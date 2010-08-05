@@ -1,175 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760956Ab0HEW0Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:26:25 -0400
-Received: from kroah.org ([198.145.64.141]:37801 "EHLO coco.kroah.org"
+	id S1760970Ab0HEW0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:26:40 -0400
+Received: from kroah.org ([198.145.64.141]:37808 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934560Ab0HEWY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:56 -0400
+	id S934570Ab0HEWY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:59 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Samium Gromoff <_deepfire@feelingofgreen.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 56/67] serial: MMIO32 support for 8250_early.c
-Date: Thu,  5 Aug 2010 15:23:23 -0700
-Message-Id: <1281047014-23429-56-git-send-email-gregkh@suse.de>
+Cc: Magnus Damm <damm@opensource.se>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 20/28] Driver core: Add BUS_NOTIFY_BIND_DRIVER
+Date: Thu,  5 Aug 2010 15:24:10 -0700
+Message-Id: <1281047058-23716-20-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213528.GA13794@kroah.com>
-References: <20100805213528.GA13794@kroah.com>
+In-Reply-To: <20100805213314.GB13744@kroah.com>
+References: <20100805213314.GB13744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Samium Gromoff <_deepfire@feelingofgreen.ru>
+From: Magnus Damm <damm@opensource.se>
 
-Provide MMIO32 support in 8250_early (aka earlycon)
+Add BUS_NOTIFY_BIND_DRIVER as a bus notifier event.
 
-[randy.dunlap@oracle.com: fix printk format warnings]
-[akpm@linux-foundation.org: fix printk args some more]
-Signed-off-by: Samium Gromoff <_deepfire@feelingofgreen.ru>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+For driver binding/unbinding we with this in
+place have the following bus notifier events:
+ - BUS_NOTIFY_BIND_DRIVER - before ->probe()
+ - BUS_NOTIFY_BOUND_DRIVER - after ->probe()
+ - BUS_NOTIFY_UNBIND_DRIVER - before ->remove()
+ - BUS_NOTIFY_UNBOUND_DRIVER - after ->remove()
+
+The event BUS_NOTIFY_BIND_DRIVER allows bus code
+to be notified that ->probe() is about to be called.
+
+Useful for bus code that needs to setup hardware before
+the driver gets to run. With this in place platform
+drivers can be loaded and unloaded as modules and the
+new BIND event allows bus code to control for instance
+device clocks that must be enabled before the driver
+can be executed.
+
+Without this patch there is no way for the bus code to
+get notified that a modular driver is about to be probed.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- Documentation/kernel-parameters.txt |    3 ++
- drivers/serial/8250_early.c         |   57 +++++++++++++++++++++++++---------
- 2 files changed, 45 insertions(+), 15 deletions(-)
+ drivers/base/dd.c      |    4 ++++
+ include/linux/device.h |    8 +++++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index d9239d5..f77ed13 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -687,8 +687,11 @@ and is between 256 and 4096 characters. It is defined in the file
- 	earlycon=	[KNL] Output early console device and options.
- 		uart[8250],io,<addr>[,options]
- 		uart[8250],mmio,<addr>[,options]
-+		uart[8250],mmio32,<addr>[,options]
- 			Start an early, polled-mode console on the 8250/16550
- 			UART at the specified I/O port or MMIO address.
-+			MMIO inter-register address stride is either 8bit (mmio)
-+                        or 32bit (mmio32).
- 			The options are the same as for ttyS, above.
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 503c262..da57ee9 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -51,6 +51,10 @@ static int driver_sysfs_add(struct device *dev)
+ {
+ 	int ret;
  
- 	earlyprintk=	[X86,SH,BLACKFIN]
-diff --git a/drivers/serial/8250_early.c b/drivers/serial/8250_early.c
-index f279745..b745792 100644
---- a/drivers/serial/8250_early.c
-+++ b/drivers/serial/8250_early.c
-@@ -19,9 +19,11 @@
-  * The user can specify the device directly, e.g.,
-  *	earlycon=uart8250,io,0x3f8,9600n8
-  *	earlycon=uart8250,mmio,0xff5e0000,115200n8
-+ *	earlycon=uart8250,mmio32,0xff5e0000,115200n8
-  * or
-  *	console=uart8250,io,0x3f8,9600n8
-  *	console=uart8250,mmio,0xff5e0000,115200n8
-+ *	console=uart8250,mmio32,0xff5e0000,115200n8
++	if (dev->bus)
++		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
++					     BUS_NOTIFY_BIND_DRIVER, dev);
++
+ 	ret = sysfs_create_link(&dev->driver->p->kobj, &dev->kobj,
+ 			  kobject_name(&dev->kobj));
+ 	if (ret == 0) {
+diff --git a/include/linux/device.h b/include/linux/device.h
+index ddffdf7..0ca24e9 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -109,10 +109,12 @@ extern int bus_unregister_notifier(struct bus_type *bus,
   */
+ #define BUS_NOTIFY_ADD_DEVICE		0x00000001 /* device added */
+ #define BUS_NOTIFY_DEL_DEVICE		0x00000002 /* device removed */
+-#define BUS_NOTIFY_BOUND_DRIVER		0x00000003 /* driver bound to device */
+-#define BUS_NOTIFY_UNBIND_DRIVER	0x00000004 /* driver about to be
++#define BUS_NOTIFY_BIND_DRIVER		0x00000003 /* driver about to be
++						      bound */
++#define BUS_NOTIFY_BOUND_DRIVER		0x00000004 /* driver bound to device */
++#define BUS_NOTIFY_UNBIND_DRIVER	0x00000005 /* driver about to be
+ 						      unbound */
+-#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000005 /* driver is unbound
++#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000006 /* driver is unbound
+ 						      from the device */
  
- #include <linux/tty.h>
-@@ -48,18 +50,31 @@ static struct early_serial8250_device early_device;
- 
- static unsigned int __init serial_in(struct uart_port *port, int offset)
- {
--	if (port->iotype == UPIO_MEM)
-+	switch (port->iotype) {
-+	case UPIO_MEM:
- 		return readb(port->membase + offset);
--	else
-+	case UPIO_MEM32:
-+		return readl(port->membase + (offset << 2));
-+	case UPIO_PORT:
- 		return inb(port->iobase + offset);
-+	default:
-+		return 0;
-+	}
- }
- 
- static void __init serial_out(struct uart_port *port, int offset, int value)
- {
--	if (port->iotype == UPIO_MEM)
-+	switch (port->iotype) {
-+	case UPIO_MEM:
- 		writeb(value, port->membase + offset);
--	else
-+		break;
-+	case UPIO_MEM32:
-+		writel(value, port->membase + (offset << 2));
-+		break;
-+	case UPIO_PORT:
- 		outb(value, port->iobase + offset);
-+		break;
-+	}
- }
- 
- #define BOTH_EMPTY (UART_LSR_TEMT | UART_LSR_THRE)
-@@ -137,15 +152,21 @@ static int __init parse_options(struct early_serial8250_device *device,
- 								char *options)
- {
- 	struct uart_port *port = &device->port;
--	int mmio, length;
-+	int mmio, mmio32, length;
- 
- 	if (!options)
- 		return -ENODEV;
- 
- 	port->uartclk = BASE_BAUD * 16;
--	if (!strncmp(options, "mmio,", 5)) {
--		port->iotype = UPIO_MEM;
--		port->mapbase = simple_strtoul(options + 5, &options, 0);
-+
-+	mmio = !strncmp(options, "mmio,", 5);
-+	mmio32 = !strncmp(options, "mmio32,", 7);
-+	if (mmio || mmio32) {
-+		port->iotype = (mmio ? UPIO_MEM : UPIO_MEM32);
-+		port->mapbase = simple_strtoul(options + (mmio ? 5 : 7),
-+					       &options, 0);
-+		if (mmio32)
-+			port->regshift = 2;
- #ifdef CONFIG_FIX_EARLYCON_MEM
- 		set_fixmap_nocache(FIX_EARLYCON_MEM_BASE,
- 					port->mapbase & PAGE_MASK);
-@@ -157,11 +178,10 @@ static int __init parse_options(struct early_serial8250_device *device,
- 		if (!port->membase) {
- 			printk(KERN_ERR "%s: Couldn't ioremap 0x%llx\n",
- 				__func__,
--			       (unsigned long long)port->mapbase);
-+			       (unsigned long long) port->mapbase);
- 			return -ENOMEM;
- 		}
- #endif
--		mmio = 1;
- 	} else if (!strncmp(options, "io,", 3)) {
- 		port->iotype = UPIO_PORT;
- 		port->iobase = simple_strtoul(options + 3, &options, 0);
-@@ -181,11 +201,18 @@ static int __init parse_options(struct early_serial8250_device *device,
- 			device->baud);
- 	}
- 
--	printk(KERN_INFO "Early serial console at %s 0x%llx (options '%s')\n",
--		mmio ? "MMIO" : "I/O port",
--		mmio ? (unsigned long long) port->mapbase
--		     : (unsigned long long) port->iobase,
--		device->options);
-+	if (mmio || mmio32)
-+		printk(KERN_INFO
-+		       "Early serial console at MMIO%s 0x%llu (options '%s')\n",
-+			mmio32 ? "32" : "",
-+			(unsigned long long)port->mapbase,
-+			device->options);
-+	else
-+		printk(KERN_INFO
-+		      "Early serial console at I/O port 0x%lu (options '%s')\n",
-+			port->iobase,
-+			device->options);
-+
- 	return 0;
- }
- 
+ extern struct kset *bus_get_kset(struct bus_type *bus);
 -- 
 1.7.2
 
