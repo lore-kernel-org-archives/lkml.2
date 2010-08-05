@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941Ab0HEQv1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:51:27 -0400
-Received: from susan.uniplac.net ([200.135.4.9]:56641 "EHLO uniplac.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab0HEQvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:51:25 -0400
-From: "Christopher Andrew" <info@uniplac.net>
-Reply-To: andrewsco.llp@computermail.net
-Subject: THIS IS MY SECOND MAIL TO YOU.
-Date: Thu, 5 Aug 2010 15:33:44 +0000
-Message-Id: <20100805145135.M70952@uniplac.net>
-X-Mailer: Open WebMail 2.51 20050228
-X-OriginatingIP: 195.245.109.83 (isa)
+	id S933543Ab0HEQ5d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:57:33 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:47683 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab0HEQ53 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:57:29 -0400
+Message-ID: <4C5AED6A.8040602@candelatech.com>
+Date: Thu, 05 Aug 2010 09:57:14 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Michael Leun <lkml20100708@newton.leun.net>, Greg KH <greg@kroah.com>,
+        netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free (after
+ using openvpn)
+References: <loom.20100708T183152-326@post.gmane.org>	<20100709235744.GA12752@kroah.com>	<20100710101540.2799c9ef@xenia.leun.net>	<20100710140800.GA20424@kroah.com>	<20100710165208.59272ae6@xenia.leun.net>	<20100710235323.5336f627@xenia.leun.net>	<20100711192939.1c25dcaf@xenia.leun.net>	<20100804153543.56f6ecad@xenia.leun.net>	<20100804214618.GA6289@kroah.com>	<20100805001105.5a3453ed@xenia.leun.net>	<m1lj8l29zm.fsf@fess.ebiederm.org>	<20100805112538.60a46cb1@xenia.leun.net> <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+In-Reply-To: <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For your Attention,
+On 08/05/2010 02:51 AM, Eric W. Biederman wrote:
+> Michael Leun<lkml20100708@newton.leun.net>  writes:
 
-I am contacting you once more on behalf of the Trustees and Executors of 
-the estate of late Dr Maurice  Wohl, as you
-have not responded to my previous mail.
-I therefore contact you again with this same email as written in the 
-will as it appears to be the only option for us to
-get through to you.
+>> Unfortunately looks like indefinitely. Never watched longer so far
+>> (rebooted soon), but I'm seeing this message now repeated every 10 secs
+>> for ~10 minutes on a idle system.
+>
+> Ugh.  A real bug then.  These can be a pain to track down and fix. I
+> think the last one of these I tracked down took a couple of weeks.  I
+> will start digging in when I get back from vacation.
 
-This is to inform you that we are in the process of finalizing the 
-execution of the Will and Last Testament of late Dr.
-Maurice Wohl.
-For your information, your name is written in the will as one of the 
-beneficiaries.
-Do contact me via my official email below for more clarification.
+I once spent a similar amount of time putting in debug variants that
+printed info for each time a netdev was acquired and released.
 
-Sincerely,
+Maybe a similar logic could be put into the official kernel (and
+disabled by default)?
 
-Christopher Andrew.
-Andrews & Lawyers LLP.
-1 Flavian Road, Nettleham Road,
-Lincoln LN2 4GR.England, UK
-Tel: +44 (0) 702 402 2755
-Tel: +44 (0) 702 401 3777
-Fax: +44 (0) 709 289 9760
-Email:andrewsco.llp@computermail.net
+That should save effort in the long run, I'd think.
+
+Thanks,
+Ben
+
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
