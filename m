@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934304Ab0HEU2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:28:45 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39082 "EHLO mgw2.diku.dk"
+	id S934383Ab0HEU3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:29:13 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39096 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760276Ab0HEU2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:28:34 -0400
-Date: Thu, 5 Aug 2010 22:28:31 +0200 (CEST)
+	id S934330Ab0HEU3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:29:01 -0400
+Date: Thu, 5 Aug 2010 22:28:59 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Florian Fainelli <florian@openwrt.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 38/42] drivers/net: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052228120.31692@ask.diku.dk>
+To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 39/42] drivers/mfd: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052228320.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,7 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Outdent the code following the if.
+Move the call to twl4030_config_sleep_sequence into the if branch that it
+is aligned with.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -50,19 +51,27 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/cpmac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+This patch changes the semantics, and might not be what is intended.
 
-diff --git a/drivers/net/cpmac.c b/drivers/net/cpmac.c
-index e1f6156..ac3985c 100644
---- a/drivers/net/cpmac.c
-+++ b/drivers/net/cpmac.c
-@@ -506,7 +506,7 @@ static int cpmac_poll(struct napi_struct *napi, int budget)
- 					"restart rx from a descriptor that's "
- 					"not free: %p\n",
- 					priv->dev->name, restart);
--				goto fatal_error;
-+			goto fatal_error;
- 		}
- 
- 		cpmac_write(priv->regs, CPMAC_RX_PTR(0), restart->mapping);
+ drivers/mfd/twl4030-power.c         |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
+index 7efa878..9ab5a20 100644
+--- a/drivers/mfd/twl4030-power.c
++++ b/drivers/mfd/twl4030-power.c
+@@ -451,12 +451,13 @@ static int __init load_twl4030_script(struct twl4030_script *tscript,
+ 		if (err)
+ 			goto out;
+ 	}
+-	if (tscript->flags & TWL4030_SLEEP_SCRIPT)
++	if (tscript->flags & TWL4030_SLEEP_SCRIPT) {
+ 		if (order)
+ 			pr_warning("TWL4030: Bad order of scripts (sleep "\
+ 					"script before wakeup) Leads to boot"\
+ 					"failure on some boards\n");
+ 		err = twl4030_config_sleep_sequence(address);
++	}
+ out:
+ 	return err;
+ }
