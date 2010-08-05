@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760762Ab0HEX42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:56:28 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60030 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756442Ab0HEX4Y convert rfc822-to-8bit (ORCPT
+	id S933718Ab0HEX4k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:56:40 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:39947 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932166Ab0HEX4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:56:24 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Michael Rubin <mrubin@google.com>
-Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and  pages_entered_writeback
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk
-In-Reply-To: <AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
-References: <20100805132433.d1d7927b.akpm@linux-foundation.org> <AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
-Message-Id: <20100806084928.31DE.A69D9226@jp.fujitsu.com>
+	Thu, 5 Aug 2010 19:56:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type;
+        b=BQYnePLXeJ0Acpb/bLWF++kfk99L67hEz1Eak5DFW9t1MF0YBf8RqvjOgeiuFtsUmw
+         Wcx85SWQU9RpsBTTkXPHX7nYZo1S1YE+x1/F9SEeDQX2hqjgjv/ZmbCmlCc8Zpxz2aiR
+         ah7H+s3tP0xHS1RxxjNUZ1V++1ScN50x5x95k=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  6 Aug 2010 08:56:20 +0900 (JST)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100805144336.GA26801@opensource.wolfsonmicro.com>
+References: <1280979638.1238.2.camel@mola> <20100805121145.GD13146@rakim.wolfsonmicro.main> 
+	<AANLkTimR8J_LqGweRpgddN3qv0oXGjnWGGiTBHQHLWi6@mail.gmail.com> 
+	<20100805144336.GA26801@opensource.wolfsonmicro.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 6 Aug 2010 07:56:14 +0800
+Message-ID: <AANLkTinorqhrmgZ8neRc4SqoUA-r3cHfuVr55a-V8HB4@mail.gmail.com>
+Subject: Re: [PATCH 1/2] lp3971: remove unnecessary ret value checking in 
+	lp3971_i2c_write()
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Aug 5, 2010 at 1:24 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Wed,  4 Aug 2010 17:43:24 -0700
-> > Michael Rubin <mrubin@google.com> wrote:
-> > Wait.  These counters appear in /proc/vmstat.  So why create standalone
-> > /proc/sys/vm files as well?
-> 
-> I did not know they would show up in /proc/vmstat.
-> 
-> I thought it made sense to put them in /proc/sys/vm since the other
-> writeback controls are there.
-> but have no problems just adding them to /prov/vmstat if that makes more sense.
+2010/8/5 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Thu, Aug 05, 2010 at 10:22:13PM +0800, Axel Lin wrote:
+>> 2010/8/5 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+>
+>> > but can I once more renew my request that you make some effort to
+>> > provide subject lines for your patches which are consistent with the
+>> > standard used for the area of the kernel you're submitting to?
+>
+>> I think we have communication problem.
+>> I thought the subject "[PATCH 1/2] lp3971: remove unnecessary ret
+>> value checking in lp3971_i2c_write()"
+>> is pretty clear.
+>> Or do you mean something else?
+>
+> In this case pretty much every regulator API patch has a subject line
+> starting "regulator: " but none of your patches do this, you have
+> created your own style which you use over all your patches.
+>
 
-?
+Got your point now. Will fix it next time.
 
-/proc/vmstat already have both.
-
-cat /proc/vmstat |grep nr_dirty
-cat /proc/vmstat |grep nr_writeback
-
-Also, /sys/devices/system/node/node0/meminfo show per-node stat.
-
-Perhaps, I'm missing your point.
-
-
+Thanks,
+Axel
