@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759259Ab0HETEG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:04:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46888 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755203Ab0HETED (ORCPT
+	id S1759284Ab0HETG7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:06:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47208 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab0HETGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:04:03 -0400
-Date: Thu, 5 Aug 2010 12:03:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Paris <eparis@redhat.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov, sds@tycho.nsa.gov, jmorris@namei.org
-Subject: Re: [PATCH] kernel: rounddown helper function
-Message-Id: <20100805120312.e166a041.akpm@linux-foundation.org>
-In-Reply-To: <1281030996.2604.17.camel@dhcp231-200.rdu.redhat.com>
-References: <20100803181607.30614.36916.stgit@paris.rdu.redhat.com>
-	<20100803112354.8761e49d.randy.dunlap@oracle.com>
-	<20100804143504.e7dfade1.akpm@linux-foundation.org>
-	<1281030996.2604.17.camel@dhcp231-200.rdu.redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Aug 2010 15:06:53 -0400
+Date: Thu, 5 Aug 2010 15:01:38 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Dominik Brodowski <linux@dominikbrodowski.net>, Valdis.Kletnieks@vt.edu,
+        josef@redhat.com,
+        Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: direct-io regression [Was: How to track down abysmal
+ performance ata - raid1 - crypto - vg/lv - xfs]
+Message-ID: <20100805190138.GV29846@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Jeff Moyer <jmoyer@redhat.com>,
+	Dominik Brodowski <linux@dominikbrodowski.net>,
+	Valdis.Kletnieks@vt.edu, josef@redhat.com,
+	Michael Monnerie <michael.monnerie@is.it-management.at>,
+	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+	xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+References: <20100804085039.GA11671@infradead.org>
+ <20100804091317.GA27779@isilmar-3.linta.de>
+ <20100804092122.GA2998@infradead.org>
+ <20100804073546.GA7494@comet.dominikbrodowski.net>
+ <201008041116.09822@zmi.at>
+ <20100804102526.GB13766@isilmar-3.linta.de>
+ <15446.1280953986@localhost>
+ <20100805093100.GA3001@comet.dominikbrodowski.net>
+ <20100805113240.GA29846@think>
+ <x49tyn8c2ea.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49tyn8c2ea.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C5B0BB1.01E8:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Aug 2010 13:56:36 -0400
-Eric Paris <eparis@redhat.com> wrote:
+On Thu, Aug 05, 2010 at 02:58:37PM -0400, Jeff Moyer wrote:
+> Chris Mason <chris.mason@oracle.com> writes:
+> 
+> > But, I'm surprised your drive is doing 8K dio reads at 16MB/s, that
+> > seems a little high.  
+> 
+> I'm not sure why you think that.  We're talking about a plain old SATA
+> disk, right?  I can get 40-50MB/s on my systems for 8KB O_DIRECT reads.
+> What am I missing?
 
-> > > I'm more used to seeing it like
-> > > 
-> > > #define DIV_ROUND_DOWN(n, d)	(((n) / (d)) * (d))
-> > > 
-> > > but since multiply/divide/modulus are usually slower, your (SELinux) way is better,
-> > > I suppose.
-> > > 
-> > > and the usual caveats apply:  don't use these macros with expressions (nor with y
-> > > or d == 0).
-> > 
-> > Yes, it really shouldn't reference its argument twice.  And that's easy
-> > to fix.
-> 
-> Are you suggesting something like
-> 
-> #define rounddown(n, d) ({ typeof(n) __n = (n); __n - (__n % (d)); })
+Clearly I'm wrong, his drive is going much faster ;)  I expect the
+smaller reads to be slower but the drive's internal cache is doing well.
 
-looks good.
+-chris
 
-> If that's what you are hoping for, would you also like to see a patch
-> doing the same thing for roundup() ?
-
-Sure.  I doubt if anything accidentally depends on the curent behavior,
-although that would be amusing.
-
-> > A fancy version would detect constant-power-of-two and do an `& (d - 1)'
-> > instead of the modulus.  But probably the compiler does optimisatons in
-> > that case - for unsigned types, at least.
-> 
-> I don't think we really need to.  My quick test shows:
-> 
-> #define rounddown(n, d) ({typeof((n)) __n = (n); (__n - (__n % (d)));})
-> 
-> int round7(unsigned int a)
-> {
-> 	return rounddown(a, 7);
-> }
-> 
-> int round4(unsigned int a)
-> {
-> 	return rounddown(a, 4);
-> }
-> 
-> 0000000000400504 <round7>:
->   400504:       b9 07 00 00 00          mov    $0x7,%ecx
->   400509:       89 f8                   mov    %edi,%eax
->   40050b:       31 d2                   xor    %edx,%edx
->   40050d:       f7 f1                   div    %ecx
->   40050f:       89 f8                   mov    %edi,%eax
->   400511:       29 d0                   sub    %edx,%eax
->   400513:       c3                      retq
-> 
-> 0000000000400514 <round4>:
->   400514:       89 f8                   mov    %edi,%eax
->   400516:       83 e0 fc                and    $0xfffffffffffffffc,%eax
->   400519:       c3                      retq
-> 
-
-OK, thanks for checking.
