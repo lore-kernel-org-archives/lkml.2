@@ -1,303 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759354Ab0HETr5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:47:57 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:54891 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759315Ab0HETrz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:47:55 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-        "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 5 Aug 2010 13:47:45 -0600
-Subject: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Index: AcsIRXwfwbieNXNUR6GBvdSy0cxVCQskSL/A
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S933369Ab0HETuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:50:46 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:7769 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759343Ab0HETum convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 15:50:42 -0400
+X-IronPort-AV: E=Sophos;i="4.55,324,1278313200"; 
+   d="scan'208";a="421398985"
+Subject: RE: [PATCH] [Bug 16494] NFS client over TCP hangs due to packet
+ loss
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Andy Chittenden <andyc.bluearc@gmail.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'David Miller'" <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
+        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
+        kaber@trash.net, eric.dumazet@gmail.com,
+        William.Allen.Simpson@gmail.com, gilad@codefidence.com,
+        ilpo.jarvinen@helsinki.fi, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        "'J. Bruce Fields'" <bfields@fieldses.org>,
+        "'Neil Brown'" <neilb@suse.de>,
+        "'Chuck Lever'" <chuck.lever@oracle.com>,
+        "'Benny Halevy'" <bhalevy@panasas.com>,
+        "'Alexandros Batsakis'" <batsakis@netapp.com>,
+        "'Joe Perches'" <joe@perches.com>
+In-Reply-To: <4c5ad0d6.42ecd80a.47d7.0dfc@mx.google.com>
+References: <4c57cfe8.887b0e0a.2f79.4772@mx.google.com>
+	 <20100803.012144.267950450.davem@davemloft.net>
+	 <20100803021110.f0b3877b.akpm@linux-foundation.org>
+	 <4C57EE9A.7040308@gmail.com>  <4c5ad0d6.42ecd80a.47d7.0dfc@mx.google.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Organization: NetApp
+Date: Thu, 05 Aug 2010 15:50:22 -0400
+Message-ID: <1281037822.2948.49.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+X-OriginalArrivalTime: 05 Aug 2010 19:50:25.0146 (UTC) FILETIME=[725C5DA0:01CB34D7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley suggested me to resubmit those patches (12 patches).  First 8 patches should be downloaded together and them compile them.
+On Thu, 2010-08-05 at 15:55 +0100, Andy Chittenden wrote:
+> > On 2010-08-03 10:11, Andrew Morton wrote:
+> > > (cc linux-nfs)
+> > >
+> > > On Tue, 03 Aug 2010 01:21:44 -0700 (PDT) David
+> > Miller<davem@davemloft.net>  wrote:
+> > >
+> > >> From: "Andy Chittenden"<andyc.bluearc@gmail.com>
+> > >> Date: Tue, 3 Aug 2010 09:14:31 +0100
+> > >>
+> > >>> I don't know whether this patch is the correct fix or not but it
+> > enables the
+> > >>> NFS client to recover.
+> > >>>
+> > >>> Kernel version: 2.6.34.1 and 2.6.32.
+> > >>>
+> > >>> Fixes<https://bugzilla.kernel.org/show_bug.cgi?id=16494>. It clears
+> > down
+> > >>> any previous shutdown attempts so that reconnects on a socket
+> > that's been
+> > >>> shutdown leave the socket in a usable state (otherwise
+> > tcp_sendmsg() returns
+> > >>> -EPIPE).
+> > >>
+> > >> If the SunRPC code wants to close a TCP socket then use it again,
+> > >> it should disconnect by doing a connect() with sa_family ==
+> > AF_UNSPEC
+> > 
+> > There is code to do that in the SunRPC code in xs_abort_connection()
+> > but
+> > that's conditionally called from xs_tcp_reuse_connection():
+> > 
+> > static void xs_tcp_reuse_connection(struct rpc_xprt *xprt, struct
+> > sock_xprt *transport)
+> > {
+> > 	unsigned int state = transport->inet->sk_state;
+> > 
+> > 	if (state == TCP_CLOSE && transport->sock->state ==
+> > SS_UNCONNECTED)
+> > 		return;
+> > 	if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT))
+> > 		return;
+> > 	xs_abort_connection(xprt, transport);
+> > }
+> > 
+> > That's changed since 2.6.26 where it unconditionally did the connect()
+> > with sa_family == AF_UNSPEC. FWIW we cannot reproduce this problem with
+> > 2.6.26.
+> 
+> The problem is fixed with this patch which also prints out that sk_shutdown
+> can be non-zero on entry to xs_tcp_reuse_connection:
+> 
+> # diff -up /home/company/software/src/linux-2.6.34.2/net/sunrpc/xprtsock.c
+> net/sunrpc/xprtsock.c 
+> --- /home/company/software/src/linux-2.6.34.2/net/sunrpc/xprtsock.c
+> 2010-08-02 18:30:51.000000000 +0100
+> +++ net/sunrpc/xprtsock.c       2010-08-05 12:21:11.000000000 +0100
+> @@ -1322,10 +1322,11 @@ static void xs_tcp_state_change(struct s
+>         if (!(xprt = xprt_from_sock(sk)))
+>                 goto out;
+>         dprintk("RPC:       xs_tcp_state_change client %p...\n", xprt);
+> -       dprintk("RPC:       state %x conn %d dead %d zapped %d\n",
+> +       dprintk("RPC:       state %x conn %d dead %d zapped %d sk_shutdown
+> %d\n",
+>                         sk->sk_state, xprt_connected(xprt),
+>                         sock_flag(sk, SOCK_DEAD),
+> -                       sock_flag(sk, SOCK_ZAPPED));
+> +                       sock_flag(sk, SOCK_ZAPPED),
+> +                       sk->sk_shutdown);
+>  
+>         switch (sk->sk_state) {
+>         case TCP_ESTABLISHED:
+> @@ -1796,10 +1797,18 @@ static void xs_tcp_reuse_connection(stru
+>  {
+>         unsigned int state = transport->inet->sk_state;
+>  
+> -       if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED)
+> -               return;
+> -       if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT))
+> -               return;
+> +       if (state == TCP_CLOSE && transport->sock->state == SS_UNCONNECTED)
+> {
+> +               if (transport->inet->sk_shutdown == 0)
+> +                       return;
+> +               printk("%s: TCP_CLOSEd and sk_shutdown set to %d\n",
+> +                       __func__, transport->inet->sk_shutdown);
+> +       }
+> +       if ((1 << state) & (TCPF_ESTABLISHED|TCPF_SYN_SENT)) {
+> +               if (transport->inet->sk_shutdown == 0)
+> +                       return;
+> +               printk("%s: sk_shutdown set to %d\n",
+> +                       __func__, transport->inet->sk_shutdown);
+> +       }
+>         xs_abort_connection(xprt, transport);
+>  }
+> 
+> Signed-off-by: Andy Chittenden <andyc.bluearc@gmail.com>
+> 
+> dmesg displays:
+> 
+> [ 2840.896043] xs_tcp_reuse_connection: TCP_CLOSEd and sk_shutdown set to 2
+> 
+> so previously the code was attempting to reuse the connection but wasn't
+> aborting it and thus didn't clear down sk_shutdown.
 
-Enable the Online Controller reset bit in the register related functions.  This is first part of the Online Controller Reset.
-The driver supports XScle and Gen2 chips.  Driver need to read the FW state register to see if there is FW state change
-Happen.
+Hi Andy,
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+I note that you are adding in two new printk()s. Why should they be
+printk(), and not dprintk()? Are you trying to report an exception that
+the user needs to be aware of, or is this only debugging info that we'll
+want to turn off under normal operation?
 
----
-drivers/scsi/megaraid/megaraid_sas.c |   53 +++++++++++++++++++----------------
- drivers/scsi/megaraid/megarad_sas.h |   27 +++++++++++++++--
- 2 files changed, 52 insertions(+), 28 deletions(-)
+Also, it might be useful to add a comment to the code here to remind us
+what the 'sk_shutdown == 0' case corresponds to as far as the socket
+state is concerned, so that the casual reader can see why we shouldn't
+reset the connection.
 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:02:55.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:32:43.000000000 -0400
-@@ -164,7 +164,7 @@ megasas_return_cmd(struct megasas_instan
- static inline void
- megasas_enable_intr_xscale(struct megasas_register_set __iomem * regs)
- {
--	writel(1, &(regs)->outbound_intr_mask);
-+	writel(0, &(regs)->outbound_intr_mask);
- 
- 	/* Dummy readl to force pci flush */
- 	readl(&regs->outbound_intr_mask);
-@@ -200,24 +200,27 @@ static int 
- megasas_clear_intr_xscale(struct megasas_register_set __iomem * regs)
- {
- 	u32 status;
-+	u32 mfiStatus = 0;
- 	/*
- 	 * Check if it is our interrupt
- 	 */
- 	status = readl(&regs->outbound_intr_status);
- 
--	if (!(status & MFI_OB_INTR_STATUS_MASK)) {
--		return 1;
--	}
-+	if (status & MFI_OB_INTR_STATUS_MASK)
-+		mfiStatus = MFI_INTR_FLAG_REPLY_MESSAGE;
-+	if (status & MFI_XSCALE_OMR0_CHANGE_INTERRUPT)
-+		mfiStatus |= MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE;
- 
- 	/*
- 	 * Clear the interrupt by writing back the same value
- 	 */
--	writel(status, &regs->outbound_intr_status);
-+	if (mfiStatus)
-+		writel(status, &regs->outbound_intr_status);
- 
- 	/* Dummy readl to force pci flush */
- 	readl(&regs->outbound_intr_status);
- 
--	return 0;
-+	return mfiStatus;
- }
- 
- /**
-@@ -264,7 +267,7 @@ megasas_enable_intr_ppc(struct megasas_r
- {
- 	writel(0xFFFFFFFF, &(regs)->outbound_doorbell_clear);
-     
--	writel(~0x80000004, &(regs)->outbound_intr_mask);
-+	writel(~0x80000000, &(regs)->outbound_intr_mask);
- 
- 	/* Dummy readl to force pci flush */
- 	readl(&regs->outbound_intr_mask);
-@@ -307,7 +310,7 @@ megasas_clear_intr_ppc(struct megasas_re
- 	status = readl(&regs->outbound_intr_status);
- 
- 	if (!(status & MFI_REPLY_1078_MESSAGE_INTERRUPT)) {
--		return 1;
-+		return 0;
- 	}
- 
- 	/*
-@@ -318,7 +321,7 @@ megasas_clear_intr_ppc(struct megasas_re
- 	/* Dummy readl to force pci flush */
- 	readl(&regs->outbound_doorbell_clear);
- 
--	return 0;
-+	return 1;
- }
- /**
-  * megasas_fire_cmd_ppc -	Sends command to the FW
-@@ -397,7 +400,7 @@ megasas_clear_intr_skinny(struct megasas
- 	status = readl(&regs->outbound_intr_status);
- 
- 	if (!(status & MFI_SKINNY_ENABLE_INTERRUPT_MASK)) {
--		return 1;
-+		return 0;
- 	}
- 
- 	/*
-@@ -410,7 +413,7 @@ megasas_clear_intr_skinny(struct megasas
- 	*/
- 	readl(&regs->outbound_intr_status);
- 
--	return 0;
-+	return 1;
- }
- 
- /**
-@@ -425,12 +428,9 @@ megasas_fire_cmd_skinny(struct megasas_i
- 			u32 frame_count,
- 			struct megasas_register_set __iomem *regs)
- {
--	unsigned long flags;
--	spin_lock_irqsave(&instance->fire_lock, flags);
- 	writel(0, &(regs)->inbound_high_queue_port);
- 	writel((frame_phys_addr | (frame_count<<1))|1,
- 		&(regs)->inbound_low_queue_port);
--	spin_unlock_irqrestore(&instance->fire_lock, flags);
- }
- 
- static struct megasas_instance_template megasas_instance_template_skinny = {
-@@ -495,23 +495,29 @@ static int
- megasas_clear_intr_gen2(struct megasas_register_set __iomem *regs)
- {
- 	u32 status;
-+	u32 mfiStatus = 0;
- 	/*
- 	 * Check if it is our interrupt
- 	 */
- 	status = readl(&regs->outbound_intr_status);
- 
--	if (!(status & MFI_GEN2_ENABLE_INTERRUPT_MASK))
--		return 1;
-+	if (status & MFI_GEN2_ENABLE_INTERRUPT_MASK) {
-+		mfiStatus = MFI_INTR_FLAG_REPLY_MESSAGE;
-+	}
-+	if (status & MFI_G2_OUTBOUND_DOORBELL_CHANGE_INTERRUPT) {
-+		mfiStatus |= MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE;
-+	}
- 
- 	/*
- 	 * Clear the interrupt by writing back the same value
- 	 */
--	writel(status, &regs->outbound_doorbell_clear);
-+	if (mfiStatus)
-+		writel(status, &regs->outbound_doorbell_clear);
- 
- 	/* Dummy readl to force pci flush */
- 	readl(&regs->outbound_intr_status);
- 
--	return 0;
-+	return mfiStatus;
- }
- /**
-  * megasas_fire_cmd_gen2 -     Sends command to the FW
-@@ -540,7 +546,7 @@ static struct megasas_instance_template 
- 
- /**
- *	This is the end of set of functions & definitions
--* 	specific to ppc (deviceid : 0x60) controllers
-+*       specific to gen2 (deviceid : 0x78, 0x79) controllers
- */
- 
- /**
-@@ -599,8 +605,7 @@ megasas_issue_blocked_cmd(struct megasas
- 	instance->instancet->fire_cmd(instance,
- 			cmd->frame_phys_addr, 0, instance->reg_set);
- 
--	wait_event_timeout(instance->int_cmd_wait_q, (cmd->cmd_status != ENODATA),
--		MEGASAS_INTERNAL_CMD_WAIT_TIME*HZ);
-+	wait_event(instance->int_cmd_wait_q, cmd->cmd_status != ENODATA);
- 
- 	return 0;
- }
-@@ -648,8 +653,8 @@ megasas_issue_blocked_abort_cmd(struct m
- 	/*
- 	 * Wait for this cmd to complete
- 	 */
--	wait_event_timeout(instance->abort_cmd_wait_q, (cmd->cmd_status != 0xFF),
--		MEGASAS_INTERNAL_CMD_WAIT_TIME*HZ);
-+	wait_event(instance->abort_cmd_wait_q, cmd->cmd_status != 0xFF);
-+	cmd->sync_cmd = 0;
- 
- 	megasas_return_cmd(instance, cmd);
- 	return 0;
-@@ -3137,7 +3142,7 @@ megasas_probe_one(struct pci_dev *pdev, 
- 	init_waitqueue_head(&instance->abort_cmd_wait_q);
- 
- 	spin_lock_init(&instance->cmd_pool_lock);
--	spin_lock_init(&instance->fire_lock);
-+	spin_lock_init(&instance->hba_lock);
- 	spin_lock_init(&instance->completion_lock);
- 	spin_lock_init(&poll_aen_lock);
- 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
---- old/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 14:02:55.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 14:24:50.000000000 -0400
-@@ -73,6 +73,12 @@
-  * HOTPLUG	: Resume from Hotplug
-  * MFI_STOP_ADP	: Send signal to FW to stop processing
-  */
-+#define WRITE_SEQUENCE_OFFSET		(0x0000000FC) /* I20 */
-+#define HOST_DIAGNOSTIC_OFFSET		(0x000000F8)  /* I20 */
-+#define DIAG_WRITE_ENABLE			(0x00000080)
-+#define DIAG_RESET_ADAPTER			(0x00000004)
-+
-+#define MFI_ADP_RESET				0x00000040
- #define MFI_INIT_ABORT				0x00000001
- #define MFI_INIT_READY				0x00000002
- #define MFI_INIT_MFIMODE			0x00000004
-@@ -704,6 +710,12 @@ struct megasas_ctrl_info {
-  */
- #define IS_DMA64				(sizeof(dma_addr_t) == 8)
- 
-+#define MFI_XSCALE_OMR0_CHANGE_INTERRUPT		0x00000001
-+
-+#define MFI_INTR_FLAG_REPLY_MESSAGE			0x00000001
-+#define MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE		0x00000002
-+#define MFI_G2_OUTBOUND_DOORBELL_CHANGE_INTERRUPT	0x00000004
-+
- #define MFI_OB_INTR_STATUS_MASK			0x00000002
- #define MFI_POLL_TIMEOUT_SECS			60
- #define MEGASAS_COMPLETION_TIMER_INTERVAL      (HZ/10)
-@@ -714,6 +726,9 @@ struct megasas_ctrl_info {
- #define MFI_REPLY_SKINNY_MESSAGE_INTERRUPT	0x40000000
- #define MFI_SKINNY_ENABLE_INTERRUPT_MASK	(0x00000001)
- 
-+#define MFI_1068_PCSR_OFFSET			0x84
-+#define MFI_1068_FW_HANDSHAKE_OFFSET		0x64
-+#define MFI_1068_FW_READY			0xDDDD0000
- /*
- * register set for both 1068 and 1078 controllers
- * structure extended for 1078 registers
-@@ -755,8 +770,10 @@ struct megasas_register_set {
- 	u32 	inbound_high_queue_port ;	/*00C4h*/
- 
- 	u32 	reserved_5;			/*00C8h*/
--	u32 	index_registers[820];		/*00CCh*/
--
-+	u32	res_6[11];			/*CCh*/
-+	u32	host_diag;
-+	u32	seq_offset;
-+	u32 	index_registers[807];		/*00CCh*/
- } __attribute__ ((packed));
- 
- struct megasas_sge32 {
-@@ -1226,11 +1243,12 @@ struct megasas_instance {
- 
- 	struct megasas_cmd **cmd_list;
- 	struct list_head cmd_pool;
-+	/* used to sync fire the cmd to fw */
- 	spinlock_t cmd_pool_lock;
-+	/* used to sync fire the cmd to fw */
-+	spinlock_t hba_lock;
- 	/* used to synch producer, consumer ptrs in dpc */
- 	spinlock_t completion_lock;
--	/* used to sync fire the cmd to fw */
--	spinlock_t fire_lock;
- 	struct dma_pool *frame_dma_pool;
- 	struct dma_pool *sense_dma_pool;
- 
-@@ -1257,6 +1275,7 @@ struct megasas_instance {
- 	u8 flag;
- 	u8 unload;
- 	u8 flag_ieee;
-+	u8 adprecovery;
- 	unsigned long last_time;
- 
- 	struct timer_list io_completion_timer; 
+Cheers
+  Trond
