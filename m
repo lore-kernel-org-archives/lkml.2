@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760103Ab0HEKjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:39:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58370 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755581Ab0HEKjw convert rfc822-to-8bit (ORCPT
+	id S1758918Ab0HEKsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:48:16 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:5202 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab0HEKsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:39:52 -0400
-From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>
-To: linux-kernel@vger.kernel.org
-Cc: trivial@kernel.org,
-        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sandeep Paulraj <s-paulraj@ti.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH] atmel_nand: Fix warning: 'part_probes' defined but not used
-Date: Thu,  5 Aug 2010 12:38:41 +0200
-Message-Id: <1281004721-397-1-git-send-email-biessmann@corscience.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1279099026-24298-1-git-send-email-biessmann@corscience.de>
-References: <1279099026-24298-1-git-send-email-biessmann@corscience.de>
+	Thu, 5 Aug 2010 06:48:10 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L6OD9I-01-2FC-02
+X-M-MSG: 
+Date: Thu, 5 Aug 2010 12:32:06 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Josh Hunt <johunt@akamai.com>, Ingo Molnar <mingo@elte.hu>
+CC: "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juhlenko@akamai.com" <juhlenko@akamai.com>
+Subject: Re: [PATCH] oprofile: add support for Intel processor model 30
+Message-ID: <20100805103206.GM26154@erda.amd.com>
+References: <1280968025-16969-1-git-send-email-johunt@akamai.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Provags-ID: V02:K0:/gTI31CubP3Qpca37LJyX8++C++kF/KrGPbI00913y5
- oF5DWMXr7p6rJ1voDqySi8CLG0X9rG3RF/HKRoiqaSiMDvRXyi
- Qlume5LuRBQOh00WnmcUXdddqst8fb5EjWJW6iQLJzIE6aowB7
- /XG58LUOdDEpIbq0nmEsAi9p1EYzf6v3vAWVcjB2g7JTYG9zAa
- veJc/Qi6QAe/CelSIrU8Q==
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1280968025-16969-1-git-send-email-johunt@akamai.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes
+On 04.08.10 20:27:05, Josh Hunt wrote:
+> Newer Intel processors identifying themselves as model 30 are not recognized by
+> oprofile.
 
-drivers/mtd/nand/atmel_nand.c:372: warning: 'part_probes' defined but not used
+> Tested using oprofile 0.9.6.
+> 
+> Signed-off-by: Josh Hunt <johunt@akamai.com>
 
-which is issued when CONFIG_MTD_PARTITIONS is defined but
-CONFIG_MTD_CMDLINE_PARTS not.
+Applied to:
 
-Signed-off-by: Andreas Bießmann <biessmann@corscience.de>
----
- Resent this patch as a trivial one cause it does only fix a warning which is
- seen in very rare cases. There is no functionality change here! I think this
- is the definition of a trivial patch.
+ git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
 
- In addition no one has commented my last submission of this patch.
+(I converted the model number to hex.)
 
- drivers/mtd/nand/atmel_nand.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thanks Josh.
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 04d3088..ccce0f0 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -364,7 +364,7 @@ static void atmel_nand_hwctl(struct mtd_info *mtd, int mode)
- 	}
- }
- 
--#ifdef CONFIG_MTD_PARTITIONS
-+#ifdef CONFIG_MTD_CMDLINE_PARTS
- static const char *part_probes[] = { "cmdlinepart", NULL };
- #endif
- 
+Ingo,
+
+please (ff-only) pull this again for tip/perf/core. You already send
+the pull request for Linus, but I think this patch will make it for
+v2.6.36 too?
+
+Thanks.
+
+-Robert
+
+> ---
+>  arch/x86/oprofile/nmi_int.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+> index b28d2f1..6f95251 100644
+> --- a/arch/x86/oprofile/nmi_int.c
+> +++ b/arch/x86/oprofile/nmi_int.c
+> @@ -657,6 +657,7 @@ static int __init ppro_init(char **cpu_type)
+>  		break;
+>  	case 0x2e:
+>  	case 26:
+> +	case 30:
+>  		spec = &op_arch_perfmon_spec;
+>  		*cpu_type = "i386/core_i7";
+>  		break;
+> -- 
+> 1.7.0.4
+> 
+> 
+
 -- 
-1.7.1
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
