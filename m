@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934198Ab0HEUYM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:24:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:57858 "EHLO mgw2.diku.dk"
+	id S934189Ab0HEUY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:24:58 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:57919 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934200Ab0HEUX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:23:57 -0400
-Date: Thu, 5 Aug 2010 22:23:54 +0200 (CEST)
+	id S934156Ab0HEUYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:24:51 -0400
+Date: Thu, 5 Aug 2010 22:24:49 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Dan Williams <dcbw@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org
-Subject: [PATCH 23/42] drivers/net/wireless/libertas: Adjust confusing if
- indentation
-Message-ID: <Pine.LNX.4.64.1008052223340.31692@ask.diku.dk>
+Subject: [PATCH 26/42] drivers/spi: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052224320.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,8 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-At the point of the patched code, err has already been tested, so it is
-only worthwhile to test it again in the if branches where it is changed.
+The return -EINVAL appears to only make sense if the if branch that it is
+aligned with is taken, so move it into that branch
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -55,29 +53,25 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/libertas/if_spi.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+This patch changes the semantics, and the change might not be correct.
 
-diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
-index fe3f080..3965c6c 100644
---- a/drivers/net/wireless/libertas/if_spi.c
-+++ b/drivers/net/wireless/libertas/if_spi.c
-@@ -800,14 +800,16 @@ static int lbs_spi_thread(void *data)
- 			goto err;
- 		}
- 
--		if (hiStatus & IF_SPI_HIST_CMD_UPLOAD_RDY)
-+		if (hiStatus & IF_SPI_HIST_CMD_UPLOAD_RDY) {
- 			err = if_spi_c2h_cmd(card);
- 			if (err)
- 				goto err;
--		if (hiStatus & IF_SPI_HIST_RX_UPLOAD_RDY)
-+		}
-+		if (hiStatus & IF_SPI_HIST_RX_UPLOAD_RDY) {
- 			err = if_spi_c2h_data(card);
- 			if (err)
- 				goto err;
-+		}
- 
- 		/* workaround: in PS mode, the card does not set the Command
- 		 * Download Ready bit, but it sets TX Download Ready. */
+ drivers/spi/amba-pl022.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/spi/amba-pl022.c b/drivers/spi/amba-pl022.c
+index f0a1418..4de50de 100644
+--- a/drivers/spi/amba-pl022.c
++++ b/drivers/spi/amba-pl022.c
+@@ -1348,10 +1348,11 @@ static int verify_controller_parameters(struct pl022 *pl022,
+ 			if ((chip_info->duplex !=
+ 			     SSP_MICROWIRE_CHANNEL_FULL_DUPLEX)
+ 			    && (chip_info->duplex !=
+-				SSP_MICROWIRE_CHANNEL_HALF_DUPLEX))
++				SSP_MICROWIRE_CHANNEL_HALF_DUPLEX)) {
+ 				dev_err(chip_info->dev,
+ 					"Microwire duplex mode is configured incorrectly\n");
+ 				return -EINVAL;
++			}
+ 		} else {
+ 			if (chip_info->duplex != SSP_MICROWIRE_CHANNEL_FULL_DUPLEX)
+ 				dev_err(chip_info->dev,
