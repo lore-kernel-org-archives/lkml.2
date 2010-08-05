@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614Ab0HEOWx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:22:53 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:35075 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760603Ab0HEOWv (ORCPT
+	id S1760624Ab0HEOXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:23:12 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:3366 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760603Ab0HEOXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:22:51 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAdkWkx5LdAL/2dsb2JhbACgN3LEVoU6BA
-Date: Fri, 6 Aug 2010 00:22:47 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: Transparent Hugepage Support #29
-Message-ID: <20100805142247.GA17359@amd>
-References: <20100803135615.GG6071@random.random>
- <201008050727.25253.edt@aei.ca>
- <20100805114915.GA25503@random.random>
- <201008050758.04918.edt@aei.ca>
+	Thu, 5 Aug 2010 10:23:10 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=PsJnY6oSsqyMO+27lSeDdOM2VHCTdz0eRjR1l7Iud3Di3R18UI5UP3mM58yDYdhWE
+	K/qAT3aGis8oObYJr+2Jg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008050758.04918.edt@aei.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100805141620.GA21459@srcf.ucam.org>
+References: <20100804185520.GA2417@srcf.ucam.org>
+	<201008042251.08266.rjw@sisk.pl>
+	<20100804205654.GA4986@srcf.ucam.org>
+	<alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
+	<AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
+	<alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
+	<20100804231003.GL24163@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008041616160.6545@asgard.lang.hm>
+	<20100805134741.GC20565@srcf.ucam.org>
+	<alpine.DEB.2.00.1008050706170.25170@asgard.lang.hm>
+	<20100805141620.GA21459@srcf.ucam.org>
+Date: Thu, 5 Aug 2010 07:23:04 -0700
+Message-ID: <AANLkTikJH=t-67TAeUjgWM1=B86ZKq1b1V4WKHHgrfuH@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: Brian Swetland <swetland@google.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 07:57:52AM -0400, Ed Tomlinson wrote:
-> On Thursday 05 August 2010 07:49:15 Andrea Arcangeli wrote:
-> > On Thu, Aug 05, 2010 at 07:27:24AM -0400, Ed Tomlinson wrote:
-> > > On a tree with:
-> > > 
-> > > commit 9d9cec888c3c4a2d5b5f01c3f3984fc4bc602681
-> > > Merge: dd6c927 9edd35f
-> > > Author: Ed <edt@aei.ca>
-> > > Date:   Wed Aug 4 15:18:53 2010 -0400
-> > > 
-> > >     Merge branch 'vfs-scale-working' of git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin into vfs-scaling
-> > > 
-> > > merged on top of
-> > > 
-> > > commit 9fe6206f400646a2322096b56c59891d530e8d51
-> > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Date:   Sun Aug 1 15:11:14 2010 -0700
-> > > 
-> > >     Linux 2.6.35
-> > 
-> > Well I didn't realize you also merged 2.6.35 on top of it. This is no
-> > standard tree, so I suggest you to checkout -f origin/master of Nick's
-> > tree until he updates to 2.6.35 himself (then I can port to it).
-> 
-> Nick,
-> 
-> Any chance of the above happening?  I'd love to test both the vfs
-> scaling changes and Andrea's much improved hugepage support together
-> on top of .35
+On Thu, Aug 5, 2010 at 7:16 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Thu, Aug 05, 2010 at 07:07:06AM -0700, david@lang.hm wrote:
+>> On Thu, 5 Aug 2010, Matthew Garrett wrote:
+>>> The decision on whether or not to go to sleep isn't the difficult bit of
+>>> this problem space.
+>>
+>> but isn't that all that wakelocks do? affect the decision on whether or
+>> not to go to sleep.
+>
+> You could think of them that way, but it's not the useful aspect of them
+> - that much could be implemented entirely in userspace. Wakelocks
+> provide a mechanism for userspace to ensure that it's handled all
+> received events before a system suspend takes place.
 
-I was going to rebase to 2.6.35 sometime, but it may have to wait
-until I get back from LSF/MM if I don't get time this week.
+For userspace or the kernel -- some events may not require userspace
+intervention, but do require the kernel to stay awake long enough to
+finish chewing on them.  Say perhaps a wifi irq comes in, the wifi
+driver/stack needs to process some beacon packets or whatnot.
 
-
+Brian
