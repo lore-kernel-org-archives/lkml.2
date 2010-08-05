@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab0HEWYb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:24:31 -0400
-Received: from kroah.org ([198.145.64.141]:37605 "EHLO coco.kroah.org"
+	id S1760883Ab0HEWYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:24:35 -0400
+Received: from kroah.org ([198.145.64.141]:37627 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932295Ab0HEWX4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:23:56 -0400
+	id S933208Ab0HEWYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:04 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 18/67] synclink: kill the big kernel lock
-Date: Thu,  5 Aug 2010 15:22:45 -0700
-Message-Id: <1281047014-23429-18-git-send-email-gregkh@suse.de>
+Subject: [PATCH 24/67] tty: serial - fix various misuses/mishandlings of port->tty
+Date: Thu,  5 Aug 2010 15:22:51 -0700
+Message-Id: <1281047014-23429-24-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -22,370 +22,359 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-We don't need it while waiting and we can lock the ioctls using the port
-mutex. While at it eliminate use of the hangup mutex and switch to the port
-mutex.
+Make it robust against hang up events. In most cases we can do this simply
+by passing the right things in the first place.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/synclink.c    |   19 ++++++-----
- drivers/char/synclink_gt.c |   78 +++++++++++++++++++-------------------------
- drivers/char/synclinkmp.c  |   32 +++++++-----------
- 3 files changed, 56 insertions(+), 73 deletions(-)
+ drivers/serial/serial_core.c |  109 +++++++++++++++++++++++-------------------
+ 1 files changed, 60 insertions(+), 49 deletions(-)
 
-diff --git a/drivers/char/synclink.c b/drivers/char/synclink.c
-index 0658fc5..2b03d4d 100644
---- a/drivers/char/synclink.c
-+++ b/drivers/char/synclink.c
-@@ -81,7 +81,6 @@
- #include <linux/mm.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/delay.h>
- #include <linux/netdevice.h>
- #include <linux/vmalloc.h>
-@@ -2436,7 +2435,9 @@ static int mgsl_get_stats(struct mgsl_struct * info, struct mgsl_icount __user *
- 	if (!user_icount) {
- 		memset(&info->icount, 0, sizeof(info->icount));
- 	} else {
-+		mutex_lock(&info->port.mutex);
- 		COPY_TO_USER(err, user_icount, &info->icount, sizeof(struct mgsl_icount));
-+		mutex_unlock(&info->port.mutex);
- 		if (err)
- 			return -EFAULT;
- 	}
-@@ -2461,7 +2462,9 @@ static int mgsl_get_params(struct mgsl_struct * info, MGSL_PARAMS __user *user_p
- 		printk("%s(%d):mgsl_get_params(%s)\n",
- 			 __FILE__,__LINE__, info->device_name);
- 			
-+	mutex_lock(&info->port.mutex);
- 	COPY_TO_USER(err,user_params, &info->params, sizeof(MGSL_PARAMS));
-+	mutex_unlock(&info->port.mutex);
- 	if (err) {
- 		if ( debug_level >= DEBUG_LEVEL_INFO )
- 			printk( "%s(%d):mgsl_get_params(%s) user buffer copy failed\n",
-@@ -2501,11 +2504,13 @@ static int mgsl_set_params(struct mgsl_struct * info, MGSL_PARAMS __user *new_pa
- 		return -EFAULT;
- 	}
- 	
-+	mutex_lock(&info->port.mutex);
- 	spin_lock_irqsave(&info->irq_spinlock,flags);
- 	memcpy(&info->params,&tmp_params,sizeof(MGSL_PARAMS));
- 	spin_unlock_irqrestore(&info->irq_spinlock,flags);
- 	
-  	mgsl_change_params(info);
-+	mutex_unlock(&info->port.mutex);
- 	
- 	return 0;
- 	
-@@ -2935,7 +2940,6 @@ static int mgsl_ioctl(struct tty_struct *tty, struct file * file,
- 		    unsigned int cmd, unsigned long arg)
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 7f28307..12ee7e0 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -58,7 +58,7 @@ static struct lock_class_key port_lock_key;
+ #define uart_console(port)	(0)
+ #endif
+ 
+-static void uart_change_speed(struct uart_state *state,
++static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
+ 					struct ktermios *old_termios);
+ static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
+ static void uart_change_pm(struct uart_state *state, int pm_state);
+@@ -137,7 +137,7 @@ uart_update_mctrl(struct uart_port *port, unsigned int set, unsigned int clear)
+  * Startup the port.  This will be called once per open.  All calls
+  * will be serialised by the per-port mutex.
+  */
+-static int uart_startup(struct uart_state *state, int init_hw)
++static int uart_startup(struct tty_struct *tty, struct uart_state *state, int init_hw)
  {
- 	struct mgsl_struct * info = tty->driver_data;
--	int ret;
- 	
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):mgsl_ioctl %s cmd=%08X\n", __FILE__,__LINE__,
-@@ -2950,10 +2954,7 @@ static int mgsl_ioctl(struct tty_struct *tty, struct file * file,
- 		    return -EIO;
- 	}
- 
--	lock_kernel();
--	ret = mgsl_ioctl_common(info, cmd, arg);
--	unlock_kernel();
--	return ret;
-+	return mgsl_ioctl_common(info, cmd, arg);
- }
- 
- static int mgsl_ioctl_common(struct mgsl_struct *info, unsigned int cmd, unsigned long arg)
-@@ -3109,12 +3110,14 @@ static void mgsl_close(struct tty_struct *tty, struct file * filp)
- 
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)			 
- 		goto cleanup;
--			
-+
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		mgsl_wait_until_sent(tty, info->timeout);
- 	mgsl_flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);	
- 	info->port.tty = NULL;
-@@ -3162,7 +3165,6 @@ static void mgsl_wait_until_sent(struct tty_struct *tty, int timeout)
- 	 * Note: use tight timings here to satisfy the NIST-PCTS.
- 	 */ 
- 
--	lock_kernel();
- 	if ( info->params.data_rate ) {
- 	       	char_time = info->timeout/(32 * 5);
- 		if (!char_time)
-@@ -3192,7 +3194,6 @@ static void mgsl_wait_until_sent(struct tty_struct *tty, int timeout)
- 				break;
- 		}
- 	}
--	unlock_kernel();
-       
- exit:
- 	if (debug_level >= DEBUG_LEVEL_INFO)
-diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-index 334cf5c..3c7ac6a 100644
---- a/drivers/char/synclink_gt.c
-+++ b/drivers/char/synclink_gt.c
-@@ -40,8 +40,8 @@
- #define DBGBH(fmt) if (debug_level >= DEBUG_LEVEL_BH) printk fmt
- #define DBGISR(fmt) if (debug_level >= DEBUG_LEVEL_ISR) printk fmt
- #define DBGDATA(info, buf, size, label) if (debug_level >= DEBUG_LEVEL_DATA) trace_block((info), (buf), (size), (label))
--//#define DBGTBUF(info) dump_tbufs(info)
--//#define DBGRBUF(info) dump_rbufs(info)
-+/*#define DBGTBUF(info) dump_tbufs(info)*/
-+/*#define DBGRBUF(info) dump_rbufs(info)*/
- 
- 
- #include <linux/module.h>
-@@ -62,7 +62,6 @@
- #include <linux/mm.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/netdevice.h>
- #include <linux/vmalloc.h>
- #include <linux/init.h>
-@@ -901,8 +900,6 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
- 	 * Note: use tight timings here to satisfy the NIST-PCTS.
+ 	struct uart_port *uport = state->uart_port;
+ 	struct tty_port *port = &state->port;
+@@ -152,7 +152,7 @@ static int uart_startup(struct uart_state *state, int init_hw)
+ 	 * once we have successfully opened the port.  Also set
+ 	 * up the tty->alt_speed kludge
  	 */
+-	set_bit(TTY_IO_ERROR, &port->tty->flags);
++	set_bit(TTY_IO_ERROR, &tty->flags);
  
--	lock_kernel();
--
- 	if (info->params.data_rate) {
- 	       	char_time = info->timeout/(32 * 5);
- 		if (!char_time)
-@@ -920,8 +917,6 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
- 		if (timeout && time_after(jiffies, orig_jiffies + timeout))
- 			break;
- 	}
--	unlock_kernel();
--
- exit:
- 	DBGINFO(("%s wait_until_sent exit\n", info->device_name));
- }
-@@ -1041,8 +1036,37 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 		    return -EIO;
- 	}
- 
--	lock_kernel();
--
-+	switch (cmd) {
-+	case MGSL_IOCWAITEVENT:
-+		return wait_mgsl_event(info, argp);
-+	case TIOCMIWAIT:
-+		return modem_input_wait(info,(int)arg);
-+	case TIOCGICOUNT:
-+		spin_lock_irqsave(&info->lock,flags);
-+		cnow = info->icount;
-+		spin_unlock_irqrestore(&info->lock,flags);
-+		p_cuser = argp;
-+		if (put_user(cnow.cts, &p_cuser->cts) ||
-+		    put_user(cnow.dsr, &p_cuser->dsr) ||
-+		    put_user(cnow.rng, &p_cuser->rng) ||
-+		    put_user(cnow.dcd, &p_cuser->dcd) ||
-+		    put_user(cnow.rx, &p_cuser->rx) ||
-+		    put_user(cnow.tx, &p_cuser->tx) ||
-+		    put_user(cnow.frame, &p_cuser->frame) ||
-+		    put_user(cnow.overrun, &p_cuser->overrun) ||
-+		    put_user(cnow.parity, &p_cuser->parity) ||
-+		    put_user(cnow.brk, &p_cuser->brk) ||
-+		    put_user(cnow.buf_overrun, &p_cuser->buf_overrun))
-+			return -EFAULT;
-+		return 0;
-+	case MGSL_IOCSGPIO:
-+		return set_gpio(info, argp);
-+	case MGSL_IOCGGPIO:
-+		return get_gpio(info, argp);
-+	case MGSL_IOCWAITGPIO:
-+		return wait_gpio(info, argp);
-+	}
-+	mutex_lock(&info->port.mutex);
- 	switch (cmd) {
- 	case MGSL_IOCGPARAMS:
- 		ret = get_params(info, argp);
-@@ -1068,50 +1092,16 @@ static int ioctl(struct tty_struct *tty, struct file *file,
- 	case MGSL_IOCGSTATS:
- 		ret = get_stats(info, argp);
- 		break;
--	case MGSL_IOCWAITEVENT:
--		ret = wait_mgsl_event(info, argp);
--		break;
--	case TIOCMIWAIT:
--		ret = modem_input_wait(info,(int)arg);
--		break;
- 	case MGSL_IOCGIF:
- 		ret = get_interface(info, argp);
- 		break;
- 	case MGSL_IOCSIF:
- 		ret = set_interface(info,(int)arg);
- 		break;
--	case MGSL_IOCSGPIO:
--		ret = set_gpio(info, argp);
--		break;
--	case MGSL_IOCGGPIO:
--		ret = get_gpio(info, argp);
--		break;
--	case MGSL_IOCWAITGPIO:
--		ret = wait_gpio(info, argp);
--		break;
--	case TIOCGICOUNT:
--		spin_lock_irqsave(&info->lock,flags);
--		cnow = info->icount;
--		spin_unlock_irqrestore(&info->lock,flags);
--		p_cuser = argp;
--		if (put_user(cnow.cts, &p_cuser->cts) ||
--		    put_user(cnow.dsr, &p_cuser->dsr) ||
--		    put_user(cnow.rng, &p_cuser->rng) ||
--		    put_user(cnow.dcd, &p_cuser->dcd) ||
--		    put_user(cnow.rx, &p_cuser->rx) ||
--		    put_user(cnow.tx, &p_cuser->tx) ||
--		    put_user(cnow.frame, &p_cuser->frame) ||
--		    put_user(cnow.overrun, &p_cuser->overrun) ||
--		    put_user(cnow.parity, &p_cuser->parity) ||
--		    put_user(cnow.brk, &p_cuser->brk) ||
--		    put_user(cnow.buf_overrun, &p_cuser->buf_overrun))
--			ret = -EFAULT;
--		ret = 0;
--		break;
- 	default:
- 		ret = -ENOIOCTLCMD;
- 	}
--	unlock_kernel();
-+	mutex_unlock(&info->port.mutex);
- 	return ret;
- }
- 
-diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
-index 2b18adc..8da976b 100644
---- a/drivers/char/synclinkmp.c
-+++ b/drivers/char/synclinkmp.c
-@@ -52,7 +52,6 @@
- #include <linux/mm.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/netdevice.h>
- #include <linux/vmalloc.h>
- #include <linux/init.h>
-@@ -1062,9 +1061,7 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
- 	if (sanity_check(info, tty->name, "wait_until_sent"))
- 		return;
- 
--	lock_kernel();
--
--	if (!(info->port.flags & ASYNC_INITIALIZED))
-+	if (!test_bit(ASYNCB_INITIALIZED, &info->port.flags))
- 		goto exit;
- 
- 	orig_jiffies = jiffies;
-@@ -1094,8 +1091,10 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
- 				break;
- 		}
- 	} else {
--		//TODO: determine if there is something similar to USC16C32
--		// 	TXSTATUS_ALL_SENT status
-+		/*
-+		 * TODO: determine if there is something similar to USC16C32
-+		 * 	 TXSTATUS_ALL_SENT status
-+		 */
- 		while ( info->tx_active && info->tx_enabled) {
- 			msleep_interruptible(jiffies_to_msecs(char_time));
- 			if (signal_pending(current))
-@@ -1106,7 +1105,6 @@ static void wait_until_sent(struct tty_struct *tty, int timeout)
- 	}
- 
- exit:
--	unlock_kernel();
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):%s wait_until_sent() exit\n",
- 			 __FILE__,__LINE__, info->device_name );
-@@ -1122,7 +1120,6 @@ static int write_room(struct tty_struct *tty)
- 	if (sanity_check(info, tty->name, "write_room"))
+ 	if (uport->type == PORT_UNKNOWN)
  		return 0;
+@@ -177,26 +177,26 @@ static int uart_startup(struct uart_state *state, int init_hw)
+ 			/*
+ 			 * Initialise the hardware port settings.
+ 			 */
+-			uart_change_speed(state, NULL);
++			uart_change_speed(tty, state, NULL);
  
--	lock_kernel();
- 	if (info->params.mode == MGSL_MODE_HDLC) {
- 		ret = (info->tx_active) ? 0 : HDLC_MAX_FRAME_SIZE;
- 	} else {
-@@ -1130,7 +1127,6 @@ static int write_room(struct tty_struct *tty)
- 		if (ret < 0)
- 			ret = 0;
+ 			/*
+ 			 * Setup the RTS and DTR signals once the
+ 			 * port is open and ready to respond.
+ 			 */
+-			if (port->tty->termios->c_cflag & CBAUD)
++			if (tty->termios->c_cflag & CBAUD)
+ 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
+ 		}
+ 
+ 		if (port->flags & ASYNC_CTS_FLOW) {
+ 			spin_lock_irq(&uport->lock);
+ 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
+-				port->tty->hw_stopped = 1;
++				tty->hw_stopped = 1;
+ 			spin_unlock_irq(&uport->lock);
+ 		}
+ 
+ 		set_bit(ASYNCB_INITIALIZED, &port->flags);
+ 
+-		clear_bit(TTY_IO_ERROR, &port->tty->flags);
++		clear_bit(TTY_IO_ERROR, &tty->flags);
  	}
--	unlock_kernel();
  
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):%s write_room()=%d\n",
-@@ -1251,7 +1247,7 @@ static void tx_release(struct tty_struct *tty)
-  *
-  * Return Value:	0 if success, otherwise error code
+ 	if (retval && capable(CAP_SYS_ADMIN))
+@@ -210,11 +210,10 @@ static int uart_startup(struct uart_state *state, int init_hw)
+  * DTR is dropped if the hangup on close termio flag is on.  Calls to
+  * uart_shutdown are serialised by the per-port semaphore.
   */
--static int do_ioctl(struct tty_struct *tty, struct file *file,
-+static int ioctl(struct tty_struct *tty, struct file *file,
- 		 unsigned int cmd, unsigned long arg)
+-static void uart_shutdown(struct uart_state *state)
++static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
  {
- 	SLMP_INFO *info = tty->driver_data;
-@@ -1341,16 +1337,6 @@ static int do_ioctl(struct tty_struct *tty, struct file *file,
+ 	struct uart_port *uport = state->uart_port;
+ 	struct tty_port *port = &state->port;
+-	struct tty_struct *tty = port->tty;
+ 
+ 	/*
+ 	 * Set the TTY IO error marker
+@@ -430,11 +429,10 @@ uart_get_divisor(struct uart_port *port, unsigned int baud)
+ EXPORT_SYMBOL(uart_get_divisor);
+ 
+ /* FIXME: Consistent locking policy */
+-static void
+-uart_change_speed(struct uart_state *state, struct ktermios *old_termios)
++static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
++					struct ktermios *old_termios)
+ {
+ 	struct tty_port *port = &state->port;
+-	struct tty_struct *tty = port->tty;
+ 	struct uart_port *uport = state->uart_port;
+ 	struct ktermios *termios;
+ 
+@@ -463,8 +461,8 @@ uart_change_speed(struct uart_state *state, struct ktermios *old_termios)
+ 	uport->ops->set_termios(uport, termios, old_termios);
+ }
+ 
+-static inline int
+-__uart_put_char(struct uart_port *port, struct circ_buf *circ, unsigned char c)
++static inline int __uart_put_char(struct uart_port *port,
++				struct circ_buf *circ, unsigned char c)
+ {
+ 	unsigned long flags;
+ 	int ret = 0;
+@@ -494,8 +492,8 @@ static void uart_flush_chars(struct tty_struct *tty)
+ 	uart_start(tty);
+ }
+ 
+-static int
+-uart_write(struct tty_struct *tty, const unsigned char *buf, int count)
++static int uart_write(struct tty_struct *tty,
++					const unsigned char *buf, int count)
+ {
+ 	struct uart_state *state = tty->driver_data;
+ 	struct uart_port *port;
+@@ -675,7 +673,7 @@ static int uart_get_info(struct uart_state *state,
  	return 0;
  }
  
--static int ioctl(struct tty_struct *tty, struct file *file,
--		 unsigned int cmd, unsigned long arg)
--{
--	int ret;
--	lock_kernel();
--	ret = do_ioctl(tty, file, cmd, arg);
--	unlock_kernel();
--	return ret;
--}
+-static int uart_set_info(struct uart_state *state,
++static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
+ 			 struct serial_struct __user *newinfo)
+ {
+ 	struct serial_struct new_serial;
+@@ -770,7 +768,7 @@ static int uart_set_info(struct uart_state *state,
+ 		 * We need to shutdown the serial port at the old
+ 		 * port/type/irq combination.
+ 		 */
+-		uart_shutdown(state);
++		uart_shutdown(tty, state);
+ 	}
+ 
+ 	if (change_port) {
+@@ -869,25 +867,27 @@ static int uart_set_info(struct uart_state *state,
+ 				       "is deprecated.\n", current->comm,
+ 				       tty_name(port->tty, buf));
+ 			}
+-			uart_change_speed(state, NULL);
++			uart_change_speed(tty, state, NULL);
+ 		}
+ 	} else
+-		retval = uart_startup(state, 1);
++		retval = uart_startup(tty, state, 1);
+  exit:
+ 	mutex_unlock(&port->mutex);
+ 	return retval;
+ }
+ 
 -
- /*
-  * /proc fs routines....
+-/*
+- * uart_get_lsr_info - get line status register info.
+- * Note: uart_ioctl protects us against hangups.
++/**
++ *	uart_get_lsr_info	-	get line status register info
++ *	@tty: tty associated with the UART
++ *	@state: UART being queried
++ *	@value: returned modem value
++ *
++ *	Note: uart_ioctl protects us against hangups.
   */
-@@ -2883,7 +2869,9 @@ static int get_stats(SLMP_INFO * info, struct mgsl_icount __user *user_icount)
- 	if (!user_icount) {
- 		memset(&info->icount, 0, sizeof(info->icount));
- 	} else {
-+		mutex_lock(&info->port.mutex);
- 		COPY_TO_USER(err, user_icount, &info->icount, sizeof(struct mgsl_icount));
-+		mutex_unlock(&info->port.mutex);
- 		if (err)
- 			return -EFAULT;
- 	}
-@@ -2898,7 +2886,9 @@ static int get_params(SLMP_INFO * info, MGSL_PARAMS __user *user_params)
- 		printk("%s(%d):%s get_params()\n",
- 			 __FILE__,__LINE__, info->device_name);
+-static int uart_get_lsr_info(struct uart_state *state,
+-			     unsigned int __user *value)
++static int uart_get_lsr_info(struct tty_struct *tty,
++			struct uart_state *state, unsigned int __user *value)
+ {
+ 	struct uart_port *uport = state->uart_port;
+-	struct tty_port *port = &state->port;
+ 	unsigned int result;
  
-+	mutex_lock(&info->port.mutex);
- 	COPY_TO_USER(err,user_params, &info->params, sizeof(MGSL_PARAMS));
-+	mutex_unlock(&info->port.mutex);
- 	if (err) {
- 		if ( debug_level >= DEBUG_LEVEL_INFO )
- 			printk( "%s(%d):%s get_params() user buffer copy failed\n",
-@@ -2926,11 +2916,13 @@ static int set_params(SLMP_INFO * info, MGSL_PARAMS __user *new_params)
- 		return -EFAULT;
- 	}
+ 	result = uport->ops->tx_empty(uport);
+@@ -900,7 +900,7 @@ static int uart_get_lsr_info(struct uart_state *state,
+ 	 */
+ 	if (uport->x_char ||
+ 	    ((uart_circ_chars_pending(&state->xmit) > 0) &&
+-	     !port->tty->stopped && !port->tty->hw_stopped))
++	     !tty->stopped && !tty->hw_stopped))
+ 		result &= ~TIOCSER_TEMT;
  
-+	mutex_lock(&info->port.mutex);
- 	spin_lock_irqsave(&info->lock,flags);
- 	memcpy(&info->params,&tmp_params,sizeof(MGSL_PARAMS));
- 	spin_unlock_irqrestore(&info->lock,flags);
- 
-  	change_params(info);
-+	mutex_unlock(&info->port.mutex);
- 
+ 	return put_user(result, value);
+@@ -961,7 +961,7 @@ static int uart_break_ctl(struct tty_struct *tty, int break_state)
  	return 0;
  }
+ 
+-static int uart_do_autoconfig(struct uart_state *state)
++static int uart_do_autoconfig(struct tty_struct *tty,struct uart_state *state)
+ {
+ 	struct uart_port *uport = state->uart_port;
+ 	struct tty_port *port = &state->port;
+@@ -980,7 +980,7 @@ static int uart_do_autoconfig(struct uart_state *state)
+ 
+ 	ret = -EBUSY;
+ 	if (tty_port_users(port) == 1) {
+-		uart_shutdown(state);
++		uart_shutdown(tty, state);
+ 
+ 		/*
+ 		 * If we already have a port type configured,
+@@ -999,7 +999,7 @@ static int uart_do_autoconfig(struct uart_state *state)
+ 		 */
+ 		uport->ops->config_port(uport, flags);
+ 
+-		ret = uart_startup(state, 1);
++		ret = uart_startup(tty, state, 1);
+ 	}
+ 	mutex_unlock(&port->mutex);
+ 	return ret;
+@@ -1122,11 +1122,11 @@ uart_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd,
+ 		break;
+ 
+ 	case TIOCSSERIAL:
+-		ret = uart_set_info(state, uarg);
++		ret = uart_set_info(tty, state, uarg);
+ 		break;
+ 
+ 	case TIOCSERCONFIG:
+-		ret = uart_do_autoconfig(state);
++		ret = uart_do_autoconfig(tty, state);
+ 		break;
+ 
+ 	case TIOCSERGWILD: /* obsolete */
+@@ -1172,7 +1172,7 @@ uart_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd,
+ 	 */
+ 	switch (cmd) {
+ 	case TIOCSERGETLSR: /* Get line status register */
+-		ret = uart_get_lsr_info(state, uarg);
++		ret = uart_get_lsr_info(tty, state, uarg);
+ 		break;
+ 
+ 	default: {
+@@ -1219,7 +1219,7 @@ static void uart_set_termios(struct tty_struct *tty,
+ 		return;
+ 	}
+ 
+-	uart_change_speed(state, old_termios);
++	uart_change_speed(tty, state, old_termios);
+ 
+ 	/* Handle transition to B0 status */
+ 	if ((old_termios->c_cflag & CBAUD) && !(cflag & CBAUD))
+@@ -1335,7 +1335,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 		uart_wait_until_sent(tty, uport->timeout);
+ 	}
+ 
+-	uart_shutdown(state);
++	uart_shutdown(tty, state);
+ 	uart_flush_buffer(tty);
+ 
+ 	tty_ldisc_flush(tty);
+@@ -1436,7 +1436,7 @@ static void uart_hangup(struct tty_struct *tty)
+ 	mutex_lock(&port->mutex);
+ 	if (port->flags & ASYNC_NORMAL_ACTIVE) {
+ 		uart_flush_buffer(tty);
+-		uart_shutdown(state);
++		uart_shutdown(tty, state);
+ 		port->count = 0;
+ 		clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
+ 		tty_port_tty_set(port, NULL);
+@@ -1446,15 +1446,19 @@ static void uart_hangup(struct tty_struct *tty)
+ 	mutex_unlock(&port->mutex);
+ }
+ 
+-/*
+- * Copy across the serial console cflag setting into the termios settings
+- * for the initial open of the port.  This allows continuity between the
+- * kernel settings, and the settings init adopts when it opens the port
+- * for the first time.
++/**
++ *	uart_update_termios	-	update the terminal hw settings
++ *	@tty: tty associated with UART
++ *	@state: UART to update
++ *
++ *	Copy across the serial console cflag setting into the termios settings
++ *	for the initial open of the port.  This allows continuity between the
++ *	kernel settings, and the settings init adopts when it opens the port
++ *	for the first time.
+  */
+-static void uart_update_termios(struct uart_state *state)
++static void uart_update_termios(struct tty_struct *tty,
++						struct uart_state *state)
+ {
+-	struct tty_struct *tty = state->port.tty;
+ 	struct uart_port *port = state->uart_port;
+ 
+ 	if (uart_console(port) && port->cons->cflag) {
+@@ -1471,7 +1475,7 @@ static void uart_update_termios(struct uart_state *state)
+ 		/*
+ 		 * Make termios settings take effect.
+ 		 */
+-		uart_change_speed(state, NULL);
++		uart_change_speed(tty, state, NULL);
+ 
+ 		/*
+ 		 * And finally enable the RTS and DTR signals.
+@@ -1668,7 +1672,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	/*
+ 	 * Start up the serial port.
+ 	 */
+-	retval = uart_startup(state, 0);
++	retval = uart_startup(tty, state, 0);
+ 
+ 	/*
+ 	 * If we succeeded, wait until the port is ready.
+@@ -1683,7 +1687,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
+ 	if (retval == 0 && !(port->flags & ASYNC_NORMAL_ACTIVE)) {
+ 		set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
+ 
+-		uart_update_termios(state);
++		uart_update_termios(tty, state);
+ 	}
+ 
+ fail:
+@@ -2010,9 +2014,13 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
+ 	struct tty_port *port = &state->port;
+ 	struct device *tty_dev;
+ 	struct uart_match match = {uport, drv};
++	struct tty_struct *tty;
+ 
+ 	mutex_lock(&port->mutex);
+ 
++	/* Must be inside the mutex lock until we convert to tty_port */
++	tty = port->tty;
++
+ 	tty_dev = device_find_child(uport->dev, &match, serial_match_port);
+ 	if (device_may_wakeup(tty_dev)) {
+ 		enable_irq_wake(uport->irq);
+@@ -2105,9 +2113,12 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
+ 		ops->set_mctrl(uport, 0);
+ 		spin_unlock_irq(&uport->lock);
+ 		if (console_suspend_enabled || !uart_console(uport)) {
++			/* Protected by port mutex for now */
++			struct tty_struct *tty = port->tty;
+ 			ret = ops->startup(uport);
+ 			if (ret == 0) {
+-				uart_change_speed(state, NULL);
++				if (tty)
++					uart_change_speed(tty, state, NULL);
+ 				spin_lock_irq(&uport->lock);
+ 				ops->set_mctrl(uport, uport->mctrl);
+ 				ops->start_tx(uport);
+@@ -2119,7 +2130,7 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
+ 				 * Clear the "initialized" flag so we won't try
+ 				 * to call the low level drivers shutdown method.
+ 				 */
+-				uart_shutdown(state);
++				uart_shutdown(tty, state);
+ 			}
+ 		}
+ 
 -- 
 1.7.2
 
