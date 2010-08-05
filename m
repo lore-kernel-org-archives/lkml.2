@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933501Ab0HEQ32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:29:28 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49471 "EHLO mga02.intel.com"
+	id S933209Ab0HEQ3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:29:25 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19701 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760474Ab0HEQ3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760462Ab0HEQ3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Aug 2010 12:29:18 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
-   d="scan'208";a="542252516"
-Message-Id: <20100805162434.512614226@intel.com>
+   d="scan'208";a="308628097"
+Message-Id: <20100805162433.105093335@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 06 Aug 2010 00:11:04 +0800
+Date: Fri, 06 Aug 2010 00:10:54 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-CC: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>, Jens Axboe <axboe@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
+        Jan Kara <jack@suse.cz>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 13/13] writeback: introduce writeback_control.inodes_written
+Subject: [PATCH 03/13] writeback: add comment to the dirty limits functions
 References: <20100805161051.501816677@intel.com>
-Content-Disposition: inline; filename=writeback-inodes_written.patch
+Content-Disposition: inline; filename=dirty-limits-comment.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce writeback_control.inodes_written to count successful
-->write_inode() calls.  A non-zero value means there are some
-progress on writeback, in which case more writeback will be tried.
+Document global_dirty_limits(), bdi_dirty_limit() and task_dirty_limit().
 
-This prevents aborting a background writeback work prematurely when
-the current set of inodes for IO happen to be only metadata-only dirty.
-
-Acked-by: Mel Gorman <mel@csn.ul.ie> 
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c         |    5 +++++
- include/linux/writeback.h |    1 +
- 2 files changed, 6 insertions(+)
+ mm/page-writeback.c |   31 ++++++++++++++++++++++++++++---
+ 1 file changed, 28 insertions(+), 3 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2010-08-05 23:30:45.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2010-08-05 23:38:55.000000000 +0800
-@@ -389,6 +389,8 @@ writeback_single_inode(struct inode *ino
- 		int err = write_inode(inode, wbc);
- 		if (ret == 0)
- 			ret = err;
-+		if (!err)
-+			wbc->inodes_written++;
- 	}
+--- linux-next.orig/mm/page-writeback.c	2010-08-03 23:14:19.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-08-05 00:37:17.000000000 +0800
+@@ -261,11 +261,18 @@ static inline void task_dirties_fraction
+ }
  
- 	spin_lock(&inode_lock);
-@@ -642,6 +644,7 @@ static long wb_writeback(struct bdi_writ
+ /*
+- * scale the dirty limit
++ * task_dirty_limit - scale down dirty throttling threshold for one task
+  *
+  * task specific dirty limit:
+  *
+  *   dirty -= (dirty/8) * p_{t}
++ *
++ * To protect light/slow dirtying tasks from heavier/fast ones, we start
++ * throttling individual tasks before reaching the bdi dirty limit.
++ * Relatively low thresholds will be allocated to heavy dirtiers. So when
++ * dirty pages grow large, heavy dirtiers will be throttled first, which will
++ * effectively curb the growth of dirty pages. Light dirtiers with high enough
++ * dirty threshold may never get throttled.
+  */
+ static unsigned long task_dirty_limit(struct task_struct *tsk,
+ 				       unsigned long bdi_dirty)
+@@ -390,6 +397,15 @@ unsigned long determine_dirtyable_memory
+ 	return x + 1;	/* Ensure that we never return 0 */
+ }
  
- 		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
- 		wbc.pages_skipped = 0;
-+		wbc.inodes_written = 0;
++/**
++ * global_dirty_limits - background-writeback and dirty-throttling thresholds
++ *
++ * Calculate the dirty thresholds based on sysctl parameters
++ * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
++ * - vm.dirty_ratio             or  vm.dirty_bytes
++ * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
++ * runtime tasks.
++ */
+ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
+ {
+ 	unsigned long background;
+@@ -424,8 +440,17 @@ void global_dirty_limits(unsigned long *
+ 	*pdirty = dirty;
+ }
  
- 		trace_wbc_writeback_start(&wbc, wb->bdi);
- 		if (work->sb)
-@@ -664,6 +667,8 @@ static long wb_writeback(struct bdi_writ
- 		 */
- 		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
- 			continue;
-+		if (wbc.inodes_written)
-+			continue;
- 
- 		/*
- 		 * Nothing written and no more inodes for IO, bail
---- linux-next.orig/include/linux/writeback.h	2010-08-05 23:28:35.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2010-08-05 23:40:46.000000000 +0800
-@@ -34,6 +34,7 @@ struct writeback_control {
- 	long nr_to_write;		/* Write this many pages, and decrement
- 					   this for each page written */
- 	long pages_skipped;		/* Pages which were not written */
-+	long inodes_written;		/* # of inodes (metadata) written */
- 
- 	/*
- 	 * For a_ops->writepages(): is start or end are non-zero then this is
+-unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+-			       unsigned long dirty)
++/**
++ * bdi_dirty_limit - @bdi's share of dirty throttling threshold
++ *
++ * Allocate high/low dirty limits to fast/slow devices, in order to prevent
++ * - starving fast devices
++ * - piling up dirty pages (that will take long time to sync) on slow devices
++ *
++ * The bdi's share of dirty limit will be adapting to its throughput and
++ * bounded by the bdi->min_ratio and/or bdi->max_ratio parameters, if set.
++ */
++unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
+ {
+ 	u64 bdi_dirty;
+ 	long numerator, denominator;
 
 
