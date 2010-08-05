@@ -1,84 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933487Ab0HEUNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:13:15 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:41658 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932599Ab0HEUNN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:13:13 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner  comment
-References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk>
-	<20100729114555.29508.4525.stgit@warthog.procyon.org.uk>
-	<20100802204000.GH2405@linux.vnet.ibm.com>
-	<201008030055.o730tgXK091413@www262.sakura.ne.jp>
-	<30552.1280828047@redhat.com>
-	<AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
-	<m1d3txzfuq.fsf@fess.ebiederm.org>
-	<AANLkTikavQKkvmdY5=8jh8KSV7vit=WcmDHWjnZfVWnv@mail.gmail.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 05 Aug 2010 13:13:03 -0700
-In-Reply-To: <AANLkTikavQKkvmdY5=8jh8KSV7vit=WcmDHWjnZfVWnv@mail.gmail.com> (Linus Torvalds's message of "Thu\, 5 Aug 2010 09\:14\:50 -0700")
-Message-ID: <m1zkx04y40.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S932949Ab0HEUQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:16:17 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:55669 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751706Ab0HEUQO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:16:14 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Thu, 5 Aug 2010 14:16:03 -0600
+Subject: [PATCH 4/12] scsi: megaraid_sas - Online controller Reset Support
+ (OCR) : Driver return RESET in timeout routine
+Thread-Topic: [PATCH 4/12] scsi: megaraid_sas - Online controller Reset
+ Support (OCR) : Driver return RESET in timeout routine
+Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAAKNeAAPxZrRQAtbz4jALI5+TwA==
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67F94@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
+ <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3CDB80BCE@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3D06ADC0F@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3D080454A@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D080454A@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+Re-Submitted requested by James Bottomley.
 
-> On Thu, Aug 5, 2010 at 12:19 AM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->>
->> No.  When we send a signal to multiple processes it needs to be an
->> atomic operation so that kill -KILL -pgrp won't let processes escape.
->> It is what posix specifies, it is what real programs expect, and it
->> is the useful semantic in userspace.
->
-> Ok. However, in that case, it's not really about the whole list
-> traversal, it's a totally separate thing, and it's really sad that we
-> end up using the (rather hot) tasklist_lock for something like that.
-> With the dcache/inode locks basically going away, I think
-> tasklist_lock ends up being one of the few hot locks left.
+In this part of the Online Controller Reset (OCR).  When driver doesn't finish to issue the pending
+Cmds, driver will return BUSY to OS.  Also in driver's timeout routine, if online controller reset is going
+On, driver will return RESET to OS. 
 
-It is about the list traversal.  In the process group case it is about
-traversing the pid->tasks[PIDTYPE_PGID] hlist, which is also protected
-by the tasklist_lock.
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-> Wouldn't it be much nicer to:
->  - make it clear that all the "real" signal locking can rely on RCU
->  - use a separate per-pgrp lock that ends up being the one that gives
-> the signal _semantic_ meaning?
->
-> That would automatically document why we get the lock too, which
-> certainly isn't clear from the code as-is.
->
-> The per-pgrp lock might be something as simple as a silly hash that
-> just spreads out the process groups over some random number of simple
-> spinlocks.
+---
+megaraid_sas.c |  110 ++++++++++++++++++++++++++++++++++++++++++++++++++++++---
+megaraid_sas.h |    2 +
+ 2 files changed, 107 insertions(+), 5 deletions(-)
 
-I think it is totally reasonable to add a per pid lock,
-that would protect the pid->task[...] hlist.  That would make
-things clearer and finer grained without a lot of effort.  Just
-a little more struct pid bloat, and a little extra care in fork,
-when we add to those lists.
-
-Even with the per-pgrp lock we still need a lock on the global process
-list for the kill -KILL -1 case.  Which suggests that tasklist_lock is
-still needed for part of kill_something_info.
-
-Eric
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-04-21 05:16:37.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-04-28 08:52:56.000000000 -0400
+@@ -1320,14 +1320,22 @@ megasas_queue_command(struct scsi_cmnd *
+ 	u32 frame_count;
+ 	struct megasas_cmd *cmd;
+ 	struct megasas_instance *instance;
++	unsigned long flags;
+ 
+ 	instance = (struct megasas_instance *)
+ 	    scmd->device->host->hostdata;
+ 
+-	/* Don't process if we have already declared adapter dead */
+-	if (instance->hw_crit_error)
++	if (instance->issuepend_done == 0)
+ 		return SCSI_MLQUEUE_HOST_BUSY;
+ 
++	spin_lock_irqsave(&instance->hba_lock, flags);
++	if (instance->adprecovery != MEGASAS_HBA_OPERATIONAL) {
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
++		return SCSI_MLQUEUE_HOST_BUSY;
++	}
++
++	spin_unlock_irqrestore(&instance->hba_lock, flags);
++
+ 	scmd->scsi_done = done;
+ 	scmd->result = 0;
+ 
+@@ -1463,6 +1471,18 @@ static int megasas_slave_alloc(struct sc
+ 	return 0;
+ }
+ 
++static void megaraid_sas_kill_hba(struct megasas_instance *instance)
++{
++	if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS0073SKINNY) ||
++		(instance->pdev->device == PCI_DEVICE_ID_LSI_SAS0071SKINNY)) {
++		writel(MFI_STOP_ADP,
++			&instance->reg_set->reserved_0[0]);
++	} else {
++		writel(MFI_STOP_ADP,
++			&instance->reg_set->inbound_doorbell);
++	}
++}
++
+ /**
+  * megasas_complete_cmd_dpc	 -	Returns FW's controller structure
+  * @instance_addr:			Address of adapter soft state
+@@ -1480,7 +1500,7 @@ static void megasas_complete_cmd_dpc(uns
+ 	unsigned long flags;
+ 
+ 	/* If we have already declared adapter dead, donot complete cmds */
+-	if (instance->hw_crit_error)
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR )
+ 		return;
+ 
+ 	spin_lock_irqsave(&instance->completion_lock, flags);
+@@ -1490,6 +1510,11 @@ static void megasas_complete_cmd_dpc(uns
+ 
+ 	while (consumer != producer) {
+ 		context = instance->reply_queue[consumer];
++		if (context >= instance->max_fw_cmds) {
++			printk(KERN_ERR "Unexpected context value %x\n",
++				context);
++			BUG();
++		}
+ 
+ 		cmd = instance->cmd_list[context];
+ 
+@@ -1539,7 +1564,76 @@ static void megasas_complete_cmd_dpc(uns
+ static int megasas_wait_for_outstanding(struct megasas_instance *instance)
+ {
+ 	int i;
++	u32 reset_index;
+ 	u32 wait_time = MEGASAS_RESET_WAIT_TIME;
++	u8 adprecovery;
++	unsigned long flags;
++	struct list_head clist_local;
++	struct megasas_cmd *reset_cmd;
++
++	spin_lock_irqsave(&instance->hba_lock, flags);
++	adprecovery = instance->adprecovery;
++	spin_unlock_irqrestore(&instance->hba_lock, flags);
++
++	if (adprecovery != MEGASAS_HBA_OPERATIONAL) {
++
++		INIT_LIST_HEAD(&clist_local);
++		spin_lock_irqsave(&instance->hba_lock, flags);
++		list_splice_init(&instance->internal_reset_pending_q,
++				&clist_local);
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
++
++		printk(KERN_NOTICE "megasas: HBA reset wait ...\n");
++		for (i = 0; i < wait_time; i++) {
++			msleep(1000);
++			spin_lock_irqsave(&instance->hba_lock, flags);
++			adprecovery = instance->adprecovery;
++			spin_unlock_irqrestore(&instance->hba_lock, flags);
++			if (adprecovery == MEGASAS_HBA_OPERATIONAL)
++				break;
++		}
++
++		if (adprecovery != MEGASAS_HBA_OPERATIONAL) {
++			printk(KERN_NOTICE "megasas: reset: Stopping HBA.\n");
++			spin_lock_irqsave(&instance->hba_lock, flags);
++			instance->adprecovery	= MEGASAS_HW_CRITICAL_ERROR;
++			spin_unlock_irqrestore(&instance->hba_lock, flags);
++			return FAILED;
++		}
++
++		reset_index	= 0;
++		while (!list_empty(&clist_local)) {
++			reset_cmd	= list_entry((&clist_local)->next,
++						struct megasas_cmd, list);
++			list_del_init(&reset_cmd->list);
++			if (reset_cmd->scmd) {
++				reset_cmd->scmd->result = DID_RESET << 16;
++				printk(KERN_NOTICE "%d:%p reset [%02x], %#lx\n",
++					reset_index, reset_cmd,
++					reset_cmd->scmd->cmnd[0],
++					reset_cmd->scmd->serial_number);
++
++				reset_cmd->scmd->scsi_done(reset_cmd->scmd);
++				megasas_return_cmd(instance, reset_cmd);
++			} else if (reset_cmd->sync_cmd) {
++				printk(KERN_NOTICE "megasas:%p synch cmds"
++						"reset queue\n",
++						reset_cmd);
++
++				reset_cmd->cmd_status = ENODATA;
++				instance->instancet->fire_cmd(instance,
++						reset_cmd->frame_phys_addr,
++						0, instance->reg_set);
++			} else {
++				printk(KERN_NOTICE "megasas: %p unexpected"
++					"cmds lst\n",
++					reset_cmd);
++			}
++			reset_index++;
++		}
++
++		return SUCCESS;
++	}
+ 
+ 	for (i = 0; i < wait_time; i++) {
+ 
+@@ -1562,6 +1656,7 @@ static int megasas_wait_for_outstanding(
+ 	}
+ 
+ 	if (atomic_read(&instance->fw_outstanding)) {
++		printk(KERN_NOTICE "megaraid_sas: pending cmds after reset\n");
+ 		/*
+ 		* Send signal to FW to stop processing any pending cmds.
+ 		* The controller will be taken offline by the OS now.
+@@ -1577,10 +1672,14 @@ static int megasas_wait_for_outstanding(
+ 				&instance->reg_set->inbound_doorbell);
+ 		}
+ 		megasas_dump_pending_frames(instance);
+-		instance->hw_crit_error = 1;
++		spin_lock_irqsave(&instance->hba_lock, flags);
++		instance->adprecovery	= MEGASAS_HW_CRITICAL_ERROR;
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
+ 		return FAILED;
+ 	}
+ 
++	printk(KERN_NOTICE "megaraid_sas: no pending cmds after reset\n");
++
+ 	return SUCCESS;
+ }
+ 
+@@ -1602,7 +1701,7 @@ static int megasas_generic_reset(struct 
+ 	scmd_printk(KERN_NOTICE, scmd, "megasas: RESET -%ld cmd=%x retries=%x\n",
+ 		 scmd->serial_number, scmd->cmnd[0], scmd->retries);
+ 
+-	if (instance->hw_crit_error) {
++	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR) {
+ 		printk(KERN_ERR "megasas: cannot recover from previous reset "
+ 		       "failures\n");
+ 		return FAILED;
+@@ -3319,6 +3418,7 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 	 * Initialize locks and queues
+ 	 */
+ 	INIT_LIST_HEAD(&instance->cmd_pool);
++	INIT_LIST_HEAD(&instance->internal_reset_pending_q);
+ 
+ 	atomic_set(&instance->fw_outstanding,0);
+ 
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-04-21 05:16:37.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-04-28 08:01:45.000000000 -0400
+@@ -1275,10 +1275,12 @@ struct megasas_instance {
+ 	u8 flag;
+ 	u8 unload;
+ 	u8 flag_ieee;
++	u8 issuepend_done;
+ 	u8 adprecovery;
+ 	unsigned long last_time;
+ 
+ 	struct timer_list io_completion_timer;
++	struct list_head internal_reset_pending_q;
+ };
+ 
+ enum {
