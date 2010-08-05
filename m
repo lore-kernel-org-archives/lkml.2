@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934164Ab0HEUWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:22:30 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55588 "EHLO mgw2.diku.dk"
+	id S934174Ab0HEUWu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:22:50 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55606 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934068Ab0HEUWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:22:23 -0400
-Date: Thu, 5 Aug 2010 22:22:20 +0200 (CEST)
+	id S932990Ab0HEUWr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:22:47 -0400
+Date: Thu, 5 Aug 2010 22:22:44 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 18/42] drivers/net: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052222000.31692@ask.diku.dk>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 19/42] drivers/media/video: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052222220.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +20,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In amd8111e.c, indent the branch of an if.
-In eepro.c, outdent the code following the if.
+In cx23885/cx23885-video.c, cx88/cx88-video.c, davinci/vpif_capture.c, and
+davinci/vpif_display.c, group the aligned code into a single if branch.
+
+In saa7134/saa7134-video.c, outdent the code following the if.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -51,49 +53,90 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/amd8111e.c |    4 ++--
- drivers/net/eepro.c    |    8 ++++----
- 2 files changed, 6 insertions(+), 6 deletions(-)
+The patch changes the semantics for the first four files, and might not be
+what is intended.
 
-diff --git a/drivers/net/amd8111e.c b/drivers/net/amd8111e.c
-index 585c25f..1f5fc64 100644
---- a/drivers/net/amd8111e.c
-+++ b/drivers/net/amd8111e.c
-@@ -396,7 +396,7 @@ static int amd8111e_set_coalesce(struct net_device * dev, enum coal_mode cmod)
- 			event_count = coal_conf->rx_event_count;
- 			if( timeout > MAX_TIMEOUT ||
- 					event_count > MAX_EVENT_COUNT )
--			return -EINVAL;
-+				return -EINVAL;
+ drivers/media/video/cx23885/cx23885-video.c |    3 ++-
+ drivers/media/video/cx88/cx88-video.c       |    3 ++-
+ drivers/media/video/davinci/vpif_capture.c  |    3 ++-
+ drivers/media/video/davinci/vpif_display.c  |    3 ++-
+ drivers/media/video/saa7134/saa7134-video.c |    2 +-
+ 5 files changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/video/cx23885/cx23885-video.c b/drivers/media/video/cx23885/cx23885-video.c
+index 4e44dcd..0f48967 100644
+--- a/drivers/media/video/cx23885/cx23885-video.c
++++ b/drivers/media/video/cx23885/cx23885-video.c
+@@ -1165,9 +1165,10 @@ static int cx23885_enum_input(struct cx23885_dev *dev, struct v4l2_input *i)
+ 	i->type  = V4L2_INPUT_TYPE_CAMERA;
+ 	strcpy(i->name, iname[INPUT(n)->type]);
+ 	if ((CX23885_VMUX_TELEVISION == INPUT(n)->type) ||
+-		(CX23885_VMUX_CABLE == INPUT(n)->type))
++		(CX23885_VMUX_CABLE == INPUT(n)->type)) {
+ 		i->type = V4L2_INPUT_TYPE_TUNER;
+ 		i->std = CX23885_NORMS;
++	}
+ 	return 0;
+ }
  
- 			timeout = timeout * DELAY_TIMER_CONV;
- 			writel(VAL0|STINTEN, mmio+INTEN0);
-@@ -409,7 +409,7 @@ static int amd8111e_set_coalesce(struct net_device * dev, enum coal_mode cmod)
- 			event_count = coal_conf->tx_event_count;
- 			if( timeout > MAX_TIMEOUT ||
- 					event_count > MAX_EVENT_COUNT )
--			return -EINVAL;
-+				return -EINVAL;
+diff --git a/drivers/media/video/cx88/cx88-video.c b/drivers/media/video/cx88/cx88-video.c
+index 0fab65c..4fba913 100644
+--- a/drivers/media/video/cx88/cx88-video.c
++++ b/drivers/media/video/cx88/cx88-video.c
+@@ -1267,9 +1267,10 @@ int cx88_enum_input (struct cx88_core  *core,struct v4l2_input *i)
+ 	i->type  = V4L2_INPUT_TYPE_CAMERA;
+ 	strcpy(i->name,iname[INPUT(n).type]);
+ 	if ((CX88_VMUX_TELEVISION == INPUT(n).type) ||
+-	    (CX88_VMUX_CABLE      == INPUT(n).type))
++	    (CX88_VMUX_CABLE      == INPUT(n).type)) {
+ 		i->type = V4L2_INPUT_TYPE_TUNER;
+ 		i->std = CX88_NORMS;
++	}
+ 	return 0;
+ }
+ EXPORT_SYMBOL(cx88_enum_input);
+diff --git a/drivers/media/video/davinci/vpif_capture.c b/drivers/media/video/davinci/vpif_capture.c
+index a7f48b5..2b42473 100644
+--- a/drivers/media/video/davinci/vpif_capture.c
++++ b/drivers/media/video/davinci/vpif_capture.c
+@@ -1030,9 +1030,10 @@ static int vpif_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
+ 			goto qbuf_exit;
  
+ 		if ((VIDEOBUF_NEEDS_INIT != buf1->state)
+-			    && (buf1->baddr != tbuf.m.userptr))
++			    && (buf1->baddr != tbuf.m.userptr)) {
+ 			vpif_buffer_release(&common->buffer_queue, buf1);
+ 			buf1->baddr = tbuf.m.userptr;
++		}
+ 		break;
  
- 			timeout = timeout * DELAY_TIMER_CONV;
-diff --git a/drivers/net/eepro.c b/drivers/net/eepro.c
-index 8d97f16..7c82631 100644
---- a/drivers/net/eepro.c
-+++ b/drivers/net/eepro.c
-@@ -1457,11 +1457,11 @@ hardware_send_packet(struct net_device *dev, void *buf, short length)
- 	if (net_debug > 5)
- 		printk(KERN_DEBUG "%s: entering hardware_send_packet routine.\n", dev->name);
+ 	default:
+diff --git a/drivers/media/video/davinci/vpif_display.c b/drivers/media/video/davinci/vpif_display.c
+index da07607..4770fda 100644
+--- a/drivers/media/video/davinci/vpif_display.c
++++ b/drivers/media/video/davinci/vpif_display.c
+@@ -935,9 +935,10 @@ static int vpif_qbuf(struct file *file, void *priv, struct v4l2_buffer *buf)
+ 			goto qbuf_exit;
  
--		/* determine how much of the transmit buffer space is available */
--		if (lp->tx_end > lp->tx_start)
-+	/* determine how much of the transmit buffer space is available */
-+	if (lp->tx_end > lp->tx_start)
- 		tx_available = lp->xmt_ram - (lp->tx_end - lp->tx_start);
--		else if (lp->tx_end < lp->tx_start)
--			tx_available = lp->tx_start - lp->tx_end;
-+	else if (lp->tx_end < lp->tx_start)
-+		tx_available = lp->tx_start - lp->tx_end;
- 	else tx_available = lp->xmt_ram;
+ 		if ((VIDEOBUF_NEEDS_INIT != buf1->state)
+-			    && (buf1->baddr != tbuf.m.userptr))
++			    && (buf1->baddr != tbuf.m.userptr)) {
+ 			vpif_buffer_release(&common->buffer_queue, buf1);
+ 			buf1->baddr = tbuf.m.userptr;
++		}
+ 		break;
  
- 	if (((((length + 3) >> 1) << 1) + 2*XMT_HEADER) >= tx_available) {
+ 	default:
+diff --git a/drivers/media/video/saa7134/saa7134-video.c b/drivers/media/video/saa7134/saa7134-video.c
+index 45f0ac8..645224c 100644
+--- a/drivers/media/video/saa7134/saa7134-video.c
++++ b/drivers/media/video/saa7134/saa7134-video.c
+@@ -1825,7 +1825,7 @@ static int saa7134_querycap(struct file *file, void  *priv,
+ 
+ 	if ((tuner_type == TUNER_ABSENT) || (tuner_type == UNSET))
+ 		cap->capabilities &= ~V4L2_CAP_TUNER;
+-		return 0;
++	return 0;
+ }
+ 
+ int saa7134_s_std_internal(struct saa7134_dev *dev, struct saa7134_fh *fh, v4l2_std_id *id)
