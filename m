@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab0HEWYs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:24:48 -0400
-Received: from kroah.org ([198.145.64.141]:37657 "EHLO coco.kroah.org"
+	id S934166Ab0HEWZR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:25:17 -0400
+Received: from kroah.org ([198.145.64.141]:37690 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760794Ab0HEWYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:12 -0400
+	id S1760857Ab0HEWY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:26 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+Cc: Jean Delvare <khali@linux-fr.org>, Andrew Morton <akpm@osdl.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 32/67] serial: trim locking on the helpers
-Date: Thu,  5 Aug 2010 15:22:59 -0700
-Message-Id: <1281047014-23429-32-git-send-email-gregkh@suse.de>
+Subject: [PATCH 06/28] Driver core: Drop __must_check from bus_for_each_drv()
+Date: Thu,  5 Aug 2010 15:23:56 -0700
+Message-Id: <1281047058-23716-6-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213528.GA13794@kroah.com>
-References: <20100805213528.GA13794@kroah.com>
+In-Reply-To: <20100805213314.GB13744@kroah.com>
+References: <20100805213314.GB13744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Jean Delvare <khali@linux-fr.org>
 
-The port mutex protects port->tty, but these paths never need to walk from
-port->tty. They do need the low level lock as the API expects that but they
-already also take it.
+There is little rationale for marking bus_for_each_drv() __must_check.
+It is more of an iteration helper than a real function. You don't know
+in advance which callback it will be used on, so you have no clue how
+important it can be to check the returned value. In practice, this
+helper function can be used for best-effort tasks.
 
-Thus we can drop the extra mutex lock calls here.
+As a matter of fact, bus_for_each_dev() is not marked __must_check.
+So remove it from bus_for_each_drv() as well. This is the same that
+was done back in October 2006 by Russell King for
+device_for_each_child(), for exactly the same reasons.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Cc: Andrew Morton <akpm@osdl.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/serial_core.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
+ include/linux/device.h |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 2379045..0603e0d 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1506,12 +1506,10 @@ static int uart_carrier_raised(struct tty_port *port)
- 	struct uart_state *state = container_of(port, struct uart_state, port);
- 	struct uart_port *uport = state->uart_port;
- 	int mctrl;
--	mutex_lock(&port->mutex);
- 	spin_lock_irq(&uport->lock);
- 	uport->ops->enable_ms(uport);
- 	mctrl = uport->ops->get_mctrl(uport);
- 	spin_unlock_irq(&uport->lock);
--	mutex_unlock(&port->mutex);
- 	if (mctrl & TIOCM_CAR)
- 		return 1;
- 	return 0;
-@@ -1521,12 +1519,11 @@ static void uart_dtr_rts(struct tty_port *port, int onoff)
- {
- 	struct uart_state *state = container_of(port, struct uart_state, port);
- 	struct uart_port *uport = state->uart_port;
--	mutex_lock(&port->mutex);
-+
- 	if (onoff)
- 		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
- 	else
- 		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
--	mutex_unlock(&port->mutex);
- }
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 6a8276f..ddffdf7 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -84,9 +84,8 @@ struct device *bus_find_device_by_name(struct bus_type *bus,
+ 				       struct device *start,
+ 				       const char *name);
  
- /*
+-int __must_check bus_for_each_drv(struct bus_type *bus,
+-				  struct device_driver *start, void *data,
+-				  int (*fn)(struct device_driver *, void *));
++int bus_for_each_drv(struct bus_type *bus, struct device_driver *start,
++		     void *data, int (*fn)(struct device_driver *, void *));
+ 
+ void bus_sort_breadthfirst(struct bus_type *bus,
+ 			   int (*compare)(const struct device *a,
 -- 
 1.7.2
 
