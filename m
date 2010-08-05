@@ -1,88 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933527Ab0HEPJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:09:26 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47250 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756426Ab0HEPJZ (ORCPT
+	id S933565Ab0HEPL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:11:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40920 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756454Ab0HEPLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:09:25 -0400
+	Thu, 5 Aug 2010 11:11:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=MlMPr7X0/r2XYFZC2C9OF6Coz9XVnHU82dppBMlD1REVGlWj7Xma08vm46+6Ud48ug
-         ooIYAj36wJmz/7Kxj+3r2bmT0kqQ92zS0hIN9TnNz29H/msJalARmAco7CtmmwU8qBZ5
-         bMqb19lh3Z03ZGf8+ZAUX4mt4bgAelDhY1Z/M=
-Date: Thu, 5 Aug 2010 19:09:17 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-        Stephane Eranian <eranian@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] perf,x86: P4 PMU -- update nmi irq statistics and unmask
-	lvt entry properly
-Message-ID: <20100805150917.GA6311@lenovo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=lqJFCZkcOIWVCsNYbQ1COpeDfFZ7kxGGIgnEZZm9Pqmriz3axytcnbO0St8O4wAubE
+         IQ+5cCHCfKgLlWNM+gMXdV8YRH+buq0WolIx6u7iF/ZzN/dKz7Q792QhIofDsNpK5PNO
+         dO9Fgmt+xVCBT1XqIR0FX8nTldt7Zw0GDv1B8=
+From: John Kacur <jkacur@redhat.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Cc: lkml <linux-kernel@vger.kernel.org>, John Kacur <jkacur@redhat.com>
+Subject: [PATCH 1/2] lockdep: Remove __debug_show_held_locks
+Date: Thu,  5 Aug 2010 17:10:53 +0200
+Message-Id: <1281021054-4228-1-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case if last active performance counter is not overflowed at
-moment of NMI being triggered by another counter, the irq statistics
-may miss an update stage. As a more serious consequence -- apic quirk
-may not be triggered so apic lvt entry stay masked.
+There is no longer any functional difference between
+__debug_show_held_locks() and debug_show_held_locks(),
+so remove the former.
 
-Tested-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: John Kacur <jkacur@redhat.com>
 ---
- arch/x86/kernel/cpu/perf_event_p4.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ include/linux/debug_locks.h |    5 -----
+ kernel/hung_task.c          |    2 +-
+ kernel/lockdep.c            |    8 +-------
+ 3 files changed, 2 insertions(+), 13 deletions(-)
 
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -656,6 +656,7 @@ static int p4_pmu_handle_irq(struct pt_r
- 	cpuc = &__get_cpu_var(cpu_hw_events);
+diff --git a/include/linux/debug_locks.h b/include/linux/debug_locks.h
+index 29b3ce3..2833452 100644
+--- a/include/linux/debug_locks.h
++++ b/include/linux/debug_locks.h
+@@ -49,7 +49,6 @@ struct task_struct;
  
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
-+		int overflow;
- 
- 		if (!test_bit(idx, cpuc->active_mask))
- 			continue;
-@@ -666,12 +667,14 @@ static int p4_pmu_handle_irq(struct pt_r
- 		WARN_ON_ONCE(hwc->idx != idx);
- 
- 		/* it might be unflagged overflow */
--		handled = p4_pmu_clear_cccr_ovf(hwc);
-+		overflow = p4_pmu_clear_cccr_ovf(hwc);
- 
- 		val = x86_perf_event_update(event);
--		if (!handled && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
-+		if (!overflow && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
- 			continue;
- 
-+		handled += overflow;
-+
- 		/* event overflow for sure */
- 		data.period = event->hw.last_period;
- 
-@@ -687,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_r
- 		inc_irq_stat(apic_perf_irqs);
- 	}
- 
--	return handled;
-+	return handled > 0;
+ #ifdef CONFIG_LOCKDEP
+ extern void debug_show_all_locks(void);
+-extern void __debug_show_held_locks(struct task_struct *task);
+ extern void debug_show_held_locks(struct task_struct *task);
+ extern void debug_check_no_locks_freed(const void *from, unsigned long len);
+ extern void debug_check_no_locks_held(struct task_struct *task);
+@@ -58,10 +57,6 @@ static inline void debug_show_all_locks(void)
+ {
  }
  
- /*
+-static inline void __debug_show_held_locks(struct task_struct *task)
+-{
+-}
+-
+ static inline void debug_show_held_locks(struct task_struct *task)
+ {
+ }
+diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+index 0c642d5..bca9423 100644
+--- a/kernel/hung_task.c
++++ b/kernel/hung_task.c
+@@ -98,7 +98,7 @@ static void check_hung_task(struct task_struct *t, unsigned long timeout)
+ 	printk(KERN_ERR "\"echo 0 > /proc/sys/kernel/hung_task_timeout_secs\""
+ 			" disables this message.\n");
+ 	sched_show_task(t);
+-	__debug_show_held_locks(t);
++	debug_show_held_locks(t);
+ 
+ 	touch_nmi_watchdog();
+ 
+diff --git a/kernel/lockdep.c b/kernel/lockdep.c
+index 5428679..843030b 100644
+--- a/kernel/lockdep.c
++++ b/kernel/lockdep.c
+@@ -3775,7 +3775,7 @@ EXPORT_SYMBOL_GPL(debug_show_all_locks);
+  * Careful: only use this function if you are sure that
+  * the task cannot run in parallel!
+  */
+-void __debug_show_held_locks(struct task_struct *task)
++void debug_show_held_locks(struct task_struct *task)
+ {
+ 	if (unlikely(!debug_locks)) {
+ 		printk("INFO: lockdep is turned off.\n");
+@@ -3783,12 +3783,6 @@ void __debug_show_held_locks(struct task_struct *task)
+ 	}
+ 	lockdep_print_held_locks(task);
+ }
+-EXPORT_SYMBOL_GPL(__debug_show_held_locks);
+-
+-void debug_show_held_locks(struct task_struct *task)
+-{
+-		__debug_show_held_locks(task);
+-}
+ EXPORT_SYMBOL_GPL(debug_show_held_locks);
+ 
+ void lockdep_sys_exit(void)
+-- 
+1.7.2
+
