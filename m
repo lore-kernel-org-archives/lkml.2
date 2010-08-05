@@ -1,90 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab0HEDpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 23:45:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54833 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758684Ab0HEDpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 23:45:50 -0400
-Date: Thu, 5 Aug 2010 13:45:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Steve French <smfrench@gmail.com>,
-        linux-cifs@vger.kernel.org
-Subject: Re: linux-next: manual merge of the workqueues tree with the Linus'
- tree
-Message-Id: <20100805134545.93ccb1b4.sfr@canb.auug.org.au>
-In-Reply-To: <20100805130459.f62468cd.sfr@canb.auug.org.au>
-References: <20100723144600.dd4da992.sfr@canb.auug.org.au>
-	<4C497CD5.5010908@kernel.org>
-	<20100723213148.3d2193a3.sfr@canb.auug.org.au>
-	<4C497E5F.80301@kernel.org>
-	<20100723214233.7cb7de8d.sfr@canb.auug.org.au>
-	<20100805130459.f62468cd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1758797Ab0HEDrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 23:47:37 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:57631 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1758684Ab0HEDrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 23:47:35 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX188+iU1Q9c8bu5ylbTuSN+KTfvnmb3Psrb+tUtRzz
+	AfHdfaxbxdrhsq
+Subject: Re: excessive wakeups in 2.6.35
+From: Mike Galbraith <efault@gmx.de>
+To: Dave Jones <davej@redhat.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+In-Reply-To: <20100804203811.GA6479@redhat.com>
+References: <20100804203811.GA6479@redhat.com>
+Content-Type: text/plain
+Date: Thu, 05 Aug 2010 05:48:11 +0200
+Message-Id: <1280980091.7508.5.camel@marge.simson.net>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__5_Aug_2010_13_45_45_+1000_u819=hHGuf89bSBC"
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Aug_2010_13_45_45_+1000_u819=hHGuf89bSBC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2010-08-04 at 16:38 -0400, Dave Jones wrote:
+> My laptop felt like it was about to burst into flames after I ran
+> 2.6.35 on it for a while.  It actually got too hot to place on my legs.
 
-Hi Tejun,
+Nomex + bigger battery :)
 
-On Thu, 5 Aug 2010 13:04:59 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> On Fri, 23 Jul 2010 21:42:33 +1000 Stephen Rothwell <sfr@canb.auug.org.au=
-> wrote:
-> >
-> > On Fri, 23 Jul 2010 13:34:55 +0200 Tejun Heo <tj@kernel.org> wrote:
-> > >
-> > > I was thinking about sending pull request w/ a note describing how to
-> > > resolve the conflict.  Would pulling in master before requesting pull
-> > > be better?
-> >=20
-> > Either would work.  Linus is fine with doing merge fixups and, after al=
-l,
-> > I figured it out. :-)
-> >=20
-> > A description always helps, of course.
->=20
-> Linus has merged the cifs tree, so you could fix these conflicts in your
-> tree by merging the cifs tree that Linus' merged (rather than merging
-> against all of Linus' tree).   That would be commit
-> cb76d5e25008b76fb8e348c861d32659430ac3fa ("cifs: fsc should not default
-> to "on"") in Linus' tree.
->=20
-> Or you could leave it all to Linus if you want to.
+> Powertop showed it running over a 1000 wakeups a second while completely idle.
+> 
+> Chuck Ebbert pointed me at this diff..
+> http://git.kernel.org/?p=linux/kernel/git/x86/linux-2.6-tip.git;a=commitdiff;h=396e894d289d69bacf5acd983c97cd6e21a14c08
+> 
+> which brings it back down to a much more respectable 80 wakeups a second.
+> 
+> Is this lined up for 2.6.35.1 ?
 
-Actually there is some more stuff in the cifs tree that has not gone to
-Linus, yet.  Sorry about that.
+Yeah, it's tagged.  More trouble than it's worth, optimization dies.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+	-Mike
 
---Signature=_Thu__5_Aug_2010_13_45_45_+1000_u819=hHGuf89bSBC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMWjPpAAoJEDMEi1NhKgbsG3QH/3JSjfxsFgHtA9V85DxJ078c
-VLQFoIdzdvyNgm+MraWk+bfzU4rqBwwDLOCr0O5EsUpVs6xd1BN9Cc5j3oO3rNIb
-daOkYH0Q+OGyHoZuXdFQi2nxqQtYlucNxDfrbKtbehBGmkDLY3QDriPCXlxT5Whv
-70n0Kqi34XP+43urXCKwgGuXP6cwtBBDSPriu/IYXSa9p4l+PfZ0ymqhA9T7oaW9
-JlyiTwiktnuQcxKfbV34BM0zEhPy6z3Oo1Rb0XHR5G3Rb0CLBSHYivxxImfEx4RC
-D0FTA5jvUe3H6SVeXE6quqAvYWs2qCqXhNuQPV07Ub44PwzD2vHZV4Klo8NuZ54=
-=J3gW
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Aug_2010_13_45_45_+1000_u819=hHGuf89bSBC--
