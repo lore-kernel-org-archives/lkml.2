@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934822Ab0HEWqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:46:48 -0400
-Received: from kroah.org ([198.145.64.141]:37599 "EHLO coco.kroah.org"
+	id S1760773Ab0HEWXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:23:46 -0400
+Received: from kroah.org ([198.145.64.141]:37547 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760802Ab0HEWXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:23:54 -0400
+	id S1760421Ab0HEWXj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:23:39 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 16/67] isicom: kill off the BKL
-Date: Thu,  5 Aug 2010 15:22:43 -0700
-Message-Id: <1281047014-23429-16-git-send-email-gregkh@suse.de>
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 03/67] vt: clean up the code - use kernel library
+Date: Thu,  5 Aug 2010 15:22:30 -0700
+Message-Id: <1281047014-23429-3-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -20,84 +21,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 
-As with the others we can use the port mutex to get the needed locking
-properties and fix the race with open.
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/isicom.c |   13 +++++--------
- 1 files changed, 5 insertions(+), 8 deletions(-)
+ drivers/char/vt.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/char/isicom.c b/drivers/char/isicom.c
-index 98310e1..c27e9d2 100644
---- a/drivers/char/isicom.c
-+++ b/drivers/char/isicom.c
-@@ -124,7 +124,6 @@
- #include <linux/fs.h>
- #include <linux/sched.h>
- #include <linux/serial.h>
--#include <linux/smp_lock.h>
- #include <linux/mm.h>
- #include <linux/interrupt.h>
- #include <linux/timer.h>
-@@ -872,7 +871,6 @@ static struct tty_port *isicom_find_port(struct tty_struct *tty)
- static int isicom_open(struct tty_struct *tty, struct file *filp)
- {
- 	struct isi_port *port;
--	struct isi_board *card;
- 	struct tty_port *tport;
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 7cdb6ee..1ff87fa 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -104,6 +104,7 @@
+ #include <linux/io.h>
+ #include <asm/system.h>
+ #include <linux/uaccess.h>
++#include <linux/ctype.h>
  
- 	tport = isicom_find_port(tty);
-@@ -1118,8 +1116,7 @@ static int isicom_set_serial_info(struct tty_struct *tty,
- 	if (copy_from_user(&newinfo, info, sizeof(newinfo)))
- 		return -EFAULT;
+ #define MAX_NR_CON_DRIVER 16
  
--	lock_kernel();
--
-+	mutex_lock(&port->port.mutex);
- 	reconfig_port = ((port->port.flags & ASYNC_SPD_MASK) !=
- 		(newinfo.flags & ASYNC_SPD_MASK));
- 
-@@ -1128,7 +1125,7 @@ static int isicom_set_serial_info(struct tty_struct *tty,
- 				(newinfo.closing_wait != port->port.closing_wait) ||
- 				((newinfo.flags & ~ASYNC_USR_MASK) !=
- 				(port->port.flags & ~ASYNC_USR_MASK))) {
--			unlock_kernel();
-+			mutex_unlock(&port->port.mutex);
- 			return -EPERM;
- 		}
- 		port->port.flags = ((port->port.flags & ~ASYNC_USR_MASK) |
-@@ -1145,7 +1142,7 @@ static int isicom_set_serial_info(struct tty_struct *tty,
- 		isicom_config_port(tty);
- 		spin_unlock_irqrestore(&port->card->card_lock, flags);
- 	}
--	unlock_kernel();
-+	mutex_unlock(&port->port.mutex);
- 	return 0;
- }
- 
-@@ -1154,7 +1151,7 @@ static int isicom_get_serial_info(struct isi_port *port,
- {
- 	struct serial_struct out_info;
- 
--	lock_kernel();
-+	mutex_lock(&port->port.mutex);
- 	memset(&out_info, 0, sizeof(out_info));
- /*	out_info.type = ? */
- 	out_info.line = port - isi_ports;
-@@ -1164,7 +1161,7 @@ static int isicom_get_serial_info(struct isi_port *port,
- /*	out_info.baud_base = ? */
- 	out_info.close_delay = port->port.close_delay;
- 	out_info.closing_wait = port->port.closing_wait;
--	unlock_kernel();
-+	mutex_unlock(&port->port.mutex);
- 	if (copy_to_user(info, &out_info, sizeof(out_info)))
- 		return -EFAULT;
- 	return 0;
+@@ -1789,8 +1790,8 @@ static void do_con_trol(struct tty_struct *tty, struct vc_data *vc, int c)
+ 			vc->vc_state = ESnormal;
+ 		return;
+ 	case ESpalette:
+-		if ( (c>='0'&&c<='9') || (c>='A'&&c<='F') || (c>='a'&&c<='f') ) {
+-			vc->vc_par[vc->vc_npar++] = (c > '9' ? (c & 0xDF) - 'A' + 10 : c - '0');
++		if (isxdigit(c)) {
++			vc->vc_par[vc->vc_npar++] = hex_to_bin(c);
+ 			if (vc->vc_npar == 7) {
+ 				int i = vc->vc_par[0] * 3, j = 1;
+ 				vc->vc_palette[i] = 16 * vc->vc_par[j++];
 -- 
 1.7.2
 
