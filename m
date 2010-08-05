@@ -1,466 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760032Ab0HEJu1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:50:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45208 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758851Ab0HEJuX (ORCPT
+	id S1760031Ab0HEJvh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:51:37 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:47841 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab0HEJvf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:50:23 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-usb@vger.kernel.org,
-        =?UTF-8?q?Micha=C5=82=20Nazarewicz?= <m.nazarewicz@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        =?UTF-8?q?Micha=C5=82=20Nazarewicz?= <m.nazarewicz@samsung.com>
-Subject: [PATCH 2/2 v2] usb gadget: don't save bind callback in struct usb_configuration
-Date: Thu,  5 Aug 2010 11:50:17 +0200
-Message-Id: <1281001817-7807-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <op.vgyjjx1d7p4s8u@pikus>
-References: <op.vgyjjx1d7p4s8u@pikus>
+	Thu, 5 Aug 2010 05:51:35 -0400
+To: Michael Leun <lkml20100708@newton.leun.net>
+Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free (after using openvpn)
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+	<20100710101540.2799c9ef@xenia.leun.net>
+	<20100710140800.GA20424@kroah.com>
+	<20100710165208.59272ae6@xenia.leun.net>
+	<20100710235323.5336f627@xenia.leun.net>
+	<20100711192939.1c25dcaf@xenia.leun.net>
+	<20100804153543.56f6ecad@xenia.leun.net>
+	<20100804214618.GA6289@kroah.com>
+	<20100805001105.5a3453ed@xenia.leun.net>
+	<m1lj8l29zm.fsf@fess.ebiederm.org>
+	<20100805112538.60a46cb1@xenia.leun.net>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 05 Aug 2010 02:51:29 -0700
+In-Reply-To: <20100805112538.60a46cb1@xenia.leun.net> (Michael Leun's message of "Thu\, 5 Aug 2010 11\:25\:38 +0200")
+Message-ID: <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bind function is most of the time only called at init time so there is no
-need to save a pointer to it in the configuration structure.
+Michael Leun <lkml20100708@newton.leun.net> writes:
 
-This fixes many section mismatches reported by modpost.
+> Hi,
+>
+> On Wed, 04 Aug 2010 17:12:29 -0700
+> ebiederm@xmission.com (Eric W. Biederman) wrote:
+>
+> First, thank you very much for picking that up (and, of course, for
+> your work at linux in general).
+>
+>
+>> > # > unshare -n /bin/bash
+>> > # > # how to setup veth device pair to get connectivity into
+>> > namespace not shown here # > openvpn --config some.config
+>> > [ running some traffic over vpn device not shown here ]
+>> > ^c # stopping openvpn
+>> > # > lsof -i
+>> > # > netstat -an
+>> > Active Internet connections (servers and established)
+>> > Proto Recv-Q Send-Q Local Address           Foreign Address
+>> > State Active UNIX domain sockets (servers and established)
+>> > Proto RefCnt Flags       Type       State         I-Node Path
+>> > # > ps ax|grep openvpn|grep -v grep
+>> > # > # cannot find anything that suggests there is anything left
+>> > from that openvpn session # > exit # logging out from shell in
+>> > network namespace
+>> >
+>> > Now I get
+>> >
+>> > Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo
+>> > to become free. Usage count = 3 [repeated]
+>> 
+>> How many times?
+>
+> Unfortunately looks like indefinitely. Never watched longer so far
+> (rebooted soon), but I'm seeing this message now repeated every 10 secs
+> for ~10 minutes on a idle system.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Michał Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
-changes since v1:
+Ugh.  A real bug then.  These can be a pain to track down and fix. I
+think the last one of these I tracked down took a couple of weeks.  I
+will start digging in when I get back from vacation.
 
- - reworded commit log as suggested by Michał
+> Additionally when testing this I found another one (by accident started
+> my firewall script in that namespace...) - using netfilter RECENT
+> makes it barf. Stripped down to the essentials it looks like this:
 
- drivers/usb/gadget/audio.c        |    3 +--
- drivers/usb/gadget/cdc2.c         |    3 +--
- drivers/usb/gadget/composite.c    |   14 ++++++++------
- drivers/usb/gadget/ether.c        |    7 +++----
- drivers/usb/gadget/f_loopback.c   |    3 +--
- drivers/usb/gadget/f_sourcesink.c |    3 +--
- drivers/usb/gadget/g_ffs.c        |    9 +++------
- drivers/usb/gadget/hid.c          |    3 +--
- drivers/usb/gadget/mass_storage.c |    3 +--
- drivers/usb/gadget/multi.c        |    6 ++----
- drivers/usb/gadget/nokia.c        |    8 ++++----
- drivers/usb/gadget/serial.c       |    4 ++--
- drivers/usb/gadget/webcam.c       |    4 ++--
- include/linux/usb/composite.h     |    5 +----
- 14 files changed, 31 insertions(+), 44 deletions(-)
+Micheal this is on 2.6.35?
 
-diff --git a/drivers/usb/gadget/audio.c b/drivers/usb/gadget/audio.c
-index a62af7b..eeff9b2 100644
---- a/drivers/usb/gadget/audio.c
-+++ b/drivers/usb/gadget/audio.c
-@@ -105,7 +105,6 @@ static int __init audio_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration audio_config_driver = {
- 	.label			= DRIVER_DESC,
--	.bind			= audio_do_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -145,7 +144,7 @@ static int __init audio_bind(struct usb_composite_dev *cdev)
- 	strings_dev[STRING_PRODUCT_IDX].id = status;
- 	device_desc.iProduct = status;
- 
--	status = usb_add_config(cdev, &audio_config_driver);
-+	status = usb_add_config(cdev, &audio_config_driver, audio_do_config);
- 	if (status < 0)
- 		goto fail;
- 
-diff --git a/drivers/usb/gadget/cdc2.c b/drivers/usb/gadget/cdc2.c
-index 928137d..c3d2c86 100644
---- a/drivers/usb/gadget/cdc2.c
-+++ b/drivers/usb/gadget/cdc2.c
-@@ -151,7 +151,6 @@ static int __init cdc_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration cdc_config_driver = {
- 	.label			= "CDC Composite (ECM + ACM)",
--	.bind			= cdc_do_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -218,7 +217,7 @@ static int __init cdc_bind(struct usb_composite_dev *cdev)
- 	device_desc.iProduct = status;
- 
- 	/* register our configuration */
--	status = usb_add_config(cdev, &cdc_config_driver);
-+	status = usb_add_config(cdev, &cdc_config_driver, cdc_do_config);
- 	if (status < 0)
- 		goto fail1;
- 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index d07960e..b6cc043 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -470,18 +470,20 @@ done:
-  * usb_add_config() - add a configuration to a device.
-  * @cdev: wraps the USB gadget
-  * @config: the configuration, with bConfigurationValue assigned
-+ * @bind: the configuration's bind function
-  * Context: single threaded during gadget setup
-  *
-- * One of the main tasks of a composite driver's bind() routine is to
-+ * One of the main tasks of a composite @bind() routine is to
-  * add each of the configurations it supports, using this routine.
-  *
-- * This function returns the value of the configuration's bind(), which
-+ * This function returns the value of the configuration's @bind(), which
-  * is zero for success else a negative errno value.  Binding configurations
-  * assigns global resources including string IDs, and per-configuration
-  * resources such as interface IDs and endpoints.
-  */
- int usb_add_config(struct usb_composite_dev *cdev,
--		struct usb_configuration *config)
-+		struct usb_configuration *config,
-+		int (*bind)(struct usb_configuration *))
- {
- 	int				status = -EINVAL;
- 	struct usb_configuration	*c;
-@@ -490,7 +492,7 @@ int usb_add_config(struct usb_composite_dev *cdev,
- 			config->bConfigurationValue,
- 			config->label, config);
- 
--	if (!config->bConfigurationValue || !config->bind)
-+	if (!config->bConfigurationValue || !bind)
- 		goto done;
- 
- 	/* Prevent duplicate configuration identifiers */
-@@ -507,7 +509,7 @@ int usb_add_config(struct usb_composite_dev *cdev,
- 	INIT_LIST_HEAD(&config->functions);
- 	config->next_interface_id = 0;
- 
--	status = config->bind(config);
-+	status = bind(config);
- 	if (status < 0) {
- 		list_del(&config->list);
- 		config->cdev = NULL;
-@@ -533,7 +535,7 @@ int usb_add_config(struct usb_composite_dev *cdev,
- 		}
- 	}
- 
--	/* set_alt(), or next config->bind(), sets up
-+	/* set_alt(), or next bind(), sets up
- 	 * ep->driver_data as needed.
- 	 */
- 	usb_ep_autoconfig_reset(cdev->gadget);
-diff --git a/drivers/usb/gadget/ether.c b/drivers/usb/gadget/ether.c
-index 400f803..cd03bea 100644
---- a/drivers/usb/gadget/ether.c
-+++ b/drivers/usb/gadget/ether.c
-@@ -251,7 +251,6 @@ static int __init rndis_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration rndis_config_driver = {
- 	.label			= "RNDIS",
--	.bind			= rndis_do_config,
- 	.bConfigurationValue	= 2,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -289,7 +288,6 @@ static int __init eth_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration eth_config_driver = {
- 	/* .label = f(hardware) */
--	.bind			= eth_do_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -373,12 +371,13 @@ static int __init eth_bind(struct usb_composite_dev *cdev)
- 
- 	/* register our configuration(s); RNDIS first, if it's used */
- 	if (has_rndis()) {
--		status = usb_add_config(cdev, &rndis_config_driver);
-+		status = usb_add_config(cdev, &rndis_config_driver,
-+				rndis_do_config);
- 		if (status < 0)
- 			goto fail;
- 	}
- 
--	status = usb_add_config(cdev, &eth_config_driver);
-+	status = usb_add_config(cdev, &eth_config_driver, eth_do_config);
- 	if (status < 0)
- 		goto fail;
- 
-diff --git a/drivers/usb/gadget/f_loopback.c b/drivers/usb/gadget/f_loopback.c
-index e91d1b1..b37960f 100644
---- a/drivers/usb/gadget/f_loopback.c
-+++ b/drivers/usb/gadget/f_loopback.c
-@@ -349,7 +349,6 @@ static int __init loopback_bind_config(struct usb_configuration *c)
- static struct usb_configuration loopback_driver = {
- 	.label		= "loopback",
- 	.strings	= loopback_strings,
--	.bind		= loopback_bind_config,
- 	.bConfigurationValue = 2,
- 	.bmAttributes	= USB_CONFIG_ATT_SELFPOWER,
- 	/* .iConfiguration = DYNAMIC */
-@@ -382,5 +381,5 @@ int __init loopback_add(struct usb_composite_dev *cdev, bool autoresume)
- 		loopback_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
- 	}
- 
--	return usb_add_config(cdev, &loopback_driver);
-+	return usb_add_config(cdev, &loopback_driver, loopback_bind_config);
- }
-diff --git a/drivers/usb/gadget/f_sourcesink.c b/drivers/usb/gadget/f_sourcesink.c
-index 6d3cc44..e403a53 100644
---- a/drivers/usb/gadget/f_sourcesink.c
-+++ b/drivers/usb/gadget/f_sourcesink.c
-@@ -498,7 +498,6 @@ unknown:
- static struct usb_configuration sourcesink_driver = {
- 	.label		= "source/sink",
- 	.strings	= sourcesink_strings,
--	.bind		= sourcesink_bind_config,
- 	.setup		= sourcesink_setup,
- 	.bConfigurationValue = 3,
- 	.bmAttributes	= USB_CONFIG_ATT_SELFPOWER,
-@@ -532,5 +531,5 @@ int __init sourcesink_add(struct usb_composite_dev *cdev, bool autoresume)
- 		sourcesink_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
- 	}
- 
--	return usb_add_config(cdev, &sourcesink_driver);
-+	return usb_add_config(cdev, &sourcesink_driver, sourcesink_bind_config);
- }
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index d1af253..ddae926 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -151,13 +151,12 @@ static int gfs_do_rndis_config(struct usb_configuration *c);
- 
- static struct usb_configuration gfs_rndis_config_driver = {
- 	.label			= "FunctionFS + RNDIS",
--	.bind			= gfs_do_rndis_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration	= DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
- };
- #  define gfs_add_rndis_config(cdev) \
--	usb_add_config(cdev, &gfs_rndis_config_driver)
-+	usb_add_config(cdev, &gfs_rndis_config_driver, gfs_do_rndis_config)
- #else
- #  define gfs_add_rndis_config(cdev) 0
- #endif
-@@ -168,13 +167,12 @@ static int gfs_do_ecm_config(struct usb_configuration *c);
- 
- static struct usb_configuration gfs_ecm_config_driver = {
- 	.label			= "FunctionFS + ECM",
--	.bind			= gfs_do_ecm_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration	= DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
- };
- #  define gfs_add_ecm_config(cdev) \
--	usb_add_config(cdev, &gfs_ecm_config_driver)
-+	usb_add_config(cdev, &gfs_ecm_config_driver, gfs_do_ecm_config)
- #else
- #  define gfs_add_ecm_config(cdev) 0
- #endif
-@@ -185,13 +183,12 @@ static int gfs_do_generic_config(struct usb_configuration *c);
- 
- static struct usb_configuration gfs_generic_config_driver = {
- 	.label			= "FunctionFS",
--	.bind			= gfs_do_generic_config,
- 	.bConfigurationValue	= 2,
- 	/* .iConfiguration	= DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
- };
- #  define gfs_add_generic_config(cdev) \
--	usb_add_config(cdev, &gfs_generic_config_driver)
-+	usb_add_config(cdev, &gfs_generic_config_driver, gfs_do_generic_config)
- #else
- #  define gfs_add_generic_config(cdev) 0
- #endif
-diff --git a/drivers/usb/gadget/hid.c b/drivers/usb/gadget/hid.c
-index 7757226..2ce69c6 100644
---- a/drivers/usb/gadget/hid.c
-+++ b/drivers/usb/gadget/hid.c
-@@ -148,7 +148,6 @@ static int __init do_config(struct usb_configuration *c)
- 
- static struct usb_configuration config_driver = {
- 	.label			= "HID Gadget",
--	.bind			= do_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -201,7 +200,7 @@ static int __init hid_bind(struct usb_composite_dev *cdev)
- 	device_desc.iProduct = status;
- 
- 	/* register our configuration */
--	status = usb_add_config(cdev, &config_driver);
-+	status = usb_add_config(cdev, &config_driver, do_config);
- 	if (status < 0)
- 		return status;
- 
-diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
-index 705cc1f..21a65a2 100644
---- a/drivers/usb/gadget/mass_storage.c
-+++ b/drivers/usb/gadget/mass_storage.c
-@@ -165,7 +165,6 @@ static int __init msg_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration msg_config_driver = {
- 	.label			= "Linux File-Backed Storage",
--	.bind			= msg_do_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -208,7 +207,7 @@ static int __init msg_bind(struct usb_composite_dev *cdev)
- 	msg_config_driver.iConfiguration = status;
- 
- 	/* register our second configuration */
--	status = usb_add_config(cdev, &msg_config_driver);
-+	status = usb_add_config(cdev, &msg_config_driver, msg_do_config);
- 	if (status < 0)
- 		return status;
- 
-diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
-index a930d7f..84c9ab6 100644
---- a/drivers/usb/gadget/multi.c
-+++ b/drivers/usb/gadget/multi.c
-@@ -181,7 +181,6 @@ static int __init rndis_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration rndis_config_driver = {
- 	.label			= "Multifunction Composite (RNDIS + MS + ACM)",
--	.bind			= rndis_do_config,
- 	.bConfigurationValue	= 2,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -217,7 +216,6 @@ static int __init cdc_do_config(struct usb_configuration *c)
- 
- static struct usb_configuration cdc_config_driver = {
- 	.label			= "Multifunction Composite (CDC + MS + ACM)",
--	.bind			= cdc_do_config,
- 	.bConfigurationValue	= 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -295,14 +293,14 @@ static int __init multi_bind(struct usb_composite_dev *cdev)
- 
- #ifdef USB_ETH_RNDIS
- 	/* register our first configuration */
--	status = usb_add_config(cdev, &rndis_config_driver);
-+	status = usb_add_config(cdev, &rndis_config_driver, rndis_do_config);
- 	if (status < 0)
- 		goto fail2;
- #endif
- 
- #ifdef CONFIG_USB_G_MULTI_CDC
- 	/* register our second configuration */
--	status = usb_add_config(cdev, &cdc_config_driver);
-+	status = usb_add_config(cdev, &cdc_config_driver, cdc_do_config);
- 	if (status < 0)
- 		goto fail2;
- #endif
-diff --git a/drivers/usb/gadget/nokia.c b/drivers/usb/gadget/nokia.c
-index 7d6b66a..a7dda39 100644
---- a/drivers/usb/gadget/nokia.c
-+++ b/drivers/usb/gadget/nokia.c
-@@ -135,7 +135,6 @@ static int __init nokia_bind_config(struct usb_configuration *c)
- 
- static struct usb_configuration nokia_config_500ma_driver = {
- 	.label		= "Bus Powered",
--	.bind		= nokia_bind_config,
- 	.bConfigurationValue = 1,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes	= USB_CONFIG_ATT_ONE,
-@@ -144,7 +143,6 @@ static struct usb_configuration nokia_config_500ma_driver = {
- 
- static struct usb_configuration nokia_config_100ma_driver = {
- 	.label		= "Self Powered",
--	.bind		= nokia_bind_config,
- 	.bConfigurationValue = 2,
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes	= USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
-@@ -206,11 +204,13 @@ static int __init nokia_bind(struct usb_composite_dev *cdev)
- 	}
- 
- 	/* finaly register the configuration */
--	status = usb_add_config(cdev, &nokia_config_500ma_driver);
-+	status = usb_add_config(cdev, &nokia_config_500ma_driver,
-+			nokia_bind_config);
- 	if (status < 0)
- 		goto err_usb;
- 
--	status = usb_add_config(cdev, &nokia_config_100ma_driver);
-+	status = usb_add_config(cdev, &nokia_config_100ma_driver,
-+			nokia_bind_config);
- 	if (status < 0)
- 		goto err_usb;
- 
-diff --git a/drivers/usb/gadget/serial.c b/drivers/usb/gadget/serial.c
-index f46a609..8838f03 100644
---- a/drivers/usb/gadget/serial.c
-+++ b/drivers/usb/gadget/serial.c
-@@ -155,7 +155,6 @@ static int __init serial_bind_config(struct usb_configuration *c)
- 
- static struct usb_configuration serial_config_driver = {
- 	/* .label = f(use_acm) */
--	.bind		= serial_bind_config,
- 	/* .bConfigurationValue = f(use_acm) */
- 	/* .iConfiguration = DYNAMIC */
- 	.bmAttributes	= USB_CONFIG_ATT_SELFPOWER,
-@@ -225,7 +224,8 @@ static int __init gs_bind(struct usb_composite_dev *cdev)
- 	}
- 
- 	/* register our configuration */
--	status = usb_add_config(cdev, &serial_config_driver);
-+	status = usb_add_config(cdev, &serial_config_driver,
-+			serial_bind_config);
- 	if (status < 0)
- 		goto fail;
- 
-diff --git a/drivers/usb/gadget/webcam.c b/drivers/usb/gadget/webcam.c
-index f5f3030..79a7230 100644
---- a/drivers/usb/gadget/webcam.c
-+++ b/drivers/usb/gadget/webcam.c
-@@ -317,7 +317,6 @@ webcam_config_bind(struct usb_configuration *c)
- 
- static struct usb_configuration webcam_config_driver = {
- 	.label			= webcam_config_label,
--	.bind			= webcam_config_bind,
- 	.bConfigurationValue	= 1,
- 	.iConfiguration		= 0, /* dynamic */
- 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
-@@ -354,7 +353,8 @@ webcam_bind(struct usb_composite_dev *cdev)
- 	webcam_config_driver.iConfiguration = ret;
- 
- 	/* Register our configuration. */
--	if ((ret = usb_add_config(cdev, &webcam_config_driver)) < 0)
-+	if ((ret = usb_add_config(cdev, &webcam_config_driver,
-+					webcam_config_bind)) < 0)
- 		goto error;
- 
- 	INFO(cdev, "Webcam Video Gadget\n");
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index 139353e..fc750b1 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -161,8 +161,6 @@ ep_choose(struct usb_gadget *g, struct usb_endpoint_descriptor *hs,
-  *	and by language IDs provided in control requests.
-  * @descriptors: Table of descriptors preceding all function descriptors.
-  *	Examples include OTG and vendor-specific descriptors.
-- * @bind: Called from @usb_add_config() to allocate resources unique to this
-- *	configuration and to call @usb_add_function() for each function used.
-  * @unbind: Reverses @bind; called as a side effect of unregistering the
-  *	driver which added this configuration.
-  * @setup: Used to delegate control requests that aren't handled by standard
-@@ -207,8 +205,7 @@ struct usb_configuration {
- 	 * we can't restructure things to avoid mismatching...
- 	 */
- 
--	/* configuration management:  bind/unbind */
--	int			(*bind)(struct usb_configuration *);
-+	/* configuration management: unbind/setup */
- 	void			(*unbind)(struct usb_configuration *);
- 	int			(*setup)(struct usb_configuration *,
- 					const struct usb_ctrlrequest *);
--- 
-1.7.1
+Alexey can you look at this BUG_ON?  It looks like there has been a regression
+or you missed something when you did the netns conversion of xt_recent.
 
+
+>> # unshare -n /bin/bash
+>> # iptables -I INPUT -d 1.2.3.4 -m recent --name BLA --set
+>> # exit
+>
+> Aug  5 11:19:47 doris kernel: [  218.420238] ------------[ cut here ]------------
+> Aug  5 11:19:47 doris kernel: [  218.420256] kernel BUG at net/netfilter/xt_recent.c:609!
+> Aug  5 11:19:47 doris kernel: [  218.420268] invalid opcode: 0000 [#1] PREEMPT SMP 
+> Aug  5 11:19:47 doris kernel: [  218.420284] last sysfs file: /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/charge_full
+> Aug  5 11:19:47 doris kernel: [  218.420295] Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ipt_REJECT ipt_LOG xt_limit xt_recent iptable_mangle iptable_nat iptable_filter nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_filter ip6_tables nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables fuse nls_utf8 loop arc4 ecb iwlagn iwlcore mac80211 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm cfg80211 snd_timer snd usb_storage iTCO_wdt soundcore tg3 sg iTCO_vendor_support snd_page_alloc rfkill i2c_i801 pcspkr battery ac ext4 jbd2 crc16 sha256_generic aes_generic cbc dm_crypt linear i915 drm_kms_helper drm i2c_algo_bit sd_mod video intel_agp button dm_snapshot dm_mod fan processor ata_piix ahci libahci libata scsi_mod thermal thermal_sys
+> Aug  5 11:19:47 doris kernel: [  218.420529] 
+> Aug  5 11:19:47 doris kernel: [  218.420542] Pid: 13, comm: netns Not tainted 2.6.35 #2 Kuril                           /40684JG         
+> Aug  5 11:19:47 doris kernel: [  218.420557] EIP: 0060:[<fc886a15>] EFLAGS: 00010206 CPU: 0
+> Aug  5 11:19:47 doris kernel: [  218.420578] EIP is at recent_net_exit+0x55/0x70 [xt_recent]
+> Aug  5 11:19:47 doris kernel: [  218.420589] EAX: f2218000 EBX: f5b79290 ECX: f2f27b40 EDX: f5cd4000
+> Aug  5 11:19:47 doris kernel: [  218.420601] ESI: f2218000 EDI: f5cd5f44 EBP: f5cd5f28 ESP: f5cd5f20
+> Aug  5 11:19:47 doris kernel: [  218.420612]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+> Aug  5 11:19:47 doris kernel: [  218.420626] Process netns (pid: 13, ti=f5cd4000 task=f5cc9920 task.ti=f5cd4000)
+> Aug  5 11:19:47 doris kernel: [  218.420635] Stack:
+> Aug  5 11:19:47 doris kernel: [  218.420641]  f5cd5f30 fc887618 f5cd5f3c c130867d fc887618 f5cd5f44 c1308850 f5cd5f60
+> Aug  5 11:19:47 doris kernel: [  218.420667] <0> c1308919 f2218014 f2218014 f221800c f221800c c15915a0 c3bb4f40 c1308850
+> Aug  5 11:19:47 doris kernel: [  218.420695] <0> f5cd5fbc c105a230 c13d1658 00000001 00000000 f7048000 c160f500 f5cc9c00
+> Aug  5 11:19:47 doris kernel: [  218.420724] Call Trace:
+> Aug  5 11:19:47 doris kernel: [  218.420749]  [<c130867d>] ? ops_exit_list+0x1d/0x50
+> Aug  5 11:19:47 doris kernel: [  218.420766]  [<c1308850>] ? cleanup_net+0x0/0x160
+> Aug  5 11:19:47 doris kernel: [  218.420782]  [<c1308919>] ? cleanup_net+0xc9/0x160
+> Aug  5 11:19:47 doris kernel: [  218.420797]  [<c1308850>] ? cleanup_net+0x0/0x160
+> Aug  5 11:19:47 doris kernel: [  218.420815]  [<c105a230>] ? worker_thread+0x110/0x250
+> Aug  5 11:19:47 doris kernel: [  218.420832]  [<c13d1658>] ? schedule+0x748/0x7a0
+> Aug  5 11:19:47 doris kernel: [  218.420849]  [<c105d5f0>] ? autoremove_wake_function+0x0/0x40
+> Aug  5 11:19:47 doris kernel: [  218.420864]  [<c105a120>] ? worker_thread+0x0/0x250
+> Aug  5 11:19:47 doris kernel: [  218.420879]  [<c105d1bc>] ? kthread+0x6c/0x80
+> Aug  5 11:19:47 doris kernel: [  218.420895]  [<c105d150>] ? kthread+0x0/0x80
+> Aug  5 11:19:47 doris kernel: [  218.420910]  [<c1003336>] ? kernel_thread_helper+0x6/0x10
+> Aug  5 11:19:47 doris kernel: [  218.420919] Code: 91 08 89 e2 81 e2 00 e0 ff ff 83 6a 14 01 f6 42 08 08 75 19 3b 1b 75 13 ba fa 72 88 fc e8 94 3e 8c c4 8d 64 24 04 5b 5d c3 0f 0b <0f> 0b 89 45 f8 e8 a1 ad b4 c4 8b 45 f8 eb da 8d b6 00 00 00 00 
+> Aug  5 11:19:47 doris kernel: [  218.421063] EIP: [<fc886a15>] recent_net_exit+0x55/0x70 [xt_recent] SS:ESP 0068:f5cd5f20
+> Aug  5 11:19:47 doris kernel: [  218.421136] ---[ end trace f57524f15f4df616 ]---
+>
+
+
+Eric
