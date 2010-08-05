@@ -1,689 +1,573 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759879Ab0HEHcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 03:32:10 -0400
-Received: from mail.perches.com ([173.55.12.10]:2270 "EHLO mail.perches.com"
+	id S1759904Ab0HEHeB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 03:34:01 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57088 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759846Ab0HEH3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 03:29:54 -0400
-From: Joe Perches <joe@perches.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input <linux-input@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/9] drivers/input/keyboard: Use pr_fmt and pr_<level>
-Date: Thu,  5 Aug 2010 00:29:44 -0700
-Message-Id: <2bfbe5c3c84aade9813c0a894ca4575122a27c81.1280992118.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.2.19.g9a302
-In-Reply-To: <20100804043256.GB25256@core.coreip.homeip.net>
-References: <20100804043256.GB25256@core.coreip.homeip.net>
-In-Reply-To: <cover.1280992116.git.joe@perches.com>
-References: <cover.1280992116.git.joe@perches.com>
+	id S1758847Ab0HEHd7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 03:33:59 -0400
+Date: Thu, 5 Aug 2010 09:33:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [GIT PULL] RCU updates for v2.6.36
+Message-ID: <20100805073345.GA6681@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move error messages from array to direct uses.
-Convert bare printks to pr_cont
+Linus,
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/input/keyboard/amikbd.c         |   42 ++++++++++++++++-------
- drivers/input/keyboard/atakbd.c         |    4 ++-
- drivers/input/keyboard/hil_kbd.c        |   21 +++++-------
- drivers/input/keyboard/hilkbd.c         |   26 ++++++++-------
- drivers/input/keyboard/jornada680_kbd.c |    5 ++-
- drivers/input/keyboard/jornada720_kbd.c |   10 +++--
- drivers/input/keyboard/lkkbd.c          |   54 +++++++++++++++----------------
- drivers/input/keyboard/locomokbd.c      |    6 ++-
- drivers/input/keyboard/newtonkbd.c      |    4 ++-
- drivers/input/keyboard/omap-keypad.c    |   25 +++++++-------
- drivers/input/keyboard/sunkbd.c         |    9 +++--
- drivers/input/keyboard/xtkbd.c          |    7 +++-
- 12 files changed, 119 insertions(+), 94 deletions(-)
+Please pull the latest core-rcu-for-linus git tree from:
 
-diff --git a/drivers/input/keyboard/amikbd.c b/drivers/input/keyboard/amikbd.c
-index 79172af..61f92a5 100644
---- a/drivers/input/keyboard/amikbd.c
-+++ b/drivers/input/keyboard/amikbd.c
-@@ -29,6 +29,8 @@
-  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
-  */
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-rcu-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Mathieu Desnoyers (1):
+      tree/tiny rcu: Add debug RCU head objects
+
+Paul E. McKenney (10):
+      powerpc: remove all rcu head initializations
+      fs: remove all rcu head initializations, except on_stack initializations
+      mm: remove all rcu head initializations
+      rcu: add an rcu_dereference_index_check()
+      rcu: add __rcu API for later sparse checking
+      lockdep: Add an in_workqueue_context() lockdep-based test function
+      vfs: add fs.h to define struct file
+      net: Make accesses to ->br_port safe for sparse RCU
+      mce: convert to rcu_dereference_index_check()
+      Revert "net: Make accesses to ->br_port safe for sparse RCU"
+
+
+ arch/powerpc/mm/pgtable.c        |    1 -
+ arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
+ fs/file.c                        |    3 -
+ fs/partitions/check.c            |    1 -
+ include/linux/compiler.h         |    2 +
+ include/linux/fdtable.h          |    1 +
+ include/linux/rcupdate.h         |   82 +++++++++++++++++++
+ include/linux/workqueue.h        |    4 +
+ kernel/rcupdate.c                |  160 ++++++++++++++++++++++++++++++++++++++
+ kernel/rcutiny.c                 |    2 +
+ kernel/rcutree.c                 |    2 +
+ kernel/workqueue.c               |   15 ++++
+ lib/Kconfig.debug                |    6 ++
+ mm/backing-dev.c                 |    1 -
+ mm/slob.c                        |    1 -
+ 15 files changed, 275 insertions(+), 8 deletions(-)
+
+diff --git a/arch/powerpc/mm/pgtable.c b/arch/powerpc/mm/pgtable.c
+index ebc2f38..2c7e801 100644
+--- a/arch/powerpc/mm/pgtable.c
++++ b/arch/powerpc/mm/pgtable.c
+@@ -92,7 +92,6 @@ static void pte_free_rcu_callback(struct rcu_head *head)
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/input.h>
-@@ -144,17 +146,6 @@ static unsigned char amikbd_keycode[0x78] __initdata = {
- 	[103]	 = KEY_RIGHTMETA
+ static void pte_free_submit(struct pte_freelist_batch *batch)
+ {
+-	INIT_RCU_HEAD(&batch->rcu);
+ 	call_rcu(&batch->rcu, pte_free_rcu_callback);
+ }
+ 
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 18cc425..0e78657 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -51,7 +51,7 @@
+ static DEFINE_MUTEX(mce_read_mutex);
+ 
+ #define rcu_dereference_check_mce(p) \
+-	rcu_dereference_check((p), \
++	rcu_dereference_index_check((p), \
+ 			      rcu_read_lock_sched_held() || \
+ 			      lockdep_is_held(&mce_read_mutex))
+ 
+diff --git a/fs/file.c b/fs/file.c
+index 34bb7f7..cccaead 100644
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -178,7 +178,6 @@ static struct fdtable * alloc_fdtable(unsigned int nr)
+ 	fdt->open_fds = (fd_set *)data;
+ 	data += nr / BITS_PER_BYTE;
+ 	fdt->close_on_exec = (fd_set *)data;
+-	INIT_RCU_HEAD(&fdt->rcu);
+ 	fdt->next = NULL;
+ 
+ 	return fdt;
+@@ -312,7 +311,6 @@ struct files_struct *dup_fd(struct files_struct *oldf, int *errorp)
+ 	new_fdt->close_on_exec = (fd_set *)&newf->close_on_exec_init;
+ 	new_fdt->open_fds = (fd_set *)&newf->open_fds_init;
+ 	new_fdt->fd = &newf->fd_array[0];
+-	INIT_RCU_HEAD(&new_fdt->rcu);
+ 	new_fdt->next = NULL;
+ 
+ 	spin_lock(&oldf->file_lock);
+@@ -430,7 +428,6 @@ struct files_struct init_files = {
+ 		.fd		= &init_files.fd_array[0],
+ 		.close_on_exec	= (fd_set *)&init_files.close_on_exec_init,
+ 		.open_fds	= (fd_set *)&init_files.open_fds_init,
+-		.rcu		= RCU_HEAD_INIT,
+ 	},
+ 	.file_lock	= __SPIN_LOCK_UNLOCKED(init_task.file_lock),
  };
- 
--static const char *amikbd_messages[8] = {
--	[0] = KERN_ALERT "amikbd: Ctrl-Amiga-Amiga reset warning!!\n",
--	[1] = KERN_WARNING "amikbd: keyboard lost sync\n",
--	[2] = KERN_WARNING "amikbd: keyboard buffer overflow\n",
--	[3] = KERN_WARNING "amikbd: keyboard controller failure\n",
--	[4] = KERN_ERR "amikbd: keyboard selftest failure\n",
--	[5] = KERN_INFO "amikbd: initiate power-up key stream\n",
--	[6] = KERN_INFO "amikbd: terminate power-up key stream\n",
--	[7] = KERN_WARNING "amikbd: keyboard interrupt\n"
--};
--
- static irqreturn_t amikbd_interrupt(int irq, void *data)
- {
- 	struct input_dev *dev = data;
-@@ -177,8 +168,33 @@ static irqreturn_t amikbd_interrupt(int irq, void *data)
- 		}
- 
- 		input_sync(dev);
--	} else				/* scancodes >= 0x78 are error codes */
--		printk(amikbd_messages[scancode - 0x78]);
-+	} else {			/* scancodes >= 0x78 are error codes */
-+		switch (scancode) {
-+		case 0x78:
-+			pr_alert("Ctrl-Amiga-Amiga reset warning!!\n");
-+			break;
-+		case 0x79:
-+			pr_warning("keyboard lost sync\n");
-+			break;
-+		case 0x7a:
-+			pr_warning("keyboard buffer overflow\n");
-+			break;
-+		case 0x7b:
-+			pr_warning("keyboard controller failure\n");
-+			break;
-+		case 0x7c:
-+			pr_err("keyboard selftest failure\n");
-+			break;
-+		case 0x7d:
-+			pr_info("initiate power-up key stream\n");
-+			break;
-+		case 0x7e:
-+			pr_info("terminate power-up key stream\n");
-+			break;
-+		case 0x7f:
-+			pr_warning("keyboard interrupt\n");
-+			break;
-+		}
- 
- 	return IRQ_HANDLED;
- }
-diff --git a/drivers/input/keyboard/atakbd.c b/drivers/input/keyboard/atakbd.c
-index 1839194..5975052 100644
---- a/drivers/input/keyboard/atakbd.c
-+++ b/drivers/input/keyboard/atakbd.c
-@@ -40,6 +40,8 @@
-  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/input.h>
-@@ -210,7 +212,7 @@ static void atakbd_interrupt(unsigned char scancode, char down)
- 			input_sync(atakbd_dev);
- 		}
- 	} else				/* scancodes >= 0xf2 are mouse data, most likely */
--		printk(KERN_INFO "atakbd: unhandled scancode %x\n", scancode);
-+		pr_info("unhandled scancode %x\n", scancode);
- 
- 	return;
- }
-diff --git a/drivers/input/keyboard/hil_kbd.c b/drivers/input/keyboard/hil_kbd.c
-index ddd5afd..cf6448a 100644
---- a/drivers/input/keyboard/hil_kbd.c
-+++ b/drivers/input/keyboard/hil_kbd.c
-@@ -31,6 +31,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/hil.h>
- #include <linux/input.h>
- #include <linux/serio.h>
-@@ -131,7 +133,7 @@ static void hil_dev_handle_command_response(struct hil_dev *dev)
- 		/* These occur when device isn't present */
- 		if (p != (HIL_ERR_INT | HIL_PKT_CMD)) {
- 			/* Anything else we'd like to know about. */
--			printk(KERN_WARNING PREFIX "Device sent unknown record %x\n", p);
-+			pr_warning("Device sent unknown record %x\n", p);
- 		}
- 		goto out;
- 	}
-@@ -212,8 +214,7 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
- 	bool absdev, ax16;
- 
- 	if ((p & HIL_CMDCT_POL) != idx - 1) {
--		printk(KERN_WARNING PREFIX
--			"Malformed poll packet %x (idx = %i)\n", p, idx);
-+		pr_warning("Malformed poll packet %x (idx = %i)\n", p, idx);
- 		return;
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index 5dcd4b0..72c5265 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -459,7 +459,6 @@ struct hd_struct *add_partition(struct gendisk *disk, int partno,
  	}
  
-@@ -267,7 +268,7 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
+ 	/* everything is up and running, commence */
+-	INIT_RCU_HEAD(&p->rcu_head);
+ 	rcu_assign_pointer(ptbl->part[partno], p);
  
- static void hil_dev_process_err(struct hil_dev *dev)
- {
--	printk(KERN_WARNING PREFIX "errored HIL packet\n");
-+	pr_warning("errored HIL packet\n");
- 	dev->idx4 = 0;
- 	complete(&dev->cmd_done); /* just in case somebody is waiting */
- }
-@@ -347,7 +348,7 @@ static void hil_dev_keyboard_setup(struct hil_dev *kbd)
- 	input_dev->name	= strlen(kbd->rnm) ? kbd->rnm : "HIL keyboard";
- 	input_dev->phys	= "hpkbd/input0";
- 
--	printk(KERN_INFO PREFIX "HIL keyboard found (did = 0x%02x, lang = %s)\n",
-+	pr_info("HIL keyboard found (did = 0x%02x, lang = %s)\n",
- 		did, hil_language[did & HIL_IDD_DID_TYPE_KB_LANG_MASK]);
- }
- 
-@@ -433,11 +434,8 @@ static void hil_dev_pointer_setup(struct hil_dev *ptr)
- 
- 	input_dev->name = strlen(ptr->rnm) ? ptr->rnm : "HIL pointer device";
- 
--	printk(KERN_INFO PREFIX
--		"HIL pointer device found (did: 0x%02x, axis: %s)\n",
--		did, txt);
--	printk(KERN_INFO PREFIX
--		"HIL pointer has %i buttons and %i sets of %i axes\n",
-+	pr_info("HIL pointer device found (did: 0x%02x, axis: %s)\n", did, txt);
-+	pr_info("HIL pointer has %i buttons and %i sets of %i axes\n",
- 		ptr->nbtn, naxsets, ptr->naxes);
- }
- 
-@@ -511,8 +509,7 @@ static int hil_dev_connect(struct serio *serio, struct serio_driver *drv)
- 	case HIL_IDD_DID_TYPE_CHAR:
- 		if (HIL_IDD_NUM_BUTTONS(idd) ||
- 		    HIL_IDD_NUM_AXES_PER_SET(*idd)) {
--			printk(KERN_INFO PREFIX
--				"combo devices are not supported.\n");
-+			pr_info("combo devices are not supported\n");
- 			goto bail1;
- 		}
- 
-diff --git a/drivers/input/keyboard/hilkbd.c b/drivers/input/keyboard/hilkbd.c
-index 5f72440..447f49a 100644
---- a/drivers/input/keyboard/hilkbd.c
-+++ b/drivers/input/keyboard/hilkbd.c
-@@ -15,6 +15,8 @@
-  * archive for more details.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/pci_ids.h>
- #include <linux/ioport.h>
- #include <linux/module.h>
-@@ -219,7 +221,7 @@ static int __devinit hil_keyb_init(void)
- 
- 	err = request_irq(HIL_IRQ, hil_interrupt, 0, "hil", hil_dev.dev_id);
- 	if (err) {
--		printk(KERN_ERR "HIL: Can't get IRQ\n");
-+		pr_err("Can't get IRQ\n");
- 		goto err1;
- 	}
- 
-@@ -232,16 +234,16 @@ static int __devinit hil_keyb_init(void)
- 
- 	wait_event_interruptible_timeout(hil_wait, hil_dev.valid, 3 * HZ);
- 	if (!hil_dev.valid)
--		printk(KERN_WARNING "HIL: timed out, assuming no keyboard present\n");
-+		pr_warning("timed out, assuming no keyboard present\n");
- 
- 	c = hil_dev.c;
- 	hil_dev.valid = 0;
- 	if (c == 0) {
- 		kbid = -1;
--		printk(KERN_WARNING "HIL: no keyboard present\n");
-+		pr_warning("no keyboard present\n");
- 	} else {
- 		kbid = ffz(~c);
--		printk(KERN_INFO "HIL: keyboard found at id %d\n", kbid);
-+		pr_info("keyboard found at id %d\n", kbid);
- 	}
- 
- 	/* set it to raw mode */
-@@ -268,12 +270,12 @@ static int __devinit hil_keyb_init(void)
- 
- 	err = input_register_device(hil_dev.dev);
- 	if (err) {
--		printk(KERN_ERR "HIL: Can't register device\n");
-+		pr_err("Can't register device\n");
- 		goto err2;
- 	}
- 
--	printk(KERN_INFO "input: %s, ID %d at 0x%08lx (irq %d) found and attached\n",
--	       hil_dev.dev->name, kbid, HILBASE, HIL_IRQ);
-+	pr_info("%s, ID %d at 0x%08lx (irq %d) found and attached\n",
-+		hil_dev.dev->name, kbid, HILBASE, HIL_IRQ);
- 
- 	return 0;
- 
-@@ -306,8 +308,8 @@ static int __devinit hil_probe_chip(struct parisc_device *dev)
- 		return -ENODEV;
- 
- 	if (!dev->irq) {
--		printk(KERN_WARNING "HIL: IRQ not found for HIL bus at 0x%p\n",
--			(void *)dev->hpa.start);
-+		pr_warning("IRQ not found for HIL bus at 0x%p\n",
-+			   (void *)dev->hpa.start);
- 		return -ENODEV;
- 	}
- 
-@@ -315,7 +317,7 @@ static int __devinit hil_probe_chip(struct parisc_device *dev)
- 	hil_irq  = dev->irq;
- 	hil_dev.dev_id = dev;
- 
--	printk(KERN_INFO "Found HIL bus at 0x%08lx, IRQ %d\n", hil_base, hil_irq);
-+	pr_info("Found HIL bus at 0x%08lx, IRQ %d\n", hil_base, hil_irq);
- 
- 	return hil_keyb_init();
- }
-@@ -368,12 +370,12 @@ static int __init hil_init(void)
- 		return -ENODEV;
- 
- 	if (!hwreg_present((void *)(HILBASE + HIL_DATA))) {
--		printk(KERN_ERR "HIL: hardware register was not found\n");
-+		pr_err("hardware register was not found\n");
- 		return -ENODEV;
- 	}
- 
- 	if (!request_region(HILBASE + HIL_DATA, 2, "hil")) {
--		printk(KERN_ERR "HIL: IOPORT region already used\n");
-+		pr_err("IOPORT region already used\n");
- 		return -EIO;
- 	}
- 
-diff --git a/drivers/input/keyboard/jornada680_kbd.c b/drivers/input/keyboard/jornada680_kbd.c
-index 5fc976d..e2c7112 100644
---- a/drivers/input/keyboard/jornada680_kbd.c
-+++ b/drivers/input/keyboard/jornada680_kbd.c
-@@ -16,6 +16,8 @@
-  * published by the Free Software Foundation.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/init.h>
- #include <linux/input.h>
- #include <linux/input-polldev.h>
-@@ -231,8 +233,7 @@ static int __devinit jornada680kbd_probe(struct platform_device *pdev)
- 	return 0;
- 
-  failed:
--	printk(KERN_ERR "Jornadakbd: failed to register driver, error: %d\n",
--		error);
-+	pr_err("failed to register driver, error: %d\n", error);
- 	platform_set_drvdata(pdev, NULL);
- 	input_free_polled_device(poll_dev);
- 	kfree(jornadakbd);
-diff --git a/drivers/input/keyboard/jornada720_kbd.c b/drivers/input/keyboard/jornada720_kbd.c
-index 2cd3e1d..f1995d8 100644
---- a/drivers/input/keyboard/jornada720_kbd.c
-+++ b/drivers/input/keyboard/jornada720_kbd.c
-@@ -15,6 +15,9 @@
-  * published by the Free Software Foundation.
-  *
-  */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/device.h>
- #include <linux/errno.h>
- #include <linux/interrupt.h>
-@@ -67,9 +70,8 @@ static irqreturn_t jornada720_kbd_interrupt(int irq, void *dev_id)
- 
- 	if (jornada_ssp_inout(GETSCANKEYCODE) != TXDUMMY) {
- 		printk(KERN_DEBUG
--			"jornada720_kbd: "
--			"GetKeycode command failed with ETIMEDOUT, "
--			"flushed bus\n");
-+		       pr_fmt("GetKeycode command failed with ETIMEDOUT, "
-+			      "flushed bus\n"));
- 	} else {
- 		/* How many keycodes are waiting for us? */
- 		count = jornada_ssp_byte(TXDUMMY);
-@@ -132,7 +134,7 @@ static int __devinit jornada720_kbd_probe(struct platform_device *pdev)
- 			  IRQF_DISABLED | IRQF_TRIGGER_FALLING,
- 			  "jornadakbd", pdev);
- 	if (err) {
--		printk(KERN_INFO "jornadakbd720_kbd: Unable to grab IRQ\n");
-+		pr_info("Unable to grab IRQ\n");
- 		goto fail1;
- 	}
- 
-diff --git a/drivers/input/keyboard/lkkbd.c b/drivers/input/keyboard/lkkbd.c
-index fa9bb6d..41d3770 100644
---- a/drivers/input/keyboard/lkkbd.c
-+++ b/drivers/input/keyboard/lkkbd.c
-@@ -61,6 +61,8 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/module.h>
-@@ -105,9 +107,9 @@ MODULE_PARM_DESC(lk201_compose_is_alt,
- 
- #undef LKKBD_DEBUG
- #ifdef LKKBD_DEBUG
--#define DBG(x...) printk(x)
-+#define DBG(format, arg...) pr_info(format, ##arg)
+ 	/* suppress uevent if the disk supresses it */
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index a5a472b..c1a62c5 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -16,6 +16,7 @@
+ # define __release(x)	__context__(x,-1)
+ # define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
+ # define __percpu	__attribute__((noderef, address_space(3)))
++# define __rcu
+ extern void __chk_user_ptr(const volatile void __user *);
+ extern void __chk_io_ptr(const volatile void __iomem *);
  #else
--#define DBG(x...) do {} while (0)
-+#define DBG(format, arg...) do { if (0) pr_info(format, ##arg); } while (0)
+@@ -34,6 +35,7 @@ extern void __chk_io_ptr(const volatile void __iomem *);
+ # define __release(x) (void)0
+ # define __cond_lock(x,c) (c)
+ # define __percpu
++# define __rcu
  #endif
  
- /* LED control */
-@@ -384,18 +386,16 @@ static void lkkbd_detection_done(struct lkkbd *lk)
- 
- 	default:
- 		strlcpy(lk->name, "Unknown DEC keyboard", sizeof(lk->name));
--		printk(KERN_ERR
--			"lkkbd: keyboard on %s is unknown, please report to "
-+		pr_err("keyboard on %s is unknown, please report to "
- 			"Jan-Benedict Glaw <jbglaw@lug-owl.de>\n", lk->phys);
--		printk(KERN_ERR "lkkbd: keyboard ID'ed as:");
-+		pr_err("keyboard ID'ed as:");
- 		for (i = 0; i < LK_NUM_IGNORE_BYTES; i++)
--			printk(" 0x%02x", lk->id[i]);
--		printk("\n");
-+			pr_cont(" 0x%02x", lk->id[i]);
-+		pr_cont("\n");
- 		break;
- 	}
- 
--	printk(KERN_INFO "lkkbd: keyboard on %s identified as: %s\n",
--		lk->phys, lk->name);
-+	pr_info("keyboard on %s identified as: %s\n", lk->phys, lk->name);
- 
- 	/*
- 	 * Report errors during keyboard boot-up.
-@@ -406,20 +406,18 @@ static void lkkbd_detection_done(struct lkkbd *lk)
- 		break;
- 
- 	case LK_STUCK_KEY:
--		printk(KERN_ERR "lkkbd: Stuck key on keyboard at %s\n",
-+		pr_err("Stuck key on keyboard at %s\n",
- 			lk->phys);
- 		break;
- 
- 	case LK_SELFTEST_FAILED:
--		printk(KERN_ERR
--			"lkkbd: Selftest failed on keyboard at %s, "
--			"keyboard may not work properly\n", lk->phys);
-+		pr_err("Selftest failed on keyboard at %s, "
-+		       "keyboard may not work properly\n", lk->phys);
- 		break;
- 
- 	default:
--		printk(KERN_ERR
--			"lkkbd: Unknown error %02x on keyboard at %s\n",
--			lk->id[2], lk->phys);
-+		pr_err("Unknown error %02x on keyboard at %s\n",
-+		       lk->id[2], lk->phys);
- 		break;
- 	}
- 
-@@ -427,9 +425,8 @@ static void lkkbd_detection_done(struct lkkbd *lk)
- 	 * Try to hint user if there's a stuck key.
- 	 */
- 	if (lk->id[2] == LK_STUCK_KEY && lk->id[3] != 0)
--		printk(KERN_ERR
--			"Scancode of stuck key is 0x%02x, keycode is 0x%04x\n",
--			lk->id[3], lk->keycode[lk->id[3]]);
-+		pr_err("Scancode of stuck key is 0x%02x, keycode is 0x%04x\n",
-+		       lk->id[3], lk->keycode[lk->id[3]]);
- }
- 
- /*
-@@ -444,10 +441,10 @@ static irqreturn_t lkkbd_interrupt(struct serio *serio,
- 	unsigned int keycode;
- 	int i;
- 
--	DBG(KERN_INFO "Got byte 0x%02x\n", data);
-+	DBG("Got byte 0x%02x\n", data);
- 
- 	if (lk->ignore_bytes > 0) {
--		DBG(KERN_INFO "Ignoring a byte on %s\n", lk->name);
-+		DBG("Ignoring a byte on %s\n", lk->name);
- 		lk->id[LK_NUM_IGNORE_BYTES - lk->ignore_bytes--] = data;
- 
- 		if (lk->ignore_bytes == 0)
-@@ -464,7 +461,7 @@ static irqreturn_t lkkbd_interrupt(struct serio *serio,
- 		break;
- 
- 	case 0x01:
--		DBG(KERN_INFO "Got 0x01, scheduling re-initialization\n");
-+		DBG("Got 0x01, scheduling re-initialization\n");
- 		lk->ignore_bytes = LK_NUM_IGNORE_BYTES;
- 		lk->id[LK_NUM_IGNORE_BYTES - lk->ignore_bytes--] = data;
- 		schedule_work(&lk->tq);
-@@ -478,8 +475,10 @@ static irqreturn_t lkkbd_interrupt(struct serio *serio,
- 	case LK_PREFIX_KEY_DOWN:
- 	case LK_MODE_CHANGE_ACK:
- 	case LK_RESPONSE_RESERVED:
--		DBG(KERN_INFO "Got %s and don't know how to handle...\n",
--			response_name(data));
-+#ifdef LKKBD_DEBUG
-+		DBG("Got %s and don't know how to handle...\n",
-+		    response_name(data));
-+#endif
- 		break;
- 
- 	default:
-@@ -489,9 +488,8 @@ static irqreturn_t lkkbd_interrupt(struct serio *serio,
- 					 !test_bit(keycode, input_dev->key));
- 			input_sync(input_dev);
- 		} else {
--			printk(KERN_WARNING
--				"%s: Unknown key with scancode 0x%02x on %s.\n",
--				__FILE__, data, lk->name);
-+			pr_warning("Unknown key with scancode 0x%02x on %s\n",
-+				   data, lk->name);
- 		}
- 	}
- 
-@@ -565,7 +563,7 @@ static int lkkbd_event(struct input_dev *dev,
- 		break;
- 
- 	default:
--		printk(KERN_ERR "%s(): Got unknown type %d, code %d, value %d\n",
-+		pr_err("%s(): Got unknown type %d, code %d, value %d\n",
- 			__func__, type, code, value);
- 	}
- 
-diff --git a/drivers/input/keyboard/locomokbd.c b/drivers/input/keyboard/locomokbd.c
-index b1ab298..01e60bd 100644
---- a/drivers/input/keyboard/locomokbd.c
-+++ b/drivers/input/keyboard/locomokbd.c
-@@ -23,6 +23,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/slab.h>
- #include <linux/module.h>
+ #ifdef __KERNEL__
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 013dc52..551671e 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -11,6 +11,7 @@
+ #include <linux/rcupdate.h>
+ #include <linux/types.h>
  #include <linux/init.h>
-@@ -254,7 +256,7 @@ static int __devinit locomokbd_probe(struct locomo_dev *dev)
- 				dev->length,
- 				LOCOMO_DRIVER_NAME(dev))) {
- 		err = -EBUSY;
--		printk(KERN_ERR "locomokbd: Can't acquire access to io memory for keyboard\n");
-+		pr_err("Can't acquire access to io memory for keyboard\n");
- 		goto err_free_mem;
- 	}
++#include <linux/fs.h>
  
-@@ -299,7 +301,7 @@ static int __devinit locomokbd_probe(struct locomo_dev *dev)
- 	/* attempt to get the interrupt */
- 	err = request_irq(dev->irq[0], locomokbd_interrupt, 0, "locomokbd", locomokbd);
- 	if (err) {
--		printk(KERN_ERR "locomokbd: Can't get irq for keyboard\n");
-+		pr_err("Can't get irq for keyboard\n");
- 		goto err_release_region;
- 	}
+ #include <asm/atomic.h>
  
-diff --git a/drivers/input/keyboard/newtonkbd.c b/drivers/input/keyboard/newtonkbd.c
-index 48d1cab..2b60858 100644
---- a/drivers/input/keyboard/newtonkbd.c
-+++ b/drivers/input/keyboard/newtonkbd.c
-@@ -26,6 +26,8 @@
-  * Justin Cormack, 68 Dartmouth Park Road, London NW5 1SN, UK.
-  */
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index b653b4a..9fbc54a 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -40,6 +40,7 @@
+ #include <linux/seqlock.h>
+ #include <linux/lockdep.h>
+ #include <linux/completion.h>
++#include <linux/debugobjects.h>
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/input.h>
-@@ -76,7 +78,7 @@ static irqreturn_t nkbd_interrupt(struct serio *serio,
- 	}
+ #ifdef CONFIG_RCU_TORTURE_TEST
+ extern int rcutorture_runnable; /* for sysctl */
+@@ -79,6 +80,16 @@ extern void rcu_init(void);
+        (ptr)->next = NULL; (ptr)->func = NULL; \
+ } while (0)
  
- 	else if (data == 0xe7) /* end of init sequence */
--		printk(KERN_INFO "input: %s on %s\n", nkbd->dev->name, serio->phys);
-+		pr_info("%s on %s\n", nkbd->dev->name, serio->phys);
- 	return IRQ_HANDLED;
- 
- }
-diff --git a/drivers/input/keyboard/omap-keypad.c b/drivers/input/keyboard/omap-keypad.c
-index a72e61d..2b85872 100644
---- a/drivers/input/keyboard/omap-keypad.c
-+++ b/drivers/input/keyboard/omap-keypad.c
-@@ -24,6 +24,8 @@
-  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
-@@ -195,15 +197,14 @@ static void omap_kp_tasklet(unsigned long data)
- 			if (!(changed & (1 << row)))
- 				continue;
- #ifdef NEW_BOARD_LEARNING_MODE
--			printk(KERN_INFO "omap-keypad: key %d-%d %s\n", col,
--			       row, (new_state[col] & (1 << row)) ?
--			       "pressed" : "released");
-+			pr_info("key %d-%d %s\n",
-+				col, row, (new_state[col] & (1 << row)) ?
-+				"pressed" : "released");
- #else
- 			key = omap_kp_find_key(col, row);
- 			if (key < 0) {
--				printk(KERN_WARNING
--				      "omap-keypad: Spurious key event %d-%d\n",
--				       col, row);
-+				pr_warning("Spurious key event %d-%d\n",
-+					   col, row);
- 				/* We scan again after a couple of seconds */
- 				spurious = 1;
- 				continue;
-@@ -300,7 +301,7 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
- 	int i, col_idx, row_idx, irq_idx, ret;
- 
- 	if (!pdata->rows || !pdata->cols || !pdata->keymap) {
--		printk(KERN_ERR "No rows, cols or keymap from pdata\n");
-+		pr_err("No rows, cols or keymap from pdata\n");
- 		return -EINVAL;
- 	}
- 
-@@ -340,8 +341,7 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
- 		/* Cols: outputs */
- 		for (col_idx = 0; col_idx < omap_kp->cols; col_idx++) {
- 			if (gpio_request(col_gpios[col_idx], "omap_kp_col") < 0) {
--				printk(KERN_ERR "Failed to request"
--				       "GPIO%d for keypad\n",
-+				pr_err("Failed to request GPIO%d for keypad\n",
- 				       col_gpios[col_idx]);
- 				goto err1;
- 			}
-@@ -350,8 +350,7 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
- 		/* Rows: inputs */
- 		for (row_idx = 0; row_idx < omap_kp->rows; row_idx++) {
- 			if (gpio_request(row_gpios[row_idx], "omap_kp_row") < 0) {
--				printk(KERN_ERR "Failed to request"
--				       "GPIO%d for keypad\n",
-+				pr_err("Failed to request GPIO%d for keypad\n",
- 				       row_gpios[row_idx]);
- 				goto err2;
- 			}
-@@ -387,7 +386,7 @@ static int __devinit omap_kp_probe(struct platform_device *pdev)
- 
- 	ret = input_register_device(omap_kp->input);
- 	if (ret < 0) {
--		printk(KERN_ERR "Unable to register omap-keypad input device\n");
-+		pr_err("Unable to register omap-keypad input device\n");
- 		goto err3;
- 	}
- 
-@@ -478,7 +477,7 @@ static struct platform_driver omap_kp_driver = {
- 
- static int __init omap_kp_init(void)
++/*
++ * init_rcu_head_on_stack()/destroy_rcu_head_on_stack() are needed for dynamic
++ * initialization and destruction of rcu_head on the stack. rcu_head structures
++ * allocated dynamically in the heap or defined statically don't need any
++ * initialization.
++ */
++#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++extern void init_rcu_head_on_stack(struct rcu_head *head);
++extern void destroy_rcu_head_on_stack(struct rcu_head *head);
++#else /* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+ static inline void init_rcu_head_on_stack(struct rcu_head *head)
  {
--	printk(KERN_INFO "OMAP Keypad Driver\n");
-+	pr_info("OMAP Keypad Driver\n");
- 	return platform_driver_register(&omap_kp_driver);
  }
+@@ -86,6 +97,7 @@ static inline void init_rcu_head_on_stack(struct rcu_head *head)
+ static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
+ {
+ }
++#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
  
-diff --git a/drivers/input/keyboard/sunkbd.c b/drivers/input/keyboard/sunkbd.c
-index a99a04b..41216ca 100644
---- a/drivers/input/keyboard/sunkbd.c
-+++ b/drivers/input/keyboard/sunkbd.c
-@@ -26,6 +26,8 @@
-  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
-  */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
  
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+@@ -517,4 +529,74 @@ extern void call_rcu(struct rcu_head *head,
+ extern void call_rcu_bh(struct rcu_head *head,
+ 			void (*func)(struct rcu_head *head));
+ 
++/*
++ * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
++ * by call_rcu() and rcu callback execution, and are therefore not part of the
++ * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
++ */
 +
- #include <linux/delay.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
-@@ -137,10 +139,9 @@ static irqreturn_t sunkbd_interrupt(struct serio *serio,
- 					 !(data & SUNKBD_RELEASE));
- 			input_sync(sunkbd->dev);
- 		} else {
--			printk(KERN_WARNING
--				"sunkbd.c: Unknown key (scancode %#x) %s.\n",
--				data & SUNKBD_KEY,
--				data & SUNKBD_RELEASE ? "released" : "pressed");
-+			pr_warning("Unknown key (scancode %#x) %s.\n",
-+				   data & SUNKBD_KEY,
-+				   data & SUNKBD_RELEASE ? "released" : "pressed");
- 		}
- 	}
- out:
-diff --git a/drivers/input/keyboard/xtkbd.c b/drivers/input/keyboard/xtkbd.c
-index 37b01d7..292110b 100644
---- a/drivers/input/keyboard/xtkbd.c
-+++ b/drivers/input/keyboard/xtkbd.c
-@@ -26,6 +26,8 @@
-  * Vojtech Pavlik, Simunkova 1594, Prague 8, 182 00 Czech Republic
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++# define STATE_RCU_HEAD_READY	0
++# define STATE_RCU_HEAD_QUEUED	1
 +
- #include <linux/slab.h>
- #include <linux/module.h>
- #include <linux/input.h>
-@@ -76,8 +78,9 @@ static irqreturn_t xtkbd_interrupt(struct serio *serio,
- 				input_report_key(xtkbd->dev, xtkbd->keycode[data & XTKBD_KEY], !(data & XTKBD_RELEASE));
- 				input_sync(xtkbd->dev);
- 			} else {
--				printk(KERN_WARNING "xtkbd.c: Unknown key (scancode %#x) %s.\n",
--					data & XTKBD_KEY, data & XTKBD_RELEASE ? "released" : "pressed");
-+				pr_warning("Unknown key (scancode %#x) %s\n",
-+					   data & XTKBD_KEY,
-+					   data & XTKBD_RELEASE ? "released" : "pressed");
- 			}
++extern struct debug_obj_descr rcuhead_debug_descr;
++
++static inline void debug_rcu_head_queue(struct rcu_head *head)
++{
++	debug_object_activate(head, &rcuhead_debug_descr);
++	debug_object_active_state(head, &rcuhead_debug_descr,
++				  STATE_RCU_HEAD_READY,
++				  STATE_RCU_HEAD_QUEUED);
++}
++
++static inline void debug_rcu_head_unqueue(struct rcu_head *head)
++{
++	debug_object_active_state(head, &rcuhead_debug_descr,
++				  STATE_RCU_HEAD_QUEUED,
++				  STATE_RCU_HEAD_READY);
++	debug_object_deactivate(head, &rcuhead_debug_descr);
++}
++#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
++static inline void debug_rcu_head_queue(struct rcu_head *head)
++{
++}
++
++static inline void debug_rcu_head_unqueue(struct rcu_head *head)
++{
++}
++#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
++
++#ifndef CONFIG_PROVE_RCU
++#define __do_rcu_dereference_check(c) do { } while (0)
++#endif /* #ifdef CONFIG_PROVE_RCU */
++
++#define __rcu_dereference_index_check(p, c) \
++	({ \
++		typeof(p) _________p1 = ACCESS_ONCE(p); \
++		__do_rcu_dereference_check(c); \
++		smp_read_barrier_depends(); \
++		(_________p1); \
++	})
++
++/**
++ * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
++ * @p: The pointer to read, prior to dereferencing
++ * @c: The conditions under which the dereference will take place
++ *
++ * Similar to rcu_dereference_check(), but omits the sparse checking.
++ * This allows rcu_dereference_index_check() to be used on integers,
++ * which can then be used as array indices.  Attempting to use
++ * rcu_dereference_check() on an integer will give compiler warnings
++ * because the sparse address-space mechanism relies on dereferencing
++ * the RCU-protected pointer.  Dereferencing integers is not something
++ * that even gcc will put up with.
++ *
++ * Note that this function does not implicitly check for RCU read-side
++ * critical sections.  If this function gains lots of uses, it might
++ * make sense to provide versions for each flavor of RCU, but it does
++ * not make sense as of early 2010.
++ */
++#define rcu_dereference_index_check(p, c) \
++	__rcu_dereference_index_check((p), (c))
++
+ #endif /* __LINUX_RCUPDATE_H */
+diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+index 9466e86..d0f7c81 100644
+--- a/include/linux/workqueue.h
++++ b/include/linux/workqueue.h
+@@ -297,4 +297,8 @@ static inline long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg)
+ #else
+ long work_on_cpu(unsigned int cpu, long (*fn)(void *), void *arg);
+ #endif /* CONFIG_SMP */
++
++#ifdef CONFIG_LOCKDEP
++int in_workqueue_context(struct workqueue_struct *wq);
++#endif
+ #endif
+diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
+index 72a8dc9..4d16983 100644
+--- a/kernel/rcupdate.c
++++ b/kernel/rcupdate.c
+@@ -114,3 +114,163 @@ int rcu_my_thread_group_empty(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_my_thread_group_empty);
+ #endif /* #ifdef CONFIG_PROVE_RCU */
++
++#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
++static inline void debug_init_rcu_head(struct rcu_head *head)
++{
++	debug_object_init(head, &rcuhead_debug_descr);
++}
++
++static inline void debug_rcu_head_free(struct rcu_head *head)
++{
++	debug_object_free(head, &rcuhead_debug_descr);
++}
++
++/*
++ * fixup_init is called when:
++ * - an active object is initialized
++ */
++static int rcuhead_fixup_init(void *addr, enum debug_obj_state state)
++{
++	struct rcu_head *head = addr;
++
++	switch (state) {
++	case ODEBUG_STATE_ACTIVE:
++		/*
++		 * Ensure that queued callbacks are all executed.
++		 * If we detect that we are nested in a RCU read-side critical
++		 * section, we should simply fail, otherwise we would deadlock.
++		 */
++		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
++		    irqs_disabled()) {
++			WARN_ON(1);
++			return 0;
++		}
++		rcu_barrier();
++		rcu_barrier_sched();
++		rcu_barrier_bh();
++		debug_object_init(head, &rcuhead_debug_descr);
++		return 1;
++	default:
++		return 0;
++	}
++}
++
++/*
++ * fixup_activate is called when:
++ * - an active object is activated
++ * - an unknown object is activated (might be a statically initialized object)
++ * Activation is performed internally by call_rcu().
++ */
++static int rcuhead_fixup_activate(void *addr, enum debug_obj_state state)
++{
++	struct rcu_head *head = addr;
++
++	switch (state) {
++
++	case ODEBUG_STATE_NOTAVAILABLE:
++		/*
++		 * This is not really a fixup. We just make sure that it is
++		 * tracked in the object tracker.
++		 */
++		debug_object_init(head, &rcuhead_debug_descr);
++		debug_object_activate(head, &rcuhead_debug_descr);
++		return 0;
++
++	case ODEBUG_STATE_ACTIVE:
++		/*
++		 * Ensure that queued callbacks are all executed.
++		 * If we detect that we are nested in a RCU read-side critical
++		 * section, we should simply fail, otherwise we would deadlock.
++		 */
++		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
++		    irqs_disabled()) {
++			WARN_ON(1);
++			return 0;
++		}
++		rcu_barrier();
++		rcu_barrier_sched();
++		rcu_barrier_bh();
++		debug_object_activate(head, &rcuhead_debug_descr);
++		return 1;
++	default:
++		return 0;
++	}
++}
++
++/*
++ * fixup_free is called when:
++ * - an active object is freed
++ */
++static int rcuhead_fixup_free(void *addr, enum debug_obj_state state)
++{
++	struct rcu_head *head = addr;
++
++	switch (state) {
++	case ODEBUG_STATE_ACTIVE:
++		/*
++		 * Ensure that queued callbacks are all executed.
++		 * If we detect that we are nested in a RCU read-side critical
++		 * section, we should simply fail, otherwise we would deadlock.
++		 */
++#ifndef CONFIG_PREEMPT
++		WARN_ON(1);
++		return 0;
++#else
++		if (rcu_preempt_depth() != 0 || preempt_count() != 0 ||
++		    irqs_disabled()) {
++			WARN_ON(1);
++			return 0;
++		}
++		rcu_barrier();
++		rcu_barrier_sched();
++		rcu_barrier_bh();
++		debug_object_free(head, &rcuhead_debug_descr);
++		return 1;
++#endif
++	default:
++		return 0;
++	}
++}
++
++/**
++ * init_rcu_head_on_stack() - initialize on-stack rcu_head for debugobjects
++ * @head: pointer to rcu_head structure to be initialized
++ *
++ * This function informs debugobjects of a new rcu_head structure that
++ * has been allocated as an auto variable on the stack.  This function
++ * is not required for rcu_head structures that are statically defined or
++ * that are dynamically allocated on the heap.  This function has no
++ * effect for !CONFIG_DEBUG_OBJECTS_RCU_HEAD kernel builds.
++ */
++void init_rcu_head_on_stack(struct rcu_head *head)
++{
++	debug_object_init_on_stack(head, &rcuhead_debug_descr);
++}
++EXPORT_SYMBOL_GPL(init_rcu_head_on_stack);
++
++/**
++ * destroy_rcu_head_on_stack() - destroy on-stack rcu_head for debugobjects
++ * @head: pointer to rcu_head structure to be initialized
++ *
++ * This function informs debugobjects that an on-stack rcu_head structure
++ * is about to go out of scope.  As with init_rcu_head_on_stack(), this
++ * function is not required for rcu_head structures that are statically
++ * defined or that are dynamically allocated on the heap.  Also as with
++ * init_rcu_head_on_stack(), this function has no effect for
++ * !CONFIG_DEBUG_OBJECTS_RCU_HEAD kernel builds.
++ */
++void destroy_rcu_head_on_stack(struct rcu_head *head)
++{
++	debug_object_free(head, &rcuhead_debug_descr);
++}
++EXPORT_SYMBOL_GPL(destroy_rcu_head_on_stack);
++
++struct debug_obj_descr rcuhead_debug_descr = {
++	.name = "rcu_head",
++	.fixup_init = rcuhead_fixup_init,
++	.fixup_activate = rcuhead_fixup_activate,
++	.fixup_free = rcuhead_fixup_free,
++};
++EXPORT_SYMBOL_GPL(rcuhead_debug_descr);
++#endif /* #ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index 38729d3..196ec02 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -169,6 +169,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ 	while (list) {
+ 		next = list->next;
+ 		prefetch(next);
++		debug_rcu_head_unqueue(list);
+ 		list->func(list);
+ 		list = next;
  	}
- 	return IRQ_HANDLED;
--- 
-1.7.2.19.g9a302
-
+@@ -211,6 +212,7 @@ static void __call_rcu(struct rcu_head *head,
+ {
+ 	unsigned long flags;
+ 
++	debug_rcu_head_queue(head);
+ 	head->func = func;
+ 	head->next = NULL;
+ 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index d443734..d5bc439 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -1112,6 +1112,7 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
+ 	while (list) {
+ 		next = list->next;
+ 		prefetch(next);
++		debug_rcu_head_unqueue(list);
+ 		list->func(list);
+ 		list = next;
+ 		if (++count >= rdp->blimit)
+@@ -1388,6 +1389,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	unsigned long flags;
+ 	struct rcu_data *rdp;
+ 
++	debug_rcu_head_queue(head);
+ 	head->func = func;
+ 	head->next = NULL;
+ 
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 327d2de..59fef15 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -68,6 +68,21 @@ struct workqueue_struct {
+ #endif
+ };
+ 
++#ifdef CONFIG_LOCKDEP
++/**
++ * in_workqueue_context() - in context of specified workqueue?
++ * @wq: the workqueue of interest
++ *
++ * Checks lockdep state to see if the current task is executing from
++ * within a workqueue item.  This function exists only if lockdep is
++ * enabled.
++ */
++int in_workqueue_context(struct workqueue_struct *wq)
++{
++	return lock_is_held(&wq->lockdep_map);
++}
++#endif
++
+ #ifdef CONFIG_DEBUG_OBJECTS_WORK
+ 
+ static struct debug_obj_descr work_debug_descr;
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index e722e9d..142faa2 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -307,6 +307,12 @@ config DEBUG_OBJECTS_WORK
+ 	  work queue routines to track the life time of work objects and
+ 	  validate the work operations.
+ 
++config DEBUG_OBJECTS_RCU_HEAD
++	bool "Debug RCU callbacks objects"
++	depends on DEBUG_OBJECTS && PREEMPT
++	help
++	  Enable this to turn on debugging of RCU list heads (call_rcu() usage).
++
+ config DEBUG_OBJECTS_ENABLE_DEFAULT
+ 	int "debug_objects bootup default value (0-1)"
+         range 0 1
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 660a87a..42f6d20 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -668,7 +668,6 @@ int bdi_init(struct backing_dev_info *bdi)
+ 	bdi->max_ratio = 100;
+ 	bdi->max_prop_frac = PROP_FRAC_BASE;
+ 	spin_lock_init(&bdi->wb_lock);
+-	INIT_RCU_HEAD(&bdi->rcu_head);
+ 	INIT_LIST_HEAD(&bdi->bdi_list);
+ 	INIT_LIST_HEAD(&bdi->wb_list);
+ 	INIT_LIST_HEAD(&bdi->work_list);
+diff --git a/mm/slob.c b/mm/slob.c
+index 23631e2..19d2e5d 100644
+--- a/mm/slob.c
++++ b/mm/slob.c
+@@ -639,7 +639,6 @@ void kmem_cache_free(struct kmem_cache *c, void *b)
+ 	if (unlikely(c->flags & SLAB_DESTROY_BY_RCU)) {
+ 		struct slob_rcu *slob_rcu;
+ 		slob_rcu = b + (c->size - sizeof(struct slob_rcu));
+-		INIT_RCU_HEAD(&slob_rcu->head);
+ 		slob_rcu->size = c->size;
+ 		call_rcu(&slob_rcu->head, kmem_rcu_free);
+ 	} else {
