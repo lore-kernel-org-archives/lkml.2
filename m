@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934146Ab0HEUsC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:48:02 -0400
-Received: from mail.atheros.com ([12.36.123.2]:49128 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758877Ab0HEUr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:47:59 -0400
-Date: Thu, 5 Aug 2010 13:47:56 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Julia Lawall <julia@diku.dk>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Jouni Malinen <Jouni.Malinen@atheros.com>,
-        Sujith Manoharan <Sujith.Manoharan@atheros.com>,
-        Vasanth Thiagarajan <Vasanth.Thiagarajan@atheros.com>,
-        Senthilkumar Balasubramanian 
-	<Senthilkumar.Balasubramanian@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "ath9k-devel@lists.ath9k.org" <ath9k-devel@venema.h4ckr.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH 33/42] drivers/net/wireless/ath/ath9k: Adjust confusing
- if indentation
-Message-ID: <20100805204756.GA1738@tux>
-References: <Pine.LNX.4.64.1008052226380.31692@ask.diku.dk>
+	id S934055Ab0HEUvS convert rfc822-to-quoted-printable (ORCPT
+	<rfc822;w@1wt.eu>); Thu, 5 Aug 2010 16:51:18 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53511 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155Ab0HEUvN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:51:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=yCY4gm+xfGDU7yg1VXHV/supnVpvLIonMDK+zrNQtcfygISmKDxZVFwjhn0nSrXlf1
+         Gzuj62NlDYGUSp8o6Zq1ta10dYk0sgkzl73pQM02CXNDgschc0YiLY2SJMFxOnpIMgWm
+         uPoLMLzGNmKCxb73/SbwrOxgP8Msv6vSrzd9g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008052226380.31692@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1008052229390.31692@ask.diku.dk>
+References: <Pine.LNX.4.64.1008052229390.31692@ask.diku.dk>
+Date: Thu, 5 Aug 2010 22:51:12 +0200
+Message-ID: <AANLkTi=YauQBWyZnGpuBtQpNq=Re8WUXY9mH6FSFMP+7@mail.gmail.com>
+Subject: Re: [PATCH 42/42] drivers/media/video/bt8xx: Adjust confusing if 
+	indentation
+From: Luca Tettamanti <kronos.it@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from QUOTED-PRINTABLE to 8bit by mail.home.local id o75KqdOV021014
 
-On Thu, Aug 05, 2010 at 01:26:56PM -0700, Julia Lawall wrote:
+Hi,
+one minor comment:
+
+On Thu, Aug 5, 2010 at 10:29 PM, Julia Lawall <julia@diku.dk> wrote:
 > From: Julia Lawall <julia@diku.dk>
-> 
-> Outdent the code following the if.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r disable braces4@
-> position p1,p2;
-> statement S1,S2;
-> @@
-> 
-> (
-> if (...) { ... }
-> |
-> if (...) S1@p1 S2@p2
-> )
-> 
-> @script:python@
-> p1 << r.p1;
-> p2 << r.p2;
-> @@
-> 
-> if (p1[0].column == p2[0].column):
->   cocci.print_main("branch",p1)
->   cocci.print_secs("after",p2)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+>
+> Indent the branch of an if.
+[...]
+> diff --git a/drivers/media/video/bt8xx/bttv-i2c.c b/drivers/media/video/bt8xx/bttv-i2c.c
+> index 685d659..695765c 100644
+> --- a/drivers/media/video/bt8xx/bttv-i2c.c
+> +++ b/drivers/media/video/bt8xx/bttv-i2c.c
+> @@ -123,7 +123,7 @@ bttv_i2c_wait_done(struct bttv *btv)
+>        if (wait_event_interruptible_timeout(btv->i2c_queue,
+>                btv->i2c_done, msecs_to_jiffies(85)) == -ERESTARTSYS)
+>
+> -       rc = -EIO;
+> +               rc = -EIO;
 
-Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+I'd also remove the empty line before the indented statement, it's confusing...
 
-> ---
-> This patch doesn't change the semantics of the code.  But it might not be
-> what is intended.
-
-Your patch is correct, it wast a tab goof, thanks for fixing this.
-
-  Luis
+Luca
