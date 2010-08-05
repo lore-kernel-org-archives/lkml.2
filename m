@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013Ab0HEVR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 17:17:28 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:1825 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab0HEVRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 17:17:24 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 17:17:24 EDT
-X-IronPort-AV: E=Sophos;i="4.55,324,1278302400"; 
-   d="scan'208";a="9667362"
-Subject: Re: commit "xen/blkfront: use tagged queuing for barriers"
-From: Daniel Stodden <daniel.stodden@citrix.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kraxel@redhat.com" <kraxel@redhat.com>
-In-Reply-To: <20100805171944.GA28446@infradead.org>
-References: <20100804115124.GA1496@infradead.org>
-	 <4C596252.9010806@fusionio.com> <20100804164441.GA7838@infradead.org>
-	 <4C5AF01C.3040601@goop.org>  <20100805171944.GA28446@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 5 Aug 2010 14:07:42 -0700
-Message-ID: <1281042462.4659.87.camel@agari.van.xensource.com>
+	id S933660Ab0HEVUs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 17:20:48 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:34356 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab0HEVUn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 17:20:43 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner  comment
+References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk>
+	<20100729114555.29508.4525.stgit@warthog.procyon.org.uk>
+	<20100802204000.GH2405@linux.vnet.ibm.com>
+	<201008030055.o730tgXK091413@www262.sakura.ne.jp>
+	<30552.1280828047@redhat.com>
+	<AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
+	<m1d3txzfuq.fsf@fess.ebiederm.org>
+	<AANLkTikavQKkvmdY5=8jh8KSV7vit=WcmDHWjnZfVWnv@mail.gmail.com>
+	<m1zkx04y40.fsf@fess.ebiederm.org>
+	<AANLkTim=VMoC+wG6Hikzic95Avooi=-9Fu=mjSCxNXEZ@mail.gmail.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 05 Aug 2010 14:20:36 -0700
+In-Reply-To: <AANLkTim=VMoC+wG6Hikzic95Avooi=-9Fu=mjSCxNXEZ@mail.gmail.com> (Linus Torvalds's message of "Thu\, 5 Aug 2010 13\:26\:21 -0700")
+Message-ID: <m1lj8k21uj.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 13:19 -0400, Christoph Hellwig wrote:
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-> > blkback - the in-kernel backend - does generate barriers when it
-> > receives one from the guest.  Could you expand on why passing a
-> > guest barrier through to the host IO stack would be bad for
-> > performance?  Isn't this exactly the same as a local writer
-> > generating a barrier?
-> 
-> If you pass it on it has the same semantics, but given that you'll
-> usually end up having multiple guest disks on a single volume using
-> lvm or similar you'll end up draining even more I/O as there is one
-> queue for all of them.  That way you can easily have one guest starve
-> others.
+> On Thu, Aug 5, 2010 at 1:13 PM, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>
+>> I think it is totally reasonable to add a per pid lock,
+>> that would protect the pid->task[...] hlist.  That would make
+>> things clearer and finer grained without a lot of effort.  Just
+>> a little more struct pid bloat, and a little extra care in fork,
+>> when we add to those lists.
+>
+> Hmm. Have you taken a look at Nick Piggin's VFS scalability patches?
+> They introduce this "RCU-safe hash chain lock", where each hashchain
+> has a lock-bit in the low bit. I wonder if that would be the right
+> thing to use?
 
-> > >Now where both old and new one are buggy is that that they don't
-> > >include the QUEUE_ORDERED_DO_PREFLUSH  and
-> > >QUEUE_ORDERED_DO_POSTFLUSH/QUEUE_ORDERED_DO_FUA which mean any
-> > >explicit cache flush (aka empty barrier) is silently dropped, making
-> > >fsync and co not preserve data integrity.
-> > 
-> > Ah, OK, something specific.  What level ends up dropping the empty
-> > barrier?  Certainly an empty WRITE_BARRIER operation to the backend
-> > will cause all prior writes to be durable, which should be enough.
-> > Are you saying that there's an extra flag we should be passing to
-> > blk_queue_ordered(), or is there some other interface we should be
-> > implementing for explicit flushes?
-> > 
-> > Is there a good reference implementation we can use as a model?
-> 
-> Just read Documentation/block/barriers.txt, it's very well described
-> there.  Even the naming of the various ORDERED constant should
-> give enough hints.
+Interesting.  I haven't looked but a lock bit in the low bit of the
+hlist head in struct pid would not add any space, and would not add
+any extra cache line bounces.  So that would just be a matter of
+adding the extra locks and getting the lock ordering correct.
 
-That one is read and well understood.
+>> Even with the per-pgrp lock we still need a lock on the global process
+>> list for the kill -KILL -1 case.  Which suggests that tasklist_lock is
+>> still needed for part of kill_something_info.
+>
+> Well, that -1 case is special anyway. The fact that we might want to
+> use the tasklist_lock there is not very relevant, I think. That is
+> _not_ a hotpath, really (at least not under any relevant loads, I'm
+> sure you could make a silly benchmark of "kill(-1,0)").
 
-I presently don't see a  point in having the frontend perform its own
-pre or post flushes as long as there's a single queue in the block
-layer. But if the kernel drops the plain _TAG mode, there is no  problem
-with that. Essentially the frontend may drain the queue as much as as it
-wants. It just won't buy you much if the backend I/O was actually
-buffered, other than adding latency to the transport.
+I expect even signal deliver to process groups is relatively rare.
 
-The only thing which matters is that the frontend lld gets to see the
-actual barrier point, anything else needs to be sorted out next to the
-physical layer anyway, so it's better left to the backends.
+The interesting question is can we kill the tasklist_lock and/or the
+tasklist.   A quick grep shows that we have maybe 100 users of the tasklist
+in the entire kernel.  Poking a little deeper it looks like man of those
+are connected to scheduling and are uses that today take the tasklist_lock
+but would be fine with the rcu_read_lock().
 
-Not sure if I understand your above comment regarding the flush and fua
-bits. Did you mean to indicate that _TAG on the frontend's request_queue
-is presently not coming up with the empty barrier request to make
-_explicit_ cache flushes happen? That would be something which
-definitely needs a workaround in the frontend then. In that case, would
-PRE/POSTFLUSH help, to get a call into prepare_flush_fn, which might
-insert the tag itself then? It's sounds a bit over the top to combine
-this with a queue drain on the transport, but I'm rather after
-correctness.
-
-Regarding the potential starvation problems when accessing shared
-physical storage you mentioned above: Yes, good point, we discussed that
-too, although only briefly, and it's a todo which I don't think has been
-solved in any present backend. But again, scheduling/merging
-drain/flush/fua on shared physical nodes more carefully would be
-something better *enforced*. The frontend can't even avoid it.
-
-I wonder if there's a userspace solution for that. Does e.g. fdatasync()
-deal with independent invocations other than serializing? Couldn't find
-anything which indicates that, but I might not have looked hard enough.
-The blktap userspace component presently doesn't buffer, so a _DRAIN is
-sufficient. But if it did, then it'd be kinda cool if handled more
-carefully. If the kernel does it, all the better.
-
-Thanks,
-Daniel
-
-
+Eric
