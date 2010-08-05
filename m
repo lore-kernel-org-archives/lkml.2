@@ -1,143 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab0HETau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:30:50 -0400
-Received: from mailb.microsoft.com ([131.107.115.215]:25803 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933415Ab0HETaj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:30:39 -0400
-From: Hank Janssen <hjanssen@microsoft.com>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "'gregkh@suse.de'" <gregkh@suse.de>
-Subject: [PATCH 5/5] staging: hv: Gracefully handle SCSI resets
-Thread-Topic: [PATCH 5/5] staging: hv: Gracefully handle SCSI resets
-Thread-Index: Acs01Iknp3eis2yLQZupvE7mjWPj2A==
-Date: Thu, 5 Aug 2010 19:30:37 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FEC8AF@TK5EX14MBXC114.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1759336Ab0HETaz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:30:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51510 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759275Ab0HETas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 15:30:48 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <jens.axboe@kernel.dk>,
+        stable@kernel.org, Bryan Mesich <bryan.mesich@ndsu.edu>,
+        scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, dm-devel@redhat.com,
+        Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and SWRITE to match the corresponding BIO_RW_* bits
+References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>
+	<4C28EFD6.2070203@vlnb.net>
+	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>
+	<4C3EF3AD.5070509@vlnb.net>
+	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>
+	<4C4D7DF5.9060909@vlnb.net>
+	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>
+	<4C5073F3.1060406@vlnb.net> <4C52A98A.7060507@kernel.org>
+	<20100802104227.79340b49@notabene> <4C56D30A.3000403@kernel.org>
+	<x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
+	<4C5B0994.1070203@vlnb.net>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 05 Aug 2010 15:30:20 -0400
+In-Reply-To: <4C5B0994.1070203@vlnb.net> (Vladislav Bolkhovitin's message of
+	"Thu, 05 Aug 2010 22:57:24 +0400")
+Message-ID: <x49lj8kc0xf.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hank Janssen <hjanssen@microsoft.com>
+Vladislav Bolkhovitin <vst@vlnb.net> writes:
 
-If we get a SCSI host bus reset we now gracefully handle it, and we take the
-device offline. This before sometimes caused hangs.
+> Jeff Moyer, on 08/05/2010 10:45 PM wrote:
+>> Tejun Heo<tj@kernel.org>  writes:
+>>
+>>> Commit a82afdf (block: use the same failfast bits for bio and request)
+>>> moved BIO_RW_* bits around such that they match up with REQ_* bits.
+>>> Unfortunately, fs.h hard coded READ, WRITE, READA and SWRITE as 0, 1,
+>>> 2 and 3, and expected them to match with BIO_RW_* bits.  READ/WRITE
+>>> didn't change but BIO_RW_AHEAD was moved to bit 4 instead of bit 1,
+>>> breaking READA and SWRITE.
+>>>
+>>> This patch updates READA and SWRITE such that they match the BIO_RW_*
+>>> bits again.  A follow up patch will update the definitions to directly
+>>> use BIO_RW_* bits so that this kind of breakage won't happen again.
+>>>
+>>> Stable: The offending commit a82afdf was released with v2.6.32, so
+>>> this patch should be applied to all kernels since then but it must
+>>> _NOT_ be applied to kernels earlier than that.
+>>
+>> Would someone be so kind as to remind me how this problem manifests
+>> itself?  I know I read this recently, but my memory and googling skills
+>> are both failing me.  :(
+>
+> See http://lkml.org/lkml/2010/7/28/315 and link inside.
 
-Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
-Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
-Cc: stable <stable@kernel.org>
+Thanks a ton!
 
----
- drivers/staging/hv/storvsc.c |   36 +++++++++++++++++++++++++++++++++++-
- 1 files changed, 35 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/staging/hv/storvsc.c b/drivers/staging/hv/storvsc.c index 6bd2ff1..5f222cf 100644
---- a/drivers/staging/hv/storvsc.c
-+++ b/drivers/staging/hv/storvsc.c
-@@ -48,7 +48,9 @@ struct storvsc_device {
- 
- 	/* 0 indicates the device is being destroyed */
- 	atomic_t RefCount;
--
-+	
-+	int reset;
-+	spinlock_t lock;
- 	atomic_t NumOutstandingRequests;
- 
- 	/*
-@@ -93,6 +95,9 @@ static inline struct storvsc_device *AllocStorDevice(struct hv_device *Device)
- 	atomic_cmpxchg(&storDevice->RefCount, 0, 2);
- 
- 	storDevice->Device = Device;
-+	storDevice->reset  = 0;
-+	spin_lock_init(&storDevice->lock);
-+
- 	Device->Extension = storDevice;
- 
- 	return storDevice;
-@@ -101,6 +106,7 @@ static inline struct storvsc_device *AllocStorDevice(struct hv_device *Device)  static inline void FreeStorDevice(struct storvsc_device *Device)  {
- 	/* ASSERT(atomic_read(&Device->RefCount) == 0); */
-+	/*kfree(Device->lock);*/
- 	kfree(Device);
- }
- 
-@@ -108,13 +114,24 @@ static inline void FreeStorDevice(struct storvsc_device *Device)  static inline struct storvsc_device *GetStorDevice(struct hv_device *Device)  {
- 	struct storvsc_device *storDevice;
-+	unsigned long flags;
- 
- 	storDevice = (struct storvsc_device *)Device->Extension;
-+
-+	spin_lock_irqsave(&storDevice->lock, flags);
-+
-+	if (storDevice->reset == 1) {
-+		spin_unlock_irqrestore(&storDevice->lock, flags);
-+		return NULL;
-+	}
-+
- 	if (storDevice && atomic_read(&storDevice->RefCount) > 1)
- 		atomic_inc(&storDevice->RefCount);
- 	else
- 		storDevice = NULL;
- 
-+	spin_unlock_irqrestore(&storDevice->lock, flags);
-+
- 	return storDevice;
- }
- 
-@@ -122,13 +139,19 @@ static inline struct storvsc_device *GetStorDevice(struct hv_device *Device)  static inline struct storvsc_device *MustGetStorDevice(struct hv_device *Device)  {
- 	struct storvsc_device *storDevice;
-+	unsigned long flags;
- 
- 	storDevice = (struct storvsc_device *)Device->Extension;
-+
-+	spin_lock_irqsave(&storDevice->lock, flags);
-+
- 	if (storDevice && atomic_read(&storDevice->RefCount))
- 		atomic_inc(&storDevice->RefCount);
- 	else
- 		storDevice = NULL;
- 
-+	spin_unlock_irqrestore(&storDevice->lock, flags);
-+
- 	return storDevice;
- }
- 
-@@ -614,6 +637,7 @@ int StorVscOnHostReset(struct hv_device *Device)
- 	struct storvsc_device *storDevice;
- 	struct storvsc_request_extension *request;
- 	struct vstor_packet *vstorPacket;
-+	unsigned long flags;
- 	int ret;
- 
- 	DPRINT_INFO(STORVSC, "resetting host adapter..."); @@ -625,6 +649,16 @@ int StorVscOnHostReset(struct hv_device *Device)
- 		return -1;
- 	}
- 
-+	spin_lock_irqsave(&storDevice->lock, flags);
-+	storDevice->reset = 1;
-+	spin_unlock_irqrestore(&storDevice->lock, flags);
-+
-+	/*
-+	 * Wait for traffic in transit to complete
-+	 */
-+	while (atomic_read(&storDevice->NumOutstandingRequests))
-+		udelay(1000);
-+
- 	request = &storDevice->ResetRequest;
- 	vstorPacket = &request->VStorPacket;
- 
---
-1.6.0.2
-
+-Jeff
