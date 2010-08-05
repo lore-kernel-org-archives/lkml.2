@@ -1,73 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759732Ab0HEGcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 02:32:13 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63355 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756669Ab0HEGcL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 02:32:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=FGKtsCufqGphcFwppLt3WaFzp68+UeYuhiB+VAlnLLPiN8imZ6ks0F+WOrBuFPKvPh
-         LrwVjps6O6ZVPLpf3darNhjU3/qE9MSiJRWnho2zGUvwbcgdmZcNmiIYbMRhjD/ELswi
-         L8ZAZ5loLeOsWsHHQNh6iRwFn8bJkVBzUZ+No=
+	id S1759761Ab0HEGfa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 02:35:30 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43654 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758803Ab0HEGf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 02:35:28 -0400
+Message-ID: <4C5A5BAE.9070301@kernel.dk>
+Date: Thu, 05 Aug 2010 08:35:26 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Date: Thu, 5 Aug 2010 02:32:10 -0400
-Message-ID: <AANLkTincu8bt91COjx4_+Xz1XEobiU=gDr1NLeqv1RF0@mail.gmail.com>
-Subject: [PATCH] drm_proc: remove the unneeded _name_ variable in function 
-	drm_proc_create_files
-From: Liu Aleaxander <aleaxander@gmail.com>
-To: airlied@linux.ie, linux-kernel@vger.kernel.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: build failure after merge of the block tree
+References: <20100805114725.7e46da74.sfr@canb.auug.org.au>
+In-Reply-To: <20100805114725.7e46da74.sfr@canb.auug.org.au>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9cb574dfe14541c7b712242e9fafc55419aa1e4f Mon Sep 17 00:00:00 2001
-From: Liu Aleaxander <Aleaxander@gmail.com>
-Date: Thu, 5 Aug 2010 14:02:52 -0400
-Subject: [PATCH] drm_proc: remove the unneeded _name_ variable in
-function drm_proc_create_files
+On 2010-08-05 03:47, Stephen Rothwell wrote:
+> Hi Jens,
+> 
+> After merging the block tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> usr/include/linux/fs.h:11: included file 'linux/blk_types.h' is not exported
+> 
+> Caused by commit 9d3dbbcd9a84518ff5e32ffe671d06a48cf84fd9 ("bio, fs:
+> separate out bio_types.h and define READ/WRITE constants in terms of
+> BIO_RW_* flags").
+> 
+> I used the block tree from next-20100804 for today.
 
-The _name_ variable in drm_proc_create_files is misused, since it hasn't been
-initialized before using it.
-
-Signed-off-by: Liu Aleaxander <Aleaxander@gmail.com>
----
- drivers/gpu/drm/drm_proc.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_proc.c b/drivers/gpu/drm/drm_proc.c
-index a9ba6b6..02f5c98 100644
---- a/drivers/gpu/drm/drm_proc.c
-+++ b/drivers/gpu/drm/drm_proc.c
-@@ -96,7 +96,6 @@ int drm_proc_create_files(struct drm_info_list
-*files, int count,
-        struct drm_device *dev = minor->dev;
-        struct proc_dir_entry *ent;
-        struct drm_info_node *tmp;
--       char name[64];
-        int i, ret;
-
-        for (i = 0; i < count; i++) {
-@@ -118,8 +117,8 @@ int drm_proc_create_files(struct drm_info_list
-*files, int count,
-                ent = proc_create_data(files[i].name, S_IRUGO, root,
-                                       &drm_proc_fops, tmp);
-                if (!ent) {
--                       DRM_ERROR("Cannot create /proc/dri/%s/%s\n",
--                                 name, files[i].name);
-+                       DRM_ERROR("Cannot create /proc/dri/%d/%s\n",
-+                                 minor->index, files[i].name);
-                        list_del(&tmp->list);
-                        kfree(tmp);
-                        ret = -1;
--- 
-1.7.0.1
-
+Thanks Stephen, I fixed this one up now and pushed it out.
 
 -- 
-regards
-Liu Aleaxander
+Jens Axboe
+
