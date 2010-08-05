@@ -1,71 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933514Ab0HEOop (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:44:45 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41200 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760663Ab0HEOim (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:38:42 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Andi Kleen <ak@linux.intel.com>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 13/17] KGDB: Remove set but unused newPC
-Date: Thu,  5 Aug 2010 09:37:54 -0500
-Message-Id: <1281019078-6636-14-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1281019078-6636-13-git-send-email-jason.wessel@windriver.com>
-References: <1281019078-6636-1-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-2-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-3-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-4-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-5-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-6-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-7-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-8-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-9-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-10-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-11-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-12-git-send-email-jason.wessel@windriver.com>
- <1281019078-6636-13-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 05 Aug 2010 14:38:21.0605 (UTC) FILETIME=[DA42BD50:01CB34AB]
+	id S933468Ab0HEOnZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:43:25 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:43234 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933314Ab0HEOkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 10:40:19 -0400
+Date: Thu, 5 Aug 2010 07:40:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: david@lang.hm
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, tytso@mit.edu, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
+Message-ID: <20100805144012.GE2447@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100804195704.GA23681@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Thu, Aug 05, 2010 at 06:18:42AM -0700, david@lang.hm wrote:
+> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+> 
+> >Continuing to rush in where angels fear to tread...
+> 
+> here here :-)
+> 
+> >o	"PM-driving application" are applications that are permitted
+> >	to acquire suspend blockers on Android.  Verion 8 of the
+> >	suspend-blocker patch seems to use group permissions to determine
+> >	which applications are classified as power aware.  More generally,
+> >	PM-driving applications seem to be those that have permission
+> >	to exert some control over the system's sleep state.
+> >
+> >	Note that an application might be power-oblivious on one Android
+> >	device and PM-driving on another, depending on whether the user
+> >	allows that application to acquire suspend blockers.  The
+> >	classification might even change over time.  For example, a
+> >	user might give an application PM-driving status initially,
+> >	but change his or her mind after some experience with that
+> >	application.
+> 
+> One thing that I think it's important to document here is
+> theinformation that Brian provided in response to your question
+> about how many (or actually how few) applications fall into this
+> catefory
 
-Found by gcc 4.6's new warnings
+Agreed!!!  I have added this, and it will appear in the next version.
 
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- arch/x86/kernel/kgdb.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+							Thanx, Paul
 
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index bae8982..a8b8097 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -456,7 +456,6 @@ int kgdb_arch_handle_exception(int e_vector, int signo, int err_code,
- {
- 	unsigned long addr;
- 	char *ptr;
--	int newPC;
- 
- 	switch (remcomInBuffer[0]) {
- 	case 'c':
-@@ -467,8 +466,6 @@ int kgdb_arch_handle_exception(int e_vector, int signo, int err_code,
- 			linux_regs->ip = addr;
- 	case 'D':
- 	case 'k':
--		newPC = linux_regs->ip;
--
- 		/* clear the trace bit */
- 		linux_regs->flags &= ~X86_EFLAGS_TF;
- 		atomic_set(&kgdb_cpu_doing_single_step, -1);
--- 
-1.6.3.3
-
+> David Lang
+> 
+> Quote:
+> 
+> >I should have asked this earlier...  What exactly are the apps'
+> >compatibility constraints?  Source-level APIs?  Byte-code class-library
+> >invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
+> >words, syscall)?
+> 
+> For Java/Dalvik apps, the wakelock API is pertty high level -- it
+> talks to a service via RPC (Binder) that actually interacts with the
+> kernel.  Changing the basic kernel<->userspace interface (within
+> reason) is not unthinkable.  For example, Arve's suspend_blocker patch
+> provides a device interface rather than the proc interface the older
+> wakelock patches use.  We'd have to make some userspace changes to
+> support that but they're pretty low level and minor.
+> 
+> In the current model, only a few processes need to specifically
+> interact with the kernel (the power management service in the
+> system_server, possibly the media_server and the radio interface
+> glue).  A model where every process needs to have a bunch of
+> instrumentation is not very desirable from our point of view.  We
+> definitely do need reasonable statistics in order to enable debugging
+> and to enable reporting to endusers (through the Battery Usage UI)
+> what's keeping the device awake.
+> 
+> Brian
+> 
