@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934383Ab0HEU3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:29:13 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39096 "EHLO mgw2.diku.dk"
+	id S934357Ab0HEU3c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:29:32 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39105 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934330Ab0HEU3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:29:01 -0400
-Date: Thu, 5 Aug 2010 22:28:59 +0200 (CEST)
+	id S934386Ab0HEU3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:29:21 -0400
+Date: Thu, 5 Aug 2010 22:29:19 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 39/42] drivers/mfd: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052228320.31692@ask.diku.dk>
+To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 40/42] drivers/isdn: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052228590.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +20,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Move the call to twl4030_config_sleep_sequence into the if branch that it
-is aligned with.
+In hisax/hfc_sx.c and mISDN/l1oip_core.c, the code after the if is
+outdented so that it is not aligned with the if branch.
+
+In mISDN/dsp_cmx.c, an else is added between the original if branch and the
+following statement, in line with the code following it.  Without this
+change, the first assignment to dsp->rx_W has no useful effect.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -51,27 +55,58 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This patch changes the semantics, and might not be what is intended.
+ drivers/isdn/hisax/hfc_sx.c     |   13 +++++++------
+ drivers/isdn/mISDN/dsp_cmx.c    |    1 +
+ drivers/isdn/mISDN/l1oip_core.c |    2 +-
+ 3 files changed, 9 insertions(+), 7 deletions(-)
 
- drivers/mfd/twl4030-power.c         |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mfd/twl4030-power.c b/drivers/mfd/twl4030-power.c
-index 7efa878..9ab5a20 100644
---- a/drivers/mfd/twl4030-power.c
-+++ b/drivers/mfd/twl4030-power.c
-@@ -451,12 +451,13 @@ static int __init load_twl4030_script(struct twl4030_script *tscript,
- 		if (err)
- 			goto out;
+diff --git a/drivers/isdn/hisax/hfc_sx.c b/drivers/isdn/hisax/hfc_sx.c
+index be5faf4..5aa138e 100644
+--- a/drivers/isdn/hisax/hfc_sx.c
++++ b/drivers/isdn/hisax/hfc_sx.c
+@@ -234,13 +234,14 @@ read_fifo(struct IsdnCardState *cs, u_char fifo, int trans_max)
+ 	  count++;
+ 	  if (count > trans_max) 
+ 	    count = trans_max; /* limit length */
+-	    if ((skb = dev_alloc_skb(count))) {
+-	      dst = skb_put(skb, count);
+-	      while (count--) 
++	  skb = dev_alloc_skb(count);
++	  if (skb) {
++	    dst = skb_put(skb, count);
++	    while (count--)
+ 		*dst++ = Read_hfc(cs, HFCSX_FIF_DRD);
+-	      return(skb);
+-	    }
+-	    else return(NULL); /* no memory */
++	    return skb;
++	  } else
++		return NULL; /* no memory */
  	}
--	if (tscript->flags & TWL4030_SLEEP_SCRIPT)
-+	if (tscript->flags & TWL4030_SLEEP_SCRIPT) {
- 		if (order)
- 			pr_warning("TWL4030: Bad order of scripts (sleep "\
- 					"script before wakeup) Leads to boot"\
- 					"failure on some boards\n");
- 		err = twl4030_config_sleep_sequence(address);
-+	}
- out:
- 	return err;
- }
+ 
+ 	do {
+diff --git a/drivers/isdn/mISDN/dsp_cmx.c b/drivers/isdn/mISDN/dsp_cmx.c
+index 713ef2b..76d9e67 100644
+--- a/drivers/isdn/mISDN/dsp_cmx.c
++++ b/drivers/isdn/mISDN/dsp_cmx.c
+@@ -1237,6 +1237,7 @@ dsp_cmx_receive(struct dsp *dsp, struct sk_buff *skb)
+ 			if (dsp->cmx_delay)
+ 				dsp->rx_W = (dsp->rx_R + dsp->cmx_delay)
+ 					& CMX_BUFF_MASK;
++			else
+ 				dsp->rx_W = (dsp->rx_R + (dsp_poll >> 1))
+ 					& CMX_BUFF_MASK;
+ 		} else {
+diff --git a/drivers/isdn/mISDN/l1oip_core.c b/drivers/isdn/mISDN/l1oip_core.c
+index 22f38e4..5b59796 100644
+--- a/drivers/isdn/mISDN/l1oip_core.c
++++ b/drivers/isdn/mISDN/l1oip_core.c
+@@ -972,7 +972,7 @@ channel_dctrl(struct dchannel *dch, struct mISDN_ctrl_req *cq)
+ 		if (debug & DEBUG_L1OIP_SOCKET)
+ 			printk(KERN_DEBUG "%s: got new ip address from user "
+ 				"space.\n", __func__);
+-			l1oip_socket_open(hc);
++		l1oip_socket_open(hc);
+ 		break;
+ 	case MISDN_CTRL_UNSETPEER:
+ 		if (debug & DEBUG_L1OIP_SOCKET)
