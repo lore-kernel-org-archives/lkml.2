@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab0HEK0m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:26:42 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:46301 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab0HEK0Y (ORCPT
+	id S1760097Ab0HEK0X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:26:23 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:25617 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755601Ab0HEK0T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:26:24 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 05 Aug 2010 12:27:37 +0200
+	Thu, 5 Aug 2010 06:26:19 -0400
+Date: Thu, 05 Aug 2010 12:27:35 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv6 3/7] USB: gadget: g_ffs: fixed vendor and product ID
-In-reply-to: <c66a92a8efa1ec83017633035352ba4a936d0f94.1281002833.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv6 1/7] USB: gadget: storage_common: fixed warning building mass
+ storage function
+In-reply-to: <cover.1281002833.git.m.nazarewicz@samsung.com>
 To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
         USB <linux-usb@vger.kernel.org>
 Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <c59df14c2fff1e327bb37f382769dad9b41da01c.1281002833.git.m.nazarewicz@samsung.com>
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Message-id: <4d9f94eea017dfb5c1931aecd56c7b3de92de1ad.1281002833.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
 References: <cover.1281002833.git.m.nazarewicz@samsung.com>
- <4d9f94eea017dfb5c1931aecd56c7b3de92de1ad.1281002833.git.m.nazarewicz@samsung.com>
- <c66a92a8efa1ec83017633035352ba4a936d0f94.1281002833.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the vendor and product ID the gadget uses
-by replacing the temporary IDs that were used during
-development (which should never get into mainline) with
-proper IDs.
+The "nofua" attribute is used in the File-Storage Gadget but the
+functions handling it are defined in storage_common.c (which may be
+not a bad thing if anyone will want to port tho "nofua" attribute to
+mass storage function) which causes the following warnings:
+
+drivers/usb/gadget/storage_common.c:718: \
+  warning: ‘fsg_show_nofua’ defined but not used
+drivers/usb/gadget/storage_common.c:782: \
+  warning: ‘fsg_store_nofua’ defined but not used
+
+Adding __maybe_unused fixes this issue.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
 ---
- drivers/usb/gadget/g_ffs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/gadget/storage_common.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index a9474f8..3c2f0a4 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -53,8 +53,8 @@ MODULE_AUTHOR("Michal Nazarewicz");
- MODULE_LICENSE("GPL");
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 484acfb..3379cc3 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -715,8 +715,8 @@ static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
+ 				  : curlun->initially_ro);
+ }
  
+-static ssize_t fsg_show_nofua(struct device *dev, struct device_attribute *attr,
+-			      char *buf)
++static ssize_t __maybe_unused
++fsg_show_nofua(struct device *dev, struct device_attribute *attr, char *buf)
+ {
+ 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
  
--static unsigned short gfs_vendor_id    = 0x0525;	/* XXX NetChip */
--static unsigned short gfs_product_id   = 0xa4ac;	/* XXX */
-+static unsigned short gfs_vendor_id    = 0x1d6b;	/* Linux Foundation */
-+static unsigned short gfs_product_id   = 0x0105;	/* FunctionFS Gadget */
+@@ -779,9 +779,9 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 	return rc;
+ }
  
- static struct usb_device_descriptor gfs_dev_desc = {
- 	.bLength		= sizeof gfs_dev_desc,
+-static ssize_t fsg_store_nofua(struct device *dev,
+-			       struct device_attribute *attr,
+-			       const char *buf, size_t count)
++static ssize_t __maybe_unused
++fsg_store_nofua(struct device *dev, struct device_attribute *attr,
++		const char *buf, size_t count)
+ {
+ 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+ 	unsigned long	nofua;
 -- 
 1.7.1
 
