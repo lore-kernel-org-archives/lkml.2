@@ -1,135 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759927Ab0HEVKf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 17:10:35 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:33192 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756724Ab0HEVKd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 17:10:33 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:date:message-id:subject:from:to:content-type:x-system-of-record;
-	b=WFvFe24aP/J58/Q41Pj9lXmAck0VgatiTikKogpGdcIoKjIwjyc9TdcPbt4IDwABz
-	ARpCS1jdIxqTzyUgg4h7g==
-MIME-Version: 1.0
-Date: Thu, 5 Aug 2010 14:10:20 -0700
-Message-ID: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-Subject: [GIT PULL] Initial Tegra ARM support
-From: Erik Gilling <konkers@google.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S934396Ab0HEVLV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 17:11:21 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:41526 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756360Ab0HEVLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 17:11:18 -0400
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+From: john stultz <johnstul@us.ibm.com>
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: gregkh@suse.de, lkml@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+	 <1280937526.28884.21.camel@work-vm>
+	 <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Aug 2010 14:11:05 -0700
+Message-ID: <1281042665.3405.15.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2010-08-05 at 15:33 +0300, Alexander Shishkin wrote:
+> On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
+> > Is there a actual use case that you need this for?  I don't really have
+> > an issue with the code I just really want to make sure the feature would
+> > be useful enough to justify the API and code maintenance going forward.
+> 
+> Yes. What we have here is an application which takes care of different means
+> of time synchronization (trusted time servers, different GSM operators, etc)
+> and also different kinds of time-based events/notifications (like "dentist
+> appointment next thursday"). When it encounters a time change that is
+> made by some other application, it basically wants to disable automatic
+> time adjustment and trigger the events/notifications which are due at this
+> (new) time.
 
-The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
-  Linus Torvalds (1):
-        Linux 2.6.35
+Ok. Something specific is always more helpful then theoretical uses.
 
-are available in the git repository at:
+I think the filtering is still a bit controversial, so you might want to
+respin it without that. But otherwise I'm ok with it as long as no one
+else objects to any of the minor details of the interface 
 
-  git://android.kernel.org/kernel/tegra.git for-linus
+GregKH: Does /sys/kernel/time_notify seem ok by you?
 
-This code has received review on linux-arm-kernel and has been in
-for-next since June 18th.  No subsystems were harmed out side of
-mach-tegra.
+thanks
+-john
 
-Colin Cross (4):
-      [ARM] tegra: Add clock support
-      [ARM] tegra: SMP support
-      [ARM] tegra: Add timer support
-      [ARM] tegra: harmony: Add harmony board file
 
-Erik Gilling (5):
-      [ARM] tegra: initial tegra support
-      [ARM] tegra: Add IRQ support
-      [ARM] tegra: add GPIO support
-      [ARM] tegra: add pinmux support
-      [ARM] tegra: add MAINTAINERS entry
-
- MAINTAINERS                                    |    9 +
- arch/arm/Kconfig                               |   25 +-
- arch/arm/Makefile                              |    1 +
- arch/arm/mach-tegra/Kconfig                    |   50 +
- arch/arm/mach-tegra/Makefile                   |   14 +
- arch/arm/mach-tegra/Makefile.boot              |    3 +
- arch/arm/mach-tegra/board-harmony-pinmux.c     |  144 +++
- arch/arm/mach-tegra/board-harmony.c            |  127 +++
- arch/arm/mach-tegra/board-harmony.h            |   22 +
- arch/arm/mach-tegra/board.h                    |   32 +
- arch/arm/mach-tegra/clock.c                    |  488 +++++++++
- arch/arm/mach-tegra/clock.h                    |  147 +++
- arch/arm/mach-tegra/common.c                   |   61 ++
- arch/arm/mach-tegra/gpio-names.h               |  247 +++++
- arch/arm/mach-tegra/gpio.c                     |  348 ++++++
- arch/arm/mach-tegra/headsmp.S                  |   61 ++
- arch/arm/mach-tegra/hotplug.c                  |  140 +++
- arch/arm/mach-tegra/include/mach/barriers.h    |   30 +
- arch/arm/mach-tegra/include/mach/clk.h         |   26 +
- arch/arm/mach-tegra/include/mach/clkdev.h      |   32 +
- arch/arm/mach-tegra/include/mach/debug-macro.S |   46 +
- arch/arm/mach-tegra/include/mach/entry-macro.S |  118 ++
- arch/arm/mach-tegra/include/mach/gpio.h        |   53 +
- arch/arm/mach-tegra/include/mach/hardware.h    |   24 +
- arch/arm/mach-tegra/include/mach/io.h          |   79 ++
- arch/arm/mach-tegra/include/mach/iomap.h       |  203 ++++
- arch/arm/mach-tegra/include/mach/irqs.h        |  173 +++
- arch/arm/mach-tegra/include/mach/memory.h      |   28 +
- arch/arm/mach-tegra/include/mach/pinmux.h      |  348 ++++++
- arch/arm/mach-tegra/include/mach/smp.h         |   30 +
- arch/arm/mach-tegra/include/mach/system.h      |   39 +
- arch/arm/mach-tegra/include/mach/timex.h       |   26 +
- arch/arm/mach-tegra/include/mach/uncompress.h  |   78 ++
- arch/arm/mach-tegra/include/mach/vmalloc.h     |   28 +
- arch/arm/mach-tegra/io.c                       |   78 ++
- arch/arm/mach-tegra/irq.c                      |   34 +
- arch/arm/mach-tegra/localtimer.c               |   25 +
- arch/arm/mach-tegra/pinmux.c                   |  945 ++++++++++++++++
- arch/arm/mach-tegra/platsmp.c                  |  156 +++
- arch/arm/mach-tegra/tegra2_clocks.c            | 1359 ++++++++++++++++++++++++
- arch/arm/mach-tegra/timer.c                    |  187 ++++
- arch/arm/mm/Kconfig                            |    3 +-
- 42 files changed, 6062 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/mach-tegra/Kconfig
- create mode 100644 arch/arm/mach-tegra/Makefile
- create mode 100644 arch/arm/mach-tegra/Makefile.boot
- create mode 100644 arch/arm/mach-tegra/board-harmony-pinmux.c
- create mode 100644 arch/arm/mach-tegra/board-harmony.c
- create mode 100644 arch/arm/mach-tegra/board-harmony.h
- create mode 100644 arch/arm/mach-tegra/board.h
- create mode 100644 arch/arm/mach-tegra/clock.c
- create mode 100644 arch/arm/mach-tegra/clock.h
- create mode 100644 arch/arm/mach-tegra/common.c
- create mode 100644 arch/arm/mach-tegra/gpio-names.h
- create mode 100644 arch/arm/mach-tegra/gpio.c
- create mode 100644 arch/arm/mach-tegra/headsmp.S
- create mode 100644 arch/arm/mach-tegra/hotplug.c
- create mode 100644 arch/arm/mach-tegra/include/mach/barriers.h
- create mode 100644 arch/arm/mach-tegra/include/mach/clk.h
- create mode 100644 arch/arm/mach-tegra/include/mach/clkdev.h
- create mode 100644 arch/arm/mach-tegra/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-tegra/include/mach/entry-macro.S
- create mode 100644 arch/arm/mach-tegra/include/mach/gpio.h
- create mode 100644 arch/arm/mach-tegra/include/mach/hardware.h
- create mode 100644 arch/arm/mach-tegra/include/mach/io.h
- create mode 100644 arch/arm/mach-tegra/include/mach/iomap.h
- create mode 100644 arch/arm/mach-tegra/include/mach/irqs.h
- create mode 100644 arch/arm/mach-tegra/include/mach/memory.h
- create mode 100644 arch/arm/mach-tegra/include/mach/pinmux.h
- create mode 100644 arch/arm/mach-tegra/include/mach/smp.h
- create mode 100644 arch/arm/mach-tegra/include/mach/system.h
- create mode 100644 arch/arm/mach-tegra/include/mach/timex.h
- create mode 100644 arch/arm/mach-tegra/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-tegra/include/mach/vmalloc.h
- create mode 100644 arch/arm/mach-tegra/io.c
- create mode 100644 arch/arm/mach-tegra/irq.c
- create mode 100644 arch/arm/mach-tegra/localtimer.c
- create mode 100644 arch/arm/mach-tegra/pinmux.c
- create mode 100644 arch/arm/mach-tegra/platsmp.c
- create mode 100644 arch/arm/mach-tegra/tegra2_clocks.c
- create mode 100644 arch/arm/mach-tegra/timer.c
