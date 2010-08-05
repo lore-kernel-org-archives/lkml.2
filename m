@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934497Ab0HEWBs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:01:48 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:58232 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796Ab0HEWBq convert rfc822-to-8bit (ORCPT
+	id S934511Ab0HEWCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:02:12 -0400
+Received: from sj-iport-1.cisco.com ([171.71.176.70]:48912 "EHLO
+	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934494Ab0HEWCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:01:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=XU1CkRpI7FxsCTMTFvkeA3ZerlJtz9BL8lNPrVF2C5PLu4/CmsuSQ5J3EhPTOZAGy
-	WPf101um5+vKrZ7ZaMFCQ==
+	Thu, 5 Aug 2010 18:02:10 -0400
+Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPTRWkyrR7Hu/2dsb2JhbACgP3GrdZsqhToEhCAn
+X-IronPort-AV: E=Sophos;i="4.55,324,1278288000"; 
+   d="scan'208";a="349700617"
+From: Roland Dreier <rdreier@cisco.com>
+To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Best way to send several patches
+References: <AANLkTin5gz-NBGYrmdOQ4F4s-fbETq642JVsHEEJY4HD@mail.gmail.com>
+X-Message-Flag: Warning: May contain useful information
+Date: Thu, 05 Aug 2010 15:02:05 -0700
+In-Reply-To: <AANLkTin5gz-NBGYrmdOQ4F4s-fbETq642JVsHEEJY4HD@mail.gmail.com>
+	(Bjarke Istrup Pedersen's message of "Thu, 5 Aug 2010 23:54:09 +0200")
+Message-ID: <adabp9g3ehu.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1281044755.30969.8.camel@c-dwalke-linux.qualcomm.com>
-References: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-	<1281044755.30969.8.camel@c-dwalke-linux.qualcomm.com>
-Date: Thu, 5 Aug 2010 15:01:43 -0700
-Message-ID: <AANLkTimZYveOZLoDS82z0nosAHa21ChHCK1GpophEQ1P@mail.gmail.com>
-Subject: Re: [GIT PULL] Initial Tegra ARM support
-From: Erik Gilling <konkers@google.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If these changes went through Russell's tree there would be
-dependancies on arch/arm/mach-tegra/(Makefile|Kconfig) in
-arch/arm/(Makefile|Kconfig) breaking Russell's tree until it was
-merged with the tegra tree.  That sounds wrong to me.  Additionally
-these patches have received review on LAKML including some by Russell
-and nothing was mentioned about this being a problem.
+ > The question is, should I just send them all to this mailinglist
+ > (Section 3 of Documentation/SubmittingPatches - the one with the patch
+ > bomb - suggest that this is a bad idea), or how should I do it? (I
+ > have only submitted a single patch before, so I didn't have to worry
+ > about that back then).
 
-There is a conflict on these against linux/master.  I'm rebasing now for Linus.
+I would suggest sending a small batch of patches (say, four or five at
+most) and see how that goes.  That way, in case you make some mistake in
+formatting or something, you don't have to send another huge pile when
+you resend.
 
--Erik
+Once your initial batch is accepted and you have the hang of submitting
+patches, then you can submit bigger batches.  But I would recommend
+having each batch have a common theme.  For example there was the recent
+series of 42 fixes for confusing if indentation -- a big batch of fixes
+for the same problem in different places, which is exactly the right way
+to do things.
 
-On Thu, Aug 5, 2010 at 2:45 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> On Thu, 2010-08-05 at 14:10 -0700, Erik Gilling wrote:
->>  arch/arm/Kconfig                               |   25 +-
->>  arch/arm/Makefile                              |    1 +
->
-> In the future could you please send changes to arch/arm/Kconfig and
-> arch/arm/Makefile to Russell .. That way there's no chance for conflicts
-> with other -next trees.
->
-> Daniel
-> --
-> Sent by an consultant of the Qualcomm Innovation Center, Inc.
-> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->
->
+ - Roland
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
