@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803Ab0HEFnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 01:43:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:44213 "EHLO mga01.intel.com"
+	id S1758783Ab0HEF4r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 01:56:47 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:60176 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab0HEFnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 01:43:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,320,1278313200"; 
-   d="scan'208";a="824892018"
-Message-ID: <4C5A4F68.5030309@intel.com>
-Date: Thu, 05 Aug 2010 13:43:04 +0800
-From: Shuang He <shuang.he@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Thomas Meyer <thomas@m3y3r.de>
-CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        "Zou, Nanhai" <nanhai.zou@intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
-Subject: Re: 2.6.35-rc6+: i915: Bisected regression
-References: <201008011101.01429.thomas@m3y3r.de>	<4C555DA0.6020109@s5r6.in-berlin.de> <98E20220-BFC9-4231-AEF5-EB59588E6D2F@m3y3r.de>
-In-Reply-To: <98E20220-BFC9-4231-AEF5-EB59588E6D2F@m3y3r.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1758190Ab0HEF4p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 01:56:45 -0400
+Date: Thu, 5 Aug 2010 07:56:29 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: paulmck@linux.vnet.ibm.com, david@lang.hm,
+        Arve =?ISO-8859-15?Q?Hj=F8n?= =?ISO-8859-15?Q?nev=E5g?= 
+	<arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, stern@rowland.harvard.edu, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100805075629.07d5d88d@schatten.dmk.lab>
+In-Reply-To: <20100805073359.4cb791c0@schatten.dmk.lab>
+References: <20100801054816.GI2470@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
+	<20100804185520.GA2417@srcf.ucam.org>
+	<201008042251.08266.rjw@sisk.pl>
+	<20100804205654.GA4986@srcf.ucam.org>
+	<alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
+	<AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
+	<alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
+	<20100804231003.GL24163@linux.vnet.ibm.com>
+	<20100805073359.4cb791c0@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 2010-8-1 18:51, Thomas Meyer wrote:
-> Am 01.08.2010 um 13:42 schrieb Stefan Richter<stefanr@s5r6.in-berlin.de>:
->
->> Thomas Meyer wrote:
->>> This commit makes suspend to ram unreliable for me:
->>>
->>> commit d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
->>> Author: Zou Nan hai<nanhai.zou@intel.com>
->>> Date:   Fri May 21 09:08:57 2010 +0800
->>>
->>>     drm/i915: implement BSD ring buffer V2
->>>
->>>     The BSD (bit stream decoder) ring is used for accessing the BSD engine
->>>     which decodes video bitstream for H.264 and VC1 on G45+.  It is
->>>     asynchronous with the render ring and has access to separate parts of
->>>     the GPU from it, though the render cache is coherent between the two.
->>>
->>>     Signed-off-by: Zou Nan hai<nanhai.zou@intel.com>
->>>     Signed-off-by: Xiang Hai hao<haihao.xiang@intel.com>
->>>     Signed-off-by: Eric Anholt<eric@anholt.net>
->>>
->>> git revert didn't work on 2.6.35-rc6 so I just changed the HAS_BSD thing to:
->>>
->>> #define HAS_BSD(dev)            (0)
->>>
->>> with this change applied suspend to ram is back to the reliability of 2.6.34.y
->>>
->>> with kind regards
->>> thomas
->> Added CCs.
->>
->> Thomas, on what hardware did you observe the regression?
-> Is a Intel mobile express gm45 chipset.
->
->>   Is it suspend
->> or resume that is unreliable?
-> suspend never finishes/hangs.
->
->>   What are the particular symptoms --- does
->> not suspend, crashes during suspend, crashes during resume...?
-> Does not suspend, backlight is on.
+On Thu, 5 Aug 2010 07:33:59 +0200
+Florian Mickler <florian@mickler.org> wrote:
+
+> On Wed, 4 Aug 2010 16:10:03 -0700
+> "Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
+
+> 
+> No no. In the David-Lang-CGroup-Scheme[1](tm?) suspend-from-idle
+> is used. For idle decision a certain subset of tasks is ignored. 
+> 
+> Where suspend is prevented by the trusted
+> process in android-world taking a wakelock, here it would just prevent
+> the system from going idle by arming timers.
+> 
+> This would be pretty equivalent to the suspend-blocker scheme and not
+> introduce new userspace api. But the downside is, as Arve pointed out,
+> that now one can not get full-idle-power-leverage while suspend
+> is blocked. 
+> 
+> [1] http://permalink.gmane.org/gmane.linux.kernel/1018452  and
+> following 
+> 
+> 
+> Cheers,
+> Flo
+> 
+
+There are a few downsides that got mentioned already in reponse..  I got
+a little lagged behind. 
+
+There are upsides to this approach like not
+having a special purpose userspace api, conceptually integrating
+suspend into the idle mechanism .. 
+
+Short summary of the cons that got mentioned:
+
+  -  applications need to resort to polling to keep the system
+	out of idle (->  system will never be fully idle)
+
+  -  the race between deciding to suspend and becoming active
+	again is not handled
+
+  -  no special statistics available
+
+  -  the timers of the ignored applications will behave unexpected
+	(as the monotonic clock is not stopped)... while applications
+	have already to cope with network-loss, other side effects of
+	suspend without monotonic clock stopped are to be expected...
 
 
-Could you help report a bug for this issue by following 
-http://intellinuxgraphics.org/how_to_report_bug.html
-
-Thanks
-     --Shuang
-
->> -- 
->> Stefan Richter
->> -=====-==-=- =--- ----=
->> http://arcgraph.de/sr/
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-
+Cheers,
+Flo
