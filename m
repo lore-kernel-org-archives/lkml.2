@@ -1,309 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934696Ab0HEWj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:39:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46107 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934646Ab0HEWip (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:38:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=R8zBODKn8H099oUxBejecVYi3DCj41lGg1HYOOqKxNOkYfRfTaTnlu+CVbW6r328KJ
-         liFHKN5NM8FnHX2ozYDJ07TyhV7dYkOtjbml19XKiEdbeT3xoBfNetNBkdy2DNS3mebA
-         N7AkJtwP+y3lhoY0n0I851QHqrppCJuWWpCZU=
-From: Michal Nazarewicz <mina86@mina86.com>
+	id S934631Ab0HEWin (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:38:43 -0400
+Received: from kroah.org ([198.145.64.141]:37698 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760842Ab0HEWYX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:23 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: m.nazarewicz@samsung.com, Michal Nazarewicz <mina86@mina86.com>,
-        "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Denis Vlasenko <vda.linux@googlemail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/3] lib: vsprintf: optimised put_dec() for 32-bit machines
-Date: Fri,  6 Aug 2010 00:38:22 +0200
-Message-Id: <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com>
-References: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com>
-To: linux-kernel@vger.kernel.org
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 41/67] tty: untangle locking of wait_until_sent
+Date: Thu,  5 Aug 2010 15:23:08 -0700
+Message-Id: <1281047014-23429-41-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <20100805213528.GA13794@kroah.com>
+References: <20100805213528.GA13794@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Existing put_dec() function uses a do_div() function for
-dividing the 64-bit argument.  On 32-bit machines this may be
-a costly operation.  This patch, replaces the put_dec()
-function on 32-bit processors to one that performs no 64-bit
-divisions.
+From: Arnd Bergmann <arnd@arndb.de>
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Some wait_until_sent versions require the big
+tty mutex, others don't and some callers of
+wait_until_sent already hold it while other don't.
+That leads to recursive use of the BTM in these
+functions, which we're trying to get rid of.
+
+This turns all cleans up the locking there so
+that the driver's wait_until_sent function
+never takes the BTM itself if it is already
+called with that lock held.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- lib/vsprintf.c |  103 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 102 insertions(+), 1 deletions(-)
+ drivers/char/amiserial.c     |   11 +++++++++--
+ drivers/serial/68360serial.c |    2 --
+ drivers/serial/crisv10.c     |    2 --
+ drivers/serial/serial_core.c |   31 ++++++++++++++++++++++---------
+ 4 files changed, 31 insertions(+), 15 deletions(-)
 
-
-I did some benchmark on the following two processors:
-
-Atom:   Intel(R) Atom(TM) CPU N270 @ 1.60GHz
-ARM:    ARMv7 Processor rev 2 (v7l)
-
-(I'm ommitting Phenom since this code is ment for 32-bit processors).
-
-Here are the results (normalised to the fastest/smallest):
-
-                    :        ARM      Intel
--- Speed ---------------------------------------------------------------
-orig_put_dec        :  10.194361   2.190063  Original
-mod1_put_dec        :  10.259952   2.025620
-mod2_put_dec        :  10.142540   1.970004
-mod3_put_dec        :  10.284313   1.961153  Version from previous patch
-mod4_put_dec        :  10.164480   1.986127
-mod5_put_dec        :  14.529587   2.531521
-mod6_put_dec        :   1.000000   1.000000  Proposed
-mod7_put_dec        :   1.006486   1.011573
-mod8_put_dec        :   8.347325   2.153098
--- Size ----------------------------------------------------------------
-orig_put_dec        :   1.000000   1.000000  Original
-mod1_put_dec        :   1.000000   1.000000
-mod2_put_dec        :   1.361111   1.403226
-mod3_put_dec        :   1.000000   1.000000  Version from previous patch
-mod4_put_dec        :   1.361111   1.403226
-mod5_put_dec        :   1.000000   1.000000
-mod6_put_dec        :   2.555556   3.508065  Proposed
-mod7_put_dec        :   2.833333   3.911290
-mod8_put_dec        :   2.027778   2.258065
-
-Source of the benchmark as well as code of all the modified version of
-functions is included with the third patch of the benchmark.
-
-
-As it can be obsevred, proposed version of the put_dec function is 10
-times faster on ARM.  I imagine that it may be similar on other
-"embedded" processors.
-
-This may be skewed by the fact that the benchmark is using GCC's
-64-bit division operator instead of kernel's do_div but it would
-appear that by avoiding 64-bit division something can be gained.
-
-The disadvantage is that the proposed function is 2.5-3.5 bigger.
-Those are not big functions though -- we are talking here about
-proposed function being below 512.
-
-
-The drawback of this function is also that the patch adds a bit of
-code.  It could be questionable whether it's worth optimising that
-much.  Anyway, posting in case someone decides that it is or will be
-simply interested. :)
-
-
-I'm currently running 2.6.35 with this patch applied.  It applies just
-fine on -next as well but I haven't tested this kernel (I don't really
-have a machine that I wouldn't be afraid to run -next on ;) ).
-
-
-PS. From Mr. Jones site: "Nonetheless, before relying on the material
-here, it would be prudent to check the arithmetic!" hence I checked
-all the calculations myself and everything seemed fine.  I've also run
-test applitacion several times so it tested a few 64-bit numbers.
-Here's a "bc" script which calculates all the numbers:
-
-
-# You can feed "bc" with this file to check the numbers
-
-# n  =                  1 * n0 +    0 <= n0 <= 65535
-#                  6 5536 * n1 +    0 <= n1 <= 65535
-#            42 9496 7296 * n2 +    0 <= n2 <= 65535
-#      281 4749 7671 0656 * n3      0 <= n3 <= 65535
-
-n0 = 65535
-n1 = 65535
-n2 = 65535
-n3 = 65535
-
-# n  =              10^ 0 * d0 +
-#                   10^ 4 * d1 +
-#                   10^ 8 * d2 +
-#                   10^12 * d3 +
-#                   10^16 * d4
-
-a0 =  656 * n3 + 7296 * n2 + 5536 * n1 +   1 * n0
-print "0 <= a0 <= ", a0, "\n"
-# 0 <= a0 <=   884 001 615
-
-a1 = 7671 * n3 + 9496 * n2 +    6 * n1
-print "0 <= a1 <= ", a1, "\n"
-# 0 <= a1 <= 1 125 432 555
-
-a2 = 4749 * n3 +   42 * n2
-print "0 <= a2 <= ", a2, "\n"
-# 0 <= a2 <=   313 978 185
-
-a3 =  281 * n3
-print "0 <= a3 <= ", a3, "\n"
-# 0 <= a3 <=    18 415 335
-
-
-b0 = a0
-print "0 <= b0 <= ", b0, "\n0 <= c1 <= ", b0 / 10000, "\n"
-# 0 <= d0 <=   884 001 615
-# 0 <= c1 <=        88 400
-
-b1 = a1 + b0 / 10000
-print "0 <= b1 <= ", b1, "\n0 <= c2 <= ", b1 / 10000, "\n"
-# 0 <= d1 <= 1 125 520 955
-# 0 <= c2 <=       112 552
-
-b2 = a2 + b1 / 10000
-print "0 <= b2 <= ", b2, "\n0 <= c3 <= ", b2 / 10000, "\n"
-# 0 <= d2 <=   314 090 737
-# 0 <= c3 <=        31 409
-
-b3 = a3 + b2 / 10000
-print "0 <= b3 <= ", b3, "\n0 <= c4 <= ", b3 / 10000, "\n"
-# 0 <= d3 <=    18 446 744
-# 0 <= c4 <=         1 844
-
-b4 = a4 + b3 / 10000
-print "0 <= b4 <= ", b4, "\n"
-# 0 <= b4 <=         1 844
-
-
-diff --git a/lib/vsprintf.c b/lib/vsprintf.c
-index d63fb15..bfbe662 100644
---- a/lib/vsprintf.c
-+++ b/lib/vsprintf.c
-@@ -278,6 +278,8 @@ int skip_atoi(const char **s)
- 	return i;
+diff --git a/drivers/char/amiserial.c b/drivers/char/amiserial.c
+index 1b21a7a..8228e61 100644
+--- a/drivers/char/amiserial.c
++++ b/drivers/char/amiserial.c
+@@ -1528,6 +1528,7 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
+ {
+ 	struct async_struct * info = tty->driver_data;
+ 	unsigned long orig_jiffies, char_time;
++	int tty_was_locked = tty_locked();
+ 	int lsr;
+ 
+ 	if (serial_paranoia_check(info, tty->name, "rs_wait_until_sent"))
+@@ -1538,7 +1539,12 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
+ 
+ 	orig_jiffies = jiffies;
+ 
+-	tty_lock_nested(); /* tty_wait_until_sent is called from lots of places */
++	/*
++	 * tty_wait_until_sent is called from lots of places,
++	 * with or without the BTM.
++	 */
++	if (!tty_was_locked)
++		tty_lock();
+ 	/*
+ 	 * Set the check interval to be 1/5 of the estimated time to
+ 	 * send a single character, and make it at least 1.  The check
+@@ -1579,7 +1585,8 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
+ 			break;
+ 	}
+ 	__set_current_state(TASK_RUNNING);
+-	tty_unlock();
++	if (!tty_was_locked)
++		tty_unlock();
+ #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+ 	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
+ #endif
+diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
+index 16f5f2f..edcf1cc 100644
+--- a/drivers/serial/68360serial.c
++++ b/drivers/serial/68360serial.c
+@@ -1705,7 +1705,6 @@ static void rs_360_wait_until_sent(struct tty_struct *tty, int timeout)
+ 	printk("jiff=%lu...", jiffies);
+ #endif
+ 
+-	tty_lock_nested(); /* always held already since we come from ->close */
+ 	/* We go through the loop at least once because we can't tell
+ 	 * exactly when the last character exits the shifter.  There can
+ 	 * be at least two characters waiting to be sent after the buffers
+@@ -1734,7 +1733,6 @@ static void rs_360_wait_until_sent(struct tty_struct *tty, int timeout)
+ 			bdp--;
+ 	} while (bdp->status & BD_SC_READY);
+ 	current->state = TASK_RUNNING;
+-	tty_unlock();
+ #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+ 	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
+ #endif
+diff --git a/drivers/serial/crisv10.c b/drivers/serial/crisv10.c
+index e6a1cb7..0825d4a 100644
+--- a/drivers/serial/crisv10.c
++++ b/drivers/serial/crisv10.c
+@@ -3924,7 +3924,6 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
+ 	 * Check R_DMA_CHx_STATUS bit 0-6=number of available bytes in FIFO
+ 	 * R_DMA_CHx_HWSW bit 31-16=nbr of bytes left in DMA buffer (0=64k)
+ 	 */
+-	tty_lock_nested(); /* locked already when coming from close */
+ 	orig_jiffies = jiffies;
+ 	while (info->xmit.head != info->xmit.tail || /* More in send queue */
+ 	       (*info->ostatusadr & 0x007f) ||  /* more in FIFO */
+@@ -3941,7 +3940,6 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
+ 			curr_time_usec - info->last_tx_active_usec;
+ 	}
+ 	set_current_state(TASK_RUNNING);
+-	tty_unlock();
  }
  
-+#if BITS_PER_LONG == 64
-+
  /*
-  * Decimal conversion is by far the most typical, and is used for
-  * /proc and /sys data. This directly impacts e.g. top performance
-@@ -366,6 +368,9 @@ char *put_dec_trunc(char *buf, unsigned q)
- 	return buf;
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 851d7c2..cd85112 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -60,7 +60,7 @@ static struct lock_class_key port_lock_key;
+ 
+ static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
+ 					struct ktermios *old_termios);
+-static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
++static void __uart_wait_until_sent(struct uart_port *port, int timeout);
+ static void uart_change_pm(struct uart_state *state, int pm_state);
+ 
+ /*
+@@ -1322,8 +1322,16 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 	tty->closing = 1;
+ 	spin_unlock_irqrestore(&port->lock, flags);
+ 
+-	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE)
+-		tty_wait_until_sent(tty, msecs_to_jiffies(port->closing_wait));
++	if (port->closing_wait != ASYNC_CLOSING_WAIT_NONE) {
++		/*
++		 * hack: open-coded tty_wait_until_sent to avoid
++		 * recursive tty_lock
++		 */
++		long timeout = msecs_to_jiffies(port->closing_wait);
++		if (wait_event_interruptible_timeout(tty->write_wait,
++				!tty_chars_in_buffer(tty), timeout) >= 0)
++			__uart_wait_until_sent(uport, timeout);
++	}
+ 
+ 	/*
+ 	 * At this point, we stop accepting input.  To do this, we
+@@ -1339,7 +1347,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
+ 		 * has completely drained; this is especially
+ 		 * important if there is a transmit FIFO!
+ 		 */
+-		uart_wait_until_sent(tty, uport->timeout);
++		__uart_wait_until_sent(uport, uport->timeout);
+ 	}
+ 
+ 	uart_shutdown(tty, state);
+@@ -1373,17 +1381,13 @@ done:
+ 	mutex_unlock(&port->mutex);
  }
  
-+/* This is used by ip4_string(). */
-+#define put_dec_8bit put_dec_trunc
-+
- /* No inlining helps gcc to use registers better */
- static noinline_for_stack
- char *put_dec(char *buf, unsigned long long num)
-@@ -379,6 +384,102 @@ char *put_dec(char *buf, unsigned long long num)
+-static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
++static void __uart_wait_until_sent(struct uart_port *port, int timeout)
+ {
+-	struct uart_state *state = tty->driver_data;
+-	struct uart_port *port = state->uart_port;
+ 	unsigned long char_time, expire;
+ 
+ 	if (port->type == PORT_UNKNOWN || port->fifosize == 0)
+ 		return;
+ 
+-	tty_lock_nested(); /* already locked when coming from close */
+-
+ 	/*
+ 	 * Set the check interval to be 1/5 of the estimated time to
+ 	 * send a single character, and make it at least 1.  The check
+@@ -1429,6 +1433,15 @@ static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
+ 			break;
  	}
+ 	set_current_state(TASK_RUNNING); /* might not be needed */
++}
++
++static void uart_wait_until_sent(struct tty_struct *tty, int timeout)
++{
++	struct uart_state *state = tty->driver_data;
++	struct uart_port *port = state->uart_port;
++
++	tty_lock();
++	__uart_wait_until_sent(port, timeout);
+ 	tty_unlock();
  }
  
-+#else
-+
-+/*
-+ * This is similar to the put_dec_full() above expect it handles
-+ * numbers from 0 to 9999 (ie. at most four digits).  It is used by
-+ * the put_dec() below which is optimised for 32-bit processors.
-+ */
-+static noinline_for_stack
-+char *put_dec_full(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	r      = (q * 0xcccd) >> 19;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	q      = (r * 0x199a) >> 16;
-+	*buf++ = (r - 10 * q)  + '0';
-+
-+	r      = (q * 0xcd) >> 11;
-+	*buf++ = (q - 10 * r)  + '0';
-+
-+	*buf++ = r + '0';
-+
-+	return buf;
-+}
-+
-+/*
-+ * Similar to above but handles only 8-bit operands and does not pad
-+ * with zeros.
-+ */
-+static noinline_for_stack
-+char *put_dec_8bit(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	r      = (q * 0xcd) >> 11;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	if (r) {
-+		q   = (r * 0xd) >> 7;
-+		*buf++ = (r - 10 * q)  + '0';
-+
-+		if (q)
-+			*buf++ = q + '0';
-+	}
-+
-+	return buf;
-+}
-+
-+/*
-+ * Based on code by Douglas W. Jones found at
-+ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html#sixtyfour>.  This
-+ * performs no 64-bit division and hence should be faster on 32-bit
-+ * machines then the version of the function above.
-+ */
-+static noinline_for_stack
-+char *put_dec(char *buf, unsigned long long n)
-+{
-+	uint32_t d3, d2, d1, q;
-+
-+	if (!n) {
-+		*buf++ = '0';
-+		return buf;
-+	}
-+
-+	d1  = (n >> 16) & 0xFFFF;
-+	d2  = (n >> 32) & 0xFFFF;
-+	d3  = (n >> 48) & 0xFFFF;
-+
-+	q   = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
-+
-+	buf = put_dec_full(buf, q % 10000);
-+	q   = q / 10000;
-+
-+	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
-+	buf = put_dec_full(buf, d1 % 10000);
-+	q   = d1 / 10000;
-+
-+	d2  = q + 4749 * d3 + 42 * d2;
-+	buf = put_dec_full(buf, d2 % 10000);
-+	q   = d2 / 10000;
-+
-+	d3  = q + 281 * d3;
-+	buf = put_dec_full(buf, d3 % 10000);
-+	q   = d3 / 10000;
-+
-+	buf = put_dec_full(buf, q);
-+
-+	while (buf[-1] == '0')
-+		--buf;
-+
-+	return buf;
-+}
-+
-+#endif
-+
- #define ZEROPAD	1		/* pad with zero */
- #define SIGN	2		/* unsigned/signed long */
- #define PLUS	4		/* show plus */
-@@ -752,7 +853,7 @@ char *ip4_string(char *p, const u8 *addr, const char *fmt)
- 	}
- 	for (i = 0; i < 4; i++) {
- 		char temp[3];	/* hold each IP quad in reverse order */
--		int digits = put_dec_trunc(temp, addr[index]) - temp;
-+		int digits = put_dec_8bit(temp, addr[index]) - temp;
- 		if (leading_zeros) {
- 			if (digits < 3)
- 				*p++ = '0';
 -- 
-1.7.1
+1.7.2
 
