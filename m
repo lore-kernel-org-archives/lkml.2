@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933330Ab0HET5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:57:52 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:50514 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759273Ab0HET5t convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:57:49 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-        "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 5 Aug 2010 13:57:25 -0600
-Subject: [PATCH 3/12] scsi: megaraid_sas - Online Controller Reset - III:
- add the reset function for Gen2 related chip
-Thread-Topic: [PATCH 3/12] scsi: megaraid_sas - Online Controller Reset -
- III: add the reset function for Gen2 related chip
-Thread-Index: AcsISPnOZnFQYxn1TaKnA/NMZ/+H5gsjzrvA
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67F7A@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804546@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804546@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S933531Ab0HET6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:58:11 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:45285 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932555Ab0HET6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 15:58:07 -0400
+To: Michael Leun <lkml20100708@newton.leun.net>
+Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free (adding ipv6 address to interface)
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+	<20100710101540.2799c9ef@xenia.leun.net>
+	<20100710140800.GA20424@kroah.com>
+	<20100710165208.59272ae6@xenia.leun.net>
+	<20100710235323.5336f627@xenia.leun.net>
+	<20100711192939.1c25dcaf@xenia.leun.net>
+	<20100804153543.56f6ecad@xenia.leun.net>
+	<20100804214618.GA6289@kroah.com>
+	<20100805001105.5a3453ed@xenia.leun.net>
+	<m1lj8l29zm.fsf@fess.ebiederm.org>
+	<20100805112538.60a46cb1@xenia.leun.net>
+	<m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+	<20100805134707.0442a7b1@xenia.leun.net>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 05 Aug 2010 12:57:59 -0700
+In-Reply-To: <20100805134707.0442a7b1@xenia.leun.net> (Michael Leun's message of "Thu\, 5 Aug 2010 13\:47\:07 +0200")
+Message-ID: <m1bp9g7ry0.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Re-submitted requested by James Bottomley.
+Michael Leun <lkml20100708@newton.leun.net> writes:
 
-Add the gen2 chip reset functions to the driver.  Driver will write the gen2 chip register offset to force the controller to reset.
+> On Thu, 05 Aug 2010 02:51:29 -0700
+> ebiederm@xmission.com (Eric W. Biederman) wrote:
+>
+>> >> > Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for
+>> >> > lo to become free. Usage count = 3 [repeated]
+>> >> 
+>> >> How many times?
+>> >
+>> > Unfortunately looks like indefinitely. Never watched longer so far
+>> > (rebooted soon), but I'm seeing this message now repeated every 10
+>> > secs for ~10 minutes on a idle system.
+>> 
+>> Ugh.  A real bug then.  These can be a pain to track down and fix. I
+>> think the last one of these I tracked down took a couple of weeks.  I
+>> will start digging in when I get back from vacation.
+>
+> OK, fortunately (hopefully) you have not put to much time onto that so
+> far - because everything I told about usage of tun and difference
+> between ssh and openvpn is complete nonsense.
+>
+> I happen to have an script in that openvpn config, which puts an ipv6
+> address on the vpn device.
+>
+> Putting an ipv6 address on a device seems to be the trigger:
+>
+> OrigNS > # ip link add type veth
+> OrigNS > # ip link set dev veth0 up
+> OrigNS > # unshare -n /bin/bash
+> NewNS > # echo $$
+> <SomePID>
+> OrigNS > # ip link set dev veth1 netns <SomePID> # this, of course is on a different terminal
+> NewNS > # ip link set dev veth1 up
+> NewNS > # ip -6 addr add dev veth1 fd50:dead:beef::1/64
+> NewNS > # exit
+>
+> Yields
+>
+> kernel: unregister_netdevice: waiting for veth1 to become free. Usage count = 3
+>
+> Oh - its veth1 this time, not lo - add an "ip link set up dev lo" in the above scenario just after the unshare, and you get the message with lo.
+>
+> One might ask, if
+>
+>> # unshare -n /bin/bash
+>> # ip link set up dev lo
+>> # ip -6 addr add dev veth1 fd50:dead:beef::1/64
+>> # exit
+>
+> also does the trick, so I tried it - and it does NOT.
+>
+> In the above scenario, not setting veth0 and veth1 up also makes it not happen. Only setting veth1 up also is not enough (seems to need to be "really up" what as you shurely know with veth is only the case when both sides are up).
+>
+> I hope, this makes it somewhat easier to track that down.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+What puzzles me is that on a slightly patched 2.6.32 (so sysfs works)
+and I am doing very similar things (openvpn tunnels, ipv6 to the
+network as a whole etc), and I am not seeing the infinite
+unregister_netdevice: messages you are talking about.
 
----
-drivers/scsi/megaraid/megaraid_sas.c |   41 +++++++++++++++++++++++++++++++++++
- 1 file changed, 41 insertions(+)
+When a network device is removed most references to it are redirected
+to the loopback device so a normal network device should not see the
+worst of the problems.  That is why lo showed up.
 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:38:29.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:38:43.000000000 -0400
-@@ -662,6 +662,47 @@ static int
- megasas_adp_reset_gen2(struct megasas_instance *instance,
- 			struct megasas_register_set __iomem *reg_set)
- {
-+	u32			retry = 0 ;
-+	u32			HostDiag;
-+
-+	writel(0, &reg_set->seq_offset);
-+	writel(4, &reg_set->seq_offset);
-+	writel(0xb, &reg_set->seq_offset);
-+	writel(2, &reg_set->seq_offset);
-+	writel(7, &reg_set->seq_offset);
-+	writel(0xd, &reg_set->seq_offset);
-+	msleep(1000);
-+
-+	HostDiag = (u32)readl(&reg_set->host_diag);
-+
-+	while ( !( HostDiag & DIAG_WRITE_ENABLE) ) {
-+		msleep(100);
-+		HostDiag = (u32)readl(&reg_set->host_diag);
-+		printk(KERN_NOTICE "RESETGEN2: retry=%x, hostdiag=%x\n",
-+					retry, HostDiag);
-+
-+		if (retry++ >= 100)
-+			return 1;
-+
-+	}
-+
-+	printk(KERN_NOTICE "ADP_RESET_GEN2: HostDiag=%x\n", HostDiag);
-+
-+	writel((HostDiag | DIAG_RESET_ADAPTER), &reg_set->host_diag);
-+
-+	ssleep(10);
-+
-+	HostDiag = (u32)readl(&reg_set->host_diag);
-+	while ( ( HostDiag & DIAG_RESET_ADAPTER) ) {
-+		msleep(100);
-+		HostDiag = (u32)readl(&reg_set->host_diag);
-+		printk(KERN_NOTICE "RESET_GEN2: retry=%x, hostdiag=%x\n",
-+				retry, HostDiag);
-+
-+		if (retry++ >= 1000)
-+			return 1;
-+
-+	}
- 	return 0;
- }
+In that context I'm a bit surprised you managed trigger a problem on veth1.
 
+I wonder what has changed with ipv6 recently.
+
+Eric
