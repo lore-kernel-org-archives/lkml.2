@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab0HEWsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:48:30 -0400
-Received: from kroah.org ([198.145.64.141]:37551 "EHLO coco.kroah.org"
+	id S934758Ab0HEWsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:48:39 -0400
+Received: from kroah.org ([198.145.64.141]:37542 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760746Ab0HEWXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:23:40 -0400
+	id S1759422Ab0HEWXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:23:38 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Yegor Yefremov <yegor_sub1@visionsystems.de>,
-        Yegor Yefremov <yegorslists@googlemail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 04/67] serial: add UART_CAP_EFR and UART_CAP_SLEEP flags to 16C950 UARTs definition
-Date: Thu,  5 Aug 2010 15:22:31 -0700
-Message-Id: <1281047014-23429-4-git-send-email-gregkh@suse.de>
+Cc: Christoph Egger <siccegge@cs.fau.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 02/67] serial: There's no config CONSOLE
+Date: Thu,  5 Aug 2010 15:22:29 -0700
+Message-Id: <1281047014-23429-2-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -21,33 +19,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yegor Yefremov <yegor_sub1@visionsystems.de>
+From: Christoph Egger <siccegge@cs.fau.de>
 
-Adding UART_CAP_EFR and UART_CAP_SLEEP flags will enable sleep mode
-and automatic CTS flow control for 16C950 UARTs. It will also avoid
-capabilities detection warning like this:
+as there's no config CONSOLE (never has been as far as I can tell) and
+noone has ever missed that piece of code, it should be safe to remove
+it making the kernel a tiny bit less complex.
 
-"ttyS0: detected caps 00000700 should be 00000100"
-
-Signed-off-by: Yegor Yefremov <yegorslists@googlemail.com>
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+Acked-by: Greg Ungerer <gerg@snapgear.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/8250.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/serial/68328serial.c |    8 --------
+ 1 files changed, 0 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index 09ef570..bc8ed4b 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -241,7 +241,7 @@ static const struct serial8250_config uart_config[] = {
- 		.fifo_size	= 128,
- 		.tx_loadsz	= 128,
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO,
-+		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
- 	},
- 	[PORT_16654] = {
- 		.name		= "ST16654",
+diff --git a/drivers/serial/68328serial.c b/drivers/serial/68328serial.c
+index 3046386..9330edb 100644
+--- a/drivers/serial/68328serial.c
++++ b/drivers/serial/68328serial.c
+@@ -78,10 +78,6 @@ struct m68k_serial *m68k_consinfo = 0;
+ 
+ #define M68K_CLOCK (16667000) /* FIXME: 16MHz is likely wrong */
+ 
+-#ifdef CONFIG_CONSOLE
+-extern wait_queue_head_t keypress_wait; 
+-#endif
+-
+ struct tty_driver *serial_driver;
+ 
+ /* number of characters left in xmit buffer before we ask for more */
+@@ -300,10 +296,6 @@ static void receive_chars(struct m68k_serial *info, unsigned short rx)
+ 				return;
+ #endif /* CONFIG_MAGIC_SYSRQ */
+ 			}
+-			/* It is a 'keyboard interrupt' ;-) */
+-#ifdef CONFIG_CONSOLE
+-			wake_up(&keypress_wait);
+-#endif			
+ 		}
+ 
+ 		if(!tty)
 -- 
 1.7.2
 
