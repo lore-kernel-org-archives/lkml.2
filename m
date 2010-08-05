@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934092Ab0HEUUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:20:37 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55462 "EHLO mgw2.diku.dk"
+	id S934122Ab0HEUUv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:20:51 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55466 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759461Ab0HEUU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:20:28 -0400
-Date: Thu, 5 Aug 2010 22:20:26 +0200 (CEST)
+	id S934068Ab0HEUUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:20:46 -0400
+Date: Thu, 5 Aug 2010 22:20:43 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 12/42] drivers/char/synclink.c: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052220100.31692@ask.diku.dk>
+Subject: [PATCH 13/42] drivers/serial/68360serial.c: Adjust confusing if
+ indentation
+Message-ID: <Pine.LNX.4.64.1008052220270.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -49,19 +50,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/char/synclink.c |    2 +-
+ drivers/serial/68360serial.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/char/synclink.c b/drivers/char/synclink.c
-index a2a5800..b7ac730 100644
---- a/drivers/char/synclink.c
-+++ b/drivers/char/synclink.c
-@@ -6637,7 +6637,7 @@ static bool mgsl_get_rx_frame(struct mgsl_struct *info)
- 			unsigned char *ptmp = info->intermediate_rxbuffer;
+diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
+index 0dff3bb..5e19b6c 100644
+--- a/drivers/serial/68360serial.c
++++ b/drivers/serial/68360serial.c
+@@ -960,7 +960,7 @@ static void change_speed(ser_info_t *info)
+ 	 * !!! ignore all characters if CREAD is not set
+ 	 */
+ 	if ((cflag & CREAD) == 0)
+-	 info->read_status_mask &= ~BD_SC_EMPTY;
++		info->read_status_mask &= ~BD_SC_EMPTY;
+ 	 local_irq_save(flags);
  
- 			if ( !(status & RXSTATUS_CRC_ERROR))
--			info->icount.rxok++;
-+				info->icount.rxok++;
- 			
- 			while(copy_count) {
- 				int partial_count;
+ 	 /* Start bit has not been added (so don't, because we would just
