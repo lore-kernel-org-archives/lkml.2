@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934230Ab0HEU0S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:26:18 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:57993 "EHLO mgw2.diku.dk"
+	id S934297Ab0HEU0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:26:30 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:58003 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934268Ab0HEU0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:26:07 -0400
-Date: Thu, 5 Aug 2010 22:26:04 +0200 (CEST)
+	id S934252Ab0HEU0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:26:23 -0400
+Date: Thu, 5 Aug 2010 22:26:20 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 30/42] drivers/net/wireless/prism54: Adjust confusing if
- indentation
-Message-ID: <Pine.LNX.4.64.1008052225460.31692@ask.diku.dk>
+To: Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 31/42] drivers/net: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052226050.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,7 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Indent the branch of an if.
+Outdent the code following the if.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -53,19 +51,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/prism54/isl_ioctl.c |    2 +-
+ drivers/net/gianfar.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/wireless/prism54/isl_ioctl.c b/drivers/net/wireless/prism54/isl_ioctl.c
-index 77cd65d..d97a2ca 100644
---- a/drivers/net/wireless/prism54/isl_ioctl.c
-+++ b/drivers/net/wireless/prism54/isl_ioctl.c
-@@ -3234,7 +3234,7 @@ prism54_ioctl(struct net_device *ndev, struct ifreq *rq, int cmd)
- 	switch (cmd) {
- 		case PRISM54_HOSTAPD:
- 		if (!capable(CAP_NET_ADMIN))
--		return -EPERM;
-+			return -EPERM;
- 		ret = prism54_hostapd(ndev, &wrq->u.data);
- 		return ret;
- 	}
+diff --git a/drivers/net/gianfar.c b/drivers/net/gianfar.c
+index a1b6301..36ccc37 100644
+--- a/drivers/net/gianfar.c
++++ b/drivers/net/gianfar.c
+@@ -1859,7 +1859,7 @@ static int register_grp_irqs(struct gfar_priv_grp *grp)
+ 				printk(KERN_ERR "%s: Can't get IRQ %d\n",
+ 					dev->name, grp->interruptError);
+ 
+-				goto err_irq_fail;
++			goto err_irq_fail;
+ 		}
+ 
+ 		if ((err = request_irq(grp->interruptTransmit, gfar_transmit,
