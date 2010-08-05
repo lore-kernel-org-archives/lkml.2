@@ -1,83 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934779Ab0HEWnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:43:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59672 "EHLO mx1.suse.de"
+	id S934732Ab0HEWnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:43:47 -0400
+Received: from kroah.org ([198.145.64.141]:37643 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933285Ab0HEWnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:43:09 -0400
-Date: Fri, 6 Aug 2010 00:42:37 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: [PULL REQUEST] ext3 & quota fixes and cleanups for 2.6.36
-Message-ID: <20100805224236.GB17416@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933260Ab0HEWYI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:08 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 28/67] tty: Make vt's have a tty_port
+Date: Thu,  5 Aug 2010 15:22:55 -0700
+Message-Id: <1281047014-23429-28-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <20100805213528.GA13794@kroah.com>
+References: <20100805213528.GA13794@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+From: Alan Cox <alan@linux.intel.com>
 
-  could you please pull from
+The vt layer isn't safely handling reference counts to tty object on the input
+side. Add a tty port structure to the vt layer in order to implement this using
+the standard helpers.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/char/vt.c              |    2 ++
+ include/linux/console_struct.h |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-  to get quota cleanups and some ext3 cleanups and fixes. There's also
-MAINTAINERS update adding myself to ext2 & ext3 entries.
-  Shortlog below:
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 321c928..a950b28 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -777,6 +777,7 @@ int vc_allocate(unsigned int currcons)	/* return 0 on success */
+ 	    if (!vc)
+ 		return -ENOMEM;
+ 	    vc_cons[currcons].d = vc;
++	    tty_port_init(&vc->port);
+ 	    INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
+ 	    visual_init(vc, currcons, 1);
+ 	    if (!*vc->vc_uni_pagedir_loc)
+@@ -2914,6 +2915,7 @@ static int __init con_init(void)
+ 	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
+ 		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
+ 		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
++		tty_port_init(&vc->port);
+ 		visual_init(vc, currcons, 1);
+ 		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
+ 		vc_init(vc, vc->vc_rows, vc->vc_cols,
+diff --git a/include/linux/console_struct.h b/include/linux/console_struct.h
+index d7d9acd..25bf67f 100644
+--- a/include/linux/console_struct.h
++++ b/include/linux/console_struct.h
+@@ -21,6 +21,8 @@ struct vt_struct;
+ #define NPAR 16
+ 
+ struct vc_data {
++	struct tty_port port;			/* Upper level data */
++
+ 	unsigned short	vc_num;			/* Console number */
+ 	unsigned int	vc_cols;		/* [#] Console size */
+ 	unsigned int	vc_rows;
+-- 
+1.7.2
 
-Andi Kleen (1):
-      ext3: Fix set but unused variables
-
-Andreas Dilger (1):
-      MAINTAINERS: Update address of Andreas Dilger
-
-Christoph Hellwig (3):
-      quota: Clean up the namespace in dqblk_xfs.h
-      quota: clean up quota active checks
-      ext3: remove vestiges of nobh support
-
-Dave Chinner (1):
-      ext3: default to ordered mode
-
-Dmitry Monakhov (1):
-      quota: check quota reservation on remove_dquot_ref
-
-Jan Kara (4):
-      ext3: Avoid filesystem corruption after a crash under heavy delete load
-      MAINTAINERS: Update entries of ext2 and ext3
-      quota: Use mark_inode_dirty_sync instead of mark_inode_dirty
-      ext3: Fix dirtying of journalled buffers in data=journal mode
-
-Jiaying Zhang (1):
-      quota: Change quota error message to print out disk and function name
-
-The diffstat is
-
- MAINTAINERS                     |    6 ++-
- fs/ext3/Kconfig                 |    1 +
- fs/ext3/inode.c                 |   80 ++++++++++++++++++++-----------------
- fs/ext3/namei.c                 |    3 +-
- fs/ext3/resize.c                |    2 -
- fs/ext3/super.c                 |   17 ++------
- fs/gfs2/quota.c                 |   10 ++--
- fs/jbd/journal.c                |    7 ---
- fs/jbd/recovery.c               |   11 +----
- fs/quota/dquot.c                |   79 ++++++++++++++++++++++++++----------
- fs/quota/quota_tree.c           |   85 +++++++++++++++++++--------------------
- fs/quota/quota_tree.h           |    6 ---
- fs/quota/quota_v1.c             |    3 +-
- fs/quota/quota_v2.c             |   11 ++---
- fs/xfs/linux-2.6/xfs_quotaops.c |   10 ++--
- fs/xfs/quota/xfs_qm_syscalls.c  |   32 +++++++-------
- include/linux/dqblk_xfs.h       |   24 +++++-----
- include/linux/ext3_fs.h         |    1 -
- include/linux/quotaops.h        |   26 +++++-------
- 19 files changed, 208 insertions(+), 206 deletions(-)
-
-							Thanks
-								Honza
