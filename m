@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab0HEE6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 00:58:20 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45534 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab0HEE6Q (ORCPT
+	id S1757309Ab0HEFA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 01:00:27 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47532 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab0HEFAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 00:58:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hw1Nt4BZCyyE+CVNY6Jj0X6d1uBcpIjSolDe5ah+LZb9DJ8FjZv7ivxXMh+THFtAB6
-         NIOA8nmHBRXL/Rk7fciJi3nqDQOVbvRpi0QO/HHtWYyhTX4YMzX4k/6mh4CeUkRBNCCP
-         Cs6Y5fswcpja3Ez4R+Naw5H/GECci9AyBhr4M=
-Subject: Re: [PATCH] Change struct flchip_shared spinlock locking into mutex
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Arnd Bergmann <arnd@arndb.de>, Vasiliy Kulikov <segooon@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Jiri Slaby <jslaby@suse.cz>, Tejun Heo <tj@kernel.org>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <1280778048-6208-1-git-send-email-stefani@seibold.net>
-References: <1280778048-6208-1-git-send-email-stefani@seibold.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 07:58:11 +0300
-Message-Id: <1280984291.1175.15.camel@localhost.localdomain>
+	Thu, 5 Aug 2010 01:00:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 5 Aug 2010 13:55:31 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 5/9] v4  Allow memory_block to span multiple memory
+ sections
+Message-Id: <20100805135531.498625ab.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C581C61.1050408@austin.ibm.com>
+References: <4C581A6D.9030908@austin.ibm.com>
+	<4C581C61.1050408@austin.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 21:40 +0200, stefani@seibold.net wrote:
-> From: Stefani Seibold <stefani@seibold.net>
-> 
-> This patch prevent to schedule while atomic by changing the
-> flchip_shared spinlock into a mutex. This should be save since no atomic
-> path will use this lock.
-> 
-> This patch is based on linux kernel 2.6.35. Please apply.
-> 
-> It was requested by Arnd Bergmann and Vasiliy Kulikov.
+On Tue, 03 Aug 2010 08:40:49 -0500
+Nathan Fontenot <nfont@austin.ibm.com> wrote:
 
-Taken to my l2-mtd-2.6.git / master
+> Update the memory sysfs code that each sysfs memory directory is now
+> considered a memory block that can contain multiple memory sections per
+> memory block.  The default size of each memory block is SECTION_SIZE_BITS
+> to maintain the current behavior of having a single memory section per
+> memory block (i.e. one sysfs directory per memory section).
+> 
+> For architectures that want to have memory blocks span multiple
+> memory sections they need only define their own memory_block_size_bytes()
+> routine.
+> 
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+(But maybe it's better to get ppc guy's Ack.)
+
 
