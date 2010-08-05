@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab0HEAww (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 20:52:52 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:52634 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab0HEAwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 20:52:51 -0400
-Subject: Re: [PATCH] [RFC] notify userspace about time changes
-From: john stultz <johnstul@us.ibm.com>
-To: Chris Friesen <chris.friesen@genband.com>
-Cc: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
-        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C59B5E1.9040707@genband.com>
-References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
-	 <1280937526.28884.21.camel@work-vm>  <4C59B5E1.9040707@genband.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 04 Aug 2010 17:52:26 -0700
-Message-ID: <1280969546.2678.33.camel@localhost.localdomain>
+	id S1759073Ab0HEAxh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 20:53:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58631 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752288Ab0HEAxd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 20:53:33 -0400
+Date: Thu, 5 Aug 2010 10:53:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Kulikov Vasiliy <segooon@gmail.com>
+Subject: linux-next: manual merge of the genesis tree with Linus' tree
+Message-Id: <20100805105327.d1e4deb1.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__5_Aug_2010_10_53_27_+1000_ch8KvHF_uM+B6cz9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 12:48 -0600, Chris Friesen wrote:
-> On 08/04/2010 09:58 AM, john stultz wrote:
-> 
-> > Is there a actual use case that you need this for?  I don't really have
-> > an issue with the code I just really want to make sure the feature would
-> > be useful enough to justify the API and code maintenance going forward.
-> 
-> We actually added a time-change-notification mechanism internally a long
-> time ago but never saw demand for it and so never bothered trying to
-> push it upstream.  Ours is signal-based.
-> 
-> Among other things we use it to pass on time-change notifications to an
-> emulator running a proprietary OS that really cares about having an
-> accurate time-of-day but can't afford a syscall to retrieve it every time.
+--Signature=_Thu__5_Aug_2010_10_53_27_+1000_ch8KvHF_uM+B6cz9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So the eventfd based method (and the filtering) proposed would work for
-you? 
+Hi Paul,
 
-thanks
--john
+Today's linux-next merge of the genesis tree got a conflict in
+drivers/net/irda/sh_irda.c between commit
+752ef8b541da2606c5668dcc176e7b16dd68b945 ("drivers: irda: fix sign bug")
+from Linus' tree and commit 8a2b6beffc88b83089845d72eed2ed74eb5c9b1e
+("net/irda/sh_irda: Modify clk_get lookups") from the genesis tree.
 
+Just context changes.  I fixed it up (trivially) and can carry the fix
+for a while.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/net/irda/sh_irda.c
+index edd5666,9db7084..0000000
+--- a/drivers/net/irda/sh_irda.c
++++ b/drivers/net/irda/sh_irda.c
+
+--Signature=_Thu__5_Aug_2010_10_53_27_+1000_ch8KvHF_uM+B6cz9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMWguHAAoJEDMEi1NhKgbsS94H/0Z8gRWB/w5im9F08fqiQ4rC
+clUU8rLiP9e7wO+ZGJKoZ0F7M7Niw3nY2eSA+yrSg/VGVZXTqNGecd1up1Z+YBbK
+UODlB7zVaLx0XMpL4fYneVLotID0UihW8JY/Sy6f5Bc6JxplHUaPQ3SXWhTM619G
+DeK7hyxIjKddWwkG67RH+QKPlE0NnU1Xbmzl13Ln91AQFQVV9hU5Lt9wlQTKoydi
+eknjn0GmqZ6DG6RWhBlevF6FN2/vASaNtKzeUFeqetP+MnkG7GIjRanAFaGicK55
+JMEZjIvPa2MQ+tlgP0qSQ88nKqfdanZ+nSedx8obv5qdmW9hoC75UXjMpdauH6s=
+=PVbb
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Aug_2010_10_53_27_+1000_ch8KvHF_uM+B6cz9--
