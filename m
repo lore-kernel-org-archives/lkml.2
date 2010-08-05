@@ -1,255 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760132Ab0HEK1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:27:18 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:25617 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760048Ab0HEK0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:26:21 -0400
-Date: Thu, 05 Aug 2010 12:27:38 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv6 4/7] USB: gadget: composite: Better string override handling
-In-reply-to: <c59df14c2fff1e327bb37f382769dad9b41da01c.1281002833.git.m.nazarewicz@samsung.com>
-To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
-        USB <linux-usb@vger.kernel.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        Vladimir Pankratov <scriptkid@mail.ru>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <f663aae67270ec7bf8732b1ba48b6030ded70355.1281002833.git.m.nazarewicz@samsung.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <cover.1281002833.git.m.nazarewicz@samsung.com>
- <4d9f94eea017dfb5c1931aecd56c7b3de92de1ad.1281002833.git.m.nazarewicz@samsung.com>
- <c66a92a8efa1ec83017633035352ba4a936d0f94.1281002833.git.m.nazarewicz@samsung.com>
- <c59df14c2fff1e327bb37f382769dad9b41da01c.1281002833.git.m.nazarewicz@samsung.com>
+	id S1760139Ab0HEK1i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:27:38 -0400
+Received: from tundra.namei.org ([65.99.196.166]:45941 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760109Ab0HEK1a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 06:27:30 -0400
+Date: Thu, 5 Aug 2010 20:27:24 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Pavel Machek <pavel@ucw.cz>
+cc: John Johansen <john.johansen@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [AppArmor #7 0/13] AppArmor security module
+In-Reply-To: <20100805062431.GA1546@ucw.cz>
+Message-ID: <alpine.LRH.2.00.1008052023030.14772@tundra.namei.org>
+References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com> <alpine.LRH.2.00.1007300903440.7719@tundra.namei.org> <20100805062431.GA1546@ucw.cz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The iManufatcurer, iProduct and iSerialNumber composite module
-parameters were only used when the gadget driver registers
-strings for manufacturer, product and serial number.  If the
-gadget never bothered to set corresponding fields in USB device
-descriptors those module parameters are ignored.
+On Thu, 5 Aug 2010, Pavel Machek wrote:
 
-This commit makes the parameters work even if the strings ID
-have not been assigned.  It also changes the way IDs are
-overridden -- what IDs are overridden is now saved in
-usb_composite_dev structure -- which makes it unnecessary to
-modify the string tables the way previous code did.
+> > Note that I added the patch below to update AA against the latest 
+> > version of path_truncate:
+> 
+> Ok, so now we have two name-based "security" modules. Can we at least
+> drop TOMOYO? That seems to have all apparmor disadvantages plus some
+> more...
 
-The commit also adds a iProduct and iManufatcurer fields to the
-usb_composite_device structure.  If they are set, appropriate
-strings are reserved and added to device descriptor.  This makes
-it unnecessary for gadget drivers to maintain code for setting
-those.  If iProduct is not set it defaults to
-usb_composite_device::name; if iManufatcurer is not set
-a default "<system> <release> with <gadget-name>" is used.
+No.  The policy is that any security module which implements an access 
+control scheme and meets a well-defined security goal, and passes 
+technical review, may be merged.
 
-The last thing is that if needs_serial field of
-usb_composite_device is set and user failed to provided
-iSerialNumber parameter a warning is issued.
+aka, The Arjan Protocol:
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/usb/gadget/composite.c |   95 ++++++++++++++++++++++++++-------------
- include/linux/usb/composite.h  |   13 +++++
- 2 files changed, 76 insertions(+), 32 deletions(-)
+http://kerneltrap.org/Linux/Documenting_Security_Module_Intent
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index e483f80..38f7982 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -69,6 +69,8 @@ static char *iSerialNumber;
- module_param(iSerialNumber, charp, 0);
- MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
- 
-+static char composite_manufacturer[50];
-+
- /*-------------------------------------------------------------------------*/
- 
- /**
-@@ -599,6 +601,7 @@ static int get_string(struct usb_composite_dev *cdev,
- 	struct usb_configuration	*c;
- 	struct usb_function		*f;
- 	int				len;
-+	const char			*str;
- 
- 	/* Yes, not only is USB's I18N support probably more than most
- 	 * folk will ever care about ... also, it's all supported here.
-@@ -638,9 +641,29 @@ static int get_string(struct usb_composite_dev *cdev,
- 		return s->bLength;
- 	}
- 
--	/* Otherwise, look up and return a specified string.  String IDs
--	 * are device-scoped, so we look up each string table we're told
--	 * about.  These lookups are infrequent; simpler-is-better here.
-+	/* Otherwise, look up and return a specified string.  First
-+	 * check if the string has not been overridden.
-+	 */
-+	if (cdev->manufacturer_override == id)
-+		str = iManufacturer ?: composite->iManufacturer ?:
-+			composite_manufacturer;
-+	else if (cdev->product_override == id)
-+		str = iProduct ?: composite->iProduct;
-+	else if (cdev->serial_override == id)
-+		str = iSerialNumber;
-+	else
-+		str = NULL;
-+	if (str) {
-+		struct usb_gadget_strings strings = {
-+			.language = language,
-+			.strings  = &(struct usb_string) { 0xff, str }
-+		};
-+		return usb_gadget_get_string(&strings, 0xff, buf);
-+	}
-+
-+	/* String IDs are device-scoped, so we look up each string
-+	 * table we're told about.  These lookups are infrequent;
-+	 * simpler-is-better here.
- 	 */
- 	if (composite->strings) {
- 		len = lookup_string(composite->strings, buf, language, id);
-@@ -1025,26 +1048,17 @@ composite_unbind(struct usb_gadget *gadget)
- 	composite = NULL;
- }
- 
--static void
--string_override_one(struct usb_gadget_strings *tab, u8 id, const char *s)
-+static u8 override_id(struct usb_composite_dev *cdev, u8 *desc)
- {
--	struct usb_string		*str = tab->strings;
--
--	for (str = tab->strings; str->s; str++) {
--		if (str->id == id) {
--			str->s = s;
--			return;
--		}
-+	if (!*desc) {
-+		int ret = usb_string_id(cdev);
-+		if (unlikely(ret < 0))
-+			WARNING(cdev, "failed to override string ID\n");
-+		else
-+			*desc = ret;
- 	}
--}
- 
--static void
--string_override(struct usb_gadget_strings **tab, u8 id, const char *s)
--{
--	while (*tab) {
--		string_override_one(*tab, id, s);
--		tab++;
--	}
-+	return *desc;
- }
- 
- static int composite_bind(struct usb_gadget *gadget)
-@@ -1101,19 +1115,34 @@ static int composite_bind(struct usb_gadget *gadget)
- 	cdev->desc = *composite->dev;
- 	cdev->desc.bMaxPacketSize0 = gadget->ep0->maxpacket;
- 
--	/* strings can't be assigned before bind() allocates the
--	 * releavnt identifiers
--	 */
--	if (cdev->desc.iManufacturer && iManufacturer)
--		string_override(composite->strings,
--			cdev->desc.iManufacturer, iManufacturer);
--	if (cdev->desc.iProduct && iProduct)
--		string_override(composite->strings,
--			cdev->desc.iProduct, iProduct);
--	if (cdev->desc.iSerialNumber && iSerialNumber)
--		string_override(composite->strings,
--			cdev->desc.iSerialNumber, iSerialNumber);
-+	/* stirng overrides */
-+	if (iManufacturer || !cdev->desc.iManufacturer) {
-+		if (!iManufacturer && !composite->iManufacturer &&
-+		    !*composite_manufacturer)
-+			snprintf(composite_manufacturer,
-+				 sizeof composite_manufacturer,
-+				 "%s %s with %s",
-+				 init_utsname()->sysname,
-+				 init_utsname()->release,
-+				 gadget->name);
-+
-+		cdev->manufacturer_override =
-+			override_id(cdev, &cdev->desc.iManufacturer);
-+	}
-+
-+	if (iProduct || (!cdev->desc.iProduct && composite->iProduct))
-+		cdev->product_override =
-+			override_id(cdev, &cdev->desc.iProduct);
-+
-+	if (iSerialNumber)
-+		cdev->serial_override =
-+			override_id(cdev, &cdev->desc.iSerialNumber);
-+
-+	/* has userspace failed to provide a serial number? */
-+	if (composite->needs_serial && !cdev->desc.iSerialNumber)
-+		WARNING(cdev, "userspace failed to provide iSerialNumber\n");
- 
-+	/* finish up */
- 	status = device_create_file(&gadget->dev, &dev_attr_suspended);
- 	if (status)
- 		goto fail;
-@@ -1211,6 +1240,8 @@ int usb_composite_register(struct usb_composite_driver *driver)
- 	if (!driver || !driver->dev || !driver->bind || composite)
- 		return -EINVAL;
- 
-+	if (!driver->iProduct)
-+		driver->iProduct = driver->name;
- 	if (!driver->name)
- 		driver->name = "composite";
- 	composite_driver.function =  (char *) driver->name;
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index 890bc14..d590904 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -237,10 +237,17 @@ int usb_add_config(struct usb_composite_dev *,
- /**
-  * struct usb_composite_driver - groups configurations into a gadget
-  * @name: For diagnostics, identifies the driver.
-+ * @iProduct: Used as iProduct override if @dev->iProduct is not set.
-+ *	If NULL value of @name is taken.
-+ * @iManufacturer: Used as iManufacturer override if @dev->iManufacturer is
-+ *	not set. If NULL a default "<system> <release> with <udc>" value
-+ *	will be used.
-  * @dev: Template descriptor for the device, including default device
-  *	identifiers.
-  * @strings: tables of strings, keyed by identifiers assigned during bind()
-  *	and language IDs provided in control requests
-+ * @needs_serial: set to 1 if the gadget needs userspace to provide
-+ * 	a serial number.  If one is not provided, warning will be printed.
-  * @bind: (REQUIRED) Used to allocate resources that are shared across the
-  *	whole device, such as string IDs, and add its configurations using
-  *	@usb_add_config().  This may fail by returning a negative errno
-@@ -265,8 +272,11 @@ int usb_add_config(struct usb_composite_dev *,
-  */
- struct usb_composite_driver {
- 	const char				*name;
-+	const char				*iProduct;
-+	const char				*iManufacturer;
- 	const struct usb_device_descriptor	*dev;
- 	struct usb_gadget_strings		**strings;
-+	unsigned		needs_serial:1;
- 
- 	/* REVISIT:  bind() functions can be marked __init, which
- 	 * makes trouble for section mismatch analysis.  See if
-@@ -333,6 +343,9 @@ struct usb_composite_dev {
- 	struct list_head		configs;
- 	struct usb_composite_driver	*driver;
- 	u8				next_string_id;
-+	u8				manufacturer_override;
-+	u8				product_override;
-+	u8				serial_override;
- 
- 	/* the gadget driver won't enable the data pullup
- 	 * while the deactivation count is nonzero.
+
 -- 
-1.7.1
-
+James Morris
+<jmorris@namei.org>
