@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933417Ab0HEQsH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:48:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62323 "EHLO mga01.intel.com"
+	id S1758941Ab0HEQv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:51:27 -0400
+Received: from susan.uniplac.net ([200.135.4.9]:56641 "EHLO uniplac.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab0HEQsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:48:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
-   d="scan'208";a="593293477"
-Message-ID: <4C5AEB41.9050903@intel.com>
-Date: Thu, 05 Aug 2010 09:48:01 -0700
-From: John Fastabend <john.r.fastabend@intel.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1750881Ab0HEQvZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:51:25 -0400
+From: "Christopher Andrew" <info@uniplac.net>
+Reply-To: andrewsco.llp@computermail.net
+Subject: THIS IS MY SECOND MAIL TO YOU.
+Date: Thu, 5 Aug 2010 15:33:44 +0000
+Message-Id: <20100805145135.M70952@uniplac.net>
+X-Mailer: Open WebMail 2.51 20050228
+X-OriginatingIP: 195.245.109.83 (isa)
 MIME-Version: 1.0
-To: divya <dipraksh@linux.vnet.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-        netdev <netdev@vger.kernel.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-Subject: Re: [linux-next] build failure
-References: <4C5A4CF4.4070203@linux.vnet.ibm.com>
-In-Reply-To: <4C5A4CF4.4070203@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+	charset=iso-8859-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-divya wrote:
-> Yestersday's linux-next(2.6.35_next_20100802) build fails with the following error on both system p and x.
-> 
-> 
->    drivers/net/ixgbe/ixgbe_main.c: In function 'ixgbe_select_queue':
->    drivers/net/ixgbe/ixgbe_main.c:6159: error: 'struct ixgbe_fcoe' has no member named 'up'
->    drivers/net/ixgbe/ixgbe_main.c: In function 'ixgbe_xmit_frame':
->    drivers/net/ixgbe/ixgbe_main.c:6221: error: 'struct ixgbe_fcoe' has no member named 'up'
->    make[3]: *** [drivers/net/ixgbe/ixgbe_main.o] Error 1
->    make[2]: *** [drivers/net/ixgbe] Error 2
->    make[2]: *** Waiting for unfinished jobs....
->    make[1]: *** [drivers/net] Error 2
->    make: *** [drivers] Error 2
-> 
-> Thanks
-> Divya
-> 
-> 
+For your Attention,
 
-Hi Divya,
+I am contacting you once more on behalf of the Trustees and Executors of 
+the estate of late Dr Maurice  Wohl, as you
+have not responded to my previous mail.
+I therefore contact you again with this same email as written in the 
+will as it appears to be the only option for us to
+get through to you.
 
-Jeff should have a fix for this in his queue already.  This is caused by 
-building with CONFIG_FCOE and without CONFIG_IXGBE_DCB.
+This is to inform you that we are in the process of finalizing the 
+execution of the Will and Last Testament of late Dr.
+Maurice Wohl.
+For your information, your name is written in the will as one of the 
+beneficiaries.
+Do contact me via my official email below for more clarification.
 
-Thanks,
-John.
+Sincerely,
+
+Christopher Andrew.
+Andrews & Lawyers LLP.
+1 Flavian Road, Nettleham Road,
+Lincoln LN2 4GR.England, UK
+Tel: +44 (0) 702 402 2755
+Tel: +44 (0) 702 401 3777
+Fax: +44 (0) 709 289 9760
+Email:andrewsco.llp@computermail.net
