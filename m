@@ -1,243 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760476Ab0HEQ3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:29:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35560 "EHLO mga09.intel.com"
+	id S933714Ab0HEQa6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:30:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19701 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760404Ab0HEQ3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:29:10 -0400
+	id S1760631Ab0HEQ3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:29:22 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
-   d="scan'208";a="542252487"
-Message-Id: <20100805162432.820843374@intel.com>
+   d="scan'208";a="308628154"
+Message-Id: <20100805162433.807859106@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 06 Aug 2010 00:10:52 +0800
+Date: Fri, 06 Aug 2010 00:10:59 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jan Kara <jack@suse.cz>, Jens Axboe <axboe@kernel.dk>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Richard Kennedy <richard@rsk.demon.co.uk>
+        Jan Kara <jack@suse.cz>, Mel Gorman <mel@csn.ul.ie>
 CC: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 01/13] writeback: reduce calls to global_page_state in balance_dirty_pages()
+Subject: [PATCH 08/13] writeback: pass writeback_control down to move_expired_inodes()
 References: <20100805161051.501816677@intel.com>
-Content-Disposition: inline; filename=writeback-less-balance-calc.patch
+Content-Disposition: inline; filename=writeback-pass-wbc-to-queue_io.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reducing the number of times balance_dirty_pages calls global_page_state
-reduces the cache references and so improves write performance on a
-variety of workloads.
+This is to prepare for moving the dirty expire policy to move_expired_inodes().
+No behavior change.
 
-'perf stats' of simple fio write tests shows the reduction in cache
-access.  Where the test is fio 'write,mmap,600Mb,pre_read' on AMD
-AthlonX2 with 3Gb memory (dirty_threshold approx 600 Mb) running each
-test 10 times, dropping the fasted & slowest values then taking the
-average & standard deviation
-
-		average (s.d.) in millions (10^6)
-2.6.31-rc8	648.6 (14.6)
-+patch		620.1 (16.5)
-
-Achieving this reduction is by dropping clip_bdi_dirty_limit as it
-rereads the counters to apply the dirty_threshold and moving this check
-up into balance_dirty_pages where it has already read the counters.
-
-Also by rearrange the for loop to only contain one copy of the limit
-tests allows the pdflush test after the loop to use the local copies of
-the counters rather than rereading them.
-
-In the common case with no throttling it now calls global_page_state 5
-fewer times and bdi_stat 2 fewer.
-
-Fengguang:
-
-This patch slightly changes behavior by replacing clip_bdi_dirty_limit()
-with the explicit check (nr_reclaimable + nr_writeback >= dirty_thresh)
-to avoid exceeding the dirty limit. Since the bdi dirty limit is mostly
-accurate we don't need to do routinely clip. A simple dirty limit check
-would be enough.
-
-The check is necessary because, in principle we should throttle
-everything calling balance_dirty_pages() when we're over the total
-limit, as said by Peter.
-
-We now set and clear dirty_exceeded not only based on bdi dirty limits,
-but also on the global dirty limit. The global limit check is added in
-place of clip_bdi_dirty_limit() for safety and not intended as a
-behavior change. The bdi limits should be tight enough to keep all dirty
-pages under the global limit at most time; occasional small exceeding
-should be OK though. The change makes the logic more obvious: the global
-limit is the ultimate goal and shall be always imposed.
-
-We may now start background writeback work based on outdated conditions.
-That's safe because the bdi flush thread will (and have to) double check
-the states. It reduces overall overheads because the test based on old
-states still have good chance to be right.
-
-[akpm@linux-foundation.org] fix uninitialized dirty_exceeded
-
-CC: Jan Kara <jack@suse.cz>
-CC: Jens Axboe <axboe@kernel.dk>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+Acked-by: Jan Kara <jack@suse.cz>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   95 ++++++++++++++----------------------------
- 1 file changed, 33 insertions(+), 62 deletions(-)
+ fs/fs-writeback.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2010-07-20 12:53:17.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-07-20 12:54:58.000000000 +0800
-@@ -253,32 +253,6 @@ static void bdi_writeout_fraction(struct
- 	}
- }
- 
--/*
-- * Clip the earned share of dirty pages to that which is actually available.
-- * This avoids exceeding the total dirty_limit when the floating averages
-- * fluctuate too quickly.
-- */
--static void clip_bdi_dirty_limit(struct backing_dev_info *bdi,
--		unsigned long dirty, unsigned long *pbdi_dirty)
--{
--	unsigned long avail_dirty;
--
--	avail_dirty = global_page_state(NR_FILE_DIRTY) +
--		 global_page_state(NR_WRITEBACK) +
--		 global_page_state(NR_UNSTABLE_NFS) +
--		 global_page_state(NR_WRITEBACK_TEMP);
--
--	if (avail_dirty < dirty)
--		avail_dirty = dirty - avail_dirty;
--	else
--		avail_dirty = 0;
--
--	avail_dirty += bdi_stat(bdi, BDI_RECLAIMABLE) +
--		bdi_stat(bdi, BDI_WRITEBACK);
--
--	*pbdi_dirty = min(*pbdi_dirty, avail_dirty);
--}
--
- static inline void task_dirties_fraction(struct task_struct *tsk,
- 		long *numerator, long *denominator)
+--- linux-next.orig/fs/fs-writeback.c	2010-08-05 23:28:18.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-08-05 23:28:19.000000000 +0800
+@@ -213,8 +213,8 @@ static bool inode_dirtied_after(struct i
+  * Move expired dirty inodes from @delaying_queue to @dispatch_queue.
+  */
+ static void move_expired_inodes(struct list_head *delaying_queue,
+-			       struct list_head *dispatch_queue,
+-				unsigned long *older_than_this)
++				struct list_head *dispatch_queue,
++				struct writeback_control *wbc)
  {
-@@ -469,7 +443,6 @@ get_dirty_limits(unsigned long *pbackgro
- 			bdi_dirty = dirty * bdi->max_ratio / 100;
+ 	LIST_HEAD(tmp);
+ 	struct list_head *pos, *node;
+@@ -224,8 +224,8 @@ static void move_expired_inodes(struct l
  
- 		*pbdi_dirty = bdi_dirty;
--		clip_bdi_dirty_limit(bdi, dirty, pbdi_dirty);
- 		task_dirty_limit(current, pbdi_dirty);
- 	}
- }
-@@ -491,7 +464,7 @@ static void balance_dirty_pages(struct a
- 	unsigned long bdi_thresh;
- 	unsigned long pages_written = 0;
- 	unsigned long pause = 1;
--
-+	bool dirty_exceeded = false;
- 	struct backing_dev_info *bdi = mapping->backing_dev_info;
- 
- 	for (;;) {
-@@ -509,10 +482,35 @@ static void balance_dirty_pages(struct a
- 					global_page_state(NR_UNSTABLE_NFS);
- 		nr_writeback = global_page_state(NR_WRITEBACK);
- 
--		bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--		bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+		/*
-+		 * In order to avoid the stacked BDI deadlock we need
-+		 * to ensure we accurately count the 'dirty' pages when
-+		 * the threshold is low.
-+		 *
-+		 * Otherwise it would be possible to get thresh+n pages
-+		 * reported dirty, even though there are thresh-m pages
-+		 * actually dirty; with m+n sitting in the percpu
-+		 * deltas.
-+		 */
-+		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
-+			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
-+			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
-+		} else {
-+			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
-+			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+		}
-+
-+		/*
-+		 * The bdi thresh is somehow "soft" limit derived from the
-+		 * global "hard" limit. The former helps to prevent heavy IO
-+		 * bdi or process from holding back light ones; The latter is
-+		 * the last resort safeguard.
-+		 */
-+		dirty_exceeded =
-+			(bdi_nr_reclaimable + bdi_nr_writeback >= bdi_thresh)
-+			|| (nr_reclaimable + nr_writeback >= dirty_thresh);
- 
--		if (bdi_nr_reclaimable + bdi_nr_writeback <= bdi_thresh)
-+		if (!dirty_exceeded)
+ 	while (!list_empty(delaying_queue)) {
+ 		inode = list_entry(delaying_queue->prev, struct inode, i_list);
+-		if (older_than_this &&
+-		    inode_dirtied_after(inode, *older_than_this))
++		if (wbc->older_than_this &&
++		    inode_dirtied_after(inode, *wbc->older_than_this))
  			break;
- 
- 		/*
-@@ -540,34 +538,10 @@ static void balance_dirty_pages(struct a
- 		if (bdi_nr_reclaimable > bdi_thresh) {
- 			writeback_inodes_wb(&bdi->wb, &wbc);
- 			pages_written += write_chunk - wbc.nr_to_write;
--			get_dirty_limits(&background_thresh, &dirty_thresh,
--				       &bdi_thresh, bdi);
- 			trace_wbc_balance_dirty_written(&wbc, bdi);
-+			if (pages_written >= write_chunk)
-+				break;		/* We've done our duty */
- 		}
--
--		/*
--		 * In order to avoid the stacked BDI deadlock we need
--		 * to ensure we accurately count the 'dirty' pages when
--		 * the threshold is low.
--		 *
--		 * Otherwise it would be possible to get thresh+n pages
--		 * reported dirty, even though there are thresh-m pages
--		 * actually dirty; with m+n sitting in the percpu
--		 * deltas.
--		 */
--		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
--			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
--		} else if (bdi_nr_reclaimable) {
--			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
--		}
--
--		if (bdi_nr_reclaimable + bdi_nr_writeback <= bdi_thresh)
--			break;
--		if (pages_written >= write_chunk)
--			break;		/* We've done our duty */
--
- 		trace_wbc_balance_dirty_wait(&wbc, bdi);
- 		__set_current_state(TASK_INTERRUPTIBLE);
- 		io_schedule_timeout(pause);
-@@ -581,8 +555,7 @@ static void balance_dirty_pages(struct a
- 			pause = HZ / 10;
- 	}
- 
--	if (bdi_nr_reclaimable + bdi_nr_writeback < bdi_thresh &&
--			bdi->dirty_exceeded)
-+	if (!dirty_exceeded && bdi->dirty_exceeded)
- 		bdi->dirty_exceeded = 0;
- 
- 	if (writeback_in_progress(bdi))
-@@ -597,9 +570,7 @@ static void balance_dirty_pages(struct a
- 	 * background_thresh, to keep the amount of dirty memory low.
- 	 */
- 	if ((laptop_mode && pages_written) ||
--	    (!laptop_mode && ((global_page_state(NR_FILE_DIRTY)
--			       + global_page_state(NR_UNSTABLE_NFS))
--					  > background_thresh)))
-+	    (!laptop_mode && (nr_reclaimable > background_thresh)))
- 		bdi_start_background_writeback(bdi);
+ 		if (sb && sb != inode->i_sb)
+ 			do_sb_sort = 1;
+@@ -262,10 +262,10 @@ static void move_expired_inodes(struct l
+  *                                           |
+  *                                           +--> dequeue for IO
+  */
+-static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
++static void queue_io(struct bdi_writeback *wb, struct writeback_control *wbc)
+ {
+ 	list_splice_init(&wb->b_more_io, &wb->b_io);
+-	move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
++	move_expired_inodes(&wb->b_dirty, &wb->b_io, wbc);
  }
  
+ static int write_inode(struct inode *inode, struct writeback_control *wbc)
+@@ -528,7 +528,7 @@ void writeback_inodes_wb(struct bdi_writ
+ 	wbc->wb_start = jiffies; /* livelock avoidance */
+ 	spin_lock(&inode_lock);
+ 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+-		queue_io(wb, wbc->older_than_this);
++		queue_io(wb, wbc);
+ 
+ 	while (!list_empty(&wb->b_io)) {
+ 		struct inode *inode = list_entry(wb->b_io.prev,
+@@ -557,7 +557,7 @@ static void __writeback_inodes_sb(struct
+ 	wbc->wb_start = jiffies; /* livelock avoidance */
+ 	spin_lock(&inode_lock);
+ 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
+-		queue_io(wb, wbc->older_than_this);
++		queue_io(wb, wbc);
+ 	writeback_sb_inodes(sb, wb, wbc, true);
+ 	spin_unlock(&inode_lock);
+ }
 
 
