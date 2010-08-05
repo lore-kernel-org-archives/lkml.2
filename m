@@ -1,79 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934315Ab0HEU1J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:27:09 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:58032 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934222Ab0HEU07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:26:59 -0400
-Date: Thu, 5 Aug 2010 22:26:56 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-        Jouni Malinen <jmalinen@atheros.com>,
-        Sujith Manoharan <Sujith.Manoharan@atheros.com>,
-        Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-        Senthil Balasubramanian <senthilkumar@atheros.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 33/42] drivers/net/wireless/ath/ath9k: Adjust confusing if
- indentation
-Message-ID: <Pine.LNX.4.64.1008052226380.31692@ask.diku.dk>
+	id S934326Ab0HEU1V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:27:21 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:59915 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934313Ab0HEU1L convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:27:11 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Thu, 5 Aug 2010 14:26:57 -0600
+Subject: [PATCH 8/12] scsi: megaraid_sas - Online Controller Reset (OCR):
+ Driver re-issue the pending cmds to FW
+Thread-Topic: [PATCH 8/12] scsi: megaraid_sas - Online Controller Reset
+ (OCR): Driver re-issue the pending cmds to FW
+Thread-Index: AcsIU1uXSxRLVXfMR7OSlGY/YB7V5AG1d2jACWzNMoA=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67FA5@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D080455A@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3D09274A2@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D09274A2@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+RESUBMIT requested by James Bottomley:
 
-Outdent the code following the if.
+After OCR finished, driver need to re-issue the pending cmds to FW again.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r disable braces4@
-position p1,p2;
-statement S1,S2;
-@@
-
-(
-if (...) { ... }
-|
-if (...) S1@p1 S2@p2
-)
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (p1[0].column == p2[0].column):
-  cocci.print_main("branch",p1)
-  cocci.print_secs("after",p2)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
 ---
-This patch doesn't change the semantics of the code.  But it might not be
-what is intended.
+drivers/scsi/megaraid/megaraid_sas.c |   81 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 80 insertions(+), 1 deletion(-)
 
- drivers/net/wireless/ath/ath9k/ar9003_mac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/ar9003_mac.c b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-index 5b995be..a462da2 100644
---- a/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-+++ b/drivers/net/wireless/ath/ath9k/ar9003_mac.c
-@@ -185,7 +185,7 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked)
- 			ath_print(common, ATH_DBG_INTERRUPT,
- 				  "AR_INTR_SYNC_LOCAL_TIMEOUT\n");
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 07:51:23.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 07:51:23.000000000 -0400
+@@ -2088,7 +2088,86 @@ megasas_complete_cmd(struct megasas_inst
+ static inline void
+ megasas_issue_pending_cmds_again(struct megasas_instance *instance)
+ {
+-	return;
++	struct megasas_cmd *cmd;
++	struct list_head clist_local;
++	union megasas_evt_class_locale class_locale;
++	unsigned long flags;
++	u32 seq_num;
++
++	INIT_LIST_HEAD(&clist_local);
++	spin_lock_irqsave(&instance->hba_lock, flags);
++	list_splice_init(&instance->internal_reset_pending_q, &clist_local);
++	spin_unlock_irqrestore(&instance->hba_lock, flags);
++
++	while (!list_empty(&clist_local)) {
++		cmd	= list_entry((&clist_local)->next,
++					struct megasas_cmd, list);
++		list_del_init(&cmd->list);
++
++		if (cmd->sync_cmd || cmd->scmd) {
++			printk(KERN_NOTICE "megaraid_sas: command %p, %p:%d"
++				"detected to be pending while HBA reset.\n",
++					cmd, cmd->scmd, cmd->sync_cmd);
++
++			cmd->retry_for_fw_reset++;
++
++			if (cmd->retry_for_fw_reset == 3) {
++				printk(KERN_NOTICE "megaraid_sas: cmd %p, %p:%d"
++					"was tried multiple times during reset."
++					"Shutting down the HBA\n",
++					cmd, cmd->scmd, cmd->sync_cmd);
++				megaraid_sas_kill_hba(instance);
++
++				instance->adprecovery =
++						MEGASAS_HW_CRITICAL_ERROR;
++				return;
++			}
++		}
++
++		if (cmd->sync_cmd == 1) {
++			if (cmd->scmd) {
++				printk(KERN_NOTICE "megaraid_sas: unexpected"
++					"cmd attached to internal command!\n");
++			}
++			printk(KERN_NOTICE "megasas: %p synchronous cmd"
++						"on the internal reset queue,"
++						"issue it again.\n", cmd);
++			cmd->cmd_status = ENODATA;
++			instance->instancet->fire_cmd(instance,
++							cmd->frame_phys_addr ,
++							0, instance->reg_set);
++		} else if (cmd->scmd) {
++			printk(KERN_NOTICE "megasas: %p scsi cmd [%02x],%#lx"
++			"detected on the internal queue, issue again.\n",
++			cmd, cmd->scmd->cmnd[0], cmd->scmd->serial_number);
++
++			atomic_inc(&instance->fw_outstanding);
++			instance->instancet->fire_cmd(instance,
++					cmd->frame_phys_addr,
++					cmd->frame_count-1, instance->reg_set);
++		} else {
++			printk(KERN_NOTICE "megasas: %p unexpected cmd on the"
++				"internal reset defer list while re-issue!!\n",
++				cmd);
++		}
++	}
++
++	if (instance->aen_cmd) {
++		printk(KERN_NOTICE "megaraid_sas: aen_cmd in def process\n");
++		megasas_return_cmd(instance, instance->aen_cmd);
++
++		instance->aen_cmd	= NULL;
++	}
++
++	/*
++	* Initiate AEN (Asynchronous Event Notification)
++	*/
++	seq_num = instance->last_seq_num;
++	class_locale.members.reserved = 0;
++	class_locale.members.locale = MR_EVT_LOCALE_ALL;
++	class_locale.members.class = MR_EVT_CLASS_DEBUG;
++
++	megasas_register_aen(instance, seq_num, class_locale.word);
+ }
  
--			REG_WRITE(ah, AR_INTR_SYNC_CAUSE_CLR, sync_cause);
-+		REG_WRITE(ah, AR_INTR_SYNC_CAUSE_CLR, sync_cause);
- 		(void) REG_READ(ah, AR_INTR_SYNC_CAUSE_CLR);
- 
- 	}
+ /**
