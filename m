@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933680Ab0HEWGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:06:24 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6281 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab0HEWGV convert rfc822-to-8bit (ORCPT
+	id S934507Ab0HEWGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:06:36 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:49848 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933704Ab0HEWGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:06:21 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=W+2KCJZ4qrzzfPDD6ABwJvcca7+3rWDUvPN88phEoUA3yjfld124wDgUNYPmnU+GR
-	KFQ9uLWVgowxmnYXDm2cQ==
+	Thu, 5 Aug 2010 18:06:30 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C5B35DB.7010302@s5r6.in-berlin.de>
+Date: Fri, 06 Aug 2010 00:06:19 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-In-Reply-To: <20100805132433.d1d7927b.akpm@linux-foundation.org>
-References: <1280969004-29530-1-git-send-email-mrubin@google.com> 
-	<1280969004-29530-3-git-send-email-mrubin@google.com> <20100805132433.d1d7927b.akpm@linux-foundation.org>
-From: Michael Rubin <mrubin@google.com>
-Date: Thu, 5 Aug 2010 15:05:57 -0700
-Message-ID: <AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
-Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and 
-	pages_entered_writeback
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk
+To: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Best way to send several patches
+References: <AANLkTin5gz-NBGYrmdOQ4F4s-fbETq642JVsHEEJY4HD@mail.gmail.com>
+In-Reply-To: <AANLkTin5gz-NBGYrmdOQ4F4s-fbETq642JVsHEEJY4HD@mail.gmail.com>
+X-Enigmail-Version: 0.96.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 1:24 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed,  4 Aug 2010 17:43:24 -0700
-> Michael Rubin <mrubin@google.com> wrote:
-> Wait.  These counters appear in /proc/vmstat.  So why create standalone
-> /proc/sys/vm files as well?
+Bjarke Istrup Pedersen wrote:
+> I'm reading on the kernelnewbies wiki about janitor work needing be to done.
+> I have been cleaning up some stuff, and have alot of patches (I have
+> split my changed into smaller patches).
 
-I did not know they would show up in /proc/vmstat.
+Good.
 
-I thought it made sense to put them in /proc/sys/vm since the other
-writeback controls are there.
-but have no problems just adding them to /prov/vmstat if that makes more sense.
+> The question is, should I just send them all to this mailinglist
+> (Section 3 of Documentation/SubmittingPatches - the one with the patch
+> bomb - suggest that this is a bad idea), or how should I do it? (I
+> have only submitted a single patch before, so I didn't have to worry
+> about that back then).
+> 
+> I have been thinking about sending a pull request, but since I've only
+> done one patch up until now, I find it unlikely to be trusted enough
+> to get a pull request through (correct me if I'm wrong).
 
-mrubin
+Send the patches to the respective subsystem mailinglist.  Cc the
+responsible maintainer and lkml.
+
+However, the current time is not ideal:  A merge window is open, with
+code in the mainline changing quickly and maintainers being busy with
+integration;  not helped by the fact that some Linux conferences are
+imminent.  Consider to wait until 2.6.36-rc1 was released, then check
+whether your patches are still applicable on top of 2.6.36-rc1, then
+post them.
+-- 
+Stefan Richter
+-=====-==-=- =--- --=-=
+http://arcgraph.de/sr/
