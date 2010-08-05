@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760100Ab0HEKd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:33:59 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:46893 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995Ab0HEKd5 convert rfc822-to-8bit (ORCPT
+	id S1760129Ab0HEKen (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:34:43 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:42188 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab0HEKel (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:33:57 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Thu, 05 Aug 2010 12:35:29 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: linux-next: manual merge of the usb tree with Linus' tree
-In-reply-to: <alpine.LNX.2.00.1008051216260.29919@pobox.suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Justin P.Mattock" <justinmattock@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Thomas Weber <weber@corscience.de>,
-        Mike Frysinger <vapier.adi@gmail.com>
-Message-id: <op.vgynpf0k7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <20100805132208.74bf6ab9.sfr@canb.auug.org.au>
- <alpine.LNX.2.00.1008051216260.29919@pobox.suse.cz>
+	Thu, 5 Aug 2010 06:34:41 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: raven@themaw.net, viro@zeniv.linux.org.uk, miklos@szeredi.hu,
+        jblunck@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-reply-to: <20100804215943.GA29353@shell> (message from Valerie Aurora on
+	Wed, 4 Aug 2010 17:59:43 -0400)
+Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount file systems
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-22-git-send-email-vaurora@redhat.com> <20100713044701.GF3949@zeus.themaw.net> <20100716210226.GD21201@shell> <1279595537.2979.10.camel@localhost> <20100804215943.GA29353@shell>
+Message-Id: <E1OgxmE-0002x2-QW@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 05 Aug 2010 12:34:18 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Aug 2010 12:17:05 +0200, Jiri Kosina <jkosina@suse.cz> wrote:
+On Wed, 4 Aug 2010, Valerie Aurora wrote:
+> I went for MS_WHITEOUT and MS_FALLTHRU, and added the checks for the
+> ops being non-null.
 
-> On Thu, 5 Aug 2010, Stephen Rothwell wrote:
->
->> Today's linux-next merge of the usb tree got a conflict in
->> Documentation/usb/linux.inf between commit
->> 0ea6e61122196509af82cc4f36cbdaacbefb8227 ("Documentation: update broken
->> web addresses") from Linus' tree and commit
->> 2e73ce9389be011587a0ca581b6798b135e64807 ("USB: gadget: g_ether: updated
->> INF file") from the usb tree.
->>
->> The URL that was fixed by the former was removed by the latter, so I just
->> used the latter version.
->
-> I see. Greg, will you just rebase the patch in USB tree on top of current
-> Linus' tree please?
+This bit me.  Mount failing with EINVAL is a big PITA.
 
-It should be enough to add this delta to the "USB: gadget: g_ether: updated
-INF file":
+Miklos
 
--;   http://www.microsoft.com/whdc/hwdev/resources/HWservices/rndis.mspx
-+;   http://www.microsoft.com/whdc/device/network/ndis/rmndis.mspx
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Index: linux-2.6/fs/namespace.c
+===================================================================
+--- linux-2.6.orig/fs/namespace.c	2010-08-05 11:06:56.000000000 +0200
++++ linux-2.6/fs/namespace.c	2010-08-05 11:39:19.000000000 +0200
+@@ -1387,6 +1387,7 @@ check_mnt_union(struct path *mntpnt, str
+ 		return 0;
+ 
+ #ifndef CONFIG_UNION_MOUNT
++	printk(KERN_INFO "union mount: not supported by the kernel\n");
+ 	return -EINVAL;
+ #endif
+ 	for (p = lower_mnt; p; p = next_mnt(p, lower_mnt)) {
+@@ -1396,17 +1397,23 @@ check_mnt_union(struct path *mntpnt, str
+ 			return -EBUSY;
+ 	}
+ 
+-	if (!IS_ROOT(mntpnt->dentry))
++	if (!IS_ROOT(mntpnt->dentry)) {
++		printk(KERN_INFO "union mount: not root\n");
+ 		return -EINVAL;
++	}
+ 
+ 	if (mnt_flags & MNT_READONLY)
+ 		return -EROFS;
+ 
+-	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT))
++	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT)) {
++		printk(KERN_INFO "union mount: whiteout not supported by fs\n");
+ 		return -EINVAL;
++	}
+ 
+-	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU))
++	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU)) {
++		printk(KERN_INFO "union mount: fallthrough not supported by fs\n");
+ 		return -EINVAL;
++	}
+ 
+ 	/* XXX top level mount should only be mounted once */
+ 
