@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934201Ab0HEUZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:25:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:57967 "EHLO mgw2.diku.dk"
+	id S934403Ab0HEU3u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:29:50 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:58038 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934228Ab0HEUZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:25:48 -0400
-Date: Thu, 5 Aug 2010 22:25:46 +0200 (CEST)
+	id S934323Ab0HEU1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:27:16 -0400
+Date: Thu, 5 Aug 2010 22:27:14 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: =?iso-8859-1?Q?Kai_M=C3=A4kisara?= <Kai.Makisara@kolumbus.fi>,
-        Willem Riede <osst@riede.org>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, osst-users@lists.sourceforge.net,
+To: Eric Moore <Eric.Moore@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 29/42] drivers/scsi: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052225240.31692@ask.diku.dk>
+Subject: [PATCH 34/42] drivers/message/fusion: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052226570.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,7 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Outdent the code following the if.
+Indent the branch of an if.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -53,26 +51,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This patch doesn't change the semantics of the code.  But it might not be
-what is intended.
+ drivers/message/fusion/mptbase.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/scsi/st.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
-index 24211d0..9c57a50 100644
---- a/drivers/scsi/st.c
-+++ b/drivers/scsi/st.c
-@@ -4166,9 +4166,9 @@ out_free_tape:
- 			if (STm->cdevs[j]) {
- 				if (cdev == STm->cdevs[j])
- 					cdev = NULL;
--					device_destroy(st_sysfs_class,
--						       MKDEV(SCSI_TAPE_MAJOR,
--							     TAPE_MINOR(i, mode, j)));
-+				device_destroy(st_sysfs_class,
-+					       MKDEV(SCSI_TAPE_MAJOR,
-+						     TAPE_MINOR(i, mode, j)));
- 				cdev_del(STm->cdevs[j]);
- 			}
- 		}
+diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+index d8c668d..92e4b25 100644
+--- a/drivers/message/fusion/mptbase.c
++++ b/drivers/message/fusion/mptbase.c
+@@ -8049,7 +8049,7 @@ union loginfo_type {
+ 			code_desc = ir_code_str[sas_loginfo.dw.code];
+ 			if (sas_loginfo.dw.subcode >=
+ 			    ARRAY_SIZE(raid_sub_code_str))
+-			break;
++				break;
+ 			if (sas_loginfo.dw.code == 0)
+ 				sub_code_desc =
+ 				    raid_sub_code_str[sas_loginfo.dw.subcode];
