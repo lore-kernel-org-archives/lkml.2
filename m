@@ -1,64 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760440Ab0HEQ3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:29:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11532 "EHLO mga11.intel.com"
+	id S933725Ab0HEQc2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:32:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35560 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760304Ab0HEQ3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:29:07 -0400
+	id S1760414Ab0HEQ3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:29:11 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
-   d="scan'208";a="825048607"
-Message-Id: <20100805161051.501816677@intel.com>
+   d="scan'208";a="644977086"
+Message-Id: <20100805162433.536198393@intel.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 06 Aug 2010 00:10:51 +0800
+Date: Fri, 06 Aug 2010 00:10:57 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>
-CC: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        Dave Chinner <david@fromorbit.com>, Martin Bligh <mbligh@google.com>,
+        Michael Rubin <mrubin@google.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 00/13] writeback patches for 2.6.36
+Subject: [PATCH 06/13] writeback: merge for_kupdate and !for_kupdate cases
+References: <20100805161051.501816677@intel.com>
+Content-Disposition: inline; filename=writeback-merge-kupdate-cases.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew,
+Unify the logic for kupdate and non-kupdate cases.
+There won't be starvation because the inodes requeued into b_more_io
+will later be spliced _after_ the remaining inodes in b_io, hence won't
+stand in the way of other inodes in the next run.
 
-These are writeback patches intended for 2.6.36.
+It avoids unnecessary redirty_tail() calls, hence the update of
+i_dirtied_when. The timestamp update is undesirable because it could
+later delay the inode's periodic writeback, or may exclude the inode
+from the data integrity sync operation (which checks timestamp to
+avoid extra work and livelock).
 
-It's combined from 2 previous patchsets:
+===
+How the redirty_tail() comes about:
 
-	writeback cleanups and trivial fixes <http://lkml.org/lkml/2010/7/10/153>
-	writeback: try to write older pages first <http://lkml.org/lkml/2010/7/22/47>
+It was a long story.. This redirty_tail() was introduced with
+wbc.more_io.  The initial patch for more_io actually does not have the
+redirty_tail(), and when it's merged, several 100% iowait bug reports
+arised:
 
-changelog:
-- removed patch "writeback: take account of NR_WRITEBACK_TEMP in balance_dirty_pages()"
-- added patch "writeback: explicit low bound for vm.dirty_ratio"
-- use "if (list_empty(&wb->b_io))" directly in "writeback: sync expired inodes first in background writeback"
-- fix misplaced chunk for removing more_io in include/trace/events/ext4.h
-- update comments in "writeback: fix queue_io() ordering"
-- update comments in "writeback: add comment to the dirty limits functions"
-- patch "writeback: try more writeback as long as something was written" will
-  no longer livelock sync() with Jan's sync() livelock avoidance patches
+reiserfs:
+        http://lkml.org/lkml/2007/10/23/93
 
-	[PATCH 01/13] writeback: reduce calls to global_page_state in balance_dirty_pages()
-	[PATCH 02/13] writeback: avoid unnecessary calculation of bdi dirty thresholds
-	[PATCH 03/13] writeback: add comment to the dirty limits functions
-	[PATCH 04/13] writeback: dont redirty tail an inode with dirty pages
-	[PATCH 05/13] writeback: fix queue_io() ordering
-	[PATCH 06/13] writeback: merge for_kupdate and !for_kupdate cases
-	[PATCH 07/13] writeback: explicit low bound for vm.dirty_ratio
-	[PATCH 08/13] writeback: pass writeback_control down to move_expired_inodes()
-	[PATCH 09/13] writeback: the kupdate expire timestamp should be a moving target
-	[PATCH 10/13] writeback: kill writeback_control.more_io
-	[PATCH 11/13] writeback: sync expired inodes first in background writeback
-	[PATCH 12/13] writeback: try more writeback as long as something was written
-	[PATCH 13/13] writeback: introduce writeback_control.inodes_written
+jfs:    
+        commit 29a424f28390752a4ca2349633aaacc6be494db5
+        JFS: clear PAGECACHE_TAG_DIRTY for no-write pages
+        
+ext2:   
+        http://www.spinics.net/linux/lists/linux-ext4/msg04762.html
 
-Thanks,
-Fengguang
+They are all old bugs hidden in various filesystems that become
+"visible" with the more_io patch. At the time, the ext2 bug is thought
+to be "trivial", so not fixed. Instead the following updated more_io
+patch with redirty_tail() is merged: 
+
+	http://www.spinics.net/linux/lists/linux-ext4/msg04507.html
+
+This will in general prevent 100% on ext2 and possibly other unknown FS bugs.
+
+CC: Dave Chinner <david@fromorbit.com>
+Cc: Martin Bligh <mbligh@google.com>
+Cc: Michael Rubin <mrubin@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |   43 ++++++++++---------------------------------
+ 1 file changed, 10 insertions(+), 33 deletions(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2010-08-05 23:21:43.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-08-05 23:22:02.000000000 +0800
+@@ -378,45 +378,22 @@ writeback_single_inode(struct inode *ino
+ 		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+ 			/*
+ 			 * We didn't write back all the pages.  nfs_writepages()
+-			 * sometimes bales out without doing anything. Redirty
+-			 * the inode; Move it from b_io onto b_more_io/b_dirty.
++			 * sometimes bales out without doing anything.
+ 			 */
+-			/*
+-			 * akpm: if the caller was the kupdate function we put
+-			 * this inode at the head of b_dirty so it gets first
+-			 * consideration.  Otherwise, move it to the tail, for
+-			 * the reasons described there.  I'm not really sure
+-			 * how much sense this makes.  Presumably I had a good
+-			 * reasons for doing it this way, and I'd rather not
+-			 * muck with it at present.
+-			 */
+-			if (wbc->for_kupdate) {
++			inode->i_state |= I_DIRTY_PAGES;
++			if (wbc->nr_to_write <= 0) {
+ 				/*
+-				 * For the kupdate function we move the inode
+-				 * to b_more_io so it will get more writeout as
+-				 * soon as the queue becomes uncongested.
++				 * slice used up: queue for next turn
+ 				 */
+-				inode->i_state |= I_DIRTY_PAGES;
+-				if (wbc->nr_to_write <= 0) {
+-					/*
+-					 * slice used up: queue for next turn
+-					 */
+-					requeue_io(inode);
+-				} else {
+-					/*
+-					 * somehow blocked: retry later
+-					 */
+-					redirty_tail(inode);
+-				}
++				requeue_io(inode);
+ 			} else {
+ 				/*
+-				 * Otherwise fully redirty the inode so that
+-				 * other inodes on this superblock will get some
+-				 * writeout.  Otherwise heavy writing to one
+-				 * file would indefinitely suspend writeout of
+-				 * all the other files.
++				 * Writeback blocked by something other than
++				 * congestion. Delay the inode for some time to
++				 * avoid spinning on the CPU (100% iowait)
++				 * retrying writeback of the dirty page/inode
++				 * that cannot be performed immediately.
+ 				 */
+-				inode->i_state |= I_DIRTY_PAGES;
+ 				redirty_tail(inode);
+ 			}
+ 		} else if (inode->i_state & I_DIRTY) {
+
 
