@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760592Ab0HEORR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:17:17 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52555 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759160Ab0HEORP (ORCPT
+	id S933220Ab0HEOUT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:20:19 -0400
+Received: from exprod7og118.obsmtp.com ([64.18.2.8]:57753 "EHLO
+	exprod7og118.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755476Ab0HEOUP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:17:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jxTJDWrQv4/g2+aXXhw1VCnzDXXFtr6buAgi3HlTyGV+UqPiwgJYPzfCRLopk4adIa
-         ple4tdJa4AouoBeIymj5EdEr8knfmeHNXsgCbMZEJIXqA7QgnbhU25Okbk6wFzQXkvE6
-         xtv3yn7XXGtkJdZO60+F2JSmVBbrfZOYamxJs=
-Date: Thu, 5 Aug 2010 23:17:06 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 3/7] vmscan: synchrounous lumpy reclaim use lock_page()
- instead trylock_page()
-Message-ID: <20100805141706.GB2985@barrios-desktop>
-References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
- <20100805151304.31C0.A69D9226@jp.fujitsu.com>
+	Thu, 5 Aug 2010 10:20:15 -0400
+Message-ID: <4C5AC646.9010403@genband.com>
+Date: Thu, 05 Aug 2010 08:10:14 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805151304.31C0.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: john stultz <johnstul@us.ibm.com>
+CC: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
+        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>	 <1280937526.28884.21.camel@work-vm>  <4C59B5E1.9040707@genband.com> <1280969546.2678.33.camel@localhost.localdomain>
+In-Reply-To: <1280969546.2678.33.camel@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Aug 2010 14:10:17.0039 (UTC) FILETIME=[EE2E5DF0:01CB34A7]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17550.007
+X-TM-AS-Result: No--21.957200-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:13:39PM +0900, KOSAKI Motohiro wrote:
-> When synchrounous lumpy reclaim, there is no reason to give up to
-> reclaim pages even if page is locked. We use lock_page() instead
-> trylock_page() in this case.
+On 08/04/2010 06:52 PM, john stultz wrote:
+> On Wed, 2010-08-04 at 12:48 -0600, Chris Friesen wrote:
+>> On 08/04/2010 09:58 AM, john stultz wrote:
+>>
+>>> Is there a actual use case that you need this for?  I don't really have
+>>> an issue with the code I just really want to make sure the feature would
+>>> be useful enough to justify the API and code maintenance going forward.
+>>
+>> We actually added a time-change-notification mechanism internally a long
+>> time ago but never saw demand for it and so never bothered trying to
+>> push it upstream.  Ours is signal-based.
+>>
+>> Among other things we use it to pass on time-change notifications to an
+>> emulator running a proprietary OS that really cares about having an
+>> accurate time-of-day but can't afford a syscall to retrieve it every time.
 > 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1cdc3db..833b6ad 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -665,7 +665,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		page = lru_to_page(page_list);
->  		list_del(&page->lru);
->  
-> -		if (!trylock_page(page))
-> +		if (sync_writeback == PAGEOUT_IO_SYNC)
-> +			lock_page(page);
-> +		else if (!trylock_page(page))
->  			goto keep;
->  
->  		VM_BUG_ON(PageActive(page));
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
+> So the eventfd based method (and the filtering) proposed would work for
+> you? 
 
-Hmm. We can make sure lumpy already doesn't select the page locked?
-I mean below scenario. 
+The eventfd based method would work.  The filtering is unnecessary for
+us and seems somewhat fragile as currently implemented.
 
-LRU head -> page A -> page B -> LRU tail
-
-lock_page(page A)
-some_function()
-direct reclaim
-select victim page B
-enter lumpy mode 
-select victim page A as well as page B
-shrink_page_list
-lock_page(page A)
-
+Chris
 
 -- 
-Kind regards,
-Minchan Kim
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
