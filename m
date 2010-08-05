@@ -1,86 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933346Ab0HESUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 14:20:52 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43850 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751577Ab0HESUt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 14:20:49 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=th9cASePRD9EeGLdEBbardqvtoDkzrZW74rfKX0qpLDHI6GhHQt2eDAE/AcE8i1Iq
-	M+yERWuPiMlsY6h5M2S5Q==
+	id S934023Ab0HESVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 14:21:21 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:46230 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751577Ab0HESVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 14:21:17 -0400
+Date: Thu, 5 Aug 2010 11:21:11 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: david@lang.hm, peterz@infradead.org, swetland@google.com,
+        linux-kernel@vger.kernel.org, florian@mickler.org,
+        linux-pm@lists.linux-foundation.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100805182111.GK2447@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com>
+ <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
+ <20100804233013.GN24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
+ <20100805001716.GO24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
+ <20100805004802.GP24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
+ <20100805151211.GA10080@linux.vnet.ibm.com>
+ <20100805160912.GA28689@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
-References: <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
-	<alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
-	<AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com>
-	<alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
-	<20100804233013.GN24163@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
-	<20100805001716.GO24163@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
-	<20100805004802.GP24163@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
-	<20100805151211.GA10080@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
-	<AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
-Date: Thu, 5 Aug 2010 11:20:46 -0700
-Message-ID: <AANLkTinTBaJ7Re8E4DVmZcDAUsceUf+9jV7r67Ks=t2n@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Brian Swetland <swetland@google.com>
-To: kevin granade <kevin.granade@gmail.com>
-Cc: david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805160912.GA28689@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 11:13 AM, kevin granade <kevin.granade@gmail.com> wrote:
-> IIRC, this was a major point of their (Android's) power management
-> policy.  User input of any kind would reset the "display active"
-> timeout, which is the primary thing keeping random untrusted
-> user-facing programs from being suspended while in use.  They seemed
-> to consider this to be a special case in their policy, but from the
-> kernel's point of view it is just another suspend blocker being held.
+On Thu, Aug 05, 2010 at 05:09:17PM +0100, Mark Brown wrote:
+> On Thu, Aug 05, 2010 at 08:12:11AM -0700, Paul E. McKenney wrote:
+> > On Wed, Aug 04, 2010 at 10:18:40PM -0700, david@lang.hm wrote:
+> 
+> > > as for intramentation, the key tool to use to see why a system isn't
+> > > going to sleep would be powertop, just like on other linux systems.
+> 
+> > Powertop is indeed an extremely valuable tool, but I am not certain
+> > that it really provides the information that the Android guys need.
+> > If I understand Arve's and Brian's posts, here is the scenario that they
+> > are trying to detect:
+> 
+> > o	Some PM-driving application has a bug in which it fails to
+> > 	release a wakelock, thus blocking suspend indefinitely.
+> 
+> > o	This PM-driving application, otherwise being a good citizen,
+> > 	blocks.
+> 
+> > o	There are numerous power-oblivious apps running, consuming
+> > 	significant CPU.
+> 
+> Or otherwise doing something power hungry.
+> 
+> > What the Android developers need to know is that the trusted application
+> > is wrongly holding a wakelock.  Won't powertop instead tell them about
+> > all the power-oblivious apps?
+> 
+> Right, and this isn't just information for developers - Android handsets
+> expose this information to end users (so they can indentify any badly
+> behaved applications they have installed or otherwise modify their
+> handset usage if they are disappointed by their battery life).  That
+> said, powertop and similar applications could always be extended to also
+> include data from wakelocks.
 
-The display being on should not prevent suspend unless the particular
-platform is incapable of suspending while the display is on.
+Good point!!!  Of course, powertop would need to interact with Android's
+user-level daemon for this to work, but perhaps this could be arranged.
+(There is a user-level daemon in Android that acquires kernel-level
+suspend blockers on behalf of applications, so a naive mod to powertop
+would just finger the user-level daemon.)
 
-> I'm not sure this is the best use case to look at though, because
-> since it is user-facing, the timeout durations are on a different
-> scale than the ones they are really worried about.  I think another
-> category of use case that they are worried about is:
->
-> (in suspend) -> wakeup due to network -> process network activity -> suspend
->
-> or an example that has been mentioned previously:
->
-> (in suspend) -> wakeup due to alarm for audio processing -> process
-> batch of audio -> suspend
->
-> In both of these cases, the display may never power on (phone might
-> beep to indicate txt message or email, audio just keeps playing), so
-> the magnitude of the "timeout" for suspending again should be very
-> small.  Specifically, they don't want there to be a timeout at all, so
-> as little time as possible time is spent out of suspend in addition to
-> the time required to handle the event that caused wakeup.
-
-Yeah, we much prefer the wakelock model where the moment the resource
-(system-needing-to-not-be-suspended) is released we return to the
-lowest power state, rather than waiting for a timer to expire (and/or
-burning cycles polling for "can we suspend yet?" when we're definitely
-not ready to suspend).
-
-Brian
+							Thanx, Paul
