@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934911Ab0HEXUc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:20:32 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:65486 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933276Ab0HEXUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:20:30 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Arjan van de Ven <arjan@infradead.org>,
-        "linux-pm\@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH v2] pm: Add runtime PM statistics
-Organization: Deep Root Systems, LLC
-References: <20100710095254.5ab7291c@infradead.org>
-	<201007112326.07541.rjw@sisk.pl>
-	<20100711221646.35f11b70@infradead.org>
-	<201007132328.28853.rjw@sisk.pl> <4C3F2CEF.2090404@linux.intel.com>
-Date: Thu, 05 Aug 2010 16:20:28 -0700
-In-Reply-To: <4C3F2CEF.2090404@linux.intel.com> (Arjan van de Ven's message of
-	"Thu, 15 Jul 2010 08:44:47 -0700")
-Message-ID: <87bp9gpryb.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
+	id S934505Ab0HEXay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:30:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754007Ab0HEXav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:30:51 -0400
+Date: Thu, 5 Aug 2010 19:30:19 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100805233019.GA30761@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804224831.GB29353@shell> <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arjan van de Ven <arjan@linux.intel.com> writes:
+On Thu, Aug 05, 2010 at 12:36:55PM +0200, Miklos Szeredi wrote:
+> On Wed, 4 Aug 2010, Valerie Aurora wrote:
+> > --zYM0uCDKw75PZbzx
+> > Content-Type: text/plain; charset=us-ascii
+> > Content-Disposition: inline
+> > 
+> > On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
+> > > On Tue, 15 Jun 2010, Valerie Aurora wrote:
+> > > > Add support for fallthru directory entries to ext2.
+> > > 
+> > > If a previously used ext2 filesystem with is mounted again then
+> > > fallthroughs don't appear to work as expected.  Stat returns ENOENT
+> > > for these entries.
+> > > 
+> > > Can't see anything obviously wrong with the code.
+> > 
+> > Hm, I wrote one test case for this that worked (attached).  Can you
+> > give me more details on your test case?  Thanks,
 
-> +
-> +/**
-> + * update_pm_runtime_accounting - Update the time accounting of power
-> states
-> + * @dev: Device to update the accounting for
-> + *
-> + * In order to be able to have time accounting of the various power states
-> + * (as used by programs such as PowerTOP to show the effectiveness of
-> runtime
-> + * PM), we need to track the time spent in each state.
-> + * update_pm_runtime_accounting must be called each time before the
-> + * runtime_status field is updated, to account the time in the old state
-> + * correctly.
-> + */
-> +void update_pm_runtime_accounting(struct device *dev)
-> +{
-> +    unsigned long now = jiffies;
-> +    int delta;
-> +
-> +    delta = now - dev->power.accounting_timestamp;
-> +
-> +    if (delta < 0)
-> +        delta = 0;
-> +
-> +    dev->power.accounting_timestamp = now;
-> +
-> +    if (dev->power.disable_depth > 0)
-> +        return;
-> +
-> +    if (dev->power.runtime_status == RPM_SUSPENDED)
-> +        dev->power.suspended_jiffies += delta;
-> +    else
-> +        dev->power.active_jiffies += delta;
-> +}
+Cool, thanks.  Yes, I suppose the fallthrus should be ignored if they
+don't fall through to anything.  If I do a proper lookup for d_ino, I
+can kill two birds with one stone, since that will tell us whether
+there is anything below the fallthru and thus whether to return this
+directory entry.
 
-By using jiffies, I think we might miss events in drivers that are doing
-runtime PM transitions in short bursts.  On embedded systems with slow
-HZ, there could potentially be lots of transitions between ticks.
+-VAL
 
-It would be nicer to use clocksource-based time so transitions between
-jiffies could still be factored into the accounting.
-
-Kevin
-
-
+> uml:~# mount -oloop -r ext3-2.img /mnt/img/
+> uml:~# mount -oloop -r ext3.img /mnt/img/
+> uml:~# losetup -f ovl.img 
+> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> uml:~# "ls" /mnt/img
+> bunion  lost+found  union
+> uml:~# "ls" /mnt/img/union
+> 1  2  3
+> uml:~# "ls" /mnt/img/union/1
+> a  x
+> uml:~# umount /mnt/img/
+> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> uml:~# ls -l /mnt/img/  
+> total 14
+> drwxr-xr-x 2 root root  1024 Aug  5 09:56 bunion
+> drwx------ 2 root root 12288 Aug  5 09:41 lost+found
+> drwxr-xr-x 3 root root  1024 Aug  5 09:56 union
+> uml:~# ls -l /mnt/img/union/
+> ls: cannot access /mnt/img/union/3: No such file or directory
+> ls: cannot access /mnt/img/union/2: No such file or directory
+> total 1
+> drwxr-xr-x 2 root root 1024 Aug  5 09:56 1
+> ?????????? ? ?    ?       ?            ? 2
+> ?????????? ? ?    ?       ?            ? 3
+> uml:~# ls -l /mnt/img/union/1
+> ls: cannot access /mnt/img/union/1/a: No such file or directory
+> ls: cannot access /mnt/img/union/1/x: No such file or directory
+> total 0
+> ?????????? ? ? ? ?            ? a
+> ?????????? ? ? ? ?            ? x
+> uml:~# 
+> 
+> Thanks,
+> Miklos
