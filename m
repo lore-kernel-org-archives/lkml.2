@@ -1,17 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934272Ab0HEW04 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:26:56 -0400
-Received: from kroah.org ([198.145.64.141]:37808 "EHLO coco.kroah.org"
+	id S1760939Ab0HEW0U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:26:20 -0400
+Received: from kroah.org ([198.145.64.141]:37773 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934575Ab0HEWZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:25:01 -0400
+	id S934538Ab0HEWYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:52 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Kulikov Vasiliy <segooon@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 60/67] mxser: remove unnesesary NULL check
-Date: Thu,  5 Aug 2010 15:23:27 -0700
-Message-Id: <1281047014-23429-60-git-send-email-gregkh@suse.de>
+Cc: John Villalovos <jvillalo@redhat.com>,
+        John Villalovos <john.l.villalovos@intel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 53/67] serial: fix missing bit coverage of ASYNC_FLAGS
+Date: Thu,  5 Aug 2010 15:23:20 -0700
+Message-Id: <1281047014-23429-53-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -19,31 +23,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kulikov Vasiliy <segooon@gmail.com>
+From: John Villalovos <jvillalo@redhat.com>
 
-mxser_transmit_chars(tty, port) is called only from mxser_interrupt().
-NULL check is performed in mxser_interrupt() so it is redundant here.
+It seems that currently ASYNC_FLAGS is one bit short of covering all the
+bits of the ASYNC user flags.  In particular it does not cover the
+ASYNC_AUTOPROBE bit.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-Acked-by: Jiri Slaby <jirislaby@gmail.com>
+ASYNCB_LAST_USER and ASYNCB_AUTOPROBE are both equal to 15.
+
+Therefore:
+ASYNC_AUTOPROBE = 1000 0000 0000 0000
+ASYNC_FLAGS     = 0111 1111 1111 1111
+
+So ASYNC_FLAGS is not covering the ASYNC_AUTOPROBE bit.
+
+This patch fixes the issue and with the patch the values will be:
+ASYNC_AUTOPROBE = 1000 0000 0000 0000
+ASYNC_FLAGS     = 1111 1111 1111 1111
+
+As a side note, doing a "git grep" I didn't find any use of
+ASYNC_AUTOPROBE or ASYNCB_AUTOPROBE in the kernel, besides this include
+file.
+
+Signed-off-by: John Villalovos <john.l.villalovos@intel.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/mxser.c |    2 +-
+ include/linux/serial.h |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index d2692d4..3fc89da 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -2193,7 +2193,7 @@ static void mxser_transmit_chars(struct tty_struct *tty, struct mxser_port *port
- 	port->mon_data.up_txcnt += (cnt - port->xmit_cnt);
- 	port->icount.tx += (cnt - port->xmit_cnt);
+diff --git a/include/linux/serial.h b/include/linux/serial.h
+index c8613c3..c3b45ad 100644
+--- a/include/linux/serial.h
++++ b/include/linux/serial.h
+@@ -151,7 +151,7 @@ struct serial_uart_config {
+ #define ASYNC_BUGGY_UART	(1U << ASYNCB_BUGGY_UART)
+ #define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
  
--	if (port->xmit_cnt < WAKEUP_CHARS && tty)
-+	if (port->xmit_cnt < WAKEUP_CHARS)
- 		tty_wakeup(tty);
- 
- 	if (port->xmit_cnt <= 0) {
+-#define ASYNC_FLAGS		((1U << ASYNCB_LAST_USER) - 1)
++#define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
+ #define ASYNC_USR_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI| \
+ 		ASYNC_CALLOUT_NOHUP|ASYNC_SPD_SHI|ASYNC_LOW_LATENCY)
+ #define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
 -- 
 1.7.2
 
