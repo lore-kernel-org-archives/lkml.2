@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab0HEDMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 23:12:07 -0400
-Received: from beauty.rexursive.com ([150.101.121.179]:43056 "EHLO
-	beauty.rexursive.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab0HEDME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 23:12:04 -0400
-Subject: [PATCH 2/2] PM: Compress hibernation image with LZO
-From: Bojan Smojver <bojan@rexursive.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 13:12:01 +1000
-Message-ID: <1280977921.2618.19.camel@shrek.rexursive.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1758736Ab0HEDP3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 23:15:29 -0400
+Received: from tundra.namei.org ([65.99.196.166]:41974 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756958Ab0HEDP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 23:15:26 -0400
+Date: Thu, 5 Aug 2010 13:15:16 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: John Johansen <john.johansen@canonical.com>
+cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH -next] apparmor: depends on NET
+In-Reply-To: <4C57825E.6020103@canonical.com>
+Message-ID: <alpine.LRH.2.00.1008051313500.8765@tundra.namei.org>
+References: <20100802144432.70293bda.sfr@canb.auug.org.au> <20100802105218.c2050fff.randy.dunlap@oracle.com> <4C57825E.6020103@canonical.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Given that hibernation image is compressed, we need the data here and
-now in order to decompress it, so a flag to read synchronously is
-redundant (i.e. we always read synchronously).
+On Mon, 2 Aug 2010, John Johansen wrote:
 
-Signed-off-by: Bojan Smojver <bojan@rexursive.com>
----
+> On 08/02/2010 10:52 AM, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > SECURITY_APPARMOR should depend on NET since AUDIT needs
+> > (depends on) NET.
+> > 
+> yes, thanks .that depends seems to have been dropped when I
+> split out networking hooks for later submission
+> 
+> Signed-off-by: John Johansen <john.johansen@canonical.com>
 
- kernel/power/power.h    |    4 ----
- kernel/power/snapshot.c |    5 -----
- 2 files changed, 0 insertions(+), 9 deletions(-)
+Thanks, I'll fix these up in the next day or so now that the code is 
+merged with Linus.
 
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 006270f..a760cf8 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -103,10 +103,6 @@ struct snapshot_handle {
- 	void		*buffer;	/* address of the block to read from
- 					 * or write to
- 					 */
--	int		sync_read;	/* Set to one to notify the caller of
--					 * snapshot_write_next() that it may
--					 * need to call wait_on_bio_chain()
--					 */
- };
- 
- /* This macro returns the address from/to which the caller of
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 25ce010..f24ee24 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -2135,8 +2135,6 @@ int snapshot_write_next(struct snapshot_handle *handle)
- 	if (handle->cur > 1 && handle->cur > nr_meta_pages + nr_copy_pages)
- 		return 0;
- 
--	handle->sync_read = 1;
--
- 	if (!handle->cur) {
- 		if (!buffer)
- 			/* This makes the buffer be freed by swsusp_free() */
-@@ -2169,7 +2167,6 @@ int snapshot_write_next(struct snapshot_handle *handle)
- 			memory_bm_position_reset(&orig_bm);
- 			restore_pblist = NULL;
- 			handle->buffer = get_buffer(&orig_bm, &ca);
--			handle->sync_read = 0;
- 			if (IS_ERR(handle->buffer))
- 				return PTR_ERR(handle->buffer);
- 		}
-@@ -2178,8 +2175,6 @@ int snapshot_write_next(struct snapshot_handle *handle)
- 		handle->buffer = get_buffer(&orig_bm, &ca);
- 		if (IS_ERR(handle->buffer))
- 			return PTR_ERR(handle->buffer);
--		if (handle->buffer != buffer)
--			handle->sync_read = 0;
- 	}
- 	handle->cur++;
- 	return PAGE_SIZE;
 
+> 
+> > Fixes 70-80 errors that occur when CONFIG_NET is not enabled,
+> > but APPARMOR selects AUDIT without qualification.  E.g.:
+> > 
+> > audit.c:(.text+0x33361): undefined reference to `netlink_unicast'
+> > (.text+0x333df): undefined reference to `netlink_unicast'
+> > audit.c:(.text+0x3341d): undefined reference to `skb_queue_tail'
+> > audit.c:(.text+0x33424): undefined reference to `kfree_skb'
+> > audit.c:(.text+0x334cb): undefined reference to `kfree_skb'
+> > audit.c:(.text+0x33597): undefined reference to `skb_put'
+> > audit.c:(.text+0x3369b): undefined reference to `__alloc_skb'
+> > audit.c:(.text+0x336d7): undefined reference to `kfree_skb'
+> > (.text+0x3374c): undefined reference to `__alloc_skb'
+> > auditfilter.c:(.text+0x35305): undefined reference to `skb_queue_tail'
+> > lsm_audit.c:(.text+0x2873): undefined reference to `init_net'
+> > lsm_audit.c:(.text+0x2878): undefined reference to `dev_get_by_index'
+> > 
+> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > Cc: John Johansen <john.johansen@canonical.com>
+> > ---
+> >  security/apparmor/Kconfig |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > --- linux-next-20100802.orig/security/apparmor/Kconfig
+> > +++ linux-next-20100802/security/apparmor/Kconfig
+> > @@ -1,6 +1,6 @@
+> >  config SECURITY_APPARMOR
+> >  	bool "AppArmor support"
+> > -	depends on SECURITY
+> > +	depends on SECURITY && NET
+> >  	select AUDIT
+> >  	select SECURITY_PATH
+> >  	select SECURITYFS
+> 
 
 -- 
-Bojan
-
-
+James Morris
+<jmorris@namei.org>
