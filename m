@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760142Ab0HEKhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:37:10 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:42196 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995Ab0HEKhI (ORCPT
+	id S1760103Ab0HEKjy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:39:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58370 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755581Ab0HEKjw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:37:08 -0400
-To: Valerie Aurora <vaurora@redhat.com>
-CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, jblunck@suse.de,
-        hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tytso@mit.edu,
-        linux-ext4@vger.kernel.org
-In-reply-to: <20100804224831.GB29353@shell> (message from Valerie Aurora on
-	Wed, 4 Aug 2010 18:48:31 -0400)
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804224831.GB29353@shell>
-Message-Id: <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 05 Aug 2010 12:36:55 +0200
+	Thu, 5 Aug 2010 06:39:52 -0400
+From: =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>
+To: linux-kernel@vger.kernel.org
+Cc: trivial@kernel.org,
+        =?UTF-8?q?Andreas=20Bie=C3=9Fmann?= <biessmann@corscience.de>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Sandeep Paulraj <s-paulraj@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH] atmel_nand: Fix warning: 'part_probes' defined but not used
+Date: Thu,  5 Aug 2010 12:38:41 +0200
+Message-Id: <1281004721-397-1-git-send-email-biessmann@corscience.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1279099026-24298-1-git-send-email-biessmann@corscience.de>
+References: <1279099026-24298-1-git-send-email-biessmann@corscience.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:/gTI31CubP3Qpca37LJyX8++C++kF/KrGPbI00913y5
+ oF5DWMXr7p6rJ1voDqySi8CLG0X9rG3RF/HKRoiqaSiMDvRXyi
+ Qlume5LuRBQOh00WnmcUXdddqst8fb5EjWJW6iQLJzIE6aowB7
+ /XG58LUOdDEpIbq0nmEsAi9p1EYzf6v3vAWVcjB2g7JTYG9zAa
+ veJc/Qi6QAe/CelSIrU8Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> --zYM0uCDKw75PZbzx
-> Content-Type: text/plain; charset=us-ascii
-> Content-Disposition: inline
-> 
-> On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
-> > On Tue, 15 Jun 2010, Valerie Aurora wrote:
-> > > Add support for fallthru directory entries to ext2.
-> > 
-> > If a previously used ext2 filesystem with is mounted again then
-> > fallthroughs don't appear to work as expected.  Stat returns ENOENT
-> > for these entries.
-> > 
-> > Can't see anything obviously wrong with the code.
-> 
-> Hm, I wrote one test case for this that worked (attached).  Can you
-> give me more details on your test case?  Thanks,
+This patch fixes
 
-uml:~# mount -oloop -r ext3-2.img /mnt/img/
-uml:~# mount -oloop -r ext3.img /mnt/img/
-uml:~# losetup -f ovl.img 
-uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-uml:~# "ls" /mnt/img
-bunion  lost+found  union
-uml:~# "ls" /mnt/img/union
-1  2  3
-uml:~# "ls" /mnt/img/union/1
-a  x
-uml:~# umount /mnt/img/
-uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-uml:~# ls -l /mnt/img/  
-total 14
-drwxr-xr-x 2 root root  1024 Aug  5 09:56 bunion
-drwx------ 2 root root 12288 Aug  5 09:41 lost+found
-drwxr-xr-x 3 root root  1024 Aug  5 09:56 union
-uml:~# ls -l /mnt/img/union/
-ls: cannot access /mnt/img/union/3: No such file or directory
-ls: cannot access /mnt/img/union/2: No such file or directory
-total 1
-drwxr-xr-x 2 root root 1024 Aug  5 09:56 1
-?????????? ? ?    ?       ?            ? 2
-?????????? ? ?    ?       ?            ? 3
-uml:~# ls -l /mnt/img/union/1
-ls: cannot access /mnt/img/union/1/a: No such file or directory
-ls: cannot access /mnt/img/union/1/x: No such file or directory
-total 0
-?????????? ? ? ? ?            ? a
-?????????? ? ? ? ?            ? x
-uml:~# 
+drivers/mtd/nand/atmel_nand.c:372: warning: 'part_probes' defined but not used
 
-Thanks,
-Miklos
+which is issued when CONFIG_MTD_PARTITIONS is defined but
+CONFIG_MTD_CMDLINE_PARTS not.
+
+Signed-off-by: Andreas Bießmann <biessmann@corscience.de>
+---
+ Resent this patch as a trivial one cause it does only fix a warning which is
+ seen in very rare cases. There is no functionality change here! I think this
+ is the definition of a trivial patch.
+
+ In addition no one has commented my last submission of this patch.
+
+ drivers/mtd/nand/atmel_nand.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 04d3088..ccce0f0 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -364,7 +364,7 @@ static void atmel_nand_hwctl(struct mtd_info *mtd, int mode)
+ 	}
+ }
+ 
+-#ifdef CONFIG_MTD_PARTITIONS
++#ifdef CONFIG_MTD_CMDLINE_PARTS
+ static const char *part_probes[] = { "cmdlinepart", NULL };
+ #endif
+ 
+-- 
+1.7.1
+
