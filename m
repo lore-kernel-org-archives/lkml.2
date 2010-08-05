@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934217Ab0HEUZP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:25:15 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:57941 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934176Ab0HEUZJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:25:09 -0400
-Date: Thu, 5 Aug 2010 22:25:06 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: lm-sensors@lm-sensors.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 27/42] drivers/hwmon: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052224500.31692@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S934142Ab0HEUZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:25:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38195 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932255Ab0HEUZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:25:20 -0400
+Date: Thu, 5 Aug 2010 13:24:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michael Rubin <mrubin@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk
+Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and
+ pages_entered_writeback
+Message-Id: <20100805132433.d1d7927b.akpm@linux-foundation.org>
+In-Reply-To: <1280969004-29530-3-git-send-email-mrubin@google.com>
+References: <1280969004-29530-1-git-send-email-mrubin@google.com>
+	<1280969004-29530-3-git-send-email-mrubin@google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Wed,  4 Aug 2010 17:43:24 -0700
+Michael Rubin <mrubin@google.com> wrote:
 
-The if (ret) test has no effect if the if branch is not taken, so move it
-into the branch that it is already aligned with.
+> To help developers and applications gain visibility into writeback
+> behaviour adding four read only sysctl files into /proc/sys/vm.
+> These files allow user apps to understand writeback behaviour over time
+> and learn how it is impacting their performance.
+> 
+>    # cat /proc/sys/vm/pages_dirtied
+>    3747
+>    # cat /proc/sys/vm/pages_entered_writeback
+>    3618
+> 
+> Documentation/vm.txt has been updated.
+> 
+> In order to track the "cleaned" and "dirtied" counts we added two
+> vm_stat_items.  Per memory node stats have been added also. So we can
+> see per node granularity:
+> 
+>    # cat /sys/devices/system/node/node20/writebackstat
+>    Node 20 pages_writeback: 0 times
+>    Node 20 pages_dirtied: 0 times
+> 
+> ...
+>
+> @@ -1091,6 +1115,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+>  {
+>  	if (mapping_cap_account_dirty(mapping)) {
+>  		__inc_zone_page_state(page, NR_FILE_DIRTY);
+> +		__inc_zone_page_state(page, NR_FILE_PAGES_DIRTIED);
+>  		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>  		task_dirty_inc(current);
+>  		task_io_account_write(PAGE_CACHE_SIZE);
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+I hope the utility of this change is worth the overhead :(
 
-// <smpl>
-@r disable braces4@
-position p1,p2;
-statement S1,S2;
-@@
+> --- a/mm/vmstat.c
+> +++ b/mm/vmstat.c
+> @@ -740,6 +740,8 @@ static const char * const vmstat_text[] = {
+>  	"numa_local",
+>  	"numa_other",
+>  #endif
+> +	"nr_pages_entered_writeback",
+> +	"nr_file_pages_dirtied",
+>  
 
-(
-if (...) { ... }
-|
-if (...) S1@p1 S2@p2
-)
+Wait.  These counters appear in /proc/vmstat.  So why create standalone
+/proc/sys/vm files as well?
 
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (p1[0].column == p2[0].column):
-  cocci.print_main("branch",p1)
-  cocci.print_secs("after",p2)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/hwmon/mc13783-adc.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/hwmon/mc13783-adc.c b/drivers/hwmon/mc13783-adc.c
-index ce3c7bc..0b53713 100644
---- a/drivers/hwmon/mc13783-adc.c
-+++ b/drivers/hwmon/mc13783-adc.c
-@@ -162,10 +162,11 @@ static int __init mc13783_adc_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto out_err_create1;
- 
--	if (!(priv->mc13783->flags & MC13783_USE_TOUCHSCREEN))
-+	if (!(priv->mc13783->flags & MC13783_USE_TOUCHSCREEN)) {
- 		ret = sysfs_create_group(&pdev->dev.kobj, &mc13783_group_ts);
- 		if (ret)
- 			goto out_err_create2;
-+	}
- 
- 	priv->hwmon_dev = hwmon_device_register(&pdev->dev);
- 	if (IS_ERR(priv->hwmon_dev)) {
