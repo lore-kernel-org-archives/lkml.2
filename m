@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932988Ab0HEVqM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 17:46:12 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:38299 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756989Ab0HEVqI (ORCPT
+	id S1757038Ab0HEVtb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 17:49:31 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:49723 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623Ab0HEVt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 17:46:08 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6065"; a="49907625"
-Subject: Re: [GIT PULL] Initial Tegra ARM support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Erik Gilling <konkers@google.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
-In-Reply-To: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-References: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 14:45:55 -0700
-Message-ID: <1281044755.30969.8.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 5 Aug 2010 17:49:28 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C5B31C7.4000109@s5r6.in-berlin.de>
+Date: Thu, 05 Aug 2010 23:48:55 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Julia Lawall <julia@diku.dk>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 11/42] drivers/ieee1394: Adjust confusing if indentation
+References: <Pine.LNX.4.64.1008052219530.31692@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1008052219530.31692@ask.diku.dk>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 14:10 -0700, Erik Gilling wrote:
->  arch/arm/Kconfig                               |   25 +-
->  arch/arm/Makefile                              |    1 + 
+Julia Lawall wrote:
+> Indent the branch of an if.
 
-In the future could you please send changes to arch/arm/Kconfig and
-arch/arm/Makefile to Russell .. That way there's no chance for conflicts
-with other -next trees.
+Committed to linux1394-2.6.git.
 
-Daniel
+> The semantic match that finds this problem is as follows:
+
+It did not find this line though:
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/feature-removal-schedule.txt;h=be7030e4dd73697ed5b979f02b6841dac7bb69c0#l549
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Stefan Richter
+-=====-==-=- =--- --=-=
+http://arcgraph.de/sr/
