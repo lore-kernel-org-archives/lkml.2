@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933826Ab0HERJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 13:09:33 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33589 "HELO
+	id S1760472Ab0HERRO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 13:17:14 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43296 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755750Ab0HERJ2 (ORCPT
+	with SMTP id S1759019Ab0HERRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 13:09:28 -0400
-Date: Thu, 5 Aug 2010 13:09:26 -0400 (EDT)
+	Thu, 5 Aug 2010 13:17:10 -0400
+Date: Thu, 5 Aug 2010 13:17:10 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: James Bottomley <James.Bottomley@suse.de>,
@@ -15,8 +15,9 @@ To: James Bottomley <James.Bottomley@suse.de>,
 cc: Andrew Morton <akpm@linux-foundation.org>,
         SCSI development list <linux-scsi@vger.kernel.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] SCSI: remove fake "address-of" expression
 In-Reply-To: <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1008051306080.1944-100000@iolanthe.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1008051315150.1944-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
@@ -31,6 +32,8 @@ removes one such fake expression, using an "#ifdef" in its place.
 Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 
 ---
+
+Resend.  I forgot to set the Subject line in the original message.
 
 On Wed, 4 Aug 2010, Linus Torvalds wrote:
 
