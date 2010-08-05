@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760664Ab0HEOim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:38:42 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41166 "EHLO
+	id S933302Ab0HEOiq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:38:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41176 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760589Ab0HEOid (ORCPT
+	with ESMTP id S1760618Ab0HEOig (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:38:33 -0400
+	Thu, 5 Aug 2010 10:38:36 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
-Subject: [GIT PULL] kgdb,kdb for 2.6.36 (1 of 2)
-Date: Thu,  5 Aug 2010 09:37:41 -0500
-Message-Id: <1281019078-6636-1-git-send-email-jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 01/17] kgdb: remove custom hex_to_bin()implementation
+Date: Thu,  5 Aug 2010 09:37:42 -0500
+Message-Id: <1281019078-6636-2-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 05 Aug 2010 14:38:11.0261 (UTC) FILETIME=[D4185ED0:01CB34AB]
+In-Reply-To: <1281019078-6636-1-git-send-email-jason.wessel@windriver.com>
+References: <1281019078-6636-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 05 Aug 2010 14:38:12.0027 (UTC) FILETIME=[D48D40B0:01CB34AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the for_linus branch which contains all the core
-kgdb and kdb changes intended for the 2.6.36 kernel.
+From: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_lin
-us
-
-The key new features here are:
-
-  * ftdump command for kdb
-    - dumps the ftrace buffer for all cpus or an individual cpu
-  * Individual register read / write in kdb (x86, mips, arm)
-  * Generic plumbing for gdb serial register packets 'p' and 'P'
-    - implementations for x86, mips and arm
-  * ARM kgdb makes use of die notifiers
-  * Optimize gdbserial response packets containing "thread:"
-
-The remainder of the patches contain miscellaneous cleanups.
-
-Jason.
-
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
-Andi Kleen (1):
-      KGDB: Remove set but unused newPC
+ kernel/debug/gdbstub.c |   21 +++++----------------
+ 1 files changed, 5 insertions(+), 16 deletions(-)
 
-Andy Shevchenko (1):
-      kgdb: remove custom hex_to_bin()implementation
+diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
+index e8fd686..3517fd7 100644
+--- a/kernel/debug/gdbstub.c
++++ b/kernel/debug/gdbstub.c
+@@ -52,17 +52,6 @@ static unsigned long		gdb_regs[(NUMREGBYTES +
+  * GDB remote protocol parser:
+  */
+ 
+-static int hex(char ch)
+-{
+-	if ((ch >= 'a') && (ch <= 'f'))
+-		return ch - 'a' + 10;
+-	if ((ch >= '0') && (ch <= '9'))
+-		return ch - '0';
+-	if ((ch >= 'A') && (ch <= 'F'))
+-		return ch - 'A' + 10;
+-	return -1;
+-}
+-
+ #ifdef CONFIG_KGDB_KDB
+ static int gdbstub_read_wait(void)
+ {
+@@ -123,8 +112,8 @@ static void get_packet(char *buffer)
+ 		buffer[count] = 0;
+ 
+ 		if (ch == '#') {
+-			xmitcsum = hex(gdbstub_read_wait()) << 4;
+-			xmitcsum += hex(gdbstub_read_wait());
++			xmitcsum = hex_to_bin(gdbstub_read_wait()) << 4;
++			xmitcsum += hex_to_bin(gdbstub_read_wait());
+ 
+ 			if (checksum != xmitcsum)
+ 				/* failed checksum */
+@@ -280,8 +269,8 @@ int kgdb_hex2mem(char *buf, char *mem, int count)
+ 	tmp_hex = tmp_raw - 1;
+ 	while (tmp_hex >= buf) {
+ 		tmp_raw--;
+-		*tmp_raw = hex(*tmp_hex--);
+-		*tmp_raw |= hex(*tmp_hex--) << 4;
++		*tmp_raw = hex_to_bin(*tmp_hex--);
++		*tmp_raw |= hex_to_bin(*tmp_hex--) << 4;
+ 	}
+ 
+ 	return probe_kernel_write(mem, tmp_raw, count);
+@@ -304,7 +293,7 @@ int kgdb_hex2long(char **ptr, unsigned long *long_val)
+ 		(*ptr)++;
+ 	}
+ 	while (**ptr) {
+-		hex_val = hex(**ptr);
++		hex_val = hex_to_bin(**ptr);
+ 		if (hex_val < 0)
+ 			break;
+ 
+-- 
+1.6.3.3
 
-Dongdong Deng (1):
-      kgdb,x86: use macro HBP_NUM to replace magic number 4
-
-Jason Wessel (13):
-      gdbstub: Optimize kgdb's "thread:" response for the gdb serial protocol
-      kgdb,kdb: individual register set and and get API
-      kgdb,x86: Individual register get/set for x86
-      kgdb,mips: Individual register get/set for mips
-      kgdb,arm: Individual register get/set for arm
-      gdbstub: Implement gdbserial 'p' and 'P' packets
-      gdbstub: do not directly use dbg_reg_def[] in gdb_cmd_reg_set()
-      arm,kgdb: Add ability to trap into debugger on notify_die
-      ftrace,kdb: Extend kdb to be able to dump the ftrace buffer
-      ftrace,kdb: Allow dumping a specific cpu's buffer with ftdump
-      mm,kdb,kgdb: Add a debug reference for the kdb kmap usage
-      kgdb,mips: remove unused kgdb_cpu_doing_single_step operations
-      debug_core,kdb: fix crash when arch does not have single step
-
-Michal Simek (1):
-      kgdb,powerpc: Replace hardcoded offset by BREAK_INSTR_SIZE
-
- arch/arm/include/asm/kgdb.h  |    6 +-
- arch/arm/kernel/kgdb.c       |  124 ++++++++++++++++---------
- arch/mips/include/asm/kgdb.h |   19 ++--
- arch/mips/kernel/kgdb.c      |  211 +++++++++++++++++++++++++++++-------------
- arch/powerpc/kernel/kgdb.c   |    2 +-
- arch/x86/include/asm/kgdb.h  |   20 ++--
- arch/x86/kernel/kgdb.c       |  189 ++++++++++++++++++-------------------
- include/linux/kgdb.h         |   15 +++-
- kernel/debug/debug_core.c    |    2 +
- kernel/debug/gdbstub.c       |  189 +++++++++++++++++++++++++++-----------
- kernel/debug/kdb/kdb_main.c  |  132 ++++++++++++++++++++++++---
- kernel/trace/Makefile        |    3 +
- kernel/trace/trace.c         |   43 +++++----
- kernel/trace/trace.h         |   19 ++++
- kernel/trace/trace_kdb.c     |  136 +++++++++++++++++++++++++++
- mm/highmem.c                 |    7 ++
- 16 files changed, 801 insertions(+), 316 deletions(-)
- create mode 100644 kernel/trace/trace_kdb.c
