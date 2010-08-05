@@ -1,92 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab0HEQBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:01:52 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46480 "EHLO mga02.intel.com"
+	id S933616Ab0HEQC2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:02:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47940 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab0HEQBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:01:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
-   d="scan'208";a="542244533"
-Date: Fri, 6 Aug 2010 00:01:24 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Martin Bligh <mbligh@google.com>, Michael Rubin <mrubin@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] writeback: merge for_kupdate and !for_kupdate cases
-Message-ID: <20100805160124.GA17939@localhost>
-References: <20100711020656.340075560@intel.com>
- <20100711021749.303817848@intel.com>
- <20100712020842.GC25335@dastard>
- <20100712155239.GC30222@localhost>
- <20100712152254.2071ba5f.akpm@linux-foundation.org>
+	id S933577Ab0HEQC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:02:26 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Jason Baron <jbaron@redhat.com>
+Subject: Re: [PATCH] Dynamic Debug: Introduce global fake module param module.ddebug
+Date: Thu, 5 Aug 2010 18:05:40 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: yehuda@hq.newdream.net, LKML <linux-kernel@vger.kernel.org>,
+        greg@kroah.com, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <201007261414.30718.trenn@suse.de> <20100805153910.GB2930@redhat.com>
+In-Reply-To: <20100805153910.GB2930@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100712152254.2071ba5f.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008051805.40730.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 06:22:54AM +0800, Andrew Morton wrote:
-> On Mon, 12 Jul 2010 23:52:39 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > > Also, I'd prefer that the
-> > > comments remain somewhat more descriptive of the circumstances that
-> > > we are operating under. Comments like "retry later to avoid blocking
-> > > writeback of other inodes" is far, far better than "retry later"
-> > > because it has "why" component that explains the reason for the
-> > > logic. You may remember why, but I sure won't in a few months time....
-> 
-> me2 (of course).  This code is waaaay too complex to be scrimping on comments.
-> 
-> > Ah yes the comment is too simple. However the redirty_tail() is not to
-> > avoid blocking writeback of other inodes, but to avoid eating 100% CPU
-> > on busy retrying a dirty inode/page that cannot perform writeback for
-> > a while. (In theory redirty_tail() can still busy retry though, when
-> > there is only one single dirty inode.) So how about
+On Thursday 05 August 2010 17:39:10 Jason Baron wrote:
+> On Mon, Jul 26, 2010 at 02:14:30PM +0200, Thomas Renninger wrote:
+> > This patch is based on 2.6.35-rc5 + this patchset I posted recently:                                                           
+> > [patch 0/3] Dynamic Debug providing early boot debug messages via
+> > boot parameter
 > > 
-> >         /*
-> >          * somehow blocked: avoid busy retrying
-> >          */
-> 
-> That's much too short.  Expand on the "somehow" - provide an example,
-> describe the common/expected cause.  Fully explain what the "busy"
-> retry _is_ and how it can come about.
+> > It would be great to see these getting merged into 2.6.36...
+... 
+> patch looks pretty good to me. I'm not sure how we reserve the
+> 'ddebug' keyword.
+Yep, I also was not sure about that.
+> However, I think its probably ok, if we mention it
+> in 'kernel-parameters.txt' and in the dynamic debug documentation.
+I added some documentation to the dynamic debug docu file and posted
+the patch again (as a reply on my initial post, should be the same mail
+thread).
 
-It was a long story.. This redirty_tail() was introduced when more_io
-is introduced. The initial patch for more_io does not have the
-redirty_tail(), and when it's merged, several 100% iowait bug reports
-arises:
+> Also, ddebug could show up in /sys/module/$(modulename}/parameters/ ,
+> but this can probably be done in a followup patch.
+This was intentional.
+At the time /sys is available one can also use 
+/sys/kernel/debug/dynamic_debug/control
+echo "module my_module_to_debug +p"
+          >/sys/kernel/debug/dynamic_debug/control
+would exactly do the same as /sys/module/$(modulename}/parameters
+The advantage of not having it, is it saves quite some resources, in 
+fact it uses none.
+Otherwise every module would have an addtional parameter added with a
+sysfs file associated with it with no additional functional gain.
 
-reiserfs:
-        http://lkml.org/lkml/2007/10/23/93
+> Also, if 'ddebug' alone is set on the kernel command line, i'd like to
+> see us enable all debug statements. We could implement this by adding
+> a special 'meta' module to the control file which is just has a module
+> name of of 'All' or something like that. This could also be done in a
+> subsequent patch.
+Is there a single query which could do it?
+If not, possibly a keyword like file/module called "all" could be added.
+Then you could simply do that by ddebug_query="all +p"
 
-jfs:
-        commit 29a424f28390752a4ca2349633aaacc6be494db5
-        JFS: clear PAGECACHE_TAG_DIRTY for no-write pages
+> We also need to at least remove the 'dynamic_printk' doc from
+> kernel-parameters.txt.
+Don't know about this one.
 
-ext2:
-        http://www.spinics.net/linux/lists/linux-ext4/msg04762.html
+So, I have your acked-by for this one?
+Let's get this pushed into a tree, with some luck it still could make it
+into 2.6.36? The other three have been taken by Pekka? He said something
+about taking them, but I haven't received any confirmation.
+Ah no, he acked-by them only.
 
-They are all old bugs hidden in various filesystems that become
-"obvious" with the more_io patch. At the time, the ext2 bug is thought
-to be "trivial", so you didn't merge that fix. Instead the following
-patch with redirty_tail() is merged:
-
-http://www.spinics.net/linux/lists/linux-ext4/msg04507.html
-
-This will in general prevent 100% on ext2 and other possibly unknown FS bugs.
-
-I'll take David's comments and note the above in changelog.
+As these are rather general ones, which tree should they go through, 
+possibly Andrew could take them?
+I can resubmit, if someone could tell me a list/maintainer that fits 
+best, so that they really make it in...
 
 Thanks,
-Fengguang
+
+         Thomas
