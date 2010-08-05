@@ -1,88 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759221Ab0HEMon (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 08:44:43 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45965 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759136Ab0HEMol (ORCPT
+	id S1760273Ab0HEMsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 08:48:40 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:39015 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757203Ab0HEMsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 08:44:41 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: Memory corruption during hibernation since 2.6.31
-Date: Thu, 5 Aug 2010 14:44:28 +0200
-User-Agent: KMail/1.9.10
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@in.ibm.com>
-References: <201007282334.08063.rjw@sisk.pl> <20100729142245.4AA5.A69D9226@jp.fujitsu.com> <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008051444.32432.linux@rainbow-software.org>
+	Thu, 5 Aug 2010 08:48:38 -0400
+X-Spam-ASN: 
+Date: Thu, 5 Aug 2010 16:48:29 +0400
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, "Nikita V\. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCHv3 15/16] pps: add parallel port PPS client
+Message-ID: <20100805164829.33855c7a@desktopvm.lvknet>
+In-Reply-To: <20100804163430.a87027c6.akpm@linux-foundation.org>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+	<5d5d3c3916cb79104160467035603093ea4f623f.1280952801.git.lasaine@lvk.cs.msu.su>
+	<20100804163430.a87027c6.akpm@linux-foundation.org>
+Organization: LVK
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/ZrCLF8NcsYL38XS0zaTvjX0"; protocol="application/pgp-signature"
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 29 July 2010 07:24:29 KAMEZAWA Hiroyuki wrote:
-> On Thu, 29 Jul 2010 14:23:33 +0900 (JST)
->
-> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> > Can you please add explicit commenting in the code?
->
-> How about this ?
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> At hibernation, all pages-should-be-saved are written into a image (here,
-> swap). Then, swap_map[], memmap etcs are also saved into disks.
->
-> But, swap allocation happens one by one. So, the final image of swap_map[]
-> is different from saved one and the commit
-> c9e444103b5e7a5a3519f9913f59767f92e33baf changes page's state while
-> assiging swap. Because memory can be modified in hibernation is only
-> not-to-be-save memory. it's a breakage.
->
-> This patch fixes it by disabling swap entry reuse at hibernation.
+--Sig_/ZrCLF8NcsYL38XS0zaTvjX0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-6 days with no crash - so the patch seems to work.
+=D0=92 Wed, 4 Aug 2010 16:34:30 -0700
+Andrew Morton <akpm@linux-foundation.org> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
 
+> On Thu,  5 Aug 2010 01:06:52 +0400
+> Alexander Gordeev <lasaine@lvk.cs.msu.su> wrote:
+>=20
+> > Add parallel port PPS client. It uses a standard method for capturing
+> > timestamps for assert edge transitions: getting a timestamp soon after
+> > an interrupt has happened. This is not a very precise source of time
+> > information due to interrupt handling delays. However, timestamps for
+> > clear edge transitions are much more precise because the interrupt
+> > handler continuously polls hardware port until the transition is done.
+> > Hardware port operations require only about 1us so the maximum error
+> > should not exceed this value. This was my primary goal when developing
+> > this client.
+> > Clear edge capture could be disabled using clear_wait parameter.
+> >=20
+> >
+> > ...
+> >
+> > +
+> > +#define SIGNAL_IS_SET(port) \
+> > +	((port->ops->read_status(port) & PARPORT_STATUS_ACK) !=3D 0)
+>=20
+> This could (and hence should) be implemented in a regular old C
+> function.
 
+Ok, thanks!
 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/swapfile.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
->
-> Index: linux-2.6.34.org/mm/swapfile.c
-> ===================================================================
-> --- linux-2.6.34.org.orig/mm/swapfile.c
-> +++ linux-2.6.34.org/mm/swapfile.c
-> @@ -315,8 +315,15 @@ checks:
->  	if (offset > si->highest_bit)
->  		scan_base = offset = si->lowest_bit;
->
-> -	/* reuse swap entry of cache-only swap if not busy. */
-> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-> +	/*
-> + 	 * reuse swap entry of cache-only swap if not busy &&
-> + 	 * when we're called via pageout(). At hibernation, swap-reuse
-> + 	 * is harmful because it changes memory status...which may
-> + 	 * be saved already.
-> + 	 */
-> +	if (vm_swap_full()
-> +		&& usage == SWAP_HAS_CACHE
-> +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
->  		int swap_was_freed;
->  		spin_unlock(&swap_lock);
->  		swap_was_freed = __try_to_reclaim_swap(si, offset);
->
+> >
+> > ...
+> >
+> > +{
+> > +	struct pps_client_pp *device;
+> > +	struct pps_source_info info =3D {
+> > +		.name		=3D DRVNAME,
+> > +		.path		=3D "",
+> > +		.mode		=3D PPS_CAPTUREBOTH | \
+> > +				  PPS_OFFSETASSERT | PPS_OFFSETCLEAR | \
+> > +				  PPS_ECHOASSERT | PPS_ECHOCLEAR | \
+> > +				  PPS_CANWAIT | PPS_TSFMT_TSPEC,
+> > +		.echo		=3D pps_echo,
+> > +		.owner		=3D THIS_MODULE,
+> > +		.dev		=3D NULL
+> > +	};
+> > +
+> > +	device =3D kzalloc(sizeof(struct pps_client_pp), GFP_KERNEL);
+> > +	if (!device) {
+> > +		pr_err(DRVNAME ": memory allocation failed, not attaching\n");
+> > +		return;
+>=20
+> eww.  parport_driver.attach() returns void so there's no way to
+> propagate the error code back.  That sucks a bit.
 
+IMHO, the whole parport thing currently sucks quite a bit.
 
--- 
-Ondrej Zary
+--=20
+  Alexander
+
+--Sig_/ZrCLF8NcsYL38XS0zaTvjX0
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iQEcBAEBCAAGBQJMWrMdAAoJEElrwznyooJbM0YH/iNEuNj+w9L+Po0tn5B85wiH
+mViUR0lvJis+vk+ptX7WACLYeTk6+AQ9l5yVbQBC7cr6D9ra45KVvo+QdAcasc0h
+4PEsQmBhZCnIKmTj5Zck2t8b83sORhfnF/58E9FB8/86VGHYQ1QwvCYhpviA5gIv
+uTeWogOIP7SwhAXNlAlqa+aXf0qT3wBu0nhvwtZKdSvlMhAnRV9CXsDC+cMqppqP
+S3LrTB9Iuq916/kEXiZYaZwl8hg0JFK3T2DG9xh/IpmsNdVHeeJFSIfVrjvN29IW
+fCY+V1aiOEt7WLvSCFiKONIwBMprew6QdKaS91hZhLlckbFYRo8WYZKNunAdnNw=
+=r0Tv
+-----END PGP SIGNATURE-----
+
+--Sig_/ZrCLF8NcsYL38XS0zaTvjX0--
