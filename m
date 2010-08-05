@@ -1,410 +1,878 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934285Ab0HEUkA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:40:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52036 "EHLO hera.kernel.org"
+	id S934462Ab0HEUlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:41:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52108 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760728Ab0HEUjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:39:55 -0400
-Date: Thu, 5 Aug 2010 20:38:04 GMT
-Message-Id: <201008052038.o75Kc45l022109@hera.kernel.org>
+	id S932794Ab0HEUlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:41:06 -0400
+Date: Thu, 5 Aug 2010 20:37:59 GMT
+Message-Id: <201008052037.o75KbxSS022005@hera.kernel.org>
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/mm for 2.6.36
-Cc: <stable@kernel.org>, Andres Salomon <dilinger@queued.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Florian Zumbiehl <florz@florz.de>,
+Subject: [GIT PULL] x86/asm for 2.6.36
+Cc: <stable@kernel.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Avi Kivity <avi@redhat.com>, Brian Gerst <brgerst@gmail.com>,
+        Glauber Costa <glommer@redhat.com>, Greg KH <gregkh@suse.de>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Jiri Slaby <jslaby@suse.cz>, Jordan Crouse <jordan.crouse@amd.com>,
-        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+        Jeff Dike <jdike@addtoit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marcin Kocielnicki <koriakin@0x04.net>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>, Pekka Paalanen <pq@iki.fi>,
-        Shinpei KATO <shinpei@il.is.s.u-tokyo.ac.jp>,
-        Stuart Bennett <stuart@freedesktop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Palfrader <peter@palfrader.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        nouveau@lists.freedesktop.org
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 05 Aug 2010 20:38:05 +0000 (UTC)
+        Zachary Amsden <zamsden@redhat.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 05 Aug 2010 20:38:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Linus,
 
-The following changes since commit 540ad6b62b3a188a53b51cac81d8a60d40e29fbd:
+The following changes since commit cdd854bc42b5e6c79bbbc40c6600d995ffe6e747:
 
-  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb (2010-07-28 20:01:26 -0700)
+  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2010-08-05 09:03:46 -0700)
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-mm-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-asm-for-linus
 
-Andres Salomon (1):
-      x86, mm: Create symbolic index into address_markers array
+Brian Gerst (5):
+      x86: Remove redundant K6 MSRs
+      x86: Use symbolic MSR names
+      x86-64: Simplify loading initial_gs
+      x86-64, asm: Directly access per-cpu IST
+      x86-32, asm: Directly access per-cpu GDT
 
-Borislav Petkov (1):
-      x86, tlb: Clean up and correct used type
+H. Peter Anvin (7):
+      x86: Add memory modify constraints to xchg() and cmpxchg()
+      Merge remote branch 'origin/x86/urgent' into x86/asm
+      x86, asm: Clean up and simplify set_64bit()
+      x86, asm: Clean up and simplify <asm/cmpxchg.h>
+      x86, asm: Move cmpxchg emulation code to arch/x86/lib
+      x86, asm: Merge cmpxchg_486_u64() and cmpxchg8b_emu()
+      um, x86: Cast to (u64 *) inside set_64bit()
 
-Florian Zumbiehl (1):
-      x86, iomap: Fix wrong page aligned size calculation in ioremapping code
+ arch/um/include/asm/pgtable-3level.h   |    4 +-
+ arch/x86/include/asm/cmpxchg_32.h      |  198 ++++++++++++++-----------------
+ arch/x86/include/asm/cmpxchg_64.h      |   83 +++++++++-----
+ arch/x86/include/asm/msr-index.h       |    2 -
+ arch/x86/kernel/acpi/realmode/wakeup.S |    2 +-
+ arch/x86/kernel/cpu/Makefile           |    2 +-
+ arch/x86/kernel/entry_32.S             |   11 +-
+ arch/x86/kernel/entry_64.S             |    6 +-
+ arch/x86/kernel/head_64.S              |    5 +-
+ arch/x86/kernel/verify_cpu_64.S        |    3 +-
+ arch/x86/kvm/svm.c                     |    6 +-
+ arch/x86/kvm/vmx.c                     |    8 +-
+ arch/x86/kvm/x86.c                     |    2 +-
+ arch/x86/lib/Makefile                  |    1 +
+ arch/x86/{kernel/cpu => lib}/cmpxchg.c |   18 ---
+ 15 files changed, 166 insertions(+), 185 deletions(-)
+ rename arch/x86/{kernel/cpu => lib}/cmpxchg.c (75%)
 
-Jiri Slaby (1):
-      x86-64, mm: Initialize VDSO earlier on 64 bits
-
-Kenji Kaneshige (2):
-      x86, ioremap: Fix incorrect physical address handling in PAE mode
-      x86, ioremap: Fix normal ram range check
-
-Marcin Slusarz (1):
-      x86, kmmio/mmiotrace: Fix double free of kmmio_fault_pages
-
-Yasuaki Ishimatsu (1):
-      x86: Ioremap: fix wrong physical address handling in PAT code
-
- arch/x86/mm/dump_pagetables.c |   32 ++++++++++++++++++++++++++------
- arch/x86/mm/ioremap.c         |   14 ++++++--------
- arch/x86/mm/kmmio.c           |   16 +++++++++++++---
- arch/x86/mm/pat.c             |    2 +-
- arch/x86/mm/testmmiotrace.c   |   22 ++++++++++++++++++++++
- arch/x86/mm/tlb.c             |    4 +---
- arch/x86/vdso/vdso32-setup.c  |    2 +-
- arch/x86/vdso/vma.c           |    2 +-
- include/linux/io.h            |    4 ++--
- include/linux/vmalloc.h       |    2 +-
- lib/ioremap.c                 |   10 +++++-----
- mm/vmalloc.c                  |    2 +-
- 12 files changed, 80 insertions(+), 32 deletions(-)
-
-diff --git a/arch/x86/mm/dump_pagetables.c b/arch/x86/mm/dump_pagetables.c
-index a725b7f..0002a3a 100644
---- a/arch/x86/mm/dump_pagetables.c
-+++ b/arch/x86/mm/dump_pagetables.c
-@@ -37,6 +37,28 @@ struct addr_marker {
- 	const char *name;
- };
+diff --git a/arch/um/include/asm/pgtable-3level.h b/arch/um/include/asm/pgtable-3level.h
+index 084de4a..0032f92 100644
+--- a/arch/um/include/asm/pgtable-3level.h
++++ b/arch/um/include/asm/pgtable-3level.h
+@@ -60,7 +60,7 @@
+ 	set_pud(pud, __pud(_PAGE_TABLE + __pa(pmd)))
  
-+/* indices for address_markers; keep sync'd w/ address_markers below */
-+enum address_markers_idx {
-+	USER_SPACE_NR = 0,
-+#ifdef CONFIG_X86_64
-+	KERNEL_SPACE_NR,
-+	LOW_KERNEL_NR,
-+	VMALLOC_START_NR,
-+	VMEMMAP_START_NR,
-+	HIGH_KERNEL_NR,
-+	MODULES_VADDR_NR,
-+	MODULES_END_NR,
-+#else
-+	KERNEL_SPACE_NR,
-+	VMALLOC_START_NR,
-+	VMALLOC_END_NR,
-+# ifdef CONFIG_HIGHMEM
-+	PKMAP_BASE_NR,
-+# endif
-+	FIXADDR_START_NR,
-+#endif
-+};
+ #ifdef CONFIG_64BIT
+-#define set_pud(pudptr, pudval) set_64bit((phys_t *) (pudptr), pud_val(pudval))
++#define set_pud(pudptr, pudval) set_64bit((u64 *) (pudptr), pud_val(pudval))
+ #else
+ #define set_pud(pudptr, pudval) (*(pudptr) = (pudval))
+ #endif
+@@ -73,7 +73,7 @@ static inline int pgd_newpage(pgd_t pgd)
+ static inline void pgd_mkuptodate(pgd_t pgd) { pgd_val(pgd) &= ~_PAGE_NEWPAGE; }
+ 
+ #ifdef CONFIG_64BIT
+-#define set_pmd(pmdptr, pmdval) set_64bit((phys_t *) (pmdptr), pmd_val(pmdval))
++#define set_pmd(pmdptr, pmdval) set_64bit((u64 *) (pmdptr), pmd_val(pmdval))
+ #else
+ #define set_pmd(pmdptr, pmdval) (*(pmdptr) = (pmdval))
+ #endif
+diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
+index 8859e12..284a6e8 100644
+--- a/arch/x86/include/asm/cmpxchg_32.h
++++ b/arch/x86/include/asm/cmpxchg_32.h
+@@ -11,38 +11,42 @@
+ extern void __xchg_wrong_size(void);
+ 
+ /*
+- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+- * Note 2: xchg has side effect, so that attribute volatile is necessary,
+- *	  but generally the primitive is invalid, *ptr is output argument. --ANK
++ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
++ * Since this is generally used to protect other memory information, we
++ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
++ * information around.
+  */
+-
+-struct __xchg_dummy {
+-	unsigned long a[100];
+-};
+-#define __xg(x) ((struct __xchg_dummy *)(x))
+-
+ #define __xchg(x, ptr, size)						\
+ ({									\
+ 	__typeof(*(ptr)) __x = (x);					\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile("xchgb %b0,%1"				\
+-			     : "=q" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile("xchgb %0,%1"				\
++			     : "=q" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile("xchgw %w0,%1"				\
+-			     : "=r" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile("xchgw %0,%1"				\
++			     : "=r" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
+ 		asm volatile("xchgl %0,%1"				\
+-			     : "=r" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++			     : "=r" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__xchg_wrong_size();					\
+ 	}								\
+@@ -53,60 +57,33 @@ struct __xchg_dummy {
+ 	__xchg((v), (ptr), sizeof(*ptr))
+ 
+ /*
+- * The semantics of XCHGCMP8B are a bit strange, this is why
+- * there is a loop and the loading of %%eax and %%edx has to
+- * be inside. This inlines well in most cases, the cached
+- * cost is around ~38 cycles. (in the future we might want
+- * to do an SIMD/3DNOW!/MMX/FPU 64-bit store here, but that
+- * might have an implicit FPU-save as a cost, so it's not
+- * clear which path to go.)
++ * CMPXCHG8B only writes to the target if we had the previous
++ * value in registers, otherwise it acts as a read and gives us the
++ * "new previous" value.  That is why there is a loop.  Preloading
++ * EDX:EAX is a performance optimization: in the common case it means
++ * we need only one locked operation.
+  *
+- * cmpxchg8b must be used with the lock prefix here to allow
+- * the instruction to be executed atomically, see page 3-102
+- * of the instruction set reference 24319102.pdf. We need
+- * the reader side to see the coherent 64bit value.
++ * A SIMD/3DNOW!/MMX/FPU 64-bit store here would require at the very
++ * least an FPU save and/or %cr0.ts manipulation.
++ *
++ * cmpxchg8b must be used with the lock prefix here to allow the
++ * instruction to be executed atomically.  We need to have the reader
++ * side to see the coherent 64bit value.
+  */
+-static inline void __set_64bit(unsigned long long *ptr,
+-			       unsigned int low, unsigned int high)
++static inline void set_64bit(volatile u64 *ptr, u64 value)
+ {
++	u32 low  = value;
++	u32 high = value >> 32;
++	u64 prev = *ptr;
 +
- /* Address space markers hints */
- static struct addr_marker address_markers[] = {
- 	{ 0, "User Space" },
-@@ -331,14 +353,12 @@ static int pt_dump_init(void)
+ 	asm volatile("\n1:\t"
+-		     "movl (%0), %%eax\n\t"
+-		     "movl 4(%0), %%edx\n\t"
+-		     LOCK_PREFIX "cmpxchg8b (%0)\n\t"
++		     LOCK_PREFIX "cmpxchg8b %0\n\t"
+ 		     "jnz 1b"
+-		     : /* no outputs */
+-		     : "D"(ptr),
+-		       "b"(low),
+-		       "c"(high)
+-		     : "ax", "dx", "memory");
+-}
+-
+-static inline void __set_64bit_constant(unsigned long long *ptr,
+-					unsigned long long value)
+-{
+-	__set_64bit(ptr, (unsigned int)value, (unsigned int)(value >> 32));
+-}
+-
+-#define ll_low(x)	*(((unsigned int *)&(x)) + 0)
+-#define ll_high(x)	*(((unsigned int *)&(x)) + 1)
+-
+-static inline void __set_64bit_var(unsigned long long *ptr,
+-				   unsigned long long value)
+-{
+-	__set_64bit(ptr, ll_low(value), ll_high(value));
++		     : "=m" (*ptr), "+A" (prev)
++		     : "b" (low), "c" (high)
++		     : "memory");
+ }
  
- #ifdef CONFIG_X86_32
- 	/* Not a compile-time constant on x86-32 */
--	address_markers[2].start_address = VMALLOC_START;
--	address_markers[3].start_address = VMALLOC_END;
-+	address_markers[VMALLOC_START_NR].start_address = VMALLOC_START;
-+	address_markers[VMALLOC_END_NR].start_address = VMALLOC_END;
- # ifdef CONFIG_HIGHMEM
--	address_markers[4].start_address = PKMAP_BASE;
--	address_markers[5].start_address = FIXADDR_START;
--# else
--	address_markers[4].start_address = FIXADDR_START;
-+	address_markers[PKMAP_BASE_NR].start_address = PKMAP_BASE;
- # endif
-+	address_markers[FIXADDR_START_NR].start_address = FIXADDR_START;
+-#define set_64bit(ptr, value)			\
+-	(__builtin_constant_p((value))		\
+-	 ? __set_64bit_constant((ptr), (value))	\
+-	 : __set_64bit_var((ptr), (value)))
+-
+-#define _set_64bit(ptr, value)						\
+-	(__builtin_constant_p(value)					\
+-	 ? __set_64bit(ptr, (unsigned int)(value),			\
+-		       (unsigned int)((value) >> 32))			\
+-	 : __set_64bit(ptr, ll_low((value)), ll_high((value))))
+-
+ extern void __cmpxchg_wrong_size(void);
+ 
+ /*
+@@ -121,23 +98,32 @@ extern void __cmpxchg_wrong_size(void);
+ 	__typeof__(*(ptr)) __new = (new);				\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile(lock "cmpxchgb %b1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "q"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile(lock "cmpxchgb %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "q" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile(lock "cmpxchgw %w1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile(lock "cmpxchgw %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
+-		asm volatile(lock "cmpxchgl %1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
++		asm volatile(lock "cmpxchgl %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__cmpxchg_wrong_size();					\
+ 	}								\
+@@ -175,32 +161,28 @@ extern void __cmpxchg_wrong_size(void);
+ 					       (unsigned long long)(n)))
  #endif
  
- 	pe = debugfs_create_file("kernel_page_tables", 0600, NULL, NULL,
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 12e4d2d..3ba6e06 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -62,8 +62,8 @@ int ioremap_change_attr(unsigned long vaddr, unsigned long size,
- static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 		unsigned long size, unsigned long prot_val, void *caller)
+-static inline unsigned long long __cmpxchg64(volatile void *ptr,
+-					     unsigned long long old,
+-					     unsigned long long new)
++static inline u64 __cmpxchg64(volatile u64 *ptr, u64 old, u64 new)
  {
--	unsigned long pfn, offset, vaddr;
--	resource_size_t last_addr;
-+	unsigned long offset, vaddr;
-+	resource_size_t pfn, last_pfn, last_addr;
- 	const resource_size_t unaligned_phys_addr = phys_addr;
- 	const unsigned long unaligned_size = size;
- 	struct vm_struct *area;
-@@ -100,10 +100,8 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 	/*
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
--	for (pfn = phys_addr >> PAGE_SHIFT;
--				(pfn << PAGE_SHIFT) < (last_addr & PAGE_MASK);
--				pfn++) {
+-	unsigned long long prev;
+-	asm volatile(LOCK_PREFIX "cmpxchg8b %3"
+-		     : "=A"(prev)
+-		     : "b"((unsigned long)new),
+-		       "c"((unsigned long)(new >> 32)),
+-		       "m"(*__xg(ptr)),
+-		       "0"(old)
++	u64 prev;
++	asm volatile(LOCK_PREFIX "cmpxchg8b %1"
++		     : "=A" (prev),
++		       "+m" (*ptr)
++		     : "b" ((u32)new),
++		       "c" ((u32)(new >> 32)),
++		       "0" (old)
+ 		     : "memory");
+ 	return prev;
+ }
+ 
+-static inline unsigned long long __cmpxchg64_local(volatile void *ptr,
+-						   unsigned long long old,
+-						   unsigned long long new)
++static inline u64 __cmpxchg64_local(volatile u64 *ptr, u64 old, u64 new)
+ {
+-	unsigned long long prev;
+-	asm volatile("cmpxchg8b %3"
+-		     : "=A"(prev)
+-		     : "b"((unsigned long)new),
+-		       "c"((unsigned long)(new >> 32)),
+-		       "m"(*__xg(ptr)),
+-		       "0"(old)
++	u64 prev;
++	asm volatile("cmpxchg8b %1"
++		     : "=A" (prev),
++		       "+m" (*ptr)
++		     : "b" ((u32)new),
++		       "c" ((u32)(new >> 32)),
++		       "0" (old)
+ 		     : "memory");
+ 	return prev;
+ }
+@@ -264,8 +246,6 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
+  * to simulate the cmpxchg8b on the 80386 and 80486 CPU.
+  */
+ 
+-extern unsigned long long cmpxchg_486_u64(volatile void *, u64, u64);
 -
-+	last_pfn = last_addr >> PAGE_SHIFT;
-+	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
- 		int is_ram = page_is_ram(pfn);
+ #define cmpxchg64(ptr, o, n)					\
+ ({								\
+ 	__typeof__(*(ptr)) __ret;				\
+@@ -283,20 +263,20 @@ extern unsigned long long cmpxchg_486_u64(volatile void *, u64, u64);
+ 	__ret; })
  
- 		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
-@@ -115,7 +113,7 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 	 * Mappings have to be page-aligned
- 	 */
- 	offset = phys_addr & ~PAGE_MASK;
--	phys_addr &= PAGE_MASK;
-+	phys_addr &= PHYSICAL_PAGE_MASK;
- 	size = PAGE_ALIGN(last_addr+1) - phys_addr;
  
- 	retval = reserve_memtype(phys_addr, (u64)phys_addr + size,
-@@ -613,7 +611,7 @@ void __init early_iounmap(void __iomem *addr, unsigned long size)
- 		return;
- 	}
- 	offset = virt_addr & ~PAGE_MASK;
--	nrpages = PAGE_ALIGN(offset + size - 1) >> PAGE_SHIFT;
-+	nrpages = PAGE_ALIGN(offset + size) >> PAGE_SHIFT;
- 
- 	idx = FIX_BTMAP_BEGIN - NR_FIX_BTMAPS*slot;
- 	while (nrpages > 0) {
-diff --git a/arch/x86/mm/kmmio.c b/arch/x86/mm/kmmio.c
-index 5d0e67f..e5d5e2c 100644
---- a/arch/x86/mm/kmmio.c
-+++ b/arch/x86/mm/kmmio.c
-@@ -45,6 +45,8 @@ struct kmmio_fault_page {
- 	 * Protected by kmmio_lock, when linked into kmmio_page_table.
- 	 */
- 	int count;
-+
-+	bool scheduled_for_release;
- };
- 
- struct kmmio_delayed_release {
-@@ -398,8 +400,11 @@ static void release_kmmio_fault_page(unsigned long page,
- 	BUG_ON(f->count < 0);
- 	if (!f->count) {
- 		disarm_kmmio_fault_page(f);
--		f->release_next = *release_list;
--		*release_list = f;
-+		if (!f->scheduled_for_release) {
-+			f->release_next = *release_list;
-+			*release_list = f;
-+			f->scheduled_for_release = true;
-+		}
- 	}
- }
- 
-@@ -471,8 +476,10 @@ static void remove_kmmio_fault_pages(struct rcu_head *head)
- 			prevp = &f->release_next;
- 		} else {
- 			*prevp = f->release_next;
-+			f->release_next = NULL;
-+			f->scheduled_for_release = false;
- 		}
--		f = f->release_next;
-+		f = *prevp;
- 	}
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-@@ -510,6 +517,9 @@ void unregister_kmmio_probe(struct kmmio_probe *p)
- 	kmmio_count--;
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-+	if (!release_list)
-+		return;
-+
- 	drelease = kmalloc(sizeof(*drelease), GFP_ATOMIC);
- 	if (!drelease) {
- 		pr_crit("leaking kmmio_fault_page objects.\n");
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index 64121a1..f6ff57b 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -158,7 +158,7 @@ static unsigned long pat_x_mtrr_type(u64 start, u64 end, unsigned long req_type)
- 	return req_type;
- }
- 
--static int pat_pagerange_is_ram(unsigned long start, unsigned long end)
-+static int pat_pagerange_is_ram(resource_size_t start, resource_size_t end)
- {
- 	int ram_page = 0, not_rampage = 0;
- 	unsigned long page_nr;
-diff --git a/arch/x86/mm/testmmiotrace.c b/arch/x86/mm/testmmiotrace.c
-index 8565d94..38868ad 100644
---- a/arch/x86/mm/testmmiotrace.c
-+++ b/arch/x86/mm/testmmiotrace.c
-@@ -90,6 +90,27 @@ static void do_test(unsigned long size)
- 	iounmap(p);
- }
- 
-+/*
-+ * Tests how mmiotrace behaves in face of multiple ioremap / iounmaps in
-+ * a short time. We had a bug in deferred freeing procedure which tried
-+ * to free this region multiple times (ioremap can reuse the same address
-+ * for many mappings).
-+ */
-+static void do_test_bulk_ioremapping(void)
-+{
-+	void __iomem *p;
-+	int i;
-+
-+	for (i = 0; i < 10; ++i) {
-+		p = ioremap_nocache(mmio_address, PAGE_SIZE);
-+		if (p)
-+			iounmap(p);
-+	}
-+
-+	/* Force freeing. If it will crash we will know why. */
-+	synchronize_rcu();
-+}
-+
- static int __init init(void)
- {
- 	unsigned long size = (read_far) ? (8 << 20) : (16 << 10);
-@@ -104,6 +125,7 @@ static int __init init(void)
- 		   "and writing 16 kB of rubbish in there.\n",
- 		   size >> 10, mmio_address);
- 	do_test(size);
-+	do_test_bulk_ioremapping();
- 	pr_info("All done.\n");
- 	return 0;
- }
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 426f3a1..c03f14a 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -278,11 +278,9 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
- 
- static void do_flush_tlb_all(void *info)
- {
--	unsigned long cpu = smp_processor_id();
 -
- 	__flush_tlb_all();
- 	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
--		leave_mm(cpu);
-+		leave_mm(smp_processor_id());
+-#define cmpxchg64_local(ptr, o, n)					\
+-({									\
+-	__typeof__(*(ptr)) __ret;					\
+-	if (likely(boot_cpu_data.x86 > 4))				\
+-		__ret = (__typeof__(*(ptr)))__cmpxchg64_local((ptr),	\
+-				(unsigned long long)(o),		\
+-				(unsigned long long)(n));		\
+-	else								\
+-		__ret = (__typeof__(*(ptr)))cmpxchg_486_u64((ptr),	\
+-				(unsigned long long)(o),		\
+-				(unsigned long long)(n));		\
+-	__ret;								\
+-})
++#define cmpxchg64_local(ptr, o, n)				\
++({								\
++	__typeof__(*(ptr)) __ret;				\
++	__typeof__(*(ptr)) __old = (o);				\
++	__typeof__(*(ptr)) __new = (n);				\
++	alternative_io("call cmpxchg8b_emu",			\
++		       "cmpxchg8b (%%esi)" ,			\
++		       X86_FEATURE_CX8,				\
++		       "=A" (__ret),				\
++		       "S" ((ptr)), "0" (__old),		\
++		       "b" ((unsigned int)__new),		\
++		       "c" ((unsigned int)(__new>>32))		\
++		       : "memory");				\
++	__ret; })
+ 
+ #endif
+ 
+diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
+index 485ae41..423ae58 100644
+--- a/arch/x86/include/asm/cmpxchg_64.h
++++ b/arch/x86/include/asm/cmpxchg_64.h
+@@ -3,51 +3,60 @@
+ 
+ #include <asm/alternative.h> /* Provides LOCK_PREFIX */
+ 
+-#define __xg(x) ((volatile long *)(x))
+-
+-static inline void set_64bit(volatile unsigned long *ptr, unsigned long val)
++static inline void set_64bit(volatile u64 *ptr, u64 val)
+ {
+ 	*ptr = val;
  }
  
- void flush_tlb_all(void)
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 02b442e..36df991 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -374,7 +374,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+-#define _set_64bit set_64bit
+-
+ extern void __xchg_wrong_size(void);
+ extern void __cmpxchg_wrong_size(void);
  
+ /*
+- * Note: no "lock" prefix even on SMP: xchg always implies lock anyway
+- * Note 2: xchg has side effect, so that attribute volatile is necessary,
+- *	  but generally the primitive is invalid, *ptr is output argument. --ANK
++ * Note: no "lock" prefix even on SMP: xchg always implies lock anyway.
++ * Since this is generally used to protect other memory information, we
++ * use "asm volatile" and "memory" clobbers to prevent gcc from moving
++ * information around.
+  */
+ #define __xchg(x, ptr, size)						\
+ ({									\
+ 	__typeof(*(ptr)) __x = (x);					\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile("xchgb %b0,%1"				\
+-			     : "=q" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile("xchgb %0,%1"				\
++			     : "=q" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile("xchgw %w0,%1"				\
+-			     : "=r" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile("xchgw %0,%1"				\
++			     : "=r" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
+-		asm volatile("xchgl %k0,%1"				\
+-			     : "=r" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
++		asm volatile("xchgl %0,%1"				\
++			     : "=r" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 8:								\
++	{								\
++		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
+ 		asm volatile("xchgq %0,%1"				\
+-			     : "=r" (__x)				\
+-			     : "m" (*__xg(ptr)), "0" (__x)		\
++			     : "=r" (__x), "+m" (*__ptr)		\
++			     : "0" (__x)				\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__xchg_wrong_size();					\
+ 	}								\
+@@ -71,29 +80,41 @@ extern void __cmpxchg_wrong_size(void);
+ 	__typeof__(*(ptr)) __new = (new);				\
+ 	switch (size) {							\
+ 	case 1:								\
+-		asm volatile(lock "cmpxchgb %b1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "q"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u8 *__ptr = (volatile u8 *)(ptr);		\
++		asm volatile(lock "cmpxchgb %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "q" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 2:								\
+-		asm volatile(lock "cmpxchgw %w1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u16 *__ptr = (volatile u16 *)(ptr);		\
++		asm volatile(lock "cmpxchgw %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 4:								\
+-		asm volatile(lock "cmpxchgl %k1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u32 *__ptr = (volatile u32 *)(ptr);		\
++		asm volatile(lock "cmpxchgl %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	case 8:								\
+-		asm volatile(lock "cmpxchgq %1,%2"			\
+-			     : "=a"(__ret)				\
+-			     : "r"(__new), "m"(*__xg(ptr)), "0"(__old)	\
++	{								\
++		volatile u64 *__ptr = (volatile u64 *)(ptr);		\
++		asm volatile(lock "cmpxchgq %2,%1"			\
++			     : "=a" (__ret), "+m" (*__ptr)		\
++			     : "r" (__new), "0" (__old)			\
+ 			     : "memory");				\
+ 		break;							\
++	}								\
+ 	default:							\
+ 		__cmpxchg_wrong_size();					\
+ 	}								\
+diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
+index 509a421..b27d160 100644
+--- a/arch/x86/include/asm/msr-index.h
++++ b/arch/x86/include/asm/msr-index.h
+@@ -161,8 +161,6 @@
+ #define MSR_K7_FID_VID_STATUS		0xc0010042
+ 
+ /* K6 MSRs */
+-#define MSR_K6_EFER			0xc0000080
+-#define MSR_K6_STAR			0xc0000081
+ #define MSR_K6_WHCR			0xc0000082
+ #define MSR_K6_UWCCR			0xc0000085
+ #define MSR_K6_EPMR			0xc0000086
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
+index 580b4e2..28595d6 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.S
+@@ -104,7 +104,7 @@ _start:
+ 	movl	%eax, %ecx
+ 	orl	%edx, %ecx
+ 	jz	1f
+-	movl	$0xc0000080, %ecx
++	movl	$MSR_EFER, %ecx
+ 	wrmsr
+ 1:
+ 
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 3a785da..c47c439 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -16,7 +16,7 @@ obj-y			:= intel_cacheinfo.o addon_cpuid_features.o
+ obj-y			+= proc.o capflags.o powerflags.o common.o
+ obj-y			+= vmware.o hypervisor.o sched.o mshyperv.o
+ 
+-obj-$(CONFIG_X86_32)	+= bugs.o cmpxchg.o
++obj-$(CONFIG_X86_32)	+= bugs.o
+ obj-$(CONFIG_X86_64)	+= bugs_64.o
+ 
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= intel.o
+diff --git a/arch/x86/kernel/cpu/cmpxchg.c b/arch/x86/kernel/cpu/cmpxchg.c
+deleted file mode 100644
+index 2056ccf..0000000
+--- a/arch/x86/kernel/cpu/cmpxchg.c
++++ /dev/null
+@@ -1,72 +0,0 @@
+-/*
+- * cmpxchg*() fallbacks for CPU not supporting these instructions
+- */
+-
+-#include <linux/kernel.h>
+-#include <linux/smp.h>
+-#include <linux/module.h>
+-
+-#ifndef CONFIG_X86_CMPXCHG
+-unsigned long cmpxchg_386_u8(volatile void *ptr, u8 old, u8 new)
+-{
+-	u8 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u8 *)ptr;
+-	if (prev == old)
+-		*(u8 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_386_u8);
+-
+-unsigned long cmpxchg_386_u16(volatile void *ptr, u16 old, u16 new)
+-{
+-	u16 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u16 *)ptr;
+-	if (prev == old)
+-		*(u16 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_386_u16);
+-
+-unsigned long cmpxchg_386_u32(volatile void *ptr, u32 old, u32 new)
+-{
+-	u32 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u32 *)ptr;
+-	if (prev == old)
+-		*(u32 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_386_u32);
+-#endif
+-
+-#ifndef CONFIG_X86_CMPXCHG64
+-unsigned long long cmpxchg_486_u64(volatile void *ptr, u64 old, u64 new)
+-{
+-	u64 prev;
+-	unsigned long flags;
+-
+-	/* Poor man's cmpxchg8b for 386 and 486. Unsuitable for SMP */
+-	local_irq_save(flags);
+-	prev = *(u64 *)ptr;
+-	if (prev == old)
+-		*(u64 *)ptr = new;
+-	local_irq_restore(flags);
+-	return prev;
+-}
+-EXPORT_SYMBOL(cmpxchg_486_u64);
+-#endif
+-
+diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
+index cd49141..233c582 100644
+--- a/arch/x86/kernel/entry_32.S
++++ b/arch/x86/kernel/entry_32.S
+@@ -611,14 +611,14 @@ ldt_ss:
+  * compensating for the offset by changing to the ESPFIX segment with
+  * a base address that matches for the difference.
+  */
++#define GDT_ESPFIX_SS PER_CPU_VAR(gdt_page) + (GDT_ENTRY_ESPFIX_SS * 8)
+ 	mov %esp, %edx			/* load kernel esp */
+ 	mov PT_OLDESP(%esp), %eax	/* load userspace esp */
+ 	mov %dx, %ax			/* eax: new kernel esp */
+ 	sub %eax, %edx			/* offset (low word is 0) */
+-	PER_CPU(gdt_page, %ebx)
+ 	shr $16, %edx
+-	mov %dl, GDT_ENTRY_ESPFIX_SS * 8 + 4(%ebx) /* bits 16..23 */
+-	mov %dh, GDT_ENTRY_ESPFIX_SS * 8 + 7(%ebx) /* bits 24..31 */
++	mov %dl, GDT_ESPFIX_SS + 4 /* bits 16..23 */
++	mov %dh, GDT_ESPFIX_SS + 7 /* bits 24..31 */
+ 	pushl $__ESPFIX_SS
+ 	CFI_ADJUST_CFA_OFFSET 4
+ 	push %eax			/* new kernel esp */
+@@ -791,9 +791,8 @@ ptregs_clone:
+  * normal stack and adjusts ESP with the matching offset.
+  */
+ 	/* fixup the stack */
+-	PER_CPU(gdt_page, %ebx)
+-	mov GDT_ENTRY_ESPFIX_SS * 8 + 4(%ebx), %al /* bits 16..23 */
+-	mov GDT_ENTRY_ESPFIX_SS * 8 + 7(%ebx), %ah /* bits 24..31 */
++	mov GDT_ESPFIX_SS + 4, %al /* bits 16..23 */
++	mov GDT_ESPFIX_SS + 7, %ah /* bits 24..31 */
+ 	shl $16, %eax
+ 	addl %esp, %eax			/* the adjusted stack pointer */
+ 	pushl $__KERNEL_DS
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 4db7c4d..59af275 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -1065,6 +1065,7 @@ ENTRY(\sym)
+ END(\sym)
+ .endm
+ 
++#define INIT_TSS_IST(x) PER_CPU_VAR(init_tss) + (TSS_ist + ((x) - 1) * 8)
+ .macro paranoidzeroentry_ist sym do_sym ist
+ ENTRY(\sym)
+ 	INTR_FRAME
+@@ -1076,10 +1077,9 @@ ENTRY(\sym)
+ 	TRACE_IRQS_OFF
+ 	movq %rsp,%rdi		/* pt_regs pointer */
+ 	xorl %esi,%esi		/* no error code */
+-	PER_CPU(init_tss, %r12)
+-	subq $EXCEPTION_STKSZ, TSS_ist + (\ist - 1) * 8(%r12)
++	subq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
+ 	call \do_sym
+-	addq $EXCEPTION_STKSZ, TSS_ist + (\ist - 1) * 8(%r12)
++	addq $EXCEPTION_STKSZ, INIT_TSS_IST(\ist)
+ 	jmp paranoid_exit	/* %ebx: no swapgs flag */
+ 	CFI_ENDPROC
+ END(\sym)
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 3d1e6f1..239046b 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -234,9 +234,8 @@ ENTRY(secondary_startup_64)
+ 	 * init data section till per cpu areas are set up.
+ 	 */
+ 	movl	$MSR_GS_BASE,%ecx
+-	movq	initial_gs(%rip),%rax
+-	movq    %rax,%rdx
+-	shrq	$32,%rdx
++	movl	initial_gs(%rip),%eax
++	movl	initial_gs+4(%rip),%edx
+ 	wrmsr	
+ 
+ 	/* esi is pointer to real mode structure with interesting info.
+diff --git a/arch/x86/kernel/verify_cpu_64.S b/arch/x86/kernel/verify_cpu_64.S
+index 45b6f8a..56a8c2a 100644
+--- a/arch/x86/kernel/verify_cpu_64.S
++++ b/arch/x86/kernel/verify_cpu_64.S
+@@ -31,6 +31,7 @@
+  */
+ 
+ #include <asm/cpufeature.h>
++#include <asm/msr-index.h>
+ 
+ verify_cpu:
+ 	pushfl				# Save caller passed flags
+@@ -88,7 +89,7 @@ verify_cpu_sse_test:
+ 	je	verify_cpu_sse_ok
+ 	test	%di,%di
+ 	jz	verify_cpu_no_longmode	# only try to force SSE on AMD
+-	movl	$0xc0010015,%ecx	# HWCR
++	movl	$MSR_K7_HWCR,%ecx
+ 	rdmsr
+ 	btr	$15,%eax		# enable SSE
+ 	wrmsr
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 56c9b6b..2636ea8 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -131,7 +131,7 @@ static struct svm_direct_access_msrs {
+ 	u32 index;   /* Index of the MSR */
+ 	bool always; /* True if intercept is always on */
+ } direct_access_msrs[] = {
+-	{ .index = MSR_K6_STAR,				.always = true  },
++	{ .index = MSR_STAR,				.always = true  },
+ 	{ .index = MSR_IA32_SYSENTER_CS,		.always = true  },
  #ifdef CONFIG_X86_64
+ 	{ .index = MSR_GS_BASE,				.always = true  },
+@@ -2433,7 +2433,7 @@ static int svm_get_msr(struct kvm_vcpu *vcpu, unsigned ecx, u64 *data)
+ 		*data = tsc_offset + native_read_tsc();
+ 		break;
+ 	}
+-	case MSR_K6_STAR:
++	case MSR_STAR:
+ 		*data = svm->vmcb->save.star;
+ 		break;
+ #ifdef CONFIG_X86_64
+@@ -2557,7 +2557,7 @@ static int svm_set_msr(struct kvm_vcpu *vcpu, unsigned ecx, u64 data)
  
--__initcall(sysenter_setup);
-+subsys_initcall(sysenter_setup);
+ 		break;
+ 	}
+-	case MSR_K6_STAR:
++	case MSR_STAR:
+ 		svm->vmcb->save.star = data;
+ 		break;
+ #ifdef CONFIG_X86_64
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 27a0222..49b25ee 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -240,14 +240,14 @@ static u64 host_efer;
+ static void ept_save_pdptrs(struct kvm_vcpu *vcpu);
  
- #ifdef CONFIG_SYSCTL
- /* Register vsyscall32 into the ABI table */
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index ac74869..43456ee 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -74,7 +74,7 @@ static int __init init_vdso_vars(void)
- 	vdso_enabled = 0;
- 	return -ENOMEM;
- }
--__initcall(init_vdso_vars);
-+subsys_initcall(init_vdso_vars);
- 
- struct linux_binprm;
- 
-diff --git a/include/linux/io.h b/include/linux/io.h
-index 6c7f0ba..7fd2d21 100644
---- a/include/linux/io.h
-+++ b/include/linux/io.h
-@@ -29,10 +29,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count);
- 
- #ifdef CONFIG_MMU
- int ioremap_page_range(unsigned long addr, unsigned long end,
--		       unsigned long phys_addr, pgprot_t prot);
-+		       phys_addr_t phys_addr, pgprot_t prot);
- #else
- static inline int ioremap_page_range(unsigned long addr, unsigned long end,
--				     unsigned long phys_addr, pgprot_t prot)
-+				     phys_addr_t phys_addr, pgprot_t prot)
- {
- 	return 0;
- }
-diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
-index 227c2a5..de05e96 100644
---- a/include/linux/vmalloc.h
-+++ b/include/linux/vmalloc.h
-@@ -30,7 +30,7 @@ struct vm_struct {
- 	unsigned long		flags;
- 	struct page		**pages;
- 	unsigned int		nr_pages;
--	unsigned long		phys_addr;
-+	phys_addr_t		phys_addr;
- 	void			*caller;
+ /*
+- * Keep MSR_K6_STAR at the end, as setup_msrs() will try to optimize it
++ * Keep MSR_STAR at the end, as setup_msrs() will try to optimize it
+  * away by decrementing the array size.
+  */
+ static const u32 vmx_msr_index[] = {
+ #ifdef CONFIG_X86_64
+ 	MSR_SYSCALL_MASK, MSR_LSTAR, MSR_CSTAR,
+ #endif
+-	MSR_EFER, MSR_TSC_AUX, MSR_K6_STAR,
++	MSR_EFER, MSR_TSC_AUX, MSR_STAR,
  };
+ #define NR_VMX_MSR ARRAY_SIZE(vmx_msr_index)
  
-diff --git a/lib/ioremap.c b/lib/ioremap.c
-index 14c6078..5730ecd 100644
---- a/lib/ioremap.c
-+++ b/lib/ioremap.c
-@@ -13,10 +13,10 @@
- #include <asm/pgtable.h>
- 
- static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
--		unsigned long end, unsigned long phys_addr, pgprot_t prot)
-+		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
- {
- 	pte_t *pte;
--	unsigned long pfn;
-+	u64 pfn;
- 
- 	pfn = phys_addr >> PAGE_SHIFT;
- 	pte = pte_alloc_kernel(pmd, addr);
-@@ -31,7 +31,7 @@ static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
- }
- 
- static inline int ioremap_pmd_range(pud_t *pud, unsigned long addr,
--		unsigned long end, unsigned long phys_addr, pgprot_t prot)
-+		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
- {
- 	pmd_t *pmd;
- 	unsigned long next;
-@@ -49,7 +49,7 @@ static inline int ioremap_pmd_range(pud_t *pud, unsigned long addr,
- }
- 
- static inline int ioremap_pud_range(pgd_t *pgd, unsigned long addr,
--		unsigned long end, unsigned long phys_addr, pgprot_t prot)
-+		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
- {
- 	pud_t *pud;
- 	unsigned long next;
-@@ -67,7 +67,7 @@ static inline int ioremap_pud_range(pgd_t *pgd, unsigned long addr,
- }
- 
- int ioremap_page_range(unsigned long addr,
--		       unsigned long end, unsigned long phys_addr, pgprot_t prot)
-+		       unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
- {
- 	pgd_t *pgd;
- 	unsigned long start;
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index ae00746..b7e314b 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -2403,7 +2403,7 @@ static int s_show(struct seq_file *m, void *p)
- 		seq_printf(m, " pages=%d", v->nr_pages);
- 
- 	if (v->phys_addr)
--		seq_printf(m, " phys=%lx", v->phys_addr);
-+		seq_printf(m, " phys=%llx", (unsigned long long)v->phys_addr);
- 
- 	if (v->flags & VM_IOREMAP)
- 		seq_printf(m, " ioremap");
+@@ -1117,10 +1117,10 @@ static void setup_msrs(struct vcpu_vmx *vmx)
+ 		if (index >= 0 && vmx->rdtscp_enabled)
+ 			move_msr_up(vmx, index, save_nmsrs++);
+ 		/*
+-		 * MSR_K6_STAR is only needed on long mode guests, and only
++		 * MSR_STAR is only needed on long mode guests, and only
+ 		 * if efer.sce is enabled.
+ 		 */
+-		index = __find_msr_index(vmx, MSR_K6_STAR);
++		index = __find_msr_index(vmx, MSR_STAR);
+ 		if ((index >= 0) && (vmx->vcpu.arch.efer & EFER_SCE))
+ 			move_msr_up(vmx, index, save_nmsrs++);
+ 	}
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 97aab03..25f1907 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -733,7 +733,7 @@ static u32 msrs_to_save[] = {
+ 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+ 	HV_X64_MSR_APIC_ASSIST_PAGE,
+ 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+-	MSR_K6_STAR,
++	MSR_STAR,
+ #ifdef CONFIG_X86_64
+ 	MSR_CSTAR, MSR_KERNEL_GS_BASE, MSR_SYSCALL_MASK, MSR_LSTAR,
+ #endif
+diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
+index f871e04..e10cf07 100644
+--- a/arch/x86/lib/Makefile
++++ b/arch/x86/lib/Makefile
+@@ -30,6 +30,7 @@ ifeq ($(CONFIG_X86_32),y)
+         lib-y += checksum_32.o
+         lib-y += strstr_32.o
+         lib-y += semaphore_32.o string_32.o
++        lib-y += cmpxchg.o
+ ifneq ($(CONFIG_X86_CMPXCHG64),y)
+         lib-y += cmpxchg8b_emu.o atomic64_386_32.o
+ endif
+diff --git a/arch/x86/lib/cmpxchg.c b/arch/x86/lib/cmpxchg.c
+new file mode 100644
+index 0000000..5d619f6
+--- /dev/null
++++ b/arch/x86/lib/cmpxchg.c
+@@ -0,0 +1,54 @@
++/*
++ * cmpxchg*() fallbacks for CPU not supporting these instructions
++ */
++
++#include <linux/kernel.h>
++#include <linux/smp.h>
++#include <linux/module.h>
++
++#ifndef CONFIG_X86_CMPXCHG
++unsigned long cmpxchg_386_u8(volatile void *ptr, u8 old, u8 new)
++{
++	u8 prev;
++	unsigned long flags;
++
++	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
++	local_irq_save(flags);
++	prev = *(u8 *)ptr;
++	if (prev == old)
++		*(u8 *)ptr = new;
++	local_irq_restore(flags);
++	return prev;
++}
++EXPORT_SYMBOL(cmpxchg_386_u8);
++
++unsigned long cmpxchg_386_u16(volatile void *ptr, u16 old, u16 new)
++{
++	u16 prev;
++	unsigned long flags;
++
++	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
++	local_irq_save(flags);
++	prev = *(u16 *)ptr;
++	if (prev == old)
++		*(u16 *)ptr = new;
++	local_irq_restore(flags);
++	return prev;
++}
++EXPORT_SYMBOL(cmpxchg_386_u16);
++
++unsigned long cmpxchg_386_u32(volatile void *ptr, u32 old, u32 new)
++{
++	u32 prev;
++	unsigned long flags;
++
++	/* Poor man's cmpxchg for 386. Unsuitable for SMP */
++	local_irq_save(flags);
++	prev = *(u32 *)ptr;
++	if (prev == old)
++		*(u32 *)ptr = new;
++	local_irq_restore(flags);
++	return prev;
++}
++EXPORT_SYMBOL(cmpxchg_386_u32);
++#endif
