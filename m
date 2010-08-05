@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759063Ab0HEJ2Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:28:16 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:44964 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667Ab0HEJ2O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:28:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OQe1K8foXD7WJy/lyOeBy1aMKteJx9x+VzBIm72TWqU0shg1cJ9DjIekhb66NEyzPW
-         fpWTCAFHr62DuFYhTjnr9pKhcerq1xhbUEmDl74Wob1cN1A0sYaqUh7fdUIUfpXpGTPL
-         grL1phJXHkwDKW/Jn/4nPWet53eadZynlk+BI=
+	id S1759819Ab0HEJ2y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:28:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751667Ab0HEJ2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 05:28:51 -0400
+Message-ID: <4C5A844C.60105@redhat.com>
+Date: Thu, 05 Aug 2010 12:28:44 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1277811391-17966-1-git-send-email-linus.walleij@stericsson.com>
-References: <1277811391-17966-1-git-send-email-linus.walleij@stericsson.com>
-Date: Thu, 5 Aug 2010 14:58:12 +0530
-Message-ID: <AANLkTikFULpLdqOF9q2vpxiQKb__zzDRGGoYR1qE=zwA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
-From: viresh kumar <viresh.linux@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        Viresh Kumar <viresh.kumar@st.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        yuanyabin1978@sina.com, linux-kernel@vger.kernel.org,
-        Ben Dooks <ben-linux@fluff.org>, Peter Pearse <peter.pearse@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Alessandro Rubini <rubini@unipv.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH] kvm: make mmu_shrink() fit shrinker's requirement
+References: <4C591313.50402@cn.fujitsu.com>
+In-Reply-To: <4C591313.50402@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 29, 2010 at 5:06 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> This creates a DMAengine driver for the ARM PL080/PL081 PrimeCells
-> based on the implementation earlier submitted by Peter Pearse.
-> This is working like a charm for memcpy and slave DMA to the PL011
-> PrimeCell on the PB11MPCore.
->
-> This DMA controller is used in mostly unmodified form in the ARM
-> RealView and Versatile platforms, in the ST-Ericsson Nomadik, and
-> in the ST SPEAr platform.
->
-> It has been converted to use the header from the Samsung PL080
-> derivate instead of its own defintions. The Samsungs have a custom
-> driver in their mach-* folders though, atleast we can share the
-> register definitions.
->
-> Cc: Peter Pearse <peter.pearse@arm.com>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> Cc: Kukjin Kim <kgene.kim@samsung.com>
-> Cc: Alessandro Rubini <rubini@unipv.it>
-> Cc: Viresh Kumar <viresh.kumar@st.com>
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
-> Changes since last revision: this has now been successfully tested
-> with PL011 UART on the PB11MPCore.
->
-> It now uses the generic runtime slave control and not the PrimeCell
-> extensions, and thus depends only on that patch set. With the previous
-> patch to the header file this is cleanly separated from the ARM tree
-> and any PrimeCell drivers and can go into the async_tx tree as it is
-> without further dependencies.
-> ---
->  drivers/dma/Kconfig        |    8 +
->  drivers/dma/Makefile       |    1 +
->  drivers/dma/amba-pl08x.c   | 2027 ++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/amba/pl08x.h |  183 ++++
->  4 files changed, 2219 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/dma/amba-pl08x.c
->  create mode 100644 include/linux/amba/pl08x.h
+  On 08/04/2010 10:13 AM, Lai Jiangshan wrote:
+> mmu_shrink() should attempt to free @nr_to_scan entries.
 >
 
-Acked-by: Viresh Kumar <viresh.kumar@st.com>
+This conflicts with Dave's patchset.
 
-regards,
-viresh.
+Dave, what's going on with those patches?  They're starting to smell.
+
+> @@ -3138,37 +3138,51 @@ static int mmu_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+>   {
+>   	struct kvm *kvm;
+>   	struct kvm *kvm_freed = NULL;
+> +	struct kvm *kvm_last;
+>   	int cache_count = 0;
+>
+>   	spin_lock(&kvm_lock);
+>
+> -	list_for_each_entry(kvm,&vm_list, vm_list) {
+> +	if (list_empty(&vm_list))
+> +		goto out;
+> +
+> +	kvm_last = list_entry(vm_list.prev, struct kvm, vm_list);
+> +
+> +	for (;;) {
+>   		int npages, idx, freed_pages;
+>   		LIST_HEAD(invalid_list);
+>
+> +		kvm = list_first_entry(&vm_list, struct kvm, vm_list);
+>   		idx = srcu_read_lock(&kvm->srcu);
+>   		spin_lock(&kvm->mmu_lock);
+>   		npages = kvm->arch.n_alloc_mmu_pages -
+>   			 kvm->arch.n_free_mmu_pages;
+> -		cache_count += npages;
+> -		if (!kvm_freed&&  nr_to_scan>  0&&  npages>  0) {
+> +		if (kvm_last)
+> +			cache_count += npages;
+> +		if (nr_to_scan>  0&&  npages>  0) {
+>   			freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm,
+>   							&invalid_list);
+> +			kvm_mmu_commit_zap_page(kvm,&invalid_list);
+>   			cache_count -= freed_pages;
+>   			kvm_freed = kvm;
+> -		}
+> -		nr_to_scan--;
+> +			nr_to_scan -= freed_pages;
+> +		} else if (kvm == kvm_freed)
+> +			nr_to_scan = 0; /* no more page to be freed, break */
+>
+> -		kvm_mmu_commit_zap_page(kvm,&invalid_list);
+>   		spin_unlock(&kvm->mmu_lock);
+>   		srcu_read_unlock(&kvm->srcu, idx);
+> -	}
+> -	if (kvm_freed)
+>   		list_move_tail(&kvm_freed->vm_list,&vm_list);
+>
+> +		if (kvm == kvm_last) /* just scaned all vms */
+> +			kvm_last = NULL;
+> +		if (!kvm_last&&  (nr_to_scan<= 0 || !kvm_freed))
+> +			break;
+> +	}
+> +
+> +out:
+>   	spin_unlock(&kvm_lock);
+>
+> -	return cache_count;
+> +	return cache_count<  0 ? 0 : cache_count;
+>   }
+>
+>   static struct shrinker mmu_shrinker = {
+> --
+> To unsubscribe from this list: send the line "unsubscribe kvm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+-- 
+error compiling committee.c: too many arguments to function
+
