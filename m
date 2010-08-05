@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934125Ab0HEUVK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:21:10 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55482 "EHLO mgw2.diku.dk"
+	id S934126Ab0HEUVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:21:33 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55551 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934050Ab0HEUVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:21:04 -0400
-Date: Thu, 5 Aug 2010 22:21:02 +0200 (CEST)
+	id S934048Ab0HEUV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:21:26 -0400
+Date: Thu, 5 Aug 2010 22:21:24 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 14/42] drivers/video/aty/mach64_ct.c: Adjust confusing if
+Subject: [PATCH 15/42] drivers/video/mbx/mbxfb.c: Adjust confusing if
  indentation
-Message-ID: <Pine.LNX.4.64.1008052220440.31692@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1008052221020.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -50,19 +50,27 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/video/aty/mach64_ct.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/video/mbx/mbxfb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/aty/mach64_ct.c b/drivers/video/aty/mach64_ct.c
-index 2745b85..204b580 100644
---- a/drivers/video/aty/mach64_ct.c
-+++ b/drivers/video/aty/mach64_ct.c
-@@ -179,7 +179,7 @@ static int aty_dsp_gt(const struct fb_info *info, u32 bpp, struct pll_ct *pll)
- 		dsp_on = ((multiplier << vshift) + divider) / divider;
- 		tmp = ((ras_multiplier << xshift) + ras_divider) / ras_divider;
- 		if (dsp_on < tmp)
--		dsp_on = tmp;
-+			dsp_on = tmp;
- 		dsp_on = dsp_on + (tmp * 2) + (pll->xclkpagefaultdelay << xshift);
- 	}
+diff --git a/drivers/video/mbx/mbxfb.c b/drivers/video/mbx/mbxfb.c
+index afea9ab..aaf7612 100644
+--- a/drivers/video/mbx/mbxfb.c
++++ b/drivers/video/mbx/mbxfb.c
+@@ -629,14 +629,14 @@ static int mbxfb_ioctl(struct fb_info *info, unsigned int cmd,
+ 		case MBXFB_IOCS_PLANEORDER:
+ 			if (copy_from_user(&porder, (void __user*)arg,
+ 					sizeof(struct mbxfb_planeorder)))
+-			return -EFAULT;
++				return -EFAULT;
+ 
+ 			return mbxfb_ioctl_planeorder(&porder);
+ 
+ 		case MBXFB_IOCS_ALPHA:
+ 			if (copy_from_user(&alpha, (void __user*)arg,
+ 					sizeof(struct mbxfb_alphaCtl)))
+-			return -EFAULT;
++				return -EFAULT;
+ 
+ 			return mbxfb_ioctl_alphactl(&alpha);
  
