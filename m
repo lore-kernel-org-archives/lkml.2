@@ -1,140 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655Ab0HEJPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:15:40 -0400
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:46353 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab0HEJPi (ORCPT
+	id S1758299Ab0HEJRP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:17:15 -0400
+Received: from smtp-out-118.synserver.de ([212.40.180.118]:1077 "EHLO
+	smtp-out-117.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754153Ab0HEJRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:15:38 -0400
-Date: Thu, 5 Aug 2010 11:15:32 +0200
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, john stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Joonwoo Park <joonwpark81@gmail.com>
-Message-ID: <20100805091532.GG26615@gundam.enneenne.com>
-Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-	linux-kernel@vger.kernel.org,
-	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-	john stultz <johnstul@us.ibm.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Tejun Heo <tj@kernel.org>, Joonwoo Park <joonwpark81@gmail.com>
-References: <cover.1280952801.git.lasaine@lvk.cs.msu.su> <033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
+	Thu, 5 Aug 2010 05:17:12 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 17503
+Date: Thu, 5 Aug 2010 11:17:04 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Tejun Heo <htejun@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH RESEND block#for-2.6.36] block_dev: always serialize
+ exclusive open attempts
+Message-ID: <20100805091704.GA1772@arch.tripp.de>
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera>
+ <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com>
+ <4C56F30D.3020304@kernel.org>
+ <4C598E6B.7050405@gmail.com>
+ <4C5A7E33.3060101@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 192.168.32.254
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCHv3 03/16] pps: fix race in PPS_FETCH handler
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C5A7E33.3060101@fusionio.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 01:06:40AM +0400, Alexander Gordeev wrote:
-> There was a race in PPS_FETCH ioctl handler when several processes want
-> to obtain PPS data simultaneously using sleeping PPS_FETCH. They all
-> sleep most of the time in the system call.
-> With the old approach when the first process waiting on the pps queue
-> is waken up it makes new system call right away and zeroes pps->go. So
-> other processes continue to sleep. This is a clear race condition
-> because of the global 'go' variable.
-> With the new approach pps->last_ev holds some value increasing at each
-> PPS event. PPS_FETCH ioctl handler saves current value to the local
-> variable at the very beginning so it can safely check that there is a
-> new event by just comparing both variables.
+On Thu, Aug 05, 2010 at 11:02:43AM +0200, Jens Axboe wrote:
+> On 2010-08-04 17:59, Tejun Heo wrote:
+> > bd_prepare_to_claim() incorrectly allowed multiple attempts for
+> > exclusive open to progress in parallel if the attempting holders are
+> > identical.  This triggered BUG_ON() as reported in the following bug.
+> > 
+> >   https://bugzilla.kernel.org/show_bug.cgi?id=16393
+> > 
+> > __bd_abort_claiming() is used to finish claiming blocks and doesn't
+> > work if multiple openers are inside a claiming block.  Allowing
+> > multiple parallel open attempts to continue doesn't gain anything as
+> > those are serialized down in the call chain anyway.  Fix it by always
+> > allowing only single open attempt in a claiming block.
+> > 
+> > This problem can easily be reproduced by adding a delay after
+> > bd_prepare_to_claim() and attempting to mount two partitions of a
+> > disk.
+> > 
+> > stable: only applicable to v2.6.35
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+> > Cc: stable@kernel.org
 > 
-> Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-> ---
->  drivers/pps/kapi.c         |    4 ++--
->  drivers/pps/pps.c          |   10 +++++++---
->  include/linux/pps_kernel.h |    2 +-
->  3 files changed, 10 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
-> index 55f3961..3f89f5e 100644
-> --- a/drivers/pps/kapi.c
-> +++ b/drivers/pps/kapi.c
-> @@ -326,8 +326,8 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
->  
->  	/* Wake up if captured something */
->  	if (captured) {
-> -		pps->go = ~0;
-> -		wake_up_interruptible(&pps->queue);
-> +		pps->last_ev++;
-> +		wake_up_interruptible_all(&pps->queue);
->  
->  		kill_fasync(&pps->async_queue, SIGIO, POLL_IN);
->  	}
-> diff --git a/drivers/pps/pps.c b/drivers/pps/pps.c
-> index c76afb9..cb24147 100644
-> --- a/drivers/pps/pps.c
-> +++ b/drivers/pps/pps.c
-> @@ -136,6 +136,7 @@ static long pps_cdev_ioctl(struct file *file,
->  
->  	case PPS_FETCH: {
->  		struct pps_fdata fdata;
-> +		unsigned int ev;
->  
->  		pr_debug("PPS_FETCH: source %d\n", pps->id);
->  
-> @@ -143,11 +144,12 @@ static long pps_cdev_ioctl(struct file *file,
->  		if (err)
->  			return -EFAULT;
->  
-> -		pps->go = 0;
-> +		ev = pps->last_ev;
->  
->  		/* Manage the timeout */
->  		if (fdata.timeout.flags & PPS_TIME_INVALID)
-> -			err = wait_event_interruptible(pps->queue, pps->go);
-> +			err = wait_event_interruptible(pps->queue,
-> +					ev < pps->last_ev);
->  		else {
->  			unsigned long ticks;
->  
-> @@ -159,7 +161,9 @@ static long pps_cdev_ioctl(struct file *file,
->  
->  			if (ticks != 0) {
->  				err = wait_event_interruptible_timeout(
-> -						pps->queue, pps->go, ticks);
-> +						pps->queue,
-> +						ev < pps->last_ev,
-> +						ticks);
->  				if (err == 0)
->  					return -ETIMEDOUT;
->  			}
-> diff --git a/include/linux/pps_kernel.h b/include/linux/pps_kernel.h
-> index c930d11..c3aed4b 100644
-> --- a/include/linux/pps_kernel.h
-> +++ b/include/linux/pps_kernel.h
-> @@ -55,7 +55,7 @@ struct pps_device {
->  	struct pps_ktime clear_tu;
->  	int current_mode;			/* PPS mode at event time */
->  
-> -	int go;					/* PPS event is arrived? */
-> +	unsigned int last_ev;			/* last PPS event id */
->  	wait_queue_head_t queue;		/* PPS event queue */
->  
->  	unsigned int id;			/* PPS source unique ID */
-> -- 
-> 1.7.1
+> Thanks Tejun, applied.
 
-Yes. It was added when we passed from ioctl to unlocked_ioctl...
-
-Acked-by: Rodolfo Giometti <giometti@linux.it>
+It's already in mainline:
+e75aa85892b2ee78c79edac720868cbef16e62eb
 
 -- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+»A man who doesn't know he is in prison can never escape.«
+William S. Burroughs
