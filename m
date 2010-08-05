@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758922Ab0HERtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 13:49:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49472 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753962Ab0HERs7 (ORCPT
+	id S1758979Ab0HERxx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 13:53:53 -0400
+Received: from gate.crashing.org ([63.228.1.57]:42447 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630Ab0HERxu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 13:48:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=eM1cKMn56JvjA2V3zTEfXaPMTEbjy2R+v0jNigf/wHVPzp4vrgyzJ7Y+Ig9h/kSOXn
-         z4o1YpLZZyzos9E/lW5hRvi/qm35Y/fjxKNDOTg5dFuDj36pBAKfxD7d4bGLuE2yXfBE
-         sNVV2zfe/ogQoiSkCWFNsyM/p1ozjYN2v1zsQ=
-Subject: Re: [PATCH 1/2] MEMSTICK: fix hangs on unexpected device removal
- in mspro_blk
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <891175.37239.qm@web37607.mail.mud.yahoo.com>
-References: <891175.37239.qm@web37607.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 20:48:56 +0300
-Message-ID: <1281030536.23959.20.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Aug 2010 13:53:50 -0400
+Subject: Re: [PATCH v2 5/7] powerpc/85xx: Add MChk handler for SRIO port
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E552011935BD@CORPEXCH1.na.ads.idt.com>
+Date: Thu, 5 Aug 2010 12:53:03 -0500
+Cc: "Michael Neuling" <mikey@neuling.org>, "Timur Tabi" <timur@freescale.com>,
+        "Alexandre Bounine" <abounine@tundra.com>,
+        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
+        <thomas.moll@sysgo.com>, "Li Yang-R58472" <r58472@freescale.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C9528078-D64C-4944-B960-0E985B3EE0BA@kernel.crashing.org>
+References: <20100308191005.GE4324@amak.tundra.com> <AANLkTine3pc2Ai2Woj81Y9fS_KgGs1sIMb2NMR6G74ww@mail.gmail.com> <AANLkTinKbimKyLpvFD7KOvavshu_n8gRcp2BvEJj0XZQ@mail.gmail.com> <4381.1280815590@neuling.org> <0CE8B6BE3C4AD74AB97D9D29BD24E5520114309D@CORPEXCH1.na.ads.idt.com> <AANLkTinpwYnyc1oN1VbtBgUF6bk6E5q_Gq1Dj3WXV3wc@mail.gmail.com> <0CE8B6BE3C4AD74AB97D9D29BD24E552011430BC@CORPEXCH1.na.ads.idt.com> <26581.1280979260@neuling.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011935BD@CORPEXCH1.na.ads.idt.com>
+To: "Bounine, Alexandre" <Alexandre.Bounine@IDT.COM>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 01:43 -0700, Alex Dubov wrote: 
-> > From: Maxim Levitsky <maximlevitsky@gmail.com>
-> > Subject: Re: [PATCH 1/2] MEMSTICK: fix hangs on unexpected device removal in mspro_blk
-> > > > 
-> > > > > Now that del_gendisk syncs, we better
-> > > > > start rejecting requests right away.
-> > > > 
-> > > > 
-> > > > I don't quite see why this change is needed. My
-> > understanding is, user
-> > > > accessible interface should be marked as removed
-> > as early, as possible.
-> > > 
-> > > The problem here is that del_gendisk, syncs the
-> > device.
-> > > This is new change, made after you did your drivers.
-> > > 
-> > > I have this problem on jMicron too (which otherwise
-> > works fine).
-> > The problem is that card check thread explicitly calls
-> > ->stop before
-> > removing the device.
-> > In case of mspro_blk.c that stops the request queue.
-> > Attempt to call del_gendisk with stopped request queue
-> > hangs due to
-> > syncing.
-> 
-> Well, ok. Sounds good.
-> 
-> 
-> > > 
-> > > I have a copy of your ms_block.c.
-> > > I would would be very happy if you share with me, what
-> > problems does it
-> > > still have (besides need of trivial port for changes
-> > in block system,
-> > > because I want to push it upstream too.
-> > > 
-> > > I have MS DUO 64M to test it against.
-> > > 
-> 
-> I've got two rather different implementations of ms_block, if I remember
-> correctly. Both suffer from random data corruptions, thanks to my
-> inexplicable desire to write the state machine as tightly, as possible.
-> Only the later one does the spec mandated geometry correctly - I actually
-> wrote the first version before I've seen the spec for the first time.
 
-By 'spec mandated geometry' you mean the fact the card needs to be
-broken into zones, somewhat like XD?
+On Aug 5, 2010, at 12:25 PM, Bounine, Alexandre wrote:
 
-Best regards,
-Maxim Levitsky
+> Below is a copy of Leo's message with pointers to the patches.
+> 
+> Alex.
+> 
+>> Subject: [PATCH] RapidIO,powerpc/85xx: remove MCSR_MASK in fsl_rio
+>> 
+>> Fixes compile problem caused by MCSR_MASK removal from book-E
+> definitions.
+> 
+> Hi Alex,
+> 
+> Only with your patch, there will still be problem on SRIO platforms
+> other than MPC85xx.
+> 
+> I have posted a patch series to fix this together with several
+> compatibility issues a month before.
+> 
+> http://patchwork.ozlabs.org/patch/56135/
+> http://patchwork.ozlabs.org/patch/56136/
+> http://patchwork.ozlabs.org/patch/56138/
+> http://patchwork.ozlabs.org/patch/56137/
+> 
+> 
+> Can anyone pick the patch series quickly as currently there is a compile
+> error when SRIO is enabled.
+> 
+> - Leo
 
+I'm looking at this now and wondering what we added the mcheck handler for in the first place and what its trying to accomplish.
+
+- k
