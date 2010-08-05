@@ -1,67 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760260Ab0HEMWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 08:22:15 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38990 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758900Ab0HEMWL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 08:22:11 -0400
-Date: Thu, 5 Aug 2010 14:21:58 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Josh Hunt <johunt@akamai.com>,
-        "oprofile-list@lists.sf.net" <oprofile-list@lists.sf.net>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juhlenko@akamai.com" <juhlenko@akamai.com>
-Subject: Re: [PATCH] oprofile: add support for Intel processor model 30
-Message-ID: <20100805122158.GA22751@elte.hu>
-References: <1280968025-16969-1-git-send-email-johunt@akamai.com>
- <20100805103206.GM26154@erda.amd.com>
+	id S933228Ab0HEM2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 08:28:21 -0400
+Received: from fwil.voltaire.com ([193.47.165.2]:49549 "EHLO exil.voltaire.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756651Ab0HEM2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 08:28:19 -0400
+Message-ID: <4C5AAE5F.2080008@voltaire.com>
+Date: Thu, 05 Aug 2010 15:28:15 +0300
+From: Or Gerlitz <ogerlitz@voltaire.com>
+User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805103206.GM26154@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.3719]
+To: "Walukiewicz, Miroslaw" <Miroslaw.Walukiewicz@intel.com>
+CC: Roland Dreier <rdreier@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Subject: Re: InfiniBand/RDMA merge plans for 2.6.36
+References: <adak4o654x9.fsf@roland-alpha.cisco.com> <BE2BFE91933D1B4089447C64486040805BD838C4@irsmsx503.ger.corp.intel.com>
+In-Reply-To: <BE2BFE91933D1B4089447C64486040805BD838C4@irsmsx503.ger.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Aug 2010 12:28:16.0153 (UTC) FILETIME=[ADD94890:01CB3499]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Walukiewicz, Miroslaw wrote:
+> Hello Roland,  What about a series from Aleksey Senin [...] And my patch RDMA/nes: IB_QPT_RAW_PACKET QP type support for nes driver https://patchwork.kernel.org/patch/110252
+Hi Mirek,
 
-* Robert Richter <robert.richter@amd.com> wrote:
+Reading your response @ http://marc.info/?l=linux-rdma&m=127954552519544 
+to the comments made during the review, I was under the impression that 
+you're going to try and modify the NES implementation, isn't this the 
+case any more?
 
-> On 04.08.10 20:27:05, Josh Hunt wrote:
-> > Newer Intel processors identifying themselves as model 30 are not recognized by
-> > oprofile.
-> 
-> > Tested using oprofile 0.9.6.
-> > 
-> > Signed-off-by: Josh Hunt <johunt@akamai.com>
-> 
-> Applied to:
-> 
->  git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-> 
-> (I converted the model number to hex.)
-> 
-> Thanks Josh.
-> 
-> Ingo,
-> 
-> please (ff-only) pull this again for tip/perf/core. You already send
-> the pull request for Linus, but I think this patch will make it for
-> v2.6.36 too?
-
-Yeah, we are still early in the merge window, and it's a very small patch in 
-any case - i pulled it.
-
-Thanks,
-
-	Ingo
+Or.
