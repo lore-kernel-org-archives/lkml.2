@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934102Ab0HEUw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:52:59 -0400
-Received: from exprod7og111.obsmtp.com ([64.18.2.175]:45378 "EHLO
-	exprod7og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932155Ab0HEUwz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:52:55 -0400
-From: Anjali Kulkarni <anjali@juniper.net>
-To: Avi Kivity <avi@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Date: Thu, 5 Aug 2010 13:51:33 -0700
-Subject: Re: Freebsd image from Qemu hangs on booting in KVM
-Thread-Topic: Freebsd image from Qemu hangs on booting in KVM
-Thread-Index: Acs0esE9USofnu+5TxCt4CKr49GvUQAZTtVs
-Message-ID: <C8807265.2600D%anjali@juniper.net>
-In-Reply-To: <4C5A7A7A.9040909@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-Entourage/13.3.0.091002
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934190Ab0HEUzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:55:00 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:44385 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932975Ab0HEUyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:54:55 -0400
+Date: Thu, 5 Aug 2010 22:47:49 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org
+Cc: Chris Mason <chris.mason@oracle.com>, josef@redhat.com,
+        Valdis.Kletnieks@vt.edu,
+        Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, dm-devel@redhat.com
+Subject: Performance impact of CONFIG_DEBUG? direct-io test case
+Message-ID: <20100805204749.GA6318@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	linux-kernel@vger.kernel.org, mingo@redhat.com,
+	peterz@infradead.org, Chris Mason <chris.mason@oracle.com>,
+	josef@redhat.com, Valdis.Kletnieks@vt.edu,
+	Michael Monnerie <michael.monnerie@is.it-management.at>,
+	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+	xfs@oss.sgi.com, dm-devel@redhat.com
+References: <20100805123649.GA18672@dhcp231-156.rdu.redhat.com>
+ <20100805113240.GA29846@think>
+ <20100805153519.GA7242@comet.dominikbrodowski.net>
+ <20100805163519.GA6604@comet.dominikbrodowski.net>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805163519.GA6604@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Avi,
-I am trying to reproduce this on another setup, and do not see the issue.
-My understanding is to run KVM + Qemu, I only need to install KVM modules,
-and Qemu does not need to be modified. Is that correct?
-I see 
 
-[root@ipg-virt01 anjali]# lsmod | grep kvm
-kvm_intel              87016  0
-kvm                   211496  1 kvm_intel
+How large is the performance impact of CONFIG_DEBUG? Well, for the test
+workload I've been working with lately,
 
-[root@ipg-virt01 anjali]# modprobe -l 'kvm*'
-/lib/modules/2.6.18-164.el5/kernel/extra/kvm.ko
-/lib/modules/2.6.18-164.el5/kernel/extra/kvm-amd.ko
-/lib/modules/2.6.18-164.el5/kernel/extra/kvm-intel.ko
+dd if=<device> of=/dev/zero bs=8k count=100000 iflag=direct
 
-And then I run Qemu, as I did, before installing KVM. It should just use
-KVM? Is there any way I can check?
+where <device> is a dm-crypted LVM volume consisting of several
+partitions on a notebook pata harddisk, I get the following results:
 
-Btw, when it hangs, I cannot even press any key, so not sure how I can get
-those commands you suggest below..
+1) best results are ~ 28 MB/s
 
-Anjali
+2) Enabling CONFIG_DEBUG_LOCK_ALLOC, which also means CONFIG_LOCKDEP
+   being enabled, causes the transfer rate to decrease by ~ 1.2 MB/s
 
-On 8/5/10 1:46 AM, "Avi Kivity" <avi@redhat.com> wrote:
+3) Enabling CONFIG_DEBUG_SPINLOCK && CONFIG_DEBUG_MUTEXTES or
+   CONFIG_DEBUG_SPINLOCK_SLEEP=y costs about ~ 0.4 MB/s each
 
->   On 08/05/2010 05:20 AM, Anjali Kulkarni wrote:
->> Hi,
->> 
->> I have a problem similar to the one seen on this list before - when I boot my
->> freebsd based(but modified) image in Qemu with KVM on CentOS, then after
->> almost booting completely, the image hangs - just before the login prompt is
->> seen. If I do not have KVM ie plain CenOS with Qemu, then this issue does not
->> occur. Has anyone seen this before and any ideas how to debug this?
-> 
-> First step is to issue 'info registers' and 'x/30i $eip-20' from the
-> monitor when it hangs (qemu -monitor stdio makes cut'n'paste easier).
+4) Enabling all of the following options:
+	CONFIG_DEBUG_RT_MUTEXES
+	CONFIG_DEBUG_PI_LIST
+	CONFIG_PROVE_LOCKING
+	CONFIG_LOCK_STAT
+	CONFIG_DEBUG_LOCKDEP
+   costs another ~ 5 MB/s.
 
+So, for this test case, the performance impact of (some) CONFIG_DEBUG
+options is highly significant, here by about 25 %.
+
+Best,
+	Dominik
