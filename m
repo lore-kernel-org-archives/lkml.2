@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab0HETaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:30:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51510 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759275Ab0HETas (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:30:48 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: Tejun Heo <tj@kernel.org>, Jens Axboe <jens.axboe@kernel.dk>,
-        stable@kernel.org, Bryan Mesich <bryan.mesich@ndsu.edu>,
-        scst-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, dm-devel@redhat.com,
-        Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and SWRITE to match the corresponding BIO_RW_* bits
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>
-	<4C28EFD6.2070203@vlnb.net>
-	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>
-	<4C3EF3AD.5070509@vlnb.net>
-	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>
-	<4C4D7DF5.9060909@vlnb.net>
-	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>
-	<4C5073F3.1060406@vlnb.net> <4C52A98A.7060507@kernel.org>
-	<20100802104227.79340b49@notabene> <4C56D30A.3000403@kernel.org>
-	<x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
-	<4C5B0994.1070203@vlnb.net>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 05 Aug 2010 15:30:20 -0400
-In-Reply-To: <4C5B0994.1070203@vlnb.net> (Vladislav Bolkhovitin's message of
-	"Thu, 05 Aug 2010 22:57:24 +0400")
-Message-ID: <x49lj8kc0xf.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1759331Ab0HETpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:45:19 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:43852 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759273Ab0HETpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 15:45:13 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAB2yWkx5LdAL/2dsb2JhbACgP3LHQ4U6BA
+Date: Fri, 6 Aug 2010 05:45:07 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
+        Nick Piggin <npiggin@kernel.dk>
+Subject: Re: Transparent Hugepage Support #29
+Message-ID: <20100805194507.GA32496@amd>
+References: <20100803135615.GG6071@random.random>
+ <201008050727.25253.edt@aei.ca>
+ <20100805114915.GA25503@random.random>
+ <201008050758.04918.edt@aei.ca>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008050758.04918.edt@aei.ca>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vladislav Bolkhovitin <vst@vlnb.net> writes:
+On Thu, Aug 05, 2010 at 07:57:52AM -0400, Ed Tomlinson wrote:
+> On Thursday 05 August 2010 07:49:15 Andrea Arcangeli wrote:
+> > On Thu, Aug 05, 2010 at 07:27:24AM -0400, Ed Tomlinson wrote:
+> > > On a tree with:
+> > > 
+> > > commit 9d9cec888c3c4a2d5b5f01c3f3984fc4bc602681
+> > > Merge: dd6c927 9edd35f
+> > > Author: Ed <edt@aei.ca>
+> > > Date:   Wed Aug 4 15:18:53 2010 -0400
+> > > 
+> > >     Merge branch 'vfs-scale-working' of git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin into vfs-scaling
+> > > 
+> > > merged on top of
+> > > 
+> > > commit 9fe6206f400646a2322096b56c59891d530e8d51
+> > > Author: Linus Torvalds <torvalds@linux-foundation.org>
+> > > Date:   Sun Aug 1 15:11:14 2010 -0700
+> > > 
+> > >     Linux 2.6.35
+> > 
+> > Well I didn't realize you also merged 2.6.35 on top of it. This is no
+> > standard tree, so I suggest you to checkout -f origin/master of Nick's
+> > tree until he updates to 2.6.35 himself (then I can port to it).
+> 
+> Nick,
+> 
+> Any chance of the above happening?  I'd love to test both the vfs scaling changes
+> and Andrea's much improved hugepage support together on top of .35
 
-> Jeff Moyer, on 08/05/2010 10:45 PM wrote:
->> Tejun Heo<tj@kernel.org>  writes:
->>
->>> Commit a82afdf (block: use the same failfast bits for bio and request)
->>> moved BIO_RW_* bits around such that they match up with REQ_* bits.
->>> Unfortunately, fs.h hard coded READ, WRITE, READA and SWRITE as 0, 1,
->>> 2 and 3, and expected them to match with BIO_RW_* bits.  READ/WRITE
->>> didn't change but BIO_RW_AHEAD was moved to bit 4 instead of bit 1,
->>> breaking READA and SWRITE.
->>>
->>> This patch updates READA and SWRITE such that they match the BIO_RW_*
->>> bits again.  A follow up patch will update the definitions to directly
->>> use BIO_RW_* bits so that this kind of breakage won't happen again.
->>>
->>> Stable: The offending commit a82afdf was released with v2.6.32, so
->>> this patch should be applied to all kernels since then but it must
->>> _NOT_ be applied to kernels earlier than that.
->>
->> Would someone be so kind as to remind me how this problem manifests
->> itself?  I know I read this recently, but my memory and googling skills
->> are both failing me.  :(
->
-> See http://lkml.org/lkml/2010/7/28/315 and link inside.
+Try vfs-scale branch now. Cleaned up and rebased on 2.6.35 although it
+is not as well tested as I would like but I won't have any more time on
+it until next week.
 
-Thanks a ton!
+vfs-scale-working retained history of fixes. I'll start another
+vfs-scale-working-2.6.36 branch for new fixes.
 
--Jeff
+Thanks,
+Nick
+
+
