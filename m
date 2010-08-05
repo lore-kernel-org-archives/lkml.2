@@ -1,90 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760970Ab0HEW0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:26:40 -0400
-Received: from kroah.org ([198.145.64.141]:37808 "EHLO coco.kroah.org"
+	id S1760901Ab0HEW0c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:26:32 -0400
+Received: from kroah.org ([198.145.64.141]:37805 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934570Ab0HEWY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:59 -0400
+	id S934569Ab0HEWY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:58 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <damm@opensource.se>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 20/28] Driver core: Add BUS_NOTIFY_BIND_DRIVER
-Date: Thu,  5 Aug 2010 15:24:10 -0700
-Message-Id: <1281047058-23716-20-git-send-email-gregkh@suse.de>
+Cc: Christoph Egger <siccegge@cs.fau.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 58/67] serial: 68328serial.c: remove dead (ALMA_ANS | DRAGONIXVZ | M68EZ328ADS)
+Date: Thu,  5 Aug 2010 15:23:25 -0700
+Message-Id: <1281047014-23429-58-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213314.GB13744@kroah.com>
-References: <20100805213314.GB13744@kroah.com>
+In-Reply-To: <20100805213528.GA13794@kroah.com>
+References: <20100805213528.GA13794@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+From: Christoph Egger <siccegge@cs.fau.de>
 
-Add BUS_NOTIFY_BIND_DRIVER as a bus notifier event.
+(ALMA_ANS | DRAGONIXVZ | M68EZ328ADS) doesn't exist in Kconfig, therefore
+remove all references to it from the source code.
 
-For driver binding/unbinding we with this in
-place have the following bus notifier events:
- - BUS_NOTIFY_BIND_DRIVER - before ->probe()
- - BUS_NOTIFY_BOUND_DRIVER - after ->probe()
- - BUS_NOTIFY_UNBIND_DRIVER - before ->remove()
- - BUS_NOTIFY_UNBOUND_DRIVER - after ->remove()
-
-The event BUS_NOTIFY_BIND_DRIVER allows bus code
-to be notified that ->probe() is about to be called.
-
-Useful for bus code that needs to setup hardware before
-the driver gets to run. With this in place platform
-drivers can be loaded and unloaded as modules and the
-new BIND event allows bus code to control for instance
-device clocks that must be enabled before the driver
-can be executed.
-
-Without this patch there is no way for the bus code to
-get notified that a modular driver is about to be probed.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/dd.c      |    4 ++++
- include/linux/device.h |    8 +++++---
- 2 files changed, 9 insertions(+), 3 deletions(-)
+ drivers/serial/68328serial.c |   16 +++++-----------
+ 1 files changed, 5 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 503c262..da57ee9 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -51,6 +51,10 @@ static int driver_sysfs_add(struct device *dev)
- {
- 	int ret;
- 
-+	if (dev->bus)
-+		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
-+					     BUS_NOTIFY_BIND_DRIVER, dev);
-+
- 	ret = sysfs_create_link(&dev->driver->p->kobj, &dev->kobj,
- 			  kobject_name(&dev->kobj));
- 	if (ret == 0) {
-diff --git a/include/linux/device.h b/include/linux/device.h
-index ddffdf7..0ca24e9 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -109,10 +109,12 @@ extern int bus_unregister_notifier(struct bus_type *bus,
+diff --git a/drivers/serial/68328serial.c b/drivers/serial/68328serial.c
+index d8204f4..7356a56 100644
+--- a/drivers/serial/68328serial.c
++++ b/drivers/serial/68328serial.c
+@@ -98,19 +98,13 @@ static void change_speed(struct m68k_serial *info);
+  *	Setup for console. Argument comes from the boot command line.
   */
- #define BUS_NOTIFY_ADD_DEVICE		0x00000001 /* device added */
- #define BUS_NOTIFY_DEL_DEVICE		0x00000002 /* device removed */
--#define BUS_NOTIFY_BOUND_DRIVER		0x00000003 /* driver bound to device */
--#define BUS_NOTIFY_UNBIND_DRIVER	0x00000004 /* driver about to be
-+#define BUS_NOTIFY_BIND_DRIVER		0x00000003 /* driver about to be
-+						      bound */
-+#define BUS_NOTIFY_BOUND_DRIVER		0x00000004 /* driver bound to device */
-+#define BUS_NOTIFY_UNBIND_DRIVER	0x00000005 /* driver about to be
- 						      unbound */
--#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000005 /* driver is unbound
-+#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000006 /* driver is unbound
- 						      from the device */
  
- extern struct kset *bus_get_kset(struct bus_type *bus);
+-#if defined(CONFIG_M68EZ328ADS) || defined(CONFIG_ALMA_ANS) || defined(CONFIG_DRAGONIXVZ)
+-#define	CONSOLE_BAUD_RATE	115200
+-#define	DEFAULT_CBAUD		B115200
+-#else
+-	/* (es) */
+-	/* note: this is messy, but it works, again, perhaps defined somewhere else?*/
+-	#ifdef CONFIG_M68VZ328
+-	#define CONSOLE_BAUD_RATE	19200
+-	#define DEFAULT_CBAUD		B19200
+-	#endif
+-	/* (/es) */
++/* note: this is messy, but it works, again, perhaps defined somewhere else?*/
++#ifdef CONFIG_M68VZ328
++#define CONSOLE_BAUD_RATE	19200
++#define DEFAULT_CBAUD		B19200
+ #endif
+ 
++
+ #ifndef CONSOLE_BAUD_RATE
+ #define	CONSOLE_BAUD_RATE	9600
+ #define	DEFAULT_CBAUD		B9600
 -- 
 1.7.2
 
