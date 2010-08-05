@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934899Ab0HEXDM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:03:12 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:39413 "EHLO e8.ny.us.ibm.com"
+	id S1760745Ab0HEXFM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:05:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54001 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755831Ab0HEXDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:03:08 -0400
-Date: Thu, 5 Aug 2010 16:03:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Brian Swetland <swetland@google.com>
-Cc: david@lang.hm, kevin granade <kevin.granade@gmail.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100805230304.GQ2447@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
- <20100805004802.GP24163@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
- <20100805151211.GA10080@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
- <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
- <20100805203102.GN2447@linux.vnet.ibm.com>
- <AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
- <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
- <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
+	id S1753672Ab0HEXFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:05:09 -0400
+Date: Thu, 5 Aug 2010 16:04:35 -0700
+From: Greg KH <gregkh@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Ludovic BARRE <ludovic.barre@stericsson.com>,
+        Vincent GUITTOT <vincent.guittot@stericsson.com>
+Subject: Re: [PATCH] U6715 16550A serial driver support
+Message-ID: <20100805230435.GA30372@suse.de>
+References: <1280739519-26930-1-git-send-email-philippe.langlais@stericsson.com>
+ <20100804125253.3977b0d7.akpm@linux-foundation.org>
+ <4C5A64E0.5060807@stericsson.com>
+ <20100805002206.758777aa.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
+In-Reply-To: <20100805002206.758777aa.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:16:51PM -0700, Brian Swetland wrote:
-> On Thu, Aug 5, 2010 at 3:09 PM,  <david@lang.hm> wrote:
-> >> Oops, yea that's actually a really bad example, that's probably
-> >> something that would be handled by low-power states.  I think the
-> >> incoming text message example is a good one though.  There seemed to
-> >> be a focus on user-interaction scale time scales, and I wanted to
-> >> point out that there are also very short duration time scales to
-> >> consider as well.
-> >
-> > good point, but I do think the short time scales are less common than people
-> > think.
-> >
-> > I'd love to get good examples of them
-> >
-> > on my iphone when a text message arrives the phone displays an alert for
-> > user-interaction times (it even lights the display to show who the message
-> > is from, and optionally a preview of the message)
-> >
-> > so what would wake a phone up from suspend where the phone should go back to
-> > sleep in under a second?
+On Thu, Aug 05, 2010 at 12:22:06AM -0700, Andrew Morton wrote:
+> On Thu, 5 Aug 2010 09:14:40 +0200 Philippe Langlais <philippe.langlais@stericsson.com> wrote:
 > 
-> Here are some real-world examples from shipped android devices:
-> - battery gauging happens every 10 minutes, need to wake long enough
-> to chatter with the 1w interface and make sure the battery is not
-> exploding
-> - always on mail/im/calendar/etc sync often has network events that
-> happen every 5-10 minutes which cause devices to briefly wake up and
-> return to sleep
-> - gps tracker app might wake every couple minutes or every n gps
-> events to log location
-> - low power audio subsystems can wake you up every 1-4 seconds (pcm)
-> or 1-4 minutes (mp3) to fetch more data
+> > 
+> > >>      
+> > > The patch adds these .set_termios hooks but doesn't actually use them
+> > > for anything.
+> > >
+> > > The changelog doesn't tell us _why_ this was done (it should) and
+> > > lacking any code to look at it's all a bit mysterious.
+> > >
+> > >    
+> > This feature is used in our U6715 8250 platform serial driver, to avoid
+> > hack in 8250.c set_termios (Alan Cox requirement).
+> > In this driver the input uart clock frequency depends on baud rate and
+> > is computed in our set_termios override function.
+> > The U6715 paltform serial patch has been submitted on linux-arm mailing 
+> > list,
+> > and is ready to enter Russell King Linux tree.
+> 
+> Oh.
+> 
+> > More things to do ?
+> 
+> Update the changelog to include this rather important information.
+> 
+> As the patches are dependent, treat them as a single series.  Russell
+> can merge them both with Greg's ack or Greg can merge them both with
+> Russell's ack.
 
-Interesting!
+I've dropped the patch from my tree, so send it through Russell's, with
+the proper changelog change and:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-So for an mp3 playback, does an Android suspend between data fetches?
+thanks,
 
-							Thanx, Paul
+greg k-h
