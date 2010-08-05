@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760685Ab0HEOi4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:38:56 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41184 "EHLO
+	id S1760699Ab0HEOjB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:39:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41205 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760635Ab0HEOii (ORCPT
+	with ESMTP id S933223Ab0HEOio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:38:38 -0400
+	Thu, 5 Aug 2010 10:38:44 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Dongdong Deng <dongdong.deng@windriver.com>
-Subject: [PATCH 08/17] gdbstub: do not directly use dbg_reg_def[] in gdb_cmd_reg_set()
-Date: Thu,  5 Aug 2010 09:37:49 -0500
-Message-Id: <1281019078-6636-9-git-send-email-jason.wessel@windriver.com>
+        Dongdong Deng <dongdong.deng@windriver.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 16/17] kgdb,x86: use macro HBP_NUM to replace magic number 4
+Date: Thu,  5 Aug 2010 09:37:57 -0500
+Message-Id: <1281019078-6636-17-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1281019078-6636-8-git-send-email-jason.wessel@windriver.com>
+In-Reply-To: <1281019078-6636-16-git-send-email-jason.wessel@windriver.com>
 References: <1281019078-6636-1-git-send-email-jason.wessel@windriver.com>
  <1281019078-6636-2-git-send-email-jason.wessel@windriver.com>
  <1281019078-6636-3-git-send-email-jason.wessel@windriver.com>
@@ -25,59 +25,104 @@ References: <1281019078-6636-1-git-send-email-jason.wessel@windriver.com>
  <1281019078-6636-6-git-send-email-jason.wessel@windriver.com>
  <1281019078-6636-7-git-send-email-jason.wessel@windriver.com>
  <1281019078-6636-8-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 05 Aug 2010 14:38:17.0574 (UTC) FILETIME=[D7DBA860:01CB34AB]
+ <1281019078-6636-9-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-10-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-11-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-12-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-13-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-14-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-15-git-send-email-jason.wessel@windriver.com>
+ <1281019078-6636-16-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 05 Aug 2010 14:38:24.0230 (UTC) FILETIME=[DBD34860:01CB34AB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Presently the usable registers definitions on x86 are not contiguous
-for kgdb.  The x86 kgdb uses a case statement for the sparse register
-accesses.  The array which defines the registers (dbg_reg_def) should
-not be used directly in order to safely work with sparse register
-definitions.
+From: Dongdong Deng <dongdong.deng@windriver.com>
 
-Specifically there was a problem when gdb accesses ORIG_AX, which is
-accessed only through the case statement.
+Use the macros provided by the HW breakpoint API.
 
-This patch encodes register memory using the size information provided
-from the debugger which avoids the need to look up the size of the
-register.  The dbg_set_reg() function always further validates the
-inputs from the debugger.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
- kernel/debug/gdbstub.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ arch/x86/kernel/kgdb.c |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/debug/gdbstub.c b/kernel/debug/gdbstub.c
-index 4ef9ddd..fc7b174 100644
---- a/kernel/debug/gdbstub.c
-+++ b/kernel/debug/gdbstub.c
-@@ -604,6 +604,7 @@ static void gdb_cmd_reg_set(struct kgdb_state *ks)
- {
- 	unsigned long regnum;
- 	char *ptr = &remcom_in_buffer[1];
-+	int i = 0;
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index a8b8097..ef10940 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -195,7 +195,7 @@ static struct hw_breakpoint {
+ 	int			len;
+ 	int			type;
+ 	struct perf_event	**pev;
+-} breakinfo[4];
++} breakinfo[HBP_NUM];
  
- 	kgdb_hex2long(&ptr, &regnum);
- 	if (*ptr++ != '=' ||
-@@ -612,7 +613,14 @@ static void gdb_cmd_reg_set(struct kgdb_state *ks)
- 		error_packet(remcom_out_buffer, -EINVAL);
- 		return;
- 	}
--	kgdb_hex2mem(ptr, (char *)gdb_regs, dbg_reg_def[regnum].size);
-+	memset(gdb_regs, 0, sizeof(gdb_regs));
-+	while (i < sizeof(gdb_regs) * 2)
-+		if (hex_to_bin(ptr[i]) >= 0)
-+			i++;
-+		else
-+			break;
-+	i = i / 2;
-+	kgdb_hex2mem(ptr, (char *)gdb_regs, i);
- 	dbg_set_reg(regnum, gdb_regs, ks->linux_regs);
- 	strcpy(remcom_out_buffer, "OK");
- }
+ static unsigned long early_dr7;
+ 
+@@ -203,7 +203,7 @@ static void kgdb_correct_hw_break(void)
+ {
+ 	int breakno;
+ 
+-	for (breakno = 0; breakno < 4; breakno++) {
++	for (breakno = 0; breakno < HBP_NUM; breakno++) {
+ 		struct perf_event *bp;
+ 		struct arch_hw_breakpoint *info;
+ 		int val;
+@@ -290,10 +290,10 @@ kgdb_remove_hw_break(unsigned long addr, int len, enum kgdb_bptype bptype)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < 4; i++)
++	for (i = 0; i < HBP_NUM; i++)
+ 		if (breakinfo[i].addr == addr && breakinfo[i].enabled)
+ 			break;
+-	if (i == 4)
++	if (i == HBP_NUM)
+ 		return -1;
+ 
+ 	if (hw_break_release_slot(i)) {
+@@ -311,7 +311,7 @@ static void kgdb_remove_all_hw_break(void)
+ 	int cpu = raw_smp_processor_id();
+ 	struct perf_event *bp;
+ 
+-	for (i = 0; i < 4; i++) {
++	for (i = 0; i < HBP_NUM; i++) {
+ 		if (!breakinfo[i].enabled)
+ 			continue;
+ 		bp = *per_cpu_ptr(breakinfo[i].pev, cpu);
+@@ -331,10 +331,10 @@ kgdb_set_hw_break(unsigned long addr, int len, enum kgdb_bptype bptype)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < 4; i++)
++	for (i = 0; i < HBP_NUM; i++)
+ 		if (!breakinfo[i].enabled)
+ 			break;
+-	if (i == 4)
++	if (i == HBP_NUM)
+ 		return -1;
+ 
+ 	switch (bptype) {
+@@ -395,7 +395,7 @@ void kgdb_disable_hw_debug(struct pt_regs *regs)
+ 
+ 	/* Disable hardware debugging while we are in kgdb: */
+ 	set_debugreg(0UL, 7);
+-	for (i = 0; i < 4; i++) {
++	for (i = 0; i < HBP_NUM; i++) {
+ 		if (!breakinfo[i].enabled)
+ 			continue;
+ 		if (dbg_is_early) {
+@@ -640,7 +640,7 @@ void kgdb_arch_late(void)
+ 	attr.bp_len = HW_BREAKPOINT_LEN_1;
+ 	attr.bp_type = HW_BREAKPOINT_W;
+ 	attr.disabled = 1;
+-	for (i = 0; i < 4; i++) {
++	for (i = 0; i < HBP_NUM; i++) {
+ 		if (breakinfo[i].pev)
+ 			continue;
+ 		breakinfo[i].pev = register_wide_hw_breakpoint(&attr, NULL);
 -- 
 1.6.3.3
 
