@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761050Ab0HEWr1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:47:27 -0400
-Received: from kroah.org ([198.145.64.141]:37569 "EHLO coco.kroah.org"
+	id S1761073Ab0HEWrb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:47:31 -0400
+Received: from kroah.org ([198.145.64.141]:37567 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760771Ab0HEWXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760770Ab0HEWXp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Aug 2010 18:23:45 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jeff Dike <jdike@addtoit.com>, Jeff Dike <jdike@linux.intel.com>,
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 09/67] tty: Remove Hayes ESP ioctls
-Date: Thu,  5 Aug 2010 15:22:36 -0700
-Message-Id: <1281047014-23429-9-git-send-email-gregkh@suse.de>
+Subject: [PATCH 08/67] serial: fix wakup races in the mrst_max3110 driver
+Date: Thu,  5 Aug 2010 15:22:35 -0700
+Message-Id: <1281047014-23429-8-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -20,41 +20,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Dike <jdike@addtoit.com>
+From: Arjan van de Ven <arjan@linux.intel.com>
 
-Remove Hayes ESP ioctls
+The mrst_max3110 driver had a set of unsafe wakeup sequences
+along the following line:
 
-The Hayes ESP driver has been removed from the tree:
-commit f53a2ade0bb9f2a81f473e6469155172a96b7c38
-("tty: esp: remove broken driver")
-so its ioctls aren't needed any more.
+if (!atomic_read(&foo)) {
+  atomic_set(&foo, 1);
+  wake_up(worker_thread);
+}
+and the worker thread would do
 
-Signed-off-by: Jeff Dike <jdike@linux.intel.com>
-Acked-by: Alan Cox <alan@linux.intel.com>
+if (atomic_read(&foo)) {
+  do_work();
+  atomic_set(&foo, 0);
+}
+
+which can result in various missed wakups due to test-then-set races,
+as well as due to clear-after-work instead of clear-before-work.
+
+This patch fixes these races by using the proper bit test-and-set operations,
+and by doing clear-before-work.
+
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/asm-generic/ioctls.h |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/serial/mrst_max3110.c |   46 ++++++++++++++++-------------------------
+ 1 files changed, 18 insertions(+), 28 deletions(-)
 
-diff --git a/include/asm-generic/ioctls.h b/include/asm-generic/ioctls.h
-index a799e20..1375fa1 100644
---- a/include/asm-generic/ioctls.h
-+++ b/include/asm-generic/ioctls.h
-@@ -87,12 +87,10 @@
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
+diff --git a/drivers/serial/mrst_max3110.c b/drivers/serial/mrst_max3110.c
+index 0341853..f6ad1ec 100644
+--- a/drivers/serial/mrst_max3110.c
++++ b/drivers/serial/mrst_max3110.c
+@@ -48,6 +48,10 @@
+ 
+ #define PR_FMT	"mrst_max3110: "
+ 
++#define UART_TX_NEEDED 1
++#define CON_TX_NEEDED  2
++#define BIT_IRQ_PENDING    3
++
+ struct uart_max3110 {
+ 	struct uart_port port;
+ 	struct spi_device *spi;
+@@ -63,15 +67,13 @@ struct uart_max3110 {
+ 	u8 clock;
+ 	u8 parity, word_7bits;
+ 
+-	atomic_t uart_tx_need;
++	unsigned long uart_flags;
+ 
+ 	/* console related */
+ 	struct circ_buf con_xmit;
+-	atomic_t con_tx_need;
+ 
+ 	/* irq related */
+ 	u16 irq;
+-	atomic_t irq_pending;
+ };
+ 
+ /* global data structure, may need be removed */
+@@ -176,10 +178,9 @@ static void serial_m3110_con_putchar(struct uart_port *port, int ch)
+ 		xmit->head = (xmit->head + 1) & (PAGE_SIZE - 1);
+ 	}
+ 
+-	if (!atomic_read(&max->con_tx_need)) {
+-		atomic_set(&max->con_tx_need, 1);
++
++	if (!test_and_set_bit(CON_TX_NEEDED, &max->uart_flags))
+ 		wake_up_process(max->main_thread);
+-	}
+ }
  
  /*
-- * some architectures define FIOQSIZE as 0x545E, which is used for
-- * TIOCGHAYESESP on others
-+ * Some arches already define FIOQSIZE due to a historical
-+ * conflict with a Hayes modem-specific ioctl value.
-  */
- #ifndef FIOQSIZE
--# define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
--# define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
- # define FIOQSIZE	0x5460
- #endif
+@@ -318,10 +319,8 @@ static void serial_m3110_start_tx(struct uart_port *port)
+ 	struct uart_max3110 *max =
+ 		container_of(port, struct uart_max3110, port);
  
+-	if (!atomic_read(&max->uart_tx_need)) {
+-		atomic_set(&max->uart_tx_need, 1);
++	if (!test_and_set_bit(UART_TX_NEEDED, &max->uart_flags))
+ 		wake_up_process(max->main_thread);
+-	}
+ }
+ 
+ static void receive_chars(struct uart_max3110 *max, unsigned char *str, int len)
+@@ -392,32 +391,23 @@ static int max3110_main_thread(void *_max)
+ 	pr_info(PR_FMT "start main thread\n");
+ 
+ 	do {
+-		wait_event_interruptible(*wq, (atomic_read(&max->irq_pending) ||
+-					       atomic_read(&max->con_tx_need) ||
+-					     atomic_read(&max->uart_tx_need)) ||
+-					     kthread_should_stop());
++		wait_event_interruptible(*wq, max->uart_flags || kthread_should_stop());
+ 
+ 		mutex_lock(&max->thread_mutex);
+ 
+-#ifdef CONFIG_MRST_MAX3110_IRQ
+-		if (atomic_read(&max->irq_pending)) {
++		if (test_and_clear_bit(BIT_IRQ_PENDING, &max->uart_flags))
+ 			max3110_console_receive(max);
+-			atomic_set(&max->irq_pending, 0);
+-		}
+-#endif
+ 
+ 		/* first handle console output */
+-		if (atomic_read(&max->con_tx_need)) {
++		if (test_and_clear_bit(CON_TX_NEEDED, &max->uart_flags))
+ 			send_circ_buf(max, xmit);
+-			atomic_set(&max->con_tx_need, 0);
+-		}
+ 
+ 		/* handle uart output */
+-		if (atomic_read(&max->uart_tx_need)) {
++		if (test_and_clear_bit(UART_TX_NEEDED, &max->uart_flags))
+ 			transmit_char(max);
+-			atomic_set(&max->uart_tx_need, 0);
+-		}
++
+ 		mutex_unlock(&max->thread_mutex);
++
+ 	} while (!kthread_should_stop());
+ 
+ 	return ret;
+@@ -430,10 +420,9 @@ static irqreturn_t serial_m3110_irq(int irq, void *dev_id)
+ 
+ 	/* max3110's irq is a falling edge, not level triggered,
+ 	 * so no need to disable the irq */
+-	if (!atomic_read(&max->irq_pending)) {
+-		atomic_inc(&max->irq_pending);
++	if (!test_and_set_bit(BIT_IRQ_PENDING, &max->uart_flags))
+ 		wake_up_process(max->main_thread);
+-	}
++
+ 	return IRQ_HANDLED;
+ }
+ #else
+@@ -753,7 +742,8 @@ static int serial_m3110_probe(struct spi_device *spi)
+ 	max->baud = 0;
+ 
+ 	max->cur_conf = 0;
+-	atomic_set(&max->irq_pending, 0);
++	max->uart_flags = 0;
++
+ 	/* Check if reading configuration register returns something sane */
+ 
+ 	res = RC_TAG;
 -- 
 1.7.2
 
