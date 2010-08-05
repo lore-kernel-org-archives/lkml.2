@@ -1,156 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759765Ab0HEHTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 03:19:38 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:48124 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758296Ab0HEHTf convert rfc822-to-8bit (ORCPT
+	id S1759848Ab0HEHT5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 03:19:57 -0400
+Received: from www84.your-server.de ([213.133.104.84]:49571 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759811Ab0HEHTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 03:19:35 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH 2/2] CRED: Fix __task_cred()'s lockdep check and banner  comment
-References: <20100729114549.29508.44899.stgit@warthog.procyon.org.uk>
-	<20100729114555.29508.4525.stgit@warthog.procyon.org.uk>
-	<20100802204000.GH2405@linux.vnet.ibm.com>
-	<201008030055.o730tgXK091413@www262.sakura.ne.jp>
-	<30552.1280828047@redhat.com>
-	<AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 05 Aug 2010 00:19:25 -0700
-In-Reply-To: <AANLkTikwM0+cxJqgQ+N_svzyyc+FKreO8XPr8oYNh6OU@mail.gmail.com> (Linus Torvalds's message of "Tue\, 3 Aug 2010 09\:07\:55 -0700")
-Message-ID: <m1d3txzfuq.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+	Thu, 5 Aug 2010 03:19:54 -0400
+From: stefani@seibold.net
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Arnd Bergmann <arnd@arndb.de>, Vasiliy Kulikov <segooon@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
+        Jiri Slaby <jslaby@suse.cz>, Tejun Heo <tj@kernel.org>,
+        linux-mtd@lists.infradead.org, Artem Bityutskiy <dedekind1@gmail.com>
+Cc: stefani@seibold.net
+Subject: [PATCH] Change struct flchip_shared spinlock locking into mutex
+Date: Thu,  5 Aug 2010 09:19:26 +0200
+Message-Id: <1280992766-13745-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.7.2
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds <torvalds@linux-foundation.org> writes:
+From: Stefani Seibold <stefani@seibold.net>
 
-> Added Oleg and Thomas to the participants.
->
-> Oleg/Thomas: the whole thread is on lkml, but I'm quoting most of the
-> relevant parts..
->
-> On Tue, Aug 3, 2010 at 2:34 AM, David Howells <dhowells@redhat.com> wrote:
->>
->> A previous patch:
->>
->>        commit 8f92054e7ca1d3a3ae50fb42d2253ac8730d9b2a
->>        Author: David Howells <dhowells@redhat.com>
->>        Date:   Thu Jul 29 12:45:55 2010 +0100
->>        Subject: CRED: Fix __task_cred()'s lockdep check and banner comment
->>
->> fixed the lockdep checks on __task_cred().  This has shown up a place in the
->> signalling code where a lock should be held - namely that
->> check_kill_permission() requires its callers to hold the RCU lock.
->
-> It's not just check_kill_permission(), is it? I thought we could do
-> the "for_each_process()" loops with just RCU, rather than holding the
-> whole tasklist_lock? So I _think_ that getting the RCU read-lock would
-> make it possible to get rid of the tasklist_lock in there too? At
-> least in kill_something_info().
->
-> Yes/no? What am I missing? This is an Oleg question, mainly.
+This patch prevent to schedule while atomic by changing the
+flchip_shared spinlock into a mutex. This should be save since no atomic
+path will use this lock.
 
-No.  When we send a signal to multiple processes it needs to be an
-atomic operation so that kill -KILL -pgrp won't let processes escape.
-It is what posix specifies, it is what real programs expect, and it
-is the useful semantic in userspace.
+This patch is based on linux kernel 2.6.35. Please apply.
 
-Just using rcu_read_lock() breaks that atomicity of sending a signal
-to a process group, which means we can have new processes that escape
-the signal.  Even with the tasklist_lock we have to have a special
-case in fork to ensure we don't add a process to a process group
-while a signal is being delivered to it.
+It was suggested by Arnd Bergmann and Vasiliy Kulikov.
 
-I have scratched my head a few times wondering if there is a way to
-preserve the atomic guarantee without taking a global lock, but I
-haven't found one I can wrap my head around yet.
+Change since last release:
 
->>        success = 0;
->>        retval = -ESRCH;
->> +       rcu_read_lock();
->>        do_each_pid_task(pgrp, PIDTYPE_PGID, p) {
->>                int err = group_send_sig_info(sig, info, p);
->>                success |= !err;
->>                retval = err;
->>        } while_each_pid_task(pgrp, PIDTYPE_PGID, p);
->> +       rcu_read_unlock();
->
-> Ok, makes sense. At the same time, I do wonder if we shouldn't perhaps
-> do this in the caller. The callers would seem to all want it - look at
-> kill_something_info(), for example, where it really looks like it
-> would be nicer to put that _whole_ function under rcu_read_lock() (in
-> the caller itself). Or in kernel/exit.c, we have two calls
-> back-to-back, so doing it in the caller would clean that up and do it
-> just once.
+- fix lpddr_cmds.c
+- tested with make allyesconfig
 
-Likely.  At one point read_lock(&tasklist_lock) implied having the
-rcu_read_lock().  As it no longer does in some cases we have a small
-pile of places with outdated assumptions.  I know I have been guilty a
-few times of forgetting about the new rule that we have to take rcu_read_lock()
-everywhere.
+Greetings,
+Stefani
 
-> Look here:
->
->> @@ -1261,6 +1263,7 @@ static int kill_something_info(int sig, struct siginfo *info, pid_t pid)
->>                int retval = 0, count = 0;
->>                struct task_struct * p;
->>
->> +               rcu_read_lock();
->>                for_each_process(p) {
->>                        if (task_pid_vnr(p) > 1 &&
->>                                        !same_thread_group(p, current)) {
->> @@ -1270,6 +1273,7 @@ static int kill_something_info(int sig, struct siginfo *info, pid_t pid)
->>                                        retval = err;
->>                        }
->>                }
->> +               rcu_read_unlock();
->>                ret = count ? retval : -ESRCH;
->>        }
->>        read_unlock(&tasklist_lock);
->
-> with those fragments, we now end up having rcu_read_lock() for _all_
-> the three cases in kill_something_info(), but rather than do it once,
-> we do it explicitly, and we do it in two different ways (two cases do
-> it explicitly, the middle one does it implicitly when it calls
-> __kill_pgrp_info().
->
-> So I think the patch is correct, but at the same time I do get the
-> feeling that we should just do it slightly differently.
->
-> Comments?
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ drivers/mtd/chips/cfi_cmdset_0001.c |   20 ++++++++++----------
+ drivers/mtd/lpddr/lpddr_cmds.c      |   20 ++++++++++----------
+ include/linux/mtd/flashchip.h       |    2 +-
+ 3 files changed, 21 insertions(+), 21 deletions(-)
 
-With the tasklist_lock the rule in these functions is that the caller
-will take the lock, so we probably make the rule the caller should
-take the lock in the same scenarios for the rcu_read_lock(). Aka just
-say:
+diff --git a/drivers/mtd/chips/cfi_cmdset_0001.c b/drivers/mtd/chips/cfi_cmdset_0001.c
+index 62f3ea9..3364061 100644
+--- a/drivers/mtd/chips/cfi_cmdset_0001.c
++++ b/drivers/mtd/chips/cfi_cmdset_0001.c
+@@ -717,7 +717,7 @@ static int cfi_intelext_partition_fixup(struct mtd_info *mtd,
+ 		chip = &newcfi->chips[0];
+ 		for (i = 0; i < cfi->numchips; i++) {
+ 			shared[i].writing = shared[i].erasing = NULL;
+-			spin_lock_init(&shared[i].lock);
++			mutex_init(&shared[i].lock);
+ 			for (j = 0; j < numparts; j++) {
+ 				*chip = cfi->chips[i];
+ 				chip->start += j << partshift;
+@@ -886,7 +886,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 		 */
+ 		struct flchip_shared *shared = chip->priv;
+ 		struct flchip *contender;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		contender = shared->writing;
+ 		if (contender && contender != chip) {
+ 			/*
+@@ -899,7 +899,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 			 * get_chip returns success we're clear to go ahead.
+ 			 */
+ 			ret = mutex_trylock(&contender->mutex);
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			if (!ret)
+ 				goto retry;
+ 			mutex_unlock(&chip->mutex);
+@@ -914,7 +914,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 				mutex_unlock(&contender->mutex);
+ 				return ret;
+ 			}
+-			spin_lock(&shared->lock);
++			mutex_lock(&shared->lock);
+ 
+ 			/* We should not own chip if it is already
+ 			 * in FL_SYNCING state. Put contender and retry. */
+@@ -930,7 +930,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 		 * on this chip. Sleep. */
+ 		if (mode == FL_ERASING && shared->erasing
+ 		    && shared->erasing->oldstate == FL_ERASING) {
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			add_wait_queue(&chip->wq, &wait);
+ 			mutex_unlock(&chip->mutex);
+@@ -944,7 +944,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, unsigned long adr
+ 		shared->writing = chip;
+ 		if (mode == FL_ERASING)
+ 			shared->erasing = chip;
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 	ret = chip_ready(map, chip, adr, mode);
+ 	if (ret == -EAGAIN)
+@@ -959,7 +959,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
+ 
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+@@ -967,7 +967,7 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
+ 				/* give back ownership to who we loaned it from */
+ 				struct flchip *loaner = shared->writing;
+ 				mutex_lock(&loaner->mutex);
+-				spin_unlock(&shared->lock);
++				mutex_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner, loaner->start);
+ 				mutex_lock(&chip->mutex);
+@@ -985,11 +985,11 @@ static void put_chip(struct map_info *map, struct flchip *chip, unsigned long ad
+ 			 * Don't let the switch below mess things up since
+ 			 * we don't have ownership to resume anything.
+ 			 */
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			wake_up(&chip->wq);
+ 			return;
+ 		}
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 
+ 	switch(chip->oldstate) {
+diff --git a/drivers/mtd/lpddr/lpddr_cmds.c b/drivers/mtd/lpddr/lpddr_cmds.c
+index fece5be..04fdfcc 100644
+--- a/drivers/mtd/lpddr/lpddr_cmds.c
++++ b/drivers/mtd/lpddr/lpddr_cmds.c
+@@ -98,7 +98,7 @@ struct mtd_info *lpddr_cmdset(struct map_info *map)
+ 	numchips = lpddr->numchips / lpddr->qinfo->HWPartsNum;
+ 	for (i = 0; i < numchips; i++) {
+ 		shared[i].writing = shared[i].erasing = NULL;
+-		spin_lock_init(&shared[i].lock);
++		mutex_init(&shared[i].lock);
+ 		for (j = 0; j < lpddr->qinfo->HWPartsNum; j++) {
+ 			*chip = lpddr->chips[i];
+ 			chip->start += j << lpddr->chipshift;
+@@ -217,7 +217,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
+ 		 */
+ 		struct flchip_shared *shared = chip->priv;
+ 		struct flchip *contender;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		contender = shared->writing;
+ 		if (contender && contender != chip) {
+ 			/*
+@@ -230,7 +230,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
+ 			 * get_chip returns success we're clear to go ahead.
+ 			 */
+ 			ret = mutex_trylock(&contender->mutex);
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			if (!ret)
+ 				goto retry;
+ 			mutex_unlock(&chip->mutex);
+@@ -245,7 +245,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
+ 				mutex_unlock(&contender->mutex);
+ 				return ret;
+ 			}
+-			spin_lock(&shared->lock);
++			mutex_lock(&shared->lock);
+ 
+ 			/* We should not own chip if it is already in FL_SYNCING
+ 			 * state. Put contender and retry. */
+@@ -261,7 +261,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
+ 		   Must sleep in such a case. */
+ 		if (mode == FL_ERASING && shared->erasing
+ 		    && shared->erasing->oldstate == FL_ERASING) {
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			set_current_state(TASK_UNINTERRUPTIBLE);
+ 			add_wait_queue(&chip->wq, &wait);
+ 			mutex_unlock(&chip->mutex);
+@@ -275,7 +275,7 @@ static int get_chip(struct map_info *map, struct flchip *chip, int mode)
+ 		shared->writing = chip;
+ 		if (mode == FL_ERASING)
+ 			shared->erasing = chip;
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 
+ 	ret = chip_ready(map, chip, mode);
+@@ -348,7 +348,7 @@ static void put_chip(struct map_info *map, struct flchip *chip)
+ {
+ 	if (chip->priv) {
+ 		struct flchip_shared *shared = chip->priv;
+-		spin_lock(&shared->lock);
++		mutex_lock(&shared->lock);
+ 		if (shared->writing == chip && chip->oldstate == FL_READY) {
+ 			/* We own the ability to write, but we're done */
+ 			shared->writing = shared->erasing;
+@@ -356,7 +356,7 @@ static void put_chip(struct map_info *map, struct flchip *chip)
+ 				/* give back the ownership */
+ 				struct flchip *loaner = shared->writing;
+ 				mutex_lock(&loaner->mutex);
+-				spin_unlock(&shared->lock);
++				mutex_unlock(&shared->lock);
+ 				mutex_unlock(&chip->mutex);
+ 				put_chip(map, loaner);
+ 				mutex_lock(&chip->mutex);
+@@ -374,11 +374,11 @@ static void put_chip(struct map_info *map, struct flchip *chip)
+ 			 * Don't let the switch below mess things up since
+ 			 * we don't have ownership to resume anything.
+ 			 */
+-			spin_unlock(&shared->lock);
++			mutex_unlock(&shared->lock);
+ 			wake_up(&chip->wq);
+ 			return;
+ 		}
+-		spin_unlock(&shared->lock);
++		mutex_unlock(&shared->lock);
+ 	}
+ 
+ 	switch (chip->oldstate) {
+diff --git a/include/linux/mtd/flashchip.h b/include/linux/mtd/flashchip.h
+index f43e9b4..23cc10f 100644
+--- a/include/linux/mtd/flashchip.h
++++ b/include/linux/mtd/flashchip.h
+@@ -92,7 +92,7 @@ struct flchip {
+ /* This is used to handle contention on write/erase operations
+    between partitions of the same physical chip. */
+ struct flchip_shared {
+-	spinlock_t lock;
++	struct mutex lock;
+ 	struct flchip *writing;
+ 	struct flchip *erasing;
+ };
+-- 
+1.7.2
 
-read_lock(&tasklist_lock);
-rcu_read_lock();
-
-everywhere, that today we say just:
-
-read_lock(&tasklist_lock);
-
-It is what was meant when the code was written and the rcu-ized, and
-it will certainly preserve my human intuition and general practical
-reality that when you have the tasklist_lock you have the
-rcu_read_lock.
-
-*Shrug*  I don't think it matters a whole lot.
-
-Eric
