@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759400Ab0HEURv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:17:51 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55311 "EHLO mgw2.diku.dk"
+	id S1759447Ab0HEUSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:18:09 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55317 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751706Ab0HEURp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:17:45 -0400
-Date: Thu, 5 Aug 2010 22:17:43 +0200 (CEST)
+	id S1759415Ab0HEUSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:18:03 -0400
+Date: Thu, 5 Aug 2010 22:18:01 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Rudolf Marek <r.marek@assembler.cz>, lm-sensors@lm-sensors.org,
+To: Faisal Latif <faisal.latif@intel.com>,
+        Chien Tung <chien.tin.tung@intel.com>,
+        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/42] drivers/hwmon: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052217240.31692@ask.diku.dk>
+Subject: [PATCH 4/42] drivers/infiniband/hw/nes: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052217430.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,9 +23,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Move the if(err) statement after the if into the if branch indicated by its
-indentation.  The preceding if(err) test implies that err cannot be nonzero
-unless the if branch is taken.
+It is not clear whether the assignment should be part of the if branch
+suggested by its indentation.  The patch preserves the current semantics.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -52,25 +54,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/hwmon/k8temp.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/infiniband/hw/nes/nes_hw.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/hwmon/k8temp.c b/drivers/hwmon/k8temp.c
-index 8bdf80d..b9bb3e0 100644
---- a/drivers/hwmon/k8temp.c
-+++ b/drivers/hwmon/k8temp.c
-@@ -252,12 +252,13 @@ static int __devinit k8temp_probe(struct pci_dev *pdev,
- 				   &sensor_dev_attr_temp3_input.dev_attr);
- 		if (err)
- 			goto exit_remove;
--		if (data->sensorsp & SEL_PLACE)
-+		if (data->sensorsp & SEL_PLACE) {
- 			err = device_create_file(&pdev->dev,
- 					   &sensor_dev_attr_temp4_input.
- 					   dev_attr);
- 			if (err)
- 				goto exit_remove;
-+		}
- 	}
- 
- 	err = device_create_file(&pdev->dev, &dev_attr_name);
+diff --git a/drivers/infiniband/hw/nes/nes_hw.c b/drivers/infiniband/hw/nes/nes_hw.c
+index f41d890..9a379d4 100644
+--- a/drivers/infiniband/hw/nes/nes_hw.c
++++ b/drivers/infiniband/hw/nes/nes_hw.c
+@@ -2740,7 +2740,7 @@ void nes_nic_ce_handler(struct nes_device *nesdev, struct nes_hw_nic_cq *cq)
+ 				/* restart the queue if it had been stopped */
+ 				if (netif_queue_stopped(nesvnic->netdev))
+ 					netif_wake_queue(nesvnic->netdev);
+-					sq_cqes = 0;
++				sq_cqes = 0;
+ 				}
+ 			} else {
+ 				rqes_processed ++;
