@@ -1,30 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab0HEPQt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:16:49 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52422 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933597Ab0HEPQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:16:45 -0400
-From: Kumar Gala <galak@kernel.crashing.org>
-To: gregkh@suse.de
-Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        akpm@linux-foundation.org
-Subject: [PATCH 0/3] driver core: Add ability for arch code to setup pdev_archdata
-Date: Thu,  5 Aug 2010 10:15:44 -0500
-Message-Id: <1281021347-1278-1-git-send-email-galak@kernel.crashing.org>
-X-Mailer: git-send-email 1.6.0.6
+	id S1760695Ab0HEPTs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:19:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:36086 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759258Ab0HEPTp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 11:19:45 -0400
+Date: Thu, 5 Aug 2010 12:19:30 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv10 2.6.35-rc6-tip 12/14]  perf: Add third parameter to
+ symbol_filter_t.
+Message-ID: <20100805151930.GB12570@ghostprotocols.net>
+References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
+ <20100727111119.24690.74064.sendpatchset@localhost6.localdomain6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100727111119.24690.74064.sendpatchset@localhost6.localdomain6>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On PPC we need to set the dma_mask pointer for platform_devices to point to
-the pdev_archdata.  We can't wait for a bus_notifier as we need the dma_mask
-setup before the platform_device_add happens so that the bus_notifiers can
-check the dma_mask to determine if we need things like the SWIOTLB dma_ops.
+Em Tue, Jul 27, 2010 at 04:41:19PM +0530, Srikar Dronamraju escreveu:
+> GElf_Sym for a symbol is needed to filter out based on binding,
+> type, value. This will be needed to list only global binding
+> functions when listing functions from  perf probe.
 
-The patch series introduces an arch specific call out (arch_setup_pdev_archdata)
-and provide an implementation on PPC to handle our specific issue.
+Humm, I think it is better to store the symbol binding in struct symbol,
+so that we can have the full symtab and then, on a particular routine,
+decide wheter we should use it or not.
 
-- k
+I'll cook up a patch now.
+
+- Arnaldo
