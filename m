@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760873Ab0HEWfu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:35:50 -0400
-Received: from kroah.org ([198.145.64.141]:37706 "EHLO coco.kroah.org"
+	id S932903Ab0HEWgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:36:04 -0400
+Received: from kroah.org ([198.145.64.141]:37708 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760867Ab0HEWY2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:28 -0400
+	id S1760862Ab0HEWY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:27 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Tony Luck <tony.luck@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 46/67] tty: avoid recursive BTM in pty_close
-Date: Thu,  5 Aug 2010 15:23:13 -0700
-Message-Id: <1281047014-23429-46-git-send-email-gregkh@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 45/67] 8250: fix set_ldisc operation
+Date: Thu,  5 Aug 2010 15:23:12 -0700
+Message-Id: <1281047014-23429-45-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -25,130 +22,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-When the console has been redirected, a hangup of the tty
-will cause tty_release to be called under the big tty_mutex,
-which leads to a deadlock because hangup is also called
-under the BTM.
-
-This moves the BTM deeper into the tty_hangup function so
-we can close the redirected tty without holding the BTM.
-In case of pty, we now need to drop the BTM before
-calling tty_vhangup.
+The ldisc number now gets passed into ->set_ldisc.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/pty.c    |    4 +++-
- drivers/char/tty_io.c |   24 ++++++++++++------------
- 2 files changed, 15 insertions(+), 13 deletions(-)
+ drivers/serial/8250.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/pty.c b/drivers/char/pty.c
-index f2d7a76..ad46eae 100644
---- a/drivers/char/pty.c
-+++ b/drivers/char/pty.c
-@@ -62,7 +62,9 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
- 		if (tty->driver == ptm_driver)
- 			devpts_pty_kill(tty->link);
- #endif
--		tty_vhangup_locked(tty->link);
-+		tty_unlock();
-+		tty_vhangup(tty->link);
-+		tty_lock();
- 	}
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index bc8ed4b..355148d 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -2404,14 +2404,9 @@ serial8250_set_termios(struct uart_port *port, struct ktermios *termios,
  }
  
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index 5db354d..6bf6d36 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -471,7 +471,7 @@ void tty_wakeup(struct tty_struct *tty)
- EXPORT_SYMBOL_GPL(tty_wakeup);
- 
- /**
-- *	do_tty_hangup		-	actual handler for hangup events
-+ *	__tty_hangup		-	actual handler for hangup events
-  *	@work: tty device
-  *
-  *	This can be called by the "eventd" kernel thread.  That is process
-@@ -492,7 +492,7 @@ EXPORT_SYMBOL_GPL(tty_wakeup);
-  *		  tasklist_lock to walk task list for hangup event
-  *		    ->siglock to protect ->signal/->sighand
-  */
--void tty_vhangup_locked(struct tty_struct *tty)
-+void __tty_hangup(struct tty_struct *tty)
+ static void
+-serial8250_set_ldisc(struct uart_port *port)
++serial8250_set_ldisc(struct uart_port *port, int new)
  {
- 	struct file *cons_filp = NULL;
- 	struct file *filp, *f = NULL;
-@@ -512,10 +512,12 @@ void tty_vhangup_locked(struct tty_struct *tty)
- 	}
- 	spin_unlock(&redirect_lock);
- 
-+	tty_lock();
-+
- 	/* inuse_filps is protected by the single tty lock,
- 	   this really needs to change if we want to flush the
- 	   workqueue with the lock held */
--	check_tty_count(tty, "do_tty_hangup");
-+	check_tty_count(tty, "tty_hangup");
- 
- 	file_list_lock();
- 	/* This breaks for file handles being sent over AF_UNIX sockets ? */
-@@ -594,6 +596,9 @@ void tty_vhangup_locked(struct tty_struct *tty)
- 	 */
- 	set_bit(TTY_HUPPED, &tty->flags);
- 	tty_ldisc_enable(tty);
-+
-+	tty_unlock();
-+
- 	if (f)
- 		fput(f);
- }
-@@ -603,9 +608,7 @@ static void do_tty_hangup(struct work_struct *work)
- 	struct tty_struct *tty =
- 		container_of(work, struct tty_struct, hangup_work);
- 
--	tty_lock();
--	tty_vhangup_locked(tty);
--	tty_unlock();
-+	__tty_hangup(tty);
- }
- 
- /**
-@@ -643,13 +646,12 @@ void tty_vhangup(struct tty_struct *tty)
- 
- 	printk(KERN_DEBUG "%s vhangup...\n", tty_name(tty, buf));
- #endif
--	tty_lock();
--	tty_vhangup_locked(tty);
--	tty_unlock();
-+	__tty_hangup(tty);
- }
- 
- EXPORT_SYMBOL(tty_vhangup);
- 
-+
- /**
-  *	tty_vhangup_self	-	process vhangup for own ctty
-  *
-@@ -727,10 +729,8 @@ void disassociate_ctty(int on_exit)
- 	if (tty) {
- 		tty_pgrp = get_pid(tty->pgrp);
- 		if (on_exit) {
--			tty_lock();
- 			if (tty->driver->type != TTY_DRIVER_TYPE_PTY)
--				tty_vhangup_locked(tty);
--			tty_unlock();
-+				tty_vhangup(tty);
- 		}
- 		tty_kref_put(tty);
- 	} else if (on_exit) {
+-	int line = port->line;
+-
+-	if (line >= port->state->port.tty->driver->num)
+-		return;
+-
+-	if (port->state->port.tty->ldisc->ops->num == N_PPS) {
++	if (new == N_PPS) {
+ 		port->flags |= UPF_HARDPPS_CD;
+ 		serial8250_enable_ms(port);
+ 	} else
 -- 
 1.7.2
 
