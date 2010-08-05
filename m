@@ -1,78 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934142Ab0HEUZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:25:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38195 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932255Ab0HEUZU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:25:20 -0400
-Date: Thu, 5 Aug 2010 13:24:33 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Michael Rubin <mrubin@google.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
-        axboe@kernel.dk
-Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and
- pages_entered_writeback
-Message-Id: <20100805132433.d1d7927b.akpm@linux-foundation.org>
-In-Reply-To: <1280969004-29530-3-git-send-email-mrubin@google.com>
-References: <1280969004-29530-1-git-send-email-mrubin@google.com>
-	<1280969004-29530-3-git-send-email-mrubin@google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S934266Ab0HEU0B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:26:01 -0400
+Received: from na3sys009aog112.obsmtp.com ([74.125.149.207]:56552 "EHLO
+	na3sys009aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934252Ab0HEUZz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:25:55 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Thu, 5 Aug 2010 14:25:47 -0600
+Subject: [PATCH 7/12] scsi: megaraid_sas - Online Controller Reset (OCR):
+ Pending cmds will be stored in diffeent queue
+Thread-Topic: [PATCH 7/12] scsi: megaraid_sas - Online Controller Reset
+ (OCR): Pending cmds will be stored in diffeent queue
+Thread-Index: AcsIUs7sdIl9C0r7T1+T03e9i9uQ0gG1ew4ACWzZffA=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67FA3@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804558@cosmail02.lsi.com>
+ <4B6A08C587958942AA3002690DD4F8C3D092749C@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D092749C@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  4 Aug 2010 17:43:24 -0700
-Michael Rubin <mrubin@google.com> wrote:
+RESUBMIT requested by James Bottomley:
 
-> To help developers and applications gain visibility into writeback
-> behaviour adding four read only sysctl files into /proc/sys/vm.
-> These files allow user apps to understand writeback behaviour over time
-> and learn how it is impacting their performance.
-> 
->    # cat /proc/sys/vm/pages_dirtied
->    3747
->    # cat /proc/sys/vm/pages_entered_writeback
->    3618
-> 
-> Documentation/vm.txt has been updated.
-> 
-> In order to track the "cleaned" and "dirtied" counts we added two
-> vm_stat_items.  Per memory node stats have been added also. So we can
-> see per node granularity:
-> 
->    # cat /sys/devices/system/node/node20/writebackstat
->    Node 20 pages_writeback: 0 times
->    Node 20 pages_dirtied: 0 times
-> 
-> ...
->
-> @@ -1091,6 +1115,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->  {
->  	if (mapping_cap_account_dirty(mapping)) {
->  		__inc_zone_page_state(page, NR_FILE_DIRTY);
-> +		__inc_zone_page_state(page, NR_FILE_PAGES_DIRTIED);
->  		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->  		task_dirty_inc(current);
->  		task_io_account_write(PAGE_CACHE_SIZE);
+When driver is doing the OCR, driver will store the pending cmds (in FW not return) to different queue.  Those cmds will
+Be re-issued to FW after OCR finished.
 
-I hope the utility of this change is worth the overhead :(
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -740,6 +740,8 @@ static const char * const vmstat_text[] = {
->  	"numa_local",
->  	"numa_other",
->  #endif
-> +	"nr_pages_entered_writeback",
-> +	"nr_file_pages_dirtied",
->  
+---
+drivers/scsi/megaraid/megaraid_sas.c |  101 ++++++++++++++++++++++++++++++++++-
+ 1 file changed, 100 insertions(+), 1 deletion(-)
 
-Wait.  These counters appear in /proc/vmstat.  So why create standalone
-/proc/sys/vm files as well?
-
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 08:43:34.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-17 07:51:23.000000000 -0400
+@@ -2100,10 +2100,106 @@ megasas_issue_pending_cmds_again(struct 
+  * did not complete in time, the kernel reset handler would flush
+  * these commands.
+  **/
+-
+ static void
+ megasas_internal_reset_defer_cmds(struct megasas_instance *instance)
+ {
++	struct megasas_cmd *cmd;
++	int i;
++	u32 max_cmd = instance->max_fw_cmds;
++	u32 defer_index;
++	unsigned long flags;
++
++	defer_index     = 0;
++	spin_lock_irqsave(&instance->cmd_pool_lock, flags);
++	for (i = 0; i < max_cmd; i++) {
++		cmd = instance->cmd_list[i];
++		if (cmd->sync_cmd == 1 || cmd->scmd) {
++			printk(KERN_NOTICE "megasas: moving cmd[%d]:%p:%d:%p"
++					"on the defer queue as internal\n",
++				defer_index, cmd, cmd->sync_cmd, cmd->scmd);
++
++			if (!list_empty(&cmd->list)) {
++				printk(KERN_NOTICE "megaraid_sas: ERROR while"
++					" moving this cmd:%p, %d %p, it was"
++					"discovered on some list?\n",
++					cmd, cmd->sync_cmd, cmd->scmd);
++
++				list_del_init(&cmd->list);
++			}
++			defer_index++;
++			list_add_tail(&cmd->list,
++				&instance->internal_reset_pending_q);
++		}
++	}
++	spin_unlock_irqrestore(&instance->cmd_pool_lock, flags);
++}
++
++
++static void
++process_fw_state_change_wq(struct work_struct *work)
++{
++	struct megasas_instance *instance =
++		container_of(work, struct megasas_instance, work_init);
++	u32 wait;
++	unsigned long flags;
++
++	if (instance->adprecovery != MEGASAS_ADPRESET_SM_INFAULT) {
++		printk(KERN_NOTICE "megaraid_sas: error, recovery st %x \n",
++				instance->adprecovery);
++		return ;
++	}
++
++	if (instance->adprecovery == MEGASAS_ADPRESET_SM_INFAULT) {
++		printk(KERN_NOTICE "megaraid_sas: FW detected to be in fault"
++					"state, restarting it...\n");
++
++		instance->instancet->disable_intr(instance->reg_set);
++		atomic_set(&instance->fw_outstanding, 0);
++
++		atomic_set(&instance->fw_reset_no_pci_access, 1);
++		instance->instancet->adp_reset(instance, instance->reg_set);
++		atomic_set(&instance->fw_reset_no_pci_access, 0 );
++
++		printk(KERN_NOTICE "megaraid_sas: FW restarted successfully,"
++					"initiating next stage...\n");
++
++		printk(KERN_NOTICE "megaraid_sas: HBA recovery state machine,"
++					"state 2 starting...\n");
++
++		/*waitting for about 20 second before start the second init*/
++		for (wait = 0; wait < 30; wait++) {
++			msleep(1000);
++		}
++
++		if (megasas_transition_to_ready(instance)) {
++			printk(KERN_NOTICE "megaraid_sas:adapter not ready\n");
++
++			megaraid_sas_kill_hba(instance);
++			instance->adprecovery	= MEGASAS_HW_CRITICAL_ERROR;
++			return ;
++		}
++
++		if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS1064R) ||
++			(instance->pdev->device == PCI_DEVICE_ID_DELL_PERC5) ||
++			(instance->pdev->device == PCI_DEVICE_ID_LSI_VERDE_ZCR)
++			) {
++			*instance->consumer = *instance->producer;
++		} else {
++			*instance->consumer = 0;
++			*instance->producer = 0;
++		}
++
++		megasas_issue_init_mfi(instance);
++
++		spin_lock_irqsave(&instance->hba_lock, flags);
++		instance->adprecovery	= MEGASAS_HBA_OPERATIONAL;
++		spin_unlock_irqrestore(&instance->hba_lock, flags);
++		instance->instancet->enable_intr(instance->reg_set);
++
++		megasas_issue_pending_cmds_again(instance);
++		instance->issuepend_done = 1;
++	}
++	return ;
+ }
+ 
+ /**
+@@ -2169,6 +2265,7 @@ megasas_deplete_reply_queue(struct megas
+ 			printk(KERN_NOTICE "megasas: fwState=%x, stage:%d\n",
+ 					fw_state, instance->adprecovery);
+ 
++			schedule_work(&instance->work_init);
+ 			return IRQ_HANDLED;
+ 
+ 		} else {
+@@ -3573,6 +3670,8 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 	instance->last_time = 0;
+ 	instance->disableOnlineCtrlReset = 1;
+ 
++	INIT_WORK(&instance->work_init, process_fw_state_change_wq);
++
+ 	/*
+ 	 * Initialize MFI Firmware
+ 	 */
