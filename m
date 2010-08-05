@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760487Ab0HENjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 09:39:11 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38138 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760465Ab0HENjD (ORCPT
+	id S1760465Ab0HENlm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 09:41:42 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:26005 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760492Ab0HENlj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 09:39:03 -0400
-Date: Thu, 5 Aug 2010 14:38:11 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
+	Thu, 5 Aug 2010 09:41:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=jfcy1y3gPU6VGRXBBa4RM/gOCWWnOt4iJk4m/OLRWYAsOgxfwVIcfxZy1JqmLdKCc
+	+TDDAyr+CdANN/JtZCQkA==
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100804195704.GA23681@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+Date: Thu, 5 Aug 2010 06:37:15 -0700
+Message-ID: <AANLkTi=wyD-K35vQdhTr7kt4wHeEDkbvzkXHAOyMtzZJ@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
+From: Brian Swetland <swetland@google.com>
 To: david@lang.hm
 Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
         linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100805133811.GA20565@srcf.ucam.org>
-References: <20100803183447.0275c134@infradead.org> <20100804163216.GB24163@linux.vnet.ibm.com> <20100804163509.GA31523@srcf.ucam.org> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm> <20100804185520.GA2417@srcf.ucam.org> <alpine.DEB.2.00.1008041207260.6545@asgard.lang.hm> <20100804192115.GA2946@srcf.ucam.org> <alpine.DEB.2.00.1008041222280.6545@asgard.lang.hm> <20100804195723.GA3553@srcf.ucam.org> <alpine.DEB.2.00.1008041508040.6545@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008041508040.6545@asgard.lang.hm>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        tytso@mit.edu, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 03:20:04PM -0700, david@lang.hm wrote:
-
-> on the other hand, making an application avoid consuming inappropriate  
-> background resources helps everywhere. an explicit "don't let the machine 
-> sleep" only works if you are trusted by a system that implements this  
-> flag.
+On Thu, Aug 5, 2010 at 6:18 AM,  <david@lang.hm> wrote:
+> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
 >
-> yes, it is painful to make the change, but the end result is better (and  
-> there are more tools out there to figure things out)
-
-Nobody's denying that it's better, but people are saying they want to 
-design a platform that's capable of handling the software we have rather 
-than the software we'd like to have.
-
-> but if you have an application in the mid-level trust situation, go ahead 
-> and have it talk to a 'keepalive' daemon that is in the 'trusted' set and 
-> let the rest of the app run untrusted. As I noted elsewhere, the 
-> keepalive daemon would need very little in the way of resources and can 
-> implement much more complex policies than anyone is going to be willing 
-> to put in the kernel.
-
-That doesn't work. You'll race with wakeup events.
-
-> similar to the current implementation, the arrival of a packet could be  
-> counted as activity that keeps the system awake for a bit (your timeout)
-
-How? You're either polling in order to know whether there's network 
-activity, or you're having every network packet wake up the policy 
-daemon, or you've got something that looks like the kernel side of 
-wakelocks.
-
->> Cell networks typically have no background traffic, for obvious reasons.
+>> Continuing to rush in where angels fear to tread...
 >
-> but don't most new smartphones also connect up to wifi networks? those 
-> are FAR from quiet.
+> here here :-)
+>
+>> o       "PM-driving application" are applications that are permitted
+>>        to acquire suspend blockers on Android.  Verion 8 of the
+>>        suspend-blocker patch seems to use group permissions to determine
+>>        which applications are classified as power aware.  More generally,
+>>        PM-driving applications seem to be those that have permission
+>>        to exert some control over the system's sleep state.
+>>
+>>        Note that an application might be power-oblivious on one Android
+>>        device and PM-driving on another, depending on whether the user
+>>        allows that application to acquire suspend blockers.  The
+>>        classification might even change over time.  For example, a
+>>        user might give an application PM-driving status initially,
+>>        but change his or her mind after some experience with that
+>>        application.
+>
+> One thing that I think it's important to document here is theinformation
+> that Brian provided in response to your question about how many (or actually
+> how few) applications fall into this catefory
 
-Wifi radio typically dwarfs your other power consumption anyway. The 
-typical situation is one where you're not attached to a wifi network.
+I think I need to clarify here.  When I say "app" in the context of
+Android, I mean "an application running under the Android app model --
+sandboxed under a per-app or app-group uid", not "a process".  The
+vast majority of processes on an Android device are "apps" in this
+sense, but some (usually low level services or daemons) are not.  Also
+I use "wakelock" as a place holder for "suspend blocker" or whatever
+exact API we're trying to hash out here, because it's shorter and I'm
+lazy.
 
-> I'm not suggesting running all events through some central server (unless 
-> you count the kernel as that server),  I'm saying that the decision that  
-> the system is idle and therefor can be stopped should be able to take 
-> this infomation into account, and if there's a race here, it should be a 
-> race that exists everywhere else, so there should be a general solution, 
-> not something specific to one use-case. (and definantly not something 
-> that requires all software to be modified and trusted to implement)
+Any app may obtain a wakelock through the standard Android APIs,
+provided it has permission to do so.  In the current implementation,
+apps obtain wakelocks via making a binder RPC call to the power
+manager service which tracks high level wakelocks (for apps!) and
+backs them by a single kernel wakelock.  Access control is at the RPC
+level.  This implementation could be changed to have the app API
+simply open /dev/suspendblock or whatnot, with access control enforced
+by unix permissions (the framework would arrange for apps with the
+android "can block sleep" permission to be in a unix group that has
+access to the device).
 
-You're right. It's a race that exists everywhere else, and it's inherent 
-unless you have some handshaking between userspace and the kernel when 
-entering suspend. Which is what wakelocks provide. Nobody has proposed a 
-solution that works without modifying existing code.
+For native services (native daemons that run "underneath" the android
+app framework -- for example the media service, the radio interface,
+etc), the kernel interface is used directly (ok, usually via a very
+thin C convenience wrapper).
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Brian
+
+
+> Quote:
+>
+>> I should have asked this earlier...  What exactly are the apps'
+>> compatibility constraints?  Source-level APIs?  Byte-code class-library
+>> invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
+>> words, syscall)?
+>
+> For Java/Dalvik apps, the wakelock API is pertty high level -- it
+> talks to a service via RPC (Binder) that actually interacts with the
+> kernel.  Changing the basic kernel<->userspace interface (within
+> reason) is not unthinkable.  For example, Arve's suspend_blocker patch
+> provides a device interface rather than the proc interface the older
+> wakelock patches use.  We'd have to make some userspace changes to
+> support that but they're pretty low level and minor.
+>
+> In the current model, only a few processes need to specifically
+> interact with the kernel (the power management service in the
+> system_server, possibly the media_server and the radio interface
+> glue).  A model where every process needs to have a bunch of
+> instrumentation is not very desirable from our point of view.  We
+> definitely do need reasonable statistics in order to enable debugging
+> and to enable reporting to endusers (through the Battery Usage UI)
+> what's keeping the device awake.
+>
+> Brian
+>
+>
