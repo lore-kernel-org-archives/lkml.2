@@ -1,110 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759662Ab0HEC2P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 22:28:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759452Ab0HEC2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 22:28:13 -0400
-Message-ID: <4C5A22B0.7050207@redhat.com>
-Date: Thu, 05 Aug 2010 10:32:16 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1759656Ab0HECcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 22:32:19 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:56028 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756958Ab0HECcR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 22:32:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=T3r5KdOHzQPxEYa/7HZ2POYmShhD9i/rvhh59kqAe1cqzrQFX0xDS6/0Aozspix11k
+         uf1nHk9bsPnedhIZaVLrvEiVYqe8hS9gp8uw1tG7L28e5k07SfWnN733XN5HuVVh0nGy
+         fs54Zqk22KuYjL3PaYkR3opkTL00qhC/DPBWM=
 MIME-Version: 1.0
-To: Milton Miller <miltonm@bga.com>
-CC: Neil Horman <nhorman@tuxdriver.com>, Neil Horman <nhorman@redhat.com>,
-        huang ying <huang.ying.caritas@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        kexec@lists.infadead.org
-Subject: Re: [Patch v2] kexec: increase max of kexec segments and use dynamic
- allocation
-References: <kexec-nrseg-reply1@mdm.bga.com> <4C5122D1.8080203@redhat.com>
-In-Reply-To: <4C5122D1.8080203@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C59E654.1090403@codeaurora.org>
+References: <4C59E654.1090403@codeaurora.org>
+Date: Thu, 5 Aug 2010 11:32:16 +0900
+Message-ID: <AANLkTimkMy6_201XNGb41e7LivkvVHMkFZWVoA-7UmBo@mail.gmail.com>
+Subject: Re: [PATCH] platform: Facilitate the creation of pseduo-platform 
+	busses
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "damm@opensource.se" <damm@opensource.se>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
+        zt.tmzt@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Ping Milton...)
-
-On 07/29/10 14:42, Cong Wang wrote:
-> On 07/27/10 18:00, Milton Miller wrote:
->> [ Added kexec at lists.infradead.org and linuxppc-dev@lists.ozlabs.org ]
->>
->>>
->>> Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine
->>> with
->>> many memory ranges. When hibernate on a machine with disjoint memory
->>> we do
->>> need one segment for each memory region. Increase this hard limit to 16K
->>> which is reasonably large.
->>>
->>> And change ->segment from a static array to a dynamically allocated
->>> memory.
->>>
->>> Cc: Neil Horman<nhorman@redhat.com>
->>> Cc: huang ying<huang.ying.caritas@gmail.com>
->>> Cc: Eric W. Biederman<ebiederm@xmission.com>
->>> Signed-off-by: WANG Cong<amwang@redhat.com>
->>>
->>> ---
->>> diff --git a/arch/powerpc/kernel/machine_kexec_64.c
->>> b/arch/powerpc/kernel/machine_kexec_64.c
->>> index ed31a29..f115585 100644
->>> --- a/arch/powerpc/kernel/machine_kexec_64.c
->>> +++ b/arch/powerpc/kernel/machine_kexec_64.c
->>> @@ -131,10 +131,7 @@ static void copy_segments(unsigned long ind)
->>> void kexec_copy_flush(struct kimage *image)
->>> {
->>> long i, nr_segments = image->nr_segments;
->>> - struct kexec_segment ranges[KEXEC_SEGMENT_MAX];
->>> -
->>> - /* save the ranges on the stack to efficiently flush the icache */
->>> - memcpy(ranges, image->segment, sizeof(ranges));
->>> + struct kexec_segment range;
->>
->> I'm glad you found our copy on the stack and removed the stack overflow
->> that comes with this bump, but ...
->>
->>>
->>> /*
->>> * After this call we may not use anything allocated in dynamic
->>> @@ -148,9 +145,11 @@ void kexec_copy_flush(struct kimage *image)
->>> * we need to clear the icache for all dest pages sometime,
->>> * including ones that were in place on the original copy
->>> */
->>> - for (i = 0; i< nr_segments; i++)
->>> - flush_icache_range((unsigned long)__va(ranges[i].mem),
->>> - (unsigned long)__va(ranges[i].mem + ranges[i].memsz));
->>> + for (i = 0; i< nr_segments; i++) {
->>> + memcpy(&range,&image->segment[i], sizeof(range));
->>> + flush_icache_range((unsigned long)__va(range.mem),
->>> + (unsigned long)__va(range.mem + range.memsz));
->>> + }
->>> }
->>
->> This is executed after the copy, so as it says,
->> "we may not use anything allocated in dynamic memory".
->>
->> We could allocate control pages to copy the segment list into.
->> Actually ppc64 doesn't use the existing control page, but that
->> is only 4kB today.
->>
->> We need the list to icache flush all the pages in all the segments.
->> The as the indirect list doesn't have pages that were allocated at
->> their destination.
->>
->> Or maybe the icache flush should be done in the generic code
->> like it does for crash load segments?
->>
+On Thu, Aug 5, 2010 at 7:14 AM, Patrick Pannuto <ppannuto@codeaurora.org> wrote:
+> Inspiration for this comes from:
+> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
 >
-> I don't get the point here, according to the comments,
-> it is copied into stack because of efficiency.
->
+> RFC: http://lkml.org/lkml/2010/8/3/496
+> Patch is unchanged from the RFC. Reviews seemed generally positive
+> and it seemed this was desired functionality.
 
+Thanks for your patch, it's really nice to see work done in this area!
+I'd like to see something like this merged in the not so distant
+future. At this point I'm not so concerned about the details, so I'll
+restrict myself to this:
 
--- 
-The opposite of love is not hate, it's indifference.
-  - Elie Wiesel
+> /drivers/my_driver.c
+>        static struct platform_driver my_driver = {
+>                .driver = {
+>                        .name   = "my-driver",
+>                        .owner  = THIS_MODULE,
+>                        .bus    = &my_bus_type,
+>                },
+>        };
+
+I would really prefer not to have the bus type in the here. I
+understand it's needed at this point, but I wonder if it's possible to
+adjust the device<->driver matching for platform devices to allow any
+type of pseudo-platform bus_type.
+
+The reason why I'd like to avoid having the bus type in the driver is
+that I'd like to reuse the platform driver across multiple
+architectures and buses. For instance, on the SH architecture and
+SH-Mobile ARM we have SoCs with SCIF hardware blocks driven by the
+sh-sci.c serial driver. The sh-sci.c platform driver supports a wide
+range of different SCI(F)(A)(B) hardware blocks, and on any given SoC
+there is a mix of SCIF blocks spread out on different buses.
+
+At this point our SH platform drivers are unaware where their driver
+instanced are located on the SoC. The I/O address and IRQs are
+assigned via struct resource and clocks are managed through clkdev. I
+believe that adding the bus type in the driver will violate this
+abstraction and make it more difficult to just instantiate a driver
+somewhere on the SoC.
+
+> /somewhere/my_device.c
+>        static struct platform_device my_device = {
+>                .name           = "my-device",
+>                .id             = -1,
+>                .dev.bus        = &my_bus_type,
+>                .dev.parent     = &sub_bus_1.dev,
+>        };
+
+This I don't mind at all. Actually, this is the place where the
+topology should be defined IMO.
+
+Cheers,
+
+/ magnus
