@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760576Ab0HENzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 09:55:19 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:48572 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab0HENzO (ORCPT
+	id S1759254Ab0HEOI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:08:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36863 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758231Ab0HEOIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 09:55:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TZdFVPGPoIkIcQsZqVrpG5npNrfRCgwj9lQq1ALtMhRLCIN0aNMYsq7GSmUROt7Gra
-         o5WCNfvJZNYO2VAsp/YxZoAwxCSgPpsnxI91ro3kP69wEA7iZKugz8uvSG029oZWUFuc
-         eLYeQ9dZAogQKirbG14WmJKl1HpsE1pUCYA90=
-Date: Thu, 5 Aug 2010 22:55:04 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/7] vmscan: synchronous lumpy reclaim don't call
- congestion_wait()
-Message-ID: <20100805135504.GA2985@barrios-desktop>
-References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
- <20100805151229.31BD.A69D9226@jp.fujitsu.com>
+	Thu, 5 Aug 2010 10:08:25 -0400
+Date: Thu, 5 Aug 2010 16:08:13 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Russell King <linux@arm.linux.org.uk>, Jiri Kosina <jkosina@suse.cz>,
+        linux-kernel@vger.kernel.org,
+        "Samuel R. C. Vale" <srcvale@holoscopio.com>,
+        Andrew Victor <linux@maxim.org.za>
+Subject: [PATCH 00/19] More section fixes [Was: Re: [PATCH 01/11] ARM:
+	cam60: move cam60_spi_devices to .init.data]
+Message-ID: <20100805140813.GA13859@pengutronix.de>
+References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100805151229.31BD.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:13:03PM +0900, KOSAKI Motohiro wrote:
-> congestion_wait() mean "waiting quueue congestion is cleared".
-> That said, if the system have plenty dirty pages and flusher thread push
-> new request to IO queue conteniously, IO queue are not cleared
-> congestion status for long time. thus, congestion_wait(HZ/10) become
-> almostly equivalent schedule_timeout(HZ/10).
-> 
-> However, synchronous lumpy reclaim donesn't need this
-> congestion_wait() at all. shrink_page_list(PAGEOUT_IO_SYNC) are
-> using wait_on_page_writeback() and it provide sufficient waiting.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Hello,
+
+I updated the series and added a few more fixes.  The usb-fixes were
+already sent to linux-usb ML, the others are new.
+
+Best regards
+Uwe
 
 -- 
-Kind regards,
-Minchan Kim
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
