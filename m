@@ -1,222 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760070Ab0HEKCz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:02:55 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33162 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755601Ab0HEKCx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:02:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 5 Aug 2010 18:57:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com, gthelen@google.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4 -mm][memcg] use id in page cgroup
-Message-Id: <20100805185758.fccad69f.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100805184434.3a29c0f9.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100805184434.3a29c0f9.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760075Ab0HEKFj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:05:39 -0400
+Received: from shutemov.name ([188.40.19.243]:36236 "EHLO shutemov.name"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755601Ab0HEKFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 06:05:36 -0400
+Date: Thu, 5 Aug 2010 13:05:35 +0300
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: lkml@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <johnstul@us.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+Message-ID: <20100805100535.GA1754@shutemov.name>
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+ <20100804153221.GA29109@shutemov.name>
+ <20100804154638.GB28519@shisha.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804154638.GB28519@shisha.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Aug 04, 2010 at 06:46:38PM +0300, Alexander Shishkin wrote:
+> On Wed, Aug 04, 2010 at 06:32:21 +0300, Kirill A. Shutemov wrote:
+> > On Wed, Aug 04, 2010 at 03:48:28PM +0300, Alexander Shishkin wrote:
+> > > Certain userspace applications (like "clock" desktop applets or ntpd) might
+> > > want to be notified when some other application changes the system time. It
+> > > might also be important for an application to be able to distinguish between
+> > > its own and somebody else's time changes.
+> > > 
+> > > This patch implements a notification interface via eventfd mechanism. Proccess
+> > > wishing to be notified about time changes should create an eventfd and echo
+> > > its file descriptor to /sys/kernel/time_notify. After that, any calls to
+> > > settimeofday()/stime()/adjtimex() made by other processes will be signalled
+> > > to this eventfd. Credits for suggesting the eventfd mechanism for this
+> > > purpose go te Kirill Shutemov.
+> > > 
+> > > So far, this implementation can only filter out notifications caused by
+> > > time change calls made by the process that wrote the eventfd descriptor to
+> > > sysfs, but not its children which (might) have inherited the eventfd. It
+> > > is so far not clear to me whether this is bad and more confusing than
+> > > excluding such children as well.
+> > 
+> > I think it's a bad idea to filter notifications. Let's leave it for
+> 
+> Why?
 
-Now, addresses of memory cgroup can be calculated by their ID without complex.
-This patch relplaces pc->mem_cgroup from a pointer to a unsigned short.
-On 64bit architecture, this offers us more 6bytes room per page_cgroup.
-Use 2bytes for blkio-cgroup's page tracking. More 4bytes will be used for
-some light-weight concurrent access.
+Someone might want to recieve notifications about its own activity.
+It's a policy. Kernel should provide mechanism, not policy.
 
-We may able to move this id onto flags field but ...go step by step.
-
-Changelog: 20100804
- - added comments to page_cgroup.h
-Changelog: 20100730
- - fixed some garbage added by debug code in early stage
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/page_cgroup.h |    6 +++++-
- mm/memcontrol.c             |   32 +++++++++++++++++++-------------
- mm/page_cgroup.c            |    2 +-
- 3 files changed, 25 insertions(+), 15 deletions(-)
-
-Index: mmotm-0727/include/linux/page_cgroup.h
-===================================================================
---- mmotm-0727.orig/include/linux/page_cgroup.h
-+++ mmotm-0727/include/linux/page_cgroup.h
-@@ -9,10 +9,14 @@
-  * page_cgroup helps us identify information about the cgroup
-  * All page cgroups are allocated at boot or memory hotplug event,
-  * then the page cgroup for pfn always exists.
-+ *
-+ * TODO: It seems ID for cgroup can be packed into "flags". But there will
-+ * be race between assigning ID <-> set/clear flags. Please be careful.
-  */
- struct page_cgroup {
- 	unsigned long flags;
--	struct mem_cgroup *mem_cgroup;
-+	unsigned short mem_cgroup;	/* ID of assigned memory cgroup */
-+	unsigned short blk_cgroup;	/* Not Used..but will be. */
- 	struct page *page;
- 	struct list_head lru;		/* per cgroup LRU list */
- };
-Index: mmotm-0727/mm/page_cgroup.c
-===================================================================
---- mmotm-0727.orig/mm/page_cgroup.c
-+++ mmotm-0727/mm/page_cgroup.c
-@@ -15,7 +15,7 @@ static void __meminit
- __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
- {
- 	pc->flags = 0;
--	pc->mem_cgroup = NULL;
-+	pc->mem_cgroup = 0;
- 	pc->page = pfn_to_page(pfn);
- 	INIT_LIST_HEAD(&pc->lru);
- }
-Index: mmotm-0727/mm/memcontrol.c
-===================================================================
---- mmotm-0727.orig/mm/memcontrol.c
-+++ mmotm-0727/mm/memcontrol.c
-@@ -379,7 +379,7 @@ struct cgroup_subsys_state *mem_cgroup_c
- static struct mem_cgroup_per_zone *
- page_cgroup_zoneinfo(struct page_cgroup *pc)
- {
--	struct mem_cgroup *mem = pc->mem_cgroup;
-+	struct mem_cgroup *mem = id_to_memcg(pc->mem_cgroup);
- 	int nid = page_cgroup_nid(pc);
- 	int zid = page_cgroup_zid(pc);
- 
-@@ -721,6 +721,11 @@ static inline bool mem_cgroup_is_root(st
- 	return (mem == root_mem_cgroup);
- }
- 
-+static inline bool mem_cgroup_is_rootid(unsigned short id)
-+{
-+	return (id == 1);
-+}
-+
- /*
-  * Following LRU functions are allowed to be used without PCG_LOCK.
-  * Operations are called by routine of global LRU independently from memcg.
-@@ -753,7 +758,7 @@ void mem_cgroup_del_lru_list(struct page
- 	 */
- 	mz = page_cgroup_zoneinfo(pc);
- 	MEM_CGROUP_ZSTAT(mz, lru) -= 1;
--	if (mem_cgroup_is_root(pc->mem_cgroup))
-+	if (mem_cgroup_is_rootid(pc->mem_cgroup))
- 		return;
- 	VM_BUG_ON(list_empty(&pc->lru));
- 	list_del_init(&pc->lru);
-@@ -780,7 +785,7 @@ void mem_cgroup_rotate_lru_list(struct p
- 	 */
- 	smp_rmb();
- 	/* unused or root page is not rotated. */
--	if (!PageCgroupUsed(pc) || mem_cgroup_is_root(pc->mem_cgroup))
-+	if (!PageCgroupUsed(pc) || mem_cgroup_is_rootid(pc->mem_cgroup))
- 		return;
- 	mz = page_cgroup_zoneinfo(pc);
- 	list_move(&pc->lru, &mz->lists[lru]);
-@@ -806,7 +811,7 @@ void mem_cgroup_add_lru_list(struct page
- 	mz = page_cgroup_zoneinfo(pc);
- 	MEM_CGROUP_ZSTAT(mz, lru) += 1;
- 	SetPageCgroupAcctLRU(pc);
--	if (mem_cgroup_is_root(pc->mem_cgroup))
-+	if (mem_cgroup_is_rootid(pc->mem_cgroup))
- 		return;
- 	list_add(&pc->lru, &mz->lists[lru]);
- }
-@@ -1474,7 +1479,7 @@ void mem_cgroup_update_file_mapped(struc
- 		return;
- 
- 	lock_page_cgroup(pc);
--	mem = pc->mem_cgroup;
-+	mem = id_to_memcg(pc->mem_cgroup);
- 	if (!mem || !PageCgroupUsed(pc))
- 		goto done;
- 
-@@ -1862,7 +1867,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
--		mem = pc->mem_cgroup;
-+		mem = id_to_memcg(pc->mem_cgroup);
- 		if (mem && !css_tryget(&mem->css))
- 			mem = NULL;
- 	} else if (PageSwapCache(page)) {
-@@ -1898,7 +1903,7 @@ static void __mem_cgroup_commit_charge(s
- 		return;
- 	}
- 
--	pc->mem_cgroup = mem;
-+	pc->mem_cgroup = css_id(&mem->css);
- 	/*
- 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
- 	 * Especially when a page_cgroup is taken from a page, pc->mem_cgroup
-@@ -1956,7 +1961,7 @@ static void __mem_cgroup_move_account(st
- 	VM_BUG_ON(PageLRU(pc->page));
- 	VM_BUG_ON(!PageCgroupLocked(pc));
- 	VM_BUG_ON(!PageCgroupUsed(pc));
--	VM_BUG_ON(pc->mem_cgroup != from);
-+	VM_BUG_ON(id_to_memcg(pc->mem_cgroup) != from);
- 
- 	if (PageCgroupFileMapped(pc)) {
- 		/* Update mapped_file data for mem_cgroup */
-@@ -1971,7 +1976,7 @@ static void __mem_cgroup_move_account(st
- 		mem_cgroup_cancel_charge(from);
- 
- 	/* caller should have done css_get */
--	pc->mem_cgroup = to;
-+	pc->mem_cgroup = css_id(&to->css);
- 	mem_cgroup_charge_statistics(to, pc, true);
- 	/*
- 	 * We charges against "to" which may not have any tasks. Then, "to"
-@@ -1991,7 +1996,7 @@ static int mem_cgroup_move_account(struc
- {
- 	int ret = -EINVAL;
- 	lock_page_cgroup(pc);
--	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
-+	if (PageCgroupUsed(pc) && id_to_memcg(pc->mem_cgroup) == from) {
- 		__mem_cgroup_move_account(pc, from, to, uncharge);
- 		ret = 0;
- 	}
-@@ -2330,7 +2335,7 @@ __mem_cgroup_uncharge_common(struct page
- 
- 	lock_page_cgroup(pc);
- 
--	mem = pc->mem_cgroup;
-+	mem = id_to_memcg(pc->mem_cgroup);
- 
- 	if (!PageCgroupUsed(pc))
- 		goto unlock_out;
-@@ -2575,7 +2580,7 @@ int mem_cgroup_prepare_migration(struct 
- 	pc = lookup_page_cgroup(page);
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc)) {
--		mem = pc->mem_cgroup;
-+		mem = id_to_memcg(pc->mem_cgroup);
- 		css_get(&mem->css);
- 		/*
- 		 * At migrating an anonymous page, its mapcount goes down
-@@ -4398,7 +4403,8 @@ static int is_target_pte_for_mc(struct v
- 		 * mem_cgroup_move_account() checks the pc is valid or not under
- 		 * the lock.
- 		 */
--		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
-+		if (PageCgroupUsed(pc) &&
-+			id_to_memcg(pc->mem_cgroup) == mc.from) {
- 			ret = MC_TARGET_PAGE;
- 			if (target)
- 				target->page = page;
-
+-- 
+ Kirill A. Shutemov
