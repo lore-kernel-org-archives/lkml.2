@@ -1,136 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934543Ab0HEXTp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:19:45 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:45635 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756769Ab0HEXTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:19:42 -0400
-Date: Thu, 5 Aug 2010 16:19:36 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: david@lang.hm
-Cc: kevin granade <kevin.granade@gmail.com>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100805231936.GS2447@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100804233013.GN24163@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
- <20100805001716.GO24163@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
- <20100805004802.GP24163@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
- <20100805151211.GA10080@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
- <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
- <alpine.DEB.2.00.1008051312220.23543@asgard.lang.hm>
+	id S934911Ab0HEXUc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:20:32 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:65486 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933276Ab0HEXUa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:20:30 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Arjan van de Ven <arjan@infradead.org>,
+        "linux-pm\@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v2] pm: Add runtime PM statistics
+Organization: Deep Root Systems, LLC
+References: <20100710095254.5ab7291c@infradead.org>
+	<201007112326.07541.rjw@sisk.pl>
+	<20100711221646.35f11b70@infradead.org>
+	<201007132328.28853.rjw@sisk.pl> <4C3F2CEF.2090404@linux.intel.com>
+Date: Thu, 05 Aug 2010 16:20:28 -0700
+In-Reply-To: <4C3F2CEF.2090404@linux.intel.com> (Arjan van de Ven's message of
+	"Thu, 15 Jul 2010 08:44:47 -0700")
+Message-ID: <87bp9gpryb.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008051312220.23543@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 01:26:18PM -0700, david@lang.hm wrote:
-> On Thu, 5 Aug 2010, kevin granade wrote:
-> 
-> >On Thu, Aug 5, 2010 at 10:46 AM,  <david@lang.hm> wrote:
-> >>On Thu, 5 Aug 2010, Paul E. McKenney wrote:
-> >>
-> >>>On Wed, Aug 04, 2010 at 10:18:40PM -0700, david@lang.hm wrote:
-> >>>>
-> >>>>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
-> >>>>>
-> >>>>>On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
-> >>>>>>
-> >>>>>>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
-> >>>
-> >>>[ . . . ]
-> >>>
-> >>however, in the case of Android I think the timeouts have to end up being
-> >>_much_ longer. Otherwise you have the problem of loading an untrusted book
-> >>reader app on the device and the device suspends while you are reading the
-> >>page.
-> >>
-> >>currently Android works around this by having a wakelock held whenever the
-> >>display is on. This seems backwards to me, the display should be on because
-> >>the system is not suspended, not the system is prevented from suspending
-> >>because the display is on.
-> >>
-> >>Rather than having the display be on causing a wavelock to be held (with the
-> >>code that is controls the display having a timeout for how long it leaves
-> >>the display on), I would invert this and have the timeout be based on system
-> >>activity, and when it decides the system is not active, turn off the display
-> >>(along with other things as it suspends)
-> >
-> >IIRC, this was a major point of their (Android's) power management
-> >policy.  User input of any kind would reset the "display active"
-> >timeout, which is the primary thing keeping random untrusted
-> >user-facing programs from being suspended while in use.  They seemed
-> >to consider this to be a special case in their policy, but from the
-> >kernel's point of view it is just another suspend blocker being held.
-> >
-> >I'm not sure this is the best use case to look at though, because
-> >since it is user-facing, the timeout durations are on a different
-> >scale than the ones they are really worried about.  I think another
-> >category of use case that they are worried about is:
-> >
-> >(in suspend) -> wakeup due to network -> process network activity -> suspend
-> >
-> >or an example that has been mentioned previously:
-> >
-> >(in suspend) -> wakeup due to alarm for audio processing -> process
-> >batch of audio -> suspend
-> 
-> when you suspend the audio will shut off, so it's sleep ->wake ->
-> sleep, not suspend
-> 
-> >In both of these cases, the display may never power on (phone might
-> >beep to indicate txt message or email, audio just keeps playing), so
-> >the magnitude of the "timeout" for suspending again should be very
-> >small.  Specifically, they don't want there to be a timeout at all, so
-> >as little time as possible time is spent out of suspend in addition to
-> >the time required to handle the event that caused wakeup.
-> 
-> it really depnds on the frequency of the wakeups.
-> 
-> if you get a network packet once every 5 min and need to wake to
-> process it, staying awake for 20 seconds after finishing procesing
-> is FAR more significant than if you get a network packet once every
-> hour. It's not just the factor of 20 that simple math would indicate
-> because the time in suspend eats power as well.
-> 
-> I don't know real numbers, so these are made up for this example
-> 
-> if suspend (with the cell live to receive packets) is 10ma average
-> current and full power is 500ma average current
-> 
-> packets every 5 min with .1 sec wake time will eat ~13maH per hour
-> 
-> packets every 5 min with 10 second wake time will eat ~37maH per hour
-> 
-> packets every hour with .1 sec wake time will eat ~10maH per hour
-> 
-> packets every hour with 10 sec wake time will eat ~11maH per hour
-> 
-> so if you have frequent wakeups, staying awake 100 times as long
-> will cut your battery life to 1/3 what it was before.
-> 
-> if your wakeups are rare, it's about a 10% hit to stay awake 100
-> times as long.
-> 
-> there is a lot of room for tuning the timeouts here.
+Arjan van de Ven <arjan@linux.intel.com> writes:
 
-Especially given different scenarios, for example, audio playback
-when the device is in airplane mode.  ;-)
+> +
+> +/**
+> + * update_pm_runtime_accounting - Update the time accounting of power
+> states
+> + * @dev: Device to update the accounting for
+> + *
+> + * In order to be able to have time accounting of the various power states
+> + * (as used by programs such as PowerTOP to show the effectiveness of
+> runtime
+> + * PM), we need to track the time spent in each state.
+> + * update_pm_runtime_accounting must be called each time before the
+> + * runtime_status field is updated, to account the time in the old state
+> + * correctly.
+> + */
+> +void update_pm_runtime_accounting(struct device *dev)
+> +{
+> +    unsigned long now = jiffies;
+> +    int delta;
+> +
+> +    delta = now - dev->power.accounting_timestamp;
+> +
+> +    if (delta < 0)
+> +        delta = 0;
+> +
+> +    dev->power.accounting_timestamp = now;
+> +
+> +    if (dev->power.disable_depth > 0)
+> +        return;
+> +
+> +    if (dev->power.runtime_status == RPM_SUSPENDED)
+> +        dev->power.suspended_jiffies += delta;
+> +    else
+> +        dev->power.active_jiffies += delta;
+> +}
 
-							Thanx, Paul
+By using jiffies, I think we might miss events in drivers that are doing
+runtime PM transitions in short bursts.  On embedded systems with slow
+HZ, there could potentially be lots of transitions between ticks.
+
+It would be nicer to use clocksource-based time so transitions between
+jiffies could still be factored into the accounting.
+
+Kevin
+
+
