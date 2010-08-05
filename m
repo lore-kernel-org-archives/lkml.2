@@ -1,68 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933542Ab0HEULM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:11:12 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44360
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932602Ab0HEULJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:11:09 -0400
-Date: Thu, 05 Aug 2010 13:11:28 -0700 (PDT)
-Message-Id: <20100805.131128.42817872.davem@davemloft.net>
-To: ebiederm@xmission.com
-Cc: lkml20100708@newton.leun.net, greg@kroah.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, adobriyan@gmail.com, kaber@trash.net
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
- (adding ipv6 address to interface)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <m1bp9g7ry0.fsf@fess.ebiederm.org>
-References: <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
-	<20100805134707.0442a7b1@xenia.leun.net>
-	<m1bp9g7ry0.fsf@fess.ebiederm.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S933609Ab0HEULV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:11:21 -0400
+Received: from mail.lang.hm ([64.81.33.126]:58279 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933553Ab0HEULR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:11:17 -0400
+Date: Thu, 5 Aug 2010 13:09:29 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <20100805180946.GI2447@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008051254020.23543@asgard.lang.hm>
+References: <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com> <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm> <20100804233013.GN24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm> <20100805001716.GO24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm> <20100805004802.GP24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm> <20100805151211.GA10080@linux.vnet.ibm.com> <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
+ <20100805180946.GI2447@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 05 Aug 2010 12:57:59 -0700
+On Thu, 5 Aug 2010, Paul E. McKenney wrote:
 
-> I wonder what has changed with ipv6 recently.
+> Subject: Re: Attempted summary of suspend-blockers LKML thread
+> 
+> On Thu, Aug 05, 2010 at 08:46:54AM -0700, david@lang.hm wrote:
+>> On Thu, 5 Aug 2010, Paul E. McKenney wrote:
+>>
+>>> On Wed, Aug 04, 2010 at 10:18:40PM -0700, david@lang.hm wrote:
+>>>> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+>>>>> On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
+>>>>>> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+>>>
+>>> [ . . . ]
+>>>
+>>>>>>> The music player is an interesting example.  It would be idle most
+>>>>>>> of the time, given that audio output doesn't consume very much CPU.
+>>>>>>> So you would not want to suspend the system just because there were
+>>>>>>> no runnable processes.  In contrast, allowing the music player to
+>>>>>>> hold a wake lock lets the system know that it would not be appropriate
+>>>>>>> to suspend.
+>>>>>>>
+>>>>>>> Or am I misunderstanding what you are proposing?
+>>>>>>
+>>>>>> the system would need to be idle for 'long enough' (configurable)
+>>>>>> before deciding to suspend, so as long as 'long enough' is longer
+>>>>>> than the music player is idle this would not be a problem.
+>>>>>
+>>>>> From a user standpoint, having the music player tell the system when
+>>>>> it is OK to suspend (e.g., when the user has paused playback) seems
+>>>>> a lot nicer than having configurable timeouts that need tweaking.
+>>>>
+>>>> every system that I have seen has a configurable "sleep if it's idle
+>>>> for this long" knob. On the iphone (work issue, I didn't want it)
+>>>> that I am currently using it can be configured from 1 min to 5 min.
+>>>>
+>>>> this is the sort of timeout I am talking about.
+>>>>
+>>>> with something in the multi-minute range for the 'do a full suspend'
+>>>> doing a wakeup every few 10s of seconds is perfectly safe.
+>>>
+>>> Ah, I was assuming -much- shorter "do full suspend" timeouts.
+>>>
+>>> My (possibly incorrect) assumption is based on the complaint that led
+>>> to my implementing RCU_FAST_NO_HZ.  A (non-Android) embedded person was
+>>> quite annoyed (to put it mildly) at the earlier version of RCU because
+>>> it prevented the system from entering the power-saving dyntick-idle mode,
+>>> not for minutes, or even for seconds, but for a handful of -milliseconds-.
+>>> This was my first hint that "energy efficiency" means something completely
+>>> different in embedded systems than it does in the servers that I am
+>>> used to.
+>>>
+>>> But I must defer to the Android guys on this -- who knows, perhaps
+>>> multi-minute delays to enter full-suspend mode are OK for them.
+>>
+>> if the system was looking at all applications I would agree that the
+>> timeout should be much shorter.
+>>
+>> I have a couple devices that are able to have the display usable,
+>> even if the CPU is asleep (the OLPC and the Kindle, two different
+>> display technologies). With these devices I would like to see the
+>> suspend happen so fast that it can suspend between keystrokes.
+>>
+>> however, in the case of Android I think the timeouts have to end up
+>> being _much_ longer. Otherwise you have the problem of loading an
+>> untrusted book reader app on the device and the device suspends
+>> while you are reading the page.
+>>
+>> currently Android works around this by having a wakelock held
+>> whenever the display is on. This seems backwards to me, the display
+>> should be on because the system is not suspended, not the system is
+>> prevented from suspending because the display is on.
+>>
+>> Rather than having the display be on causing a wavelock to be held
+>> (with the code that is controls the display having a timeout for how
+>> long it leaves the display on), I would invert this and have the
+>> timeout be based on system activity, and when it decides the system
+>> is not active, turn off the display (along with other things as it
+>> suspends)
+>
+> From what I can see, the decision between these two approaches comes down
+> to their energy efficiencies, and thus their battery lifetimes.  Are you
+> in a position to benchmark these two approaches against each other?
 
-There was a recent fix to the IGMP snooping code we have in
-the bridging layer, if parsing of an ipv6 IGMP packet failed
-we'd leak the packet (and thus references to whatever device
-it referenced).
+no, I'm not in a position to benchmark them against each other.
 
-commit 6d1d1d398cb7db7a12c5d652d50f85355345234f
-Author: Herbert Xu <herbert@gondor.apana.org.au>
-Date:   Thu Jul 29 01:12:31 2010 +0000
+I am claiming that (in this area) the two are equivalent (or at lease very 
+close to equivalent given the approximate magnatude of the timeouts that 
+are involved)
 
-    bridge: Fix skb leak when multicast parsing fails on TX
-    
-    On the bridge TX path we're leaking an skb when br_multicast_rcv
-    returns an error.
-    
-    Reported-by: David Lamparter <equinox@diac24.net>
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+1. a daemon controls the screen, monitors input and holds a wakelock until 
+a configurable timeout after input, after which the system sleeps
 
-diff --git a/net/bridge/br_device.c b/net/bridge/br_device.c
-index 4cec805..f49bcd9 100644
---- a/net/bridge/br_device.c
-+++ b/net/bridge/br_device.c
-@@ -48,8 +48,10 @@ netdev_tx_t br_dev_xmit(struct sk_buff *skb, struct net_device *dev)
- 
- 	rcu_read_lock();
- 	if (is_multicast_ether_addr(dest)) {
--		if (br_multicast_rcv(br, NULL, skb))
-+		if (br_multicast_rcv(br, NULL, skb)) {
-+			kfree_skb(skb);
- 			goto out;
-+		}
- 
- 		mdst = br_mdb_get(br, skb);
- 		if (mdst || BR_INPUT_SKB_CB_MROUTERS_ONLY(skb))
+2. a daemon monitors input, it wakes up every few seconds (to 10s of 
+seconds) when there is no input for a configurable timeout the daemon 
+sleep without waking up periodically. when the daemon sleeps for longer 
+than a configurable period the system is considered idle and goes to 
+sleep.
+
+in both cases the system will be awake as long as there is input within 
+the initial timeout period.
+
+the second case could eata smidge power as there can be an additional lag 
+before the system sleeps (the second timeout), that depends on exactly how 
+the input is detected.
+
+
+>>>>> From another e-mail tonight it sounds like almost everything
+>>>>> already talks
+>>>>
+>>>> to a userspace daemon, so if "(the power management service in the
+>>>> system_server, possibly the media_server and the radio interface
+>>>> glue)" (plus possibly some kernel activity) are the only things
+>>>> looked at when considering if it's safe to sleep or not, all of
+>>>> these can (or already do) do 'something' every few seconds, making
+>>>> this problem sound significantly smaller than it sounded like
+>>>> before.
+>>>>
+>>>> Android could even keep it's user-space API between the system power
+>>>> daemon and the rest of userspace the same if they want to.
+>>>>
+>>>> over time, additional apps could be considered 'trusted' (or flagged
+>>>> that way by the user) and not have to interact with the power daemon
+>>>> to keep things alive.
+>>>
+>>> Hmmm...  Isn't it the "trusted" (AKA PM-driving) apps that interact with
+>>> the power daemon via suspend blockers, rather than the other way around?
+>>
+>> I was looking at it from a kernel point of view, "trusted" (AKA
+>> PM-driving) apps are ones that have permission to grab the wakelock.
+>> Any app/daemon that is so trusted can communicate with anything else
+>> in userspace as part of making it's decision on whento take the
+>> wakelock, but those other applications would not qualify as
+>> "trusted" in my eyes.
+>
+> So you are saying that PM-driving apps can check up on power-oblivious
+> apps as part of their decision process.  Sounds reasonable to me,
+> though such checking increases the dependencies among apps, which might
+> increase complexity.
+
+more to the point, I'm saying that that's how it works currently with 
+wavelocks. the unprivilaged processes can ask the privilaged process to 
+hold a wavelock for them.
+
+>>>> as for intramentation, the key tool to use to see why a system isn't
+>>>> going to sleep would be powertop, just like on other linux systems.
+>>>
+>>> Powertop is indeed an extremely valuable tool, but I am not certain
+>>> that it really provides the information that the Android guys need.
+>>> If I understand Arve's and Brian's posts, here is the scenario that they
+>>> are trying to detect:
+>>>
+>>> o	Some PM-driving application has a bug in which it fails to
+>>> 	release a wakelock, thus blocking suspend indefinitely.
+>>>
+>>> o	This PM-driving application, otherwise being a good citizen,
+>>> 	blocks.
+>>>
+>>> o	There are numerous power-oblivious apps running, consuming
+>>> 	significant CPU.
+>>>
+>>> What the Android developers need to know is that the trusted application
+>>> is wrongly holding a wakelock.  Won't powertop instead tell them about
+>>> all the power-oblivious apps?
+>>
+>> in my proposal (without a wakelock), powertop would tell you what
+>> applications are running and setting timers. If we can modify the
+>> kernel/suspend decision code to only look at processes in one cgroup
+>> when deciding if the system should go to sleep, a similar
+>> modification to poewrtop should let you only show stats on the
+>> "trusted" applications.
+>
+> Mark Brown suggests adding suspend-blocker information to powertop, which
+> might well be a very good way to handle this.  This sounds plausible to
+> me, but then again, I have never chased down wakelock bugs on Android
+> systems.
+>
+> A key point is that it is not enough to focus on PM-driving apps, you
+> instead need to focus on only those PM-driving apps that currently hold
+> a suspend blocker.
+
+if you have wavelocks, then you just need info on the use of wavelocks
+
+with my proposal staying awake is based on process activity, which is 
+exactly what powertop is monitoring now, it just needs to be able to 
+filter out the activity of the untrusted apps.
+
+>> If you have a userspace power management daemon that accepts
+>> requests from untrusted programs and does something to keep the
+>> system from sleeping (either taking a wakelock or setting a 'short'
+>> timer), it needs to keep the records of this itself because
+>> otherwise all the kernel will see (with either powertop or wakelock
+>> reporting) is that the power management daemon is what kept the
+>> system from sleeping.
+>
+> According to Brian Swetland, Android does in fact have such a
+> power-management daemon.  I would guess that this daemon tracks which
+> apps it is holding suspend blockers on behalf of.  This approach might
+> well make it harder to bring powertop to bear, as powertop would need
+> to communicate with Android's power-management daemon.  But perhaps
+> something could be arranged.
+
+My expectation is that instead of modifying apps to talk to the power 
+management daemon, the apps would be classified as 'trusted' or 
+'untrusted' more appropriatly.
+
+if user input is activity that keeps the system alive, then only 
+applications that will run for extended period with no user input need to 
+be trusted.
+
+David Lang
