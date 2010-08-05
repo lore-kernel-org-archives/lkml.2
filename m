@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933710Ab0HEQec (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:34:32 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:35048 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933152Ab0HEQea convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:34:30 -0400
+	id S933739Ab0HEQfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:35:33 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:49184 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933152Ab0HEQf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:35:29 -0400
+Date: Thu, 5 Aug 2010 18:35:19 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Chris Mason <chris.mason@oracle.com>, josef@redhat.com,
+        Valdis.Kletnieks@vt.edu,
+        Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: direct-io regression [Was: How to track down abysmal
+ performance ata - raid1 - crypto - vg/lv - xfs]
+Message-ID: <20100805163519.GA6604@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Chris Mason <chris.mason@oracle.com>, josef@redhat.com,
+	Valdis.Kletnieks@vt.edu,
+	Michael Monnerie <michael.monnerie@is.it-management.at>,
+	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+	xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+References: <20100805123649.GA18672@dhcp231-156.rdu.redhat.com>
+ <20100805113240.GA29846@think>
+ <20100805153519.GA7242@comet.dominikbrodowski.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimMLts_x_BujsqYupkmA-UyB9mNyD6KZ0OeNRWd@mail.gmail.com>
-References: <20100803114853.27a29365.sfr@canb.auug.org.au>
-	<AANLkTimMLts_x_BujsqYupkmA-UyB9mNyD6KZ0OeNRWd@mail.gmail.com>
-Date: Thu, 5 Aug 2010 09:34:29 -0700
-Message-ID: <AANLkTikwweZdn4Uw9DabY7e1+Ed-ooA1-e7-0zNRgqmf@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the davinci tree with Linus' tree
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sekhar Nori <nsekhar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805153519.GA7242@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 9:30 AM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> On Mon, Aug 2, 2010 at 6:48 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> Hi Kevin,
->>
->> Today's linux-next merge of the davinci tree got a conflict in
->> arch/arm/mach-davinci/board-da850-evm.c between commit
->> 8b24599e72c9aee1ea1187e29cb9c5de9f449cce ("davinci: da850/omap-l138 evm:
->> account for DEFDCDC{2,3} being tied high") from Linus' tree and commit
->> ebd1e7808b2fe72d627bdab7bcf61126a831ca5a ("davinci: da850 evm: sparse
->> cleanup: make file local variables static") from the davinci tree.
->>
->> Just context changes.  I fixed it up (see below) and can carry the fix
->> for a while.
->
-> Thanks for catching this.
->
-> Before I submit to Linus, I'll merge this with the original tree
-> (Liam's voltage-2.6 tree) so Linus doesn't have to fix this up.
->
+Small correction:
 
-On second thought, to keep it simple, I'm just going to drop the
-version from the davinci tree for this merge window, update it and
-submit it as a fix in -rc2.
+On Thu, Aug 05, 2010 at 05:35:19PM +0200, Dominik Brodowski wrote:
+> With this fix, I get proper speeds when doing dio reads from
+> /dev/mapper/vg0-*_crypt; see the 17.3 MB/s above. Most strangely,
+> also accesing /dev/mapper/vg0-* (un-encrypted) and the raw
+> device at /dev/sda* speeds up (to up to 28 MB/s). Was only seeing around
+> 16 to 18 MB/s without this patch for unencrypted access.
 
-Kevin
+The speed-up of the unencrypted access (18 -> 28 MB/s) is caused by using a
+different configuration for kernel 2.6.35; and seems to be unrelated to your
+patch. Will try to track down which config option is the culprit.
+
+
+kernel, dmcrypt?	| good config | bad config
+-------------------------------------------------
+patched 2.6.35, dmcrypt	  ~ 18 MB/s	~ 13 MB/s
+patched 2.6.35		  ~ 28 MB/s	~ 18 MB/s
+-------------------------------------------------
+plain 2.6.35, dmcrypt	  ~  3 MB/s	~  3 MB/s
+plain 2.6.35		  <not tested>	~ 16 MB/s	
+
+
+Best,
+	Dominik
