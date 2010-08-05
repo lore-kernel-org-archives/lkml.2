@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934406Ab0HEU36 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:29:58 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39117 "EHLO mgw2.diku.dk"
+	id S934386Ab0HEUaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:30:07 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39125 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934089Ab0HEU3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:29:41 -0400
-Date: Thu, 5 Aug 2010 22:29:38 +0200 (CEST)
+	id S934404Ab0HEU35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:29:57 -0400
+Date: Thu, 5 Aug 2010 22:29:55 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>,
-        linux-decnet-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 41/42] net/decnet: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052229200.31692@ask.diku.dk>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 42/42] drivers/media/video/bt8xx: Adjust confusing if
+ indentation
+Message-ID: <Pine.LNX.4.64.1008052229390.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -51,37 +51,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- net/decnet/dn_nsp_out.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/media/video/bt8xx/bttv-i2c.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/decnet/dn_nsp_out.c b/net/decnet/dn_nsp_out.c
-index baeb1ea..2ef1152 100644
---- a/net/decnet/dn_nsp_out.c
-+++ b/net/decnet/dn_nsp_out.c
-@@ -693,22 +693,22 @@ void dn_nsp_send_conninit(struct sock *sk, unsigned char msgflg)
- 	aux = scp->accessdata.acc_userl;
- 	*skb_put(skb, 1) = aux;
- 	if (aux > 0)
--	memcpy(skb_put(skb, aux), scp->accessdata.acc_user, aux);
-+		memcpy(skb_put(skb, aux), scp->accessdata.acc_user, aux);
+diff --git a/drivers/media/video/bt8xx/bttv-i2c.c b/drivers/media/video/bt8xx/bttv-i2c.c
+index 685d659..695765c 100644
+--- a/drivers/media/video/bt8xx/bttv-i2c.c
++++ b/drivers/media/video/bt8xx/bttv-i2c.c
+@@ -123,7 +123,7 @@ bttv_i2c_wait_done(struct bttv *btv)
+ 	if (wait_event_interruptible_timeout(btv->i2c_queue,
+ 		btv->i2c_done, msecs_to_jiffies(85)) == -ERESTARTSYS)
  
- 	aux = scp->accessdata.acc_passl;
- 	*skb_put(skb, 1) = aux;
- 	if (aux > 0)
--	memcpy(skb_put(skb, aux), scp->accessdata.acc_pass, aux);
-+		memcpy(skb_put(skb, aux), scp->accessdata.acc_pass, aux);
+-	rc = -EIO;
++		rc = -EIO;
  
- 	aux = scp->accessdata.acc_accl;
- 	*skb_put(skb, 1) = aux;
- 	if (aux > 0)
--	memcpy(skb_put(skb, aux), scp->accessdata.acc_acc, aux);
-+		memcpy(skb_put(skb, aux), scp->accessdata.acc_acc, aux);
- 
- 	aux = (__u8)le16_to_cpu(scp->conndata_out.opt_optl);
- 	*skb_put(skb, 1) = aux;
- 	if (aux > 0)
--	memcpy(skb_put(skb,aux), scp->conndata_out.opt_data, aux);
-+		memcpy(skb_put(skb, aux), scp->conndata_out.opt_data, aux);
- 
- 	scp->persist = dn_nsp_persist(sk);
- 	scp->persist_fxn = dn_nsp_retrans_conninit;
+ 	if (btv->i2c_done & BT848_INT_RACK)
+ 		rc = 1;
