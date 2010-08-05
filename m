@@ -1,124 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760587Ab0HEUik (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:38:40 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:33798 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756497Ab0HEUii convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:38:38 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-        "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 5 Aug 2010 14:38:29 -0600
-Subject: [PATCH 12/12] scsi: megaraid_sas - Version and documentation update 
-Thread-Topic: [PATCH 12/12] scsi: megaraid_sas - Version and documentation
- update 
-Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAABGVuwAbGnGQQAbWYT3AJbL3/MA==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67FBC@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
- <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80C39@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3D0804562@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3D09274B7@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D09274B7@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1760682Ab0HEUir (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:38:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48059 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755156Ab0HEUin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:38:43 -0400
+Date: Thu, 5 Aug 2010 20:38:00 GMT
+Message-Id: <201008052038.o75Kc07G022013@hera.kernel.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/build for 2.6.36
+Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 05 Aug 2010 20:38:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RESUBMIT requested by James Bottomley:
+Hi Linus,
 
-Update the version and documentation.
+The following changes since commit cdd854bc42b5e6c79bbbc40c6600d995ffe6e747:
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2010-08-05 09:03:46 -0700)
 
----
-Documentation/scsi/ChangeLog.megaraid_sas |   46 ++++++++++++++++++++++++++++++
- drivers/scsi/megaraid/megaraid_sas.h      |    6 +--
- 2 files changed, 49 insertions(+), 3 deletions(-)
+are available in the git repository at:
 
-diff -rupN old/Documentation/scsi/ChangeLog.megaraid_sas new/Documentation/scsi/ChangeLog.megaraid_sas
---- old/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-04 07:48:32.000000000 -0400
-+++ new/Documentation/scsi/ChangeLog.megaraid_sas	2010-08-04 07:58:50.000000000 -0400
-@@ -1,3 +1,49 @@
-+1 Release Date    : Thur.  May 03, 2010 09:12:45 PST 2009 -
-+			(emaild-id:megaraidlinux@lsi.com)
-+			Bo Yang
-+
-+2 Current Version : 00.00.04.31-rc1
-+3 Older Version   : 00.00.04.17.1-rc1
-+
-+1.	Add the Online Controller Reset (OCR) to the Driver.
-+	OCR is the new feature for megaraid_sas driver which
-+	will allow the fw to do the chip reset which will not
-+	affact the OS behavious.
-+
-+	To add the OCR support, driver need to do: 
-+		a). reset the controller chips -- Xscale and Gen2 which
-+		will change the function calls and add the reset function
-+		related to this two chips.
-+		
-+		b). during the reset, driver will store the pending cmds
-+		which not returned by FW to driver's pending queue.  Driver
-+		will re-issue those pending cmds again to FW after the OCR
-+		finished.
-+		
-+		c). In driver's timeout routine, driver will report to
-+		OS as reset. Also driver's queue routine will block the
-+		cmds until the OCR finished.
-+		
-+		d). in Driver's ISR routine, if driver get the FW state as
-+		state change, FW in Failure status and FW support online controller
-+		reset (OCR), driver will start to do the controller reset.
-+		
-+		e). In driver's IOCTL routine, the application cmds will wait for the
-+		OCR to finish, then issue the cmds to FW.
-+		 
-+		f). Before driver kill adapter, driver will do last chance of
-+		OCR to see if driver can bring back the FW.      
-+
-+2.	Add the CTIO support to the driver.
-+3.	Add the support update flag to the driver to tell LSI megaraid_sas
-+	application which driver will support the device update.  So application
-+	will not need to do the device update after application add/del the device
-+	from the system.
-+
-+4.	Add the input parameter max_sectors to 1MB support to our GEN2 controller.
-+	customer can use the input paramenter max_sectors to add 1MB support to GEN2
-+	controller.
-+
- 1 Release Date    : Thur.  Oct 29, 2009 09:12:45 PST 2009 -
- 			(emaild-id:megaraidlinux@lsi.com)
- 			Bo Yang
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
---- old/drivers/scsi/megaraid/megaraid_sas.h	2010-08-04 07:52:09.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-08-04 07:48:32.000000000 -0400
-@@ -18,9 +18,9 @@
- /*
-  * MegaRAID SAS Driver meta data
-  */
--#define MEGASAS_VERSION			"00.00.04.17.1-rc1"
--#define MEGASAS_RELDATE			"Oct. 29, 2009"
--#define MEGASAS_EXT_VERSION		"Thu. Oct. 29, 11:41:51 PST 2009"
-+#define MEGASAS_VERSION			"00.00.04.31-rc1"
-+#define MEGASAS_RELDATE			"May 3, 2010"
-+#define MEGASAS_EXT_VERSION		"Mon. May 3, 11:41:51 PST 2010"
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-build-for-linus
+
+H. Peter Anvin (2):
+      x86, vdso: Error out if the vdso contains external references
+      x86, vdso: Don't quote $nm in the script for checking vdso references
+
+ arch/x86/vdso/Makefile      |    3 ++-
+ arch/x86/vdso/checkundef.sh |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 1 deletions(-)
+ create mode 100755 arch/x86/vdso/checkundef.sh
+
+Merge made by recursive.
+ arch/x86/vdso/Makefile      |    3 ++-
+ arch/x86/vdso/checkundef.sh |   10 ++++++++++
+ 2 files changed, 12 insertions(+), 1 deletions(-)
+ create mode 100755 arch/x86/vdso/checkundef.sh
+diff --git a/arch/x86/vdso/Makefile b/arch/x86/vdso/Makefile
+index 6b4ffed..4a2afa1 100644
+--- a/arch/x86/vdso/Makefile
++++ b/arch/x86/vdso/Makefile
+@@ -120,7 +120,8 @@ $(obj)/vdso32-syms.lds: $(vdso32.so-y:%=$(obj)/vdso32-%-syms.lds) FORCE
+ quiet_cmd_vdso = VDSO    $@
+       cmd_vdso = $(CC) -nostdlib -o $@ \
+ 		       $(VDSO_LDFLAGS) $(VDSO_LDFLAGS_$(filter %.lds,$(^F))) \
+-		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^)
++		       -Wl,-T,$(filter %.lds,$^) $(filter %.o,$^) && \
++		 sh $(srctree)/$(src)/checkundef.sh '$(NM)' '$@'
  
- /*
-  * Device IDs
+ VDSO_LDFLAGS = -fPIC -shared $(call cc-ldoption, -Wl$(comma)--hash-style=sysv)
+ GCOV_PROFILE := n
+diff --git a/arch/x86/vdso/checkundef.sh b/arch/x86/vdso/checkundef.sh
+new file mode 100755
+index 0000000..7ee90a9
+--- /dev/null
++++ b/arch/x86/vdso/checkundef.sh
+@@ -0,0 +1,10 @@
++#!/bin/sh
++nm="$1"
++file="$2"
++$nm "$file" | grep '^ *U' > /dev/null 2>&1
++if [ $? -eq 1 ]; then
++    exit 0
++else
++    echo "$file: undefined symbols found" >&2
++    exit 1
++fi
