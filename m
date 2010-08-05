@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934309Ab0HEU0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:26:47 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:58022 "EHLO mgw2.diku.dk"
+	id S934349Ab0HEU1y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:27:54 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:58105 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934280Ab0HEU0l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:26:41 -0400
-Date: Thu, 5 Aug 2010 22:26:38 +0200 (CEST)
+	id S933006Ab0HEU1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:27:37 -0400
+Date: Thu, 5 Aug 2010 22:27:32 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Eilon Greenstein <eilong@broadcom.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 32/42] drivers/net/bnx2x: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052226210.31692@ask.diku.dk>
+To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 35/42] sound/oss: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052227140.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,7 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Outdent the code following the if.
+Indent the branch of an if.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -50,30 +51,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This patch doesn't change the semantics of the code.  But it might not be
-what is intended.
+ sound/oss/ad1848.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- drivers/net/bnx2x/bnx2x_link.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/net/bnx2x/bnx2x_link.c b/drivers/net/bnx2x/bnx2x_link.c
-index 0383e30..0fa0991 100644
---- a/drivers/net/bnx2x/bnx2x_link.c
-+++ b/drivers/net/bnx2x/bnx2x_link.c
-@@ -1254,11 +1254,11 @@ static void bnx2x_set_autoneg(struct link_params *params,
- 		    PORT_HW_CFG_SPEED_CAPABILITY_D0_1G)
- 			reg_val |= MDIO_CL73_IEEEB1_AN_ADV2_ADVR_1000M_KX;
- 
--			CL45_WR_OVER_CL22(bp, params->port,
--					      params->phy_addr,
--					      MDIO_REG_BANK_CL73_IEEEB1,
--					      MDIO_CL73_IEEEB1_AN_ADV2,
--				      reg_val);
-+		CL45_WR_OVER_CL22(bp, params->port,
-+				      params->phy_addr,
-+				      MDIO_REG_BANK_CL73_IEEEB1,
-+				      MDIO_CL73_IEEEB1_AN_ADV2,
-+			      reg_val);
- 
- 		/* CL73 Autoneg Enabled */
- 		reg_val = MDIO_CL73_IEEEB0_CL73_AN_CONTROL_AN_EN;
+diff --git a/sound/oss/ad1848.c b/sound/oss/ad1848.c
+index 24793c5..4d2a6ae 100644
+--- a/sound/oss/ad1848.c
++++ b/sound/oss/ad1848.c
+@@ -716,7 +716,7 @@ static int ad1848_mixer_ioctl(int dev, unsigned int cmd, void __user *arg)
+ 				
+ 				default:
+ 					if (get_user(val, (int __user *)arg))
+-					return -EFAULT;
++						return -EFAULT;
+ 					val = ad1848_mixer_set(devc, cmd & 0xff, val);
+ 					break;
+ 			} 
