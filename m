@@ -1,108 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759856Ab0HEH0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 03:26:05 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51573 "EHLO mx3.mail.elte.hu"
+	id S1759866Ab0HEH0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 03:26:55 -0400
+Received: from mail2.gnudd.com ([213.203.150.91]:61999 "EHLO mail.gnudd.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759671Ab0HEH0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 03:26:03 -0400
-Date: Thu, 5 Aug 2010 09:25:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Joerg Roedel <joerg.roedel@amd.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [GIT PULL] core/iommu updates for v2.6.36
-Message-ID: <20100805072555.GA5297@elte.hu>
+	id S1758847Ab0HEH0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 03:26:53 -0400
+X-Greylist: delayed 784 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 03:26:50 EDT
+Date: Thu, 5 Aug 2010 09:12:35 +0200
+From: Alessandro Rubini <rubini@unipv.it>
+To: linus.ml.walleij@gmail.com
+Cc: dan.j.williams@intel.com, peter.pearse@arm.com, viresh.kumar@st.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        yuanyabin1978@sina.com, ben-linux@fluff.org, kgene.kim@samsung.com,
+        rmk@arm.linux.org.uk
+Subject: Re: [PATCH 2/2] DMAENGINE: driver for the ARM PL080/PL081
+ PrimeCells
+Message-ID: <20100805071235.GA436@morgana.i.gnudd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Face: #Q;A)@_4.#>0+_%y]7aBr:c"ndLp&#+2?]J;lkse\^)FP^Lr5@O0{)J;'nny4%74.fM'n)M
+	>ISCj.KmsL/HTxz!:Ju'pnj'Gz&.
+Organization: GnuDD, Device Drivers, Embedded Systems, Courses
+In-Reply-To: <AANLkTi=yJjHDh08muCg7Z97xRGDcTQrv=VimHSNCqn2U@mail.gmail.com>
+References: <AANLkTi=yJjHDh08muCg7Z97xRGDcTQrv=VimHSNCqn2U@mail.gmail.com>
+  <1277811391-17966-1-git-send-email-linus.walleij@stericsson.com>
+  <AANLkTi=jStVGbJC7jUyhOG3og14F58rw+LEN2UqnP-X0@mail.gmail.com>
+  <AANLkTi=bkp+JJYQ7dF36Up3gcjJR8LypgfKBWZHLfPH-@mail.gmail.com>
+  <AANLkTimPAeupEKwksBKOyWX8K+wHgmgc5vEJ8cXBsQtD@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+> Peter, Alessandro and Viresh especially: you will hopefully use this
+> driver for ARM refboards, Nomadik and SPEAr, can you provide
+> an Acked-by:?
 
-Please pull the latest core-iommu-for-linus git tree from:
+I'm sorry I can't test it these times, I must delay stuff to
+the last week of August.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-iommu-for-linus
-
- Thanks,
-
-	Ingo
-
------------------->
-Joerg Roedel (1):
-      x86/amd-iommu: Export cache-coherency capability
-
-Kulikov Vasiliy (1):
-      x86/amd-iommu: Use for_each_pci_dev()
-
-Tom Lyon (1):
-      iommu-api: Extension to check for interrupt remapping
-
-
- arch/x86/kernel/amd_iommu.c |    8 ++++++--
- drivers/pci/intel-iommu.c   |    2 ++
- include/linux/iommu.h       |    1 +
- 3 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index 0d20286..fa044e1 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -2572,6 +2572,11 @@ static phys_addr_t amd_iommu_iova_to_phys(struct iommu_domain *dom,
- static int amd_iommu_domain_has_cap(struct iommu_domain *domain,
- 				    unsigned long cap)
- {
-+	switch (cap) {
-+	case IOMMU_CAP_CACHE_COHERENCY:
-+		return 1;
-+	}
-+
- 	return 0;
- }
- 
-@@ -2609,8 +2614,7 @@ int __init amd_iommu_init_passthrough(void)
- 
- 	pt_domain->mode |= PAGE_MODE_NONE;
- 
--	while ((dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev)) != NULL) {
--
-+	for_each_pci_dev(dev) {
- 		if (!check_device(&dev->dev))
- 			continue;
- 
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index c9171be..6a5af18 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -3698,6 +3698,8 @@ static int intel_iommu_domain_has_cap(struct iommu_domain *domain,
- 
- 	if (cap == IOMMU_CAP_CACHE_COHERENCY)
- 		return dmar_domain->iommu_snooping;
-+	if (cap == IOMMU_CAP_INTR_REMAP)
-+		return intr_remapping_enabled;
- 
- 	return 0;
- }
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index be22ad8..0a2ba40 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -30,6 +30,7 @@ struct iommu_domain {
- };
- 
- #define IOMMU_CAP_CACHE_COHERENCY	0x1
-+#define IOMMU_CAP_INTR_REMAP		0x2	/* isolates device intrs */
- 
- struct iommu_ops {
- 	int (*domain_init)(struct iommu_domain *domain);
+/alessandro
