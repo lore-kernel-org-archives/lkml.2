@@ -1,87 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934505Ab0HEXay (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:30:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab0HEXav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:30:51 -0400
-Date: Thu, 5 Aug 2010 19:30:19 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-Message-ID: <20100805233019.GA30761@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804224831.GB29353@shell> <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu>
+	id S1758974Ab0HEXfY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:35:24 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36525 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754782Ab0HEXfV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:35:21 -0400
+Date: Thu, 5 Aug 2010 16:34:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 07/13] writeback: explicit low bound for vm.dirty_ratio
+Message-Id: <20100805163401.e9754032.akpm@linux-foundation.org>
+In-Reply-To: <20100805162433.673243074@intel.com>
+References: <20100805161051.501816677@intel.com>
+	<20100805162433.673243074@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 12:36:55PM +0200, Miklos Szeredi wrote:
-> On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> > --zYM0uCDKw75PZbzx
-> > Content-Type: text/plain; charset=us-ascii
-> > Content-Disposition: inline
-> > 
-> > On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
-> > > On Tue, 15 Jun 2010, Valerie Aurora wrote:
-> > > > Add support for fallthru directory entries to ext2.
-> > > 
-> > > If a previously used ext2 filesystem with is mounted again then
-> > > fallthroughs don't appear to work as expected.  Stat returns ENOENT
-> > > for these entries.
-> > > 
-> > > Can't see anything obviously wrong with the code.
-> > 
-> > Hm, I wrote one test case for this that worked (attached).  Can you
-> > give me more details on your test case?  Thanks,
+On Fri, 06 Aug 2010 00:10:58 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-Cool, thanks.  Yes, I suppose the fallthrus should be ignored if they
-don't fall through to anything.  If I do a proper lookup for d_ino, I
-can kill two birds with one stone, since that will tell us whether
-there is anything below the fallthru and thus whether to return this
-directory entry.
-
--VAL
-
-> uml:~# mount -oloop -r ext3-2.img /mnt/img/
-> uml:~# mount -oloop -r ext3.img /mnt/img/
-> uml:~# losetup -f ovl.img 
-> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> uml:~# "ls" /mnt/img
-> bunion  lost+found  union
-> uml:~# "ls" /mnt/img/union
-> 1  2  3
-> uml:~# "ls" /mnt/img/union/1
-> a  x
-> uml:~# umount /mnt/img/
-> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> uml:~# ls -l /mnt/img/  
-> total 14
-> drwxr-xr-x 2 root root  1024 Aug  5 09:56 bunion
-> drwx------ 2 root root 12288 Aug  5 09:41 lost+found
-> drwxr-xr-x 3 root root  1024 Aug  5 09:56 union
-> uml:~# ls -l /mnt/img/union/
-> ls: cannot access /mnt/img/union/3: No such file or directory
-> ls: cannot access /mnt/img/union/2: No such file or directory
-> total 1
-> drwxr-xr-x 2 root root 1024 Aug  5 09:56 1
-> ?????????? ? ?    ?       ?            ? 2
-> ?????????? ? ?    ?       ?            ? 3
-> uml:~# ls -l /mnt/img/union/1
-> ls: cannot access /mnt/img/union/1/a: No such file or directory
-> ls: cannot access /mnt/img/union/1/x: No such file or directory
-> total 0
-> ?????????? ? ? ? ?            ? a
-> ?????????? ? ? ? ?            ? x
-> uml:~# 
+> Force a user visible low bound of 5% for the vm.dirty_ratio interface.
 > 
-> Thanks,
-> Miklos
+> Currently global_dirty_limits() applies a low bound of 5% for
+> vm_dirty_ratio.  This is not very user visible -- if the user sets
+> vm.dirty_ratio=1, the operation seems to succeed but will be rounded up
+> to 5% when used.
+> 
+> Another problem is inconsistency: calc_period_shift() uses the plain
+> vm_dirty_ratio value, which may be a problem when vm.dirty_ratio is set
+> to < 5 by the user.
+
+The changelog describes the old behaviour but doesn't describe the
+proposed new behaviour.
+
+> --- linux-next.orig/kernel/sysctl.c	2010-08-05 22:48:34.000000000 +0800
+> +++ linux-next/kernel/sysctl.c	2010-08-05 22:48:47.000000000 +0800
+> @@ -126,6 +126,7 @@ static int ten_thousand = 10000;
+>  
+>  /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
+>  static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
+> +static int dirty_ratio_min = 5;
+>  
+>  /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
+>  static int maxolduid = 65535;
+> @@ -1031,7 +1032,7 @@ static struct ctl_table vm_table[] = {
+>  		.maxlen		= sizeof(vm_dirty_ratio),
+>  		.mode		= 0644,
+>  		.proc_handler	= dirty_ratio_handler,
+> -		.extra1		= &zero,
+> +		.extra1		= &dirty_ratio_min,
+>  		.extra2		= &one_hundred,
+>  	},
+
+I forget how the procfs core handles this.  Presumably the write will
+now fail with -EINVAL or something?  So people's scripts will now
+error out and their space shuttles will crash?
+
+All of which illustrates why it's important to fully describe changes
+in the changelog!  So people can consider and discuss the end-user
+implications of a change.
