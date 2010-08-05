@@ -1,133 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760031Ab0HEJvh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:51:37 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:47841 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755581Ab0HEJvf (ORCPT
+	id S1759987Ab0HEJ6s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:58:48 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58560 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755526Ab0HEJ6o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:51:35 -0400
-To: Michael Leun <lkml20100708@newton.leun.net>
-Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free (after using openvpn)
-References: <loom.20100708T183152-326@post.gmane.org>
-	<20100709235744.GA12752@kroah.com>
-	<20100710101540.2799c9ef@xenia.leun.net>
-	<20100710140800.GA20424@kroah.com>
-	<20100710165208.59272ae6@xenia.leun.net>
-	<20100710235323.5336f627@xenia.leun.net>
-	<20100711192939.1c25dcaf@xenia.leun.net>
-	<20100804153543.56f6ecad@xenia.leun.net>
-	<20100804214618.GA6289@kroah.com>
-	<20100805001105.5a3453ed@xenia.leun.net>
-	<m1lj8l29zm.fsf@fess.ebiederm.org>
-	<20100805112538.60a46cb1@xenia.leun.net>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Thu, 05 Aug 2010 02:51:29 -0700
-In-Reply-To: <20100805112538.60a46cb1@xenia.leun.net> (Michael Leun's message of "Thu\, 5 Aug 2010 11\:25\:38 +0200")
-Message-ID: <m1y6clz8ta.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 5 Aug 2010 05:58:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=weJhNqjU9K9V9DqJpxKAPYtpZgdOhSrUfJbyM5kWKgd3GA77e8S9tTk0aj2fy6YP2y
+         W7qTp8gQfBdmXRDqpA5PhE4MjJD6DTaFk3iDlK0qsoryvTkuhGApb+mYbTTEsxXcLFeN
+         pYy43F7CVxWIVPk5yra30SBvQmf2u20VRTegw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+In-Reply-To: <20100805062431.GA1546@ucw.cz>
+References: <1280440089-3203-1-git-send-email-john.johansen@canonical.com>
+	<alpine.LRH.2.00.1007300903440.7719@tundra.namei.org>
+	<20100805062431.GA1546@ucw.cz>
+Date: Thu, 5 Aug 2010 11:58:42 +0200
+Message-ID: <AANLkTimku1sLsZyg3=2Oo9Xq=7U-hDKtc1Fy3ZytxZYS@mail.gmail.com>
+Subject: Re: [AppArmor #7 0/13] AppArmor security module
+From: Jan III Sobieski <jan3sobi3ski@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: James Morris <jmorris@namei.org>,
+        John Johansen <john.johansen@canonical.com>,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Leun <lkml20100708@newton.leun.net> writes:
+Hi,
 
-> Hi,
+2010/8/5 Pavel Machek <pavel@ucw.cz>:
+> On Fri 2010-07-30 09:05:23, James Morris wrote:
+>> On Thu, 29 Jul 2010, John Johansen wrote:
+>>
+>> > This is the seveth general posting of the newest version of the
+>> > AppArmor security module it has been rewritten to use the security_path
+>> > hooks instead of the previous vfs approach.  The current implementation
+>> > is aimed at being as semantically close to previous versions of AppArmor
+>> > as possible while using the existing LSM infrastructure.
+>>
+>> Applied to
+>> git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+>>
+>> Please carry out any further development against the above tree.
+>>
+>> Note that I added the patch below to update AA against the latest
+>> version of path_truncate:
 >
-> On Wed, 04 Aug 2010 17:12:29 -0700
-> ebiederm@xmission.com (Eric W. Biederman) wrote:
->
-> First, thank you very much for picking that up (and, of course, for
-> your work at linux in general).
->
->
->> > # > unshare -n /bin/bash
->> > # > # how to setup veth device pair to get connectivity into
->> > namespace not shown here # > openvpn --config some.config
->> > [ running some traffic over vpn device not shown here ]
->> > ^c # stopping openvpn
->> > # > lsof -i
->> > # > netstat -an
->> > Active Internet connections (servers and established)
->> > Proto Recv-Q Send-Q Local Address           Foreign Address
->> > State Active UNIX domain sockets (servers and established)
->> > Proto RefCnt Flags       Type       State         I-Node Path
->> > # > ps ax|grep openvpn|grep -v grep
->> > # > # cannot find anything that suggests there is anything left
->> > from that openvpn session # > exit # logging out from shell in
->> > network namespace
->> >
->> > Now I get
->> >
->> > Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo
->> > to become free. Usage count = 3 [repeated]
->> 
->> How many times?
->
-> Unfortunately looks like indefinitely. Never watched longer so far
-> (rebooted soon), but I'm seeing this message now repeated every 10 secs
-> for ~10 minutes on a idle system.
+> Ok, so now we have two name-based "security" modules. Can we at least
+> drop TOMOYO? That seems to have all apparmor disadvantages plus some
+> more...
 
-Ugh.  A real bug then.  These can be a pain to track down and fix. I
-think the last one of these I tracked down took a couple of weeks.  I
-will start digging in when I get back from vacation.
+Great idea! I suggest also to throw away the unnecessary filesystems.
+Ext3 is great - who needs Ext4 or XFS?
 
-> Additionally when testing this I found another one (by accident started
-> my firewall script in that namespace...) - using netfilter RECENT
-> makes it barf. Stripped down to the essentials it looks like this:
-
-Micheal this is on 2.6.35?
-
-Alexey can you look at this BUG_ON?  It looks like there has been a regression
-or you missed something when you did the netns conversion of xt_recent.
-
-
->> # unshare -n /bin/bash
->> # iptables -I INPUT -d 1.2.3.4 -m recent --name BLA --set
->> # exit
->
-> Aug  5 11:19:47 doris kernel: [  218.420238] ------------[ cut here ]------------
-> Aug  5 11:19:47 doris kernel: [  218.420256] kernel BUG at net/netfilter/xt_recent.c:609!
-> Aug  5 11:19:47 doris kernel: [  218.420268] invalid opcode: 0000 [#1] PREEMPT SMP 
-> Aug  5 11:19:47 doris kernel: [  218.420284] last sysfs file: /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/charge_full
-> Aug  5 11:19:47 doris kernel: [  218.420295] Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ipt_REJECT ipt_LOG xt_limit xt_recent iptable_mangle iptable_nat iptable_filter nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_filter ip6_tables nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables fuse nls_utf8 loop arc4 ecb iwlagn iwlcore mac80211 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm cfg80211 snd_timer snd usb_storage iTCO_wdt soundcore tg3 sg iTCO_vendor_support snd_page_alloc rfkill i2c_i801 pcspkr battery ac ext4 jbd2 crc16 sha256_generic aes_generic cbc dm_crypt linear i915 drm_kms_helper drm i2c_algo_bit sd_mod video intel_agp button dm_snapshot dm_mod fan processor ata_piix ahci libahci libata scsi_mod thermal thermal_sys
-> Aug  5 11:19:47 doris kernel: [  218.420529] 
-> Aug  5 11:19:47 doris kernel: [  218.420542] Pid: 13, comm: netns Not tainted 2.6.35 #2 Kuril                           /40684JG         
-> Aug  5 11:19:47 doris kernel: [  218.420557] EIP: 0060:[<fc886a15>] EFLAGS: 00010206 CPU: 0
-> Aug  5 11:19:47 doris kernel: [  218.420578] EIP is at recent_net_exit+0x55/0x70 [xt_recent]
-> Aug  5 11:19:47 doris kernel: [  218.420589] EAX: f2218000 EBX: f5b79290 ECX: f2f27b40 EDX: f5cd4000
-> Aug  5 11:19:47 doris kernel: [  218.420601] ESI: f2218000 EDI: f5cd5f44 EBP: f5cd5f28 ESP: f5cd5f20
-> Aug  5 11:19:47 doris kernel: [  218.420612]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
-> Aug  5 11:19:47 doris kernel: [  218.420626] Process netns (pid: 13, ti=f5cd4000 task=f5cc9920 task.ti=f5cd4000)
-> Aug  5 11:19:47 doris kernel: [  218.420635] Stack:
-> Aug  5 11:19:47 doris kernel: [  218.420641]  f5cd5f30 fc887618 f5cd5f3c c130867d fc887618 f5cd5f44 c1308850 f5cd5f60
-> Aug  5 11:19:47 doris kernel: [  218.420667] <0> c1308919 f2218014 f2218014 f221800c f221800c c15915a0 c3bb4f40 c1308850
-> Aug  5 11:19:47 doris kernel: [  218.420695] <0> f5cd5fbc c105a230 c13d1658 00000001 00000000 f7048000 c160f500 f5cc9c00
-> Aug  5 11:19:47 doris kernel: [  218.420724] Call Trace:
-> Aug  5 11:19:47 doris kernel: [  218.420749]  [<c130867d>] ? ops_exit_list+0x1d/0x50
-> Aug  5 11:19:47 doris kernel: [  218.420766]  [<c1308850>] ? cleanup_net+0x0/0x160
-> Aug  5 11:19:47 doris kernel: [  218.420782]  [<c1308919>] ? cleanup_net+0xc9/0x160
-> Aug  5 11:19:47 doris kernel: [  218.420797]  [<c1308850>] ? cleanup_net+0x0/0x160
-> Aug  5 11:19:47 doris kernel: [  218.420815]  [<c105a230>] ? worker_thread+0x110/0x250
-> Aug  5 11:19:47 doris kernel: [  218.420832]  [<c13d1658>] ? schedule+0x748/0x7a0
-> Aug  5 11:19:47 doris kernel: [  218.420849]  [<c105d5f0>] ? autoremove_wake_function+0x0/0x40
-> Aug  5 11:19:47 doris kernel: [  218.420864]  [<c105a120>] ? worker_thread+0x0/0x250
-> Aug  5 11:19:47 doris kernel: [  218.420879]  [<c105d1bc>] ? kthread+0x6c/0x80
-> Aug  5 11:19:47 doris kernel: [  218.420895]  [<c105d150>] ? kthread+0x0/0x80
-> Aug  5 11:19:47 doris kernel: [  218.420910]  [<c1003336>] ? kernel_thread_helper+0x6/0x10
-> Aug  5 11:19:47 doris kernel: [  218.420919] Code: 91 08 89 e2 81 e2 00 e0 ff ff 83 6a 14 01 f6 42 08 08 75 19 3b 1b 75 13 ba fa 72 88 fc e8 94 3e 8c c4 8d 64 24 04 5b 5d c3 0f 0b <0f> 0b 89 45 f8 e8 a1 ad b4 c4 8b 45 f8 eb da 8d b6 00 00 00 00 
-> Aug  5 11:19:47 doris kernel: [  218.421063] EIP: [<fc886a15>] recent_net_exit+0x55/0x70 [xt_recent] SS:ESP 0068:f5cd5f20
-> Aug  5 11:19:47 doris kernel: [  218.421136] ---[ end trace f57524f15f4df616 ]---
->
-
-
-Eric
+-- 
+Jan III Sobieski
