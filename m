@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab0HED1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 23:27:35 -0400
-Received: from claw.goop.org ([74.207.240.146]:57874 "EHLO claw.goop.org"
+	id S1758758Ab0HEDaB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 23:30:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:35800 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758674Ab0HED1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 23:27:33 -0400
-Message-ID: <4C5A2FA4.6080307@goop.org>
-Date: Wed, 04 Aug 2010 20:27:32 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1758674Ab0HED35 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 23:29:57 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PULL] modules
+Date: Thu, 5 Aug 2010 12:59:53 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: William Pitcock <nenolod@dereferenced.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-References: <1278837584.2538.135.camel@edumazet-laptop> <11606525.291278863922663.JavaMail.root@ifrit.dereferenced.org> <20100716065901.GA31612@kroah.com>
-In-Reply-To: <20100716065901.GA31612@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008051259.54472.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 07/15/2010 11:59 PM, Greg KH wrote:
-> On Sun, Jul 11, 2010 at 07:58:42PM +0400, William Pitcock wrote:
->> 2.6.32.16 (possibly 2.6.32.15) has a regression where it is unusable
->> as a Xen domU.  I would say 2.6.32.12 is the best choice since who knows
->> what other regressions there are in .16.
-> Did you happen to tell the stable maintainer about this and do a simple
-> 'git bisect' to find the offending patch so that it can be resolved?
+I'm pretty happy with this; there have been no complaints since that initial
+flurry of fixes.
 
-If it is compiled on Debian then its probably that cmpxchg memory 
-argument bug which hits in pvclock.c.
+The following changes since commit 3cfc2c42c1cbc8e238bb9c0612c0df4565e3a8b4:
+  Linus Torvalds (1):
+        Merge branch 'for-next' of git://git.kernel.org/.../jikos/trivial
 
-     J
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git modules
+
+Eric Dumazet (1):
+      module: module_unload_init() cleanup
+
+Linus Torvalds (4):
+      module: refactor load_module
+      module: refactor load_module part 2
+      module: reduce stack usage for each_symbol()
+      module: add load_info
+
+Rusty Russell (14):
+      module: refactor load_module part 3
+      module: refactor load_module part 4
+      module: refactor load_module part 5
+      module: refactor out section header rewriting
+      module: refactor out section header rewriting: FIX modversions
+      module: kallsyms functions take struct load_info
+      module: fix crash in get_ksymbol() when oopsing in module init
+      module: layout_and_allocate
+      module: sysfs cleanup
+      module: fix sysfs cleanup for !CONFIG_SYSFS
+      module: pass load_info into other functions
+      module: move module args strndup_user to just before use
+      module: group post-relocation functions into post_relocation()
+      module: cleanup comments, remove noinline
+
+ kernel/module.c | 1088 +++++++++++++++++++++++++++++--------------------------
+ 1 files changed, 581 insertions(+), 507 deletions(-)
