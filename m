@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760939Ab0HEW0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:26:20 -0400
-Received: from kroah.org ([198.145.64.141]:37773 "EHLO coco.kroah.org"
+	id S1760928Ab0HEW0O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:26:14 -0400
+Received: from kroah.org ([198.145.64.141]:37763 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934538Ab0HEWYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:52 -0400
+	id S934528Ab0HEWYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:48 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: John Villalovos <jvillalo@redhat.com>,
-        John Villalovos <john.l.villalovos@intel.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Tobias Klauser <tklauser@distanz.ch>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 53/67] serial: fix missing bit coverage of ASYNC_FLAGS
-Date: Thu,  5 Aug 2010 15:23:20 -0700
-Message-Id: <1281047014-23429-53-git-send-email-gregkh@suse.de>
+Subject: [PATCH 52/67] serial: "altera_uart: simplify altera_uart_console_putc()" checkpatch fixes
+Date: Thu,  5 Aug 2010 15:23:19 -0700
+Message-Id: <1281047014-23429-52-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -23,49 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Villalovos <jvillalo@redhat.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-It seems that currently ASYNC_FLAGS is one bit short of covering all the
-bits of the ASYNC user flags.  In particular it does not cover the
-ASYNC_AUTOPROBE bit.
+ERROR: code indent should use tabs where possible
+#32: FILE: drivers/serial/altera_uart.c:397:
++^I         ALTERA_UART_STATUS_TRDY_MSK))$
 
-ASYNCB_LAST_USER and ASYNCB_AUTOPROBE are both equal to 15.
+total: 1 errors, 0 warnings, 39 lines checked
 
-Therefore:
-ASYNC_AUTOPROBE = 1000 0000 0000 0000
-ASYNC_FLAGS     = 0111 1111 1111 1111
+./patches/altera_uart-simplify-altera_uart_console_putc.patch has style problems, please review.  If any of these errors
+are false positives report them to the maintainer, see
+CHECKPATCH in MAINTAINERS.
 
-So ASYNC_FLAGS is not covering the ASYNC_AUTOPROBE bit.
+Please run checkpatch prior to sending patches
 
-This patch fixes the issue and with the patch the values will be:
-ASYNC_AUTOPROBE = 1000 0000 0000 0000
-ASYNC_FLAGS     = 1111 1111 1111 1111
 
-As a side note, doing a "git grep" I didn't find any use of
-ASYNC_AUTOPROBE or ASYNCB_AUTOPROBE in the kernel, besides this include
-file.
+This fix got lost when someone merged "altera_uart: simplify
+altera_uart_console_putc()".  Please don't lose fixes.  Please don't write
+of mere patches which have trivial checkpatch errors.
 
-Signed-off-by: John Villalovos <john.l.villalovos@intel.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Tobias Klauser <tklauser@distanz.ch>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/serial.h |    2 +-
+ drivers/serial/altera_uart.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/serial.h b/include/linux/serial.h
-index c8613c3..c3b45ad 100644
---- a/include/linux/serial.h
-+++ b/include/linux/serial.h
-@@ -151,7 +151,7 @@ struct serial_uart_config {
- #define ASYNC_BUGGY_UART	(1U << ASYNCB_BUGGY_UART)
- #define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
+diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
+index 0f11896..f8d8a00 100644
+--- a/drivers/serial/altera_uart.c
++++ b/drivers/serial/altera_uart.c
+@@ -394,7 +394,7 @@ int __init early_altera_uart_setup(struct altera_uart_platform_uart *platp)
+ static void altera_uart_console_putc(struct uart_port *port, const char c)
+ {
+ 	while (!(readl(port->membase + ALTERA_UART_STATUS_REG) &
+-	         ALTERA_UART_STATUS_TRDY_MSK))
++		 ALTERA_UART_STATUS_TRDY_MSK))
+ 		cpu_relax();
  
--#define ASYNC_FLAGS		((1U << ASYNCB_LAST_USER) - 1)
-+#define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
- #define ASYNC_USR_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI| \
- 		ASYNC_CALLOUT_NOHUP|ASYNC_SPD_SHI|ASYNC_LOW_LATENCY)
- #define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
+ 	writel(c, port->membase + ALTERA_UART_TXDATA_REG);
 -- 
 1.7.2
 
