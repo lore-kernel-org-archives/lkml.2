@@ -1,23 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab0HEUVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:21:52 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55560 "EHLO mgw2.diku.dk"
+	id S934154Ab0HEUWK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:22:10 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55573 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934129Ab0HEUVn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:21:43 -0400
-Date: Thu, 5 Aug 2010 22:21:41 +0200 (CEST)
+	id S932376Ab0HEUWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:22:03 -0400
+Date: Thu, 5 Aug 2010 22:22:00 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
+To: Samuel Ortiz <samuel@sortiz.org>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 16/42] net/ipv6/netfilter: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052221240.31692@ask.diku.dk>
+Subject: [PATCH 17/42] drivers/net/irda: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052221410.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -56,19 +50,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c |    2 +-
+ drivers/net/irda/mcs7780.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c b/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
-index 1df3c8b..befccff 100644
---- a/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
-+++ b/net/ipv6/netfilter/nf_conntrack_proto_icmpv6.c
-@@ -192,7 +192,7 @@ icmpv6_error(struct net *net, struct nf_conn *tmpl,
- 	icmp6h = skb_header_pointer(skb, dataoff, sizeof(_ih), &_ih);
- 	if (icmp6h == NULL) {
- 		if (LOG_INVALID(net, IPPROTO_ICMPV6))
--		nf_log_packet(PF_INET6, 0, skb, NULL, NULL, NULL,
-+			nf_log_packet(PF_INET6, 0, skb, NULL, NULL, NULL,
- 			      "nf_ct_icmpv6: short packet ");
- 		return -NF_ACCEPT;
+diff --git a/drivers/net/irda/mcs7780.c b/drivers/net/irda/mcs7780.c
+index 5b1036a..74b20f1 100644
+--- a/drivers/net/irda/mcs7780.c
++++ b/drivers/net/irda/mcs7780.c
+@@ -734,7 +734,7 @@ static int mcs_net_open(struct net_device *netdev)
  	}
+ 
+ 	if (!mcs_setup_urbs(mcs))
+-	goto error3;
++		goto error3;
+ 
+ 	ret = mcs_receive_start(mcs);
+ 	if (ret)
