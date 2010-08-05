@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758313Ab0HEFaN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 01:30:13 -0400
+	id S1758788Ab0HEFaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 01:30:22 -0400
 Received: from mail-px0-f174.google.com ([209.85.212.174]:63198 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757803Ab0HEFaF (ORCPT
+	with ESMTP id S1758318Ab0HEFaQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 01:30:05 -0400
+	Thu, 5 Aug 2010 01:30:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:subject:to:cc:date:message-id:in-reply-to:references
          :user-agent:mime-version:content-type:content-transfer-encoding;
-        b=eyTXVcmLCY7McwN+Yjvp+FGF2bE/Q6aur+X75Pd6ExEaF1YRpDHK4mJ24b5qy3OBnW
-         we9Qdu8pzQWzHtAlcECQOfLreWvyDn1tThETmjcFz/PkAXikBIFC36ExHB3FEFODIf+m
-         6LWn3Nr7i0qhF/UUqN3eDhbo0cbXRNC+g1uxI=
+        b=eSSlSneRo2q0bAtuOX9rSlCfzaSoBw96k1iK/61AuhD8/KBEaW5uCsS4QkmxeTpoDp
+         1NOrNrinoY0vaEruUxQS7R7afshQJj4qc5gNFvomH0npLpNarDjjFPRS+H/PD3wqpJhp
+         RB39Xz351raR0DLJavv8zEidlVtyhFGKvDAlg=
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH 2/5] panasonic-laptop - switch to using sparse keymap library
+Subject: [PATCH 4/5] Input: hp-wmi - switch to using sparse keymap library
 To: platform-driver-x86@vger.kernel.org
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, mjg@redhat.com
-Date: Wed, 04 Aug 2010 22:30:02 -0700
-Message-ID: <20100805053002.604.7478.stgit@localhost.localdomain>
+Date: Wed, 04 Aug 2010 22:30:13 -0700
+Message-ID: <20100805053013.604.84229.stgit@localhost.localdomain>
 In-Reply-To: <20100805052645.604.28606.stgit@localhost.localdomain>
 References: <20100805052645.604.28606.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -30,293 +30,284 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nstead of implementing its own version of keymap hanlding switch over to
-using sparse keymap library.
+Instead of implementing its own version of keymap hanlding switch over
+to using sparse keymap library.
 
-Cc: Harald Welte <laforge@gnumonks.org>
+Also make sure that we install notify handler only after we allocated
+input device and that we remove notify handler before unregistering
+input device.
+
 Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
 
- drivers/platform/x86/Kconfig            |    1 
- drivers/platform/x86/panasonic-laptop.c |  172 +++++++++++--------------------
- 2 files changed, 62 insertions(+), 111 deletions(-)
+ drivers/platform/x86/Kconfig  |    1 
+ drivers/platform/x86/hp-wmi.c |  172 ++++++++++++-----------------------------
+ 2 files changed, 52 insertions(+), 121 deletions(-)
 
 diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 63d68e7..a99d226 100644
+index 22cec21..15d5374 100644
 --- a/drivers/platform/x86/Kconfig
 +++ b/drivers/platform/x86/Kconfig
-@@ -171,6 +171,7 @@ config PANASONIC_LAPTOP
- 	tristate "Panasonic Laptop Extras"
- 	depends on INPUT && ACPI
- 	depends on BACKLIGHT_CLASS_DEVICE
+@@ -141,6 +141,7 @@ config HP_WMI
+ 	depends on ACPI_WMI
+ 	depends on INPUT
+ 	depends on RFKILL || RFKILL = n
 +	select INPUT_SPARSEKMAP
- 	---help---
- 	  This driver adds support for access to backlight control and hotkeys
- 	  on Panasonic Let's Note laptops.
-diff --git a/drivers/platform/x86/panasonic-laptop.c b/drivers/platform/x86/panasonic-laptop.c
-index ec01c3d..b3b9e04 100644
---- a/drivers/platform/x86/panasonic-laptop.c
-+++ b/drivers/platform/x86/panasonic-laptop.c
-@@ -128,6 +128,7 @@
- #include <acpi/acpi_bus.h>
- #include <acpi/acpi_drivers.h>
+ 	help
+ 	 Say Y here if you want to support WMI-based hotkeys on HP laptops and
+ 	 to read data from WMI such as docking or ambient light sensor state.
+diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
+index f155163..92a8c18 100644
+--- a/drivers/platform/x86/hp-wmi.c
++++ b/drivers/platform/x86/hp-wmi.c
+@@ -29,6 +29,7 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
  #include <linux/input.h>
 +#include <linux/input/sparse-keymap.h>
- 
- 
- #ifndef ACPI_HOTKEY_COMPONENT
-@@ -200,30 +201,29 @@ static struct acpi_driver acpi_pcc_driver = {
- 			},
+ #include <linux/platform_device.h>
+ #include <linux/acpi.h>
+ #include <linux/rfkill.h>
+@@ -87,24 +88,16 @@ struct bios_return {
+ 	u32 return_code;
  };
  
--#define KEYMAP_SIZE		11
--static const unsigned int initial_keymap[KEYMAP_SIZE] = {
--	/*  0 */ KEY_RESERVED,
--	/*  1 */ KEY_BRIGHTNESSDOWN,
--	/*  2 */ KEY_BRIGHTNESSUP,
--	/*  3 */ KEY_DISPLAYTOGGLE,
--	/*  4 */ KEY_MUTE,
--	/*  5 */ KEY_VOLUMEDOWN,
--	/*  6 */ KEY_VOLUMEUP,
--	/*  7 */ KEY_SLEEP,
--	/*  8 */ KEY_PROG1, /* Change CPU boost */
--	/*  9 */ KEY_BATTERY,
--	/* 10 */ KEY_SUSPEND,
-+static const struct key_entry panasonic_keymap[] = {
-+	{ KE_KEY, 0, { KEY_RESERVED } },
-+	{ KE_KEY, 1, { KEY_BRIGHTNESSDOWN } },
-+	{ KE_KEY, 2, { KEY_BRIGHTNESSUP } },
-+	{ KE_KEY, 3, { KEY_DISPLAYTOGGLE } },
-+	{ KE_KEY, 4, { KEY_MUTE } },
-+	{ KE_KEY, 5, { KEY_VOLUMEDOWN } },
-+	{ KE_KEY, 6, { KEY_VOLUMEUP } },
-+	{ KE_KEY, 7, { KEY_SLEEP } },
-+	{ KE_KEY, 8, { KEY_PROG1 } }, /* Change CPU boost */
-+	{ KE_KEY, 9, { KEY_BATTERY } },
-+	{ KE_KEY, 10, { KEY_SUSPEND } },
+-struct key_entry {
+-	char type;		/* See KE_* below */
+-	u16 code;
+-	u16 keycode;
+-};
+-
+-enum { KE_KEY, KE_END };
+-
+-static struct key_entry hp_wmi_keymap[] = {
+-	{KE_KEY, 0x02, KEY_BRIGHTNESSUP},
+-	{KE_KEY, 0x03, KEY_BRIGHTNESSDOWN},
+-	{KE_KEY, 0x20e6, KEY_PROG1},
+-	{KE_KEY, 0x20e8, KEY_MEDIA},
+-	{KE_KEY, 0x2142, KEY_MEDIA},
+-	{KE_KEY, 0x213b, KEY_INFO},
+-	{KE_KEY, 0x2169, KEY_DIRECTION},
+-	{KE_KEY, 0x231b, KEY_HELP},
+-	{KE_END, 0}
++static const struct key_entry hp_wmi_keymap[] = {
++	{ KE_KEY, 0x02,   { KEY_BRIGHTNESSUP } },
++	{ KE_KEY, 0x03,   { KEY_BRIGHTNESSDOWN } },
++	{ KE_KEY, 0x20e6, { KEY_PROG1 } },
++	{ KE_KEY, 0x20e8, { KEY_MEDIA } },
++	{ KE_KEY, 0x2142, { KEY_MEDIA } },
++	{ KE_KEY, 0x213b, { KEY_INFO } },
++	{ KE_KEY, 0x2169, { KEY_DIRECTION } },
++	{ KE_KEY, 0x231b, { KEY_HELP } },
 +	{ KE_END, 0 }
  };
  
- struct pcc_acpi {
- 	acpi_handle		handle;
- 	unsigned long		num_sifr;
- 	int			sticky_mode;
--	u32 			*sinf;
-+	u32			*sinf;
- 	struct acpi_device	*device;
- 	struct input_dev	*input_dev;
- 	struct backlight_device	*backlight;
--	unsigned int		keymap[KEYMAP_SIZE];
- };
+ static struct input_dev *hp_wmi_input_dev;
+@@ -361,64 +354,9 @@ static DEVICE_ATTR(als, S_IRUGO | S_IWUSR, show_als, set_als);
+ static DEVICE_ATTR(dock, S_IRUGO, show_dock, NULL);
+ static DEVICE_ATTR(tablet, S_IRUGO, show_tablet, NULL);
  
- struct pcc_keyinput {
-@@ -446,56 +446,10 @@ static struct attribute_group pcc_attr_group = {
- 
- /* hotkey input device driver */
- 
--static int pcc_getkeycode(struct input_dev *dev,
--			  unsigned int scancode, unsigned int *keycode)
+-static struct key_entry *hp_wmi_get_entry_by_scancode(unsigned int code)
 -{
--	struct pcc_acpi *pcc = input_get_drvdata(dev);
+-	struct key_entry *key;
 -
--	if (scancode >= ARRAY_SIZE(pcc->keymap))
--		return -EINVAL;
+-	for (key = hp_wmi_keymap; key->type != KE_END; key++)
+-		if (code == key->code)
+-			return key;
 -
--	*keycode = pcc->keymap[scancode];
--
--	return 0;
+-	return NULL;
 -}
 -
--static int keymap_get_by_keycode(struct pcc_acpi *pcc, unsigned int keycode)
+-static struct key_entry *hp_wmi_get_entry_by_keycode(unsigned int keycode)
 -{
--	int i;
+-	struct key_entry *key;
 -
--	for (i = 0; i < ARRAY_SIZE(pcc->keymap); i++) {
--		if (pcc->keymap[i] == keycode)
--			return i+1;
+-	for (key = hp_wmi_keymap; key->type != KE_END; key++)
+-		if (key->type == KE_KEY && keycode == key->keycode)
+-			return key;
+-
+-	return NULL;
+-}
+-
+-static int hp_wmi_getkeycode(struct input_dev *dev,
+-			     unsigned int scancode, unsigned int *keycode)
+-{
+-	struct key_entry *key = hp_wmi_get_entry_by_scancode(scancode);
+-
+-	if (key && key->type == KE_KEY) {
+-		*keycode = key->keycode;
+-		return 0;
 -	}
 -
--	return 0;
+-	return -EINVAL;
 -}
 -
--static int pcc_setkeycode(struct input_dev *dev,
--			  unsigned int scancode, unsigned int keycode)
+-static int hp_wmi_setkeycode(struct input_dev *dev,
+-			     unsigned int scancode, unsigned int keycode)
 -{
--	struct pcc_acpi *pcc = input_get_drvdata(dev);
--	int oldkeycode;
+-	struct key_entry *key;
+-	unsigned int old_keycode;
 -
--	if (scancode >= ARRAY_SIZE(pcc->keymap))
--		return -EINVAL;
+-	key = hp_wmi_get_entry_by_scancode(scancode);
+-	if (key && key->type == KE_KEY) {
+-		old_keycode = key->keycode;
+-		key->keycode = keycode;
+-		set_bit(keycode, dev->keybit);
+-		if (!hp_wmi_get_entry_by_keycode(old_keycode))
+-			clear_bit(old_keycode, dev->keybit);
+-		return 0;
+-	}
 -
--	oldkeycode = pcc->keymap[scancode];
--	pcc->keymap[scancode] = keycode;
--
--	set_bit(keycode, dev->keybit);
--
--	if (!keymap_get_by_keycode(pcc, oldkeycode))
--		clear_bit(oldkeycode, dev->keybit);
--
--	return 0;
+-	return -EINVAL;
 -}
 -
- static void acpi_pcc_generate_keyinput(struct pcc_acpi *pcc)
+ static void hp_wmi_notify(u32 value, void *context)
  {
- 	struct input_dev *hotk_input_dev = pcc->input_dev;
- 	int rc;
--	int key_code, hkey_num;
- 	unsigned long long result;
+ 	struct acpi_buffer response = { ACPI_ALLOCATE_BUFFER, NULL };
+-	static struct key_entry *key;
+ 	union acpi_object *obj;
+ 	u32 event_id, event_data;
+ 	int key_code, ret;
+@@ -479,19 +417,9 @@ static void hp_wmi_notify(u32 value, void *context)
+ 					   sizeof(key_code));
+ 		if (ret)
+ 			break;
+-		key = hp_wmi_get_entry_by_scancode(key_code);
+-		if (key) {
+-			switch (key->type) {
+-			case KE_KEY:
+-				input_report_key(hp_wmi_input_dev,
+-						 key->keycode, 1);
+-				input_sync(hp_wmi_input_dev);
+-				input_report_key(hp_wmi_input_dev,
+-						 key->keycode, 0);
+-				input_sync(hp_wmi_input_dev);
+-				break;
+-			}
+-		} else
++
++		if (!sparse_keymap_report_event(hp_wmi_input_dev,
++						key_code, 1, true))
+ 			printk(KERN_INFO PREFIX "Unknown key code - 0x%x\n",
+ 			       key_code);
+ 		break;
+@@ -524,7 +452,7 @@ static void hp_wmi_notify(u32 value, void *context)
  
- 	rc = acpi_evaluate_integer(pcc->handle, METHOD_HKEY_QUERY,
-@@ -508,25 +462,10 @@ static void acpi_pcc_generate_keyinput(struct pcc_acpi *pcc)
- 
- 	acpi_bus_generate_proc_event(pcc->device, HKEY_NOTIFY, result);
- 
--	hkey_num = result & 0xf;
--
--	if (hkey_num < 0 || hkey_num >= ARRAY_SIZE(pcc->keymap)) {
-+	if (!sparse_keymap_report_event(hotk_input_dev,
-+					result & 0xf, result & 0x80, false))
- 		ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
--				  "hotkey number out of range: %d\n",
--				  hkey_num));
--		return;
--	}
--
--	key_code = pcc->keymap[hkey_num];
--
--	if (key_code != KEY_RESERVED) {
--		int pushed = (result & 0x80) ? TRUE : FALSE;
--
--		input_report_key(hotk_input_dev, key_code, pushed);
--		input_sync(hotk_input_dev);
--	}
--
--	return;
-+				  "Unknown hotkey event: %d\n", result));
- }
- 
- static void acpi_pcc_hotkey_notify(struct acpi_device *device, u32 event)
-@@ -545,40 +484,55 @@ static void acpi_pcc_hotkey_notify(struct acpi_device *device, u32 event)
- 
- static int acpi_pcc_init_input(struct pcc_acpi *pcc)
+ static int __init hp_wmi_input_setup(void)
  {
--	int i, rc;
-+	struct input_dev *input_dev;
-+	int error;
+-	struct key_entry *key;
++	acpi_status status;
+ 	int err;
  
--	pcc->input_dev = input_allocate_device();
--	if (!pcc->input_dev) {
-+	input_dev = input_allocate_device();
-+	if (!input_dev) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
- 				  "Couldn't allocate input device for hotkey"));
- 		return -ENOMEM;
- 	}
- 
--	pcc->input_dev->evbit[0] = BIT(EV_KEY);
+ 	hp_wmi_input_dev = input_allocate_device();
+@@ -534,21 +462,14 @@ static int __init hp_wmi_input_setup(void)
+ 	hp_wmi_input_dev->name = "HP WMI hotkeys";
+ 	hp_wmi_input_dev->phys = "wmi/input0";
+ 	hp_wmi_input_dev->id.bustype = BUS_HOST;
+-	hp_wmi_input_dev->getkeycode = hp_wmi_getkeycode;
+-	hp_wmi_input_dev->setkeycode = hp_wmi_setkeycode;
 -
--	pcc->input_dev->name = ACPI_PCC_DRIVER_NAME;
--	pcc->input_dev->phys = ACPI_PCC_INPUT_PHYS;
--	pcc->input_dev->id.bustype = BUS_HOST;
--	pcc->input_dev->id.vendor = 0x0001;
--	pcc->input_dev->id.product = 0x0001;
--	pcc->input_dev->id.version = 0x0100;
--	pcc->input_dev->getkeycode = pcc_getkeycode;
--	pcc->input_dev->setkeycode = pcc_setkeycode;
-+	input_dev->name = ACPI_PCC_DRIVER_NAME;
-+	input_dev->phys = ACPI_PCC_INPUT_PHYS;
-+	input_dev->id.bustype = BUS_HOST;
-+	input_dev->id.vendor = 0x0001;
-+	input_dev->id.product = 0x0001;
-+	input_dev->id.version = 0x0100;
+-	for (key = hp_wmi_keymap; key->type != KE_END; key++) {
+-		switch (key->type) {
+-		case KE_KEY:
+-			set_bit(EV_KEY, hp_wmi_input_dev->evbit);
+-			set_bit(key->keycode, hp_wmi_input_dev->keybit);
+-			break;
+-		}
+-	}
  
--	/* load initial keymap */
--	memcpy(pcc->keymap, initial_keymap, sizeof(pcc->keymap));
-+	error = sparse_keymap_setup(input_dev, panasonic_keymap, NULL);
-+	if (error) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
-+				  "Unable to setup input device keymap\n"));
+-	set_bit(EV_SW, hp_wmi_input_dev->evbit);
+-	set_bit(SW_DOCK, hp_wmi_input_dev->swbit);
+-	set_bit(SW_TABLET_MODE, hp_wmi_input_dev->swbit);
++	__set_bit(EV_SW, hp_wmi_input_dev->evbit);
++	__set_bit(SW_DOCK, hp_wmi_input_dev->swbit);
++	__set_bit(SW_TABLET_MODE, hp_wmi_input_dev->swbit);
++
++	err = sparse_keymap_setup(hp_wmi_input_dev, hp_wmi_keymap, NULL);
++	if (err)
 +		goto err_free_dev;
-+	}
  
--	for (i = 0; i < ARRAY_SIZE(pcc->keymap); i++)
--		__set_bit(pcc->keymap[i], pcc->input_dev->keybit);
--	__clear_bit(KEY_RESERVED, pcc->input_dev->keybit);
-+	error = input_register_device(input_dev);
-+	if (error) {
-+		ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
-+				  "Unable to register input device\n"));
+ 	/* Set initial hardware state */
+ 	input_report_switch(hp_wmi_input_dev, SW_DOCK, hp_wmi_dock_state());
+@@ -556,14 +477,32 @@ static int __init hp_wmi_input_setup(void)
+ 			    hp_wmi_tablet_state());
+ 	input_sync(hp_wmi_input_dev);
+ 
+-	err = input_register_device(hp_wmi_input_dev);
+-
+-	if (err) {
+-		input_free_device(hp_wmi_input_dev);
+-		return err;
++	status = wmi_install_notify_handler(HPWMI_EVENT_GUID, hp_wmi_notify, NULL);
++	if (ACPI_FAILURE(status)) {
++		err = -EIO;
 +		goto err_free_keymap;
-+	}
+ 	}
  
--	input_set_drvdata(pcc->input_dev, pcc);
-+	pcc->input_dev = input_dev;
-+	return 0;
- 
--	rc = input_register_device(pcc->input_dev);
--	if (rc < 0)
--		input_free_device(pcc->input_dev);
++	err = input_register_device(hp_wmi_input_dev);
++	if (err)
++		goto err_uninstall_notifier;
++
+ 	return 0;
++
++ err_uninstall_notifier:
++	wmi_remove_notify_handler(HPWMI_EVENT_GUID);
 + err_free_keymap:
-+	sparse_keymap_free(input_dev);
++	sparse_keymap_free(hp_wmi_input_dev);
 + err_free_dev:
-+	input_free_device(input_dev);
-+	return error;
++	input_free_device(hp_wmi_input_dev);
++	return err;
 +}
- 
--	return rc;
-+static void acpi_pcc_destroy_input(struct pcc_acpi *pcc)
++
++static void hp_wmi_input_destroy(void)
 +{
-+	sparse_keymap_free(pcc->input_dev);
-+	input_unregister_device(pcc->input_dev);
-+	/*
-+	 * No need to input_free_device() since core input API refcounts
-+	 * and free()s the device.
-+	 */
++	wmi_remove_notify_handler(HPWMI_EVENT_GUID);
++	sparse_keymap_free(hp_wmi_input_dev);
++	input_unregister_device(hp_wmi_input_dev);
  }
  
- /* kernel module interface */
-@@ -636,7 +590,7 @@ static int acpi_pcc_hotkey_add(struct acpi_device *device)
- 	if (result) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_ERROR,
- 				  "Error installing keyinput handler\n"));
--		goto out_hotkey;
-+		goto out_sinf;
+ static void cleanup_sysfs(struct platform_device *device)
+@@ -718,15 +657,9 @@ static int __init hp_wmi_init(void)
+ 	int bios_capable = wmi_has_guid(HPWMI_BIOS_GUID);
+ 
+ 	if (event_capable) {
+-		err = wmi_install_notify_handler(HPWMI_EVENT_GUID,
+-						 hp_wmi_notify, NULL);
+-		if (ACPI_FAILURE(err))
+-			return -EINVAL;
+ 		err = hp_wmi_input_setup();
+-		if (err) {
+-			wmi_remove_notify_handler(HPWMI_EVENT_GUID);
++		if (err)
+ 			return err;
+-		}
  	}
  
- 	if (!acpi_pcc_retrieve_biosdata(pcc, pcc->sinf)) {
-@@ -651,7 +605,7 @@ static int acpi_pcc_hotkey_add(struct acpi_device *device)
- 						   &pcc_backlight_ops, &props);
- 	if (IS_ERR(pcc->backlight)) {
- 		result = PTR_ERR(pcc->backlight);
--		goto out_sinf;
-+		goto out_input;
- 	}
+ 	if (bios_capable) {
+@@ -753,20 +686,17 @@ err_device_add:
+ err_device_alloc:
+ 	platform_driver_unregister(&hp_wmi_driver);
+ err_driver_reg:
+-	if (wmi_has_guid(HPWMI_EVENT_GUID)) {
+-		input_unregister_device(hp_wmi_input_dev);
+-		wmi_remove_notify_handler(HPWMI_EVENT_GUID);
+-	}
++	if (event_capable)
++		hp_wmi_input_destroy();
  
- 	/* read the initial brightness setting from the hardware */
-@@ -669,12 +623,10 @@ static int acpi_pcc_hotkey_add(struct acpi_device *device)
+ 	return err;
+ }
  
- out_backlight:
- 	backlight_device_unregister(pcc->backlight);
-+out_input:
-+	acpi_pcc_destroy_input(pcc);
- out_sinf:
- 	kfree(pcc->sinf);
--out_input:
--	input_unregister_device(pcc->input_dev);
--	/* no need to input_free_device() since core input API refcount and
--	 * free()s the device */
- out_hotkey:
- 	kfree(pcc);
- 
-@@ -709,9 +661,7 @@ static int acpi_pcc_hotkey_remove(struct acpi_device *device, int type)
- 
- 	backlight_device_unregister(pcc->backlight);
- 
--	input_unregister_device(pcc->input_dev);
--	/* no need to input_free_device() since core input API refcount and
--	 * free()s the device */
-+	acpi_pcc_destroy_input(pcc);
- 
- 	kfree(pcc->sinf);
- 	kfree(pcc);
+ static void __exit hp_wmi_exit(void)
+ {
+-	if (wmi_has_guid(HPWMI_EVENT_GUID)) {
+-		wmi_remove_notify_handler(HPWMI_EVENT_GUID);
+-		input_unregister_device(hp_wmi_input_dev);
+-	}
++	if (wmi_has_guid(HPWMI_EVENT_GUID))
++		hp_wmi_input_destroy();
++
+ 	if (hp_wmi_platform_dev) {
+ 		platform_device_unregister(hp_wmi_platform_dev);
+ 		platform_driver_unregister(&hp_wmi_driver);
 
