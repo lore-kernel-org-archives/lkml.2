@@ -1,139 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab0HEXGP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:06:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7855 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753672Ab0HEXGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:06:12 -0400
-Date: Fri, 6 Aug 2010 01:59:14 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ben Blum <bblum@google.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>, kvm@vger.kernel.org
-Subject: [PATCH] cgroups: fix API thinko
-Message-ID: <20100805225914.GA26772@redhat.com>
+	id S932947Ab0HEXHb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:07:31 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:51889 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753672Ab0HEXH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:07:27 -0400
+Message-ID: <4C5B4404.6010602@euromail.se>
+Date: Fri, 06 Aug 2010 01:06:44 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-To: unlisted-recipients:; (no To-header on input)
+To: Kevin McNeely <kev@cypress.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        David Brown <davidb@codeaurora.org>,
+        Trilok Soni <tsoni@codeaurora.org>,
+        Fred <fwk@ubuntu.linuxcertified.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
+        Simtec Linux Team <linux@simtec.co.uk>,
+        Todd Fischer <todd.fischer@ridgerun.com>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Sascha Hauer <s.hauer@pengutronix.de>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
+References: <Kevin McNeely <kev@cypress.com> <1281031924-3032-1-git-send-email-kev@cypress.com>
+In-Reply-To: <1281031924-3032-1-git-send-email-kev@cypress.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1Oh9WV-0004n0-B7.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Oh9WV-0004n0-B7 79a1dea24224d4e84e94af5954f68714
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cgroup_attach_task_current_cg API that have upstream is backwards: we
-really need an API to attach to the cgroups from another process A to
-the current one.
+On 08/05/2010 08:12 PM, Kevin McNeely wrote:
 
-In our case (vhost), a priveledged user wants to attach it's task to cgroups
-from a less priveledged one, the API makes us run it in the other
-task's context, and this fails.
+> From: Fred <fwk@ubuntu.linuxcertified.com>
+> 
+> This is a new touchscreen driver for the Cypress Semiconductor
+> cyttsp family of devices.  This updated driver is for both the i2c and spi
+> versions of the devices. The driver code consists of common core code for
+> both i2c and spi driver.  This submission is in response to review comments
+> from the initial submission.
+> 
+> Signed-off-by: Kevin McNeely <kev@cypress.com>
+> ---
 
-So let's make the API generic and just pass in 'from' and 'to' tasks.
-Add an inline wrapper for cgroup_attach_task_current_cg to avoid
-breaking bisect.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+General impression: There is a lot of useful code in here, but as already
+pointed out, well over half of it should not be part of the kernel driver.
 
-Paul, Li, Sridhar, could you please review the following
-patch?
+Suggestion 1: Clean out the internal state code and use MT protocol B instead.
 
-I only compile-tested it due to travel, but looks
-straight-forward to me.
-Alex Williamson volunteered to test and report the results.
-Sending out now for review as I might be offline for a bit.
-Will only try to merge when done, obviously.
+Suggestion 2: Cut out the single touch calculation, as already pointed out by
+Trilok. Why not submit it to the mtdev project instead? The problem is generic
+to all new MT drivers, so a common solution while waiting for full MT support in
+userspace could be useful.
 
-If OK, I would like to merge this through -net tree,
-together with the patch fixing vhost-net.
-Let me know if that sounds ok.
-
-Thanks!
-
-This patch is on top of net-next, it is needed for fix
-vhost-net regression in net-next, where a non-priveledged
-process can't enable the device anymore:
-
-when qemu uses vhost, inside the ioctl call it
-creates a thread, and tries to add
-this thread to the groups of current, and it fails.
-But we control the thread, so to solve the problem,
-we really should tell it 'connect to out cgroups'.
-
-What this patch does is add an API for that.
-
- include/linux/cgroup.h |   11 ++++++++++-
- kernel/cgroup.c        |    9 +++++----
- 2 files changed, 15 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 43b2072..b38ec60 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -525,7 +525,11 @@ struct task_struct *cgroup_iter_next(struct cgroup *cgrp,
- void cgroup_iter_end(struct cgroup *cgrp, struct cgroup_iter *it);
- int cgroup_scan_tasks(struct cgroup_scanner *scan);
- int cgroup_attach_task(struct cgroup *, struct task_struct *);
--int cgroup_attach_task_current_cg(struct task_struct *);
-+int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
-+static inline int cgroup_attach_task_current_cg(struct task_struct *tsk)
-+{
-+	return cgroup_attach_task_all(current, tsk);
-+}
- 
- /*
-  * CSS ID is ID for cgroup_subsys_state structs under subsys. This only works
-@@ -583,6 +587,11 @@ static inline int cgroupstats_build(struct cgroupstats *stats,
- }
- 
- /* No cgroups - nothing to do */
-+static inline int cgroup_attach_task_all(struct task_struct *from,
-+					 struct task_struct *t)
-+{
-+	return 0;
-+}
- static inline int cgroup_attach_task_current_cg(struct task_struct *t)
- {
- 	return 0;
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index dce8ebc..e6293b8 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1606,10 +1606,11 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
- }
- 
- /**
-- * cgroup_attach_task_current_cg - attach task 'tsk' to current task's cgroup
-+ * cgroup_attach_task_all - attach task 'tsk' to all cgroups of task 'from'
-+ * @from: attach to all cgroups of a given task
-  * @tsk: the task to be attached
-  */
--int cgroup_attach_task_current_cg(struct task_struct *tsk)
-+int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
- {
- 	struct cgroupfs_root *root;
- 	struct cgroup *cur_cg;
-@@ -1617,7 +1618,7 @@ int cgroup_attach_task_current_cg(struct task_struct *tsk)
- 
- 	cgroup_lock();
- 	for_each_active_root(root) {
--		cur_cg = task_cgroup_from_root(current, root);
-+		cur_cg = task_cgroup_from_root(from, root);
- 		retval = cgroup_attach_task(cur_cg, tsk);
- 		if (retval)
- 			break;
-@@ -1626,7 +1627,7 @@ int cgroup_attach_task_current_cg(struct task_struct *tsk)
- 
- 	return retval;
- }
--EXPORT_SYMBOL_GPL(cgroup_attach_task_current_cg);
-+EXPORT_SYMBOL_GPL(cgroup_attach_task_all);
- 
- /*
-  * Attach task with pid 'pid' to cgroup 'cgrp'. Call with cgroup_mutex
--- 
-1.7.2.rc0.14.g41c1c
+Thanks,
+Henrik
