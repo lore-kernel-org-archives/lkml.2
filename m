@@ -1,36 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759995Ab0HEIq5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 04:46:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11770 "EHLO mx1.redhat.com"
+	id S1759998Ab0HEIs2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 04:48:28 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:56304 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759983Ab0HEIqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 04:46:54 -0400
-Message-ID: <4C5A7A7A.9040909@redhat.com>
-Date: Thu, 05 Aug 2010 11:46:50 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1755247Ab0HEIs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 04:48:26 -0400
 MIME-Version: 1.0
-To: Anjali Kulkarni <anjali@juniper.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Subject: Re: Freebsd image from Qemu hangs on booting in KVM
-References: <50B3A5560BA4D74CADEC55A48B4641B23D5AD270D6@EMBX01-HQ.jnpr.net>
-In-Reply-To: <50B3A5560BA4D74CADEC55A48B4641B23D5AD270D6@EMBX01-HQ.jnpr.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19546.31437.994840.466509@pilspetsen.it.uu.se>
+Date: Thu, 5 Aug 2010 10:48:13 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Olof Johansson <olof@lixom.net>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: R_ARM_REL32 relocation support
+In-Reply-To: <1280993763-15254-1-git-send-email-olof@lixom.net>
+References: <34780qy39a4uj093a4y>
+	<1280993763-15254-1-git-send-email-olof@lixom.net>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/05/2010 05:20 AM, Anjali Kulkarni wrote:
-> Hi,
->
-> I have a problem similar to the one seen on this list before - when I boot my freebsd based(but modified) image in Qemu with KVM on CentOS, then after almost booting completely, the image hangs - just before the login prompt is seen. If I do not have KVM ie plain CenOS with Qemu, then this issue does not occur. Has anyone seen this before and any ideas how to debug this?
+Olof Johansson writes:
+ > commit d0679c730395d0bde9a46939e7ba255b4ba7dd7c moved -fno-dwarf2-cfi-asm to be
+ > powerpc-only, causing R_ARM_REL32 to be used with some toolchains on ARM.
+ > 
+ > Implement support for it to make modules work with more toolchains.
+ > 
+ > Signed-off-by: Olof Johansson <olof@lixom.net>
 
-First step is to issue 'info registers' and 'x/30i $eip-20' from the 
-monitor when it hangs (qemu -monitor stdio makes cut'n'paste easier).
+Michal Marek's patch(*) to use -fno-dwarf2-cfi-asm already exists
+and is IMO the correct solution in that it addresses the cause
+of the problem rather than its symptoms.
 
--- 
-error compiling committee.c: too many arguments to function
+NAK from me for now.
 
+(*) http://lkml.org/lkml/2010/7/26/154
+
+/Mikael
+
+ > ---
+ >  arch/arm/include/asm/elf.h |    1 +
+ >  arch/arm/kernel/module.c   |    4 ++++
+ >  2 files changed, 5 insertions(+), 0 deletions(-)
+ > 
+ > diff --git a/arch/arm/include/asm/elf.h b/arch/arm/include/asm/elf.h
+ > index 51662fe..b1f1991 100644
+ > --- a/arch/arm/include/asm/elf.h
+ > +++ b/arch/arm/include/asm/elf.h
+ > @@ -50,6 +50,7 @@ typedef struct user_fp elf_fpregset_t;
+ >  #define R_ARM_NONE		0
+ >  #define R_ARM_PC24		1
+ >  #define R_ARM_ABS32		2
+ > +#define R_ARM_REL32		3
+ >  #define R_ARM_CALL		28
+ >  #define R_ARM_JUMP24		29
+ >  #define R_ARM_V4BX		40
+ > diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+ > index c628bdf..ec9526d 100644
+ > --- a/arch/arm/kernel/module.c
+ > +++ b/arch/arm/kernel/module.c
+ > @@ -132,6 +132,10 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
+ >  			*(u32 *)loc += sym->st_value;
+ >  			break;
+ >  
+ > +		case R_ARM_REL32:
+ > +			*(u32 *)loc += sym->st_value - loc;
+ > +			break;
+ > +
+ >  		case R_ARM_PC24:
+ >  		case R_ARM_CALL:
+ >  		case R_ARM_JUMP24:
+ > -- 
+ > 1.5.6.5
+ > 
+ > 
+ > _______________________________________________
+ > linux-arm-kernel mailing list
+ > linux-arm-kernel@lists.infradead.org
+ > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+ > 
