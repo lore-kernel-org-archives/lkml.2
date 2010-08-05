@@ -1,52 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759598Ab0HEA2F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 20:28:05 -0400
-Received: from web27008.mail.ukl.yahoo.com ([217.146.177.8]:28719 "HELO
-	web27008.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754007Ab0HEA16 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 20:27:58 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=eq59vJAQEyoar1G6WeDrGqLQnY47pOJRR3ia162UnczXAqYj1XHBvVrat+txyjvyCMaO2y4Xpj22N3NUrN6EeYg8JY0LVV3vvV6sznaLVr+lCLk10tHnYWi6o5GLwR+rX0jgZ+tOCuPQBF98piJMKEk6oH0tkBHGM4TAjcTLX7o=;
-Message-ID: <999475.75291.qm@web27008.mail.ukl.yahoo.com>
-X-YMail-OSG: dE7mSdAVM1lHoc8Dj2WAwlaQrujnFn7OdS1JZ7CBipPhfJd
- IRR0PknR1SFaS3sxQdOIIKLug0CFvbEyYqnNHPWyZtukVmGWq4f9tPnamTOY
- LI_kDAopGWqOSAala90qhyiTTIWOHXzA64UXf068476VmT8iSVH00kUAulq_
- OlyAJKyIXfA8qpZFuTHMX7XfuwXXOoeSc925CCA.42ABtIe8lp8lCNhjBAsK
- 7tyhlwAYPLQ50iUfa069igCfpLnF48gCR1FNtFcUoWyeEQqOFPzhpOO3P7xH
- qm.tT_mWXG3nsqwYqFRno
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Thu, 5 Aug 2010 00:27:56 +0000 (GMT)
-From: bifferos <bifferos@yahoo.co.uk>
-Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what c_ident is
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
-        Ingo Molnar <mingo@elte.hu>, linux-tip-commits@vger.kernel.org
-In-Reply-To: <4C59F343.20901@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759515Ab0HEAbA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 20:31:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43852 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759233Ab0HEAaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 20:30:55 -0400
+Date: Thu, 5 Aug 2010 10:30:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: inux-kernel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 4, add a new git tree please?
+Message-Id: <20100805103050.3c201cdd.sfr@canb.auug.org.au>
+In-Reply-To: <20100804222350.GA2220@phenom.dumpdata.com>
+References: <20100804151035.14678528.sfr@canb.auug.org.au>
+	<20100804222350.GA2220@phenom.dumpdata.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
---- On Thu, 5/8/10, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> > Without the patch RDC is misreported as Cyrix
-> Cx486SLC.
-> > 
-> 
-> And what problems does that cause?  Presumably none,
+Hi Konrad,
 
-If I don't know the CPU how do I set the tick rate?
+On Wed, 4 Aug 2010 18:23:50 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
+.com> wrote:
+>
+> I was wondering if you could add in your awesome tool this extra git
+> tree:
+>=20
+>  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
+>=20
+> (the head of it please)
+>=20
+> It has this patchset: http://lkml.org/lkml/2010/7/27/246
+>=20
+> that I have been carrying in=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git
+>=20
+> but I realized it should probably not be in the swiotlb and was hence
+> wondering if you would be OK adding in that extra git tree?
 
-http://android.git.kernel.org/?p=kernel/common.git;a=commitdiff_plain;h=e1b4d1143651fb3838be1117785b6e0386fa151f
+Added from today, but only because everything in it is already in
+linux-next from your other tree.  I assume that you will remove this stuff
+from there.
 
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-      
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMWgY6AAoJEDMEi1NhKgbsRp8H+gKleEj9YuyGF7yCuqZoUp3m
+x8gRtaTC509xOQRGWvQXrB8z0sOs6FeJknHvxt79z91rI0MWOL39D2vf5ZQG3+D+
+9CFXrsKbr0bKJ0KakHvgWD+vo35cAWWHGMbIMqQPWZzL2MDddQRXNTMB2Pp7oLQR
+AbV3MP+RJ+ZvSDD4HWRb5dN4gYppJBWlkbI9CSf6Y3+sKO9CmDAeGGdCaNOLvpBl
+DCp+W3zr3Tk4SUyjPulmikiFK22vYa8gKY3Dus68wvoiELZnQe67QY+hExey8apu
+lzTbx+45gSEk+1DASHe17kqfThFGGqY6jYNHcyRaSqLDXOebyGr6b3ajqFxBSi8=
+=Ghr4
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm--
