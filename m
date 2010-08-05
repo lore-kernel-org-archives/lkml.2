@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760206Ab0HEXvI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:51:08 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37822 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758633Ab0HEXvD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:51:03 -0400
+	id S933471Ab0HEXwf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:52:35 -0400
+Received: from fn.samba.org ([216.83.154.106]:45902 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755601Ab0HEXwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:52:31 -0400
+Date: Thu, 5 Aug 2010 16:52:18 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100805235218.GB31233@jeremy-laptop>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+ <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+ <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+ <30448.1279800887@redhat.com>
+ <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+ <1280524978.2452.9.camel@segv.aura.of.mankind>
+ <20100801092529.5e6ba0e0@corrin.poochiereds.net>
 MIME-Version: 1.0
-In-Reply-To: <1281047390.3405.22.camel@localhost.localdomain>
-References: <1280926108-24668-1-git-send-email-virtuoso@slind.org> 
-	<1280937526.28884.21.camel@work-vm> <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com> 
-	<1281042665.3405.15.camel@localhost.localdomain> <AANLkTi=Gxk7FwmyCqNwXQEg7OsvDh4p2Mg3Fhiy1g5pv@mail.gmail.com> 
-	<1281047390.3405.22.camel@localhost.localdomain>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 6 Aug 2010 01:50:48 +0200
-Message-ID: <AANLkTimNEbVacF6EzFAjdyvY6G8xa0nXCi0Do_i=FSaY@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] notify userspace about time changes
-To: john stultz <johnstul@us.ibm.com>
-Cc: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
-        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100801092529.5e6ba0e0@corrin.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 00:29, john stultz <johnstul@us.ibm.com> wrote:
-> On Fri, 2010-08-06 at 00:17 +0200, Kay Sievers wrote:
->> On Thu, Aug 5, 2010 at 23:11, john stultz <johnstul@us.ibm.com> wrote:
->> > On Thu, 2010-08-05 at 15:33 +0300, Alexander Shishkin wrote:
->> >> On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
->> >> > Is there a actual use case that you need this for?  I don't really have
->> >> > an issue with the code I just really want to make sure the feature would
->> >> > be useful enough to justify the API and code maintenance going forward.
->>
->> Basically everything that schedules an action based on an absolute
->> time specification, like at 3pm today, and not in 3 hours from now,
->> needs to track such system time changes. Otherwise it has to do
->> nonsense like cron does, to wake up every minute to check the current
->> time.
->
-> time_create(CLOCK_REALTIME,...) creates absolute (not relative) timers
-> that should be adjusted when the clock is changed. Is that not the case?
+On Sun, Aug 01, 2010 at 09:25:29AM -0400, Jeff Layton wrote:
+> On Fri, 30 Jul 2010 23:22:58 +0200
+> utz lehmann <lkml123@s2y4n2c.de> wrote:
+> 
+> > On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
+> > > But the fact is, th Unix ctime semantics are insane and largely
+> > > useless. There's a damn good reason almost nobody uses ctime under
+> > > unix.
+> > > 
+> > > So what I'm suggesting is that we have a flag - either per-process or
+> > > per-mount - that just says "use windows semantics for ctime".
+> > 
+> > When abusing an existing time stamp use atime not ctime please.
+> > ctime has it's uses. atime was just a mistake and is nearly useless.
+> > 
+> > And with noatime we already have creation time semantics for atime.
+> > 
+> 
+> Ugh. Honestly all of this talk of abusing different time fields seems
+> like craziness to me. It's going to be very hard to do that without
+> breaking *something*. There's also very little reason to do this when
+> xattrs are a much cleaner approach.
+> 
+> Neil Brown has put forth a very reasoned justification for putting the
+> birthtime in an xattr. After reading it, I think that makes more sense
+> than anything. It's also something that can be done without any extra
+> infrastructure. If at some point in the future we get an xstat-like
+> syscall then we can always add birthtime to that as well.
 
-That works, yes. The created timer is still is a fixed value, and it
-gets automatically adjusted when the system time changes.
+Just my 2 cents (as a Samba server implementor). I *hate* the idea
+of adding a "virtual" EA for birthtime. If you're going to add it,
+just add it to the stat struct like *BSD does. Don't abuse the other
+time fields, it's a new one.
 
-This is the example Lennart and I thought about when we considered
-adding cron-like stuff to systemd's timer configs, but didn't want to
-do silly things like scheduled checks for the actual time, so we
-delayed this feature until such a notification becomes available.
+Jeff, please don't advocate for an EA for the Samba server to use.
+Don't add it as an EA. It's *not* an EA, it's a timestamp.
 
-Consider we want stuff like "wakeup every day at 3pm", the next wakeup
-might be earlier than the timer we calculated last time, on system
-time changes. We need to re-calculate it. This is necessary for all
-repeating events.
-
-Say we want to wakeup at 3pm, now it's 4pm, so we schedule it in 23
-hours. Now the system time changes to 2pm, and we would expect to
-wakeup in one hour, but we take 25.
-
-Kay
+Jeremy.
