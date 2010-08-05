@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933282Ab0HEMcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 08:32:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58783 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757203Ab0HEMcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 08:32:42 -0400
-Date: Thu, 5 Aug 2010 08:36:49 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Chris Mason <chris.mason@oracle.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Valdis.Kletnieks@vt.edu, josef@redhat.com,
-        Michael Monnerie <michael.monnerie@is.it-management.at>,
-        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: direct-io regression [Was: How to track down abysmal
-	performance ata - raid1 - crypto - vg/lv - xfs]
-Message-ID: <20100805123649.GA18672@dhcp231-156.rdu.redhat.com>
-References: <20100804073546.GA7494@comet.dominikbrodowski.net> <20100804085039.GA11671@infradead.org> <20100804091317.GA27779@isilmar-3.linta.de> <20100804092122.GA2998@infradead.org> <20100804073546.GA7494@comet.dominikbrodowski.net> <201008041116.09822@zmi.at> <20100804102526.GB13766@isilmar-3.linta.de> <15446.1280953986@localhost> <20100805093100.GA3001@comet.dominikbrodowski.net> <20100805113240.GA29846@think>
+	id S933267Ab0HEMc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 08:32:26 -0400
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:43166 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1756027Ab0HEMcY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 08:32:24 -0400
+Date: Thu, 5 Aug 2010 14:31:47 +0200
+From: Rodolfo Giometti <giometti@enneenne.com>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, john stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Joonwoo Park <joonwpark81@gmail.com>
+Message-ID: <20100805123147.GA19407@gundam.enneenne.com>
+Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+	linux-kernel@vger.kernel.org,
+	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+	john stultz <johnstul@us.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>, Joonwoo Park <joonwpark81@gmail.com>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su> <244e91439eeb1c835b6fa82999fcd65a8a282183.1280952801.git.lasaine@lvk.cs.msu.su> <20100805093236.GI26615@gundam.enneenne.com> <20100805154231.52555130@desktopvm.lvknet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100805113240.GA29846@think>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100805154231.52555130@desktopvm.lvknet>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 192.168.32.254
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [PATCHv3 05/16] pps: access pps device by direct pointer
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 07:32:40AM -0400, Chris Mason wrote:
-> On Thu, Aug 05, 2010 at 11:31:00AM +0200, Dominik Brodowski wrote:
-> > Hey,
-> > 
-> > when attempting to track down insufficient I/O performance, I found the
-> > following reression relating to direct-io on my notebook, where an
-> > ata device, which consists of several partitions, is combined to a lvm
-> > volume, and one logical volume is then encrypted using dm-crypt. Test case
-> > was the following command:
-> > 
-> > $ dd if=/dev/mapper/vg0-root_crypt of=/dev/zero iflag=direct bs=8k count=131072
-> > 
-> > 2.6.34 results in ~16 MB/s,
-> > 2.6.35 results in ~ 3.1 MB/s
-> > 
-> > The regression was bisected down to the follwoing commit:
-> > 
-> > commit c2c6ca417e2db7a519e6e92c82f4a933d940d076
-> > Author: Josef Bacik <josef@redhat.com>
-> > Date:   Sun May 23 11:00:55 2010 -0400
-> > 
-> >     direct-io: do not merge logically non-contiguous requests
-> >     
-> > ...
-> > 
-> > How to fix this? I do not use btrfs, but ext3 (and the access was down on
-> > the block level, not on the fs level, so this btrs-related commit should not
-> > cause such a regression).
+On Thu, Aug 05, 2010 at 03:42:31PM +0400, Alexander Gordeev wrote:
+> ?? Thu, 5 Aug 2010 11:32:36 +0200
+> Rodolfo Giometti <giometti@enneenne.com> ??????????:
 > 
-> Well, you've already bisected down to an offending if statement, that's
-> a huge help.  I'll try to reproduce this and fix it up today.
+> > On Thu, Aug 05, 2010 at 01:06:42AM +0400, Alexander Gordeev wrote:
+> > > Using device index as a pointer needs some unnecessary work to be done
+> > > every time the pointer is needed (in irq handler for example).
+> > > Using a direct pointer is much more easy (and safe as well).
+> > > 
+> > > Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+> [snip]
+> > 
+> > If you remove these functions you can't be sure anymore that nobodies
+> > may call pps_event() over a non existent device...
 > 
-> But, I'm surprised your drive is doing 8K dio reads at 16MB/s, that
-> seems a little high.  
->
+> [snip]
+> 
+> > By dropping pps_get_source you may be here by a call from (i.e.) a
+> > serial port driver whose doesn't know if your PPS source is gone or
+> > not...
+> > 
+> > I don't understand how your modifications may resolve this problem.
+> 
+> Well, this can happen only if PPS client module calls pps_event before
+> calling pps_register_source() or after pps_unregister_source(). This
+> means that it's broken! If we try to handle/workaround broken clients it
 
-Hrm, I made sure there were no perf regressions when I wast testing this stuff,
-though I think I only tested xfs and ext4.  Originally I had a test where if we
-provided our own submit_io, so maybe as a workaround just make
+Suppose we are using pps-ldisc client. How can you assure that
+nobodies may execute pps_tty_close() while you are into the
+pps_event() related to the same serial port?
 
-if (dio->final_block_in_bio != dio->cur_page_block ||
-                    cur_offset != bio_next_offset) 
+You can't disable serial interrupts in order to avoid
+pps_tty_dcd_change calls...
 
-look like this
+> affects performance. So we have to choose what is the priority:
+> security or performance. My guru told me I shouldn't bother too much
+> about broken kernel-space code which my code interacts with. If it's
+> broken it should be fixed. Some assertions enabled by DEBUG define are
+> enough. For me it makes sense but I don't know what should I check here?
 
-if (dio->final_block_in_bio != dio->cur_page_block ||
-    (dio->submit_io && cur_offset != bio_next_offset))
+I'm sorry but I disagree with you. Kernel code can't allow userland
+programs to corrupt it!
 
-and that should limit my change to only btrfs.  I know why it could cause a
-problem, but this change shouldn't be causing a 400% regression.  I suspect
-something else is afoot here.  Thanks,
+We are not discussing about security or performance but about
+reliability.
 
-Josef
+Ciao,
+
+Rodolfo
+
+-- 
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
