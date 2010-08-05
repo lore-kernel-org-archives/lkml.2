@@ -1,138 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760218Ab0HEMqo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 08:46:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58030 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab0HEMql (ORCPT
+	id S1759221Ab0HEMon (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 08:44:43 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45965 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759136Ab0HEMol (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 08:46:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Frd2qLGpZ/uON1aXQa1vlbFnJ7pva2pCSiq+c6x8bnGTVpCeLDApW8ipwywSf2oRZ3
-         TEy/n6x8o2pbzmaUoGvCO8Rn4KvWuthAYQLYqnmTwiXxSDIoMPplySMXxsu1MKg4EfuN
-         Ovss5A3QvgBVoSPr3C1HLlb2xpTeFxgoc+NfE=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <952321.94696.qm@web37608.mail.mud.yahoo.com>
-References: <952321.94696.qm@web37608.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 15:46:36 +0300
-Message-ID: <1281012396.9324.29.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 5 Aug 2010 08:44:41 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Date: Thu, 5 Aug 2010 14:44:28 +0200
+User-Agent: KMail/1.9.10
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>
+References: <201007282334.08063.rjw@sisk.pl> <20100729142245.4AA5.A69D9226@jp.fujitsu.com> <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201008051444.32432.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 01:30 -0700, Alex Dubov wrote: 
-> > Maxim Levitsky wrote: 
-> > > On Wed, 2010-08-04 at 00:57 -0700, Alex Dubov wrote: 
-> > > > I see two immediate problems with this patch:
-> > > > 
-> > > > 1. On cosmetic level, custom debug macros should
-> > not be employed. Device
-> > > > core already have this functionality (dynamic
-> > debug levels and such). Please,
-> > > > use dev_dbg and friends for print-outs.
-> > > This allows much easier control for debug.
-> > > Single module parameter is enough to adjust it.
-> > > This helps me help users.
-> > > (Eg, kernel compilation is out of question)
-> 
-> I doubt it will be that useful, but it's not my call to make anyway.
-> 
-> 
-> > > 
-> > > 
-> > > > 
-> > > > 2. On a structural level, I'd rather prefer host
-> > drivers to not start their
-> > > > own threads. If you look at both current host
-> > implementations, they operate
-> > > > in callback fashion. Apart from saving some
-> > resources, this reduces the
-> > > > amount of problems encountered during
-> > suspend/resume and shutdown.
-> > > This isn't possible.
-> > > Hardware doesn't support interrupts on memstick bus
-> > changes, it only
-> > > supports DMA done from/to internal FIFO, and DMA it
-> > only possible for
-> > > 512 byte TPCs.
-> > > 
-> > 
-> 
-> How depressing.
-> 
-> > 
-> > Another question.
-> > 
-> > I see that current code ignores MEMSTICK_CAP_AUTO_GET_INT
-> > Instread mspro_blk.c enables this capability for parallel
-> > mode, assuming
-> > that hw supports it. Its true in my case, but might not be
-> > true in other
-> > cases.
-> > I think I should fix that, right?
-> 
-> This is mandated by the spec. INT should be available automatically in
-> parallel mode, and some hardware does it in serial as well.
-Thinking again about that I agree with you.
-Then I can remove 2 more lines from my driver.
+On Thursday 29 July 2010 07:24:29 KAMEZAWA Hiroyuki wrote:
+> On Thu, 29 Jul 2010 14:23:33 +0900 (JST)
+>
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > Can you please add explicit commenting in the code?
+>
+> How about this ?
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> At hibernation, all pages-should-be-saved are written into a image (here,
+> swap). Then, swap_map[], memmap etcs are also saved into disks.
+>
+> But, swap allocation happens one by one. So, the final image of swap_map[]
+> is different from saved one and the commit
+> c9e444103b5e7a5a3519f9913f59767f92e33baf changes page's state while
+> assiging swap. Because memory can be modified in hibernation is only
+> not-to-be-save memory. it's a breakage.
+>
+> This patch fixes it by disabling swap entry reuse at hibernation.
 
-Btw, I want to add a callback from driver to card driver to be able to
-reset card in case of error (windows driver does that in case of any
-error)
+6 days with no crash - so the patch seems to work.
 
-I would use most of the mspro_block_resume for the implementation for
-mspro.
 
-Any objections, suggestions?
 
-> 
-> > 
-> > Also I see that you bath
-> > TPC_READ_LONG_DATA/TPC_READ_LONG_DATA
-> > Does that mean that every HW sector is larger that 512?
-> > If so, you are doing copy on write, right?
-> > I have small caching in my sm_ftl of last sector. It helps
-> > performance a
-> > lot.
-> 
-> 
-> That's how its called in the spec.
-> Sectors can be larger than 512b on Pro-HG sticks, and there's additional
-> TPC_READ/WRITE_QUAD_DATA which operates on larger quantities.
-> 
-> > 
-> > 
-> > Also I want to clarify that the only kind of interrupts
-> > supported by hw
-> > (besides usual card detection interrupt), is DMA done
-> > interrupt.
-> > Thats why I have to use thread.
-> > Doing polling in r592_submit_req (which runs in atomic
-> > context is just
-> > cruel).
-> 
-> Yes, I see you have a timed wait there.
-> 
-> 
-> > Besides, under moderate IO load, the IO thread doesn't
-> > sleep, thus there
-> > is no overhead of wake/sleep.
-> > 
-> > 
-> > Best regards,
-> > Maxim Levitsky
-> > 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/swapfile.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+>
+> Index: linux-2.6.34.org/mm/swapfile.c
+> ===================================================================
+> --- linux-2.6.34.org.orig/mm/swapfile.c
+> +++ linux-2.6.34.org/mm/swapfile.c
+> @@ -315,8 +315,15 @@ checks:
+>  	if (offset > si->highest_bit)
+>  		scan_base = offset = si->lowest_bit;
+>
+> -	/* reuse swap entry of cache-only swap if not busy. */
+> -	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
+> +	/*
+> + 	 * reuse swap entry of cache-only swap if not busy &&
+> + 	 * when we're called via pageout(). At hibernation, swap-reuse
+> + 	 * is harmful because it changes memory status...which may
+> + 	 * be saved already.
+> + 	 */
+> +	if (vm_swap_full()
+> +		&& usage == SWAP_HAS_CACHE
+> +		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+>  		int swap_was_freed;
+>  		spin_unlock(&swap_lock);
+>  		swap_was_freed = __try_to_reclaim_swap(si, offset);
+>
 
-Best regards,
-Maxim Levitsky
 
+-- 
+Ondrej Zary
