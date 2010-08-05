@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760442Ab0HEQpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:45:12 -0400
-Received: from thunk.org ([69.25.196.29]:47504 "EHLO thunker.thunk.org"
+	id S933417Ab0HEQsH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:48:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62323 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757439Ab0HEQpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:45:07 -0400
-Date: Thu, 5 Aug 2010 12:45:04 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
- are no dirty pages.
-Message-ID: <20100805164504.GI2901@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>,
-	Mingming Cao <cmm@us.ibm.com>, Ric Wheeler <rwheeler@redhat.com>,
-	linux-ext4 <linux-ext4@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com>
- <1272934667.2544.3.camel@mingming-laptop>
- <4BE02C45.6010608@redhat.com>
- <1273002566.3755.10.camel@mingming-laptop>
- <20100629205102.GM15515@tux1.beaverton.ibm.com>
- <20100805164008.GH2901@thunk.org>
+	id S1750881Ab0HEQsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:48:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
+   d="scan'208";a="593293477"
+Message-ID: <4C5AEB41.9050903@intel.com>
+Date: Thu, 05 Aug 2010 09:48:01 -0700
+From: John Fastabend <john.r.fastabend@intel.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805164008.GH2901@thunk.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: divya <dipraksh@linux.vnet.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        netdev <netdev@vger.kernel.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
+Subject: Re: [linux-next] build failure
+References: <4C5A4CF4.4070203@linux.vnet.ibm.com>
+In-Reply-To: <4C5A4CF4.4070203@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-P.S.  If it wasn't clear, I'm still in favor of trying to coordinate
-barriers across the whole file system, since that is much more likely
-to help use cases that arise in real life.
+divya wrote:
+> Yestersday's linux-next(2.6.35_next_20100802) build fails with the following error on both system p and x.
+> 
+> 
+>    drivers/net/ixgbe/ixgbe_main.c: In function 'ixgbe_select_queue':
+>    drivers/net/ixgbe/ixgbe_main.c:6159: error: 'struct ixgbe_fcoe' has no member named 'up'
+>    drivers/net/ixgbe/ixgbe_main.c: In function 'ixgbe_xmit_frame':
+>    drivers/net/ixgbe/ixgbe_main.c:6221: error: 'struct ixgbe_fcoe' has no member named 'up'
+>    make[3]: *** [drivers/net/ixgbe/ixgbe_main.o] Error 1
+>    make[2]: *** [drivers/net/ixgbe] Error 2
+>    make[2]: *** Waiting for unfinished jobs....
+>    make[1]: *** [drivers/net] Error 2
+>    make: *** [drivers] Error 2
+> 
+> Thanks
+> Divya
+> 
+> 
 
-   	    	       	     	     - Ted
+Hi Divya,
+
+Jeff should have a fix for this in his queue already.  This is caused by 
+building with CONFIG_FCOE and without CONFIG_IXGBE_DCB.
+
+Thanks,
+John.
