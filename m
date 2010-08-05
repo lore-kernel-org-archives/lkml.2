@@ -1,68 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760841Ab0HEWvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:51:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48823 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758591Ab0HEWvq (ORCPT
+	id S934887Ab0HEXAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:00:06 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62176 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756396Ab0HEW76 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:51:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EpfJMdxgTPhn1XbQVvipS85Fv8umZu8ZLufJPzTaatCagYEBr8C925SFcEmi5Kny5A
-         cmjYfVqB20CwH61/M/N44lQmXyTZ9JIwRBYGwTB9sPm8wXPmkoFj7hk3FD27XpubZtyH
-         cLtueyHp5zt7SHuDPyNqDeAiZV3VLHk+lk1xE=
-Subject: Re: [PATCH 0/2 V3] Driver for Ricoh cardreader + few fixes
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281021809-20924-1-git-send-email-maximlevitsky@gmail.com>
-References: <1281021809-20924-1-git-send-email-maximlevitsky@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Aug 2010 01:51:41 +0300
-Message-ID: <1281048701.7148.13.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Aug 2010 18:59:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <4C58B1B6.9050005@quicinc.com>
+References: <4C58A7AA.8020007@codeaurora.org> <20100803235631.GA17759@suse.de> 
+	<4C58AE15.6090900@codeaurora.org> <20100804000945.GA19729@suse.de> 
+	<4C58B1B6.9050005@quicinc.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 5 Aug 2010 16:59:35 -0600
+X-Google-Sender-Auth: xLCZK-7-LaM10-3iznqHbjUntBw
+Message-ID: <AANLkTikVzh9=DvvUPbKmDeo6k2-pPVSnjH+GxAPdQFO4@mail.gmail.com>
+Subject: Re: [RFC PATCH] platform: Faciliatate the creation of pseduo-platform 
+	busses
+To: Patrick Pannuto <ppannuto@quicinc.com>
+Cc: Greg KH <gregkh@suse.de>, Patrick Pannuto <ppannuto@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "damm@opensource.se" <damm@opensource.se>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>, "dtor@mail.ru" <dtor@mail.ru>,
+        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 18:23 +0300, Maxim Levitsky wrote: 
-> Hi,
-> 
-> This is third revision of my patches that conatains one more fix, and few fixes
-> for the driver.
-> 
-> Changes since V2:
-> * Removed accidently added hunk from r852.c
-> * Few cosmetic cleanups in the driver
-> 
-> 
-> --- original description from v2 ---
-> 
-> Patches 1-2 have no reason to be held  back from beeing merged in 2.6.35
-> In fact patch #2 should be added to -stable as well.
-> 
-> The actual driver (patch #3) is new driver, so it can't introduce regressions,
-> thus I think it can go to 2.6.36 as well.
-> 
-> I already have report form one user that driver works.
-Two users now...
+On Tue, Aug 3, 2010 at 6:17 PM, Patrick Pannuto <ppannuto@quicinc.com> wrote:
+>>>>>
+>>>>>    struct platform_device sub_bus1 = {
+>>>>>            .name           = "sub_bus1",
+>>>>>            .id             = -1,
+>>>>>            .dev.bus        = &my_bus_type,
+>>>>>    }
+>>>>>    EXPORT_SYMBOL_GPL(sub_bus1);
+>>>>
+>>>> You really want a bus hanging off of a bus?  Normally you need a device
+>>>> to do that, which is what I think you have here, but the naming is a bit
+>>>> odd to me.
+>>>>
+>>>> What would you do with this "sub bus"?  It's just a device, but you are
+>>>> wanting it to be around for something.
+>>>>
+>>>
+>>> It's for power management stuff, basically, there are actual physical buses
+>>> involved that can be completely powered off IFF all of their devices are
+>>> not in use. Plus it actually matches bus topology this way.
+>>
+>> Then create a real bus hanging off of a device, not another device that
+>> "acts" like a bus here, right?  Or am I missing the point?
+>>
+>
+> The motivation for doing it this was is that one driver could drive
+> devices on two different subbusses.  In the example, "my-driver" could
+> drive a device on sub_bus1 AND sub_bus2 (if there were 2+ devices, one
+> or more on each bus).
+>
+> From my understanding, this is not possible if they are actually
+> different busses.
 
-> 
-> Best regards,
-> 	Maxim Levitsky
-> 
-> 
+It sounds an awful lot like 2 separate concepts are being conflated
+here.  In Linux terminology, we have two things:
 
-Andrew, this is the latest version of my patches.
-Sorry again for the mess in V1 of patches I sent to you.
+/bus types/ describe the common behavour of similarly attached things.
+/physical or logical busses/ are where devices are actually attached
+registered to the system.
 
+These are not the same thing.
 
-Best regards,
-Maxim Levitsky
+The primary thing that a bus-type provides is the set of device driver
+that can be bound to the device plus some common functionality.
+Almost every struct device has the 'struct bus_type bus' field set so
+that it can be bound against a device driver when it is registered.
 
+Every struct device also has a 'struct device *parent' field.  The
+parent field denotes where the device lives in the Linux device model
+(see /sys/devices/*), but it says *nothing* about what the bus type of
+device it is.  Remember I mentioned physical/logical busses earlier?
+Well the core Linux device model doesn't really have a concept of bus
+instances, it only knows about devices and bus types.  The .parent
+field is the closest thing the device model has to a bus instance, but
+the model places no constraints on the bus type of each child 'struct
+device'.
+
+(caveat: many bus_types do have a concept of bus instances; but that
+is specific to the bus_type.  The core device model doesn't care.
+Also, in practical terms, yes most sibling devices will also be of the
+same bus_type, but it is not a given, and it is not enforced.)
+
+For example, a system can have many physical pci busses, but all the
+devices hanging off those busses are still just registered on
+pci_bus_type.  The parent of those devices, however, reflects the
+physical bus the device is attached to.
+
+In fact, the bus type has absolutely no bearing on where a device
+actually lives in the Linux driver model.  A common misunderstanding
+is that all platform devices live under /sys/devices/platform.
+
+This also is not true.
+
+By default the platform bus will put devices without a parent into
+/sys/devices/platform, but if parent is set, then the device will be
+registered where the parent pointer tells it to be registered.  It is
+totally okay to have the following structure (off the top of my head):
+
+system_bus (platform_bus_type, registers a bunch of child devices)
+|--pci_bus (platform_bus_type; implements a pci host bridge)
+|  |--usb host controller 1 (pci_bus_type, implements a usb bus instance)
+|  |--usb host controller 2 (pci_bus_type, implements a usb bus instance)
+|  |--fpga (pci_bus_type, implements a bunch of devices)
+|     |--spi controller (platform_bus_type)
+|     |--custom peripheral (platform_bus_type)
+|--uart (platform_bus_type)
+|--uart (platform_bus_type)
+|--ethernet (platform_bus_type)
+|--external bus (platform_bus_type; represents and external local bus)
+|  |--i2c controller (platform_bus_type)
+|  |  |--eeprom (i2c_bus_type)
+|  |  |--temperature sensor (i2c_bus_type)
+|--gpio controller (platform_bus_type)
+
+Platform devices can show up just about anywhere in the tree.
+
+(On that point Greg, what is the reason for even having the
+/sys/devices/platform/ parent?  Why not just let the platform devices
+sit at the root of the device tree?  In the OF case (granted, I'm
+biased) all of the platform_device registrations reflect the actual
+device hierarchy expressed in the device tree data.)
+
+So, the *only* reason to have a different bus_type is if the actual
+behaviour of the bus is different.  A different bus type wouldn't even
+cause a different topology if doing so wouldn't make sense.  For
+example in the OMAP case, the topology might look like:
+
+system_bus (platform_bus_type, registers a bunch of child devices)
+|  ...
+|--uart (omap_bus_type)
+|--uart (omap_bus_type)
+|--ethernet (platform_bus_type)
+
+See?  Devices of different types can often be siblings at the same
+device layer.  (note: not *always* true.  PCI busses for instance
+always expect to only host pci_devices and visa-versa, but for simple
+platform-like busses it may be true).
+
+Now, having gone on this whole long tirade, it looks like having
+separate platform bus types may not be the best approach after all.
+Magnus and Kevin are exploring using devres to handle implementing the
+system-specific behaviour.  It is certainly an area for more research
+and experimental implementations.
+
+g.
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
