@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933494Ab0HEOld (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:41:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41925 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933481Ab0HEOlW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:41:22 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>,
-        David Airlie <airlied@linux.ie>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 8/9] drm_fb_helper: Preserve capability to use atomic kms
-Date: Thu,  5 Aug 2010 09:39:57 -0500
-Message-Id: <1281019198-6777-9-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1281019198-6777-8-git-send-email-jason.wessel@windriver.com>
-References: <1281019198-6777-1-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-2-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-3-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-4-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-5-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-6-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-7-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-8-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 05 Aug 2010 14:40:10.0592 (UTC) FILETIME=[1B38D600:01CB34AC]
+	id S933520Ab0HEOmA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:42:00 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46815 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933507Ab0HEOlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 10:41:52 -0400
+Date: Fri, 6 Aug 2010 00:41:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 4, add a new git tree please?
+Message-Id: <20100806004144.41f4641f.sfr@canb.auug.org.au>
+In-Reply-To: <20100805143732.GA5697@phenom.dumpdata.com>
+References: <20100804151035.14678528.sfr@canb.auug.org.au>
+	<20100804222350.GA2220@phenom.dumpdata.com>
+	<20100805103050.3c201cdd.sfr@canb.auug.org.au>
+	<20100805143732.GA5697@phenom.dumpdata.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__6_Aug_2010_00_41_44_+1000_Lf52HIBeNazR2cTx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 5349ef3127c77075ff70b2014f17ae0fbcaaf199 (drm/fb: fix
-FBIOGET/PUT_VSCREENINFO pixel clock handling) changed the logic of
-when a pixclock was valid vs invalid.
+--Signature=_Fri__6_Aug_2010_00_41_44_+1000_Lf52HIBeNazR2cTx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The atomic kernel mode setting used by the kernel debugger relies upon
-the drm_fb_helper_check_var() to always return -EINVAL.  Until a
-better solution exists, this behavior will be restored.
+Hi Konrad,
 
-CC: David Airlie <airlied@linux.ie>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- drivers/gpu/drm/drm_fb_helper.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, 5 Aug 2010 10:37:32 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
+.com> wrote:
+>
+> Looking at your linux-next tree it looks that you added the wrong tree.
+> You added 'xen-2.6.git' while in actuallity the tree is 'xen.git'.
+> Could you change it please? Thanks.
 
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index 6245add..de82e20 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -685,7 +685,7 @@ int drm_fb_helper_check_var(struct fb_var_screeninfo *var,
- 	struct drm_framebuffer *fb = fb_helper->fb;
- 	int depth;
- 
--	if (var->pixclock != 0)
-+	if (var->pixclock != 0 || in_dbg_master())
- 		return -EINVAL;
- 
- 	/* Need to resize the fb object !!! */
--- 
-1.6.4.rc1
+Ooops.  Actually, I fetched the correct tree, it was just in the listing
+that it was wrong (copy and paste error).  Fixed now.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__6_Aug_2010_00_41_44_+1000_Lf52HIBeNazR2cTx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMWs2oAAoJEDMEi1NhKgbs78oH/0i4kChAcztgjY/Y+6rhk9YG
+Gzx4qjFyZFjPXH5zQldLp12enLOWpSblV4SCL9iTn7UTVcxLZH23vTSdwbSA+lF3
+HKho2ENbmbRUebB/OUTOBHQeqj0mFFCftiCvgbgYXcQOFkjPj9hEBjIAeLGwr/ey
+2E5CjqBlX29iP2cNgd3ZZ8fE//WDNDetfWLmxfIqoBFUEYDlky5KoY59njN5+lKV
+Vd8pq++rMs3tqfWz2+D6LUdXCkNWbR/LMU7aVENuPhsV+NvhDbmEgH9nwjSfJr97
+39Qbtz66ed+lnHJYEd/Q6wD+Bk8ECqzGmPzDKNaOL46zgqc9uKBb/xjwZBpe05A=
+=GlpD
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__6_Aug_2010_00_41_44_+1000_Lf52HIBeNazR2cTx--
