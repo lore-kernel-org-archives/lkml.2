@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760339Ab0HENV2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 09:21:28 -0400
-Received: from mail.lang.hm ([64.81.33.126]:44790 "EHLO bifrost.lang.hm"
+	id S1760337Ab0HENXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 09:23:10 -0400
+Received: from mail.lang.hm ([64.81.33.126]:57916 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758448Ab0HENVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 09:21:23 -0400
-Date: Thu, 5 Aug 2010 06:18:42 -0700 (PDT)
+	id S1759228Ab0HENXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 09:23:09 -0400
+Date: Thu, 5 Aug 2010 06:21:51 -0700 (PDT)
 From: david@lang.hm
 X-X-Sender: dlang@asgard.lang.hm
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        linux-pm@lists.linux-foundation.org,
+        linux-kernel <linux-kernel@vger.kernel.org>, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
         swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk, menage@google.com, david-b@pacbell.net,
-        James.Bottomley@suse.de, tytso@mit.edu, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
-In-Reply-To: <20100804195704.GA23681@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
-References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100804195704.GA23681@linux.vnet.ibm.com>
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <201008050210.40995.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1008050620310.25170@asgard.lang.hm>
+References: <20100801210548.23f77ff6@infradead.org> <201008050126.20812.rjw@sisk.pl> <alpine.DEB.2.00.1008041634560.6545@asgard.lang.hm> <201008050210.40995.rjw@sisk.pl>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
@@ -28,56 +29,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+On Thu, 5 Aug 2010, Rafael J. Wysocki wrote:
 
-> Continuing to rush in where angels fear to tread...
-
-here here :-)
-
-> o	"PM-driving application" are applications that are permitted
-> 	to acquire suspend blockers on Android.  Verion 8 of the
-> 	suspend-blocker patch seems to use group permissions to determine
-> 	which applications are classified as power aware.  More generally,
-> 	PM-driving applications seem to be those that have permission
-> 	to exert some control over the system's sleep state.
+> On Thursday, August 05, 2010, david@lang.hm wrote:
+>> On Thu, 5 Aug 2010, Rafael J. Wysocki wrote:
+>>
+>>> On Thursday, August 05, 2010, david@lang.hm wrote:
+>>>> On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
+>>>>
+>>>>> Subject: Re: Attempted summary of suspend-blockers LKML thread
+>>>>>
+>>>>> On Wednesday, August 04, 2010, david@lang.hm wrote:
+>>>>>> On Wed, 4 Aug 2010, Rafael J. Wysocki wrote:
+>>>>>>> In the suspend case, when you have frozen all applications, you can
+>>>>>>> sequentially disable all interrupts except for a few selected ("wakeup") ones
+>>>>>>> in a safe way.   By disabling them, you ensure that the CPU will only be
+>>>>>>> "revived" by a limited set of events and that allows the system to stay
+>>>>>>> low-power for extended time intervals.
+>>>>>>
+>>>>>> the benifit of this will depend on what wakeups you are able to avoid by
+>>>>>> putting the hardware to sleep. Depending on the hardware, this may be not
+>>>>>> matter that much.
+>>>>>
+>>>>> That's correct, but evidently it does make a difference with the hardware
+>>>>> Android commonly runs on.
+>>>>
+>>>> Ok, but is there a way to put some of this to sleep without involving a
+>>>> full suspend?
+>>>
+>>> Technically, maybe, but we have no generic infrastructure in the kernel for that.
+>>> There may be SoC-specific implementations, but nothing general enough.
+>>
+>> well, I know that we have specific cases of this (drive spin-down, cpu
+>> speed, display backlight for a few examples), is it worth trying to define
+>> a generic way to do this sort of thing? or should it be left as a
+>> per-device thing (with per-device knobs to control it)
 >
-> 	Note that an application might be power-oblivious on one Android
-> 	device and PM-driving on another, depending on whether the user
-> 	allows that application to acquire suspend blockers.  The
-> 	classification might even change over time.  For example, a
-> 	user might give an application PM-driving status initially,
-> 	but change his or her mind after some experience with that
-> 	application.
+> The ability to put specific devices into low-power states in certain
+> well-defined situations is clearly not sufficient.  For one example, usually
+> you can easily put an Ethernet adapter into a low-power state when the network
+> cable is detached from it.  It is not clear, however, what criteria should be
+> used for deciding to put that adapter into the low-power state when the cable
+> is attached to it (and open() has been called).
+>
+> To mimic suspend you'll have to be able to put _all_ devices into low-power
+> states and shut down the interrupts that allow the monotonic clock to advance.
+> That's much more than simple runtime power management of selected devices.
 
-One thing that I think it's important to document here is theinformation 
-that Brian provided in response to your question about how many (or 
-actually how few) applications fall into this catefory
+true for the generic case, my thought was that for specially built 
+hardware it may be possible to select hardware that lets you get very 
+close.
+
+>> I thought I had seen discussion on how to define such a generic power
+>> management interface, and I thought the results had been acceptable.
+>
+> If you have a pointer to that discussion, I'm interested. :-)
+
+sorry, it was several months ago.
 
 David Lang
-
-Quote:
-
-> I should have asked this earlier...  What exactly are the apps'
-> compatibility constraints?  Source-level APIs?  Byte-code class-library
-> invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
-> words, syscall)?
-
-For Java/Dalvik apps, the wakelock API is pertty high level -- it
-talks to a service via RPC (Binder) that actually interacts with the
-kernel.  Changing the basic kernel<->userspace interface (within
-reason) is not unthinkable.  For example, Arve's suspend_blocker patch
-provides a device interface rather than the proc interface the older
-wakelock patches use.  We'd have to make some userspace changes to
-support that but they're pretty low level and minor.
-
-In the current model, only a few processes need to specifically
-interact with the kernel (the power management service in the
-system_server, possibly the media_server and the radio interface
-glue).  A model where every process needs to have a bunch of
-instrumentation is not very desirable from our point of view.  We
-definitely do need reasonable statistics in order to enable debugging
-and to enable reporting to endusers (through the Battery Usage UI)
-what's keeping the device awake.
-
-Brian
-
