@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933623Ab0HEP0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:26:22 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:39301 "EHLO e3.ny.us.ibm.com"
+	id S933618Ab0HEP1F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:27:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50077 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933274Ab0HEP0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:26:19 -0400
-Date: Thu, 5 Aug 2010 20:53:35 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	id S933274Ab0HEP07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 11:26:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,322,1278313200"; 
+   d="scan'208";a="593262776"
+Date: Thu, 5 Aug 2010 23:26:46 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv10 2.6.35-rc6-tip 12/14]  perf: Add third parameter to
- symbol_filter_t.
-Message-ID: <20100805152335.GD9561@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100727110855.24690.26901.sendpatchset@localhost6.localdomain6>
- <20100727111119.24690.74064.sendpatchset@localhost6.localdomain6>
- <20100805151930.GB12570@ghostprotocols.net>
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 3/6] writeback: kill writeback_control.more_io
+Message-ID: <20100805152646.GA10385@localhost>
+References: <20100722050928.653312535@intel.com>
+ <20100722061822.763629019@intel.com>
+ <20100801153424.GA8204@barrios-desktop>
+ <20100805145053.GA6161@localhost>
+ <20100805145606.GA3083@barrios-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100805151930.GB12570@ghostprotocols.net>
+In-Reply-To: <20100805145606.GA3083@barrios-desktop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Em Tue, Jul 27, 2010 at 04:41:19PM +0530, Srikar Dronamraju escreveu:
-> > GElf_Sym for a symbol is needed to filter out based on binding,
-> > type, value. This will be needed to list only global binding
-> > functions when listing functions from  perf probe.
+On Thu, Aug 05, 2010 at 10:56:06PM +0800, Minchan Kim wrote:
+> On Thu, Aug 05, 2010 at 10:50:53PM +0800, Wu Fengguang wrote:
+> > > include/trace/events/ext4.h also have more_io field. 
+> > 
+> > I didn't find it in linux-next. What's your kernel version?
 > 
-> Humm, I think it is better to store the symbol binding in struct symbol,
-> so that we can have the full symtab and then, on a particular routine,
-> decide wheter we should use it or not.
-> 
-> I'll cook up a patch now.
+> I used mmotm-07-29. 
 
-Okay, Please keep me in loop on that patch so that I can update this
-patch accordingly.
+Heh it's in linux-next too -- I didn't find the field because the
+chunk to remove it slipped into a previous patch..
 
---
-Thanks and Regards
-Srikar
+Thanks,
+Fengguang
