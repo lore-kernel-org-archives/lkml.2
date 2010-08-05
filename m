@@ -1,123 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758753Ab0HEDRl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 23:17:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16704 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756958Ab0HEDRj (ORCPT
+	id S1758761Ab0HEDSN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 23:18:13 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55683 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756958Ab0HEDSK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 23:17:39 -0400
-Date: Wed, 4 Aug 2010 20:14:52 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: linux-crypto@vger.kernel.org,
-        Steffen Klassert <steffen.klassert@secunet.com>,
-        Dan Kruchinin <dkruchinin@acm.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Documentation/padata.txt: fix typos etc.
-Message-Id: <20100804201452.647aac63.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C5A2D21.00D5:SCFMA4539814,ss=1,fgs=0
+	Wed, 4 Aug 2010 23:18:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=yAf9ZQV266EgUWrzacXjFWXEigaZhD2kKNhwNKgCJnWzdLk9e9NnU9/J3jjRaH3tqj
+         B+y4qnHAMie0z4yIcNoN9o/uKq98oJ00nSbxYeLrHcDNFbJQL52HYTuqqglzKs6q2Cb7
+         HsswJl5GBhzm2XdMcrwkK3SMhkzVELY3SZAY4=
+Date: Thu, 5 Aug 2010 11:22:17 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Michael Neuling <mikey@neuling.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Simon Horman <horms@verge.net.au>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [rfc] Merge kexec-tools into the kernel tree
+Message-ID: <20100805032217.GA5235@cr0.nay.redhat.com>
+References: <20100804070647.GB24064@verge.net.au>
+ <m17hk6de62.fsf@fess.ebiederm.org>
+ <30114.1280963486@neuling.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <30114.1280963486@neuling.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, Aug 05, 2010 at 09:11:26AM +1000, Michael Neuling wrote:
+>> > After all the excitement of relocating kexec-tools from
+>> > one location on kernel.org to another last week it was
+>> > suggested to me by Michael Neuling that the merging
+>> > kexec-tools into the kernel tree would be a good idea.
+>> >
+>> > Given that there have been a bunch of issues with kexec
+>> > on power that this would resolve. and there is precedence
+>> > for tools in the kernel tree, this sounds entirely reasonable to me.
+>> > So with my kexec-tools maintainer hat on, I would like to start
+>> > a conversation about this.
+>> 
+>> What are the issues with kexec on power?  Did someone fail to maintain
+>> ABI compatibility?
+>> 
+>> The interface isn't even supposed to be linux specific, so I can't
+>> imagine what would motivate moving this into the kernel tree.
+>> 
+>> I'm afraid that someone has a good answer for why their lives would be
+>> simpler if /sbin/kexec was in the kernel tree and I will be absolutely
+>> horrified and about someones stupidity when I hear that answer.
+>
+>I may have misrepresented how bad it is for power to Horms.  None of the
+>issues would be solved by a merge, but it would make life easier IMHO.
+>
+>In power we've added features to kexec which have required changes to
+>both the kernel and kexec-tools.  These have been backwards compatible,
+>so not to break to the ABI.  The problem here is getting users and
+>distros to take the correct versions of both sources if they want this
+>new feature.
+>
+>Similarly with bugs.  We recently went through a round of bug fixes for
+>new larger power7 machines.  We found bugs in both kexec-tools and the
+>kernel.  That meant we had to ensure users and distros were getting
+>correctly updated versions of both tools.
 
-Fix typos & grammar.
-Use CPU instead of cpu in text.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Steffen Klassert <steffen.klassert@secunet.com>,
- Herbert Xu <herbert@gondor.apana.org.au>,
- Dan Kruchinin <dkruchinin@acm.org>,
- Andrew Morton <akpm@linux-foundation.org>,
- linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
----
- Documentation/padata.txt |   24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+I am afraid kexec-tools is not alone, there are plenty of user-space
+applications which rely on some new kernel feature after a specific version.
+If this could be a reason for inclusion into kernel tree, then much more
+applications shall be included too. And if this happened, Linux would be
+more like *BSD.
 
---- lnx26-snap.orig/Documentation/padata.txt
-+++ lnx26-snap/Documentation/padata.txt
-@@ -19,7 +19,7 @@ overall control of how tasks are to be r
- 
- The pcpumask describes which processors will be used to execute work
- submitted to this instance in parallel. The cbcpumask defines which
--processors are allowed to use as the serialization callback processor.
-+processors are allowed to be used as the serialization callback processor.
- The workqueue wq is where the work will actually be done; it should be
- a multithreaded queue, naturally.
- 
-@@ -30,10 +30,10 @@ cpumasks this helper function can be use
- 
- Note: Padata maintains two kinds of cpumasks internally. The user supplied
- cpumasks, submitted by padata_alloc/padata_alloc_possible and the 'usable'
--cpumasks. The usable cpumasks are always the subset of active cpus in the
--user supplied cpumasks, these are the cpumasks padata actually use. So
--it is legal to supply a cpumask to padata that contains offline cpus.
--Once a offline cpu in the user supplied cpumask comes online, padata
-+cpumasks. The usable cpumasks are always a subset of active CPUs in the
-+user supplied cpumasks; these are the cpumasks padata actually uses. So
-+it is legal to supply a cpumask to padata that contains offline CPUs.
-+Once an offline CPU in the user supplied cpumask comes online, padata
- is going to use it.
- 
- There are functions for enabling and disabling the instance:
-@@ -44,7 +44,7 @@ There are functions for enabling and dis
- These functions are setting or clearing the "PADATA_INIT" flag;
- if that flag is not set, other functions will refuse to work.
- padata_start returns zero on success (flag set) or -EINVAL if the
--padata cpumask contains no active cpu (flag not set).
-+padata cpumask contains no active CPU (flag not set).
- padata_stop clears the flag and blocks until the padata instance
- is unused.
- 
-@@ -63,11 +63,11 @@ done with great frequency.
- 
- It's possible to change both cpumasks of a padata instance with
- padata_set_cpumasks by specifying the cpumasks for parallel execution (pcpumask)
--and for the serial callback function (cbcpumask). padata_set_cpumask is to
-+and for the serial callback function (cbcpumask). padata_set_cpumask is used to
- change just one of the cpumasks. Here cpumask_type is one of PADATA_CPU_SERIAL,
- PADATA_CPU_PARALLEL and cpumask specifies the new cpumask to use.
--To simply add or remove one cpu from a certain cpumask the functions
--padata_add_cpu/padata_remove_cpu are used. cpu specifies the cpu to add or
-+To simply add or remove one CPU from a certain cpumask the functions
-+padata_add_cpu/padata_remove_cpu are used. cpu specifies the CPU to add or
- remove and mask is one of PADATA_CPU_SERIAL, PADATA_CPU_PARALLEL.
- 
- If a user is interested in padata cpumask changes, he can register to
-@@ -82,7 +82,7 @@ To unregister from that notifier:
- 					   struct notifier_block *nblock);
- 
- The padata cpumask change notifier notifies about changes of the usable
--cpumasks, i.e. the subset of active cpus in the user supplied cpumask.
-+cpumasks, i.e. the subset of active CPUs in the user supplied cpumask.
- 
- Padata calls the notifier chain with:
- 
-@@ -92,7 +92,7 @@ Padata calls the notifier chain with:
- 
- Here cpumask_change_notifier is registered notifier, notification_mask
- is one of PADATA_CPU_SERIAL, PADATA_CPU_PARALLEL and cpumask is a pointer
--to a struct padata_cpumask that contains the new cpumask informations.
-+to a struct padata_cpumask that contains the new cpumask information.
- 
- Actually submitting work to the padata instance requires the creation of a
- padata_priv structure:
-@@ -104,7 +104,7 @@ padata_priv structure:
-     };
- 
- This structure will almost certainly be embedded within some larger
--structure specific to the work to be done.  Most its fields are private to
-+structure specific to the work to be done.  Most of its fields are private to
- padata, but the structure should be zeroed at initialisation time, and the
- parallel() and serial() functions should be provided.  Those functions will
- be called in the process of getting the work done as we will see
+Also, this is a big reason why linux distributions exist. They are
+responsible for collecting the right version of some application and the
+right version of kernel that makes them work together.
+
+So, I think  _we_ should get used to this unless Linus decides to change
+this model.
+
+>Neither of these problems are show stoppers or power specific but I
+>think it would make life easier in these scenarios if the sources were
+>merged.  We could just tell users and distros to grab (say) 2.6.35
+>sources and we'd know they'd be right for both userspace and the kernel.
+>
+
+I think the solution is documention, or release notes, not including
+it into kernel tree.
+
+Thanks.
