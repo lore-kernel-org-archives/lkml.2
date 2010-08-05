@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760928Ab0HEW0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:26:14 -0400
-Received: from kroah.org ([198.145.64.141]:37763 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934528Ab0HEWYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:48 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 52/67] serial: "altera_uart: simplify altera_uart_console_putc()" checkpatch fixes
-Date: Thu,  5 Aug 2010 15:23:19 -0700
-Message-Id: <1281047014-23429-52-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213528.GA13794@kroah.com>
-References: <20100805213528.GA13794@kroah.com>
+	id S934624Ab0HEWZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:25:35 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54336 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760882Ab0HEWYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:35 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "damm\@opensource.se" <damm@opensource.se>,
+        "lethal\@linux-sh.org" <lethal@linux-sh.org>,
+        "rjw\@sisk.pl" <rjw@sisk.pl>,
+        "eric.y.miao\@gmail.com" <eric.y.miao@gmail.com>,
+        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
+        zt.tmzt@gmail.com, grant.likely@secretlab.ca, magnus.damm@gmail.com
+Subject: Re: [PATCH] platform: Facilitate the creation of pseduo-platform busses
+Organization: Deep Root Systems, LLC
+References: <4C59E654.1090403@codeaurora.org>
+	<877hk56hiy.fsf@deeprootsystems.com> <4C5A0C68.9080500@codeaurora.org>
+	<87fwytxdba.fsf@deeprootsystems.com> <4C5AE75F.5020507@codeaurora.org>
+Date: Thu, 05 Aug 2010 15:24:31 -0700
+In-Reply-To: <4C5AE75F.5020507@codeaurora.org> (Patrick Pannuto's message of
+	"Thu, 05 Aug 2010 09:31:27 -0700")
+Message-ID: <87eiecr940.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
+Patrick Pannuto <ppannuto@codeaurora.org> writes:
 
-ERROR: code indent should use tabs where possible
-#32: FILE: drivers/serial/altera_uart.c:397:
-+^I         ALTERA_UART_STATUS_TRDY_MSK))$
+>> 
+>>> You had indicated that you were going on vacation for a month and I
+>>> had not seen any more follow-up on this issue, so I forged ahead.
+>> 
+>> Great, I'm glad you forged ahead.  There is definitely a broader need
+>> for something like this, and I have no personal attachment to the code.
+>> 
+>> I have no problems with you continuing the work (in fact, I'd prefer it.
+>> I have lots of other things to catch up on after my vacation.)
+>> 
+>> In the future though, it's common (and kind) to note the original author
+>> in the changelog when basing a patch on previous work.  Something like
+>> "originally written by..."  or "based on the work of..." etc.
+>
+> Ok, I can do that; that was the intention of the "original inspiration from"
+> line at the beginning.  
 
-total: 1 errors, 0 warnings, 39 lines checked
+Maybe we need an 'Inspired-by:'  tag. :)
 
-./patches/altera_uart-simplify-altera_uart_console_putc.patch has style problems, please review.  If any of these errors
-are false positives report them to the maintainer, see
-CHECKPATCH in MAINTAINERS.
+> Is there a more formal way of indicating this in the
+> next version of the patch? Should I add you as a "From:" or an "Author:"?
 
-Please run checkpatch prior to sending patches
+I don't know if there is an official way of doing this.
 
+I typically add something like "based on the idea/code originally
+proposed/written by John Doe" in the changelog, and then add Cc: John
+Doe <...> in the changelog too, but AFAIK, none of this is formalized.
 
-This fix got lost when someone merged "altera_uart: simplify
-altera_uart_console_putc()".  Please don't lose fixes.  Please don't write
-of mere patches which have trivial checkpatch errors.
-
-Cc: Tobias Klauser <tklauser@distanz.ch>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/serial/altera_uart.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
-index 0f11896..f8d8a00 100644
---- a/drivers/serial/altera_uart.c
-+++ b/drivers/serial/altera_uart.c
-@@ -394,7 +394,7 @@ int __init early_altera_uart_setup(struct altera_uart_platform_uart *platp)
- static void altera_uart_console_putc(struct uart_port *port, const char c)
- {
- 	while (!(readl(port->membase + ALTERA_UART_STATUS_REG) &
--	         ALTERA_UART_STATUS_TRDY_MSK))
-+		 ALTERA_UART_STATUS_TRDY_MSK))
- 		cpu_relax();
- 
- 	writel(c, port->membase + ALTERA_UART_TXDATA_REG);
--- 
-1.7.2
-
+Kevin
