@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab0HEB6X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 21:58:23 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:54221 "EHLO e4.ny.us.ibm.com"
+	id S1759611Ab0HECAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 22:00:06 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36511 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759366Ab0HEB6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 21:58:20 -0400
-Date: Wed, 4 Aug 2010 18:58:15 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100805015815.GN2927@count0.beaverton.ibm.com>
-References: <20100731215214.2543c07e@infradead.org>
- <20100801054816.GI2470@linux.vnet.ibm.com>
- <20100731230101.7cc1d8c7@infradead.org>
- <20100801191228.GL2470@linux.vnet.ibm.com>
- <20100801154708.19817b75@infradead.org>
- <20100802011006.GS2470@linux.vnet.ibm.com>
- <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
- <20100803183447.0275c134@infradead.org>
- <20100804163216.GB24163@linux.vnet.ibm.com>
- <20100804163509.GA31523@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100804163509.GA31523@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759439Ab0HECAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 22:00:01 -0400
+Subject: Re: [PATCH 1/3] Input: sysrq - drop tty argument from sysrq ops
+ handlers
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        David Miller <davem@davemloft.net>, Fenghua Yu <fenghua.yu@intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>
+In-Reply-To: <20100804100926.3f24f5e5@lxorguk.ukuu.org.uk>
+References: <20100804075602.30647.91462.stgit@localhost.localdomain>
+	 <20100804075900.30647.46910.stgit@localhost.localdomain>
+	 <1280910830.1902.144.camel@pasglop>
+	 <20100804100926.3f24f5e5@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Aug 2010 11:59:24 +1000
+Message-ID: <1280973564.1902.166.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 05:35:09PM +0100, Matthew Garrett wrote:
-> On Wed, Aug 04, 2010 at 09:32:16AM -0700, Paul E. McKenney wrote:
+On Wed, 2010-08-04 at 10:09 +0100, Alan Cox wrote:
 > 
-> > If this doesn't work for the Android folks for whatever reason, another
-> > approach would be to do the freeze in user code, which could track
-> > whether any user-level resources (pthread mutexes, SysV semas, whatever)
-> > where held, and do the freeze on a thread-by-thread basis within each
-> > "victim" application as the threads reach safe points.
+> Fundamentally - no. However the impact it has on a lot of the drivers
+> will be significant and you'll be submitting a huge patch pile to fix up
+> all the locking assumptions (for one it means port->tty might change
+> across any call that ends up in sysrq)
+
+Right. That's nasty. I think we need somewhat to break the loop when
+that happens as if we were getting a new interrupt to some extent.
+
+And that's a lot of drivers to fix.
+
+> > serial drivers might need to be audited a bit to make sure they cope
+> > with the lock being dropped and re-acquired around the sysrq call.
 > 
-> The main problem I see with the cgroups solution is that it doesn't seem 
-> to do anything to handle avoiding loss of wakeup events.
+> Architecturally I think it would make more sense to add a new sysrq
+> helper which merely sets a flag, and check that flag at the end of the IRQ
+> when dropping the lock anyway.
 
-cgroups alone don't but there is a solution which doesn't require routing
-all event data through a single server -- use SIGIO.
+Interesting idea. That does mean that multiple sysrq in one interrupt
+will be coalesced but I don't see that as an issue.
 
-Suppose we've got two cgroups of tasks -- those in the initial freezer
-cgroup and those in a freezer cgroup meant for power-naive apps. Let's
-call the second cgroup the naive cgroup.
+> Otherwise it'll be a huge amount of work to even build test all those
+> consoles.
 
-One task -- let's call it the "waker" -- is in the initial cgroup is normaly
-asleep waiting for SIGIO. Note it's not an "app" -- it's been trusted/blessed
-to be a non-power-naive task. It will be signaled via SIGIO by the
-applications which want to be unfrozen when an event comes in.
-
-When the power-naive app in the naive cgroup opens a file descriptor it's
-going through the Android interpretter to make the syscall. The interpretter
-can do fcntl() on the fd to cause SIGIO to be delivered to the waker task.
-When the waker gets SIGIO it unfreezes the naive cgroup and thus wakes the
-power-naive app. When the power-naive app wakes it will
-poll/return-from-poll/read/return-from-read and thus retrieve the event.
-
-Then it's just a matter of choosing when to freeze the naive cgroup. That
-requires a userspace implementation of the suspend blockers API plus
-opportunistic suspend but does not require any other kernel pieces. Then you
-can use sigprocmask to prevent the freeze/wake-event race. You would
-probably even merge the waker with the daemon which implements
-opportunistic suspend.
+Right. Better to have a way where we can fix them one at a time. I'll
+look into it. Thanks.
 
 Cheers,
-    -Matt Helsley
+Ben.
+
+
