@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934280Ab0HEUck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:32:40 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56250 "EHLO hera.kernel.org"
+	id S934344Ab0HEUeR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:34:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56277 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759293Ab0HEUcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:32:31 -0400
-Date: Thu, 5 Aug 2010 20:31:30 GMT
-Message-Id: <201008052031.o75KVUBZ017140@hera.kernel.org>
+	id S934029Ab0HEUdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:33:11 -0400
+Date: Thu, 5 Aug 2010 20:31:27 GMT
+Message-Id: <201008052031.o75KVR7x017116@hera.kernel.org>
 From: "H. Peter Anvin" <hpa@linux.intel.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Subject: [GIT PULL] x86/setup for 2.6.36
@@ -18,7 +18,7 @@ Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
         Thomas Gleixner <tglx@linutronix.de>, Yinghai Lu <yinghai@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 05 Aug 2010 20:31:31 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 05 Aug 2010 20:31:28 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
