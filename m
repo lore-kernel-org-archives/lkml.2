@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759902Ab0HEIK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 04:10:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52927 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759708Ab0HEIKz convert rfc822-to-8bit (ORCPT
+	id S1759949Ab0HEITY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 04:19:24 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:52770 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab0HEITT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 04:10:55 -0400
-Subject: Re: lockdep and oops_in_progress
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTi=gnsPUPomCUXRLgV0PhNxtBaXiCheDU=yRV0Kx@mail.gmail.com>
-References: <AANLkTi=gnsPUPomCUXRLgV0PhNxtBaXiCheDU=yRV0Kx@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 05 Aug 2010 10:10:49 +0200
-Message-ID: <1280995849.1923.1515.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 5 Aug 2010 04:19:19 -0400
+X-Greylist: delayed 564 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 04:19:19 EDT
+Date: Thu, 5 Aug 2010 10:09:53 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, stable@kernel.org,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Bill Davidsen <davidsen@tmr.com>, Ben Gamari <bgamari.foss@gmail.com>
+Subject: Re: Why PAGEOUT_IO_SYNC stalls for a long time
+Message-ID: <20100805080953.GA3366@rhlx01.hs-esslingen.de>
+References: <20100801174229.4B08.A69D9226@jp.fujitsu.com> <20100804111005.GA17745@csn.ul.ie> <20100805151630.31CF.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805151630.31CF.A69D9226@jp.fujitsu.com>
+X-Priority: none
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 16:21 +1000, Dave Airlie wrote:
-> Hi guys,
+On Thu, Aug 05, 2010 at 03:20:44PM +0900, KOSAKI Motohiro wrote:
+> Yup, I posted them today. While my lite testing, they works intentionally. it mean
+>  - reduce low order reclaim latency
+>  - keep high successfull rate order-9 reclaim under heavy io workload
 > 
-> I was debugging a wierd issue with suspend/resume and fbcon/X with
-> some recent work Jesse and myself did to try and make sure a pinned
-> fbcon always gets the text on it with a panic or oops occurs.
-> 
-> It does this by testing the oops_in_progress flag, however once any
-> lockdep issue occurs it looks to me that we leave this flag set
-> forever, in most places I can see in oops code etc they call
-> bust_spinlocks(1) then bust_spinlocks(0) to balance the
-> oops_in_progress value, but lockdep never seems to reset it.
-> 
-> I'm wondering if there is an inherent reason for this or if I whip up
-> a patch to reset once the lockdep is printed if this would cause any
-> issues?
+> However, they obviously need more test. comment are welcome :)
 
-That's debug_locks_off(), right? I don't think there's a particular
-reason we keep it set, cleaning that up might take a bit of work but
-shouldn't be too hard.
+Thanks a lot!
 
-Ingo, do you remember anything about that?, I think that bit comes from
-before my time.
+I've been following recent discussions,
+however testing is planned to be done in nearer future
+since I'm currently "recovering" from large backlog (Thesis).
+
+Andreas Mohr
