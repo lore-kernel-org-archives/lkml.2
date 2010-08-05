@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933199Ab0HEVyP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 17:54:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65412 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932654Ab0HEVyK (ORCPT
+	id S934497Ab0HEWBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:01:48 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:58232 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab0HEWBq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 17:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=VUdqiE21+v2tRyftbmdSOD2NAVL1jHyB4JMZy+XiqR4THxbtE3CLq20+2ESGzDd2Ek
-         vsodiBwOexDD+rnGUJKzPMCbMjiL8Gi6ZWT0JOiyIxREOiyuHKh5/CUYm06Wxo8xfadQ
-         ZU4nLKn6gBETvbalYX4fpqHv3gzIaFlhwqRVo=
+	Thu, 5 Aug 2010 18:01:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=XU1CkRpI7FxsCTMTFvkeA3ZerlJtz9BL8lNPrVF2C5PLu4/CmsuSQ5J3EhPTOZAGy
+	WPf101um5+vKrZ7ZaMFCQ==
 MIME-Version: 1.0
-Date: Thu, 5 Aug 2010 23:54:09 +0200
-X-Google-Sender-Auth: iSr_8U9RYgJkY4Bx6SuGu-4yGeo
-Message-ID: <AANLkTin5gz-NBGYrmdOQ4F4s-fbETq642JVsHEEJY4HD@mail.gmail.com>
-Subject: Best way to send several patches
-From: Bjarke Istrup Pedersen <gurligebis@gentoo.org>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <1281044755.30969.8.camel@c-dwalke-linux.qualcomm.com>
+References: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
+	<1281044755.30969.8.camel@c-dwalke-linux.qualcomm.com>
+Date: Thu, 5 Aug 2010 15:01:43 -0700
+Message-ID: <AANLkTimZYveOZLoDS82z0nosAHa21ChHCK1GpophEQ1P@mail.gmail.com>
+Subject: Re: [GIT PULL] Initial Tegra ARM support
+From: Erik Gilling <konkers@google.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-tegra@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+If these changes went through Russell's tree there would be
+dependancies on arch/arm/mach-tegra/(Makefile|Kconfig) in
+arch/arm/(Makefile|Kconfig) breaking Russell's tree until it was
+merged with the tegra tree.  That sounds wrong to me.  Additionally
+these patches have received review on LAKML including some by Russell
+and nothing was mentioned about this being a problem.
 
-I'm reading on the kernelnewbies wiki about janitor work needing be to done.
-I have been cleaning up some stuff, and have alot of patches (I have
-split my changed into smaller patches).
+There is a conflict on these against linux/master.  I'm rebasing now for Linus.
 
-The question is, should I just send them all to this mailinglist
-(Section 3 of Documentation/SubmittingPatches - the one with the patch
-bomb - suggest that this is a bad idea), or how should I do it? (I
-have only submitted a single patch before, so I didn't have to worry
-about that back then).
+-Erik
 
-I have been thinking about sending a pull request, but since I've only
-done one patch up until now, I find it unlikely to be trusted enough
-to get a pull request through (correct me if I'm wrong).
-
-Best regards,
-Bjarke
+On Thu, Aug 5, 2010 at 2:45 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
+> On Thu, 2010-08-05 at 14:10 -0700, Erik Gilling wrote:
+>>  arch/arm/Kconfig                               |   25 +-
+>>  arch/arm/Makefile                              |    1 +
+>
+> In the future could you please send changes to arch/arm/Kconfig and
+> arch/arm/Makefile to Russell .. That way there's no chance for conflicts
+> with other -next trees.
+>
+> Daniel
+> --
+> Sent by an consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+>
+>
