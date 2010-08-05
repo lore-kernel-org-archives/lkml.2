@@ -1,143 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934522Ab0HEWGx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:06:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6512 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932528Ab0HEWGu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:06:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=Mzw7zNwDxzg+pC2+Cw2CJeqKMpR5oHa8k1UY7R1MbG78m0bkCtJqjDtQL2FgP6e/3
-	rEa2+77sCsxcY92j2hcNA==
+	id S1760429Ab0HEWHy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:07:54 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:45909 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S933687Ab0HEWHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:07:47 -0400
+Date: Fri, 6 Aug 2010 00:05:11 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: torvalds@osdl.org, akpm@osdl.org
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [git pull] PCMCIA updates for 2.6.36
+Message-ID: <20100805220511.GA7040@comet.dominikbrodowski.net>
+Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
+	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimZYveOZLoDS82z0nosAHa21ChHCK1GpophEQ1P@mail.gmail.com>
-References: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-	<1281044755.30969.8.camel@c-dwalke-linux.qualcomm.com>
-	<AANLkTimZYveOZLoDS82z0nosAHa21ChHCK1GpophEQ1P@mail.gmail.com>
-Date: Thu, 5 Aug 2010 15:06:47 -0700
-Message-ID: <AANLkTin_De+bqV9sC4k2iDaQ3i7r1pXLWbX87_dMAtAc@mail.gmail.com>
-Subject: Re: [GIT PULL] Initial Tegra ARM support
-From: Erik Gilling <konkers@google.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-I rebased my for-linus tree on top of master and resolved the merge
-conflict with arch/arm/Kconfig
+several PCMCIA updates for 2.6.36 are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git master
 
-The following changes since commit cdd854bc42b5e6c79bbbc40c6600d995ffe6e747:
-  Linus Torvalds (1):
-        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
+Please pull from that location. The diffstat and list of changes is below,
+the individual diffs are sent (at least) to the linux-pcmcia list.
 
-are available in the git repository at:
+This patch series also includes the removal of the PCMCIA ioctl code.
+The Kconfig option was already removed in the past kernel series; I have not
+received any further feedback -- besides the notable opposition by
+Russell King, last repeated during the 2.6.35 merge window -- on why
+this long obsoleted ioctl should still be made available by the kernel.
 
-  git://android.kernel.org/kernel/tegra.git for-linus
+In other news, this patch set contains a large cleanup of how PCMCIA
+drivers set up and utilize ioport resources -- the less often used
+iomem resources will follow in the next release cycle, though they
+are already properly set up, exported in sysfs, and registered with
+the core on properly behaving socket drivers. 
 
-Cheers,
-    Erik
+Thanks,
+        Dominik
 
-Colin Cross (4):
-      [ARM] tegra: Add clock support
-      [ARM] tegra: SMP support
-      [ARM] tegra: Add timer support
-      [ARM] tegra: harmony: Add harmony board file
+Dominik Brodowski (18):
+      pcmcia: remove obsolete ioctl
+      pcmcia: simplify event callback
+      pcmcia: split up central event handler
+      pcmcia: remove obsolete CS_EVENT_ definitions
+      pcmcia: remove unused flag, simplify headers
+      pcmcia: remove cs_types.h
+      pcmcia: use pcmica_{read,write}_config_byte
+      pcmcia: clean up cs.h
+      pcmcia: use struct resource for PCMCIA devices
+      pcmcia: do not use io_req_t after call to pcmcia_request_io()
+      pcmcia: do not use io_req_t when calling pcmcia_request_io()
+      pcmcia: move local definitions out of include/pcmcia/cs.h
+      pcmcia: remove memreq_t
+      pcmcia: use struct resource for PCMCIA devices, part 2
+      pcmcia: export resource information to sysfs
+      pcmcia: insert PCMCIA device resources into resource tree
+      pcmcia: do not request windows if you don't need to
+      pcmcia: avoid buffer overflow in pcmcia_setup_isa_irq
 
-Erik Gilling (5):
-      [ARM] tegra: initial tegra support
-      [ARM] tegra: Add IRQ support
-      [ARM] tegra: add GPIO support
-      [ARM] tegra: add pinmux support
-      [ARM] tegra: add MAINTAINERS entry
-
- MAINTAINERS                                    |    9 +
- arch/arm/Kconfig                               |   24 +-
- arch/arm/Makefile                              |    1 +
- arch/arm/mach-tegra/Kconfig                    |   50 +
- arch/arm/mach-tegra/Makefile                   |   14 +
- arch/arm/mach-tegra/Makefile.boot              |    3 +
- arch/arm/mach-tegra/board-harmony-pinmux.c     |  144 +++
- arch/arm/mach-tegra/board-harmony.c            |  127 +++
- arch/arm/mach-tegra/board-harmony.h            |   22 +
- arch/arm/mach-tegra/board.h                    |   32 +
- arch/arm/mach-tegra/clock.c                    |  488 +++++++++
- arch/arm/mach-tegra/clock.h                    |  147 +++
- arch/arm/mach-tegra/common.c                   |   61 ++
- arch/arm/mach-tegra/gpio-names.h               |  247 +++++
- arch/arm/mach-tegra/gpio.c                     |  348 ++++++
- arch/arm/mach-tegra/headsmp.S                  |   61 ++
- arch/arm/mach-tegra/hotplug.c                  |  140 +++
- arch/arm/mach-tegra/include/mach/barriers.h    |   30 +
- arch/arm/mach-tegra/include/mach/clk.h         |   26 +
- arch/arm/mach-tegra/include/mach/clkdev.h      |   32 +
- arch/arm/mach-tegra/include/mach/debug-macro.S |   46 +
- arch/arm/mach-tegra/include/mach/entry-macro.S |  118 ++
- arch/arm/mach-tegra/include/mach/gpio.h        |   53 +
- arch/arm/mach-tegra/include/mach/hardware.h    |   24 +
- arch/arm/mach-tegra/include/mach/io.h          |   79 ++
- arch/arm/mach-tegra/include/mach/iomap.h       |  203 ++++
- arch/arm/mach-tegra/include/mach/irqs.h        |  173 +++
- arch/arm/mach-tegra/include/mach/memory.h      |   28 +
- arch/arm/mach-tegra/include/mach/pinmux.h      |  348 ++++++
- arch/arm/mach-tegra/include/mach/smp.h         |   30 +
- arch/arm/mach-tegra/include/mach/system.h      |   39 +
- arch/arm/mach-tegra/include/mach/timex.h       |   26 +
- arch/arm/mach-tegra/include/mach/uncompress.h  |   78 ++
- arch/arm/mach-tegra/include/mach/vmalloc.h     |   28 +
- arch/arm/mach-tegra/io.c                       |   78 ++
- arch/arm/mach-tegra/irq.c                      |   34 +
- arch/arm/mach-tegra/localtimer.c               |   25 +
- arch/arm/mach-tegra/pinmux.c                   |  945 ++++++++++++++++
- arch/arm/mach-tegra/platsmp.c                  |  156 +++
- arch/arm/mach-tegra/tegra2_clocks.c            | 1359 ++++++++++++++++++++++++
- arch/arm/mach-tegra/timer.c                    |  187 ++++
- arch/arm/mm/Kconfig                            |    3 +-
- 42 files changed, 6061 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/mach-tegra/Kconfig
- create mode 100644 arch/arm/mach-tegra/Makefile
- create mode 100644 arch/arm/mach-tegra/Makefile.boot
- create mode 100644 arch/arm/mach-tegra/board-harmony-pinmux.c
- create mode 100644 arch/arm/mach-tegra/board-harmony.c
- create mode 100644 arch/arm/mach-tegra/board-harmony.h
- create mode 100644 arch/arm/mach-tegra/board.h
- create mode 100644 arch/arm/mach-tegra/clock.c
- create mode 100644 arch/arm/mach-tegra/clock.h
- create mode 100644 arch/arm/mach-tegra/common.c
- create mode 100644 arch/arm/mach-tegra/gpio-names.h
- create mode 100644 arch/arm/mach-tegra/gpio.c
- create mode 100644 arch/arm/mach-tegra/headsmp.S
- create mode 100644 arch/arm/mach-tegra/hotplug.c
- create mode 100644 arch/arm/mach-tegra/include/mach/barriers.h
- create mode 100644 arch/arm/mach-tegra/include/mach/clk.h
- create mode 100644 arch/arm/mach-tegra/include/mach/clkdev.h
- create mode 100644 arch/arm/mach-tegra/include/mach/debug-macro.S
- create mode 100644 arch/arm/mach-tegra/include/mach/entry-macro.S
- create mode 100644 arch/arm/mach-tegra/include/mach/gpio.h
- create mode 100644 arch/arm/mach-tegra/include/mach/hardware.h
- create mode 100644 arch/arm/mach-tegra/include/mach/io.h
- create mode 100644 arch/arm/mach-tegra/include/mach/iomap.h
- create mode 100644 arch/arm/mach-tegra/include/mach/irqs.h
- create mode 100644 arch/arm/mach-tegra/include/mach/memory.h
- create mode 100644 arch/arm/mach-tegra/include/mach/pinmux.h
- create mode 100644 arch/arm/mach-tegra/include/mach/smp.h
- create mode 100644 arch/arm/mach-tegra/include/mach/system.h
- create mode 100644 arch/arm/mach-tegra/include/mach/timex.h
- create mode 100644 arch/arm/mach-tegra/include/mach/uncompress.h
- create mode 100644 arch/arm/mach-tegra/include/mach/vmalloc.h
- create mode 100644 arch/arm/mach-tegra/io.c
- create mode 100644 arch/arm/mach-tegra/irq.c
- create mode 100644 arch/arm/mach-tegra/localtimer.c
- create mode 100644 arch/arm/mach-tegra/pinmux.c
- create mode 100644 arch/arm/mach-tegra/platsmp.c
- create mode 100644 arch/arm/mach-tegra/tegra2_clocks.c
- create mode 100644 arch/arm/mach-tegra/timer.c
+ Documentation/feature-removal-schedule.txt       |   23 -
+ Documentation/pcmcia/driver-changes.txt          |   12 +
+ drivers/ata/pata_pcmcia.c                        |   38 +-
+ drivers/bluetooth/bluecard_cs.c                  |   32 +-
+ drivers/bluetooth/bt3c_cs.c                      |   27 +-
+ drivers/bluetooth/btuart_cs.c                    |   31 +-
+ drivers/bluetooth/dtl1_cs.c                      |   35 +-
+ drivers/char/pcmcia/cm4000_cs.c                  |   30 +-
+ drivers/char/pcmcia/cm4040_cs.c                  |   37 +-
+ drivers/char/pcmcia/ipwireless/main.c            |   47 +-
+ drivers/char/pcmcia/ipwireless/main.h            |    1 -
+ drivers/char/pcmcia/ipwireless/tty.h             |    1 -
+ drivers/char/pcmcia/synclink_cs.c                |   29 +-
+ drivers/ide/ide-cs.c                             |   39 +-
+ drivers/isdn/hardware/avm/avm_cs.c               |   25 +-
+ drivers/isdn/hisax/avma1_cs.c                    |   29 +-
+ drivers/isdn/hisax/elsa_cs.c                     |   32 +-
+ drivers/isdn/hisax/sedlbauer_cs.c                |   83 +--
+ drivers/isdn/hisax/teles_cs.c                    |   30 +-
+ drivers/mmc/host/sdricoh_cs.c                    |    1 -
+ drivers/mtd/maps/pcmciamtd.c                     |   15 +-
+ drivers/net/pcmcia/3c574_cs.c                    |   14 +-
+ drivers/net/pcmcia/3c589_cs.c                    |   14 +-
+ drivers/net/pcmcia/axnet_cs.c                    |   48 +-
+ drivers/net/pcmcia/com20020_cs.c                 |   22 +-
+ drivers/net/pcmcia/fmvj18x_cs.c                  |   48 +-
+ drivers/net/pcmcia/ibmtr_cs.c                    |   29 +-
+ drivers/net/pcmcia/nmclan_cs.c                   |   32 +-
+ drivers/net/pcmcia/pcnet_cs.c                    |   63 +-
+ drivers/net/pcmcia/smc91c92_cs.c                 |   71 +-
+ drivers/net/pcmcia/xirc2ps_cs.c                  |   60 +-
+ drivers/net/wireless/airo_cs.c                   |   74 +--
+ drivers/net/wireless/atmel_cs.c                  |   25 +-
+ drivers/net/wireless/b43/pcmcia.c                |   13 +-
+ drivers/net/wireless/hostap/hostap_cs.c          |  136 +--
+ drivers/net/wireless/libertas/if_cs.c            |   16 +-
+ drivers/net/wireless/orinoco/orinoco_cs.c        |   30 +-
+ drivers/net/wireless/orinoco/spectrum_cs.c       |   62 +-
+ drivers/net/wireless/ray_cs.c                    |   27 +-
+ drivers/net/wireless/wl3501_cs.c                 |   24 +-
+ drivers/parport/parport_cs.c                     |   23 +-
+ drivers/pcmcia/Makefile                          |    1 -
+ drivers/pcmcia/au1000_generic.h                  |    1 -
+ drivers/pcmcia/au1000_pb1x00.c                   |    2 -
+ drivers/pcmcia/cistpl.c                          |   11 +-
+ drivers/pcmcia/cs.c                              |   79 +--
+ drivers/pcmcia/cs_internal.h                     |   62 +-
+ drivers/pcmcia/db1xxx_ss.c                       |    1 -
+ drivers/pcmcia/ds.c                              |  184 ++--
+ drivers/pcmcia/i82092.c                          |    1 -
+ drivers/pcmcia/i82365.c                          |    1 -
+ drivers/pcmcia/m32r_cfc.c                        |    1 -
+ drivers/pcmcia/m32r_pcc.c                        |    1 -
+ drivers/pcmcia/m8xx_pcmcia.c                     |    1 -
+ drivers/pcmcia/pcmcia_cis.c                      |    1 -
+ drivers/pcmcia/pcmcia_ioctl.c                    | 1077 ----------------------
+ drivers/pcmcia/pcmcia_resource.c                 |  331 ++++---
+ drivers/pcmcia/pd6729.c                          |    1 -
+ drivers/pcmcia/pxa2xx_base.c                     |    1 -
+ drivers/pcmcia/rsrc_iodyn.c                      |    8 +-
+ drivers/pcmcia/rsrc_mgr.c                        |    6 +-
+ drivers/pcmcia/rsrc_nonstatic.c                  |   15 +-
+ drivers/pcmcia/sa1100_generic.c                  |    1 -
+ drivers/pcmcia/soc_common.h                      |    1 -
+ drivers/pcmcia/socket_sysfs.c                    |    1 -
+ drivers/pcmcia/tcic.c                            |    1 -
+ drivers/pcmcia/xxs1500_ss.c                      |    1 -
+ drivers/pcmcia/yenta_socket.c                    |    1 -
+ drivers/scsi/pcmcia/aha152x_stub.c               |   17 +-
+ drivers/scsi/pcmcia/fdomain_stub.c               |   15 +-
+ drivers/scsi/pcmcia/nsp_cs.c                     |   61 +-
+ drivers/scsi/pcmcia/qlogic_stub.c                |   33 +-
+ drivers/scsi/pcmcia/sym53c500_cs.c               |   31 +-
+ drivers/serial/serial_cs.c                       |   68 +-
+ drivers/ssb/main.c                               |    1 -
+ drivers/ssb/pcmcia.c                             |   15 +-
+ drivers/ssb/scan.c                               |    1 -
+ drivers/staging/comedi/drivers/cb_das16_cs.c     |   37 +-
+ drivers/staging/comedi/drivers/das08_cs.c        |   36 +-
+ drivers/staging/comedi/drivers/ni_daq_700.c      |   62 +-
+ drivers/staging/comedi/drivers/ni_daq_dio24.c    |   63 +-
+ drivers/staging/comedi/drivers/ni_labpc_cs.c     |   63 +-
+ drivers/staging/comedi/drivers/ni_mio_cs.c       |   16 +-
+ drivers/staging/comedi/drivers/quatech_daqp_cs.c |   37 +-
+ drivers/staging/wlags49_h2/wl_cs.c               |   11 +-
+ drivers/staging/wlags49_h2/wl_internal.h         |    1 -
+ drivers/telephony/ixj_pcmcia.c                   |   20 +-
+ drivers/usb/host/sl811_cs.c                      |   24 +-
+ include/pcmcia/cistpl.h                          |    2 +
+ include/pcmcia/cs.h                              |  157 +---
+ include/pcmcia/cs_types.h                        |   40 -
+ include/pcmcia/ds.h                              |  251 +-----
+ include/pcmcia/ss.h                              |   25 +-
+ sound/pcmcia/pdaudiocf/pdaudiocf.c               |    9 +-
+ sound/pcmcia/pdaudiocf/pdaudiocf.h               |    1 -
+ sound/pcmcia/vx/vxpocket.c                       |    9 +-
+ sound/pcmcia/vx/vxpocket.h                       |    1 -
+ 97 files changed, 1189 insertions(+), 3138 deletions(-)
+ delete mode 100644 drivers/pcmcia/pcmcia_ioctl.c
+ delete mode 100644 include/pcmcia/cs_types.h
