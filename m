@@ -1,123 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934699Ab0HEXQh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:16:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:38580 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934505Ab0HEXQb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:16:31 -0400
+	id S934543Ab0HEXTp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:19:45 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:45635 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756769Ab0HEXTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:19:42 -0400
+Date: Thu, 5 Aug 2010 16:19:36 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: david@lang.hm
+Cc: kevin granade <kevin.granade@gmail.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100805231936.GS2447@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100804233013.GN24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
+ <20100805001716.GO24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
+ <20100805004802.GP24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
+ <20100805151211.GA10080@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
+ <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
+ <alpine.DEB.2.00.1008051312220.23543@asgard.lang.hm>
 MIME-Version: 1.0
-In-Reply-To: <87fwytxdba.fsf@deeprootsystems.com>
-References: <4C59E654.1090403@codeaurora.org> <877hk56hiy.fsf@deeprootsystems.com> 
-	<4C5A0C68.9080500@codeaurora.org> <87fwytxdba.fsf@deeprootsystems.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 5 Aug 2010 17:16:10 -0600
-X-Google-Sender-Auth: fQsjr4Mfpu_dvUOGSObcgeVkEdc
-Message-ID: <AANLkTimCS4RV+8E_ZzX97=r5rmQR3nmizp0JYK+syLRa@mail.gmail.com>
-Subject: Re: [PATCH] platform: Facilitate the creation of pseduo-platform 
-	busses
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
-        zt.tmzt@gmail.com, magnus.damm@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008051312220.23543@asgard.lang.hm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 9:57 AM, Kevin Hilman
-<khilman@deeprootsystems.com> wrote:
-> Patrick Pannuto <ppannuto@codeaurora.org> writes:
->
->> On 08/04/2010 05:16 PM, Kevin Hilman wrote:
->>> Patrick Pannuto <ppannuto@codeaurora.org> writes:
->>>
->>>> Inspiration for this comes from:
->>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
->>>
->>> Also, later in that thread I also wrote[1] what seems to be the core of
->>> what you've done here: namely, allow platform_devices and
->>> platform_drivers to to be used on custom busses.  Patch is at the end of
->>> this mail with a more focused changelog.  As Greg suggested in his reply
->>> to your first version, this part could be merged today, and the
->>> platform_bus_init stuff could be added later, after some more review.
->>> Some comments below...
->>>
->>
->> I can split this into 2 patches.
->
-> Yes, I think that would be better.
->
->> Was your patch sent to linux-kernel or just linux-omap? I'm not on linux-omap...
->
-> That thread was on linux-arm-kernel and linux-omap
->
->>
->>>> [snip]
->>>>
->>>> Which will allow the same driver to easily to used on either
->>>> the platform bus or the newly defined bus type.
->>>
->>> Except it requires a re-compile.
->>>
->>> Rather than doing this at compile time, it would be better to support
->>> legacy devices at runtime.  You could handle this by simply registering
->>> the driver on the custom bus and the platform_bus and let the bus
->>> matching code handle it.  Then, the same binary would work on both
->>> legacy and updated SoCs.
->>>
->>
->> Can you safely register a driver on more than one bus? I didn't think
->> that was safe -- normally it's impossible since you're calling
->>
->> struct BUS_TYPE_driver mydriver;
->> BUS_TYPE_driver_register(&mydriver)
->>
->> but now we have multiple "bus types" that are all actually platform type; still,
->> at a minimum you would need:
->>       struct platform_driver mydrvier1 = {
->>               .driver.bus = &sub_bus1,
->>       };
->>       struct platform_driver mydrvier2 = {
->>               .driver.bus = &sub_bus2,
->>       };
->> which would all point to the same driver functions, yet the respective devices
->> attached for the "same" driver would be on different buses. I fear this might
->> confuse some drivers. I don't think dynamic bus assignment is this easy
->>
->> In short: I do not believe the same driver can be registered on multiple
->> different buses -- if this is wrong, please correct me.
->
-> It is possible, and currently done in powerpc land where some
-> drivers handle devices on the platform_bus and the custom OF bus.
+On Thu, Aug 05, 2010 at 01:26:18PM -0700, david@lang.hm wrote:
+> On Thu, 5 Aug 2010, kevin granade wrote:
+> 
+> >On Thu, Aug 5, 2010 at 10:46 AM,  <david@lang.hm> wrote:
+> >>On Thu, 5 Aug 2010, Paul E. McKenney wrote:
+> >>
+> >>>On Wed, Aug 04, 2010 at 10:18:40PM -0700, david@lang.hm wrote:
+> >>>>
+> >>>>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+> >>>>>
+> >>>>>On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
+> >>>>>>
+> >>>>>>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+> >>>
+> >>>[ . . . ]
+> >>>
+> >>however, in the case of Android I think the timeouts have to end up being
+> >>_much_ longer. Otherwise you have the problem of loading an untrusted book
+> >>reader app on the device and the device suspends while you are reading the
+> >>page.
+> >>
+> >>currently Android works around this by having a wakelock held whenever the
+> >>display is on. This seems backwards to me, the display should be on because
+> >>the system is not suspended, not the system is prevented from suspending
+> >>because the display is on.
+> >>
+> >>Rather than having the display be on causing a wavelock to be held (with the
+> >>code that is controls the display having a timeout for how long it leaves
+> >>the display on), I would invert this and have the timeout be based on system
+> >>activity, and when it decides the system is not active, turn off the display
+> >>(along with other things as it suspends)
+> >
+> >IIRC, this was a major point of their (Android's) power management
+> >policy.  User input of any kind would reset the "display active"
+> >timeout, which is the primary thing keeping random untrusted
+> >user-facing programs from being suspended while in use.  They seemed
+> >to consider this to be a special case in their policy, but from the
+> >kernel's point of view it is just another suspend blocker being held.
+> >
+> >I'm not sure this is the best use case to look at though, because
+> >since it is user-facing, the timeout durations are on a different
+> >scale than the ones they are really worried about.  I think another
+> >category of use case that they are worried about is:
+> >
+> >(in suspend) -> wakeup due to network -> process network activity -> suspend
+> >
+> >or an example that has been mentioned previously:
+> >
+> >(in suspend) -> wakeup due to alarm for audio processing -> process
+> >batch of audio -> suspend
+> 
+> when you suspend the audio will shut off, so it's sleep ->wake ->
+> sleep, not suspend
+> 
+> >In both of these cases, the display may never power on (phone might
+> >beep to indicate txt message or email, audio just keeps playing), so
+> >the magnitude of the "timeout" for suspending again should be very
+> >small.  Specifically, they don't want there to be a timeout at all, so
+> >as little time as possible time is spent out of suspend in addition to
+> >the time required to handle the event that caused wakeup.
+> 
+> it really depnds on the frequency of the wakeups.
+> 
+> if you get a network packet once every 5 min and need to wake to
+> process it, staying awake for 20 seconds after finishing procesing
+> is FAR more significant than if you get a network packet once every
+> hour. It's not just the factor of 20 that simple math would indicate
+> because the time in suspend eats power as well.
+> 
+> I don't know real numbers, so these are made up for this example
+> 
+> if suspend (with the cell live to receive packets) is 10ma average
+> current and full power is 500ma average current
+> 
+> packets every 5 min with .1 sec wake time will eat ~13maH per hour
+> 
+> packets every 5 min with 10 second wake time will eat ~37maH per hour
+> 
+> packets every hour with .1 sec wake time will eat ~10maH per hour
+> 
+> packets every hour with 10 sec wake time will eat ~11maH per hour
+> 
+> so if you have frequent wakeups, staying awake 100 times as long
+> will cut your battery life to 1/3 what it was before.
+> 
+> if your wakeups are rare, it's about a 10% hit to stay awake 100
+> times as long.
+> 
+> there is a lot of room for tuning the timeouts here.
 
-As of now, the of_platform_bus_type has been removed.  It was a bad
-idea because it tried to encode non-bus-specific information into
-something that was just a clone of the platform_bus.  Drivers that
-worked on both had to be bound to both busses.  I do actually have
-code that automatically registers a driver on more than one bus, but
-it is rather a hack and was only a temporary measure.
+Especially given different scenarios, for example, audio playback
+when the device is in airplane mode.  ;-)
 
-The relevant question before going down this path is, "Is the
-omap/sh/other-soc behaviour something fundamentally different from the
-platform bus?  Or is it something complementary that would be better
-handled with a notifier or some orthogonal method of adding new
-behaviour?"
-
-I don't have a problem with multiple platform_bus instances using the
-same code (I did suggest it after all), but I do worry about muddying
-the Linux device model or making it overly complex.  Binding single
-drivers to multiple device types could be messy.
-
-Cheers,
-g.
+							Thanx, Paul
