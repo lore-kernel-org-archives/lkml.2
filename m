@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760507Ab0HEOJN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:09:13 -0400
-Received: from mail.lang.hm ([64.81.33.126]:53883 "EHLO bifrost.lang.hm"
+	id S1760249Ab0HEOPK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:15:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59928 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759256Ab0HEOJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:09:11 -0400
-Date: Thu, 5 Aug 2010 07:07:06 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100805134741.GC20565@srcf.ucam.org>
-Message-ID: <alpine.DEB.2.00.1008050706170.25170@asgard.lang.hm>
-References: <20100801054816.GI2470@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm> <20100804185520.GA2417@srcf.ucam.org> <201008042251.08266.rjw@sisk.pl> <20100804205654.GA4986@srcf.ucam.org> <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
- <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com> <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm> <20100804231003.GL24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041616160.6545@asgard.lang.hm> <20100805134741.GC20565@srcf.ucam.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1759160Ab0HEOPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 10:15:06 -0400
+Message-ID: <4C5AC736.20903@zytor.com>
+Date: Thu, 05 Aug 2010 07:14:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+CC: Borislav Petkov <bp@amd64.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD machines
+References: <1280940316-7966-1-git-send-email-bp@amd64.org> <1280940316-7966-2-git-send-email-bp@amd64.org> <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com>
+In-Reply-To: <20100805074503.GI18307@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Aug 2010, Matthew Garrett wrote:
+On 08/05/2010 12:45 AM, Roedel, Joerg wrote:
+> 
+> To make sure I understand correctly, you suggest to initialize
+> tramponline_pg_dir in the boot sequence of the first cpu and fork
+> swapper_pg_dir from it later on?
+> 
 
-> On Wed, Aug 04, 2010 at 04:19:20PM -0700, david@lang.hm wrote:
->
->> only consider the activity of a subset of processes when deciding if we
->> should suspend or not. If the decision is to suspend, freeze everything.
->>
->> you (and many other people) are confusing what I've proposed (use cgroups
->> to indicate what processes to care about and what ones to not care about
->> when deciding to suspend/go to idle) with the prior cgroup proposal (use
->> cgroups to freeze a subset of tasks while leaving others runnable)
->
-> The decision on whether or not to go to sleep isn't the difficult bit of
-> this problem space.
+Correct.
 
-but isn't that all that wakelocks do? affect the decision on whether or 
-not to go to sleep.
+>> I realize this isn't how the 64-bit code works at the moment, but in a
+>> lot of ways I think it would be better if it did.
+> 
+> Yeah, may make sense. This patch already brings the 32 bit
+> implementation closer to the 64 bit one. On 64 bit things are somewhat
+> simpler because the tramponline page table can be defined at
+> compile-time there (contains only 2 pgd_t entries) while on 32 bit we
+> have to initialize it at runtime.
 
-David Lang
+Correct, again.  It's unclear to me if we can get away with the very
+simple 64-bit approach -- in particular, not including all the 1:1
+mappings in the kernel -- for all future users, though.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
