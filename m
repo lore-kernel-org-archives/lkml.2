@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934664Ab0HEWlA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:41:00 -0400
-Received: from kroah.org ([198.145.64.141]:37682 "EHLO coco.kroah.org"
+	id S934698Ab0HEWll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:41:41 -0400
+Received: from kroah.org ([198.145.64.141]:37676 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760836Ab0HEWYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760822Ab0HEWYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Aug 2010 18:24:20 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: "Hans J. Koch" <hjk@linutronix.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 01/28] uio: Remove IRQF_DISABLED flag from uio_pdrv_genirq.c
-Date: Thu,  5 Aug 2010 15:23:51 -0700
-Message-Id: <1281047058-23716-1-git-send-email-gregkh@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 37/67] tty: fix console_sem lock order
+Date: Thu,  5 Aug 2010 15:23:04 -0700
+Message-Id: <1281047014-23429-37-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213314.GB13744@kroah.com>
-References: <20100805213314.GB13744@kroah.com>
+In-Reply-To: <20100805213528.GA13794@kroah.com>
+References: <20100805213528.GA13794@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans J. Koch <hjk@linutronix.de>
+From: Arnd Bergmann <arnd@arndb.de>
 
-Remove IRQF_DISABLED flag since it is deprecated and a no-op in the
-current kernel.
+vgacon_do_font_op releases and reacquires the BTM while holding
+console_sem. This violates the rule that BTM has to be the
+outer lock whenever we hold both.
 
-Signed-off-by: Hans J. Koch <hjk@linutronix.de>
+There does not seem to be any reason to give up the BTM here,
+so just stop doing that.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/uio/uio_pdrv_genirq.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/video/console/vgacon.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/uio/uio_pdrv_genirq.c b/drivers/uio/uio_pdrv_genirq.c
-index 61e569d..7174d51 100644
---- a/drivers/uio/uio_pdrv_genirq.c
-+++ b/drivers/uio/uio_pdrv_genirq.c
-@@ -155,7 +155,6 @@ static int uio_pdrv_genirq_probe(struct platform_device *pdev)
- 	 * Interrupt sharing is not supported.
- 	 */
+diff --git a/drivers/video/console/vgacon.c b/drivers/video/console/vgacon.c
+index 7197005..54e32c5 100644
+--- a/drivers/video/console/vgacon.c
++++ b/drivers/video/console/vgacon.c
+@@ -1108,7 +1108,6 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 		charmap += 4 * cmapsz;
+ #endif
  
--	uioinfo->irq_flags |= IRQF_DISABLED;
- 	uioinfo->handler = uio_pdrv_genirq_handler;
- 	uioinfo->irqcontrol = uio_pdrv_genirq_irqcontrol;
- 	uioinfo->open = uio_pdrv_genirq_open;
+-	tty_unlock();
+ 	spin_lock_irq(&vga_lock);
+ 	/* First, the Sequencer */
+ 	vga_wseq(state->vgabase, VGA_SEQ_RESET, 0x1);
+@@ -1192,7 +1191,6 @@ static int vgacon_do_font_op(struct vgastate *state,char *arg,int set,int ch512)
+ 		vga_wattr(state->vgabase, VGA_AR_ENABLE_DISPLAY, 0);	
+ 	}
+ 	spin_unlock_irq(&vga_lock);
+-	tty_lock();
+ 	return 0;
+ }
+ 
 -- 
 1.7.2
 
