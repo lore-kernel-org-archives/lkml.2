@@ -1,18 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064Ab0HEUUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:20:19 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55406 "EHLO mgw2.diku.dk"
+	id S934092Ab0HEUUh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:20:37 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55462 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759461Ab0HEUUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:20:13 -0400
-Date: Thu, 5 Aug 2010 22:20:09 +0200 (CEST)
+	id S1759461Ab0HEUU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:20:28 -0400
+Date: Thu, 5 Aug 2010 22:20:26 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 11/42] drivers/ieee1394: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052219530.31692@ask.diku.dk>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 12/42] drivers/char/synclink.c: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052220100.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -51,19 +49,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/ieee1394/ohci1394.c |    2 +-
+ drivers/char/synclink.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/ieee1394/ohci1394.c b/drivers/ieee1394/ohci1394.c
-index d0dc1db..5081502 100644
---- a/drivers/ieee1394/ohci1394.c
-+++ b/drivers/ieee1394/ohci1394.c
-@@ -1106,7 +1106,7 @@ static int ohci_iso_recv_init(struct hpsb_iso *iso)
- 		if (recv->block_irq_interval * 4 > iso->buf_packets)
- 			recv->block_irq_interval = iso->buf_packets / 4;
- 		if (recv->block_irq_interval < 1)
--		recv->block_irq_interval = 1;
-+			recv->block_irq_interval = 1;
+diff --git a/drivers/char/synclink.c b/drivers/char/synclink.c
+index a2a5800..b7ac730 100644
+--- a/drivers/char/synclink.c
++++ b/drivers/char/synclink.c
+@@ -6637,7 +6637,7 @@ static bool mgsl_get_rx_frame(struct mgsl_struct *info)
+ 			unsigned char *ptmp = info->intermediate_rxbuffer;
  
- 		/* choose a buffer stride */
- 		/* must be a power of 2, and <= PAGE_SIZE */
+ 			if ( !(status & RXSTATUS_CRC_ERROR))
+-			info->icount.rxok++;
++				info->icount.rxok++;
+ 			
+ 			while(copy_count) {
+ 				int partial_count;
