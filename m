@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758797Ab0HEDrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 23:47:37 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:57631 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1758684Ab0HEDrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 23:47:35 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX188+iU1Q9c8bu5ylbTuSN+KTfvnmb3Psrb+tUtRzz
-	AfHdfaxbxdrhsq
-Subject: Re: excessive wakeups in 2.6.35
-From: Mike Galbraith <efault@gmx.de>
-To: Dave Jones <davej@redhat.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-In-Reply-To: <20100804203811.GA6479@redhat.com>
-References: <20100804203811.GA6479@redhat.com>
-Content-Type: text/plain
-Date: Thu, 05 Aug 2010 05:48:11 +0200
-Message-Id: <1280980091.7508.5.camel@marge.simson.net>
+	id S1758813Ab0HEDvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 23:51:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47446 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758766Ab0HEDvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 23:51:50 -0400
+Date: Thu, 5 Aug 2010 13:51:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>, <linux-cifs@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wang Lei <wang840925@gmail.com>, David Howells <dhowells@redhat.com>
+Subject: linux-next: build failure after merge of the final tree (cifs tree
+ related)
+Message-Id: <20100805135149.98b2001b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 16:38 -0400, Dave Jones wrote:
-> My laptop felt like it was about to burst into flames after I ran
-> 2.6.35 on it for a while.  It actually got too hot to place on my legs.
+Hi Steve,
 
-Nomex + bigger battery :)
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-> Powertop showed it running over a 1000 wakeups a second while completely idle.
-> 
-> Chuck Ebbert pointed me at this diff..
-> http://git.kernel.org/?p=linux/kernel/git/x86/linux-2.6-tip.git;a=commitdiff;h=396e894d289d69bacf5acd983c97cd6e21a14c08
-> 
-> which brings it back down to a much more respectable 80 wakeups a second.
-> 
-> Is this lined up for 2.6.35.1 ?
+net/dns_resolver/dns_key.c: In function 'init_dns_resolver':
+net/dns_resolver/dns_key.c:170: error: implicit declaration of function 'IS_ERR'
+net/dns_resolver/dns_key.c:171: error: implicit declaration of function 'PTR_ERR'
+net/dns_resolver/dns_query.c: In function 'dns_query':
+net/dns_resolver/dns_query.c:126: error: implicit declaration of function 'IS_ERR'
+net/dns_resolver/dns_query.c:127: error: implicit declaration of function 'PTR_ERR'
 
-Yeah, it's tagged.  More trouble than it's worth, optimization dies.
+Caused by commit bae8da144bd6254d1e9cec2a7d6da7cade84e00e ("DNS: Separate
+out CIFS DNS Resolver code").
 
-	-Mike
+See Rule 1 in Documentation/SubmitChecklist.
 
+I have added this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 5 Aug 2010 13:49:29 +1000
+Subject: [PATCH] cifs: include linux/err.h for IS_ERR and PTR_ERR
+
+Fixes build errors:
+
+net/dns_resolver/dns_key.c: In function 'init_dns_resolver':
+net/dns_resolver/dns_key.c:170: error: implicit declaration of function 'IS_ERR'
+net/dns_resolver/dns_key.c:171: error: implicit declaration of function 'PTR_ERR'
+net/dns_resolver/dns_query.c: In function 'dns_query':
+net/dns_resolver/dns_query.c:126: error: implicit declaration of function 'IS_ERR'
+net/dns_resolver/dns_query.c:127: error: implicit declaration of function 'PTR_ERR'
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/dns_resolver/dns_key.c   |    1 +
+ net/dns_resolver/dns_query.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index 1b1b411..400a04d 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -28,6 +28,7 @@
+ #include <linux/string.h>
+ #include <linux/kernel.h>
+ #include <linux/keyctl.h>
++#include <linux/err.h>
+ #include <keys/dns_resolver-type.h>
+ #include <keys/user-type.h>
+ #include "internal.h"
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index 6c0cf31..b33e1f7 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -39,6 +39,7 @@
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <linux/dns_resolver.h>
++#include <linux/err.h>
+ #include <keys/dns_resolver-type.h>
+ #include <keys/user-type.h>
+ 
+-- 
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
