@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932947Ab0HEXHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:07:31 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:51889 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753672Ab0HEXH1 (ORCPT
+	id S1760068Ab0HEXJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:09:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59441 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754014Ab0HEXJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:07:27 -0400
-Message-ID: <4C5B4404.6010602@euromail.se>
-Date: Fri, 06 Aug 2010 01:06:44 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Kevin McNeely <kev@cypress.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        David Brown <davidb@codeaurora.org>,
-        Trilok Soni <tsoni@codeaurora.org>,
-        Fred <fwk@ubuntu.linuxcertified.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Todd Fischer <todd.fischer@ridgerun.com>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Sascha Hauer <s.hauer@pengutronix.de>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
-References: <Kevin McNeely <kev@cypress.com> <1281031924-3032-1-git-send-email-kev@cypress.com>
-In-Reply-To: <1281031924-3032-1-git-send-email-kev@cypress.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Aug 2010 19:09:05 -0400
+Date: Thu, 5 Aug 2010 16:08:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 00/13] writeback patches for 2.6.36
+Message-Id: <20100805160801.a5e0afc1.akpm@linux-foundation.org>
+In-Reply-To: <20100805161051.501816677@intel.com>
+References: <20100805161051.501816677@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1Oh9WV-0004n0-B7.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1Oh9WV-0004n0-B7 79a1dea24224d4e84e94af5954f68714
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 08:12 PM, Kevin McNeely wrote:
+On Fri, 06 Aug 2010 00:10:51 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-> From: Fred <fwk@ubuntu.linuxcertified.com>
-> 
-> This is a new touchscreen driver for the Cypress Semiconductor
-> cyttsp family of devices.  This updated driver is for both the i2c and spi
-> versions of the devices. The driver code consists of common core code for
-> both i2c and spi driver.  This submission is in response to review comments
-> from the initial submission.
-> 
-> Signed-off-by: Kevin McNeely <kev@cypress.com>
-> ---
+> These are writeback patches intended for 2.6.36.
 
+I won't be here Friday.  I need to get my junk into mainline on Monday.
+Everybody and his dog is working on writeback, which is good, but
+there's a lot of flux here.
 
-General impression: There is a lot of useful code in here, but as already
-pointed out, well over half of it should not be part of the kernel driver.
+So, no, I think it's too late to be thinking about 2.6.36-rc1.  Let's
+slow down a bit, review and test each other's proposals and work out
+what we want to do in the longer term.  After we've done that, we can
+calmly and carefully take a look to see if there are any nice goodies
+which we want to slip into 2.6.36-rc3 or thereabouts.
 
-Suggestion 1: Clean out the internal state code and use MT protocol B instead.
-
-Suggestion 2: Cut out the single touch calculation, as already pointed out by
-Trilok. Why not submit it to the mtdev project instead? The problem is generic
-to all new MT drivers, so a common solution while waiting for full MT support in
-userspace could be useful.
-
-Thanks,
-Henrik
