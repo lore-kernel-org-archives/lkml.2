@@ -1,117 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760654Ab0HESbM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 14:31:12 -0400
-Received: from xenotime.net ([72.52.115.56]:39937 "HELO xenotime.net"
+	id S934001Ab0HESbO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 14:31:14 -0400
+Received: from xenotime.net ([72.52.115.56]:53170 "HELO xenotime.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758656Ab0HESbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754773Ab0HESbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Aug 2010 14:31:07 -0400
 Date: Thu, 05 Aug 2010 11:23:11 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org
-Cc: Nicolas Kaiser <nikai@nikai.net>
-Subject: [PATCH 6/7] Documentation: fix kbuild typos and wording
-Message-ID: <12810325911232@xenotime.net>
+Cc: matt mooney <mfm@muteddisk.com>
+Subject: [PATCH 3/7] Documentation: update kbuild loadable modules goals & examples
+Message-ID: <12810325914000@xenotime.net>
 In-Reply-To: <12810325911230@xenotime.net>
 X-Mailer: gregkh_patchbomb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Kaiser <nikai@nikai.net>
+From: matt mooney <mfm@muteddisk.com>
 
-Fixed some typos and wording.
+Update section 3.3 Loadable module goals - obj-m, from $(<module_name>-objs)
+to $(<module_name>-y) for easier addition of conditional objects to the
+module. The examples are also updated to reflect the current state of
+each Makefile used.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- Documentation/kbuild/kbuild.txt    |    8 ++++----
- Documentation/kbuild/makefiles.txt |   24 ++++++++++++------------
- 2 files changed, 16 insertions(+), 16 deletions(-)
 
---- linux-2.6.35-rc3.orig/Documentation/kbuild/kbuild.txt
-+++ linux-2.6.35-rc3/Documentation/kbuild/kbuild.txt
-@@ -40,15 +40,15 @@ Set the directory to look for the kernel
- modules.
- The directory can be specified in several ways:
- 1) Use "M=..." on the command line
--2) Environmnet variable KBUILD_EXTMOD
--3) Environmnet variable SUBDIRS
-+2) Environment variable KBUILD_EXTMOD
-+3) Environment variable SUBDIRS
- The possibilities are listed in the order they take precedence.
- Using "M=..." will always override the others.
- 
- KBUILD_OUTPUT
- --------------------------------------------------
- Specify the output directory when building the kernel.
--The output directory can also be specificed using "O=...".
-+The output directory can also be specified using "O=...".
- Setting "O=..." takes precedence over KBUILD_OUTPUT.
- 
- ARCH
-@@ -90,7 +90,7 @@ The script will be called with the follo
-     $3 - kernel map file
-     $4 - default install path (use root directory if blank)
- 
--The implmentation of "make install" is architecture specific
-+The implementation of "make install" is architecture specific
- and it may differ from the above.
- 
- INSTALLKERNEL is provided to enable the possibility to
+ Documentation/kbuild/makefiles.txt |   37 +++++++++++++--------------
+ 1 file changed, 19 insertions(+), 18 deletions(-)
+
 --- linux-2.6.35-rc3.orig/Documentation/kbuild/makefiles.txt
 +++ linux-2.6.35-rc3/Documentation/kbuild/makefiles.txt
-@@ -285,12 +285,12 @@ more details, with real examples.
- --- 3.7 Compilation flags
+@@ -187,34 +187,35 @@ more details, with real examples.
+ 	Note: In this example $(CONFIG_ISDN_PPP_BSDCOMP) evaluates to 'm'
  
-     ccflags-y, asflags-y and ldflags-y
--	The three flags listed above apply only to the kbuild makefile where
--	they are assigned (i.e., per-directory). They are used for all the
--	normal cc, as and ld invocation happening during a recursive build.
-+	These three flags apply only to the kbuild makefile in which they
-+	are assigned. They are used for all the normal cc, as and ld
-+	invocations happening during a recursive build.
- 	Note: Flags with the same behaviour were previously named:
--	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS. They are still
--	supported but their use is deprecated.
-+	EXTRA_CFLAGS, EXTRA_AFLAGS and EXTRA_LDFLAGS.
-+	They are still supported but their usage is deprecated.
- 
- 	ccflags-y specifies options for compiling with $(CC).
- 
-@@ -317,10 +317,10 @@ more details, with real examples.
- 
-     subdir-ccflags-y, subdir-asflags-y
- 	The two flags listed above are similar to ccflags-y and asflags-y.
--	The difference is that the subdir- variants affect the kbuild
--	file where they are present and all subdirectories. Options specified
--	using subdir-* are added to the commandline before the options
--	specified using the non-subdir variants.
-+	The difference is that the subdir- variants have effect for the kbuild
-+	file where they are present and all subdirectories.
-+	Options specified using subdir-* are added to the commandline before
-+	the options specified using the non-subdir variants.
+ 	If a kernel module is built from several source files, you specify
+-	that you want to build a module in the same way as above.
+-
+-	Kbuild needs to know which the parts that you want to build your
+-	module from, so you have to tell it by setting an
+-	$(<module_name>-objs) variable.
++	that you want to build a module in the same way as above; however,
++	kbuild needs to know which object files you want to build your
++	module from, so you have to tell it by setting a $(<module_name>-y)
++	variable.
  
  	Example:
- 		subdir-ccflags-y := -Werror
-@@ -1174,14 +1174,14 @@ When kbuild executes, the following step
- === 7 Kbuild syntax for exported headers
+ 		#drivers/isdn/i4l/Makefile
+-		obj-$(CONFIG_ISDN) += isdn.o
+-		isdn-objs := isdn_net_lib.o isdn_v110.o isdn_common.o
++		obj-$(CONFIG_ISDN_I4L) += isdn.o
++		isdn-y := isdn_net_lib.o isdn_v110.o isdn_common.o
  
- The kernel include a set of headers that is exported to userspace.
--Many headers can be exported as-is but other headers requires  a
-+Many headers can be exported as-is but other headers require a
- minimal pre-processing before they are ready for user-space.
- The pre-processing does:
- - drop kernel specific annotations
- - drop include of compiler.h
--- drop all sections that is kernel internat (guarded by ifdef __KERNEL__)
-+- drop all sections that are kernel internal (guarded by ifdef __KERNEL__)
+ 	In this example, the module name will be isdn.o. Kbuild will
+-	compile the objects listed in $(isdn-objs) and then run
++	compile the objects listed in $(isdn-y) and then run
+ 	"$(LD) -r" on the list of these files to generate isdn.o.
  
--Each relevant directory contain a file name "Kbuild" which specify the
-+Each relevant directory contains a file name "Kbuild" which specifies the
- headers to be exported.
- See subsequent chapter for the syntax of the Kbuild file.
+-	Kbuild recognises objects used for composite objects by the suffix
+-	-objs, and the suffix -y. This allows the Makefiles to use
+-	the value of a CONFIG_ symbol to determine if an object is part
+-	of a composite object.
++	Due to kbuild recognizing $(<module_name>-y) for composite objects,
++	you can use the value of a CONFIG_ symbol to optionally include an
++	object file as part of a composite object.
  
+ 	Example:
+ 		#fs/ext2/Makefile
+-	        obj-$(CONFIG_EXT2_FS)        += ext2.o
+-		ext2-y                       := balloc.o bitmap.o
+-	        ext2-$(CONFIG_EXT2_FS_XATTR) += xattr.o
+-
+-	In this example, xattr.o is only part of the composite object
+-	ext2.o if $(CONFIG_EXT2_FS_XATTR) evaluates to 'y'.
++	        obj-$(CONFIG_EXT2_FS) += ext2.o
++		ext2-y := balloc.o dir.o file.o ialloc.o inode.o ioctl.o \
++			  namei.o super.o symlink.o
++	        ext2-$(CONFIG_EXT2_FS_XATTR) += xattr.o xattr_user.o \
++						xattr_trusted.o
++
++	In this example, xattr.o, xattr_user.o and xattr_trusted.o are only
++	part of the composite object ext2.o if $(CONFIG_EXT2_FS_XATTR)
++	evaluates to 'y'.
+ 
+ 	Note: Of course, when you are building objects into the kernel,
+ 	the syntax above will also work. So, if you have CONFIG_EXT2_FS=y,
 
 
 -- 
