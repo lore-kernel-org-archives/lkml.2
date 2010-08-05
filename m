@@ -1,131 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760472Ab0HERRO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 13:17:14 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:43296 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759019Ab0HERRK (ORCPT
+	id S933671Ab0HERTv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 13:19:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33040 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140Ab0HERTs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 13:17:10 -0400
-Date: Thu, 5 Aug 2010 13:17:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@suse.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH] SCSI: remove fake "address-of" expression
-In-Reply-To: <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1008051315150.1944-100000@iolanthe.rowland.org>
+	Thu, 5 Aug 2010 13:19:48 -0400
+Date: Thu, 5 Aug 2010 13:19:45 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <jaxboe@fusionio.com>,
+        linux-kernel@vger.kernel.org,
+        Daniel Stodden <daniel.stodden@citrix.com>, kraxel@redhat.com
+Subject: Re: commit "xen/blkfront: use tagged queuing for barriers"
+Message-ID: <20100805171944.GA28446@infradead.org>
+References: <20100804115124.GA1496@infradead.org>
+ <4C596252.9010806@fusionio.com>
+ <20100804164441.GA7838@infradead.org>
+ <4C5AF01C.3040601@goop.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C5AF01C.3040601@goop.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fake "address-of" expressions that evaluate to NULL generally confuse
-readers and can provoke compiler warnings.  This patch (as1411)
-removes one such fake expression, using an "#ifdef" in its place.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-
----
-
-Resend.  I forgot to set the Subject line in the original message.
-
-On Wed, 4 Aug 2010, Linus Torvalds wrote:
-
-> On Tue, Aug 3, 2010 at 9:13 PM, James Bottomley <James.Bottomley@suse.de> wrote:
+On Thu, Aug 05, 2010 at 10:08:44AM -0700, Jeremy Fitzhardinge wrote:
+>  On 08/04/2010 09:44 AM, Christoph Hellwig wrote:
+> >>But either the blkfront patch is wrong and it needs to be fixed,
+> >Actually both the old and the new one are wrong, but I'd say the new
+> >one is even more wrong.
 > >
-> > Alan Stern (3):
-> >      sd: add support for runtime PM
-> >      implement runtime Power Management
-> >      convert to the new PM framework
+> >_TAG implies that the device can do ordering by tag.  And at least the
+> >qemu xen_disk backend doesn't when it advertizes this feature.
 > 
-> Guys, these kind of crazy games really aren't appropriate:
-> 
->   +/* scsi_pm.c */
->   +#ifdef CONFIG_PM_OPS
->   +extern const struct dev_pm_ops scsi_bus_pm_ops;
->   +#else
->   +#define scsi_bus_pm_ops                (*NULL)
->   +#endif
-> 
-> that's just crazy. Yes, I see how it's then used (address-of operator
-> turns it back into NULL), but the compiler warns about it
-> ("drivers/scsi/scsi_sysfs.c:384: warning: dereferencing ‘void *’
-> pointer") and I think the compiler is 100% correct about warning about
-> it.
-> 
-> It's not just the (*NULL) games, btw. The above can cause confusion.
-> It's ugly not just because it causes the compiler to warn, but because
-> you use a very subtle and non-standard way of using #define's, so that
-> when you look at the source code where this is used, it's not at all
-> obvious what is going on. The code looks like
-> 
->     .pm             = &scsi_bus_pm_ops,
-> 
-> and dammit, it would be rather understandable if some _human_ that
-> reads that is also confused and thinks that the above means that the
-> .pm pointer can never be NULL. The address-of would certainly throw
-> me, and not necessarily at all make me grep for "could that possibly
-> be some crazy way to say NULL".
-> 
-> And there is absolutely no reason to play games like that. It would
-> have been entirely understandable if you just put the #ifdef in the C
-> code itself, or if you used a #define that just said
-> 
->   #ifdef CONFIG_PM_OPS
->   #define SCSI_BUS_PM_OPS &scsi_bus_pm_ops
->   #else
->   #define SCSI_BUS_PM_OPS NULL
->   #endif
-> 
-> and I think it would be less confusing, and it wouldn't upset the compiler.
-> 
-> Yes, yes, I realize that we do these kinds of things for function
-> pointers all the time, so I do understand where the pattern comes
-> from. At the same time, I rather think that function pointers are a
-> bit different, and they don't have the whole address-of problem.
-> 
-> I guess I should be happy that you didn't use some linker tricks to
-> make "&scsi_bus_pm_ops" turn into NULL at link time. That could be
-> done too, and would have been even more subtly confusing.
+> We don't use qemu at all for block storage; qemu (afaik) doesn't
+> have a blkback protocol implementation in it.  I'm guessing xen_disk
+> is to allow kvm to be compatible with Xen disk images?  It certainly
+> isn't a reference implementation.
 
-In my opinion this is the simplest and easiest-to-understand approach.  
-The two of you can fight over who merges it first.  :-)
+Disk images formats have nothing to do with the I/O interface.  I
+believe Gerd added it for running unmodified Xen guests in qemu,
+but he can explain more of it.
 
-Alan Stern
+I've only mentioned it here because it's the one I easily have access
+to.  Given Xen's about 4 different I/O backends and the various forked
+trees it's rather hard to find the official reference.
 
+> >I'm pretty sure most if not all of the original Xen backends do the
+> >same.  Given that I have tried to implement tagged ordering in qemu
+> >I know that comes down to doing exactly the same draining we already
+> >do in the kernel, just duplicated in the virtual disk backend.  That
+> >is for a userspace implementation - for a kernel implementation only
+> >using block devices we could in theory implement it using barriers,
+> >but that would be even more inefficient.  And last time I looked
+> >at the in-kernel xen disk backed it didn't do that either.
+> 
+> blkback - the in-kernel backend - does generate barriers when it
+> receives one from the guest.  Could you expand on why passing a
+> guest barrier through to the host IO stack would be bad for
+> performance?  Isn't this exactly the same as a local writer
+> generating a barrier?
 
+If you pass it on it has the same semantics, but given that you'll
+usually end up having multiple guest disks on a single volume using
+lvm or similar you'll end up draining even more I/O as there is one
+queue for all of them.  That way you can easily have one guest starve
+others.
 
-Index: usb-2.6/drivers/scsi/scsi_priv.h
-===================================================================
---- usb-2.6.orig/drivers/scsi/scsi_priv.h
-+++ usb-2.6/drivers/scsi/scsi_priv.h
-@@ -148,8 +148,6 @@ static inline void scsi_netlink_exit(voi
- /* scsi_pm.c */
- #ifdef CONFIG_PM_OPS
- extern const struct dev_pm_ops scsi_bus_pm_ops;
--#else /* CONFIG_PM_OPS */
--#define scsi_bus_pm_ops		(*NULL)
- #endif
- #ifdef CONFIG_PM_RUNTIME
- extern void scsi_autopm_get_target(struct scsi_target *);
-Index: usb-2.6/drivers/scsi/scsi_sysfs.c
-===================================================================
---- usb-2.6.orig/drivers/scsi/scsi_sysfs.c
-+++ usb-2.6/drivers/scsi/scsi_sysfs.c
-@@ -382,7 +382,9 @@ struct bus_type scsi_bus_type = {
-         .name		= "scsi",
-         .match		= scsi_bus_match,
- 	.uevent		= scsi_bus_uevent,
-+#ifdef CONFIG_PM_OPS
- 	.pm		= &scsi_bus_pm_ops,
-+#endif
- };
- EXPORT_SYMBOL_GPL(scsi_bus_type);
- 
+Note that we're going to get rid of the draining for common cases
+anyway, but that's a separate discussion thread the "relaxed barriers"
+one.
+
+> It's true that a number of the Xen backends end up implementing
+> barriers via drain for simplicity's sake, but there's no inherent
+> reason why they couldn't implement a more complete tagged model.
+
+If they are in Linux/Posix userspace they can't because there are
+not system calls to archive that.  And then again there really is
+no need to implement all this in the host anyway - the draining
+is something we enforced on ourselves in Linux without good reason,
+which we're trying to get rid of and no other OS ever did.
+
+> >Now where both old and new one are buggy is that that they don't
+> >include the QUEUE_ORDERED_DO_PREFLUSH  and
+> >QUEUE_ORDERED_DO_POSTFLUSH/QUEUE_ORDERED_DO_FUA which mean any
+> >explicit cache flush (aka empty barrier) is silently dropped, making
+> >fsync and co not preserve data integrity.
+> 
+> Ah, OK, something specific.  What level ends up dropping the empty
+> barrier?  Certainly an empty WRITE_BARRIER operation to the backend
+> will cause all prior writes to be durable, which should be enough.
+> Are you saying that there's an extra flag we should be passing to
+> blk_queue_ordered(), or is there some other interface we should be
+> implementing for explicit flushes?
+> 
+> Is there a good reference implementation we can use as a model?
+
+Just read Documentation/block/barriers.txt, it's very well described
+there.  Even the naming of the various ORDERED constant should
+give enough hints.
+
+> As I said before, the qemu xen backend is irrelevent.
+
+It's one of the many backends written to the protocol specification,
+I don't think it's fair to call it irrelevant.  And as mentioned before
+I'd be very surprised if the other backends all get it right.  If you
+send me pointers to one or two backends you considered "relevent" I'm
+happy to look at them.
 
