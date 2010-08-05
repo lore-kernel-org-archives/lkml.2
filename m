@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760649Ab0HEUog (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:44:36 -0400
-Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:47080 "EHLO
-	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759391Ab0HEUoe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:44:34 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Maharana, Parag" <Parag.Maharana@lsi.com>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 5 Aug 2010 14:44:19 -0600
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Index: Acsw2E0UU5zHj3F8SMOoBE3QdnJBMAEBoOMw
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67FC4@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-	 <1277046060.5242.18.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
-	 <1277063250.5242.25.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
-	 <1277066924.5242.41.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
- <1280598371.2801.11.camel@mulgrave.site>
-In-Reply-To: <1280598371.2801.11.camel@mulgrave.site>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1760725Ab0HEUpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:45:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20733 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758865Ab0HEUpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:45:02 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Avi Kivity <avi@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Ric Wheeler <rwheeler@redhat.com>, Mingming Cao <cmm@us.ibm.com>,
+        djwong@us.ibm.com, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC] ext4: Don't send extra barrier during fsync if there are no dirty pages.
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com>
+	<1272934667.2544.3.camel@mingming-laptop>
+	<4BE02C45.6010608@redhat.com> <20100504154553.GA22777@infradead.org>
+	<20100630124832.GA1333@thunk.org> <4C5818A1.9070102@redhat.com>
+	<20100804233206.GA2901@thunk.org> <4C5A1FDC.3010700@redhat.com>
+	<20100805161745.GG2901@thunk.org>
+	<x49pqxwc1p3.fsf@segfault.boston.devel.redhat.com>
+	<20100805203928.GM2901@thunk.org>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 05 Aug 2010 16:44:53 -0400
+In-Reply-To: <20100805203928.GM2901@thunk.org> (Ted Ts'o's message of "Thu, 5
+	Aug 2010 16:39:28 -0400")
+Message-ID: <x49hbj8bxh6.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o75Kiq7b020948
 
-James,
+"Ted Ts'o" <tytso@mit.edu> writes:
 
-I re-submitted all 12 patches.  Can you help to push them to main tree?
+> On Thu, Aug 05, 2010 at 03:13:44PM -0400, Jeff Moyer wrote:
+>> > IO_CMD_FSYNC doesn't exist right now, but sure, it means we don't have
+>> 
+>> Well, there's IOCB_CMD_FSYNC.  But still, this isn't the same thing as
+>> what's requested.  If I understand correctly, what is requested is a
+>> mechanism to flush out all data for multiple file descriptors and follow
+>> that with a single barrier/flush (and yes, Ted did give a summary of the
+>> commands that would be required to accomplish that).
+>> 
+>> There still remains the question of why this should be tied to the AIO
+>> submission interface.
+>
+> I don't think it should, personally.  The only excuse might be if
+> someone wanted to do an asynchronous fsync(), but I don't think that
+> makes sense in most cases.
 
-Thanks,
+In case it wasn't clear, we are in agreement on this.
 
-Bo Yang
-
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@suse.de] 
-Sent: Saturday, July 31, 2010 1:46 PM
-To: Yang, Bo
-Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Maharana, Parag; Daftardar, Jayant
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
-
-On Fri, 2010-07-30 at 12:53 -0600, Yang, Bo wrote:
-> Do you know when those patches (12 patches) will be pushed to upstream?
-
-Well, it looks like I lost the branch I was fixing all this up in
-somewhere.  I don't really have time to redo that work, so could you
-send the series correctly (that's the 8 OCR patches that don't
-individually compile as a single patch with a correct changelog plus the
-four others).
-
-Thanks,
-
-James
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Cheers,
+Jeff
