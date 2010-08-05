@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933597Ab0HEPZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:25:45 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:49190 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758829Ab0HEPZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:25:43 -0400
-Date: Thu, 5 Aug 2010 16:25:27 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 7/7] vmscan: isolated_lru_pages() stop neighbor search
-	if neighbor can't be isolated
-Message-ID: <20100805152527.GI25688@csn.ul.ie>
-References: <20100805150624.31B7.A69D9226@jp.fujitsu.com> <20100805151525.31CC.A69D9226@jp.fujitsu.com>
+	id S933608Ab0HEP0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:26:05 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:42893 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933467Ab0HEP0B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 11:26:01 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 11:26:00 EDT
+Message-ID: <4C5AD674.30908@example.com>
+Date: Thu, 05 Aug 2010 17:19:16 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100805151525.31CC.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: The horror is over, but I deleted and forgot some lines - please
+ help
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 15453257698511319320
+X-Ovh-Remote: 83.24.108.219 (doa219.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:16:06PM +0900, KOSAKI Motohiro wrote:
-> isolate_lru_pages() doesn't only isolate LRU tail pages, but also
-> isolate neighbor pages of the eviction page.
-> 
-> Now, the neighbor search don't stop even if neighbors can't be isolated.
-> It is silly. successful higher order allocation need full contenious
-> memory, even though only one page reclaim failure mean to fail making
-> enough contenious memory.
-> 
-> Then, isolate_lru_pages() should stop to search PFN neighbor pages and
-> try to search next page on LRU soon. This patch does it. Also all of
-> lumpy reclaim failure account nr_lumpy_failed.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Hello,
 
-Seems reasonable.
+I git-synchronized linux kernel source but it failed to build. I 
+discovered that the problem is in sound/pci/hda/hda_codec.c . There was 
+some git specific line of text, so I just deleted it and some other two 
+lines. It failed again because one of the lines that I just deleted 
+contained trailing { brace, closing for statement as far as I remember.
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Can somebody remind me what had I deleted at first? And how to spot such 
+situations in the future? I thought that I could write a script to 
+search and i.e. grep *.c files in the source to catch such coliding 
+places. But I don't know what should I search.
+
+Reagrds,
+
+Piotr Hosowicz
+
+PS: With working sound ;-)
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Na przyjêciu ch³opak pyta blondynkê:
+- Czy mogê ciê prosiæ do walca?
+- Zg³upia³e¶? To ju¿ nie mia³e¶ czym przyjechaæ?
+NP: Peter Green Splinter Group - Turn Your Love Away
+NB: 2.6.35-20100805-1436+
