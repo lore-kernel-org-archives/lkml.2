@@ -1,409 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760220Ab0HEO7R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:59:17 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47665 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933176Ab0HEO7M (ORCPT
+	id S1760657Ab0HEPBw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:01:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58776 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759128Ab0HEPBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:59:12 -0400
+	Thu, 5 Aug 2010 11:01:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cV8rn1DxLWbfwTJllQ4yLpLJyT6oyn92DZs/210bLcusMQJla5o5FFO2t6LjB97WT/
-         jJWZYCZvGywhZA4RCNeTOnkD+I70fGj6oalZwLn7FnwWz/VMPdOPgEIL4k8mWcNiudZ2
-         Nh6txMSKv7Ndt7ooOOM2R90k0OS8ew5o42SSs=
-Date: Thu, 5 Aug 2010 23:59:03 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 4/7] vmscan: narrowing synchrounous lumply reclaim
- condition
-Message-ID: <20100805145903.GC2985@barrios-desktop>
-References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
- <20100805151341.31C3.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805151341.31C3.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:subject:date:message-id:x-mailer;
+        b=GazXgVcUkGdRQahFszxFePXkQ7MWx8t/yRoGrvbdAkR9XPge3YDK9MzwGF7X0Po6WL
+         M6Vh+m0WAXlL1Ne34yNbI8+JjTxBV3i85HVZXwsmqqOZ+6Bqt7UpVKAekvoNMem46/ZT
+         cqJVMww/LWcXsHlxYcLSZX5759ziP0hHKxu3g=
+From: Maurice Dawson <mauricedawson2699@gmail.com>
+To: gregkh@suse.de, rich.folsom@gmail.com, mithlesh@linsyssoft.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Staging: comedi: fix over 80 characters coding style issue in adl_pci9111.c
+Date: Thu,  5 Aug 2010 16:01:28 +0100
+Message-Id: <1281020488-2696-1-git-send-email-mauricedawson2699@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:14:13PM +0900, KOSAKI Motohiro wrote:
-> Now, mainly shrink_page_list() give up to reclaim the page by following
-> 10 reasons.
-> 
->   1. trylock_page() failure
->   2. page is unevictable
->   3. zone reclaim and page is mapped
->   4. PageWriteback() is true
->   5. page is swapbacked and swap is full
->   6. add_to_swap() failure
->   7. page is dirty and gfpmask don't have GFP_IO, GFP_FS
->   8. page is pinned
->   9. IO queue is congested
->  10. pageout() start IO, but not finished
-> 
-> When lumpy reclaim, all of failure cause synchronous lumpy reclaim but
-> It's slightly stupid. At least, case (2), (3), (5), (6), (7) and (8)
-> don't have any worth to retry. Then, This patch implement to disable
-> lumpy reclaim while reclaim processing.
+This is a patch to the adl_pci9111.c file that fixes up most over 80 characters warnings found by the checkpatch.pl tool. The lines that are still over 80 characters are either strings or, by changing them their readability would be unacceptably reduced.
 
-Agree. 
+Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9111.c |   54 +++++++++++++++++---------
+ 1 files changed, 36 insertions(+), 18 deletions(-)
 
-> 
-> Case (9) is more interesting. current behavior is,
->   1. start shrink_page_list(async)
->   2. found queue_congested()
->   3. skip pageout write
->   4. even tough start shrink_page_list(sync)
->   5. wait a lot of pages
->   6. again, found queue_congested()
->   7. give up pageout write again
-> 
-> So, it's meaningless time wasting. however just skipping page reclaim
-> seems no good idea for high order lumpy reclaim. because, example, x86
-> hugepage need 512 contenious memory. They often have much dirty pages
-> than queue congestion threshold (~=128).
-> 
-> After this patch, pageout() retrieve queueue congestion following
-> 
->  - If order > PAGE_ALLOC_COSTLY_ORDER
-> 	Ignore queue congestion always.
->  - If order <= PAGE_ALLOC_COSTLY_ORDER
-> 	skip write page and disable lumpy reclaim.
-> 
-
-If Mel's patch which skip pageout in direct reclaim works well, still we need this?
-file pages doesn't page out any more in direct reclaim path. 
-AFAIK, swap page's writeout doesn't consider queue_congested as we discuss it 
-at Wu's thread on some day ago. so it's no problem. 
-
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |  122 ++++++++++++++++++++++++++++++++++++----------------------
->  1 files changed, 76 insertions(+), 46 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 833b6ad..f7aabd2 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -51,6 +51,12 @@
->  #define CREATE_TRACE_POINTS
->  #include <trace/events/vmscan.h>
->  
-> +enum lumpy_mode {
-> +	LUMPY_MODE_NONE,
-> +	LUMPY_MODE_ASYNC,
-> +	LUMPY_MODE_SYNC,
-> +};
-> +
->  struct scan_control {
->  	/* Incremented by the number of inactive pages that were scanned */
->  	unsigned long nr_scanned;
-> @@ -82,7 +88,7 @@ struct scan_control {
->  	 * Intend to reclaim enough contenious memory rather than to reclaim
->  	 * enough amount memory. I.e, it's the mode for high order allocation.
->  	 */
-> -	bool lumpy_reclaim_mode;
-> +	enum lumpy_mode lumpy_reclaim_mode;
->  
->  	/* Which cgroup do we reclaim from */
->  	struct mem_cgroup *mem_cgroup;
-> @@ -265,6 +271,36 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->  	return ret;
->  }
->  
-> +static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc,
-> +				   bool sync)
-> +{
-> +	enum lumpy_mode mode = sync ? LUMPY_MODE_SYNC : LUMPY_MODE_ASYNC;
-> +
-> +	/*
-> +	 * Some reclaim have alredy been failed. No worth to try synchronous
-> +	 * lumpy reclaim.
-> +	 */
-> +	if (sync && sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
-> +		return;
-> +
-> +	/*
-> +	 * If we need a large contiguous chunk of memory, or have
-> +	 * trouble getting a small set of contiguous pages, we
-> +	 * will reclaim both active and inactive pages.
-> +	 */
-> +	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> +		sc->lumpy_reclaim_mode = mode;
-> +	else if (sc->order && priority < DEF_PRIORITY - 2)
-> +		sc->lumpy_reclaim_mode = mode;
-> +	else
-> +		sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-> +}
-> +
-> +static void disable_lumpy_reclaim_mode(struct scan_control *sc)
-> +{
-> +	sc->lumpy_reclaim_mode = LUMPY_MODE_NONE;
-> +}
-> +
->  static inline int is_page_cache_freeable(struct page *page)
->  {
->  	/*
-> @@ -275,7 +311,8 @@ static inline int is_page_cache_freeable(struct page *page)
->  	return page_count(page) - page_has_private(page) == 2;
->  }
->  
-> -static int may_write_to_queue(struct backing_dev_info *bdi)
-> +static int may_write_to_queue(struct backing_dev_info *bdi,
-> +			      struct scan_control *sc)
->  {
->  	if (current->flags & PF_SWAPWRITE)
->  		return 1;
-> @@ -283,6 +320,10 @@ static int may_write_to_queue(struct backing_dev_info *bdi)
->  		return 1;
->  	if (bdi == current->backing_dev_info)
->  		return 1;
-> +
-> +	/* lumpy reclaim for hugepage often need a lot of write */
-> +	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> +		return 1;
->  	return 0;
->  }
->  
-> @@ -307,12 +348,6 @@ static void handle_write_error(struct address_space *mapping,
->  	unlock_page(page);
->  }
->  
-> -/* Request for sync pageout. */
-> -enum pageout_io {
-> -	PAGEOUT_IO_ASYNC,
-> -	PAGEOUT_IO_SYNC,
-> -};
-> -
->  /* possible outcome of pageout() */
->  typedef enum {
->  	/* failed to write page out, page is locked */
-> @@ -330,7 +365,7 @@ typedef enum {
->   * Calls ->writepage().
->   */
->  static pageout_t pageout(struct page *page, struct address_space *mapping,
-> -						enum pageout_io sync_writeback)
-> +			 struct scan_control *sc)
->  {
->  	/*
->  	 * If the page is dirty, only perform writeback if that write
-> @@ -366,8 +401,10 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  	}
->  	if (mapping->a_ops->writepage == NULL)
->  		return PAGE_ACTIVATE;
-> -	if (!may_write_to_queue(mapping->backing_dev_info))
-> +	if (!may_write_to_queue(mapping->backing_dev_info, sc)) {
-> +		disable_lumpy_reclaim_mode(sc);
->  		return PAGE_KEEP;
-> +	}
->  
->  	if (clear_page_dirty_for_io(page)) {
->  		int res;
-> @@ -394,7 +431,8 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  		 * direct reclaiming a large contiguous area and the
->  		 * first attempt to free a range of pages fails.
->  		 */
-> -		if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-> +		if (PageWriteback(page) &&
-> +		    sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC)
->  			wait_on_page_writeback(page);
->  
->  		if (!PageWriteback(page)) {
-> @@ -402,7 +440,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  			ClearPageReclaim(page);
->  		}
->  		trace_mm_vmscan_writepage(page,
-> -			sync_writeback == PAGEOUT_IO_SYNC);
-> +				sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC);
->  		inc_zone_page_state(page, NR_VMSCAN_WRITE);
->  		return PAGE_SUCCESS;
->  	}
-> @@ -580,7 +618,7 @@ static enum page_references page_check_references(struct page *page,
->  	referenced_page = TestClearPageReferenced(page);
->  
->  	/* Lumpy reclaim - ignore references */
-> -	if (sc->lumpy_reclaim_mode)
-> +	if (sc->lumpy_reclaim_mode != LUMPY_MODE_NONE)
->  		return PAGEREF_RECLAIM;
->  
->  	/*
-> @@ -644,8 +682,7 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->   * shrink_page_list() returns the number of reclaimed pages
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
-> -					struct scan_control *sc,
-> -					enum pageout_io sync_writeback)
-> +				      struct scan_control *sc)
->  {
->  	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
-> @@ -665,7 +702,7 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		page = lru_to_page(page_list);
->  		list_del(&page->lru);
->  
-> -		if (sync_writeback == PAGEOUT_IO_SYNC)
-> +		if (sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC)
->  			lock_page(page);
->  		else if (!trylock_page(page))
->  			goto keep;
-> @@ -696,10 +733,13 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			 * for any page for which writeback has already
->  			 * started.
->  			 */
-> -			if (sync_writeback == PAGEOUT_IO_SYNC && may_enter_fs)
-> +			if (sc->lumpy_reclaim_mode == LUMPY_MODE_SYNC &&
-> +			    may_enter_fs)
->  				wait_on_page_writeback(page);
-> -			else
-> -				goto keep_locked;
-> +			else {
-> +				unlock_page(page);
-> +				goto keep_lumpy;
-> +			}
->  		}
->  
->  		references = page_check_references(page, sc);
-> @@ -753,14 +793,17 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  				goto keep_locked;
->  
->  			/* Page is dirty, try to write it out here */
-> -			switch (pageout(page, mapping, sync_writeback)) {
-> +			switch (pageout(page, mapping, sc)) {
->  			case PAGE_KEEP:
->  				goto keep_locked;
->  			case PAGE_ACTIVATE:
->  				goto activate_locked;
->  			case PAGE_SUCCESS:
-> -				if (PageWriteback(page) || PageDirty(page))
-> +				if (PageWriteback(page))
-> +					goto keep_lumpy;
-> +				if (PageDirty(page))
->  					goto keep;
-> +
->  				/*
->  				 * A synchronous write - probably a ramdisk.  Go
->  				 * ahead and try to reclaim the page.
-> @@ -843,6 +886,7 @@ cull_mlocked:
->  			try_to_free_swap(page);
->  		unlock_page(page);
->  		putback_lru_page(page);
-> +		disable_lumpy_reclaim_mode(sc);
->  		continue;
->  
->  activate_locked:
-> @@ -855,6 +899,8 @@ activate_locked:
->  keep_locked:
->  		unlock_page(page);
->  keep:
-> +		disable_lumpy_reclaim_mode(sc);
-> +keep_lumpy:
->  		list_add(&page->lru, &ret_pages);
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
-> @@ -1255,7 +1301,7 @@ static inline bool should_reclaim_stall(unsigned long nr_taken,
->  		return false;
->  
->  	/* Only stall on lumpy reclaim */
-> -	if (!sc->lumpy_reclaim_mode)
-> +	if (sc->lumpy_reclaim_mode == LUMPY_MODE_NONE)
->  		return false;
->  
->  	/* If we have relaimed everything on the isolated list, no stall */
-> @@ -1300,15 +1346,15 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  			return SWAP_CLUSTER_MAX;
->  	}
->  
-> -
-> +	set_lumpy_reclaim_mode(priority, sc, false);
->  	lru_add_drain();
->  	spin_lock_irq(&zone->lru_lock);
->  
->  	if (scanning_global_lru(sc)) {
->  		nr_taken = isolate_pages_global(nr_to_scan,
->  			&page_list, &nr_scanned, sc->order,
-> -			sc->lumpy_reclaim_mode ?
-> -				ISOLATE_BOTH : ISOLATE_INACTIVE,
-> +			sc->lumpy_reclaim_mode == LUMPY_MODE_NONE ?
-> +					ISOLATE_INACTIVE: ISOLATE_BOTH,
->  			zone, 0, file);
->  		zone->pages_scanned += nr_scanned;
->  		if (current_is_kswapd())
-> @@ -1320,8 +1366,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  	} else {
->  		nr_taken = mem_cgroup_isolate_pages(nr_to_scan,
->  			&page_list, &nr_scanned, sc->order,
-> -			sc->lumpy_reclaim_mode ?
-> -				ISOLATE_BOTH : ISOLATE_INACTIVE,
-> +			sc->lumpy_reclaim_mode == LUMPY_MODE_NONE ?
-> +					ISOLATE_INACTIVE: ISOLATE_BOTH,
->  			zone, sc->mem_cgroup,
->  			0, file);
->  		/*
-> @@ -1339,7 +1385,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  
->  	spin_unlock_irq(&zone->lru_lock);
->  
-> -	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-> +	nr_reclaimed = shrink_page_list(&page_list, sc);
->  
->  	/* Check if we should syncronously wait for writeback */
->  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
-> @@ -1350,7 +1396,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  		nr_active = clear_active_flags(&page_list, NULL);
->  		count_vm_events(PGDEACTIVATE, nr_active);
->  
-> -		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-> +		set_lumpy_reclaim_mode(priority, sc, true);
-> +		nr_reclaimed += shrink_page_list(&page_list, sc);
->  	}
->  
->  	local_irq_disable();
-> @@ -1721,21 +1768,6 @@ out:
->  	}
->  }
->  
-> -static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc)
-> -{
-> -	/*
-> -	 * If we need a large contiguous chunk of memory, or have
-> -	 * trouble getting a small set of contiguous pages, we
-> -	 * will reclaim both active and inactive pages.
-> -	 */
-> -	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
-> -		sc->lumpy_reclaim_mode = 1;
-> -	else if (sc->order && priority < DEF_PRIORITY - 2)
-> -		sc->lumpy_reclaim_mode = 1;
-> -	else
-> -		sc->lumpy_reclaim_mode = 0;
-> -}
-> -
->  /*
->   * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
->   */
-> @@ -1750,8 +1782,6 @@ static void shrink_zone(int priority, struct zone *zone,
->  
->  	get_scan_count(zone, sc, nr, priority);
->  
-> -	set_lumpy_reclaim_mode(priority, sc);
-> -
->  	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
->  					nr[LRU_INACTIVE_FILE]) {
->  		for_each_evictable_lru(l) {
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
-
+diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
+index 36a254c..6cd245d 100755
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -133,12 +133,13 @@ TODO:
+ #define PCI9111_8254_BCD_COUNTER		0x01
+ 
+ /* IO address map */
+-
+-#define PCI9111_REGISTER_AD_FIFO_VALUE 			0x00	/*  AD Data stored in FIFO */
++	/* AD Data stored in FIFO */
++#define PCI9111_REGISTER_AD_FIFO_VALUE			0x00
+ #define PCI9111_REGISTER_DA_OUTPUT 			0x00
+ #define PCI9111_REGISTER_DIGITAL_IO 			0x02
+ #define PCI9111_REGISTER_EXTENDED_IO_PORTS 		0x04
+-#define PCI9111_REGISTER_AD_CHANNEL_CONTROL 		0x06	/*  Channel selection */
++	/* Channel selection */
++#define PCI9111_REGISTER_AD_CHANNEL_CONTROL		0x06
+ #define PCI9111_REGISTER_AD_CHANNEL_READBACK 		0x06
+ #define PCI9111_REGISTER_INPUT_SIGNAL_RANGE 		0x08
+ #define PCI9111_REGISTER_RANGE_STATUS_READBACK 		0x08
+@@ -202,9 +203,12 @@ TODO:
+   outb(0, PCI9111_IO_BASE+PCI9111_REGISTER_SOFTWARE_TRIGGER)
+ 
+ #define pci9111_fifo_reset() \
+-  outb(PCI9111_FFEN_SET_FIFO_ENABLE, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL); \
+-  outb(PCI9111_FFEN_SET_FIFO_DISABLE, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL); \
+-  outb(PCI9111_FFEN_SET_FIFO_ENABLE, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL)
++  outb(PCI9111_FFEN_SET_FIFO_ENABLE, \
++			PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL); \
++  outb(PCI9111_FFEN_SET_FIFO_DISABLE, \
++			PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL); \
++  outb(PCI9111_FFEN_SET_FIFO_ENABLE, \
++			PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL)
+ 
+ #define pci9111_is_fifo_full() \
+   ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)& \
+@@ -219,27 +223,30 @@ TODO:
+     PCI9111_FIFO_EMPTY_MASK)==0)
+ 
+ #define pci9111_ai_channel_set(channel) \
+-  outb((channel)&PCI9111_CHANNEL_MASK, PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_CONTROL)
++  outb((channel)&PCI9111_CHANNEL_MASK, \
++			PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_CONTROL)
+ 
+ #define pci9111_ai_channel_get() \
+   inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_READBACK)&PCI9111_CHANNEL_MASK
+ 
+ #define pci9111_ai_range_set(range) \
+-  outb((range)&PCI9111_RANGE_MASK, PCI9111_IO_BASE+PCI9111_REGISTER_INPUT_SIGNAL_RANGE)
++  outb((range)&PCI9111_RANGE_MASK, \
++			PCI9111_IO_BASE+PCI9111_REGISTER_INPUT_SIGNAL_RANGE)
+ 
+ #define pci9111_ai_range_get() \
+   inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)&PCI9111_RANGE_MASK
+ 
+ #define pci9111_ai_get_data() \
+-  ((inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE)>>4)&PCI9111_AI_RESOLUTION_MASK) \
+-  ^ PCI9111_AI_RESOLUTION_2_CMP_BIT
++  ((inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE)>>4) & \
++	PCI9111_AI_RESOLUTION_MASK) ^ PCI9111_AI_RESOLUTION_2_CMP_BIT
+ 
+ #define pci9111_hr_ai_get_data() \
+-  (inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE) & PCI9111_HR_AI_RESOLUTION_MASK) \
+-  ^ PCI9111_HR_AI_RESOLUTION_2_CMP_BIT
++  (inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE) & \
++	PCI9111_HR_AI_RESOLUTION_MASK) ^ PCI9111_HR_AI_RESOLUTION_2_CMP_BIT
+ 
+ #define pci9111_ao_set_data(data) \
+-  outw(data&PCI9111_AO_RESOLUTION_MASK, PCI9111_IO_BASE+PCI9111_REGISTER_DA_OUTPUT)
++  outw(data&PCI9111_AO_RESOLUTION_MASK, \
++				PCI9111_IO_BASE+PCI9111_REGISTER_DA_OUTPUT)
+ 
+ #define pci9111_di_get_bits() \
+   inw(PCI9111_IO_BASE+PCI9111_REGISTER_DIGITAL_IO)
+@@ -287,7 +294,10 @@ static DEFINE_PCI_DEVICE_TABLE(pci9111_pci_table) = {
+ 	{
+ 	PCI_VENDOR_ID_ADLINK, PCI9111_HR_DEVICE_ID, PCI_ANY_ID,
+ 		    PCI_ANY_ID, 0, 0, 0},
+-	    /* { PCI_VENDOR_ID_ADLINK, PCI9111_HG_DEVICE_ID, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 }, */
++	/*
++	 * { PCI_VENDOR_ID_ADLINK, PCI9111_HG_DEVICE_ID,
++	 * PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
++	 */
+ 	{
+ 	0}
+ };
+@@ -345,7 +355,8 @@ struct pci9111_private_data {
+ 	struct pci_dev *pci_device;
+ 	unsigned long io_range;	/*  PCI6503 io range */
+ 
+-	unsigned long lcr_io_base;	/*  Local configuration register base address */
++	/* Local configuration register base address */
++	unsigned long lcr_io_base;
+ 	unsigned long lcr_io_range;
+ 
+ 	int stop_counter;
+@@ -358,7 +369,8 @@ struct pci9111_private_data {
+ 
+ 	int ao_readback;	/*  Last written analog output data */
+ 
+-	unsigned int timer_divisor_1;	/*  Divisor values for the 8254 timer pacer */
++	/* Divisor values for the 8254 timer pacer */
++	unsigned int timer_divisor_1;
+ 	unsigned int timer_divisor_2;
+ 
+ 	int is_valid;		/*  Is device valid */
+@@ -575,7 +587,10 @@ pci9111_ai_do_cmd_test(struct comedi_device *dev,
+ 	if (error)
+ 		return 1;
+ 
+-	/*  step 2 : make sure trigger sources are unique and mutually compatible */
++	/*  step 2 :
++	 * make sure trigger sources are unique
++	 * and mutually compatible
++	 */
+ 
+ 	if (cmd->start_src != TRIG_NOW)
+ 		error++;
+@@ -1269,7 +1284,10 @@ found:
+ 
+ 	/*  TODO: Warn about non-tested boards. */
+ 
+-	/*  Read local configuration register base address [PCI_BASE_ADDRESS #1]. */
++	/*
++	 * Read local configuration register base address
++	 * [PCI_BASE_ADDRESS #1].
++	 */
+ 
+ 	lcr_io_base = pci_resource_start(pci_device, 1);
+ 	lcr_io_range = pci_resource_len(pci_device, 1);
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
