@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760134Ab0HEK2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:28:38 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:48148 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758642Ab0HEK2e (ORCPT
+	id S1760100Ab0HEKd7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:33:59 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:46893 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab0HEKd5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:28:34 -0400
-To: Valerie Aurora <vaurora@redhat.com>
-CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, jblunck@suse.de,
-        hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-reply-to: <20100804194749.GA2134@shell> (message from Valerie Aurora on
-	Wed, 4 Aug 2010 15:47:50 -0400)
-Subject: Re: [PATCH 19/38] union-mount: Introduce union_dir structure and basic operations
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-20-git-send-email-vaurora@redhat.com> <E1OgfJb-0000n9-KZ@pomaz-ex.szeredi.hu> <20100804194749.GA2134@shell>
-Message-Id: <E1OgxgQ-0002vU-BK@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 05 Aug 2010 12:28:18 +0200
+	Thu, 5 Aug 2010 06:33:57 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Thu, 05 Aug 2010 12:35:29 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: linux-next: manual merge of the usb tree with Linus' tree
+In-reply-to: <alpine.LNX.2.00.1008051216260.29919@pobox.suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Jiri Kosina <jkosina@suse.cz>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Justin P.Mattock" <justinmattock@gmail.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Thomas Weber <weber@corscience.de>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Message-id: <op.vgynpf0k7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <20100805132208.74bf6ab9.sfr@canb.auug.org.au>
+ <alpine.LNX.2.00.1008051216260.29919@pobox.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> > Why was the hash table concept dropped?  The header comment still
-> > talks about that?
-> 
-> Simply, Al Viro didn't like it.  But note that the current
-> implementation still uses part of the hash table solution.  You still
-> have union_dir structures external to dentries for the read-only
-> layers of the stack.  The change is from Al's observation that the
-> topmost dentry could only be part of one stack.  Why do a lookup on
-> the topmost dentry when you could keep an pointer to the stack in the
-> dentry itself and skip the lookup?  Once you have the head of the
-> stack, you don't need lookup for the rest of it.  This eliminates all
-> the lookup machinery and the union hash table lock, which seems like a
-> big win to me.
+On Thu, 05 Aug 2010 12:17:05 +0200, Jiri Kosina <jkosina@suse.cz> wrote:
 
-That dentry field will be unused most of the time and we lose space
-for d_iname for *all* filesystems.  On 64bit this results in max
-inline name going from 32 down to 24 bytes.  On my root fs 7% of names
-are 24-31 in length.  That's more than triple that of names which are
-more than 32 in length.
+> On Thu, 5 Aug 2010, Stephen Rothwell wrote:
+>
+>> Today's linux-next merge of the usb tree got a conflict in
+>> Documentation/usb/linux.inf between commit
+>> 0ea6e61122196509af82cc4f36cbdaacbefb8227 ("Documentation: update broken
+>> web addresses") from Linus' tree and commit
+>> 2e73ce9389be011587a0ca581b6798b135e64807 ("USB: gadget: g_ether: updated
+>> INF file") from the usb tree.
+>>
+>> The URL that was fixed by the former was removed by the latter, so I just
+>> used the latter version.
+>
+> I see. Greg, will you just rebase the patch in USB tree on top of current
+> Linus' tree please?
 
-Yeah, union mounts can be configured out, but that's not much
-consolation for distros which want to enable this feature.
+It should be enough to add this delta to the "USB: gadget: g_ether: updated
+INF file":
 
-> The biggest drawback of the hash table in my mind was that it
-> introduced a new global synchronization point in lookup.  Making it go
-> fast would be dcache lookup optimization all over again.
+-;   http://www.microsoft.com/whdc/hwdev/resources/HWservices/rndis.mspx
++;   http://www.microsoft.com/whdc/device/network/ndis/rmndis.mspx
 
-I already asked this, but I'll ask again, what about doing this with a
-union filesystem?  That solves this problem in one simple go, as well
-as a host of others.
-
-I'll do some experimenting because I feel it should be possible to do
-all this in a union fs with most of the advantages of union mounts.
-That doesn't mean it won't need any VFS support, but I think the
-amount of VFS burden can be considerably reduced with that approach at
-a small price (just dentry tree duplication).
-
-Miklos
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
