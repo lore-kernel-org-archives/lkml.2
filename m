@@ -1,110 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759594Ab0HEBzn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 21:55:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36320 "EHLO smtps.tip.net.au"
+	id S1759603Ab0HEB6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 21:58:23 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:54221 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759366Ab0HEBzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 21:55:41 -0400
-Date: Thu, 5 Aug 2010 11:55:35 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Konrad Rzeszutek Wilk <konrad@kernel.org>,
-        Mike Christie <michaelc@cs.wisc.edu>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Jayamohan Kallickal <jayamohank@serverengines.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (scsi-post-merge tree related)
-Message-Id: <20100805115535.74df93af.sfr@canb.auug.org.au>
-In-Reply-To: <1280780042.2843.628.camel@mulgrave.site>
-References: <20100803024445.0bf7ec86.sfr@canb.auug.org.au>
-	<20100803024701.b3dff69a.sfr@canb.auug.org.au>
-	<1280768048.2843.242.camel@mulgrave.site>
-	<4C570464.9010204@cs.wisc.edu>
-	<20100802185925.GA32503@andromeda.dapyr.net>
-	<4C5717E6.8010805@cs.wisc.edu>
-	<20100802195940.GC32503@andromeda.dapyr.net>
-	<1280780042.2843.628.camel@mulgrave.site>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__5_Aug_2010_11_55_35_+1000_Esg6teY.bofDtXLH"
+	id S1759366Ab0HEB6U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 21:58:20 -0400
+Date: Wed, 4 Aug 2010 18:58:15 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, swetland@google.com, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100805015815.GN2927@count0.beaverton.ibm.com>
+References: <20100731215214.2543c07e@infradead.org>
+ <20100801054816.GI2470@linux.vnet.ibm.com>
+ <20100731230101.7cc1d8c7@infradead.org>
+ <20100801191228.GL2470@linux.vnet.ibm.com>
+ <20100801154708.19817b75@infradead.org>
+ <20100802011006.GS2470@linux.vnet.ibm.com>
+ <AANLkTi=a-1hn_oL=i-=RKK9xOur+4mQjTRut+aiXtYkE@mail.gmail.com>
+ <20100803183447.0275c134@infradead.org>
+ <20100804163216.GB24163@linux.vnet.ibm.com>
+ <20100804163509.GA31523@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100804163509.GA31523@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Aug_2010_11_55_35_+1000_Esg6teY.bofDtXLH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 04, 2010 at 05:35:09PM +0100, Matthew Garrett wrote:
+> On Wed, Aug 04, 2010 at 09:32:16AM -0700, Paul E. McKenney wrote:
+> 
+> > If this doesn't work for the Android folks for whatever reason, another
+> > approach would be to do the freeze in user code, which could track
+> > whether any user-level resources (pthread mutexes, SysV semas, whatever)
+> > where held, and do the freeze on a thread-by-thread basis within each
+> > "victim" application as the threads reach safe points.
+> 
+> The main problem I see with the cgroups solution is that it doesn't seem 
+> to do anything to handle avoiding loss of wakeup events.
 
-Hi James,
+cgroups alone don't but there is a solution which doesn't require routing
+all event data through a single server -- use SIGIO.
 
-On Mon, 02 Aug 2010 15:14:02 -0500 James Bottomley <James.Bottomley@suse.de=
-> wrote:
->
-> On Mon, 2010-08-02 at 15:59 -0400, Konrad Rzeszutek Wilk wrote:
-> > > >Yikes. Last minute change, eh?
-> > >=20
-> > > I do not know what you mean. The patches always had iscsi_boot_sysfs =
-in=20
-> > > the firmware dir. You mean this is a last minute change?
-> >=20
-> > Yes, this rename.
-> > >=20
-> > > >
-> > > >>interface is generic and should be used on any arch and with anythi=
-ng
-> > > >>(ibft or iscsi driver) that wants to export iscsi boot info. The
-> > > >>attached patch moves iscsi_boot_sysfs to drivers/scsi. It was made =
-over
-> > > >>linux-next. I have only compile tested it.
-> > > >
-> > > >did you compile test it with the x86 native iBFT driver?
-> > >=20
-> > > Yes.
-> >=20
-> > Excellent. The patch does not look like it has changed at all, so:
-> >=20
-> >  1). Signed-off-by: Konrad Rzeszutek Wilk <konrad@kernel.org>
-> >    for the removal from firmware/ibft, and
-> >  2). Reviewed-by: Konrad Rzeszutek Wilk <konrad@kernel.org> for the
-> >  the part that puts in drivers/scsi and will make it now under James'
-> >  mainternship.
-> >=20
-> > James,
-> >=20
-> > I've asked Linus to pull my iBFT tree before yours as there was this
-> > dependency. Are you OK putting this patch in your tree, or would you pr=
-efer
-> > that I expunge Mike's patch from mine?
->=20
-> I can put this patch into my post merge tree.  I suspect you having a
-> post-post-merge tree (needed for the build problems) might be a bit
-> overkill ...
+Suppose we've got two cgroups of tasks -- those in the initial freezer
+cgroup and those in a freezer cgroup meant for power-naive apps. Let's
+call the second cgroup the naive cgroup.
 
-Ping?
---=20
+One task -- let's call it the "waker" -- is in the initial cgroup is normaly
+asleep waiting for SIGIO. Note it's not an "app" -- it's been trusted/blessed
+to be a non-power-naive task. It will be signaled via SIGIO by the
+applications which want to be unfrozen when an event comes in.
+
+When the power-naive app in the naive cgroup opens a file descriptor it's
+going through the Android interpretter to make the syscall. The interpretter
+can do fcntl() on the fd to cause SIGIO to be delivered to the waker task.
+When the waker gets SIGIO it unfreezes the naive cgroup and thus wakes the
+power-naive app. When the power-naive app wakes it will
+poll/return-from-poll/read/return-from-read and thus retrieve the event.
+
+Then it's just a matter of choosing when to freeze the naive cgroup. That
+requires a userspace implementation of the suspend blockers API plus
+opportunistic suspend but does not require any other kernel pieces. Then you
+can use sigprocmask to prevent the freeze/wake-event race. You would
+probably even merge the waker with the daemon which implements
+opportunistic suspend.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__5_Aug_2010_11_55_35_+1000_Esg6teY.bofDtXLH
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMWhoXAAoJEDMEi1NhKgbseS8IAIt3cCKe4oJTDBevrZIWUHk+
-H1XYj2REDE7tLdxZOqdRATLu/xCMsvY7aD54kbDoYwxsePlTpZviYOSIUpiM1HK3
-qHNMTyYNGadR0pEfx1UXk+4E/ARHPMmGwfKzAYkngbY/Qp8kkxXxXrr2x1ECIGdp
-0ax1dlxhwcPQTklFcmkCBJdcDTh3wIDEkRuTHpjI6U5PVevHSDkqpsiyb11VGGSu
-iXZtDf3/ujwACrW7St4vnInNxZ+xJtvUOUW/ln0qUs2S8XU5gzpeNwKq/5yKryne
-WzUoBjzH8BbtX9XJ9rnriG9Vj9ERQak/uUxNmJCFLrOf+urO5ZJCf2/ZJ9pRz2E=
-=twdf
------END PGP SIGNATURE-----
-
---Signature=_Thu__5_Aug_2010_11_55_35_+1000_Esg6teY.bofDtXLH--
+    -Matt Helsley
