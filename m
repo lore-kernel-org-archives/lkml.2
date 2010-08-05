@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933471Ab0HEXwf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 19:52:35 -0400
-Received: from fn.samba.org ([216.83.154.106]:45902 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755601Ab0HEXwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 19:52:31 -0400
-Date: Thu, 5 Aug 2010 16:52:18 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: utz lehmann <lkml123@s2y4n2c.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100805235218.GB31233@jeremy-laptop>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
- <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
- <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
- <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
- <1280524978.2452.9.camel@segv.aura.of.mankind>
- <20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	id S1760762Ab0HEX42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 19:56:28 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60030 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756442Ab0HEX4Y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 19:56:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Michael Rubin <mrubin@google.com>
+Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and  pages_entered_writeback
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk
+In-Reply-To: <AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
+References: <20100805132433.d1d7927b.akpm@linux-foundation.org> <AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
+Message-Id: <20100806084928.31DE.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100801092529.5e6ba0e0@corrin.poochiereds.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  6 Aug 2010 08:56:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 01, 2010 at 09:25:29AM -0400, Jeff Layton wrote:
-> On Fri, 30 Jul 2010 23:22:58 +0200
-> utz lehmann <lkml123@s2y4n2c.de> wrote:
+> On Thu, Aug 5, 2010 at 1:24 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> > On Wed,  4 Aug 2010 17:43:24 -0700
+> > Michael Rubin <mrubin@google.com> wrote:
+> > Wait.  These counters appear in /proc/vmstat.  So why create standalone
+> > /proc/sys/vm files as well?
 > 
-> > On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
-> > > But the fact is, th Unix ctime semantics are insane and largely
-> > > useless. There's a damn good reason almost nobody uses ctime under
-> > > unix.
-> > > 
-> > > So what I'm suggesting is that we have a flag - either per-process or
-> > > per-mount - that just says "use windows semantics for ctime".
-> > 
-> > When abusing an existing time stamp use atime not ctime please.
-> > ctime has it's uses. atime was just a mistake and is nearly useless.
-> > 
-> > And with noatime we already have creation time semantics for atime.
-> > 
+> I did not know they would show up in /proc/vmstat.
 > 
-> Ugh. Honestly all of this talk of abusing different time fields seems
-> like craziness to me. It's going to be very hard to do that without
-> breaking *something*. There's also very little reason to do this when
-> xattrs are a much cleaner approach.
-> 
-> Neil Brown has put forth a very reasoned justification for putting the
-> birthtime in an xattr. After reading it, I think that makes more sense
-> than anything. It's also something that can be done without any extra
-> infrastructure. If at some point in the future we get an xstat-like
-> syscall then we can always add birthtime to that as well.
+> I thought it made sense to put them in /proc/sys/vm since the other
+> writeback controls are there.
+> but have no problems just adding them to /prov/vmstat if that makes more sense.
 
-Just my 2 cents (as a Samba server implementor). I *hate* the idea
-of adding a "virtual" EA for birthtime. If you're going to add it,
-just add it to the stat struct like *BSD does. Don't abuse the other
-time fields, it's a new one.
+?
 
-Jeff, please don't advocate for an EA for the Samba server to use.
-Don't add it as an EA. It's *not* an EA, it's a timestamp.
+/proc/vmstat already have both.
 
-Jeremy.
+cat /proc/vmstat |grep nr_dirty
+cat /proc/vmstat |grep nr_writeback
+
+Also, /sys/devices/system/node/node0/meminfo show per-node stat.
+
+Perhaps, I'm missing your point.
+
+
