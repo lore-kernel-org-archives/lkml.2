@@ -1,103 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759819Ab0HEJ2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:28:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41221 "EHLO mx1.redhat.com"
+	id S1759920Ab0HEJ3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:29:14 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:57079 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab0HEJ2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:28:51 -0400
-Message-ID: <4C5A844C.60105@redhat.com>
-Date: Thu, 05 Aug 2010 12:28:44 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH] kvm: make mmu_shrink() fit shrinker's requirement
-References: <4C591313.50402@cn.fujitsu.com>
-In-Reply-To: <4C591313.50402@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1751301Ab0HEJ3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 05:29:09 -0400
+Date: Thu, 5 Aug 2010 11:25:38 +0200
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
+ (after using openvpn) (was Re: sysfs bug when using tun with network
+ namespaces)
+Message-ID: <20100805112538.60a46cb1@xenia.leun.net>
+In-Reply-To: <m1lj8l29zm.fsf@fess.ebiederm.org>
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+	<20100710101540.2799c9ef@xenia.leun.net>
+	<20100710140800.GA20424@kroah.com>
+	<20100710165208.59272ae6@xenia.leun.net>
+	<20100710235323.5336f627@xenia.leun.net>
+	<20100711192939.1c25dcaf@xenia.leun.net>
+	<20100804153543.56f6ecad@xenia.leun.net>
+	<20100804214618.GA6289@kroah.com>
+	<20100805001105.5a3453ed@xenia.leun.net>
+	<m1lj8l29zm.fsf@fess.ebiederm.org>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/04/2010 10:13 AM, Lai Jiangshan wrote:
-> mmu_shrink() should attempt to free @nr_to_scan entries.
->
+Hi,
 
-This conflicts with Dave's patchset.
+On Wed, 04 Aug 2010 17:12:29 -0700
+ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-Dave, what's going on with those patches?  They're starting to smell.
+First, thank you very much for picking that up (and, of course, for
+your work at linux in general).
 
-> @@ -3138,37 +3138,51 @@ static int mmu_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
->   {
->   	struct kvm *kvm;
->   	struct kvm *kvm_freed = NULL;
-> +	struct kvm *kvm_last;
->   	int cache_count = 0;
->
->   	spin_lock(&kvm_lock);
->
-> -	list_for_each_entry(kvm,&vm_list, vm_list) {
-> +	if (list_empty(&vm_list))
-> +		goto out;
-> +
-> +	kvm_last = list_entry(vm_list.prev, struct kvm, vm_list);
-> +
-> +	for (;;) {
->   		int npages, idx, freed_pages;
->   		LIST_HEAD(invalid_list);
->
-> +		kvm = list_first_entry(&vm_list, struct kvm, vm_list);
->   		idx = srcu_read_lock(&kvm->srcu);
->   		spin_lock(&kvm->mmu_lock);
->   		npages = kvm->arch.n_alloc_mmu_pages -
->   			 kvm->arch.n_free_mmu_pages;
-> -		cache_count += npages;
-> -		if (!kvm_freed&&  nr_to_scan>  0&&  npages>  0) {
-> +		if (kvm_last)
-> +			cache_count += npages;
-> +		if (nr_to_scan>  0&&  npages>  0) {
->   			freed_pages = kvm_mmu_remove_some_alloc_mmu_pages(kvm,
->   							&invalid_list);
-> +			kvm_mmu_commit_zap_page(kvm,&invalid_list);
->   			cache_count -= freed_pages;
->   			kvm_freed = kvm;
-> -		}
-> -		nr_to_scan--;
-> +			nr_to_scan -= freed_pages;
-> +		} else if (kvm == kvm_freed)
-> +			nr_to_scan = 0; /* no more page to be freed, break */
->
-> -		kvm_mmu_commit_zap_page(kvm,&invalid_list);
->   		spin_unlock(&kvm->mmu_lock);
->   		srcu_read_unlock(&kvm->srcu, idx);
-> -	}
-> -	if (kvm_freed)
->   		list_move_tail(&kvm_freed->vm_list,&vm_list);
->
-> +		if (kvm == kvm_last) /* just scaned all vms */
-> +			kvm_last = NULL;
-> +		if (!kvm_last&&  (nr_to_scan<= 0 || !kvm_freed))
-> +			break;
-> +	}
-> +
-> +out:
->   	spin_unlock(&kvm_lock);
->
-> -	return cache_count;
-> +	return cache_count<  0 ? 0 : cache_count;
->   }
->
->   static struct shrinker mmu_shrinker = {
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+> > # > unshare -n /bin/bash
+> > # > # how to setup veth device pair to get connectivity into
+> > namespace not shown here # > openvpn --config some.config
+> > [ running some traffic over vpn device not shown here ]
+> > ^c # stopping openvpn
+> > # > lsof -i
+> > # > netstat -an
+> > Active Internet connections (servers and established)
+> > Proto Recv-Q Send-Q Local Address           Foreign Address
+> > State Active UNIX domain sockets (servers and established)
+> > Proto RefCnt Flags       Type       State         I-Node Path
+> > # > ps ax|grep openvpn|grep -v grep
+> > # > # cannot find anything that suggests there is anything left
+> > from that openvpn session # > exit # logging out from shell in
+> > network namespace
+> >
+> > Now I get
+> >
+> > Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo
+> > to become free. Usage count = 3 [repeated]
+> 
+> How many times?
+
+Unfortunately looks like indefinitely. Never watched longer so far
+(rebooted soon), but I'm seeing this message now repeated every 10 secs
+for ~10 minutes on a idle system.
+
+Additionally when testing this I found another one (by accident started
+my firewall script in that namespace...) - using netfilter RECENT
+makes it barf. Stripped down to the essentials it looks like this:
+
+> # unshare -n /bin/bash
+> # iptables -I INPUT -d 1.2.3.4 -m recent --name BLA --set
+> # exit
+
+Aug  5 11:19:47 doris kernel: [  218.420238] ------------[ cut here ]------------
+Aug  5 11:19:47 doris kernel: [  218.420256] kernel BUG at net/netfilter/xt_recent.c:609!
+Aug  5 11:19:47 doris kernel: [  218.420268] invalid opcode: 0000 [#1] PREEMPT SMP 
+Aug  5 11:19:47 doris kernel: [  218.420284] last sysfs file: /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0A:00/power_supply/BAT0/charge_full
+Aug  5 11:19:47 doris kernel: [  218.420295] Modules linked in: snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device edd cpufreq_conservative cpufreq_userspace cpufreq_powersave acpi_cpufreq mperf ipt_REJECT ipt_LOG xt_limit xt_recent iptable_mangle iptable_nat iptable_filter nf_conntrack_ipv6 xt_state xt_tcpudp ip6table_filter ip6_tables nf_nat_ftp nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables fuse nls_utf8 loop arc4 ecb iwlagn iwlcore mac80211 snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm cfg80211 snd_timer snd usb_storage iTCO_wdt soundcore tg3 sg iTCO_vendor_support snd_page_alloc rfkill i2c_i801 pcspkr battery ac ext4 jbd2 crc16 sha256_generic aes_generic cbc dm_crypt linear i915 drm_kms_helper drm i2c_algo_bit sd_mod video intel_agp button dm_snapshot dm_mod fan processor ata_piix ahci libahci libata scsi_mod thermal thermal_sys
+Aug  5 11:19:47 doris kernel: [  218.420529] 
+Aug  5 11:19:47 doris kernel: [  218.420542] Pid: 13, comm: netns Not tainted 2.6.35 #2 Kuril                           /40684JG         
+Aug  5 11:19:47 doris kernel: [  218.420557] EIP: 0060:[<fc886a15>] EFLAGS: 00010206 CPU: 0
+Aug  5 11:19:47 doris kernel: [  218.420578] EIP is at recent_net_exit+0x55/0x70 [xt_recent]
+Aug  5 11:19:47 doris kernel: [  218.420589] EAX: f2218000 EBX: f5b79290 ECX: f2f27b40 EDX: f5cd4000
+Aug  5 11:19:47 doris kernel: [  218.420601] ESI: f2218000 EDI: f5cd5f44 EBP: f5cd5f28 ESP: f5cd5f20
+Aug  5 11:19:47 doris kernel: [  218.420612]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+Aug  5 11:19:47 doris kernel: [  218.420626] Process netns (pid: 13, ti=f5cd4000 task=f5cc9920 task.ti=f5cd4000)
+Aug  5 11:19:47 doris kernel: [  218.420635] Stack:
+Aug  5 11:19:47 doris kernel: [  218.420641]  f5cd5f30 fc887618 f5cd5f3c c130867d fc887618 f5cd5f44 c1308850 f5cd5f60
+Aug  5 11:19:47 doris kernel: [  218.420667] <0> c1308919 f2218014 f2218014 f221800c f221800c c15915a0 c3bb4f40 c1308850
+Aug  5 11:19:47 doris kernel: [  218.420695] <0> f5cd5fbc c105a230 c13d1658 00000001 00000000 f7048000 c160f500 f5cc9c00
+Aug  5 11:19:47 doris kernel: [  218.420724] Call Trace:
+Aug  5 11:19:47 doris kernel: [  218.420749]  [<c130867d>] ? ops_exit_list+0x1d/0x50
+Aug  5 11:19:47 doris kernel: [  218.420766]  [<c1308850>] ? cleanup_net+0x0/0x160
+Aug  5 11:19:47 doris kernel: [  218.420782]  [<c1308919>] ? cleanup_net+0xc9/0x160
+Aug  5 11:19:47 doris kernel: [  218.420797]  [<c1308850>] ? cleanup_net+0x0/0x160
+Aug  5 11:19:47 doris kernel: [  218.420815]  [<c105a230>] ? worker_thread+0x110/0x250
+Aug  5 11:19:47 doris kernel: [  218.420832]  [<c13d1658>] ? schedule+0x748/0x7a0
+Aug  5 11:19:47 doris kernel: [  218.420849]  [<c105d5f0>] ? autoremove_wake_function+0x0/0x40
+Aug  5 11:19:47 doris kernel: [  218.420864]  [<c105a120>] ? worker_thread+0x0/0x250
+Aug  5 11:19:47 doris kernel: [  218.420879]  [<c105d1bc>] ? kthread+0x6c/0x80
+Aug  5 11:19:47 doris kernel: [  218.420895]  [<c105d150>] ? kthread+0x0/0x80
+Aug  5 11:19:47 doris kernel: [  218.420910]  [<c1003336>] ? kernel_thread_helper+0x6/0x10
+Aug  5 11:19:47 doris kernel: [  218.420919] Code: 91 08 89 e2 81 e2 00 e0 ff ff 83 6a 14 01 f6 42 08 08 75 19 3b 1b 75 13 ba fa 72 88 fc e8 94 3e 8c c4 8d 64 24 04 5b 5d c3 0f 0b <0f> 0b 89 45 f8 e8 a1 ad b4 c4 8b 45 f8 eb da 8d b6 00 00 00 00 
+Aug  5 11:19:47 doris kernel: [  218.421063] EIP: [<fc886a15>] recent_net_exit+0x55/0x70 [xt_recent] SS:ESP 0068:f5cd5f20
+Aug  5 11:19:47 doris kernel: [  218.421136] ---[ end trace f57524f15f4df616 ]---
 
 
 -- 
-error compiling committee.c: too many arguments to function
+MfG,
+
+Michael Leun
 
