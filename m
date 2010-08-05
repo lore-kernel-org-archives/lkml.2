@@ -1,127 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760175Ab0HELUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 07:20:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56897 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759028Ab0HELUu (ORCPT
+	id S1759053Ab0HELZX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 07:25:23 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:18707 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758883Ab0HELZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 07:20:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=yDihac6m7RY6HlxpzCFYV0Rao6ruaig3IEBXrIXRq+Yx0y2AouzWfTq9kSJnCX3QpL
-         zjNrqAvX7s/hfgqpvdLqY3+Wuo6H5uFt77EFyw2yQ0aVBsnmGu8eQYlvDt+tRZwS3qTJ
-         ux4P8KiEbMi14HAS2C5GBqY8d+i1BdARqoiaM=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <952321.94696.qm@web37608.mail.mud.yahoo.com>
-References: <952321.94696.qm@web37608.mail.mud.yahoo.com>
+	Thu, 5 Aug 2010 07:25:21 -0400
+Subject: Re: [PATCH] atmel_nand: Fix warning: 'part_probes' defined but not
+ used
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andreas =?ISO-8859-1?Q?Bie=DFmann?= <biessmann@corscience.de>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org,
+        David Woodhouse <dwmw2@infradead.org>,
+        Sandeep Paulraj <s-paulraj@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        linux-mtd@lists.infradead.org
+In-Reply-To: <1281004721-397-1-git-send-email-biessmann@corscience.de>
+References: <1279099026-24298-1-git-send-email-biessmann@corscience.de>
+	 <1281004721-397-1-git-send-email-biessmann@corscience.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 14:20:45 +0300
-Message-ID: <1281007245.8617.15.camel@maxim-laptop>
+Date: Thu, 05 Aug 2010 13:50:40 +0300
+Message-ID: <1281005440.15689.83.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 05 Aug 2010 10:52:03.0352 (UTC) FILETIME=[3CFDC180:01CB348C]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 01:30 -0700, Alex Dubov wrote: 
-> > Maxim Levitsky wrote: 
-> > > On Wed, 2010-08-04 at 00:57 -0700, Alex Dubov wrote: 
-> > > > I see two immediate problems with this patch:
-> > > > 
-> > > > 1. On cosmetic level, custom debug macros should
-> > not be employed. Device
-> > > > core already have this functionality (dynamic
-> > debug levels and such). Please,
-> > > > use dev_dbg and friends for print-outs.
-> > > This allows much easier control for debug.
-> > > Single module parameter is enough to adjust it.
-> > > This helps me help users.
-> > > (Eg, kernel compilation is out of question)
+On Thu, 2010-08-05 at 12:38 +0200, Andreas Bießmann wrote:
+> This patch fixes
 > 
-> I doubt it will be that useful, but it's not my call to make anyway.
+> drivers/mtd/nand/atmel_nand.c:372: warning: 'part_probes' defined but not used
 > 
+> which is issued when CONFIG_MTD_PARTITIONS is defined but
+> CONFIG_MTD_CMDLINE_PARTS not.
 > 
-> > > 
-> > > 
-> > > > 
-> > > > 2. On a structural level, I'd rather prefer host
-> > drivers to not start their
-> > > > own threads. If you look at both current host
-> > implementations, they operate
-> > > > in callback fashion. Apart from saving some
-> > resources, this reduces the
-> > > > amount of problems encountered during
-> > suspend/resume and shutdown.
-> > > This isn't possible.
-> > > Hardware doesn't support interrupts on memstick bus
-> > changes, it only
-> > > supports DMA done from/to internal FIFO, and DMA it
-> > only possible for
-> > > 512 byte TPCs.
-> > > 
-> > 
-> 
-> How depressing.
-> 
-> > 
-> > Another question.
-> > 
-> > I see that current code ignores MEMSTICK_CAP_AUTO_GET_INT
-> > Instread mspro_blk.c enables this capability for parallel
-> > mode, assuming
-> > that hw supports it. Its true in my case, but might not be
-> > true in other
-> > cases.
-> > I think I should fix that, right?
-> 
-> This is mandated by the spec. INT should be available automatically in
-> parallel mode, and some hardware does it in serial as well.
-> 
-> > 
-> > Also I see that you bath
-> > TPC_READ_LONG_DATA/TPC_READ_LONG_DATA
-> > Does that mean that every HW sector is larger that 512?
-> > If so, you are doing copy on write, right?
-> > I have small caching in my sm_ftl of last sector. It helps
-> > performance a
-> > lot.
-> 
-> 
-> That's how its called in the spec.
-> Sectors can be larger than 512b on Pro-HG sticks, and there's additional
-> TPC_READ/WRITE_QUAD_DATA which operates on larger quantities.
-But not on ordinary PRO, right?
+> Signed-off-by: Andreas Bießmann <biessmann@corscience.de>
 
-Small question, can I use Pro-HG stick in my reader that is designed for
-Standard/PRO only? Does your subsystem support it?
+Pushed to my l2-mtd-2.6.git / master
 
-8-bit mode really isn't supported here, but it is optional I am sure.
-
-> 
-> > 
-> > 
-> > Also I want to clarify that the only kind of interrupts
-> > supported by hw
-> > (besides usual card detection interrupt), is DMA done
-> > interrupt.
-> > Thats why I have to use thread.
-> > Doing polling in r592_submit_req (which runs in atomic
-> > context is just
-> > cruel).
-> 
-> Yes, I see you have a timed wait there.
-> 
-
-Alex, how should I proceed in merge of my driver?
-Do you have any objections against it now?
-
-Best regards,
-Maxim Levitsky
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
