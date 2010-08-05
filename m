@@ -1,65 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758940Ab0HEK5d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:57:33 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50277 "EHLO hera.kernel.org"
+	id S1758957Ab0HELH4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 07:07:56 -0400
+Received: from mail.pod.cz ([213.155.227.146]:58411 "EHLO mail.pod.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758889Ab0HEK53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:57:29 -0400
-Message-ID: <4C5A98A0.4030208@kernel.org>
-Date: Thu, 05 Aug 2010 12:55:28 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1758849Ab0HELHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 07:07:53 -0400
+Date: Thu, 5 Aug 2010 13:07:50 +0200
+From: Vitezslav Samel <vitezslav@samel.cz>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Joonwoo Park <joonwpark81@gmail.com>
+Subject: Re: [PATCHv3 03/16] pps: fix race in PPS_FETCH handler
+Message-ID: <20100805110750.GA10965@pc11.op.pod.cz>
+Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+	linux-kernel@vger.kernel.org,
+	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+	Rodolfo Giometti <giometti@enneenne.com>,
+	john stultz <johnstul@us.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>, Joonwoo Park <joonwpark81@gmail.com>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+ <033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
+ <20100805051929.GA14413@pc11.op.pod.cz>
+ <20100805141951.2cce9490@desktopvm.lvknet>
 MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-        Jens Axboe <axboe@kernel.dk>, Karel Zak <kzak@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Jan Blunck <jblunck@suse.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v3 3/3] init: add support for root devices specified by
- partition UUID
-References: <AANLkTi=b_zBigV8ePRPO1_qHpbMTALnCAV7v=dSTO5wc@mail.gmail.com> <1280946126-19587-3-git-send-email-wad@chromium.org>
-In-Reply-To: <1280946126-19587-3-git-send-email-wad@chromium.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 05 Aug 2010 10:57:06 +0000 (UTC)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100805141951.2cce9490@desktopvm.lvknet>
+User-Agent: Mutt/1.5.20 (2009-08-27)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Aug 05, 2010 at 02:19:51PM +0400, Alexander Gordeev wrote:
+> Hi Vitezslav,
+> 
+> В Thu, 5 Aug 2010 07:19:29 +0200
+> Vitezslav Samel <vitezslav@samel.cz> пишет:
+> 
+> > On Thu, Aug 05, 2010 at 01:06:40AM +0400, Alexander Gordeev wrote:
+> > > There was a race in PPS_FETCH ioctl handler when several processes want
+> > > to obtain PPS data simultaneously using sleeping PPS_FETCH. They all
+> > > sleep most of the time in the system call.
+> > > With the old approach when the first process waiting on the pps queue
+> > > is waken up it makes new system call right away and zeroes pps->go. So
+> > > other processes continue to sleep. This is a clear race condition
+> > > because of the global 'go' variable.
+> > > With the new approach pps->last_ev holds some value increasing at each
+> > > PPS event. PPS_FETCH ioctl handler saves current value to the local
+> > > variable at the very beginning so it can safely check that there is a
+> > > new event by just comparing both variables.
+> > > 
+> > > Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+> > > ---
+> > >  drivers/pps/kapi.c         |    4 ++--
+> > >  drivers/pps/pps.c          |   10 +++++++---
+> > >  include/linux/pps_kernel.h |    2 +-
+> > >  3 files changed, 10 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+> > > index 55f3961..3f89f5e 100644
+> > > --- a/drivers/pps/kapi.c
+> > > +++ b/drivers/pps/kapi.c
+> > > @@ -326,8 +326,8 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
+> > >  
+> > >  	/* Wake up if captured something */
+> > >  	if (captured) {
+> > > -		pps->go = ~0;
+> > > -		wake_up_interruptible(&pps->queue);
+> > > +		pps->last_ev++;
+> > > +		wake_up_interruptible_all(&pps->queue);
+> > 
+> >   What happens if pps->last_ev overflows? Seems to me it would freeze
+> > pps.
+> 
+> Yes, it will freeze the fds (if they don't use timeouts). But in normal
+> circumstances, i.e. when pps_event is called twice a second, it will
+> overflow after ~68 years of uninterrupted work. Well, it's the same
+> kind of problem as an overflow of struct timespec. I thought it's not
+> actually a problem. Should I use u64 instead of unsigned int or add a
+> runtime check somewhere?
 
-On 08/04/2010 08:22 PM, Will Drewry wrote:
-> @@ -642,6 +642,7 @@ void __init printk_all_partitions(void)
->  		struct hd_struct *part;
->  		char name_buf[BDEVNAME_SIZE];
->  		char devt_buf[BDEVT_SIZE];
-> +		u8 uuid[PARTITION_META_INFO_UUIDLTH * 2 + 1];
->  
->  		/*
->  		 * Don't show empty devices or things that have been
-> @@ -660,10 +661,14 @@ void __init printk_all_partitions(void)
->  		while ((part = disk_part_iter_next(&piter))) {
->  			bool is_part0 = part == &disk->part0;
->  
-> -			printk("%s%s %10llu %s", is_part0 ? "" : "  ",
-> +			uuid[0] = 0;
-> +			if (part->info)
-> +				part_unpack_uuid(part->info->uuid, uuid);
-> +
-> +			printk("%s%s %10llu %s %s", is_part0 ? "" : "  ",
->  			       bdevt_str(part_devt(part), devt_buf),
->  			       (unsigned long long)part->nr_sects >> 1,
-> -			       disk_name(disk, part->partno, name_buf));
-> +			       disk_name(disk, part->partno, name_buf), uuid);
+  If we're using 1PPS it's ~68 years, but someone is trying 5PPS now
+(it would overflow in ~13.6 years) - what if someone tries e.g. 100PPS?
+It's not the same as overflow of struct timespec! I think it deserves
+some treatment.
 
-Hmmm... I'm a bit worried about this.  This might break userspace
-tools.  I think it would be better to export it via sysfs.
-
-Thanks.
-
--- 
-tejun
+	Cheers,
+		Vita
