@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760936Ab0HEWbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:31:42 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:43332 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757485Ab0HEWan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:30:43 -0400
-Subject: Re: [PATCH] [RFC] notify userspace about time changes
-From: john stultz <johnstul@us.ibm.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
-        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1281047390.3405.22.camel@localhost.localdomain>
-References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
-	 <1280937526.28884.21.camel@work-vm>
-	 <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
-	 <1281042665.3405.15.camel@localhost.localdomain>
-	 <AANLkTi=Gxk7FwmyCqNwXQEg7OsvDh4p2Mg3Fhiy1g5pv@mail.gmail.com>
-	 <1281047390.3405.22.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 15:30:30 -0700
-Message-ID: <1281047430.3405.23.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1760976Ab0HEWcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:32:00 -0400
+Received: from kroah.org ([198.145.64.141]:37801 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934567Ab0HEWY6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:58 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Jike Song <albcamus@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 19/28] driver core: fix memory leak on one error path in bus_register()
+Date: Thu,  5 Aug 2010 15:24:09 -0700
+Message-Id: <1281047058-23716-19-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <20100805213314.GB13744@kroah.com>
+References: <20100805213314.GB13744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 15:29 -0700, john stultz wrote:
-> On Fri, 2010-08-06 at 00:17 +0200, Kay Sievers wrote:
-> > On Thu, Aug 5, 2010 at 23:11, john stultz <johnstul@us.ibm.com> wrote:
-> > > On Thu, 2010-08-05 at 15:33 +0300, Alexander Shishkin wrote:
-> > >> On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
-> > >> > Is there a actual use case that you need this for?  I don't really have
-> > >> > an issue with the code I just really want to make sure the feature would
-> > >> > be useful enough to justify the API and code maintenance going forward.
-> > 
-> > Basically everything that schedules an action based on an absolute
-> > time specification, like at 3pm today, and not in 3 hours from now,
-> > needs to track such system time changes. Otherwise it has to do
-> > nonsense like cron does, to wake up every minute to check the current
-> > time.
-> 
-> time_create(CLOCK_REALTIME,...) creates absolute (not relative) timers
+From: Jike Song <albcamus@gmail.com>
 
-Sorry, *timer_create*.
+Reported-by: huangweibing@gmail.com
+Signed-off-by: Jike Song <albcamus@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/base/bus.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-thanks
--john
-
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 12eec3f..eb1b7fa 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -945,8 +945,8 @@ bus_devices_fail:
+ 	bus_remove_file(bus, &bus_attr_uevent);
+ bus_uevent_fail:
+ 	kset_unregister(&bus->p->subsys);
+-	kfree(bus->p);
+ out:
++	kfree(bus->p);
+ 	bus->p = NULL;
+ 	return retval;
+ }
+-- 
+1.7.2
 
