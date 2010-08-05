@@ -1,221 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759828Ab0HEG7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 02:59:46 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47189 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758243Ab0HEG7m (ORCPT
+	id S1759834Ab0HEHAx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 03:00:53 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61787 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759736Ab0HEHAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 02:59:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 5/6] vmscan: Do not writeback filesystem pages in direct reclaim
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>
-In-Reply-To: <1280497020-22816-6-git-send-email-mel@csn.ul.ie>
-References: <1280497020-22816-1-git-send-email-mel@csn.ul.ie> <1280497020-22816-6-git-send-email-mel@csn.ul.ie>
-Message-Id: <20100805154718.31D5.A69D9226@jp.fujitsu.com>
+	Thu, 5 Aug 2010 03:00:50 -0400
+Message-ID: <4C5A619D.5050407@monstr.eu>
+Date: Thu, 05 Aug 2010 09:00:45 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 2.6.36-rc1
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  5 Aug 2010 15:59:37 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
-again, very sorry for the delay.
+please pull the following patches to your tree.
+There is support for KGDB, several cleanups/fixups and I also heavily 
+rewrite entry.S.
 
-> When memory is under enough pressure, a process may enter direct
-> reclaim to free pages in the same manner kswapd does. If a dirty page is
-> encountered during the scan, this page is written to backing storage using
-> mapping->writepage. This can result in very deep call stacks, particularly
-> if the target storage or filesystem are complex. It has already been observed
-> on XFS that the stack overflows but the problem is not XFS-specific.
-> 
-> This patch prevents direct reclaim writing back filesystem pages by checking
-> if current is kswapd or the page is anonymous before writing back.  If the
-> dirty pages cannot be written back, they are placed back on the LRU lists
-> for either background writing by the BDI threads or kswapd. If in direct
-> lumpy reclaim and dirty pages are encountered, the process will stall for
-> the background flusher before trying to reclaim the pages again.
-> 
-> As the call-chain for writing anonymous pages is not expected to be deep
-> and they are not cleaned by flusher threads, anonymous pages are still
-> written back in direct reclaim.
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
->  mm/vmscan.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++------------
->  1 files changed, 54 insertions(+), 15 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index d83812a..2d2b588 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -139,6 +139,9 @@ static DECLARE_RWSEM(shrinker_rwsem);
->  #define scanning_global_lru(sc)	(1)
->  #endif
->  
-> +/* Direct lumpy reclaim waits up to five seconds for background cleaning */
-> +#define MAX_SWAP_CLEAN_WAIT 50
-> +
->  static struct zone_reclaim_stat *get_reclaim_stat(struct zone *zone,
->  						  struct scan_control *sc)
->  {
-> @@ -645,11 +648,13 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
->  					struct scan_control *sc,
-> -					enum pageout_io sync_writeback)
-> +					enum pageout_io sync_writeback,
-> +					unsigned long *nr_still_dirty)
->  {
->  	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
->  	int pgactivate = 0;
-> +	unsigned long nr_dirty = 0;
->  	unsigned long nr_reclaimed = 0;
->  
->  	cond_resched();
-> @@ -743,6 +748,15 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  		}
->  
->  		if (PageDirty(page)) {
-> +			/*
-> +			 * Only kswapd can writeback filesystem pages to
-> +			 * avoid risk of stack overflow
-> +			 */
-> +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> +				nr_dirty++;
-> +				goto keep_locked;
-> +			}
-> +
->  			if (references == PAGEREF_RECLAIM_CLEAN)
->  				goto keep_locked;
->  			if (!may_enter_fs)
-> @@ -860,6 +874,8 @@ keep:
->  	free_page_list(&free_pages);
->  
->  	list_splice(&ret_pages, page_list);
-> +
-> +	*nr_still_dirty = nr_dirty;
->  	count_vm_events(PGACTIVATE, pgactivate);
->  	return nr_reclaimed;
->  }
-> @@ -1242,12 +1258,14 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  			struct scan_control *sc, int priority, int file)
->  {
->  	LIST_HEAD(page_list);
-> +	LIST_HEAD(putback_list);
->  	unsigned long nr_scanned;
->  	unsigned long nr_reclaimed = 0;
->  	unsigned long nr_taken;
->  	unsigned long nr_active;
->  	unsigned long nr_anon;
->  	unsigned long nr_file;
-> +	unsigned long nr_dirty;
->  
->  	while (unlikely(too_many_isolated(zone, file, sc))) {
->  		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> @@ -1296,28 +1314,49 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  
->  	spin_unlock_irq(&zone->lru_lock);
->  
-> -	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-> +	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
-> +								&nr_dirty);
->  
->  	/*
-> -	 * If we are direct reclaiming for contiguous pages and we do
-> +	 * If specific pages are needed such as with direct reclaiming
-> +	 * for contiguous pages or for memory containers and we do
->  	 * not reclaim everything in the list, try again and wait
-> -	 * for IO to complete. This will stall high-order allocations
-> -	 * but that should be acceptable to the caller
-> +	 * for IO to complete. This will stall callers that require
-> +	 * specific pages but it should be acceptable to the caller
->  	 */
-> -	if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
-> -			sc->lumpy_reclaim_mode) {
-> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +	if (sc->may_writepage && !current_is_kswapd() &&
-> +			(sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
-> +		int dirty_retry = MAX_SWAP_CLEAN_WAIT;
->  
-> -		/*
-> -		 * The attempt at page out may have made some
-> -		 * of the pages active, mark them inactive again.
-> -		 */
-> -		nr_active = clear_active_flags(&page_list, NULL);
-> -		count_vm_events(PGDEACTIVATE, nr_active);
-> +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
-> +			struct page *page, *tmp;
-> +
-> +			/* Take off the clean pages marked for activation */
-> +			list_for_each_entry_safe(page, tmp, &page_list, lru) {
-> +				if (PageDirty(page) || PageWriteback(page))
-> +					continue;
-> +
-> +				list_del(&page->lru);
-> +				list_add(&page->lru, &putback_list);
-> +			}
-> +
-> +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
-
-ditto.
-wakeup_flusher_threads(0) is not correct?
-
-And, When flusher thread still don't start IO, this loop don't have proper
-waiting. do we need wait_on_page_dirty() or something?
-(similar wait_on_page_writeback)
+Thanks,
+Michal
 
 
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+   Linus Torvalds (1):
+         Linux 2.6.35
 
-> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
+are available in the git repository at:
 
-As we discussed, congestion_wait() don't works find if slow strage device
-is connected.
+   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
 
+FUJITA Tomonori (1):
+       microblaze: remove unused HAVE_ARCH_PCI_SET_DMA_MASK
 
->  
-> -		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-> +			/*
-> +			 * The attempt at page out may have made some
-> +			 * of the pages active, mark them inactive again.
-> +			 */
-> +			nr_active = clear_active_flags(&page_list, NULL);
-> +			count_vm_events(PGDEACTIVATE, nr_active);
-> +
-> +			nr_reclaimed += shrink_page_list(&page_list, sc,
-> +						PAGEOUT_IO_SYNC, &nr_dirty);
+Michal Simek (46):
+       microblaze: Fix __copy_to/from_user_inatomic macros
+       microblaze: Fix comment for TLB
+       microblaze: Implement flush_dcache_page macro
+       microblaze: Remove unused label
+       microblaze: Sync noMMU and MMU setup_memory
+       microblaze: Fix copy_to_user_page macro
+       microblaze: Disable FRAME_POINTER selection
+       microblaze: Fix sys_clone syscall
+       microblaze: Trace hardirqs
+       microblaze: Improve ftrace time measuring
+       microblaze: Do not trace cpu_relax function
+       microblaze: Enable early printk only for uartlite
+       microblaze: Decrease time shifting values
+       microblaze: Fix number of pvr regs
+       microblaze: Cleanup boot/Makefile
+       microblaze: Do not use _start in vmlinux
+       microblaze: Fix VM_ON and VM_OFF macros
+       microblaze: Save and restore r3/r4 in SAVE/RESTORE_REGS macros
+       microblaze: Optimize clear_vms_ums macro
+       microblaze: Remove PER_CPU(KM) variable
+       microblaze: Move BIP setup to the end of ret_from_trap/ret_from_exc
+       microblaze: Move stack backup to SAVE_STATE macro
+       microblaze: remove enable_irq from SAVE_STATE macro
+       microblaze: trivial: Use la insted of addik
+       microblaze: Optimize SAVE_STATE macro
+       microblaze: Simplify _debug_exception function
+       microblaze: Do not setup BIP in _debug_exception
+       microblaze: Completely remove working with R11 register
+       microblaze: Remove additional loading
+       microblaze: Optimize SAVE_STATE macro
+       microblaze: Remove additional setup for kernel_mode
+       microblaze: Implement clear_ums macro and fix SAVE_STATE macro
+       microblaze: Optimize hw exception rutine
+       microblaze: entry.S: Macro optimization
+       microblaze: Move SAVE_STATE upward
+       microblaze: Do not mix register saving and mode setting
+       microblaze: Save kernel mode in delay slot
+       microblaze: Use delay slot in syscall macros
+       microblaze: Put together addik instructions
+       microblaze: Fix _user_exception function
+       microblaze: Fix _interrupt function
+       microblaze: Move PT_MODE saving to delay slot
+       microblaze: Simplify syscall rutine
+       microblaze: Remove nop after MSRCLR/SET, MTS, MFS instructions
+       microblaze: Support brki rX, 0x18 for user application debugging
+       microblaze: Add KGDB support
 
-After my patch, when PAGEOUT_IO_SYNC failure, retry is no good idea.
-can we remove this loop?
+Steven J. Magnani (2):
+       microblaze: Allow PAGE_SIZE configuration
+       microblaze: Add stack unwinder
 
+  arch/microblaze/Kconfig                       |   31 ++
+  arch/microblaze/Kconfig.debug                 |    1 +
+  arch/microblaze/boot/Makefile                 |   11 +-
+  arch/microblaze/include/asm/cacheflush.h      |   18 +-
+  arch/microblaze/include/asm/dma-mapping.h     |    6 -
+  arch/microblaze/include/asm/elf.h             |    2 +-
+  arch/microblaze/include/asm/exceptions.h      |   21 +-
+  arch/microblaze/include/asm/kgdb.h            |   28 ++
+  arch/microblaze/include/asm/page.h            |   12 +-
+  arch/microblaze/include/asm/pvr.h             |    2 +-
+  arch/microblaze/include/asm/setup.h           |    2 -
+  arch/microblaze/include/asm/system.h          |    1 -
+  arch/microblaze/include/asm/uaccess.h         |    4 +-
+  arch/microblaze/include/asm/unwind.h          |   29 ++
+  arch/microblaze/kernel/Makefile               |    3 +-
+  arch/microblaze/kernel/cpu/mb.c               |    1 +
+  arch/microblaze/kernel/entry-nommu.S          |   28 ++
+  arch/microblaze/kernel/entry.S                |  607 
+++++++++++---------------
+  arch/microblaze/kernel/exceptions.c           |    9 +-
+  arch/microblaze/kernel/head.S                 |    4 +-
+  arch/microblaze/kernel/hw_exception_handler.S |    4 +-
+  arch/microblaze/kernel/irq.c                  |    2 +
+  arch/microblaze/kernel/kgdb.c                 |  147 ++++++
+  arch/microblaze/kernel/misc.S                 |    2 +-
+  arch/microblaze/kernel/process.c              |    7 +-
+  arch/microblaze/kernel/ptrace.c               |   17 +-
+  arch/microblaze/kernel/stacktrace.c           |   44 +--
+  arch/microblaze/kernel/timer.c                |   24 +-
+  arch/microblaze/kernel/traps.c                |   91 ++--
+  arch/microblaze/kernel/unwind.c               |  318 +++++++++++++
+  arch/microblaze/kernel/vmlinux.lds.S          |   16 +-
+  arch/microblaze/mm/fault.c                    |   16 -
+  arch/microblaze/mm/init.c                     |    7 +-
+  lib/Kconfig.debug                             |    6 +-
+  34 files changed, 977 insertions(+), 544 deletions(-)
+  create mode 100644 arch/microblaze/include/asm/kgdb.h
+  create mode 100644 arch/microblaze/include/asm/unwind.h
+  create mode 100644 arch/microblaze/kernel/kgdb.c
+  create mode 100644 arch/microblaze/kernel/unwind.c
 
-> +		}
->  	}
->  
-> +	list_splice(&putback_list, &page_list);
-> +
->  	local_irq_disable();
->  	if (current_is_kswapd())
->  		__count_vm_events(KSWAPD_STEAL, nr_reclaimed);
-> -- 
-> 1.7.1
-> 
-
-
-
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
