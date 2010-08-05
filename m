@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933292Ab0HEMdS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 08:33:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46562 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933239Ab0HEMdP convert rfc822-to-8bit (ORCPT
+	id S933351Ab0HEMfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 08:35:19 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:40328 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933288Ab0HEMfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 08:33:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=hCrQ64be9R4lCAv/4GOOjbPnc9zqPUr2ZkrniTdq8nk7KCmTx9pSmlJge05BSfSgfo
-         hD+khMder60jsWRFrbEFqKKEsQ8/q65URoG1eRNaChn3ozvx4J1PX3DenRDNx3TYEQtR
-         YW/Q8DDzm2jzjMZJr7X92JtWqqhkiR+uPLcaA=
+	Thu, 5 Aug 2010 08:35:16 -0400
+X-AuditID: b753bd60-aa6d3ba000005dcc-01-4c5ab00154f8
+Message-ID: <4C5AAFFF.8060002@hitachi.com>
+Date: Thu, 05 Aug 2010 21:35:11 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <1280937526.28884.21.camel@work-vm>
-References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
-	<1280937526.28884.21.camel@work-vm>
-Date: Thu, 5 Aug 2010 15:33:14 +0300
-X-Google-Sender-Auth: bJNoScyhw0OFjzdF1zzWkhsMbE4
-Message-ID: <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
-Subject: Re: [PATCH] [RFC] notify userspace about time changes
-From: Alexander Shishkin <virtuoso@slind.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: gregkh@suse.de, lkml@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] [BUGFIX] kprobes: Fix selftest to clear flags field for
+ reusing probes
+References: <20100805123134.3888.4549.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20100805123134.3888.4549.stgit@ltc236.sdl.hitachi.co.jp>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
-> On Wed, 2010-08-04 at 15:48 +0300, Alexander Shishkin wrote:
->> Certain userspace applications (like "clock" desktop applets or ntpd) might
->> want to be notified when some other application changes the system time. It
->> might also be important for an application to be able to distinguish between
->> its own and somebody else's time changes.
->
-> So NTP doesn't actually care, as it will notice the STA_UNSYNC flag is
-> set the next time it checks adjtimex.
->
-> The clock apps example seems reasonable, but maybe isn't the most
-> compelling argument for adding a new kernel api.
->
-> Is there a actual use case that you need this for?  I don't really have
-> an issue with the code I just really want to make sure the feature would
-> be useful enough to justify the API and code maintenance going forward.
+Fix selftest to clear flags field for reusing probes
+because the flags field can be modified by Kprobes.
+This also set NULL to kprobe.addr instead of 0.
 
-Yes. What we have here is an application which takes care of different means
-of time synchronization (trusted time servers, different GSM operators, etc)
-and also different kinds of time-based events/notifications (like "dentist
-appointment next thursday"). When it encounters a time change that is
-made by some other application, it basically wants to disable automatic
-time adjustment and trigger the events/notifications which are due at this
-(new) time.
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: linux-kernel@vger.kernel.org
+---
 
-Regards,
---
-Alex
+ kernel/test_kprobes.c |   12 +++++++++---
+ 1 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/test_kprobes.c b/kernel/test_kprobes.c
+index 4f10451..f8b11a2 100644
+--- a/kernel/test_kprobes.c
++++ b/kernel/test_kprobes.c
+@@ -115,7 +115,9 @@ static int test_kprobes(void)
+ 	int ret;
+ 	struct kprobe *kps[2] = {&kp, &kp2};
+
+-	kp.addr = 0; /* addr should be cleard for reusing kprobe. */
++	/* addr and flags should be cleard for reusing kprobe. */
++	kp.addr = NULL;
++	kp.flags = 0;
+ 	ret = register_kprobes(kps, 2);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "Kprobe smoke test failed: "
+@@ -210,7 +212,9 @@ static int test_jprobes(void)
+ 	int ret;
+ 	struct jprobe *jps[2] = {&jp, &jp2};
+
+-	jp.kp.addr = 0; /* addr should be cleard for reusing kprobe. */
++	/* addr and flags should be cleard for reusing kprobe. */
++	jp.kp.addr = NULL;
++	jp.kp.flags = 0;
+ 	ret = register_jprobes(jps, 2);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "Kprobe smoke test failed: "
+@@ -323,7 +327,9 @@ static int test_kretprobes(void)
+ 	int ret;
+ 	struct kretprobe *rps[2] = {&rp, &rp2};
+
+-	rp.kp.addr = 0; /* addr should be cleard for reusing kprobe. */
++	/* addr and flags should be cleard for reusing kprobe. */
++	rp.kp.addr = NULL;
++	rp.kp.flags = 0;
+ 	ret = register_kretprobes(rps, 2);
+ 	if (ret < 0) {
+ 		printk(KERN_ERR "Kprobe smoke test failed: "
+
+
