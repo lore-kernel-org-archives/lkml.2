@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760502Ab0HEPPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:15:42 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:8179 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab0HEPPk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:15:40 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=NsDt7wR3l40nOEGmfF2oeARZQFDcLRVeSIdVasecmdlFcjnYpVj8M9d+D5dIP9ZLm
-	DdCygl0OYI8TG0d29vE7Q==
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008050724110.25170@asgard.lang.hm>
-References: <20100803183447.0275c134@infradead.org>
-	<20100804163216.GB24163@linux.vnet.ibm.com>
-	<20100804163509.GA31523@srcf.ucam.org>
-	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
-	<20100804185520.GA2417@srcf.ucam.org>
-	<alpine.DEB.2.00.1008041207260.6545@asgard.lang.hm>
-	<20100804192115.GA2946@srcf.ucam.org>
-	<alpine.DEB.2.00.1008041222280.6545@asgard.lang.hm>
-	<20100804195723.GA3553@srcf.ucam.org>
-	<alpine.DEB.2.00.1008041508040.6545@asgard.lang.hm>
-	<20100805133811.GA20565@srcf.ucam.org>
-	<alpine.DEB.2.00.1008050724110.25170@asgard.lang.hm>
-Date: Thu, 5 Aug 2010 08:15:35 -0700
-Message-ID: <AANLkTinOkBvKKtrvb_ZYTPzAU9r24yXVPfcbSGqHUUji@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Brian Swetland <swetland@google.com>
-To: david@lang.hm
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1760696Ab0HEPQM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:16:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52414 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933260Ab0HEPQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 11:16:09 -0400
+From: Kumar Gala <galak@kernel.crashing.org>
+To: gregkh@suse.de
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        akpm@linux-foundation.org
+Subject: [PATCH 3/3] powerpc: Dont require a dma_ops struct to set dma mask
+Date: Thu,  5 Aug 2010 10:15:47 -0500
+Message-Id: <1281021347-1278-4-git-send-email-galak@kernel.crashing.org>
+X-Mailer: git-send-email 1.6.0.6
+In-Reply-To: <1281021347-1278-3-git-send-email-galak@kernel.crashing.org>
+References: <1281021347-1278-1-git-send-email-galak@kernel.crashing.org>
+ <1281021347-1278-2-git-send-email-galak@kernel.crashing.org>
+ <1281021347-1278-3-git-send-email-galak@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 7:34 AM,  <david@lang.hm> wrote:
->
-> for example, if you want to abort the suspend because there is network
-> activity, you can check the packet count of your network interface, decide
-> to go to sleep, setup the network interface to raise a 'wake me up'
-> interrupt (because you have decided in a userspace policy that you want
-> this), and then check to see if the packet count has changed. If it has,
-> abort the suspend, if not continue the suspend and once you are suspended if
-> the 'wake me up' interrupt is set you will wake back up.
->
-> there are probably cleaner/better ways of doing this than the simple logic
-> that I'm listing, but why wouldn't the simple logic provide the correct
-> result?
+The only reason to require a dma_ops struct is to see if it has
+implemented set_dma_mask.  If not we can fall back to setting the mask
+directly.
 
-If your network interrupt happens before the network driver's
-suspend() hook is called this works -- the check in the suspend hook
-observes the change and returns an abort status.
+This resolves an issue with how to sequence the setting of a DMA mask
+for platform devices.  Before we had an issue in that we have no way of
+setting the DMA mask before the various low level bus notifiers get
+called that might check it (swiotlb).
 
-If your network interrupt happens after the suspend() hook is called
-this does not work -- the event comes after your opportunity to abort
-suspend has happened, your interrupt handler processed it, set the
-flag, but the system proceeds to suspend anyway, missing the event.
+So now we can do:
 
-The wakelock/suspendblock mechanism avoids races like the above.
+	pdev = platform_device_alloc("foobar", 0);
+	dma_set_mask(&pdev->dev, DMA_BIT_MASK(37));
+	platform_device_register(pdev);
 
-Brian
+And expect the right thing to happen with the bus notifiers get called
+via platform_device_register.
+
+Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
+---
+ arch/powerpc/include/asm/dma-mapping.h |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
+index c85ef23..952208a 100644
+--- a/arch/powerpc/include/asm/dma-mapping.h
++++ b/arch/powerpc/include/asm/dma-mapping.h
+@@ -131,12 +131,10 @@ static inline int dma_set_mask(struct device *dev, u64 dma_mask)
+ {
+ 	struct dma_map_ops *dma_ops = get_dma_ops(dev);
+ 
+-	if (unlikely(dma_ops == NULL))
+-		return -EIO;
+-	if (dma_ops->set_dma_mask != NULL)
+-		return dma_ops->set_dma_mask(dev, dma_mask);
+ 	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
+ 		return -EIO;
++	if (dma_ops && (dma_ops->set_dma_mask != NULL))
++		return dma_ops->set_dma_mask(dev, dma_mask);
+ 	*dev->dma_mask = dma_mask;
+ 	return 0;
+ }
+-- 
+1.6.0.6
+
