@@ -1,152 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760968Ab0HEWcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:32:41 -0400
-Received: from kroah.org ([198.145.64.141]:37793 "EHLO coco.kroah.org"
+	id S933214Ab0HEWdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:33:36 -0400
+Received: from kroah.org ([198.145.64.141]:37777 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934555Ab0HEWYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:55 -0400
+	id S934542Ab0HEWYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:54 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Yury Georgievskiy <ygeorgie@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 55/67] serial: mcf: don't take spinlocks in already protected functions
-Date: Thu,  5 Aug 2010 15:23:22 -0700
-Message-Id: <1281047014-23429-55-git-send-email-gregkh@suse.de>
+Cc: Axel Lin <axel.lin@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 15/28] dcdbas: remove a redundant smi_data_buf_free in dcdbas_exit
+Date: Thu,  5 Aug 2010 15:24:05 -0700
+Message-Id: <1281047058-23716-15-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213528.GA13794@kroah.com>
-References: <20100805213528.GA13794@kroah.com>
+In-Reply-To: <20100805213314.GB13744@kroah.com>
+References: <20100805213314.GB13744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yury Georgievskiy <ygeorgie@gmail.com>
+From: Axel Lin <axel.lin@gmail.com>
 
-Don't take the port spinlock in uart functions where the serial core
-already takes care of locking/unlocking them.
+smi_data_buf_free is called twice in current implementation.
+The second call simply return because smi_data_buf is set to NULL in first call.
+This patch removes the second smi_data_buf_free call.
 
-The code would actually lock up on architectures where spinlocks are
-implemented.
-
-Also protect calling mcf_rx_chars/mcf_tx_chars in the interrupt handler by
-the port spinlock and use IRQ_RETVAL to return from isr.
-
-[akpm@linux-foundation.org: make irq-handler return value more explicit]
-Signed-off-by: Yury Georgievskiy <ygeorgie@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Acked-by: Greg Ungerer <gerg@uclinux.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/mcf.c |   31 +++++++++++++------------------
- 1 files changed, 13 insertions(+), 18 deletions(-)
+ drivers/firmware/dcdbas.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/serial/mcf.c b/drivers/serial/mcf.c
-index b5aaef9..3394b7c 100644
---- a/drivers/serial/mcf.c
-+++ b/drivers/serial/mcf.c
-@@ -70,16 +70,14 @@ static unsigned int mcf_tx_empty(struct uart_port *port)
- static unsigned int mcf_get_mctrl(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 	unsigned int sigs;
+diff --git a/drivers/firmware/dcdbas.c b/drivers/firmware/dcdbas.c
+index aa9bc9e..69ad529 100644
+--- a/drivers/firmware/dcdbas.c
++++ b/drivers/firmware/dcdbas.c
+@@ -634,9 +634,6 @@ static void __exit dcdbas_exit(void)
+ 	 * before platform_device_unregister
+ 	 */
+ 	unregister_reboot_notifier(&dcdbas_reboot_nb);
+-	smi_data_buf_free();
+-	platform_device_unregister(dcdbas_pdev);
+-	platform_driver_unregister(&dcdbas_driver);
  
--	spin_lock_irqsave(&port->lock, flags);
- 	sigs = (readb(port->membase + MCFUART_UIPR) & MCFUART_UIPR_CTS) ?
- 		0 : TIOCM_CTS;
- 	sigs |= (pp->sigs & TIOCM_RTS);
- 	sigs |= (mcf_getppdcd(port->line) ? TIOCM_CD : 0);
- 	sigs |= (mcf_getppdtr(port->line) ? TIOCM_DTR : 0);
--	spin_unlock_irqrestore(&port->lock, flags);
-+
- 	return sigs;
+ 	/*
+ 	 * We have to free the buffer here instead of dcdbas_remove
+@@ -645,6 +642,8 @@ static void __exit dcdbas_exit(void)
+ 	 * released.
+ 	 */
+ 	smi_data_buf_free();
++	platform_device_unregister(dcdbas_pdev);
++	platform_driver_unregister(&dcdbas_driver);
  }
  
-@@ -88,16 +86,13 @@ static unsigned int mcf_get_mctrl(struct uart_port *port)
- static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->sigs = sigs;
- 	mcf_setppdtr(port->line, (sigs & TIOCM_DTR));
- 	if (sigs & TIOCM_RTS)
- 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP1);
- 	else
- 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP0);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -105,12 +100,9 @@ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
- static void mcf_start_tx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->imr |= MCFUART_UIR_TXREADY;
- 	writeb(pp->imr, port->membase + MCFUART_UIMR);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -118,12 +110,9 @@ static void mcf_start_tx(struct uart_port *port)
- static void mcf_stop_tx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->imr &= ~MCFUART_UIR_TXREADY;
- 	writeb(pp->imr, port->membase + MCFUART_UIMR);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -131,12 +120,9 @@ static void mcf_stop_tx(struct uart_port *port)
- static void mcf_stop_rx(struct uart_port *port)
- {
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&port->lock, flags);
- 	pp->imr &= ~MCFUART_UIR_RXREADY;
- 	writeb(pp->imr, port->membase + MCFUART_UIMR);
--	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- /****************************************************************************/
-@@ -366,13 +352,22 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
- 	struct uart_port *port = data;
- 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
- 	unsigned int isr;
-+	irqreturn_t ret = IRQ_NONE;
- 
- 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
--	if (isr & MCFUART_UIR_RXREADY)
-+
-+	spin_lock(&port->lock);
-+	if (isr & MCFUART_UIR_RXREADY) {
- 		mcf_rx_chars(pp);
--	if (isr & MCFUART_UIR_TXREADY)
-+		ret = IRQ_HANDLED;
-+	}
-+	if (isr & MCFUART_UIR_TXREADY) {
- 		mcf_tx_chars(pp);
--	return IRQ_HANDLED;
-+		ret = IRQ_HANDLED;
-+	}
-+	spin_unlock(&port->lock);
-+
-+	return ret;
- }
- 
- /****************************************************************************/
+ module_init(dcdbas_init);
 -- 
 1.7.2
 
