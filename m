@@ -1,61 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934166Ab0HEWZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:25:17 -0400
-Received: from kroah.org ([198.145.64.141]:37690 "EHLO coco.kroah.org"
+	id S1760864Ab0HEWZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:25:42 -0400
+Received: from kroah.org ([198.145.64.141]:37744 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760857Ab0HEWY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:26 -0400
+	id S933402Ab0HEWYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:38 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Jean Delvare <khali@linux-fr.org>, Andrew Morton <akpm@osdl.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 06/28] Driver core: Drop __must_check from bus_for_each_drv()
-Date: Thu,  5 Aug 2010 15:23:56 -0700
-Message-Id: <1281047058-23716-6-git-send-email-gregkh@suse.de>
+Cc: Kulikov Vasiliy <segooon@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 49/67] tty_io: remove casts from void*
+Date: Thu,  5 Aug 2010 15:23:16 -0700
+Message-Id: <1281047014-23429-49-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
-In-Reply-To: <20100805213314.GB13744@kroah.com>
-References: <20100805213314.GB13744@kroah.com>
+In-Reply-To: <20100805213528.GA13794@kroah.com>
+References: <20100805213528.GA13794@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jean Delvare <khali@linux-fr.org>
+From: Kulikov Vasiliy <segooon@gmail.com>
 
-There is little rationale for marking bus_for_each_drv() __must_check.
-It is more of an iteration helper than a real function. You don't know
-in advance which callback it will be used on, so you have no clue how
-important it can be to check the returned value. In practice, this
-helper function can be used for best-effort tasks.
+Remove unnesessary casts from void*.
 
-As a matter of fact, bus_for_each_dev() is not marked __must_check.
-So remove it from bus_for_each_drv() as well. This is the same that
-was done back in October 2006 by Russell King for
-device_for_each_child(), for exactly the same reasons.
-
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Cc: Andrew Morton <akpm@osdl.org>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/device.h |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+ drivers/char/tty_io.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 6a8276f..ddffdf7 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -84,9 +84,8 @@ struct device *bus_find_device_by_name(struct bus_type *bus,
- 				       struct device *start,
- 				       const char *name);
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 6bf6d36..0906c15 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -893,7 +893,7 @@ static ssize_t tty_read(struct file *file, char __user *buf, size_t count,
+ 	struct inode *inode;
+ 	struct tty_ldisc *ld;
  
--int __must_check bus_for_each_drv(struct bus_type *bus,
--				  struct device_driver *start, void *data,
--				  int (*fn)(struct device_driver *, void *));
-+int bus_for_each_drv(struct bus_type *bus, struct device_driver *start,
-+		     void *data, int (*fn)(struct device_driver *, void *));
+-	tty = (struct tty_struct *)file->private_data;
++	tty = file->private_data;
+ 	inode = file->f_path.dentry->d_inode;
+ 	if (tty_paranoia_check(tty, inode, "tty_read"))
+ 		return -EIO;
+@@ -1070,7 +1070,7 @@ static ssize_t tty_write(struct file *file, const char __user *buf,
+ 	ssize_t ret;
+ 	struct tty_ldisc *ld;
  
- void bus_sort_breadthfirst(struct bus_type *bus,
- 			   int (*compare)(const struct device *a,
+-	tty = (struct tty_struct *)file->private_data;
++	tty = file->private_data;
+ 	if (tty_paranoia_check(tty, inode, "tty_write"))
+ 		return -EIO;
+ 	if (!tty || !tty->ops->write ||
+@@ -1513,7 +1513,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	int	idx;
+ 	char	buf[64];
+ 
+-	tty = (struct tty_struct *)filp->private_data;
++	tty = filp->private_data;
+ 	if (tty_paranoia_check(tty, inode, "tty_release_dev"))
+ 		return 0;
+ 
+@@ -1920,7 +1920,7 @@ static unsigned int tty_poll(struct file *filp, poll_table *wait)
+ 	struct tty_ldisc *ld;
+ 	int ret = 0;
+ 
+-	tty = (struct tty_struct *)filp->private_data;
++	tty = filp->private_data;
+ 	if (tty_paranoia_check(tty, filp->f_path.dentry->d_inode, "tty_poll"))
+ 		return 0;
+ 
+@@ -1937,7 +1937,7 @@ static int __tty_fasync(int fd, struct file *filp, int on)
+ 	unsigned long flags;
+ 	int retval = 0;
+ 
+-	tty = (struct tty_struct *)filp->private_data;
++	tty = filp->private_data;
+ 	if (tty_paranoia_check(tty, filp->f_path.dentry->d_inode, "tty_fasync"))
+ 		goto out;
+ 
+@@ -2497,7 +2497,7 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	struct tty_ldisc *ld;
+ 	struct inode *inode = file->f_dentry->d_inode;
+ 
+-	tty = (struct tty_struct *)file->private_data;
++	tty = file->private_data;
+ 	if (tty_paranoia_check(tty, inode, "tty_ioctl"))
+ 		return -EINVAL;
+ 
 -- 
 1.7.2
 
