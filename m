@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934295Ab0HEUzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:55:04 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:44398 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933027Ab0HEUyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:54:55 -0400
-Date: Thu, 5 Aug 2010 22:54:48 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: linux-kernel@vger.kernel.org, mingo@redhat.com, peterz@infradead.org
-Cc: Chris Mason <chris.mason@oracle.com>, josef@redhat.com,
-        Valdis.Kletnieks@vt.edu,
-        Michael Monnerie <michael.monnerie@is.it-management.at>,
-        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
-        xfs@oss.sgi.com, dm-devel@redhat.com
-Subject: Performance impact of CONFIG_SCHED_MC? direct-io test case
-Message-ID: <20100805205448.GB6318@comet.dominikbrodowski.net>
-Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-	linux-kernel@vger.kernel.org, mingo@redhat.com,
-	peterz@infradead.org, Chris Mason <chris.mason@oracle.com>,
-	josef@redhat.com, Valdis.Kletnieks@vt.edu,
-	Michael Monnerie <michael.monnerie@is.it-management.at>,
-	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
-	xfs@oss.sgi.com, dm-devel@redhat.com
-References: <20100805123649.GA18672@dhcp231-156.rdu.redhat.com>
- <20100805113240.GA29846@think>
- <20100805153519.GA7242@comet.dominikbrodowski.net>
- <20100805163519.GA6604@comet.dominikbrodowski.net>
+	id S934325Ab0HEU4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:56:03 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48371 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932935Ab0HEUz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:55:57 -0400
+Date: Thu, 5 Aug 2010 22:55:55 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Luca Tettamanti <kronos.it@gmail.com>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 42/42] drivers/media/video/bt8xx: Adjust confusing if 
+ indentation
+In-Reply-To: <AANLkTi=YauQBWyZnGpuBtQpNq=Re8WUXY9mH6FSFMP+7@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1008052255250.31692@ask.diku.dk>
+References: <Pine.LNX.4.64.1008052229390.31692@ask.diku.dk>
+ <AANLkTi=YauQBWyZnGpuBtQpNq=Re8WUXY9mH6FSFMP+7@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805163519.GA6604@comet.dominikbrodowski.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Julia Lawall <julia@diku.dk>
 
-How large is the performance impact of CONFIG_SCHED_MC -- for which there
-is a warning that it comes "at a cost of slightly increased overhead in
-some places."? Well, for the test workload I've been working with lately,
+Indent the branch of an if.
 
-dd if=<device> of=/dev/zero bs=8k count=100000 iflag=direct
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-where <device> is a dm-crypted LVM volume consisting of several
-partitions on a notebook pata harddisk, and all this runs on a Core2 Duo,
-I get a ~ 10 % performance reduction if CONFIG_SCHED_MC is enabled.
+// <smpl>
+@r disable braces4@
+position p1,p2;
+statement S1,S2;
+@@
 
-Combined with the CONFIG_DEBUG performance reduction mentioned in the other
-message, all of the reduction from 28 MB/s to 18 MB/s is explained for.
+(
+if (...) { ... }
+|
+if (...) S1@p1 S2@p2
+)
 
-Best,
-	Dominik
+@script:python@
+p1 << r.p1;
+p2 << r.p2;
+@@
 
-PS: Ingo: you got both mingo@elte.hu and mingo@redhat.com in MAINTAINERS,
-I suppose both are valid?
+if (p1[0].column == p2[0].column):
+  cocci.print_main("branch",p1)
+  cocci.print_secs("after",p2)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/media/video/bt8xx/bttv-i2c.c           |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/video/bt8xx/bttv-i2c.c b/drivers/media/video/bt8xx/bttv-i2c.c
+index 685d659..81d5b30 100644
+--- a/drivers/media/video/bt8xx/bttv-i2c.c
++++ b/drivers/media/video/bt8xx/bttv-i2c.c
+@@ -122,8 +122,7 @@ bttv_i2c_wait_done(struct bttv *btv)
+ 	/* timeout */
+ 	if (wait_event_interruptible_timeout(btv->i2c_queue,
+ 		btv->i2c_done, msecs_to_jiffies(85)) == -ERESTARTSYS)
+-
+-	rc = -EIO;
++		rc = -EIO;
+ 
+ 	if (btv->i2c_done & BT848_INT_RACK)
+ 		rc = 1;
