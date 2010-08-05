@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745Ab0HEAsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 20:48:11 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39325 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751245Ab0HEAsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 20:48:08 -0400
-Date: Wed, 4 Aug 2010 17:48:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: david@lang.hm
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100805004802.GP24163@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100804205654.GA4986@srcf.ucam.org>
- <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
- <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
- <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
- <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com>
- <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm>
- <20100804233013.GN24163@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm>
- <20100805001716.GO24163@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756894Ab0HEAww (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 20:52:52 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:52634 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab0HEAwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 20:52:51 -0400
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+From: john stultz <johnstul@us.ibm.com>
+To: Chris Friesen <chris.friesen@genband.com>
+Cc: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
+        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C59B5E1.9040707@genband.com>
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+	 <1280937526.28884.21.camel@work-vm>  <4C59B5E1.9040707@genband.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 04 Aug 2010 17:52:26 -0700
+Message-ID: <1280969546.2678.33.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
-> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+On Wed, 2010-08-04 at 12:48 -0600, Chris Friesen wrote:
+> On 08/04/2010 09:58 AM, john stultz wrote:
 > 
-> >On Wed, Aug 04, 2010 at 04:49:22PM -0700, david@lang.hm wrote:
-> >>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
-> >>
-> >>>On Wed, Aug 04, 2010 at 04:23:43PM -0700, david@lang.hm wrote:
-> >>>>On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
-> >>>>
-> >>>>>
-> >>>>>We suspend as soon as no wakelocks are held. There is no delay.
-> >>>>
-> >>>>So, if I have a bookreader app that is not allowed to get the
-> >>>>wakelock, and nothing else is running, the system will suspend
-> >>>>immediatly after I click a button to go to the next page? it will
-> >>>>not stay awake to give me a chance to read the page at all?
-> >>>>
-> >>>>how can any application run without wakelock privilages?
-> >>>
-> >>>Isn't a wakelock held as long as the display is lit, so that the
-> >>>system would continue running as long as the page was visible?
-> >>
-> >>what holds this wakelock, and what sort of timeout does it have?
-> >>(and why could that same timeout be used in other ways instead)
-> >
-> >I defer to the Android guys on what exactly holds the display's
-> >wakelock.  The timeout is the display-blank timeout.
-> >
-> >>how many apps really need to keep running after the screen blanks?
-> >>there are a few (audio output apps, including music player and
-> >>Navigation directions), but I don't have see a problem with them
-> >>being marked as the 'trusted' apps to pay attention instead.
-> >
-> >Downloading is another.
+> > Is there a actual use case that you need this for?  I don't really have
+> > an issue with the code I just really want to make sure the feature would
+> > be useful enough to justify the API and code maintenance going forward.
 > 
-> this is definantly an interesting case, do you want an active
-> network connection to keep the machine awake? if so do you want it
-> for all network connections, or only for some...
-
-The Android approach is that everything is permitted to run when the
-device is not suspended.  So that would be all network connections.
-
-> >The music player is an interesting example.  It would be idle most
-> >of the time, given that audio output doesn't consume very much CPU.
-> >So you would not want to suspend the system just because there were
-> >no runnable processes.  In contrast, allowing the music player to
-> >hold a wake lock lets the system know that it would not be appropriate
-> >to suspend.
-> >
-> >Or am I misunderstanding what you are proposing?
+> We actually added a time-change-notification mechanism internally a long
+> time ago but never saw demand for it and so never bothered trying to
+> push it upstream.  Ours is signal-based.
 > 
-> the system would need to be idle for 'long enough' (configurable)
-> before deciding to suspend, so as long as 'long enough' is longer
-> than the music player is idle this would not be a problem.
+> Among other things we use it to pass on time-change notifications to an
+> emulator running a proprietary OS that really cares about having an
+> accurate time-of-day but can't afford a syscall to retrieve it every time.
 
->From a user standpoint, having the music player tell the system when
-it is OK to suspend (e.g., when the user has paused playback) seems
-a lot nicer than having configurable timeouts that need tweaking.
+So the eventfd based method (and the filtering) proposed would work for
+you? 
 
-> >>if the backlight being on holds the wakelock, it would seem that
-> >>almost every other use of the wakelock could (and probably should)
-> >>be replaced by something that tickles the display to stay on longer.
-> >
-> >The problem with this approach is that the display consumes quite a
-> >bit of power, so you don't want to leave it on unnecessarily.  So if
-> >the system is doing something (for example, playing music) that does
-> >not require the display, you really want the display to be off.
-> 
-> what percentage (and types) of apps are really useful with the
-> display off. I think that there are relativly few apps that you
-> really want to keep running if the display is off.
+thanks
+-john
 
-The length of time those apps are running is the governing factor
-for battery life, and not the number of such apps, right?
 
-							Thanx, Paul
