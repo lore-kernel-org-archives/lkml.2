@@ -1,146 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab0HEFUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 01:20:06 -0400
-Received: from mail.lang.hm ([64.81.33.126]:52572 "EHLO bifrost.lang.hm"
+	id S1757318Ab0HEF0w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 01:26:52 -0400
+Received: from mail.pod.cz ([213.155.227.146]:37735 "EHLO mail.pod.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753497Ab0HEFUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 01:20:03 -0400
-Date: Wed, 4 Aug 2010 22:18:40 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100805004802.GP24163@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
-References: <20100804205654.GA4986@srcf.ucam.org> <alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm> <AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com> <alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm> <AANLkTingom2AKfMu0EbfdfLiMnHo+buy1e4=PBENf3Vi@mail.gmail.com>
- <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm> <20100804233013.GN24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm> <20100805001716.GO24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
- <20100805004802.GP24163@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753497Ab0HEF0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 01:26:50 -0400
+X-Greylist: delayed 437 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 01:26:49 EDT
+Date: Thu, 5 Aug 2010 07:19:29 +0200
+From: Vitezslav Samel <vitezslav@samel.cz>
+To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Joonwoo Park <joonwpark81@gmail.com>
+Subject: Re: [PATCHv3 03/16] pps: fix race in PPS_FETCH handler
+Message-ID: <20100805051929.GA14413@pc11.op.pod.cz>
+Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+	linux-kernel@vger.kernel.org,
+	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
+	Rodolfo Giometti <giometti@enneenne.com>,
+	john stultz <johnstul@us.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>, Joonwoo Park <joonwpark81@gmail.com>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+ <033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
+User-Agent: Mutt/1.5.20 (2009-08-27)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+On Thu, Aug 05, 2010 at 01:06:40AM +0400, Alexander Gordeev wrote:
+> There was a race in PPS_FETCH ioctl handler when several processes want
+> to obtain PPS data simultaneously using sleeping PPS_FETCH. They all
+> sleep most of the time in the system call.
+> With the old approach when the first process waiting on the pps queue
+> is waken up it makes new system call right away and zeroes pps->go. So
+> other processes continue to sleep. This is a clear race condition
+> because of the global 'go' variable.
+> With the new approach pps->last_ev holds some value increasing at each
+> PPS event. PPS_FETCH ioctl handler saves current value to the local
+> variable at the very beginning so it can safely check that there is a
+> new event by just comparing both variables.
+> 
+> Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+> ---
+>  drivers/pps/kapi.c         |    4 ++--
+>  drivers/pps/pps.c          |   10 +++++++---
+>  include/linux/pps_kernel.h |    2 +-
+>  3 files changed, 10 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+> index 55f3961..3f89f5e 100644
+> --- a/drivers/pps/kapi.c
+> +++ b/drivers/pps/kapi.c
+> @@ -326,8 +326,8 @@ void pps_event(int source, struct pps_ktime *ts, int event, void *data)
+>  
+>  	/* Wake up if captured something */
+>  	if (captured) {
+> -		pps->go = ~0;
+> -		wake_up_interruptible(&pps->queue);
+> +		pps->last_ev++;
+> +		wake_up_interruptible_all(&pps->queue);
 
-> On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
->> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
->>
->>> On Wed, Aug 04, 2010 at 04:49:22PM -0700, david@lang.hm wrote:
->>>> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
->>>>
->>>>> On Wed, Aug 04, 2010 at 04:23:43PM -0700, david@lang.hm wrote:
->>>>>> On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
->>>>>>
->>>>>>>
->>>>>>> We suspend as soon as no wakelocks are held. There is no delay.
->>>>>>
->>>>>> So, if I have a bookreader app that is not allowed to get the
->>>>>> wakelock, and nothing else is running, the system will suspend
->>>>>> immediatly after I click a button to go to the next page? it will
->>>>>> not stay awake to give me a chance to read the page at all?
->>>>>>
->>>>>> how can any application run without wakelock privilages?
->>>>>
->>>>> Isn't a wakelock held as long as the display is lit, so that the
->>>>> system would continue running as long as the page was visible?
->>>>
->>>> what holds this wakelock, and what sort of timeout does it have?
->>>> (and why could that same timeout be used in other ways instead)
->>>
->>> I defer to the Android guys on what exactly holds the display's
->>> wakelock.  The timeout is the display-blank timeout.
->>>
->>>> how many apps really need to keep running after the screen blanks?
->>>> there are a few (audio output apps, including music player and
->>>> Navigation directions), but I don't have see a problem with them
->>>> being marked as the 'trusted' apps to pay attention instead.
->>>
->>> Downloading is another.
->>
->> this is definantly an interesting case, do you want an active
->> network connection to keep the machine awake? if so do you want it
->> for all network connections, or only for some...
->
-> The Android approach is that everything is permitted to run when the
-> device is not suspended.  So that would be all network connections.
+  What happens if pps->last_ev overflows? Seems to me it would freeze
+pps.
 
-I wasn't suggesting freezing some network connections while letting others 
-run, I was thinking in terms of 'if the system patcher daemon is 
-downloading, don't go to sleep, but if it's dancing cows (or mail client 
-to an IMAP server) go ahead and sleep, even if there is some data passing 
-over the connection.
-
->>> The music player is an interesting example.  It would be idle most
->>> of the time, given that audio output doesn't consume very much CPU.
->>> So you would not want to suspend the system just because there were
->>> no runnable processes.  In contrast, allowing the music player to
->>> hold a wake lock lets the system know that it would not be appropriate
->>> to suspend.
->>>
->>> Or am I misunderstanding what you are proposing?
->>
->> the system would need to be idle for 'long enough' (configurable)
->> before deciding to suspend, so as long as 'long enough' is longer
->> than the music player is idle this would not be a problem.
->
-> From a user standpoint, having the music player tell the system when
-> it is OK to suspend (e.g., when the user has paused playback) seems
-> a lot nicer than having configurable timeouts that need tweaking.
-
-every system that I have seen has a configurable "sleep if it's idle for 
-this long" knob. On the iphone (work issue, I didn't want it) that I am 
-currently using it can be configured from 1 min to 5 min.
-
-this is the sort of timeout I am talking about.
-
-with something in the multi-minute range for the 'do a full suspend' doing 
-a wakeup every few 10s of seconds is perfectly safe.
-
->>>> if the backlight being on holds the wakelock, it would seem that
->>>> almost every other use of the wakelock could (and probably should)
->>>> be replaced by something that tickles the display to stay on longer.
->>>
->>> The problem with this approach is that the display consumes quite a
->>> bit of power, so you don't want to leave it on unnecessarily.  So if
->>> the system is doing something (for example, playing music) that does
->>> not require the display, you really want the display to be off.
->>
->> what percentage (and types) of apps are really useful with the
->> display off. I think that there are relativly few apps that you
->> really want to keep running if the display is off.
->
-> The length of time those apps are running is the governing factor
-> for battery life, and not the number of such apps, right?
-
-correct, but the number of such apps indicates the scope of the problem.
-
->From another e-mail tonight it sounds like almost everything already talks 
-to a userspace daemon, so if "(the power management service in the
-system_server, possibly the media_server and the radio interface
-glue)" (plus possibly some kernel activity) are the only things looked at 
-when considering if it's safe to sleep or not, all of these can (or 
-already do) do 'something' every few seconds, making this problem sound 
-significantly smaller than it sounded like before.
-
-Android could even keep it's user-space API between the system power 
-daemon and the rest of userspace the same if they want to.
-
-over time, additional apps could be considered 'trusted' (or flagged that 
-way by the user) and not have to interact with the power daemon to keep 
-things alive.
-
-as for intramentation, the key tool to use to see why a system isn't going 
-to sleep would be powertop, just like on other linux systems.
-
-David Lang
+	Cheers,
+		Vita
