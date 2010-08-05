@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0HEJTv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 05:19:51 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:52368 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756839Ab0HEJTs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 05:19:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=oRiDZL93J3yaR+8qEeXRwh+2GYxxuH8giu0UArPH5Onq+MAtu6sksDo01mKztb1vj8
-         Jy+Rl9UyHxFD59ytCaUUU3s2w68WAhUCeYkN7rgiBohUAjFPtfdRSx8wj4g0KorzzP3p
-         ZTo582X+lYpYew8iVpHG4PJStOigW4fJJMyKA=
-From: Eric Miao <eric.y.miao@gmail.com>
-To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>
-Cc: Eric Miao <eric.y.miao@gmail.com>, stable <stable@kernel.org>
-Subject: [PATCH] w100fb: fix building error caused by incorrect use of writel()
-Date: Thu,  5 Aug 2010 17:19:34 +0800
-Message-Id: <1280999974-2585-1-git-send-email-eric.y.miao@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1758912Ab0HEJVF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 05:21:05 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:58995 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756859Ab0HEJVB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 05:21:01 -0400
+X-ASG-Debug-ID: 1281000057-1ea400000000-xx1T2L
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C5A8273.2010803@fusionio.com>
+Date: Thu, 5 Aug 2010 11:20:51 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Tejun Heo <htejun@gmail.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "stable@kernel.org" <stable@kernel.org>
+X-ASG-Orig-Subj: Re: [PATCH RESEND block#for-2.6.36] block_dev: always serialize 
+ exclusive open attempts
+Subject: Re: [PATCH RESEND block#for-2.6.36] block_dev: always serialize 
+ exclusive open attempts
+References: <2dWFdr9kTFM.A.P0D.spXVMB@chimera> <AANLkTimcH7+Bq1UEbaSU7SQpzArPgmSLegiqE13V8=CF@mail.gmail.com> <4C56F30D.3020304@kernel.org> <4C598E6B.7050405@gmail.com> <4C5A7E33.3060101@fusionio.com> <20100805091704.GA1772@arch.tripp.de>
+In-Reply-To: <20100805091704.GA1772@arch.tripp.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1281000058
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
-Cc: stable <stable@kernel.org>
----
- drivers/video/w100fb.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On 2010-08-05 11:17, Markus Trippelsdorf wrote:
+> On Thu, Aug 05, 2010 at 11:02:43AM +0200, Jens Axboe wrote:
+>> On 2010-08-04 17:59, Tejun Heo wrote:
+>>> bd_prepare_to_claim() incorrectly allowed multiple attempts for
+>>> exclusive open to progress in parallel if the attempting holders are
+>>> identical.  This triggered BUG_ON() as reported in the following bug.
+>>>
+>>>   https://bugzilla.kernel.org/show_bug.cgi?id=16393
+>>>
+>>> __bd_abort_claiming() is used to finish claiming blocks and doesn't
+>>> work if multiple openers are inside a claiming block.  Allowing
+>>> multiple parallel open attempts to continue doesn't gain anything as
+>>> those are serialized down in the call chain anyway.  Fix it by always
+>>> allowing only single open attempt in a claiming block.
+>>>
+>>> This problem can easily be reproduced by adding a delay after
+>>> bd_prepare_to_claim() and attempting to mount two partitions of a
+>>> disk.
+>>>
+>>> stable: only applicable to v2.6.35
+>>>
+>>> Signed-off-by: Tejun Heo <tj@kernel.org>
+>>> Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+>>> Cc: stable@kernel.org
+>>
+>> Thanks Tejun, applied.
+> 
+> It's already in mainline:
+> e75aa85892b2ee78c79edac720868cbef16e62eb
 
-diff --git a/drivers/video/w100fb.c b/drivers/video/w100fb.c
-index e66b8b1..d8b12c3 100644
---- a/drivers/video/w100fb.c
-+++ b/drivers/video/w100fb.c
-@@ -858,9 +858,9 @@ unsigned long w100fb_gpio_read(int port)
- void w100fb_gpio_write(int port, unsigned long value)
- {
- 	if (port==W100_GPIO_PORT_A)
--		value = writel(value, remapped_regs + mmGPIO_DATA);
-+		writel(value, remapped_regs + mmGPIO_DATA);
- 	else
--		value = writel(value, remapped_regs + mmGPIO_DATA2);
-+		writel(value, remapped_regs + mmGPIO_DATA2);
- }
- EXPORT_SYMBOL(w100fb_gpio_read);
- EXPORT_SYMBOL(w100fb_gpio_write);
+Irk, had not noticed yet, my for-2.6.36 branch isn't fully merged
+up yet. Thanks for the heads-up.
+
 -- 
-1.7.1
+Jens Axboe
 
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
