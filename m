@@ -1,167 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760429Ab0HEWHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:07:54 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:45909 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S933687Ab0HEWHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:07:47 -0400
-Date: Fri, 6 Aug 2010 00:05:11 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: torvalds@osdl.org, akpm@osdl.org
-Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [git pull] PCMCIA updates for 2.6.36
-Message-ID: <20100805220511.GA7040@comet.dominikbrodowski.net>
-Mail-Followup-To: torvalds@osdl.org, akpm@osdl.org,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+	id S934484Ab0HEWKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:10:54 -0400
+Received: from mail.lang.hm ([64.81.33.126]:39739 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758881Ab0HEWKu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:10:50 -0400
+Date: Thu, 5 Aug 2010 15:09:32 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: kevin granade <kevin.granade@gmail.com>
+cc: paulmck@linux.vnet.ibm.com,
+        =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
+References: <alpine.DEB.2.00.1008041620010.6545@asgard.lang.hm> <20100804233013.GN24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm> <20100805001716.GO24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
+ <20100805004802.GP24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm> <20100805151211.GA10080@linux.vnet.ibm.com> <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm> <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
+ <20100805203102.GN2447@linux.vnet.ibm.com> <AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="680960-1374493777-1281046173=:30632"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-several PCMCIA updates for 2.6.36 are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git master
+--680960-1374493777-1281046173=:30632
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-Please pull from that location. The diffstat and list of changes is below,
-the individual diffs are sent (at least) to the linux-pcmcia list.
+On Thu, 5 Aug 2010, kevin granade wrote:
 
-This patch series also includes the removal of the PCMCIA ioctl code.
-The Kconfig option was already removed in the past kernel series; I have not
-received any further feedback -- besides the notable opposition by
-Russell King, last repeated during the 2.6.35 merge window -- on why
-this long obsoleted ioctl should still be made available by the kernel.
+> On Thu, Aug 5, 2010 at 3:31 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+>> On Thu, Aug 05, 2010 at 01:13:31PM -0500, kevin granade wrote:
+>>> On Thu, Aug 5, 2010 at 10:46 AM,  <david@lang.hm> wrote:
+>>>> On Thu, 5 Aug 2010, Paul E. McKenney wrote:
+>>>>
+>>>>>
+>>>>> [ . . . ]
+>>>>>
+>>>>>
+>>>>> My (possibly incorrect) assumption is based on the complaint that led
+>>>>> to my implementing RCU_FAST_NO_HZ.  A (non-Android) embedded person was
+>>>>> quite annoyed (to put it mildly) at the earlier version of RCU because
+>>>>> it prevented the system from entering the power-saving dyntick-idle mode,
+>>>>> not for minutes, or even for seconds, but for a handful of -milliseconds-.
+>>>>> This was my first hint that "energy efficiency" means something completely
+>>>>> different in embedded systems than it does in the servers that I am
+>>>>> used to.
+>>>>>
+>>>>> But I must defer to the Android guys on this -- who knows, perhaps
+>>>>> multi-minute delays to enter full-suspend mode are OK for them.
+>>>>
+>>>> if the system was looking at all applications I would agree that the timeout
+>>>> should be much shorter.
+>>>>
+>>>> I have a couple devices that are able to have the display usable, even if
+>>>> the CPU is asleep (the OLPC and the Kindle, two different display
+>>>> technologies). With these devices I would like to see the suspend happen so
+>>>> fast that it can suspend between keystrokes.
+>>>>
+>>>> however, in the case of Android I think the timeouts have to end up being
+>>>> _much_ longer. Otherwise you have the problem of loading an untrusted book
+>>>> reader app on the device and the device suspends while you are reading the
+>>>> page.
+>>>>
+>>>> currently Android works around this by having a wakelock held whenever the
+>>>> display is on. This seems backwards to me, the display should be on because
+>>>> the system is not suspended, not the system is prevented from suspending
+>>>> because the display is on.
+>>>>
+>>>> Rather than having the display be on causing a wavelock to be held (with the
+>>>> code that is controls the display having a timeout for how long it leaves
+>>>> the display on), I would invert this and have the timeout be based on system
+>>>> activity, and when it decides the system is not active, turn off the display
+>>>> (along with other things as it suspends)
+>>>
+>>> IIRC, this was a major point of their (Android's) power management
+>>> policy.  User input of any kind would reset the "display active"
+>>> timeout, which is the primary thing keeping random untrusted
+>>> user-facing programs from being suspended while in use.  They seemed
+>>> to consider this to be a special case in their policy, but from the
+>>> kernel's point of view it is just another suspend blocker being held.
+>>>
+>>> I'm not sure this is the best use case to look at though, because
+>>> since it is user-facing, the timeout durations are on a different
+>>> scale than the ones they are really worried about.  I think another
+>>> category of use case that they are worried about is:
+>>>
+>>> (in suspend) -> wakeup due to network -> process network activity -> suspend
+>>>
+>>> or an example that has been mentioned previously:
+>>>
+>>> (in suspend) -> wakeup due to alarm for audio processing -> process
+>>> batch of audio -> suspend
+>>>
+>>> In both of these cases, the display may never power on (phone might
+>>> beep to indicate txt message or email, audio just keeps playing), so
+>>> the magnitude of the "timeout" for suspending again should be very
+>>> small.  Specifically, they don't want there to be a timeout at all, so
+>>> as little time as possible time is spent out of suspend in addition to
+>>> the time required to handle the event that caused wakeup.
+>>
+>> It would be good to get some sort of range for the "timeout".  In the
+>> audio-output case, my understanding that the spacing between bursts of
+>> audio-processing activity is measured in some hundreds of milliseconds,
+>> in which case one would want the delays until suspend to be on the
+>> millisecond scale.  But does Android really suspend between bursts of
+>> audio processing while playing music?  Very cool if so!  ;-)
+>
+> Oops, yea that's actually a really bad example, that's probably
+> something that would be handled by low-power states.  I think the
+> incoming text message example is a good one though.  There seemed to
+> be a focus on user-interaction scale time scales, and I wanted to
+> point out that there are also very short duration time scales to
+> consider as well.
 
-In other news, this patch set contains a large cleanup of how PCMCIA
-drivers set up and utilize ioport resources -- the less often used
-iomem resources will follow in the next release cycle, though they
-are already properly set up, exported in sysfs, and registered with
-the core on properly behaving socket drivers. 
+good point, but I do think the short time scales are less common than 
+people think.
 
-Thanks,
-        Dominik
+I'd love to get good examples of them
 
-Dominik Brodowski (18):
-      pcmcia: remove obsolete ioctl
-      pcmcia: simplify event callback
-      pcmcia: split up central event handler
-      pcmcia: remove obsolete CS_EVENT_ definitions
-      pcmcia: remove unused flag, simplify headers
-      pcmcia: remove cs_types.h
-      pcmcia: use pcmica_{read,write}_config_byte
-      pcmcia: clean up cs.h
-      pcmcia: use struct resource for PCMCIA devices
-      pcmcia: do not use io_req_t after call to pcmcia_request_io()
-      pcmcia: do not use io_req_t when calling pcmcia_request_io()
-      pcmcia: move local definitions out of include/pcmcia/cs.h
-      pcmcia: remove memreq_t
-      pcmcia: use struct resource for PCMCIA devices, part 2
-      pcmcia: export resource information to sysfs
-      pcmcia: insert PCMCIA device resources into resource tree
-      pcmcia: do not request windows if you don't need to
-      pcmcia: avoid buffer overflow in pcmcia_setup_isa_irq
+on my iphone when a text message arrives the phone displays an alert for 
+user-interaction times (it even lights the display to show who the message 
+is from, and optionally a preview of the message)
 
- Documentation/feature-removal-schedule.txt       |   23 -
- Documentation/pcmcia/driver-changes.txt          |   12 +
- drivers/ata/pata_pcmcia.c                        |   38 +-
- drivers/bluetooth/bluecard_cs.c                  |   32 +-
- drivers/bluetooth/bt3c_cs.c                      |   27 +-
- drivers/bluetooth/btuart_cs.c                    |   31 +-
- drivers/bluetooth/dtl1_cs.c                      |   35 +-
- drivers/char/pcmcia/cm4000_cs.c                  |   30 +-
- drivers/char/pcmcia/cm4040_cs.c                  |   37 +-
- drivers/char/pcmcia/ipwireless/main.c            |   47 +-
- drivers/char/pcmcia/ipwireless/main.h            |    1 -
- drivers/char/pcmcia/ipwireless/tty.h             |    1 -
- drivers/char/pcmcia/synclink_cs.c                |   29 +-
- drivers/ide/ide-cs.c                             |   39 +-
- drivers/isdn/hardware/avm/avm_cs.c               |   25 +-
- drivers/isdn/hisax/avma1_cs.c                    |   29 +-
- drivers/isdn/hisax/elsa_cs.c                     |   32 +-
- drivers/isdn/hisax/sedlbauer_cs.c                |   83 +--
- drivers/isdn/hisax/teles_cs.c                    |   30 +-
- drivers/mmc/host/sdricoh_cs.c                    |    1 -
- drivers/mtd/maps/pcmciamtd.c                     |   15 +-
- drivers/net/pcmcia/3c574_cs.c                    |   14 +-
- drivers/net/pcmcia/3c589_cs.c                    |   14 +-
- drivers/net/pcmcia/axnet_cs.c                    |   48 +-
- drivers/net/pcmcia/com20020_cs.c                 |   22 +-
- drivers/net/pcmcia/fmvj18x_cs.c                  |   48 +-
- drivers/net/pcmcia/ibmtr_cs.c                    |   29 +-
- drivers/net/pcmcia/nmclan_cs.c                   |   32 +-
- drivers/net/pcmcia/pcnet_cs.c                    |   63 +-
- drivers/net/pcmcia/smc91c92_cs.c                 |   71 +-
- drivers/net/pcmcia/xirc2ps_cs.c                  |   60 +-
- drivers/net/wireless/airo_cs.c                   |   74 +--
- drivers/net/wireless/atmel_cs.c                  |   25 +-
- drivers/net/wireless/b43/pcmcia.c                |   13 +-
- drivers/net/wireless/hostap/hostap_cs.c          |  136 +--
- drivers/net/wireless/libertas/if_cs.c            |   16 +-
- drivers/net/wireless/orinoco/orinoco_cs.c        |   30 +-
- drivers/net/wireless/orinoco/spectrum_cs.c       |   62 +-
- drivers/net/wireless/ray_cs.c                    |   27 +-
- drivers/net/wireless/wl3501_cs.c                 |   24 +-
- drivers/parport/parport_cs.c                     |   23 +-
- drivers/pcmcia/Makefile                          |    1 -
- drivers/pcmcia/au1000_generic.h                  |    1 -
- drivers/pcmcia/au1000_pb1x00.c                   |    2 -
- drivers/pcmcia/cistpl.c                          |   11 +-
- drivers/pcmcia/cs.c                              |   79 +--
- drivers/pcmcia/cs_internal.h                     |   62 +-
- drivers/pcmcia/db1xxx_ss.c                       |    1 -
- drivers/pcmcia/ds.c                              |  184 ++--
- drivers/pcmcia/i82092.c                          |    1 -
- drivers/pcmcia/i82365.c                          |    1 -
- drivers/pcmcia/m32r_cfc.c                        |    1 -
- drivers/pcmcia/m32r_pcc.c                        |    1 -
- drivers/pcmcia/m8xx_pcmcia.c                     |    1 -
- drivers/pcmcia/pcmcia_cis.c                      |    1 -
- drivers/pcmcia/pcmcia_ioctl.c                    | 1077 ----------------------
- drivers/pcmcia/pcmcia_resource.c                 |  331 ++++---
- drivers/pcmcia/pd6729.c                          |    1 -
- drivers/pcmcia/pxa2xx_base.c                     |    1 -
- drivers/pcmcia/rsrc_iodyn.c                      |    8 +-
- drivers/pcmcia/rsrc_mgr.c                        |    6 +-
- drivers/pcmcia/rsrc_nonstatic.c                  |   15 +-
- drivers/pcmcia/sa1100_generic.c                  |    1 -
- drivers/pcmcia/soc_common.h                      |    1 -
- drivers/pcmcia/socket_sysfs.c                    |    1 -
- drivers/pcmcia/tcic.c                            |    1 -
- drivers/pcmcia/xxs1500_ss.c                      |    1 -
- drivers/pcmcia/yenta_socket.c                    |    1 -
- drivers/scsi/pcmcia/aha152x_stub.c               |   17 +-
- drivers/scsi/pcmcia/fdomain_stub.c               |   15 +-
- drivers/scsi/pcmcia/nsp_cs.c                     |   61 +-
- drivers/scsi/pcmcia/qlogic_stub.c                |   33 +-
- drivers/scsi/pcmcia/sym53c500_cs.c               |   31 +-
- drivers/serial/serial_cs.c                       |   68 +-
- drivers/ssb/main.c                               |    1 -
- drivers/ssb/pcmcia.c                             |   15 +-
- drivers/ssb/scan.c                               |    1 -
- drivers/staging/comedi/drivers/cb_das16_cs.c     |   37 +-
- drivers/staging/comedi/drivers/das08_cs.c        |   36 +-
- drivers/staging/comedi/drivers/ni_daq_700.c      |   62 +-
- drivers/staging/comedi/drivers/ni_daq_dio24.c    |   63 +-
- drivers/staging/comedi/drivers/ni_labpc_cs.c     |   63 +-
- drivers/staging/comedi/drivers/ni_mio_cs.c       |   16 +-
- drivers/staging/comedi/drivers/quatech_daqp_cs.c |   37 +-
- drivers/staging/wlags49_h2/wl_cs.c               |   11 +-
- drivers/staging/wlags49_h2/wl_internal.h         |    1 -
- drivers/telephony/ixj_pcmcia.c                   |   20 +-
- drivers/usb/host/sl811_cs.c                      |   24 +-
- include/pcmcia/cistpl.h                          |    2 +
- include/pcmcia/cs.h                              |  157 +---
- include/pcmcia/cs_types.h                        |   40 -
- include/pcmcia/ds.h                              |  251 +-----
- include/pcmcia/ss.h                              |   25 +-
- sound/pcmcia/pdaudiocf/pdaudiocf.c               |    9 +-
- sound/pcmcia/pdaudiocf/pdaudiocf.h               |    1 -
- sound/pcmcia/vx/vxpocket.c                       |    9 +-
- sound/pcmcia/vx/vxpocket.h                       |    1 -
- 97 files changed, 1189 insertions(+), 3138 deletions(-)
- delete mode 100644 drivers/pcmcia/pcmcia_ioctl.c
- delete mode 100644 include/pcmcia/cs_types.h
+so what would wake a phone up from suspend where the phone should go back 
+to sleep in under a second?
+
+David Lang
+--680960-1374493777-1281046173=:30632--
