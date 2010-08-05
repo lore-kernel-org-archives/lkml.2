@@ -1,91 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933684Ab0HEVtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 17:49:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756989Ab0HEVtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 17:49:36 -0400
-Subject: Re: [PATCH 23/42] drivers/net/wireless/libertas: Adjust confusing
- if indentation
-From: Dan Williams <dcbw@redhat.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1008052223340.31692@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052223340.31692@ask.diku.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 16:50:44 -0500
-Message-ID: <1281045044.18688.5.camel@dcbw.foobar.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933043Ab0HEVvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 17:51:49 -0400
+Received: from exprod7og102.obsmtp.com ([64.18.2.157]:41330 "EHLO
+	exprod7og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757032Ab0HEVvo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 17:51:44 -0400
+From: Anjali Kulkarni <anjali@juniper.net>
+To: Avi Kivity <avi@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Date: Thu, 5 Aug 2010 14:39:58 -0700
+Subject: Re: Freebsd image from Qemu hangs on booting in KVM
+Thread-Topic: Freebsd image from Qemu hangs on booting in KVM
+Thread-Index: Acs0esE9USofnu+5TxCt4CKr49GvUQAZTtVsAAGw4U0=
+Message-ID: <C8807DBE.26044%anjali@juniper.net>
+In-Reply-To: <C8807265.2600D%anjali@juniper.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-Entourage/13.3.0.091002
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 22:23 +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> At the point of the patched code, err has already been tested, so it is
-> only worthwhile to test it again in the if branches where it is changed.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r disable braces4@
-> position p1,p2;
-> statement S1,S2;
-> @@
-> 
-> (
-> if (...) { ... }
-> |
-> if (...) S1@p1 S2@p2
-> )
-> 
-> @script:python@
-> p1 << r.p1;
-> p2 << r.p2;
-> @@
-> 
-> if (p1[0].column == p2[0].column):
->   cocci.print_main("branch",p1)
->   cocci.print_secs("after",p2)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+Ok, I could reproduce the problem, and also get the info you asked for:
 
-Acked-by: Dan Williams <dcbw@redhat.com>
+(qemu) info registers
+EAX=00000000 EBX=c27166c0 ECX=00000013 EDX=c0bf85e0
+ESI=c057cea0 EDI=00000000 EBP=d35a5ce4 ESP=d35a5ce4
+EIP=c09e48ba EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+ES =0028 00000000 ffffffff 00c09300
+CS =0020 00000000 ffffffff 00c09b00
+SS =0028 00000000 ffffffff 00c09300
+DS =0028 00000000 ffffffff 00c09300
+FS =0008 c0c6c900 ffffffff 00c09300
+GS =003b 00000000 ffffffff 00c0f300
+LDT=0050 c0c6c720 00000087 0000e200
+TR =0048 c0c6c940 00000067 00008b00
+GDT=     c0c6c680 00000097
+IDT=     c0c6db40 000007ff
+CR0=e005003b CR2=4808e000 CR3=1f54e000 CR4=00000090
+DR0=00000000 DR1=00000000 DR2=00000000 DR3=00000000
+DR6=ffff0ff0 DR7=00000400
+FCW=127f FSW=0000 [ST=0] FTW=00 MXCSR=00000000
+FPR0=0000000000000000 0000 FPR1=0000000000000000 0000
+FPR2=0000000000000000 0000 FPR3=0000000000000000 0000
+FPR4=0000000000000000 0000 FPR5=0000000000000000 0000
+FPR6=0000000000000000 0000 FPR7=0000000000000000 0000
+XMM00=00000000000000000000000000000000
+XMM01=00000000000000000000000000000000
+XMM02=00000000000000000000000000000000
+XMM03=00000000000000000000000000000000
+XMM04=00000000000000000000000000000000
+XMM05=00000000000000000000000000000000
+XMM06=00000000000000000000000000000000
+XMM07=00000000000000000000000000000000
+(qemu) x/30i $eip-20
+0x00000000c09e48a6:  add    %al,(%eax)
+0x00000000c09e48a8:  leave
+0x00000000c09e48a9:  ret
+0x00000000c09e48aa:  push   %ebp
+0x00000000c09e48ab:  mov    %esp,%ebp
+0x00000000c09e48ad:  leave
+0x00000000c09e48ae:  ret
+0x00000000c09e48af:  push   %ebp
+0x00000000c09e48b0:  mov    %esp,%ebp
+0x00000000c09e48b2:  hlt
+0x00000000c09e48b3:  jmp    0xc09e48b2
+0x00000000c09e48b5:  push   %ebp
+0x00000000c09e48b6:  mov    %esp,%ebp
+0x00000000c09e48b8:  sti
+0x00000000c09e48b9:  hlt
+0x00000000c09e48ba:  leave
+0x00000000c09e48bb:  ret
+0x00000000c09e48bc:  push   %ebp
+0x00000000c09e48bd:  mov    %esp,%ebp
+0x00000000c09e48bf:  mov    %cr0,%eax
+0x00000000c09e48c2:  or     $0x5002a,%eax
+0x00000000c09e48c7:  mov    %eax,%cr0
+0x00000000c09e48ca:  movl   0xc0c6c888,%gs
+0x00000000c09e48d0:  leave
+0x00000000c09e48d1:  ret
+0x00000000c09e48d2:  push   %ebp
+0x00000000c09e48d3:  mov    %esp,%ebp
+0x00000000c09e48d5:  sub    $0x8,%esp
+0x00000000c09e48d8:  mov    %ebx,(%esp,1)
+0x00000000c09e48db:  mov    %esi,0x4(%esp,1)
+(qemu) 
 
-> ---
->  drivers/net/wireless/libertas/if_spi.c |    6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+
+
+On 8/5/10 1:51 PM, "Anjali Kulkarni" <anjali@juniper.net> wrote:
+
+> Thanks Avi,
+> I am trying to reproduce this on another setup, and do not see the issue.
+> My understanding is to run KVM + Qemu, I only need to install KVM modules,
+> and Qemu does not need to be modified. Is that correct?
+> I see 
 > 
-> diff --git a/drivers/net/wireless/libertas/if_spi.c b/drivers/net/wireless/libertas/if_spi.c
-> index fe3f080..3965c6c 100644
-> --- a/drivers/net/wireless/libertas/if_spi.c
-> +++ b/drivers/net/wireless/libertas/if_spi.c
-> @@ -800,14 +800,16 @@ static int lbs_spi_thread(void *data)
->  			goto err;
->  		}
->  
-> -		if (hiStatus & IF_SPI_HIST_CMD_UPLOAD_RDY)
-> +		if (hiStatus & IF_SPI_HIST_CMD_UPLOAD_RDY) {
->  			err = if_spi_c2h_cmd(card);
->  			if (err)
->  				goto err;
-> -		if (hiStatus & IF_SPI_HIST_RX_UPLOAD_RDY)
-> +		}
-> +		if (hiStatus & IF_SPI_HIST_RX_UPLOAD_RDY) {
->  			err = if_spi_c2h_data(card);
->  			if (err)
->  				goto err;
-> +		}
->  
->  		/* workaround: in PS mode, the card does not set the Command
->  		 * Download Ready bit, but it sets TX Download Ready. */
-
+> [root@ipg-virt01 anjali]# lsmod | grep kvm
+> kvm_intel              87016  0
+> kvm                   211496  1 kvm_intel
+> 
+> [root@ipg-virt01 anjali]# modprobe -l 'kvm*'
+> /lib/modules/2.6.18-164.el5/kernel/extra/kvm.ko
+> /lib/modules/2.6.18-164.el5/kernel/extra/kvm-amd.ko
+> /lib/modules/2.6.18-164.el5/kernel/extra/kvm-intel.ko
+> 
+> And then I run Qemu, as I did, before installing KVM. It should just use
+> KVM? Is there any way I can check?
+> 
+> Btw, when it hangs, I cannot even press any key, so not sure how I can get
+> those commands you suggest below..
+> 
+> Anjali
+> 
+> On 8/5/10 1:46 AM, "Avi Kivity" <avi@redhat.com> wrote:
+> 
+>>   On 08/05/2010 05:20 AM, Anjali Kulkarni wrote:
+>>> Hi,
+>>> 
+>>> I have a problem similar to the one seen on this list before - when I boot
+>>> my
+>>> freebsd based(but modified) image in Qemu with KVM on CentOS, then after
+>>> almost booting completely, the image hangs - just before the login prompt is
+>>> seen. If I do not have KVM ie plain CenOS with Qemu, then this issue does
+>>> not
+>>> occur. Has anyone seen this before and any ideas how to debug this?
+>> 
+>> First step is to issue 'info registers' and 'x/30i $eip-20' from the
+>> monitor when it hangs (qemu -monitor stdio makes cut'n'paste easier).
+> 
 
