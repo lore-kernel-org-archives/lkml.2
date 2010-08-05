@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759683Ab0HEGOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 02:14:52 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37405 "EHLO
+	id S1759694Ab0HEGP3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 02:15:29 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37434 "EHLO
 	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757750Ab0HEGOu (ORCPT
+	with ESMTP id S1757750Ab0HEGP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 02:14:50 -0400
+	Thu, 5 Aug 2010 02:15:27 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
@@ -14,57 +14,58 @@ To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
         Johannes Weiner <hannes@cmpxchg.org>, Mel Gorman <mel@csn.ul.ie>,
         Wu Fengguang <fengguang.wu@intel.com>,
         Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 5/7] vmscan: kill dead code in shrink_inactive_list()
+Subject: [PATCH 6/7] vmscan: remove PF_SWAPWRITE from __zone_reclaim()
 Cc: kosaki.motohiro@jp.fujitsu.com
 In-Reply-To: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
 References: <20100805150624.31B7.A69D9226@jp.fujitsu.com>
-Message-Id: <20100805151415.31C6.A69D9226@jp.fujitsu.com>
+Message-Id: <20100805151448.31C9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  5 Aug 2010 15:14:47 +0900 (JST)
+Date: Thu,  5 Aug 2010 15:15:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When synchrounous lumy reclaim occur, page_list have gurantee to
-don't have active page because now page activation in shrink_page_list()
-always disable lumpy reclaim.
+When zone_reclaim() was merged at first, It always order-0
+allocation with PF_SWAPWRITE flag. (probably they are both
+unintional).
 
-Then, This patch remove virtual dead code.
+Former was fixed commit bd2f6199cf (vmscan: respect higher
+order in zone_reclaim()). However it expose latter mistake
+because !order-0 reclaim often cause dirty pages isolation
+and large latency.
+
+Now, we have good opportunity to fix latter too.
 
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- mm/vmscan.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ mm/vmscan.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index f7aabd2..f21dbeb 100644
+index f21dbeb..e043e97 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -1334,7 +1334,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 	unsigned long nr_scanned;
- 	unsigned long nr_reclaimed = 0;
- 	unsigned long nr_taken;
--	unsigned long nr_active;
- 	unsigned long nr_anon;
- 	unsigned long nr_file;
- 
-@@ -1389,13 +1388,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
- 
- 	/* Check if we should syncronously wait for writeback */
- 	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
--		/*
--		 * The attempt at page out may have made some
--		 * of the pages active, mark them inactive again.
--		 */
--		nr_active = clear_active_flags(&page_list, NULL);
--		count_vm_events(PGDEACTIVATE, nr_active);
--
- 		set_lumpy_reclaim_mode(priority, sc, true);
- 		nr_reclaimed += shrink_page_list(&page_list, sc);
+@@ -2663,7 +2663,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	 * and we also need to be able to write out pages for RECLAIM_WRITE
+ 	 * and RECLAIM_SWAP.
+ 	 */
+-	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
++	p->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+ 	reclaim_state.reclaimed_slab = 0;
+ 	p->reclaim_state = &reclaim_state;
+@@ -2716,7 +2716,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
  	}
+ 
+ 	p->reclaim_state = NULL;
+-	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
++	current->flags &= ~PF_MEMALLOC;
+ 	lockdep_clear_current_reclaim_state();
+ 	return sc.nr_reclaimed >= nr_pages;
+ }
 -- 
 1.6.5.2
 
