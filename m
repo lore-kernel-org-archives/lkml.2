@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489Ab0HEPFQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:05:16 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:51738 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933414Ab0HEPFK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:05:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=q8FO63FaW151aZPgwseDSfq6Am3i+UocP9d7UrIlncGbVVraLvbZMoxCrz2IUzVu2D
-         zhaZiCHSTKlT4EilITkFvDuHTRJnJWmdMOAQDidjzXu3gQdrlEqVrhoOefThc1QR43zW
-         c3SXsDKkwhIe9yhxO9aFvlLGbIP/JVqvkEVp4=
-Date: Thu, 5 Aug 2010 22:59:40 +0800
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dave Airlie <airlied@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: lockdep and oops_in_progress
-Message-ID: <20100805145940.GA8685@zhy>
-Reply-To: Yong Zhang <yong.zhang0@gmail.com>
-References: <AANLkTi=gnsPUPomCUXRLgV0PhNxtBaXiCheDU=yRV0Kx@mail.gmail.com>
- <1280995849.1923.1515.camel@laptop>
+	id S933536Ab0HEPGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:06:23 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:41374 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933496Ab0HEPGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 11:06:21 -0400
+Date: Thu, 5 Aug 2010 16:06:05 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/7] vmscan: synchronous lumpy reclaim don't call
+	congestion_wait()
+Message-ID: <20100805150605.GF25688@csn.ul.ie>
+References: <20100805150624.31B7.A69D9226@jp.fujitsu.com> <20100805151229.31BD.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1280995849.1923.1515.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100805151229.31BD.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 10:10:49AM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-08-05 at 16:21 +1000, Dave Airlie wrote:
-> > Hi guys,
-> > 
-> > I was debugging a wierd issue with suspend/resume and fbcon/X with
-> > some recent work Jesse and myself did to try and make sure a pinned
-> > fbcon always gets the text on it with a panic or oops occurs.
-> > 
-> > It does this by testing the oops_in_progress flag, however once any
-> > lockdep issue occurs it looks to me that we leave this flag set
-> > forever, in most places I can see in oops code etc they call
-> > bust_spinlocks(1) then bust_spinlocks(0) to balance the
-> > oops_in_progress value, but lockdep never seems to reset it.
-> > 
-> > I'm wondering if there is an inherent reason for this or if I whip up
-> > a patch to reset once the lockdep is printed if this would cause any
-> > issues?
+On Thu, Aug 05, 2010 at 03:13:03PM +0900, KOSAKI Motohiro wrote:
+> congestion_wait() mean "waiting quueue congestion is cleared".
+> That said, if the system have plenty dirty pages and flusher thread push
+> new request to IO queue conteniously, IO queue are not cleared
+> congestion status for long time. thus, congestion_wait(HZ/10) become
+> almostly equivalent schedule_timeout(HZ/10).
 > 
-> That's debug_locks_off(), right? I don't think there's a particular
-> reason we keep it set, cleaning that up might take a bit of work but
-> shouldn't be too hard.
-
-commit e0fdace10e75dac67d906213b780ff1b1a4cc360
-Author: David Miller <davem@davemloft.net>
-Date:   Fri Aug 1 01:11:22 2008 -0700
-
-    debug_locks: set oops_in_progress if we will log messages.
-    
-    Otherwise lock debugging messages on runqueue locks can deadlock the
-    system due to the wakeups performed by printk().
-    
-    Signed-off-by: David S. Miller <davem@davemloft.net>
-    Signed-off-by: Ingo Molnar <mingo@elte.hu>
-
-Seems we can revert that commit now because of 'robustify printk'.
-
-Dave, what do you think about it?
-
-Thanks,
-Yong
-
+> However, synchronous lumpy reclaim donesn't need this
+> congestion_wait() at all. shrink_page_list(PAGEOUT_IO_SYNC) are
+> using wait_on_page_writeback() and it provide sufficient waiting.
 > 
-> Ingo, do you remember anything about that?, I think that bit comes from
-> before my time.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+Needs rebasing for mmotm but otherwise;
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+> ---
+>  mm/vmscan.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index cf51d62..1cdc3db 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -1341,7 +1341,6 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
+>  
+>  	/* Check if we should syncronously wait for writeback */
+>  	if (should_reclaim_stall(nr_taken, nr_reclaimed, priority, sc)) {
+> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
+>  		/*
+>  		 * The attempt at page out may have made some
+>  		 * of the pages active, mark them inactive again.
+> -- 
+> 1.6.5.2
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
