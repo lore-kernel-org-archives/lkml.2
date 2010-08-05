@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934325Ab0HEU4D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:56:03 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48371 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932935Ab0HEUz5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:55:57 -0400
-Date: Thu, 5 Aug 2010 22:55:55 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Luca Tettamanti <kronos.it@gmail.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 42/42] drivers/media/video/bt8xx: Adjust confusing if 
- indentation
-In-Reply-To: <AANLkTi=YauQBWyZnGpuBtQpNq=Re8WUXY9mH6FSFMP+7@mail.gmail.com>
-Message-ID: <Pine.LNX.4.64.1008052255250.31692@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052229390.31692@ask.diku.dk>
- <AANLkTi=YauQBWyZnGpuBtQpNq=Re8WUXY9mH6FSFMP+7@mail.gmail.com>
+	id S934330Ab0HEU6L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:58:11 -0400
+Received: from n2c.bullet.mail.ac4.yahoo.com ([76.13.13.79]:28535 "HELO
+	n2c.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932426Ab0HEU6J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:58:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 577111.13170.bm@omp131.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=2jk4frtssxDinuWqh+YcEp3W4CNhs2lM5k6nH36f7WIyh1H1twdmDZZtw5nB4eIS/3xjAp3WRJ1C43vbIHPxtAiSu4jnnSdg/NRIEQagRq64lieYBNvqdLeb5wDZJzIga69lKPuPuE10guLvJ8JMJz7aVDVuBr8lV/uQ4n/1OOg=;
+Message-ID: <312769.16763.qm@web180307.mail.gq1.yahoo.com>
+X-YMail-OSG: nGS0hEoVM1lLB0kbKqz9ZoPXqibmn7tcD3df_m3UbiKL8yZ
+ 29sB7SrjUSPuxVqGvmR5G5nh923BCXAeuubprzitp1AXbs6OycE2Ym.deiSw
+ bTnIrqvG5l3KBCKmry24DZhKC0nG7wyyCLBbTPDjHfYnvgNdqGs79.CbdK5Y
+ 4X8Z.Jb5cFUYePlA2D6sCSwaTjo18Fq_uG1QwoblS_X0jYwpomRQ4_WkXeK9
+ xUqEdAt88VUR33Ju9zLJ_DC8y2RFkUIaMuWZGmDNf0KbZ_eFRBSV9ljAJbaJ
+ PUZfkfbFJQsbDBWK61YevrWhspRqkcCq6eER27QA-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Thu, 5 Aug 2010 13:58:06 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv6 4/7] USB: gadget: composite: Better string override handling
+To: Greg KH <greg@kroah.com>, USB <linux-usb@vger.kernel.org>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        Vladimir Pankratov <scriptkid@mail.ru>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+In-Reply-To: <f663aae67270ec7bf8732b1ba48b6030ded70355.1281002833.git.m.nazarewicz@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+OK, I guess.  This version does not have the
+hard-wired serial number some previous versions had.
 
-Indent the branch of an if.
+However, I can't put the time in for a real review
+and test session, so I'll have to hope this doesn't
+have any subtle bugs such review would uncover.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+- Dave
 
-// <smpl>
-@r disable braces4@
-position p1,p2;
-statement S1,S2;
-@@
 
-(
-if (...) { ... }
-|
-if (...) S1@p1 S2@p2
-)
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-if (p1[0].column == p2[0].column):
-  cocci.print_main("branch",p1)
-  cocci.print_secs("after",p2)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/media/video/bt8xx/bttv-i2c.c           |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/media/video/bt8xx/bttv-i2c.c b/drivers/media/video/bt8xx/bttv-i2c.c
-index 685d659..81d5b30 100644
---- a/drivers/media/video/bt8xx/bttv-i2c.c
-+++ b/drivers/media/video/bt8xx/bttv-i2c.c
-@@ -122,8 +122,7 @@ bttv_i2c_wait_done(struct bttv *btv)
- 	/* timeout */
- 	if (wait_event_interruptible_timeout(btv->i2c_queue,
- 		btv->i2c_done, msecs_to_jiffies(85)) == -ERESTARTSYS)
--
--	rc = -EIO;
-+		rc = -EIO;
- 
- 	if (btv->i2c_done & BT848_INT_RACK)
- 		rc = 1;
