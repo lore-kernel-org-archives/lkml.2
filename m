@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759447Ab0HEUSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:18:09 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55317 "EHLO mgw2.diku.dk"
+	id S932961Ab0HEUSa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:18:30 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55330 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759415Ab0HEUSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:18:03 -0400
-Date: Thu, 5 Aug 2010 22:18:01 +0200 (CEST)
+	id S1760110Ab0HEUSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:18:20 -0400
+Date: Thu, 5 Aug 2010 22:18:18 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Faisal Latif <faisal.latif@intel.com>,
-        Chien Tung <chien.tin.tung@intel.com>,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/42] drivers/infiniband/hw/nes: Adjust confusing if indentation
-Message-ID: <Pine.LNX.4.64.1008052217430.31692@ask.diku.dk>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 5/42] arch/s390/kernel: Adjust confusing if indentation
+Message-ID: <Pine.LNX.4.64.1008052218010.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,8 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-It is not clear whether the assignment should be part of the if branch
-suggested by its indentation.  The patch preserves the current semantics.
+Indent the branch of an if.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -54,19 +52,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/infiniband/hw/nes/nes_hw.c |    2 +-
+ arch/s390/kernel/kprobes.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes_hw.c b/drivers/infiniband/hw/nes/nes_hw.c
-index f41d890..9a379d4 100644
---- a/drivers/infiniband/hw/nes/nes_hw.c
-+++ b/drivers/infiniband/hw/nes/nes_hw.c
-@@ -2740,7 +2740,7 @@ void nes_nic_ce_handler(struct nes_device *nesdev, struct nes_hw_nic_cq *cq)
- 				/* restart the queue if it had been stopped */
- 				if (netif_queue_stopped(nesvnic->netdev))
- 					netif_wake_queue(nesvnic->netdev);
--					sq_cqes = 0;
-+				sq_cqes = 0;
- 				}
- 			} else {
- 				rqes_processed ++;
+diff --git a/arch/s390/kernel/kprobes.c b/arch/s390/kernel/kprobes.c
+index 2a3d2bf..5a7fccf 100644
+--- a/arch/s390/kernel/kprobes.c
++++ b/arch/s390/kernel/kprobes.c
+@@ -140,7 +140,7 @@ void __kprobes get_instruction_type(struct arch_specific_insn *ainsn)
+ 	case 0xc0:
+ 		if ((*ainsn->insn & 0x0f) == 0x00  /* larl  */
+ 			|| (*ainsn->insn & 0x0f) == 0x05) /* brasl */
+-		ainsn->fixup |= FIXUP_RETURN_REGISTER;
++			ainsn->fixup |= FIXUP_RETURN_REGISTER;
+ 		break;
+ 	case 0xeb:
+ 		if (*(((__u8 *) ainsn->insn) + 5 ) == 0x44 ||	/* bxhg  */
