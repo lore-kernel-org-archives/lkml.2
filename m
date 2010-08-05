@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934122Ab0HEUUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:20:51 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:55466 "EHLO mgw2.diku.dk"
+	id S934125Ab0HEUVK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:21:10 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:55482 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934068Ab0HEUUq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:20:46 -0400
-Date: Thu, 5 Aug 2010 22:20:43 +0200 (CEST)
+	id S934050Ab0HEUVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:21:04 -0400
+Date: Thu, 5 Aug 2010 22:21:02 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 13/42] drivers/serial/68360serial.c: Adjust confusing if
+Subject: [PATCH 14/42] drivers/video/aty/mach64_ct.c: Adjust confusing if
  indentation
-Message-ID: <Pine.LNX.4.64.1008052220270.31692@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1008052220440.31692@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -50,19 +50,19 @@ if (p1[0].column == p2[0].column):
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/serial/68360serial.c |    2 +-
+ drivers/video/aty/mach64_ct.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
-index 0dff3bb..5e19b6c 100644
---- a/drivers/serial/68360serial.c
-+++ b/drivers/serial/68360serial.c
-@@ -960,7 +960,7 @@ static void change_speed(ser_info_t *info)
- 	 * !!! ignore all characters if CREAD is not set
- 	 */
- 	if ((cflag & CREAD) == 0)
--	 info->read_status_mask &= ~BD_SC_EMPTY;
-+		info->read_status_mask &= ~BD_SC_EMPTY;
- 	 local_irq_save(flags);
+diff --git a/drivers/video/aty/mach64_ct.c b/drivers/video/aty/mach64_ct.c
+index 2745b85..204b580 100644
+--- a/drivers/video/aty/mach64_ct.c
++++ b/drivers/video/aty/mach64_ct.c
+@@ -179,7 +179,7 @@ static int aty_dsp_gt(const struct fb_info *info, u32 bpp, struct pll_ct *pll)
+ 		dsp_on = ((multiplier << vshift) + divider) / divider;
+ 		tmp = ((ras_multiplier << xshift) + ras_divider) / ras_divider;
+ 		if (dsp_on < tmp)
+-		dsp_on = tmp;
++			dsp_on = tmp;
+ 		dsp_on = dsp_on + (tmp * 2) + (pll->xclkpagefaultdelay << xshift);
+ 	}
  
- 	 /* Start bit has not been added (so don't, because we would just
