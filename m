@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933267Ab0HEMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 08:32:26 -0400
-Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:43166 "EHLO
-	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab0HEMcY (ORCPT
+	id S933292Ab0HEMdS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 08:33:18 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46562 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933239Ab0HEMdP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 08:32:24 -0400
-Date: Thu, 5 Aug 2010 14:31:47 +0200
-From: Rodolfo Giometti <giometti@enneenne.com>
-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
-        linuxpps@ml.enneenne.com, john stultz <johnstul@us.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Joonwoo Park <joonwpark81@gmail.com>
-Message-ID: <20100805123147.GA19407@gundam.enneenne.com>
-Mail-Followup-To: Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-	linux-kernel@vger.kernel.org,
-	"Nikita V. Youshchenko" <yoush@cs.msu.su>, linuxpps@ml.enneenne.com,
-	john stultz <johnstul@us.ibm.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Tejun Heo <tj@kernel.org>, Joonwoo Park <joonwpark81@gmail.com>
-References: <cover.1280952801.git.lasaine@lvk.cs.msu.su> <244e91439eeb1c835b6fa82999fcd65a8a282183.1280952801.git.lasaine@lvk.cs.msu.su> <20100805093236.GI26615@gundam.enneenne.com> <20100805154231.52555130@desktopvm.lvknet>
+	Thu, 5 Aug 2010 08:33:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=hCrQ64be9R4lCAv/4GOOjbPnc9zqPUr2ZkrniTdq8nk7KCmTx9pSmlJge05BSfSgfo
+         hD+khMder60jsWRFrbEFqKKEsQ8/q65URoG1eRNaChn3ozvx4J1PX3DenRDNx3TYEQtR
+         YW/Q8DDzm2jzjMZJr7X92JtWqqhkiR+uPLcaA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805154231.52555130@desktopvm.lvknet>
-Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
-X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 192.168.32.254
-X-SA-Exim-Mail-From: giometti@enneenne.com
-Subject: Re: [PATCHv3 05/16] pps: access pps device by direct pointer
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
+In-Reply-To: <1280937526.28884.21.camel@work-vm>
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+	<1280937526.28884.21.camel@work-vm>
+Date: Thu, 5 Aug 2010 15:33:14 +0300
+X-Google-Sender-Auth: bJNoScyhw0OFjzdF1zzWkhsMbE4
+Message-ID: <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+From: Alexander Shishkin <virtuoso@slind.org>
+To: john stultz <johnstul@us.ibm.com>
+Cc: gregkh@suse.de, lkml@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:42:31PM +0400, Alexander Gordeev wrote:
-> ?? Thu, 5 Aug 2010 11:32:36 +0200
-> Rodolfo Giometti <giometti@enneenne.com> ??????????:
-> 
-> > On Thu, Aug 05, 2010 at 01:06:42AM +0400, Alexander Gordeev wrote:
-> > > Using device index as a pointer needs some unnecessary work to be done
-> > > every time the pointer is needed (in irq handler for example).
-> > > Using a direct pointer is much more easy (and safe as well).
-> > > 
-> > > Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
-> [snip]
-> > 
-> > If you remove these functions you can't be sure anymore that nobodies
-> > may call pps_event() over a non existent device...
-> 
-> [snip]
-> 
-> > By dropping pps_get_source you may be here by a call from (i.e.) a
-> > serial port driver whose doesn't know if your PPS source is gone or
-> > not...
-> > 
-> > I don't understand how your modifications may resolve this problem.
-> 
-> Well, this can happen only if PPS client module calls pps_event before
-> calling pps_register_source() or after pps_unregister_source(). This
-> means that it's broken! If we try to handle/workaround broken clients it
+On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
+> On Wed, 2010-08-04 at 15:48 +0300, Alexander Shishkin wrote:
+>> Certain userspace applications (like "clock" desktop applets or ntpd) might
+>> want to be notified when some other application changes the system time. It
+>> might also be important for an application to be able to distinguish between
+>> its own and somebody else's time changes.
+>
+> So NTP doesn't actually care, as it will notice the STA_UNSYNC flag is
+> set the next time it checks adjtimex.
+>
+> The clock apps example seems reasonable, but maybe isn't the most
+> compelling argument for adding a new kernel api.
+>
+> Is there a actual use case that you need this for?  I don't really have
+> an issue with the code I just really want to make sure the feature would
+> be useful enough to justify the API and code maintenance going forward.
 
-Suppose we are using pps-ldisc client. How can you assure that
-nobodies may execute pps_tty_close() while you are into the
-pps_event() related to the same serial port?
+Yes. What we have here is an application which takes care of different means
+of time synchronization (trusted time servers, different GSM operators, etc)
+and also different kinds of time-based events/notifications (like "dentist
+appointment next thursday"). When it encounters a time change that is
+made by some other application, it basically wants to disable automatic
+time adjustment and trigger the events/notifications which are due at this
+(new) time.
 
-You can't disable serial interrupts in order to avoid
-pps_tty_dcd_change calls...
-
-> affects performance. So we have to choose what is the priority:
-> security or performance. My guru told me I shouldn't bother too much
-> about broken kernel-space code which my code interacts with. If it's
-> broken it should be fixed. Some assertions enabled by DEBUG define are
-> enough. For me it makes sense but I don't know what should I check here?
-
-I'm sorry but I disagree with you. Kernel code can't allow userland
-programs to corrupt it!
-
-We are not discussing about security or performance but about
-reliability.
-
-Ciao,
-
-Rodolfo
-
--- 
-
-GNU/Linux Solutions                  e-mail: giometti@enneenne.com
-Linux Device Driver                          giometti@linux.it
-Embedded Systems                     phone:  +39 349 2432127
-UNIX programming                     skype:  rodolfo.giometti
-Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
+Regards,
+--
+Alex
