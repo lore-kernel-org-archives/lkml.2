@@ -1,69 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933305Ab0HEO35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:29:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:27387 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756867Ab0HEO3y (ORCPT
+	id S933310Ab0HEObx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:31:53 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:50776 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867Ab0HEObs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:29:54 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=lbVJ3HXjD+8samg6sF9WfJR6eex6vPGx24dJKUx3mPTeK2o5qM2JgWe8cu8o5ckaD
-	L009aPir4y+6wg0CaKP+Q==
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008050717260.25170@asgard.lang.hm>
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
-	<20100804205654.GA4986@srcf.ucam.org>
-	<AANLkTi=fH=XqJ0QgaMwPr5efacWAFo5h0khD7RjL4n8L@mail.gmail.com>
-	<201008050220.51805.rjw@sisk.pl>
-	<AANLkTikK+OCrg8Jx5SpTbg6iFDX12MKZrTsdOr4mRJN0@mail.gmail.com>
-	<20100805134057.GB20565@srcf.ucam.org>
-	<alpine.DEB.2.00.1008050717260.25170@asgard.lang.hm>
-Date: Thu, 5 Aug 2010 07:29:51 -0700
-Message-ID: <AANLkTik2VJewvER0WPwb5vKELq+S8_xqPsAiidc1aRCD@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Brian Swetland <swetland@google.com>
-To: david@lang.hm
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Thu, 5 Aug 2010 10:31:48 -0400
+X-Spam-ASN: 
+Date: Thu, 5 Aug 2010 18:31:40 +0400
+From: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+To: Vitezslav Samel <vitezslav@samel.cz>
+Cc: linux-kernel@vger.kernel.org, "Nikita V. Youshchenko" <yoush@cs.msu.su>,
+        linuxpps@ml.enneenne.com, Rodolfo Giometti <giometti@enneenne.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Joonwoo Park <joonwpark81@gmail.com>
+Subject: Re: [PATCHv3 03/16] pps: fix race in PPS_FETCH handler
+Message-ID: <20100805183140.0735a7b7@desktopvm.lvknet>
+In-Reply-To: <20100805110750.GA10965@pc11.op.pod.cz>
+References: <cover.1280952801.git.lasaine@lvk.cs.msu.su>
+	<033148d225d9e4929fcc02ed8de0fcfa3637cffe.1280952801.git.lasaine@lvk.cs.msu.su>
+	<20100805051929.GA14413@pc11.op.pod.cz>
+	<20100805141951.2cce9490@desktopvm.lvknet>
+	<20100805110750.GA10965@pc11.op.pod.cz>
+Organization: LVK
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA256;
+ boundary="Sig_/.JW9qUV+TPiHR9wAP/493hC"; protocol="application/pgp-signature"
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 7:22 AM,  <david@lang.hm> wrote:
->
-> Ok, it is now sounding to me like there are two different (but somewhat
-> related) purposes that wakelocks are being used for
->
-> 1. deciding if the system should go to sleep now or not (what most of the
-> discussion has been about)
->
-> 2. narrowing the race between going to sleep and wakeup events.
->
-> I'm not sure it's possible to completely eliminate the race, even with
-> wakelocks there is some time between the time you last check if the wakelock
-> is set and when the hardware finishes responding to your commands to go to
-> sleep (Unless you can set a level-based interrupt that will wake you up as
-> soon as you finish going to sleep)
+--Sig_/.JW9qUV+TPiHR9wAP/493hC
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-The transition into sleep is race-free in the wakelock model -- either
-the wakeup event happens during the kernel suspend (and grabs a
-wakelock), in which case suspend is aborted (and not attempted again
-until there are once again no more wakelocks held), or the system
-fully suspends to its lowest power mode until a wakeup event brings it
-back out again.  Entry to lowest power mode must abort if a wakeup
-event/interrupt occurs while it's in process -- exactly how the
-handoff happens here is hardware dependent but in practice this is
-doable on just about any modern system.
+=D0=92 Thu, 5 Aug 2010 13:07:50 +0200
+Vitezslav Samel <vitezslav@samel.cz> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
 
-Brian
+> On Thu, Aug 05, 2010 at 02:19:51PM +0400, Alexander Gordeev wrote:
+> > Hi Vitezslav,
+> >=20
+> > =D0=92 Thu, 5 Aug 2010 07:19:29 +0200
+> > Vitezslav Samel <vitezslav@samel.cz> =D0=BF=D0=B8=D1=88=D0=B5=D1=82:
+> >=20
+> > > On Thu, Aug 05, 2010 at 01:06:40AM +0400, Alexander Gordeev wrote:
+> > > > There was a race in PPS_FETCH ioctl handler when several processes =
+want
+> > > > to obtain PPS data simultaneously using sleeping PPS_FETCH. They all
+> > > > sleep most of the time in the system call.
+> > > > With the old approach when the first process waiting on the pps que=
+ue
+> > > > is waken up it makes new system call right away and zeroes pps->go.=
+ So
+> > > > other processes continue to sleep. This is a clear race condition
+> > > > because of the global 'go' variable.
+> > > > With the new approach pps->last_ev holds some value increasing at e=
+ach
+> > > > PPS event. PPS_FETCH ioctl handler saves current value to the local
+> > > > variable at the very beginning so it can safely check that there is=
+ a
+> > > > new event by just comparing both variables.
+> > > >=20
+> > > > Signed-off-by: Alexander Gordeev <lasaine@lvk.cs.msu.su>
+> > > > ---
+> > > >  drivers/pps/kapi.c         |    4 ++--
+> > > >  drivers/pps/pps.c          |   10 +++++++---
+> > > >  include/linux/pps_kernel.h |    2 +-
+> > > >  3 files changed, 10 insertions(+), 6 deletions(-)
+> > > >=20
+> > > > diff --git a/drivers/pps/kapi.c b/drivers/pps/kapi.c
+> > > > index 55f3961..3f89f5e 100644
+> > > > --- a/drivers/pps/kapi.c
+> > > > +++ b/drivers/pps/kapi.c
+> > > > @@ -326,8 +326,8 @@ void pps_event(int source, struct pps_ktime *ts=
+, int event, void *data)
+> > > > =20
+> > > >  	/* Wake up if captured something */
+> > > >  	if (captured) {
+> > > > -		pps->go =3D ~0;
+> > > > -		wake_up_interruptible(&pps->queue);
+> > > > +		pps->last_ev++;
+> > > > +		wake_up_interruptible_all(&pps->queue);
+> > >=20
+> > >   What happens if pps->last_ev overflows? Seems to me it would freeze
+> > > pps.
+> >=20
+> > Yes, it will freeze the fds (if they don't use timeouts). But in normal
+> > circumstances, i.e. when pps_event is called twice a second, it will
+> > overflow after ~68 years of uninterrupted work. Well, it's the same
+> > kind of problem as an overflow of struct timespec. I thought it's not
+> > actually a problem. Should I use u64 instead of unsigned int or add a
+> > runtime check somewhere?
+>=20
+>   If we're using 1PPS it's ~68 years, but someone is trying 5PPS now
+> (it would overflow in ~13.6 years) - what if someone tries e.g. 100PPS?
+> It's not the same as overflow of struct timespec! I think it deserves
+> some treatment.
+
+You are right. :)
+I'll use u64 here then which should be enough for sure, ok?
+
+Thanks for the note!
+
+--=20
+  Alexander
+
+--Sig_/.JW9qUV+TPiHR9wAP/493hC
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iQEcBAEBCAAGBQJMWstMAAoJEElrwznyooJbJzoIAJOscXvPYXNcF+vnI4AhrmAQ
+jPHwQagZNE3pad9s2SuFpQWGq1RJb1opyIXuUs3sCfChyu6K52hY2sBdaOAGOiw/
+E99emaAtnm0nzNtfk3h4UHoCChz9F9ZuPdDqIHzXFtgg7A2YKadtK6FDkVwRbqT0
+RKEgto41++WvvXKfvWX8OjaRPUAf6nn31qWbZweaLyNTr9r2pNVPooTqqBgj9n+6
+YtKpw9QrSZihUfJrlB5fb5UNBLNKyqgMmejToFl3eA1Ad/x1LZu2mvq+whJBLM3b
+AXqN84gS97uzrSLbAoRoFSg0E4jeX0nnghoAiHupT7svf9dWZstwV74vSvt1xiE=
+=SDfI
+-----END PGP SIGNATURE-----
+
+--Sig_/.JW9qUV+TPiHR9wAP/493hC--
