@@ -1,48 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933969Ab0HERDE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 13:03:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933754Ab0HERCy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 13:02:54 -0400
-Date: Thu, 5 Aug 2010 19:02:23 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL REQUEST] UDF changes for 2.6.36
-Message-ID: <20100805170222.GF3535@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933978Ab0HEREa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 13:04:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31939 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750881Ab0HEREY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 13:04:24 -0400
+Date: Thu, 5 Aug 2010 10:04:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: nir.tzachar@gmail.com
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sam@ravnborg.org, randy.dunlap@oracle.com
+Subject: Re: [PATCH] nconfig: add search support
+Message-Id: <20100805100408.5b724047.randy.dunlap@oracle.com>
+In-Reply-To: <1280838492-9942-1-git-send-email-nir.tzachar@gmail.com>
+References: <AANLkTimyDwWtLbc682rW-QORjU0+r+txZO-iKAini1H1@mail.gmail.com>
+	<1280838492-9942-1-git-send-email-nir.tzachar@gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C5AEF0E.012C:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+On Tue,  3 Aug 2010 15:28:12 +0300 nir.tzachar@gmail.com wrote:
 
-  could you please pull from
+> From: Nir Tzachar <nir.tzachar@gmail.com>
+> 
+> Remove the old hotkeys feature, and replace by a regular string search.
+> Behaviour of search is as advised by Sam.
+> 
+> From nconfig help:
+> 
+> Searching: pressing '/' triggers search mode. nconfig performs a
+>            regular string compare, case insensitive, starting at
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-udf-2.6.git
-for_linus
+I would say: simple string compare
+"regular" has no meaning (at least for me) there.
 
-  to get two minor cleanups:
+>            the beginning of each menu line.\n"
+>            Pressing the up/down keys highlights the previous/next
+>            matching item. Backspace removes one character from the
+>            match string. Pressing either '/' again or ESC exits\
+>            search mode. All other keys behave normally.
+> 
+> Miscellaneous other changes (including Rundy's Justin's input).
 
-Huang Weiyi (1):
-      udf: remove duplicated #include
+Yes, the bottom menu and the typos are fixed.  Thanks.
 
-Justin P. Mattock (1):
-      udf: super.c Fix warning: variable 'sbi' set but not used
+However, I'm not finding this terribly useful, mostly due to it starting
+comparison at the beginning of each menu line.
 
-The diffstat is
+E.g., I'd like to be able to find "emulations" in the top-level menu here:
+	Executable file formats / Emulations  --->
 
- fs/udf/file.c  |    1 -
- fs/udf/super.c |    2 --
- 2 files changed, 0 insertions(+), 3 deletions(-)
+or I'd like to be able to find "crc" menu items in any sub-menu.
+Maybe I should just stick to config symbol searches.  I don't think it's all
+that likely that people will know how each menu line text begins.
 
-							Thanks
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+As for the search UI, I'd rather that it be presented like the symbol search,
+in a box, instead of just a single line at the top of the screen.
+
+
+> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
+> ---
+>  scripts/kconfig/nconf.c     |  350 +++++++++++++++++++++++++------------------
+>  scripts/kconfig/nconf.gui.c |   20 ++--
+>  scripts/kconfig/nconf.h     |    3 +-
+>  3 files changed, 213 insertions(+), 160 deletions(-)
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
