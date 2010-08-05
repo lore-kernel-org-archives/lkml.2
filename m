@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934866Ab0HEWoQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:44:16 -0400
-Received: from kroah.org ([198.145.64.141]:37624 "EHLO coco.kroah.org"
+	id S1760837Ab0HEWpF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:45:05 -0400
+Received: from kroah.org ([198.145.64.141]:37621 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933089Ab0HEWYC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:02 -0400
+	id S933081Ab0HEWYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:01 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 23/67] synclink: reworking locking a bit
-Date: Thu,  5 Aug 2010 15:22:50 -0700
-Message-Id: <1281047014-23429-23-git-send-email-gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 22/67] tty: Fix the digi acceleport driver NULL checks
+Date: Thu,  5 Aug 2010 15:22:49 -0700
+Message-Id: <1281047014-23429-22-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -22,131 +21,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Use the port mutex and port lock to fix the various races. The locking
-still isn't totally consistent but its better than before. Wants switching
-to the port helpers.
+This now refcounts but doesn't actually check the reference was obtained in
+all the places it should.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/synclink_gt.c |   12 +++++++++++-
- drivers/char/synclinkmp.c  |    9 ++++++++-
- 2 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/usb/serial/digi_acceleport.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-index 3c7ac6a..5a602eb 100644
---- a/drivers/char/synclink_gt.c
-+++ b/drivers/char/synclink_gt.c
-@@ -675,12 +675,14 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		goto cleanup;
- 	}
- 
-+	mutex_lock(&info->port.mutex);
- 	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
- 
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
- 		retval = -EBUSY;
- 		spin_unlock_irqrestore(&info->netlock, flags);
-+		mutex_unlock(&info->port.mutex);
- 		goto cleanup;
- 	}
- 	info->port.count++;
-@@ -692,7 +694,7 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		if (retval < 0)
- 			goto cleanup;
- 	}
--
-+	mutex_unlock(&info->port.mutex);
- 	retval = block_til_ready(tty, filp, info);
- 	if (retval) {
- 		DBGINFO(("%s block_til_ready rc=%d\n", info->device_name, retval));
-@@ -724,12 +726,14 @@ static void close(struct tty_struct *tty, struct file *filp)
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
- 
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -740,17 +744,23 @@ cleanup:
- static void hangup(struct tty_struct *tty)
+diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
+index fd35f73..b92070c 100644
+--- a/drivers/usb/serial/digi_acceleport.c
++++ b/drivers/usb/serial/digi_acceleport.c
+@@ -609,8 +609,10 @@ static void digi_wakeup_write_lock(struct work_struct *work)
+ static void digi_wakeup_write(struct usb_serial_port *port)
  {
- 	struct slgt_info *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 	DBGINFO(("%s hangup\n", info->device_name));
- 
- 	flush_buffer(tty);
-+
-+	mutex_lock(&info->port.mutex);
- 	shutdown(info);
- 
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);
- 
- 	wake_up_interruptible(&info->port.open_wait);
+ 	struct tty_struct *tty = tty_port_tty_get(&port->port);
+-	tty_wakeup(tty);
+-	tty_kref_put(tty);
++	if (tty) {
++		tty_wakeup(tty);
++		tty_kref_put(tty);
++	}
  }
-diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
-index 8da976b..ac447c7 100644
---- a/drivers/char/synclinkmp.c
-+++ b/drivers/char/synclinkmp.c
-@@ -812,13 +812,15 @@ static void close(struct tty_struct *tty, struct file *filp)
  
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
--		
+ 
+@@ -1682,7 +1684,7 @@ static int digi_read_inb_callback(struct urb *urb)
+ 		priv->dp_throttle_restart = 1;
+ 
+ 	/* receive data */
+-	if (opcode == DIGI_CMD_RECEIVE_DATA) {
++	if (tty && opcode == DIGI_CMD_RECEIVE_DATA) {
+ 		/* get flag from port_status */
+ 		flag = 0;
+ 
+@@ -1763,10 +1765,12 @@ static int digi_read_oob_callback(struct urb *urb)
+ 			return -1;
+ 
+ 		tty = tty_port_tty_get(&port->port);
 +
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
- 
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -834,6 +836,7 @@ cleanup:
- static void hangup(struct tty_struct *tty)
- {
- 	SLMP_INFO *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):%s hangup()\n",
-@@ -842,12 +845,16 @@ static void hangup(struct tty_struct *tty)
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 
-+	mutex_lock(&info->port.mutex);
- 	flush_buffer(tty);
- 	shutdown(info);
- 
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);
- 
- 	wake_up_interruptible(&info->port.open_wait);
- }
+ 		rts = 0;
+-		rts = tty->termios->c_cflag & CRTSCTS;
++		if (tty)
++			rts = tty->termios->c_cflag & CRTSCTS;
+ 		
+-		if (opcode == DIGI_CMD_READ_INPUT_SIGNALS) {
++		if (tty && opcode == DIGI_CMD_READ_INPUT_SIGNALS) {
+ 			spin_lock(&priv->dp_port_lock);
+ 			/* convert from digi flags to termiox flags */
+ 			if (val & DIGI_READ_INPUT_SIGNALS_CTS) {
 -- 
 1.7.2
 
