@@ -1,223 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367Ab0HEOjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:39:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57187 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933360Ab0HEOjq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:39:46 -0400
-Date: Thu, 5 Aug 2010 11:38:50 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 3/3] KVM: MMU: prefetch ptes when intercepted guest #PF
-Message-ID: <20100805143850.GA1648@amt.cnet>
-References: <4C58DE49.1020705@cn.fujitsu.com>
- <4C58DF26.3060305@cn.fujitsu.com>
- <4C58DF89.4080404@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C58DF89.4080404@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S933413Ab0HEOke (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:40:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41635 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933394Ab0HEOk2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 10:40:28 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH 3/9] kgdboc: Add call backs to allow kernel mode switching
+Date: Thu,  5 Aug 2010 09:39:52 -0500
+Message-Id: <1281019198-6777-4-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1281019198-6777-3-git-send-email-jason.wessel@windriver.com>
+References: <1281019198-6777-1-git-send-email-jason.wessel@windriver.com>
+ <1281019198-6777-2-git-send-email-jason.wessel@windriver.com>
+ <1281019198-6777-3-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 05 Aug 2010 14:40:06.0123 (UTC) FILETIME=[188EEBB0:01CB34AC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 11:33:29AM +0800, Xiao Guangrong wrote:
-> Support prefetch ptes when intercept guest #PF, avoid to #PF by later
-> access
-> 
-> If we meet any failure in the prefetch path, we will exit it and
-> not try other ptes to avoid become heavy path
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/mmu.c         |  107 +++++++++++++++++++++++++++++++++++++++++++-
->  arch/x86/kvm/paging_tmpl.h |   81 ++++++++++++++++++++++++++++++++-
->  2 files changed, 184 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 9c69725..4501734 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -89,6 +89,8 @@ module_param(oos_shadow, bool, 0644);
->  	}
->  #endif
->  
-> +#define PTE_PREFETCH_NUM		8
-> +
->  #define PT_FIRST_AVAIL_BITS_SHIFT 9
->  #define PT64_SECOND_AVAIL_BITS_SHIFT 52
->  
-> @@ -403,7 +405,7 @@ static int mmu_topup_memory_caches(struct kvm_vcpu *vcpu)
->  	if (r)
->  		goto out;
->  	r = mmu_topup_memory_cache(&vcpu->arch.mmu_rmap_desc_cache,
-> -				   rmap_desc_cache, 4);
-> +				   rmap_desc_cache, 4 + PTE_PREFETCH_NUM);
->  	if (r)
->  		goto out;
->  	r = mmu_topup_memory_cache_page(&vcpu->arch.mmu_page_cache, 8);
-> @@ -2090,6 +2092,108 @@ static void nonpaging_new_cr3(struct kvm_vcpu *vcpu)
->  {
->  }
->  
-> +static struct kvm_memory_slot *
-> +pte_prefetch_gfn_to_memslot(struct kvm_vcpu *vcpu, gfn_t gfn, bool no_dirty_log)
-> +{
-> +	struct kvm_memory_slot *slot;
-> +
-> +	slot = gfn_to_memslot(vcpu->kvm, gfn);
-> +	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
-> +	      (no_dirty_log && slot->dirty_bitmap))
-> +		slot = NULL;
+Add the kms keyword processing to kgdboc and the callbacks to invoke
+console switching when ever kgdboc is started with "kgdboc=kms,kbd".
 
-Why is this no_dirty_log optimization worthwhile?
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/serial/kgdboc.c |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
 
-> +
-> +	return slot;
-> +}
-> +
-> +static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
-> +				     bool no_dirty_log)
-> +{
-> +	struct kvm_memory_slot *slot;
-> +	unsigned long hva;
-> +
-> +	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, no_dirty_log);
-> +	if (!slot) {
-> +		get_page(bad_page);
-> +		return page_to_pfn(bad_page);
-> +	}
-> +
-> +	hva = gfn_to_hva_memslot(slot, gfn);
-> +
-> +	return hva_to_pfn_atomic(vcpu->kvm, hva);
-> +}
-> +
-> +static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
-> +				    struct kvm_mmu_page *sp,
-> +				    u64 *start, u64 *end)
-> +{
-> +	struct page *pages[PTE_PREFETCH_NUM];
-> +	struct kvm_memory_slot *slot;
-> +	unsigned hva, access = sp->role.access;
-> +	int i, ret, npages = end - start;
-> +	gfn_t gfn;
-> +
-> +	gfn = kvm_mmu_page_get_gfn(sp, start - sp->spt);
-> +	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, access & ACC_WRITE_MASK);
-> +	if (!slot || slot->npages - (gfn - slot->base_gfn) != npages)
-> +		return -1;
-> +
-> +	hva = gfn_to_hva_memslot(slot, gfn);
-> +	ret = __get_user_pages_fast(hva, npages, 1, pages);
-> +	if (ret <= 0)
-> +		return -1;
+diff --git a/drivers/serial/kgdboc.c b/drivers/serial/kgdboc.c
+index a9a94ae..39f9a1a 100644
+--- a/drivers/serial/kgdboc.c
++++ b/drivers/serial/kgdboc.c
+@@ -17,6 +17,7 @@
+ #include <linux/kdb.h>
+ #include <linux/tty.h>
+ #include <linux/console.h>
++#include <linux/vt_kern.h>
+ 
+ #define MAX_CONFIG_LEN		40
+ 
+@@ -31,6 +32,7 @@ static struct kparam_string kps = {
+ 	.maxlen			= MAX_CONFIG_LEN,
+ };
+ 
++static int kgdboc_use_kms;  /* 1 if we use kernel mode switching */
+ static struct tty_driver	*kgdb_tty_driver;
+ static int			kgdb_tty_line;
+ 
+@@ -104,6 +106,12 @@ static int configure_kgdboc(void)
+ 	kgdboc_io_ops.is_console = 0;
+ 	kgdb_tty_driver = NULL;
+ 
++	kgdboc_use_kms = 0;
++	if (strncmp(cptr, "kms,", 4) == 0) {
++		cptr += 4;
++		kgdboc_use_kms = 1;
++	}
++
+ 	if (kgdboc_register_kbd(&cptr))
+ 		goto do_register;
+ 
+@@ -201,8 +209,14 @@ static int param_set_kgdboc_var(const char *kmessage, struct kernel_param *kp)
+ 	return configure_kgdboc();
+ }
+ 
++static int dbg_restore_graphics;
++
+ static void kgdboc_pre_exp_handler(void)
+ {
++	if (!dbg_restore_graphics && kgdboc_use_kms) {
++		dbg_restore_graphics = 1;
++		con_debug_enter(vc_cons[fg_console].d);
++	}
+ 	/* Increment the module count when the debugger is active */
+ 	if (!kgdb_connected)
+ 		try_module_get(THIS_MODULE);
+@@ -213,6 +227,10 @@ static void kgdboc_post_exp_handler(void)
+ 	/* decrement the module count when the debugger detaches */
+ 	if (!kgdb_connected)
+ 		module_put(THIS_MODULE);
++	if (kgdboc_use_kms && dbg_restore_graphics) {
++		dbg_restore_graphics = 0;
++		con_debug_leave();
++	}
+ }
+ 
+ static struct kgdb_io kgdboc_io_ops = {
+-- 
+1.6.4.rc1
 
-Better do one at a time with hva_to_pfn_atomic. Or, if you measure that
-its worthwhile, do on a separate patch (using a helper as discussed
-previously).
-
-> +
-> +	for (i = 0; i < ret; i++, gfn++, start++)
-> +		mmu_set_spte(vcpu, start, ACC_ALL,
-> +			     access, 0, 0, 1, NULL,
-> +			     sp->role.level, gfn,
-> +			     page_to_pfn(pages[i]), true, true);
-> +
-> +	return ret == npages ? 0 : -1;
-> +}
-> +
-> +static void __direct_pte_prefetch(struct kvm_vcpu *vcpu,
-> +				  struct kvm_mmu_page *sp, u64 *sptep)
-> +{
-> +	u64 *spte, *start = NULL;
-> +	int i;
-> +
-> +	WARN_ON(!sp->role.direct);
-> +
-> +	i = (sptep - sp->spt) & ~(PTE_PREFETCH_NUM - 1);
-> +	spte = sp->spt + i;
-> +
-> +	for (i = 0; i < PTE_PREFETCH_NUM; i++, spte++) {
-> +		if (*spte != shadow_trap_nonpresent_pte || spte == sptep) {
-> +			if (!start)
-> +				continue;
-> +			if (direct_pte_prefetch_many(vcpu, sp, start, spte) < 0)
-> +				break;
-> +			start = NULL;
-> +		} else if (!start)
-> +			start = spte;
-> +	}
-> +}
-> +
-> +static void direct_pte_prefetch(struct kvm_vcpu *vcpu, u64 *sptep)
-> +{
-> +	struct kvm_mmu_page *sp;
-> +
-> +	/*
-> +	 * Since it's no accessed bit on EPT, it's no way to
-> +	 * distinguish between actually accessed translations
-> +	 * and prefetched, so disable pte prefetch if EPT is
-> +	 * enabled.
-> +	 */
-> +	if (!shadow_accessed_mask)
-> +		return;
-> +
-> +	sp = page_header(__pa(sptep));
-> +	if (sp->role.level > PT_PAGE_TABLE_LEVEL)
-> +		return;
-> +
-> +	__direct_pte_prefetch(vcpu, sp, sptep);
-> +}
-> +
->  static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
->  			int level, gfn_t gfn, pfn_t pfn)
->  {
-> @@ -2103,6 +2207,7 @@ static int __direct_map(struct kvm_vcpu *vcpu, gpa_t v, int write,
->  			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL, ACC_ALL,
->  				     0, write, 1, &pt_write,
->  				     level, gfn, pfn, false, true);
-> +			direct_pte_prefetch(vcpu, iterator.sptep);
->  			++vcpu->stat.pf_fixed;
->  			break;
->  		}
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 51ef909..114c17d 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -67,6 +67,7 @@ struct guest_walker {
->  	int level;
->  	gfn_t table_gfn[PT_MAX_FULL_LEVELS];
->  	pt_element_t ptes[PT_MAX_FULL_LEVELS];
-> +	pt_element_t prefetch_ptes[PTE_PREFETCH_NUM];
->  	gpa_t pte_gpa[PT_MAX_FULL_LEVELS];
->  	unsigned pt_access;
->  	unsigned pte_access;
-> @@ -302,14 +303,87 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
->  static bool FNAME(gpte_changed)(struct kvm_vcpu *vcpu,
->  				struct guest_walker *gw, int level)
->  {
-> -	int r;
->  	pt_element_t curr_pte;
-> -
-> -	r = kvm_read_guest_atomic(vcpu->kvm, gw->pte_gpa[level - 1],
-> +	gpa_t base_gpa, pte_gpa = gw->pte_gpa[level - 1];
-> +	u64 mask;
-> +	int r, index;
-> +
-> +	if (level == PT_PAGE_TABLE_LEVEL) {
-> +		mask = PTE_PREFETCH_NUM * sizeof(pt_element_t) - 1;
-> +		base_gpa = pte_gpa & ~mask;
-> +		index = (pte_gpa - base_gpa) / sizeof(pt_element_t);
-> +
-> +		r = kvm_read_guest_atomic(vcpu->kvm, base_gpa,
-> +				gw->prefetch_ptes, sizeof(gw->prefetch_ptes));
-> +		curr_pte = gw->prefetch_ptes[index];
-
-This can slowdown a single non-prefetchable pte fault. Maybe its
-irrelevant, but please have kvm_read_guest_atomic in the first patch and
-then later optimize, its easier to review and bisectable.
