@@ -1,141 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab0HEOms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 10:42:48 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41633 "EHLO
+	id S933498Ab0HEOmx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 10:42:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41629 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933392Ab0HEOk1 (ORCPT
+	with ESMTP id S933389Ab0HEOkY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 10:40:27 -0400
+	Thu, 5 Aug 2010 10:40:24 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 4/9] fb: add hooks to handle KDB enter/exit
-Date: Thu,  5 Aug 2010 09:39:53 -0500
-Message-Id: <1281019198-6777-5-git-send-email-jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
+Subject: [GIT PULL] kgdb,kdb,kms for 2.6.36 (2 of 2)
+Date: Thu,  5 Aug 2010 09:39:49 -0500
+Message-Id: <1281019198-6777-1-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1281019198-6777-4-git-send-email-jason.wessel@windriver.com>
-References: <1281019198-6777-1-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-2-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-3-git-send-email-jason.wessel@windriver.com>
- <1281019198-6777-4-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 05 Aug 2010 14:40:06.0904 (UTC) FILETIME=[19061780:01CB34AC]
+X-OriginalArrivalTime: 05 Aug 2010 14:40:03.0185 (UTC) FILETIME=[16CE9E10:01CB34AC]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
+Linus please pull the kms-merge branch which merges the atomic kernel
+mode setting hooks into the kernel debugger.
 
-Add fb ops to handle enter/exit of the kernel debugger.  If present, the
-fb core will register them with KGDB and they'll be called when the
-debugger is entered and exited.  The new functions are responsible for
-switching to an appropriate debug framebuffer and restoring the
-interrupted state at exit time.
+git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git kms-merge
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+--- Notes for Linus ---
+
+All the code patches are acked or signed off by Jesse Barnes as this
+patch set was co-developed and tested by each of us.  These patches
+are not in the drm git tree due to the dependence to kgdb/kdb patches.
+
+--- End Notes for Linus ---
+
+This patch set stacks on top of the kgdb / kdb patches and focuses on
+further extending kdb to accommodate atomic kernel mode setting (kms).
+The idea is that simply setting "kgdboc=kms,kbd" as a kernel argument
+will allow you to catch a panic, kernel fault, or jump into the kernel
+debugger shell from a graphics console session.
+
+At the moment only the Intel i915 class video devices are supported,
+but the API is generic and allows for other kms based drivers to
+enable atomic mode setting.
+
+Thanks,
+Jason.
+
 ---
- drivers/video/console/fbcon.c |   26 ++++++++++++++++++++++++++
- drivers/video/console/fbcon.h |    1 +
- include/linux/fb.h            |   13 +++++++++++++
- 3 files changed, 40 insertions(+), 0 deletions(-)
+The following changes since commit 9f64eb95d0cfd50675067d7a76f9d8efc53dc21c:
+  Jason Wessel (1):
+        debug_core,kdb: fix crash when arch does not have single step
 
-diff --git a/drivers/video/console/fbcon.c b/drivers/video/console/fbcon.c
-index b0a3fa0..3b3f574 100644
---- a/drivers/video/console/fbcon.c
-+++ b/drivers/video/console/fbcon.c
-@@ -2342,6 +2342,30 @@ static int fbcon_blank(struct vc_data *vc, int blank, int mode_switch)
- 	return 0;
- }
- 
-+static int fbcon_debug_enter(struct vc_data *vc)
-+{
-+	struct fb_info *info = registered_fb[con2fb_map[vc->vc_num]];
-+	struct fbcon_ops *ops = info->fbcon_par;
-+
-+	ops->save_graphics = ops->graphics;
-+	ops->graphics = 0;
-+	if (info->fbops->fb_debug_enter)
-+		info->fbops->fb_debug_enter(info);
-+	fbcon_set_palette(vc, color_table);
-+	return 0;
-+}
-+
-+static int fbcon_debug_leave(struct vc_data *vc)
-+{
-+	struct fb_info *info = registered_fb[con2fb_map[vc->vc_num]];
-+	struct fbcon_ops *ops = info->fbcon_par;
-+
-+	ops->graphics = ops->save_graphics;
-+	if (info->fbops->fb_debug_leave)
-+		info->fbops->fb_debug_leave(info);
-+	return 0;
-+}
-+
- static int fbcon_get_font(struct vc_data *vc, struct console_font *font)
- {
- 	u8 *fontdata = vc->vc_font.data;
-@@ -3276,6 +3300,8 @@ static const struct consw fb_con = {
- 	.con_screen_pos 	= fbcon_screen_pos,
- 	.con_getxy 		= fbcon_getxy,
- 	.con_resize             = fbcon_resize,
-+	.con_debug_enter	= fbcon_debug_enter,
-+	.con_debug_leave	= fbcon_debug_leave,
- };
- 
- static struct notifier_block fbcon_event_notifier = {
-diff --git a/drivers/video/console/fbcon.h b/drivers/video/console/fbcon.h
-index 89a3468..6bd2e0c 100644
---- a/drivers/video/console/fbcon.h
-+++ b/drivers/video/console/fbcon.h
-@@ -74,6 +74,7 @@ struct fbcon_ops {
- 	int    cursor_reset;
- 	int    blank_state;
- 	int    graphics;
-+	int    save_graphics; /* for debug enter/leave */
- 	int    flags;
- 	int    rotate;
- 	int    cur_rotate;
-diff --git a/include/linux/fb.h b/include/linux/fb.h
-index e7445df..0c5659c 100644
---- a/include/linux/fb.h
-+++ b/include/linux/fb.h
-@@ -3,6 +3,9 @@
- 
- #include <linux/types.h>
- #include <linux/i2c.h>
-+#ifdef __KERNEL__
-+#include <linux/kgdb.h>
-+#endif /* __KERNEL__ */
- 
- /* Definitions of frame buffers						*/
- 
-@@ -607,6 +610,12 @@ struct fb_deferred_io {
-  * LOCKING NOTE: those functions must _ALL_ be called with the console
-  * semaphore held, this is the only suitable locking mechanism we have
-  * in 2.6. Some may be called at interrupt time at this point though.
-+ *
-+ * The exception to this is the debug related hooks.  Putting the fb
-+ * into a debug state (e.g. flipping to the kernel console) and restoring
-+ * it must be done in a lock-free manner, so low level drivers should
-+ * keep track of the initial console (if applicable) and may need to
-+ * perform direct, unlocked hardware writes in these hooks.
-  */
- 
- struct fb_ops {
-@@ -676,6 +685,10 @@ struct fb_ops {
- 
- 	/* teardown any resources to do with this framebuffer */
- 	void (*fb_destroy)(struct fb_info *info);
-+
-+	/* called at KDB enter and leave time to prepare the console */
-+	int (*fb_debug_enter)(struct fb_info *info);
-+	int (*fb_debug_leave)(struct fb_info *info);
- };
- 
- #ifdef CONFIG_FB_TILEBLITTING
--- 
-1.6.4.rc1
+are available in the git repository at:
 
+  . kms-merge
+
+Jason Wessel (5):
+      vt,console,kdb: automatically set kdb LINES variable
+      kgdboc: Add call backs to allow kernel mode switching
+      i915: when kgdb is active display compression should be off
+      drm_fb_helper: Preserve capability to use atomic kms
+      kgdb,docs: Update the kgdb docs to include kms
+
+Jesse Barnes (4):
+      vt,console,kdb: implement atomic console enter/leave functions
+      fb: add hooks to handle KDB enter/exit
+      drm: add KGDB/KDB support
+      drm/i915: use new fb debug hooks
+
+ Documentation/DocBook/kgdb.tmpl      |  108 +++++++++++++++++++++++++++++++---
+ Documentation/kernel-parameters.txt  |    9 ++-
+ drivers/char/vt.c                    |   78 ++++++++++++++++++++++++
+ drivers/gpu/drm/drm_fb_helper.c      |   76 +++++++++++++++++++++++-
+ drivers/gpu/drm/i915/intel_display.c |  102 +++++++++++++++++++++++++++++++-
+ drivers/gpu/drm/i915/intel_fb.c      |    2 +
+ drivers/serial/kgdboc.c              |   18 ++++++
+ drivers/video/console/fbcon.c        |   26 ++++++++
+ drivers/video/console/fbcon.h        |    1 +
+ include/drm/drm_crtc_helper.h        |    2 +
+ include/drm/drm_fb_helper.h          |    5 ++
+ include/linux/console.h              |   13 ++++
+ include/linux/fb.h                   |   13 ++++
+ include/linux/kdb.h                  |    4 +
+ kernel/debug/kdb/kdb_private.h       |    2 -
+ 15 files changed, 444 insertions(+), 15 deletions(-)
