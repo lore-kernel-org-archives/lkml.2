@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760883Ab0HEWYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:24:35 -0400
-Received: from kroah.org ([198.145.64.141]:37627 "EHLO coco.kroah.org"
+	id S934269Ab0HEWe4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:34:56 -0400
+Received: from kroah.org ([198.145.64.141]:37739 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933208Ab0HEWYE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:04 -0400
+	id S1760878Ab0HEWYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:34 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 24/67] tty: serial - fix various misuses/mishandlings of port->tty
-Date: Thu,  5 Aug 2010 15:22:51 -0700
-Message-Id: <1281047014-23429-24-git-send-email-gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 48/67] serial: max3107: Abstract out the platform specific bits
+Date: Thu,  5 Aug 2010 15:23:15 -0700
+Message-Id: <1281047014-23429-48-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
@@ -22,359 +21,1169 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Make it robust against hang up events. In most cases we can do this simply
-by passing the right things in the first place.
+At the moment there is only one platform type supported and there is is
+hard wired, but with these changes the infrastructure is now there for
+anyone else to provide methods for their hardware.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/serial_core.c |  109 +++++++++++++++++++++++-------------------
- 1 files changed, 60 insertions(+), 49 deletions(-)
+ drivers/serial/Kconfig        |   21 ++-
+ drivers/serial/Makefile       |    1 +
+ drivers/serial/max3107-aava.c |  344 ++++++++++++++++++++++++++++++++++
+ drivers/serial/max3107.c      |  413 +++++++++--------------------------------
+ drivers/serial/max3107.h      |   85 ++++++++-
+ include/linux/serial_core.h   |    4 +
+ 6 files changed, 531 insertions(+), 337 deletions(-)
+ create mode 100644 drivers/serial/max3107-aava.c
 
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 7f28307..12ee7e0 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -58,7 +58,7 @@ static struct lock_class_key port_lock_key;
- #define uart_console(port)	(0)
- #endif
+diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
+index fd40627..c34c217 100644
+--- a/drivers/serial/Kconfig
++++ b/drivers/serial/Kconfig
+@@ -542,20 +542,29 @@ config SERIAL_S5PV210
+ 	help
+ 	  Serial port support for Samsung's S5P Family of SoC's
  
--static void uart_change_speed(struct uart_state *state,
-+static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
- 					struct ktermios *old_termios);
- static void uart_wait_until_sent(struct tty_struct *tty, int timeout);
- static void uart_change_pm(struct uart_state *state, int pm_state);
-@@ -137,7 +137,7 @@ uart_update_mctrl(struct uart_port *port, unsigned int set, unsigned int clear)
-  * Startup the port.  This will be called once per open.  All calls
-  * will be serialised by the per-port mutex.
-  */
--static int uart_startup(struct uart_state *state, int init_hw)
-+static int uart_startup(struct tty_struct *tty, struct uart_state *state, int init_hw)
- {
- 	struct uart_port *uport = state->uart_port;
- 	struct tty_port *port = &state->port;
-@@ -152,7 +152,7 @@ static int uart_startup(struct uart_state *state, int init_hw)
- 	 * once we have successfully opened the port.  Also set
- 	 * up the tty->alt_speed kludge
- 	 */
--	set_bit(TTY_IO_ERROR, &port->tty->flags);
-+	set_bit(TTY_IO_ERROR, &tty->flags);
- 
- 	if (uport->type == PORT_UNKNOWN)
- 		return 0;
-@@ -177,26 +177,26 @@ static int uart_startup(struct uart_state *state, int init_hw)
- 			/*
- 			 * Initialise the hardware port settings.
- 			 */
--			uart_change_speed(state, NULL);
-+			uart_change_speed(tty, state, NULL);
- 
- 			/*
- 			 * Setup the RTS and DTR signals once the
- 			 * port is open and ready to respond.
- 			 */
--			if (port->tty->termios->c_cflag & CBAUD)
-+			if (tty->termios->c_cflag & CBAUD)
- 				uart_set_mctrl(uport, TIOCM_RTS | TIOCM_DTR);
- 		}
- 
- 		if (port->flags & ASYNC_CTS_FLOW) {
- 			spin_lock_irq(&uport->lock);
- 			if (!(uport->ops->get_mctrl(uport) & TIOCM_CTS))
--				port->tty->hw_stopped = 1;
-+				tty->hw_stopped = 1;
- 			spin_unlock_irq(&uport->lock);
- 		}
- 
- 		set_bit(ASYNCB_INITIALIZED, &port->flags);
- 
--		clear_bit(TTY_IO_ERROR, &port->tty->flags);
-+		clear_bit(TTY_IO_ERROR, &tty->flags);
- 	}
- 
- 	if (retval && capable(CAP_SYS_ADMIN))
-@@ -210,11 +210,10 @@ static int uart_startup(struct uart_state *state, int init_hw)
-  * DTR is dropped if the hangup on close termio flag is on.  Calls to
-  * uart_shutdown are serialised by the per-port semaphore.
-  */
--static void uart_shutdown(struct uart_state *state)
-+static void uart_shutdown(struct tty_struct *tty, struct uart_state *state)
- {
- 	struct uart_port *uport = state->uart_port;
- 	struct tty_port *port = &state->port;
--	struct tty_struct *tty = port->tty;
- 
- 	/*
- 	 * Set the TTY IO error marker
-@@ -430,11 +429,10 @@ uart_get_divisor(struct uart_port *port, unsigned int baud)
- EXPORT_SYMBOL(uart_get_divisor);
- 
- /* FIXME: Consistent locking policy */
--static void
--uart_change_speed(struct uart_state *state, struct ktermios *old_termios)
-+static void uart_change_speed(struct tty_struct *tty, struct uart_state *state,
-+					struct ktermios *old_termios)
- {
- 	struct tty_port *port = &state->port;
--	struct tty_struct *tty = port->tty;
- 	struct uart_port *uport = state->uart_port;
- 	struct ktermios *termios;
- 
-@@ -463,8 +461,8 @@ uart_change_speed(struct uart_state *state, struct ktermios *old_termios)
- 	uport->ops->set_termios(uport, termios, old_termios);
- }
- 
--static inline int
--__uart_put_char(struct uart_port *port, struct circ_buf *circ, unsigned char c)
-+static inline int __uart_put_char(struct uart_port *port,
-+				struct circ_buf *circ, unsigned char c)
- {
- 	unsigned long flags;
- 	int ret = 0;
-@@ -494,8 +492,8 @@ static void uart_flush_chars(struct tty_struct *tty)
- 	uart_start(tty);
- }
- 
--static int
--uart_write(struct tty_struct *tty, const unsigned char *buf, int count)
-+static int uart_write(struct tty_struct *tty,
-+					const unsigned char *buf, int count)
- {
- 	struct uart_state *state = tty->driver_data;
- 	struct uart_port *port;
-@@ -675,7 +673,7 @@ static int uart_get_info(struct uart_state *state,
- 	return 0;
- }
- 
--static int uart_set_info(struct uart_state *state,
-+static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
- 			 struct serial_struct __user *newinfo)
- {
- 	struct serial_struct new_serial;
-@@ -770,7 +768,7 @@ static int uart_set_info(struct uart_state *state,
- 		 * We need to shutdown the serial port at the old
- 		 * port/type/irq combination.
- 		 */
--		uart_shutdown(state);
-+		uart_shutdown(tty, state);
- 	}
- 
- 	if (change_port) {
-@@ -869,25 +867,27 @@ static int uart_set_info(struct uart_state *state,
- 				       "is deprecated.\n", current->comm,
- 				       tty_name(port->tty, buf));
- 			}
--			uart_change_speed(state, NULL);
-+			uart_change_speed(tty, state, NULL);
- 		}
- 	} else
--		retval = uart_startup(state, 1);
-+		retval = uart_startup(tty, state, 1);
-  exit:
- 	mutex_unlock(&port->mutex);
- 	return retval;
- }
- 
--
--/*
-- * uart_get_lsr_info - get line status register info.
-- * Note: uart_ioctl protects us against hangups.
-+/**
-+ *	uart_get_lsr_info	-	get line status register info
-+ *	@tty: tty associated with the UART
-+ *	@state: UART being queried
-+ *	@value: returned modem value
-+ *
-+ *	Note: uart_ioctl protects us against hangups.
-  */
--static int uart_get_lsr_info(struct uart_state *state,
--			     unsigned int __user *value)
-+static int uart_get_lsr_info(struct tty_struct *tty,
-+			struct uart_state *state, unsigned int __user *value)
- {
- 	struct uart_port *uport = state->uart_port;
--	struct tty_port *port = &state->port;
- 	unsigned int result;
- 
- 	result = uport->ops->tx_empty(uport);
-@@ -900,7 +900,7 @@ static int uart_get_lsr_info(struct uart_state *state,
- 	 */
- 	if (uport->x_char ||
- 	    ((uart_circ_chars_pending(&state->xmit) > 0) &&
--	     !port->tty->stopped && !port->tty->hw_stopped))
-+	     !tty->stopped && !tty->hw_stopped))
- 		result &= ~TIOCSER_TEMT;
- 
- 	return put_user(result, value);
-@@ -961,7 +961,7 @@ static int uart_break_ctl(struct tty_struct *tty, int break_state)
- 	return 0;
- }
- 
--static int uart_do_autoconfig(struct uart_state *state)
-+static int uart_do_autoconfig(struct tty_struct *tty,struct uart_state *state)
- {
- 	struct uart_port *uport = state->uart_port;
- 	struct tty_port *port = &state->port;
-@@ -980,7 +980,7 @@ static int uart_do_autoconfig(struct uart_state *state)
- 
- 	ret = -EBUSY;
- 	if (tty_port_users(port) == 1) {
--		uart_shutdown(state);
-+		uart_shutdown(tty, state);
- 
- 		/*
- 		 * If we already have a port type configured,
-@@ -999,7 +999,7 @@ static int uart_do_autoconfig(struct uart_state *state)
- 		 */
- 		uport->ops->config_port(uport, flags);
- 
--		ret = uart_startup(state, 1);
-+		ret = uart_startup(tty, state, 1);
- 	}
- 	mutex_unlock(&port->mutex);
- 	return ret;
-@@ -1122,11 +1122,11 @@ uart_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd,
- 		break;
- 
- 	case TIOCSSERIAL:
--		ret = uart_set_info(state, uarg);
-+		ret = uart_set_info(tty, state, uarg);
- 		break;
- 
- 	case TIOCSERCONFIG:
--		ret = uart_do_autoconfig(state);
-+		ret = uart_do_autoconfig(tty, state);
- 		break;
- 
- 	case TIOCSERGWILD: /* obsolete */
-@@ -1172,7 +1172,7 @@ uart_ioctl(struct tty_struct *tty, struct file *filp, unsigned int cmd,
- 	 */
- 	switch (cmd) {
- 	case TIOCSERGETLSR: /* Get line status register */
--		ret = uart_get_lsr_info(state, uarg);
-+		ret = uart_get_lsr_info(tty, state, uarg);
- 		break;
- 
- 	default: {
-@@ -1219,7 +1219,7 @@ static void uart_set_termios(struct tty_struct *tty,
- 		return;
- 	}
- 
--	uart_change_speed(state, old_termios);
-+	uart_change_speed(tty, state, old_termios);
- 
- 	/* Handle transition to B0 status */
- 	if ((old_termios->c_cflag & CBAUD) && !(cflag & CBAUD))
-@@ -1335,7 +1335,7 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
- 		uart_wait_until_sent(tty, uport->timeout);
- 	}
- 
--	uart_shutdown(state);
-+	uart_shutdown(tty, state);
- 	uart_flush_buffer(tty);
- 
- 	tty_ldisc_flush(tty);
-@@ -1436,7 +1436,7 @@ static void uart_hangup(struct tty_struct *tty)
- 	mutex_lock(&port->mutex);
- 	if (port->flags & ASYNC_NORMAL_ACTIVE) {
- 		uart_flush_buffer(tty);
--		uart_shutdown(state);
-+		uart_shutdown(tty, state);
- 		port->count = 0;
- 		clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
- 		tty_port_tty_set(port, NULL);
-@@ -1446,15 +1446,19 @@ static void uart_hangup(struct tty_struct *tty)
- 	mutex_unlock(&port->mutex);
- }
- 
--/*
-- * Copy across the serial console cflag setting into the termios settings
-- * for the initial open of the port.  This allows continuity between the
-- * kernel settings, and the settings init adopts when it opens the port
-- * for the first time.
-+/**
-+ *	uart_update_termios	-	update the terminal hw settings
-+ *	@tty: tty associated with UART
-+ *	@state: UART to update
-+ *
-+ *	Copy across the serial console cflag setting into the termios settings
-+ *	for the initial open of the port.  This allows continuity between the
-+ *	kernel settings, and the settings init adopts when it opens the port
-+ *	for the first time.
-  */
--static void uart_update_termios(struct uart_state *state)
-+static void uart_update_termios(struct tty_struct *tty,
-+						struct uart_state *state)
- {
--	struct tty_struct *tty = state->port.tty;
- 	struct uart_port *port = state->uart_port;
- 
- 	if (uart_console(port) && port->cons->cflag) {
-@@ -1471,7 +1475,7 @@ static void uart_update_termios(struct uart_state *state)
- 		/*
- 		 * Make termios settings take effect.
- 		 */
--		uart_change_speed(state, NULL);
-+		uart_change_speed(tty, state, NULL);
- 
- 		/*
- 		 * And finally enable the RTS and DTR signals.
-@@ -1668,7 +1672,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
- 	/*
- 	 * Start up the serial port.
- 	 */
--	retval = uart_startup(state, 0);
-+	retval = uart_startup(tty, state, 0);
- 
- 	/*
- 	 * If we succeeded, wait until the port is ready.
-@@ -1683,7 +1687,7 @@ static int uart_open(struct tty_struct *tty, struct file *filp)
- 	if (retval == 0 && !(port->flags & ASYNC_NORMAL_ACTIVE)) {
- 		set_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
- 
--		uart_update_termios(state);
-+		uart_update_termios(tty, state);
- 	}
- 
- fail:
-@@ -2010,9 +2014,13 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
- 	struct tty_port *port = &state->port;
- 	struct device *tty_dev;
- 	struct uart_match match = {uport, drv};
-+	struct tty_struct *tty;
- 
- 	mutex_lock(&port->mutex);
- 
-+	/* Must be inside the mutex lock until we convert to tty_port */
-+	tty = port->tty;
 +
- 	tty_dev = device_find_child(uport->dev, &match, serial_match_port);
- 	if (device_may_wakeup(tty_dev)) {
- 		enable_irq_wake(uport->irq);
-@@ -2105,9 +2113,12 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
- 		ops->set_mctrl(uport, 0);
- 		spin_unlock_irq(&uport->lock);
- 		if (console_suspend_enabled || !uart_console(uport)) {
-+			/* Protected by port mutex for now */
-+			struct tty_struct *tty = port->tty;
- 			ret = ops->startup(uport);
- 			if (ret == 0) {
--				uart_change_speed(state, NULL);
-+				if (tty)
-+					uart_change_speed(tty, state, NULL);
- 				spin_lock_irq(&uport->lock);
- 				ops->set_mctrl(uport, uport->mctrl);
- 				ops->start_tx(uport);
-@@ -2119,7 +2130,7 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
- 				 * Clear the "initialized" flag so we won't try
- 				 * to call the low level drivers shutdown method.
- 				 */
--				uart_shutdown(state);
-+				uart_shutdown(tty, state);
- 			}
- 		}
++config SERIAL_MAX3100
++	tristate "MAX3100 support"
++	depends on SPI
++	select SERIAL_CORE
++	help
++	  MAX3100 chip support
++
+ config SERIAL_MAX3107
+ 	tristate "MAX3107 support"
+-	depends on SPI && GPIOLIB
++	depends on SPI
+ 	select SERIAL_CORE
+-	default y
+ 	help
+ 	  MAX3107 chip support
  
+-config SERIAL_MAX3100
+-	tristate "MAX3100 support"
+-	depends on SPI
++config SERIAL_MAX3107_AAVA
++	tristate "MAX3107 AAVA platform support"
++	depends on X86_MRST && SERIAL_MAX3107 && GPIOLIB
+ 	select SERIAL_CORE
+ 	help
+-	  MAX3100 chip support
++	  Support for the MAX3107 chip configuration found on the AAVA
++	  platform. Includes the extra initialisation and GPIO support
++	  neded for this device.
+ 
+ config SERIAL_DZ
+ 	bool "DECstation DZ serial driver"
+diff --git a/drivers/serial/Makefile b/drivers/serial/Makefile
+index 4cd0c06..424067a 100644
+--- a/drivers/serial/Makefile
++++ b/drivers/serial/Makefile
+@@ -47,6 +47,7 @@ obj-$(CONFIG_SERIAL_S3C6400) += s3c6400.o
+ obj-$(CONFIG_SERIAL_S5PV210) += s5pv210.o
+ obj-$(CONFIG_SERIAL_MAX3100) += max3100.o
+ obj-$(CONFIG_SERIAL_MAX3107) += max3107.o
++obj-$(CONFIG_SERIAL_MAX3107_AAVA) += max3107-aava.o
+ obj-$(CONFIG_SERIAL_IP22_ZILOG) += ip22zilog.o
+ obj-$(CONFIG_SERIAL_MUX) += mux.o
+ obj-$(CONFIG_SERIAL_68328) += 68328serial.o
+diff --git a/drivers/serial/max3107-aava.c b/drivers/serial/max3107-aava.c
+new file mode 100644
+index 0000000..a1fe304
+--- /dev/null
++++ b/drivers/serial/max3107-aava.c
+@@ -0,0 +1,344 @@
++/*
++ *  max3107.c - spi uart protocol driver for Maxim 3107
++ *  Based on max3100.c
++ *	by Christian Pellegrin <chripell@evolware.org>
++ *  and	max3110.c
++ *	by Feng Tang <feng.tang@intel.com>
++ *
++ *  Copyright (C) Aavamobile 2009
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
++ *
++ *  You should have received a copy of the GNU General Public License
++ *  along with this program; if not, write to the Free Software
++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ */
++
++#include <linux/delay.h>
++#include <linux/device.h>
++#include <linux/serial_core.h>
++#include <linux/serial.h>
++#include <linux/spi/spi.h>
++#include <linux/freezer.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/sfi.h>
++#include <asm/mrst.h>
++#include "max3107.h"
++
++/* GPIO direction to input function */
++static int max3107_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
++{
++	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
++	u16 buf[1];		/* Buffer for SPI transfer */
++
++	if (offset >= MAX3107_GPIO_COUNT) {
++		dev_err(&s->spi->dev, "Invalid GPIO\n");
++		return -EINVAL;
++	}
++
++	/* Read current GPIO configuration register */
++	buf[0] = MAX3107_GPIOCFG_REG;
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
++		dev_err(&s->spi->dev, "SPI transfer GPIO read failed\n");
++		return -EIO;
++	}
++	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
++
++	/* Set GPIO to input */
++	buf[0] &= ~(0x0001 << offset);
++
++	/* Write new GPIO configuration register value */
++	buf[0] |= (MAX3107_WRITE_BIT | MAX3107_GPIOCFG_REG);
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, NULL, 2)) {
++		dev_err(&s->spi->dev, "SPI transfer GPIO write failed\n");
++		return -EIO;
++	}
++	return 0;
++}
++
++/* GPIO direction to output function */
++static int max3107_gpio_direction_out(struct gpio_chip *chip, unsigned offset,
++					int value)
++{
++	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
++	u16 buf[2];	/* Buffer for SPI transfers */
++
++	if (offset >= MAX3107_GPIO_COUNT) {
++		dev_err(&s->spi->dev, "Invalid GPIO\n");
++		return -EINVAL;
++	}
++
++	/* Read current GPIO configuration and data registers */
++	buf[0] = MAX3107_GPIOCFG_REG;
++	buf[1] = MAX3107_GPIODATA_REG;
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 4)) {
++		dev_err(&s->spi->dev, "SPI transfer gpio failed\n");
++		return -EIO;
++	}
++	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
++	buf[1] &= MAX3107_SPI_RX_DATA_MASK;
++
++	/* Set GPIO to output */
++	buf[0] |= (0x0001 << offset);
++	/* Set value */
++	if (value)
++		buf[1] |= (0x0001 << offset);
++	else
++		buf[1] &= ~(0x0001 << offset);
++
++	/* Write new GPIO configuration and data register values */
++	buf[0] |= (MAX3107_WRITE_BIT | MAX3107_GPIOCFG_REG);
++	buf[1] |= (MAX3107_WRITE_BIT | MAX3107_GPIODATA_REG);
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, NULL, 4)) {
++		dev_err(&s->spi->dev,
++			"SPI transfer for GPIO conf data w failed\n");
++		return -EIO;
++	}
++	return 0;
++}
++
++/* GPIO value query function */
++static int max3107_gpio_get(struct gpio_chip *chip, unsigned offset)
++{
++	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
++	u16 buf[1];	/* Buffer for SPI transfer */
++
++	if (offset >= MAX3107_GPIO_COUNT) {
++		dev_err(&s->spi->dev, "Invalid GPIO\n");
++		return -EINVAL;
++	}
++
++	/* Read current GPIO data register */
++	buf[0] = MAX3107_GPIODATA_REG;
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
++		dev_err(&s->spi->dev, "SPI transfer GPIO data r failed\n");
++		return -EIO;
++	}
++	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
++
++	/* Return value */
++	return buf[0] & (0x0001 << offset);
++}
++
++/* GPIO value set function */
++static void max3107_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
++{
++	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
++	u16 buf[2];	/* Buffer for SPI transfers */
++
++	if (offset >= MAX3107_GPIO_COUNT) {
++		dev_err(&s->spi->dev, "Invalid GPIO\n");
++		return;
++	}
++
++	/* Read current GPIO configuration registers*/
++	buf[0] = MAX3107_GPIODATA_REG;
++	buf[1] = MAX3107_GPIOCFG_REG;
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 4)) {
++		dev_err(&s->spi->dev,
++			"SPI transfer for GPIO data and config read failed\n");
++		return;
++	}
++	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
++	buf[1] &= MAX3107_SPI_RX_DATA_MASK;
++
++	if (!(buf[1] & (0x0001 << offset))) {
++		/* Configured as input, can't set value */
++		dev_warn(&s->spi->dev,
++				"Trying to set value for input GPIO\n");
++		return;
++	}
++
++	/* Set value */
++	if (value)
++		buf[0] |= (0x0001 << offset);
++	else
++		buf[0] &= ~(0x0001 << offset);
++
++	/* Write new GPIO data register value */
++	buf[0] |= (MAX3107_WRITE_BIT | MAX3107_GPIODATA_REG);
++	/* Perform SPI transfer */
++	if (max3107_rw(s, (u8 *)buf, NULL, 2))
++		dev_err(&s->spi->dev, "SPI transfer GPIO data w failed\n");
++}
++
++/* GPIO chip data */
++static struct gpio_chip max3107_gpio_chip = {
++	.owner			= THIS_MODULE,
++	.direction_input	= max3107_gpio_direction_in,
++	.direction_output	= max3107_gpio_direction_out,
++	.get			= max3107_gpio_get,
++	.set			= max3107_gpio_set,
++	.can_sleep		= 1,
++	.base			= MAX3107_GPIO_BASE,
++	.ngpio			= MAX3107_GPIO_COUNT,
++};
++
++/**
++ *	max3107_aava_reset	-	reset on AAVA systems
++ *	@spi: The SPI device we are probing
++ *
++ *	Reset the device ready for probing.
++ */
++
++static int max3107_aava_reset(struct spi_device *spi)
++{
++	/* Reset the chip */
++	if (gpio_request(MAX3107_RESET_GPIO, "max3107")) {
++		pr_err("Requesting RESET GPIO failed\n");
++		return -EIO;
++	}
++	if (gpio_direction_output(MAX3107_RESET_GPIO, 0)) {
++		pr_err("Setting RESET GPIO to 0 failed\n");
++		gpio_free(MAX3107_RESET_GPIO);
++		return -EIO;
++	}
++	msleep(MAX3107_RESET_DELAY);
++	if (gpio_direction_output(MAX3107_RESET_GPIO, 1)) {
++		pr_err("Setting RESET GPIO to 1 failed\n");
++		gpio_free(MAX3107_RESET_GPIO);
++		return -EIO;
++	}
++	gpio_free(MAX3107_RESET_GPIO);
++	msleep(MAX3107_WAKEUP_DELAY);
++	return 0;
++}
++
++static int max3107_aava_configure(struct max3107_port *s)
++{
++	int retval;
++
++	/* Initialize GPIO chip data */
++	s->chip = max3107_gpio_chip;
++	s->chip.label = s->spi->modalias;
++	s->chip.dev = &s->spi->dev;
++
++	/* Add GPIO chip */
++	retval = gpiochip_add(&s->chip);
++	if (retval) {
++		dev_err(&s->spi->dev, "Adding GPIO chip failed\n");
++		return retval;
++	}
++
++	/* Temporary fix for EV2 boot problems, set modem reset to 0 */
++	max3107_gpio_direction_out(&s->chip, 3, 0);
++	return 0;
++}
++
++#if 0
++/* This will get enabled once we have the board stuff merged for this
++   specific case */
++
++static const struct baud_table brg13_ext[] = {
++	{ 300,    MAX3107_BRG13_B300 },
++	{ 600,    MAX3107_BRG13_B600 },
++	{ 1200,   MAX3107_BRG13_B1200 },
++	{ 2400,   MAX3107_BRG13_B2400 },
++	{ 4800,   MAX3107_BRG13_B4800 },
++	{ 9600,   MAX3107_BRG13_B9600 },
++	{ 19200,  MAX3107_BRG13_B19200 },
++	{ 57600,  MAX3107_BRG13_B57600 },
++	{ 115200, MAX3107_BRG13_B115200 },
++	{ 230400, MAX3107_BRG13_B230400 },
++	{ 460800, MAX3107_BRG13_B460800 },
++	{ 921600, MAX3107_BRG13_B921600 },
++	{ 0, 0 }
++};
++
++static void max3107_aava_init(struct max3107_port *s)
++{
++	/*override for AAVA SC specific*/
++	if (mrst_platform_id() == MRST_PLATFORM_AAVA_SC) {
++		if (get_koski_build_id() <= KOSKI_EV2)
++			if (s->ext_clk) {
++				s->brg_cfg = MAX3107_BRG13_B9600;
++				s->baud_tbl = (struct baud_table *)brg13_ext;
++			}
++	}
++}
++#endif
++
++static int __devexit max3107_aava_remove(struct spi_device *spi)
++{
++	struct max3107_port *s = dev_get_drvdata(&spi->dev);
++
++	/* Remove GPIO chip */
++	if (gpiochip_remove(&s->chip))
++		dev_warn(&spi->dev, "Removing GPIO chip failed\n");
++
++	/* Then do the default remove */
++	return max3107_remove(spi);
++}
++
++/* Platform data */
++static struct max3107_plat aava_plat_data = {
++	.loopback               = 0,
++	.ext_clk                = 1,
++/*	.init			= max3107_aava_init, */
++	.configure		= max3107_aava_configure,
++	.hw_suspend		= max3107_hw_susp,
++	.polled_mode            = 0,
++	.poll_time              = 0,
++};
++
++
++static int __devinit max3107_probe_aava(struct spi_device *spi)
++{
++	int err = max3107_aava_reset(spi);
++	if (err < 0)
++		return err;
++	return max3107_probe(spi, &aava_plat_data);
++}
++
++/* Spi driver data */
++static struct spi_driver max3107_driver = {
++	.driver = {
++		.name		= "aava-max3107",
++		.bus		= &spi_bus_type,
++		.owner		= THIS_MODULE,
++	},
++	.probe		= max3107_probe_aava,
++	.remove		= __devexit_p(max3107_aava_remove),
++	.suspend	= max3107_suspend,
++	.resume		= max3107_resume,
++};
++
++/* Driver init function */
++static int __init max3107_init(void)
++{
++	return spi_register_driver(&max3107_driver);
++}
++
++/* Driver exit function */
++static void __exit max3107_exit(void)
++{
++	spi_unregister_driver(&max3107_driver);
++}
++
++module_init(max3107_init);
++module_exit(max3107_exit);
++
++MODULE_DESCRIPTION("MAX3107 driver");
++MODULE_AUTHOR("Aavamobile");
++MODULE_ALIAS("aava-max3107-spi");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/serial/max3107.c b/drivers/serial/max3107.c
+index a96ddd3..67283c1 100644
+--- a/drivers/serial/max3107.c
++++ b/drivers/serial/max3107.c
+@@ -31,98 +31,12 @@
+ #include <linux/device.h>
+ #include <linux/serial_core.h>
+ #include <linux/serial.h>
++#include <linux/gpio.h>
+ #include <linux/spi/spi.h>
+ #include <linux/freezer.h>
+-#include <linux/platform_device.h>
+-#include <linux/gpio.h>
+-#include <linux/sfi.h>
+-#include <asm/mrst.h>
+ #include "max3107.h"
+ 
+-struct baud_table {
+-	int baud;
+-	u32 new_brg;
+-};
+-
+-struct max3107_port {
+-	/* UART port structure */
+-	struct uart_port port;
+-
+-	/* SPI device structure */
+-	struct spi_device *spi;
+-
+-	/* GPIO chip stucture */
+-	struct gpio_chip chip;
+-
+-	/* Workqueue that does all the magic */
+-	struct workqueue_struct *workqueue;
+-	struct work_struct work;
+-
+-	/* Lock for shared data */
+-	spinlock_t data_lock;
+-
+-	/* Device configuration */
+-	int ext_clk;		/* 1 if external clock used */
+-	int loopback;		/* Current loopback mode state */
+-	int baud;			/* Current baud rate */
+-
+-	/* State flags */
+-	int suspended;		/* Indicates suspend mode */
+-	int tx_fifo_empty;	/* Flag for TX FIFO state */
+-	int rx_enabled;		/* Flag for receiver state */
+-	int tx_enabled;		/* Flag for transmitter state */
+-
+-	u16 irqen_reg;		/* Current IRQ enable register value */
+-	/* Shared data */
+-	u16 mode1_reg;		/* Current mode1 register value*/
+-	int mode1_commit;	/* Flag for setting new mode1 register value */
+-	u16 lcr_reg;		/* Current LCR register value */
+-	int lcr_commit;		/* Flag for setting new LCR register value */
+-	u32 brg_cfg;		/* Current Baud rate generator config  */
+-	int brg_commit;		/* Flag for setting new baud rate generator
+-				 * config
+-				 */
+-	struct baud_table *baud_tbl;
+-	int handle_irq;		/* Indicates that IRQ should be handled */
+-
+-	/* Rx buffer and str*/
+-	u16 *rxbuf;
+-	u8  *rxstr;
+-	/* Tx buffer*/
+-	u16 *txbuf;
+-};
+-
+-/* Platform data structure */
+-struct max3107_plat {
+-	/* Loopback mode enable */
+-	int loopback;
+-	/* External clock enable */
+-	int ext_clk;
+-	/* HW suspend function */
+-	void (*max3107_hw_suspend) (struct max3107_port *s, int suspend);
+-	/* Polling mode enable */
+-	int polled_mode;
+-	/* Polling period if polling mode enabled */
+-	int poll_time;
+-};
+-
+-static struct baud_table brg13_ext[] = {
+-	{ 300,    MAX3107_BRG13_B300 },
+-	{ 600,    MAX3107_BRG13_B600 },
+-	{ 1200,   MAX3107_BRG13_B1200 },
+-	{ 2400,   MAX3107_BRG13_B2400 },
+-	{ 4800,   MAX3107_BRG13_B4800 },
+-	{ 9600,   MAX3107_BRG13_B9600 },
+-	{ 19200,  MAX3107_BRG13_B19200 },
+-	{ 57600,  MAX3107_BRG13_B57600 },
+-	{ 115200, MAX3107_BRG13_B115200 },
+-	{ 230400, MAX3107_BRG13_B230400 },
+-	{ 460800, MAX3107_BRG13_B460800 },
+-	{ 921600, MAX3107_BRG13_B921600 },
+-	{ 0, 0 }
+-};
+-
+-static struct baud_table brg26_ext[] = {
++static const struct baud_table brg26_ext[] = {
+ 	{ 300,    MAX3107_BRG26_B300 },
+ 	{ 600,    MAX3107_BRG26_B600 },
+ 	{ 1200,   MAX3107_BRG26_B1200 },
+@@ -138,7 +52,7 @@ static struct baud_table brg26_ext[] = {
+ 	{ 0, 0 }
+ };
+ 
+-static struct baud_table brg13_int[] = {
++static const struct baud_table brg13_int[] = {
+ 	{ 300,    MAX3107_BRG13_IB300 },
+ 	{ 600,    MAX3107_BRG13_IB600 },
+ 	{ 1200,   MAX3107_BRG13_IB1200 },
+@@ -157,7 +71,7 @@ static struct baud_table brg13_int[] = {
+ static u32 get_new_brg(int baud, struct max3107_port *s)
+ {
+ 	int i;
+-	struct baud_table *baud_tbl = s->baud_tbl;
++	const struct baud_table *baud_tbl = s->baud_tbl;
+ 
+ 	for (i = 0; i < 13; i++) {
+ 		if (baud == baud_tbl[i].baud)
+@@ -168,7 +82,7 @@ static u32 get_new_brg(int baud, struct max3107_port *s)
+ }
+ 
+ /* Perform SPI transfer for write/read of device register(s) */
+-static int max3107_rw(struct max3107_port *s, u8 *tx, u8 *rx, int len)
++int max3107_rw(struct max3107_port *s, u8 *tx, u8 *rx, int len)
+ {
+ 	struct spi_message spi_msg;
+ 	struct spi_transfer spi_xfer;
+@@ -213,6 +127,7 @@ static int max3107_rw(struct max3107_port *s, u8 *tx, u8 *rx, int len)
+ #endif
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(max3107_rw);
+ 
+ /* Puts received data to circular buffer */
+ static void put_data_to_circ_buf(struct max3107_port *s, unsigned char *data,
+@@ -611,16 +526,10 @@ static void max3107_register_init(struct max3107_port *s)
+ 		s->brg_cfg = MAX3107_BRG13_IB9600;
+ 		s->baud_tbl = (struct baud_table *)brg13_int;
+ 	}
+-#if 0
+-	/*override for AAVA SC specific*/
+-	if (mrst_platform_id() == MRST_PLATFORM_AAVA_SC) {
+-		if (get_koski_build_id() <= KOSKI_EV2)
+-			if (s->ext_clk) {
+-				s->brg_cfg = MAX3107_BRG13_B9600;
+-				s->baud_tbl = (struct baud_table *)brg13_ext;
+-			}
+-	}
+-#endif
++
++	if (s->pdata->init)
++		s->pdata->init(s);
++
+ 	buf[0] = (MAX3107_WRITE_BIT | MAX3107_BRGDIVMSB_REG)
+ 		| ((s->brg_cfg >> 16) & MAX3107_SPI_TX_DATA_MASK);
+ 	buf[1] = (MAX3107_WRITE_BIT | MAX3107_BRGDIVLSB_REG)
+@@ -734,7 +643,7 @@ static irqreturn_t max3107_irq(int irqno, void *dev_id)
+  * used but that would mess the GPIOs
+  *
+  */
+-static void max3107_hw_susp(struct max3107_port *s, int suspend)
++void max3107_hw_susp(struct max3107_port *s, int suspend)
+ {
+ 	pr_debug("enter, suspend %d\n", suspend);
+ 
+@@ -752,6 +661,7 @@ static void max3107_hw_susp(struct max3107_port *s, int suspend)
+ 		max3107_set_sleep(s, MAX3107_DISABLE_AUTOSLEEP);
+ 	}
+ }
++EXPORT_SYMBOL_GPL(max3107_hw_susp);
+ 
+ /* Modem status IRQ enabling */
+ static void max3107_enable_ms(struct uart_port *port)
+@@ -899,10 +809,8 @@ static void max3107_shutdown(struct uart_port *port)
+ {
+ 	struct max3107_port *s = container_of(port, struct max3107_port, port);
+ 
+-	if (s->suspended) {
+-		/* Resume HW */
+-		max3107_hw_susp(s, 0);
+-	}
++	if (s->suspended && s->pdata->hw_suspend)
++		s->pdata->hw_suspend(s, 0);
+ 
+ 	/* Free the interrupt */
+ 	free_irq(s->spi->irq, s);
+@@ -915,7 +823,8 @@ static void max3107_shutdown(struct uart_port *port)
+ 	}
+ 
+ 	/* Suspend HW */
+-	max3107_hw_susp(s, 1);
++	if (s->pdata->hw_suspend)
++		s->pdata->hw_suspend(s, 1);
+ }
+ 
+ /* Port startup function */
+@@ -941,7 +850,8 @@ static int max3107_startup(struct uart_port *port)
+ 	}
+ 
+ 	/* Resume HW */
+-	max3107_hw_susp(s, 0);
++	if (s->pdata->hw_suspend)
++		s->pdata->hw_suspend(s, 0);
+ 
+ 	/* Init registers */
+ 	max3107_register_init(s);
+@@ -973,16 +883,14 @@ static int max3107_request_port(struct uart_port *port)
+ static void max3107_config_port(struct uart_port *port, int flags)
+ {
+ 	struct max3107_port *s = container_of(port, struct max3107_port, port);
+-
+-	/* Use PORT_MAX3100 since we are at least int the same series */
+-	s->port.type = PORT_MAX3100;
++	s->port.type = PORT_MAX3107;
+ }
+ 
+ /* Port verify function */
+ static int max3107_verify_port(struct uart_port *port,
+ 				struct serial_struct *ser)
+ {
+-	if (ser->type == PORT_UNKNOWN || ser->type == PORT_MAX3100)
++	if (ser->type == PORT_UNKNOWN || ser->type == PORT_MAX3107)
+ 		return 0;
+ 
+ 	return -EINVAL;
+@@ -1000,157 +908,6 @@ static void max3107_break_ctl(struct uart_port *port, int break_state)
+ 	/* We don't support break control, do nothing */
+ }
+ 
+-/* GPIO direction to input function */
+-static int max3107_gpio_direction_in(struct gpio_chip *chip, unsigned offset)
+-{
+-	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
+-	u16 buf[1];		/* Buffer for SPI transfer */
+-
+-	if (offset >= MAX3107_GPIO_COUNT) {
+-		dev_err(&s->spi->dev, "Invalid GPIO\n");
+-		return -EINVAL;
+-	}
+-
+-	/* Read current GPIO configuration register */
+-	buf[0] = MAX3107_GPIOCFG_REG;
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
+-		dev_err(&s->spi->dev, "SPI transfer GPIO read failed\n");
+-		return -EIO;
+-	}
+-	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
+-
+-	/* Set GPIO to input */
+-	buf[0] &= ~(0x0001 << offset);
+-
+-	/* Write new GPIO configuration register value */
+-	buf[0] |= (MAX3107_WRITE_BIT | MAX3107_GPIOCFG_REG);
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, NULL, 2)) {
+-		dev_err(&s->spi->dev, "SPI transfer GPIO write failed\n");
+-		return -EIO;
+-	}
+-	return 0;
+-}
+-
+-/* GPIO direction to output function */
+-static int max3107_gpio_direction_out(struct gpio_chip *chip, unsigned offset,
+-					int value)
+-{
+-	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
+-	u16 buf[2];	/* Buffer for SPI transfers */
+-
+-	if (offset >= MAX3107_GPIO_COUNT) {
+-		dev_err(&s->spi->dev, "Invalid GPIO\n");
+-		return -EINVAL;
+-	}
+-
+-	/* Read current GPIO configuration and data registers */
+-	buf[0] = MAX3107_GPIOCFG_REG;
+-	buf[1] = MAX3107_GPIODATA_REG;
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 4)) {
+-		dev_err(&s->spi->dev, "SPI transfer gpio failed\n");
+-		return -EIO;
+-	}
+-	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
+-	buf[1] &= MAX3107_SPI_RX_DATA_MASK;
+-
+-	/* Set GPIO to output */
+-	buf[0] |= (0x0001 << offset);
+-	/* Set value */
+-	if (value)
+-		buf[1] |= (0x0001 << offset);
+-	else
+-		buf[1] &= ~(0x0001 << offset);
+-
+-	/* Write new GPIO configuration and data register values */
+-	buf[0] |= (MAX3107_WRITE_BIT | MAX3107_GPIOCFG_REG);
+-	buf[1] |= (MAX3107_WRITE_BIT | MAX3107_GPIODATA_REG);
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, NULL, 4)) {
+-		dev_err(&s->spi->dev,
+-			"SPI transfer for GPIO conf data w failed\n");
+-		return -EIO;
+-	}
+-	return 0;
+-}
+-
+-/* GPIO value query function */
+-static int max3107_gpio_get(struct gpio_chip *chip, unsigned offset)
+-{
+-	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
+-	u16 buf[1];	/* Buffer for SPI transfer */
+-
+-	if (offset >= MAX3107_GPIO_COUNT) {
+-		dev_err(&s->spi->dev, "Invalid GPIO\n");
+-		return -EINVAL;
+-	}
+-
+-	/* Read current GPIO data register */
+-	buf[0] = MAX3107_GPIODATA_REG;
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 2)) {
+-		dev_err(&s->spi->dev, "SPI transfer GPIO data r failed\n");
+-		return -EIO;
+-	}
+-	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
+-
+-	/* Return value */
+-	return buf[0] & (0x0001 << offset);
+-}
+-
+-/* GPIO value set function */
+-static void max3107_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+-{
+-	struct max3107_port *s = container_of(chip, struct max3107_port, chip);
+-	u16 buf[2];	/* Buffer for SPI transfers */
+-
+-	if (offset >= MAX3107_GPIO_COUNT) {
+-		dev_err(&s->spi->dev, "Invalid GPIO\n");
+-		return;
+-	}
+-
+-	/* Read current GPIO configuration registers*/
+-	buf[0] = MAX3107_GPIODATA_REG;
+-	buf[1] = MAX3107_GPIOCFG_REG;
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, (u8 *)buf, 4)) {
+-		dev_err(&s->spi->dev,
+-			"SPI transfer for GPIO data and config read failed\n");
+-		return;
+-	}
+-	buf[0] &= MAX3107_SPI_RX_DATA_MASK;
+-	buf[1] &= MAX3107_SPI_RX_DATA_MASK;
+-
+-	if (!(buf[1] & (0x0001 << offset))) {
+-		/* Configured as input, can't set value */
+-		dev_warn(&s->spi->dev,
+-				"Trying to set value for input GPIO\n");
+-		return;
+-	}
+-
+-	/* Set value */
+-	if (value)
+-		buf[0] |= (0x0001 << offset);
+-	else
+-		buf[0] &= ~(0x0001 << offset);
+-
+-	/* Write new GPIO data register value */
+-	buf[0] |= (MAX3107_WRITE_BIT | MAX3107_GPIODATA_REG);
+-	/* Perform SPI transfer */
+-	if (max3107_rw(s, (u8 *)buf, NULL, 2))
+-		dev_err(&s->spi->dev, "SPI transfer GPIO data w failed\n");
+-}
+-
+-/* Platform data */
+-static struct max3107_plat max3107_plat_data = {
+-	.loopback               = 0,
+-	.ext_clk                = 1,
+-	.max3107_hw_suspend     = &max3107_hw_susp,
+-	.polled_mode            = 0,
+-	.poll_time              = 0,
+-};
+ 
+ /* Port functions */
+ static struct uart_ops max3107_ops = {
+@@ -1180,52 +937,48 @@ static struct uart_driver max3107_uart_driver = {
+ 	.nr             = 1,
+ };
+ 
+-/* GPIO chip data */
+-static struct gpio_chip max3107_gpio_chip = {
+-	.owner			= THIS_MODULE,
+-	.direction_input	= max3107_gpio_direction_in,
+-	.direction_output	= max3107_gpio_direction_out,
+-	.get			= max3107_gpio_get,
+-	.set			= max3107_gpio_set,
+-	.can_sleep		= 1,
+-	.base			= MAX3107_GPIO_BASE,
+-	.ngpio			= MAX3107_GPIO_COUNT,
++static int driver_registered = 0;
++
++
++
++/* 'Generic' platform data */
++static struct max3107_plat generic_plat_data = {
++	.loopback               = 0,
++	.ext_clk                = 1,
++	.hw_suspend		= max3107_hw_susp,
++	.polled_mode            = 0,
++	.poll_time              = 0,
+ };
+-/* Device probe function */
+-static int __devinit max3107_probe(struct spi_device *spi)
++
++
++/*******************************************************************/
++
++/**
++ *	max3107_probe		-	SPI bus probe entry point
++ *	@spi: the spi device
++ *
++ *	SPI wants us to probe this device and if appropriate claim it.
++ *	Perform any platform specific requirements and then initialise
++ *	the device.
++ */
++
++int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata)
+ {
+ 	struct max3107_port *s;
+-	struct max3107_plat *pdata = &max3107_plat_data;
+ 	u16 buf[2];	/* Buffer for SPI transfers */
+ 	int retval;
+ 
+ 	pr_info("enter max3107 probe\n");
+ 
+-	/* Reset the chip */
+-	if (gpio_request(MAX3107_RESET_GPIO, "max3107")) {
+-		pr_err("Requesting RESET GPIO failed\n");
+-		return -EIO;
+-	}
+-	if (gpio_direction_output(MAX3107_RESET_GPIO, 0)) {
+-		pr_err("Setting RESET GPIO to 0 failed\n");
+-		gpio_free(MAX3107_RESET_GPIO);
+-		return -EIO;
+-	}
+-	msleep(MAX3107_RESET_DELAY);
+-	if (gpio_direction_output(MAX3107_RESET_GPIO, 1)) {
+-		pr_err("Setting RESET GPIO to 1 failed\n");
+-		gpio_free(MAX3107_RESET_GPIO);
+-		return -EIO;
+-	}
+-	gpio_free(MAX3107_RESET_GPIO);
+-	msleep(MAX3107_WAKEUP_DELAY);
+-
+ 	/* Allocate port structure */
+ 	s = kzalloc(sizeof(*s), GFP_KERNEL);
+ 	if (!s) {
+ 		pr_err("Allocating port structure failed\n");
+ 		return -ENOMEM;
+ 	}
++
++	s->pdata = pdata;
++
+ 	/* SPI Rx buffer
+ 	 * +2 for RX FIFO interrupt
+ 	 * disabling and RX level query
+@@ -1298,10 +1051,13 @@ static int __devinit max3107_probe(struct spi_device *spi)
+ 	}
+ 
+ 	/* Register UART driver */
+-	retval = uart_register_driver(&max3107_uart_driver);
+-	if (retval) {
+-		dev_err(&s->spi->dev, "Registering UART driver failed\n");
+-		return retval;
++	if (!driver_registered) {
++		retval = uart_register_driver(&max3107_uart_driver);
++		if (retval) {
++			dev_err(&s->spi->dev, "Registering UART driver failed\n");
++			return retval;
++		}
++		driver_registered = 1;
+ 	}
+ 
+ 	/* Initialize UART port data */
+@@ -1312,8 +1068,7 @@ static int __devinit max3107_probe(struct spi_device *spi)
+ 	s->port.uartclk = 9600;
+ 	s->port.flags = UPF_SKIP_TEST | UPF_BOOT_AUTOCONF;
+ 	s->port.irq = s->spi->irq;
+-	/* Use PORT_MAX3100 since we are at least in the same series */
+-	s->port.type = PORT_MAX3100;
++	s->port.type = PORT_MAX3107;
+ 
+ 	/* Add UART port */
+ 	retval = uart_add_one_port(&max3107_uart_driver, &s->port);
+@@ -1322,44 +1077,31 @@ static int __devinit max3107_probe(struct spi_device *spi)
+ 		return retval;
+ 	}
+ 
+-	/* Initialize GPIO chip data */
+-	s->chip = max3107_gpio_chip;
+-	s->chip.label = spi->modalias;
+-	s->chip.dev = &spi->dev;
+-
+-	/* Add GPIO chip */
+-	retval = gpiochip_add(&s->chip);
+-	if (retval) {
+-		dev_err(&s->spi->dev, "Adding GPIO chip failed\n");
+-		return retval;
++	if (pdata->configure) {
++		retval = pdata->configure(s);
++		if (retval < 0)
++			return retval;
+ 	}
+ 
+-	/* Temporary fix for EV2 boot problems, set modem reset to 0 */
+-	max3107_gpio_direction_out(&s->chip, 3, 0);
+-
+ 	/* Go to suspend mode */
+-	max3107_hw_susp(s, 1);
++	if (pdata->hw_suspend)
++		pdata->hw_suspend(s, 1);
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(max3107_probe);
+ 
+ /* Driver remove function */
+-static int __devexit max3107_remove(struct spi_device *spi)
++int max3107_remove(struct spi_device *spi)
+ {
+ 	struct max3107_port *s = dev_get_drvdata(&spi->dev);
+ 
+ 	pr_info("enter max3107 remove\n");
+ 
+-	/* Remove GPIO chip */
+-	if (gpiochip_remove(&s->chip))
+-		dev_warn(&s->spi->dev, "Removing GPIO chip failed\n");
+-
+ 	/* Remove port */
+ 	if (uart_remove_one_port(&max3107_uart_driver, &s->port))
+ 		dev_warn(&s->spi->dev, "Removing UART port failed\n");
+ 
+-	/* Unregister UART driver */
+-	uart_unregister_driver(&max3107_uart_driver);
+ 
+ 	/* Free TxRx buffer */
+ 	kfree(s->rxbuf);
+@@ -1371,9 +1113,10 @@ static int __devexit max3107_remove(struct spi_device *spi)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(max3107_remove);
+ 
+ /* Driver suspend function */
+-static int max3107_suspend(struct spi_device *spi, pm_message_t state)
++int max3107_suspend(struct spi_device *spi, pm_message_t state)
+ {
+ #ifdef CONFIG_PM
+ 	struct max3107_port *s = dev_get_drvdata(&spi->dev);
+@@ -1384,13 +1127,15 @@ static int max3107_suspend(struct spi_device *spi, pm_message_t state)
+ 	uart_suspend_port(&max3107_uart_driver, &s->port);
+ 
+ 	/* Go to suspend mode */
+-	max3107_hw_susp(s, 1);
++	if (s->pdata->hw_suspend)
++		s->pdata->hw_suspend(s, 1);
+ #endif	/* CONFIG_PM */
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(max3107_suspend);
+ 
+ /* Driver resume function */
+-static int max3107_resume(struct spi_device *spi)
++int max3107_resume(struct spi_device *spi)
+ {
+ #ifdef CONFIG_PM
+ 	struct max3107_port *s = dev_get_drvdata(&spi->dev);
+@@ -1398,13 +1143,20 @@ static int max3107_resume(struct spi_device *spi)
+ 	pr_debug("enter resume\n");
+ 
+ 	/* Resume from suspend */
+-	max3107_hw_susp(s, 0);
++	if (s->pdata->hw_suspend)
++		s->pdata->hw_suspend(s, 0);
+ 
+ 	/* Resume UART port */
+ 	uart_resume_port(&max3107_uart_driver, &s->port);
+ #endif	/* CONFIG_PM */
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(max3107_resume);
++
++static int max3107_probe_generic(struct spi_device *spi)
++{
++	return max3107_probe(spi, &generic_plat_data);
++}
+ 
+ /* Spi driver data */
+ static struct spi_driver max3107_driver = {
+@@ -1413,7 +1165,7 @@ static struct spi_driver max3107_driver = {
+ 		.bus		= &spi_bus_type,
+ 		.owner		= THIS_MODULE,
+ 	},
+-	.probe		= max3107_probe,
++	.probe		= max3107_probe_generic,
+ 	.remove		= __devexit_p(max3107_remove),
+ 	.suspend	= max3107_suspend,
+ 	.resume		= max3107_resume,
+@@ -1430,6 +1182,9 @@ static int __init max3107_init(void)
+ static void __exit max3107_exit(void)
+ {
+ 	pr_info("enter max3107 exit\n");
++	/* Unregister UART driver */
++	if (driver_registered)
++		uart_unregister_driver(&max3107_uart_driver);
+ 	spi_unregister_driver(&max3107_driver);
+ }
+ 
+@@ -1438,5 +1193,5 @@ module_exit(max3107_exit);
+ 
+ MODULE_DESCRIPTION("MAX3107 driver");
+ MODULE_AUTHOR("Aavamobile");
+-MODULE_ALIAS("max3107-spi-uart");
+-MODULE_LICENSE("GPLv2");
++MODULE_ALIAS("max3107-spi");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/serial/max3107.h b/drivers/serial/max3107.h
+index a5625d1..72b3041 100644
+--- a/drivers/serial/max3107.h
++++ b/drivers/serial/max3107.h
+@@ -10,8 +10,8 @@
+  * (at your option) any later version.
+  */
+ 
+-#ifndef _LINUX_SERIAL_MAX3107_H
+-#define _LINUX_SERIAL_MAX3107_H
++#ifndef _MAX3107_H
++#define _MAX3107_H
+ 
+ /* Serial error status definitions */
+ #define MAX3107_PARITY_ERROR	1
+@@ -355,4 +355,85 @@
+ #define MAX3107_BRG13_IB460800	(0x000000 | 0x00)
+ #define MAX3107_BRG13_IB921600	(0x000000 | 0x00)
+ 
++
++struct baud_table {
++	int baud;
++	u32 new_brg;
++};
++
++struct max3107_port {
++	/* UART port structure */
++	struct uart_port port;
++
++	/* SPI device structure */
++	struct spi_device *spi;
++
++	/* GPIO chip stucture */
++	struct gpio_chip chip;
++
++	/* Workqueue that does all the magic */
++	struct workqueue_struct *workqueue;
++	struct work_struct work;
++
++	/* Lock for shared data */
++	spinlock_t data_lock;
++
++	/* Device configuration */
++	int ext_clk;		/* 1 if external clock used */
++	int loopback;		/* Current loopback mode state */
++	int baud;			/* Current baud rate */
++
++	/* State flags */
++	int suspended;		/* Indicates suspend mode */
++	int tx_fifo_empty;	/* Flag for TX FIFO state */
++	int rx_enabled;		/* Flag for receiver state */
++	int tx_enabled;		/* Flag for transmitter state */
++
++	u16 irqen_reg;		/* Current IRQ enable register value */
++	/* Shared data */
++	u16 mode1_reg;		/* Current mode1 register value*/
++	int mode1_commit;	/* Flag for setting new mode1 register value */
++	u16 lcr_reg;		/* Current LCR register value */
++	int lcr_commit;		/* Flag for setting new LCR register value */
++	u32 brg_cfg;		/* Current Baud rate generator config  */
++	int brg_commit;		/* Flag for setting new baud rate generator
++				 * config
++				 */
++	struct baud_table *baud_tbl;
++	int handle_irq;		/* Indicates that IRQ should be handled */
++
++	/* Rx buffer and str*/
++	u16 *rxbuf;
++	u8  *rxstr;
++	/* Tx buffer*/
++	u16 *txbuf;
++
++	struct max3107_plat *pdata;	/* Platform data */
++};
++
++/* Platform data structure */
++struct max3107_plat {
++	/* Loopback mode enable */
++	int loopback;
++	/* External clock enable */
++	int ext_clk;
++	/* Called during the register initialisation */
++	void (*init)(struct max3107_port *s);
++	/* Called when the port is found and configured */
++	int (*configure)(struct max3107_port *s);
++	/* HW suspend function */
++	void (*hw_suspend) (struct max3107_port *s, int suspend);
++	/* Polling mode enable */
++	int polled_mode;
++	/* Polling period if polling mode enabled */
++	int poll_time;
++};
++
++extern int max3107_rw(struct max3107_port *s, u8 *tx, u8 *rx, int len);
++extern void max3107_hw_susp(struct max3107_port *s, int suspend);
++extern int max3107_probe(struct spi_device *spi, struct max3107_plat *pdata);
++extern int max3107_remove(struct spi_device *spi);
++extern int max3107_suspend(struct spi_device *spi, pm_message_t state);
++extern int max3107_resume(struct spi_device *spi);
++
+ #endif /* _LINUX_SERIAL_MAX3107_H */
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 3292816..9ddc866 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -186,6 +186,10 @@
+ #define PORT_ALTERA_JTAGUART	91
+ #define PORT_ALTERA_UART	92
+ 
++/* MAX3107 */
++#define PORT_MAX3107	94
++
++
+ #ifdef __KERNEL__
+ 
+ #include <linux/compiler.h>
 -- 
 1.7.2
 
