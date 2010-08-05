@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760129Ab0HEKen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 06:34:43 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:42188 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995Ab0HEKel (ORCPT
+	id S1760149Ab0HEKf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 06:35:59 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:47046 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab0HEKf4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 06:34:41 -0400
-To: Valerie Aurora <vaurora@redhat.com>
-CC: raven@themaw.net, viro@zeniv.linux.org.uk, miklos@szeredi.hu,
-        jblunck@suse.de, hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-reply-to: <20100804215943.GA29353@shell> (message from Valerie Aurora on
-	Wed, 4 Aug 2010 17:59:43 -0400)
-Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount file systems
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-22-git-send-email-vaurora@redhat.com> <20100713044701.GF3949@zeus.themaw.net> <20100716210226.GD21201@shell> <1279595537.2979.10.camel@localhost> <20100804215943.GA29353@shell>
-Message-Id: <E1OgxmE-0002x2-QW@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 05 Aug 2010 12:34:18 +0200
+	Thu, 5 Aug 2010 06:35:56 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Thu, 05 Aug 2010 12:37:29 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 1/2] usb gadget: don't save bind callback in struct
+ usb_gadget_driver
+In-reply-to: <20100805093954.GA22207@pengutronix.de>
+To: =?utf-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Message-id: <op.vgynsrlu7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <20100802182521.GA4151@pengutronix.de>
+ <1280773666-5405-1-git-send-email-u.kleine-koenig@pengutronix.de>
+ <op.vgyi8eix7p4s8u@pikus> <20100805093954.GA22207@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> I went for MS_WHITEOUT and MS_FALLTHRU, and added the checks for the
-> ops being non-null.
+On Thu, 05 Aug 2010 11:39:54 +0200, Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
 
-This bit me.  Mount failing with EINVAL is a big PITA.
+> On Thu, Aug 05, 2010 at 10:58:52AM +0200, Michał Nazarewicz wrote:
+>> On Mon, 02 Aug 2010 20:27:45 +0200, Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+>>> diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_udc.c
+>>> @@ -2045,7 +2045,6 @@ static void __exit udc_exit(void)
+>>>  }
+>>> EXPORT_SYMBOL(usb_gadget_unregister_driver);
+>>> -EXPORT_SYMBOL(usb_gadget_register_driver);
+>>
+>> *IF* you are going to send an updated patch, how about removing
+>> empty line above this EXPORT_SYMBOL().
 
-Miklos
+> I kept that, because the '}' doesn't belong to
+> usb_gadget_unregister_driver.
 
+In that case disregard my last comment. Move along, nothing to see. ;)
 
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2010-08-05 11:06:56.000000000 +0200
-+++ linux-2.6/fs/namespace.c	2010-08-05 11:39:19.000000000 +0200
-@@ -1387,6 +1387,7 @@ check_mnt_union(struct path *mntpnt, str
- 		return 0;
- 
- #ifndef CONFIG_UNION_MOUNT
-+	printk(KERN_INFO "union mount: not supported by the kernel\n");
- 	return -EINVAL;
- #endif
- 	for (p = lower_mnt; p; p = next_mnt(p, lower_mnt)) {
-@@ -1396,17 +1397,23 @@ check_mnt_union(struct path *mntpnt, str
- 			return -EBUSY;
- 	}
- 
--	if (!IS_ROOT(mntpnt->dentry))
-+	if (!IS_ROOT(mntpnt->dentry)) {
-+		printk(KERN_INFO "union mount: not root\n");
- 		return -EINVAL;
-+	}
- 
- 	if (mnt_flags & MNT_READONLY)
- 		return -EROFS;
- 
--	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT))
-+	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT)) {
-+		printk(KERN_INFO "union mount: whiteout not supported by fs\n");
- 		return -EINVAL;
-+	}
- 
--	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU))
-+	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU)) {
-+		printk(KERN_INFO "union mount: fallthrough not supported by fs\n");
- 		return -EINVAL;
-+	}
- 
- 	/* XXX top level mount should only be mounted once */
- 
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
