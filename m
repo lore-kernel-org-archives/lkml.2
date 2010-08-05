@@ -1,82 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933978Ab0HEREa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 13:04:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31939 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750881Ab0HEREY (ORCPT
+	id S933826Ab0HERJd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 13:09:33 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:33589 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755750Ab0HERJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 13:04:24 -0400
-Date: Thu, 5 Aug 2010 10:04:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: nir.tzachar@gmail.com
-Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sam@ravnborg.org, randy.dunlap@oracle.com
-Subject: Re: [PATCH] nconfig: add search support
-Message-Id: <20100805100408.5b724047.randy.dunlap@oracle.com>
-In-Reply-To: <1280838492-9942-1-git-send-email-nir.tzachar@gmail.com>
-References: <AANLkTimyDwWtLbc682rW-QORjU0+r+txZO-iKAini1H1@mail.gmail.com>
-	<1280838492-9942-1-git-send-email-nir.tzachar@gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C5AEF0E.012C:SCFMA4539814,ss=1,fgs=0
+	Thu, 5 Aug 2010 13:09:28 -0400
+Date: Thu, 5 Aug 2010 13:09:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: James Bottomley <James.Bottomley@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1008051306080.1944-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  3 Aug 2010 15:28:12 +0300 nir.tzachar@gmail.com wrote:
+Fake "address-of" expressions that evaluate to NULL generally confuse
+readers and can provoke compiler warnings.  This patch (as1411)
+removes one such fake expression, using an "#ifdef" in its place.
 
-> From: Nir Tzachar <nir.tzachar@gmail.com>
-> 
-> Remove the old hotkeys feature, and replace by a regular string search.
-> Behaviour of search is as advised by Sam.
-> 
-> From nconfig help:
-> 
-> Searching: pressing '/' triggers search mode. nconfig performs a
->            regular string compare, case insensitive, starting at
-
-I would say: simple string compare
-"regular" has no meaning (at least for me) there.
-
->            the beginning of each menu line.\n"
->            Pressing the up/down keys highlights the previous/next
->            matching item. Backspace removes one character from the
->            match string. Pressing either '/' again or ESC exits\
->            search mode. All other keys behave normally.
-> 
-> Miscellaneous other changes (including Rundy's Justin's input).
-
-Yes, the bottom menu and the typos are fixed.  Thanks.
-
-However, I'm not finding this terribly useful, mostly due to it starting
-comparison at the beginning of each menu line.
-
-E.g., I'd like to be able to find "emulations" in the top-level menu here:
-	Executable file formats / Emulations  --->
-
-or I'd like to be able to find "crc" menu items in any sub-menu.
-Maybe I should just stick to config symbol searches.  I don't think it's all
-that likely that people will know how each menu line text begins.
-
-
-As for the search UI, I'd rather that it be presented like the symbol search,
-in a box, instead of just a single line at the top of the screen.
-
-
-> Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
-> ---
->  scripts/kconfig/nconf.c     |  350 +++++++++++++++++++++++++------------------
->  scripts/kconfig/nconf.gui.c |   20 ++--
->  scripts/kconfig/nconf.h     |    3 +-
->  3 files changed, 213 insertions(+), 160 deletions(-)
-
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
 
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+On Wed, 4 Aug 2010, Linus Torvalds wrote:
+
+> On Tue, Aug 3, 2010 at 9:13 PM, James Bottomley <James.Bottomley@suse.de> wrote:
+> >
+> > Alan Stern (3):
+> >      sd: add support for runtime PM
+> >      implement runtime Power Management
+> >      convert to the new PM framework
+> 
+> Guys, these kind of crazy games really aren't appropriate:
+> 
+>   +/* scsi_pm.c */
+>   +#ifdef CONFIG_PM_OPS
+>   +extern const struct dev_pm_ops scsi_bus_pm_ops;
+>   +#else
+>   +#define scsi_bus_pm_ops                (*NULL)
+>   +#endif
+> 
+> that's just crazy. Yes, I see how it's then used (address-of operator
+> turns it back into NULL), but the compiler warns about it
+> ("drivers/scsi/scsi_sysfs.c:384: warning: dereferencing ‘void *’
+> pointer") and I think the compiler is 100% correct about warning about
+> it.
+> 
+> It's not just the (*NULL) games, btw. The above can cause confusion.
+> It's ugly not just because it causes the compiler to warn, but because
+> you use a very subtle and non-standard way of using #define's, so that
+> when you look at the source code where this is used, it's not at all
+> obvious what is going on. The code looks like
+> 
+>     .pm             = &scsi_bus_pm_ops,
+> 
+> and dammit, it would be rather understandable if some _human_ that
+> reads that is also confused and thinks that the above means that the
+> .pm pointer can never be NULL. The address-of would certainly throw
+> me, and not necessarily at all make me grep for "could that possibly
+> be some crazy way to say NULL".
+> 
+> And there is absolutely no reason to play games like that. It would
+> have been entirely understandable if you just put the #ifdef in the C
+> code itself, or if you used a #define that just said
+> 
+>   #ifdef CONFIG_PM_OPS
+>   #define SCSI_BUS_PM_OPS &scsi_bus_pm_ops
+>   #else
+>   #define SCSI_BUS_PM_OPS NULL
+>   #endif
+> 
+> and I think it would be less confusing, and it wouldn't upset the compiler.
+> 
+> Yes, yes, I realize that we do these kinds of things for function
+> pointers all the time, so I do understand where the pattern comes
+> from. At the same time, I rather think that function pointers are a
+> bit different, and they don't have the whole address-of problem.
+> 
+> I guess I should be happy that you didn't use some linker tricks to
+> make "&scsi_bus_pm_ops" turn into NULL at link time. That could be
+> done too, and would have been even more subtly confusing.
+
+In my opinion this is the simplest and easiest-to-understand approach.  
+The two of you can fight over who merges it first.  :-)
+
+Alan Stern
+
+
+
+Index: usb-2.6/drivers/scsi/scsi_priv.h
+===================================================================
+--- usb-2.6.orig/drivers/scsi/scsi_priv.h
++++ usb-2.6/drivers/scsi/scsi_priv.h
+@@ -148,8 +148,6 @@ static inline void scsi_netlink_exit(voi
+ /* scsi_pm.c */
+ #ifdef CONFIG_PM_OPS
+ extern const struct dev_pm_ops scsi_bus_pm_ops;
+-#else /* CONFIG_PM_OPS */
+-#define scsi_bus_pm_ops		(*NULL)
+ #endif
+ #ifdef CONFIG_PM_RUNTIME
+ extern void scsi_autopm_get_target(struct scsi_target *);
+Index: usb-2.6/drivers/scsi/scsi_sysfs.c
+===================================================================
+--- usb-2.6.orig/drivers/scsi/scsi_sysfs.c
++++ usb-2.6/drivers/scsi/scsi_sysfs.c
+@@ -382,7 +382,9 @@ struct bus_type scsi_bus_type = {
+         .name		= "scsi",
+         .match		= scsi_bus_match,
+ 	.uevent		= scsi_bus_uevent,
++#ifdef CONFIG_PM_OPS
+ 	.pm		= &scsi_bus_pm_ops,
++#endif
+ };
+ EXPORT_SYMBOL_GPL(scsi_bus_type);
+ 
+
