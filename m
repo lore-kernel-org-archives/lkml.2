@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760063Ab0HEVO0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 17:14:26 -0400
-Received: from fep28.mx.upcmail.net ([62.179.121.48]:62440 "EHLO
-	fep28.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab0HEVOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 17:14:23 -0400
-X-Greylist: delayed 982 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 17:14:22 EDT
-X-SourceIP: 62.24.72.246
-From: Pavel Pisa <ppisa4lists@pikron.com>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 10/42] drivers/mmc/host: Adjust confusing if indentation
-Date: Thu, 5 Aug 2010 22:57:53 +0200
-User-Agent: KMail/1.9.9
-Cc: Julia Lawall <julia@diku.dk>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <Pine.LNX.4.64.1008052219360.31692@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1008052219360.31692@ask.diku.dk>
-Organization: PiKRON Ltd.
+	id S933013Ab0HEVR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 17:17:28 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:1825 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754603Ab0HEVRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 17:17:24 -0400
+X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 17:17:24 EDT
+X-IronPort-AV: E=Sophos;i="4.55,324,1278302400"; 
+   d="scan'208";a="9667362"
+Subject: Re: commit "xen/blkfront: use tagged queuing for barriers"
+From: Daniel Stodden <daniel.stodden@citrix.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Jens Axboe <jaxboe@fusionio.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kraxel@redhat.com" <kraxel@redhat.com>
+In-Reply-To: <20100805171944.GA28446@infradead.org>
+References: <20100804115124.GA1496@infradead.org>
+	 <4C596252.9010806@fusionio.com> <20100804164441.GA7838@infradead.org>
+	 <4C5AF01C.3040601@goop.org>  <20100805171944.GA28446@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 5 Aug 2010 14:07:42 -0700
+Message-ID: <1281042462.4659.87.camel@agari.van.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008052257.54039.ppisa4lists@pikron.com>
-X-Cloudmark-Analysis: v=1.1 cv=K3uBg944YaUT+Qsu6bWO0a0V3uPy4DQNslbdoMCD4tw= c=1 sm=0 a=_QxRSBM50n4A:10 a=8nJEP1OIZ-IA:10 a=JfrnYn6hAAAA:8 a=Hq8N7MYxAAAA:8 a=_DdsVZnbAAAA:8 a=sfedO3ta4UrCDlHuVnoA:9 a=9xGzteWa772asJB_t_sUAsJGnWwA:4 a=wPNLvfGTeEIA:10 a=KAyHu9oVlqoA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 05 August 2010 22:19:52 Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-...
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-Acked-by: Pavel Pisa <pisa@cmp.felk.cvut.cz>
+On Thu, 2010-08-05 at 13:19 -0400, Christoph Hellwig wrote:
 
-Good catch.
+> > blkback - the in-kernel backend - does generate barriers when it
+> > receives one from the guest.  Could you expand on why passing a
+> > guest barrier through to the host IO stack would be bad for
+> > performance?  Isn't this exactly the same as a local writer
+> > generating a barrier?
+> 
+> If you pass it on it has the same semantics, but given that you'll
+> usually end up having multiple guest disks on a single volume using
+> lvm or similar you'll end up draining even more I/O as there is one
+> queue for all of them.  That way you can easily have one guest starve
+> others.
 
-> ---
->  drivers/mmc/host/imxmmc.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/imxmmc.c b/drivers/mmc/host/imxmmc.c
-> index 9a68ff4..5a950b1 100644
-> --- a/drivers/mmc/host/imxmmc.c
-> +++ b/drivers/mmc/host/imxmmc.c
-> @@ -148,11 +148,12 @@ static int imxmci_start_clock(struct imxmci_host
-> *host)
->
->  		while (delay--) {
->  			reg = readw(host->base + MMC_REG_STATUS);
-> -			if (reg & STATUS_CARD_BUS_CLK_RUN)
-> +			if (reg & STATUS_CARD_BUS_CLK_RUN) {
->  				/* Check twice before cut */
->  				reg = readw(host->base + MMC_REG_STATUS);
->  				if (reg & STATUS_CARD_BUS_CLK_RUN)
->  					return 0;
-> +			}
->
->  			if (test_bit(IMXMCI_PEND_STARTED_b, &host->pending_events))
->  				return 0;
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> > >Now where both old and new one are buggy is that that they don't
+> > >include the QUEUE_ORDERED_DO_PREFLUSH  and
+> > >QUEUE_ORDERED_DO_POSTFLUSH/QUEUE_ORDERED_DO_FUA which mean any
+> > >explicit cache flush (aka empty barrier) is silently dropped, making
+> > >fsync and co not preserve data integrity.
+> > 
+> > Ah, OK, something specific.  What level ends up dropping the empty
+> > barrier?  Certainly an empty WRITE_BARRIER operation to the backend
+> > will cause all prior writes to be durable, which should be enough.
+> > Are you saying that there's an extra flag we should be passing to
+> > blk_queue_ordered(), or is there some other interface we should be
+> > implementing for explicit flushes?
+> > 
+> > Is there a good reference implementation we can use as a model?
+> 
+> Just read Documentation/block/barriers.txt, it's very well described
+> there.  Even the naming of the various ORDERED constant should
+> give enough hints.
 
---
-                Pavel Pisa
-    e-mail:     pisa@cmp.felk.cvut.cz
-    www:        http://cmp.felk.cvut.cz/~pisa
-    university: http://dce.fel.cvut.cz/
-    company:    http://www.pikron.com/
+That one is read and well understood.
+
+I presently don't see a  point in having the frontend perform its own
+pre or post flushes as long as there's a single queue in the block
+layer. But if the kernel drops the plain _TAG mode, there is no  problem
+with that. Essentially the frontend may drain the queue as much as as it
+wants. It just won't buy you much if the backend I/O was actually
+buffered, other than adding latency to the transport.
+
+The only thing which matters is that the frontend lld gets to see the
+actual barrier point, anything else needs to be sorted out next to the
+physical layer anyway, so it's better left to the backends.
+
+Not sure if I understand your above comment regarding the flush and fua
+bits. Did you mean to indicate that _TAG on the frontend's request_queue
+is presently not coming up with the empty barrier request to make
+_explicit_ cache flushes happen? That would be something which
+definitely needs a workaround in the frontend then. In that case, would
+PRE/POSTFLUSH help, to get a call into prepare_flush_fn, which might
+insert the tag itself then? It's sounds a bit over the top to combine
+this with a queue drain on the transport, but I'm rather after
+correctness.
+
+Regarding the potential starvation problems when accessing shared
+physical storage you mentioned above: Yes, good point, we discussed that
+too, although only briefly, and it's a todo which I don't think has been
+solved in any present backend. But again, scheduling/merging
+drain/flush/fua on shared physical nodes more carefully would be
+something better *enforced*. The frontend can't even avoid it.
+
+I wonder if there's a userspace solution for that. Does e.g. fdatasync()
+deal with independent invocations other than serializing? Couldn't find
+anything which indicates that, but I might not have looked hard enough.
+The blktap userspace component presently doesn't buffer, so a _DRAIN is
+sufficient. But if it did, then it'd be kinda cool if handled more
+carefully. If the kernel does it, all the better.
+
+Thanks,
+Daniel
+
+
