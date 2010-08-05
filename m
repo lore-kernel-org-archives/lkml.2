@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933731Ab0HEQdC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 12:33:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35560 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760367Ab0HEQ3I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 12:29:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,323,1278313200"; 
-   d="scan'208";a="644977062"
-Message-Id: <20100805162433.673243074@intel.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 06 Aug 2010 00:10:58 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Mel Gorman <mel@csn.ul.ie>, Chris Mason <chris.mason@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 07/13] writeback: explicit low bound for vm.dirty_ratio
-References: <20100805161051.501816677@intel.com>
-Content-Disposition: inline; filename=min-dirty-ratio.patch
+	id S933710Ab0HEQec (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 12:34:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35048 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933152Ab0HEQea convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 12:34:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimMLts_x_BujsqYupkmA-UyB9mNyD6KZ0OeNRWd@mail.gmail.com>
+References: <20100803114853.27a29365.sfr@canb.auug.org.au>
+	<AANLkTimMLts_x_BujsqYupkmA-UyB9mNyD6KZ0OeNRWd@mail.gmail.com>
+Date: Thu, 5 Aug 2010 09:34:29 -0700
+Message-ID: <AANLkTikwweZdn4Uw9DabY7e1+Ed-ooA1-e7-0zNRgqmf@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the davinci tree with Linus' tree
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sekhar Nori <nsekhar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Force a user visible low bound of 5% for the vm.dirty_ratio interface.
+On Thu, Aug 5, 2010 at 9:30 AM, Kevin Hilman
+<khilman@deeprootsystems.com> wrote:
+> On Mon, Aug 2, 2010 at 6:48 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>> Hi Kevin,
+>>
+>> Today's linux-next merge of the davinci tree got a conflict in
+>> arch/arm/mach-davinci/board-da850-evm.c between commit
+>> 8b24599e72c9aee1ea1187e29cb9c5de9f449cce ("davinci: da850/omap-l138 evm:
+>> account for DEFDCDC{2,3} being tied high") from Linus' tree and commit
+>> ebd1e7808b2fe72d627bdab7bcf61126a831ca5a ("davinci: da850 evm: sparse
+>> cleanup: make file local variables static") from the davinci tree.
+>>
+>> Just context changes.  I fixed it up (see below) and can carry the fix
+>> for a while.
+>
+> Thanks for catching this.
+>
+> Before I submit to Linus, I'll merge this with the original tree
+> (Liam's voltage-2.6 tree) so Linus doesn't have to fix this up.
+>
 
-Currently global_dirty_limits() applies a low bound of 5% for
-vm_dirty_ratio.  This is not very user visible -- if the user sets
-vm.dirty_ratio=1, the operation seems to succeed but will be rounded up
-to 5% when used.
+On second thought, to keep it simple, I'm just going to drop the
+version from the davinci tree for this merge window, update it and
+submit it as a fix in -rc2.
 
-Another problem is inconsistency: calc_period_shift() uses the plain
-vm_dirty_ratio value, which may be a problem when vm.dirty_ratio is set
-to < 5 by the user.
-
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- kernel/sysctl.c     |    3 ++-
- mm/page-writeback.c |   10 ++--------
- 2 files changed, 4 insertions(+), 9 deletions(-)
-
---- linux-next.orig/kernel/sysctl.c	2010-08-05 22:48:34.000000000 +0800
-+++ linux-next/kernel/sysctl.c	2010-08-05 22:48:47.000000000 +0800
-@@ -126,6 +126,7 @@ static int ten_thousand = 10000;
- 
- /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
- static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
-+static int dirty_ratio_min = 5;
- 
- /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
- static int maxolduid = 65535;
-@@ -1031,7 +1032,7 @@ static struct ctl_table vm_table[] = {
- 		.maxlen		= sizeof(vm_dirty_ratio),
- 		.mode		= 0644,
- 		.proc_handler	= dirty_ratio_handler,
--		.extra1		= &zero,
-+		.extra1		= &dirty_ratio_min,
- 		.extra2		= &one_hundred,
- 	},
- 	{
---- linux-next.orig/mm/page-writeback.c	2010-08-05 22:48:42.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-08-05 22:48:47.000000000 +0800
-@@ -415,14 +415,8 @@ void global_dirty_limits(unsigned long *
- 
- 	if (vm_dirty_bytes)
- 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
--	else {
--		int dirty_ratio;
--
--		dirty_ratio = vm_dirty_ratio;
--		if (dirty_ratio < 5)
--			dirty_ratio = 5;
--		dirty = (dirty_ratio * available_memory) / 100;
--	}
-+	else
-+		dirty = (vm_dirty_ratio * available_memory) / 100;
- 
- 	if (dirty_background_bytes)
- 		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-
-
+Kevin
