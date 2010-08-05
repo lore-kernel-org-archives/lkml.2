@@ -1,125 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab0HEFeS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 01:34:18 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:40658 "EHLO mx01.d-labs.de"
+	id S1757803Ab0HEFnK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 01:43:10 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44213 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756442Ab0HEFeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 01:34:15 -0400
-Date: Thu, 5 Aug 2010 07:33:59 +0200
-From: Florian Mickler <florian@mickler.org>
-To: paulmck@linux.vnet.ibm.com
-Cc: david@lang.hm, Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, stern@rowland.harvard.edu, swetland@google.com,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100805073359.4cb791c0@schatten.dmk.lab>
-In-Reply-To: <20100804231003.GL24163@linux.vnet.ibm.com>
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008041124580.6545@asgard.lang.hm>
-	<20100804185520.GA2417@srcf.ucam.org>
-	<201008042251.08266.rjw@sisk.pl>
-	<20100804205654.GA4986@srcf.ucam.org>
-	<alpine.DEB.2.00.1008041529530.6545@asgard.lang.hm>
-	<AANLkTimRZc2B1=ic-0jrGBX7ahCu=NCoQadCOePGDmh9@mail.gmail.com>
-	<alpine.DEB.2.00.1008041554580.6545@asgard.lang.hm>
-	<20100804231003.GL24163@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753624Ab0HEFnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 01:43:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,320,1278313200"; 
+   d="scan'208";a="824892018"
+Message-ID: <4C5A4F68.5030309@intel.com>
+Date: Thu, 05 Aug 2010 13:43:04 +0800
+From: Shuang He <shuang.he@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Thomas Meyer <thomas@m3y3r.de>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        "Zou, Nanhai" <nanhai.zou@intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>
+Subject: Re: 2.6.35-rc6+: i915: Bisected regression
+References: <201008011101.01429.thomas@m3y3r.de>	<4C555DA0.6020109@s5r6.in-berlin.de> <98E20220-BFC9-4231-AEF5-EB59588E6D2F@m3y3r.de>
+In-Reply-To: <98E20220-BFC9-4231-AEF5-EB59588E6D2F@m3y3r.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010 16:10:03 -0700
-"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
-
-> On Wed, Aug 04, 2010 at 03:56:42PM -0700, david@lang.hm wrote:
-> > On Wed, 4 Aug 2010, Arve Hj?nnev?g wrote:
-> > 
-> > >On Wed, Aug 4, 2010 at 3:31 PM,  <david@lang.hm> wrote:
-> > >>On Wed, 4 Aug 2010, Matthew Garrett wrote:
-> > >>
-> > >>>On Wed, Aug 04, 2010 at 10:51:07PM +0200, Rafael J. Wysocki wrote:
-> > >>>>
-> > >>>>On Wednesday, August 04, 2010, Matthew Garrett wrote:
-> > >>>>>
-> > >>>>>No! And that's precisely the issue. Android's existing behaviour could
-> > >>>>>be entirely implemented in the form of binary that manually triggers
-> > >>>>>suspend when (a) the screen is off and (b) no userspace applications
-> > >>>>>have indicated that the system shouldn't sleep, except for the wakeup
-> > >>>>>event race. Imagine the following:
-> > >>>>>
-> > >>>>>1) The policy timeout is about to expire. No applications are holding
-> > >>>>>wakelocks. The system will suspend providing nothing takes a wakelock.
-> > >>>>>2) A network packet arrives indicating an incoming SIP call
-> > >>>>>3) The VOIP application takes a wakelock and prevents the phone from
-> > >>>>>suspending while the call is in progress
-> > >>>>>
-> > >>>>>What stops the system going to sleep between (2) and (3)? cgroups don't,
-> > >>>>>because the voip app is an otherwise untrusted application that you've
-> > >>>>>just told the scheduler to ignore.
-> > >>>>
-> > >>>>I _think_ you can use the just-merged /sys/power/wakeup_count mechanism
-> > >>>>to
-> > >>>>avoid the race (if pm_wakeup_event() is called at 2)).
-> > >>>
-> > >>>Yes, I think that solves the problem. The only question then is whether
-> > >>>it's preferable to use cgroups or suspend fully, which is pretty much up
-> > >>>to the implementation. In other words, is there a reason we're still
-> > >>>having this conversation? :) It'd be good to have some feedback from
-> > >>>Google as to whether this satisfies their functional requirements.
-> > >>
-> > >>the proposal that I nade was not to use cgroups to freeze some processes and
-> > >>not others, but to use cgroups to decide to ignore some processes when
-> > >>deciding if the system is idle, stop everything or nothing. cgroups are just
-> > >>a way of easily grouping processes (and their children) into different
-> > >>groups.
-> > >
-> > >That does not avoid the dependency problem. A process may be waiting
-> > >on a resource that a process you ignore owns. I you ignore the process
-> > >that owns the resource and enter idle when it is ready to run (or
-> > >waiting on a timer), you are still effectively blocking the other
-> > >process.
-> > 
-> > and if you don't have a wakelock the same thing will happen. If you
-> > expect the process to take a while you can set a timeout to wake up
-> > every 30 seconds or so and wait again, this would be enough to
-> > prevent you from going to sleep (or am I misunderstanding how long
-> > before you go into suspend without a wakelock set, see my other
-> > e-mail for the full question)
-> 
-> The difference between the Android scheme and your proposal is that the
-> Android scheme freezes -all- the processes, not just a subset of them.
-> Therefore, in the Android scheme, the case of one process attempting to
-> acquire a resource held by a frozen process.  In contrast, any scheme
-> that attempts to freeze only a subset of the processes must somehow
-> either avoid or properly handle the situation where a frozen process is
-> holding a resource that a running process is trying to acquire.
-> 
-> 							Thanx, Paul
-
-No no. In the David-Lang-CGroup-Scheme[1](tm?) suspend-from-idle
-is used. For idle decision a certain subset of tasks is ignored. 
-
-Where suspend is prevented by the trusted
-process in android-world taking a wakelock, here it would just prevent
-the system from going idle by arming timers.
-
-This would be pretty equivalent to the suspend-blocker scheme and not
-introduce new userspace api. But the downside is, as Arve pointed out,
-that now one can not get full-idle-power-leverage while suspend
-is blocked. 
-
-[1] http://permalink.gmane.org/gmane.linux.kernel/1018452  and
-following 
+  On 2010-8-1 18:51, Thomas Meyer wrote:
+> Am 01.08.2010 um 13:42 schrieb Stefan Richter<stefanr@s5r6.in-berlin.de>:
+>
+>> Thomas Meyer wrote:
+>>> This commit makes suspend to ram unreliable for me:
+>>>
+>>> commit d1b851fc0d105caa6b6e3e7c92d2987dfb52cbe0
+>>> Author: Zou Nan hai<nanhai.zou@intel.com>
+>>> Date:   Fri May 21 09:08:57 2010 +0800
+>>>
+>>>     drm/i915: implement BSD ring buffer V2
+>>>
+>>>     The BSD (bit stream decoder) ring is used for accessing the BSD engine
+>>>     which decodes video bitstream for H.264 and VC1 on G45+.  It is
+>>>     asynchronous with the render ring and has access to separate parts of
+>>>     the GPU from it, though the render cache is coherent between the two.
+>>>
+>>>     Signed-off-by: Zou Nan hai<nanhai.zou@intel.com>
+>>>     Signed-off-by: Xiang Hai hao<haihao.xiang@intel.com>
+>>>     Signed-off-by: Eric Anholt<eric@anholt.net>
+>>>
+>>> git revert didn't work on 2.6.35-rc6 so I just changed the HAS_BSD thing to:
+>>>
+>>> #define HAS_BSD(dev)            (0)
+>>>
+>>> with this change applied suspend to ram is back to the reliability of 2.6.34.y
+>>>
+>>> with kind regards
+>>> thomas
+>> Added CCs.
+>>
+>> Thomas, on what hardware did you observe the regression?
+> Is a Intel mobile express gm45 chipset.
+>
+>>   Is it suspend
+>> or resume that is unreliable?
+> suspend never finishes/hangs.
+>
+>>   What are the particular symptoms --- does
+>> not suspend, crashes during suspend, crashes during resume...?
+> Does not suspend, backlight is on.
 
 
-Cheers,
-Flo
+Could you help report a bug for this issue by following 
+http://intellinuxgraphics.org/how_to_report_bug.html
+
+Thanks
+     --Shuang
+
+>> -- 
+>> Stefan Richter
+>> -=====-==-=- =--- ----=
+>> http://arcgraph.de/sr/
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
 
