@@ -1,329 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758590Ab0HEAQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 20:16:13 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63189 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758230Ab0HEAQJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 20:16:09 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Patrick Pannuto <ppannuto@codeaurora.org>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm\@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "damm\@opensource.se" <damm@opensource.se>,
-        "lethal\@linux-sh.org" <lethal@linux-sh.org>,
-        "rjw\@sisk.pl" <rjw@sisk.pl>,
-        "eric.y.miao\@gmail.com" <eric.y.miao@gmail.com>,
-        "netdev\@vger.kernel.org" <netdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
-        zt.tmzt@gmail.com, grant.likely@secretlab.ca, magnus.damm@gmail.com
-Subject: Re: [PATCH] platform: Facilitate the creation of pseduo-platform busses
-Organization: Deep Root Systems, LLC
-References: <4C59E654.1090403@codeaurora.org>
-Date: Wed, 04 Aug 2010 17:16:05 -0700
-In-Reply-To: <4C59E654.1090403@codeaurora.org> (Patrick Pannuto's message of
-	"Wed, 04 Aug 2010 15:14:44 -0700")
-Message-ID: <877hk56hiy.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1759471Ab0HEAQW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 20:16:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39218 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759361Ab0HEAQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 20:16:19 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: david@lang.hm
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Thu, 5 Aug 2010 02:15:13 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+References: <20100801054816.GI2470@linux.vnet.ibm.com> <201008050133.01169.rjw@sisk.pl> <alpine.DEB.2.00.1008041650470.6545@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.00.1008041650470.6545@asgard.lang.hm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008050215.14319.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patrick Pannuto <ppannuto@codeaurora.org> writes:
+On Thursday, August 05, 2010, david@lang.hm wrote:
+> On Thu, 5 Aug 2010, Rafael J. Wysocki wrote:
+> 
+> > On Thursday, August 05, 2010, david@lang.hm wrote:
+> >>
+> >> My proposal would never freeze a subset of processes.
+> >>
+> >> what my proposal:
+> >>
+> >> only consider the activity of a subset of processes when deciding if we
+> >> should suspend or not. If the decision is to suspend, freeze everything.
+> >
+> > That alone doesn't allow you to handle the race Matthew was referring to
+> > (ie. wakeup event happening right after you've decided to suspend).
+> >
+> > A mechanism of making a decision alone is not sufficient, you also need a
+> > mechanism to avoid races between wakeup events and suspend process.
+> >
+> 
+> I thought you just posted that there was a new feature that would be able 
+> to abort the suspend and so that race was closed.
 
-> Inspiration for this comes from:
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
+Yes, you can use that for this purpose, but then you'd need a user space
+power manager who would decide whether or not to suspend.  Then, however,
+the problem boils down to setting up appropriate communication between the
+power manager and the other applications in user space (ie. the kernel
+doesn't need to be involved in that at all).
 
-Also, later in that thread I also wrote[1] what seems to be the core of
-what you've done here: namely, allow platform_devices and
-platform_drivers to to be used on custom busses.  Patch is at the end of
-this mail with a more focused changelog.  As Greg suggested in his reply
-to your first version, this part could be merged today, and the
-platform_bus_init stuff could be added later, after some more review.
-Some comments below...
-
-> INTRO
->
-> As SOCs become more popular, the desire to quickly define a simple,
-> but functional, bus type with only a few unique properties becomes
-> desirable. As they become more complicated, the ability to nest these
-> simple busses and otherwise orchestrate them to match the actual
-> topology also becomes desirable.
->
-> EXAMPLE USAGE
->
-> /arch/ARCH/MY_ARCH/my_bus.c:
->
-> 	#include <linux/device.h>
-> 	#include <linux/platform_device.h>
->
-> 	struct bus_type my_bus_type = {
-> 		.name	= "mybus",
-> 	};
-> 	EXPORT_SYMBOL_GPL(my_bus_type);
->
-> 	struct platform_device sub_bus1 = {
-> 		.name		= "sub_bus1",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 	}
-> 	EXPORT_SYMBOL_GPL(sub_bus1);
->
-> 	struct platform_device sub_bus2 = {
-> 		.name		= "sub_bus2",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 	}
-> 	EXPORT_SYMBOL_GPL(sub_bus2);
->
-> 	static int __init my_bus_init(void)
-> 	{
-> 		int error;
-> 		platform_bus_type_init(&my_bus_type);
-> 		error = bus_register(&my_bus_type);
-> 		if (error)
-> 			return error;
->
-> 		error = platform_device_register(&sub_bus1);
-> 		if (error)
-> 			goto fail_sub_bus1;
->
-> 		error = platform_device_register(&sub_bus2);
-> 		if (error)
-> 			goto fail_sub_bus2;
->
-> 		return error;
->
-> 	fail_sub_bus2:
-> 		platform_device_unregister(&sub_bus1);
-> 	fail_sub_bus2:
-> 		bus_unregister(&my_bus_type);
->
-> 		return error;
-> 	}
-> 	postcore_initcall(my_bus_init);
-> 	EXPORT_SYMBOL_GPL(my_bus_init);
->
-> /drivers/my_driver.c
-> 	static struct platform_driver my_driver = {
-> 		.driver	= {
-> 			.name	= "my-driver",
-> 			.owner	= THIS_MODULE,
-> 			.bus	= &my_bus_type,
-> 		},
-> 	};
->
-> /somewhere/my_device.c
-> 	static struct platform_device my_device = {
-> 		.name		= "my-device",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 		.dev.parent	= &sub_bus_1.dev,
-> 	};
->
-> Notice that for a device / driver, only 3 lines were added to
-> switch from the platform bus to the new my_bus. This is
-> especially valuable if we consider supporting a legacy SOCs
-> and new SOCs where the same driver is used, but may need to
-> be on either the platform bus or the new my_bus. The above
-> code then becomes:
->
-> 	(possibly in a header)
-> 	#ifdef CONFIG_MY_BUS
-> 	#define MY_BUS_TYPE	&my_bus_type
-> 	#else
-> 	#define MY_BUS_TYPE	NULL
-> 	#endif
-
-> /drivers/my_driver.c
-> 	static struct platform_driver my_driver = {
-> 		.driver	= {
-> 			.name	= "my-driver",
-> 			.owner	= THIS_MODULE,
-> 			.bus	= MY_BUS_TYPE,
-> 		},
-> 	};
->
-> Which will allow the same driver to easily to used on either
-> the platform bus or the newly defined bus type.
-
-Except it requires a re-compile.
-
-Rather than doing this at compile time, it would be better to support
-legacy devices at runtime.  You could handle this by simply registering
-the driver on the custom bus and the platform_bus and let the bus
-matching code handle it.  Then, the same binary would work on both
-legacy and updated SoCs.
-
->
-> This will build a device tree that mirrors the actual configuration:
->     /sys/bus
->     |-- my_bus
->     |   |-- devices
->     |   |   |-- sub_bus1 -> ../../../devices/platform/sub_bus1
->     |   |   |-- sub_bus2 -> ../../../devices/platform/sub_bus2
->     |   |   |-- my-device -> ../../../devices/platform/sub_bus1/my-device
->     |   |-- drivers
->     |   |   |-- my-driver
->
->
-> Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
-> ---
->  drivers/base/platform.c         |   30 ++++++++++++++++++++++++++----
->  include/linux/platform_device.h |    2 ++
->  2 files changed, 28 insertions(+), 4 deletions(-)
->
-> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-> index 4d99c8b..c86be03 100644
-> --- a/drivers/base/platform.c
-> +++ b/drivers/base/platform.c
-> @@ -241,7 +241,8 @@ int platform_device_add(struct platform_device *pdev)
->  	if (!pdev->dev.parent)
->  		pdev->dev.parent = &platform_bus;
->  
-> -	pdev->dev.bus = &platform_bus_type;
-> +	if (!pdev->dev.bus)
-> +		pdev->dev.bus = &platform_bus_type;
->  
->  	if (pdev->id != -1)
->  		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
-> @@ -482,7 +483,8 @@ static void platform_drv_shutdown(struct device *_dev)
->   */
->  int platform_driver_register(struct platform_driver *drv)
->  {
-> -	drv->driver.bus = &platform_bus_type;
-> +	if (!drv->driver.bus)
-> +		drv->driver.bus = &platform_bus_type;
->  	if (drv->probe)
->  		drv->driver.probe = platform_drv_probe;
->  	if (drv->remove)
-> @@ -539,12 +541,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
->  	 * if the probe was successful, and make sure any forced probes of
->  	 * new devices fail.
->  	 */
-> -	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
-> +	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
->  	drv->probe = NULL;
->  	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
->  		retval = -ENODEV;
->  	drv->driver.probe = platform_drv_probe_fail;
-> -	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
-> +	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
-
-Up to here, this looks exactly what I wrote in thread referenced above.
-
->  
->  	if (code != retval)
->  		platform_driver_unregister(drv);
-> @@ -1017,6 +1019,26 @@ struct bus_type platform_bus_type = {
->  };
->  EXPORT_SYMBOL_GPL(platform_bus_type);
->  
-> +/** platform_bus_type_init - fill in a pseudo-platform-bus
-> +  * @bus: foriegn bus type
-> +  *
-> +  * This init is basically a selective memcpy that
-> +  * won't overwrite any user-defined attributes and
-> +  * only copies things that platform bus defines anyway
-> +  */
-
-minor nit: kernel doc style has wrong indentation
-
-> +void platform_bus_type_init(struct bus_type *bus)
-> +{
-> +	if (!bus->dev_attrs)
-> +		bus->dev_attrs = platform_bus_type.dev_attrs;
-> +	if (!bus->match)
-> +		bus->match = platform_bus_type.match;
-> +	if (!bus->uevent)
-> +		bus->uevent = platform_bus_type.uevent;
-> +	if (!bus->pm)
-> +		bus->pm = platform_bus_type.pm;
-> +}
-> +EXPORT_SYMBOL_GPL(platform_bus_type_init);
-
-With this approach, you should note in the comments/changelog that
-any selective customization of the bus PM methods must be done after 
-calling platform_bus_type_init().
-
-Also, You've left out the legacy PM methods here.  That implies that
-moving a driver from the platform_bus to the custom bus is not entirely
-transparent.  If the driver still has legacy PM methods, it would stop
-working on the custom bus.
-
-While this is good motivation for converting a driver to dev_pm_ops, at
-a minimum it should be clear in the changelog that the derivative busses
-do not support legacy PM methods.  However, since it's quite easy to do,
-and you want the derivative busses to be *exactly* like the platform bus
-except where explicitly changed, I'd suggest you also check/copy the
-legacy PM methods.
-
-In addition, you've missed several fields in 'struct bus_type'
-(bus_attr, drv_attr, p, etc.)  Without digging deeper into the driver
-core, I'm not sure if they are all needed at init time, but it should be
-clear in the comments why they can be excluded.
-
-Kevin
-
-[1] http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31289.html
-
-
->From b784009af1d0a7065dc5e58a13ce29afa3432d3e Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Date: Mon, 28 Jun 2010 16:08:14 -0700
-Subject: [PATCH] driver core: allow platform_devices and platform_drivers on custom busses
-
-This allows platform_devices and platform_drivers to be registered onto
-custom busses that are compatible with the platform_bus.
-
-Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
----
- drivers/base/platform.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index 4d99c8b..2cf55e2 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -241,7 +241,8 @@ int platform_device_add(struct platform_device *pdev)
- 	if (!pdev->dev.parent)
- 		pdev->dev.parent = &platform_bus;
- 
--	pdev->dev.bus = &platform_bus_type;
-+	if (!pdev->dev.bus)
-+		pdev->dev.bus = &platform_bus_type;
- 
- 	if (pdev->id != -1)
- 		dev_set_name(&pdev->dev, "%s.%d", pdev->name,  pdev->id);
-@@ -482,7 +483,8 @@ static void platform_drv_shutdown(struct device *_dev)
-  */
- int platform_driver_register(struct platform_driver *drv)
- {
--	drv->driver.bus = &platform_bus_type;
-+	if (!drv->driver.bus)
-+		drv->driver.bus = &platform_bus_type;
- 	if (drv->probe)
- 		drv->driver.probe = platform_drv_probe;
- 	if (drv->remove)
-@@ -539,12 +541,12 @@ int __init_or_module platform_driver_probe(struct platform_driver *drv,
- 	 * if the probe was successful, and make sure any forced probes of
- 	 * new devices fail.
- 	 */
--	spin_lock(&platform_bus_type.p->klist_drivers.k_lock);
-+	spin_lock(&drv->driver.bus->p->klist_drivers.k_lock);
- 	drv->probe = NULL;
- 	if (code == 0 && list_empty(&drv->driver.p->klist_devices.k_list))
- 		retval = -ENODEV;
- 	drv->driver.probe = platform_drv_probe_fail;
--	spin_unlock(&platform_bus_type.p->klist_drivers.k_lock);
-+	spin_unlock(&drv->driver.bus->p->klist_drivers.k_lock);
- 
- 	if (code != retval)
- 		platform_driver_unregister(drv);
--- 
-1.7.2.1
-
+Thanks,
+Rafael
