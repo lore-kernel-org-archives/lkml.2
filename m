@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760122Ab0HELOM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 07:14:12 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:58840 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760020Ab0HELOH (ORCPT
+	id S1760171Ab0HELT7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 07:19:59 -0400
+Received: from mail.mellanox.co.il ([194.90.237.43]:38070 "EHLO mellanox.co.il"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759040Ab0HELT4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 07:14:07 -0400
-To: Valerie Aurora <vaurora@redhat.com>
-CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, jblunck@suse.de,
-        hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, tytso@mit.edu,
-        linux-ext4@vger.kernel.org
-In-reply-to: <20100804230421.GC29353@shell> (message from Valerie Aurora on
-	Wed, 4 Aug 2010 19:04:22 -0400)
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804230421.GC29353@shell>
-Message-Id: <E1OgyOZ-000321-Fp@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 05 Aug 2010 13:13:55 +0200
+	Thu, 5 Aug 2010 07:19:56 -0400
+From: Tziporet Koren <tziporet@mellanox.co.il>
+To: Roland Dreier <rdreier@cisco.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+Date: Thu, 5 Aug 2010 14:19:53 +0300
+Subject: RE: InfiniBand/RDMA merge plans for 2.6.36
+Thread-Topic: InfiniBand/RDMA merge plans for 2.6.36
+Thread-Index: Acs0LX+eamdEM0CFR7C0YygcQAs0qgAYnr1Q
+Message-ID: <E113D394D7C5DB4F8FF691FA7EE9DB443B50B5FD12@MTLMAIL.mtl.com>
+References: <adak4o654x9.fsf@roland-alpha.cisco.com>
+In-Reply-To: <adak4o654x9.fsf@roland-alpha.cisco.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> > Another idea is to use an internal inode and make all fallthroughs be
-> > hard links to that.
-> > 
-> > I think the same would work for whiteouts as well.  I don't like the
-> > fact that whiteouts are invisible even when not mounted as part of a
-> > union.
-> 
-> I don't know if this helps, but I just wrote support for removing ext2
-> whiteouts and fallthrus using tune2fs and e2fsck.  I think this does
-> what people want from a "visible" whiteout feature without adding more
-> complexity to the VFS.  It also takes away all consideration of race
-> conditions and dentry conversion that happens with online removal of
-> whiteouts and fallthrus.
-> 
-> What are your thoughts on what a visible whiteout/fallthru would look
-> like?
+On 8/5/2010 2:33 AM, Roland Dreier wrote:
 
-Best would be if it didn't need any modification to filesystems.  All
-this having to upgrade util-linux, e2fsprogs, having incompatible
-filesystem features is a pain for users (just been through that).
+Hi Roland,
 
-What we already have in most filesystems:
+>
+> Here are a few topics I'm tracking that are not ready in time for the
+> 2.6.36 window and will need to wait for 2.6.37 at least:
+>
+>  - XRC.  While I think we made significant progress here, the fact is
+>    that this is not ready to merge at the beginning of the merge
+>    window, and so we'll need to keep working on it and wait for the
+>    next merge window.  I think this is just blocked on me at the
+>    moment.
+Jack did all the changes you asked for and submitting the V3 patches on 2010/05/19, 
+which was long enough before the window.
+What is the reason it will not be part of 2.6.36 kernel?
 
- - extended attributes, e.g. use the system.union.* namespace and
-   denote whiteouts and falltroughs with such an attribute
+>
+>  - IBoE.  Same as XRC; we made significant progress (and I opened an
+>    iboe branch to track this), and I think we have finally gotten the
+>    user-kernel interface nailed down yet, but it's just too late.
+Eli sent the user space patch that was the last technical debate last week. 
+He will also send a new patch-set in day or two.
+This feature was under a lot of technical review from the community.
+Please consider including it in 2.6.36 after all.
+ 
+In general - none of our new features going to be included and I wish to understand the reason behind it (I hope it's not personal :-)
 
- - hard links to make sure a separate inode is not necessary for each
-   whiteout/fallthrough entry
-
- - some way for the user to easily identify such files when not
-   mounted as part of a union e.g. make it a symlink pointing to
-   "(deleted)" or whatever
-
-Later the extended attributes can also be used for other things like
-e.g. chmod()/chown() only copying up metadata, not data, and
-indicating that data is still found on the lower layers.
-
-Miklos
+regards
+Tziporet
