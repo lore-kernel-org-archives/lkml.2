@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756724Ab0HEWaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:30:15 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:45109 "EHLO e4.ny.us.ibm.com"
+	id S1760923Ab0HEW36 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:29:58 -0400
+Received: from kroah.org ([198.145.64.141]:37848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760926Ab0HEW37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:29:59 -0400
-Subject: Re: [PATCH] [RFC] notify userspace about time changes
-From: john stultz <johnstul@us.ibm.com>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alexander Shishkin <virtuoso@slind.org>, gregkh@suse.de,
-        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=Gxk7FwmyCqNwXQEg7OsvDh4p2Mg3Fhiy1g5pv@mail.gmail.com>
-References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
-	 <1280937526.28884.21.camel@work-vm>
-	 <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
-	 <1281042665.3405.15.camel@localhost.localdomain>
-	 <AANLkTi=Gxk7FwmyCqNwXQEg7OsvDh4p2Mg3Fhiy1g5pv@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 15:29:50 -0700
-Message-ID: <1281047390.3405.22.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S934229Ab0HEWZG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:25:06 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 25/28] regulator: Remove owner field from attribute initialization in regulator core driver
+Date: Thu,  5 Aug 2010 15:24:15 -0700
+Message-Id: <1281047058-23716-25-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.2
+In-Reply-To: <20100805213314.GB13744@kroah.com>
+References: <20100805213314.GB13744@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-06 at 00:17 +0200, Kay Sievers wrote:
-> On Thu, Aug 5, 2010 at 23:11, john stultz <johnstul@us.ibm.com> wrote:
-> > On Thu, 2010-08-05 at 15:33 +0300, Alexander Shishkin wrote:
-> >> On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
-> >> > Is there a actual use case that you need this for?  I don't really have
-> >> > an issue with the code I just really want to make sure the feature would
-> >> > be useful enough to justify the API and code maintenance going forward.
-> 
-> Basically everything that schedules an action based on an absolute
-> time specification, like at 3pm today, and not in 3 hours from now,
-> needs to track such system time changes. Otherwise it has to do
-> nonsense like cron does, to wake up every minute to check the current
-> time.
+From: Guenter Roeck <guenter.roeck@ericsson.com>
 
-time_create(CLOCK_REALTIME,...) creates absolute (not relative) timers
-that should be adjusted when the clock is changed. Is that not the case?
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/regulator/core.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
--john
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 2248087..422a709 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1025,7 +1025,6 @@ static struct regulator *create_regulator(struct regulator_dev *rdev,
+ 		if (regulator->dev_attr.attr.name == NULL)
+ 			goto attr_name_err;
+ 
+-		regulator->dev_attr.attr.owner = THIS_MODULE;
+ 		regulator->dev_attr.attr.mode = 0444;
+ 		regulator->dev_attr.show = device_requested_uA_show;
+ 		err = device_create_file(dev, &regulator->dev_attr);
+-- 
+1.7.2
 
