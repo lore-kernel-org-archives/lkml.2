@@ -1,105 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759515Ab0HEAbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 4 Aug 2010 20:31:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43852 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759233Ab0HEAaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 4 Aug 2010 20:30:55 -0400
-Date: Thu, 5 Aug 2010 10:30:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: inux-kernel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 4, add a new git tree please?
-Message-Id: <20100805103050.3c201cdd.sfr@canb.auug.org.au>
-In-Reply-To: <20100804222350.GA2220@phenom.dumpdata.com>
-References: <20100804151035.14678528.sfr@canb.auug.org.au>
-	<20100804222350.GA2220@phenom.dumpdata.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1759531Ab0HEAhm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 4 Aug 2010 20:37:42 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53283 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755505Ab0HEAhj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 4 Aug 2010 20:37:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 5 Aug 2010 09:32:05 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Hugh Dickins <hughd@google.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Balbir Singh <balbir@in.ibm.com>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH -mm] hibernation: freeze swap at hibernation v2
+Message-Id: <20100805093205.3aa48713.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100804151839.62641a60.akpm@linux-foundation.org>
+References: <201007282334.08063.rjw@sisk.pl>
+	<20100730131432.891df49a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100802150225.851b48fe.kamezawa.hiroyu@jp.fujitsu.com>
+	<201008040109.15818.rjw@sisk.pl>
+	<20100804083119.8b7cd3f0.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100804135739.1d3ed9e2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100804151839.62641a60.akpm@linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 4 Aug 2010 15:18:39 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Hi Konrad,
+> On Wed, 4 Aug 2010 13:57:39 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > At taking memory snapshot in hibernate_snapshot(), all (directly called)
+> > memory allocator uses GFP_ATOMIC. And it seems swap-misusage during
+> > hibernation never occurs.
+> > 
+> > But, from pessimistic point of view, there is no guarantee to trust 
+> > any page allcation doesn't have __GFP_WAIT. It's better to have an indication
+> > "we enter hibernation, don't use swap!".
+> > 
+> > This patch tries to freeze new-swap-allocation during hibernation.
+> > (We can trust all user processes are freezed, then, dont't take care of swapin)
+> > 
+> > By this, no updates will be happen to swap_map[] among hibernate_snapshot()
+> > to save_image(). swap is thawed when swsusp_free() is called.
+> > We can trust swap-corruption will never happen without any doubts.
+> > 
+> 
+> Confused (as usual).
+> 
+Sorry
+> The above seems to be saying "there isn't a bug, but perhaps there is
+> one that we don't know about so let's fix it in case it's there".  Or
+> something.
+> 
+> But this email thread used to be called "Memory corruption during
+> hibernation since 2.6.31" which sounds a heck of a lot more serious.
+> 
+> Does this patch fix memory corruption?  If so, why was that corruption
+> occurring, and under which circumstances?
+> 
+The corruption we see now is fixed by 
+mm-fix-corruption-of-hibernation-caused-by-reusing-swap-during-image-saving.patch
+This patch disables swap-reuse by the hibernation code itself and fixes the bug.
 
-On Wed, 4 Aug 2010 18:23:50 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
-.com> wrote:
->
-> I was wondering if you could add in your awesome tool this extra git
-> tree:
->=20
->  git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git
->=20
-> (the head of it please)
->=20
-> It has this patchset: http://lkml.org/lkml/2010/7/27/246
->=20
-> that I have been carrying in=20
-> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git
->=20
-> but I realized it should probably not be in the swiotlb and was hence
-> wondering if you would be OK adding in that extra git tree?
+But, IIUC, comments from reviewer was "it looks like a temporary-fix. It will work
+and be good for backporting...but can't we have a permanent fix which never be
+broken by anyone ?" 
 
-Added from today, but only because everything in it is already in
-linux-next from your other tree.  I assume that you will remove this stuff
-from there.
+IOW, the patch doesn't stop get_swap_page() because we believe all
+subsystems related to hibernation works well _now_ and everyone use GFP_ATOMIC.
 
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
+However, hibernation is a set of complex features. It's coded very carefully and
+works well but no one can't see the all of codes in subsystems. So, some safe
+system is better rather than believing.
 
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
+(BTW, one of reasons we can believe we are safe is that critical threads have
+ to be frozen before creating snapshot.)
 
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
+For example, for guaranteeing gfp_mask, we have 
+	clear_gfp_allowed_mask()
+	set_gfp_allowed_mask()
+and clears __GFP_IO|__GFP_FS from all allocation requests via alloc_pages, slab,
+slub etc even if someone use a gfp_mask other than GFP_ATOMIC.
+These code is for notifying memory allocator that "hibernation is running!".
 
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
+The idea of this patch is notifying swap-allocator that "hibernation is running!"
+(With this, we can believe ourselves even if some tainted modules are loaded.)
 
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
+This patch's purpose is adding a safe system rather than believing no one does
+bad thing. Fortunately, disallowing using swap is easy.
 
---Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMWgY6AAoJEDMEi1NhKgbsRp8H+gKleEj9YuyGF7yCuqZoUp3m
-x8gRtaTC509xOQRGWvQXrB8z0sOs6FeJknHvxt79z91rI0MWOL39D2vf5ZQG3+D+
-9CFXrsKbr0bKJ0KakHvgWD+vo35cAWWHGMbIMqQPWZzL2MDddQRXNTMB2Pp7oLQR
-AbV3MP+RJ+ZvSDD4HWRb5dN4gYppJBWlkbI9CSf6Y3+sKO9CmDAeGGdCaNOLvpBl
-DCp+W3zr3Tk4SUyjPulmikiFK22vYa8gKY3Dus68wvoiELZnQe67QY+hExey8apu
-lzTbx+45gSEk+1DASHe17kqfThFGGqY6jYNHcyRaSqLDXOebyGr6b3ajqFxBSi8=
-=Ghr4
------END PGP SIGNATURE-----
+Thanks,
+-Kame
 
---Signature=_Thu__5_Aug_2010_10_30_50_+1000_/yV4MGOlC85o3oCm--
+
+
+
+
+
