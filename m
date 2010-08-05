@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933389Ab0HETaY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:30:24 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:29800 "EHLO
+	id S933449Ab0HETak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:30:40 -0400
+Received: from smtp.microsoft.com ([131.107.115.212]:18483 "EHLO
 	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933169Ab0HET3y convert rfc822-to-8bit (ORCPT
+	with ESMTP id S933169Ab0HETad convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:29:54 -0400
+	Thu, 5 Aug 2010 15:30:33 -0400
 From: Hank Janssen <hjanssen@microsoft.com>
 To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
         "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
         "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>
 CC: Haiyang Zhang <haiyangz@microsoft.com>,
         "'gregkh@suse.de'" <gregkh@suse.de>
-Subject: [PATCH 2/5] staging: hv: Fixed lockup problem with bounce_buffer
- scatter list
-Thread-Topic: [PATCH 2/5] staging: hv: Fixed lockup problem with
- bounce_buffer scatter list
-Thread-Index: Acs000n4umh+quy0SoacBAaO04Zgug==
-Date: Thu, 5 Aug 2010 19:29:53 +0000
-Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FEC88B@TK5EX14MBXC114.redmond.corp.microsoft.com>
+Subject: [PATCH 4/5] staging: hv: Increased storvsc ringbuffer and
+ max_io_requests
+Thread-Topic: [PATCH 4/5] staging: hv: Increased storvsc ringbuffer and
+ max_io_requests
+Thread-Index: Acs008UdxtEncPL+Rpqoxnj3OpofFw==
+Date: Thu, 5 Aug 2010 19:30:31 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C56223FEC89F@TK5EX14MBXC114.redmond.corp.microsoft.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -34,55 +34,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Hank Janssen <hjanssen@microsoft.com>
 
-Fixed lockup problem with bounce_buffer scatter list which caused
-crashes in heavy loads. Under heavy loads with many clients we this
-problem appear, it causes a kernel Panic.
+Increased storvsc ringbuffer and max_io_requests. This now more
+closely mimics the numbers on Hyper-V. And will allow more IO requests
+to take place for the SCSI driver.
+
+Max_IO is set to double from what it was before, Hyper-V allows it and
+we have had appliance builder requests to see if it was a problem to
+increase the number.
+
+Ringbuffer size for storvsc is now increased because I have seen A few buffer
+problems on extremely busy systems. They were Set pretty low before.
+And since max_io_requests is increased I Really needed to increase the buffer
+as well.
+
 
 Signed-off-by:Hank Janssen <hjanssen@microsoft.com>
 Signed-off-by:Haiyang Zhang <haiyangz@microsoft.com>
 Cc: stable <stable@kernel.org>
 ---
- drivers/staging/hv/storvsc_drv.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/staging/hv/storvsc_api.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index 3b9ccb0..169d701 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -615,6 +615,7 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
- 	unsigned int request_size = 0;
- 	int i;
- 	struct scatterlist *sgl;
-+	unsigned int sg_count = 0;
+diff --git a/drivers/staging/hv/storvsc_api.h b/drivers/staging/hv/storvsc_api.h
+index 0063bde..8505a1c 100644
+--- a/drivers/staging/hv/storvsc_api.h
++++ b/drivers/staging/hv/storvsc_api.h
+@@ -28,10 +28,10 @@
+ #include "vmbus_api.h"
  
- 	DPRINT_DBG(STORVSC_DRV, "scmnd %p dir %d, use_sg %d buf %p len %d "
- 		   "queue depth %d tagged %d", scmnd, scmnd->sc_data_direction, @@ -697,6 +698,7 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
- 	request->DataBuffer.Length = scsi_bufflen(scmnd);
- 	if (scsi_sg_count(scmnd)) {
- 		sgl = (struct scatterlist *)scsi_sglist(scmnd);
-+		sg_count = scsi_sg_count(scmnd);
+ /* Defines */
+-#define STORVSC_RING_BUFFER_SIZE			(10*PAGE_SIZE)
++#define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
+ #define BLKVSC_RING_BUFFER_SIZE				(20*PAGE_SIZE)
  
- 		/* check if we need to bounce the sgl */
- 		if (do_bounce_buffer(sgl, scsi_sg_count(scmnd)) != -1) { @@ -731,15 +733,16 @@ static int storvsc_queuecommand(struct scsi_cmnd *scmnd,
- 					      scsi_sg_count(scmnd));
+-#define STORVSC_MAX_IO_REQUESTS				64
++#define STORVSC_MAX_IO_REQUESTS				128
  
- 			sgl = cmd_request->bounce_sgl;
-+			sg_count = cmd_request->bounce_sgl_count;
- 		}
- 
- 		request->DataBuffer.Offset = sgl[0].offset;
- 
--		for (i = 0; i < scsi_sg_count(scmnd); i++) {
-+		for (i = 0; i < sg_count; i++) {
- 			DPRINT_DBG(STORVSC_DRV, "sgl[%d] len %d offset %d\n",
- 				   i, sgl[i].length, sgl[i].offset);
--			request->DataBuffer.PfnArray[i] =
--					page_to_pfn(sg_page((&sgl[i])));
-+			request->DataBuffer.PfnArray[i] =
-+				page_to_pfn(sg_page((&sgl[i])));
- 		}
- 	} else if (scsi_sglist(scmnd)) {
- 		/* ASSERT(scsi_bufflen(scmnd) <= PAGE_SIZE); */
+ /*
+  * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
 --
 1.6.0.2
 
