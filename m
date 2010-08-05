@@ -1,172 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934252Ab0HEUfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 16:35:31 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:57007 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758872Ab0HEUf2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 16:35:28 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>,
-        "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
-CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-        "'akpm@osdl.org'" <akpm@osdl.org>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Thu, 5 Aug 2010 14:35:21 -0600
-Subject: [PATCH 11/12] scsi: megaraid_sas - Add three times Online
- controller reset
-Thread-Topic: [PATCH 11/12] scsi: megaraid_sas - Add three times Online
- controller reset
-Thread-Index: Aco28IhK0BCwqEkwToSTDcG+BIA9kwDb1hagAACJvwADF6mW4AvxomIAHahLLtAAA8xQAAbHLQFQAbWKG4AJbK7AwA==
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67FB5@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
- <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3CDB80C32@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3D0804561@cosmail02.lsi.com>
- <4B6A08C587958942AA3002690DD4F8C3D09274B2@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D09274B2@cosmail02.lsi.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S934333Ab0HEUg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 16:36:28 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40459 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758651Ab0HEUgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 16:36:24 -0400
+Date: Thu, 5 Aug 2010 22:36:23 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: David Brownell <david-b@pacbell.net>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 26/42] drivers/spi/amba-pl022.c: Adjust confusing if indentation
+In-Reply-To: <921858.63779.qm@web180313.mail.gq1.yahoo.com>
+Message-ID: <Pine.LNX.4.64.1008052235400.31692@ask.diku.dk>
+References: <921858.63779.qm@web180313.mail.gq1.yahoo.com>
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RESUBMIT requested by James Bottomley:
+From: Julia Lawall <julia@diku.dk>
 
-If fw didn't raise the interrupt with the fw state change to driver and fw goes to failure state, driver
-Will check the FW state in driver's timeout routine and issue the reset if need.  Driver will do the OCR upto three
-Times until kill adapter.  Also driver will issue OCR before driver kill adapter even if fw in operational state.   
+The return -EINVAL appears to only make sense if the if branch that it is
+aligned with is taken, so move it into that branch
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@r disable braces4@
+position p1,p2;
+statement S1,S2;
+@@
+
+(
+if (...) { ... }
+|
+if (...) S1@p1 S2@p2
+)
+
+@script:python@
+p1 << r.p1;
+p2 << r.p2;
+@@
+
+if (p1[0].column == p2[0].column):
+  cocci.print_main("branch",p1)
+  cocci.print_secs("after",p2)
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-drivers/scsi/megaraid/megaraid_sas.c |   70 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 69 insertions(+), 1 deletion(-)
+This patch changes the semantics, and the change might not be correct.
 
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-04 07:43:30.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-04 07:44:48.000000000 -0400
-@@ -730,6 +730,10 @@ static int
- megasas_check_reset_gen2(struct megasas_instance *instance,
- 		struct megasas_register_set __iomem *regs)
- {
-+	if (instance->adprecovery != MEGASAS_HBA_OPERATIONAL) {
-+		return 1;
-+	}
-+
- 	return 0;
- }
- 
-@@ -942,6 +946,7 @@ megasas_make_sgl_skinny(struct megasas_i
- 			mfi_sgl->sge_skinny[i].length = sg_dma_len(os_sgl);
- 			mfi_sgl->sge_skinny[i].phys_addr =
- 						sg_dma_address(os_sgl);
-+			mfi_sgl->sge_skinny[i].flag = 0;
- 		}
- 	}
- 	return sge_count;
-@@ -1569,6 +1574,28 @@ static void megasas_complete_cmd_dpc(uns
- 	}
- }
- 
-+static void
-+megasas_internal_reset_defer_cmds(struct megasas_instance *instance);
-+
-+static void
-+process_fw_state_change_wq(struct work_struct *work);
-+
-+void megasas_do_ocr(struct megasas_instance *instance)
-+{
-+	if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS1064R) ||
-+	(instance->pdev->device == PCI_DEVICE_ID_DELL_PERC5) ||
-+	(instance->pdev->device == PCI_DEVICE_ID_LSI_VERDE_ZCR)) {
-+		*instance->consumer     = MEGASAS_ADPRESET_INPROG_SIGN;
-+	}
-+	instance->instancet->disable_intr(instance->reg_set);
-+	instance->adprecovery   = MEGASAS_ADPRESET_SM_INFAULT;
-+	instance->issuepend_done = 0;
-+
-+	atomic_set(&instance->fw_outstanding, 0);
-+	megasas_internal_reset_defer_cmds(instance);
-+	process_fw_state_change_wq(&instance->work_init);
-+}
-+
- /**
-  * megasas_wait_for_outstanding -	Wait for all outstanding cmds
-  * @instance:				Adapter soft state
-@@ -1586,6 +1613,8 @@ static int megasas_wait_for_outstanding(
- 	unsigned long flags;
- 	struct list_head clist_local;
- 	struct megasas_cmd *reset_cmd;
-+	u32 fw_state;
-+	u8 kill_adapter_flag;
- 
- 	spin_lock_irqsave(&instance->hba_lock, flags);
- 	adprecovery = instance->adprecovery;
-@@ -1671,7 +1700,45 @@ static int megasas_wait_for_outstanding(
- 		msleep(1000);
- 	}
- 
--	if (atomic_read(&instance->fw_outstanding)) {
-+	i = 0;
-+	kill_adapter_flag = 0;
-+	do {
-+		fw_state = instance->instancet->read_fw_status_reg(
-+					instance->reg_set) & MFI_STATE_MASK;
-+		if ((fw_state == MFI_STATE_FAULT) &&
-+			(instance->disableOnlineCtrlReset == 0)) {
-+			if (i == 3) {
-+				kill_adapter_flag = 2;
-+				break;
+ drivers/spi/amba-pl022.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/spi/amba-pl022.c b/drivers/spi/amba-pl022.c
+index f0a1418..4de50de 100644
+--- a/drivers/spi/amba-pl022.c
++++ b/drivers/spi/amba-pl022.c
+@@ -1348,10 +1348,11 @@ static int verify_controller_parameters(struct pl022 *pl022,
+ 			if ((chip_info->duplex !=
+ 			     SSP_MICROWIRE_CHANNEL_FULL_DUPLEX)
+ 			    && (chip_info->duplex !=
+-				SSP_MICROWIRE_CHANNEL_HALF_DUPLEX))
++				SSP_MICROWIRE_CHANNEL_HALF_DUPLEX)) {
+ 				dev_err(chip_info->dev,
+ 					"Microwire duplex mode is configured incorrectly\n");
+ 				return -EINVAL;
 +			}
-+			megasas_do_ocr(instance);
-+			kill_adapter_flag = 1;
-+
-+			/* wait for 1 secs to let FW finish the pending cmds */
-+			msleep(1000);
-+		}
-+		i++;
-+	} while (i <= 3);
-+
-+	if (atomic_read(&instance->fw_outstanding) &&
-+					!kill_adapter_flag) {
-+		if (instance->disableOnlineCtrlReset == 0) {
-+
-+			megasas_do_ocr(instance);
-+
-+			/* wait for 5 secs to let FW finish the pending cmds */
-+			for (i = 0; i < wait_time; i++) {
-+				int outstanding =
-+					atomic_read(&instance->fw_outstanding);
-+				if (!outstanding)
-+					return SUCCESS;
-+				msleep(1000);
-+			}
-+		}
-+	}
-+
-+	if (atomic_read(&instance->fw_outstanding) ||
-+					(kill_adapter_flag == 2)) {
- 		printk(KERN_NOTICE "megaraid_sas: pending cmds after reset\n");
- 		/*
- 		* Send signal to FW to stop processing any pending cmds.
-@@ -2681,6 +2748,7 @@ static int megasas_create_frame_pool(str
- 			return -ENOMEM;
- 		}
- 
-+		memset(cmd->frame, 0, total_sz);
- 		cmd->frame->io.context = cmd->index;
- 		cmd->frame->io.pad_0 = 0;
- 	}
+ 		} else {
+ 			if (chip_info->duplex != SSP_MICROWIRE_CHANNEL_FULL_DUPLEX)
+ 				dev_err(chip_info->dev,
