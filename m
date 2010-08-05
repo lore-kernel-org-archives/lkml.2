@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933433Ab0HETyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:54:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8622 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932192Ab0HETyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:54:36 -0400
-Date: Thu, 5 Aug 2010 15:54:15 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH 27/38] union-mount: In-kernel file copyup routines
-Message-ID: <20100805195415.GA30348@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-28-git-send-email-vaurora@redhat.com> <E1OgfrQ-0000sG-Jx@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1OgfrQ-0000sG-Jx@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+	id S933330Ab0HET5w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:57:52 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:50514 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759273Ab0HET5t convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 15:57:49 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Thu, 5 Aug 2010 13:57:25 -0600
+Subject: [PATCH 3/12] scsi: megaraid_sas - Online Controller Reset - III:
+ add the reset function for Gen2 related chip
+Thread-Topic: [PATCH 3/12] scsi: megaraid_sas - Online Controller Reset -
+ III: add the reset function for Gen2 related chip
+Thread-Index: AcsISPnOZnFQYxn1TaKnA/NMZ/+H5gsjzrvA
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67F7A@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804546@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804546@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 05:26:28PM +0200, Miklos Szeredi wrote:
-> On Tue, 15 Jun 2010, Valerie Aurora wrote:
-> > When a file on the read-only layer of a union mount is altered, it
-> > must be copied up to the topmost read-write layer.  This patch creates
-> > union_copyup() and its supporting routines.
-> > 
-> > Thanks to Valdis Kletnieks for a bug fix.
-> 
-> What happens if there's a crash in the middle of the copyup?
-> 
-> Possible solution is using rename to atomically "replace" the
-> underlying file.  That however introduces namespace issues: where to
-> put the temporary file which then needs to be deleted on "fsck.union"?
+Re-submitted requested by James Bottomley.
 
-This kind of problem is what makes union mounts so much fun to work
-on!! </sarcasm>
+Add the gen2 chip reset functions to the driver.  Driver will write the gen2 chip register offset to force the controller to reset.
 
-So far this version of union mounts has kept the namespace clean, so
-I'd like to keep it that way.  One of my ideas is to mark the new file
-as "copy-in-progress" and if we encounter such a file, we restart the
-copyup again.  But how to mark it?  A new inode flag?
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-This applies in some form to directory copyup too.  However, we
-already have a flag we use to indicate that it's copied up - the
-opaque flag.  I moved that to be set after the directory entries are
-copied up.  If it crashes in the middle, it can be safely restarted
-the next time we call readdir() on that directory.
+---
+drivers/scsi/megaraid/megaraid_sas.c |   41 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
 
-I added a comment to the commit message describing the problem, so
-it's at least documented.
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:38:29.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:38:43.000000000 -0400
+@@ -662,6 +662,47 @@ static int
+ megasas_adp_reset_gen2(struct megasas_instance *instance,
+ 			struct megasas_register_set __iomem *reg_set)
+ {
++	u32			retry = 0 ;
++	u32			HostDiag;
++
++	writel(0, &reg_set->seq_offset);
++	writel(4, &reg_set->seq_offset);
++	writel(0xb, &reg_set->seq_offset);
++	writel(2, &reg_set->seq_offset);
++	writel(7, &reg_set->seq_offset);
++	writel(0xd, &reg_set->seq_offset);
++	msleep(1000);
++
++	HostDiag = (u32)readl(&reg_set->host_diag);
++
++	while ( !( HostDiag & DIAG_WRITE_ENABLE) ) {
++		msleep(100);
++		HostDiag = (u32)readl(&reg_set->host_diag);
++		printk(KERN_NOTICE "RESETGEN2: retry=%x, hostdiag=%x\n",
++					retry, HostDiag);
++
++		if (retry++ >= 100)
++			return 1;
++
++	}
++
++	printk(KERN_NOTICE "ADP_RESET_GEN2: HostDiag=%x\n", HostDiag);
++
++	writel((HostDiag | DIAG_RESET_ADAPTER), &reg_set->host_diag);
++
++	ssleep(10);
++
++	HostDiag = (u32)readl(&reg_set->host_diag);
++	while ( ( HostDiag & DIAG_RESET_ADAPTER) ) {
++		msleep(100);
++		HostDiag = (u32)readl(&reg_set->host_diag);
++		printk(KERN_NOTICE "RESET_GEN2: retry=%x, hostdiag=%x\n",
++				retry, HostDiag);
++
++		if (retry++ >= 1000)
++			return 1;
++
++	}
+ 	return 0;
+ }
 
--VAL
