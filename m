@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab0HELbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 07:31:21 -0400
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:42502 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758838Ab0HELbS (ORCPT
+	id S933179Ab0HELdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 07:33:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40286 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754858Ab0HELdb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 07:31:18 -0400
-X-Greylist: delayed 1157 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 07:31:18 EDT
-Subject: [PATCH] stop_machine: struct cpu_stopper, remove alignment padding
- on 64 bits
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 12:11:57 +0100
-Message-ID: <1281006717.2000.12.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Aug 2010 07:33:31 -0400
+Date: Thu, 5 Aug 2010 07:32:40 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>, Valdis.Kletnieks@vt.edu,
+        josef@redhat.com,
+        Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: direct-io regression [Was: How to track down abysmal
+ performance ata - raid1 - crypto - vg/lv - xfs]
+Message-ID: <20100805113240.GA29846@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Dominik Brodowski <linux@dominikbrodowski.net>,
+	Valdis.Kletnieks@vt.edu, josef@redhat.com,
+	Michael Monnerie <michael.monnerie@is.it-management.at>,
+	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+	xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+References: <20100804073546.GA7494@comet.dominikbrodowski.net>
+ <20100804085039.GA11671@infradead.org>
+ <20100804091317.GA27779@isilmar-3.linta.de>
+ <20100804092122.GA2998@infradead.org>
+ <20100804073546.GA7494@comet.dominikbrodowski.net>
+ <201008041116.09822@zmi.at>
+ <20100804102526.GB13766@isilmar-3.linta.de>
+ <15446.1280953986@localhost>
+ <20100805093100.GA3001@comet.dominikbrodowski.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805093100.GA3001@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C5AA172.016F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder elements in structure cpu_stopper to remove alignment padding on
-64 bit builds, this shrinks its size from 40 to 32 bytes saving 8 bytes
-per cpu.
+On Thu, Aug 05, 2010 at 11:31:00AM +0200, Dominik Brodowski wrote:
+> Hey,
+> 
+> when attempting to track down insufficient I/O performance, I found the
+> following reression relating to direct-io on my notebook, where an
+> ata device, which consists of several partitions, is combined to a lvm
+> volume, and one logical volume is then encrypted using dm-crypt. Test case
+> was the following command:
+> 
+> $ dd if=/dev/mapper/vg0-root_crypt of=/dev/zero iflag=direct bs=8k count=131072
+> 
+> 2.6.34 results in ~16 MB/s,
+> 2.6.35 results in ~ 3.1 MB/s
+> 
+> The regression was bisected down to the follwoing commit:
+> 
+> commit c2c6ca417e2db7a519e6e92c82f4a933d940d076
+> Author: Josef Bacik <josef@redhat.com>
+> Date:   Sun May 23 11:00:55 2010 -0400
+> 
+>     direct-io: do not merge logically non-contiguous requests
+>     
+> ...
+> 
+> How to fix this? I do not use btrfs, but ext3 (and the access was down on
+> the block level, not on the fs level, so this btrs-related commit should not
+> cause such a regression).
 
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
----
-patch against 2.6.35
-compiled & tested on x86_64
+Well, you've already bisected down to an offending if statement, that's
+a huge help.  I'll try to reproduce this and fix it up today.
 
-regards
-Richard
+But, I'm surprised your drive is doing 8K dio reads at 16MB/s, that
+seems a little high.  
 
-
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 70f8d90..4372ccb 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -35,9 +35,9 @@ struct cpu_stop_done {
- /* the actual stopper, one per every possible cpu, enabled on online cpus */
- struct cpu_stopper {
- 	spinlock_t		lock;
-+	bool			enabled;	/* is this stopper enabled? */
- 	struct list_head	works;		/* list of pending works */
- 	struct task_struct	*thread;	/* stopper thread */
--	bool			enabled;	/* is this stopper enabled? */
- };
- 
- static DEFINE_PER_CPU(struct cpu_stopper, cpu_stopper);
-
+-chris
 
