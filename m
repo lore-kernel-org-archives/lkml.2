@@ -1,71 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759331Ab0HETpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 15:45:19 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:43852 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759273Ab0HETpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 15:45:13 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAB2yWkx5LdAL/2dsb2JhbACgP3LHQ4U6BA
-Date: Fri, 6 Aug 2010 05:45:07 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@kernel.dk>
-Subject: Re: Transparent Hugepage Support #29
-Message-ID: <20100805194507.GA32496@amd>
-References: <20100803135615.GG6071@random.random>
- <201008050727.25253.edt@aei.ca>
- <20100805114915.GA25503@random.random>
- <201008050758.04918.edt@aei.ca>
+	id S1759354Ab0HETr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 15:47:57 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:54891 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759315Ab0HETrz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 15:47:55 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>,
+        "'James.Bottomley@HansenPartnership.com'" 
+	<James.Bottomley@HansenPartnership.com>,
+        "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>
+CC: "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'akpm@osdl.org'" <akpm@osdl.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Thu, 5 Aug 2010 13:47:45 -0600
+Subject: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Index: AcsIRXwfwbieNXNUR6GBvdSy0cxVCQskSL/A
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBD67F68@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008050758.04918.edt@aei.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 07:57:52AM -0400, Ed Tomlinson wrote:
-> On Thursday 05 August 2010 07:49:15 Andrea Arcangeli wrote:
-> > On Thu, Aug 05, 2010 at 07:27:24AM -0400, Ed Tomlinson wrote:
-> > > On a tree with:
-> > > 
-> > > commit 9d9cec888c3c4a2d5b5f01c3f3984fc4bc602681
-> > > Merge: dd6c927 9edd35f
-> > > Author: Ed <edt@aei.ca>
-> > > Date:   Wed Aug 4 15:18:53 2010 -0400
-> > > 
-> > >     Merge branch 'vfs-scale-working' of git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin into vfs-scaling
-> > > 
-> > > merged on top of
-> > > 
-> > > commit 9fe6206f400646a2322096b56c59891d530e8d51
-> > > Author: Linus Torvalds <torvalds@linux-foundation.org>
-> > > Date:   Sun Aug 1 15:11:14 2010 -0700
-> > > 
-> > >     Linux 2.6.35
-> > 
-> > Well I didn't realize you also merged 2.6.35 on top of it. This is no
-> > standard tree, so I suggest you to checkout -f origin/master of Nick's
-> > tree until he updates to 2.6.35 himself (then I can port to it).
-> 
-> Nick,
-> 
-> Any chance of the above happening?  I'd love to test both the vfs scaling changes
-> and Andrea's much improved hugepage support together on top of .35
+James Bottomley suggested me to resubmit those patches (12 patches).  First 8 patches should be downloaded together and them compile them.
 
-Try vfs-scale branch now. Cleaned up and rebased on 2.6.35 although it
-is not as well tested as I would like but I won't have any more time on
-it until next week.
+Enable the Online Controller reset bit in the register related functions.  This is first part of the Online Controller Reset.
+The driver supports XScle and Gen2 chips.  Driver need to read the FW state register to see if there is FW state change
+Happen.
 
-vfs-scale-working retained history of fixes. I'll start another
-vfs-scale-working-2.6.36 branch for new fixes.
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Thanks,
-Nick
+---
+drivers/scsi/megaraid/megaraid_sas.c |   53 +++++++++++++++++++----------------
+ drivers/scsi/megaraid/megarad_sas.h |   27 +++++++++++++++--
+ 2 files changed, 52 insertions(+), 28 deletions(-)
 
-
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:02:55.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 14:32:43.000000000 -0400
+@@ -164,7 +164,7 @@ megasas_return_cmd(struct megasas_instan
+ static inline void
+ megasas_enable_intr_xscale(struct megasas_register_set __iomem * regs)
+ {
+-	writel(1, &(regs)->outbound_intr_mask);
++	writel(0, &(regs)->outbound_intr_mask);
+ 
+ 	/* Dummy readl to force pci flush */
+ 	readl(&regs->outbound_intr_mask);
+@@ -200,24 +200,27 @@ static int 
+ megasas_clear_intr_xscale(struct megasas_register_set __iomem * regs)
+ {
+ 	u32 status;
++	u32 mfiStatus = 0;
+ 	/*
+ 	 * Check if it is our interrupt
+ 	 */
+ 	status = readl(&regs->outbound_intr_status);
+ 
+-	if (!(status & MFI_OB_INTR_STATUS_MASK)) {
+-		return 1;
+-	}
++	if (status & MFI_OB_INTR_STATUS_MASK)
++		mfiStatus = MFI_INTR_FLAG_REPLY_MESSAGE;
++	if (status & MFI_XSCALE_OMR0_CHANGE_INTERRUPT)
++		mfiStatus |= MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE;
+ 
+ 	/*
+ 	 * Clear the interrupt by writing back the same value
+ 	 */
+-	writel(status, &regs->outbound_intr_status);
++	if (mfiStatus)
++		writel(status, &regs->outbound_intr_status);
+ 
+ 	/* Dummy readl to force pci flush */
+ 	readl(&regs->outbound_intr_status);
+ 
+-	return 0;
++	return mfiStatus;
+ }
+ 
+ /**
+@@ -264,7 +267,7 @@ megasas_enable_intr_ppc(struct megasas_r
+ {
+ 	writel(0xFFFFFFFF, &(regs)->outbound_doorbell_clear);
+     
+-	writel(~0x80000004, &(regs)->outbound_intr_mask);
++	writel(~0x80000000, &(regs)->outbound_intr_mask);
+ 
+ 	/* Dummy readl to force pci flush */
+ 	readl(&regs->outbound_intr_mask);
+@@ -307,7 +310,7 @@ megasas_clear_intr_ppc(struct megasas_re
+ 	status = readl(&regs->outbound_intr_status);
+ 
+ 	if (!(status & MFI_REPLY_1078_MESSAGE_INTERRUPT)) {
+-		return 1;
++		return 0;
+ 	}
+ 
+ 	/*
+@@ -318,7 +321,7 @@ megasas_clear_intr_ppc(struct megasas_re
+ 	/* Dummy readl to force pci flush */
+ 	readl(&regs->outbound_doorbell_clear);
+ 
+-	return 0;
++	return 1;
+ }
+ /**
+  * megasas_fire_cmd_ppc -	Sends command to the FW
+@@ -397,7 +400,7 @@ megasas_clear_intr_skinny(struct megasas
+ 	status = readl(&regs->outbound_intr_status);
+ 
+ 	if (!(status & MFI_SKINNY_ENABLE_INTERRUPT_MASK)) {
+-		return 1;
++		return 0;
+ 	}
+ 
+ 	/*
+@@ -410,7 +413,7 @@ megasas_clear_intr_skinny(struct megasas
+ 	*/
+ 	readl(&regs->outbound_intr_status);
+ 
+-	return 0;
++	return 1;
+ }
+ 
+ /**
+@@ -425,12 +428,9 @@ megasas_fire_cmd_skinny(struct megasas_i
+ 			u32 frame_count,
+ 			struct megasas_register_set __iomem *regs)
+ {
+-	unsigned long flags;
+-	spin_lock_irqsave(&instance->fire_lock, flags);
+ 	writel(0, &(regs)->inbound_high_queue_port);
+ 	writel((frame_phys_addr | (frame_count<<1))|1,
+ 		&(regs)->inbound_low_queue_port);
+-	spin_unlock_irqrestore(&instance->fire_lock, flags);
+ }
+ 
+ static struct megasas_instance_template megasas_instance_template_skinny = {
+@@ -495,23 +495,29 @@ static int
+ megasas_clear_intr_gen2(struct megasas_register_set __iomem *regs)
+ {
+ 	u32 status;
++	u32 mfiStatus = 0;
+ 	/*
+ 	 * Check if it is our interrupt
+ 	 */
+ 	status = readl(&regs->outbound_intr_status);
+ 
+-	if (!(status & MFI_GEN2_ENABLE_INTERRUPT_MASK))
+-		return 1;
++	if (status & MFI_GEN2_ENABLE_INTERRUPT_MASK) {
++		mfiStatus = MFI_INTR_FLAG_REPLY_MESSAGE;
++	}
++	if (status & MFI_G2_OUTBOUND_DOORBELL_CHANGE_INTERRUPT) {
++		mfiStatus |= MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE;
++	}
+ 
+ 	/*
+ 	 * Clear the interrupt by writing back the same value
+ 	 */
+-	writel(status, &regs->outbound_doorbell_clear);
++	if (mfiStatus)
++		writel(status, &regs->outbound_doorbell_clear);
+ 
+ 	/* Dummy readl to force pci flush */
+ 	readl(&regs->outbound_intr_status);
+ 
+-	return 0;
++	return mfiStatus;
+ }
+ /**
+  * megasas_fire_cmd_gen2 -     Sends command to the FW
+@@ -540,7 +546,7 @@ static struct megasas_instance_template 
+ 
+ /**
+ *	This is the end of set of functions & definitions
+-* 	specific to ppc (deviceid : 0x60) controllers
++*       specific to gen2 (deviceid : 0x78, 0x79) controllers
+ */
+ 
+ /**
+@@ -599,8 +605,7 @@ megasas_issue_blocked_cmd(struct megasas
+ 	instance->instancet->fire_cmd(instance,
+ 			cmd->frame_phys_addr, 0, instance->reg_set);
+ 
+-	wait_event_timeout(instance->int_cmd_wait_q, (cmd->cmd_status != ENODATA),
+-		MEGASAS_INTERNAL_CMD_WAIT_TIME*HZ);
++	wait_event(instance->int_cmd_wait_q, cmd->cmd_status != ENODATA);
+ 
+ 	return 0;
+ }
+@@ -648,8 +653,8 @@ megasas_issue_blocked_abort_cmd(struct m
+ 	/*
+ 	 * Wait for this cmd to complete
+ 	 */
+-	wait_event_timeout(instance->abort_cmd_wait_q, (cmd->cmd_status != 0xFF),
+-		MEGASAS_INTERNAL_CMD_WAIT_TIME*HZ);
++	wait_event(instance->abort_cmd_wait_q, cmd->cmd_status != 0xFF);
++	cmd->sync_cmd = 0;
+ 
+ 	megasas_return_cmd(instance, cmd);
+ 	return 0;
+@@ -3137,7 +3142,7 @@ megasas_probe_one(struct pci_dev *pdev, 
+ 	init_waitqueue_head(&instance->abort_cmd_wait_q);
+ 
+ 	spin_lock_init(&instance->cmd_pool_lock);
+-	spin_lock_init(&instance->fire_lock);
++	spin_lock_init(&instance->hba_lock);
+ 	spin_lock_init(&instance->completion_lock);
+ 	spin_lock_init(&poll_aen_lock);
+ 
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.h new/drivers/scsi/megaraid/megaraid_sas.h
+--- old/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 14:02:55.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.h	2010-06-08 14:24:50.000000000 -0400
+@@ -73,6 +73,12 @@
+  * HOTPLUG	: Resume from Hotplug
+  * MFI_STOP_ADP	: Send signal to FW to stop processing
+  */
++#define WRITE_SEQUENCE_OFFSET		(0x0000000FC) /* I20 */
++#define HOST_DIAGNOSTIC_OFFSET		(0x000000F8)  /* I20 */
++#define DIAG_WRITE_ENABLE			(0x00000080)
++#define DIAG_RESET_ADAPTER			(0x00000004)
++
++#define MFI_ADP_RESET				0x00000040
+ #define MFI_INIT_ABORT				0x00000001
+ #define MFI_INIT_READY				0x00000002
+ #define MFI_INIT_MFIMODE			0x00000004
+@@ -704,6 +710,12 @@ struct megasas_ctrl_info {
+  */
+ #define IS_DMA64				(sizeof(dma_addr_t) == 8)
+ 
++#define MFI_XSCALE_OMR0_CHANGE_INTERRUPT		0x00000001
++
++#define MFI_INTR_FLAG_REPLY_MESSAGE			0x00000001
++#define MFI_INTR_FLAG_FIRMWARE_STATE_CHANGE		0x00000002
++#define MFI_G2_OUTBOUND_DOORBELL_CHANGE_INTERRUPT	0x00000004
++
+ #define MFI_OB_INTR_STATUS_MASK			0x00000002
+ #define MFI_POLL_TIMEOUT_SECS			60
+ #define MEGASAS_COMPLETION_TIMER_INTERVAL      (HZ/10)
+@@ -714,6 +726,9 @@ struct megasas_ctrl_info {
+ #define MFI_REPLY_SKINNY_MESSAGE_INTERRUPT	0x40000000
+ #define MFI_SKINNY_ENABLE_INTERRUPT_MASK	(0x00000001)
+ 
++#define MFI_1068_PCSR_OFFSET			0x84
++#define MFI_1068_FW_HANDSHAKE_OFFSET		0x64
++#define MFI_1068_FW_READY			0xDDDD0000
+ /*
+ * register set for both 1068 and 1078 controllers
+ * structure extended for 1078 registers
+@@ -755,8 +770,10 @@ struct megasas_register_set {
+ 	u32 	inbound_high_queue_port ;	/*00C4h*/
+ 
+ 	u32 	reserved_5;			/*00C8h*/
+-	u32 	index_registers[820];		/*00CCh*/
+-
++	u32	res_6[11];			/*CCh*/
++	u32	host_diag;
++	u32	seq_offset;
++	u32 	index_registers[807];		/*00CCh*/
+ } __attribute__ ((packed));
+ 
+ struct megasas_sge32 {
+@@ -1226,11 +1243,12 @@ struct megasas_instance {
+ 
+ 	struct megasas_cmd **cmd_list;
+ 	struct list_head cmd_pool;
++	/* used to sync fire the cmd to fw */
+ 	spinlock_t cmd_pool_lock;
++	/* used to sync fire the cmd to fw */
++	spinlock_t hba_lock;
+ 	/* used to synch producer, consumer ptrs in dpc */
+ 	spinlock_t completion_lock;
+-	/* used to sync fire the cmd to fw */
+-	spinlock_t fire_lock;
+ 	struct dma_pool *frame_dma_pool;
+ 	struct dma_pool *sense_dma_pool;
+ 
+@@ -1257,6 +1275,7 @@ struct megasas_instance {
+ 	u8 flag;
+ 	u8 unload;
+ 	u8 flag_ieee;
++	u8 adprecovery;
+ 	unsigned long last_time;
+ 
+ 	struct timer_list io_completion_timer; 
