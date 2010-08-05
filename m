@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab0HEPwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 11:52:06 -0400
-Received: from kroah.org ([198.145.64.141]:46554 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752491Ab0HEPwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 11:52:03 -0400
-Date: Thu, 5 Aug 2010 08:51:26 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Subject: Re: linux-next: manual merge of the tty tree with the kgdb tree
-Message-ID: <20100805155126.GB11121@kroah.com>
-References: <20100805131700.5c03444c.sfr@canb.auug.org.au>
+	id S933424Ab0HEPyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 11:54:15 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:47742 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756454Ab0HEPyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 11:54:13 -0400
+Date: Thu, 5 Aug 2010 17:53:57 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: josef@redhat.com, Valdis.Kletnieks@vt.edu,
+        Michael Monnerie <michael.monnerie@is.it-management.at>,
+        Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+Subject: Re: direct-io regression [Was: How to track down abysmal
+ performance ata - raid1 - crypto - vg/lv - xfs]
+Message-ID: <20100805155357.GA8245@comet.dominikbrodowski.net>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Chris Mason <chris.mason@oracle.com>, josef@redhat.com,
+	Valdis.Kletnieks@vt.edu,
+	Michael Monnerie <michael.monnerie@is.it-management.at>,
+	Christoph Hellwig <hch@infradead.org>, linux-raid@vger.kernel.org,
+	xfs@oss.sgi.com, linux-kernel@vger.kernel.org, dm-devel@redhat.com
+References: <20100805123649.GA18672@dhcp231-156.rdu.redhat.com>
+ <20100805113240.GA29846@think>
+ <20100805153519.GA7242@comet.dominikbrodowski.net>
+ <20100805153943.GO29846@think>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100805131700.5c03444c.sfr@canb.auug.org.au>
+In-Reply-To: <20100805153943.GO29846@think>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 01:17:00PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Thu, Aug 05, 2010 at 11:39:43AM -0400, Chris Mason wrote:
+> On Thu, Aug 05, 2010 at 05:35:19PM +0200, Dominik Brodowski wrote:
+> > On Thu, Aug 05, 2010 at 07:32:40AM -0400, Chris Mason wrote:
+> > > But, I'm surprised your drive is doing 8K dio reads at 16MB/s, that
+> > > seems a little high.  
+> > 
+> > Well, that's what it does:
+> > 
+> > # $ dd if=/dev/mapper/vg0-home_crypt of=/dev/zero iflag=direct bs=8k count=131072 seek=131072
+> > # 131072+0 records in
+> > # 131072+0 records out
+> > # 1073741824 bytes (1.1 GB) copied, 62.0177 s, 17.3 MB/s
 > 
-> Today's linux-next merge of the tty tree got a conflict in
-> drivers/char/vt.c between commit be6f9f80724e1684987c486c33c4eb882ba50680
-> ("vt,console,kdb: automatically set kdb LINES variable") from the kgdb
-> tree and commit 46ca223803ae544fb5460bc81d961244866fcdc4 ("vt: clean up
-> the code - use kernel library") from the tty tree.
-> 
-> Just overlapping additions.  I fixed it up (see below) and can carry the
-> fix as necessary.
+> Can I ask you to do the test directly to the real honest to goodness
+> drive?   If it were an SSD I'd be less surprised, but then the extra
+> submits shouldn't hurt the ssd that much either.
 
-Thanks, that's an easy fixup.
+>From lower the chain up to the device:
 
-greg k-h
+# LANG=EN dd if=/dev/mapper/vg0-root_crypt of=/dev/zero bs=8k count=131072 seek=393300 iflag=direct
+131072+0 records in
+131072+0 records out
+1073741824 bytes (1.1 GB) copied, 63.1217 s, 17.0 MB/s
+
+# LANG=EN dd if=/dev/mapper/vg0-root of=/dev/zero bs=8k count=131072 seek=393300 iflag=direct
+131072+0 records in
+131072+0 records out
+1073741824 bytes (1.1 GB) copied, 43.2335 s, 24.8 MB/s
+
+# LANG=EN dd if=/dev/sda5 of=/dev/zero bs=8k count=131072 seek=393300 iflag=direct
+131072+0 records in
+131072+0 records out
+1073741824 bytes (1.1 GB) copied, 42.0868 s, 25.5 MB/s
+
+Best,
+	Dominik
