@@ -1,71 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760988Ab0HEWc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 18:32:27 -0400
-Received: from kroah.org ([198.145.64.141]:37808 "EHLO coco.kroah.org"
+	id S1760968Ab0HEWcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 18:32:41 -0400
+Received: from kroah.org ([198.145.64.141]:37793 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934564Ab0HEWY5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 18:24:57 -0400
+	id S934555Ab0HEWYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 18:24:55 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Richard=20R=C3=B6jfors?= <richard.rojfors@pelagicore.com>,
+Cc: Yury Georgievskiy <ygeorgie@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 57/67] timbuart: use __devinit and __devexit macros for probe and remove
-Date: Thu,  5 Aug 2010 15:23:24 -0700
-Message-Id: <1281047014-23429-57-git-send-email-gregkh@suse.de>
+Subject: [PATCH 55/67] serial: mcf: don't take spinlocks in already protected functions
+Date: Thu,  5 Aug 2010 15:23:22 -0700
+Message-Id: <1281047014-23429-55-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.2
 In-Reply-To: <20100805213528.GA13794@kroah.com>
 References: <20100805213528.GA13794@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Röjfors <richard.rojfors@pelagicore.com>
+From: Yury Georgievskiy <ygeorgie@gmail.com>
 
-Move the probe and remove functions to the devinit and devexit sections.
+Don't take the port spinlock in uart functions where the serial core
+already takes care of locking/unlocking them.
 
-Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+The code would actually lock up on architectures where spinlocks are
+implemented.
+
+Also protect calling mcf_rx_chars/mcf_tx_chars in the interrupt handler by
+the port spinlock and use IRQ_RETVAL to return from isr.
+
+[akpm@linux-foundation.org: make irq-handler return value more explicit]
+Signed-off-by: Yury Georgievskiy <ygeorgie@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Acked-by: Greg Ungerer <gerg@uclinux.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/timbuart.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/serial/mcf.c |   31 +++++++++++++------------------
+ 1 files changed, 13 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/serial/timbuart.c b/drivers/serial/timbuart.c
-index 67ca642..1f36b7e 100644
---- a/drivers/serial/timbuart.c
-+++ b/drivers/serial/timbuart.c
-@@ -423,7 +423,7 @@ static struct uart_driver timbuart_driver = {
- 	.nr = 1
- };
- 
--static int timbuart_probe(struct platform_device *dev)
-+static int __devinit timbuart_probe(struct platform_device *dev)
+diff --git a/drivers/serial/mcf.c b/drivers/serial/mcf.c
+index b5aaef9..3394b7c 100644
+--- a/drivers/serial/mcf.c
++++ b/drivers/serial/mcf.c
+@@ -70,16 +70,14 @@ static unsigned int mcf_tx_empty(struct uart_port *port)
+ static unsigned int mcf_get_mctrl(struct uart_port *port)
  {
- 	int err, irq;
- 	struct timbuart_port *uart;
-@@ -489,7 +489,7 @@ err_mem:
- 	return err;
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 	unsigned int sigs;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	sigs = (readb(port->membase + MCFUART_UIPR) & MCFUART_UIPR_CTS) ?
+ 		0 : TIOCM_CTS;
+ 	sigs |= (pp->sigs & TIOCM_RTS);
+ 	sigs |= (mcf_getppdcd(port->line) ? TIOCM_CD : 0);
+ 	sigs |= (mcf_getppdtr(port->line) ? TIOCM_DTR : 0);
+-	spin_unlock_irqrestore(&port->lock, flags);
++
+ 	return sigs;
  }
  
--static int timbuart_remove(struct platform_device *dev)
-+static int __devexit timbuart_remove(struct platform_device *dev)
+@@ -88,16 +86,13 @@ static unsigned int mcf_get_mctrl(struct uart_port *port)
+ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
  {
- 	struct timbuart_port *uart = platform_get_drvdata(dev);
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
  
-@@ -507,7 +507,7 @@ static struct platform_driver timbuart_platform_driver = {
- 		.owner	= THIS_MODULE,
- 	},
- 	.probe		= timbuart_probe,
--	.remove		= timbuart_remove,
-+	.remove		= __devexit_p(timbuart_remove),
- };
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->sigs = sigs;
+ 	mcf_setppdtr(port->line, (sigs & TIOCM_DTR));
+ 	if (sigs & TIOCM_RTS)
+ 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP1);
+ 	else
+ 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP0);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
  
- /*--------------------------------------------------------------------------*/
+ /****************************************************************************/
+@@ -105,12 +100,9 @@ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
+ static void mcf_start_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr |= MCFUART_UIR_TXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -118,12 +110,9 @@ static void mcf_start_tx(struct uart_port *port)
+ static void mcf_stop_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr &= ~MCFUART_UIR_TXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -131,12 +120,9 @@ static void mcf_stop_tx(struct uart_port *port)
+ static void mcf_stop_rx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr &= ~MCFUART_UIR_RXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -366,13 +352,22 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
+ 	struct uart_port *port = data;
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+ 	unsigned int isr;
++	irqreturn_t ret = IRQ_NONE;
+ 
+ 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
+-	if (isr & MCFUART_UIR_RXREADY)
++
++	spin_lock(&port->lock);
++	if (isr & MCFUART_UIR_RXREADY) {
+ 		mcf_rx_chars(pp);
+-	if (isr & MCFUART_UIR_TXREADY)
++		ret = IRQ_HANDLED;
++	}
++	if (isr & MCFUART_UIR_TXREADY) {
+ 		mcf_tx_chars(pp);
+-	return IRQ_HANDLED;
++		ret = IRQ_HANDLED;
++	}
++	spin_unlock(&port->lock);
++
++	return ret;
+ }
+ 
+ /****************************************************************************/
 -- 
 1.7.2
 
