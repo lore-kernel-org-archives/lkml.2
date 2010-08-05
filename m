@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759019Ab0HERqs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 13:46:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36576 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754014Ab0HERqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 13:46:46 -0400
-Message-ID: <4C5AF8FD.1060506@redhat.com>
-Date: Thu, 05 Aug 2010 19:46:37 +0200
-From: Gerd Hoffmann <kraxel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-kernel@vger.kernel.org,
-        Daniel Stodden <daniel.stodden@citrix.com>
-Subject: Re: commit "xen/blkfront: use tagged queuing for barriers"
-References: <20100804115124.GA1496@infradead.org> <4C596252.9010806@fusionio.com> <20100804164441.GA7838@infradead.org> <4C5AF01C.3040601@goop.org> <20100805171944.GA28446@infradead.org>
-In-Reply-To: <20100805171944.GA28446@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S933981Ab0HERrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 13:47:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36979 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932369Ab0HERrq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 13:47:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=KyNlaMBy66dOS65GCjAIyc62SB7tFoPhTDlsHKAvQviT5jdqWwedH19lDaadugyGNU
+         CEl3tWerw3Cl5fEznGc0bNGBv8aNhiDr2nBdKfIwtj79ijVlW+9WyXWh3ljVkBgCWdUN
+         G70jIvZj4WwPFNTyif7vFzJZbwyVtGm9r8mw4=
+Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281011437.9324.14.camel@maxim-laptop>
+References: <390339.43272.qm@web37603.mail.mud.yahoo.com>
+	 <1281011437.9324.14.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Aug 2010 20:47:42 +0300
+Message-ID: <1281030462.23959.18.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/10 19:19, Christoph Hellwig wrote:
-> On Thu, Aug 05, 2010 at 10:08:44AM -0700, Jeremy Fitzhardinge wrote:
->>   On 08/04/2010 09:44 AM, Christoph Hellwig wrote:
->>>> But either the blkfront patch is wrong and it needs to be fixed,
->>> Actually both the old and the new one are wrong, but I'd say the new
->>> one is even more wrong.
->>>
->>> _TAG implies that the device can do ordering by tag.  And at least the
->>> qemu xen_disk backend doesn't when it advertizes this feature.
->>
->> We don't use qemu at all for block storage; qemu (afaik) doesn't
->> have a blkback protocol implementation in it.
+On Thu, 2010-08-05 at 15:30 +0300, Maxim Levitsky wrote: 
+> On Thu, 2010-08-05 at 04:48 -0700, Alex Dubov wrote: 
+> > > > 
+> > > > That's how its called in the spec.
+> > > > Sectors can be larger than 512b on Pro-HG sticks, and
+> > > there's additional
+> > > > TPC_READ/WRITE_QUAD_DATA which operates on larger
+> > > quantities.
+> > > But not on ordinary PRO, right?
+> > 
+> > Pro sectors are normally 512 bytes.
+> > 
+> > > 
+> > > Small question, can I use Pro-HG stick in my reader that is
+> > > designed for
+> > > Standard/PRO only? Does your subsystem support it?
+> > 
+> > It should work. It works for me on TI, which has no 8b mode either.
+> In that case, is there an upper limit on sector size?
+Also, you don't use the MS_TPC_READ_QUAD_DATA at all.
+So mspro_blk.c won't work with >512 bytes/sector disk?
+Or there is some compatibility?
 
-Upstream qemu has.
 
->> I'm guessing xen_disk
->> is to allow kvm to be compatible with Xen disk images?
+Best regards,
+Maxim Levitsky
 
-No, is actually is a blkback implementation.
 
->> It certainly
->> isn't a reference implementation.
-
-Indeed.  I also havn't tested it for ages, not sure whenever it still works.
-
-> Disk images formats have nothing to do with the I/O interface.  I
-> believe Gerd added it for running unmodified Xen guests in qemu,
-> but he can explain more of it.
-
-Well, you can boot pv kernels with upstream qemu.  qemu must be compiled 
-with xen support enabled, you need xen underneath and xenstored must 
-run, but nothing else (xend, tapdisk, ...) is required.  qemu will call 
-xen libraries to build the domain and run the pv kernel.  qemu provides 
-backends for console, framebuffer, network and disk.
-
-There was also the plan to allow xen being emulated, so you could run pv 
-kernels in qemu without xen (using tcg or kvm).  Basically xenner merged 
-into qemu.  That project was never finished though and I didn't spend 
-any time on it for at least one year ...
-
-Hope this clarifies,
-   Gerd
 
