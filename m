@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761864Ab0HFSf2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:35:28 -0400
-Received: from kroah.org ([198.145.64.141]:48557 "EHLO coco.kroah.org"
+	id S935586Ab0HFSnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:43:18 -0400
+Received: from kroah.org ([198.145.64.141]:48596 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761806Ab0HFSfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:00 2010
-Message-Id: <20100806183200.500407662@clark.site>
+	id S1761876Ab0HFSfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:01 2010
+Message-Id: <20100806183200.946105969@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:26 -0700
+Date: Fri, 06 Aug 2010 11:30:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [05/38] amd64_edac: Fix DCT base address selector
+        Dean Nelson <dnelson@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [10/38] e1000e: dont inadvertently re-set INTX_DISABLE
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit 9975a5f22a4fcc8d08035c65439900a983f891ad upstream.
+commit 36f2407fe52c55566221f8c68c8fb808abffd2f5 upstream.
 
-The correct check is to verify whether in high range we're below 4GB
-and not to extract the DctSelBaseAddr again. See "2.8.5 Routing DRAM
-Requests" in the F10h BKDG.
+Should e1000_test_msi() fail to see an msi interrupt, it attempts to
+fallback to legacy INTx interrupts. But an error in the code may prevent
+this from happening correctly.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Acked-by: Doug Thompson <dougthompson@xmission.com>
+Before calling e1000_test_msi_interrupt(), e1000_test_msi() disables SERR
+by clearing the SERR bit from the just read PCI_COMMAND bits as it writes
+them back out.
+
+Upon return from calling e1000_test_msi_interrupt(), it re-enables SERR
+by writing out the version of PCI_COMMAND it had previously read.
+
+The problem with this is that e1000_test_msi_interrupt() calls
+pci_disable_msi(), which eventually ends up in pci_intx(). And because
+pci_intx() was called with enable set to 1, the INTX_DISABLE bit gets
+cleared from PCI_COMMAND, which is what we want. But when we get back to
+e1000_test_msi(), the INTX_DISABLE bit gets inadvertently re-set because
+of the attempt by e1000_test_msi() to re-enable SERR.
+
+The solution is to have e1000_test_msi() re-read the PCI_COMMAND bits as
+part of its attempt to re-enable SERR.
+
+During debugging/testing of this issue I found that not all the systems
+I ran on had the SERR bit set to begin with. And on some of the systems
+the same could be said for the INTX_DISABLE bit. Needless to say these
+latter systems didn't have a problem falling back to legacy INTx
+interrupts with the code as is.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Tested-by: Emil Tantilov <emil.s.tantilov@intel.com>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/amd64_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/e1000e/netdev.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1430,7 +1430,7 @@ static inline u64 f10_get_base_addr_offs
- 	u64 chan_off;
+--- a/drivers/net/e1000e/netdev.c
++++ b/drivers/net/e1000e/netdev.c
+@@ -3419,13 +3419,18 @@ static int e1000_test_msi(struct e1000_a
  
- 	if (hi_range_sel) {
--		if (!(dct_sel_base_addr & 0xFFFFF800) &&
-+		if (!(dct_sel_base_addr & 0xFFFF0000) &&
- 		   hole_valid && (sys_addr >= 0x100000000ULL))
- 			chan_off = hole_off << 16;
- 		else
+ 	/* disable SERR in case the MSI write causes a master abort */
+ 	pci_read_config_word(adapter->pdev, PCI_COMMAND, &pci_cmd);
+-	pci_write_config_word(adapter->pdev, PCI_COMMAND,
+-			      pci_cmd & ~PCI_COMMAND_SERR);
++	if (pci_cmd & PCI_COMMAND_SERR)
++		pci_write_config_word(adapter->pdev, PCI_COMMAND,
++				      pci_cmd & ~PCI_COMMAND_SERR);
+ 
+ 	err = e1000_test_msi_interrupt(adapter);
+ 
+-	/* restore previous setting of command word */
+-	pci_write_config_word(adapter->pdev, PCI_COMMAND, pci_cmd);
++	/* re-enable SERR */
++	if (pci_cmd & PCI_COMMAND_SERR) {
++		pci_read_config_word(adapter->pdev, PCI_COMMAND, &pci_cmd);
++		pci_cmd |= PCI_COMMAND_SERR;
++		pci_write_config_word(adapter->pdev, PCI_COMMAND, pci_cmd);
++	}
+ 
+ 	/* success ! */
+ 	if (!err)
 
 
