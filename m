@@ -1,71 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935281Ab0HFBrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:47:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33557 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935246Ab0HFBq5 (ORCPT
+	id S935204Ab0HFBrF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:47:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47657 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935229Ab0HFBqw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:46:57 -0400
+	Thu, 5 Aug 2010 21:46:52 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andrea Gelmini <andrea.gelmini@gelma.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Julia Lawall <julia@diku.dk>, Masami Hiramatsu <mhiramat@redhat.com>,
-        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@suse.de>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: linux-kernel@vger.kernel.org, Julia Lawall <julia@diku.dk>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 00/10] perf/core improvements and fixes
-Date: Thu,  5 Aug 2010 22:46:07 -0300
-Message-Id: <1281059177-18747-1-git-send-email-acme@infradead.org>
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 09/10] perf timechart: Adjust confusing if indentation
+Date: Thu,  5 Aug 2010 22:46:16 -0300
+Message-Id: <1281059177-18747-10-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+In-Reply-To: <1281059177-18747-1-git-send-email-acme@infradead.org>
+References: <1281059177-18747-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+From: Julia Lawall <julia@diku.dk>
 
-        Please pull from:
+Outdent the code following the if.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-Regards,
+// <smpl>
+@r disable braces4@
+position p1,p2;
+statement S1,S2;
+@@
 
-- Arnaldo
+(
+if (...) { ... }
+|
+if (...) S1@p1 S2@p2
+)
 
-Andrea Gelmini (2):
-  perf probe: Remove duplicated #include
-  perf trace: Clean up #includes
+@script:python@
+p1 << r.p1;
+p2 << r.p2;
+@@
 
-Arnaldo Carvalho de Melo (7):
-  perf symbols: Store the symbol binding
-  perf ui: Add a map browser
-  perf ui: Shorten ui_browser->refresh_entries to refresh
-  perf hists: Handle verbose in hists__sort_list_width
-  perf hists: Fixup addr snprintf width on 32 bit arches
-  perf ui: Add search by name/addr to the map__browser
-  perf report: Speed up exit path
+if (p1[0].column == p2[0].column):
+  cocci.print_main("branch",p1)
+  cocci.print_secs("after",p2)
+// </smpl>
 
-Julia Lawall (1):
-  perf timechart: Adjust confusing if indentation
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <Pine.LNX.4.64.1008052227330.31692@ask.diku.dk>
+Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-timechart.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- tools/perf/builtin-report.c    |   31 +++++-
- tools/perf/builtin-timechart.c |    4 +-
- tools/perf/builtin-trace.c     |   19 +--
- tools/perf/util/hist.c         |    3 +
- tools/perf/util/newt.c         |  242 +++++++++++++++++++++++++++++++++++++--
- tools/perf/util/probe-finder.c |    1 -
- tools/perf/util/sort.c         |    6 +-
- tools/perf/util/symbol.c       |   30 ++++--
- tools/perf/util/symbol.h       |    1 +
- 9 files changed, 297 insertions(+), 40 deletions(-)
+diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
+index 5161619..9bcc38f 100644
+--- a/tools/perf/builtin-timechart.c
++++ b/tools/perf/builtin-timechart.c
+@@ -455,8 +455,8 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
+ 		if (p->current->state != TYPE_NONE)
+ 			pid_put_sample(sw->next_pid, p->current->state, cpu, p->current->state_since, timestamp);
+ 
+-			p->current->state_since = timestamp;
+-			p->current->state = TYPE_RUNNING;
++		p->current->state_since = timestamp;
++		p->current->state = TYPE_RUNNING;
+ 	}
+ 
+ 	if (prev_p->current) {
+-- 
+1.6.2.5
 
