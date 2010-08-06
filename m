@@ -1,79 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759393Ab0HFAob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:44:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43561 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756389Ab0HFAo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:44:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Brian Swetland <swetland@google.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Date: Fri, 6 Aug 2010 02:42:41 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-References: <20100801054816.GI2470@linux.vnet.ibm.com> <201008060141.46109.rjw@sisk.pl> <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
-In-Reply-To: <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
+	id S932811Ab0HFAo6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:44:58 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52415 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757274Ab0HFAoz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 20:44:55 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and  pages_entered_writeback
+Cc: kosaki.motohiro@jp.fujitsu.com, Michael Rubin <mrubin@google.com>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk
+In-Reply-To: <20100805172711.87c802ca.akpm@linux-foundation.org>
+References: <20100806091548.31ED.A69D9226@jp.fujitsu.com> <20100805172711.87c802ca.akpm@linux-foundation.org>
+Message-Id: <20100806093312.31F9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008060242.41595.rjw@sisk.pl>
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  6 Aug 2010 09:44:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 06, 2010, Brian Swetland wrote:
-> 2010/8/5 Rafael J. Wysocki <rjw@sisk.pl>:
-> >>
-> >> Our wakelock stats currently have
-> >> (name,)count,expire_count,wake_count,active_since,total_time,sleep_time,max_time
-> >> and last_change. Not all of these are equally important (total_time is
-> >> most important followed by active_since), but you only have count.
-> >> Also as discussed before, many wakelocks/suspendblockers are not
-> >> associated with a struct device.
-> >
-> > OK
-> >
-> > How much of that is used in practice and what for exactly?
-> >
-> > Do you _really_ have to debug the wakelocks in drivers that much?
+> On Fri,  6 Aug 2010 09:18:59 +0900 (JST)
+> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 > 
-> Debugging power related issues is pretty critical to building
-> competitive mobile devices.
+> > > On Thu, Aug 5, 2010 at 4:56 PM, KOSAKI Motohiro
+> > > <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > > > /proc/vmstat already have both.
+> > > >
+> > > > cat /proc/vmstat |grep nr_dirty
+> > > > cat /proc/vmstat |grep nr_writeback
+> > > >
+> > > > Also, /sys/devices/system/node/node0/meminfo show per-node stat.
+> > > >
+> > > > Perhaps, I'm missing your point.
+> > > 
+> > > These only show the number of dirty pages present in the system at the
+> > > point they are queried.
+> > > The counter I am trying to add are increasing over time. They allow
+> > > developers to see rates of pages being dirtied and entering writeback.
+> > > Which is very helpful.
+> > 
+> > Usually administrators get the data two times and subtract them. Isn't it sufficient?
+> > 
+> 
+> Nope.  The existing nr_dirty is "number of pages dirtied since boot"
+> minus "number of pages cleaned since boot".  If you do the
+> wait-one-second-then-subtract thing on nr_dirty, the result is
+> dirtying-bandwidth minus cleaning-bandwidth, and can't be used to
+> determine dirtying-bandwidth.
 
-Well, I don't think anyone will disagree with that.
+Technically, yes. I meant, _now_, typical administrators are using the 
+subtraction.
+Do you mean this is wrong? or do you mean you have another use case?
 
-> Throughout the several months of this discussion I have been
-> continually scratching my head at this "debugability considered
-> harmful" attitude that I see in reaction to our interest in having the
-> ability (gated behind a config option even -- really, that'd be fine,
-> not everyone need enable it) to gather useful stats and examine the
-> state of the system.
+Just curious.
 
-The problem is what kind of stats would be actually sufficient and we haven't
-seriously discussed that.  You said you'd need statistics and we took that for
-granted, but we didn't really go into details here.
 
-> At this point it sounds like there's no interest in the solution we
-> have, which works and has worked for a few years, and has been revised
-> 10+ times based on feedback here, and no interest in providing a
-> solution that accomplishes similar functionality, so perhaps it's time
-> for us to cut our losses and just go back to maintaining our patches
-> instead of having the same arguments over and over again.
+> I can see that a graph of dirtying events versus time could be an
+> interesting thing.  I don't see how it could be obtained using the
+> existing instrumentation.  tracepoints, probably..
 
-Please remember that I also have spent considerable amount of time trying to
-push your solution upstream and defending it.  I might have spent that time
-on other things instead, so please don't tell me about "losses".
+I think it depend on frequency of the usecase. If the usecase is enouth
+major, convenience way (e.g. /proc/vmstat) is very helpful.
 
-If you want to stay in your ivory tower, that's perfectly fine by me, but
-I guess that won't really benefit anyone in the long run.
+probably, I haven't understand the usecase of this feature.
 
-Thanks,
-Rafael
+
+
