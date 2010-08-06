@@ -1,126 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934457Ab0HFJmv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 05:42:51 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:62240 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933066Ab0HFJmt (ORCPT
+	id S934363Ab0HFJva (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 05:51:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53117 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759021Ab0HFJvZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 05:42:49 -0400
-Reply-To: <nick.cheng@areca.com.tw>
-From: "Nick Cheng" <nick.cheng@areca.com.tw>
-To: "'Dan Carpenter'" <error27@gmail.com>, "'Julia Lawall'" <julia@diku.dk>
-Cc: "'James E.J. Bottomley'" <James.Bottomley@suse.de>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kernel-janitors@vger.kernel.org>
-References: <Pine.LNX.4.64.1008052219190.31692@ask.diku.dk> <20100806074920.GR9031@bicker>
-Subject: RE: [PATCH 9/42] drivers/scsi: Adjust confusing if indentation
-Date: Fri, 6 Aug 2010 17:42:37 +0800
-Organization: Areca Technology
-Message-ID: <125A3006922D4D419060126ED7EE2E56@areca4e4f859d4>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <20100806074920.GR9031@bicker>
-Thread-Index: Acs1PAsOOjCclrZFS3K1W0Ym/c8VvAADxi0A
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
+	Fri, 6 Aug 2010 05:51:25 -0400
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Peter Zijlstra <peterz@infradead.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>,
+        2nddept-manager@sdl.hitachi.co.jp
+In-Reply-To: <4C5BA937.5010504@hitachi.com>
+References: <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>
+	 <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal>
+	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>
+	 <1280855904.1923.675.camel@laptop> <20100803182556.GA13798@Krystal>
+	 <1280904410.1923.700.camel@laptop>  <20100804144539.GA4617@Krystal>
+	 <1280933788.1923.1281.camel@laptop>  <4C5BA937.5010504@hitachi.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 06 Aug 2010 11:50:40 +0200
+Message-ID: <1281088240.1947.357.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I agree.
-Signed-off-by: Nick Cheng <nick.cheng@areca.com.tw>
------Original Message-----
-From: Dan Carpenter [mailto:error27@gmail.com] 
-Sent: Friday, August 06, 2010 3:50 PM
-To: Julia Lawall
-Cc: James E.J. Bottomley; linux-scsi@vger.kernel.org;
-linux-kernel@vger.kernel.org; kernel-janitors@vger.kernel.org;
-nick.cheng@areca.com.tw
-Subject: Re: [PATCH 9/42] drivers/scsi: Adjust confusing if indentation
+On Fri, 2010-08-06 at 15:18 +0900, Masami Hiramatsu wrote:
+> Peter Zijlstra wrote:
+> > On Wed, 2010-08-04 at 10:45 -0400, Mathieu Desnoyers wrote:
+> > 
+> >> How do you plan to read the data concurrently with the writer overwriting the
+> >> data while you are reading it without corruption ?
+> > 
+> > I don't consider reading while writing (in overwrite mode) a valid case.
+> > 
+> > If you want to use overwrite, stop the writer before reading it.
+> 
+> For example, would you like to read system audit log always after
+> stop the audit?
+> 
+> NO, that's a most important requirement for tracers, especially for
+> system admins (they're the most important users of Linux) to check
+> the system health and catch system troubles.
+> 
+> For performance measurement and checking hotspot, one-shot tracing
+> is enough. But it's just for developers. But for the real world
+> computing, Linux is just an OS, users want to run their system,
+> middleware and applications, without troubles. But when they hit
+> a trouble, they wanna shoot it ASAP.
+> The flight recorder mode is mainly for those users.
 
+You cannot over-write and consistently read the buffer, that's plain
+impossible. With sub-buffers you can swivel a sub-buffer and
+consistently read that, but there is no guarantee the next sub-buffer
+you steal was indeed adjacent to the previous buffer you stole as that
+might have gotten over-written by the active writer while you were
+stealing the previous one.
 
-This should go to Nick Cheng.  He would know about the arcmsr driver.
+If you want to snapshot buffers, do that, simply swivel the whole trace
+buffer, and continue tracing in a new one, then consume the old trace in
+a consistent manner.
 
-regards,
-dan carpenter
+I really see no value in being able to read unrelated bits and pieces of
+a buffer.
 
-On Thu, Aug 05, 2010 at 10:19:36PM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Outdent the code following the if.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r disable braces4@
-> position p1,p2;
-> statement S1,S2;
-> @@
-> 
-> (
-> if (...) { ... }
-> |
-> if (...) S1@p1 S2@p2
-> )
-> 
-> @script:python@
-> p1 << r.p1;
-> p2 << r.p2;
-> @@
-> 
-> if (p1[0].column == p2[0].column):
->   cocci.print_main("branch",p1)
->   cocci.print_secs("after",p2)
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> This might be the wrong fix, however it doesn't change the current
-semantics.
-> 
->  drivers/scsi/arcmsr/arcmsr_hba.c    |    4 ++--
->  drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
->  2 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c
-b/drivers/scsi/arcmsr/arcmsr_hba.c
-> index 95a895d..c4e5cdc 100644
-> --- a/drivers/scsi/arcmsr/arcmsr_hba.c
-> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c
-> @@ -877,8 +877,8 @@ static void arcmsr_report_ccb_state(struct
-AdapterControlBlock *acb,
->  	if (!error) {
->  		if (acb->devstate[id][lun] == ARECA_RAID_GONE)
->  			acb->devstate[id][lun] = ARECA_RAID_GOOD;
-> -			ccb->pcmd->result = DID_OK << 16;
-> -			arcmsr_ccb_complete(ccb);
-> +		ccb->pcmd->result = DID_OK << 16;
-> +		arcmsr_ccb_complete(ccb);
->  	}else{
->  		switch (ccb->arcmsr_cdb.DeviceStatus) {
->  		case ARCMSR_DEV_SELECT_TIMEOUT: {
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c
-b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> index 57bcd5c..12faf64 100644
-> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> @@ -534,7 +534,7 @@ _base_display_event_data(struct MPT2SAS_ADAPTER *ioc,
->  		if (event_data->DiscoveryStatus)
->  			printk("discovery_status(0x%08x)",
->  			    le32_to_cpu(event_data->DiscoveryStatus));
-> -			printk("\n");
-> +		printk("\n");
->  		return;
->  	}
->  	case MPI2_EVENT_SAS_BROADCAST_PRIMITIVE:
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors"
-in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+So no, I will _not_ support reading an over-write buffer while there is
+an active reader.
