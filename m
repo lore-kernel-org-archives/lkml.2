@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933902Ab0HFHL6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:11:58 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:51863 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1760528Ab0HFHL4 convert rfc822-to-8bit (ORCPT
+	id S933916Ab0HFHNy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:13:54 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47126 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758900Ab0HFHNx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:11:56 -0400
-X-Quarantine-ID: <o15VqZJCFaqQ>
-X-Amavis-Alert: BAD HEADER, Improper folded header field made up entirely of
-	whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n jycPrvgA\n\t\n
-	R1goSzOnkp14Y[...]
-Subject: Re: [PATCH] drm: Fix support for PCI domains
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Dave Airlie <airlied@gmail.com>, dri-devel@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281066910.2168.10.camel@pasglop>
-References: <1281066910.2168.10.camel@pasglop>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 06 Aug 2010 09:11:47 +0200
-Message-ID: <1281078707.19303.451.camel@thor.local>
+	Fri, 6 Aug 2010 03:13:53 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 6 Aug 2010 16:08:27 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: Paul Menage <menage@google.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
+        oleg@redhat.com
+Subject: Re: [PATCH v4 1/2] cgroups: read-write lock CLONE_THREAD forking
+ per threadgroup
+Message-Id: <20100806160827.d73ae050.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100806060224.GA1351@ghc17.ghc.andrew.cmu.edu>
+References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
+	<20100730235754.GB22644@ghc17.ghc.andrew.cmu.edu>
+	<AANLkTikpNG2Y3S3AyxAbCkMynKu1u5yKPrw=bh+uy=9R@mail.gmail.com>
+	<20100804043328.GB11950@ghc17.ghc.andrew.cmu.edu>
+	<AANLkTi=dhym3c+XJVjoObROcw=mz2Y+a2R5oMdePK3Ng@mail.gmail.com>
+	<20100806060224.GA1351@ghc17.ghc.andrew.cmu.edu>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fre, 2010-08-06 at 13:55 +1000, Benjamin Herrenschmidt wrote: 
-> (For some reason I thought that went in ages ago ...)
-> 
-> This fixes support for PCI domains in what should hopefully be a backward
-> compatible way along with a change to libdrm.
-> 
-> When the interface version is set to 1.4, we assume userspace understands
-> domains and the world is at peace. We thus pass proper domain numbers
-> instead of 0 to userspace.
-> 
-> The newer libdrm will then try 1.4 first, and fallback to 1.1, along with
-> ignoring domains in the later case (well, except on alpha of course)
-> 
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+On Fri, 6 Aug 2010 02:02:24 -0400
+Ben Blum <bblum@andrew.cmu.edu> wrote:
 
-Reviewed-by: Michel Dänzer <michel@daenzer.net>
+> On Tue, Aug 03, 2010 at 09:34:22PM -0700, Paul Menage wrote:
+> > On Tue, Aug 3, 2010 at 9:33 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
+> > >> As far as the #ifdef mess goes, it's true that some people don't have
+> > >> CONFIG_CGROUPS defined. I'd imagine that these are likely to be
+> > >> embedded systems with a fairly small number of processes and threads
+> > >> per process. Are there really any such platforms where the cost of a
+> > >> single extra rwsem per process is going to make a difference either in
+> > >> terms of memory or lock contention? I think you should consider making
+> > >> these additions unconditional.
+> > >
+> > > That's certainly an option, but I think it would be clean enough to put
+> > > static inline functions just under the signal_struct definition.
+> > 
+> > Either sounds fine to me. I suspect others have a stronger opinion.
+> > 
+> > Paul
+> > 
+> 
+> Any other votes? One set of static inline functions (I'd call them
+> threadgroup_fork_{read,write}_{un,}lock) or just remove the ifdefs
+> entirely? I'm inclined to go with the former.
+> 
 
-Thanks for tackling this, Ben!
+I vote for the former. #ifdef can be easily removed if someone finds it useful
+for other purpose...and static inline function is usual way.
 
+Thanks,
+-Kame
 
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
