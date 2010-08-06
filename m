@@ -1,131 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934530Ab0HFRJT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:09:19 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:59307 "EHLO e4.ny.us.ibm.com"
+	id S934975Ab0HFRJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:09:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8202 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933055Ab0HFRJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:09:15 -0400
-Date: Fri, 6 Aug 2010 10:09:04 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Brian Swetland <swetland@google.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100806170904.GG2432@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
- <201008051734.06736.rjw@sisk.pl>
- <AANLkTi=kDx440MrLnQEcT46b3gkahU5ZGc0oWrWF-D2g@mail.gmail.com>
- <201008060141.46109.rjw@sisk.pl>
- <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
-MIME-Version: 1.0
+	id S933861Ab0HFRJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:09:32 -0400
+Date: Fri, 6 Aug 2010 13:09:08 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 19/38] union-mount: Introduce union_dir structure and basic operations
+Message-ID: <20100806170908.GA16599@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-20-git-send-email-vaurora@redhat.com> <E1OgfJb-0000n9-KZ@pomaz-ex.szeredi.hu> <20100804194749.GA2134@shell> <E1OgxgQ-0002vU-BK@pomaz-ex.szeredi.hu>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <E1OgxgQ-0002vU-BK@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 05:29:24PM -0700, Brian Swetland wrote:
-> 2010/8/5 Rafael J. Wysocki <rjw@sisk.pl>:
-> >>
-> >> Our wakelock stats currently have
-> >> (name,)count,expire_count,wake_count,active_since,total_time,sleep_time,max_time
-> >> and last_change. Not all of these are equally important (total_time is
-> >> most important followed by active_since), but you only have count.
-> >> Also as discussed before, many wakelocks/suspendblockers are not
-> >> associated with a struct device.
-> >
-> > OK
-> >
-> > How much of that is used in practice and what for exactly?
-> >
-> > Do you _really_ have to debug the wakelocks in drivers that much?
+On Thu, Aug 05, 2010 at 12:28:18PM +0200, Miklos Szeredi wrote:
+> On Wed, 4 Aug 2010, Valerie Aurora wrote:
+> > > Why was the hash table concept dropped?  The header comment still
+> > > talks about that?
+> > 
+> > Simply, Al Viro didn't like it.  But note that the current
+> > implementation still uses part of the hash table solution.  You still
+> > have union_dir structures external to dentries for the read-only
+> > layers of the stack.  The change is from Al's observation that the
+> > topmost dentry could only be part of one stack.  Why do a lookup on
+> > the topmost dentry when you could keep an pointer to the stack in the
+> > dentry itself and skip the lookup?  Once you have the head of the
+> > stack, you don't need lookup for the rest of it.  This eliminates all
+> > the lookup machinery and the union hash table lock, which seems like a
+> > big win to me.
 > 
-> Debugging power related issues is pretty critical to building
-> competitive mobile devices.
+> That dentry field will be unused most of the time and we lose space
+> for d_iname for *all* filesystems.  On 64bit this results in max
+> inline name going from 32 down to 24 bytes.  On my root fs 7% of names
+> are 24-31 in length.  That's more than triple that of names which are
+> more than 32 in length.
 > 
-> Throughout the several months of this discussion I have been
-> continually scratching my head at this "debugability considered
-> harmful" attitude that I see in reaction to our interest in having the
-> ability (gated behind a config option even -- really, that'd be fine,
-> not everyone need enable it) to gather useful stats and examine the
-> state of the system.
+> Yeah, union mounts can be configured out, but that's not much
+> consolation for distros which want to enable this feature.
 
-In my case, it has not been "debuggability considered harmful", but
-rather my lack of understanding of the kinds of bugs that can arise and
-what information is most helpful in tracking them down.  Arve's post
-listing the meanings of the stats helped me quite a bit, although I am
-sure that my understanding is still quite rudimentary.
+I'll bring it up with Al.
 
-> At this point it sounds like there's no interest in the solution we
-> have, which works and has worked for a few years, and has been revised
-> 10+ times based on feedback here, and no interest in providing a
-> solution that accomplishes similar functionality, so perhaps it's time
-> for us to cut our losses and just go back to maintaining our patches
-> instead of having the same arguments over and over again.
+> > The biggest drawback of the hash table in my mind was that it
+> > introduced a new global synchronization point in lookup.  Making it go
+> > fast would be dcache lookup optimization all over again.
+> 
+> I already asked this, but I'll ask again, what about doing this with a
+> union filesystem?  That solves this problem in one simple go, as well
+> as a host of others.
+> 
+> I'll do some experimenting because I feel it should be possible to do
+> all this in a union fs with most of the advantages of union mounts.
+> That doesn't mean it won't need any VFS support, but I think the
+> amount of VFS burden can be considerably reduced with that approach at
+> a small price (just dentry tree duplication).
 
-And this brings up another aspect of Android requirements.  Mainlining
-Android features is not necessarily an all-or-nothing proposition.  Here
-is a prototype list of degrees of mainlining, along with at least a few
-of the benefits and difficulties of each level:
+That would be great.  My theory on the current version is to do
+everything in the VFS except when it is much cleaner to make minor
+changes to the underlying fs.  I went this way because I'd worked on a
+stacked file system version and couldn't see how to avoid the
+complexity that unionfs ran into.  But a VFS/stacked fs hybrid might
+look nicer than a VFS/low-level fs hybrid.
 
-o	Mainline that provides exactly what Android needs.
-
-	This is of course the best case, but, as you may have noticed,
-	might not be easy to achieve.  The plain fact is that Linux
-	must support a wide variety of workloads, so some give-and-take
-	is usually required.
-
-o	Mainline that exactly matches the ideal API, but which fails
-	to implement some feature or another.
-
-	This is still not bad.  You have to carry a specific patch to
-	provide the feature(s), but all the calling sites are carried
-	upstream in mainline.
-
-o	Mainline provides something that is close to the ideal API, but
-	some additional constant arguments are required.
-
-	This is not so good, but at least the drivers can be upstreamed
-	and the changes required to get to an Android-ready kernel
-	are fairly simple.
-
-o	Mainline provides something, but Android requires changes to the
-	supplied API which require additional data to be passed from
-	call site to call site.
-
-	Again, at least drivers can be upstreamed, but the changes required
-	to get to an Android-ready kernel are a bit more involved.
-
-o	Mainline provides a stubbed-out API.
-
-	Once again, the drivers can at least be upstreamed, but Android
-	is the only project validating the placement of calls to the
-	API.   This means that changes to the drivers are likely to
-	mess up the placement of the call sites.  Therefore, getting
-	to an Android-ready kernel requires careful inspection of the
-	drivers to adjust for bugs introduced by others.
-
-o	Mainline provides nothing.
-
-	Status quo.  This means that some other group will likely
-	introduce the required functionality in an incremental fashion.
-	This process will likely fail to take Android's needs into
-	account, probably leading to...
-
-o	Mainline provides functionality that is similar to what
-	Android needs, but in a completely incompatible manner
-	that cannot be used easily (or perhaps at all) by Android.
-
-My guess is that there is value to Android in a number of the non-perfect
-cases.
-
-							Thanx, Paul
+-VAL
