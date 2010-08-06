@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933874Ab0HFFWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:22:48 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41671 "EHLO
+	id S935356Ab0HFFXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:23:51 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41667 "EHLO
 	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933760Ab0HFFPe (ORCPT
+	with ESMTP id S933751Ab0HFFPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:34 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 21/43] memblock: Remove unused memblock.debug struct member
-Date: Fri,  6 Aug 2010 15:15:02 +1000
-Message-Id: <1281071724-28740-22-git-send-email-benh@kernel.crashing.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michal Simek <monstr@monstr.eu>
+Subject: [PATCH 08/43] memblock/microblaze: Use new accessors
+Date: Fri,  6 Aug 2010 15:14:49 +1000
+Message-Id: <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -21,37 +22,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+CC: Michal Simek <monstr@monstr.eu>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/microblaze/mm/init.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index b65045a..0fe6dd5 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -32,7 +32,6 @@ struct memblock_type {
- };
+diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+index afd6494..32a702b 100644
+--- a/arch/microblaze/mm/init.c
++++ b/arch/microblaze/mm/init.c
+@@ -70,16 +70,16 @@ static void __init paging_init(void)
  
- struct memblock {
--	unsigned long debug;
- 	phys_addr_t current_limit;
- 	struct memblock_type memory;
- 	struct memblock_type reserved;
-@@ -55,9 +54,11 @@ extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
- #define MEMBLOCK_ALLOC_ACCESSIBLE	0
+ void __init setup_memory(void)
+ {
+-	int i;
+ 	unsigned long map_size;
++	struct memblock_region *reg;
++
+ #ifndef CONFIG_MMU
+ 	u32 kernel_align_start, kernel_align_size;
  
- extern phys_addr_t __init memblock_alloc_base(phys_addr_t size,
--		phys_addr_t, phys_addr_t max_addr);
-+					 phys_addr_t align,
-+					 phys_addr_t max_addr);
- extern phys_addr_t __init __memblock_alloc_base(phys_addr_t size,
--		phys_addr_t align, phys_addr_t max_addr);
-+					   phys_addr_t align,
-+					   phys_addr_t max_addr);
- extern phys_addr_t __init memblock_phys_mem_size(void);
- extern phys_addr_t memblock_end_of_DRAM(void);
- extern void __init memblock_enforce_memory_limit(phys_addr_t memory_limit);
+ 	/* Find main memory where is the kernel */
+-	for (i = 0; i < memblock.memory.cnt; i++) {
+-		memory_start = (u32) memblock.memory.regions[i].base;
+-		memory_end = (u32) memblock.memory.regions[i].base
+-				+ (u32) memblock.memory.region[i].size;
++	for_each_memblock(memory, reg) {
++		memory_start = (u32)reg->base;
++		memory_end = (u32) reg->base + reg->size;
+ 		if ((memory_start <= (u32)_text) &&
+ 					((u32)_text <= memory_end)) {
+ 			memory_size = memory_end - memory_start;
+@@ -147,12 +147,10 @@ void __init setup_memory(void)
+ 	free_bootmem(memory_start, memory_size);
+ 
+ 	/* reserve allocate blocks */
+-	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		pr_debug("reserved %d - 0x%08x-0x%08x\n", i,
+-			(u32) memblock.reserved.region[i].base,
+-			(u32) memblock_size_bytes(&memblock.reserved, i));
+-		reserve_bootmem(memblock.reserved.region[i].base,
+-			memblock_size_bytes(&memblock.reserved, i) - 1, BOOTMEM_DEFAULT);
++	for_each_memblock(reserved, reg) {
++		pr_debug("reserved - 0x%08x-0x%08x\n",
++			 (u32) reg->base, (u32) reg->size);
++		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
+ 	}
+ #ifdef CONFIG_MMU
+ 	init_bootmem_done = 1;
 -- 
 1.7.0.4
 
