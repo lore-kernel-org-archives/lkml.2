@@ -1,60 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933870Ab0HFJJK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 05:09:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28117 "EHLO mga11.intel.com"
+	id S935320Ab0HFJJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 05:09:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9539 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932984Ab0HFJJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 05:09:03 -0400
+	id S935231Ab0HFJJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 05:09:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,327,1278313200"; 
-   d="scan'208";a="593547796"
+   d="scan'208";a="593547922"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v9 03/16] Add a ndo_mp_port_prep func to net_device_ops.
-Date: Fri,  6 Aug 2010 17:23:31 +0800
-Message-Id: <1281086624-5765-4-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC PATCH v9 16/16] An example how to alloc user buffer based on napi_gro_frags() interface.
+Date: Fri,  6 Aug 2010 17:23:44 +0800
+Message-Id: <1281086624-5765-17-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1281086624-5765-3-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1281086624-5765-16-git-send-email-xiaohui.xin@intel.com>
 References: <1281086624-5765-1-git-send-email-xiaohui.xin@intel.com>
  <1281086624-5765-2-git-send-email-xiaohui.xin@intel.com>
  <1281086624-5765-3-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-4-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-5-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-6-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-7-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-8-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-9-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-10-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-11-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-12-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-13-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-14-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-15-git-send-email-xiaohui.xin@intel.com>
+ <1281086624-5765-16-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-If the driver want to allocate external buffers,
-then it can export it's capability, as the skb
-buffer header length, the page length can be DMA, etc.
-The external buffers owner may utilize this.
-
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+This example is made on ixgbe driver which using napi_gro_frags().
+It can get buffers from guest side directly using netdev_alloc_page()
+and release guest buffers using netdev_free_page().
 ---
- include/linux/netdevice.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ drivers/net/ixgbe/ixgbe_main.c |   25 +++++++++++++++++++++----
+ 1 files changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index ba582e1..aba0308 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -710,6 +710,10 @@ struct net_device_ops {
- 	int			(*ndo_fcoe_get_wwn)(struct net_device *dev,
- 						    u64 *wwn, int type);
- #endif
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+	int			(*ndo_mp_port_prep)(struct net_device *dev,
-+						struct mpassthru_port *port);
-+#endif
- };
+diff --git a/drivers/net/ixgbe/ixgbe_main.c b/drivers/net/ixgbe/ixgbe_main.c
+index cfe6853..c563111 100644
+--- a/drivers/net/ixgbe/ixgbe_main.c
++++ b/drivers/net/ixgbe/ixgbe_main.c
+@@ -691,7 +691,14 @@ static inline void ixgbe_release_rx_desc(struct ixgbe_hw *hw,
+ static bool is_rx_buffer_mapped_as_page(struct ixgbe_rx_buffer *bi,
+ 					struct net_device *dev)
+ {
+-	return true;
++	return dev_is_mpassthru(dev);
++}
++
++static u32 get_page_skb_offset(struct net_device *dev)
++{
++	if (!dev_is_mpassthru(dev))
++		return 0;
++	return dev->mp_port->vnet_hlen;
+ }
  
- /*
+ /**
+@@ -764,7 +771,8 @@ static void ixgbe_alloc_rx_buffers(struct ixgbe_adapter *adapter,
+ 				adapter->alloc_rx_page_failed++;
+ 				goto no_buffers;
+ 			}
+-			bi->page_skb_offset = 0;
++			bi->page_skb_offset =
++				get_page_skb_offset(adapter->netdev);
+ 			bi->dma = pci_map_page(pdev, bi->page_skb,
+ 					bi->page_skb_offset,
+ 					(PAGE_SIZE / 2),
+@@ -899,8 +907,10 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 			len = le16_to_cpu(rx_desc->wb.upper.length);
+ 		}
+ 
+-		if (is_no_buffer(rx_buffer_info))
++		if (is_no_buffer(rx_buffer_info)) {
++			printk("no buffers\n");
+ 			break;
++		}
+ 
+ 		cleaned = true;
+ 
+@@ -945,6 +955,12 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 						rx_buffer_info->page_skb,
+ 						rx_buffer_info->page_skb_offset,
+ 						len);
++				if (dev_is_mpassthru(netdev) &&
++						netdev->mp_port->hash)
++					skb_shinfo(skb)->destructor_arg =
++					netdev->mp_port->hash(netdev,
++					rx_buffer_info->page_skb);
++
+ 				rx_buffer_info->page_skb = NULL;
+ 				skb->len += len;
+ 				skb->data_len += len;
+@@ -962,7 +978,8 @@ static bool ixgbe_clean_rx_irq(struct ixgbe_q_vector *q_vector,
+ 			                   upper_len);
+ 
+ 			if ((rx_ring->rx_buf_len > (PAGE_SIZE / 2)) ||
+-			    (page_count(rx_buffer_info->page) != 1))
++			    (page_count(rx_buffer_info->page) != 1) ||
++				dev_is_mpassthru(netdev))
+ 				rx_buffer_info->page = NULL;
+ 			else
+ 				get_page(rx_buffer_info->page);
 -- 
 1.5.4.4
 
