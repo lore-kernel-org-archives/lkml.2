@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965656Ab0HFTbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:31:10 -0400
-Received: from kroah.org ([198.145.64.141]:47492 "EHLO coco.kroah.org"
+	id S935074Ab0HFTbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:31:31 -0400
+Received: from kroah.org ([198.145.64.141]:47486 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935826Ab0HFT2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:28:18 -0400
+	id S935089Ab0HFT2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:28:17 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:17 2010
-Message-Id: <20100806192117.253099112@clark.site>
+Message-Id: <20100806192117.169237763@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:20:12 -0700
+Date: Fri, 06 Aug 2010 12:20:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>
-Subject: [31/36] drm/i915: Check overlay stride errata for i830 and i845
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [30/36] drm/radeon/kms/r7xx: add workaround for hw issue with HDP flush
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +25,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit a1efd14a99483a4fb9308902397ed86b69454c99 upstream.
+commit 812d046915f48236657f02c06d7dc47140e9ceda upstream.
 
-Apparently i830 and i845 cannot handle any stride that is not a multiple
-of 256, unlike their brethren which do support 64 byte aligned strides.
+Use of HDP_*_COHERENCY_FLUSH_CNTL can cause a hang in certain
+situations.  Add workaround.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Eric Anholt <eric@anholt.net>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_overlay.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/r600.c   |   24 ++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/r600d.h  |    1 +
+ drivers/gpu/drm/radeon/rv770.c  |    5 ++++-
+ drivers/gpu/drm/radeon/rv770d.h |    1 +
+ 4 files changed, 28 insertions(+), 3 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_overlay.c
-+++ b/drivers/gpu/drm/i915/intel_overlay.c
-@@ -950,7 +950,7 @@ static int check_overlay_src(struct drm_
- 	    || rec->src_width < N_HORIZ_Y_TAPS*4)
- 		return -EINVAL;
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -361,7 +361,17 @@ void r600_pcie_gart_tlb_flush(struct rad
+ 	u32 tmp;
  
--	/* check alingment constrains */
-+	/* check alignment constraints */
- 	switch (rec->flags & I915_OVERLAY_TYPE_MASK) {
- 		case I915_OVERLAY_RGB:
- 			/* not implemented */
-@@ -982,7 +982,10 @@ static int check_overlay_src(struct drm_
- 		return -EINVAL;
+ 	/* flush hdp cache so updates hit vram */
+-	WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
++	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
++		void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
++		u32 tmp;
++
++		/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
++		 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
++		 */
++		WREG32(HDP_DEBUG1, 0);
++		tmp = readl((void __iomem *)ptr);
++	} else
++		WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
  
- 	/* stride checking */
--	stride_mask = 63;
-+	if (IS_I830(dev) || IS_845G(dev))
-+		stride_mask = 255;
-+	else
-+		stride_mask = 63;
+ 	WREG32(VM_CONTEXT0_INVALIDATION_LOW_ADDR, rdev->mc.gtt_start >> 12);
+ 	WREG32(VM_CONTEXT0_INVALIDATION_HIGH_ADDR, (rdev->mc.gtt_end - 1) >> 12);
+@@ -2949,5 +2959,15 @@ int r600_debugfs_mc_info_init(struct rad
+  */
+ void r600_ioctl_wait_idle(struct radeon_device *rdev, struct radeon_bo *bo)
+ {
+-	WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
++	/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
++	 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
++	 */
++	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
++		void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
++		u32 tmp;
++
++		WREG32(HDP_DEBUG1, 0);
++		tmp = readl((void __iomem *)ptr);
++	} else
++		WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
+ }
+--- a/drivers/gpu/drm/radeon/r600d.h
++++ b/drivers/gpu/drm/radeon/r600d.h
+@@ -245,6 +245,7 @@
+ #define	HDP_NONSURFACE_SIZE				0x2C0C
+ #define HDP_REG_COHERENCY_FLUSH_CNTL			0x54A0
+ #define	HDP_TILING_CONFIG				0x2F3C
++#define HDP_DEBUG1                                      0x2F34
  
- 	if (rec->stride_Y & stride_mask || rec->stride_UV & stride_mask)
- 		return -EINVAL;
+ #define MC_VM_AGP_TOP					0x2184
+ #define MC_VM_AGP_BOT					0x2188
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -174,7 +174,10 @@ static void rv770_mc_program(struct rade
+ 		WREG32((0x2c20 + j), 0x00000000);
+ 		WREG32((0x2c24 + j), 0x00000000);
+ 	}
+-	WREG32(HDP_REG_COHERENCY_FLUSH_CNTL, 0);
++	/* r7xx hw bug.  Read from HDP_DEBUG1 rather
++	 * than writing to HDP_REG_COHERENCY_FLUSH_CNTL
++	 */
++	tmp = RREG32(HDP_DEBUG1);
+ 
+ 	rv515_mc_stop(rdev, &save);
+ 	if (r600_mc_wait_for_idle(rdev)) {
+--- a/drivers/gpu/drm/radeon/rv770d.h
++++ b/drivers/gpu/drm/radeon/rv770d.h
+@@ -128,6 +128,7 @@
+ #define	HDP_NONSURFACE_SIZE				0x2C0C
+ #define HDP_REG_COHERENCY_FLUSH_CNTL			0x54A0
+ #define	HDP_TILING_CONFIG				0x2F3C
++#define HDP_DEBUG1                                      0x2F34
+ 
+ #define MC_SHARED_CHMAP						0x2004
+ #define		NOOFCHAN_SHIFT					12
 
 
