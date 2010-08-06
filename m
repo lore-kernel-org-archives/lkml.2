@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761281Ab0HFLlx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 07:41:53 -0400
-Received: from filtteri5.pp.htv.fi ([213.243.153.188]:40983 "EHLO
-	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756442Ab0HFLlt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 07:41:49 -0400
-Date: Fri, 6 Aug 2010 14:41:14 +0300
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Alexander Shishkin <virtuoso@slind.org>
-Subject: Re: [patch 01/20] Create generic alignment API (v8)
-Message-ID: <20100806114114.GH28519@shisha.kicks-ass.net>
-Mail-Followup-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Christoph Hellwig <hch@lst.de>, Li Zefan <lizf@cn.fujitsu.com>,
-	Lai Jiangshan <laijs@cn.fujitsu.com>,
-	Johannes Berg <johannes.berg@intel.com>,
-	Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-	Arnaldo Carvalho de Melo <acme@infradead.org>,
-	Tom Zanussi <tzanussi@gmail.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Andi Kleen <andi@firstfloor.org>,
-	Russell King - ARM Linux <linux@arm.linux.org.uk>,
-	linux-arm-kernel@lists.infradead.org,
-	Imre Deak <imre.deak@nokia.com>, Jamie Lokier <jamie@shareable.org>,
-	Alexey Dobriyan <adobriyan@gmail.com>
-References: <20100709225727.312232266@efficios.com>
- <20100709225814.855827624@efficios.com>
+	id S1761288Ab0HFLqq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 07:46:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28011 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752346Ab0HFLqo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 07:46:44 -0400
+Date: Fri, 6 Aug 2010 13:46:11 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mingo@elte.hu, rostedt@goodmis.org, yhlu.kernel@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/2] apic: tracing IPI events
+Message-ID: <20100806114611.GE1981@jolsa.brq.redhat.com>
+References: <1281006578-5073-1-git-send-email-jolsa@redhat.com>
+ <87bp9gc783.fsf@basil.nowhere.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100709225814.855827624@efficios.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87bp9gc783.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 06:57:28 -0400, Mathieu Desnoyers wrote:
-> Rather than re-doing the "alignment on a type size" trick all over again at
-> different levels, import the "ltt_align" from LTTng into kernel.h and make this
-> available to everyone. Renaming to:
+On Fri, Aug 06, 2010 at 01:26:36PM +0200, Andi Kleen wrote:
+> Jiri Olsa <jolsa@redhat.com> writes:
+> >
+> > please let me know what you think
 > 
-> - object_align()
-> - object_align_floor()
-> - offset_align()
-> - offset_align_floor()
+> You forgot to state why you want it?
+> 
+> In generall the only case that should happen anytime commonly is mask,
+> the others only for obscure uncommon paths.
+> 
+> However there is already accounting for it in /proc/interrupts
+> that can be easily sampled. Does adding additional tracing really give 
+> any value?
 
-I was just wondering if this patch makes any progress anywhere?
+As I was asked to do that for other guys, I'm not completely sure.
+Anyway the reason I got was, that while debuging crash it seemed 
+some IPIs might got lost.
 
-Regards,
---
-Alex
+Also it'd be probably used as a tracepoint itself via additional code,
+than by ring buffer tracing.
+
+I'll check if I can get more justifing info..
+
+jirka
+
+> 
+> -Andi
+> -- 
+> ak@linux.intel.com -- Speaking for myself only.
