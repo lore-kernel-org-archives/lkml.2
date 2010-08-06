@@ -1,67 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919Ab0HFJAK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 05:00:10 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45349 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756476Ab0HFJAB (ORCPT
+	id S1760973Ab0HFJEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 05:04:25 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35674 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760803Ab0HFJEW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 05:00:01 -0400
-Date: Fri, 6 Aug 2010 09:59:41 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: stepanm@codeaurora.org
-Cc: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: msm: Add MSM IOMMU support.
-Message-ID: <20100806085941.GA15852@n2100.arm.linux.org.uk>
-References: <1281062204-21880-1-git-send-email-stepanm@codeaurora.org> <20100806073333.GA14965@n2100.arm.linux.org.uk> <93bd044b61aed19a3571bc019af0252a.squirrel@www.codeaurora.org>
+	Fri, 6 Aug 2010 05:04:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wSgb8sTo6fPvI2Pna2YIIXNoR/OR5Gq/XbRQ+LCu8mwOmHUPiLdvibordm6TT7z+Uk
+         /gMrrjPIf9Tl9o8hvknPdlAldw5koLoRzlkaSkyQQ9/uyQGXXFZX1lyZK9WK10/GQdob
+         ac3msrIAEQA/7UBIm4RaGBluJfhiGd2riz64Q=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <93bd044b61aed19a3571bc019af0252a.squirrel@www.codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <Pine.LNX.4.64.1008052217240.31692@ask.diku.dk>
+References: <Pine.LNX.4.64.1008052217240.31692@ask.diku.dk>
+Date: Fri, 6 Aug 2010 11:04:20 +0200
+Message-ID: <AANLkTikGYhWCVW1HqdhwqRHaph54S9U4eKi7nNLHktMV@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH 3/42] drivers/hwmon: Adjust confusing if 
+	indentation
+From: Charles Logan <cybercorecentre@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Rudolf Marek <r.marek@assembler.cz>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 01:17:46AM -0700, stepanm@codeaurora.org wrote:
-> Thank you for your comments. I will apply the fixes you have mentioned. I
-> am flushing the cache when I update the page table because the page table
-> lives in regular RAM that is mapped as cacheable on the CPU side, and in
-> the default configuration the IOMMU reads the page table from RAM.
+Corrected:
 
-That's fine, but use the right function.
+> // <smpl>
+> @r disable braces5@
+> position p1,p2;
+> statement S1,S2;
+> @@
+>
+> (
+> if (...) { ... }
+> |
+> if (...) S1@p1 S2@p2
+> )
+>
+> @script:python@
+> p1 << r.p1;
+> p2 << r.p2;
+> @@
+>
+> if (p1[0].column == p2[0].column):
+>  cocci.print_main("branch",p4)
+>  cocci.print_secs("after",p5)
+> // </smpl>
 
-> So, I
-> have put in the flush call to give the IOMMU a coherent view of the page
-> tables. I realize it is more efficient to just flush that specific part of
-> L2, but this is just the basic version of the driver and that optimization
-> will be eventually put in.
 
-Here, you're talking about L2 again, but your code only touches the L1
-cache.  I think you're confused about caching.
 
-> What did you mean by:
-> > Any reason you can't have some kind of struct device instead?
-> 
-> Are you referring to the clock line? As far as I understand it, the kernel
-> tracks the clocks by a string name, but I can look into it further.
-
-No.
-
-/**
- * clk_get - lookup and obtain a reference to a clock producer.
- * @dev: device for clock "consumer"
- * @id: clock comsumer ID
- *
- * Returns a struct clk corresponding to the clock producer, or
- * valid IS_ERR() condition containing errno.  The implementation
- * uses @dev and @id to determine the clock consumer, and thereby
- * the clock producer.  (IOW, @id may be identical strings, but
- * clk_get may return different clock producers depending on @dev.)
-
-The intention is that 'id' is specific to each 'dev', and identifies
-the connection on 'dev' that you want the clock for.  It's the
-_consumer's_ name, nothing to do with the clock producer.
-
-There's also clk_get_sys() if you don't have a struct device.
+On Thu, Aug 5, 2010 at 10:17 PM, Julia Lawall <julia@diku.dk> wrote:
+> From: Julia Lawall <julia@diku.dk>
+>
+> Move the if(err) statement after the if into the if branch indicated by its
+> indentation.  The preceding if(err) test implies that err cannot be nonzero
+> unless the if branch is taken.
+>
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @r disable braces4@
+> position p1,p2;
+> statement S1,S2;
+> @@
+>
+> (
+> if (...) { ... }
+> |
+> if (...) S1@p1 S2@p2
+> )
+>
+> @script:python@
+> p1 << r.p1;
+> p2 << r.p2;
+> @@
+>
+> if (p1[0].column == p2[0].column):
+>  cocci.print_main("branch",p1)
+>  cocci.print_secs("after",p2)
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+>
+> ---
+>  drivers/hwmon/k8temp.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/hwmon/k8temp.c b/drivers/hwmon/k8temp.c
+> index 8bdf80d..b9bb3e0 100644
+> --- a/drivers/hwmon/k8temp.c
+> +++ b/drivers/hwmon/k8temp.c
+> @@ -252,12 +252,13 @@ static int __devinit k8temp_probe(struct pci_dev *pdev,
+>                                   &sensor_dev_attr_temp3_input.dev_attr);
+>                if (err)
+>                        goto exit_remove;
+> -               if (data->sensorsp & SEL_PLACE)
+> +               if (data->sensorsp & SEL_PLACE) {
+>                        err = device_create_file(&pdev->dev,
+>                                           &sensor_dev_attr_temp4_input.
+>                                           dev_attr);
+>                        if (err)
+>                                goto exit_remove;
+> +               }
+>        }
+>
+>        err = device_create_file(&pdev->dev, &dev_attr_name);
+>
+> _______________________________________________
+> lm-sensors mailing list
+> lm-sensors@lm-sensors.org
+> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
+>
