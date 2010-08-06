@@ -1,28 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761539Ab0HFQLr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 12:11:47 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:37058 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760088Ab0HFQLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 12:11:42 -0400
-Date: Fri, 6 Aug 2010 17:10:54 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 2/42] arch/mips/kernel: Adjust confusing if indentation
-Message-ID: <20100806161054.GB4034@linux-mips.org>
-References: <Pine.LNX.4.64.1008052217010.31692@ask.diku.dk>
+	id S933035Ab0HFQUH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 12:20:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49497 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759119Ab0HFQUD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 12:20:03 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008052217010.31692@ask.diku.dk>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C5BE229.1090801@suse.cz>
+References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> 
+	<4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com> 
+	<20100806051354.GA24343@merkur.ravnborg.org> <4C5BE229.1090801@suse.cz>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Aug 2010 09:19:23 -0700
+Message-ID: <AANLkTimWHnxbYzkJ1KhuS3DgTuSRz-gMnzEJvbsY835g@mail.gmail.com>
+Subject: Re: [PATCH] kconfig: fix make oldconfig
+To: Michal Marek <mmarek@suse.cz>
+Cc: Sam Ravnborg <sam@ravnborg.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>, JBeulich@novell.com,
+        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
+        lizf@cn.fujitsu.com, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied.  Thanks Julia,
+On Fri, Aug 6, 2010 at 3:21 AM, Michal Marek <mmarek@suse.cz> wrote:
+>
+> Linus, will you apply this directly or should I apply it to the kbuild
+> tree and send you a pull request?
 
-  Ralf
+I took it directly, since I spend a lot of time doing "make oldconfig
+; make -j16" which is why I found this (after pulling, I tend verify
+that at least nothing broke my _own_ configuration)
+
+             Linus
