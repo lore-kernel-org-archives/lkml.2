@@ -1,90 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933926Ab0HFHOF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:14:05 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:37779 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760450Ab0HFHN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:13:59 -0400
-Date: Fri, 6 Aug 2010 00:13:56 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
-	are no dirty pages.
-Message-ID: <20100806071356.GE2109@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org>
+	id S933918Ab0HFHQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:16:14 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:41513 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933221Ab0HFHQL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 03:16:11 -0400
+Date: Fri, 6 Aug 2010 10:11:00 +0300
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Greg KH <gregkh@suse.de>, john stultz <johnstul@us.ibm.com>,
+        lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+        linux-kernel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>
+Subject: Re: [PATCH] [RFC] notify userspace about time changes
+Message-ID: <20100806071100.GF28519@shisha.kicks-ass.net>
+Mail-Followup-To: Kay Sievers <kay.sievers@vrfy.org>,
+	Greg KH <gregkh@suse.de>, john stultz <johnstul@us.ibm.com>,
+	lkml@vger.kernel.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Martin Schwidefsky <schwidefsky@de.ibm.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Jon Hunter <jon-hunter@ti.com>, Ingo Molnar <mingo@elte.hu>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	David Howells <dhowells@redhat.com>, Avi Kivity <avi@redhat.com>,
+	"H. Peter Anvin" <hpa@zytor.com>, John Kacur <jkacur@redhat.com>,
+	linux-kernel@vger.kernel.org
+References: <1280926108-24668-1-git-send-email-virtuoso@slind.org>
+ <1280937526.28884.21.camel@work-vm>
+ <AANLkTin_5RVQo8qbJp=naN6WHdA39JM81Y+003E0SLOq@mail.gmail.com>
+ <1281042665.3405.15.camel@localhost.localdomain>
+ <20100805213851.GA13868@suse.de>
+ <AANLkTimYmtXZe1Ue-z2D_5512RXz3xUSRWPiUUUY6rrz@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=koi8-r
 Content-Disposition: inline
-In-Reply-To: <20100805164008.GH2901@thunk.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimYmtXZe1Ue-z2D_5512RXz3xUSRWPiUUUY6rrz@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 12:40:08PM -0400, Ted Ts'o wrote:
-> On Tue, Jun 29, 2010 at 01:51:02PM -0700, Darrick J. Wong wrote:
-> > 
-> > This second version of the patch uses the inode state flags and
-> > (suboptimally) also catches directio writes.  It might be a better
-> > idea to try to coordinate all the barrier requests across the whole
-> > filesystem, though that's a bit more difficult.
+On Fri, Aug 06, 2010 at 12:22:27 +0200, Kay Sievers wrote:
+> On Thu, Aug 5, 2010 at 23:38, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Aug 05, 2010 at 02:11:05PM -0700, john stultz wrote:
+> >> On Thu, 2010-08-05 at 15:33 +0300, Alexander Shishkin wrote:
+> >> > On 4 August 2010 18:58, john stultz <johnstul@us.ibm.com> wrote:
+> >> > > Is there a actual use case that you need this for? šI don't really have
+> >> > > an issue with the code I just really want to make sure the feature would
+> >> > > be useful enough to justify the API and code maintenance going forward.
+> >> >
+> >> > Yes. What we have here is an application which takes care of different means
+> >> > of time synchronization (trusted time servers, different GSM operators, etc)
+> >> > and also different kinds of time-based events/notifications (like "dentist
+> >> > appointment next thursday"). When it encounters a time change that is
+> >> > made by some other application, it basically wants to disable automatic
+> >> > time adjustment and trigger the events/notifications which are due at this
+> >> > (new) time.
+> >>
+> >> Ok. Something specific is always more helpful then theoretical uses.
+> >>
+> >> I think the filtering is still a bit controversial, so you might want to
+> >> respin it without that. But otherwise I'm ok with it as long as no one
+> >> else objects to any of the minor details of the interface
+> >>
+> >> GregKH: Does /sys/kernel/time_notify seem ok by you?
+> >
+> > Um, it depends, what is that file going to do? šI don't see a
+> > Documentation/ABI/ entry here that describes it fully :)
 > 
-> Hi Darrick,
-> 
-> When I looked at this patch more closely, and thought about it hard,
-> the fact that this helps the FFSB mail server benchmark surprised me,
-> and then I realized it's because it doesn't really accurately emulate
-> a mail server at all.  Or at least, not a MTA.  In a MTA, only one CPU
-> will touch a queue file, so there should never be a case of a double
-> fsync to a single file.  This is why I was thinking about a
-> coordinating barrier requests across the whole filesystem --- it helps
-> out in the case where you have all your CPU threads hammering
-> /var/spool/mqueue, or /var/spool/exim4/input, and where they are all
-> creating queue files, and calling fsync() in parallel.  This patch
-> won't help that case.
-> 
-> It will help the case of a MDA --- Mail Delivery Agent --- if you have
-> multiple e-mails all getting delivered at the same time into the same
-> /var/mail/<username> file, with an fsync() following after a mail
-> message is appended to the file.  This is a much rarer case, and I
-> can't think of any other workload where you will have multiple
-> processes racing against each other and fsync'ing the same inode.
-> Even in the MDA case, it's rare that you will have one mbox getting so
-> many deliveries that this case would be hit.
-> 
-> So while I was thinking about accepting this patch, I now find myself
-> hesitating.  There _is_ a minor race in the patch that I noticed,
-> which I'll point out below, but that's easily fixed.  The bigger issue
-> is it's not clear this patch will actually make a difference in the
-> real world.  I trying and failing to think of a real-life application
-> which is stupid enough to do back-to-back fsync commands, even if it's
-> because it has multiple threads all trying to write to the file and
-> fsync to it in an uncoordinated fashion.  It would be easily enough to
-> add instrumentation that would trigger a printk if the patch optimized
-> out a barrier --- and if someone can point out even one badly written
-> application --- whether it's mysql, postgresql, a GNOME or KDE
-> application, db2, Oracle, etc., I'd say sure.  But adding even a tiny
-> amount of extra complexity for something which is _only_ helpful for a
-> benchmark grates against my soul....
-> 
-> So if you can think of something, please point it out to me.  If it
-> would help ext4 users in real life, I'd be all for it.  But at this
-> point, I'm thinking that perhaps the real issue is that the mail
-> server benchmark isn't accurately reflecting a real life workload.
+> I think that's really awkward interface, to pass file descriptor
+> numbers around and write them to magic sysfs files.
 
-Yes, it's a proxy for something else.  One of our larger products would like to
-use fsync() to flush dirty data out to disk (right now it looks like they use
-O_SYNC), but they're concerned that the many threads they use can create an
-fsync() storm.  So, they wanted to know how to mitigate the effects of those
-storms.  Not calling fsync() except when they really need to guarantee a disk
-write is a good start, but I'd like to get ahead of them to pick off more low
-hanging fruit like the barrier coordination and not sending barriers when
-there's no dirty data ... before they run into it. :)
+Unfortunately, the magic file descriptor is the only viable option for us
+(see the usecase I described earlier), for a simple reason that it gives
+you the *number of times* the system time has changed so that the user
+can see when someone else is changing the time, for example.
 
---D
+Plus, using the magic sysfs file you can specify what kind of events you
+want to subscribe to, eventually. Like "everything but my changes", "only
+my changes", "everything", etc. It can be extendable.
+
+> I would very much prefer a file that contains the current time, and
+> wakes up possible users with a POLL_ERR on changes caused by some
+> other process. That works very well for things like /proc/mounts, is
+> easy to get, and does not need a full page of weird instructions to
+> get stuff done. :)
+
+So you get a POLLERR because there was a time change that you expected
+and then someone who wants his time change to go unnoticed changes it
+again before you started polling again.
+
+Full page of weird instructions you are referring to is as follows (sans
+error checking):
+
+     efd = eventfd(0, 0);
+     fd = open("/sys/kernel/time_notify", O_WRONLY);
+     fdprintf(fd, "%d", efd);
+     close(fd);
+
+     fds[0].fd = efd;
+     fds[0].events = POLLIN;
+     while (poll(fds, 1, -1) > 0) {
+     	   uint64_t n;
+
+	   read(efd, &n, 8);
+	   printf("system time has been modified %d time(s)\n", n);
+     }
+
+Regards,
+--
+Alex
