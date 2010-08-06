@@ -1,90 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965115Ab0HFTQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:16:00 -0400
-Received: from kroah.org ([198.145.64.141]:58472 "EHLO coco.kroah.org"
+	id S935805Ab0HFTQX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:16:23 -0400
+Received: from kroah.org ([198.145.64.141]:58466 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964946Ab0HFS74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:59:56 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:33 2010
-Message-Id: <20100806185833.915291684@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:56:56 -0700
+	id S935661Ab0HFS7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:59:55 -0400
+Date: Fri, 6 Aug 2010 11:58:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Subject: [01/34] sched: cgroup: Implement different treatment for idle shares
-In-Reply-To: <20100806185853.GA28270@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/34] 2.6.32.18-stable review
+Message-ID: <20100806185853.GA28270@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.32.18 release.
+There are 34 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by August 8, 2010, 18:00:00 UTC.
+Anything received after that time might be too late.
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.32.18-rc1.gz
+and the diffstat can be found below.
 
-commit cd8ad40de36c2fe75f3b731bd70198b385895246 upstream.
+thanks,
 
-When setting the weight for a per-cpu task-group, we have to put in a
-phantom weight when there is no work on that cpu, otherwise we'll not
-service that cpu when new work gets placed there until we again update
-the per-cpu weights.
+greg k-h
 
-We used to add these phantom weights to the total, so that the idle
-per-cpu shares don't get inflated, this however causes the non-idle
-parts to get deflated, causing unexpected weight distibutions.
-
-Reverse this, so that the non-idle shares are correct but the idle
-shares are inflated.
-
-Reported-by: Yasunori Goto <y-goto@jp.fujitsu.com>
-Tested-by: Yasunori Goto <y-goto@jp.fujitsu.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1257934048.23203.76.camel@twins>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- kernel/sched.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1623,7 +1623,7 @@ static void update_group_shares_cpu(stru
-  */
- static int tg_shares_up(struct task_group *tg, void *data)
- {
--	unsigned long weight, rq_weight = 0, shares = 0;
-+	unsigned long weight, rq_weight = 0, sum_weight = 0, shares = 0;
- 	unsigned long *usd_rq_weight;
- 	struct sched_domain *sd = data;
- 	unsigned long flags;
-@@ -1639,6 +1639,7 @@ static int tg_shares_up(struct task_grou
- 		weight = tg->cfs_rq[i]->load.weight;
- 		usd_rq_weight[i] = weight;
- 
-+		rq_weight += weight;
- 		/*
- 		 * If there are currently no tasks on the cpu pretend there
- 		 * is one of average load so that when a new task gets to
-@@ -1647,10 +1648,13 @@ static int tg_shares_up(struct task_grou
- 		if (!weight)
- 			weight = NICE_0_LOAD;
- 
--		rq_weight += weight;
-+		sum_weight += weight;
- 		shares += tg->cfs_rq[i]->shares;
- 	}
- 
-+	if (!rq_weight)
-+		rq_weight = sum_weight;
-+
- 	if ((!shares && rq_weight) || shares > tg->shares)
- 		shares = tg->shares;
- 
-
-
+ Makefile                                    |    2 +-
+ arch/arm/plat-mxc/gpio.c                    |    8 +++
+ arch/arm/plat-mxc/include/mach/gpio.h       |    1 +
+ arch/parisc/kernel/firmware.c               |   12 +---
+ arch/x86/xen/enlighten.c                    |    2 +-
+ arch/x86/xen/time.c                         |   39 ------------
+ drivers/edac/amd64_edac.c                   |    4 +-
+ drivers/gpu/drm/i915/i915_dma.c             |    9 +++
+ drivers/gpu/drm/i915/i915_drv.h             |    2 +
+ drivers/gpu/drm/i915/intel_bios.c           |   65 +++++++++++++++++++
+ drivers/gpu/drm/i915/intel_bios.h           |   17 +++++
+ drivers/gpu/drm/i915/intel_lvds.c           |   90 ++++++++++-----------------
+ drivers/misc/enclosure.c                    |    7 ++-
+ drivers/net/e1000e/hw.h                     |    2 +-
+ drivers/net/e1000e/netdev.c                 |   13 +++-
+ drivers/net/wireless/ath/ath9k/eeprom_def.c |    2 +-
+ drivers/net/wireless/ath/ath9k/hw.c         |   19 +++++-
+ drivers/net/wireless/ath/ath9k/xmit.c       |   16 +++---
+ drivers/net/wireless/iwlwifi/iwl-scan.c     |   18 +++---
+ drivers/parisc/led.c                        |    6 +-
+ drivers/ssb/driver_chipcommon_pmu.c         |   17 +++--
+ drivers/ssb/pci.c                           |   20 +-----
+ drivers/staging/comedi/Kconfig              |    5 ++
+ drivers/staging/comedi/drivers/Makefile     |    4 +-
+ fs/cifs/dns_resolve.c                       |    2 +-
+ fs/cifs/dns_resolve.h                       |    4 +-
+ fs/gfs2/dir.c                               |    2 +-
+ fs/nfs/file.c                               |   14 ++++-
+ fs/nfs/nfs4xdr.c                            |    2 +-
+ fs/xfs/xfs_dfrag.c                          |    5 +-
+ include/linux/ssb/ssb.h                     |    5 +-
+ include/linux/ssb/ssb_driver_chipcommon.h   |   15 ++++-
+ kernel/sched.c                              |    8 ++-
+ kernel/slow-work.c                          |    2 +-
+ mm/memory.c                                 |   16 ++++-
+ net/9p/trans_fd.c                           |    2 +-
+ net/wireless/mlme.c                         |    8 +-
+ net/wireless/scan.c                         |    5 ++
+ 38 files changed, 285 insertions(+), 185 deletions(-)
