@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933830Ab0HFFUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:20:45 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:33770 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933776Ab0HFFPg (ORCPT
+	id S933904Ab0HFFVB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:21:01 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49958 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933774Ab0HFFPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:36 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 29/43] memblock: Move functions around into a more sensible order
-Date: Fri,  6 Aug 2010 15:15:10 +1000
-Message-Id: <1281071724-28740-30-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 30/43] memblock: Add array resizing support
+Date: Fri,  6 Aug 2010 15:15:11 +1000
+Message-Id: <1281071724-28740-31-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -21,383 +21,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some shuffling is needed for doing array resize so we may as well
-put some sense into the ordering of the functions in the whole memblock.c
-file. No code change. Added some comments.
+When one of the array gets full, we resize it. After much thinking and
+a few iterations of that code, I went back to on-demand resizing using
+the (new) internal memblock_find_base() function, which is pretty much what
+Yinghai initially proposed, though there some differences in the details.
+
+To work this relies on the default alloc limit being set sensibly by
+the architecture.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |  301 ++++++++++++++++++++++++++++++---------------------------
- 1 files changed, 159 insertions(+), 142 deletions(-)
+ mm/memblock.c |  104 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 102 insertions(+), 2 deletions(-)
 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index b775fca..e5f3f9b 100644
+index e5f3f9b..0787790 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -24,40 +24,18 @@ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIO
+@@ -11,6 +11,7 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/bitops.h>
+ #include <linux/poison.h>
+@@ -18,12 +19,23 @@
+ 
+ struct memblock memblock;
+ 
+-static int memblock_debug;
++static int memblock_debug, memblock_can_resize;
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
  
  #define MEMBLOCK_ERROR	(~(phys_addr_t)0)
  
--static int __init early_memblock(char *p)
--{
--	if (p && strstr(p, "debug"))
--		memblock_debug = 1;
--	return 0;
--}
--early_param("memblock", early_memblock);
-+/*
-+ * Address comparison utilities
-+ */
- 
--static void memblock_dump(struct memblock_type *region, char *name)
-+static phys_addr_t memblock_align_down(phys_addr_t addr, phys_addr_t size)
- {
--	unsigned long long base, size;
--	int i;
--
--	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
--
--	for (i = 0; i < region->cnt; i++) {
--		base = region->regions[i].base;
--		size = region->regions[i].size;
--
--		pr_info(" %s[0x%x]\t0x%016llx - 0x%016llx, 0x%llx bytes\n",
--		    name, i, base, base + size - 1, size);
--	}
-+	return addr & ~(size - 1);
- }
- 
--void memblock_dump_all(void)
-+static phys_addr_t memblock_align_up(phys_addr_t addr, phys_addr_t size)
- {
--	if (!memblock_debug)
--		return;
--
--	pr_info("MEMBLOCK configuration:\n");
--	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
--
--	memblock_dump(&memblock.memory, "memory");
--	memblock_dump(&memblock.reserved, "reserved");
-+	return (addr + (size - 1)) & ~(size - 1);
- }
- 
- static unsigned long memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
-@@ -88,6 +66,77 @@ static long memblock_regions_adjacent(struct memblock_type *type,
- 	return memblock_addrs_adjacent(base1, size1, base2, size2);
- }
- 
-+long memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
++/* inline so we don't get a warning when pr_debug is compiled out */
++static inline const char *memblock_type_name(struct memblock_type *type)
 +{
-+	unsigned long i;
-+
-+	for (i = 0; i < type->cnt; i++) {
-+		phys_addr_t rgnbase = type->regions[i].base;
-+		phys_addr_t rgnsize = type->regions[i].size;
-+		if (memblock_addrs_overlap(base, size, rgnbase, rgnsize))
-+			break;
-+	}
-+
-+	return (i < type->cnt) ? i : -1;
++	if (type == &memblock.memory)
++		return "memory";
++	else if (type == &memblock.reserved)
++		return "reserved";
++	else
++		return "unknown";
 +}
 +
-+/*
-+ * Find, allocate, deallocate or reserve unreserved regions. All allocations
-+ * are top-down.
-+ */
-+
-+static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
-+					  phys_addr_t size, phys_addr_t align)
-+{
-+	phys_addr_t base, res_base;
-+	long j;
-+
-+	base = memblock_align_down((end - size), align);
-+	while (start <= base) {
-+		j = memblock_overlaps_region(&memblock.reserved, base, size);
-+		if (j < 0)
-+			return base;
-+		res_base = memblock.reserved.regions[j].base;
-+		if (res_base < size)
-+			break;
-+		base = memblock_align_down(res_base - size, align);
-+	}
-+
-+	return MEMBLOCK_ERROR;
-+}
-+
-+static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
-+{
-+	long i;
-+	phys_addr_t base = 0;
-+	phys_addr_t res_base;
-+
-+	BUG_ON(0 == size);
-+
-+	size = memblock_align_up(size, align);
-+
-+	/* Pump up max_addr */
-+	if (max_addr == MEMBLOCK_ALLOC_ACCESSIBLE)
-+		max_addr = memblock.current_limit;
-+
-+	/* We do a top-down search, this tends to limit memory
-+	 * fragmentation by keeping early boot allocs near the
-+	 * top of memory
-+	 */
-+	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
-+		phys_addr_t memblockbase = memblock.memory.regions[i].base;
-+		phys_addr_t memblocksize = memblock.memory.regions[i].size;
-+
-+		if (memblocksize < size)
-+			continue;
-+		base = min(memblockbase + memblocksize, max_addr);
-+		res_base = memblock_find_region(memblockbase, base, size, align);
-+		if (res_base != MEMBLOCK_ERROR)
-+			return res_base;
-+	}
-+	return MEMBLOCK_ERROR;
-+}
-+
- static void memblock_remove_region(struct memblock_type *type, unsigned long r)
- {
- 	unsigned long i;
-@@ -107,22 +156,6 @@ static void memblock_coalesce_regions(struct memblock_type *type,
+ /*
+  * Address comparison utilities
+  */
+@@ -156,6 +168,79 @@ static void memblock_coalesce_regions(struct memblock_type *type,
  	memblock_remove_region(type, r2);
  }
  
--void __init memblock_analyze(void)
--{
--	int i;
--
--	/* Check marker in the unused last array entry */
--	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
--		!= (phys_addr_t)RED_INACTIVE);
--	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
--		!= (phys_addr_t)RED_INACTIVE);
--
--	memblock.memory_size = 0;
--
--	for (i = 0; i < memblock.memory.cnt; i++)
--		memblock.memory_size += memblock.memory.regions[i].size;
--}
--
++/* Defined below but needed now */
++static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size);
++
++static int memblock_double_array(struct memblock_type *type)
++{
++	struct memblock_region *new_array, *old_array;
++	phys_addr_t old_size, new_size, addr;
++	int use_slab = slab_is_available();
++
++	/* We don't allow resizing until we know about the reserved regions
++	 * of memory that aren't suitable for allocation
++	 */
++	if (!memblock_can_resize)
++		return -1;
++
++	pr_debug("memblock: %s array full, doubling...", memblock_type_name(type));
++
++	/* Calculate new doubled size */
++	old_size = type->max * sizeof(struct memblock_region);
++	new_size = old_size << 1;
++
++	/* Try to find some space for it.
++	 *
++	 * WARNING: We assume that either slab_is_available() and we use it or
++	 * we use MEMBLOCK for allocations. That means that this is unsafe to use
++	 * when bootmem is currently active (unless bootmem itself is implemented
++	 * on top of MEMBLOCK which isn't the case yet)
++	 *
++	 * This should however not be an issue for now, as we currently only
++	 * call into MEMBLOCK while it's still active, or much later when slab is
++	 * active for memory hotplug operations
++	 */
++	if (use_slab) {
++		new_array = kmalloc(new_size, GFP_KERNEL);
++		addr = new_array == NULL ? MEMBLOCK_ERROR : __pa(new_array);
++	} else
++		addr = memblock_find_base(new_size, sizeof(phys_addr_t), MEMBLOCK_ALLOC_ACCESSIBLE);
++	if (addr == MEMBLOCK_ERROR) {
++		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
++		       memblock_type_name(type), type->max, type->max * 2);
++		return -1;
++	}
++	new_array = __va(addr);
++
++	/* Found space, we now need to move the array over before
++	 * we add the reserved region since it may be our reserved
++	 * array itself that is full.
++	 */
++	memcpy(new_array, type->regions, old_size);
++	memset(new_array + type->max, 0, old_size);
++	old_array = type->regions;
++	type->regions = new_array;
++	type->max <<= 1;
++
++	/* If we use SLAB that's it, we are done */
++	if (use_slab)
++		return 0;
++
++	/* Add the new reserved region now. Should not fail ! */
++	BUG_ON(memblock_add_region(&memblock.reserved, addr, new_size) < 0);
++
++	/* If the array wasn't our static init one, then free it. We only do
++	 * that before SLAB is available as later on, we don't know whether
++	 * to use kfree or free_bootmem_pages(). Shouldn't be a big deal
++	 * anyways
++	 */
++	if (old_array != memblock_memory_init_regions &&
++	    old_array != memblock_reserved_init_regions)
++		memblock_free(__pa(old_array), old_size);
++
++	return 0;
++}
++
  static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
  {
  	unsigned long coalesced = 0;
-@@ -260,49 +293,47 @@ long __init memblock_reserve(phys_addr_t base, phys_addr_t size)
- 	return memblock_add_region(_rgn, base, size);
- }
+@@ -196,7 +281,11 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
  
--long memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-+phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
- {
--	unsigned long i;
-+	phys_addr_t found;
- 
--	for (i = 0; i < type->cnt; i++) {
--		phys_addr_t rgnbase = type->regions[i].base;
--		phys_addr_t rgnsize = type->regions[i].size;
--		if (memblock_addrs_overlap(base, size, rgnbase, rgnsize))
--			break;
--	}
-+	/* We align the size to limit fragmentation. Without this, a lot of
-+	 * small allocs quickly eat up the whole reserve array on sparc
+ 	if (coalesced)
+ 		return coalesced;
+-	if (type->cnt >= type->max)
++
++	/* If we are out of space, we fail. It's too late to resize the array
++	 * but then this shouldn't have happened in the first place.
 +	 */
-+	size = memblock_align_up(size, align);
++	if (WARN_ON(type->cnt >= type->max))
+ 		return -1;
  
--	return (i < type->cnt) ? i : -1;
--}
-+	found = memblock_find_base(size, align, max_addr);
-+	if (found != MEMBLOCK_ERROR &&
-+	    memblock_add_region(&memblock.reserved, found, size) >= 0)
-+		return found;
+ 	/* Couldn't coalesce the MEMBLOCK, so add it to the sorted table. */
+@@ -217,6 +306,14 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+ 	}
+ 	type->cnt++;
  
--static phys_addr_t memblock_align_down(phys_addr_t addr, phys_addr_t size)
--{
--	return addr & ~(size - 1);
-+	return 0;
- }
- 
--static phys_addr_t memblock_align_up(phys_addr_t addr, phys_addr_t size)
-+phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
- {
--	return (addr + (size - 1)) & ~(size - 1);
-+	phys_addr_t alloc;
-+
-+	alloc = __memblock_alloc_base(size, align, max_addr);
-+
-+	if (alloc == 0)
-+		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
-+		      (unsigned long long) size, (unsigned long long) max_addr);
-+
-+	return alloc;
- }
- 
--static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
--					  phys_addr_t size, phys_addr_t align)
-+phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
- {
--	phys_addr_t base, res_base;
--	long j;
-+	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
-+}
- 
--	base = memblock_align_down((end - size), align);
--	while (start <= base) {
--		j = memblock_overlaps_region(&memblock.reserved, base, size);
--		if (j < 0)
--			return base;
--		res_base = memblock.reserved.regions[j].base;
--		if (res_base < size)
--			break;
--		base = memblock_align_down(res_base - size, align);
--	}
- 
--	return MEMBLOCK_ERROR;
--}
-+/*
-+ * Additional node-local allocators. Search for node memory is bottom up
-+ * and walks memblock regions within that node bottom-up as well, but allocation
-+ * within an memblock region is top-down.
-+ */
- 
- phys_addr_t __weak __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
- {
-@@ -364,72 +395,6 @@ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int n
- 	return memblock_alloc(size, align);
- }
- 
--phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
--{
--	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
--}
--
--static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
--{
--	long i;
--	phys_addr_t base = 0;
--	phys_addr_t res_base;
--
--	BUG_ON(0 == size);
--
--	/* Pump up max_addr */
--	if (max_addr == MEMBLOCK_ALLOC_ACCESSIBLE)
--		max_addr = memblock.current_limit;
--
--	/* We do a top-down search, this tends to limit memory
--	 * fragmentation by keeping early boot allocs near the
--	 * top of memory
--	 */
--	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
--		phys_addr_t memblockbase = memblock.memory.regions[i].base;
--		phys_addr_t memblocksize = memblock.memory.regions[i].size;
--
--		if (memblocksize < size)
--			continue;
--		base = min(memblockbase + memblocksize, max_addr);
--		res_base = memblock_find_region(memblockbase, base, size, align);
--		if (res_base != MEMBLOCK_ERROR)
--			return res_base;
--	}
--	return MEMBLOCK_ERROR;
--}
--
--phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
--{	
--	phys_addr_t found;
--
--	/* We align the size to limit fragmentation. Without this, a lot of
--	 * small allocs quickly eat up the whole reserve array on sparc
--	 */
--	size = memblock_align_up(size, align);
--
--	found = memblock_find_base(size, align, max_addr);
--	if (found != MEMBLOCK_ERROR &&
--	    memblock_add_region(&memblock.reserved, found, size) >= 0)
--		return found;
--
--	return 0;
--}
--
--phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
--{
--	phys_addr_t alloc;
--
--	alloc = __memblock_alloc_base(size, align, max_addr);
--
--	if (alloc == 0)
--		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
--		      (unsigned long long) size, (unsigned long long) max_addr);
--
--	return alloc;
--}
--
--
- /* You must call memblock_analyze() before this. */
- phys_addr_t __init memblock_phys_mem_size(void)
- {
-@@ -534,6 +499,50 @@ void __init memblock_set_current_limit(phys_addr_t limit)
- 	memblock.current_limit = limit;
- }
- 
-+static void memblock_dump(struct memblock_type *region, char *name)
-+{
-+	unsigned long long base, size;
-+	int i;
-+
-+	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
-+
-+	for (i = 0; i < region->cnt; i++) {
-+		base = region->regions[i].base;
-+		size = region->regions[i].size;
-+
-+		pr_info(" %s[0x%x]\t0x%016llx - 0x%016llx, 0x%llx bytes\n",
-+		    name, i, base, base + size - 1, size);
++	/* The array is full ? Try to resize it. If that fails, we undo
++	 * our allocation and return an error
++	 */
++	if (type->cnt == type->max && memblock_double_array(type)) {
++		type->cnt--;
++		return -1;
 +	}
-+}
 +
-+void memblock_dump_all(void)
-+{
-+	if (!memblock_debug)
-+		return;
-+
-+	pr_info("MEMBLOCK configuration:\n");
-+	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
-+
-+	memblock_dump(&memblock.memory, "memory");
-+	memblock_dump(&memblock.reserved, "reserved");
-+}
-+
-+void __init memblock_analyze(void)
-+{
-+	int i;
-+
-+	/* Check marker in the unused last array entry */
-+	WARN_ON(memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS].base
-+		!= (phys_addr_t)RED_INACTIVE);
-+	WARN_ON(memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS].base
-+		!= (phys_addr_t)RED_INACTIVE);
-+
-+	memblock.memory_size = 0;
-+
-+	for (i = 0; i < memblock.memory.cnt; i++)
-+		memblock.memory_size += memblock.memory.regions[i].size;
-+}
-+
- void __init memblock_init(void)
- {
- 	/* Hookup the initial arrays */
-@@ -561,3 +570,11 @@ void __init memblock_init(void)
- 	memblock.current_limit = MEMBLOCK_ALLOC_ANYWHERE;
+ 	return 0;
  }
  
-+static int __init early_memblock(char *p)
-+{
-+	if (p && strstr(p, "debug"))
-+		memblock_debug = 1;
-+	return 0;
-+}
-+early_param("memblock", early_memblock);
+@@ -541,6 +638,9 @@ void __init memblock_analyze(void)
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++)
+ 		memblock.memory_size += memblock.memory.regions[i].size;
 +
++	/* We allow resizing from there */
++	memblock_can_resize = 1;
+ }
+ 
+ void __init memblock_init(void)
 -- 
 1.7.0.4
 
