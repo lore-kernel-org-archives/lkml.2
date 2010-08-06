@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935821Ab0HFTgc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:36:32 -0400
-Received: from kroah.org ([198.145.64.141]:43475 "EHLO coco.kroah.org"
+	id S1761953Ab0HFTh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:37:59 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38297 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935083Ab0HFT1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:27:50 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:14 2010
-Message-Id: <20100806192114.866930798@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:46 -0700
+	id S1750940Ab0HFThz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:37:55 -0400
+Date: Fri, 6 Aug 2010 12:37:46 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Helge Deller <deller@gmx.de>, Kyle McMartin <kyle@mcmartin.ca>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>
-Subject: [05/36] PARISC: led.c - fix potential stack overflow in led_proc_write()
-In-Reply-To: <20100806192649.GA1614@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY patches for 2.6.36
+Message-ID: <20100806193746.GA2022@suse.de>
+References: <20100805213528.GA13794@kroah.com>
+ <AANLkTikhq6FF4j+w-TXrPeq05NhvbhgqhJkW7tCw2+3c@mail.gmail.com>
+ <20100806185147.GB23853@suse.de>
+ <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Aug 06, 2010 at 08:45:52PM +0100, Alan Cox wrote:
+> On Fri, 6 Aug 2010 11:51:47 -0700
+> Greg KH <gregkh@suse.de> wrote:
+> 
+> > On Fri, Aug 06, 2010 at 11:40:15AM -0700, Linus Torvalds wrote:
+> > > 
+> > > Do do the highlander thing on that crud. Cut it off at the head, and
+> > > make sure it never ever comes back to life.
+> > 
+> > Arnd and Alan, I'll drop the BKL portion of this patch series and
+> > regenerate something to get the other tty patches to Linus.
+> 
+> Wouldn't it make more sense to simply turn it on as Linus suggested ?
 
-------------------
+That's fine with me, and drop the option entirely?  Arnd, any objection
+to that?
 
-From: Helge Deller <deller@gmx.de>
+thanks,
 
-commit 4b4fd27c0b5ec638a1f06ced9226fd95229dbbf0 upstream.
-
-avoid potential stack overflow by correctly checking count parameter
-
-Reported-by: Ilja <ilja@netric.org>
-Signed-off-by: Helge Deller <deller@gmx.de>
-Acked-by: Kyle McMartin <kyle@mcmartin.ca>
-Cc: James E.J. Bottomley <jejb@parisc-linux.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/parisc/led.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
-
---- a/drivers/parisc/led.c
-+++ b/drivers/parisc/led.c
-@@ -176,16 +176,18 @@ static ssize_t led_proc_write(struct fil
- 	size_t count, loff_t *pos)
- {
- 	void *data = PDE(file->f_path.dentry->d_inode)->data;
--	char *cur, lbuf[count + 1];
-+	char *cur, lbuf[32];
- 	int d;
- 
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EACCES;
- 
--	memset(lbuf, 0, count + 1);
-+	if (count >= sizeof(lbuf))
-+		count = sizeof(lbuf)-1;
- 
- 	if (copy_from_user(lbuf, buf, count))
- 		return -EFAULT;
-+	lbuf[count] = 0;
- 
- 	cur = lbuf;
- 
-
-
+greg k-h
