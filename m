@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762065Ab0HFUdp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:33:45 -0400
-Received: from claw.goop.org ([74.207.240.146]:41779 "EHLO claw.goop.org"
+	id S1762061Ab0HFUfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:35:07 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33698 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762015Ab0HFUdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:33:43 -0400
-Message-ID: <4C5C71A5.3050500@goop.org>
-Date: Fri, 06 Aug 2010 13:33:41 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1762019Ab0HFUfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 16:35:03 -0400
+Date: Fri, 6 Aug 2010 13:22:28 -0700
+From: Greg KH <gregkh@suse.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PATCH] TTY patches for 2.6.36
+Message-ID: <20100806202228.GA6153@suse.de>
+References: <20100805213528.GA13794@kroah.com>
+ <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
+ <AANLkTimGoG97dtp_hmHBJwwo1stzZxLoKs4_jr+eQ=gJ@mail.gmail.com>
+ <201008062158.46013.arnd@arndb.de>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jan Beulich <JBeulich@novell.com>, Peter Zijlstra <peterz@infradead.org>,
-        Xen-devel <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
-        Nick Piggin <npiggin@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 02/12] x86/ticketlock: convert spin loop to C
-References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <cf01e01095f802dc5082e82a8e96c84903e929a6.1279328276.git.jeremy.fitzhardinge@citrix.com> <1280761639.1923.213.camel@laptop> <4C56E1A1.6020005@goop.org> <4C5C1F80020000780000EA6D@vpn.id2.novell.com> <4C5C21E3.1020004@goop.org> <4C5C6DCE.4020206@zytor.com>
-In-Reply-To: <4C5C6DCE.4020206@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008062158.46013.arnd@arndb.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/06/2010 01:17 PM, H. Peter Anvin wrote:
-> On 08/06/2010 07:53 AM, Jeremy Fitzhardinge wrote:
->> On 08/06/2010 05:43 AM, Jan Beulich wrote:
->>> You certainly mean "the compiler currently treats this as being:" - I
->>> don't think there's a guarantee it'll always be doing so.
->>>
->>>> for (;;) {
->>>> if (inc.tickets.head == inc.tickets.tail)
->>>> goto out;
->>>> ...
->>>> }
->>>> out: barrier();
->>>> }
->>>>
->>>> (Which would probably be a reasonable way to clarify the code.)
->>> I therefore think it needs to be written this way.
->>
->> Agreed.
->>
->
-> A call/return to an actual out-of-line function is a barrier (and will 
-> always be a barrier, as it is the fundamental ABI sequence points), 
-> but to an inline function it is not.
+On Fri, Aug 06, 2010 at 09:58:45PM +0200, Arnd Bergmann wrote:
+> On Friday 06 August 2010 21:38:36 Linus Torvalds wrote:
+> > I also don't want the BKL to show up in grep, even if the config
+> > option for it were to be impossible to enable. If we've gotten far
+> > enough that we can get rid of the BKL in the tty layer, we really
+> > should get rid of it. Not leave it in some zombie limbo state.
+> 
+> Ok, I've sent the replacement patch that does this, and I'm much
+> happier with the outcome.
+> 
+> If you apply this version, the only stronghold left for the BKL
+> will be fs/lockd, everything else that's left is either simple
+> to fix or highly obscure.
 
-Yes. So the goto explicitly puts the barrier into the control flow which 
-should stop the compiler from doing anything unexpected.
+Ok, I got that one now, and am building the tree to test here before
+sending to Linus.
 
-     J
+thanks,
+
+greg k-h
