@@ -1,74 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761796Ab0HFS1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:27:11 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53928 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761781Ab0HFS1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:27:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D7ALu3UptCP+9YYB/iQPanx4AwlQjPr2gb8YvhwwsrNXILAlR5GcM6NaBuwJPcCbPm
-         stK6PwW3gCmWydRZeqn4VSLGr0uOBbp/JxKlaG9FGYKjrL2MNbcynR38uK0DPxL6Gtku
-         wYfsAMiKfcYdXnSmvuKQ5SvFR5h7NRNzjjeI8=
-From: Namhyung Kim <namhyung@gmail.com>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] percpu: add sanity check for UP
-Date: Sat,  7 Aug 2010 03:26:23 +0900
-Message-Id: <1281119187-12640-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S964855Ab0HFS20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:28:26 -0400
+Received: from kroah.org ([198.145.64.141]:36034 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761799Ab0HFS2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:28:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 10:56:11 2010
+Message-Id: <20100806175611.728174109@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 06 Aug 2010 10:54:40 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [4/4] GFS2: rename causes kernel Oops
+In-Reply-To: <20100806182735.GA15732@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add sanity check for percpu accessors on UP.
-This removes lots of sparse warnings.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+------------------
+
+From: Bob Peterson <rpeterso@redhat.com>
+
+commit 728a756b8fcd22d80e2dbba8117a8a3aafd3f203 upstream.
+
+This patch fixes a kernel Oops in the GFS2 rename code.
+
+The problem was in the way the gfs2 directory code was trying
+to re-use sentinel directory entries.
+
+In the failing case, gfs2's rename function was renaming a
+file to another name that had the same non-trivial length.
+The file being renamed happened to be the first directory
+entry on the leaf block.
+
+First, the rename code (gfs2_rename in ops_inode.c) found the
+original directory entry and decided it could do its job by
+simply replacing the directory entry with another.  Therefore
+it determined correctly that no block allocations were needed.
+
+Next, the rename code deleted the old directory entry prior to
+replacing it with the new name.  Therefore, the soon-to-be
+replaced directory entry was temporarily made into a directory
+entry "sentinel" or a place holder at the start of a leaf block.
+
+Lastly, it went to re-add the replacement directory entry in
+that leaf block.  However, when gfs2_dirent_find_space was
+looking for space in the leaf block, it used the wrong value
+for the sentinel.  That threw off its calculations so later
+it decides it can't really re-use the sentinel and therefore
+must allocate a new leaf block.  But because it previously decided
+to re-use the directory entry, it didn't waste the time to
+grab a new block allocation for the inode.  Therefore, the
+inode's i_alloc pointer was still NULL and it crashes trying to
+reference it.
+
+In the case of sentinel directory entries, the entire dirent is
+reused, not just the "free space" portion of it, and therefore
+the function gfs2_dirent_find_space should use the value 0
+rather than GFS2_DIRENT_SIZE(0) for the actual dirent size.
+
+Fixing this calculation enables the reproducer programs to work
+properly.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- include/asm-generic/percpu.h |   12 +++++++++---
- include/linux/percpu.h       |    2 +-
- 2 files changed, 10 insertions(+), 4 deletions(-)
+ fs/gfs2/dir.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
-index b5043a9..50ac3ac 100644
---- a/include/asm-generic/percpu.h
-+++ b/include/asm-generic/percpu.h
-@@ -70,9 +70,15 @@ extern void setup_per_cpu_areas(void);
+--- a/fs/gfs2/dir.c
++++ b/fs/gfs2/dir.c
+@@ -393,7 +393,7 @@ static int gfs2_dirent_find_space(const
+ 	unsigned totlen = be16_to_cpu(dent->de_rec_len);
  
- #else /* ! SMP */
- 
--#define per_cpu(var, cpu)			(*((void)(cpu), &(var)))
--#define __get_cpu_var(var)			(var)
--#define __raw_get_cpu_var(var)			(var)
-+#define VERIFY_PERCPU_PTR(__p) ({			\
-+	__verify_pcpu_ptr((__p));			\
-+	(typeof(*(__p)) __kernel __force *) (__p);	\
-+})
-+
-+#define per_cpu(var, cpu) \
-+	(*((void)(cpu), VERIFY_PERCPU_PTR(&(var))))
-+#define __get_cpu_var(var)		(*VERIFY_PERCPU_PTR(&(var)))
-+#define __raw_get_cpu_var(var)		(*VERIFY_PERCPU_PTR(&(var)))
- #define this_cpu_ptr(ptr) per_cpu_ptr(ptr, 0)
- #define __this_cpu_ptr(ptr) this_cpu_ptr(ptr)
- 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index d3a38d6..bc36301 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -143,7 +143,7 @@ extern void __init setup_per_cpu_areas(void);
- 
- #else /* CONFIG_SMP */
- 
--#define per_cpu_ptr(ptr, cpu) ({ (void)(cpu); (ptr); })
-+#define per_cpu_ptr(ptr, cpu) ({ (void)(cpu); VERIFY_PERCPU_PTR((ptr)); })
- 
- /* can't distinguish from other static vars, always false */
- static inline bool is_kernel_percpu_address(unsigned long addr)
--- 
-1.7.0.4
+ 	if (gfs2_dirent_sentinel(dent))
+-		actual = GFS2_DIRENT_SIZE(0);
++		actual = 0;
+ 	if (totlen - actual >= required)
+ 		return 1;
+ 	return 0;
+
 
