@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935381Ab0HFUxb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:53:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53968 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932155Ab0HFUx3 (ORCPT
+	id S964795Ab0HFU4D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:56:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62122 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934680Ab0HFUz6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:53:29 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
-        Michael Neuling <mikey@neuling.org>, Jeff Layton <jlayton@redhat.com>,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-In-Reply-To: <20100806185836.185076461@clark.site>
-References: <20100806185836.185076461@clark.site>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-HdqI9Ra+QyVbtxm/pOoR"
-Date: Fri, 06 Aug 2010 21:53:17 +0100
-Message-ID: <1281127997.7543.0.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [Stable-review] [26/34] CIFS: Fix compile error with __init in
- cifs_init_dns_resolver() definition
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	Fri, 6 Aug 2010 16:55:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Q06aErti8b6r97QK4MFKCmXJuLXtF7PuBskgtoq6edMgccyXDl2zGqZjzii7H2fBP7
+         LeokwGi2fbWJCBUxnUKJaRz9dfWdKE+xDs0+xhgRXPqdRcNPprMtinuGd9a+Sf/jEdmr
+         LSA/xOKe8O0BsKmNyZhM2bfAzBg9oBz5gv1ns=
+Date: Fri, 6 Aug 2010 22:55:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] tracing: wake up tasks reading trace_pipe on write to
+	trace_marker
+Message-ID: <20100806205549.GB5345@nowhere>
+References: <20100727224408.GB4142@joi.lan> <1281127136.3352.13.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281127136.3352.13.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 06, 2010 at 04:38:56PM -0400, Steven Rostedt wrote:
+> On Wed, 2010-07-28 at 00:44 +0200, Marcin Slusarz wrote:
+> > Currently we rely on other code periodically waking up trace reader.
+> > If there aren't any other data than markers, reader will never be woken up.
+> > Fix it.
+> > 
+> > Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+> > Cc: Steven Rostedt <rostedt@goodmis.org>
+> > Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > ---
+> >  kernel/trace/trace.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> > index 086d363..02e04c8 100644
+> > --- a/kernel/trace/trace.c
+> > +++ b/kernel/trace/trace.c
+> > @@ -1520,6 +1520,7 @@ int trace_array_vprintk(struct trace_array *tr,
+> >  	if (!filter_check_discard(call, entry, buffer, event)) {
+> >  		ring_buffer_unlock_commit(buffer, event);
+> >  		ftrace_trace_stack(buffer, irq_flags, 6, pc);
+> > +		trace_wake_up();
+> >  	}
+> >  
+> 
+> This can't work. trace_printk() and friends must be able to be used
+> anywhere. This can cause race conditions with the rq locks in the
+> scheduler.
+> 
+> But you do bring up a good idea. That is, perhaps we should have a way
+> to attach to known safe tracepoints that we can hook to to check if a
+> wake up should happen or not.
 
---=-HdqI9Ra+QyVbtxm/pOoR
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2010-08-06 at 11:57 -0700, Greg KH wrote:
-> 2.6.32-stable review patch.  If anyone has any objections, please let us =
-know.
->=20
-> ------------------
->  [stable] [PATCH 2.6.32/stable] CIFS: Fix compile error with __init in ci=
-fs_init_dns_resolver() definition
->=20
-> From: Michael Neuling <mikey@neuling.org>
->=20
-> An allmodconfig compile on ppc64 with 2.6.32.17 currently gives this erro=
-r
->=20
-> fs/cifs/dns_resolve.h:27: error: expected '=3D', ',', ';', 'asm' or '__at=
-tribute__' before 'cifs_init_dns_resolver'
->=20
-> This adds the correct header file to fix this.
-[...]
+This could be a simple macro that takes the name of the trace event:
 
-Why <linux/module.h> and not <linux/init.h>?
 
-Ben.
+DEFINE_EVENT(event_tpl, event_name, ...);
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
 
---=-HdqI9Ra+QyVbtxm/pOoR
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+TRACE_EVENT_NO_WAKE(event_name);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I think trace events should be wakeable by default as it looks safe for
+most of them. But probably we don't want that per event class.
 
-iQIVAwUATFx2N+e/yOyVhhEJAQJgORAAkD0UIKGbPHr8hi/UxxfwIo7SmM3Wkd7V
-EyfGVZkQUu7YYm5XRyaCoZtqwv2sXE1OeZfw5PZwGQSimOMeo68y5q6PlaKg0yKy
-V8Ofh0GYsoA2j7pSZGr36ek6Zhj5l0a91nNMpinejVNImE1EyOj7vzQMA6D91sSO
-MyZTgch0n9K0kT1EPYpZ9k9xOfCEicTVle/PlgQ7KPpLYkG5Nhz2RnJOHzyI9QJ7
-EQL/fhtoaoCX9S2vFyAb3IsfgvyvW3mBrC5elFvLG5hl3x/xQYP9ssM4KZq3idGS
-JOCoJPzjr4/eXlje1Q4D23jX+n/tt4aVRbmqKFxWT3wepvV9QmeXF5FKWQfACrr8
-v4bCaDtImc51jxy90JqbrLEUJLlBf0/QAwAYkcw3Lxq2ONGz6E62lOPG1nioxg9w
-AQe/8U6CnPFSDCH/UsV9vCefm40tCXBn6iy6Yzl0eXBSiWn9jVUKQ2NgSaQMknbL
-b2LtP6Hsgb+cK7UZ062/4XIbKksItr1T5yAhoa7mkExKwaHX7AkGK2dw5dp6Utm4
-FtIwZXW+H3zFbwzn6JC+T+0w4s/66mbib7CoJ+Y1zd0JRicCOFQDV6gDOt7E3ot/
-FBxx9ZwAOxXcRGYT4NhVjiydXwUf2gbMfi187/Bey3AgH8OfOptkimw1oGy2dJ4+
-2Ox+HsOpvyg=
-=AFPT
------END PGP SIGNATURE-----
+In the unsafe list, I only have some sched and lock events in
+mind, but I bet there are some others.
 
---=-HdqI9Ra+QyVbtxm/pOoR--
