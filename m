@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965563Ab0HFT2N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:28:13 -0400
-Received: from kroah.org ([198.145.64.141]:43484 "EHLO coco.kroah.org"
+	id S935864Ab0HFTcV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:32:21 -0400
+Received: from kroah.org ([198.145.64.141]:43544 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935668Ab0HFT1w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:27:52 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192115.034145520@clark.site>
+	id S1761704Ab0HFT2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:28:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:16 2010
+Message-Id: <20100806192116.683623848@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:48 -0700
+Date: Fri, 06 Aug 2010 12:20:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kyle McMartin <kyle@parisc-linux.org>
-Subject: [07/36] parisc: pass through \t to early (iodc) console
+        Bob Peterson <rpeterso@redhat.com>,
+        Steven Whitehouse <swhiteho@redhat.com>
+Subject: [25/36] GFS2: rename causes kernel Oops
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kyle McMartin <kyle@mcmartin.ca>
+From: Bob Peterson <rpeterso@redhat.com>
 
-commit d9b68e5e88248bb24fd4e455588bea1d56108fd6 upstream.
+commit 728a756b8fcd22d80e2dbba8117a8a3aafd3f203 upstream.
 
-The firmware handles '\t' internally, so stop trying to emulate it
-(which, incidentally, had a bug in it.)
+This patch fixes a kernel Oops in the GFS2 rename code.
 
-Fixes a really weird hang at bootup in rcu_bootup_announce, which,
-as far as I can tell, is the first printk in the core kernel to use
-a tab as the first character.
+The problem was in the way the gfs2 directory code was trying
+to re-use sentinel directory entries.
 
-Signed-off-by: Kyle McMartin <kyle@parisc-linux.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In the failing case, gfs2's rename function was renaming a
+file to another name that had the same non-trivial length.
+The file being renamed happened to be the first directory
+entry on the leaf block.
+
+First, the rename code (gfs2_rename in ops_inode.c) found the
+original directory entry and decided it could do its job by
+simply replacing the directory entry with another.  Therefore
+it determined correctly that no block allocations were needed.
+
+Next, the rename code deleted the old directory entry prior to
+replacing it with the new name.  Therefore, the soon-to-be
+replaced directory entry was temporarily made into a directory
+entry "sentinel" or a place holder at the start of a leaf block.
+
+Lastly, it went to re-add the replacement directory entry in
+that leaf block.  However, when gfs2_dirent_find_space was
+looking for space in the leaf block, it used the wrong value
+for the sentinel.  That threw off its calculations so later
+it decides it can't really re-use the sentinel and therefore
+must allocate a new leaf block.  But because it previously decided
+to re-use the directory entry, it didn't waste the time to
+grab a new block allocation for the inode.  Therefore, the
+inode's i_alloc pointer was still NULL and it crashes trying to
+reference it.
+
+In the case of sentinel directory entries, the entire dirent is
+reused, not just the "free space" portion of it, and therefore
+the function gfs2_dirent_find_space should use the value 0
+rather than GFS2_DIRENT_SIZE(0) for the actual dirent size.
+
+Fixing this calculation enables the reproducer programs to work
+properly.
+
+Signed-off-by: Bob Peterson <rpeterso@redhat.com>
+Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/kernel/firmware.c |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ fs/gfs2/dir.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/kernel/firmware.c
-+++ b/arch/parisc/kernel/firmware.c
-@@ -1123,7 +1123,6 @@ static char __attribute__((aligned(64)))
-  */
- int pdc_iodc_print(const unsigned char *str, unsigned count)
- {
--	static int posx;        /* for simple TAB-Simulation... */
- 	unsigned int i;
- 	unsigned long flags;
+--- a/fs/gfs2/dir.c
++++ b/fs/gfs2/dir.c
+@@ -392,7 +392,7 @@ static int gfs2_dirent_find_space(const
+ 	unsigned totlen = be16_to_cpu(dent->de_rec_len);
  
-@@ -1133,19 +1132,12 @@ int pdc_iodc_print(const unsigned char *
- 			iodc_dbuf[i+0] = '\r';
- 			iodc_dbuf[i+1] = '\n';
- 			i += 2;
--			posx = 0;
- 			goto print;
--		case '\t':
--			while (posx & 7) {
--				iodc_dbuf[i] = ' ';
--				i++, posx++;
--			}
--			break;
- 		case '\b':	/* BS */
--			posx -= 2;
-+			i--; /* overwrite last */
- 		default:
- 			iodc_dbuf[i] = str[i];
--			i++, posx++;
-+			i++;
- 			break;
- 		}
- 	}
+ 	if (gfs2_dirent_sentinel(dent))
+-		actual = GFS2_DIRENT_SIZE(0);
++		actual = 0;
+ 	if (totlen - actual >= required)
+ 		return 1;
+ 	return 0;
 
 
