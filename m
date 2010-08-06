@@ -1,78 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762000Ab0HFUBU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:01:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34890 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756868Ab0HFUBR (ORCPT
+	id S933976Ab0HFUCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:02:39 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52928 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868Ab0HFUCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:01:17 -0400
-Message-ID: <4C5C69F9.5020108@windriver.com>
-Date: Fri, 06 Aug 2010 15:00:57 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: linux-next: Tree for August 6 (kgdboc)
-References: <20100806132758.6001d416.sfr@canb.auug.org.au> <20100806115344.52c712b7.randy.dunlap@oracle.com>
-In-Reply-To: <20100806115344.52c712b7.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Aug 2010 20:00:58.0633 (UTC) FILETIME=[165C8F90:01CB35A2]
+	Fri, 6 Aug 2010 16:02:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=lDnDjOSzDF6h0m5FE6p5v8k4m4X/Y7r4F3o0eltc34kHom2lYimo1JSpCIBe7t9FHc
+         zjGfo9M441NstO0Mf8312n/zgfEuJaxx5oq7RnYBbF8G3H/7TRfcuyVCja5HbTBkzcZp
+         Hq42LcNKMir5WAwoMge+BmBvN8zTZGTAJWEFM=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Karsten Keil <isdn@linux-pingi.de>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Tilman Schmidt <tilman@imap.cc>, Tejun Heo <tj@kernel.org>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/18] isdn: hisax: call disable_pci_device() if pci_probe() failed
+Date: Sat,  7 Aug 2010 00:02:21 +0400
+Message-Id: <1281124949-14361-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2010 01:53 PM, Randy Dunlap wrote:
-> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
-> 
->> Hi all,
->>
->> As the merge window is open, please do not add 2.6.37 material to your
->> linux-next included trees until after 2.6.36-rc1.
->>
->> Changes since 20100805:
-> 
-> 
-> ERROR: "con_debug_enter" [drivers/serial/kgdboc.ko] undefined!
-> ERROR: "vc_cons" [drivers/serial/kgdboc.ko] undefined!
-> ERROR: "fg_console" [drivers/serial/kgdboc.ko] undefined!
-> ERROR: "con_debug_leave" [drivers/serial/kgdboc.ko] undefined!
-> 
-> .config is attached.
-> 
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+Driver should call disable_pci_device() if it returns from pci_probe()
+with error.
 
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/isdn/hisax/avm_pci.c   |    2 ++
+ drivers/isdn/hisax/elsa.c      |    5 +++++
+ drivers/isdn/hisax/nj_u.c      |    2 ++
+ drivers/isdn/hisax/sedlbauer.c |    3 +++
+ drivers/isdn/hisax/w6692.c     |    6 +++++-
+ 5 files changed, 17 insertions(+), 1 deletions(-)
 
-Any possibility you can try this patch?
-
-I'll push it into kgdb-next in just a few min, and I created another test against this.
-
-Thanks,
-Jason.
-
-
-diff --git a/include/linux/console.h b/include/linux/console.h
-index f76fc29..305e9c2 100644
---- a/include/linux/console.h
-+++ b/include/linux/console.h
-@@ -79,8 +79,13 @@ int register_con_driver(const struct consw *csw, int first, int last);
- int unregister_con_driver(const struct consw *csw);
- int take_over_console(const struct consw *sw, int first, int last, int deflt);
- void give_up_console(const struct consw *sw);
-+#ifdef CONFIG_HW_CONSOLE
- int con_debug_enter(struct vc_data *vc);
- int con_debug_leave(void);
-+#else
-+#define con_debug_enter()
-+#define con_debug_leave()
-+#endif
+diff --git a/drivers/isdn/hisax/avm_pci.c b/drivers/isdn/hisax/avm_pci.c
+index fcf4ed1..c503d7f 100644
+--- a/drivers/isdn/hisax/avm_pci.c
++++ b/drivers/isdn/hisax/avm_pci.c
+@@ -845,12 +845,14 @@ static int __devinit avm_pci_setup(struct IsdnCardState *cs)
+ 		cs->irq = dev_avm->irq;
+ 		if (!cs->irq) {
+ 			printk(KERN_ERR "FritzPCI: No IRQ for PCI card found\n");
++			pci_disable_device(dev_avm);
+ 			return(0);
+ 		}
  
- /* scroll */
- #define SM_UP       (1)
+ 		cs->hw.avm.cfg_reg = pci_resource_start(dev_avm, 1);
+ 		if (!cs->hw.avm.cfg_reg) {
+ 			printk(KERN_ERR "FritzPCI: No IO-Adr for PCI card found\n");
++			pci_disable_device(dev_avm);
+ 			return(0);
+ 		}
+ 
+diff --git a/drivers/isdn/hisax/elsa.c b/drivers/isdn/hisax/elsa.c
+index 5d9d338..452429a 100644
+--- a/drivers/isdn/hisax/elsa.c
++++ b/drivers/isdn/hisax/elsa.c
+@@ -1034,12 +1034,14 @@ static int __devinit
+ setup_elsa_pci(struct IsdnCard *card)
+ {
+ 	struct IsdnCardState *cs = card->cs;
++	struct pci_dev *pdev;
+ 
+ 	cs->subtyp = 0;
+ 	if ((dev_qs1000 = hisax_find_pci_device(PCI_VENDOR_ID_ELSA,
+ 		PCI_DEVICE_ID_ELSA_MICROLINK, dev_qs1000))) {
+ 		if (pci_enable_device(dev_qs1000))
+ 			return(0);
++		pdev = dev_qs1000;
+ 		cs->subtyp = ELSA_QS1000PCI;
+ 		cs->irq = dev_qs1000->irq;
+ 		cs->hw.elsa.cfg = pci_resource_start(dev_qs1000, 1);
+@@ -1048,6 +1050,7 @@ setup_elsa_pci(struct IsdnCard *card)
+ 		PCI_DEVICE_ID_ELSA_QS3000, dev_qs3000))) {
+ 		if (pci_enable_device(dev_qs3000))
+ 			return(0);
++		pdev = dev_qs3000;
+ 		cs->subtyp = ELSA_QS3000PCI;
+ 		cs->irq = dev_qs3000->irq;
+ 		cs->hw.elsa.cfg = pci_resource_start(dev_qs3000, 1);
+@@ -1058,11 +1061,13 @@ setup_elsa_pci(struct IsdnCard *card)
+ 	}
+ 	if (!cs->irq) {
+ 		printk(KERN_WARNING "Elsa: No IRQ for PCI card found\n");
++		pci_disable_device(pdev);
+ 		return(0);
+ 	}
+ 
+ 	if (!(cs->hw.elsa.base && cs->hw.elsa.cfg)) {
+ 		printk(KERN_WARNING "Elsa: No IO-Adr for PCI card found\n");
++		pci_disable_device(pdev);
+ 		return(0);
+ 	}
+ 	if ((cs->hw.elsa.cfg & 0xff) || (cs->hw.elsa.base & 0xf)) {
+diff --git a/drivers/isdn/hisax/nj_u.c b/drivers/isdn/hisax/nj_u.c
+index 095e974..bc5afbe 100644
+--- a/drivers/isdn/hisax/nj_u.c
++++ b/drivers/isdn/hisax/nj_u.c
+@@ -137,11 +137,13 @@ static int __devinit nju_pci_probe(struct pci_dev *dev_netjet,
+ 	cs->irq = dev_netjet->irq;
+ 	if (!cs->irq) {
+ 		printk(KERN_WARNING "NETspider-U: No IRQ for PCI card found\n");
++		pci_disable_device(dev_netjet);
+ 		return(0);
+ 	}
+ 	cs->hw.njet.base = pci_resource_start(dev_netjet, 0);
+ 	if (!cs->hw.njet.base) {
+ 		printk(KERN_WARNING "NETspider-U: No IO-Adr for PCI card found\n");
++		pci_disable_device(dev_netjet);
+ 		return(0);
+ 	}
+ 
+diff --git a/drivers/isdn/hisax/sedlbauer.c b/drivers/isdn/hisax/sedlbauer.c
+index 69dfc8d..dc9864b 100644
+--- a/drivers/isdn/hisax/sedlbauer.c
++++ b/drivers/isdn/hisax/sedlbauer.c
+@@ -614,6 +614,7 @@ setup_sedlbauer_pci(struct IsdnCard *card)
+ 		cs->irq = dev_sedl->irq;
+ 		if (!cs->irq) {
+ 			printk(KERN_WARNING "Sedlbauer: No IRQ for PCI card found\n");
++			pci_disable_device(dev_sedl);
+ 			return(0);
+ 		}
+ 		cs->hw.sedl.cfg_reg = pci_resource_start(dev_sedl, 0);
+@@ -631,6 +632,7 @@ setup_sedlbauer_pci(struct IsdnCard *card)
+ 		cs->hw.sedl.cfg_reg);
+ 	if (sub_id != PCI_SUB_ID_SEDLBAUER) {
+ 		printk(KERN_ERR "Sedlbauer: unknown sub id %#x\n", sub_id);
++		pci_disable_device(dev_sedl);
+ 		return(0);
+ 	}
+ 	if (sub_vendor_id == PCI_SUBVENDOR_SPEEDFAX_PYRAMID) {
+@@ -648,6 +650,7 @@ setup_sedlbauer_pci(struct IsdnCard *card)
+ 	} else {
+ 		printk(KERN_ERR "Sedlbauer: unknown sub vendor id %#x\n",
+ 			sub_vendor_id);
++		pci_disable_device(dev_sedl);
+ 		return(0);
+ 	}
+ 
+diff --git a/drivers/isdn/hisax/w6692.c b/drivers/isdn/hisax/w6692.c
+index e2cfb6f..4221cab 100644
+--- a/drivers/isdn/hisax/w6692.c
++++ b/drivers/isdn/hisax/w6692.c
+@@ -1012,8 +1012,10 @@ setup_w6692(struct IsdnCard *card)
+ 					    id_list[id_idx].device_id,
+ 					    dev_w6692);
+ 		if (dev_w6692) {
+-			if (pci_enable_device(dev_w6692))
++			if (pci_enable_device(dev_w6692)) {
++				dev_w6692 = NULL;
+ 				continue;
++			}
+ 			cs->subtyp = id_idx;
+ 			break;
+ 		}
+@@ -1040,10 +1042,12 @@ setup_w6692(struct IsdnCard *card)
+ 	cs->irq = pci_irq;
+ 	if (!cs->irq) {
+ 		printk(KERN_WARNING "W6692: No IRQ for PCI card found\n");
++		pci_disable_device(dev_w6692);
+ 		return (0);
+ 	}
+ 	if (!pci_ioaddr) {
+ 		printk(KERN_WARNING "W6692: NO I/O Base Address found\n");
++		pci_disable_device(dev_w6692);
+ 		return (0);
+ 	}
+ 	cs->hw.w6692.iobase = pci_ioaddr;
+-- 
+1.7.0.4
+
