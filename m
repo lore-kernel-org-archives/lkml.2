@@ -1,107 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935302Ab0HFBte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:49:34 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:42693 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933217Ab0HFBt1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:49:27 -0400
-Date: Thu, 5 Aug 2010 21:49:25 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100806014925.GB496@Krystal>
-References: <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal> <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal> <1280855904.1923.675.camel@laptop> <20100803182556.GA13798@Krystal> <1280904410.1923.700.camel@laptop> <20100804144539.GA4617@Krystal> <1280933788.1923.1281.camel@laptop>
+	id S935205Ab0HFBxA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:53:00 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:50488 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S934613Ab0HFBw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 21:52:57 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1/PBNh4gizPgDTEDwyEVutdhOKPkPgBnv7Tw2DXwj
+	yPGh6N4eoXR5H6
+Message-ID: <4C5B6AF5.2060605@gmx.de>
+Date: Fri, 06 Aug 2010 03:52:53 +0200
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1280933788.1923.1281.camel@laptop>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 21:42:37 up 195 days,  4:19,  6 users,  load average: 0.19, 0.07,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: torvalds@linux-foundation.org
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] viafb updates
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Wed, 2010-08-04 at 10:45 -0400, Mathieu Desnoyers wrote:
-> 
-> > How do you plan to read the data concurrently with the writer overwriting the
-> > data while you are reading it without corruption ?
-> 
-> I don't consider reading while writing (in overwrite mode) a valid case.
-> 
-> If you want to use overwrite, stop the writer before reading it.
+Hi Linus,
 
-How inconvenient. It happens that the relatively large group of users I am
-working for do care for this use-case. They cannot afford to stop tracing as
-soon as they hit "one bug". This "bug" could be a simple odd scenario that they
-want to snapshot, but in all cases they want tracing to continue.
+please pull viafb updates for 2.6.36 from:
 
-> 
-> >  I think that the stack dump
-> > should simply be saved directly to the ring buffer, without copy. The
-> > dump_stack() functions might have to be extended so they don't just save text
-> > dumbly, but can also be used to save events into the trace in binary format,
-> > perhaps with the continuation cookie Linus was proposing.
-> 
-> Because I don't want to support truncating reservations (because that
-> leads to large nops for nested events)
+   git://github.com/schandinat/linux-2.6.git for-linus
 
-Agreed in this case. Truncating reservations might make sense for filtering, but
-even there I have a strong preference for filtering directly on the information
-received as parameter, before performing buffer space reservation, whenever
-possible.
+There are some minor bugfixes, cleanups and updates as well as two significant 
+changes. Two undocumented ioctls which duplicate the framebuffer interface and 
+prevent a clean implementation are removed. The PLL value format change drops 
+some bits which looks sane as unichrome X driver does not set those bits as well.
 
-> and when the event needs to go to
-> multiple buffers you can re-use the stack-dump without having to do the
-> unwind again.
-> 
-> The problem with the continuation thing Linus suggested is that it would
-> bloat the output 3 fold. A stack entry is a single u64. If you want to
-> wrap that in a continuation event you need: a header (u64), a cookie
-> (u64) and the entry (u64).
-
-Agreed, it's probably not such a good fit for these small pieces of information.
-
-> 
-> Continuation events might make heaps of sense for larger data pieces,
-> but I don't see them being practical for such small pieces.
-
-Yep.
-
-What I did in a past life in earlier LTTng versions was to use a 2-pass unwind.
-The first pass is the most costly because it brings all the data into the L1
-cache. This first pass is used to compute the array size you need to save the
-whole stack frame, but it does not copy anything. The second pass performs the
-copy. This was surprisingly efficient.
 
 Thanks,
 
-Mathieu
+Florian Tobias Schandinat
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+
+Andrew Morton (1):
+       drivers/video/via/via-gpio.c: fix warning
+
+Ben Hutchings (1):
+       viafb: Depends on X86
+
+Florian Tobias Schandinat (11):
+       MAINTAINERS: update viafb entry
+       viafb: remove duplicated scaling code
+       viafb: improve lcd code readability
+       viafb: add lcd scaling support for some IGPs
+       viafb: fix PCI table
+       viafb: simplify lcd size "detection"
+       viafb: PLL value cleanup
+       viafb: update fix before calculating depth
+       viafb: remove ioctls which break the framebuffer interface
+       viafb: probe cleanups
+       viafb: fix accel_flags check_var bug
+
+Henrik Kretzschmar (1):
+       fbdev: section cleanup in viafb driver
+
+  MAINTAINERS                  |    5 +-
+  drivers/video/Kconfig        |    2 +-
+  drivers/video/via/chip.h     |    1 -
+  drivers/video/via/hw.c       |  587 +++++++++++++++++++++++++++++-------------
+  drivers/video/via/hw.h       |   14 +-
+  drivers/video/via/ioctl.h    |    3 -
+  drivers/video/via/lcd.c      |  117 +--------
+  drivers/video/via/lcd.h      |    5 -
+  drivers/video/via/share.h    |  309 ----------------------
+  drivers/video/via/via-core.c |   22 +-
+  drivers/video/via/via-gpio.c |    2 +-
+  drivers/video/via/viafbdev.c |  284 +--------------------
+  12 files changed, 449 insertions(+), 902 deletions(-)
