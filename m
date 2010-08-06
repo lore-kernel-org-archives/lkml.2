@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965629Ab0HFTfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:35:42 -0400
-Received: from kroah.org ([198.145.64.141]:43497 "EHLO coco.kroah.org"
+	id S935847Ab0HFTf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:35:57 -0400
+Received: from kroah.org ([198.145.64.141]:43493 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964876Ab0HFT1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S964922Ab0HFT1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 15:27:54 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192115.220948566@clark.site>
+Message-Id: <20100806192115.122688191@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:50 -0700
+Date: Fri, 06 Aug 2010 12:19:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Borislav Petkov <borislav.petkov@amd.com>,
         Doug Thompson <dougthompson@xmission.com>
-Subject: [09/36] amd64_edac: Correct scrub rate setting
+Subject: [08/36] amd64_edac: Fix DCT base address selector
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,9 +28,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit bc57117856cf1e581135810b37d3b75f9d1749f5 upstream.
+commit 9975a5f22a4fcc8d08035c65439900a983f891ad upstream.
 
-Exit early when setting scrub rate on unknown/unsupported families.
+The correct check is to verify whether in high range we're below 4GB
+and not to extract the DctSelBaseAddr again. See "2.8.5 Routing DRAM
+Requests" in the F10h BKDG.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Acked-by: Doug Thompson <dougthompson@xmission.com>
@@ -42,14 +44,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 --- a/drivers/edac/amd64_edac.c
 +++ b/drivers/edac/amd64_edac.c
-@@ -178,7 +178,7 @@ static int amd64_set_scrub_rate(struct m
+@@ -1430,7 +1430,7 @@ static inline u64 f10_get_base_addr_offs
+ 	u64 chan_off;
  
- 	default:
- 		amd64_printk(KERN_ERR, "Unsupported family!\n");
--		break;
-+		return -EINVAL;
- 	}
- 	return amd64_search_set_scrub_rate(pvt->misc_f3_ctl, *bandwidth,
- 			min_scrubrate);
+ 	if (hi_range_sel) {
+-		if (!(dct_sel_base_addr & 0xFFFFF800) &&
++		if (!(dct_sel_base_addr & 0xFFFF0000) &&
+ 		   hole_valid && (sys_addr >= 0x100000000ULL))
+ 			chan_off = hole_off << 16;
+ 		else
 
 
