@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761515Ab0HFPOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:14:23 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49029 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184Ab0HFPOV (ORCPT
+	id S1761484Ab0HFPUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:20:49 -0400
+Received: from filtteri1.pp.htv.fi ([213.243.153.184]:45480 "EHLO
+	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755157Ab0HFPUq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:14:21 -0400
-Date: Fri, 6 Aug 2010 12:14:13 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 7/9] perf: Export cpumap
-Message-ID: <20100806151413.GD13780@ghostprotocols.net>
-References: <1281104713-23141-1-git-send-email-bp@amd64.org>
- <1281104713-23141-8-git-send-email-bp@amd64.org>
- <20100806143912.GB13780@ghostprotocols.net>
- <20100806144939.GD21628@aftab>
+	Fri, 6 Aug 2010 11:20:46 -0400
+X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Aug 2010 11:20:46 EDT
+Message-ID: <20100806181031.oirlcygghkwk4ggo@webmail.welho.com>
+Date: Fri, 06 Aug 2010 18:10:31 +0300
+From: Customer Service <info@msl.co.uk>
+Reply-to: msoftdept2010@w.cn
+To: undisclosed-recipients:;
+Subject: Microsoft Online Email Promo
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <20100806144939.GD21628@aftab>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 06, 2010 at 04:49:39PM +0200, Borislav Petkov escreveu:
-> From: Arnaldo Carvalho de Melo <acme@infradead.org>
-> > Is this independent of previous patches? I.e. to be applied to current
-> > perf/core?
 
-> I'm afraid not since earlier patches in the series introduce the
-> toplevel Makefile that glues all the different tools/lib/* parts
-> together. However, I could extract the toplevel Makefile parts and
-> cpumap.c and ctype.c if you really need it now - I've been doing this so
-> often lately that I could do it with my eyes closed now :o).
+-- 
+MICROSOFT CUSTOMER SERVICE
+REFNO.:MS/75-A08055161/2010
+Batch: 044/05/ZY369
 
-:-)
+Dear E-mail Owner,
 
-We need to get back at merging that series, so some patch series
-installments, with say, 3 or 4 patches each, would be great.
+You are a winner of the just concluded Microsoft Online Email Promo. You have
+therefore been approved to claim a total sum Five Hundred Thousand Great
+Britain Pounds (£500,000.00). Please this information are required for
+verification.
 
-- Arnaldo
+Name:...................
+Address:...............
+Country:...............
+Age:..................
+Gender:................
+Occupation:..............
+Phone and Fax:...............
+Winning E-mail Address:................
+
+Please contact:
+Owens Gibson
+Email: msoftdept2010@w.cn
+
+Telephone: +44-704-570-7201
+
+Crosswhite Anita
+Annoucer For Microsoft Online Email Promo
+
+
+
+
+
