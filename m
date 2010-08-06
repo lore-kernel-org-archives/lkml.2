@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964998Ab0HFSgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:36:41 -0400
-Received: from kroah.org ([198.145.64.141]:48750 "EHLO coco.kroah.org"
+	id S964965Ab0HFSgO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:36:14 -0400
+Received: from kroah.org ([198.145.64.141]:48676 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964961Ab0HFSgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:12 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:03 2010
-Message-Id: <20100806183203.235235513@clark.site>
+	id S964927Ab0HFSf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
+Message-Id: <20100806183201.992421347@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:57 -0700
+Date: Fri, 06 Aug 2010 11:30:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [36/38] drm/radeon/kms: handle the case of no active displays properly in the bandwidth code
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [22/38] ath9k: fix TSF after reset on AR913x
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,146 +26,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit e06b14ee91a2ddefc9a67443a6cd8ee0fa800115 upstream.
+commit f860d526eb2939a1c37128900b5af2b6f3ff7f20 upstream.
 
-Logic was:
-if (mode0 && mode1)
-else if (mode0)
-else
+When issuing a reset, the TSF value is lost in the hardware because of
+the 913x specific cold reset. As with some AR9280 cards, the TSF needs
+to be preserved in software here.
 
-Should be:
-if (mode0 && mode1)
-else if (mode0)
-else if (mode1)
+Additionally, there's an issue that frequently prevents a successful
+TSF write directly after the chip reset. In this case, repeating the
+TSF write after the initval-writes usually works.
 
-Otherwise we may end up calculating the priority regs with
-unitialized values.
+This patch detects failed TSF writes and recovers from them, taking
+into account the delay caused by the initval writes.
 
-Fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=16492
-
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Reported-by: Björn Smedman <bjorn.smedman@venatech.se>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/rs690.c |   27 +++++++++------------------
- drivers/gpu/drm/radeon/rv515.c |   23 +++++++++--------------
- 2 files changed, 18 insertions(+), 32 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c |   16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/rs690.c
-+++ b/drivers/gpu/drm/radeon/rs690.c
-@@ -398,7 +398,9 @@ void rs690_bandwidth_update(struct radeo
- 	struct drm_display_mode *mode1 = NULL;
- 	struct rs690_watermark wm0;
- 	struct rs690_watermark wm1;
--	u32 tmp, d1mode_priority_a_cnt, d2mode_priority_a_cnt;
-+	u32 tmp;
-+	u32 d1mode_priority_a_cnt = S_006548_D1MODE_PRIORITY_A_OFF(1);
-+	u32 d2mode_priority_a_cnt = S_006548_D1MODE_PRIORITY_A_OFF(1);
- 	fixed20_12 priority_mark02, priority_mark12, fill_rate;
- 	fixed20_12 a, b;
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -1268,7 +1268,8 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ 	macStaId1 = REG_READ(ah, AR_STA_ID1) & AR_STA_ID1_BASE_RATE_11B;
  
-@@ -495,10 +497,6 @@ void rs690_bandwidth_update(struct radeo
- 			d1mode_priority_a_cnt |= S_006548_D1MODE_PRIORITY_A_ALWAYS_ON(1);
- 			d2mode_priority_a_cnt |= S_006D48_D2MODE_PRIORITY_A_ALWAYS_ON(1);
- 		}
--		WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
--		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
--		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
--		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
- 	} else if (mode0) {
- 		if (dfixed_trunc(wm0.dbpp) > 64)
- 			a.full = dfixed_mul(wm0.dbpp, wm0.num_line_pair);
-@@ -528,13 +526,7 @@ void rs690_bandwidth_update(struct radeo
- 		d1mode_priority_a_cnt = dfixed_trunc(priority_mark02);
- 		if (rdev->disp_priority == 2)
- 			d1mode_priority_a_cnt |= S_006548_D1MODE_PRIORITY_A_ALWAYS_ON(1);
--		WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
--		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
--		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT,
--			S_006D48_D2MODE_PRIORITY_A_OFF(1));
--		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT,
--			S_006D4C_D2MODE_PRIORITY_B_OFF(1));
--	} else {
-+	} else if (mode1) {
- 		if (dfixed_trunc(wm1.dbpp) > 64)
- 			a.full = dfixed_mul(wm1.dbpp, wm1.num_line_pair);
- 		else
-@@ -563,13 +555,12 @@ void rs690_bandwidth_update(struct radeo
- 		d2mode_priority_a_cnt = dfixed_trunc(priority_mark12);
- 		if (rdev->disp_priority == 2)
- 			d2mode_priority_a_cnt |= S_006D48_D2MODE_PRIORITY_A_ALWAYS_ON(1);
--		WREG32(R_006548_D1MODE_PRIORITY_A_CNT,
--			S_006548_D1MODE_PRIORITY_A_OFF(1));
--		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT,
--			S_00654C_D1MODE_PRIORITY_B_OFF(1));
--		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
--		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	/* For chips on which RTC reset is done, save TSF before it gets cleared */
+-	if (AR_SREV_9280(ah) && ah->eep_ops->get_eeprom(ah, EEP_OL_PWRCTRL))
++	if (AR_SREV_9100(ah) ||
++	    (AR_SREV_9280(ah) && ah->eep_ops->get_eeprom(ah, EEP_OL_PWRCTRL)))
+ 		tsf = ath9k_hw_gettsf64(ah);
+ 
+ 	saveLedState = REG_READ(ah, AR_CFG_LED) &
+@@ -1300,7 +1301,7 @@ int ath9k_hw_reset(struct ath_hw *ah, st
  	}
+ 
+ 	/* Restore TSF */
+-	if (tsf && AR_SREV_9280(ah) && ah->eep_ops->get_eeprom(ah, EEP_OL_PWRCTRL))
++	if (tsf)
+ 		ath9k_hw_settsf64(ah, tsf);
+ 
+ 	if (AR_SREV_9280_10_OR_LATER(ah))
+@@ -1310,6 +1311,17 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ 	if (r)
+ 		return r;
+ 
++	/*
++	 * Some AR91xx SoC devices frequently fail to accept TSF writes
++	 * right after the chip reset. When that happens, write a new
++	 * value after the initvals have been applied, with an offset
++	 * based on measured time difference
++	 */
++	if (AR_SREV_9100(ah) && (ath9k_hw_gettsf64(ah) < tsf)) {
++		tsf += 1500;
++		ath9k_hw_settsf64(ah, tsf);
++	}
 +
-+	WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
-+	WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
-+	WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
-+	WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
- }
- 
- uint32_t rs690_mc_rreg(struct radeon_device *rdev, uint32_t reg)
---- a/drivers/gpu/drm/radeon/rv515.c
-+++ b/drivers/gpu/drm/radeon/rv515.c
-@@ -925,7 +925,9 @@ void rv515_bandwidth_avivo_update(struct
- 	struct drm_display_mode *mode1 = NULL;
- 	struct rv515_watermark wm0;
- 	struct rv515_watermark wm1;
--	u32 tmp, d1mode_priority_a_cnt, d2mode_priority_a_cnt;
-+	u32 tmp;
-+	u32 d1mode_priority_a_cnt = MODE_PRIORITY_OFF;
-+	u32 d2mode_priority_a_cnt = MODE_PRIORITY_OFF;
- 	fixed20_12 priority_mark02, priority_mark12, fill_rate;
- 	fixed20_12 a, b;
- 
-@@ -999,10 +1001,6 @@ void rv515_bandwidth_avivo_update(struct
- 			d1mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
- 			d2mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
- 		}
--		WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
--		WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
--		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
--		WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
- 	} else if (mode0) {
- 		if (dfixed_trunc(wm0.dbpp) > 64)
- 			a.full = dfixed_div(wm0.dbpp, wm0.num_line_pair);
-@@ -1032,11 +1030,7 @@ void rv515_bandwidth_avivo_update(struct
- 		d1mode_priority_a_cnt = dfixed_trunc(priority_mark02);
- 		if (rdev->disp_priority == 2)
- 			d1mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
--		WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
--		WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
--		WREG32(D2MODE_PRIORITY_A_CNT, MODE_PRIORITY_OFF);
--		WREG32(D2MODE_PRIORITY_B_CNT, MODE_PRIORITY_OFF);
--	} else {
-+	} else if (mode1) {
- 		if (dfixed_trunc(wm1.dbpp) > 64)
- 			a.full = dfixed_div(wm1.dbpp, wm1.num_line_pair);
- 		else
-@@ -1065,11 +1059,12 @@ void rv515_bandwidth_avivo_update(struct
- 		d2mode_priority_a_cnt = dfixed_trunc(priority_mark12);
- 		if (rdev->disp_priority == 2)
- 			d2mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
--		WREG32(D1MODE_PRIORITY_A_CNT, MODE_PRIORITY_OFF);
--		WREG32(D1MODE_PRIORITY_B_CNT, MODE_PRIORITY_OFF);
--		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
--		WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
- 	}
-+
-+	WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
-+	WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
-+	WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
-+	WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
- }
- 
- void rv515_bandwidth_update(struct radeon_device *rdev)
+ 	/* Setup MFP options for CCMP */
+ 	if (AR_SREV_9280_20_OR_LATER(ah)) {
+ 		/* Mask Retry(b11), PwrMgt(b12), MoreData(b13) to 0 in mgmt
 
 
