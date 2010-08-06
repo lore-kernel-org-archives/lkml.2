@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934933Ab0HFMqR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 08:46:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:32793 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232Ab0HFMqM (ORCPT
+	id S1761198Ab0HFMrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 08:47:13 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:56270 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752668Ab0HFMrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 08:46:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ba+US2eiQtKmzd9MKwwTOrJVA8+vi10Qvu9g80hs32F0Wt09kGzcCUzdmUfwV5Moz9
-         5DhpBLmjtqcOqnWN+k0PoL5KPF+tb+0NxzQkWriWEZ5pdreLqzo4K/8bJkuvGBnEo3O2
-         YCkTUXP8jF1qrOEbUwxgIY029OW4wEdwHZc8A=
-From: Namhyung Kim <namhyung@gmail.com>
-To: tj@kernel.org
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH] percpu: remove address_space attribute if !SMP
-Date: Fri,  6 Aug 2010 21:46:08 +0900
-Message-Id: <1281098768-5724-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 6 Aug 2010 08:47:11 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18D43bzcEblOC2YvDGVoN4m
+Date: Fri, 6 Aug 2010 15:47:26 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Paul Walmsley <paul@pwsan.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] omap3: make coresight register save across OFF
+ modes a sysfs option
+Message-ID: <20100806124726.GN23778@atomide.com>
+References: <13B9B4C6EF24D648824FF11BE896716203BADA0745@dlee02.ent.ti.com>
+ <1280077520-7538-8-git-send-email-virtuoso@slind.org>
+ <20100806123711.GI28519@shisha.kicks-ass.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806123711.GI28519@shisha.kicks-ass.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-percpu data has no special meaning in case of !CONFIG_SMP.
-This removes lots of sparse warnings.
+* Alexander Shishkin <virtuoso@slind.org> [100806 15:30]:
+> On Sun, Jul 25, 2010 at 08:05:20 +0300, Alexander Shishkin wrote:
+> > This adds a sysfs file at /sys/power/coresight_save which is used to
+> > control if the ETM and debug components' states should be saved and
+> > restored across OFF modes.
+> 
+> The non-omap patches are merged to Russell's tree, so these three are
+> the only remaining.
+> 
+> This one won't apply to linux-omap master any more because of the pm44xx
+> in the makefile, but should be ok otherwise. It would still apply to
+> linus' tree.
+> 
+> So, should I rediff it, resend it or just drop it, because it's not needed?
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Patches look OK to me.
 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index a5a472b..8dfd41d 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -15,7 +15,11 @@
- # define __acquire(x)	__context__(x,1)
- # define __release(x)	__context__(x,-1)
- # define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
--# define __percpu	__attribute__((noderef, address_space(3)))
-+# ifdef CONFIG_SMP
-+#  define __percpu	__attribute__((noderef, address_space(3)))
-+# else
-+#  define __percpu
-+# endif
- extern void __chk_user_ptr(const volatile void __user *);
- extern void __chk_io_ptr(const volatile void __iomem *);
- #else
--- 
-1.7.0.4
+Care to refresh and repost the remaining ones one more time to avoid
+confusion about which ones remain?
 
+Are you OK if we merge these in the next merge window after this?
+
+I'd rather have these sitting in linux-omap tree for a while first
+before we merge them so we can be sure they won't break the idle
+code..
+
+Regards,
+
+Tony
