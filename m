@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965742Ab0HFTep (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:34:45 -0400
-Received: from kroah.org ([198.145.64.141]:43522 "EHLO coco.kroah.org"
+	id S1761947Ab0HFTfH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:35:07 -0400
+Received: from kroah.org ([198.145.64.141]:43505 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935816Ab0HFT2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:28:00 -0400
+	id S935041Ab0HFT15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:27:57 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192115.668550775@clark.site>
+Message-Id: <20100806192115.403787611@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:55 -0700
+Date: Fri, 06 Aug 2010 12:19:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg Rose <gregory.v.rose@intel.com>,
+        Dean Nelson <dnelson@redhat.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [14/36] igb: Use only a single Tx queue in SR-IOV mode
+Subject: [11/36] e1000e: dont inadvertently re-set INTX_DISABLE
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,52 +27,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Rose <gregory.v.rose@intel.com>
+From: Dean Nelson <dnelson@redhat.com>
 
-commit 5fa8517f038d51d571981fb495206cc30ed91b06 upstream.
+commit 36f2407fe52c55566221f8c68c8fb808abffd2f5 upstream.
 
-The 82576 expects the second rx queue in any pool to receive L2 switch
-loop back packets sent from the second tx queue in another pool.  The
-82576 VF driver does not enable the second rx queue so if the PF driver
-sends packets destined to a VF from its second tx queue then the VF
-driver will never see them.  In SR-IOV mode limit the number of tx queues
-used by the PF driver to one. This patch fixes a bug reported in which
-the PF cannot communciate with the VF and should be considered for 2.6.34
-stable.
+Should e1000_test_msi() fail to see an msi interrupt, it attempts to
+fallback to legacy INTx interrupts. But an error in the code may prevent
+this from happening correctly.
 
-Signed-off-by: Greg Rose <gregory.v.rose@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+Before calling e1000_test_msi_interrupt(), e1000_test_msi() disables SERR
+by clearing the SERR bit from the just read PCI_COMMAND bits as it writes
+them back out.
+
+Upon return from calling e1000_test_msi_interrupt(), it re-enables SERR
+by writing out the version of PCI_COMMAND it had previously read.
+
+The problem with this is that e1000_test_msi_interrupt() calls
+pci_disable_msi(), which eventually ends up in pci_intx(). And because
+pci_intx() was called with enable set to 1, the INTX_DISABLE bit gets
+cleared from PCI_COMMAND, which is what we want. But when we get back to
+e1000_test_msi(), the INTX_DISABLE bit gets inadvertently re-set because
+of the attempt by e1000_test_msi() to re-enable SERR.
+
+The solution is to have e1000_test_msi() re-read the PCI_COMMAND bits as
+part of its attempt to re-enable SERR.
+
+During debugging/testing of this issue I found that not all the systems
+I ran on had the SERR bit set to begin with. And on some of the systems
+the same could be said for the INTX_DISABLE bit. Needless to say these
+latter systems didn't have a problem falling back to legacy INTx
+interrupts with the code as is.
+
+Signed-off-by: Dean Nelson <dnelson@redhat.com>
+Tested-by: Emil Tantilov <emil.s.tantilov@intel.com>
 Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/igb/igb_main.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/net/e1000e/netdev.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -322,9 +322,6 @@ static void igb_cache_ring_register(stru
- 			for (; i < adapter->rss_queues; i++)
- 				adapter->rx_ring[i]->reg_idx = rbase_offset +
- 				                               Q_IDX_82576(i);
--			for (; j < adapter->rss_queues; j++)
--				adapter->tx_ring[j]->reg_idx = rbase_offset +
--				                               Q_IDX_82576(j);
- 		}
- 	case e1000_82575:
- 	case e1000_82580:
-@@ -685,7 +682,10 @@ static void igb_set_interrupt_capability
+--- a/drivers/net/e1000e/netdev.c
++++ b/drivers/net/e1000e/netdev.c
+@@ -3041,13 +3041,18 @@ static int e1000_test_msi(struct e1000_a
  
- 	/* Number of supported queues. */
- 	adapter->num_rx_queues = adapter->rss_queues;
--	adapter->num_tx_queues = adapter->rss_queues;
-+	if (adapter->vfs_allocated_count)
-+		adapter->num_tx_queues = 1;
-+	else
-+		adapter->num_tx_queues = adapter->rss_queues;
+ 	/* disable SERR in case the MSI write causes a master abort */
+ 	pci_read_config_word(adapter->pdev, PCI_COMMAND, &pci_cmd);
+-	pci_write_config_word(adapter->pdev, PCI_COMMAND,
+-			      pci_cmd & ~PCI_COMMAND_SERR);
++	if (pci_cmd & PCI_COMMAND_SERR)
++		pci_write_config_word(adapter->pdev, PCI_COMMAND,
++				      pci_cmd & ~PCI_COMMAND_SERR);
  
- 	/* start with one vector for every rx queue */
- 	numvecs = adapter->num_rx_queues;
+ 	err = e1000_test_msi_interrupt(adapter);
+ 
+-	/* restore previous setting of command word */
+-	pci_write_config_word(adapter->pdev, PCI_COMMAND, pci_cmd);
++	/* re-enable SERR */
++	if (pci_cmd & PCI_COMMAND_SERR) {
++		pci_read_config_word(adapter->pdev, PCI_COMMAND, &pci_cmd);
++		pci_cmd |= PCI_COMMAND_SERR;
++		pci_write_config_word(adapter->pdev, PCI_COMMAND, pci_cmd);
++	}
+ 
+ 	/* success ! */
+ 	if (!err)
 
 
