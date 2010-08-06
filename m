@@ -1,572 +1,607 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935542Ab0HFSXu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:23:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27505 "EHLO mx1.redhat.com"
+	id S935552Ab0HFS0X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:26:23 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:11311 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935476Ab0HFSXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:23:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100806182039.5615.62116.stgit@warthog.procyon.org.uk>
-References: <20100806182039.5615.62116.stgit@warthog.procyon.org.uk>
-Cc: dhowells@redhat.com, smfrench@gmail.com, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wang Lei <wang840925@gmail.com>
-Subject: Re: [PATCH] DNS: If the DNS server returns an error, allow that to be cached
-Date: Fri, 06 Aug 2010 19:22:50 +0100
-Message-ID: <5697.1281118970@redhat.com>
-To: unlisted-recipients:; (no To-header on input)
+	id S1757206Ab0HFS0T convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:26:19 -0400
+X-IronPort-AV: E=Sophos;i="4.55,330,1278313200"; 
+   d="scan'208";a="422762823"
+Subject: [GIT PULL] Please pull NFS client changes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Fri, 06 Aug 2010 14:26:17 -0400
+Message-ID: <1281119177.2900.10.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+X-OriginalArrivalTime: 06 Aug 2010 18:26:19.0189 (UTC) FILETIME=[DD262E50:01CB3594]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
+
+Please pull from the "nfs-for-2.6.36" branch of the repository at
+
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git nfs-for-2.6.36
+
+This will update the following files through the appended changesets.
+
+  Cheers,
+    Trond
+
+----
+ fs/nfs/Kconfig                 |   10 +-
+ fs/nfs/callback_proc.c         |   19 +--
+ fs/nfs/client.c                |  143 ++++++-------
+ fs/nfs/delegation.c            |   16 +-
+ fs/nfs/delegation.h            |    4 +-
+ fs/nfs/dir.c                   |    9 -
+ fs/nfs/direct.c                |   29 ++-
+ fs/nfs/file.c                  |   51 ++---
+ fs/nfs/getroot.c               |    2 +-
+ fs/nfs/inode.c                 |   74 ++++++-
+ fs/nfs/internal.h              |    7 +-
+ fs/nfs/nfs2xdr.c               |    7 +-
+ fs/nfs/nfs3xdr.c               |    8 +-
+ fs/nfs/nfs4_fs.h               |   57 ++++-
+ fs/nfs/nfs4proc.c              |  474 +++++++++++++++++++++++-----------------
+ fs/nfs/nfs4renewd.c            |    4 +-
+ fs/nfs/nfs4state.c             |   82 +++++---
+ fs/nfs/nfs4xdr.c               |  111 ++++++++--
+ fs/nfs/pagelist.c              |    8 +-
+ fs/nfs/read.c                  |    3 +-
+ fs/nfs/super.c                 |   26 ++-
+ fs/nfs/unlink.c                |    2 +-
+ fs/nfs/write.c                 |    9 +-
+ include/linux/nfs4.h           |    1 +
+ include/linux/nfs_fs.h         |   13 +-
+ include/linux/nfs_fs_sb.h      |    7 +-
+ include/linux/nfs_mount.h      |    1 +
+ include/linux/nfs_page.h       |    1 +
+ include/linux/nfs_xdr.h        |   12 +-
+ include/linux/sunrpc/auth.h    |   21 +--
+ include/linux/sunrpc/clnt.h    |    5 +-
+ include/linux/sunrpc/sched.h   |    7 +-
+ include/linux/sunrpc/xprt.h    |    1 +
+ net/sunrpc/auth.c              |  157 +++++++++----
+ net/sunrpc/auth_generic.c      |   23 +--
+ net/sunrpc/auth_gss/auth_gss.c |   29 +--
+ net/sunrpc/auth_null.c         |    2 +-
+ net/sunrpc/auth_unix.c         |   21 +-
+ net/sunrpc/clnt.c              |  182 +++++++++++----
+ net/sunrpc/sched.c             |  104 ++--------
+ net/sunrpc/sunrpc_syms.c       |   15 +-
+ net/sunrpc/xprt.c              |    3 +
+ net/sunrpc/xprtsock.c          |   38 ++--
+ 43 files changed, 1057 insertions(+), 741 deletions(-)
+
+commit 3dce9a5c3a39a664e372886ea86c42ae7ae33dfc
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 4 14:39:16 2010 -0400
+
+    NFS: NFSv4.1 is no longer a "developer only" feature
+    
+    Mark it as 'experimental' instead, since in practice, NFSv4.1 should now be
+    relatively stable.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b3edc2bc19b4856c705f4aea3f5472970b99f386
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 4 14:38:01 2010 -0400
+
+    NFS: NFS_V4 is no longer an EXPERIMENTAL feature
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d5eff1a3412f6d75bf28f423c5015ece8055407a
+Author: Bryan Schumaker <bjschuma@netapp.com>
+Date:   Tue Aug 3 13:04:00 2010 -0400
+
+    NFS: Fix /proc/mount for legacy binary interface
+    
+    Add a flag so we know if we mounted the NFS server using the legacy
+    binary interface.  If we used the legacy interface, then we should not
+    show the mountd options.
+    
+    Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 761fe93cdfa29071879d882c92e966ae692c0048
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Aug 4 09:29:52 2010 -0400
+
+    NFS: Fix the locking in nfs4_callback_getattr
+    
+    The delegation is protected by RCU now, so we need to replace the
+    nfsi->rwsem protection with an rcu protected section.
+    
+    Reported-by: Fred Isaman <iisaman@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0d8a374673c9bc62bc78a2d8fe64553a51542cb4
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sun Aug 1 20:14:55 2010 -0400
+
+    SUNRPC: Defer deleting the security context until gss_do_free_ctx()
+    
+    There is no need to delete the gss context separately from the rest
+    of the security context information, and doing so gives rise to a
+    an rcu_dereference_check() warning.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit c3ae62ae08bb0db3639d8c579e4ff0967d908199
+Author: J. Bruce Fields <bfields@redhat.com>
+Date:   Tue Aug 3 17:22:20 2010 -0400
+
+    SUNRPC: prevent task_cleanup running on freed xprt
+    
+    We saw a report of a NULL dereference in xprt_autoclose:
+    
+    	https://bugzilla.redhat.com/show_bug.cgi?id=611938
+    
+    This appears to be the result of an xprt's task_cleanup running after
+    the xprt is destroyed.  Nothing in the current code appears to prevent
+    that.
+    
+    Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d6a1ed08c6acea647b3f2aaebe0261f079e1be49
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:08 2010 -0400
+
+    SUNRPC: Reduce asynchronous RPC task stack usage
+    
+    We should just farm out asynchronous RPC tasks immediately to rpciod...
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit a17c2153d2e271b0cbacae9bed83b0eaa41db7e1
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:08 2010 -0400
+
+    SUNRPC: Move the bound cred to struct rpc_rqst
+    
+    This will allow us to save the original generic cred in rpc_message, so
+    that if we migrate from one server to another, we can generate a new bound
+    cred without having to punt back to the NFS layer.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 8572b8e2e3c5f3d990122348c4d2c64dad338611
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:08 2010 -0400
+
+    SUNRPC: Clean up of rpc_bindcred()
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 58f9612c6ea858f532021a0ce42ec53cb0a493b3
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:08 2010 -0400
+
+    SUNRPC: Move remaining RPC client related task initialisation into clnt.c
+    
+    Now that rpc_run_task() is the sole entry point for RPC calls, we can move
+    the remaining rpc_client-related initialisation of struct rpc_task from
+    sched.c into clnt.c.
+    
+    Also move rpc_killall_tasks() into the same file, since that too is
+    relative to the rpc_clnt.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d9b6cd94601e1d17273f93a326a135fbf487a918
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:08 2010 -0400
+
+    SUNRPC: Ensure that rpc_exit() always wakes up a sleeping task
+    
+    Make rpc_exit() non-inline, and ensure that it always wakes up a task that
+    has been queued.
+    
+    Kill off the now unused rpc_wake_up_task().
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 241269bd0b580faae71575443d9ab38df7469126
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:08 2010 -0400
+
+    SUNRPC: Make the credential cache hashtable size configurable
+    
+    This patch allows the user to configure the credential cache hashtable size
+    using a new module parameter: auth_hashtable_size
+    When set, this parameter will be rounded up to the nearest power of two,
+    with a maximum allowed value of 1024 elements.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 988664a0f6bbfc356e6ce55f7a87b8594050012f
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:07 2010 -0400
+
+    SUNRPC: Store the hashtable size in struct rpc_cred_cache
+    
+    Cleanup in preparation for allowing the user to determine the maximum hash
+    table size.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 5d8d9a4d9ff74c55901642b4e2ac5124830ddafe
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:07 2010 -0400
+
+    NFS: Ensure the AUTH_UNIX credcache is allocated dynamically
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d05dd4e98f0dd30ee933e05ac9363614c47df83a
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:07 2010 -0400
+
+    NFS: Fix the NFS users of rpc_restart_call()
+    
+    Fix up those functions that depend on knowing whether or not
+    rpc_restart_call is successful or not.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit f1f88fc7e818c6678c6799a2edb8f1aeccc124aa
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:07 2010 -0400
+
+    SUNRPC: The function rpc_restart_call() should return success/failure
+    
+    Both rpc_restart_call_prepare() and rpc_restart_call() test for the
+    RPC_TASK_KILLED flag, and fail to restart the RPC call if that flag is set.
+    
+    This patch allows callers to know whether or not the restart was
+    successful, so that they can perform cleanups etc in case of failure.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit a6f03393ec86fd25523c79497a9a773bda170d1d
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:07 2010 -0400
+
+    NFSv4: Get rid of the bogus RPC_ASSASSINATED(task) checks
+    
+    There is no real reason to have RPC_ASSASSINATED() checks in the NFS code.
+    As far as it is concerned, this is just an RPC error...
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 452e93523d9433f83670e7b42cbe75319c208762
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:06 2010 -0400
+
+    NFSv4: Clean up the process of renewing the NFSv4 lease
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 14516c3a30e256e8d4e7a9af271c8df644ac3222
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:06 2010 -0400
+
+    NFSv4.1: Handle NFS4ERR_DELAY on SEQUENCE correctly
+    
+    In RFC5661, an NFS4ERR_DELAY error on a SEQUENCE operation has the special
+    meaning that the server is not finished processing the request. In this
+    case we want to just retry the request without touching the slot.
+    
+    Also fix a bug whereby we would fail to update the sequence id if the
+    server returned any error other than NFS_OK/NFS4ERR_DELAY.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0a8ebba943dd89bdd57c5dab5a66932f690847d9
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:06 2010 -0400
+
+    NFS: nfs_rename() should not have to flush out writebacks
+    
+    We don't really support nfs servers that invalidate the file handle after a
+    rename, so precautions such as flushing out dirty data before renaming the
+    file are superfluous.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1b924e5f878e3cd62a20bd8dbf3b911a40185a99
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:06 2010 -0400
+
+    NFS: Clean up the callers of nfs_wb_all()
+    
+    There is no need to flush out writes before calling nfs_wb_all().
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit af7fa16506bf9b6323e862a61e14c20555152bb3
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Sat Jul 31 14:29:06 2010 -0400
+
+    NFS: Fix up the fsync code
+    
+    Christoph points out that the VFS will always flush out data before calling
+    nfs_fsync(), so we can dispense with a full call to nfs_wb_all(), and
+    replace that with a simpler call to nfs_commit_inode().
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 77041ed9b49a9e10f374bfa6e482d30ee7a3d46e
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Jul 1 12:49:11 2010 -0400
+
+    NFSv4: Ensure the lockowners are labelled using the fl_owner and/or fl_pid
+    
+    flock locks want to be labelled using the process pid, while posix locks
+    want to be labelled using the fl_owner.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d3c7b7ccc199ee564177ee914c04771d6bc00295
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Jul 1 12:49:01 2010 -0400
+
+    NFSv4: Add support for the RELEASE_LOCKOWNER operation
+    
+    This is needed by NFSv4.0 servers in order to keep the number of locking
+    stateids at a manageable level.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit daccbded7f153ec84a3baf3136052e41d0eab555
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Jun 25 18:11:43 2010 -0400
+
+    NFSv4: Clean up for lockowner XDR encoding
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit f11ac8db5d07b6e99d41ff4aa39d878ee5cef1c5
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Jun 25 16:35:53 2010 -0400
+
+    NFSv4: Ensure that we track the NFSv4 lock state in read/write requests.
+    
+    This patch fixes bugzilla entry 14501:
+      https://bugzilla.kernel.org/show_bug.cgi?id=14501
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1f0e890dba5b0f543fea47732116b1c65d55614e
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Jun 24 15:11:43 2010 -0400
+
+    NFSv4: Clean up struct nfs4_state_owner
+    
+    The 'so_delegations' list appears to be unused.
+    
+    Also eliminate so_client. If we already have so_server, we can get to the
+    nfs_client structure.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 1055d76d91e69c8ea9fb748db4d4a53b6384df31
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:27 2010 -0400
+
+    NFSv4.1: There is no need to init the session more than once...
+    
+    Set up a flag to ensure that is indeed the case.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit fe74ba3a8db003410e48863a5cafa6ac90674540
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:27 2010 -0400
+
+    NFSv41: Cleanup for nfs4_alloc_session.
+    
+    There is no reason to change the nfs_client state every time we allocate a
+    new session. Move that line into nfs4_init_client_minor_version.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d77d76ffb638bd013782138cca6d8f4918c5afd6
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:27 2010 -0400
+
+    NFSv41: Clean up exclusive create
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit a4432345352c2be157ed844603147ac2c82f209c
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:27 2010 -0400
+
+    NFSv41: Deprecate nfs_client->cl_minorversion
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit e047a10c1293ee0ab20258154e7f3ebf8ad502d6
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:27 2010 -0400
+
+    NFSv41: Fix nfs_async_inode_return_delegation() ugliness
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit c48f4f3541e67881c9eb7c46e052f5ece48ef530
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:27 2010 -0400
+
+    NFSv41: Convert the various reboot recovery ops etc to minor version ops
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 97dc135947181a6670949a480da56c3ebf8d3715
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:26 2010 -0400
+
+    NFSv41: Clean up the NFSv4.1 minor version specific operations
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit a2118c33aad6c447ad5e0a60cfaea3939b52ce0a
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:26 2010 -0400
+
+    NFSv41: Don't store session state in the nfs_client->cl_state
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit df8964554a4e19c8ddcc4d9c642c4d267662d770
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:26 2010 -0400
+
+    NFSv41: Further cleanup for nfs4_sequence_done
+    
+    Instead of testing if the nfs_client has a session, we should be testing if
+    the struct nfs4_sequence_res was set up with one.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 035168ab39f66e4946d493f9ee20d11e154f332a
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:26 2010 -0400
+
+    NFSv4.1: Make nfs4_setup_sequence take a nfs_server argument
+    
+    In anticipation of the day when we have per-filesystem sessions, and also
+    in order to allow the session to change in the event of a filesystem
+    migration event.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 71ac6da9944e2c9ec73ca64ca7bca74428858585
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:26 2010 -0400
+
+    NFSv4.1: Merge the nfs41_proc_async_sequence() and nfs4_proc_sequence()
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit aa5190d0ed7d042c6d7d89fe8101558a912eee73
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:25 2010 -0400
+
+    NFSv4: Kill nfs4_async_handle_error() abuses by NFSv4.1
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d185a334c748b3ca9de1f3a293fd8a9cf68378ab
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:25 2010 -0400
+
+    NFSv4.1: Simplify nfs41_sequence_done()
+    
+    Nobody uses the rpc_status parameter.
+    
+    It is not obvious why we need the struct nfs_client argument either, when
+    we already have that information in the session.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 2a6e26cdb8f17b1075c2dfd8f2f3c341bac4f441
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:25 2010 -0400
+
+    NFSv4.1: Clean up nfs4_setup_sequence
+    
+    Firstly, there is little point in first zeroing out the entire struct
+    nfs4_sequence_res, and then initialising all fields save one. Just
+    initialise the last field to zero...
+    
+    Secondly, nfs41_setup_sequence() has only 2 possible return values: 0, or
+    -EAGAIN, so there is no 'terminate rpc task' case.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d5f8d3fe72594f2e896b407f78daf24f37ef4d53
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 09:52:25 2010 -0400
+
+    NFSv41: Fix a memory leak in nfs41_proc_async_sequence()
+    
+    If the call to rpc_call_async() fails, then the arguments will not be
+    freed, since there will be no call to nfs41_sequence_call_done
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit d3f6baaa34c54040b3ef30950e59b54ac0624b21
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Tue Jun 22 08:52:39 2010 -0400
+
+    NFSv4: Fix an embarassing typo in encode_attrs()
+    
+    Apparently, we have never been able to set the atime correctly from the
+    NFSv4 client.
+    
+    Reported-by: 小倉一夫 <ka-ogura@bd6.so-net.ne.jp>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 0be8189f2c87fcc747d6a4a657a0b6e2161b2318
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Fri Jun 18 12:23:58 2010 -0400
+
+    NFSv4: Ensure that /proc/self/mountinfo displays the minor version number
+    
+    Currently, we do not display the minor version mount parameter in the
+    /proc mount info.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit 44950b67a6239b377a9e6fd52c498b310bcdd713
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Thu Jun 17 11:45:12 2010 -0400
+
+    NFSv4.1: Ensure that we initialise the session when following a referral
+    
+    Put the code that is common to both the referral and ordinary mount cases
+    into a common helper routine.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit b76ce56192bcf618013fb9aecd83488cffd645cc
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed Jun 16 13:57:32 2010 -0400
+
+    SUNRPC: Fix a re-entrancy bug in xs_tcp_read_calldir()
+    
+    If the attempt to read the calldir fails, then instead of storing the read
+    bytes, we currently discard them. This leads to a garbage final result when
+    upon re-entry to the same routine, we read the remaining bytes.
+    
+    Fixes the regression in bugzilla number 16213. Please see
+        https://bugzilla.kernel.org/show_bug.cgi?id=16213
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
+
+commit f799bdb355edaabd81b778087613409a8932fbe9
+Author: Andy Adamson <andros@netapp.com>
+Date:   Wed Jun 16 09:51:02 2010 -0400
+
+    nfs4 use mandatory attribute file type in nfs4_get_root
+    
+    S_ISDIR(fsinfo.fattr->mode) checks the file type rather than the mode bits,
+    so we should be checking for the NFS_ATTR_FATTR_TYPE fattr property.
+    
+    Signed-off-by: Andy Adamson <andros@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Cc: stable@kernel.org
 
-The userspace upcall program is the attached.
-
-David
----
-/*
- * DNS Resolver Module User-space Helper for AFSDB records
- *
- * Copyright (C) Wang Lei (wang840925@gmail.com) 2010
- * Authors: Wang Lei (wang840925@gmail.com)
- *          David Howells (dhowells@redhat.com)
- *
- * This is a userspace tool for querying AFSDB RR records in the DNS on behalf
- * of the kernel, and converting the VL server addresses to IPv4 format so that
- * they can be used by the kAFS filesystem.
- *
- * Compile with:
- *
- * 	cc -o dns.afsdb dns_query_afsdb.c -lresolv -lkeyutils
- *
- * As some function like res_init() should use the static liberary, which is a
- * bug of libresolv, that is the reason for cifs.upcall to reimplement.
- *
- * To use this program, you must tell /sbin/request-key how to invoke it.  You
- * need to have the keyutils package installed and something like the following
- * lines added to your /etc/request-key.conf file:
- *
- * 	#OP    TYPE         DESCRIPTION CALLOUT INFO PROGRAM ARG1 ARG2 ARG3 ...
- * 	====== ============ =========== ============ ==========================
- * 	create dns_resolver afsdb:*     *            /usr/sbin/dns.afsdb %k
- *
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- */
-#define _GNU_SOURCE
-#include <netinet/in.h>
-#include <arpa/nameser.h>
-#include <arpa/inet.h>
-#include <resolv.h>
-#include <getopt.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <syslog.h>
-#include <errno.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <keyutils.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-
-static const char *DNS_PARSE_VERSION = "1.0";
-static const char prog[] = "dns.upcall";
-static const char key_type[] = "dns_resolver";
-static const char afsdb_query_type[] = "afsdb";
-static key_serial_t key = 0;
-static int verbose = 0;
-
-
-#define	MAX_VLS			15	/* Max Volume Location Servers Per-Cell */
-#define DNS_EXPIRY_PREFIX	"expiry_time="
-#define DNS_EXPIRY_TIME_LEN	10 /* 2^32 - 1 = 4294967295 */
-#define AFSDB_MAX_DATA_LEN						\
-	((MAX_VLS * (INET6_ADDRSTRLEN + 1)) + sizeof(DNS_EXPIRY_PREFIX) + \
-	 DNS_EXPIRY_TIME_LEN + 1 /* '#'*/ + 1 /* end 0 */)
-
-#define	INET_IP4_ONLY	0x1
-#define	INET_IP6_ONLY	0x2
-#define	INET_ALL	0xFF
-
-#define DNS_ERR_PREFIX	"#dnserror="
-
-/*
- * Print an error to stderr or the syslog, negate the key being created and
- * exit
- */
-static __attribute__((format(printf, 1, 2), noreturn))
-void error(const char *fmt, ...)
-{
-	va_list va;
-
-	va_start(va, fmt);
-	if (isatty(2)) {
-		vfprintf(stderr, fmt, va);
-		fputc('\n', stderr);
-	} else {
-		vsyslog(LOG_ERR, fmt, va);
-	}
-	va_end(va);
-
-	/*
-	 * on error, negatively instantiate the key ourselves so that we can
-	 * make sure the kernel doesn't hang it off of a searchable keyring
-	 * and interfere with the next attempt to instantiate the key.
-	 */
-	keyctl_negate(key, 1, KEY_REQKEY_DEFL_DEFAULT);
-
-	exit(1);
-}
-
-#define error(FMT, ...) error("Error: " FMT, ##__VA_ARGS__);
-
-/*
- * Just print an error to stderr or the syslog
- */
-static __attribute__((format(printf, 1, 2)))
-void _error(const char *fmt, ...)
-{
-	va_list va;
-
-	va_start(va, fmt);
-	if (isatty(2)) {
-		vfprintf(stderr, fmt, va);
-		fputc('\n', stderr);
-	} else {
-		vsyslog(LOG_ERR, fmt, va);
-	}
-	va_end(va);
-}
-
-/*
- * Print status information
- */
-static __attribute__((format(printf, 1, 2)))
-void info(const char *fmt, ...)
-{
-	va_list va;
-
-	if (verbose < 1)
-		return;
-
-	va_start(va, fmt);
-	if (isatty(1)) {
-		fputs("I: ", stdout);
-		vfprintf(stdout, fmt, va);
-		fputc('\n', stdout);
-	} else {
-		vsyslog(LOG_INFO, fmt, va);
-	}
-	va_end(va);
-}
-
-/*
- * Print a nameserver error and exit
- */
-static __attribute__((noreturn))
-void nsError(int err, const char *domain)
-{
-	char buf[AFSDB_MAX_DATA_LEN];
-	int ret;
-
-	if (isatty(2))
-		fprintf(stderr, "%s: %s.\n", domain, hstrerror(err));
-	else
-		syslog(LOG_INFO, "%s: %s", domain, hstrerror(err));
-
-	sprintf(buf, "%s%d", DNS_ERR_PREFIX, err);
-
-	info("The key instantiation ERROR data is '%s'", buf);
-
-	ret = keyctl_instantiate(key, buf, strlen(buf) + 1, 0);
-	if (ret == -1)
-		error("%s: keyctl_instantiate: %m", __func__);
-
-	exit(0);
-}
-
-/*
- * Print debugging information
- */
-static __attribute__((format(printf, 1, 2)))
-void debug(const char *fmt, ...)
-{
-	va_list va;
-
-	if (verbose < 2)
-		return;
-
-	va_start(va, fmt);
-	if (isatty(1)) {
-		fputs("D: ", stdout);
-		vfprintf(stdout, fmt, va);
-		fputc('\n', stdout);
-	} else {
-		vsyslog(LOG_DEBUG, fmt, va);
-	}
-	va_end(va);
-}
-
-/*
- * Perform address resolution on a hostname
- */
-static int
-dns_resolver(char *server_name, char *ip, short mask)
-{
-	struct addrinfo hints, *addr;
-	int ret, len;
-	void *p;
-
-	memset(&hints, 0, sizeof(hints));
-	switch (mask) {
-	case INET_IP4_ONLY:	hints.ai_family = AF_INET;	break;
-	case INET_IP6_ONLY:	hints.ai_family = AF_INET6;	break;
-	default: break;
-	}
-
-	/* resolve name to ip */
-	ret = getaddrinfo(server_name, NULL, &hints, &addr);
-	if (ret) {
-		info("unable to resolve hostname: %s [%s]",
-		     server_name, gai_strerror(ret));
-		return -1;
-	}
-
-	/* convert ip to string form */
-	if (addr->ai_family == AF_INET && (mask & INET_IP4_ONLY)) {
-		p = &(((struct sockaddr_in *)addr->ai_addr)->sin_addr);
-		len = INET_ADDRSTRLEN;
-	} else if (addr->ai_family == AF_INET6 && (mask & INET_IP6_ONLY)) {
-		p = &(((struct sockaddr_in6 *)addr->ai_addr)->sin6_addr);
-		len = INET6_ADDRSTRLEN;
-	} else {
-		freeaddrinfo(addr);
-		return -1;
-	}
-
-	if (!inet_ntop(addr->ai_family, p, ip, len))
-		error("%s: inet_ntop: %m", __func__);
-
-	freeaddrinfo(addr);
-	return 0;
-}
-
-/*
- *
- */
-static void
-addVLServers(char *VLlist[],
-	     int *vlsnum,
-             ns_msg handle,
-             ns_sect section,
-	     char *result,
-	     short mask,
-	     unsigned long *_ttl)
-{
-	int rrnum;  /* resource record number */
-	ns_rr rr;   /* expanded resource record */
-	char ip[INET6_ADDRSTRLEN];
-	char *p = result;
-	int subtype, i, ret, alen;
-	unsigned int ttl = UINT_MAX, rr_ttl;
-
-	debug("AFSDB RR count is %d", ns_msg_count(handle, section));
-
-	/*
-	 * Look at all the resource records in this section.
-	 */
-	for (rrnum = 0; rrnum < ns_msg_count(handle, section); rrnum++) {
-		/*
-		 * Expand the resource record number rrnum into rr.
-		 */
-		if (ns_parserr(&handle, section, rrnum, &rr)) {
-			_error("ns_parserr failed : %m");
-			continue;
-		}
-
-		/*
-		 * We're only interested in AFSDB records
-		 */
-		if (ns_rr_type(rr) == ns_t_afsdb) {
-			VLlist[*vlsnum] = malloc(MAXDNAME);
-			if (!VLlist[*vlsnum])
-				error("Out of memory");
-
-			subtype = ns_get16(ns_rr_rdata(rr));
-
-			/* Expand the name server's domain name */
-			if (ns_name_uncompress(
-				    ns_msg_base(handle),/* Start of the message	*/
-				    ns_msg_end(handle), /* End of the message	*/
-				    ns_rr_rdata(rr) + 2,    /* Position in the message*/
-				    VLlist[*vlsnum],		/* Result	*/
-				    MAXDNAME		/* Size of VLlist buffer*/
-					       ) < 0)	/* Negative: error	*/
-				error("ns_name_uncompress failed");
-
-			rr_ttl = ns_rr_ttl(rr);
-			if (ttl > rr_ttl)
-				ttl = rr_ttl;
-
-			/* Check the domain name we've just unpacked and add it to
-			 * the list of name servers if it is not a duplicate.
-			 * If it is a duplicate, just ignore it.
-			 */
-			for (i = 0; i < *vlsnum; i++)
-				if (strcasecmp(VLlist[i], VLlist[*vlsnum]) == 0)
-					goto next_one;
-
-			/* Turn the hostname into IP addresses */
-			ret = dns_resolver(VLlist[*vlsnum], ip, mask);
-			if (ret) {
-				debug("AFSDB RR can't resolve."
-				      "subtype:%d, server name:%s, netmask:%d",
-				      subtype, VLlist[*vlsnum], mask);
-				goto next_one;
-			}
-
-			info("AFSDB RR subtype:%d, server name:%s, ip:%s, ttl:%u",
-			     subtype, VLlist[*vlsnum], ip, ttl);
-
-			/* colons are used in IPv6 addresses, so we use commas
-			 * to separate IP addresses
-			 */
-			if (p > result)
-				*p++ = ',';
-			alen = strlen(ip);
-			memcpy(p, ip, alen);
-			p += alen;
-			p[0] = '\0';
-
-			/* prepare for the next record */
-			(*vlsnum)++;
-			continue;
-
-		next_one:
-			free(VLlist[*vlsnum]);
-		}
-	}
-
-	*_ttl = ttl;
-	info("ttl: %u", ttl);
-}
-
-/*
- * Look up the AFSDB record to get the VL server addresses.
- *
- * The callout_info is parsed for request options.  For instance, "ipv4" to
- * request only IPv4 addresses and "ipv6" to request only IPv6 addresses.
- */
-static __attribute__((noreturn))
-int dns_get_vlserver(key_serial_t key, const char *cell, char *options)
-{
-	int	ret;
-	char	*VLlist[MAX_VLS];	/* list of name servers	*/
-	char	ip[AFSDB_MAX_DATA_LEN];
-	int	vlsnum = 0;		/* number of name servers in list */
-	short	mask = INET_ALL;
-	int	responseLen, len;	/* buffer length */
-	ns_msg	handle;			/* handle for response message */
-	unsigned long ttl = ULONG_MAX;
-	union {
-		HEADER hdr;
-		u_char buf[NS_PACKETSZ];
-	} response;		/* response buffers */
-
-	debug("Get AFSDB RR for cell name:'%s', options:'%s'", cell, options);
-
-	/* query the dns for an AFSDB RR */
-	responseLen = res_query(cell,		/* the query to make */
-				ns_c_in,	/* record class */
-				ns_t_afsdb,	/* record type */
-				response.buf,
-				sizeof(response));
-	if (responseLen < 0) {
-		/* negative result; set an arbitrary timeout on the cache of 1
-		 * minute */
-		ret = keyctl_set_timeout(key, 1 * 60);
-		if (ret == -1)
-			error("%s: keyctl_set_timeout: %m", __func__);
-		nsError(h_errno, cell);
-	}
-
-	if (ns_initparse(response.buf, responseLen, &handle) < 0)
-		error("ns_initparse: %m");
-
-	/* Is the IP address family limited? */
-	if (strcmp(options, "ipv4") == 0)
-		mask = INET_IP4_ONLY;
-	else if (strcmp(options, "ipv6") == 0)
-		mask = INET_IP6_ONLY;
-
-	/* look up a list of VL servers */
-	addVLServers(VLlist, &vlsnum, handle, ns_s_an, ip, mask, &ttl);
-
-	info("DNS query AFSDB RR results:'%s' ttl:%lu", ip, ttl);
-
-	len = strlen(ip);
-
-	/* set the key's expiry time from the minimum TTL encountered */
-	ret = keyctl_set_timeout(key, ttl);
-	if (ret == -1)
-		error("%s: keyctl_set_timeout: %m", __func__);
-
-	/* handle a lack of results */
-	if (len == 0)
-		nsError(NO_DATA, cell);
-
-	info("The key instantiation data is '%s'", ip);
-
-	/* load the key with data key */
-	ret = keyctl_instantiate(key, ip, strlen(ip) + 1, 0);
-	if (ret == -1)
-		error("%s: keyctl_instantiate: %m", __func__);
-
-	exit(0);
-}
-
-/*
- * Print usage details,
- */
-static __attribute__((noreturn))
-void usage(void)
-{
-	if (isatty(2))
-		fprintf(stderr,
-			"Usage: %s [-vv] [-C <callout_info>] [-D <desc>]"
-			" key_serial\n",
-			prog);
-	else
-		info("Usage: %s [-vv] key_serial", prog);
-	keyctl_negate(key, 1, KEY_REQKEY_DEFL_DEFAULT);
-	exit(2);
-}
-
-const struct option long_options[] = {
-	{ "call-out",	1, NULL, 'C' },
-	{ "desc",	1, NULL, 'D' },
-	{ "verbose",	0, NULL, 'v' },
-	{ "version",	0, NULL, 'V' },
-	{ NULL,		0, NULL, 0 }
-};
-
-
-int main(int argc, char *argv[])
-{
-	int ktlen, qtlen, ret;
-	char *keyend, *p;
-	char *callout_info = NULL;
-	char *buf = NULL, *name;
-	char hostbuf[NI_MAXHOST];
-
-	hostbuf[0] = '\0';
-
-	openlog(prog, 0, LOG_DAEMON);
-
-	while ((ret = getopt_long(argc, argv, "vD:C:", long_options, NULL)) != -1) {
-		switch (ret) {
-		case 'C':
-			callout_info = optarg;
-			continue;
-		case 'D':
-			ret = asprintf(&buf, "%s;-1;-1;0;%s", key_type, optarg);
-			if (ret < 0)
-				error("Error %m");
-			continue;
-		case 'V':
-			printf("version: %s\n", DNS_PARSE_VERSION);
-			exit(0);
-		case 'v':
-			verbose++;
-			continue;
-		default:
-			if (!isatty(2))
-				syslog(LOG_ERR, "unknown option: %c", ret);
-			usage();
-		}
-	}
-
-	argc -= optind;
-	if (argc != 1)
-		usage();
-	argv += optind;
-
-	/* get the key ID */
-	errno = 0;
-	key = strtol(*argv, NULL, 10);
-	if (errno != 0)
-		error("Invalid key ID format: %m");
-
-	/* get the key description (of the form "x;x;x;x;<query_type>:<name>") */
-	if (!buf) {
-		ret = keyctl_describe_alloc(key, &buf);
-		if (ret == -1)
-			error("keyctl_describe_alloc failed: %m");
-	}
-
-	/* get the callout_info (which can supply options) */
-	if (!callout_info) {
-		ret = keyctl_read_alloc(KEY_SPEC_REQKEY_AUTH_KEY,
-					(void **)&callout_info);
-		if (ret == -1)
-			error("Invalid key callout_info read: %m");
-	}
-
-	ret = 1;
-	info("Key description: '%s'", buf);
-	info("Callout info: '%s'", callout_info);
-
-	p = strchr(buf, ';');
-	if (!p)
-		error("Badly formatted key description '%s'", buf);
-	ktlen = p - buf;
-
-	if (ktlen != sizeof(key_type) - 1 ||
-	    memcmp(buf, key_type, ktlen) != 0)
-		error("Key type is not supported: '%*.*s'", ktlen, ktlen, buf);
-
-	keyend = buf + ktlen + 1;
-
-	/* the actual key description is after the last semicolon */
-	keyend = rindex(keyend, ';');
-	if (!keyend)
-		error("Invalid key description: %s", buf);
-	keyend++;
-
-	name = index(keyend, ':');
-	if (!name)
-		error("Missing query type: '%s'", keyend);
-	qtlen = name - keyend;
-	name++;
-
-	if (qtlen == sizeof(afsdb_query_type) - 1 &&
-	    memcmp(keyend, afsdb_query_type, sizeof(afsdb_query_type) - 1) == 0
-	    ) {
-		info("Do DNS query of AFSDB type for:'%s' mask:'%s'",
-		     name, callout_info);
-		dns_get_vlserver(key, name, callout_info);
-	}
-
-	error("Query type:\"%*.*s\" is not supported", qtlen, qtlen, keyend);
-}
 
