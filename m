@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933916Ab0HFHNy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:13:54 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47126 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758900Ab0HFHNx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:13:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 6 Aug 2010 16:08:27 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Paul Menage <menage@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com,
-        oleg@redhat.com
-Subject: Re: [PATCH v4 1/2] cgroups: read-write lock CLONE_THREAD forking
- per threadgroup
-Message-Id: <20100806160827.d73ae050.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100806060224.GA1351@ghc17.ghc.andrew.cmu.edu>
-References: <20100730235649.GA22644@ghc17.ghc.andrew.cmu.edu>
-	<20100730235754.GB22644@ghc17.ghc.andrew.cmu.edu>
-	<AANLkTikpNG2Y3S3AyxAbCkMynKu1u5yKPrw=bh+uy=9R@mail.gmail.com>
-	<20100804043328.GB11950@ghc17.ghc.andrew.cmu.edu>
-	<AANLkTi=dhym3c+XJVjoObROcw=mz2Y+a2R5oMdePK3Ng@mail.gmail.com>
-	<20100806060224.GA1351@ghc17.ghc.andrew.cmu.edu>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933926Ab0HFHOF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:14:05 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:37779 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760450Ab0HFHN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 03:13:59 -0400
+Date: Fri, 6 Aug 2010 00:13:56 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
+	are no dirty pages.
+Message-ID: <20100806071356.GE2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805164008.GH2901@thunk.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Aug 2010 02:02:24 -0400
-Ben Blum <bblum@andrew.cmu.edu> wrote:
-
-> On Tue, Aug 03, 2010 at 09:34:22PM -0700, Paul Menage wrote:
-> > On Tue, Aug 3, 2010 at 9:33 PM, Ben Blum <bblum@andrew.cmu.edu> wrote:
-> > >> As far as the #ifdef mess goes, it's true that some people don't have
-> > >> CONFIG_CGROUPS defined. I'd imagine that these are likely to be
-> > >> embedded systems with a fairly small number of processes and threads
-> > >> per process. Are there really any such platforms where the cost of a
-> > >> single extra rwsem per process is going to make a difference either in
-> > >> terms of memory or lock contention? I think you should consider making
-> > >> these additions unconditional.
-> > >
-> > > That's certainly an option, but I think it would be clean enough to put
-> > > static inline functions just under the signal_struct definition.
+On Thu, Aug 05, 2010 at 12:40:08PM -0400, Ted Ts'o wrote:
+> On Tue, Jun 29, 2010 at 01:51:02PM -0700, Darrick J. Wong wrote:
 > > 
-> > Either sounds fine to me. I suspect others have a stronger opinion.
-> > 
-> > Paul
-> > 
+> > This second version of the patch uses the inode state flags and
+> > (suboptimally) also catches directio writes.  It might be a better
+> > idea to try to coordinate all the barrier requests across the whole
+> > filesystem, though that's a bit more difficult.
 > 
-> Any other votes? One set of static inline functions (I'd call them
-> threadgroup_fork_{read,write}_{un,}lock) or just remove the ifdefs
-> entirely? I'm inclined to go with the former.
+> Hi Darrick,
 > 
+> When I looked at this patch more closely, and thought about it hard,
+> the fact that this helps the FFSB mail server benchmark surprised me,
+> and then I realized it's because it doesn't really accurately emulate
+> a mail server at all.  Or at least, not a MTA.  In a MTA, only one CPU
+> will touch a queue file, so there should never be a case of a double
+> fsync to a single file.  This is why I was thinking about a
+> coordinating barrier requests across the whole filesystem --- it helps
+> out in the case where you have all your CPU threads hammering
+> /var/spool/mqueue, or /var/spool/exim4/input, and where they are all
+> creating queue files, and calling fsync() in parallel.  This patch
+> won't help that case.
+> 
+> It will help the case of a MDA --- Mail Delivery Agent --- if you have
+> multiple e-mails all getting delivered at the same time into the same
+> /var/mail/<username> file, with an fsync() following after a mail
+> message is appended to the file.  This is a much rarer case, and I
+> can't think of any other workload where you will have multiple
+> processes racing against each other and fsync'ing the same inode.
+> Even in the MDA case, it's rare that you will have one mbox getting so
+> many deliveries that this case would be hit.
+> 
+> So while I was thinking about accepting this patch, I now find myself
+> hesitating.  There _is_ a minor race in the patch that I noticed,
+> which I'll point out below, but that's easily fixed.  The bigger issue
+> is it's not clear this patch will actually make a difference in the
+> real world.  I trying and failing to think of a real-life application
+> which is stupid enough to do back-to-back fsync commands, even if it's
+> because it has multiple threads all trying to write to the file and
+> fsync to it in an uncoordinated fashion.  It would be easily enough to
+> add instrumentation that would trigger a printk if the patch optimized
+> out a barrier --- and if someone can point out even one badly written
+> application --- whether it's mysql, postgresql, a GNOME or KDE
+> application, db2, Oracle, etc., I'd say sure.  But adding even a tiny
+> amount of extra complexity for something which is _only_ helpful for a
+> benchmark grates against my soul....
+> 
+> So if you can think of something, please point it out to me.  If it
+> would help ext4 users in real life, I'd be all for it.  But at this
+> point, I'm thinking that perhaps the real issue is that the mail
+> server benchmark isn't accurately reflecting a real life workload.
 
-I vote for the former. #ifdef can be easily removed if someone finds it useful
-for other purpose...and static inline function is usual way.
+Yes, it's a proxy for something else.  One of our larger products would like to
+use fsync() to flush dirty data out to disk (right now it looks like they use
+O_SYNC), but they're concerned that the many threads they use can create an
+fsync() storm.  So, they wanted to know how to mitigate the effects of those
+storms.  Not calling fsync() except when they really need to guarantee a disk
+write is a good start, but I'd like to get ahead of them to pick off more low
+hanging fruit like the barrier coordination and not sending barriers when
+there's no dirty data ... before they run into it. :)
 
-Thanks,
--Kame
-
+--D
