@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761312Ab0HFMEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 08:04:38 -0400
-Received: from mxs.selfmail.ru ([77.221.143.26]:50438 "EHLO mxs.selfmail.ru"
-	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752007Ab0HFMEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 08:04:35 -0400
-X-ACL-SPF: 
-Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests -
- second fully working version - once again
-From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Reply-To: v.tolstov@selfip.ru
-To: Daniel Kiper <dkiper@net-space.pl>
-Cc: jeremy@goop.org, konrad.wilk@oracle.com, stefano.stabellini@eu.citrix.com,
-        linux-mm@kvack.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100806111147.GA31683@router-fw-old.local.net-space.pl>
-References: <20100806111147.GA31683@router-fw-old.local.net-space.pl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Selfip.Ru
-Date: Fri, 06 Aug 2010 16:03:18 +0400
-Message-ID: <1281096198.27692.6.camel@vase.work>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 8bit
+	id S1760521Ab0HFMQn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 08:16:43 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:43286 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756680Ab0HFMQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 08:16:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=wBxL7MSVPlIATWX1XWQ4pBh5HVvOKKguMkmvaTPbraF8bEtMAL2QwzS/OuEJbe1o8M
+         W+tKGD3Atkwp7WiFJwKISvLDDfo/5fBpSUFCOpPCCT1O0xgnO4QT6kX2MsvVfItlvVNz
+         DWZ8vS6ysHvAhsW0BO+hsOPJEPqq2SjyD4L/Y=
+Date: Fri, 6 Aug 2010 20:16:30 +0800
+From: dingshaoheng <dshbusiness@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Hello, newbie wants help.
+Message-ID: <20100806121630.GA3024@DSH>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-В Птн, 06/08/2010 в 13:11 +0200, Daniel Kiper пишет:
-> Hi,
-> 
-> I am sending this e-mail once again because it probably
-> has been lost in abyss of Xen-devel/LKLM list.
-> 
-> Here is the second version of memory hotplug support
-> for Xen guests patch. This one cleanly applies to
-> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git
-> repository, xen/memory-hotplug head.
+Hello, all.
 
-Testing on sles 11 sp1 and opensuse 11.3. On results - send e-mail..
+I have used linux(ubuntu) for more than one year.
+For long time, I wish I can hack in the kernel.
+But I still can't fix a bug or write a driver, except compile the kernel.
+I really need some suggestion.
+Now, I'm reading some book--
+	Linux kernel development, second edition, by Robert Love.
+	Linux device driver, third edition, by Jonatban Corbet etc.
 
--- 
-Vasiliy G Tolstov <v.tolstov@selfip.ru>
-Selfip.Ru
+But I find these books is so difficult to understand.
+The author always gave out new things that he has never explained.
+I wish if there is some way to learn the kernel step by step, or less hard.
+Could anyone give me some advice?
 
+PS: I have tried to read the source code, but they are even more difficult.
+I wish this email has been posted to the right place(not disturb you).
+I know you are busy coding. If this email is not appropriately, please do't
+be angry, just ignore it.
+
+Thanks.
