@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964989Ab0HFSgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:36:35 -0400
-Received: from kroah.org ([198.145.64.141]:48716 "EHLO coco.kroah.org"
+	id S964998Ab0HFSgl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:36:41 -0400
+Received: from kroah.org ([198.145.64.141]:48750 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964947Ab0HFSgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
-Message-Id: <20100806183202.679209582@clark.site>
+	id S964961Ab0HFSgM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:03 2010
+Message-Id: <20100806183203.235235513@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:51 -0700
+Date: Fri, 06 Aug 2010 11:30:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Howells <dhowells@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [30/38] CRED: Fix RCU warning due to previous patch fixing __task_cred()s checks
+        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
+Subject: [36/38] drm/radeon/kms: handle the case of no active displays properly in the bandwidth code
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,63 +25,146 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Howells <dhowells@redhat.com>
+From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 694f690d27dadccc8cb9d90532e76593b61fe098 upstream.
+commit e06b14ee91a2ddefc9a67443a6cd8ee0fa800115 upstream.
 
-Commit 8f92054e7ca1 ("CRED: Fix __task_cred()'s lockdep check and banner
-comment") fixed the lockdep checks on __task_cred().  This has shown up
-a place in the signalling code where a lock should be held - namely that
-check_kill_permission() requires its callers to hold the RCU lock.
+Logic was:
+if (mode0 && mode1)
+else if (mode0)
+else
 
-Fix group_send_sig_info() to get the RCU read lock around its call to
-check_kill_permission().
+Should be:
+if (mode0 && mode1)
+else if (mode0)
+else if (mode1)
 
-Without this patch, the following warning can occur:
+Otherwise we may end up calculating the priority regs with
+unitialized values.
 
-  ===================================================
-  [ INFO: suspicious rcu_dereference_check() usage. ]
-  ---------------------------------------------------
-  kernel/signal.c:660 invoked rcu_dereference_check() without protection!
-  ...
+Fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=16492
 
-Reported-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/signal.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/gpu/drm/radeon/rs690.c |   27 +++++++++------------------
+ drivers/gpu/drm/radeon/rv515.c |   23 +++++++++--------------
+ 2 files changed, 18 insertions(+), 32 deletions(-)
 
---- a/kernel/signal.c
-+++ b/kernel/signal.c
-@@ -637,7 +637,7 @@ static inline bool si_fromuser(const str
+--- a/drivers/gpu/drm/radeon/rs690.c
++++ b/drivers/gpu/drm/radeon/rs690.c
+@@ -398,7 +398,9 @@ void rs690_bandwidth_update(struct radeo
+ 	struct drm_display_mode *mode1 = NULL;
+ 	struct rs690_watermark wm0;
+ 	struct rs690_watermark wm1;
+-	u32 tmp, d1mode_priority_a_cnt, d2mode_priority_a_cnt;
++	u32 tmp;
++	u32 d1mode_priority_a_cnt = S_006548_D1MODE_PRIORITY_A_OFF(1);
++	u32 d2mode_priority_a_cnt = S_006548_D1MODE_PRIORITY_A_OFF(1);
+ 	fixed20_12 priority_mark02, priority_mark12, fill_rate;
+ 	fixed20_12 a, b;
  
- /*
-  * Bad permissions for sending the signal
-- * - the caller must hold at least the RCU read lock
-+ * - the caller must hold the RCU read lock
-  */
- static int check_kill_permission(int sig, struct siginfo *info,
- 				 struct task_struct *t)
-@@ -1127,11 +1127,14 @@ struct sighand_struct *lock_task_sighand
- 
- /*
-  * send signal info to all the members of a group
-- * - the caller must hold the RCU read lock at least
-  */
- int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p)
- {
--	int ret = check_kill_permission(sig, info, p);
-+	int ret;
+@@ -495,10 +497,6 @@ void rs690_bandwidth_update(struct radeo
+ 			d1mode_priority_a_cnt |= S_006548_D1MODE_PRIORITY_A_ALWAYS_ON(1);
+ 			d2mode_priority_a_cnt |= S_006D48_D2MODE_PRIORITY_A_ALWAYS_ON(1);
+ 		}
+-		WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	} else if (mode0) {
+ 		if (dfixed_trunc(wm0.dbpp) > 64)
+ 			a.full = dfixed_mul(wm0.dbpp, wm0.num_line_pair);
+@@ -528,13 +526,7 @@ void rs690_bandwidth_update(struct radeo
+ 		d1mode_priority_a_cnt = dfixed_trunc(priority_mark02);
+ 		if (rdev->disp_priority == 2)
+ 			d1mode_priority_a_cnt |= S_006548_D1MODE_PRIORITY_A_ALWAYS_ON(1);
+-		WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT,
+-			S_006D48_D2MODE_PRIORITY_A_OFF(1));
+-		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT,
+-			S_006D4C_D2MODE_PRIORITY_B_OFF(1));
+-	} else {
++	} else if (mode1) {
+ 		if (dfixed_trunc(wm1.dbpp) > 64)
+ 			a.full = dfixed_mul(wm1.dbpp, wm1.num_line_pair);
+ 		else
+@@ -563,13 +555,12 @@ void rs690_bandwidth_update(struct radeo
+ 		d2mode_priority_a_cnt = dfixed_trunc(priority_mark12);
+ 		if (rdev->disp_priority == 2)
+ 			d2mode_priority_a_cnt |= S_006D48_D2MODE_PRIORITY_A_ALWAYS_ON(1);
+-		WREG32(R_006548_D1MODE_PRIORITY_A_CNT,
+-			S_006548_D1MODE_PRIORITY_A_OFF(1));
+-		WREG32(R_00654C_D1MODE_PRIORITY_B_CNT,
+-			S_00654C_D1MODE_PRIORITY_B_OFF(1));
+-		WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	}
 +
-+	rcu_read_lock();
-+	ret = check_kill_permission(sig, info, p);
-+	rcu_read_unlock();
++	WREG32(R_006548_D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
++	WREG32(R_00654C_D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
++	WREG32(R_006D48_D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
++	WREG32(R_006D4C_D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ }
  
- 	if (!ret && sig)
- 		ret = do_send_sig_info(sig, info, p, true);
+ uint32_t rs690_mc_rreg(struct radeon_device *rdev, uint32_t reg)
+--- a/drivers/gpu/drm/radeon/rv515.c
++++ b/drivers/gpu/drm/radeon/rv515.c
+@@ -925,7 +925,9 @@ void rv515_bandwidth_avivo_update(struct
+ 	struct drm_display_mode *mode1 = NULL;
+ 	struct rv515_watermark wm0;
+ 	struct rv515_watermark wm1;
+-	u32 tmp, d1mode_priority_a_cnt, d2mode_priority_a_cnt;
++	u32 tmp;
++	u32 d1mode_priority_a_cnt = MODE_PRIORITY_OFF;
++	u32 d2mode_priority_a_cnt = MODE_PRIORITY_OFF;
+ 	fixed20_12 priority_mark02, priority_mark12, fill_rate;
+ 	fixed20_12 a, b;
+ 
+@@ -999,10 +1001,6 @@ void rv515_bandwidth_avivo_update(struct
+ 			d1mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+ 			d2mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+ 		}
+-		WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	} else if (mode0) {
+ 		if (dfixed_trunc(wm0.dbpp) > 64)
+ 			a.full = dfixed_div(wm0.dbpp, wm0.num_line_pair);
+@@ -1032,11 +1030,7 @@ void rv515_bandwidth_avivo_update(struct
+ 		d1mode_priority_a_cnt = dfixed_trunc(priority_mark02);
+ 		if (rdev->disp_priority == 2)
+ 			d1mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+-		WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
+-		WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_A_CNT, MODE_PRIORITY_OFF);
+-		WREG32(D2MODE_PRIORITY_B_CNT, MODE_PRIORITY_OFF);
+-	} else {
++	} else if (mode1) {
+ 		if (dfixed_trunc(wm1.dbpp) > 64)
+ 			a.full = dfixed_div(wm1.dbpp, wm1.num_line_pair);
+ 		else
+@@ -1065,11 +1059,12 @@ void rv515_bandwidth_avivo_update(struct
+ 		d2mode_priority_a_cnt = dfixed_trunc(priority_mark12);
+ 		if (rdev->disp_priority == 2)
+ 			d2mode_priority_a_cnt |= MODE_PRIORITY_ALWAYS_ON;
+-		WREG32(D1MODE_PRIORITY_A_CNT, MODE_PRIORITY_OFF);
+-		WREG32(D1MODE_PRIORITY_B_CNT, MODE_PRIORITY_OFF);
+-		WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
+-		WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ 	}
++
++	WREG32(D1MODE_PRIORITY_A_CNT, d1mode_priority_a_cnt);
++	WREG32(D1MODE_PRIORITY_B_CNT, d1mode_priority_a_cnt);
++	WREG32(D2MODE_PRIORITY_A_CNT, d2mode_priority_a_cnt);
++	WREG32(D2MODE_PRIORITY_B_CNT, d2mode_priority_a_cnt);
+ }
+ 
+ void rv515_bandwidth_update(struct radeon_device *rdev)
 
 
