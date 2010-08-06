@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761236Ab0HFLSp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 07:18:45 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41727 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759228Ab0HFLSl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 07:18:41 -0400
-Date: Fri, 6 Aug 2010 12:18:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: Re: [PATCH] regulator: max1586 - fix a memory leak in
- max1586_pmic_remove()
-Message-ID: <20100806111839.GF398@rakim.wolfsonmicro.main>
-References: <1281072795.24426.3.camel@mola>
+	id S1761148Ab0HFLYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 07:24:08 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36490 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752267Ab0HFLYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 07:24:07 -0400
+Message-ID: <4C5BF0D5.1080505@kernel.dk>
+Date: Fri, 06 Aug 2010 13:24:05 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281072795.24426.3.camel@mola>
-X-Cookie: "Pok pok pok, P'kok!"
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Resend: [PATCH] blkdev: fix blkdev_issue_zeroout return value
+References: <87vd7o2f9z.fsf@dmon-lap.sw.ru> <4C5BEA4E.4070107@kernel.dk> <87mxt02dr5.fsf@dmon-lap.sw.ru>
+In-Reply-To: <87mxt02dr5.fsf@dmon-lap.sw.ru>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 01:33:15PM +0800, Axel Lin wrote:
-> In max1586_pmic_probe(), we allocate memory for max1586.
-> In max1586_pmic_remove(), current implementation only free rdev
-> which is a member of struct max1586_data.
-> Thus, there is a small memory leak when we unload the module.
+On 2010-08-06 13:15, Dmitry Monakhov wrote:
+> Jens Axboe <axboe@kernel.dk> writes:
 > 
-> This patch fixes the memory leak by passing max1586 to i2c clientdata,
-> and properly kfree(max1586) in max1586_pmic_remove().
+>> On 2010-08-06 12:42, Dmitry Monakhov wrote:
+>>> Hi Jens,
+>>> Seems that my first mail was missed somewhere.  
+>>> I've found couple of trivial issues in blkdev_issue_zeroout()
+>>> implementation. Unfortunately I've miss during initial testing phase
+>>> because always called it with BARRIER|WAIT flags.
+>>
+>> BTW, this:
+>>
+>> @@ -218,15 +222,18 @@ submit:
+>>  		/* One of bios in the batch was completed with error.*/
+>>  		ret = -EIO;
+>>  
+>> -	if (ret)
+>> +	if (ret && ret != -ENOMEM)
+>>  		goto out;
+>>  
+>>  	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
+>>  		ret = -EOPNOTSUPP;
+>>  		goto out;
+>>  	}
+>> -	if (nr_sects != 0)
+>> +	if (nr_sects != 0) {
+>> +		if (ret == -ENOMEM)
+>> +			io_schedule();
+>>  		goto submit;
+>> +	}
+>>  out:
+>>  	return ret;
+>>  }
+>>
+>> is broken. Either the caller sets __GFP_WAIT and then bio_alloc() will
+>> not fail, or GFP_ATOMIC is used knowing that the call can fail and
+>> return ENOMEM. Don't code in retry logic like this.
+> Ok, my fault and in fact i've done in explicitly. I just thought
+> that blk-layer is some times an exception from general GFP_ATOMIC rule
+> because in some places in blk-layer we stick to GFP_NOFAIL semantics
+> regardless to actual gfp flags.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> New version attached.
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thanks that looks better, now really added.
+
+-- 
+Jens Axboe
+
