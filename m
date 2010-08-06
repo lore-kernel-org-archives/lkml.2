@@ -1,92 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935004Ab0HFRHf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:07:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42683 "EHLO hera.kernel.org"
+	id S934530Ab0HFRJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:09:19 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:59307 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934633Ab0HFRHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:07:31 -0400
-Date: Fri, 6 Aug 2010 17:06:38 GMT
-From: tip-bot for Julia Lawall <julia@diku.dk>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        julia@diku.dk, hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, julia@diku.dk, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <Pine.LNX.4.64.1008052227330.31692@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052227330.31692@ask.diku.dk>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf timechart: Adjust confusing if indentation
-Message-ID: <tip-33e26a1b492d21283d1372ddd547562d371dab98@git.kernel.org>
-Git-Commit-ID: 33e26a1b492d21283d1372ddd547562d371dab98
-X-Mailer: tip-git-log-daemon
+	id S933055Ab0HFRJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:09:15 -0400
+Date: Fri, 6 Aug 2010 10:09:04 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Brian Swetland <swetland@google.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100806170904.GG2432@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100801054816.GI2470@linux.vnet.ibm.com>
+ <201008051734.06736.rjw@sisk.pl>
+ <AANLkTi=kDx440MrLnQEcT46b3gkahU5ZGc0oWrWF-D2g@mail.gmail.com>
+ <201008060141.46109.rjw@sisk.pl>
+ <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 06 Aug 2010 17:06:39 +0000 (UTC)
+In-Reply-To: <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  33e26a1b492d21283d1372ddd547562d371dab98
-Gitweb:     http://git.kernel.org/tip/33e26a1b492d21283d1372ddd547562d371dab98
-Author:     Julia Lawall <julia@diku.dk>
-AuthorDate: Thu, 5 Aug 2010 22:27:51 +0200
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Thu, 5 Aug 2010 19:38:02 -0300
+On Thu, Aug 05, 2010 at 05:29:24PM -0700, Brian Swetland wrote:
+> 2010/8/5 Rafael J. Wysocki <rjw@sisk.pl>:
+> >>
+> >> Our wakelock stats currently have
+> >> (name,)count,expire_count,wake_count,active_since,total_time,sleep_time,max_time
+> >> and last_change. Not all of these are equally important (total_time is
+> >> most important followed by active_since), but you only have count.
+> >> Also as discussed before, many wakelocks/suspendblockers are not
+> >> associated with a struct device.
+> >
+> > OK
+> >
+> > How much of that is used in practice and what for exactly?
+> >
+> > Do you _really_ have to debug the wakelocks in drivers that much?
+> 
+> Debugging power related issues is pretty critical to building
+> competitive mobile devices.
+> 
+> Throughout the several months of this discussion I have been
+> continually scratching my head at this "debugability considered
+> harmful" attitude that I see in reaction to our interest in having the
+> ability (gated behind a config option even -- really, that'd be fine,
+> not everyone need enable it) to gather useful stats and examine the
+> state of the system.
 
-perf timechart: Adjust confusing if indentation
+In my case, it has not been "debuggability considered harmful", but
+rather my lack of understanding of the kinds of bugs that can arise and
+what information is most helpful in tracking them down.  Arve's post
+listing the meanings of the stats helped me quite a bit, although I am
+sure that my understanding is still quite rudimentary.
 
-Outdent the code following the if.
+> At this point it sounds like there's no interest in the solution we
+> have, which works and has worked for a few years, and has been revised
+> 10+ times based on feedback here, and no interest in providing a
+> solution that accomplishes similar functionality, so perhaps it's time
+> for us to cut our losses and just go back to maintaining our patches
+> instead of having the same arguments over and over again.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+And this brings up another aspect of Android requirements.  Mainlining
+Android features is not necessarily an all-or-nothing proposition.  Here
+is a prototype list of degrees of mainlining, along with at least a few
+of the benefits and difficulties of each level:
 
-// <smpl>
-@r disable braces4@
-position p1,p2;
-statement S1,S2;
-@@
+o	Mainline that provides exactly what Android needs.
 
-(
-if (...) { ... }
-|
-if (...) S1@p1 S2@p2
-)
+	This is of course the best case, but, as you may have noticed,
+	might not be easy to achieve.  The plain fact is that Linux
+	must support a wide variety of workloads, so some give-and-take
+	is usually required.
 
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
+o	Mainline that exactly matches the ideal API, but which fails
+	to implement some feature or another.
 
-if (p1[0].column == p2[0].column):
-  cocci.print_main("branch",p1)
-  cocci.print_secs("after",p2)
-// </smpl>
+	This is still not bad.  You have to carry a specific patch to
+	provide the feature(s), but all the calling sites are carried
+	upstream in mainline.
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-LKML-Reference: <Pine.LNX.4.64.1008052227330.31692@ask.diku.dk>
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-timechart.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+o	Mainline provides something that is close to the ideal API, but
+	some additional constant arguments are required.
 
-diff --git a/tools/perf/builtin-timechart.c b/tools/perf/builtin-timechart.c
-index 5161619..9bcc38f 100644
---- a/tools/perf/builtin-timechart.c
-+++ b/tools/perf/builtin-timechart.c
-@@ -455,8 +455,8 @@ static void sched_switch(int cpu, u64 timestamp, struct trace_entry *te)
- 		if (p->current->state != TYPE_NONE)
- 			pid_put_sample(sw->next_pid, p->current->state, cpu, p->current->state_since, timestamp);
- 
--			p->current->state_since = timestamp;
--			p->current->state = TYPE_RUNNING;
-+		p->current->state_since = timestamp;
-+		p->current->state = TYPE_RUNNING;
- 	}
- 
- 	if (prev_p->current) {
+	This is not so good, but at least the drivers can be upstreamed
+	and the changes required to get to an Android-ready kernel
+	are fairly simple.
+
+o	Mainline provides something, but Android requires changes to the
+	supplied API which require additional data to be passed from
+	call site to call site.
+
+	Again, at least drivers can be upstreamed, but the changes required
+	to get to an Android-ready kernel are a bit more involved.
+
+o	Mainline provides a stubbed-out API.
+
+	Once again, the drivers can at least be upstreamed, but Android
+	is the only project validating the placement of calls to the
+	API.   This means that changes to the drivers are likely to
+	mess up the placement of the call sites.  Therefore, getting
+	to an Android-ready kernel requires careful inspection of the
+	drivers to adjust for bugs introduced by others.
+
+o	Mainline provides nothing.
+
+	Status quo.  This means that some other group will likely
+	introduce the required functionality in an incremental fashion.
+	This process will likely fail to take Android's needs into
+	account, probably leading to...
+
+o	Mainline provides functionality that is similar to what
+	Android needs, but in a completely incompatible manner
+	that cannot be used easily (or perhaps at all) by Android.
+
+My guess is that there is value to Android in a number of the non-perfect
+cases.
+
+							Thanx, Paul
