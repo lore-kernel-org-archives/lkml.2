@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965170Ab0HFTAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:00:42 -0400
-Received: from kroah.org ([198.145.64.141]:58572 "EHLO coco.kroah.org"
+	id S965258Ab0HFTCh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:02:37 -0400
+Received: from kroah.org ([198.145.64.141]:58688 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965091Ab0HFTAP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:35 2010
-Message-Id: <20100806185835.450626103@clark.site>
+	id S965152Ab0HFTAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
+Message-Id: <20100806185836.849192569@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:13 -0700
+Date: Fri, 06 Aug 2010 11:57:29 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [18/34] iwlwifi: fix scan abort
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [34/34] ssb: Handle alternate SSPROM location
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +27,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit d28232b461b8d54b09e59325dbac8b0913ce2049 upstream.
+commit 9d1ac34ec3a67713308ae0883c3359c557f14d17 upstream.
 
-Fix possible double priv->mutex lock introduced by commit
-a69b03e941abae00380fc6bc1877fb797a1b31e6
-"iwlwifi: cancel scan watchdog in iwl_bg_abort_scan" .
-We can not call cancel_delayed_work_sync(&priv->scan_check) with
-priv->mutex locked because workqueue function iwl_bg_scan_check()
-take that lock internally.
+In kernel Bugzilla #15825 (2 users), in a wireless mailing list thread
+(http://lists.infradead.org/pipermail/b43-dev/2010-May/000124.html), and on a
+netbook owned by John Linville
+(http://marc.info/?l=linux-wireless&m=127230751408818&w=4), there are reports
+of ssb failing to detect an SPROM at the normal location. After studying the
+MMIO trace dump for the Broadcom wl driver, it was determined that the affected
+boxes had a relocated SPROM.
 
-We do not need to synchronize when canceling priv->scan_check work.
-We can avoid races (sending double abort command or send no
-command at all) using STATUS_SCAN_ABORT bit. Moreover
-current iwl_bg_scan_check() code seems to be broken, as
-we should not send abort commands when currently aborting.
+This patch fixes all systems that have reported this problem.
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-scan.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ drivers/ssb/driver_chipcommon.c |    1 +
+ drivers/ssb/pci.c               |   15 +++++++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -497,11 +497,10 @@ void iwl_bg_scan_check(struct work_struc
- 		return;
+--- a/drivers/ssb/driver_chipcommon.c
++++ b/drivers/ssb/driver_chipcommon.c
+@@ -235,6 +235,7 @@ void ssb_chipcommon_init(struct ssb_chip
+ 		return; /* We don't have a ChipCommon */
+ 	if (cc->dev->id.revision >= 11)
+ 		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
++	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
+ 	ssb_pmu_init(cc);
+ 	chipco_powercontrol_init(cc);
+ 	ssb_chipco_set_clockmode(cc, SSB_CLKMODE_FAST);
+--- a/drivers/ssb/pci.c
++++ b/drivers/ssb/pci.c
+@@ -625,11 +625,22 @@ static int ssb_pci_sprom_get(struct ssb_
+ 		return -ENODEV;
+ 	}
+ 	if (bus->chipco.dev) {	/* can be unavailible! */
+-		bus->sprom_offset = (bus->chipco.dev->id.revision < 31) ?
+-			SSB_SPROM_BASE1 : SSB_SPROM_BASE31;
++		/*
++		 * get SPROM offset: SSB_SPROM_BASE1 except for
++		 * chipcommon rev >= 31 or chip ID is 0x4312 and
++		 * chipcommon status & 3 == 2
++		 */
++		if (bus->chipco.dev->id.revision >= 31)
++			bus->sprom_offset = SSB_SPROM_BASE31;
++		else if (bus->chip_id == 0x4312 &&
++			 (bus->chipco.status & 0x03) == 2)
++			bus->sprom_offset = SSB_SPROM_BASE31;
++		else
++			bus->sprom_offset = SSB_SPROM_BASE1;
+ 	} else {
+ 		bus->sprom_offset = SSB_SPROM_BASE1;
+ 	}
++	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
  
- 	mutex_lock(&priv->mutex);
--	if (test_bit(STATUS_SCANNING, &priv->status) ||
--	    test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
--		IWL_DEBUG_SCAN(priv, "Scan completion watchdog resetting "
--			"adapter (%dms)\n",
--			jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
-+	if (test_bit(STATUS_SCANNING, &priv->status) &&
-+	    !test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
-+		IWL_DEBUG_SCAN(priv, "Scan completion watchdog (%dms)\n",
-+			       jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
- 
- 		if (!test_bit(STATUS_EXIT_PENDING, &priv->status))
- 			iwl_send_scan_abort(priv);
-@@ -797,12 +796,11 @@ void iwl_bg_abort_scan(struct work_struc
- 	    !test_bit(STATUS_GEO_CONFIGURED, &priv->status))
- 		return;
- 
--	mutex_lock(&priv->mutex);
--
--	cancel_delayed_work_sync(&priv->scan_check);
--	set_bit(STATUS_SCAN_ABORTING, &priv->status);
--	iwl_send_scan_abort(priv);
-+	cancel_delayed_work(&priv->scan_check);
- 
-+	mutex_lock(&priv->mutex);
-+	if (test_bit(STATUS_SCAN_ABORTING, &priv->status))
-+		iwl_send_scan_abort(priv);
- 	mutex_unlock(&priv->mutex);
- }
- EXPORT_SYMBOL(iwl_bg_abort_scan);
+ 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
+ 	if (!buf)
 
 
