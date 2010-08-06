@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762010Ab0HFUUe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:20:34 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57318 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752473Ab0HFUUb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:20:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PATCH] TTY patches for 2.6.36
-Date: Fri, 6 Aug 2010 22:19:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.92; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <20100805213528.GA13794@kroah.com> <201008062158.46013.arnd@arndb.de> <AANLkTi=Yv2TE1x6aT2GLC9+CKQXaeDJciAMEfNa1_XXx@mail.gmail.com>
-In-Reply-To: <AANLkTi=Yv2TE1x6aT2GLC9+CKQXaeDJciAMEfNa1_XXx@mail.gmail.com>
+	id S1762022Ab0HFUW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:22:28 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46801 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761974Ab0HFUW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 16:22:26 -0400
+Message-ID: <4C5C6DCE.4020206@zytor.com>
+Date: Fri, 06 Aug 2010 13:17:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Jan Beulich <JBeulich@novell.com>, Peter Zijlstra <peterz@infradead.org>,
+        Xen-devel <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
+        Nick Piggin <npiggin@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 02/12] x86/ticketlock: convert spin loop to C
+References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <cf01e01095f802dc5082e82a8e96c84903e929a6.1279328276.git.jeremy.fitzhardinge@citrix.com> <1280761639.1923.213.camel@laptop> <4C56E1A1.6020005@goop.org> <4C5C1F80020000780000EA6D@vpn.id2.novell.com> <4C5C21E3.1020004@goop.org>
+In-Reply-To: <4C5C21E3.1020004@goop.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008062219.19442.arnd@arndb.de>
-X-Provags-ID: V02:K0:4for5rr2X7IXa6hAs7g6/e3jKCmkFU6PoQV2HMfj1K+
- djmRvf47Gb5G1ohA72gh896Z2OXUQDcRgFHYkeFDuFX/U545AZ
- uNhL3wK+QITLtr7LwkGPUWf1l01Kue+zHgZ6bF7VsmW5APmx0t
- y4FfvM4ZO2GNgmzCCwUSv+nxt2xZIp6RWe1a1etAHyulo7IZRM
- v22FPlZTCtJm+dcsDJjig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 August 2010 22:11:46 Linus Torvalds wrote:
-> On Fri, Aug 6, 2010 at 12:58 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >
-> > If you apply this version, the only stronghold left for the BKL
-> > will be fs/lockd, everything else that's left is either simple
-> > to fix or highly obscure.
-> 
-> Didn't we have patches for fs/lockd/ too? Or am I just confused with
-> the fs/locks.c patches?
+On 08/06/2010 07:53 AM, Jeremy Fitzhardinge wrote:
+> On 08/06/2010 05:43 AM, Jan Beulich wrote:
+>> You certainly mean "the compiler currently treats this as being:" - I
+>> don't think there's a guarantee it'll always be doing so.
+>>
+>>> for (;;) {
+>>> if (inc.tickets.head == inc.tickets.tail)
+>>> goto out;
+>>> ...
+>>> }
+>>> out: barrier();
+>>> }
+>>>
+>>> (Which would probably be a reasonable way to clarify the code.)
+>> I therefore think it needs to be written this way.
+>
+> Agreed.
+>
 
-I had a ten-year old patch from Willy that takes care of fs/locks.c,
-but we can't apply that without also taking care of fs/lockd.
+A call/return to an actual out-of-line function is a barrier (and will 
+always be a barrier, as it is the fundamental ABI sequence points), but 
+to an inline function it is not.
 
-I first didn't realize this when I sent that patch.
-
-	Arnd
+	-hpa
