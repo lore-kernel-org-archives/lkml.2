@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933590Ab0HFHEa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:04:30 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:50341 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab0HFHE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:04:27 -0400
-Date: Fri, 6 Aug 2010 00:04:24 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
-	are no dirty pages.
-Message-ID: <20100806070424.GD2109@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org>
+	id S933792Ab0HFHGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:06:38 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:47093 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560Ab0HFHGf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 03:06:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=akeuFkt0Tyz2x16+1vmG66u2ofa5zug3hxqet3i2Q5j8JYfsLIY/8lTIixtkjMQjHa
+         yWuicGT+Iq0I3/6rPcWOgyv+DtkFJkRzp7E9NpTMUGZZtVHPHeobc4Js2Gsn5VUwE07H
+         XuhqrENGDBqIMdKuzfHdR3yVn02wvVAcui0sM=
+Message-ID: <4C5BB472.5000207@gmail.com>
+Date: Fri, 06 Aug 2010 09:06:26 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100805164504.GI2901@thunk.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend
+ to RAM
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C52DF50.80009@kernel.org> <4C5AE1E2.6070601@gmail.com> <201008060830.50889.stephan.diestelhorst@amd.com>
+In-Reply-To: <201008060830.50889.stephan.diestelhorst@amd.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 12:45:04PM -0400, Ted Ts'o wrote:
-> P.S.  If it wasn't clear, I'm still in favor of trying to coordinate
-> barriers across the whole file system, since that is much more likely
-> to help use cases that arise in real life.
+Hello,
 
-Ok.  I have a rough sketch of a patch to do that, and I was going to send it
-out today, but the test machine caught on fire while I was hammering it with
-the fsync tests one last time and ... yeah.  I'm fairly sure the patch didn't
-cause the fire, but I'll check anyway after I finish cleaning up.
+On 08/06/2010 08:30 AM, Stephan Diestelhorst wrote:
+> On Thursday 05 August 2010, 18:08:02 Tejun Heo wrote:
+>> Can you please try the following patch and see whether the problem
+>> goes away?
+> <snip>
+> 
+> to which revision does the patch apply? I didn't get it to apply
+> cleanly to Linus' kernel HEAD or the 2.6.34 stable tag. Maybe I am
+> missing something, since I am a git-n00b (use Mercurial all the time)?
 
-"[PATCH] ext4: Don't set my machine ablaze with barrier requests" :P
+It applies cleanly to v2.6.35.
 
-(The patch did seem to cut barrier requests counts by about 20% though the
-impact on performance was pretty small.)
+Thanks.
 
---D
+-- 
+tejun
