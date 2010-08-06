@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760246Ab0HFAMB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:12:01 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:54611 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755831Ab0HFAL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:11:58 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:x-system-of-record;
-	b=b6ULW0wKyG8TSoLDyqltCi+N8raN+oY1Hi8zMLUdD4j53YeL+1MbJ+JDXlZNt2QlH
-	6F9Yg+kTESdsjLI+TnDkQ==
-MIME-Version: 1.0
-In-Reply-To: <20100806084928.31DE.A69D9226@jp.fujitsu.com>
-References: <20100805132433.d1d7927b.akpm@linux-foundation.org> 
-	<AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com> 
-	<20100806084928.31DE.A69D9226@jp.fujitsu.com>
-From: Michael Rubin <mrubin@google.com>
-Date: Thu, 5 Aug 2010 17:11:35 -0700
-Message-ID: <AANLkTimD4jkkPpnhQhR+OF=6=dWV2dJj4M_DGfAmHgRQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and 
-	pages_entered_writeback
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, jack@suse.cz,
-        david@fromorbit.com, hch@lst.de, axboe@kernel.dk
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S935134Ab0HFAMW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:12:22 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:38307 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932258Ab0HFAMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 20:12:19 -0400
+Date: Fri, 6 Aug 2010 02:09:47 +0200
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: ebiederm@xmission.com (Eric W. Biederman)
+Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
+        Patrick McHardy <kaber@trash.net>
+Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
+ (adding ipv6 address to interface)
+Message-ID: <20100806020947.3b7c66ac@xenia.leun.net>
+In-Reply-To: <m1bp9g7ry0.fsf@fess.ebiederm.org>
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+	<20100710101540.2799c9ef@xenia.leun.net>
+	<20100710140800.GA20424@kroah.com>
+	<20100710165208.59272ae6@xenia.leun.net>
+	<20100710235323.5336f627@xenia.leun.net>
+	<20100711192939.1c25dcaf@xenia.leun.net>
+	<20100804153543.56f6ecad@xenia.leun.net>
+	<20100804214618.GA6289@kroah.com>
+	<20100805001105.5a3453ed@xenia.leun.net>
+	<m1lj8l29zm.fsf@fess.ebiederm.org>
+	<20100805112538.60a46cb1@xenia.leun.net>
+	<m1y6clz8ta.fsf_-_@fess.ebiederm.org>
+	<20100805134707.0442a7b1@xenia.leun.net>
+	<m1bp9g7ry0.fsf@fess.ebiederm.org>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 4:56 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> /proc/vmstat already have both.
->
-> cat /proc/vmstat |grep nr_dirty
-> cat /proc/vmstat |grep nr_writeback
->
-> Also, /sys/devices/system/node/node0/meminfo show per-node stat.
->
-> Perhaps, I'm missing your point.
+On Thu, 05 Aug 2010 12:57:59 -0700
+ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-These only show the number of dirty pages present in the system at the
-point they are queried.
-The counter I am trying to add are increasing over time. They allow
-developers to see rates of pages being dirtied and entering writeback.
-Which is very helpful.
+> What puzzles me is that on a slightly patched 2.6.32 (so sysfs works)
+> and I am doing very similar things (openvpn tunnels, ipv6 to the
+> network as a whole etc), and I am not seeing the infinite
+> unregister_netdevice: messages you are talking about.
 
-mrubin
+Hmmm, I think there are 2 possibilities:
+
+- You send me a patch against plain 2.6.32, so I can check my
+  scenarios against that kernel
+
+or 
+
+-  You could try yourself, its really just that few lines against a
+  fresh booted system in a clean, easy to reproduce state
+
+(Only, if you think that would yield useful information, of course).
+
+> When a network device is removed most references to it are redirected
+> to the loopback device so a normal network device should not see the
+> worst of the problems.  That is why lo showed up.
+> 
+> In that context I'm a bit surprised you managed trigger a problem on
+> veth1.
+
+Difference was, when that message showed up with veth1, lo in that
+namespace was down while testing. When lo was up it showed up on lo.
+
+-- 
+MfG,
+
+Michael Leun
+
