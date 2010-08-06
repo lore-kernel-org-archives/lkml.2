@@ -1,90 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761547Ab0HFQ22 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 12:28:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55769 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752066Ab0HFQ20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 12:28:26 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] AFS: Fix the module init error handling
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 06 Aug 2010 17:26:48 +0100
-Message-ID: <20100806162648.11782.17953.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1761565Ab0HFQaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 12:30:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50273 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760111Ab0HFQ36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 12:29:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=TkTju38MKpY7+Cw0JUtxALrjQaBFH8sYquNrQIZlVi6fceRQMRS5YZrJcspNHqT7PQ
+         LZEggfdoCw8oTt7KSF+PLvE0Q8N95xwaXVDRC2iFJj09Y4lTyykuZhSF4w1d9hNl75da
+         cq+8ON1Q9P3ERnFL7jxv5iIVx8EhBkTbshPLg=
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] tty_io: add an API to get device corresponding to tty_struct
+Date: Fri,  6 Aug 2010 20:29:28 +0400
+Message-Id: <1281112169-27086-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the module init error handling.  There are a bunch of goto labels for
-aborting the init procedure at different points and just undoing what needs
-undoing - they aren't all in the right places, however.
+Some device drivers (mostly tty line disciplines) would like to have way
+to get a struct device instancve corresponding to passed tty_struct. Add
+respective API call.
 
-This can lead to an oops like the following:
-
-	BUG: unable to handle kernel NULL pointer dereference at 0000000000000020
-	IP: [<ffffffff81042a31>] destroy_workqueue+0x17/0xc0
-	...
-	Modules linked in: kafs(+) dns_resolver rxkad af_rxrpc fscache
-
-	Pid: 2171, comm: insmod Not tainted 2.6.35-cachefs+ #319 DG965RY/
-	...
-	Process insmod (pid: 2171, threadinfo ffff88003ca6a000, task ffff88003dcc3050)
-	...
-	Call Trace:
-	 [<ffffffffa0055994>] afs_callback_update_kill+0x10/0x12 [kafs]
-	 [<ffffffffa007d1c5>] afs_init+0x190/0x1ce [kafs]
-	 [<ffffffffa007d035>] ? afs_init+0x0/0x1ce [kafs]
-	 [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
-	 [<ffffffff8105f7ee>] sys_init_module+0x9c/0x1de
-	 [<ffffffff81001eab>] system_call_fastpath+0x16/0x1b
-
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 ---
+ drivers/char/tty_io.c |   20 ++++++++++++++++++++
+ include/linux/tty.h   |    1 +
+ 2 files changed, 21 insertions(+), 0 deletions(-)
 
- fs/afs/main.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/fs/afs/main.c b/fs/afs/main.c
-index 66d54d3..cfd1cbe 100644
---- a/fs/afs/main.c
-+++ b/fs/afs/main.c
-@@ -111,6 +111,8 @@ static int __init afs_init(void)
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index d71f0fc..43fdeef 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -3017,6 +3017,26 @@ dev_t tty_devnum(struct tty_struct *tty)
+ }
+ EXPORT_SYMBOL(tty_devnum);
  
- 	/* initialise the callback update process */
- 	ret = afs_callback_update_init();
-+	if (ret < 0)
-+		goto error_callback_update_init;
- 
- 	/* create the RxRPC transport */
- 	ret = afs_open_socket();
-@@ -127,15 +129,16 @@ static int __init afs_init(void)
- error_fs:
- 	afs_close_socket();
- error_open_socket:
-+	afs_callback_update_kill();
-+error_callback_update_init:
-+	afs_vlocation_purge();
- error_vl_update_init:
-+	afs_cell_purge();
- error_cell_init:
- #ifdef CONFIG_AFS_FSCACHE
- 	fscache_unregister_netfs(&afs_cache_netfs);
- error_cache:
- #endif
--	afs_callback_update_kill();
--	afs_vlocation_purge();
--	afs_cell_purge();
- 	afs_proc_cleanup();
- 	rcu_barrier();
- 	printk(KERN_ERR "kAFS: failed to register: %d\n", ret);
++static int dev_match_devt(struct device *dev, void *data)
++{
++	dev_t *devt = data;
++	return dev->devt == *devt;
++}
++
++/**
++ * 	tty_get_device - get a device corresponding to tty
++ * 	@tty: the struct that describes the tty device
++ *
++ * 	Returns a pointer to the struct device for this tty device
++ * 	(or NULL in case of error).
++ */
++struct device *tty_get_device(struct tty_struct *tty)
++{
++	dev_t devt = tty_devnum(tty);
++	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
++}
++EXPORT_SYMBOL(tty_get_device);
++
+ void proc_clear_tty(struct task_struct *p)
+ {
+ 	unsigned long flags;
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 931078b..5038433 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -451,6 +451,7 @@ extern int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
+ 			unsigned int cmd, unsigned long arg);
+ extern int tty_perform_flush(struct tty_struct *tty, unsigned long arg);
+ extern dev_t tty_devnum(struct tty_struct *tty);
++struct device *tty_get_device(struct tty_struct *tty);
+ extern void proc_clear_tty(struct task_struct *p);
+ extern struct tty_struct *get_current_tty(void);
+ extern void tty_default_fops(struct file_operations *fops);
+-- 
+1.7.1
 
