@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760192Ab0HFFTd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:19:33 -0400
-Received: from outbound3-nonen.messaging.lotuslive.com ([8.12.152.99]:52425
-	"EHLO outbound3-nonen.messaging.lotuslive.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934691Ab0HFFS1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:18:27 -0400
-X-Greylist: delayed 724 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Aug 2010 01:18:27 EDT
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-From: "Teddy Williams" <teddychambers124@operamail.com>
-Date: Fri, 6 Aug 2010 06:06:21 +0100
-Subject: Read carefully this e-mail
-X-Originating-Ip: 82.158.204.242
-X-Originating-Server: c-in3ws--03-01.sv2.lotusliveops.com
-X-Ob-Auth: teddychambers124:operamail.com@operamail.com
-Message-Id: <20100806050621.F32CD77A615@c-in3ws--03-01.sv2.lotuslive.com>
-To: undisclosed-recipients:;
+	id S934120Ab0HFFSX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:18:23 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57866 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933789Ab0HFFPg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 01:15:36 -0400
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 37/43] memblock: Expose some memblock bits for use by x86
+Date: Fri,  6 Aug 2010 15:15:18 +1000
+Message-Id: <1281071724-28740-38-git-send-email-benh@kernel.crashing.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention: 
+From: Yinghai Lu <yinghai@kernel.org>
 
+This exposes memblock_debug and associated memblock_dbg() macro,
+along with memblock_can_resize so that x86 can use these when
+ported to use memblock
 
-On behalf of the Trustees and Executor of the estate of Late Eng. Jüîrgen Krüîgger. I once again try to notify you as my earlier letter was
-returned undelivered. I hereby attempt to reach you again by this same email address on the WILL. I wish to notify you  that late Eng. Jürgen 
-Krügger made you a beneficiary to his WILL. He left the sum of Thirty Million, One Hundred Thousand Dollars (USD$30, 100.000.00) to you in
-the Codicil and last testament to his WILL.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ include/linux/memblock.h |    5 +++++
+ mm/memblock.c            |    3 ++-
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
-
-This may sound strange and unbelievable to you, but it is real and true. Being a widely traveled man, he must have been in contact with
-you in the past or simply you were nominated to him by one of his numerous friends abroad who wished you good. Eng. Jürgen Krügger until his
-death was a member of the Helicopter Society and the Institute of Electronic &  Electrical Engineers. He was a very dedicated Christian who loved to
-give out. His great philanthropy earned him numerous awards during hislife time. Late Engr. Jurgen Krugger died on the 13th day of December,
-2004 at the age  of 80 years, and his WILL is now ready for execution.According to him this money is to support your humanitarian activities
-and to help the poor and the needy in our society. Please if I reachyou as I am hopeful, endeavor to get back to me as soon as possible to
-enable me conclude my job. I hope to hear from you in no distant time.Note:You are advise to contact me with my personal email 
-address:teddy.chambers75@yahoo.com.hk 
-
-I await your prompt response.
-Yours in Service,
-
-
-BARRISTER TEDDY WILLIAMS ESQ.PRINCIPAL PARTNERS: Barrister Aidan Walsh.Esq Markus Wolfgang,Smith Esq 
-
-Tel+34-603-131-235 
-Fax:+34-911-414-351
-E-mail:teddy.chambers75@yahoo.com.hk 
-
-
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index c8da03e..eed0f9b 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -39,6 +39,11 @@ struct memblock {
+ };
+ 
+ extern struct memblock memblock;
++extern int memblock_debug;
++extern int memblock_can_resize;
++
++#define memblock_dbg(fmt, ...) \
++	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+ 
+ extern void __init memblock_init(void);
+ extern void __init memblock_analyze(void);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index cc15be2..5499ab1 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -22,7 +22,8 @@
+ 
+ struct memblock memblock;
+ 
+-static int memblock_debug, memblock_can_resize;
++int memblock_debug;
++int memblock_can_resize;
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ 
 -- 
-_______________________________________________
-Surf the Web in a faster, safer and easier way:
-Download Opera 9 at http://www.opera.com
+1.7.0.4
 
