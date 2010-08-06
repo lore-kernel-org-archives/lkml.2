@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761455Ab0HFO0V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 10:26:21 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40151 "EHLO
+	id S1761469Ab0HFO03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 10:26:29 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:40158 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542Ab0HFO0B (ORCPT
+	with ESMTP id S1761458Ab0HFO0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 10:26:01 -0400
+	Fri, 6 Aug 2010 10:26:22 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: <acme@infradead.org>, <fweisbec@gmail.com>, <mingo@elte.hu>,
         <peterz@infradead.org>, <rostedt@goodmis.org>
 Cc: <linux-kernel@vger.kernel.org>, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [RFC PATCH 7/9] perf: Export cpumap
-Date: Fri,  6 Aug 2010 16:25:11 +0200
-Message-Id: <1281104713-23141-8-git-send-email-bp@amd64.org>
+Subject: [RFC PATCH 8/9] perf: Carve out mmap helpers for general use
+Date: Fri,  6 Aug 2010 16:25:12 +0200
+Message-Id: <1281104713-23141-9-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1281104713-23141-1-git-send-email-bp@amd64.org>
 References: <1281104713-23141-1-git-send-email-bp@amd64.org>
@@ -23,468 +23,456 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Export cpu counting and cpumap manipulating utils for general use. This
-pulls ctype.c along.
+Export the mmap_read* helpers into tools/lib/perf/mmap.[ch]
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- tools/lib/lk/Makefile       |    3 +
- tools/lib/lk/cpumap.c       |  114 +++++++++++++++++++++++++++++++++++++++++++
- tools/lib/lk/cpumap.h       |    7 +++
- tools/lib/lk/ctype.c        |   39 +++++++++++++++
- tools/perf/Makefile         |    3 -
- tools/perf/builtin-record.c |    2 +-
- tools/perf/builtin-stat.c   |    2 +-
- tools/perf/builtin-top.c    |    2 +-
- tools/perf/util/cpumap.c    |  114 -------------------------------------------
- tools/perf/util/cpumap.h    |    7 ---
- tools/perf/util/ctype.c     |   39 ---------------
- 11 files changed, 166 insertions(+), 166 deletions(-)
- create mode 100644 tools/lib/lk/cpumap.c
- create mode 100644 tools/lib/lk/cpumap.h
- create mode 100644 tools/lib/lk/ctype.c
- delete mode 100644 tools/perf/util/cpumap.c
- delete mode 100644 tools/perf/util/cpumap.h
- delete mode 100644 tools/perf/util/ctype.c
+ tools/Makefile              |    6 ++-
+ tools/lib/perf/Makefile     |   35 ++++++++++++++
+ tools/lib/perf/mmap.c       |   95 ++++++++++++++++++++++++++++++++++++++
+ tools/lib/perf/mmap.h       |   15 ++++++
+ tools/perf/Makefile         |    2 +-
+ tools/perf/builtin-record.c |  107 ++++---------------------------------------
+ tools/perf/builtin-top.c    |   28 ++---------
+ 7 files changed, 166 insertions(+), 122 deletions(-)
+ create mode 100644 tools/lib/perf/Makefile
+ create mode 100644 tools/lib/perf/mmap.c
+ create mode 100644 tools/lib/perf/mmap.h
 
-diff --git a/tools/lib/lk/Makefile b/tools/lib/lk/Makefile
-index 823bbb5..ff94b2e 100644
---- a/tools/lib/lk/Makefile
-+++ b/tools/lib/lk/Makefile
-@@ -7,9 +7,12 @@ LIB_OBJS=
- LIB_H += debugfs.h
- LIB_H += util.h
- LIB_H += types.h
-+LIB_H += cpumap.h
+diff --git a/tools/Makefile b/tools/Makefile
+index d3b1447..691f78b 100644
+--- a/tools/Makefile
++++ b/tools/Makefile
+@@ -34,7 +34,7 @@ export BASIC_CFLAGS
+ PERF_TOP_DIR := $(CURDIR)
+ export PERF_TOP_DIR
  
- LIB_OBJS += debugfs.o
- LIB_OBJS += usage.o
-+LIB_OBJS += cpumap.o
-+LIB_OBJS += ctype.o
+-perf: libparsevent lklib .FORCE
++perf: libparsevent lklib lkperflib .FORCE
+ 	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1)
  
- LIBFILE = $(LIB_OUTPUT)lklib.a
+ libparsevent: .FORCE
+@@ -43,9 +43,13 @@ libparsevent: .FORCE
+ lklib: .FORCE
+ 	$(QUIET_SUBDIR0)lib/lk/ $(QUIET_SUBDIR1)
  
-diff --git a/tools/lib/lk/cpumap.c b/tools/lib/lk/cpumap.c
++lkperflib: .FORCE
++	$(QUIET_SUBDIR0)lib/perf/ $(QUIET_SUBDIR1)
++
+ clean:
+ 	$(QUIET_SUBDIR0)lib/trace/ $(QUIET_SUBDIR1) clean
+ 	$(QUIET_SUBDIR0)lib/lk/ $(QUIET_SUBDIR1) clean
++	$(QUIET_SUBDIR0)lib/perf/ $(QUIET_SUBDIR1) clean
+ 	$(QUIET_SUBDIR0)perf/ $(QUIET_SUBDIR1) clean
+ 
+ .PHONY: clean .FORCE
+diff --git a/tools/lib/perf/Makefile b/tools/lib/perf/Makefile
 new file mode 100644
-index 0000000..7c3008a
+index 0000000..9942d52
 --- /dev/null
-+++ b/tools/lib/lk/cpumap.c
-@@ -0,0 +1,114 @@
-+#include <lk/util.h>
-+#include <perf.h>
-+#include "cpumap.h"
-+#include <assert.h>
++++ b/tools/lib/perf/Makefile
+@@ -0,0 +1,35 @@
++include ../../scripts/Makefile.lib
++
++# guard against environment variables
++LIB_H=
++LIB_OBJS=
++
++LIB_H += mmap.h
++
++LIB_OBJS += mmap.o
++
++LIBFILE = $(LIB_OUTPUT)lkperflib.a
++
++CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
++EXTLIBS = -lpthread -lrt -lelf -lm
++ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
++ALL_LDFLAGS = $(LDFLAGS)
++
++RM = rm -f
++
++$(LIBFILE): $(LIB_OBJS)
++	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
++
++$(LIB_OBJS): $(LIB_H)
++
++%.o: %.c
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
++%.s: %.c
++	$(QUIET_CC)$(CC) -S $(ALL_CFLAGS) $<
++%.o: %.S
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
++
++clean:
++	$(RM) $(LIB_OBJS) $(LIBFILE)
++
++.PHONY: clean
+diff --git a/tools/lib/perf/mmap.c b/tools/lib/perf/mmap.c
+new file mode 100644
+index 0000000..b154ccc
+--- /dev/null
++++ b/tools/lib/perf/mmap.c
+@@ -0,0 +1,95 @@
 +#include <stdio.h>
++#include <perf.h>
++#include "mmap.h"
 +
-+int cpumap[MAX_NR_CPUS];
-+
-+static int default_cpu_map(void)
++unsigned long mmap_read_head(struct mmap_data *md)
 +{
-+	int nr_cpus, i;
++	struct perf_event_mmap_page *pc = md->base;
++	long head;
 +
-+	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
-+	assert(nr_cpus <= MAX_NR_CPUS);
-+	assert((int)nr_cpus >= 0);
++	head = pc->data_head;
++	rmb();
 +
-+	for (i = 0; i < nr_cpus; ++i)
-+		cpumap[i] = i;
-+
-+	return nr_cpus;
++	return head;
 +}
 +
-+static int read_all_cpu_map(void)
++static void mmap_write_tail(struct mmap_data *md, unsigned long tail)
 +{
-+	FILE *onlnf;
-+	int nr_cpus = 0;
-+	int n, cpu, prev;
-+	char sep;
++	struct perf_event_mmap_page *pc = md->base;
 +
-+	onlnf = fopen("/sys/devices/system/cpu/online", "r");
-+	if (!onlnf)
-+		return default_cpu_map();
++	/*
++	 * ensure all reads are done before we write the tail out.
++	 */
++	/* mb(); */
++	pc->data_tail = tail;
++}
 +
-+	sep = 0;
-+	prev = -1;
-+	for (;;) {
-+		n = fscanf(onlnf, "%u%c", &cpu, &sep);
-+		if (n <= 0)
-+			break;
-+		if (prev >= 0) {
-+			assert(nr_cpus + cpu - prev - 1 < MAX_NR_CPUS);
-+			while (++prev < cpu)
-+				cpumap[nr_cpus++] = prev;
-+		}
-+		assert (nr_cpus < MAX_NR_CPUS);
-+		cpumap[nr_cpus++] = cpu;
-+		if (n == 2 && sep == '-')
-+			prev = cpu;
-+		else
-+			prev = -1;
-+		if (n == 1 || sep == '\n')
-+			break;
++static unsigned long mmap_read(struct mmap_data *md,
++			       void (*write_output)(void *, size_t))
++{
++	unsigned int head = mmap_read_head(md);
++	unsigned int old = md->prev;
++	unsigned int page_size;
++	unsigned char *data;
++	unsigned long size, samples = 0;
++	void *buf;
++	int diff;
++
++	page_size = sysconf(_SC_PAGE_SIZE);
++	data = md->base + page_size;
++
++	/*
++	 * If we're further behind than half the buffer, there's a chance
++	 * the writer will bite our tail and mess up the samples under us.
++	 *
++	 * If we somehow ended up ahead of the head, we got messed up.
++	 *
++	 * In either case, truncate and restart at head.
++	 */
++	diff = head - old;
++	if (diff < 0) {
++		fprintf(stderr, "WARNING: failed to keep up with mmap data\n");
++		/*
++		 * head points to a known good entry, start there.
++		 */
++		old = head;
 +	}
-+	fclose(onlnf);
-+	if (nr_cpus > 0)
-+		return nr_cpus;
 +
-+	return default_cpu_map();
-+}
++	if (old != head)
++		samples++;
 +
-+int read_cpu_map(const char *cpu_list)
-+{
-+	unsigned long start_cpu, end_cpu = 0;
-+	char *p = NULL;
-+	int i, nr_cpus = 0;
++	size = head - old;
 +
-+	if (!cpu_list)
-+		return read_all_cpu_map();
++	if ((old & md->mask) + size != (head & md->mask)) {
++		buf = &data[old & md->mask];
++		size = md->mask + 1 - (old & md->mask);
++		old += size;
 +
-+	if (!isdigit(*cpu_list))
-+		goto invalid;
-+
-+	while (isdigit(*cpu_list)) {
-+		p = NULL;
-+		start_cpu = strtoul(cpu_list, &p, 0);
-+		if (start_cpu >= INT_MAX
-+		    || (*p != '\0' && *p != ',' && *p != '-'))
-+			goto invalid;
-+
-+		if (*p == '-') {
-+			cpu_list = ++p;
-+			p = NULL;
-+			end_cpu = strtoul(cpu_list, &p, 0);
-+
-+			if (end_cpu >= INT_MAX || (*p != '\0' && *p != ','))
-+				goto invalid;
-+
-+			if (end_cpu < start_cpu)
-+				goto invalid;
-+		} else {
-+			end_cpu = start_cpu;
-+		}
-+
-+		for (; start_cpu <= end_cpu; start_cpu++) {
-+			/* check for duplicates */
-+			for (i = 0; i < nr_cpus; i++)
-+				if (cpumap[i] == (int)start_cpu)
-+					goto invalid;
-+
-+			assert(nr_cpus < MAX_NR_CPUS);
-+			cpumap[nr_cpus++] = (int)start_cpu;
-+		}
-+		if (*p)
-+			++p;
-+
-+		cpu_list = p;
++		write_output(buf, size);
 +	}
-+	if (nr_cpus > 0)
-+		return nr_cpus;
 +
-+	return default_cpu_map();
-+invalid:
-+	return -1;
++	buf = &data[old & md->mask];
++	size = head - old;
++	old += size;
++
++	write_output(buf, size);
++
++	md->prev = old;
++	mmap_write_tail(md, old);
++
++	return samples;
 +}
-diff --git a/tools/lib/lk/cpumap.h b/tools/lib/lk/cpumap.h
++
++unsigned long mmap_read_all(struct mmap_data *mmap_array, int nr_cpus,
++			    void (*write_output)(void *, size_t))
++{
++	int i;
++	unsigned long samples = 0;
++
++	for (i = 0; i < nr_cpus; i++) {
++		if (mmap_array[i].base)
++			samples += mmap_read(&mmap_array[i], write_output);
++	}
++
++	return samples;
++}
+diff --git a/tools/lib/perf/mmap.h b/tools/lib/perf/mmap.h
 new file mode 100644
-index 0000000..1d7bd56
+index 0000000..b6622e5
 --- /dev/null
-+++ b/tools/lib/lk/cpumap.h
-@@ -0,0 +1,7 @@
-+#ifndef __LK_CPUMAP_H
-+#define __LK_CPUMAP_H
++++ b/tools/lib/perf/mmap.h
+@@ -0,0 +1,15 @@
++#ifndef __PERF_MMAP_H
++#define __PERF_MMAP_H
 +
-+extern int read_cpu_map(const char *cpu_list);
-+extern int cpumap[];
-+
-+#endif /* __LK_CPUMAP_H */
-diff --git a/tools/lib/lk/ctype.c b/tools/lib/lk/ctype.c
-new file mode 100644
-index 0000000..aada3ac
---- /dev/null
-+++ b/tools/lib/lk/ctype.c
-@@ -0,0 +1,39 @@
-+/*
-+ * Sane locale-independent, ASCII ctype.
-+ *
-+ * No surprises, and works with signed and unsigned chars.
-+ */
-+#include "util.h"
-+
-+enum {
-+	S = GIT_SPACE,
-+	A = GIT_ALPHA,
-+	D = GIT_DIGIT,
-+	G = GIT_GLOB_SPECIAL,	/* *, ?, [, \\ */
-+	R = GIT_REGEX_SPECIAL,	/* $, (, ), +, ., ^, {, | * */
-+	P = GIT_PRINT_EXTRA,	/* printable - alpha - digit - glob - regex */
-+
-+	PS = GIT_SPACE | GIT_PRINT_EXTRA,
++struct mmap_data {
++	int			counter;
++	void			*base;
++	unsigned int		mask;
++	unsigned int		prev;
 +};
 +
-+unsigned char sane_ctype[256] = {
-+/*	0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F			    */
++unsigned long mmap_read_head(struct mmap_data *md);
++unsigned long mmap_read_all(struct mmap_data *, int,
++			    void (*write_output)(void *, size_t));
 +
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, S, S, 0, 0, S, 0, 0,		/*   0.. 15 */
-+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/*  16.. 31 */
-+	PS,P, P, P, R, P, P, P, R, R, G, R, P, P, R, P,		/*  32.. 47 */
-+	D, D, D, D, D, D, D, D, D, D, P, P, P, P, P, G,		/*  48.. 63 */
-+	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  64.. 79 */
-+	A, A, A, A, A, A, A, A, A, A, A, G, G, P, R, P,		/*  80.. 95 */
-+	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  96..111 */
-+	A, A, A, A, A, A, A, A, A, A, A, R, R, P, P, 0,		/* 112..127 */
-+	/* Nothing in the 128.. range */
-+};
-+
-+const char *graph_line =
-+	"_____________________________________________________________________"
-+	"_____________________________________________________________________";
-+const char *graph_dotted_line =
-+	"---------------------------------------------------------------------"
-+	"---------------------------------------------------------------------"
-+	"---------------------------------------------------------------------";
++#endif /* __PERF_MMAP_H */
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 3938844..7171f27 100644
+index 7171f27..6a7d019 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -385,13 +385,11 @@ LIB_H += util/trace-event.h
- LIB_H += util/probe-finder.h
- LIB_H += util/probe-event.h
- LIB_H += util/pstack.h
--LIB_H += util/cpumap.h
+@@ -328,7 +328,7 @@ export PERL_PATH
  
- LIB_OBJS += $(OUTPUT)util/abspath.o
- LIB_OBJS += $(OUTPUT)util/alias.o
- LIB_OBJS += $(OUTPUT)util/build-id.o
- LIB_OBJS += $(OUTPUT)util/config.o
--LIB_OBJS += $(OUTPUT)util/ctype.o
- LIB_OBJS += $(OUTPUT)util/environment.o
- LIB_OBJS += $(OUTPUT)util/event.o
- LIB_OBJS += $(OUTPUT)util/exec_cmd.o
-@@ -430,7 +428,6 @@ LIB_OBJS += $(OUTPUT)util/sort.o
- LIB_OBJS += $(OUTPUT)util/hist.o
- LIB_OBJS += $(OUTPUT)util/probe-event.o
- LIB_OBJS += $(OUTPUT)util/util.o
--LIB_OBJS += $(OUTPUT)util/cpumap.o
+ LIB_FILE=$(OUTPUT)libperf.a
  
- BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+-EXTRA_LIB_FILES=$(LIB_OUTPUT)libparsevent.a $(LIB_OUTPUT)lklib.a
++EXTRA_LIB_FILES=$(LIB_OUTPUT)libparsevent.a $(LIB_OUTPUT)lklib.a $(LIB_OUTPUT)lkperflib.a
  
+ LIB_H += ../../include/linux/perf_event.h
+ LIB_H += ../../include/linux/rbtree.h
 diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 7447269..e55aa5b 100644
+index e55aa5b..2111f7d 100644
 --- a/tools/perf/builtin-record.c
 +++ b/tools/perf/builtin-record.c
-@@ -21,7 +21,7 @@
+@@ -6,22 +6,21 @@
+  * later analysis via perf report.
+  */
+ #define _FILE_OFFSET_BITS 64
+-
+ #include "builtin.h"
+-
+ #include "perf.h"
+ 
+ #include "util/build-id.h"
+-#include <lk/util.h>
+ #include "util/parse-options.h"
+ #include "util/parse-events.h"
+-
+ #include "util/header.h"
+ #include "util/event.h"
  #include "util/debug.h"
  #include "util/session.h"
  #include "util/symbol.h"
--#include "util/cpumap.h"
-+#include <lk/cpumap.h>
++
+ #include <lk/cpumap.h>
++#include <lk/util.h>
++#include <perf/mmap.h>
  
  #include <unistd.h>
  #include <sched.h>
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 12dabd3..1f60239 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -45,7 +45,7 @@
- #include "util/event.h"
- #include "util/debug.h"
- #include "util/header.h"
--#include "util/cpumap.h"
-+#include <lk/cpumap.h>
- #include "util/thread.h"
+@@ -62,7 +61,7 @@ static bool			no_samples			=  false;
+ static bool			sample_address			=  false;
+ static bool			no_buildid			=  false;
  
- #include <sys/prctl.h>
+-static long			samples				=      0;
++static unsigned long		samples				=      0;
+ static u64			bytes_written			=      0;
+ 
+ static struct pollfd		*event_array;
+@@ -76,37 +75,8 @@ static off_t			post_processing_offset;
+ static struct perf_session	*session;
+ static const char		*cpu_list;
+ 
+-struct mmap_data {
+-	int			counter;
+-	void			*base;
+-	unsigned int		mask;
+-	unsigned int		prev;
+-};
+-
+ static struct mmap_data		mmap_array[MAX_NR_CPUS];
+ 
+-static unsigned long mmap_read_head(struct mmap_data *md)
+-{
+-	struct perf_event_mmap_page *pc = md->base;
+-	long head;
+-
+-	head = pc->data_head;
+-	rmb();
+-
+-	return head;
+-}
+-
+-static void mmap_write_tail(struct mmap_data *md, unsigned long tail)
+-{
+-	struct perf_event_mmap_page *pc = md->base;
+-
+-	/*
+-	 * ensure all reads are done before we write the tail out.
+-	 */
+-	/* mb(); */
+-	pc->data_tail = tail;
+-}
+-
+ static void advance_output(size_t size)
+ {
+ 	bytes_written += size;
+@@ -134,55 +104,6 @@ static int process_synthesized_event(event_t *event,
+ 	return 0;
+ }
+ 
+-static void mmap_read(struct mmap_data *md)
+-{
+-	unsigned int head = mmap_read_head(md);
+-	unsigned int old = md->prev;
+-	unsigned char *data = md->base + page_size;
+-	unsigned long size;
+-	void *buf;
+-	int diff;
+-
+-	/*
+-	 * If we're further behind than half the buffer, there's a chance
+-	 * the writer will bite our tail and mess up the samples under us.
+-	 *
+-	 * If we somehow ended up ahead of the head, we got messed up.
+-	 *
+-	 * In either case, truncate and restart at head.
+-	 */
+-	diff = head - old;
+-	if (diff < 0) {
+-		fprintf(stderr, "WARNING: failed to keep up with mmap data\n");
+-		/*
+-		 * head points to a known good entry, start there.
+-		 */
+-		old = head;
+-	}
+-
+-	if (old != head)
+-		samples++;
+-
+-	size = head - old;
+-
+-	if ((old & md->mask) + size != (head & md->mask)) {
+-		buf = &data[old & md->mask];
+-		size = md->mask + 1 - (old & md->mask);
+-		old += size;
+-
+-		write_output(buf, size);
+-	}
+-
+-	buf = &data[old & md->mask];
+-	size = head - old;
+-	old += size;
+-
+-	write_output(buf, size);
+-
+-	md->prev = old;
+-	mmap_write_tail(md, old);
+-}
+-
+ static volatile int done = 0;
+ static volatile int signr = -1;
+ 
+@@ -483,19 +404,6 @@ static struct perf_event_header finished_round_event = {
+ 	.type = PERF_RECORD_FINISHED_ROUND,
+ };
+ 
+-static void mmap_read_all(void)
+-{
+-	int i;
+-
+-	for (i = 0; i < nr_cpu; i++) {
+-		if (mmap_array[i].base)
+-			mmap_read(&mmap_array[i]);
+-	}
+-
+-	if (perf_header__has_feat(&session->header, HEADER_TRACE_INFO))
+-		write_output(&finished_round_event, sizeof(finished_round_event));
+-}
+-
+ static int __cmd_record(int argc, const char **argv)
+ {
+ 	int i, counter;
+@@ -729,10 +637,13 @@ static int __cmd_record(int argc, const char **argv)
+ 		close(go_pipe[1]);
+ 
+ 	for (;;) {
+-		int hits = samples;
++		unsigned long hits = samples;
+ 		int thread;
+ 
+-		mmap_read_all();
++		samples = mmap_read_all(mmap_array, nr_cpu, write_output);
++
++		if (perf_header__has_feat(&session->header, HEADER_TRACE_INFO))
++			write_output(&finished_round_event, sizeof(finished_round_event));
+ 
+ 		if (hits == samples) {
+ 			if (done)
 diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index 8d94e16..9813351 100644
+index 9813351..5fc6bd4 100644
 --- a/tools/perf/builtin-top.c
 +++ b/tools/perf/builtin-top.c
-@@ -28,7 +28,7 @@
- #include <linux/rbtree.h>
+@@ -24,11 +24,8 @@
+ #include "util/session.h"
+ #include "util/symbol.h"
+ #include "util/thread.h"
+-#include <lk/util.h>
+-#include <linux/rbtree.h>
  #include "util/parse-options.h"
  #include "util/parse-events.h"
--#include "util/cpumap.h"
-+#include <lk/cpumap.h>
+-#include <lk/cpumap.h>
  
  #include "util/debug.h"
  
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-deleted file mode 100644
-index 8ef8cef..0000000
---- a/tools/perf/util/cpumap.c
-+++ /dev/null
-@@ -1,114 +0,0 @@
--#include <lk/util.h>
--#include "../perf.h"
--#include "cpumap.h"
--#include <assert.h>
--#include <stdio.h>
--
--int cpumap[MAX_NR_CPUS];
--
--static int default_cpu_map(void)
--{
--	int nr_cpus, i;
--
--	nr_cpus = sysconf(_SC_NPROCESSORS_ONLN);
--	assert(nr_cpus <= MAX_NR_CPUS);
--	assert((int)nr_cpus >= 0);
--
--	for (i = 0; i < nr_cpus; ++i)
--		cpumap[i] = i;
--
--	return nr_cpus;
--}
--
--static int read_all_cpu_map(void)
--{
--	FILE *onlnf;
--	int nr_cpus = 0;
--	int n, cpu, prev;
--	char sep;
--
--	onlnf = fopen("/sys/devices/system/cpu/online", "r");
--	if (!onlnf)
--		return default_cpu_map();
--
--	sep = 0;
--	prev = -1;
--	for (;;) {
--		n = fscanf(onlnf, "%u%c", &cpu, &sep);
--		if (n <= 0)
--			break;
--		if (prev >= 0) {
--			assert(nr_cpus + cpu - prev - 1 < MAX_NR_CPUS);
--			while (++prev < cpu)
--				cpumap[nr_cpus++] = prev;
--		}
--		assert (nr_cpus < MAX_NR_CPUS);
--		cpumap[nr_cpus++] = cpu;
--		if (n == 2 && sep == '-')
--			prev = cpu;
--		else
--			prev = -1;
--		if (n == 1 || sep == '\n')
--			break;
--	}
--	fclose(onlnf);
--	if (nr_cpus > 0)
--		return nr_cpus;
--
--	return default_cpu_map();
--}
--
--int read_cpu_map(const char *cpu_list)
--{
--	unsigned long start_cpu, end_cpu = 0;
--	char *p = NULL;
--	int i, nr_cpus = 0;
--
--	if (!cpu_list)
--		return read_all_cpu_map();
--
--	if (!isdigit(*cpu_list))
--		goto invalid;
--
--	while (isdigit(*cpu_list)) {
--		p = NULL;
--		start_cpu = strtoul(cpu_list, &p, 0);
--		if (start_cpu >= INT_MAX
--		    || (*p != '\0' && *p != ',' && *p != '-'))
--			goto invalid;
--
--		if (*p == '-') {
--			cpu_list = ++p;
--			p = NULL;
--			end_cpu = strtoul(cpu_list, &p, 0);
--
--			if (end_cpu >= INT_MAX || (*p != '\0' && *p != ','))
--				goto invalid;
--
--			if (end_cpu < start_cpu)
--				goto invalid;
--		} else {
--			end_cpu = start_cpu;
--		}
--
--		for (; start_cpu <= end_cpu; start_cpu++) {
--			/* check for duplicates */
--			for (i = 0; i < nr_cpus; i++)
--				if (cpumap[i] == (int)start_cpu)
--					goto invalid;
--
--			assert(nr_cpus < MAX_NR_CPUS);
--			cpumap[nr_cpus++] = (int)start_cpu;
--		}
--		if (*p)
--			++p;
--
--		cpu_list = p;
--	}
--	if (nr_cpus > 0)
--		return nr_cpus;
--
--	return default_cpu_map();
--invalid:
--	return -1;
--}
-diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
-deleted file mode 100644
-index 3e60f56..0000000
---- a/tools/perf/util/cpumap.h
-+++ /dev/null
-@@ -1,7 +0,0 @@
--#ifndef __PERF_CPUMAP_H
--#define __PERF_CPUMAP_H
--
--extern int read_cpu_map(const char *cpu_list);
--extern int cpumap[];
--
--#endif /* __PERF_CPUMAP_H */
-diff --git a/tools/perf/util/ctype.c b/tools/perf/util/ctype.c
-deleted file mode 100644
-index 3507362..0000000
---- a/tools/perf/util/ctype.c
-+++ /dev/null
-@@ -1,39 +0,0 @@
--/*
-- * Sane locale-independent, ASCII ctype.
-- *
-- * No surprises, and works with signed and unsigned chars.
-- */
--#include "cache.h"
--
--enum {
--	S = GIT_SPACE,
--	A = GIT_ALPHA,
--	D = GIT_DIGIT,
--	G = GIT_GLOB_SPECIAL,	/* *, ?, [, \\ */
--	R = GIT_REGEX_SPECIAL,	/* $, (, ), +, ., ^, {, | * */
--	P = GIT_PRINT_EXTRA,	/* printable - alpha - digit - glob - regex */
--
--	PS = GIT_SPACE | GIT_PRINT_EXTRA,
+@@ -52,6 +49,11 @@
+ #include <sys/uio.h>
+ #include <sys/mman.h>
+ 
++#include <lk/util.h>
++#include <lk/cpumap.h>
++#include <perf/mmap.h>
++
++#include <linux/rbtree.h>
+ #include <linux/unistd.h>
+ #include <linux/types.h>
+ 
+@@ -1102,24 +1104,6 @@ static int event__process(event_t *event, struct perf_session *session)
+ 	return 0;
+ }
+ 
+-struct mmap_data {
+-	int			counter;
+-	void			*base;
+-	int			mask;
+-	unsigned int		prev;
 -};
 -
--unsigned char sane_ctype[256] = {
--/*	0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F			    */
+-static unsigned int mmap_read_head(struct mmap_data *md)
+-{
+-	struct perf_event_mmap_page *pc = md->base;
+-	int head;
 -
--	0, 0, 0, 0, 0, 0, 0, 0, 0, S, S, 0, 0, S, 0, 0,		/*   0.. 15 */
--	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		/*  16.. 31 */
--	PS,P, P, P, R, P, P, P, R, R, G, R, P, P, R, P,		/*  32.. 47 */
--	D, D, D, D, D, D, D, D, D, D, P, P, P, P, P, G,		/*  48.. 63 */
--	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  64.. 79 */
--	A, A, A, A, A, A, A, A, A, A, A, G, G, P, R, P,		/*  80.. 95 */
--	P, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A,		/*  96..111 */
--	A, A, A, A, A, A, A, A, A, A, A, R, R, P, P, 0,		/* 112..127 */
--	/* Nothing in the 128.. range */
--};
+-	head = pc->data_head;
+-	rmb();
 -
--const char *graph_line =
--	"_____________________________________________________________________"
--	"_____________________________________________________________________";
--const char *graph_dotted_line =
--	"---------------------------------------------------------------------"
--	"---------------------------------------------------------------------"
--	"---------------------------------------------------------------------";
+-	return head;
+-}
+-
+ static void perf_session__mmap_read_counter(struct perf_session *self,
+ 					    struct mmap_data *md)
+ {
+@@ -1137,7 +1121,7 @@ static void perf_session__mmap_read_counter(struct perf_session *self,
+ 	 * In either case, truncate and restart at head.
+ 	 */
+ 	diff = head - old;
+-	if (diff > md->mask / 2 || diff < 0) {
++	if ((unsigned)diff > md->mask / 2 || diff < 0) {
+ 		fprintf(stderr, "WARNING: failed to keep up with mmap data.\n");
+ 
+ 		/*
 -- 
 1.7.1
 
