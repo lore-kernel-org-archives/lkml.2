@@ -1,84 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934633Ab0HFRQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:16:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31372 "EHLO mx1.redhat.com"
+	id S934996Ab0HFRRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:17:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933385Ab0HFRQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:16:55 -0400
-Date: Fri, 6 Aug 2010 12:33:38 -0400
+	id S934138Ab0HFRQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:16:57 -0400
+Date: Fri, 6 Aug 2010 13:16:40 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: raven@themaw.net, viro@zeniv.linux.org.uk, jblunck@suse.de,
-        hch@infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount file systems
-Message-ID: <20100806163338.GA15068@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-22-git-send-email-vaurora@redhat.com> <20100713044701.GF3949@zeus.themaw.net> <20100716210226.GD21201@shell> <1279595537.2979.10.camel@localhost> <20100804215943.GA29353@shell> <E1OgxmE-0002x2-QW@pomaz-ex.szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100806171640.GC16599@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804224831.GB29353@shell> <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu> <20100805233019.GA30761@shell> <E1OhI5C-0005PG-3G@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1OgxmE-0002x2-QW@pomaz-ex.szeredi.hu>
+In-Reply-To: <E1OhI5C-0005PG-3G@pomaz-ex.szeredi.hu>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 12:34:18PM +0200, Miklos Szeredi wrote:
-> On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> > I went for MS_WHITEOUT and MS_FALLTHRU, and added the checks for the
-> > ops being non-null.
+On Fri, Aug 06, 2010 at 10:15:14AM +0200, Miklos Szeredi wrote:
+> On Thu, 5 Aug 2010, Valerie Aurora wrote:
+> > On Thu, Aug 05, 2010 at 12:36:55PM +0200, Miklos Szeredi wrote:
+> > > On Wed, 4 Aug 2010, Valerie Aurora wrote:
+> > > > --zYM0uCDKw75PZbzx
+> > > > Content-Type: text/plain; charset=us-ascii
+> > > > Content-Disposition: inline
+> > > > 
+> > > > On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
+> > > > > On Tue, 15 Jun 2010, Valerie Aurora wrote:
+> > > > > > Add support for fallthru directory entries to ext2.
+> > > > > 
+> > > > > If a previously used ext2 filesystem with is mounted again then
+> > > > > fallthroughs don't appear to work as expected.  Stat returns ENOENT
+> > > > > for these entries.
+> > > > > 
+> > > > > Can't see anything obviously wrong with the code.
+> > > > 
+> > > > Hm, I wrote one test case for this that worked (attached).  Can you
+> > > > give me more details on your test case?  Thanks,
+> > 
+> > Cool, thanks.  Yes, I suppose the fallthrus should be ignored if they
+> > don't fall through to anything.
 > 
-> This bit me.  Mount failing with EINVAL is a big PITA.
+> That's not the case here.  They _should_ fall through to ext3.img, yet
+> apparently after ovl.img being mounted again they don't seem to work.
 
-Thanks, I merged this.
+Oh, "mmount -b 8" == "mount -o union".  Is this the mmount from mtools
+or something else?
+
+> Note, ovl.img starts out as a completely empty filesystem.
+> 
+> The difference between your test case and mine mitght be that yours
+> not only reads the directory but stats the files as well, while mine
+> does not.
+
+Okay, I'll experiment more and see what I can do.
 
 -VAL
 
-
+> Thanks,
 > Miklos
 > 
 > 
-> Index: linux-2.6/fs/namespace.c
-> ===================================================================
-> --- linux-2.6.orig/fs/namespace.c	2010-08-05 11:06:56.000000000 +0200
-> +++ linux-2.6/fs/namespace.c	2010-08-05 11:39:19.000000000 +0200
-> @@ -1387,6 +1387,7 @@ check_mnt_union(struct path *mntpnt, str
->  		return 0;
->  
->  #ifndef CONFIG_UNION_MOUNT
-> +	printk(KERN_INFO "union mount: not supported by the kernel\n");
->  	return -EINVAL;
->  #endif
->  	for (p = lower_mnt; p; p = next_mnt(p, lower_mnt)) {
-> @@ -1396,17 +1397,23 @@ check_mnt_union(struct path *mntpnt, str
->  			return -EBUSY;
->  	}
->  
-> -	if (!IS_ROOT(mntpnt->dentry))
-> +	if (!IS_ROOT(mntpnt->dentry)) {
-> +		printk(KERN_INFO "union mount: not root\n");
->  		return -EINVAL;
-> +	}
->  
->  	if (mnt_flags & MNT_READONLY)
->  		return -EROFS;
->  
-> -	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT))
-> +	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT)) {
-> +		printk(KERN_INFO "union mount: whiteout not supported by fs\n");
->  		return -EINVAL;
-> +	}
->  
-> -	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU))
-> +	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU)) {
-> +		printk(KERN_INFO "union mount: fallthrough not supported by fs\n");
->  		return -EINVAL;
-> +	}
->  
->  	/* XXX top level mount should only be mounted once */
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> > > uml:~# mount -oloop -r ext3-2.img /mnt/img/
+> > > uml:~# mount -oloop -r ext3.img /mnt/img/
+> > > uml:~# losetup -f ovl.img 
+> > > uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> > > uml:~# "ls" /mnt/img
+> > > bunion  lost+found  union
+> > > uml:~# "ls" /mnt/img/union
+> > > 1  2  3
+> > > uml:~# "ls" /mnt/img/union/1
+> > > a  x
+> > > uml:~# umount /mnt/img/
+> > > uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> > > uml:~# ls -l /mnt/img/  
+> > > total 14
+> > > drwxr-xr-x 2 root root  1024 Aug  5 09:56 bunion
+> > > drwx------ 2 root root 12288 Aug  5 09:41 lost+found
+> > > drwxr-xr-x 3 root root  1024 Aug  5 09:56 union
+> > > uml:~# ls -l /mnt/img/union/
+> > > ls: cannot access /mnt/img/union/3: No such file or directory
+> > > ls: cannot access /mnt/img/union/2: No such file or directory
+> > > total 1
+> > > drwxr-xr-x 2 root root 1024 Aug  5 09:56 1
+> > > ?????????? ? ?    ?       ?            ? 2
+> > > ?????????? ? ?    ?       ?            ? 3
+> > > uml:~# ls -l /mnt/img/union/1
+> > > ls: cannot access /mnt/img/union/1/a: No such file or directory
+> > > ls: cannot access /mnt/img/union/1/x: No such file or directory
+> > > total 0
+> > > ?????????? ? ? ? ?            ? a
+> > > ?????????? ? ? ? ?            ? x
+> > > uml:~# 
+> > > 
+> > > Thanks,
+> > > Miklos
+> > 
