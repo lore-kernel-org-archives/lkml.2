@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935805Ab0HFTQX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:16:23 -0400
-Received: from kroah.org ([198.145.64.141]:58466 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935661Ab0HFS7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:59:55 -0400
-Date: Fri, 6 Aug 2010 11:58:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/34] 2.6.32.18-stable review
-Message-ID: <20100806185853.GA28270@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S935781Ab0HFTRQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:17:16 -0400
+Received: from acsinet14.oracle.com ([141.146.126.236]:32843 "EHLO
+	acsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935054Ab0HFTRK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:17:10 -0400
+X-Greylist: delayed 1055 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Aug 2010 15:17:09 EDT
+Date: Fri, 6 Aug 2010 09:29:02 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: David Howells <dhowells@redhat.com>
+Cc: smfrench@gmail.com, jlayton@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] DNS: Fixes for the DNS query module
+Message-Id: <20100806092902.6555a644.randy.dunlap@oracle.com>
+In-Reply-To: <20100806021352.29873.16452.stgit@warthog.procyon.org.uk>
+References: <20100806021347.29873.87087.stgit@warthog.procyon.org.uk>
+	<20100806021352.29873.16452.stgit@warthog.procyon.org.uk>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.32.18 release.
-There are 34 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+On Fri, 06 Aug 2010 03:13:52 +0100 David Howells wrote:
 
-Responses should be made by August 8, 2010, 18:00:00 UTC.
-Anything received after that time might be too late.
+> Fixes for the DNS query module, including:
+> 
+>  (1) Use 'negative' instead of '-ve' in the documentation.
+> 
+>  (2) Mark the kdoc comment with '/**' on dns_query().
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.32.18-rc1.gz
-and the diffstat can be found below.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-thanks,
+Thanks, David.
 
-greg k-h
 
- Makefile                                    |    2 +-
- arch/arm/plat-mxc/gpio.c                    |    8 +++
- arch/arm/plat-mxc/include/mach/gpio.h       |    1 +
- arch/parisc/kernel/firmware.c               |   12 +---
- arch/x86/xen/enlighten.c                    |    2 +-
- arch/x86/xen/time.c                         |   39 ------------
- drivers/edac/amd64_edac.c                   |    4 +-
- drivers/gpu/drm/i915/i915_dma.c             |    9 +++
- drivers/gpu/drm/i915/i915_drv.h             |    2 +
- drivers/gpu/drm/i915/intel_bios.c           |   65 +++++++++++++++++++
- drivers/gpu/drm/i915/intel_bios.h           |   17 +++++
- drivers/gpu/drm/i915/intel_lvds.c           |   90 ++++++++++-----------------
- drivers/misc/enclosure.c                    |    7 ++-
- drivers/net/e1000e/hw.h                     |    2 +-
- drivers/net/e1000e/netdev.c                 |   13 +++-
- drivers/net/wireless/ath/ath9k/eeprom_def.c |    2 +-
- drivers/net/wireless/ath/ath9k/hw.c         |   19 +++++-
- drivers/net/wireless/ath/ath9k/xmit.c       |   16 +++---
- drivers/net/wireless/iwlwifi/iwl-scan.c     |   18 +++---
- drivers/parisc/led.c                        |    6 +-
- drivers/ssb/driver_chipcommon_pmu.c         |   17 +++--
- drivers/ssb/pci.c                           |   20 +-----
- drivers/staging/comedi/Kconfig              |    5 ++
- drivers/staging/comedi/drivers/Makefile     |    4 +-
- fs/cifs/dns_resolve.c                       |    2 +-
- fs/cifs/dns_resolve.h                       |    4 +-
- fs/gfs2/dir.c                               |    2 +-
- fs/nfs/file.c                               |   14 ++++-
- fs/nfs/nfs4xdr.c                            |    2 +-
- fs/xfs/xfs_dfrag.c                          |    5 +-
- include/linux/ssb/ssb.h                     |    5 +-
- include/linux/ssb/ssb_driver_chipcommon.h   |   15 ++++-
- kernel/sched.c                              |    8 ++-
- kernel/slow-work.c                          |    2 +-
- mm/memory.c                                 |   16 ++++-
- net/9p/trans_fd.c                           |    2 +-
- net/wireless/mlme.c                         |    8 +-
- net/wireless/scan.c                         |    5 ++
- 38 files changed, 285 insertions(+), 185 deletions(-)
+> ---
+> 
+>  Documentation/networking/dns_resolver.txt |    6 +++---
+>  net/dns_resolver/dns_query.c              |    2 +-
+>  2 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/Documentation/networking/dns_resolver.txt b/Documentation/networking/dns_resolver.txt
+> index d8e0ce1..aefd1e6 100644
+> --- a/Documentation/networking/dns_resolver.txt
+> +++ b/Documentation/networking/dns_resolver.txt
+> @@ -96,9 +96,9 @@ implemented in the module can be called after doing:
+>       for the default query type it is just a list of comma-separated IPv4 and
+>       IPv6 addresses.  The caller must free the result.
+>  
+> -     The length of the result string is returned on success, and a -ve error
+> -     code is returned otherwise.  -EKEYREJECTED will be returned if the DNS
+> -     lookup failed.
+> +     The length of the result string is returned on success, and a negative
+> +     error code is returned otherwise.  -EKEYREJECTED will be returned if the
+> +     DNS lookup failed.
+>  
+>       If _expiry is non-NULL, the expiry time (TTL) of the result will be
+>       returned also.
+> diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+> index b33e1f7..03d5255 100644
+> --- a/net/dns_resolver/dns_query.c
+> +++ b/net/dns_resolver/dns_query.c
+> @@ -45,7 +45,7 @@
+>  
+>  #include "internal.h"
+>  
+> -/*
+> +/**
+>   * dns_query - Query the DNS
+>   * @type: Query type (or NULL for straight host->IP lookup)
+>   * @name: Name to look up
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
