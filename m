@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965681Ab0HFTdB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:33:01 -0400
-Received: from kroah.org ([198.145.64.141]:43566 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965165Ab0HFT2I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S965126Ab0HFT2I (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Aug 2010 15:28:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:16 2010
-Message-Id: <20100806192116.385584228@clark.site>
+Received: from kroah.org ([198.145.64.141]:43480 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935089Ab0HFT1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:27:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
+Message-Id: <20100806192114.950626346@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:20:03 -0700
+Date: Fri, 06 Aug 2010 12:19:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [22/36] cfg80211: dont get expired BSSes
+        Juergen Beisert <j.beisert@pengutronix.de>,
+        Daniel Mack <daniel@caiaq.de>, Baruch Siach <baruch@tkos.co.il>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: [06/36] arm/imx/gpio: add spinlock protection
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,52 +27,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Baruch Siach <baruch@tkos.co.il>
 
-commit ccb6c1360f8dd43303c659db718e7e0b24175db5 upstream.
+commit 14cb0deb66fcfca8fdbef75da8c84b5405a8c767 upstream.
 
-When kernel-internal users use cfg80211_get_bss()
-to get a reference to a BSS struct, they may end
-up getting one that would have been removed from
-the list if there had been any userspace access
-to the list. This leads to inconsistencies and
-problems.
+The GPIO registers need protection from concurrent access for operations that
+are not atomic.
 
-Fix it by making cfg80211_get_bss() ignore BSSes
-that cfg80211_bss_expire() would remove.
-
-Fixes http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2180
-
-Reported-by: Jiajia Zheng <jiajia.zheng@intel.com>
-Tested-by: Jiajia Zheng <jiajia.zheng@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Juergen Beisert <j.beisert@pengutronix.de>
+Cc: Daniel Mack <daniel@caiaq.de>
+Reported-by: rpkamiak@rockwellcollins.com
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/scan.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/plat-mxc/gpio.c              |    8 ++++++++
+ arch/arm/plat-mxc/include/mach/gpio.h |    1 +
+ 2 files changed, 9 insertions(+)
 
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -275,6 +275,7 @@ struct cfg80211_bss *cfg80211_get_bss(st
- {
- 	struct cfg80211_registered_device *dev = wiphy_to_dev(wiphy);
- 	struct cfg80211_internal_bss *bss, *res = NULL;
-+	unsigned long now = jiffies;
+--- a/arch/arm/plat-mxc/gpio.c
++++ b/arch/arm/plat-mxc/gpio.c
+@@ -215,13 +215,16 @@ static void _set_gpio_direction(struct g
+ 	struct mxc_gpio_port *port =
+ 		container_of(chip, struct mxc_gpio_port, chip);
+ 	u32 l;
++	unsigned long flags;
  
- 	spin_lock_bh(&dev->bss_lock);
++	spin_lock_irqsave(&port->lock, flags);
+ 	l = __raw_readl(port->base + GPIO_GDIR);
+ 	if (dir)
+ 		l |= 1 << offset;
+ 	else
+ 		l &= ~(1 << offset);
+ 	__raw_writel(l, port->base + GPIO_GDIR);
++	spin_unlock_irqrestore(&port->lock, flags);
+ }
  
-@@ -283,6 +284,10 @@ struct cfg80211_bss *cfg80211_get_bss(st
- 			continue;
- 		if (channel && bss->pub.channel != channel)
- 			continue;
-+		/* Don't get expired BSS structs */
-+		if (time_after(now, bss->ts + IEEE80211_SCAN_RESULT_EXPIRE) &&
-+		    !atomic_read(&bss->hold))
-+			continue;
- 		if (is_bss(&bss->pub, bssid, ssid, ssid_len)) {
- 			res = bss;
- 			kref_get(&res->ref);
+ static void mxc_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
+@@ -230,9 +233,12 @@ static void mxc_gpio_set(struct gpio_chi
+ 		container_of(chip, struct mxc_gpio_port, chip);
+ 	void __iomem *reg = port->base + GPIO_DR;
+ 	u32 l;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&port->lock, flags);
+ 	l = (__raw_readl(reg) & (~(1 << offset))) | (value << offset);
+ 	__raw_writel(l, reg);
++	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ static int mxc_gpio_get(struct gpio_chip *chip, unsigned offset)
+@@ -286,6 +292,8 @@ int __init mxc_gpio_init(struct mxc_gpio
+ 		port[i].chip.base = i * 32;
+ 		port[i].chip.ngpio = 32;
+ 
++		spin_lock_init(&port[i].lock);
++
+ 		/* its a serious configuration bug when it fails */
+ 		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
+ 
+--- a/arch/arm/plat-mxc/include/mach/gpio.h
++++ b/arch/arm/plat-mxc/include/mach/gpio.h
+@@ -36,6 +36,7 @@ struct mxc_gpio_port {
+ 	int virtual_irq_start;
+ 	struct gpio_chip chip;
+ 	u32 both_edges;
++	spinlock_t lock;
+ };
+ 
+ int mxc_gpio_init(struct mxc_gpio_port*, int);
 
 
