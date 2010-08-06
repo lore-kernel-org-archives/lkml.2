@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935710Ab0HFTAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:00:48 -0400
-Received: from kroah.org ([198.145.64.141]:58581 "EHLO coco.kroah.org"
+	id S965094Ab0HFTAx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:00:53 -0400
+Received: from kroah.org ([198.145.64.141]:58626 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965094Ab0HFTAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:35 2010
-Message-Id: <20100806185835.552418009@clark.site>
+	id S935697Ab0HFTA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:29 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
+Message-Id: <20100806185836.439426482@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:14 -0700
+Date: Fri, 06 Aug 2010 11:57:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [19/34] cfg80211: ignore spurious deauth
+        Zhao Yakui <yakui.zhao@intel.com>, Eric Anholt <eric@anholt.net>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [29/34] drm/i915: parse child device from VBT
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Zhao Yakui <yakui.zhao@intel.com>
 
-commit 643f82e32f14faf0d0944c804203a6681b6b0a1e upstream.
+commit 6363ee6f496eb7e3b3f78dc105e522c7b496089b upstream.
 
-Ever since mac80211/drivers are no longer
-fully in charge of keeping track of the
-auth status, trying to make them do so will
-fail. Instead of warning and reporting the
-deauthentication to userspace, cfg80211 must
-simply ignore it so that spurious
-deauthentications, e.g. before starting
-authentication, aren't seen by userspace as
-actual deauthentications.
+On some laptops there is no HDMI/DP. But the xrandr still reports
+several disconnected HDMI/display ports. In such case the user will be
+confused.
+ >DVI1 disconnected (normal left inverted right x axis y axis)
+ >DP1 disconnected (normal left inverted right x axis y axis)
+ >DVI2 disconnected (normal left inverted right x axis y axis)
+ >DP2 disconnected (normal left inverted right x axis y axis)
+ >DP3 disconnected (normal left inverted right x axis y axis)
 
-Reported-by: Paul Stewart <pstew@google.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch set is to use the child device parsed in VBT to decide whether
+the HDMI/DP/LVDS/TV should be initialized.
+
+Parse the child device from VBT.
+
+The device class type is also added for LFP, TV, HDMI, DP output.
+
+https://bugs.freedesktop.org/show_bug.cgi?id=22785
+
+Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+Reviewed-by: Adam Jackson <ajax@redhat.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+Acked-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/mlme.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/gpu/drm/i915/i915_dma.c   |    9 +++++
+ drivers/gpu/drm/i915/i915_drv.h   |    2 +
+ drivers/gpu/drm/i915/intel_bios.c |   65 ++++++++++++++++++++++++++++++++++++++
+ drivers/gpu/drm/i915/intel_bios.h |   17 +++++++++
+ 4 files changed, 93 insertions(+)
 
---- a/net/wireless/mlme.c
-+++ b/net/wireless/mlme.c
-@@ -43,10 +43,10 @@ void cfg80211_send_rx_auth(struct net_de
- 		}
+--- a/drivers/gpu/drm/i915/i915_dma.c
++++ b/drivers/gpu/drm/i915/i915_dma.c
+@@ -1526,6 +1526,15 @@ int i915_driver_unload(struct drm_device
  	}
  
--	WARN_ON(!done);
--
--	nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
--	cfg80211_sme_rx_auth(dev, buf, len);
-+	if (done) {
-+		nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
-+		cfg80211_sme_rx_auth(dev, buf, len);
-+	}
+ 	if (drm_core_check_feature(dev, DRIVER_MODESET)) {
++		/*
++		 * free the memory space allocated for the child device
++		 * config parsed from VBT
++		 */
++		if (dev_priv->child_dev && dev_priv->child_dev_num) {
++			kfree(dev_priv->child_dev);
++			dev_priv->child_dev = NULL;
++			dev_priv->child_dev_num = 0;
++		}
+ 		drm_irq_uninstall(dev);
+ 		vga_client_register(dev->pdev, NULL, NULL, NULL);
+ 	}
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -555,6 +555,8 @@ typedef struct drm_i915_private {
+ 	struct timer_list idle_timer;
+ 	bool busy;
+ 	u16 orig_clock;
++	int child_dev_num;
++	struct child_device_config *child_dev;
+ 	struct drm_connector *int_lvds_connector;
+ } drm_i915_private_t;
  
- 	wdev_unlock(wdev);
+--- a/drivers/gpu/drm/i915/intel_bios.c
++++ b/drivers/gpu/drm/i915/intel_bios.c
+@@ -362,6 +362,70 @@ parse_driver_features(struct drm_i915_pr
+ 		dev_priv->render_reclock_avail = true;
  }
+ 
++static void
++parse_device_mapping(struct drm_i915_private *dev_priv,
++		       struct bdb_header *bdb)
++{
++	struct bdb_general_definitions *p_defs;
++	struct child_device_config *p_child, *child_dev_ptr;
++	int i, child_device_num, count;
++	u16	block_size;
++
++	p_defs = find_section(bdb, BDB_GENERAL_DEFINITIONS);
++	if (!p_defs) {
++		DRM_DEBUG_KMS("No general definition block is found\n");
++		return;
++	}
++	/* judge whether the size of child device meets the requirements.
++	 * If the child device size obtained from general definition block
++	 * is different with sizeof(struct child_device_config), skip the
++	 * parsing of sdvo device info
++	 */
++	if (p_defs->child_dev_size != sizeof(*p_child)) {
++		/* different child dev size . Ignore it */
++		DRM_DEBUG_KMS("different child size is found. Invalid.\n");
++		return;
++	}
++	/* get the block size of general definitions */
++	block_size = get_blocksize(p_defs);
++	/* get the number of child device */
++	child_device_num = (block_size - sizeof(*p_defs)) /
++				sizeof(*p_child);
++	count = 0;
++	/* get the number of child device that is present */
++	for (i = 0; i < child_device_num; i++) {
++		p_child = &(p_defs->devices[i]);
++		if (!p_child->device_type) {
++			/* skip the device block if device type is invalid */
++			continue;
++		}
++		count++;
++	}
++	if (!count) {
++		DRM_DEBUG_KMS("no child dev is parsed from VBT \n");
++		return;
++	}
++	dev_priv->child_dev = kzalloc(sizeof(*p_child) * count, GFP_KERNEL);
++	if (!dev_priv->child_dev) {
++		DRM_DEBUG_KMS("No memory space for child device\n");
++		return;
++	}
++
++	dev_priv->child_dev_num = count;
++	count = 0;
++	for (i = 0; i < child_device_num; i++) {
++		p_child = &(p_defs->devices[i]);
++		if (!p_child->device_type) {
++			/* skip the device block if device type is invalid */
++			continue;
++		}
++		child_dev_ptr = dev_priv->child_dev + count;
++		count++;
++		memcpy((void *)child_dev_ptr, (void *)p_child,
++					sizeof(*p_child));
++	}
++	return;
++}
+ /**
+  * intel_init_bios - initialize VBIOS settings & find VBT
+  * @dev: DRM device
+@@ -413,6 +477,7 @@ intel_init_bios(struct drm_device *dev)
+ 	parse_lfp_panel_data(dev_priv, bdb);
+ 	parse_sdvo_panel_data(dev_priv, bdb);
+ 	parse_sdvo_device_mapping(dev_priv, bdb);
++	parse_device_mapping(dev_priv, bdb);
+ 	parse_driver_features(dev_priv, bdb);
+ 
+ 	pci_unmap_rom(pdev, bios);
+--- a/drivers/gpu/drm/i915/intel_bios.h
++++ b/drivers/gpu/drm/i915/intel_bios.h
+@@ -549,4 +549,21 @@ bool intel_init_bios(struct drm_device *
+ #define   SWF14_APM_STANDBY	0x1
+ #define   SWF14_APM_RESTORE	0x0
+ 
++/* Add the device class for LFP, TV, HDMI */
++#define	 DEVICE_TYPE_INT_LFP	0x1022
++#define	 DEVICE_TYPE_INT_TV	0x1009
++#define	 DEVICE_TYPE_HDMI	0x60D2
++#define	 DEVICE_TYPE_DP		0x68C6
++#define	 DEVICE_TYPE_eDP	0x78C6
++
++/* define the DVO port for HDMI output type */
++#define		DVO_B		1
++#define		DVO_C		2
++#define		DVO_D		3
++
++/* define the PORT for DP output type */
++#define		PORT_IDPB	7
++#define		PORT_IDPC	8
++#define		PORT_IDPD	9
++
+ #endif /* _I830_BIOS_H_ */
 
 
