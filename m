@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761508Ab0HFPMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:12:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45712 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756385Ab0HFPMs convert rfc822-to-8bit (ORCPT
+	id S1761515Ab0HFPOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:14:23 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49029 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757184Ab0HFPOV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:12:48 -0400
+	Fri, 6 Aug 2010 11:14:21 -0400
+Date: Fri, 6 Aug 2010 12:14:13 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Borislav Petkov <bp@amd64.org>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 7/9] perf: Export cpumap
+Message-ID: <20100806151413.GD13780@ghostprotocols.net>
+References: <1281104713-23141-1-git-send-email-bp@amd64.org>
+ <1281104713-23141-8-git-send-email-bp@amd64.org>
+ <20100806143912.GB13780@ghostprotocols.net>
+ <20100806144939.GD21628@aftab>
 MIME-Version: 1.0
-In-Reply-To: <20100806142727.GB4921@suse.de>
-References: <4C58A7AA.8020007@codeaurora.org> <20100803235631.GA17759@suse.de> 
-	<4C58AE15.6090900@codeaurora.org> <20100804000945.GA19729@suse.de> 
-	<4C58B1B6.9050005@quicinc.com> <AANLkTikVzh9=DvvUPbKmDeo6k2-pPVSnjH+GxAPdQFO4@mail.gmail.com> 
-	<20100806142727.GB4921@suse.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 6 Aug 2010 09:12:27 -0600
-X-Google-Sender-Auth: OXA_33957zUkUvW7pS_aCojDXaQ
-Message-ID: <AANLkTi=VbVed09=u-Ea0L8c_CWZ_CLLjWH9ZjD2dyg6Y@mail.gmail.com>
-Subject: Re: [RFC PATCH] platform: Faciliatate the creation of pseduo-platform 
-	busses
-To: Greg KH <gregkh@suse.de>
-Cc: Patrick Pannuto <ppannuto@quicinc.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "dtor@mail.ru" <dtor@mail.ru>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806144939.GD21628@aftab>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 8:27 AM, Greg KH <gregkh@suse.de> wrote:
-> On Thu, Aug 05, 2010 at 04:59:35PM -0600, Grant Likely wrote:
->> (On that point Greg, what is the reason for even having the
->> /sys/devices/platform/ parent?  Why not just let the platform devices
->> sit at the root of the device tree?  In the OF case (granted, I'm
->> biased) all of the platform_device registrations reflect the actual
->> device hierarchy expressed in the device tree data.)
->
-> If we sat them at the "root", there would be a bunch of them there.  I
-> don't know, we could drop the parent, I guess whoever created the
-> platform device oh so long ago, decided that it would look nicer to be
-> in this type of structure.
+Em Fri, Aug 06, 2010 at 04:49:39PM +0200, Borislav Petkov escreveu:
+> From: Arnaldo Carvalho de Melo <acme@infradead.org>
+> > Is this independent of previous patches? I.e. to be applied to current
+> > perf/core?
 
-Personally I'd rather see a meaningful structure used here.  Maybe
-having them all in the root will encourage people to find realistic
-parents for their platform devices.  :-)  Why don't I float a patch to
-remove this and see if anybody freaks out.  Should I wrap it with a
-CONFIG_ so that it can be configurable for a release or to, or just
-make it unconditional?
-
->> Now, having gone on this whole long tirade, it looks like having
->> separate platform bus types may not be the best approach after all.
->
-> I totally agree, and thanks for the detailed explaination, it saved me
-> from having to write up the same thing :)
+> I'm afraid not since earlier patches in the series introduce the
+> toplevel Makefile that glues all the different tools/lib/* parts
+> together. However, I could extract the toplevel Makefile parts and
+> cpumap.c and ctype.c if you really need it now - I've been doing this so
+> often lately that I could do it with my eyes closed now :o).
 
 :-)
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+We need to get back at merging that series, so some patch series
+installments, with say, 3 or 4 patches each, would be great.
+
+- Arnaldo
