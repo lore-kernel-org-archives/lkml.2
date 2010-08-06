@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab0HFEuy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 00:50:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40379 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452Ab0HFEuu (ORCPT
+	id S1758866Ab0HFEzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 00:55:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30707 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab0HFEzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 00:50:50 -0400
-Date: Fri, 6 Aug 2010 06:50:46 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org,
-        =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>,
-        linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 2/2 v2] usb gadget: don't save bind callback in struct
-	usb_configuration
-Message-ID: <20100806045046.GA13345@pengutronix.de>
-References: <op.vgyjjx1d7p4s8u@pikus> <1281001817-7807-1-git-send-email-u.kleine-koenig@pengutronix.de> <20100805223435.GC18619@kroah.com>
+	Fri, 6 Aug 2010 00:55:09 -0400
+Message-ID: <4C5B9469.3080409@kernel.org>
+Date: Thu, 05 Aug 2010 21:49:45 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+References: <20100803.203814.59697285.davem@davemloft.net> 	<AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com> 	<AANLkTinU4+tcm2O_BVBFkHSdnx7JEPtM4sw_s--qdUKC@mail.gmail.com> <AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
+In-Reply-To: <AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100805223435.GC18619@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C5B95A2.00FB,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 03:34:35PM -0700, Greg KH wrote:
-> On Thu, Aug 05, 2010 at 11:50:17AM +0200, Uwe Kleine-K√∂nig wrote:
-> > The bind function is most of the time only called at init time so there is no
-> > need to save a pointer to it in the configuration structure.
-> > 
-> > This fixes many section mismatches reported by modpost.
-> > 
-> > Signed-off-by: Uwe Kleine-K√∂nig <u.kleine-koenig@pengutronix.de>
-> > Cc: Micha≈Ç Nazarewicz <m.nazarewicz@samsung.com>
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > ---
-> > changes since v1:
+On 08/05/2010 07:15 PM, Linus Torvalds wrote:
+> On Thu, Aug 5, 2010 at 7:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>>  CC      drivers/net/ixgbe/ixgbe_main.o
+>> drivers/net/ixgbe/ixgbe_main.c: In function ëixgbe_select_queueí:
+>> drivers/net/ixgbe/ixgbe_main.c:6159: error: ëstruct ixgbe_fcoeí has no member named ëupí
 > 
-> I'm confused, can you resend what you want me to apply please?
-Will do.
- 
-> Do I need to drop Micha≈Ç's patch before applying yours?
-I double checked that now, and there is one thing in Micha≈Ç's patch that
-is not fixed in mine.  It's the hunk for drivers/usb/gadget/zero.c, as I
-didn't touch struct usb_composite_driver yet.  So expect three patches
-in reply to this mail.
+> Hmm. You must have some other version of that file than I do. Line
+> 6159 is in ixgbe_init_module() in my source tree.
+> 
+>                  Linus
 
-Best regards
-Uwe
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/net/ixgbe/ixgbe_main.c;h=7d6a415bcf885633999e10ed795df49876d6c47e;hb=HEAD
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-K√∂nig            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+6146 static u16 ixgbe_select_queue(struct net_device *dev, struct sk_buff *skb)
+6147 {
+6148         struct ixgbe_adapter *adapter = netdev_priv(dev);
+6149         int txq = smp_processor_id();
+6150
+6151 #ifdef IXGBE_FCOE
+6152         if ((skb->protocol == htons(ETH_P_FCOE)) ||
+6153             (skb->protocol == htons(ETH_P_FIP))) {
+6154                 if (adapter->flags & IXGBE_FLAG_FCOE_ENABLED) {
+6155                         txq &= (adapter->ring_feature[RING_F_FCOE].indices - 1);
+6156                         txq += adapter->ring_feature[RING_F_FCOE].mask;
+6157                         return txq;
+6158                 } else if (adapter->flags & IXGBE_FLAG_DCB_ENABLED) {
+6159                         txq = adapter->fcoe.up;
+6160                         return txq;
+6161                 }
+6162         }
+6163 #endif
