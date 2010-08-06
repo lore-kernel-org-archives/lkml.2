@@ -1,58 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934493Ab0HFKmR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 06:42:17 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:37316 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933047Ab0HFKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 06:42:12 -0400
-X-ASG-Debug-ID: 1281091331-49cd00030000-xx1T2L
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4C5BE701.1020800@fusionio.com>
-Date: Fri, 6 Aug 2010 12:42:09 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S935253Ab0HFKm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 06:42:57 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55134 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933047Ab0HFKmy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 06:42:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:cc:date:message-id:user-agent:mime-version
+         :content-type;
+        b=cG1x8oF3DeUffvMEIQ7oTCmRZhIy/Q+/2842ONHlKsR8zEwcw8Qtj13Mxa+sKCDloD
+         Z5f92aTyGnCI2LHxW9+xLDt9VL+wxk6svhZeKIIma/7EEomxIxnAeyWM2mIEdBsVJnKX
+         pNecRtyrYwEEX5hpEL1Gn6zTUvhhcda4hPIQ8=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: axboe@kernel.dk
+Subject: Resend: [PATCH] blkdev: fix blkdev_issue_zeroout return value
+CC: linux-kernel@vger.kernel.org
+Date: Fri, 06 Aug 2010 14:42:48 +0400
+Message-ID: <87vd7o2f9z.fsf@dmon-lap.sw.ru>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-ASG-Orig-Subj: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
-Subject: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
-References: <4C5BE640.2050801@fusionio.com>
-In-Reply-To: <4C5BE640.2050801@fusionio.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1281091331
-X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-06 12:38, Jens Axboe wrote:
-> Hi Linus,
-> 
-> This is the big round of updates for the IO bits for 2.6.36-rc1.
-> Not sure what happened on the excessive number of merges listed
-> as:
-> 
->       Merge branch 'for-2.6.36' into for-next
-> 
-> as these should 1) just have been regular fast forwards, and 2)
-> not be listed under 2.6.36 when the pull was in the other
-> direction. I tend to run -git git versions, so perhaps there
-> was a bad version in there. I was planning on reshuffling
-> the branch, but it's 3 months of churn and fixups in there and
-> that would take me a while. Let me know if you absolutely
-> hate it and I'll do it.
+--=-=-=
 
-Oh, and the 'master' merges into for-2.6.36 were all done to
-resolve conflicts. I had to do two just this week after you
-starting pulling in changes from others, as they were beyond
-git to automatically resolve. So there are no excessive merges,
-just the weird listings for for-2.6.36 -> for-next.
+Hi Jens,
+Seems that my first mail was missed somewhere.  
+I've found couple of trivial issues in blkdev_issue_zeroout()
+implementation. Unfortunately I've miss during initial testing phase
+because always called it with BARRIER|WAIT flags.
 
+
+--=-=-=
+Content-Disposition: inline; filename=patch-1
+
+>From 5eb4d762ad8fe146ee638fb1b2d7730db3e3ca4b Mon Sep 17 00:00:00 2001
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+Date: Tue, 27 Jul 2010 17:12:27 +0400
+Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
+
+- If function called without barrier option retvalue is incorrect
+- Add io_schedule() between loops
+
+
+ diff --git a/block/blk-lib.c b/block/blk-lib.c
+index d0216b9..a8d6a21 100644
+
+Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
+---
+ block/blk-lib.c |   15 +++++++++++----
+ 1 files changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index d0216b9..a8d6a21 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -157,7 +157,7 @@ static void bio_batch_end_io(struct bio *bio, int err)
+ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
+ {
+-	int ret = 0;
++	int ret;
+ 	struct bio *bio;
+ 	struct bio_batch bb;
+ 	unsigned int sz, issued = 0;
+@@ -175,11 +175,14 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
+ 			return ret;
+ 	}
+ submit:
++	ret = 0;
+ 	while (nr_sects != 0) {
+ 		bio = bio_alloc(gfp_mask,
+ 				min(nr_sects, (sector_t)BIO_MAX_PAGES));
+-		if (!bio)
++		if (!bio) {
++			ret = -ENOMEM;
+ 			break;
++		}
+ 
+ 		bio->bi_sector = sector;
+ 		bio->bi_bdev   = bdev;
+@@ -198,6 +201,7 @@ submit:
+ 			if (ret < (sz << 9))
+ 				break;
+ 		}
++		ret = 0;
+ 		issued++;
+ 		submit_bio(WRITE, bio);
+ 	}
+@@ -218,15 +222,18 @@ submit:
+ 		/* One of bios in the batch was completed with error.*/
+ 		ret = -EIO;
+ 
+-	if (ret)
++	if (ret && ret != -ENOMEM)
+ 		goto out;
+ 
+ 	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
+ 		ret = -EOPNOTSUPP;
+ 		goto out;
+ 	}
+-	if (nr_sects != 0)
++	if (nr_sects != 0) {
++		if (ret == -ENOMEM)
++			io_schedule();
+ 		goto submit;
++	}
+ out:
+ 	return ret;
+ }
 -- 
-Jens Axboe
+1.6.6.1
 
-
-Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
+--=-=-=--
