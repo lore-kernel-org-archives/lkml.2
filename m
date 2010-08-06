@@ -1,108 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965221Ab0HFXiC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 19:38:02 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43116 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965162Ab0HFXh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 19:37:59 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Arjan van de Ven <arjan@infradead.org>,
-        "linux-pm\@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: Re: [PATCH v2] pm: Add runtime PM statistics
-Organization: Deep Root Systems, LLC
-References: <20100710095254.5ab7291c@infradead.org>
-	<201007112326.07541.rjw@sisk.pl>
-	<20100711221646.35f11b70@infradead.org>
-	<201007132328.28853.rjw@sisk.pl> <4C3F2CEF.2090404@linux.intel.com>
-	<87bp9gpryb.fsf@deeprootsystems.com>
-	<4C5B5077.1060901@linux.intel.com>
-Date: Fri, 06 Aug 2010 16:37:56 -0700
-In-Reply-To: <4C5B5077.1060901@linux.intel.com> (Arjan van de Ven's message of
-	"Thu, 05 Aug 2010 16:59:51 -0700")
-Message-ID: <87wrs3mhwr.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S935723Ab0HFXi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 19:38:28 -0400
+Received: from fieldses.org ([174.143.236.118]:60728 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761596Ab0HFXiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 19:38:23 -0400
+Date: Fri, 6 Aug 2010 19:36:41 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-nfs@vger.kernel.org, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH 05/38] whiteout/NFSD: Don't return information about
+ whiteouts to userspace
+Message-ID: <20100806233641.GG29536@fieldses.org>
+References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
+ <1281134124-17041-6-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281134124-17041-6-git-send-email-vaurora@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arjan van de Ven <arjan@linux.intel.com> writes:
+On Fri, Aug 06, 2010 at 03:34:51PM -0700, Valerie Aurora wrote:
+> From: Jan Blunck <jblunck@suse.de>
+> 
+> Userspace isn't ready for handling another file type, so silently drop
+> whiteout directory entries before they leave the kernel.
+> 
+> Signed-off-by: Jan Blunck <jblunck@suse.de>
+> Signed-off-by: David Woodhouse <dwmw2@infradead.org>
+> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> Cc: linux-nfs@vger.kernel.org
+> Cc: "J. Bruce Fields" <bfields@fieldses.org>
 
-> On 8/5/2010 4:20 PM, Kevin Hilman wrote:
->> Arjan van de Ven<arjan@linux.intel.com>  writes:
->>
->>    
->>> +
->>> +/**
->>> + * update_pm_runtime_accounting - Update the time accounting of power
->>> states
->>> + * @dev: Device to update the accounting for
->>> + *
->>> + * In order to be able to have time accounting of the various power states
->>> + * (as used by programs such as PowerTOP to show the effectiveness of
->>> runtime
->>> + * PM), we need to track the time spent in each state.
->>> + * update_pm_runtime_accounting must be called each time before the
->>> + * runtime_status field is updated, to account the time in the old state
->>> + * correctly.
->>> + */
->>> +void update_pm_runtime_accounting(struct device *dev)
->>> +{
->>> +    unsigned long now = jiffies;
->>> +    int delta;
->>> +
->>> +    delta = now - dev->power.accounting_timestamp;
->>> +
->>> +    if (delta<  0)
->>> +        delta = 0;
->>> +
->>> +    dev->power.accounting_timestamp = now;
->>> +
->>> +    if (dev->power.disable_depth>  0)
->>> +        return;
->>> +
->>> +    if (dev->power.runtime_status == RPM_SUSPENDED)
->>> +        dev->power.suspended_jiffies += delta;
->>> +    else
->>> +        dev->power.active_jiffies += delta;
->>> +}
->>>      
->> By using jiffies, I think we might miss events in drivers that are doing
->> runtime PM transitions in short bursts.  On embedded systems with slow
->> HZ, there could potentially be lots of transitions between ticks.
->>
->> It would be nicer to use clocksource-based time so transitions between
->> jiffies could still be factored into the accounting.
->>    
->
-> you're absolutely right that the current mechanism is more "sampling
-> accuracy" (similar to most /proc info that shows up with top and
-> such).
->
-> on the "slow HZ".. there is no more valid reason to not set HZ to
-> 1000... 
+For what it's worth:
 
-Probably, especially with tickless idle, but not so sure there is total
-agreement on this in the embedded world though...
+	Acked-by: J. Bruce Fields <bfields@redhat.com>
 
-> so we'll get 1 msec sampling rate basically.
->
-> the problem with a more accurate clocksource is that it's
-> expensive. And more... the path to such clocksource itself might be
-> subject to power management ;-)
+(Like Neil I kinda hoped we wouldn't need the check in every callback,
+but probably you're right that it wouldn't be worth the extra layer of
+indirection.)
 
-What about using read_persistent_clock() then?  Then the arch/platform
-definition of this will determine the max sampling rate.
+--b.
 
-Kevin
-
-
-
+> Cc: Neil Brown <neilb@suse.de>
+> ---
+>  fs/compat.c       |    9 +++++++++
+>  fs/nfsd/nfs3xdr.c |    5 +++++
+>  fs/nfsd/nfs4xdr.c |    5 +++++
+>  fs/nfsd/nfsxdr.c  |    4 ++++
+>  fs/readdir.c      |    9 +++++++++
+>  5 files changed, 32 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/compat.c b/fs/compat.c
+> index 6490d21..7e7b3a4 100644
+> --- a/fs/compat.c
+> +++ b/fs/compat.c
+> @@ -912,6 +912,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
+>  	struct compat_old_linux_dirent __user *dirent;
+>  	compat_ulong_t d_ino;
+>  
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +
+>  	if (buf->result)
+>  		return -EINVAL;
+>  	d_ino = ino;
+> @@ -983,6 +986,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
+>  	compat_ulong_t d_ino;
+>  	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(compat_long_t));
+>  
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +
+>  	buf->error = -EINVAL;	/* only used if we fail.. */
+>  	if (reclen > buf->count)
+>  		return -EINVAL;
+> @@ -1072,6 +1078,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
+>  	int reclen = ALIGN(jj + namlen + 1, sizeof(u64));
+>  	u64 off;
+>  
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +
+>  	buf->error = -EINVAL;	/* only used if we fail.. */
+>  	if (reclen > buf->count)
+>  		return -EINVAL;
+> diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
+> index 2a533a0..9b96f5a 100644
+> --- a/fs/nfsd/nfs3xdr.c
+> +++ b/fs/nfsd/nfs3xdr.c
+> @@ -885,6 +885,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
+>  	int		elen;		/* estimated entry length in words */
+>  	int		num_entry_words = 0;	/* actual number of words */
+>  
+> +	if (d_type == DT_WHT) {
+> +		cd->common.err = nfs_ok;
+> +		return 0;
+> +	}
+> +
+>  	if (cd->offset) {
+>  		u64 offset64 = offset;
+>  
+> diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> index ac17a70..fb67254 100644
+> --- a/fs/nfsd/nfs4xdr.c
+> +++ b/fs/nfsd/nfs4xdr.c
+> @@ -2279,6 +2279,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
+>  		return 0;
+>  	}
+>  
+> +	if (d_type == DT_WHT) {
+> +		cd->common.err = nfs_ok;
+> +		return 0;
+> +	}
+> +
+>  	if (cd->offset)
+>  		xdr_encode_hyper(cd->offset, (u64) offset);
+>  
+> diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
+> index 4ce005d..0e57d4b 100644
+> --- a/fs/nfsd/nfsxdr.c
+> +++ b/fs/nfsd/nfsxdr.c
+> @@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
+>  			namlen, name, offset, ino);
+>  	 */
+>  
+> +	if (d_type == DT_WHT) {
+> +		cd->common.err = nfs_ok;
+> +		return 0;
+> +	}
+>  	if (offset > ~((u32) 0)) {
+>  		cd->common.err = nfserr_fbig;
+>  		return -EINVAL;
+> diff --git a/fs/readdir.c b/fs/readdir.c
+> index 7723401..3a48491 100644
+> --- a/fs/readdir.c
+> +++ b/fs/readdir.c
+> @@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
+>  	struct old_linux_dirent __user * dirent;
+>  	unsigned long d_ino;
+>  
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +
+>  	if (buf->result)
+>  		return -EINVAL;
+>  	d_ino = ino;
+> @@ -154,6 +157,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
+>  	unsigned long d_ino;
+>  	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(long));
+>  
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +
+>  	buf->error = -EINVAL;	/* only used if we fail.. */
+>  	if (reclen > buf->count)
+>  		return -EINVAL;
+> @@ -239,6 +245,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
+>  	struct getdents_callback64 * buf = (struct getdents_callback64 *) __buf;
+>  	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 1, sizeof(u64));
+>  
+> +	if (d_type == DT_WHT)
+> +		return 0;
+> +
+>  	buf->error = -EINVAL;	/* only used if we fail.. */
+>  	if (reclen > buf->count)
+>  		return -EINVAL;
+> -- 
+> 1.6.3.3
+> 
