@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965031Ab0HFSiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:38:07 -0400
-Received: from kroah.org ([198.145.64.141]:48730 "EHLO coco.kroah.org"
+	id S935582Ab0HFSim (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:38:42 -0400
+Received: from kroah.org ([198.145.64.141]:48712 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964953Ab0HFSgJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:09 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:03 2010
-Message-Id: <20100806183202.971529522@clark.site>
+	id S964946Ab0HFSgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
+Message-Id: <20100806183202.594463680@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:54 -0700
+Date: Fri, 06 Aug 2010 11:30:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [33/38] drm/radeon: add new pci ids
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [29/38] mac80211: avoid scheduling while atomic in mesh_rx_plink_frame
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +25,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: John W. Linville <linville@tuxdriver.com>
 
-commit 1297c05a8dfb568c689f057d51a65eebe5ddc86f upstream.
+commit c937019761a758f2749b1f3a032b7a91fb044753 upstream.
 
-New evergreen and r7xx ids.
+While mesh_rx_plink_frame holds sta->lock...
 
-Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+mesh_rx_plink_frame ->
+	mesh_plink_inc_estab_count ->
+		ieee80211_bss_info_change_notify
+
+...but ieee80211_bss_info_change_notify is allowed to sleep.  A driver
+taking advantage of that allowance can cause a scheduling while
+atomic bug.  Similar paths exist for mesh_plink_dec_estab_count,
+so work around those as well.
+
+http://bugzilla.kernel.org/show_bug.cgi?id=16099
+
+Also, correct a minor kerneldoc comment error (mismatched function names).
+
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/drm/drm_pciids.h |    7 +++++++
- 1 file changed, 7 insertions(+)
+ net/mac80211/mesh_plink.c |   42 +++++++++++++++++++++++++++++++-----------
+ 1 file changed, 31 insertions(+), 11 deletions(-)
 
---- a/include/drm/drm_pciids.h
-+++ b/include/drm/drm_pciids.h
-@@ -146,6 +146,8 @@
- 	{0x1002, 0x6888, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6889, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x688A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x688C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x688D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6898, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x6899, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x689c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_HEMLOCK|RADEON_NEW_MEMMAP}, \
-@@ -161,6 +163,7 @@
- 	{0x1002, 0x68be, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_JUNIPER|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68c0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68c1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x68c7, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68c8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68c9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68d8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_NEW_MEMMAP}, \
-@@ -174,6 +177,7 @@
- 	{0x1002, 0x68e8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68e9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68f1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x68f2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68f8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68f9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x68fe, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
-@@ -314,6 +318,7 @@
- 	{0x1002, 0x9456, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x945A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x945B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x945E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9460, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9462, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x946A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-@@ -324,6 +329,7 @@
- 	{0x1002, 0x9487, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9488, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9489, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x948A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x948F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9490, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9491, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-@@ -366,6 +372,7 @@
- 	{0x1002, 0x9553, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9555, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9557, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-+	{0x1002, 0x955f, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9580, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV630|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9581, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV630|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
- 	{0x1002, 0x9583, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV630|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+--- a/net/mac80211/mesh_plink.c
++++ b/net/mac80211/mesh_plink.c
+@@ -65,7 +65,6 @@ void mesh_plink_inc_estab_count(struct i
+ {
+ 	atomic_inc(&sdata->u.mesh.mshstats.estab_plinks);
+ 	mesh_accept_plinks_update(sdata);
+-	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ }
+ 
+ static inline
+@@ -73,7 +72,6 @@ void mesh_plink_dec_estab_count(struct i
+ {
+ 	atomic_dec(&sdata->u.mesh.mshstats.estab_plinks);
+ 	mesh_accept_plinks_update(sdata);
+-	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ }
+ 
+ /**
+@@ -115,7 +113,7 @@ static struct sta_info *mesh_plink_alloc
+ }
+ 
+ /**
+- * mesh_plink_deactivate - deactivate mesh peer link
++ * __mesh_plink_deactivate - deactivate mesh peer link
+  *
+  * @sta: mesh peer link to deactivate
+  *
+@@ -123,18 +121,23 @@ static struct sta_info *mesh_plink_alloc
+  *
+  * Locking: the caller must hold sta->lock
+  */
+-static void __mesh_plink_deactivate(struct sta_info *sta)
++static bool __mesh_plink_deactivate(struct sta_info *sta)
+ {
+ 	struct ieee80211_sub_if_data *sdata = sta->sdata;
++	bool deactivated = false;
+ 
+-	if (sta->plink_state == PLINK_ESTAB)
++	if (sta->plink_state == PLINK_ESTAB) {
+ 		mesh_plink_dec_estab_count(sdata);
++		deactivated = true;
++	}
+ 	sta->plink_state = PLINK_BLOCKED;
+ 	mesh_path_flush_by_nexthop(sta);
++
++	return deactivated;
+ }
+ 
+ /**
+- * __mesh_plink_deactivate - deactivate mesh peer link
++ * mesh_plink_deactivate - deactivate mesh peer link
+  *
+  * @sta: mesh peer link to deactivate
+  *
+@@ -142,9 +145,15 @@ static void __mesh_plink_deactivate(stru
+  */
+ void mesh_plink_deactivate(struct sta_info *sta)
+ {
++	struct ieee80211_sub_if_data *sdata = sta->sdata;
++	bool deactivated;
++
+ 	spin_lock_bh(&sta->lock);
+-	__mesh_plink_deactivate(sta);
++	deactivated = __mesh_plink_deactivate(sta);
+ 	spin_unlock_bh(&sta->lock);
++
++	if (deactivated)
++		ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ }
+ 
+ static int mesh_plink_frame_tx(struct ieee80211_sub_if_data *sdata,
+@@ -381,10 +390,16 @@ int mesh_plink_open(struct sta_info *sta
+ 
+ void mesh_plink_block(struct sta_info *sta)
+ {
++	struct ieee80211_sub_if_data *sdata = sta->sdata;
++	bool deactivated;
++
+ 	spin_lock_bh(&sta->lock);
+-	__mesh_plink_deactivate(sta);
++	deactivated = __mesh_plink_deactivate(sta);
+ 	sta->plink_state = PLINK_BLOCKED;
+ 	spin_unlock_bh(&sta->lock);
++
++	if (deactivated)
++		ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ }
+ 
+ 
+@@ -397,6 +412,7 @@ void mesh_rx_plink_frame(struct ieee8021
+ 	enum plink_event event;
+ 	enum plink_frame_type ftype;
+ 	size_t baselen;
++	bool deactivated;
+ 	u8 ie_len;
+ 	u8 *baseaddr;
+ 	__le16 plid, llid, reason;
+@@ -651,8 +667,9 @@ void mesh_rx_plink_frame(struct ieee8021
+ 		case CNF_ACPT:
+ 			del_timer(&sta->plink_timer);
+ 			sta->plink_state = PLINK_ESTAB;
+-			mesh_plink_inc_estab_count(sdata);
+ 			spin_unlock_bh(&sta->lock);
++			mesh_plink_inc_estab_count(sdata);
++			ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ 			mpl_dbg("Mesh plink with %pM ESTABLISHED\n",
+ 				sta->sta.addr);
+ 			break;
+@@ -684,8 +701,9 @@ void mesh_rx_plink_frame(struct ieee8021
+ 		case OPN_ACPT:
+ 			del_timer(&sta->plink_timer);
+ 			sta->plink_state = PLINK_ESTAB;
+-			mesh_plink_inc_estab_count(sdata);
+ 			spin_unlock_bh(&sta->lock);
++			mesh_plink_inc_estab_count(sdata);
++			ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ 			mpl_dbg("Mesh plink with %pM ESTABLISHED\n",
+ 				sta->sta.addr);
+ 			mesh_plink_frame_tx(sdata, PLINK_CONFIRM, sta->sta.addr, llid,
+@@ -702,11 +720,13 @@ void mesh_rx_plink_frame(struct ieee8021
+ 		case CLS_ACPT:
+ 			reason = cpu_to_le16(MESH_CLOSE_RCVD);
+ 			sta->reason = reason;
+-			__mesh_plink_deactivate(sta);
++			deactivated = __mesh_plink_deactivate(sta);
+ 			sta->plink_state = PLINK_HOLDING;
+ 			llid = sta->llid;
+ 			mod_plink_timer(sta, dot11MeshHoldingTimeout(sdata));
+ 			spin_unlock_bh(&sta->lock);
++			if (deactivated)
++				ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON);
+ 			mesh_plink_frame_tx(sdata, PLINK_CLOSE, sta->sta.addr, llid,
+ 					    plid, reason);
+ 			break;
 
 
