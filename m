@@ -1,135 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964816Ab0HFVBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 17:01:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45923 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761664Ab0HFVBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 17:01:48 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] NFS: Use kernel DNS resolver
-To: smfrench@gmail.com, jlayton@redhat.com
-Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>
-Date: Fri, 06 Aug 2010 22:01:39 +0100
-Message-ID: <20100806210139.11486.77708.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S935195Ab0HFVDx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 17:03:53 -0400
+Received: from xenotime.net ([72.52.115.56]:53270 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S935183Ab0HFVDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 17:03:49 -0400
+Message-ID: <49930.64.134.136.84.1281128621.squirrel@xenotime.net>
+In-Reply-To: <4C5C69F9.5020108@windriver.com>
+References: <20100806132758.6001d416.sfr@canb.auug.org.au>
+    <20100806115344.52c712b7.randy.dunlap@oracle.com>
+    <4C5C69F9.5020108@windriver.com>
+Date: Fri, 6 Aug 2010 14:03:41 -0700 (PDT)
+Subject: Re: linux-next: Tree for August 6 (kgdboc)
+From: rdunlap@xenotime.net
+To: "Jason Wessel" <jason.wessel@windriver.com>
+Cc: "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Stephen Rothwell" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        kgdb-bugreport@lists.sourceforge.net,
+        "Jesse Barnes" <jbarnes@virtuousgeek.org>
+User-Agent: SquirrelMail/1.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+On Fri, August 6, 2010 1:00 pm, Jason Wessel wrote:
+> On 08/06/2010 01:53 PM, Randy Dunlap wrote:
+>
+>> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
+>>
+>>
+>>> Hi all,
+>>>
+>>>
+>>> As the merge window is open, please do not add 2.6.37 material to
+>>> your linux-next included trees until after 2.6.36-rc1.
+>>>
+>>> Changes since 20100805:
+>>>
+>>
+>>
+>> ERROR: "con_debug_enter" [drivers/serial/kgdboc.ko] undefined!
+>> ERROR: "vc_cons" [drivers/serial/kgdboc.ko] undefined!
+>> ERROR: "fg_console" [drivers/serial/kgdboc.ko] undefined!
+>> ERROR: "con_debug_leave" [drivers/serial/kgdboc.ko] undefined!
+>>
+>>
+>> .config is attached.
+>>
+>>
+>> ---
+>> ~Randy
+>> *** Remember to use Documentation/SubmitChecklist when testing your code
+>> ***
+>>
+>
+>
+> Any possibility you can try this patch?
+>
+>
+> I'll push it into kgdb-next in just a few min, and I created another test
+> against this.
 
-Use the kernel DNS resolver to translate hostnames to IP addresses.  Create a
-new config option to choose between the legacy DNS resolver and the new
-resolver.
+Yes, that works for me.  Thanks.
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
 
- fs/nfs/Kconfig       |   16 ++++++++++++++++
- fs/nfs/dns_resolve.c |   24 ++++++++++++++++++++++++
- fs/nfs/dns_resolve.h |   12 ++++++++++++
- 3 files changed, 52 insertions(+), 0 deletions(-)
+> Thanks,
+> Jason.
+>
+>
+>
+> diff --git a/include/linux/console.h b/include/linux/console.h index
+> f76fc29..305e9c2 100644 --- a/include/linux/console.h
+> +++ b/include/linux/console.h
+> @@ -79,8 +79,13 @@ int register_con_driver(const struct consw *csw, int
+> first, int last); int unregister_con_driver(const struct consw *csw); int
+> take_over_console(const struct consw *sw, int first, int last, int
+> deflt); void give_up_console(const struct consw *sw); +#ifdef
+> CONFIG_HW_CONSOLE
+> int con_debug_enter(struct vc_data *vc); int con_debug_leave(void); +#else
+> +#define con_debug_enter()
+> +#define con_debug_leave()
+> +#endif
+>
+>
+> /* scroll */
+> #define SM_UP       (1)
+> --
 
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index a43d07e..10eebc5 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -100,3 +100,19 @@ config NFS_FSCACHE
- 	help
- 	  Say Y here if you want NFS data to be cached locally on disc through
- 	  the general filesystem cache manager
-+
-+config NFS_USE_LEGACY_DNS
-+	bool "Use the legacy NFS DNS resolver"
-+	depends on NFS_V4
-+	help
-+	  The kernel now provides a method for translating a host name into an
-+	  IP address.  Select Y here if you would rather use your own DNS
-+	  resolver script.
-+
-+	  If unsure, say N
-+
-+config NFS_USE_KERNEL_DNS
-+	bool
-+	depends on NFS_V4 && !NFS_USE_LEGACY_DNS
-+	select DNS_RESOLVER
-+	default y
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 76fd235..dba50a5 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -6,6 +6,29 @@
-  * Resolves DNS hostnames into valid ip addresses
-  */
- 
-+#ifdef CONFIG_NFS_USE_KERNEL_DNS
-+
-+#include <linux/sunrpc/clnt.h>
-+#include <linux/dns_resolver.h>
-+
-+ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
-+		struct sockaddr *sa, size_t salen)
-+{
-+	ssize_t ret;
-+	char *ip_addr = NULL;
-+	int ip_len;
-+
-+	ip_len = dns_query(NULL, name, namelen, NULL, &ip_addr, NULL);
-+	if (ip_len > 0)
-+		ret = rpc_pton(ip_addr, ip_len, sa, salen);
-+	else
-+		ret = -ESRCH;
-+	kfree(ip_addr);
-+	return ret;
-+}
-+
-+#else
-+
- #include <linux/hash.h>
- #include <linux/string.h>
- #include <linux/kmod.h>
-@@ -346,3 +369,4 @@ void nfs_dns_resolver_destroy(void)
- 	nfs_cache_unregister(&nfs_dns_resolve);
- }
- 
-+#endif
-diff --git a/fs/nfs/dns_resolve.h b/fs/nfs/dns_resolve.h
-index a3f0938..199bb55 100644
---- a/fs/nfs/dns_resolve.h
-+++ b/fs/nfs/dns_resolve.h
-@@ -6,8 +6,20 @@
- 
- #define NFS_DNS_HOSTNAME_MAXLEN	(128)
- 
-+
-+#ifdef CONFIG_NFS_USE_KERNEL_DNS
-+static inline int nfs_dns_resolver_init(void)
-+{
-+	return 0;
-+}
-+
-+static inline void nfs_dns_resolver_destroy(void)
-+{}
-+#else
- extern int nfs_dns_resolver_init(void);
- extern void nfs_dns_resolver_destroy(void);
-+#endif
-+
- extern ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
- 		struct sockaddr *sa, size_t salen);
- 
+
 
