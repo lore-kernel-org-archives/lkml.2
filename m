@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761352Ab0HFNcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 09:32:11 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:15362 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761333Ab0HFNcG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 09:32:06 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Fri, 06 Aug 2010 15:33:39 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv6 4/7] USB: gadget: composite: Better string override
- handling
-In-reply-to: <312769.16763.qm@web180307.mail.gq1.yahoo.com>
-To: Greg KH <greg@kroah.com>, USB <linux-usb@vger.kernel.org>,
-        David Brownell <david-b@pacbell.net>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        Vladimir Pankratov <scriptkid@mail.ru>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Message-id: <op.vg0qmdhd7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <312769.16763.qm@web180307.mail.gq1.yahoo.com>
+	id S1761360Ab0HFNhf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 09:37:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55924 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761334Ab0HFNhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 09:37:34 -0400
+Message-ID: <4C5C1011.6080209@kernel.org>
+Date: Fri, 06 Aug 2010 15:37:21 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] percpu: remove address_space attribute if !SMP
+References: <1281098768-5724-1-git-send-email-namhyung@gmail.com>	 <4C5C04D8.1080103@kernel.org> <1281099197.1655.11.camel@leonhard>	 <4C5C06A6.7070206@kernel.org> <1281101014.1655.20.camel@leonhard>
+In-Reply-To: <1281101014.1655.20.camel@leonhard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 06 Aug 2010 13:37:32 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Aug 2010 22:58:06 +0200, David Brownell <david-b@pacbell.net> wrote:
+Hello,
 
-> OK, I guess.  This version does not have the
-> hard-wired serial number some previous versions had.
+On 08/06/2010 03:23 PM, Namhyung Kim wrote:
+> Sure. :-)
+> Although I'm not sure that it is really needed, if so I'll do that.
 
-Great! Thanks!  At least it seems my patch makes sense now. :)
+Well, the whole __percpu markup thing is to detect misuse of percpu
+pointers.  I think it would definitely be better to have the sanity
+check for UP code too.  It's not like it's gonna cost any runtime
+overhead and all the needed pieces are already there.
+
+Thanks.
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+tejun
