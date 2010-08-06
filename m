@@ -1,74 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934954Ab0HFRW4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:22:56 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:50945 "EHLO e3.ny.us.ibm.com"
+	id S935012Ab0HFRYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:24:17 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:47634 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761621Ab0HFRWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:22:52 -0400
-Date: Fri, 6 Aug 2010 10:22:26 -0700
+	id S933884Ab0HFRYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:24:14 -0400
+Date: Fri, 6 Aug 2010 10:24:09 -0700
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
-        kevin granade <kevin.granade@gmail.com>,
-        Arve Hj?nnev?g <arve@android.com>,
+To: david@lang.hm
+Cc: kevin granade <kevin.granade@gmail.com>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
         Matthew Garrett <mjg59@srcf.ucam.org>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Arjan van de Ven <arjan@infradead.org>,
         linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
 Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100806172226.GH2432@linux.vnet.ibm.com>
+Message-ID: <20100806172409.GI2432@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100805203102.GN2447@linux.vnet.ibm.com>
- <AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
- <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
- <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
- <20100805230304.GQ2447@linux.vnet.ibm.com>
- <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
- <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
- <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com>
- <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
- <20100806123047.GE31326@sirena.org.uk>
+References: <20100805001716.GO24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
+ <20100805004802.GP24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
+ <20100805151211.GA10080@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
+ <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
+ <alpine.DEB.2.00.1008051312220.23543@asgard.lang.hm>
+ <20100805231936.GS2447@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008060111240.30564@asgard.lang.hm>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100806123047.GE31326@sirena.org.uk>
+In-Reply-To: <alpine.DEB.2.00.1008060111240.30564@asgard.lang.hm>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 01:30:48PM +0100, Mark Brown wrote:
-> On Thu, Aug 05, 2010 at 06:01:24PM -0700, david@lang.hm wrote:
-> > On Thu, 5 Aug 2010, Brian Swetland wrote:
+On Fri, Aug 06, 2010 at 01:29:57AM -0700, david@lang.hm wrote:
+> On Thu, 5 Aug 2010, Paul E. McKenney wrote:
 > 
-> >> Obviously not all clocks are stopped (the DSP and codec are powered
-> >> and clocked, for example), but yeah we can clock gate and power gate
-> >> the cpu and most other peripherals while audio is playing on a number
-> >> of ARM SoC designs available today (and the past few years).
+> >On Thu, Aug 05, 2010 at 01:26:18PM -0700, david@lang.hm wrote:
+> >>On Thu, 5 Aug 2010, kevin granade wrote:
+> >>
+> >>>On Thu, Aug 5, 2010 at 10:46 AM,  <david@lang.hm> wrote:
+> >>>>On Thu, 5 Aug 2010, Paul E. McKenney wrote:
+> >>>>
+> >>>>>On Wed, Aug 04, 2010 at 10:18:40PM -0700, david@lang.hm wrote:
+> >>>>>>
+> >>>>>>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+> >>>>>>>
+> >>>>>>>On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
+> >>>>>>>>
+> >>>>>>>>On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+> >>>>>
+> >>>>>[ . . . ]
+> >>>>>
+> >>>>however, in the case of Android I think the timeouts have to end up being
+> >>>>_much_ longer. Otherwise you have the problem of loading an untrusted book
+> >>>>reader app on the device and the device suspends while you are reading the
+> >>>>page.
+> >>>>
+> >>>>currently Android works around this by having a wakelock held whenever the
+> >>>>display is on. This seems backwards to me, the display should be on because
+> >>>>the system is not suspended, not the system is prevented from suspending
+> >>>>because the display is on.
+> >>>>
+> >>>>Rather than having the display be on causing a wavelock to be held (with the
+> >>>>code that is controls the display having a timeout for how long it leaves
+> >>>>the display on), I would invert this and have the timeout be based on system
+> >>>>activity, and when it decides the system is not active, turn off the display
+> >>>>(along with other things as it suspends)
+> >>>
+> >>>IIRC, this was a major point of their (Android's) power management
+> >>>policy.  User input of any kind would reset the "display active"
+> >>>timeout, which is the primary thing keeping random untrusted
+> >>>user-facing programs from being suspended while in use.  They seemed
+> >>>to consider this to be a special case in their policy, but from the
+> >>>kernel's point of view it is just another suspend blocker being held.
+> >>>
+> >>>I'm not sure this is the best use case to look at though, because
+> >>>since it is user-facing, the timeout durations are on a different
+> >>>scale than the ones they are really worried about.  I think another
+> >>>category of use case that they are worried about is:
+> >>>
+> >>>(in suspend) -> wakeup due to network -> process network activity -> suspend
+> >>>
+> >>>or an example that has been mentioned previously:
+> >>>
+> >>>(in suspend) -> wakeup due to alarm for audio processing -> process
+> >>>batch of audio -> suspend
+> >>
+> >>when you suspend the audio will shut off, so it's sleep ->wake ->
+> >>sleep, not suspend
+> >>
+> >>>In both of these cases, the display may never power on (phone might
+> >>>beep to indicate txt message or email, audio just keeps playing), so
+> >>>the magnitude of the "timeout" for suspending again should be very
+> >>>small.  Specifically, they don't want there to be a timeout at all, so
+> >>>as little time as possible time is spent out of suspend in addition to
+> >>>the time required to handle the event that caused wakeup.
+> >>
+> >>it really depnds on the frequency of the wakeups.
+> >>
+> >>if you get a network packet once every 5 min and need to wake to
+> >>process it, staying awake for 20 seconds after finishing procesing
+> >>is FAR more significant than if you get a network packet once every
+> >>hour. It's not just the factor of 20 that simple math would indicate
+> >>because the time in suspend eats power as well.
+> >>
+> >>I don't know real numbers, so these are made up for this example
+> >>
+> >>if suspend (with the cell live to receive packets) is 10ma average
+> >>current and full power is 500ma average current
+> >>
+> >>packets every 5 min with .1 sec wake time will eat ~13maH per hour
+> >>
+> >>packets every 5 min with 10 second wake time will eat ~37maH per hour
+> >>
+> >>packets every hour with .1 sec wake time will eat ~10maH per hour
+> >>
+> >>packets every hour with 10 sec wake time will eat ~11maH per hour
+> >>
+> >>so if you have frequent wakeups, staying awake 100 times as long
+> >>will cut your battery life to 1/3 what it was before.
+> >>
+> >>if your wakeups are rare, it's about a 10% hit to stay awake 100
+> >>times as long.
+> >>
+> >>there is a lot of room for tuning the timeouts here.
+> >
+> >Especially given different scenarios, for example, audio playback
+> >when the device is in airplane mode.  ;-)
 > 
-> > does this then mean that you have multiple variations of suspend?
+> hmm, I've been thinking and talking in terms of two classes of
+> cgroups, trusted and untrusted. I wonder if it would be possible to
+> set timeouts for each cgroup instead)
 > 
-> > for example, one where the audio stuff is left powered, and one where it  
-> > isn't?
+> the system would go to sleep IFF all cgroups have been idle longer
+> than the idle time (with -1 idle time being 'ignore this cgroup')
 > 
-> This was the core of the issue I was raising in the last thread about
-> this (the one following the rename to suspend blockers).  Essentially
-> what happens in a mainline context is that some subsystems can with
-> varying degress of optionality ignore some or all of the instruction to
-> suspend and keep bits of the system alive during suspend.
+> if this could be done you could set longer times for things designed
+> for user-interaction than you do for other purposes.
 > 
-> Those that stay alive will either have per subsystem handling or will be
-> outside the direct control of the kernel entirely (the modem is a good
-> example of the latter case in many systems - in terms of the software
-> it's essentially a parallel computer that's sitting in the system rather
-> than a perhiperal of the AP).
+> you could set media to 0 idle time (so that as soon as it finishes
+> processing the system can sleep until the next timer)
+> 
+> to do this, the code making the decision would have to be able to
+> find out the following fairly cheaply.
+> 
+> 1. for this cgroup, what was the last time something ran
+> 
+> 2. for this cgroup, what is the next timer set
+> 
+> it would be nice to get network traffic/connection stats.
+> 
+> so two questions.
+> 
+> first, what else would you need to get accumulated for the cgroup
+> 
+> second, is there a fairly easy way to have these stats available?
+> 
+> for the 'last time it ran' stat, this seems like you could have a
+> per-cpu variable per cgroup that's fairly cheap to update, but you
+> would need to take a global lock to read accuratly (the lock may be
+> expensive enough that it's worth trying to read the variables from
+> the other cpu without a lock, just to see if it's remotely possible
+> to sleep/suspend)
+> 
+> with timers, is it possible to have multiple timer wheels (one per
+> cgroup)?
 
-This underscores a basic difference between servers and these embedded
-devices.  When you suspend a server, it is doing nothing, because servers
-rely very heavily on the CPUs.  In contrast, many embedded devices can
-perform useful work even when the CPUs are completely powered down.
+I apologize in advance for what I am about to write, but...
+
+If you continue in this vein, you are likely to make suspend blockers
+look very simple and natural.  ;-)
 
 							Thanx, Paul
