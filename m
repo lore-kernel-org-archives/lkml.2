@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761175Ab0HFKVd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 06:21:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64951 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761118Ab0HFKVa convert rfc822-to-8bit (ORCPT
+	id S1761192Ab0HFKV4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 06:21:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19526 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761147Ab0HFKVy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 06:21:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=dBMbUqLCXNJedcO8+fHjfGyUOqZ7HZYCVP2xFPbULYaXyd+XIJpNMjRg0XPTJJY3Vj
-         NOcCwNTD7IKAOb5eyq+hKz/Ud710Bb886Wq7f+AJnZ/cK3pfZF7lZi3hq+Yeu7y4MM2g
-         KFjbMXYPycrgCq2fJqBp3OoHfwDtWyE870Ifk=
-Date: Fri, 6 Aug 2010 12:21:25 +0200
-From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
-	<ariveira@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Trivial. Fix typo in kconfig entry.
-Message-ID: <20100806122125.3e1768cf@varda>
-In-Reply-To: <20100806014328.GA22465@gondor.apana.org.au>
-References: <20100805112142.68d8926d@varda>
-	<20100806014328.GA22465@gondor.apana.org.au>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Fri, 6 Aug 2010 06:21:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,327,1278313200"; 
+   d="scan'208";a="542488600"
+From: "Tung, Chien Tin" <chien.tin.tung@intel.com>
+To: Dan Carpenter <error27@gmail.com>, Julia Lawall <julia@diku.dk>
+CC: "Latif, Faisal" <faisal.latif@intel.com>,
+        Roland Dreier <rolandd@cisco.com>,
+        "Hefty, Sean" <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Fri, 6 Aug 2010 03:21:31 -0700
+Subject: RE: [PATCH 4/42 v2] drivers/infiniband/hw/nes: Adjust confusing if
+ indentation
+Thread-Topic: [PATCH 4/42 v2] drivers/infiniband/hw/nes: Adjust confusing if
+ indentation
+Thread-Index: Acs0+Mx19U8Mv8dCR6SP2YfTHHBoaAAV5sDw
+Message-ID: <2EFBCAEF10980645BBCFB605689E08E9049F35CB95@azsmsx506.amr.corp.intel.com>
+References: <Pine.LNX.4.64.1008052217430.31692@ask.diku.dk>
+ <20100805234831.GK9031@bicker>
+In-Reply-To: <20100805234831.GK9031@bicker>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-El Fri, 6 Aug 2010 09:43:28 +0800
-Herbert Xu <herbert@gondor.apana.org.au> escribió:
-
-> On Thu, Aug 05, 2010 at 11:21:42AM +0200, Alejandro Riveira Fernández wrote:
-> > 
-> >  This fixes a typo in file crypto/Kconfig.
+> I think the white space is meant to look like this.  I did look at
+> whether the "sq_cqes = 0;" should only be done if netif_queue_stopped().
+> In the end I decided this was what was intended, but it would be
+> better if someone more familiar with the code reviewed it.
 > 
-> Thanks for the patch.  As I've just negated this option, the typo
-> text no longer exists in the crypto-2.6 tree.
+> Reported-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+> ---
+> v2: changed different indents
 
- Fair enough.
+Looks to me.  Thanks for the patch.
 
-> 
-> Cheers,
+Acked-by: Chien Tung <chien.tin.tung@intel.com>
+
+Chien
+
+
+
+
