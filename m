@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935706Ab0HFTNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:13:42 -0400
-Received: from kroah.org ([198.145.64.141]:58526 "EHLO coco.kroah.org"
+	id S935814Ab0HFTOc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:14:32 -0400
+Received: from kroah.org ([198.145.64.141]:58484 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965072Ab0HFTAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:05 -0400
+	id S935669Ab0HFS77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:59:59 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:34 2010
-Message-Id: <20100806185834.549293320@clark.site>
+Message-Id: <20100806185834.089377858@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:03 -0700
+Date: Fri, 06 Aug 2010 11:56:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kyle McMartin <kyle@parisc-linux.org>
-Subject: [08/34] parisc: pass through \t to early (iodc) console
+        Benny Halevy <bhalevy@panasas.com>,
+        "J. Bruce Fields" <bfields@citi.umich.edu>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>
+Subject: [03/34] Re: acl trouble after upgrading ubuntu
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kyle McMartin <kyle@mcmartin.ca>
+From: J. Bruce Fields <bfields@fieldses.org>
 
-commit d9b68e5e88248bb24fd4e455588bea1d56108fd6 upstream.
+commit d327cf7449e6fd5cbac784c641770e9366faa386 upstream.
 
-The firmware handles '\t' internally, so stop trying to emulate it
-(which, incidentally, had a bug in it.)
+Subject: [03/34] nfs: fix acl decoding
 
-Fixes a really weird hang at bootup in rcu_bootup_announce, which,
-as far as I can tell, is the first printk in the core kernel to use
-a tab as the first character.
+Commit 28f566942c6b1d929f5e240e69e7081b77b238d3 "NFS: use dynamically
+computed compound_hdr.replen for xdr_inline_pages offset" accidentally
+changed the amount of space to allow for the acl reply, resulting in an
+IO error on attempts to get an acl.
 
-Signed-off-by: Kyle McMartin <kyle@parisc-linux.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Paul Rudin <paul@rudin.co.uk>
+Cc: Benny Halevy <bhalevy@panasas.com>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Cc: Jeremy Kerr <jeremy.kerr@canonical.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- arch/parisc/kernel/firmware.c |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
-
---- a/arch/parisc/kernel/firmware.c
-+++ b/arch/parisc/kernel/firmware.c
-@@ -1123,7 +1123,6 @@ static char __attribute__((aligned(64)))
-  */
- int pdc_iodc_print(const unsigned char *str, unsigned count)
- {
--	static int posx;        /* for simple TAB-Simulation... */
- 	unsigned int i;
- 	unsigned long flags;
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -2096,7 +2096,7 @@ nfs4_xdr_enc_getacl(struct rpc_rqst *req, __be32 *p,
+ 	encode_compound_hdr(&xdr, req, &hdr);
+ 	encode_sequence(&xdr, &args->seq_args, &hdr);
+ 	encode_putfh(&xdr, args->fh, &hdr);
+-	replen = hdr.replen + nfs4_fattr_bitmap_maxsz + 1;
++	replen = hdr.replen + op_decode_hdr_maxsz + nfs4_fattr_bitmap_maxsz + 1;
+ 	encode_getattr_two(&xdr, FATTR4_WORD0_ACL, 0, &hdr);
  
-@@ -1133,19 +1132,12 @@ int pdc_iodc_print(const unsigned char *
- 			iodc_dbuf[i+0] = '\r';
- 			iodc_dbuf[i+1] = '\n';
- 			i += 2;
--			posx = 0;
- 			goto print;
--		case '\t':
--			while (posx & 7) {
--				iodc_dbuf[i] = ' ';
--				i++, posx++;
--			}
--			break;
- 		case '\b':	/* BS */
--			posx -= 2;
-+			i--; /* overwrite last */
- 		default:
- 			iodc_dbuf[i] = str[i];
--			i++, posx++;
-+			i++;
- 			break;
- 		}
- 	}
+ 	xdr_inline_pages(&req->rq_rcv_buf, replen << 2,
 
 
