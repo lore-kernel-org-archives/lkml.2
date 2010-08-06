@@ -1,335 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935526Ab0HFKoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 06:44:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47371 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934650Ab0HFKoE (ORCPT
+	id S935522Ab0HFKuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 06:50:19 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:58555 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934475Ab0HFKuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 06:44:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=E5XxHf1bE/txrHYeDoU7cPIleORAccOD9bZB7iROaLLJsnwHtFeulAZg/rLx2JkouA
-         QosnWpQX7rADDdDbxjfdfCpbbouzsmVRBPX2igmbFALdgS1pLYlfCqGUir5b7qFk5sao
-         lxRFDTJYQAdOm9uKfz7rj/Y/893nTRiCEvLNI=
-From: Neil Munro <neilmunro@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Niadh <neilmunro@gmail.com>
-Subject: [PATCH 985/985] Staging: RT2860: Fixed All errors in rt_linux.h
-Date: Fri,  6 Aug 2010 11:49:50 +0100
-Message-Id: <1281091790-3721-1-git-send-email-neilmunro@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
+	Fri, 6 Aug 2010 06:50:11 -0400
+Message-ID: <4C5BE8DB.5030503@linux.vnet.ibm.com>
+Date: Fri, 06 Aug 2010 12:50:03 +0200
+From: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Josef Bacik <josef@redhat.com>, hch@infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: PATCH 3/6 - direct-io: do not merge logically non-contiguous
+ requests
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Niadh <neilmunro@gmail.com>
+On Fri, May 21, 2010 at 15:37:45AM -0400, Josef Bacik wrote:
+> On Fri, May 21, 2010 at 11:21:11AM -0400, Christoph Hellwig wrote:
+>> On Wed, May 19, 2010 at 04:24:51PM -0400, Josef Bacik wrote:
+>> > Btrfs cannot handle having logically non-contiguous requests submitted.  For
+>> > example if you have
+>> > 
+>> > Logical:  [0-4095][HOLE][8192-12287]
+>> > Physical: [0-4095]      [4096-8191]
+>> > 
+>> > Normally the DIO code would put these into the same BIO's.  The problem is we
+>> > need to know exactly what offset is associated with what BIO so we can do our
+>> > checksumming and unlocking properly, so putting them in the same BIO doesn't
+>> > work.  So add another check where we submit the current BIO if the physical
+>> > blocks are not contigous OR the logical blocks are not contiguous.
+>> 
+>> This gets us slightly less optimal I/O patters for other filesystems in
+>> this case.  But it's probably corner case enough to not care and make it
+>> the default.
+>> 
+>> But please make the comment in the comment as verbose as the commit
+>> message so that people understand why we're doing this when reading the
+>> code in a few years.
+>> 
+>
+>So after I sent this I thought that maybe I could make that test _only_ if we
+>provide submit_bio, that way it only affects btrfs and not everybody else, would
+>you prefer I do something like that?  I will make the commit log a bit more
+>verbose.  Thanks,
+>
+>Josef
 
-Removed all errors from this file the warnings however remain.
+I guess was hit by those "slightly less optimal I/O patters for other
+file-systems" while measuring performance with iozone sequential using
+direct I/O with 64k requests.
+First I only saw increased cpu costs and a huge number of request
+merges, analyzing that brought me to this patch (reverting fixes the
+issue).
 
-Signed-off-by: Neil Munro <neilmunro@gmail.com>
----
- drivers/staging/rt2860/rt_linux.h |  126 +++++++++++++++++-------------------
- 1 files changed, 60 insertions(+), 66 deletions(-)
+Therefore I'd like to come back to that suggested "that way it only
+affects btrfs" solution.
 
-diff --git a/drivers/staging/rt2860/rt_linux.h b/drivers/staging/rt2860/rt_linux.h
-index b370fb2..80a7ed8 100644
---- a/drivers/staging/rt2860/rt_linux.h
-+++ b/drivers/staging/rt2860/rt_linux.h
-@@ -101,20 +101,19 @@ extern const struct iw_handler_def rt28xx_iw_handler_def;
- /***********************************************************************************
-  *	OS Specific definitions and data structures
-  ***********************************************************************************/
--typedef int (*HARD_START_XMIT_FUNC) (struct sk_buff * skb,
--				     struct net_device * net_dev);
-+typedef int (*HARD_START_XMIT_FUNC) (struct sk_buff *skb,
-+				     struct net_device *net_dev);
+What happens on my system is that all direct I/O requests from 
+userspace are broken up in 4k bio's and then re-merged
+by the ioscheduler before reaching the device driver.
+Eventually that means +30% cpu cost for 64k, probably much more for
+larger request sizes - Throughput is only affected if there is no
+cpu left to spare for this additional overhead.
 
- #ifdef RTMP_MAC_PCI
- #ifndef PCI_DEVICE
--#define PCI_DEVICE(vend,dev) \
-+#define PCI_DEVICE(vend, dev) \
- 	.vendor = (vend), .device = (dev), \
- 	.subvendor = PCI_ANY_ID, .subdevice = PCI_ANY_ID
- #endif /* PCI_DEVICE // */
- #endif /* RTMP_MAC_PCI // */
+A blktrace log is probably the best way to explain this in detail:
+(sequential 64k requests using direct I/O reading a 2Gb file on a
+ext2 file system)
 
- #define RT_MOD_INC_USE_COUNT() \
--	if (!try_module_get(THIS_MODULE)) \
--	{ \
-+	if (!try_module_get(THIS_MODULE)) {\
- 		DBGPRINT(RT_DEBUG_ERROR, ("%s: cannot reserve module\n", __func__)); \
- 		return -1; \
- 	}
-@@ -142,8 +141,8 @@ struct iw_statistics *rt28xx_get_wireless_stats(IN struct net_device *net_dev);
- #define NDIS_STATUS_INVALID_DATA				0x02
- #define NDIS_STATUS_RESOURCES                   0x03
+Application summary for iozone :
+BAD:                                      GOOD:
+iozone (18572, ...)                       iozone (18482, ...)                   
+ Reads Queued:     506,222,    2,024MiB    Reads Queued:      37,851, 2,040MiB 
+ Read Dispatches:   33,110,    2,024MiB    Read Dispatches:   33,368, 2,040MiB 
+ Reads Requeued:         0                 Reads Requeued:         0            
+ Reads Completed:   15,072,  911,112KiB    Reads Completed:    9,814, 588,708KiB 
+ Read Merges:      473,111,    1,892MiB    Read Merges:        4,483,  
+17,936KiB 
+ IO unplugs:        32,108                 IO unplugs:        32,364            
+ Allocation wait:       32                 Allocation wait:       26            
+ Dispatch wait:        338                 Dispatch wait:        216            
+ Completion wait:    1,426                 Completion wait:    1,362 
 
--#define NDIS_SET_PACKET_STATUS(_p, _status)			do{} while(0)
--#define NdisWriteErrorLogEntry(_a, _b, _c, _d)		do{} while(0)
-+#define NDIS_SET_PACKET_STATUS (_p, _status)			do {} while (0)
-+#define NdisWriteErrorLogEntry (_a, _b, _c, _d)		do {} while (0)
+As a full stream of blktrace events it looks like that:
+GOOD:
+  8,0    3        3     0.002964189 18400  A   R 65960 + 128 <- (8,1) 65928
+  8,0    3        4     0.002964345 18400  Q   R 65960 + 128 [iozone]
+  8,0    3        5     0.002964814 18400  G   R 65960 + 128 [iozone]
+  8,0    3        6     0.002965533 18400  P   N [iozone]
+  8,0    3        7     0.002965689 18400  I   R 65960 + 128 (     875) [iozone]
+  8,0    3        8     0.002966095 18400  U   N [iozone] 1
+  8,0    3        9     0.002966501 18400  D   R 65960 + 128 (     812) [iozone]
+  8,0    3       11     0.003599064 18401  C   R 65960 + 128 (  632563) [0]
 
- /* statistics counter */
- #define STATS_INC_RX_PACKETS(_pAd, _dev)
-@@ -207,7 +206,7 @@ struct os_lock {
- }
+BAD:
+  8,0    1      226     0.002707250 18572  A   R 148008 + 8 <- (8,1) 147976
+  8,0    1      227     0.002707406 18572  Q   R 148008 + 8 [iozone]
+  8,0    1      228     0.002707875 18572  G   R 148008 + 8 [iozone]
+  8,0    1      229     0.002708563 18572  P   N [iozone]
+  8,0    1      230     0.002708813 18572  I   R 148008 + 8 (     938) [iozone]
+  8,0    1      231     0.002709469 18572  A   R 148016 + 8 <- (8,1) 147984
+  8,0    1      232     0.002709625 18572  Q   R 148016 + 8 [iozone]
+  8,0    1      233     0.002709875 18572  M   R 148016 + 8 [iozone]
+  8,0    1      234     0.002710594 18572  A   R 148024 + 8 <- (8,1) 147992
+  8,0    1      235     0.002710750 18572  Q   R 148024 + 8 [iozone]
+  8,0    1      236     0.002710969 18572  M   R 148024 + 8 [iozone]
+  8,0    1      237     0.002711563 18572  A   R 148032 + 8 <- (8,1) 148000
+  8,0    1      238     0.002711750 18572  Q   R 148032 + 8 [iozone]
+  8,0    1      239     0.002712063 18572  M   R 148032 + 8 [iozone]
+  8,0    1      240     0.002712625 18572  A   R 148040 + 8 <- (8,1) 148008
+  8,0    1      241     0.002712750 18572  Q   R 148040 + 8 [iozone]
+  8,0    1      242     0.002713000 18572  M   R 148040 + 8 [iozone]
+  8,0    1      243     0.002713531 18572  A   R 148048 + 8 <- (8,1) 148016
+  8,0    1      244     0.002713750 18572  Q   R 148048 + 8 [iozone]
+  8,0    1      245     0.002713969 18572  M   R 148048 + 8 [iozone]
+  8,0    1      246     0.002714531 18572  A   R 148056 + 8 <- (8,1) 148024
+  8,0    1      247     0.002714656 18572  Q   R 148056 + 8 [iozone]
+  8,0    1      248     0.002714938 18572  M   R 148056 + 8 [iozone]
+  8,0    1      249     0.002715500 18572  A   R 148064 + 8 <- (8,1) 148032
+  8,0    1      250     0.002715625 18572  Q   R 148064 + 8 [iozone]
+  8,0    1      251     0.002715844 18572  M   R 148064 + 8 [iozone]
+  8,0    1      252     0.002716438 18572  A   R 148072 + 8 <- (8,1) 148040
+  8,0    1      253     0.002716625 18572  Q   R 148072 + 8 [iozone]
+  8,0    1      254     0.002716844 18572  M   R 148072 + 8 [iozone]
+  8,0    1      255     0.002717375 18572  A   R 148080 + 8 <- (8,1) 148048
+  8,0    1      256     0.002717531 18572  Q   R 148080 + 8 [iozone]
+  8,0    1      257     0.002717750 18572  M   R 148080 + 8 [iozone]
+  8,0    1      258     0.002718344 18572  A   R 148088 + 8 <- (8,1) 148056
+  8,0    1      259     0.002718500 18572  Q   R 148088 + 8 [iozone]
+  8,0    1      260     0.002718719 18572  M   R 148088 + 8 [iozone]
+  8,0    1      261     0.002719250 18572  A   R 148096 + 8 <- (8,1) 148064
+  8,0    1      262     0.002719406 18572  Q   R 148096 + 8 [iozone]
+  8,0    1      263     0.002719688 18572  M   R 148096 + 8 [iozone]
+  8,0    1      264     0.002720156 18572  A   R 148104 + 8 <- (8,1) 148072
+  8,0    1      265     0.002720313 18572  Q   R 148104 + 8 [iozone]
+  8,0    1      266     0.002720531 18572  M   R 148104 + 8 [iozone]
+  8,0    1      267     0.002721031 18572  A   R 148112 + 8 <- (8,1) 148080
+  8,0    1      268     0.002721219 18572  Q   R 148112 + 8 [iozone]
+  8,0    1      269     0.002721469 18572  M   R 148112 + 8 [iozone]
+  8,0    1      270     0.002721938 18572  A   R 148120 + 8 <- (8,1) 148088
+  8,0    1      271     0.002722063 18572  Q   R 148120 + 8 [iozone]
+  8,0    1      272     0.002722344 18572  M   R 148120 + 8 [iozone]
+  8,0    1      273     0.002722813 18572  A   R 148128 + 8 <- (8,1) 148096
+  8,0    1      274     0.002722938 18572  Q   R 148128 + 8 [iozone]
+  8,0    1      275     0.002723156 18572  M   R 148128 + 8 [iozone]
+  8,0    1      276     0.002723406 18572  U   N [iozone] 1
+  8,0    1      277     0.002724031 18572  D   R 148008 + 128 (   15218) [iozone]
+  8,0    1      279     0.003318094     0  C   R 148008 + 128 (  594063) [0]
 
- #define NdisFreeSpinLock(lock)          \
--	do{}while(0)
-+	do {} while (0)
 
- #define RTMP_SEM_LOCK(__lock)					\
- {												\
-@@ -249,32 +248,32 @@ struct os_lock {
- #ifndef wait_event_interruptible_timeout
- #define __wait_event_interruptible_timeout(wq, condition, ret) \
- do { \
--        wait_queue_t __wait; \
--        init_waitqueue_entry(&__wait, current); \
--        add_wait_queue(&wq, &__wait); \
--        for (;;) { \
--                set_current_state(TASK_INTERRUPTIBLE); \
--                if (condition) \
--                        break; \
--                if (!signal_pending(current)) { \
--                        ret = schedule_timeout(ret); \
--                        if (!ret) \
--                                break; \
--                        continue; \
--                } \
--                ret = -ERESTARTSYS; \
--                break; \
--        } \
--        current->state = TASK_RUNNING; \
--        remove_wait_queue(&wq, &__wait); \
-+	wait_queue_t __wait; \
-+	init_waitqueue_entry(&__wait, current); \
-+	add_wait_queue(&wq, &__wait); \
-+	for (;;) { \
-+		set_current_state(TASK_INTERRUPTIBLE); \
-+		if (condition) \
-+			break; \
-+		if (!signal_pending(current)) { \
-+			ret = schedule_timeout(ret); \
-+			if (!ret) \
-+				break; \
-+			continue; \
-+		} \
-+		ret = -ERESTARTSYS; \
-+		break; \
-+	} \
-+	current->state = TASK_RUNNING; \
-+	remove_wait_queue(&wq, &__wait); \
- } while (0)
+-- 
 
- #define wait_event_interruptible_timeout(wq, condition, timeout) \
- ({ \
--        long __ret = timeout; \
--        if (!(condition)) \
--                __wait_event_interruptible_timeout(wq, condition, __ret); \
--        __ret; \
-+	long __ret = timeout; \
-+	if (!(condition)) \
-+		__wait_event_interruptible_timeout(wq, condition, __ret); \
-+	__ret; \
- })
- #endif
-
-@@ -289,8 +288,7 @@ do { \
- 		wait_event_interruptible(_pTask->kthread_q, \
- 								 _pTask->kthread_running || kthread_should_stop()); \
- 		_pTask->kthread_running = FALSE; \
--		if (kthread_should_stop()) \
--		{ \
-+		if (kthread_should_stop()) {\
- 			RTMP_SET_FLAG(_pAd, fRTMP_ADAPTER_HALT_IN_PROGRESS); \
- 			break; \
- 		} \
-@@ -299,13 +297,12 @@ do { \
-
- #ifdef KTHREAD_SUPPORT
- #define WAKE_UP(_pTask) \
--	do{ \
--		if ((_pTask)->kthread_task) \
--        { \
-+	do { \
-+		if ((_pTask)->kthread_task) {\
- 			(_pTask)->kthread_running = TRUE; \
--	        wake_up(&(_pTask)->kthread_q); \
-+			wake_up(&(_pTask)->kthread_q); \
- 		} \
--	}while(0)
-+	} while (0)
- #endif
-
- /***********************************************************************************
-@@ -349,23 +346,23 @@ typedef void (*TIMER_FUNCTION) (unsigned long);
- 	long _loop = ((_time)/(1000/OS_HZ)) > 0 ? ((_time)/(1000/OS_HZ)) : 1;\
- 	wait_queue_head_t _wait; \
- 	init_waitqueue_head(&_wait); \
--	for (_i=0; _i<(_loop); _i++) \
-+	for (_i = 0; _i < (_loop); _i++) \
- 		wait_event_interruptible_timeout(_wait, 0, ONE_TICK); }
-
--#define RTMP_TIME_AFTER(a,b)		\
-+#define RTMP_TIME_AFTER(a , b)		\
- 	(typecheck(unsigned long, (unsigned long)a) && \
- 	 typecheck(unsigned long, (unsigned long)b) && \
- 	 ((long)(b) - (long)(a) < 0))
-
--#define RTMP_TIME_AFTER_EQ(a,b)	\
-+#define RTMP_TIME_AFTER_EQ(a , b)	\
- 	(typecheck(unsigned long, (unsigned long)a) && \
- 	 typecheck(unsigned long, (unsigned long)b) && \
- 	 ((long)(a) - (long)(b) >= 0))
--#define RTMP_TIME_BEFORE(a,b)	RTMP_TIME_AFTER_EQ(b,a)
-+#define RTMP_TIME_BEFORE(a , b)	RTMP_TIME_AFTER_EQ(b , a)
-
- #define ONE_TICK 1
-
--static inline void NdisGetSystemUpTime(unsigned long * time)
-+static inline void NdisGetSystemUpTime(unsigned long *time)
- {
- 	*time = jiffies;
- }
-@@ -416,12 +413,11 @@ struct os_cookie {
- extern unsigned long RTDebugLevel;
-
- #define DBGPRINT_RAW(Level, Fmt)    \
--do{                                   \
--    if (Level <= RTDebugLevel)      \
--    {                               \
--        printk Fmt;               \
-+do {                                   \
-+    if (Level <= RTDebugLevel) {     \
-+	printk Fmt;               \
-     }                               \
--}while(0)
-+} while (0)
-
- #define DBGPRINT(Level, Fmt)    DBGPRINT_RAW(Level, Fmt)
-
-@@ -517,8 +513,7 @@ void linux_pci_unmap_single(struct rt_rtmp_adapter *pAd, dma_addr_t dma_addr,
- /*Patch for ASIC turst read/write bug, needs to remove after metel fix */
- #define RTMP_IO_READ32(_A, _R, _pV)								\
- {																\
--    if ((_A)->bPCIclkOff == FALSE)                                  \
--    {                                                               \
-+    if ((_A)->bPCIclkOff == FALSE) {                                 \
- 		(*_pV = readl((void *)((_A)->CSRBaseAddress + MAC_CSR0)));		\
- 		(*_pV = readl((void *)((_A)->CSRBaseAddress + (_R))));			\
-     }                                                               \
-@@ -539,8 +534,7 @@ void linux_pci_unmap_single(struct rt_rtmp_adapter *pAd, dma_addr_t dma_addr,
- }
- #define RTMP_IO_WRITE32(_A, _R, _V)												\
- {																				\
--    if ((_A)->bPCIclkOff == FALSE)                                  \
--    {                                                               \
-+    if ((_A)->bPCIclkOff == FALSE) {                                 \
- 	u32 Val;																\
- 	Val = readl((void *)((_A)->CSRBaseAddress + MAC_CSR0));			\
- 	writel((_V), (void *)((_A)->CSRBaseAddress + (_R)));								\
-@@ -632,7 +626,7 @@ void linux_pci_unmap_single(struct rt_rtmp_adapter *pAd, dma_addr_t dma_addr,
-
- #define RELEASE_NDIS_PACKET(_pAd, _pPacket, _Status)                    \
- {                                                                       \
--        RTMPFreeNdisPacket(_pAd, _pPacket);                             \
-+	RTMPFreeNdisPacket(_pAd, _pPacket);                             \
- }
-
- /*
-@@ -745,65 +739,65 @@ void linux_pci_unmap_single(struct rt_rtmp_adapter *pAd, dma_addr_t dma_addr,
-
- /*DHCP */
- #define RTMP_SET_PACKET_DHCP(_p, _flg)   													\
--			do{																				\
-+			do {																				\
- 				if (_flg)																	\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) |= (RTMP_PACKET_SPECIFIC_DHCP);		\
- 				else																		\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) &= (!RTMP_PACKET_SPECIFIC_DHCP);	\
--			}while(0)
-+			} while (0)
- #define RTMP_GET_PACKET_DHCP(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & RTMP_PACKET_SPECIFIC_DHCP)
-
- /*EAPOL */
- #define RTMP_SET_PACKET_EAPOL(_p, _flg)   													\
--			do{																				\
-+			do {																				\
- 				if (_flg)																	\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) |= (RTMP_PACKET_SPECIFIC_EAPOL);		\
- 				else																		\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) &= (!RTMP_PACKET_SPECIFIC_EAPOL);	\
--			}while(0)
-+			} while (0)
- #define RTMP_GET_PACKET_EAPOL(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & RTMP_PACKET_SPECIFIC_EAPOL)
-
- /*WAI */
- #define RTMP_SET_PACKET_WAI(_p, _flg)   													\
--			do{																				\
-+			do {																				\
- 				if (_flg)																	\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) |= (RTMP_PACKET_SPECIFIC_WAI);		\
- 				else																		\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) &= (!RTMP_PACKET_SPECIFIC_WAI);	\
--			}while(0)
-+			} while (0)
- #define RTMP_GET_PACKET_WAI(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & RTMP_PACKET_SPECIFIC_WAI)
-
- #define RTMP_GET_PACKET_LOWRATE(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & (RTMP_PACKET_SPECIFIC_EAPOL | RTMP_PACKET_SPECIFIC_DHCP | RTMP_PACKET_SPECIFIC_WAI))
-
- /*VLAN */
- #define RTMP_SET_PACKET_VLAN(_p, _flg)   													\
--			do{																				\
-+			do {																				\
- 				if (_flg)																	\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) |= (RTMP_PACKET_SPECIFIC_VLAN);		\
- 				else																		\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) &= (!RTMP_PACKET_SPECIFIC_VLAN);	\
--			}while(0)
-+			} while (0)
- #define RTMP_GET_PACKET_VLAN(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & RTMP_PACKET_SPECIFIC_VLAN)
-
- /*LLC/SNAP */
- #define RTMP_SET_PACKET_LLCSNAP(_p, _flg)   													\
--			do{																				\
-+			do {																				\
- 				if (_flg)																	\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) |= (RTMP_PACKET_SPECIFIC_LLCSNAP);		\
- 				else																		\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) &= (!RTMP_PACKET_SPECIFIC_LLCSNAP);		\
--			}while(0)
-+			} while (0)
-
- #define RTMP_GET_PACKET_LLCSNAP(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & RTMP_PACKET_SPECIFIC_LLCSNAP)
-
- /* IP */
- #define RTMP_SET_PACKET_IPV4(_p, _flg)														\
--			do{																				\
-+			do {																				\
- 				if (_flg)																	\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) |= (RTMP_PACKET_SPECIFIC_IPV4);		\
- 				else																		\
- 					(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11]) &= (!RTMP_PACKET_SPECIFIC_IPV4);	\
--			}while(0)
-+			} while (0)
-
- #define RTMP_GET_PACKET_IPV4(_p)		(RTPKT_TO_OSPKT(_p)->cb[CB_OFF+11] & RTMP_PACKET_SPECIFIC_IPV4)
-
-@@ -833,8 +827,8 @@ IRQ_HANDLE_TYPE rt2860_interrupt(int irq, void *dev_instance);
-
- int rt28xx_sta_ioctl(struct net_device *net_dev, IN OUT struct ifreq *rq, int cmd);
-
--extern int ra_mtd_write(int num, loff_t to, size_t len, const u_char * buf);
--extern int ra_mtd_read(int num, loff_t from, size_t len, u_char * buf);
-+extern int ra_mtd_write(int num, loff_t to, size_t len, const u_char *buf);
-+extern int ra_mtd_read(int num, loff_t from, size_t len, u_char *buf);
-
- #define GET_PAD_FROM_NET_DEV(_pAd, _net_dev)	(_pAd) = (struct rt_rtmp_adapter *)(_net_dev)->ml_priv;
-
---
-1.7.2.1
-
+Grüsse / regards, Christian Ehrhardt
+IBM Linux Technology Center, System z Linux Performance 
