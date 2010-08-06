@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761519Ab0HFPwB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:52:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51758 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752568Ab0HFPv7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:51:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTindzwVR93MN=6HpevQZh5EqfvnmbzEj9OeG-PLJ@mail.gmail.com>
-References: <4C5BE640.2050801@fusionio.com> <AANLkTindzwVR93MN=6HpevQZh5EqfvnmbzEj9OeG-PLJ@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 08:51:36 -0700
-Message-ID: <AANLkTi=WyWdERdyM+X5VOTX02_O_5GqV9hBQ145RmMWg@mail.gmail.com>
-Subject: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1761568Ab0HFP6J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:58:09 -0400
+Received: from lo.gmane.org ([80.91.229.12]:42910 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761498Ab0HFP6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 11:58:07 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Raja R Harinath <harinath@hurrynot.org>
+Subject: Re: [PATCH 3/3] lib: vsprintf: added a put_dec() test and benchmark tool
+Date: Fri, 06 Aug 2010 21:27:09 +0530
+Message-ID: <8762zn7mzu.fsf@hariville.hurrynot.org>
+References: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com>
+	<0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
+	<b3cd8c92d68f3ca7104be13841f1f66f7db9f7e1.1280872240.git.mina86@mina86.com>
+	<201008060710.06304.vda.linux@googlemail.com>
+	<op.vg0csju97p4s8u@pikus>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 117.192.153.106
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Cancel-Lock: sha1:dysdL8pr23Gw8E98tTiSK+o2nx4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 8:44 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+Hi,
+
+Michał Nazarewicz <m.nazarewicz@samsung.com> writes:
+
+> On Fri, 06 Aug 2010 07:10:06 +0200, Denys Vlasenko <vda.linux@googlemail.com> wrote:
 >
->                                                                    ... And
-> once you _do_ ask me to merge from you, I still don't want you to do
-> the merge, because I want to know about what conflicts. That's where
-> the bugs almost always are.
+>> On Friday 06 August 2010 00:38, Michal Nazarewicz wrote:
+>>> This commit adds a test application for the put_dec() and
+>>> family of functions that are used by the previous two commits.
+>>>
+>>> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+>>
+>>> +put-dec-test: put-dec-test.c
+>>> +	exec $(CC) $(CFLAGS) -o $@ $<
+>>
+>> (1) Why exec?
+>
+> Micro Makefile optimisation -- saves us a fork().
 
-Actually, let me rephrase that.
+I don't think it's worth it.  The use of 'exec' will force make to
+invoke the shell, while without the exec, make has an opportunity to
+optimize out the shell invocation completely [1].  Forcing the use of a
+shell to avoid a fork() sounds like a terrible trade-off.
 
-Almost all bugs are just individual commits. But the "oh, we had
-conflicts between trees" is where the subtle bugs that are due to
-interactions between two different development projects tend to be..
+- Hari
 
-So "almost always" is not really true - almost always bugs are just
-simply bugs: incorrect code. I wish we didn't have that, but hey,
-reality clearly hates me.  But the reason I want to see the merge
-problems (even if I then occasionally end up having to send it back
-and say "ok, I see the merge problem and I can't handle it, you do it
-for me") is because that way I _see_ when people step on each others
-feet. Because when it happens, it's ripe for nasty issues, including
-simply ones that are due to bad development habits, or due to bad
-source tree organization.
+[1] See, for instance, construct_command_argv_internal() in
 
-                          Linus
+  http://cvs.savannah.gnu.org/viewvc/make/job.c?root=make&view=markup
+
