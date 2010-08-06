@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965593Ab0HFV3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 17:29:38 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:29920 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751542Ab0HFV3g (ORCPT
+	id S965760Ab0HFV3q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 17:29:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:49105 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761764Ab0HFV3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 17:29:36 -0400
-Date: Fri, 6 Aug 2010 15:29:34 -0600
-From: dann frazier <dannf@hp.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-kernel@vger.kernel.org,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        Thomas Mingarelli <thomas.mingarelli@hp.com>
-Subject: Re: [PATCH 00/15] hpwdt: make NMI code a config option (+ other
- cleanup)
-Message-ID: <20100806212933.GA10779@ldl.fc.hp.com>
-References: <1280274663-9160-1-git-send-email-dannf@hp.com>
- <20100805214102.GA4288@infomag.iguana.be>
- <20100806212648.GA30843@infomag.iguana.be>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100806212648.GA30843@infomag.iguana.be>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 6 Aug 2010 17:29:37 -0400
+X-Authority-Analysis: v=1.1 cv=puNM1lMKksHKE6hmMqMstpyRmqXf+M/teYaxpNq+S3U= c=1 sm=0 a=vMBlIDAt6S4A:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=fd6j61FBm051ZTlz6r0A:9 a=ehj1m-hygN0oItJ1aMUfAdmFZh8A:4 a=PUjeQqilurYA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Subject: Re: [PATCH] tracing: wake up tasks reading trace_pipe on write to
+ trace_marker
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Marcin Slusarz <marcin.slusarz@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <20100806205549.GB5345@nowhere>
+References: <20100727224408.GB4142@joi.lan>
+	 <1281127136.3352.13.camel@gandalf.stny.rr.com>
+	 <20100806205549.GB5345@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 06 Aug 2010 17:29:35 -0400
+Message-ID: <1281130175.3352.15.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 11:26:48PM +0200, Wim Van Sebroeck wrote:
-> Hi Dan,
-> 
-> > So overall: patches look good, but let's re-order the patches a bit (so that we first clean-up the driver and then add the NMI related changes (If we ever need to revert some things then we at least have a clean-driver before we start bisecting the NMI changes)).
-> > And secondly: let's try to have the ifdef's out of the init and exit procedures.
+On Fri, 2010-08-06 at 22:55 +0200, Frederic Weisbecker wrote:
+
+> > This can't work. trace_printk() and friends must be able to be used
+> > anywhere. This can cause race conditions with the rq locks in the
+> > scheduler.
 > > 
-> > If you can look at how we can get rid of the ifdef's in init and exit, then I will reorder the patches and change the 3 timer patches and put that allready in a git tree.
+> > But you do bring up a good idea. That is, perhaps we should have a way
+> > to attach to known safe tracepoints that we can hook to to check if a
+> > wake up should happen or not.
 > 
-> I reorganised the sequence of patches. I'll sent them to you for verification (and will put a copy in linux-watchdog mailing list).
 > 
-> the patches now look like:
-> watchdog: hpwdt (1/12): clean-up include-files.
-> watchdog: hpwdt (2/12): Group options that affect watchdog behavior together
-> watchdog: hpwdt (3/12): Group NMI sourcing specific items together
-> watchdog: hpwdt (4/12): Despecificate driver from iLO2
-> watchdog: hpwdt (5/12): Make x86 assembly ifdef guard more strict
-> watchdog: hpwdt (6/12): Introduce SECS_TO_TICKS() macro
-> watchdog: hpwdt (7/12): allow full range of timer values supported by hardware
-> watchdog: hpwdt (8/12): implement WDIOC_GETTIMELEFT
-> watchdog: hpwdt (9/12): hpwdt_pretimeout reorganization
-> watchdog: hpwdt (10/12): Construct status message w/ kasprintf and emit it with dev_info
-> watchdog: hpwdt (11/12): Use "decoding" instead of "sourcing"
-> watchdog: hpwdt (12/12): Make NMI decoding a compile-time option
+> This could be a simple macro that takes the name of the trace event:
 > 
-> (patch 12 can still be improved).
+> 
+> DEFINE_EVENT(event_tpl, event_name, ...);
+> 
+> 
+> TRACE_EVENT_NO_WAKE(event_name);
+> 
 
-Thanks! I'll work on the #ifdef'ing & get you a new #12
+Yeah, that may be worth doing for 2.6.37. Might as well also add a
+trace_printk_nowake() too, when you know you are in dangerous locations
+like the scheduler or NMI.
 
--- 
-dann frazier | ProLiant Linux
+
+> I think trace events should be wakeable by default as it looks safe for
+> most of them. But probably we don't want that per event class.
+> 
+> In the unsafe list, I only have some sched and lock events in
+> mind, but I bet there are some others.
+
+Yep, will put that on my todo list.
+
+Thanks,
+
+-- Steve
+
+
