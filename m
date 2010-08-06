@@ -1,138 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762171Ab0HFWgY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:36:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50004 "EHLO mx1.redhat.com"
+	id S935529Ab0HFWn6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:43:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32424 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751780Ab0HFWgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 18:36:06 -0400
+	id S1762152Ab0HFWgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 18:36:18 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 01/38] VFS: Comment follow_mount() and friends
-Date: Fri,  6 Aug 2010 15:34:47 -0700
-Message-Id: <1281134124-17041-2-git-send-email-vaurora@redhat.com>
+        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: [PATCH 10/38] whiteout: Split of ext2_append_link() from ext2_add_link()
+Date: Fri,  6 Aug 2010 15:34:56 -0700
+Message-Id: <1281134124-17041-11-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add comments describing what the directions "up" and "down" mean and
-ref count handling to the VFS follow_mount() family of functions.
+From: Jan Blunck <jblunck@suse.de>
 
+The ext2_append_link() is later used to find or append a directory
+entry to whiteout.
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Theodore Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/namei.c     |   43 +++++++++++++++++++++++++++++++++++++++----
- fs/namespace.c |   16 ++++++++++++++--
- 2 files changed, 53 insertions(+), 6 deletions(-)
+ fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 50 insertions(+), 20 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 868d0cb..fd6df0d 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -597,6 +597,17 @@ loop:
- 	return err;
- }
- 
-+/*
-+ * follow_up - Find the mountpoint of path's vfsmount
-+ *
-+ * Given a path, find the mountpoint of its source file system.
-+ * Replace @path with the path of the mountpoint in the parent mount.
-+ * Up is towards /.
-+ *
-+ * Return 1 if we went up a level and 0 if we were already at the
-+ * root.
-+ */
-+
- int follow_up(struct path *path)
- {
- 	struct vfsmount *parent;
-@@ -617,8 +628,22 @@ int follow_up(struct path *path)
- 	return 1;
- }
- 
--/* no need for dcache_lock, as serialization is taken care in
-- * namespace.c
-+/*
-+ * __follow_mount - Return the most recent mount at this mountpoint
-+ *
-+ * Given a mountpoint, find the most recently mounted file system at
-+ * this mountpoint and return the path to its root dentry.  This is
-+ * the file system that is visible, and it is in the direction of VFS
-+ * "down" - away from the root of the mount tree.  See comments to
-+ * lookup_mnt() for an example of "down."
-+ *
-+ * Does not decrement the refcount on the given mount even if it
-+ * follows it to another mount and returns that path instead.
-+ *
-+ * Returns 0 if path was unchanged, 1 if we followed it to another mount.
-+ *
-+ * No need for dcache_lock, as serialization is taken care in
-+ * namespace.c.
-  */
- static int __follow_mount(struct path *path)
- {
-@@ -637,6 +662,12 @@ static int __follow_mount(struct path *path)
- 	return res;
- }
- 
-+/*
-+ * Like __follow_mount, but no return value and drops references to
-+ * both mnt and dentry of the given path if it follows to another
-+ * mount.
-+ */
-+
- static void follow_mount(struct path *path)
- {
- 	while (d_mountpoint(path->dentry)) {
-@@ -650,8 +681,12 @@ static void follow_mount(struct path *path)
- 	}
- }
- 
--/* no need for dcache_lock, as serialization is taken care in
-- * namespace.c
-+/*
-+ * Like follow_mount(), but traverses only one layer instead of
-+ * continuing until it runs out.
-+ *
-+ * No need for dcache_lock, as serialization is taken care in
-+ * namespace.c.
-  */
- int follow_down(struct path *path)
- {
-diff --git a/fs/namespace.c b/fs/namespace.c
-index 88058de..b8a66db 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -433,8 +433,20 @@ struct vfsmount *__lookup_mnt(struct vfsmount *mnt, struct dentry *dentry,
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 7516957..57207a9 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
  }
  
  /*
-- * lookup_mnt increments the ref count before returning
-- * the vfsmount struct.
-+ * lookup_mnt - Return the first child mount mounted at path
-+ *
-+ * "First" means first mounted chronologically.  If you create the
-+ * following mounts:
-+ *
-+ * mount /dev/sda1 /mnt
-+ * mount /dev/sda2 /mnt
-+ * mount /dev/sda3 /mnt
-+ *
-+ * Then lookup_mnt() on the base /mnt dentry in the root mount will
-+ * return successively the root dentry and vfsmount of /dev/sda1, then
-+ * /dev/sda2, then /dev/sda3, then NULL.
-+ *
-+ * lookup_mnt takes a reference to the found vfsmount.
+- *	Parent is locked.
++ * Find or append a given dentry to the parent directory
   */
- struct vfsmount *lookup_mnt(struct path *path)
+-int ext2_add_link (struct dentry *dentry, struct inode *inode)
++static ext2_dirent * ext2_append_entry(struct dentry * dentry,
++				       struct page ** page)
  {
+ 	struct inode *dir = dentry->d_parent->d_inode;
+ 	const char *name = dentry->d_name.name;
+@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 	unsigned chunk_size = ext2_chunk_size(dir);
+ 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
+ 	unsigned short rec_len, name_len;
+-	struct page *page = NULL;
+-	ext2_dirent * de;
++	ext2_dirent * de = NULL;
+ 	unsigned long npages = dir_pages(dir);
+ 	unsigned long n;
+ 	char *kaddr;
+-	loff_t pos;
+-	int err;
+ 
+ 	/*
+ 	 * We take care of directory expansion in the same loop.
+@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 	for (n = 0; n <= npages; n++) {
+ 		char *dir_end;
+ 
+-		page = ext2_get_page(dir, n, 0);
+-		err = PTR_ERR(page);
+-		if (IS_ERR(page))
++		*page = ext2_get_page(dir, n, 0);
++		de = ERR_PTR(PTR_ERR(*page));
++		if (IS_ERR(*page))
+ 			goto out;
+-		lock_page(page);
+-		kaddr = page_address(page);
++		lock_page(*page);
++		kaddr = page_address(*page);
+ 		dir_end = kaddr + ext2_last_byte(dir, n);
+ 		de = (ext2_dirent *)kaddr;
+ 		kaddr += PAGE_CACHE_SIZE - reclen;
+ 		while ((char *)de <= kaddr) {
+ 			if ((char *)de == dir_end) {
+ 				/* We hit i_size */
+-				name_len = 0;
+-				rec_len = chunk_size;
++				de->name_len = 0;
+ 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
+ 				de->inode = 0;
+ 				goto got_it;
+@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 			if (de->rec_len == 0) {
+ 				ext2_error(dir->i_sb, __func__,
+ 					"zero-length directory entry");
+-				err = -EIO;
++				de = ERR_PTR(-EIO);
+ 				goto out_unlock;
+ 			}
+-			err = -EEXIST;
+ 			if (ext2_match (namelen, name, de))
+-				goto out_unlock;
++				goto got_it;
+ 			name_len = EXT2_DIR_REC_LEN(de->name_len);
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+ 			if (!de->inode && rec_len >= reclen)
+@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 				goto got_it;
+ 			de = (ext2_dirent *) ((char *) de + rec_len);
+ 		}
+-		unlock_page(page);
+-		ext2_put_page(page);
++		unlock_page(*page);
++		ext2_put_page(*page);
+ 	}
++
+ 	BUG();
+-	return -EINVAL;
+ 
+ got_it:
++	return de;
++	/* OFFSET_CACHE */
++out_unlock:
++	unlock_page(*page);
++	ext2_put_page(*page);
++out:
++	return de;
++}
++
++/*
++ *	Parent is locked.
++ */
++int ext2_add_link (struct dentry *dentry, struct inode *inode)
++{
++	struct inode *dir = dentry->d_parent->d_inode;
++	const char *name = dentry->d_name.name;
++	int namelen = dentry->d_name.len;
++	unsigned short rec_len, name_len;
++	ext2_dirent * de;
++	struct page *page;
++	loff_t pos;
++	int err;
++
++	de = ext2_append_entry(dentry, &page);
++	if (IS_ERR(de))
++		return PTR_ERR(de);
++
++	err = -EEXIST;
++	if (ext2_match (namelen, name, de))
++		goto out_unlock;
++
++got_it:
++	name_len = EXT2_DIR_REC_LEN(de->name_len);
++	rec_len = ext2_rec_len_from_disk(de->rec_len);
++
+ 	pos = page_offset(page) +
+ 		(char*)de - (char*)page_address(page);
+ 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
+@@ -563,7 +594,6 @@ got_it:
+ 	/* OFFSET_CACHE */
+ out_put:
+ 	ext2_put_page(page);
+-out:
+ 	return err;
+ out_unlock:
+ 	unlock_page(page);
 -- 
 1.6.3.3
 
