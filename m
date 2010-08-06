@@ -1,37 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935344Ab0HFUpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:45:47 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35048
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932155Ab0HFUpp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:45:45 -0400
-Date: Fri, 06 Aug 2010 13:46:04 -0700 (PDT)
-Message-Id: <20100806.134604.55881296.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-08-06
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100806191443.GB2753@tuxdriver.com>
-References: <20100806191443.GB2753@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S935147Ab0HFUs7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:48:59 -0400
+Received: from mail0.scram.de ([78.47.204.202]:34338 "EHLO mail.scram.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932155Ab0HFUsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 16:48:55 -0400
+X-Greylist: delayed 340 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Aug 2010 16:48:55 EDT
+Authentication-Results: localhost; dkim=pass (1024-bit key)
+	header.i=@scram.de; dkim-asp=signed
+X-Spam-Flag: NO
+X-Spam-Score: -0.728
+Authentication-Results: amavis.colab.de (amavisd-new); dkim=pass
+	header.i=@scram.de
+Message-ID: <4C5C73DC.4010408@scram.de>
+Date: Fri, 06 Aug 2010 22:43:08 +0200
+From: Jochen Friedrich <jochen+linux-kernel@scram.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+MIME-Version: 1.0
+To: "Kernel, Linux" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Fri, 6 Aug 2010 15:14:43 -0400
-
-> Here is the first round of fixes intended for 2.6.36.  It is bigger than
-> I would prefer, but I hope you will still find it acceptable, especially
-> as we are still so early in the cycle.
-
-Pulled, thanks John.
-
-As you know I'd prefer if things settle down from this point
-forward, thanks :-)
+subscribe linux-kernel
