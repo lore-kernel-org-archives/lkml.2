@@ -1,295 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935873Ab0HFWoI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:44:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50517 "EHLO mx1.redhat.com"
+	id S1762145Ab0HFWgP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:36:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29783 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762151Ab0HFWgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 18:36:18 -0400
+	id S1759400Ab0HFWgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 18:36:06 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, linux-mm@kvack.org
-Subject: [PATCH 09/38] whiteout: tmpfs whiteout support
-Date: Fri,  6 Aug 2010 15:34:55 -0700
-Message-Id: <1281134124-17041-10-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
-References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 00/38] VFS union mounts - Add MS_FALLTHRU
+Date: Fri,  6 Aug 2010 15:34:46 -0700
+Message-Id: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for whiteout dentries to tmpfs.  This includes adding
-support for whiteouts to d_genocide(), which is called to tear down
-pinned tmpfs dentries.  Whiteouts have to be persistent, so they have
-a pinning extra ref count that needs to be dropped by d_genocide().
+Major changes since last version:
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Cc: linux-mm@kvack.org
----
- fs/dcache.c |   13 +++++-
- mm/shmem.c  |  145 +++++++++++++++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 143 insertions(+), 15 deletions(-)
+ * Separate MS_FALLTHRU instead of piggybacking on MS_WHITEOUT
+ * Renumbering of ext2 flags - backwards incompatible
+ * Bug fix for > 2 layers
+ * Better mount error messages (from Miklos Szeredi)
+ * Rebase against 2.6.35
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 80f059b..79b9f6a 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2229,7 +2229,18 @@ resume:
- 		struct list_head *tmp = next;
- 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
- 		next = tmp->next;
--		if (d_unhashed(dentry)||!dentry->d_inode)
-+		/*
-+		 * Skip unhashed and negative dentries, but process
-+		 * positive dentries and whiteouts.  A whiteout looks
-+		 * kind of like a negative dentry for purposes of
-+		 * lookup, but it has an extra pinning ref count
-+		 * because it can't be evicted like a negative dentry
-+		 * can.  What we care about here is ref counts - and
-+		 * we need to drop the ref count on a whiteout before
-+		 * we can evict it.
-+		 */
-+		if (d_unhashed(dentry)||(!dentry->d_inode &&
-+					 !d_is_whiteout(dentry)))
- 			continue;
- 		if (!list_empty(&dentry->d_subdirs)) {
- 			this_parent = dentry;
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f65f840..a0a4fa5 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1805,6 +1805,76 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return 0;
- }
- 
-+static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
-+static int shmem_unlink(struct inode *dir, struct dentry *dentry);
-+
-+/*
-+ * This is the whiteout support for tmpfs. It uses one singleton whiteout
-+ * inode per superblock thus it is very similar to shmem_link().
-+ */
-+static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
-+			  struct dentry *new_dentry)
-+{
-+	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
-+	struct dentry *dentry;
-+
-+	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
-+		return -EPERM;
-+
-+	/* This gives us a proper initialized negative dentry */
-+	dentry = simple_lookup(dir, new_dentry, NULL);
-+	if (dentry && IS_ERR(dentry))
-+		return PTR_ERR(dentry);
-+
-+	/*
-+	 * No ordinary (disk based) filesystem counts whiteouts as inodes;
-+	 * but each new link needs a new dentry, pinning lowmem, and
-+	 * tmpfs dentries cannot be pruned until they are unlinked.
-+	 */
-+	if (sbinfo->max_inodes) {
-+		spin_lock(&sbinfo->stat_lock);
-+		if (!sbinfo->free_inodes) {
-+			spin_unlock(&sbinfo->stat_lock);
-+			return -ENOSPC;
-+		}
-+		sbinfo->free_inodes--;
-+		spin_unlock(&sbinfo->stat_lock);
-+	}
-+
-+	if (old_dentry->d_inode) {
-+		if (S_ISDIR(old_dentry->d_inode->i_mode))
-+			shmem_rmdir(dir, old_dentry);
-+		else
-+			shmem_unlink(dir, old_dentry);
-+	}
-+
-+	dir->i_size += BOGO_DIRENT_SIZE;
-+	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+	/* Extra pinning count for the created dentry */
-+	dget(new_dentry);
-+	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags |= DCACHE_WHITEOUT;
-+	spin_unlock(&new_dentry->d_lock);
-+	return 0;
-+}
-+
-+static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
-+				struct inode *inode)
-+{
-+	if (d_is_whiteout(dentry)) {
-+		/* Re-using an existing whiteout */
-+		shmem_free_inode(dir->i_sb);
-+		if (S_ISDIR(inode->i_mode))
-+			inode->i_mode |= S_OPAQUE;
-+	} else {
-+		/* New dentry */
-+		dir->i_size += BOGO_DIRENT_SIZE;
-+		dget(dentry); /* Extra count - pin the dentry in core */
-+	}
-+	/* Will clear DCACHE_WHITEOUT flag */
-+	d_instantiate(dentry, inode);
-+
-+}
- /*
-  * File creation. Allocate an inode, and we're done..
-  */
-@@ -1833,10 +1903,8 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
- #else
- 		error = 0;
- #endif
--		dir->i_size += BOGO_DIRENT_SIZE;
-+		shmem_d_instantiate(dir, dentry, inode);
- 		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--		d_instantiate(dentry, inode);
--		dget(dentry); /* Extra count - pin the dentry in core */
- 	}
- 	return error;
- }
-@@ -1874,12 +1942,11 @@ static int shmem_link(struct dentry *old_dentry, struct inode *dir, struct dentr
- 	if (ret)
- 		goto out;
- 
--	dir->i_size += BOGO_DIRENT_SIZE;
-+	shmem_d_instantiate(dir, dentry, inode);
-+
- 	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
- 	inc_nlink(inode);
- 	atomic_inc(&inode->i_count);	/* New dentry reference */
--	dget(dentry);		/* Extra pinning count for the created dentry */
--	d_instantiate(dentry, inode);
- out:
- 	return ret;
- }
-@@ -1888,21 +1955,61 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
- {
- 	struct inode *inode = dentry->d_inode;
- 
--	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
--		shmem_free_inode(inode->i_sb);
-+	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
-+		shmem_free_inode(dir->i_sb);
- 
-+	if (inode) {
-+		inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+		drop_nlink(inode);
-+	}
- 	dir->i_size -= BOGO_DIRENT_SIZE;
--	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--	drop_nlink(inode);
- 	dput(dentry);	/* Undo the count from "create" - this does all the work */
- 	return 0;
- }
- 
-+static void shmem_dir_unlink_whiteouts(struct inode *dir, struct dentry *dentry)
-+{
-+	if (!dentry->d_inode)
-+		return;
-+
-+	/* Remove whiteouts from logical empty directory */
-+	if (S_ISDIR(dentry->d_inode->i_mode) &&
-+	    dentry->d_inode->i_sb->s_flags & MS_WHITEOUT) {
-+		struct dentry *child, *next;
-+		LIST_HEAD(list);
-+
-+		spin_lock(&dcache_lock);
-+		list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
-+			spin_lock(&child->d_lock);
-+			if (d_is_whiteout(child)) {
-+				__d_drop(child);
-+				if (!list_empty(&child->d_lru)) {
-+					list_del(&child->d_lru);
-+					dentry_stat.nr_unused--;
-+				}
-+				list_add(&child->d_lru, &list);
-+			}
-+			spin_unlock(&child->d_lock);
-+		}
-+		spin_unlock(&dcache_lock);
-+
-+		list_for_each_entry_safe(child, next, &list, d_lru) {
-+			spin_lock(&child->d_lock);
-+			list_del_init(&child->d_lru);
-+			spin_unlock(&child->d_lock);
-+
-+			shmem_unlink(dentry->d_inode, child);
-+		}
-+	}
-+}
-+
- static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
- {
- 	if (!simple_empty(dentry))
- 		return -ENOTEMPTY;
- 
-+	/* Remove whiteouts from logical empty directory */
-+	shmem_dir_unlink_whiteouts(dir, dentry);
- 	drop_nlink(dentry->d_inode);
- 	drop_nlink(dir);
- 	return shmem_unlink(dir, dentry);
-@@ -1911,7 +2018,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
- /*
-  * The VFS layer already does all the dentry stuff for rename,
-  * we just have to decrement the usage count for the target if
-- * it exists so that the VFS layer correctly free's it when it
-+ * it exists so that the VFS layer correctly frees it when it
-  * gets overwritten.
-  */
- static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry)
-@@ -1922,7 +2029,12 @@ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct
- 	if (!simple_empty(new_dentry))
- 		return -ENOTEMPTY;
- 
-+	if (d_is_whiteout(new_dentry))
-+		shmem_unlink(new_dir, new_dentry);
-+
- 	if (new_dentry->d_inode) {
-+		/* Remove whiteouts from logical empty directory */
-+		shmem_dir_unlink_whiteouts(new_dir, new_dentry);
- 		(void) shmem_unlink(new_dir, new_dentry);
- 		if (they_are_dirs)
- 			drop_nlink(old_dir);
-@@ -1987,10 +2099,8 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
- 		unlock_page(page);
- 		page_cache_release(page);
- 	}
--	dir->i_size += BOGO_DIRENT_SIZE;
-+	shmem_d_instantiate(dir, dentry, inode);
- 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--	d_instantiate(dentry, inode);
--	dget(dentry);
- 	return 0;
- }
- 
-@@ -2367,6 +2477,12 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!root)
- 		goto failed_iput;
- 	sb->s_root = root;
-+
-+#ifdef CONFIG_TMPFS
-+	if (!(sb->s_flags & MS_NOUSER))
-+		sb->s_flags |= MS_WHITEOUT;
-+#endif
-+
- 	return 0;
- 
- failed_iput:
-@@ -2466,6 +2582,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
- 	.rmdir		= shmem_rmdir,
- 	.mknod		= shmem_mknod,
- 	.rename		= shmem_rename,
-+	.whiteout       = shmem_whiteout,
- #endif
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	.setattr	= shmem_notify_change,
--- 
-1.6.3.3
+This branch is named "ms_fallthru" and is in the usual git tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/val/linux-2.6.git
+
+You will have to update your util-linux-ng and e2fsprogs to get the
+new magic numbers for ext2 feature flags and mount options.  You have
+to throw away any existing union mount ext2 disk images and build new
+ones (all two of you who have them).
+
+Branch "union_mount" of both:
+
+git://git.kernel.org/pub/scm/fs/ext2/val/e2fsprogs.git
+
+git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
+
+-VAL
+
+Felix Fietkau (2):
+  whiteout: jffs2 whiteout support
+  fallthru: jffs2 fallthru support
+
+Jan Blunck (10):
+  VFS: Make lookup_hash() return a struct path
+  autofs4: Save autofs trigger's vfsmount in super block info
+  whiteout/NFSD: Don't return information about whiteouts to userspace
+  whiteout: Add vfs_whiteout() and whiteout inode operation
+  whiteout: Set opaque flag if new directory was previously a whiteout
+  whiteout: Allow removal of a directory with whiteouts
+  whiteout: Split of ext2_append_link() from ext2_add_link()
+  whiteout: ext2 whiteout support
+  union-mount: Introduce MNT_UNION and MS_UNION flags
+  union-mount: Call do_whiteout() on unlink and rmdir in unions
+
+Valerie Aurora (26):
+  VFS: Comment follow_mount() and friends
+  VFS: Add read-only users count to superblock
+  whiteout: tmpfs whiteout support
+  fallthru: Basic fallthru definitions
+  fallthru: ext2 fallthru support
+  fallthru: tmpfs fallthru support
+  union-mount: Union mounts documentation
+  union-mount: Introduce union_dir structure and basic operations
+  union-mount: Free union dirs on removal from dcache
+  union-mount: Support for union mounting file systems
+  union-mount: Implement union lookup
+  union-mount: Copy up directory entries on first readdir()
+  VFS: Split inode_permission() and create path_permission()
+  VFS: Create user_path_nd() to lookup both parent and target
+  union-mount: In-kernel file copyup routines
+  union-mount: Implement union-aware access()/faccessat()
+  union-mount: Implement union-aware link()
+  union-mount: Implement union-aware rename()
+  union-mount: Implement union-aware writable open()
+  union-mount: Implement union-aware chown()
+  union-mount: Implement union-aware truncate()
+  union-mount: Implement union-aware chmod()/fchmodat()
+  union-mount: Implement union-aware lchown()
+  union-mount: Implement union-aware utimensat()
+  union-mount: Implement union-aware setxattr()
+  union-mount: Implement union-aware lsetxattr()
+
+ Documentation/filesystems/union-mounts.txt |  752 +++++++++++++++++++++++++++
+ Documentation/filesystems/vfs.txt          |   16 +-
+ fs/Kconfig                                 |   13 +
+ fs/Makefile                                |    1 +
+ fs/autofs4/autofs_i.h                      |    1 +
+ fs/autofs4/init.c                          |   11 +-
+ fs/autofs4/root.c                          |    6 +
+ fs/compat.c                                |    9 +
+ fs/dcache.c                                |   32 ++-
+ fs/ext2/dir.c                              |  248 +++++++++-
+ fs/ext2/ext2.h                             |    4 +
+ fs/ext2/inode.c                            |   11 +-
+ fs/ext2/namei.c                            |   85 +++-
+ fs/ext2/super.c                            |    7 +
+ fs/jffs2/dir.c                             |  104 ++++-
+ fs/jffs2/fs.c                              |    4 +
+ fs/jffs2/super.c                           |    2 +-
+ fs/libfs.c                                 |   21 +-
+ fs/namei.c                                 |  754 ++++++++++++++++++++++++----
+ fs/namespace.c                             |  289 +++++++++++-
+ fs/nfsd/nfs3xdr.c                          |    5 +
+ fs/nfsd/nfs4xdr.c                          |    5 +
+ fs/nfsd/nfsxdr.c                           |    4 +
+ fs/open.c                                  |  116 ++++-
+ fs/readdir.c                               |   18 +
+ fs/super.c                                 |   24 +
+ fs/union.c                                 |  699 ++++++++++++++++++++++++++
+ fs/union.h                                 |   80 +++
+ fs/utimes.c                                |   14 +-
+ fs/xattr.c                                 |   65 ++-
+ include/linux/dcache.h                     |   19 +-
+ include/linux/ext2_fs.h                    |    8 +
+ include/linux/fs.h                         |   26 +
+ include/linux/jffs2.h                      |    8 +
+ include/linux/mount.h                      |    6 +-
+ include/linux/namei.h                      |    2 +
+ mm/shmem.c                                 |  193 +++++++-
+ 37 files changed, 3480 insertions(+), 182 deletions(-)
+ create mode 100644 Documentation/filesystems/union-mounts.txt
+ create mode 100644 fs/union.c
+ create mode 100644 fs/union.h
 
