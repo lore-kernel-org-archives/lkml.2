@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965291Ab0HFTJA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:09:00 -0400
-Received: from kroah.org ([198.145.64.141]:58640 "EHLO coco.kroah.org"
+	id S965080Ab0HFTAZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:00:25 -0400
+Received: from kroah.org ([198.145.64.141]:58526 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935638Ab0HFTA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
-Message-Id: <20100806185836.358150448@clark.site>
+	id S935646Ab0HFTAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:35 2010
+Message-Id: <20100806185835.087632723@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:23 -0700
+Date: Fri, 06 Aug 2010 11:57:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Takashi Iwai <tiwai@suse.de>, Matthew Garrett <mjg@redhat.com>,
-        Adam Jackson <ajax@redhat.com>, Eric Anholt <eric@anholt.net>
-Subject: [28/34] drm/i915: Fix LVDS presence check
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: [14/34] ath9k: enable serialize_regmode for non-PCIE AR9160
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,141 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-Combined patches from 2.6.33 for fixing LVDS detection.
-7cf4f69d3f4511f443473954456cb91d5514756d
-    drm/i915: Don't set up the LVDS if it isn't in the BIOS device table.
-38b3037ee47fbd65a36bc7c39f60a900fbbe3b8e
-    drm/i915: Fix LVDS presence check
-6e36595a2131e7ed5ee2674be54b2713ba7f0490
-    drm/i915: Declare the new VBT parsing functions as static
-11ba159288f1bfc1a475c994e598f5fe423fde9d
-    drm/i915: Don't check for lid presence when detecting LVDS
+From: John W. Linville <linville@tuxdriver.com>
 
-Acked-by: Takashi Iwai <tiwai@suse.de>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Adam Jackson <ajax@redhat.com>
-Cc: Eric Anholt <eric@anholt.net>
+commit 4c85ab11ca56da1aa59b58c80cc6a356515cc645 upstream.
+
+https://bugzilla.kernel.org/show_bug.cgi?id=16476
+
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/intel_lvds.c |   90 +++++++++++++-------------------------
- 1 file changed, 33 insertions(+), 57 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -901,64 +901,45 @@ static const struct dmi_system_id intel_
- 	{ }	/* terminating entry */
- };
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -929,7 +929,8 @@ int ath9k_hw_init(struct ath_hw *ah)
  
--#ifdef CONFIG_ACPI
- /*
-- * check_lid_device -- check whether @handle is an ACPI LID device.
-- * @handle: ACPI device handle
-- * @level : depth in the ACPI namespace tree
-- * @context: the number of LID device when we find the device
-- * @rv: a return value to fill if desired (Not use)
-+ * Enumerate the child dev array parsed from VBT to check whether
-+ * the LVDS is present.
-+ * If it is present, return 1.
-+ * If it is not present, return false.
-+ * If no child dev is parsed from VBT, it assumes that the LVDS is present.
-+ * Note: The addin_offset should also be checked for LVDS panel.
-+ * Only when it is non-zero, it is assumed that it is present.
-  */
--static acpi_status
--check_lid_device(acpi_handle handle, u32 level, void *context,
--			void **return_value)
-+static int lvds_is_present_in_vbt(struct drm_device *dev)
- {
--	struct acpi_device *acpi_dev;
--	int *lid_present = context;
--
--	acpi_dev = NULL;
--	/* Get the acpi device for device handle */
--	if (acpi_bus_get_device(handle, &acpi_dev) || !acpi_dev) {
--		/* If there is no ACPI device for handle, return */
--		return AE_OK;
--	}
--
--	if (!strncmp(acpi_device_hid(acpi_dev), "PNP0C0D", 7))
--		*lid_present = 1;
-+	struct drm_i915_private *dev_priv = dev->dev_private;
-+	struct child_device_config *p_child;
-+	int i, ret;
- 
--	return AE_OK;
--}
-+	if (!dev_priv->child_dev_num)
-+		return 1;
- 
--/**
-- * check whether there exists the ACPI LID device by enumerating the ACPI
-- * device tree.
-- */
--static int intel_lid_present(void)
--{
--	int lid_present = 0;
-+	ret = 0;
-+	for (i = 0; i < dev_priv->child_dev_num; i++) {
-+		p_child = dev_priv->child_dev + i;
-+		/*
-+		 * If the device type is not LFP, continue.
-+		 * If the device type is 0x22, it is also regarded as LFP.
-+		 */
-+		if (p_child->device_type != DEVICE_TYPE_INT_LFP &&
-+			p_child->device_type != DEVICE_TYPE_LFP)
-+			continue;
- 
--	if (acpi_disabled) {
--		/* If ACPI is disabled, there is no ACPI device tree to
--		 * check, so assume the LID device would have been present.
-+		/* The addin_offset should be checked. Only when it is
-+		 * non-zero, it is regarded as present.
- 		 */
--		return 1;
-+		if (p_child->addin_offset) {
-+			ret = 1;
-+			break;
-+		}
- 	}
--
--	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
--				ACPI_UINT32_MAX,
--				check_lid_device, &lid_present, NULL);
--
--	return lid_present;
--}
--#else
--static int intel_lid_present(void)
--{
--	/* In the absence of ACPI built in, assume that the LID device would
--	 * have been present.
--	 */
--	return 1;
-+	return ret;
- }
--#endif
- 
- /**
-  * intel_lvds_init - setup LVDS connectors on this device
-@@ -983,15 +964,10 @@ void intel_lvds_init(struct drm_device *
- 	if (dmi_check_system(intel_no_lvds))
- 		return;
- 
--	/* Assume that any device without an ACPI LID device also doesn't
--	 * have an integrated LVDS.  We would be better off parsing the BIOS
--	 * to get a reliable indicator, but that code isn't written yet.
--	 *
--	 * In the case of all-in-one desktops using LVDS that we've seen,
--	 * they're using SDVO LVDS.
--	 */
--	if (!intel_lid_present())
-+	if (!lvds_is_present_in_vbt(dev)) {
-+		DRM_DEBUG_KMS("LVDS is not present in VBT\n");
- 		return;
-+	}
- 
- 	if (IS_IGDNG(dev)) {
- 		if ((I915_READ(PCH_LVDS) & LVDS_DETECTED) == 0)
+ 	if (ah->config.serialize_regmode == SER_REG_MODE_AUTO) {
+ 		if (ah->hw_version.macVersion == AR_SREV_VERSION_5416_PCI ||
+-		    (AR_SREV_9280(ah) && !ah->is_pciexpress)) {
++		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah)) &&
++		     !ah->is_pciexpress)) {
+ 			ah->config.serialize_regmode =
+ 				SER_REG_MODE_ON;
+ 		} else {
 
 
