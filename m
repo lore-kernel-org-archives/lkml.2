@@ -1,59 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762115Ab0HFVyv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 17:54:51 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:33819 "EHLO e5.ny.us.ibm.com"
+	id S1761896Ab0HFWGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:06:34 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47321 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762091Ab0HFVyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 17:54:49 -0400
-Date: Fri, 6 Aug 2010 14:54:47 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.hengli.com.au, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de
-Subject: Re: [PATCH] net: convert to rcu_dereference_index_check()
-Message-ID: <20100806215447.GM2432@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100806212607.GA9410@linux.vnet.ibm.com>
- <20100806.144901.184847372.davem@davemloft.net>
+	id S1751676Ab0HFWGa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 18:06:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Sat, 7 Aug 2010 00:04:43 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+References: <Pine.LNX.4.44L0.1008061505070.9303-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1008061505070.9303-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100806.144901.184847372.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008070004.43923.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 02:49:01PM -0700, David Miller wrote:
-> From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> Date: Fri, 6 Aug 2010 14:26:07 -0700
+On Friday, August 06, 2010, Alan Stern wrote:
+> On Thu, 5 Aug 2010, Arve Hjønnevåg wrote:
+...
+> But what sorts of things qualify as wakeup events?  Right now, the code
+> handles only events coming by way of the PME# signal (or its platform
+> equivalent).  But that signal usually gets activated only when a PCI
+> device is in a low-power mode; if the device is at full power then it
+> simply generates an IRQ.  It's the same event, but reported to the
+> kernel in a different way.  So consider...
 > 
-> > At long last, the following is the final patch blocking acceptance
-> > of Arnd's sparse annotations for RCU.  It was itself blocked behind
-> > the definition of rcu_dereference_index_check(), which made it to
-> > mainline only just today.
-> > 
-> > Would you be willing to ack this patch so that I can push it to -tip,
-> > along with Arnd's work and a bunch of other stuff?
->  ...
-> >     net: convert to rcu_dereference_index_check()
-> >     
-> >     The task_cls_classid() function applies rcu_dereference() to integers,
-> >     which does not work with the shiny new sparse-based checking in
-> >     rcu_dereference().  This commit therefore moves to the new RCU API
-> >     rcu_dereference_index_check().
-> >     
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >     Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> Case 1: The system is suspending and the PCI device has already been
+> 	placed in D3hot when an event occurs.  PME# is activated,
+> 	the wakeup event is reported, the suspend is aborted, and the 
+> 	system won't try to suspend again for at least 100 ms.  Good.
 > 
-> You should of course wait for Herbert's ACK too, but for
-> the record:
+> Case 2: The system is running normally and the PCI device is at full
+> 	power when an event occurs.  PME# isn't activated and 
+> 	pm_wakeup_event doesn't get called.  Then when the system
+> 	tries to suspend 25 ms later, there's nothing to prevent it
+> 	even though the event is still being processed.  Bad.
 > 
-> Acked-by: David S. Miller <davem@davemloft.net>
-> 
-> :-)
+> In case 2 the race has not been resolved.  It seems to me that the 
+> only proper solution is to call pm_wakeup_event for _every_ PCI 
+> interrupt.  This may be too much to add to a hot path, but what's the 
+> alternative?
 
-Thank you, David!!!  ;-)
+Arguably not every PCI interrupt should be regarded as a wakeup event, so
+I think we can simply say in the cases when that's necessary the driver should
+be responsible for using pm_wakeup_event() or pm_stay_awake() / pm_relax() as
+appropriate.
 
-							Thanx, Paul
+My patch only added it to the bus-level code which covered the PME-based
+wakeup events that _cannot_ be handled by device drivers.
+
+Thanks,
+Rafael
