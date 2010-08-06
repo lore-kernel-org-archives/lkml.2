@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760366Ab0HFHB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:01:26 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46681 "EHLO mx2.mail.elte.hu"
+	id S933590Ab0HFHEa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:04:30 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:50341 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754560Ab0HFHBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:01:23 -0400
-Date: Fri, 6 Aug 2010 09:00:17 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andrea Gelmini <andrea.gelmini@gelma.net>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Julia Lawall <julia@diku.dk>,
-        Masami Hiramatsu <mhiramat@redhat.com>, Mike Galbraith <efault@gmx.de>,
-        Nick Piggin <npiggin@suse.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Stephane Eranian <eranian@google.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 00/10] perf/core improvements and fixes
-Message-ID: <20100806070017.GA26056@elte.hu>
-References: <1281059177-18747-1-git-send-email-acme@infradead.org>
+	id S1754560Ab0HFHE1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 03:04:27 -0400
+Date: Fri, 6 Aug 2010 00:04:24 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
+	are no dirty pages.
+Message-ID: <20100806070424.GD2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281059177-18747-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100805164504.GI2901@thunk.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 05, 2010 at 12:45:04PM -0400, Ted Ts'o wrote:
+> P.S.  If it wasn't clear, I'm still in favor of trying to coordinate
+> barriers across the whole file system, since that is much more likely
+> to help use cases that arise in real life.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Ok.  I have a rough sketch of a patch to do that, and I was going to send it
+out today, but the test machine caught on fire while I was hammering it with
+the fsync tests one last time and ... yeah.  I'm fairly sure the patch didn't
+cause the fire, but I'll check anyway after I finish cleaning up.
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Andrea Gelmini (2):
->   perf probe: Remove duplicated #include
->   perf trace: Clean up #includes
-> 
-> Arnaldo Carvalho de Melo (7):
->   perf symbols: Store the symbol binding
->   perf ui: Add a map browser
->   perf ui: Shorten ui_browser->refresh_entries to refresh
->   perf hists: Handle verbose in hists__sort_list_width
->   perf hists: Fixup addr snprintf width on 32 bit arches
->   perf ui: Add search by name/addr to the map__browser
->   perf report: Speed up exit path
-> 
-> Julia Lawall (1):
->   perf timechart: Adjust confusing if indentation
-> 
->  tools/perf/builtin-report.c    |   31 +++++-
->  tools/perf/builtin-timechart.c |    4 +-
->  tools/perf/builtin-trace.c     |   19 +--
->  tools/perf/util/hist.c         |    3 +
->  tools/perf/util/newt.c         |  242 +++++++++++++++++++++++++++++++++++++--
->  tools/perf/util/probe-finder.c |    1 -
->  tools/perf/util/sort.c         |    6 +-
->  tools/perf/util/symbol.c       |   30 ++++--
->  tools/perf/util/symbol.h       |    1 +
->  9 files changed, 297 insertions(+), 40 deletions(-)
+"[PATCH] ext4: Don't set my machine ablaze with barrier requests" :P
 
-Pulled, thanks Arnaldo!
+(The patch did seem to cut barrier requests counts by about 20% though the
+impact on performance was pretty small.)
 
-	Ingo
+--D
