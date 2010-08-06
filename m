@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935134Ab0HFAMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:12:22 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:38307 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932258Ab0HFAMT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:12:19 -0400
-Date: Fri, 6 Aug 2010 02:09:47 +0200
-From: Michael Leun <lkml20100708@newton.leun.net>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Greg KH <greg@kroah.com>, netdev@vger.kernel.org, davem@davemloft.net,
-        linux-kernel@vger.kernel.org, Alexey Dobriyan <adobriyan@gmail.com>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: NET_NS: unregister_netdevice: waiting for lo to become free
- (adding ipv6 address to interface)
-Message-ID: <20100806020947.3b7c66ac@xenia.leun.net>
-In-Reply-To: <m1bp9g7ry0.fsf@fess.ebiederm.org>
-References: <loom.20100708T183152-326@post.gmane.org>
-	<20100709235744.GA12752@kroah.com>
-	<20100710101540.2799c9ef@xenia.leun.net>
-	<20100710140800.GA20424@kroah.com>
-	<20100710165208.59272ae6@xenia.leun.net>
-	<20100710235323.5336f627@xenia.leun.net>
-	<20100711192939.1c25dcaf@xenia.leun.net>
-	<20100804153543.56f6ecad@xenia.leun.net>
-	<20100804214618.GA6289@kroah.com>
-	<20100805001105.5a3453ed@xenia.leun.net>
-	<m1lj8l29zm.fsf@fess.ebiederm.org>
-	<20100805112538.60a46cb1@xenia.leun.net>
-	<m1y6clz8ta.fsf_-_@fess.ebiederm.org>
-	<20100805134707.0442a7b1@xenia.leun.net>
-	<m1bp9g7ry0.fsf@fess.ebiederm.org>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S935085Ab0HFANl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:13:41 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:55322 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831Ab0HFANj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 20:13:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=UV0B2e71suKZW4KKhkJtIDzHhoWz/BRXZmg6ZSSiLysiPOyLBPopxDW2taMsWzVI/
+	z28cn9RGzvSszirGpcTTA==
+MIME-Version: 1.0
+In-Reply-To: <20100805230304.GQ2447@linux.vnet.ibm.com>
+References: <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
+	<20100805004802.GP24163@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
+	<20100805151211.GA10080@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
+	<AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
+	<20100805203102.GN2447@linux.vnet.ibm.com>
+	<AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
+	<alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
+	<AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
+	<20100805230304.GQ2447@linux.vnet.ibm.com>
+Date: Thu, 5 Aug 2010 17:13:14 -0700
+Message-ID: <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+From: Brian Swetland <swetland@google.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: david@lang.hm, kevin granade <kevin.granade@gmail.com>,
+        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 05 Aug 2010 12:57:59 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
+On Thu, Aug 5, 2010 at 4:03 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+>> > so what would wake a phone up from suspend where the phone should go back to
+>> > sleep in under a second?
+>>
+>> Here are some real-world examples from shipped android devices:
+>> - battery gauging happens every 10 minutes, need to wake long enough
+>> to chatter with the 1w interface and make sure the battery is not
+>> exploding
+>> - always on mail/im/calendar/etc sync often has network events that
+>> happen every 5-10 minutes which cause devices to briefly wake up and
+>> return to sleep
+>> - gps tracker app might wake every couple minutes or every n gps
+>> events to log location
+>> - low power audio subsystems can wake you up every 1-4 seconds (pcm)
+>> or 1-4 minutes (mp3) to fetch more data
+>
+> Interesting!
+>
+> So for an mp3 playback, does an Android suspend between data fetches?
 
-> What puzzles me is that on a slightly patched 2.6.32 (so sysfs works)
-> and I am doing very similar things (openvpn tunnels, ipv6 to the
-> network as a whole etc), and I am not seeing the infinite
-> unregister_netdevice: messages you are talking about.
+It can if the latency is long enough (which is why I point out low
+power audio which is usually high latency).  For low latency (system
+sounds, etc) 10-25ms between buffers it's not practical to fully
+suspend but we will go to the lowest power state in idle if possible.
 
-Hmmm, I think there are 2 possibilities:
-
-- You send me a patch against plain 2.6.32, so I can check my
-  scenarios against that kernel
-
-or 
-
--  You could try yourself, its really just that few lines against a
-  fresh booted system in a clean, easy to reproduce state
-
-(Only, if you think that would yield useful information, of course).
-
-> When a network device is removed most references to it are redirected
-> to the loopback device so a normal network device should not see the
-> worst of the problems.  That is why lo showed up.
-> 
-> In that context I'm a bit surprised you managed trigger a problem on
-> veth1.
-
-Difference was, when that message showed up with veth1, lo in that
-namespace was down while testing. When lo was up it showed up on lo.
-
--- 
-MfG,
-
-Michael Leun
-
+Brian
