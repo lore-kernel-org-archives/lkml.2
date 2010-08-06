@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760203Ab0HFGsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 02:48:01 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46505 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab0HFGr6 (ORCPT
+	id S1760421Ab0HFGwS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 02:52:18 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:2831 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab0HFGwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 02:47:58 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz9370J98dN936eM4015Lzz1202hzz15d4Rz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L6PWRL-01-G2Z-02
+	Fri, 6 Aug 2010 02:52:13 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L6PXQQ-02-9UL-02
 X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
-Date: Fri, 6 Aug 2010 08:30:50 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-24-generic; KDE/4.4.5; x86_64; ; )
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+Date: Fri, 6 Aug 2010 08:52:03 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C52DF50.80009@kernel.org> <4C5AE1E2.6070601@gmail.com>
-In-Reply-To: <4C5AE1E2.6070601@gmail.com>
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: A question of perf NMI handler
+Message-ID: <20100806065203.GR26154@erda.amd.com>
+References: <1280931093.1923.1194.camel@laptop>
+ <20100804145203.GP3353@redhat.com>
+ <1280934161.1923.1294.camel@laptop>
+ <20100804151858.GB5130@lenovo>
+ <20100804155002.GS3353@redhat.com>
+ <20100804161046.GC5130@lenovo>
+ <20100804162026.GU3353@redhat.com>
+ <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-ID: <201008060830.50889.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100804192634.GG5130@lenovo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On 04.08.10 15:26:34, Cyrill Gorcunov wrote:
 
-On Thursday 05 August 2010, 18:08:02 Tejun Heo wrote:
-> Can you please try the following patch and see whether the problem
-> goes away?
-<snip>
+> yes, that is what I meant by nmi_sc register. I think we need to restucturize
+> current default_do_nmi handler but how to be with perfs I don't know at moment
+> if perf register gets overflowed (ie already has pedning nmi) but we handle
+> it in early nmi cycle this would lead to strange results. Need to think.
+> 
+> > 
+> > So you can decide to either get an unrecovered nmi panic triggered by
+> > a perfctr or losing unknown nmis from other sources. Maybe this can be
+> > fixed by implementing handlers for those sources.
 
-to which revision does the patch apply? I didn't get it to apply
-cleanly to Linus' kernel HEAD or the 2.6.34 stable tag. Maybe I am
-missing something, since I am a git-n00b (use Mercurial all the time)?
+I was playing around with it yesterday trying to fix this. My idea is
+to skip an unkown nmi if the privious nmi was a *handled* perfctr
+nmi. I will probably post an rfc patch early next week.
 
-Thanks,
-  Stephan
+Another problem I encountered is that unknown nmis from the chipset
+are not reenabled, thus when hitting the nmi button I only see one
+unknown nmi message per boot, if I reenable it, I get an nmi
+storm firing nmi_watchdog. Uhh....
+
+-Robert
+
 -- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
