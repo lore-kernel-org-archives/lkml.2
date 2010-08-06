@@ -1,97 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762112Ab0HFWba (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:31:30 -0400
-Received: from claw.goop.org ([74.207.240.146]:40709 "EHLO claw.goop.org"
+	id S1762129Ab0HFWgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:36:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40158 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751780Ab0HFWb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 18:31:27 -0400
-Message-ID: <4C5C86CD.2000109@goop.org>
-Date: Fri, 06 Aug 2010 15:03:57 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jan Beulich <JBeulich@novell.com>, Peter Zijlstra <peterz@infradead.org>,
-        Xen-devel <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
-        Nick Piggin <npiggin@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 02/12] x86/ticketlock: convert spin loop to C
-References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <cf01e01095f802dc5082e82a8e96c84903e929a6.1279328276.git.jeremy.fitzhardinge@citrix.com> <1280761639.1923.213.camel@laptop> <4C56E1A1.6020005@goop.org> <4C5C1F80020000780000EA6D@vpn.id2.novell.com> <4C5C21E3.1020004@goop.org> <4C5C6DCE.4020206@zytor.com> <4C5C71A5.3050500@goop.org> <4C5C7A0A.9080107@zytor.com>
-In-Reply-To: <4C5C7A0A.9080107@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754877Ab0HFWgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 18:36:06 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+        autofs@linux.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 04/38] autofs4: Save autofs trigger's vfsmount in super block info
+Date: Fri,  6 Aug 2010 15:34:50 -0700
+Message-Id: <1281134124-17041-5-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
+References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/06/2010 02:09 PM, H. Peter Anvin wrote:
-> On 08/06/2010 01:33 PM, Jeremy Fitzhardinge wrote:
->> On 08/06/2010 01:17 PM, H. Peter Anvin wrote:
->>> On 08/06/2010 07:53 AM, Jeremy Fitzhardinge wrote:
->>>> On 08/06/2010 05:43 AM, Jan Beulich wrote:
->>>>> You certainly mean "the compiler currently treats this as being:" - I
->>>>> don't think there's a guarantee it'll always be doing so.
->>>>>
->>>>>> for (;;) {
->>>>>> if (inc.tickets.head == inc.tickets.tail)
->>>>>> goto out;
->>>>>> ...
->>>>>> }
->>>>>> out: barrier();
->>>>>> }
->>>>>>
->>>>>> (Which would probably be a reasonable way to clarify the code.)
->>>>> I therefore think it needs to be written this way.
->>>>
->>>> Agreed.
->>>>
->>>
->>> A call/return to an actual out-of-line function is a barrier (and will
->>> always be a barrier, as it is the fundamental ABI sequence points),
->>> but to an inline function it is not.
->>
->> Yes. So the goto explicitly puts the barrier into the control flow which
->> should stop the compiler from doing anything unexpected.
->>
->
-> In this particular case, though, I would somewhat expect the more 
-> conventional:
->
-> while (inc.tickets.head != inc.tickets.tail) {
->     cpu_relax();
->     inc.tickets.head = ACCESS_ONCE(lock->tickets_head);
-> }
+From: Jan Blunck <jblunck@suse.de>
 
-Yes, that makes sense for the plain spinlock version.  But the full 
-code, including the pv-ticketlock spin timeout, ends up being:
+XXX - This is broken and included just to make union mounts work.  Ian
+Kent and David Howells are working on a long-term solution that will
+replace abuse of ->follow_link() to trigger an automount with a new
+op.
 
-static __always_inline void arch_spin_lock(struct arch_spinlock *lock)
-{
-	register struct __raw_tickets inc;
+Original commit message:
 
-	inc = __ticket_spin_claim(lock);
+This is a bugfix/replacement for commit
+051d381259eb57d6074d02a6ba6e90e744f1a29f:
 
-	for (;;) {
-		unsigned count = SPIN_THRESHOLD;
+    During a path walk if an autofs trigger is mounted on a dentry,
+    when the follow_link method is called, the nameidata struct
+    contains the vfsmount and mountpoint dentry of the parent mount
+    while the dentry that is passed in is the root of the autofs
+    trigger mount.  I believe it is impossible to get the vfsmount of
+    the trigger mount, within the follow_link method, when only the
+    parent vfsmount and the root dentry of the trigger mount are
+    known.
 
-		do {
-			if (inc.head == inc.tail)
-				goto out;
-			cpu_relax();
-			inc.head = ACCESS_ONCE(lock->tickets.head);
-		} while (--count);
-		__ticket_lock_spinning(lock, inc.tail);
-	}
-out:	barrier();		/* make sure nothing creeps before the lock is taken */
-}
+The pre solution in this commit was to replace the path embedded in the
+parent's nameidata with the path of the link itself in
+__do_follow_link().  This is a relatively harmless misuse of the
+field, but union mounts ran into a bug during follow_link() caused by
+the nameidata containing the wrong path (we count on it being what it
+is all other places - the path of the parent).
 
-So the goto form is closer to the final form.  If it weren't for this, 
-I'd also prefer the while() form.
+A cleaner and easier to understand solution is to save the necessary
+vfsmount in the autofs superblock info when it is mounted.  Then we
+can easily update the vfsmount in autofs4_follow_link().
 
-(If you config PARAVIRT_SPINLOCKS=n, then __ticket_lock_spinning() 
-becomes an empty inline, which causes gcc to collapse the whole thing 
-into a simple infinite loop (ie, it eliminates "count" and the inner loop).)
+Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Acked-by: Ian Kent <raven@themaw.net>
+Cc: autofs@linux.kernel.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+---
+ fs/autofs4/autofs_i.h |    1 +
+ fs/autofs4/init.c     |   11 ++++++++++-
+ fs/autofs4/root.c     |    6 ++++++
+ fs/namei.c            |    7 ++-----
+ 4 files changed, 19 insertions(+), 6 deletions(-)
 
+diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
+index 3d283ab..de3af64 100644
+--- a/fs/autofs4/autofs_i.h
++++ b/fs/autofs4/autofs_i.h
+@@ -133,6 +133,7 @@ struct autofs_sb_info {
+ 	int reghost_enabled;
+ 	int needs_reghost;
+ 	struct super_block *sb;
++	struct vfsmount *mnt;
+ 	struct mutex wq_mutex;
+ 	spinlock_t fs_lock;
+ 	struct autofs_wait_queue *queues; /* Wait queue pointer */
+diff --git a/fs/autofs4/init.c b/fs/autofs4/init.c
+index 9722e4b..5e0dcd7 100644
+--- a/fs/autofs4/init.c
++++ b/fs/autofs4/init.c
+@@ -17,7 +17,16 @@
+ static int autofs_get_sb(struct file_system_type *fs_type,
+ 	int flags, const char *dev_name, void *data, struct vfsmount *mnt)
+ {
+-	return get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	struct autofs_sb_info *sbi;
++	int ret;
++
++	ret = get_sb_nodev(fs_type, flags, data, autofs4_fill_super, mnt);
++	if (ret)
++		return ret;
++
++	sbi = autofs4_sbi(mnt->mnt_sb);
++	sbi->mnt = mnt;
++	return 0;
+ }
+ 
+ static struct file_system_type autofs_fs_type = {
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index db4117e..e4c507d 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -220,6 +220,12 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
+ 	DPRINTK("dentry=%p %.*s oz_mode=%d nd->flags=%d",
+ 		dentry, dentry->d_name.len, dentry->d_name.name, oz_mode,
+ 		nd->flags);
++
++	dput(nd->path.dentry);
++	mntput(nd->path.mnt);
++	nd->path.mnt = mntget(sbi->mnt);
++	nd->path.dentry = dget(dentry);
++
+ 	/*
+ 	 * For an expire of a covered direct or offset mount we need
+ 	 * to break out of follow_down() at the autofs mount trigger
+diff --git a/fs/namei.c b/fs/namei.c
+index 735f54b..7552e61 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -539,11 +539,8 @@ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
+ 	touch_atime(path->mnt, dentry);
+ 	nd_set_link(nd, NULL);
+ 
+-	if (path->mnt != nd->path.mnt) {
+-		path_to_nameidata(path, nd);
+-		dget(dentry);
+-	}
+-	mntget(path->mnt);
++	if (path->mnt == nd->path.mnt)
++		mntget(nd->path.mnt);
+ 	nd->last_type = LAST_BIND;
+ 	*p = dentry->d_inode->i_op->follow_link(dentry, nd);
+ 	error = PTR_ERR(*p);
+-- 
+1.6.3.3
 
-     J
