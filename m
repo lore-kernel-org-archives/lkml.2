@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935573Ab0HFSd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:33:26 -0400
-Received: from kroah.org ([198.145.64.141]:48527 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935476Ab0HFSdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:33:23 -0400
-Date: Fri, 6 Aug 2010 11:32:50 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/38] 2.6.35.1-stable review
-Message-ID: <20100806183250.GA23019@kroah.com>
+	id S1761679Ab0HFSeV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:34:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47264 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759322Ab0HFSeS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:34:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=kxJ13PX3LmFeZRnlE9kV7KOADZB6b2cyMh39cS6W8zNPmutosi6acpSbLV0LYfy03U
+         2yDRZbb3jb02zW3gwmv46npaCaq+iG5EKJGNX5o2MoSfN+a9/QvbUlj3/H66DEcFr8lX
+         W1NRiWYBG24aWiETqjNnDsvES4bGnRmPs3kYs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTi=OLP+NwGP7v0O0=ZqBNp_Ag9mm+LEUnCw5OX7L@mail.gmail.com>
+References: <1277811391-17966-1-git-send-email-linus.walleij@stericsson.com>
+	<AANLkTi=jStVGbJC7jUyhOG3og14F58rw+LEN2UqnP-X0@mail.gmail.com>
+	<AANLkTi=bkp+JJYQ7dF36Up3gcjJR8LypgfKBWZHLfPH-@mail.gmail.com>
+	<AANLkTimPAeupEKwksBKOyWX8K+wHgmgc5vEJ8cXBsQtD@mail.gmail.com>
+	<AANLkTi=yJjHDh08muCg7Z97xRGDcTQrv=VimHSNCqn2U@mail.gmail.com>
+	<20100805071235.GA436@morgana.i.gnudd.com>
+	<AANLkTinAuZ5GAauKHfUVV_K_9gQOpFY35m7SLsH6rvD1@mail.gmail.com>
+	<AANLkTi=OLP+NwGP7v0O0=ZqBNp_Ag9mm+LEUnCw5OX7L@mail.gmail.com>
+Date: Fri, 6 Aug 2010 11:34:16 -0700
+X-Google-Sender-Auth: 1Mea05U6vjcuEEVI3LdT4uBrQp0
+Message-ID: <AANLkTi=9BjWWdcZg0w772jcemjriQ5p0HV3EJB8OM68O@mail.gmail.com>
+Subject: Re: [PATCH 2/2] DMAENGINE: driver for the ARM PL080/PL081 PrimeCells
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Alessandro Rubini <rubini@unipv.it>, peter.pearse@arm.com,
+        viresh.kumar@st.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, yuanyabin1978@sina.com,
+        ben-linux@fluff.org, kgene.kim@samsung.com, rmk@arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 2.6.35.1 release.
-There are 38 patches in this series, all will be posted as a response to
-this one.  If anyone has any issues with these being applied, please let
-us know.  If anyone is a maintainer of the proper subsystem, and wants
-to add a Signed-off-by: line to the patch, please respond with it.
+On Fri, Aug 6, 2010 at 10:54 AM, Dan Williams <dan.j.williams@intel.com> wrote:
+> On Thu, Aug 5, 2010 at 12:30 AM, Linus Walleij
+> <linus.ml.walleij@gmail.com> wrote:
+>> 2010/8/5 Alessandro Rubini <rubini@unipv.it>:
+>>
+>>>> Peter, Alessandro and Viresh especially: you will hopefully use this
+>>>> driver for ARM refboards, Nomadik and SPEAr, can you provide
+>>>> an Acked-by:?
+>>>
+>>> I'm sorry I can't test it these times, I must delay stuff to
+>>> the last week of August.
+>>
+>> That's be a Tested-by: tag, Acked-by: was more about whether you
+>> think it looks sane I believe, see Documentation/SubmittingPatches.
+>
+> We have the Acked-by from Viresh, Alessandro looks like he is
+> interested in trying it out, the driver is self contained, marked
+> experimental, and you have a track-record of fixing things up, so I'll
+> include it with the idea it will be easier to fixup in-tree.
 
-Responses should be made by August 8, 2010, 18:00:00 UTC.
-Anything received after that time might be too late.
+...except this version no longer compiles:
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.35.1-rc1.gz
-and the diffstat can be found below.
+drivers/dma/amba-pl08x.c: In function 'dma_set_runtime_config':
+drivers/dma/amba-pl08x.c:1399: error: 'struct dma_slave_config' has no
+member named 'maxburst'
+drivers/dma/amba-pl08x.c:1405: error: 'struct dma_slave_config' has no
+member named 'addr'
+drivers/dma/amba-pl08x.c:1408: error: 'struct dma_slave_config' has no
+member named 'addr_width'
+drivers/dma/amba-pl08x.c:1464: error: 'struct dma_slave_config' has no
+member named 'addr_width'
+drivers/dma/amba-pl08x.c:1464: error: 'struct dma_slave_config' has no
+member named 'maxburst'
 
-thanks,
+Fix that up and we can try to get it in the second half of the merge window.
 
-greg k-h
-
- Makefile                                       |    2 +-
- arch/arm/plat-mxc/gpio.c                       |    8 ++
- arch/arm/plat-mxc/include/mach/gpio.h          |    1 +
- arch/parisc/kernel/firmware.c                  |   12 +--
- arch/x86/xen/enlighten.c                       |    2 +-
- arch/x86/xen/time.c                            |   39 -------
- drivers/edac/amd64_edac.c                      |    6 +-
- drivers/gpu/drm/i915/intel_display.c           |  144 +++++++++++++++---------
- drivers/gpu/drm/i915/intel_drv.h               |    8 +-
- drivers/gpu/drm/i915/intel_overlay.c           |    7 +-
- drivers/gpu/drm/radeon/r600.c                  |   24 ++++-
- drivers/gpu/drm/radeon/r600d.h                 |    1 +
- drivers/gpu/drm/radeon/radeon_object.c         |   27 +++--
- drivers/gpu/drm/radeon/rs690.c                 |   27 ++---
- drivers/gpu/drm/radeon/rv515.c                 |   23 ++---
- drivers/gpu/drm/radeon/rv770.c                 |    5 +-
- drivers/gpu/drm/radeon/rv770d.h                |    1 +
- drivers/misc/enclosure.c                       |    7 +-
- drivers/net/e1000e/hw.h                        |    2 +-
- drivers/net/e1000e/netdev.c                    |   13 ++-
- drivers/net/igb/igb_main.c                     |    8 +-
- drivers/net/wireless/ath/ath9k/ar9002_calib.c  |    2 +-
- drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 +-
- drivers/net/wireless/ath/ath9k/eeprom.h        |    2 +-
- drivers/net/wireless/ath/ath9k/eeprom_4k.c     |    4 +-
- drivers/net/wireless/ath/ath9k/eeprom_9287.c   |    4 +-
- drivers/net/wireless/ath/ath9k/eeprom_def.c    |    6 +-
- drivers/net/wireless/ath/ath9k/hw.c            |   23 +++-
- drivers/net/wireless/ath/ath9k/xmit.c          |   95 ++++++++++------
- drivers/net/wireless/iwlwifi/iwl-scan.c        |   18 ++--
- drivers/net/xen-netfront.c                     |    1 +
- drivers/parisc/led.c                           |    6 +-
- drivers/ssb/driver_chipcommon.c                |    1 +
- drivers/ssb/pci.c                              |   15 ++-
- fs/block_dev.c                                 |    4 +-
- include/drm/drm_pciids.h                       |    7 +
- include/linux/netdevice.h                      |    2 +
- include/linux/notifier.h                       |    1 +
- kernel/signal.c                                |    9 +-
- net/9p/trans_fd.c                              |    2 +-
- net/ipv4/devinet.c                             |    1 +
- net/mac80211/mesh_plink.c                      |   42 +++++--
- net/sched/sch_generic.c                        |   18 +++
- net/wireless/mlme.c                            |    8 +-
- net/wireless/scan.c                            |    5 +
- 45 files changed, 395 insertions(+), 250 deletions(-)
+--
+Dan
