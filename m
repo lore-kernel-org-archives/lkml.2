@@ -1,106 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934996Ab0HFRRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:17:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934138Ab0HFRQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:16:57 -0400
-Date: Fri, 6 Aug 2010 13:16:40 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-Message-ID: <20100806171640.GC16599@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804224831.GB29353@shell> <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu> <20100805233019.GA30761@shell> <E1OhI5C-0005PG-3G@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1OhI5C-0005PG-3G@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+	id S934989Ab0HFRSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:18:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41049 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751771Ab0HFRSU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:18:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <201008052037.o75KbxSS022005@hera.kernel.org>
+References: <201008052037.o75KbxSS022005@hera.kernel.org>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Aug 2010 10:17:27 -0700
+Message-ID: <AANLkTimZF5U-AmD6200gnTuNzX5nUqVqEo_NmiH3rz5n@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/asm for 2.6.36
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: stable@kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Avi Kivity <avi@redhat.com>, Brian Gerst <brgerst@gmail.com>,
+        Glauber Costa <glommer@redhat.com>, Greg KH <gregkh@suse.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Jeff Dike <jdike@addtoit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Peter Palfrader <peter@palfrader.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Zachary Amsden <zamsden@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 10:15:14AM +0200, Miklos Szeredi wrote:
-> On Thu, 5 Aug 2010, Valerie Aurora wrote:
-> > On Thu, Aug 05, 2010 at 12:36:55PM +0200, Miklos Szeredi wrote:
-> > > On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> > > > --zYM0uCDKw75PZbzx
-> > > > Content-Type: text/plain; charset=us-ascii
-> > > > Content-Disposition: inline
-> > > > 
-> > > > On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
-> > > > > On Tue, 15 Jun 2010, Valerie Aurora wrote:
-> > > > > > Add support for fallthru directory entries to ext2.
-> > > > > 
-> > > > > If a previously used ext2 filesystem with is mounted again then
-> > > > > fallthroughs don't appear to work as expected.  Stat returns ENOENT
-> > > > > for these entries.
-> > > > > 
-> > > > > Can't see anything obviously wrong with the code.
-> > > > 
-> > > > Hm, I wrote one test case for this that worked (attached).  Can you
-> > > > give me more details on your test case?  Thanks,
-> > 
-> > Cool, thanks.  Yes, I suppose the fallthrus should be ignored if they
-> > don't fall through to anything.
-> 
-> That's not the case here.  They _should_ fall through to ext3.img, yet
-> apparently after ovl.img being mounted again they don't seem to work.
+On Thu, Aug 5, 2010 at 1:37 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+>
+>  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-asm-for-linus
+>
+> H. Peter Anvin (7):
+>      x86, asm: Clean up and simplify set_64bit()
 
-Oh, "mmount -b 8" == "mount -o union".  Is this the mmount from mtools
-or something else?
+Hmm. This seems to cause compiler warnings for me on x86-64:
 
-> Note, ovl.img starts out as a completely empty filesystem.
-> 
-> The difference between your test case and mine mitght be that yours
-> not only reads the directory but stats the files as well, while mine
-> does not.
+  drivers/pci/intr_remapping.c: In function ‘modify_irte’:
+  drivers/pci/intr_remapping.c:314: warning: passing argument 1 of
+‘set_64bit’ from incompatible pointer type
+  /home/torvalds/v2.6/linux/arch/x86/include/asm/cmpxchg_64.h:6: note:
+expected ‘volatile u64 *’ but argument is of type ‘long unsigned int
+*’
 
-Okay, I'll experiment more and see what I can do.
+and I'm not clear on the reason for that function prototype change.
 
--VAL
-
-> Thanks,
-> Miklos
-> 
-> 
-> > 
-> > > uml:~# mount -oloop -r ext3-2.img /mnt/img/
-> > > uml:~# mount -oloop -r ext3.img /mnt/img/
-> > > uml:~# losetup -f ovl.img 
-> > > uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> > > uml:~# "ls" /mnt/img
-> > > bunion  lost+found  union
-> > > uml:~# "ls" /mnt/img/union
-> > > 1  2  3
-> > > uml:~# "ls" /mnt/img/union/1
-> > > a  x
-> > > uml:~# umount /mnt/img/
-> > > uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> > > uml:~# ls -l /mnt/img/  
-> > > total 14
-> > > drwxr-xr-x 2 root root  1024 Aug  5 09:56 bunion
-> > > drwx------ 2 root root 12288 Aug  5 09:41 lost+found
-> > > drwxr-xr-x 3 root root  1024 Aug  5 09:56 union
-> > > uml:~# ls -l /mnt/img/union/
-> > > ls: cannot access /mnt/img/union/3: No such file or directory
-> > > ls: cannot access /mnt/img/union/2: No such file or directory
-> > > total 1
-> > > drwxr-xr-x 2 root root 1024 Aug  5 09:56 1
-> > > ?????????? ? ?    ?       ?            ? 2
-> > > ?????????? ? ?    ?       ?            ? 3
-> > > uml:~# ls -l /mnt/img/union/1
-> > > ls: cannot access /mnt/img/union/1/a: No such file or directory
-> > > ls: cannot access /mnt/img/union/1/x: No such file or directory
-> > > total 0
-> > > ?????????? ? ? ? ?            ? a
-> > > ?????????? ? ? ? ?            ? x
-> > > uml:~# 
-> > > 
-> > > Thanks,
-> > > Miklos
-> > 
+                          Linus
