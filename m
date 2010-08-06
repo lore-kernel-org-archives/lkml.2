@@ -1,97 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762177Ab0HFXTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 19:19:23 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41336 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751953Ab0HFXTU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 19:19:20 -0400
+	id S1762164Ab0HFX0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 19:26:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44034 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751980Ab0HFX0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 19:26:01 -0400
+Date: Fri, 6 Aug 2010 16:02:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: David Cross / Applications Engineer <odc@cypress.com>
+Cc: linux-kernel@vger.kernel.org, david.cross@cypress.com
+Subject: Re: PATCH: West Bridge Driver Kernel Support linux-2.6.35
+Message-ID: <20100806230246.GA6433@suse.de>
+References: <20100806222815.M60253@cypress.com>
 MIME-Version: 1.0
-In-Reply-To: <20100804125156.GA23464@sepie.suse.cz>
-References: <20100804125156.GA23464@sepie.suse.cz>
-Date: Fri, 6 Aug 2010 16:19:19 -0700
-Message-ID: <AANLkTinN4npO7qfSa-42B-Cq5mKZX+--H0=1SuSrWTEP@mail.gmail.com>
-Subject: Re: [GIT] kbuild: kconfig changes
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, JBeulich@novell.com,
-        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
-        justinmattock@gmail.com, lizf@cn.fujitsu.com, sam@ravnborg.org,
-        ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100806222815.M60253@cypress.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 4, 2010 at 5:51 AM, Michal Marek <mmarek@suse.cz> wrote:
-> Hi Linus,
->
-> this is the kconfig part of kbuild. We have four new *config targets:
-> * oldnoconfig: set all new options to 'n'
-> * listnewconfig: list all unset config options
-> * alldefconfig: set all options to their defaults specified in Kconfig
->  files
-> * savedefconfig: write a defconfig file with only the differences from
->  an alldefconfig (aka minimal defconfig)
->
-> Kconfig also warns when a select statement selects a symbol with unmet
-> dependencies (which typically results in a broken config). Li Zefan did
-> quite some usability fixes to the visual config interfaces.
->
-> Michal
->
-> The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
->
->  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
->
-> are available in the git repository at:
->  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kconfig
->
-> Aristeu Rozanski (1):
->      kconfig: introduce nonint_oldconfig and loose_nonint_oldconfig
->
-> Catalin Marinas (1):
->      kbuild: Warn on selecting symbols with unmet direct dependencies
->
-> Jan Beulich (1):
->      kconfig: Don't write invisible choice values
+On Fri, Aug 06, 2010 at 03:31:19PM -0700, David Cross / Applications Engineer wrote:
+> 
+> Re-Re-Re-sending with unnecessary files removed and line wrap turned off in
+> new email client. The last one did include a Signed-off-by: at the end, I
+> believe, and I am re-including here. Please let me know if there are
+> formatting issues with this sign off.
 
-This change prevents some the minimal defconfig options from working.
-Specifically our usb gadget drivers do not get set. Reverting this
-part of the changes fixes my problem, but I don't know what other side
-effects it may have:
+Signed-off-by: goes after the body of the changelog comment, and before
+the patch itself.
 
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index e95718f..1797226 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -261,18 +261,14 @@ struct symbol *sym_choice_default(struct symbol *sym)
- static struct symbol *sym_calc_choice(struct symbol *sym)
- {
-        struct symbol *def_sym;
--       struct property *prop;
--       struct expr *e;
--
--       /* first calculate all choice values' visibilities */
--       prop = sym_get_choice_prop(sym);
--       expr_list_for_each_sym(prop->expr, e, def_sym)
--               sym_calc_visibility(def_sym);
+> This is a driver for the Cypress West Bridge companion chip. Its function is
+> analogous to the North/South Bridges of PC environments applied to embedded
+> devices, in that it expands I/O and storage capabilities of an embedded
+> processor. The Astoria version, which this driver applies to, functions as a
+> USB, embedded memory and SDIO controller. The kernel that this patch was
+> applied to is linux-2.6.35, although it was tested using the android kernel
+> 2.6.29 running on the Zoom 2 platform. In this system, it was used primarily
+> as a sideloading accelerator enabling direct data transfers between a USB host
+> PC and embedded memory without system overheads.
+> Minor modifications were also made to the kernel for this patch. These include
+> changes such as EXPORTing of fat_get_block in the kernel code. Another
+> function, mpage_cleardirty was also added to the memory management code. This
+> function is used to clear the dirty pages from a specific inode. This allows
+> for direct, file based DMA. None of these changes are believed to have any
+> negative impact on the kernel and may provide additional benefit for other
+> developers and drivers.
+> The driver, as submitted, was placed into the drivers/staging/westbridge
+> folder as the directory structure it will eventually reside in is not yet
+> defined. The driver, as placed in staging is divided into four parts:
+> 1) gadget – this implements a gadget peripheral controller and includes IOCTLs
+> for MTP transfers
+> 2) block – this implements a generic block device driver to enable access to
+> embedded memory
+> 3) api – this is the Cypress SDK, and includes USB and Storage specific
+> functions. In addition, it includes common code for low level routines such as
+> message passing and common data transfer routines
+> 4) hal – this should likely be included in the arch directory as it needs to
+> be modified for a given platform. The directory structure in the staging area
+> is meant to reflect the eventual location of where this code likely should be.
+> It is platform specific. In this case, the HAL included is for the Android
+> Zoom 2 platform. Here, West Bridge is connected to the GPMC (general purpose
+> memory controller) of the OMAP3. Specific timing needs to be enabled to ensure
+> reliable communication.
+> Many thanks to Greg KH for conducting initial reviews and providing pointers.
+> Please contact david.cross@cypress.com for questions, concerns or feedback.
+> 
+> Binary files linux-2.6-35-vanilla/arch/arm/boot/compressed/piggy.gzip and
+> linux-2.6-35_incl_sdk/arch/arm/boot/compressed/piggy.gzip differ
+> diff -uprN -X linux-2.6-35-vanilla/Documentation/dontdiff
+> linux-2.6-35-vanilla/arch/arm/mach-omap2/gpmc.c
+> linux-2.6-35_incl_sdk/arch/arm/mach-omap2/gpmc.c
+> --- linux-2.6-35-vanilla/arch/arm/mach-omap2/gpmc.c	2010-08-03
+> 14:40:10.000000000 -0700
 
-        /* is the user choice visible? */
-        def_sym = sym->def[S_DEF_USER].val;
--       if (def_sym && def_sym->visible != no)
--               return def_sym;
-+       if (def_sym) {
-+               sym_calc_visibility(def_sym);
-+               if (def_sym->visible != no)
-+                       return def_sym;
-+       }
+The patch is still line-wrapped and you have files in your diff that
+shouldn't be (i.e. the "binary" files above.)
 
-        def_sym = sym_choice_default(sym);
+Care to redo it?
 
+Also, I need a TODO file in the driver directory that details what needs
+to be done in order to move the code into the main portion of the
+kernel.  Take a look at the other drivers/staging/*/TODO files for
+examples of the format and content.
 
--- 
-Arve Hjønnevåg
+thanks,
+
+greg k-h
