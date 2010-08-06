@@ -1,67 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761493Ab0HFPJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:09:58 -0400
-Received: from mail.windriver.com ([147.11.1.11]:64360 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760524Ab0HFPJz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:09:55 -0400
-Message-ID: <4C5C25B7.4020902@windriver.com>
-Date: Fri, 06 Aug 2010 10:09:43 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] timekeeping: Fix overflow in rawtime tv_nsec on 32 bit
- archs
-References: <1281011312-23499-1-git-send-email-jason.wessel@windriver.com> <1281046640.3405.18.camel@localhost.localdomain>
-In-Reply-To: <1281046640.3405.18.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+	id S1761504Ab0HFPKa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:10:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24877 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757190Ab0HFPK0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 11:10:26 -0400
+Subject: Re: [PATCH] cgroups: fix API thinko
+From: Alex Williamson <alex.williamson@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ben Blum <bblum@google.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+In-Reply-To: <20100805225914.GA26772@redhat.com>
+References: <20100805225914.GA26772@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Aug 2010 09:09:08 -0600
+Message-ID: <1281107348.6598.377.camel@x201>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Aug 2010 15:09:45.0185 (UTC) FILETIME=[675FFD10:01CB3579]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 05:17 PM, john stultz wrote:
-> On Thu, 2010-08-05 at 07:28 -0500, Jason Wessel wrote:
->> The tv_nsec is a long and when added to the shift value it can wrap
->> and become negative which later causes looping problems in the
->> getrawmonotonic().  The edge case occurs when the system has slept for
->> a short period of time of ~2 seconds.
+On Fri, 2010-08-06 at 01:59 +0300, Michael S. Tsirkin wrote:
+> cgroup_attach_task_current_cg API that have upstream is backwards: we
+> really need an API to attach to the cgroups from another process A to
+> the current one.
 > 
-> Ah, good catch!
+> In our case (vhost), a priveledged user wants to attach it's task to cgroups
+> from a less priveledged one, the API makes us run it in the other
+> task's context, and this fails.
 > 
-> I reworked some of the variable names to make a little more sense and
-> simplified the accumulation. Do you mind giving this a test in your
-> environment that triggered the issue to make sure nothing else slipped
-> in?
+> So let's make the API generic and just pass in 'from' and 'to' tasks.
+> Add an inline wrapper for cgroup_attach_task_current_cg to avoid
+> breaking bisect.
 > 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> Paul, Li, Sridhar, could you please review the following
+> patch?
+> 
+> I only compile-tested it due to travel, but looks
+> straight-forward to me.
+> Alex Williamson volunteered to test and report the results.
+> Sending out now for review as I might be offline for a bit.
+> Will only try to merge when done, obviously.
 
+This does seem to be working here, so please review and let us know if
+this looks like a suitable interface.  Thanks,
 
-No problem.
+Alex
 
+> If OK, I would like to merge this through -net tree,
+> together with the patch fixing vhost-net.
+> Let me know if that sounds ok.
+> 
+> Thanks!
+> 
+> This patch is on top of net-next, it is needed for fix
+> vhost-net regression in net-next, where a non-priveledged
+> process can't enable the device anymore:
+> 
+> when qemu uses vhost, inside the ioctl call it
+> creates a thread, and tries to add
+> this thread to the groups of current, and it fails.
+> But we control the thread, so to solve the problem,
+> we really should tell it 'connect to out cgroups'.
+> 
+> What this patch does is add an API for that.
+> 
+>  include/linux/cgroup.h |   11 ++++++++++-
+>  kernel/cgroup.c        |    9 +++++----
+>  2 files changed, 15 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+> index 43b2072..b38ec60 100644
+> --- a/include/linux/cgroup.h
+> +++ b/include/linux/cgroup.h
+> @@ -525,7 +525,11 @@ struct task_struct *cgroup_iter_next(struct cgroup *cgrp,
+>  void cgroup_iter_end(struct cgroup *cgrp, struct cgroup_iter *it);
+>  int cgroup_scan_tasks(struct cgroup_scanner *scan);
+>  int cgroup_attach_task(struct cgroup *, struct task_struct *);
+> -int cgroup_attach_task_current_cg(struct task_struct *);
+> +int cgroup_attach_task_all(struct task_struct *from, struct task_struct *);
+> +static inline int cgroup_attach_task_current_cg(struct task_struct *tsk)
+> +{
+> +	return cgroup_attach_task_all(current, tsk);
+> +}
+>  
+>  /*
+>   * CSS ID is ID for cgroup_subsys_state structs under subsys. This only works
+> @@ -583,6 +587,11 @@ static inline int cgroupstats_build(struct cgroupstats *stats,
+>  }
+>  
+>  /* No cgroups - nothing to do */
+> +static inline int cgroup_attach_task_all(struct task_struct *from,
+> +					 struct task_struct *t)
+> +{
+> +	return 0;
+> +}
+>  static inline int cgroup_attach_task_current_cg(struct task_struct *t)
+>  {
+>  	return 0;
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index dce8ebc..e6293b8 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1606,10 +1606,11 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
+>  }
+>  
+>  /**
+> - * cgroup_attach_task_current_cg - attach task 'tsk' to current task's cgroup
+> + * cgroup_attach_task_all - attach task 'tsk' to all cgroups of task 'from'
+> + * @from: attach to all cgroups of a given task
+>   * @tsk: the task to be attached
+>   */
+> -int cgroup_attach_task_current_cg(struct task_struct *tsk)
+> +int cgroup_attach_task_all(struct task_struct *from, struct task_struct *tsk)
+>  {
+>  	struct cgroupfs_root *root;
+>  	struct cgroup *cur_cg;
+> @@ -1617,7 +1618,7 @@ int cgroup_attach_task_current_cg(struct task_struct *tsk)
+>  
+>  	cgroup_lock();
+>  	for_each_active_root(root) {
+> -		cur_cg = task_cgroup_from_root(current, root);
+> +		cur_cg = task_cgroup_from_root(from, root);
+>  		retval = cgroup_attach_task(cur_cg, tsk);
+>  		if (retval)
+>  			break;
+> @@ -1626,7 +1627,7 @@ int cgroup_attach_task_current_cg(struct task_struct *tsk)
+>  
+>  	return retval;
+>  }
+> -EXPORT_SYMBOL_GPL(cgroup_attach_task_current_cg);
+> +EXPORT_SYMBOL_GPL(cgroup_attach_task_all);
+>  
+>  /*
+>   * Attach task with pid 'pid' to cgroup 'cgrp'. Call with cgroup_mutex
 
-This looks good to me.  I even increased the delay and I can see it recovers properly.
-
-The instrumentation shows raw_nsecs would have otherwise been negative going from 90.* to 97.* in the log.
-
-           <...>-4801  [000]    90.105084: update_wall_time: raw_nsecs: 37283ea1
-           <...>-4801  [000]    90.109078: update_wall_time: raw_nsecs: 376547b4
-           <...>-4801  [000]    97.694264: update_wall_time: raw_nsecs: b1776db4
-           <...>-4801  [000]    97.694270: update_wall_time: raw_nsecs: b453ffb4
-           <...>-4801  [000]    97.694272: update_wall_time: raw_nsecs: 7b95c7b4
-
-Note that I had instrumented it just after:
-
-raw_nsecs += raw_time.tv_nsec;
-
-We should send this over to -stable when it is considered baked because this was found in the 2.6.35 and may be a problem elsewhere as well.
-
-Thanks,
-Jason.
 
 
