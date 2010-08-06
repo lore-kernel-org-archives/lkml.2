@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761830Ab0HFSfY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:35:24 -0400
-Received: from kroah.org ([198.145.64.141]:48555 "EHLO coco.kroah.org"
+	id S1761864Ab0HFSf2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:35:28 -0400
+Received: from kroah.org ([198.145.64.141]:48557 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761792Ab0HFSfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:21 -0400
+	id S1761806Ab0HFSfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:23 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:00 2010
-Message-Id: <20100806183200.406242674@clark.site>
+Message-Id: <20100806183200.500407662@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:25 -0700
+Date: Fri, 06 Aug 2010 11:30:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Kyle McMartin <kyle@parisc-linux.org>
-Subject: [04/38] parisc: pass through \t to early (iodc) console
+        Borislav Petkov <borislav.petkov@amd.com>,
+        Doug Thompson <dougthompson@xmission.com>
+Subject: [05/38] amd64_edac: Fix DCT base address selector
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kyle McMartin <kyle@mcmartin.ca>
+From: Borislav Petkov <borislav.petkov@amd.com>
 
-commit d9b68e5e88248bb24fd4e455588bea1d56108fd6 upstream.
+commit 9975a5f22a4fcc8d08035c65439900a983f891ad upstream.
 
-The firmware handles '\t' internally, so stop trying to emulate it
-(which, incidentally, had a bug in it.)
+The correct check is to verify whether in high range we're below 4GB
+and not to extract the DctSelBaseAddr again. See "2.8.5 Routing DRAM
+Requests" in the F10h BKDG.
 
-Fixes a really weird hang at bootup in rcu_bootup_announce, which,
-as far as I can tell, is the first printk in the core kernel to use
-a tab as the first character.
-
-Signed-off-by: Kyle McMartin <kyle@parisc-linux.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+Acked-by: Doug Thompson <dougthompson@xmission.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/kernel/firmware.c |   12 ++----------
- 1 file changed, 2 insertions(+), 10 deletions(-)
+ drivers/edac/amd64_edac.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/parisc/kernel/firmware.c
-+++ b/arch/parisc/kernel/firmware.c
-@@ -1123,7 +1123,6 @@ static char __attribute__((aligned(64)))
-  */
- int pdc_iodc_print(const unsigned char *str, unsigned count)
- {
--	static int posx;        /* for simple TAB-Simulation... */
- 	unsigned int i;
- 	unsigned long flags;
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -1430,7 +1430,7 @@ static inline u64 f10_get_base_addr_offs
+ 	u64 chan_off;
  
-@@ -1133,19 +1132,12 @@ int pdc_iodc_print(const unsigned char *
- 			iodc_dbuf[i+0] = '\r';
- 			iodc_dbuf[i+1] = '\n';
- 			i += 2;
--			posx = 0;
- 			goto print;
--		case '\t':
--			while (posx & 7) {
--				iodc_dbuf[i] = ' ';
--				i++, posx++;
--			}
--			break;
- 		case '\b':	/* BS */
--			posx -= 2;
-+			i--; /* overwrite last */
- 		default:
- 			iodc_dbuf[i] = str[i];
--			i++, posx++;
-+			i++;
- 			break;
- 		}
- 	}
+ 	if (hi_range_sel) {
+-		if (!(dct_sel_base_addr & 0xFFFFF800) &&
++		if (!(dct_sel_base_addr & 0xFFFF0000) &&
+ 		   hole_valid && (sys_addr >= 0x100000000ULL))
+ 			chan_off = hole_off << 16;
+ 		else
 
 
