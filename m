@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761953Ab0HFTh7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:37:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38297 "EHLO mx1.suse.de"
+	id S965118Ab0HFTiS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:38:18 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:57794 "EHLO h5.dl5rb.org.uk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750940Ab0HFThz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:37:55 -0400
-Date: Fri, 6 Aug 2010 12:37:46 -0700
-From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [GIT PATCH] TTY patches for 2.6.36
-Message-ID: <20100806193746.GA2022@suse.de>
-References: <20100805213528.GA13794@kroah.com>
- <AANLkTikhq6FF4j+w-TXrPeq05NhvbhgqhJkW7tCw2+3c@mail.gmail.com>
- <20100806185147.GB23853@suse.de>
- <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
+	id S1761971Ab0HFTiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:38:11 -0400
+Date: Fri, 6 Aug 2010 20:37:56 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        Eric Paris <eparis@parisplace.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] SELINUX: Fix build error.
+Message-ID: <20100806193756.GA24645@linux-mips.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 08:45:52PM +0100, Alan Cox wrote:
-> On Fri, 6 Aug 2010 11:51:47 -0700
-> Greg KH <gregkh@suse.de> wrote:
-> 
-> > On Fri, Aug 06, 2010 at 11:40:15AM -0700, Linus Torvalds wrote:
-> > > 
-> > > Do do the highlander thing on that crud. Cut it off at the head, and
-> > > make sure it never ever comes back to life.
-> > 
-> > Arnd and Alan, I'll drop the BKL portion of this patch series and
-> > regenerate something to get the other tty patches to Linus.
-> 
-> Wouldn't it make more sense to simply turn it on as Linus suggested ?
+[...]
+  CC      security/selinux/hooks.o
+/home/ralf/src/linux/linux-mips/security/selinux/hooks.c: In function ‘selinux_inode_permission’:
+/home/ralf/src/linux/linux-mips/security/selinux/hooks.c:2644:38: error: ‘FILE__AUDIT_ACCESS’ undeclared (first use in this function)
+/home/ralf/src/linux/linux-mips/security/selinux/hooks.c:2644:38: note: each undeclared identifier is reported only once for each function it appears in
+make[4]: *** [security/selinux/hooks.o] Error 1
+make[3]: *** [security/selinux] Error 2
+make[2]: *** [security] Error 2
+make[1]: *** [sub-make] Error 2
+make: *** [all] Error 2
 
-That's fine with me, and drop the option entirely?  Arnd, any objection
-to that?
+This is cause by a stale security/selinux/av_permissions.h in the $(src)
+directory which will override a more recent version in $(obj) that is it
+appears to strike only when building with a separate object directory.
 
-thanks,
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
-greg k-h
+ security/selinux/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/security/selinux/Makefile b/security/selinux/Makefile
+index f013982..58d80f3 100644
+--- a/security/selinux/Makefile
++++ b/security/selinux/Makefile
+@@ -25,6 +25,6 @@ $(obj)/avc.o: $(obj)/flask.h
+ quiet_cmd_flask = GEN     $(obj)/flask.h $(obj)/av_permissions.h
+       cmd_flask = scripts/selinux/genheaders/genheaders $(obj)/flask.h $(obj)/av_permissions.h
+ 
+-targets += flask.h
++targets += flask.h av_permissions.h
+ $(obj)/flask.h: $(src)/include/classmap.h FORCE
+ 	$(call if_changed,flask)
