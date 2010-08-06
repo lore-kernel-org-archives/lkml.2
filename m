@@ -1,150 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964931Ab0HFTUN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:20:13 -0400
-Received: from claw.goop.org ([74.207.240.146]:34926 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751056Ab0HFTUL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:20:11 -0400
-Message-ID: <4C5C6067.1000403@goop.org>
-Date: Fri, 06 Aug 2010 12:20:07 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S964964Ab0HFTWR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:22:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53530 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab0HFTWM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:22:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=I/6Wu+7o5A/gX8FGPsTANqhrDDVjZ4vM3xSGze9S9lVhr8B0Y6yeqQS/l/yao2R1bm
+         EAh4OpOEMkxHzKh3Xssqmy8o+B14ghHccxLfJST+0z8pwpIu1gOM+SvNpRjKu30tOQXT
+         YR1/icgIiwsZ9qaVgHPOiAQThDbDrGFV2D9BU=
 MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Daniel Kiper <dkiper@net-space.pl>, stefano.stabellini@eu.citrix.com,
-        linux-mm@kvack.org, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org, v.tolstov@selfip.ru
-Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests - second
- fully working version - once again
-References: <20100806111147.GA31683@router-fw-old.local.net-space.pl> <20100806163408.GA8678@phenom.dumpdata.com>
-In-Reply-To: <20100806163408.GA8678@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100806135429.GB25864@merkur.ravnborg.org>
+References: <AANLkTimyDwWtLbc682rW-QORjU0+r+txZO-iKAini1H1@mail.gmail.com>
+	<1280838492-9942-1-git-send-email-nir.tzachar@gmail.com>
+	<20100805100408.5b724047.randy.dunlap@oracle.com>
+	<AANLkTi=9hBYy4k=tJBo38O98z_O646ZpStqNdEYWP3MO@mail.gmail.com>
+	<20100806135429.GB25864@merkur.ravnborg.org>
+Date: Fri, 6 Aug 2010 22:22:10 +0300
+Message-ID: <AANLkTinz4sdP5vENRqn9MgmfovWKK0vBj5bHNzP4ABjx@mail.gmail.com>
+Subject: Re: [PATCH] nconfig: add search support
+From: Nir Tzachar <nir.tzachar@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>, Randy Dunlap <randy.dunlap@oracle.com>
+Cc: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/06/2010 09:34 AM, Konrad Rzeszutek Wilk wrote:
-> On Fri, Aug 06, 2010 at 01:11:47PM +0200, Daniel Kiper wrote:
->> Hi,
->>
->> I am sending this e-mail once again because it probably
->> has been lost in abyss of Xen-devel/LKLM list.
->>
->> Here is the second version of memory hotplug support
->> for Xen guests patch. This one cleanly applies to
->> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git
->> repository, xen/memory-hotplug head.
->>
->> Changes:
->>    - /sys/devices/system/memory/probe interface has been removed;
->>      /sys/devices/system/xen_memory/xen_memory0/{target,target_kb}
->>      are much better (I forgot about them),
->>    - most of the code have been moved to drivers/xen/balloon.c,
->>    - this changes forced me to export hotadd_new_pgdat and
->>      rollback_node_hotadd function from mm/memory_hotplug.c;
->>      could it be accepted by mm/memory_hotplug.c maintainers ???
->>    - PV on HVM mode is supported now; it was tested on
->>      git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
->>      repository, 2.6.34-pvhvm head,
->>    - most of Jeremy suggestions have been applied.
->>
->> On Wed, Jul 28, 2010 at 11:36:29AM +0400, Vasiliy G Tolstov wrote:
->> [...]
->>> Work's fine with opensuse 11.3 (dom0 and domU)
->> Thx.
->>
->> On Thu, Jul 29, 2010 at 12:39:52PM -0700, Jeremy Fitzhardinge wrote:
->>>   On 07/26/2010 05:41 PM, Daniel Kiper wrote:
->>>> Hi,
->>>>
->>>> Currently there is fully working version.
->>>> It has been tested on Xen Ver. 4.0.0 in PV
->>>> guest i386/x86_64 with Linux kernel Ver. 2.6.32.16
->>>> and Ver. 2.6.34.1. This patch cleanly applys
->>>> to Ver. 2.6.34.1
->>> Thanks.  I've pushed this into xen.git as xen/memory-hotplug so people
->>> can play with it more easily (but I haven't merged it into any of the
->>> other branches yet).
->> Thx.
->>
->>>> +#ifdef CONFIG_XEN_BALLOON_MEMORY_HOTPLUG
->>>> +static inline unsigned long current_target(void)
->>>> +{
->>>> +	return balloon_stats.target_pages;
->>> Why does this need its own version?
->> Because original version return values not bigger
->> then initial memory allocation which does not allow
->> memory hotplug to function.
->>
->>>> +int __ref xen_add_memory(int nid, u64 start, u64 size)
->>>> +{
->>>> +	pg_data_t *pgdat = NULL;
->>>> +	int new_pgdat = 0, ret;
->>>> +
->>>> +	lock_system_sleep();
->>>> +
->>>> +	if (!node_online(nid)) {
->>>> +		pgdat = hotadd_new_pgdat(nid, start);
->>>> +		ret = -ENOMEM;
->>>> +		if (!pgdat)
->>>> +			goto out;
->>>> +		new_pgdat = 1;
->>>> +	}
->>>> +
->>>> +	/* call arch's memory hotadd */
->>>> +	ret = arch_add_memory(nid, start, size);
->>>> +
->>>> +	if (ret<   0)
->>>> +		goto error;
->>>> +
->>>> +	/* we online node here. we can't roll back from here. */
->>>> +	node_set_online(nid);
->>>> +
->>>> +	if (new_pgdat) {
->>>> +		ret = register_one_node(nid);
->>>> +		/*
->>>> +		 * If sysfs file of new node can't create, cpu on the node
->>>> +		 * can't be hot-added. There is no rollback way now.
->>>> +		 * So, check by BUG_ON() to catch it reluctantly..
->>>> +		 */
->>>> +		BUG_ON(ret);
->>>> +	}
->>> This doesn't seem to be doing anything particularly xen-specific.
->> In general it could be generic however I do not know
->> it will be useful for others. If this function would
->> be accepted by mm/memory_hotplug.c maintainers we could
->> move it there. I removed from original add_memory funtion
->> resource allocation (and deallocation after error), which
->> must be done before XENMEM_populate_physmap in Xen. xen_add_memory
->> is called after physmap is fully populated.
->>
->> If you have a questions please drop me a line.
+On Fri, Aug 6, 2010 at 4:54 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> >>
+>> >> Searching: pressing '/' triggers search mode. nconfig performs a
+>> >>            regular string compare, case insensitive, starting at
+>> >
+>> > I would say: simple string compare
+>> > "regular" has no meaning (at least for me) there.
 >
+> pressing '/' triggers interactive search mode. nconfig search for the
+> string in the menu prompts (no regex support).
 >
-> Can you repost a patch that is on top of a virgin tree please?
-
-I just thanked him for posting a delta ;)  I've pushed this into 
-xen/memory-hotplug so you can easily generate a complete diff with "git 
-diff v2.6.34..xen/memory-hotplug".
-
-> + spin_lock_irqsave(&balloon_lock, flags);
->> +
->> +	if (!is_memory_resource_reserved()) {
->> +
->> +		/*
->> +		 * Look for first unused memory region starting at page
->> +		 * boundary. Skip last memory section created at boot time
->> +		 * becuase it may contains unused memory pages with PG_reserved
->> +		 * bit not set (online_pages require PG_reserved bit set).
->> +		 */
->> +
->> +		r = kzalloc(sizeof(struct resource), GFP_KERNEL);
+> [Just a suggestion for a bt different wording]
 >
+>> > Maybe I should just stick to config symbol searches.  I don't think it's all
+>> > that likely that people will know how each menu line text begins.
+>> >
+>> >
+>>
+>> We can replace strcasecmp with strcasestr. I agree it would be more useful.
 >
-> You are holding a spinlock here. Kzalloc can sleep
+> This is better.
+>
+>>
+>> > As for the search UI, I'd rather that it be presented like the symbol search,
+>> > in a box, instead of just a single line at the top of the screen.
+>>
+>> But then it is not interactive. I was aiming for something similar to
+>> vim's search, where the search is matched as you type and the only
+>> free terminal real-estate to display the match string was at the top
+>> of the screen. I think such a minimal design is better than a
+>> cumbersome text box which displays the search results afterwards (as
+>> is symbol search), as the search is only intended for the currently
+>> displayed menu and the user would usually just want to save the extra
+>> typing of navigating to a specific menu item.
+>
+> It was introduced to replace the "hotkey" support, and as such is useful.
+> If we want to search for content of all prompts then we should extend
+> the symbols search to do so.
+> Maybe we should just let it search for both symbols _and_ propmts.
 
-Good point.
+There is a different alternative which slipped my mind, which can be
+useful for Randy's use case: just use the single menu mode of nconfig
+and then the search feature will give you the behavior you desire
+(i.e., jumping to the globally matching prompt).
 
-     J
+> If one search for HOTPLUG_CPU there is no hits in any propmts anyway.
+> And if one search for "Pentium" there is no config symbol hits.
+
+If such a search cannot return the menu context of the matching
+symbol, there is no way for nconfig to jump to the matching menu. But
+a different approach may be to add the symbol search to nconfig's
+search, such that instead of just matching the prompt, nconfig will
+also match the symbol.
+
+Cheers,
+Nir.
+
+>        Sam
+>
