@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935074Ab0HFTbb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:31:31 -0400
-Received: from kroah.org ([198.145.64.141]:47486 "EHLO coco.kroah.org"
+	id S935841Ab0HFTbi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:31:38 -0400
+Received: from kroah.org ([198.145.64.141]:47479 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935089Ab0HFT2R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:28:17 -0400
+	id S965605Ab0HFT2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:28:16 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:17 2010
-Message-Id: <20100806192117.169237763@clark.site>
+Message-Id: <20100806192117.069147131@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:20:11 -0700
+Date: Fri, 06 Aug 2010 12:20:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@redhat.com>
-Subject: [30/36] drm/radeon/kms/r7xx: add workaround for hw issue with HDP flush
+Subject: [29/36] drm/radeon: add new pci ids
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,93 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexdeucher@gmail.com>
 
-commit 812d046915f48236657f02c06d7dc47140e9ceda upstream.
+commit 1297c05a8dfb568c689f057d51a65eebe5ddc86f upstream.
 
-Use of HDP_*_COHERENCY_FLUSH_CNTL can cause a hang in certain
-situations.  Add workaround.
+New evergreen and r7xx ids.
 
 Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
 Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/radeon/r600.c   |   24 ++++++++++++++++++++++--
- drivers/gpu/drm/radeon/r600d.h  |    1 +
- drivers/gpu/drm/radeon/rv770.c  |    5 ++++-
- drivers/gpu/drm/radeon/rv770d.h |    1 +
- 4 files changed, 28 insertions(+), 3 deletions(-)
+ include/drm/drm_pciids.h |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/gpu/drm/radeon/r600.c
-+++ b/drivers/gpu/drm/radeon/r600.c
-@@ -361,7 +361,17 @@ void r600_pcie_gart_tlb_flush(struct rad
- 	u32 tmp;
- 
- 	/* flush hdp cache so updates hit vram */
--	WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
-+	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
-+		void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
-+		u32 tmp;
-+
-+		/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
-+		 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
-+		 */
-+		WREG32(HDP_DEBUG1, 0);
-+		tmp = readl((void __iomem *)ptr);
-+	} else
-+		WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
- 
- 	WREG32(VM_CONTEXT0_INVALIDATION_LOW_ADDR, rdev->mc.gtt_start >> 12);
- 	WREG32(VM_CONTEXT0_INVALIDATION_HIGH_ADDR, (rdev->mc.gtt_end - 1) >> 12);
-@@ -2949,5 +2959,15 @@ int r600_debugfs_mc_info_init(struct rad
-  */
- void r600_ioctl_wait_idle(struct radeon_device *rdev, struct radeon_bo *bo)
- {
--	WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
-+	/* r7xx hw bug.  write to HDP_DEBUG1 followed by fb read
-+	 * rather than write to HDP_REG_COHERENCY_FLUSH_CNTL
-+	 */
-+	if ((rdev->family >= CHIP_RV770) && (rdev->family <= CHIP_RV740)) {
-+		void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
-+		u32 tmp;
-+
-+		WREG32(HDP_DEBUG1, 0);
-+		tmp = readl((void __iomem *)ptr);
-+	} else
-+		WREG32(R_005480_HDP_MEM_COHERENCY_FLUSH_CNTL, 0x1);
- }
---- a/drivers/gpu/drm/radeon/r600d.h
-+++ b/drivers/gpu/drm/radeon/r600d.h
-@@ -245,6 +245,7 @@
- #define	HDP_NONSURFACE_SIZE				0x2C0C
- #define HDP_REG_COHERENCY_FLUSH_CNTL			0x54A0
- #define	HDP_TILING_CONFIG				0x2F3C
-+#define HDP_DEBUG1                                      0x2F34
- 
- #define MC_VM_AGP_TOP					0x2184
- #define MC_VM_AGP_BOT					0x2188
---- a/drivers/gpu/drm/radeon/rv770.c
-+++ b/drivers/gpu/drm/radeon/rv770.c
-@@ -174,7 +174,10 @@ static void rv770_mc_program(struct rade
- 		WREG32((0x2c20 + j), 0x00000000);
- 		WREG32((0x2c24 + j), 0x00000000);
- 	}
--	WREG32(HDP_REG_COHERENCY_FLUSH_CNTL, 0);
-+	/* r7xx hw bug.  Read from HDP_DEBUG1 rather
-+	 * than writing to HDP_REG_COHERENCY_FLUSH_CNTL
-+	 */
-+	tmp = RREG32(HDP_DEBUG1);
- 
- 	rv515_mc_stop(rdev, &save);
- 	if (r600_mc_wait_for_idle(rdev)) {
---- a/drivers/gpu/drm/radeon/rv770d.h
-+++ b/drivers/gpu/drm/radeon/rv770d.h
-@@ -128,6 +128,7 @@
- #define	HDP_NONSURFACE_SIZE				0x2C0C
- #define HDP_REG_COHERENCY_FLUSH_CNTL			0x54A0
- #define	HDP_TILING_CONFIG				0x2F3C
-+#define HDP_DEBUG1                                      0x2F34
- 
- #define MC_SHARED_CHMAP						0x2004
- #define		NOOFCHAN_SHIFT					12
+--- a/include/drm/drm_pciids.h
++++ b/include/drm/drm_pciids.h
+@@ -146,6 +146,8 @@
+ 	{0x1002, 0x6888, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6889, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x688A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x688C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x688D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6898, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x6899, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CYPRESS|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x689c, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_HEMLOCK|RADEON_NEW_MEMMAP}, \
+@@ -161,6 +163,7 @@
+ 	{0x1002, 0x68be, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_JUNIPER|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68c0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68c1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x68c7, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68c8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68c9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68d8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_REDWOOD|RADEON_NEW_MEMMAP}, \
+@@ -174,6 +177,7 @@
+ 	{0x1002, 0x68e8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68e9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68f1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x68f2, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68f8, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68f9, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x68fe, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_CEDAR|RADEON_NEW_MEMMAP}, \
+@@ -314,6 +318,7 @@
+ 	{0x1002, 0x9456, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x945A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x945B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x945E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9460, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9462, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x946A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+@@ -324,6 +329,7 @@
+ 	{0x1002, 0x9487, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9488, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9489, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x948A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x948F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9490, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9491, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV730|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+@@ -366,6 +372,7 @@
+ 	{0x1002, 0x9553, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9555, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9557, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
++	{0x1002, 0x955f, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV710|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9580, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV630|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9581, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV630|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
+ 	{0x1002, 0x9583, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV630|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
 
 
