@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761633Ab0HFRwV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:52:21 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:45159 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab0HFRwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:52:19 -0400
-Date: Fri, 6 Aug 2010 19:52:17 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "Justin P. Mattock" <justinmattock@gmail.com>, JBeulich@novell.com,
-        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
-        lizf@cn.fujitsu.com, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: fix make oldconfig
-Message-ID: <20100806175217.GA8944@merkur.ravnborg.org>
-References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> <4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com> <20100806051354.GA24343@merkur.ravnborg.org> <4C5BE229.1090801@suse.cz> <AANLkTimWHnxbYzkJ1KhuS3DgTuSRz-gMnzEJvbsY835g@mail.gmail.com>
+	id S1761640Ab0HFRww (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:52:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50522 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751813Ab0HFRwq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:52:46 -0400
+Message-ID: <4C5C4AAB.3000606@zytor.com>
+Date: Fri, 06 Aug 2010 10:47:23 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimWHnxbYzkJ1KhuS3DgTuSRz-gMnzEJvbsY835g@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Xen-devel <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [Xen-devel] [PATCH RFC 03/12] x86/ticketlock: Use C for __ticket_spin_unlock
+References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <f3622d39ae72573c586405ea6f1597eb39fc28d4.1279328276.git.jeremy.fitzhardinge@citrix.com> <20100720153845.GA9122@phenom.dumpdata.com> <4C45CC02.7030603@goop.org>
+In-Reply-To: <4C45CC02.7030603@goop.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 09:19:23AM -0700, Linus Torvalds wrote:
-> On Fri, Aug 6, 2010 at 3:21 AM, Michal Marek <mmarek@suse.cz> wrote:
-> >
-> > Linus, will you apply this directly or should I apply it to the kbuild
-> > tree and send you a pull request?
+On 07/20/2010 09:17 AM, Jeremy Fitzhardinge wrote:
 > 
-> I took it directly, since I spend a lot of time doing "make oldconfig
-> ; make -j16" which is why I found this (after pulling, I tend verify
-> that at least nothing broke my _own_ configuration)
+> "volatile" would be a compiler barrier, but it has no direct effect on,
+> or relevence to, the CPU.  It just cares about the LOCK_PREFIX.  The
+> "memory" clobber is probably unnecessary as well, since the constraints
+> already tell the compiler the most important information.  We can add
+> barriers separately as needed.
+> 
 
-Hmm, I wonder why you call oldconfig explicitly?
+You absolutely need volatile, since otherwise you're permitting the
+compiler to split, re-execute or even drop the code.  Anything else
+might work, by accident, but it's not clean.
 
-A plain "make -j16" executes "silentoldconfig" if there
-is any changes in a Kconfig* file or in .config.
-Just double checked and it works as I expected.
+	-hpa
 
-So you are asked if there is any new options anyway even
-if you skip your "oldconfig" step.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-The difference between oldconfig and silentoldconfig these days
-are just that silentoldconfig updates include/config/*
-which oldconfig does not.
-
-It could be as simple as old habits.
-Just curious to know if there is something I have missed.
-
-	Sam
