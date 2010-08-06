@@ -1,43 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761423Ab0HFOj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 10:39:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54277 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475Ab0HFOj0 (ORCPT
+	id S934271Ab0HFOsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 10:48:09 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:48204 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932268Ab0HFOsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 10:39:26 -0400
-Date: Fri, 6 Aug 2010 11:39:12 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: fweisbec@gmail.com, mingo@elte.hu, peterz@infradead.org,
-        rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [RFC PATCH 7/9] perf: Export cpumap
-Message-ID: <20100806143912.GB13780@ghostprotocols.net>
-References: <1281104713-23141-1-git-send-email-bp@amd64.org>
- <1281104713-23141-8-git-send-email-bp@amd64.org>
+	Fri, 6 Aug 2010 10:48:05 -0400
+Date: Fri, 6 Aug 2010 10:48:01 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
+        Jamie Lokier <jamie@shareable.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [patch 01/20] Create generic alignment API (v8)
+Message-ID: <20100806144801.GA5523@Krystal>
+References: <20100709225727.312232266@efficios.com> <20100709225814.855827624@efficios.com> <20100806114114.GH28519@shisha.kicks-ass.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281104713-23141-8-git-send-email-bp@amd64.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100806114114.GH28519@shisha.kicks-ass.net>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 10:45:40 up 195 days, 17:22,  8 users,  load average: 0.00, 0.02,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Aug 06, 2010 at 04:25:11PM +0200, Borislav Petkov escreveu:
-> From: Borislav Petkov <borislav.petkov@amd.com>
+* Alexander Shishkin (virtuoso@slind.org) wrote:
+> On Fri, Jul 09, 2010 at 06:57:28 -0400, Mathieu Desnoyers wrote:
+> > Rather than re-doing the "alignment on a type size" trick all over again at
+> > different levels, import the "ltt_align" from LTTng into kernel.h and make this
+> > available to everyone. Renaming to:
+> > 
+> > - object_align()
+> > - object_align_floor()
+> > - offset_align()
+> > - offset_align_floor()
 > 
-> Export cpu counting and cpumap manipulating utils for general use. This
-> pulls ctype.c along.
+> I was just wondering if this patch makes any progress anywhere?
+
+I'm using it in my generic ring buffer code (I'm posting it as part of the
+patchset). This ring buffer has only been posted in RFC-stages so far.
+
+Other than that, there has been no objection. So the first user of this patch
+that gets merged will probably bring the patch alongside with it.
+
+Thanks,
+
+Mathieu
+
 > 
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> Regards,
+> --
+> Alex
 
-Is this independent of previous patches? I.e. to be applied to current
-perf/core?
-
-- Arnaldo
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
