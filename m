@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab0HFFSQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:18:16 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43319 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933793Ab0HFFPg (ORCPT
+	id S933938Ab0HFFUc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:20:32 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41686 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933780Ab0HFFPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:36 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
-        Yinghai Lu <yinghai@kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 38/43] memblock: Improve debug output when resizing the reserve array
-Date: Fri,  6 Aug 2010 15:15:19 +1000
-Message-Id: <1281071724-28740-39-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 32/43] memblock: Add "start" argument to memblock_find_base()
+Date: Fri,  6 Aug 2010 15:15:13 +1000
+Message-Id: <1281071724-28740-33-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -22,50 +21,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+To constraint the search of a region between two boundaries,
+which will be used by the new NUMA aware allocator among others.
 
-Print out the location info in addition to which array is being
-resized. Also use memblocK_dbg() to put that under control of
-the memblock_debug flag.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ mm/memblock.c |   27 ++++++++++++++++-----------
+ 1 files changed, 16 insertions(+), 11 deletions(-)
 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 5499ab1..c3703ab 100644
+index 8715f09..468ff43 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -192,8 +192,6 @@ static int memblock_double_array(struct memblock_type *type)
- 	if (!memblock_can_resize)
- 		return -1;
- 
--	pr_debug("memblock: %s array full, doubling...", memblock_type_name(type));
--
- 	/* Calculate new doubled size */
- 	old_size = type->max * sizeof(struct memblock_region);
- 	new_size = old_size << 1;
-@@ -221,6 +219,9 @@ static int memblock_double_array(struct memblock_type *type)
- 	}
- 	new_array = __va(addr);
- 
-+	memblock_dbg("memblock: %s array is doubled to %ld at [%#010llx-%#010llx]",
-+		 memblock_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size - 1);
-+
- 	/* Found space, we now need to move the array over before
- 	 * we add the reserved region since it may be our reserved
- 	 * array itself that is full.
-@@ -672,7 +673,7 @@ static void memblock_dump(struct memblock_type *region, char *name)
- 		base = region->regions[i].base;
- 		size = region->regions[i].size;
- 
--		pr_info(" %s[0x%x]\t0x%016llx - 0x%016llx, 0x%llx bytes\n",
-+		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes\n",
- 		    name, i, base, base + size - 1, size);
- 	}
+@@ -117,19 +117,18 @@ static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t en
+ 	return MEMBLOCK_ERROR;
  }
+ 
+-static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
++static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align,
++					phys_addr_t start, phys_addr_t end)
+ {
+ 	long i;
+-	phys_addr_t base = 0;
+-	phys_addr_t res_base;
+ 
+ 	BUG_ON(0 == size);
+ 
+ 	size = memblock_align_up(size, align);
+ 
+ 	/* Pump up max_addr */
+-	if (max_addr == MEMBLOCK_ALLOC_ACCESSIBLE)
+-		max_addr = memblock.current_limit;
++	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
++		end = memblock.current_limit;
+ 
+ 	/* We do a top-down search, this tends to limit memory
+ 	 * fragmentation by keeping early boot allocs near the
+@@ -138,13 +137,19 @@ static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align
+ 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
+ 		phys_addr_t memblockbase = memblock.memory.regions[i].base;
+ 		phys_addr_t memblocksize = memblock.memory.regions[i].size;
++		phys_addr_t bottom, top, found;
+ 
+ 		if (memblocksize < size)
+ 			continue;
+-		base = min(memblockbase + memblocksize, max_addr);
+-		res_base = memblock_find_region(memblockbase, base, size, align);
+-		if (res_base != MEMBLOCK_ERROR)
+-			return res_base;
++		if ((memblockbase + memblocksize) <= start)
++			break;
++		bottom = max(memblockbase, start);
++		top = min(memblockbase + memblocksize, end);
++		if (bottom >= top)
++			continue;
++		found = memblock_find_region(bottom, top, size, align);
++		if (found != MEMBLOCK_ERROR)
++			return found;
+ 	}
+ 	return MEMBLOCK_ERROR;
+ }
+@@ -204,7 +209,7 @@ static int memblock_double_array(struct memblock_type *type)
+ 		new_array = kmalloc(new_size, GFP_KERNEL);
+ 		addr = new_array == NULL ? MEMBLOCK_ERROR : __pa(new_array);
+ 	} else
+-		addr = memblock_find_base(new_size, sizeof(phys_addr_t), MEMBLOCK_ALLOC_ACCESSIBLE);
++		addr = memblock_find_base(new_size, sizeof(phys_addr_t), 0, MEMBLOCK_ALLOC_ACCESSIBLE);
+ 	if (addr == MEMBLOCK_ERROR) {
+ 		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
+ 		       memblock_type_name(type), type->max, type->max * 2);
+@@ -416,7 +421,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ 	 */
+ 	size = memblock_align_up(size, align);
+ 
+-	found = memblock_find_base(size, align, max_addr);
++	found = memblock_find_base(size, align, 0, max_addr);
+ 	if (found != MEMBLOCK_ERROR &&
+ 	    memblock_add_region(&memblock.reserved, found, size) >= 0)
+ 		return found;
 -- 
 1.7.0.4
 
