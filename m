@@ -1,226 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760796Ab0HFIRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 04:17:15 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:42828 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab0HFIRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 04:17:11 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6065"; a="49961787"
-Message-ID: <93bd044b61aed19a3571bc019af0252a.squirrel@www.codeaurora.org>
-In-Reply-To: <20100806073333.GA14965@n2100.arm.linux.org.uk>
-References: <1281062204-21880-1-git-send-email-stepanm@codeaurora.org>
-    <20100806073333.GA14965@n2100.arm.linux.org.uk>
-Date: Fri, 6 Aug 2010 01:17:46 -0700 (PDT)
-Subject: Re: [PATCH] arm: msm: Add MSM IOMMU support.
-From: stepanm@codeaurora.org
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: "Stepan Moskovchenko" <stepanm@codeaurora.org>, dwalker@codeaurora.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
+	id S1757067Ab0HFIbp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 04:31:45 -0400
+Received: from mail.lang.hm ([64.81.33.126]:53267 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753589Ab0HFIbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 04:31:39 -0400
+Date: Fri, 6 Aug 2010 01:29:57 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: kevin granade <kevin.granade@gmail.com>,
+        =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+In-Reply-To: <20100805231936.GS2447@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008060111240.30564@asgard.lang.hm>
+References: <20100804233013.GN24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041643490.6545@asgard.lang.hm> <20100805001716.GO24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm> <20100805004802.GP24163@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm> <20100805151211.GA10080@linux.vnet.ibm.com> <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm> <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com> <alpine.DEB.2.00.1008051312220.23543@asgard.lang.hm>
+ <20100805231936.GS2447@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Aug 05, 2010 at 07:36:44PM -0700, Stepan Moskovchenko wrote:
->> +/**
->> + * struct msm_iommu_dev - a single IOMMU hardware instance
->> + * name		Human-readable name given to this IOMMU HW instance
->> + * clk		Name of the AXI clock used for the config space of this IOMMU
->> + * clk_rate	Rate to set for the AXI clock. 0 means don't set a rate
->> + * num_ctx	Number of context banks on this IOMMU device
->> + *
->> + */
->> +struct msm_iommu_dev {
->> +	char *name;
->
-> const?
->
->> +	char *clk;
->
-> const?  Any reason you can't have some kind of struct device instead?
->
->> +	unsigned long clk_rate;
->> +	unsigned int num_ctx;
->> +};
->> +
->> +/**
->> + * struct msm_iommu_ctx_dev - an IOMMU context bank instance
->> + * name		Human-readable name given to this context bank
->> + * num		Index of this context bank within the hardware
->> + * mids		List of Machine IDs that are to be mapped into this context
->> + *		bank, terminated by -1. The MID is a set of signals on the
->> + *		AXI bus that identifies the function associated with a specific
->> + *		memory request. (See ARM spec).
->> + */
->> +struct msm_iommu_ctx_dev {
->> +	char *name;
->
-> const?
->
->> +	int num;
->> +	int mids[MAX_NUM_MIDS];
->> +};
->> +
-> ...
->> +int v7_flush_kern_cache_all(void);
->
-> No - don't use internal functions directly.  Use flush_cache_all()
-> instead.
->
->> +#ifndef __ARCH_ARM_MACH_MSM_IOMMU_HW_8XXX_H
->> +#define __ARCH_ARM_MACH_MSM_IOMMU_HW_8XXX_H
->> +
->> +#define CTX_SHIFT 12
->> +
->> +#define GET_GLOBAL_REG(reg, base) (readl((base)|(reg)))
->> +#define GET_CTX_REG(reg, base,
->> ctx)	(readl((base)|(reg)|((ctx)<<CTX_SHIFT)))
->
-> This doesn't work if 'base' is correctly typed.  Use addition please.
-> Spacces around operators please.
->
->> +
->> +#define SET_GLOBAL_REG(reg, base, val)	(writel((val), (base) | (reg)))
->> +
->> +#define SET_CTX_REG(reg, base, ctx, val) \
->> +			(writel((val), (base) | (reg) | ((ctx)<<CTX_SHIFT)))
->
-> Addition.
->
->> +
->> +/* Wrappers for numbered registers */
->> +#define SET_GLOBAL_REG_N(b, n, r, v) SET_GLOBAL_REG(b, ((r)|(n<<2)),
->> (v))
->> +#define GET_GLOBAL_REG_N(b, n, r)    GET_GLOBAL_REG(b, ((r)|(n<<2)))
->> +
->> +/* Field wrappers */
->> +#define GET_GLOBAL_FIELD(b, r, F)    GET_FIELD(((b)|(r)), F##_MASK,
->> F##_SHIFT)
->> +#define GET_CONTEXT_FIELD(b, c, r, F)	\
->> +	GET_FIELD(((b)|(r)|((c)<<CTX_SHIFT)), F##_MASK, F##_SHIFT)
->> +
->> +#define SET_GLOBAL_FIELD(b, r, F, v) \
->> +	SET_FIELD(((b)|(r)), F##_MASK, F##_SHIFT, (v))
->> +#define SET_CONTEXT_FIELD(b, c, r, F, v)	\
->> +	SET_FIELD(((b)|(r)|((c)<<CTX_SHIFT)), F##_MASK, F##_SHIFT, (v))
->> +
->> +#define GET_FIELD(addr, mask, shift)  ((readl(addr) >> (shift) &
->> (mask)))
->> +
->> +#define SET_FIELD(addr, mask, shift, v) \
->> +do { \
->> +	int t = readl(addr); mb(); \
->> +	writel((t & ~((mask)<<(shift))) | (((v) & (mask)) << (shift)), addr);\
->> +	mb();\
->
-> readl/writel have barriers now, so these probably aren't required.  Please
-> check.
->
-> ...
->> +	if (len == SZ_16M) {
->> +		int i = 0;
->> +		for (i = 0; i < 16; i++)
->> +			*(fl_pte+i) = (pa & 0xFF000000) | PMD_SECT_SUPER |
->> +				PMD_SECT_AP_READ | PMD_SECT_AP_WRITE |
->> +				PMD_TYPE_SECT | PMD_SECT_S;
->
-> Don't reuse the kernel's definitions for its own page tables for IOMMU
-> page tables.
->
->> +	}
->> +
->> +	if (len == SZ_1M)
->> +		*fl_pte = (pa & 0xFFF00000) | PMD_SECT_AP_READ |
->> +			PMD_SECT_AP_WRITE | PMD_TYPE_SECT |
->> +			PMD_SECT_S;
->
-> Ditto.
->
->> +
->> +	/* Need a 2nd level table */
->> +	if ((len == SZ_4K || len == SZ_64K) && (*fl_pte) == 0) {
->> +		unsigned long *sl;
->> +		sl = (unsigned long *) __get_free_pages(GFP_KERNEL, 0);
->> +
->> +		if (!sl) {
->> +			pr_err("could not allocate second level table\n");
->> +			goto fail_nomem;
->> +		}
->> +
->> +		memset(sl, 0, SZ_4K);
->> +		*fl_pte = ((((int)__pa(sl)) & 0xFFFFFC00) | PMD_TYPE_TABLE);
->
-> Ditto.
->
->> +	}
->> +
->> +	sl_table = (unsigned long *) __va(((*fl_pte) & 0xFFFFFC00));
->> +	sl_offset = SL_OFFSET(va);
->> +	sl_pte = sl_table + sl_offset;
->> +
->> +
->> +	if (len == SZ_4K)
->> +		*sl_pte = (pa & 0xFFFFF000) | PTE_EXT_AP0 | PTE_EXT_AP1 |
->> +			PTE_EXT_SHARED | PTE_TYPE_SMALL;
->
-> Ditto.
->
->> +
->> +	if (len == SZ_64K) {
->> +		int i;
->> +
->> +		for (i = 0; i < 16; i++)
->> +			*(sl_pte+i) = (pa & 0xFFFF0000) | PTE_EXT_AP0 |
->> +				PTE_EXT_AP1 | PTE_EXT_SHARED | PTE_TYPE_LARGE;
->
-> Ditto.
->
->> +	}
->> +
->> +#ifndef CONFIG_IOMMU_PGTABLES_L2
->> +	v7_flush_kern_cache_all();
->> +#endif
->
-> What has L2 got to do with whether you flush the L1 cache?
+On Thu, 5 Aug 2010, Paul E. McKenney wrote:
 
-Hello
+> On Thu, Aug 05, 2010 at 01:26:18PM -0700, david@lang.hm wrote:
+>> On Thu, 5 Aug 2010, kevin granade wrote:
+>>
+>>> On Thu, Aug 5, 2010 at 10:46 AM,  <david@lang.hm> wrote:
+>>>> On Thu, 5 Aug 2010, Paul E. McKenney wrote:
+>>>>
+>>>>> On Wed, Aug 04, 2010 at 10:18:40PM -0700, david@lang.hm wrote:
+>>>>>>
+>>>>>> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+>>>>>>>
+>>>>>>> On Wed, Aug 04, 2010 at 05:25:53PM -0700, david@lang.hm wrote:
+>>>>>>>>
+>>>>>>>> On Wed, 4 Aug 2010, Paul E. McKenney wrote:
+>>>>>
+>>>>> [ . . . ]
+>>>>>
+>>>> however, in the case of Android I think the timeouts have to end up being
+>>>> _much_ longer. Otherwise you have the problem of loading an untrusted book
+>>>> reader app on the device and the device suspends while you are reading the
+>>>> page.
+>>>>
+>>>> currently Android works around this by having a wakelock held whenever the
+>>>> display is on. This seems backwards to me, the display should be on because
+>>>> the system is not suspended, not the system is prevented from suspending
+>>>> because the display is on.
+>>>>
+>>>> Rather than having the display be on causing a wavelock to be held (with the
+>>>> code that is controls the display having a timeout for how long it leaves
+>>>> the display on), I would invert this and have the timeout be based on system
+>>>> activity, and when it decides the system is not active, turn off the display
+>>>> (along with other things as it suspends)
+>>>
+>>> IIRC, this was a major point of their (Android's) power management
+>>> policy.  User input of any kind would reset the "display active"
+>>> timeout, which is the primary thing keeping random untrusted
+>>> user-facing programs from being suspended while in use.  They seemed
+>>> to consider this to be a special case in their policy, but from the
+>>> kernel's point of view it is just another suspend blocker being held.
+>>>
+>>> I'm not sure this is the best use case to look at though, because
+>>> since it is user-facing, the timeout durations are on a different
+>>> scale than the ones they are really worried about.  I think another
+>>> category of use case that they are worried about is:
+>>>
+>>> (in suspend) -> wakeup due to network -> process network activity -> suspend
+>>>
+>>> or an example that has been mentioned previously:
+>>>
+>>> (in suspend) -> wakeup due to alarm for audio processing -> process
+>>> batch of audio -> suspend
+>>
+>> when you suspend the audio will shut off, so it's sleep ->wake ->
+>> sleep, not suspend
+>>
+>>> In both of these cases, the display may never power on (phone might
+>>> beep to indicate txt message or email, audio just keeps playing), so
+>>> the magnitude of the "timeout" for suspending again should be very
+>>> small.  Specifically, they don't want there to be a timeout at all, so
+>>> as little time as possible time is spent out of suspend in addition to
+>>> the time required to handle the event that caused wakeup.
+>>
+>> it really depnds on the frequency of the wakeups.
+>>
+>> if you get a network packet once every 5 min and need to wake to
+>> process it, staying awake for 20 seconds after finishing procesing
+>> is FAR more significant than if you get a network packet once every
+>> hour. It's not just the factor of 20 that simple math would indicate
+>> because the time in suspend eats power as well.
+>>
+>> I don't know real numbers, so these are made up for this example
+>>
+>> if suspend (with the cell live to receive packets) is 10ma average
+>> current and full power is 500ma average current
+>>
+>> packets every 5 min with .1 sec wake time will eat ~13maH per hour
+>>
+>> packets every 5 min with 10 second wake time will eat ~37maH per hour
+>>
+>> packets every hour with .1 sec wake time will eat ~10maH per hour
+>>
+>> packets every hour with 10 sec wake time will eat ~11maH per hour
+>>
+>> so if you have frequent wakeups, staying awake 100 times as long
+>> will cut your battery life to 1/3 what it was before.
+>>
+>> if your wakeups are rare, it's about a 10% hit to stay awake 100
+>> times as long.
+>>
+>> there is a lot of room for tuning the timeouts here.
+>
+> Especially given different scenarios, for example, audio playback
+> when the device is in airplane mode.  ;-)
 
-Thank you for your comments. I will apply the fixes you have mentioned. I
-am flushing the cache when I update the page table because the page table
-lives in regular RAM that is mapped as cacheable on the CPU side, and in
-the default configuration the IOMMU reads the page table from RAM. So, I
-have put in the flush call to give the IOMMU a coherent view of the page
-tables. I realize it is more efficient to just flush that specific part of
-L2, but this is just the basic version of the driver and that optimization
-will be eventually put in. The hardware is actually capable of reading the
-IOMMU page table straight out of the L2 cache, but I haven't figured out
-how much control the API should give over this feature... initially I was
-thinking of a Kconfig "sub-option" for it but maybe more fine-grained
-control is in order, depending on the access pattern of each IOMMU. I can
-add this functionality in a subsequent patch, once the basic driver is in.
-If flushing the cache in this manner is not the right way to handle IOMMU
-page tables, can you please suggest what would be more appropriate?
+hmm, I've been thinking and talking in terms of two classes of cgroups, 
+trusted and untrusted. I wonder if it would be possible to set timeouts 
+for each cgroup instead)
 
-What did you mean by:
-> Any reason you can't have some kind of struct device instead?
+the system would go to sleep IFF all cgroups have been idle longer than 
+the idle time (with -1 idle time being 'ignore this cgroup')
 
-Are you referring to the clock line? As far as I understand it, the kernel
-tracks the clocks by a string name, but I can look into it further. Only a
-few of the IOMMUs even have clocks that I need to control in this manner,
-and these are only accessed at init time. From what I remember, it is
-possible to "get" a clock device, but I am not sure these can be
-statically added to the struct like that.
+if this could be done you could set longer times for things designed for 
+user-interaction than you do for other purposes.
 
-I will make the changes you suggested and post another version soon.
+you could set media to 0 idle time (so that as soon as it finishes 
+processing the system can sleep until the next timer)
 
-Thanks
-Steve
+to do this, the code making the decision would have to be able to find out 
+the following fairly cheaply.
 
+1. for this cgroup, what was the last time something ran
+
+2. for this cgroup, what is the next timer set
+
+it would be nice to get network traffic/connection stats.
+
+so two questions.
+
+first, what else would you need to get accumulated for the cgroup
+
+second, is there a fairly easy way to have these stats available?
+
+for the 'last time it ran' stat, this seems like you could have a per-cpu 
+variable per cgroup that's fairly cheap to update, but you would need to 
+take a global lock to read accuratly (the lock may be expensive enough 
+that it's worth trying to read the variables from the other cpu without a 
+lock, just to see if it's remotely possible to sleep/suspend)
+
+with timers, is it possible to have multiple timer wheels (one per 
+cgroup)?
+
+David Lang
