@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965040Ab0HFSjf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:39:35 -0400
-Received: from kroah.org ([198.145.64.141]:48690 "EHLO coco.kroah.org"
+	id S965050Ab0HFSj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:39:57 -0400
+Received: from kroah.org ([198.145.64.141]:48686 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964936Ab0HFSgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:00 -0400
+	id S964934Ab0HFSf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:59 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
-Message-Id: <20100806183202.256024022@clark.site>
+Message-Id: <20100806183202.171655982@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:46 -0700
+Date: Fri, 06 Aug 2010 11:30:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [25/38] iwlwifi: fix scan abort
+Subject: [24/38] ath9k_hw: fix antenna diversity on AR9285
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +26,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit d28232b461b8d54b09e59325dbac8b0913ce2049 upstream.
+commit 601e0cb165e65dc185b31fe7ebd2c0169ea47306 upstream.
 
-Fix possible double priv->mutex lock introduced by commit
-a69b03e941abae00380fc6bc1877fb797a1b31e6
-"iwlwifi: cancel scan watchdog in iwl_bg_abort_scan" .
-We can not call cancel_delayed_work_sync(&priv->scan_check) with
-priv->mutex locked because workqueue function iwl_bg_scan_check()
-take that lock internally.
+On AR9285, the antenna switch configuration register uses more than just
+16 bits. Because of an arbitrary mask applied to the EEPROM value that
+stores this configuration, diversity was broken in some cases, leading
+to a significant degradation in signal strength.
+Fix this by changing the callback to return a 32 bit value and remove
+the arbitrary mask.
 
-We do not need to synchronize when canceling priv->scan_check work.
-We can avoid races (sending double abort command or send no
-command at all) using STATUS_SCAN_ABORT bit. Moreover
-current iwl_bg_scan_check() code seems to be broken, as
-we should not send abort commands when currently aborting.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-scan.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9003_eeprom.c |    2 +-
+ drivers/net/wireless/ath/ath9k/eeprom.h        |    2 +-
+ drivers/net/wireless/ath/ath9k/eeprom_4k.c     |    4 ++--
+ drivers/net/wireless/ath/ath9k/eeprom_9287.c   |    4 ++--
+ drivers/net/wireless/ath/ath9k/eeprom_def.c    |    4 ++--
+ 5 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -420,11 +420,10 @@ void iwl_bg_scan_check(struct work_struc
- 		return;
- 
- 	mutex_lock(&priv->mutex);
--	if (test_bit(STATUS_SCANNING, &priv->status) ||
--	    test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
--		IWL_DEBUG_SCAN(priv, "Scan completion watchdog resetting "
--			"adapter (%dms)\n",
--			jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
-+	if (test_bit(STATUS_SCANNING, &priv->status) &&
-+	    !test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
-+		IWL_DEBUG_SCAN(priv, "Scan completion watchdog (%dms)\n",
-+			       jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
- 
- 		if (!test_bit(STATUS_EXIT_PENDING, &priv->status))
- 			iwl_send_scan_abort(priv);
-@@ -489,12 +488,11 @@ void iwl_bg_abort_scan(struct work_struc
- 	    !test_bit(STATUS_GEO_CONFIGURED, &priv->status))
- 		return;
- 
--	mutex_lock(&priv->mutex);
--
--	cancel_delayed_work_sync(&priv->scan_check);
--	set_bit(STATUS_SCAN_ABORTING, &priv->status);
--	iwl_send_scan_abort(priv);
-+	cancel_delayed_work(&priv->scan_check);
- 
-+	mutex_lock(&priv->mutex);
-+	if (test_bit(STATUS_SCAN_ABORTING, &priv->status))
-+		iwl_send_scan_abort(priv);
- 	mutex_unlock(&priv->mutex);
+--- a/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
++++ b/drivers/net/wireless/ath/ath9k/ar9003_eeprom.c
+@@ -944,7 +944,7 @@ static u8 ath9k_hw_ar9300_get_num_ant_co
+ 	return 1;
  }
- EXPORT_SYMBOL(iwl_bg_abort_scan);
+ 
+-static u16 ath9k_hw_ar9300_get_eeprom_antenna_cfg(struct ath_hw *ah,
++static u32 ath9k_hw_ar9300_get_eeprom_antenna_cfg(struct ath_hw *ah,
+ 						  struct ath9k_channel *chan)
+ {
+ 	return -EINVAL;
+--- a/drivers/net/wireless/ath/ath9k/eeprom.h
++++ b/drivers/net/wireless/ath/ath9k/eeprom.h
+@@ -669,7 +669,7 @@ struct eeprom_ops {
+ 	int (*get_eeprom_ver)(struct ath_hw *hw);
+ 	int (*get_eeprom_rev)(struct ath_hw *hw);
+ 	u8 (*get_num_ant_config)(struct ath_hw *hw, enum ieee80211_band band);
+-	u16 (*get_eeprom_antenna_cfg)(struct ath_hw *hw,
++	u32 (*get_eeprom_antenna_cfg)(struct ath_hw *hw,
+ 				      struct ath9k_channel *chan);
+ 	void (*set_board_values)(struct ath_hw *hw, struct ath9k_channel *chan);
+ 	void (*set_addac)(struct ath_hw *hw, struct ath9k_channel *chan);
+--- a/drivers/net/wireless/ath/ath9k/eeprom_4k.c
++++ b/drivers/net/wireless/ath/ath9k/eeprom_4k.c
+@@ -1149,13 +1149,13 @@ static void ath9k_hw_4k_set_board_values
+ 	}
+ }
+ 
+-static u16 ath9k_hw_4k_get_eeprom_antenna_cfg(struct ath_hw *ah,
++static u32 ath9k_hw_4k_get_eeprom_antenna_cfg(struct ath_hw *ah,
+ 					      struct ath9k_channel *chan)
+ {
+ 	struct ar5416_eeprom_4k *eep = &ah->eeprom.map4k;
+ 	struct modal_eep_4k_header *pModal = &eep->modalHeader;
+ 
+-	return pModal->antCtrlCommon & 0xFFFF;
++	return pModal->antCtrlCommon;
+ }
+ 
+ static u8 ath9k_hw_4k_get_num_ant_config(struct ath_hw *ah,
+--- a/drivers/net/wireless/ath/ath9k/eeprom_9287.c
++++ b/drivers/net/wireless/ath/ath9k/eeprom_9287.c
+@@ -1131,13 +1131,13 @@ static u8 ath9k_hw_AR9287_get_num_ant_co
+ 	return 1;
+ }
+ 
+-static u16 ath9k_hw_AR9287_get_eeprom_antenna_cfg(struct ath_hw *ah,
++static u32 ath9k_hw_AR9287_get_eeprom_antenna_cfg(struct ath_hw *ah,
+ 						  struct ath9k_channel *chan)
+ {
+ 	struct ar9287_eeprom *eep = &ah->eeprom.map9287;
+ 	struct modal_eep_ar9287_header *pModal = &eep->modalHeader;
+ 
+-	return pModal->antCtrlCommon & 0xFFFF;
++	return pModal->antCtrlCommon;
+ }
+ 
+ static u16 ath9k_hw_AR9287_get_spur_channel(struct ath_hw *ah,
+--- a/drivers/net/wireless/ath/ath9k/eeprom_def.c
++++ b/drivers/net/wireless/ath/ath9k/eeprom_def.c
+@@ -1437,14 +1437,14 @@ static u8 ath9k_hw_def_get_num_ant_confi
+ 	return num_ant_config;
+ }
+ 
+-static u16 ath9k_hw_def_get_eeprom_antenna_cfg(struct ath_hw *ah,
++static u32 ath9k_hw_def_get_eeprom_antenna_cfg(struct ath_hw *ah,
+ 					       struct ath9k_channel *chan)
+ {
+ 	struct ar5416_eeprom_def *eep = &ah->eeprom.def;
+ 	struct modal_eep_header *pModal =
+ 		&(eep->modalHeader[IS_CHAN_2GHZ(chan)]);
+ 
+-	return pModal->antCtrlCommon & 0xFFFF;
++	return pModal->antCtrlCommon;
+ }
+ 
+ static u16 ath9k_hw_def_get_spur_channel(struct ath_hw *ah, u16 i, bool is2GHz)
 
 
