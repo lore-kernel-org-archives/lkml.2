@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965027Ab0HFSlI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:41:08 -0400
-Received: from kroah.org ([198.145.64.141]:48636 "EHLO coco.kroah.org"
+	id S965057Ab0HFSlO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:41:14 -0400
+Received: from kroah.org ([198.145.64.141]:48634 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964894Ab0HFSfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:44 -0400
+	id S964891Ab0HFSfn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:43 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:01 2010
-Message-Id: <20100806183201.312200862@clark.site>
+Message-Id: <20100806183201.564503709@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:35 -0700
+Date: Fri, 06 Aug 2010 11:30:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Subject: [14/38] ath9k: enable serialize_regmode for non-PCIE AR9160
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [17/38] ath9k_hw: fix a sign error in the IQ calibration code
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: John W. Linville <linville@tuxdriver.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 4c85ab11ca56da1aa59b58c80cc6a356515cc645 upstream.
+commit 23399016d9583d799ca98ce443a1410b13c3e96e upstream.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16476
-
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
-Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/ar9002_calib.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -537,7 +537,8 @@ static int __ath9k_hw_init(struct ath_hw
+--- a/drivers/net/wireless/ath/ath9k/ar9002_calib.c
++++ b/drivers/net/wireless/ath/ath9k/ar9002_calib.c
+@@ -239,7 +239,7 @@ static void ar9002_hw_iqcalibrate(struct
+ 			if (qCoff > 15)
+ 				qCoff = 15;
+ 			else if (qCoff <= -16)
+-				qCoff = 16;
++				qCoff = -16;
  
- 	if (ah->config.serialize_regmode == SER_REG_MODE_AUTO) {
- 		if (ah->hw_version.macVersion == AR_SREV_VERSION_5416_PCI ||
--		    (AR_SREV_9280(ah) && !ah->is_pciexpress)) {
-+		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah)) &&
-+		     !ah->is_pciexpress)) {
- 			ah->config.serialize_regmode =
- 				SER_REG_MODE_ON;
- 		} else {
+ 			ath_print(common, ATH_DBG_CALIBRATE,
+ 				  "Chn %d : iCoff = 0x%x  qCoff = 0x%x\n",
 
 
