@@ -1,79 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0HGQDX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 12:03:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41716 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752513Ab0HGQDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 12:03:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=jXnLzchF/1KWiHAfC3OGgLpAIV0EYb/KkULKO4qmMrYJRrL5PGClOezEwVtAZPNkvA
-         HSJYWGKAKhT7sDvprF37CFd7BXoKGV/zIleHiNtfgKaQS3z46du2eaY59ZnP2bB8hw9n
-         lylASDio+T2B7p0gHxpv+OWBs/ropN1DgoLfs=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <815343.24396.qm@web37602.mail.mud.yahoo.com>
-References: <815343.24396.qm@web37602.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 Aug 2010 19:03:15 +0300
-Message-ID: <1281196995.3300.6.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753765Ab0HGQVS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 12:21:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19115 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753199Ab0HGQVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 12:21:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,334,1278313200"; 
+   d="scan'208";a="542799168"
+Date: Fri, 6 Aug 2010 20:44:52 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 07/13] writeback: explicit low bound for vm.dirty_ratio
+Message-ID: <20100806124452.GC4717@localhost>
+References: <20100805161051.501816677@intel.com>
+ <20100805162433.673243074@intel.com>
+ <20100805163401.e9754032.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100805163401.e9754032.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-07 at 06:12 -0700, Alex Dubov wrote: 
-> > > > 
-> > > > Btw, I want to add a callback from driver to card
-> > driver to
-> > > > be able to
-> > > > reset card in case of error (windows driver does
-> > that in
-> > > > case of any
-> > > > error)
-> > > > 
-> > > > I would use most of the mspro_block_resume for
-> > the
-> > > > implementation for
-> > > > mspro.
-> > > > 
-> > > > Any objections, suggestions?
-> > > > 
-> > > 
-> > > Just toggle a power on it. Power off/power on will do
-> > the full reset of
-> > > the controller and the media. You don't have to
-> > reinitialize it, as you
-> > > are sure that it's the same stick.
-> > 
-> > Yea, but after such reboot, the device will be in serial
-> > mode. So, I
-> > will need to send switch TPC to device. My driver doesn't
-> > know how to do
-> > that...., so it would be nice to have callback to the
-> > core.
-> > 
+On Fri, Aug 06, 2010 at 07:34:01AM +0800, Andrew Morton wrote:
+> On Fri, 06 Aug 2010 00:10:58 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
 > 
-> Lets ask a different question: why do you think this
-> particular functionality is needed at all? Have you encountered any
-> problems which require it (I haven't, btw)?
+> > Force a user visible low bound of 5% for the vm.dirty_ratio interface.
+> > 
+> > Currently global_dirty_limits() applies a low bound of 5% for
+> > vm_dirty_ratio.  This is not very user visible -- if the user sets
+> > vm.dirty_ratio=1, the operation seems to succeed but will be rounded up
+> > to 5% when used.
+> > 
+> > Another problem is inconsistency: calc_period_shift() uses the plain
+> > vm_dirty_ratio value, which may be a problem when vm.dirty_ratio is set
+> > to < 5 by the user.
+> 
+> The changelog describes the old behaviour but doesn't describe the
+> proposed new behaviour.
 
-I would image using this to verify that stick is still in place on I/O
-error.
+Yeah, fixed below.
 
-If I just power  down/up it, it will loose state, for example IO mode,
-reg range, etc...
+> > --- linux-next.orig/kernel/sysctl.c	2010-08-05 22:48:34.000000000 +0800
+> > +++ linux-next/kernel/sysctl.c	2010-08-05 22:48:47.000000000 +0800
+> > @@ -126,6 +126,7 @@ static int ten_thousand = 10000;
+> >  
+> >  /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
+> >  static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
+> > +static int dirty_ratio_min = 5;
+> >  
+> >  /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
+> >  static int maxolduid = 65535;
+> > @@ -1031,7 +1032,7 @@ static struct ctl_table vm_table[] = {
+> >  		.maxlen		= sizeof(vm_dirty_ratio),
+> >  		.mode		= 0644,
+> >  		.proc_handler	= dirty_ratio_handler,
+> > -		.extra1		= &zero,
+> > +		.extra1		= &dirty_ratio_min,
+> >  		.extra2		= &one_hundred,
+> >  	},
+> 
+> I forget how the procfs core handles this.  Presumably the write will
+> now fail with -EINVAL or something?
 
-But anyway, this isn't very important.
+Right.
+         # echo 111 > /proc/sys/vm/dirty_ratio
+         echo: write error: invalid argument
 
-Best regards,
-Maxim Levitsky
+> So people's scripts will now error out and their space shuttles will
+> crash?
 
+Looks like a serious problem. I'm now much more reserved on pushing
+this patch :)
+
+> All of which illustrates why it's important to fully describe changes
+> in the changelog!  So people can consider and discuss the end-user
+> implications of a change.
+
+Good point. Here is the patch with updated changelog.
+
+Thanks,
+Fengguang
+---
+Subject: writeback: explicit low bound for vm.dirty_ratio
+From: Wu Fengguang <fengguang.wu@intel.com>
+Date: Thu Jul 15 10:28:57 CST 2010
+
+Force a user visible low bound of 5% for the vm.dirty_ratio interface.
+
+This is an interface change. When doing
+
+	echo N > /proc/sys/vm/dirty_ratio
+
+where N < 5, the old behavior is pretend to accept the value, while
+the new behavior is to reject it explicitly with -EINVAL.  This will
+possibly break user space if they checks the return value.
+
+Currently global_dirty_limits() applies a low bound of 5% for
+vm_dirty_ratio.  This is not very user visible -- if the user sets
+vm.dirty_ratio=1, the operation seems to succeed but will be rounded up
+to 5% when used.
+
+Another problem is inconsistency: calc_period_shift() uses the plain
+vm_dirty_ratio value, which may be a problem when vm.dirty_ratio is set
+to < 5 by the user.
+
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ kernel/sysctl.c     |    3 ++-
+ mm/page-writeback.c |   10 ++--------
+ 2 files changed, 4 insertions(+), 9 deletions(-)
+
+--- linux-next.orig/kernel/sysctl.c	2010-08-05 22:48:34.000000000 +0800
++++ linux-next/kernel/sysctl.c	2010-08-05 22:48:47.000000000 +0800
+@@ -126,6 +126,7 @@ static int ten_thousand = 10000;
+ 
+ /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
+ static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
++static int dirty_ratio_min = 5;
+ 
+ /* this is needed for the proc_dointvec_minmax for [fs_]overflow UID and GID */
+ static int maxolduid = 65535;
+@@ -1031,7 +1032,7 @@ static struct ctl_table vm_table[] = {
+ 		.maxlen		= sizeof(vm_dirty_ratio),
+ 		.mode		= 0644,
+ 		.proc_handler	= dirty_ratio_handler,
+-		.extra1		= &zero,
++		.extra1		= &dirty_ratio_min,
+ 		.extra2		= &one_hundred,
+ 	},
+ 	{
+--- linux-next.orig/mm/page-writeback.c	2010-08-05 22:48:42.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-08-05 22:48:47.000000000 +0800
+@@ -415,14 +415,8 @@ void global_dirty_limits(unsigned long *
+ 
+ 	if (vm_dirty_bytes)
+ 		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
+-	else {
+-		int dirty_ratio;
+-
+-		dirty_ratio = vm_dirty_ratio;
+-		if (dirty_ratio < 5)
+-			dirty_ratio = 5;
+-		dirty = (dirty_ratio * available_memory) / 100;
+-	}
++	else
++		dirty = (vm_dirty_ratio * available_memory) / 100;
+ 
+ 	if (dirty_background_bytes)
+ 		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
