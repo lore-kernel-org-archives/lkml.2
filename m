@@ -1,120 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935253Ab0HFKm5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 06:42:57 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:55134 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933047Ab0HFKmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 06:42:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:subject:cc:date:message-id:user-agent:mime-version
-         :content-type;
-        b=cG1x8oF3DeUffvMEIQ7oTCmRZhIy/Q+/2842ONHlKsR8zEwcw8Qtj13Mxa+sKCDloD
-         Z5f92aTyGnCI2LHxW9+xLDt9VL+wxk6svhZeKIIma/7EEomxIxnAeyWM2mIEdBsVJnKX
-         pNecRtyrYwEEX5hpEL1Gn6zTUvhhcda4hPIQ8=
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: axboe@kernel.dk
-Subject: Resend: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-CC: linux-kernel@vger.kernel.org
-Date: Fri, 06 Aug 2010 14:42:48 +0400
-Message-ID: <87vd7o2f9z.fsf@dmon-lap.sw.ru>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S935511Ab0HFKns (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 06:43:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42102 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933047Ab0HFKnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 06:43:45 -0400
+Message-ID: <4C5BE75F.1050105@suse.de>
+Date: Fri, 06 Aug 2010 12:43:43 +0200
+From: Hannes Reinecke <hare@suse.de>
+User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+Cc: "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>,
+        "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/12] scsi: megaraid_sas - Add input parameter for max_sectors
+References: <4B6A08C587958942AA3002690DD4F8C3D080455E@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3D09274AC@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3DBD67FAE@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3DBD67FAE@cosmail02.lsi.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+Yang, Bo wrote:
+> RESUBMIT requested by James Bottomley:
+> 
+> Driver add the input parameters support for max_sectors for our gen2 chip.  Customer can
+> Set the max_sectors support to 1MB for gen2 chip during the driver load.
+> 
+> Signed-off-by Bo Yang<bo.yang@lsi.com>
+> 
+> ---
+> drivers/scsi/megaraid/megaraid_sas.c |   74 +++++++++++++++++++++++++++++++++++
+>  drivers/scsi/megaraid/megaraid_sas.h |    1
+>  2 files changed, 75 insertions(+)
+> 
+> diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c new/drivers/scsi/megaraid/megaraid_sas.c
+> --- old/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 09:04:38.000000000 -0400
+> +++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-06-08 09:51:56.000000000 -0400
+> @@ -57,6 +57,15 @@ module_param_named(poll_mode_io, poll_mo
+>  MODULE_PARM_DESC(poll_mode_io,
+>  	"Complete cmds from IO path, (default=0)");
+>  
+> +/*
+> + * Number of sectors per IO command
+> + * Will be set in megasas_init_mfi if user does not provide
+> + */
+> +static unsigned int max_sectors;
+> +module_param_named(max_sectors, max_sectors, int, 0);
+> +MODULE_PARM_DESC(max_sectors,
+> +	"Maximum number of sectors per IO command");
+> +
+>  MODULE_LICENSE("GPL");
+>  MODULE_VERSION(MEGASAS_VERSION);
+>  MODULE_AUTHOR("megaraidlinux@lsi.com");
+> @@ -3566,6 +3575,32 @@ static int megasas_start_aen(struct mega
+>  				    class_locale.word);
+>  }
+>  
+> +static ssize_t
+> +sysfs_max_sectors_read(struct kobject *kobj, struct bin_attribute *bin_attr,
+> +			char *buf, loff_t off, size_t count)
+> +{
+> +	struct device *dev = container_of(kobj, struct device, kobj);
+> +
+> +	struct Scsi_Host *host = class_to_shost(dev);
+> +
+> +	struct megasas_instance *instance =
+> +				(struct megasas_instance *)host->hostdata;
+> +
+> +	count = sprintf(buf, "%u\n", instance->max_sectors_per_req);
+> +
+> +	return count+1;
+> +}
+> +
+> +static struct bin_attribute sysfs_max_sectors_attr = {
+> +	.attr = {
+> +		.name = "max_sectors",
+> +		.mode = S_IRUSR|S_IRGRP|S_IROTH,
+> +		.owner = THIS_MODULE,
+> +	},
+> +	.size = 7,
+> +	.read = sysfs_max_sectors_read,
+> +};
+> +
+>  /**
+>   * megasas_io_attach -	Attaches this driver to SCSI mid-layer
+>   * @instance:		Adapter soft state
+> @@ -3573,6 +3608,7 @@ static int megasas_start_aen(struct mega
+>  static int megasas_io_attach(struct megasas_instance *instance)
+>  {
+>  	struct Scsi_Host *host = instance->host;
+> +	u32		error;
+>  
+>  	/*
+>  	 * Export parameters required by SCSI mid-layer
+> @@ -3588,6 +3624,27 @@ static int megasas_io_attach(struct mega
+>  			instance->max_fw_cmds - MEGASAS_INT_CMDS;
+>  	host->this_id = instance->init_id;
+>  	host->sg_tablesize = instance->max_num_sge;
+> +	/*
+> +	 * Check if the module parameter value for max_sectors can be used
+> +	 */
+> +	if (max_sectors && max_sectors < instance->max_sectors_per_req)
+> +		instance->max_sectors_per_req = max_sectors;
+> +	else {
+> +		if (max_sectors) {
+> +			if (((instance->pdev->device ==
+> +				PCI_DEVICE_ID_LSI_SAS1078GEN2) ||
+> +				(instance->pdev->device ==
+> +				PCI_DEVICE_ID_LSI_SAS0079GEN2)) &&
+> +				(max_sectors <= MEGASAS_MAX_SECTORS)) {
+> +				instance->max_sectors_per_req = max_sectors;
+> +			} else {
+> +			printk(KERN_INFO "megasas: max_sectors should be > 0"
+> +				"and <= %d (or < 1MB for GEN2 controller)\n",
+> +				instance->max_sectors_per_req);
+> +			}
+> +		}
+> +	}
+> +
+>  	host->max_sectors = instance->max_sectors_per_req;
+>  	host->cmd_per_lun = 128;
+>  	host->max_channel = MEGASAS_MAX_CHANNELS - 1;
+> @@ -3604,10 +3661,27 @@ static int megasas_io_attach(struct mega
+>  	}
+>  
+>  	/*
+> +	 * Create sysfs entries for module paramaters
+> +	 */
+> +	error = sysfs_create_bin_file(&instance->host->shost_dev.kobj,
+> +			&sysfs_max_sectors_attr);
+> +
+Errm. sysfs_create_bin_file? 
+Do you expect a user to paste binary values in there?
+Please use the standard interface here.
+sysfs_create_bin_file should only be used for 'real' binary values,
+like raw f/w commands.
 
-Hi Jens,
-Seems that my first mail was missed somewhere.  
-I've found couple of trivial issues in blkdev_issue_zeroout()
-implementation. Unfortunately I've miss during initial testing phase
-because always called it with BARRIER|WAIT flags.
+Cheers,
 
-
---=-=-=
-Content-Disposition: inline; filename=patch-1
-
->From 5eb4d762ad8fe146ee638fb1b2d7730db3e3ca4b Mon Sep 17 00:00:00 2001
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-Date: Tue, 27 Jul 2010 17:12:27 +0400
-Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-
-- If function called without barrier option retvalue is incorrect
-- Add io_schedule() between loops
-
-
- diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d0216b9..a8d6a21 100644
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- block/blk-lib.c |   15 +++++++++++----
- 1 files changed, 11 insertions(+), 4 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index d0216b9..a8d6a21 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -157,7 +157,7 @@ static void bio_batch_end_io(struct bio *bio, int err)
- int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
- {
--	int ret = 0;
-+	int ret;
- 	struct bio *bio;
- 	struct bio_batch bb;
- 	unsigned int sz, issued = 0;
-@@ -175,11 +175,14 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			return ret;
- 	}
- submit:
-+	ret = 0;
- 	while (nr_sects != 0) {
- 		bio = bio_alloc(gfp_mask,
- 				min(nr_sects, (sector_t)BIO_MAX_PAGES));
--		if (!bio)
-+		if (!bio) {
-+			ret = -ENOMEM;
- 			break;
-+		}
- 
- 		bio->bi_sector = sector;
- 		bio->bi_bdev   = bdev;
-@@ -198,6 +201,7 @@ submit:
- 			if (ret < (sz << 9))
- 				break;
- 		}
-+		ret = 0;
- 		issued++;
- 		submit_bio(WRITE, bio);
- 	}
-@@ -218,15 +222,18 @@ submit:
- 		/* One of bios in the batch was completed with error.*/
- 		ret = -EIO;
- 
--	if (ret)
-+	if (ret && ret != -ENOMEM)
- 		goto out;
- 
- 	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
- 		ret = -EOPNOTSUPP;
- 		goto out;
- 	}
--	if (nr_sects != 0)
-+	if (nr_sects != 0) {
-+		if (ret == -ENOMEM)
-+			io_schedule();
- 		goto submit;
-+	}
- out:
- 	return ret;
- }
+Hannes
 -- 
-1.6.6.1
-
---=-=-=--
+Dr. Hannes Reinecke		      zSeries & Storage
+hare@suse.de			      +49 911 74053 688
+SUSE LINUX Products GmbH, Maxfeldstr. 5, 90409 Nürnberg
+GF: Markus Rex, HRB 16746 (AG Nürnberg)
