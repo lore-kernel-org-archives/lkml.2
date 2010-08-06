@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964879Ab0HFSmQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:42:16 -0400
-Received: from kroah.org ([198.145.64.141]:48615 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964843Ab0HFSfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:01 2010
-Message-Id: <20100806183201.223510837@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:34 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Greg Rose <gregory.v.rose@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [13/38] igb: Use only a single Tx queue in SR-IOV mode
-In-Reply-To: <20100806183250.GA23019@kroah.com>
+	id S965076Ab0HFSm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:42:27 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:35723 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965069Ab0HFSmP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:42:15 -0400
+Subject: [PATCH] powerpc: fix i8042 module build error
+To: martyn.welch@ge.com, benh@kernel.crashing.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        sfr@canb.auug.org.au
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 06 Aug 2010 12:42:12 -0600
+Message-ID: <20100806183839.32149.6238.stgit@angua>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+of_i8042_{kbd,aux}_irq needs to be exported
 
-------------------
-
-From: Greg Rose <gregory.v.rose@intel.com>
-
-commit 5fa8517f038d51d571981fb495206cc30ed91b06 upstream.
-
-The 82576 expects the second rx queue in any pool to receive L2 switch
-loop back packets sent from the second tx queue in another pool.  The
-82576 VF driver does not enable the second rx queue so if the PF driver
-sends packets destined to a VF from its second tx queue then the VF
-driver will never see them.  In SR-IOV mode limit the number of tx queues
-used by the PF driver to one. This patch fixes a bug reported in which
-the PF cannot communciate with the VF and should be considered for 2.6.34
-stable.
-
-Signed-off-by: Greg Rose <gregory.v.rose@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/net/igb/igb_main.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -630,9 +630,6 @@ static void igb_cache_ring_register(stru
- 			for (; i < adapter->rss_queues; i++)
- 				adapter->rx_ring[i]->reg_idx = rbase_offset +
- 				                               Q_IDX_82576(i);
--			for (; j < adapter->rss_queues; j++)
--				adapter->tx_ring[j]->reg_idx = rbase_offset +
--				                               Q_IDX_82576(j);
- 		}
- 	case e1000_82575:
- 	case e1000_82580:
-@@ -996,7 +993,10 @@ static void igb_set_interrupt_capability
- 
- 	/* Number of supported queues. */
- 	adapter->num_rx_queues = adapter->rss_queues;
--	adapter->num_tx_queues = adapter->rss_queues;
-+	if (adapter->vfs_allocated_count)
-+		adapter->num_tx_queues = 1;
-+	else
-+		adapter->num_tx_queues = adapter->rss_queues;
- 
- 	/* start with one vector for every rx queue */
- 	numvecs = adapter->num_rx_queues;
+Stephen and Ben, this fixes up the build error in linux-next.  If you prefer,
+I can stuff this patch into my next-powerpc branch.  Ben, I've got other
+commits in that branch that I'll be sending to you early next week anyway.
 
+ arch/powerpc/kernel/setup-common.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/powerpc/kernel/setup-common.c b/arch/powerpc/kernel/setup-common.c
+index 15ade0d..9d4882a 100644
+--- a/arch/powerpc/kernel/setup-common.c
++++ b/arch/powerpc/kernel/setup-common.c
+@@ -96,7 +96,9 @@ struct screen_info screen_info = {
+ 
+ /* Variables required to store legacy IO irq routing */
+ int of_i8042_kbd_irq;
++EXPORT_SYMBOL_GPL(of_i8042_kbd_irq);
+ int of_i8042_aux_irq;
++EXPORT_SYMBOL_GPL(of_i8042_aux_irq);
+ 
+ #ifdef __DO_IRQ_CANON
+ /* XXX should go elsewhere eventually */
 
