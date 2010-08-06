@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934989Ab0HFRSW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:18:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41049 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751771Ab0HFRSU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:18:20 -0400
+	id S934954Ab0HFRW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:22:56 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:50945 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761621Ab0HFRWw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:22:52 -0400
+Date: Fri, 6 Aug 2010 10:22:26 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
+        kevin granade <kevin.granade@gmail.com>,
+        Arve Hj?nnev?g <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100806172226.GH2432@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100805203102.GN2447@linux.vnet.ibm.com>
+ <AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
+ <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
+ <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
+ <20100805230304.GQ2447@linux.vnet.ibm.com>
+ <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
+ <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
+ <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com>
+ <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
+ <20100806123047.GE31326@sirena.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <201008052037.o75KbxSS022005@hera.kernel.org>
-References: <201008052037.o75KbxSS022005@hera.kernel.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 10:17:27 -0700
-Message-ID: <AANLkTimZF5U-AmD6200gnTuNzX5nUqVqEo_NmiH3rz5n@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/asm for 2.6.36
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: stable@kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Avi Kivity <avi@redhat.com>, Brian Gerst <brgerst@gmail.com>,
-        Glauber Costa <glommer@redhat.com>, Greg KH <gregkh@suse.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Jeff Dike <jdike@addtoit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Peter Palfrader <peter@palfrader.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Zachary Amsden <zamsden@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806123047.GE31326@sirena.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 1:37 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
->
->  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-asm-for-linus
->
-> H. Peter Anvin (7):
->      x86, asm: Clean up and simplify set_64bit()
+On Fri, Aug 06, 2010 at 01:30:48PM +0100, Mark Brown wrote:
+> On Thu, Aug 05, 2010 at 06:01:24PM -0700, david@lang.hm wrote:
+> > On Thu, 5 Aug 2010, Brian Swetland wrote:
+> 
+> >> Obviously not all clocks are stopped (the DSP and codec are powered
+> >> and clocked, for example), but yeah we can clock gate and power gate
+> >> the cpu and most other peripherals while audio is playing on a number
+> >> of ARM SoC designs available today (and the past few years).
+> 
+> > does this then mean that you have multiple variations of suspend?
+> 
+> > for example, one where the audio stuff is left powered, and one where it  
+> > isn't?
+> 
+> This was the core of the issue I was raising in the last thread about
+> this (the one following the rename to suspend blockers).  Essentially
+> what happens in a mainline context is that some subsystems can with
+> varying degress of optionality ignore some or all of the instruction to
+> suspend and keep bits of the system alive during suspend.
+> 
+> Those that stay alive will either have per subsystem handling or will be
+> outside the direct control of the kernel entirely (the modem is a good
+> example of the latter case in many systems - in terms of the software
+> it's essentially a parallel computer that's sitting in the system rather
+> than a perhiperal of the AP).
 
-Hmm. This seems to cause compiler warnings for me on x86-64:
+This underscores a basic difference between servers and these embedded
+devices.  When you suspend a server, it is doing nothing, because servers
+rely very heavily on the CPUs.  In contrast, many embedded devices can
+perform useful work even when the CPUs are completely powered down.
 
-  drivers/pci/intr_remapping.c: In function ‘modify_irte’:
-  drivers/pci/intr_remapping.c:314: warning: passing argument 1 of
-‘set_64bit’ from incompatible pointer type
-  /home/torvalds/v2.6/linux/arch/x86/include/asm/cmpxchg_64.h:6: note:
-expected ‘volatile u64 *’ but argument is of type ‘long unsigned int
-*’
-
-and I'm not clear on the reason for that function prototype change.
-
-                          Linus
+							Thanx, Paul
