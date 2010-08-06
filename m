@@ -1,59 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761488Ab0HFOtJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 10:49:09 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41742 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948Ab0HFOtF (ORCPT
+	id S934780Ab0HFOwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 10:52:24 -0400
+Received: from caiajhbdcagg.dreamhost.com ([208.97.132.66]:60200 "EHLO
+	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759702Ab0HFOwV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 10:49:05 -0400
-Date: Fri, 6 Aug 2010 16:49:39 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "rostedt@goodmis.org" <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH 7/9] perf: Export cpumap
-Message-ID: <20100806144939.GD21628@aftab>
-References: <1281104713-23141-1-git-send-email-bp@amd64.org>
- <1281104713-23141-8-git-send-email-bp@amd64.org>
- <20100806143912.GB13780@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100806143912.GB13780@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 6 Aug 2010 10:52:21 -0400
+Subject: Re: [PATCH RESEND] Fix /proc/softirqs file formatting
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <4C56089B.9090405@ncos.nec.co.jp>
+References: <1280516809.1955.0.camel@cowboy>
+	 <4C56089B.9090405@ncos.nec.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Aug 2010 10:52:16 -0400
+Message-ID: <1281106336.1945.0.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-Date: Fri, Aug 06, 2010 at 10:39:12AM -0400
-
-> Em Fri, Aug 06, 2010 at 04:25:11PM +0200, Borislav Petkov escreveu:
-> > From: Borislav Petkov <borislav.petkov@amd.com>
+On Mon, 2010-08-02 at 08:51 +0900, Keika Kobayashi wrote:
+> (2010/07/31 4:06), Davidlohr Bueso wrote:
+> > Hi,
 > > 
-> > Export cpu counting and cpumap manipulating utils for general use. This
-> > pulls ctype.c along.
+> > The length of the BLOCK_IPOLL string is making it's value be printed too
+> > far to the right. This patch fixes this and makes the output a bit
+> > neater.
 > > 
-> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> > Currently:
+> >                 CPU0
+> >       HI:          0
+> >    TIMER:     599792
+> >   NET_TX:          2
+> >   NET_RX:          6
+> >    BLOCK:      80807
+> > BLOCK_IOPOLL:          0
+> >  TASKLET:      20012
+> >    SCHED:          0
+> >  HRTIMER:         63
+> >      RCU:     619279
+> > 
+> > With patch:
+> >                     CPU0
+> >           HI:          0
+> >        TIMER:     585582
+> >       NET_TX:          2
+> >       NET_RX:          6
+> >        BLOCK:      80320
+> > BLOCK_IOPOLL:          0
+> >      TASKLET:      19287
+> >        SCHED:          0
+> >      HRTIMER:         62
+> >          RCU:     604441
+> > 
+> > 
+> > 
+> > Thanks,
+> > Davidlohr
+> >  
+> > 
+> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+> > ---
+> >  fs/proc/softirqs.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/proc/softirqs.c b/fs/proc/softirqs.c
+> > index 1807c24..3799473 100644
+> > --- a/fs/proc/softirqs.c
+> > +++ b/fs/proc/softirqs.c
+> > @@ -10,13 +10,13 @@ static int show_softirqs(struct seq_file *p, void *v)
+> >  {
+> >  	int i, j;
+> >  
+> > -	seq_printf(p, "                ");
+> > +	seq_printf(p, "                    ");
+> >  	for_each_possible_cpu(i)
+> >  		seq_printf(p, "CPU%-8d", i);
+> >  	seq_printf(p, "\n");
+> >  
+> >  	for (i = 0; i < NR_SOFTIRQS; i++) {
+> > -		seq_printf(p, "%8s:", softirq_to_name[i]);
+> > +		seq_printf(p, "%12s:", softirq_to_name[i]);
+> >  		for_each_possible_cpu(j)
+> >  			seq_printf(p, " %10u", kstat_softirqs_cpu(i, j));
+> >  		seq_printf(p, "\n");
 > 
-> Is this independent of previous patches? I.e. to be applied to current
-> perf/core?
+> Sorry for late response.
+> 
+> It looks good to me.
+> 
+> // Keika Kobayashi
 
-I'm afraid not since earlier patches in the series introduce the
-toplevel Makefile that glues all the different tools/lib/* parts
-together. However, I could extract the toplevel Makefile parts and
-cpumap.c and ctype.c if you really need it now - I've been doing this so
-often lately that I could do it with my eyes closed now :o).
+Then, if no one objects, can we get it added upstream?
 
--- 
-Regards/Gruss,
-Boris.
+Thanks,
+Davidlohr
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
