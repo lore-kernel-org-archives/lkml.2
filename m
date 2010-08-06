@@ -1,53 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761995Ab0HFTxJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:53:09 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46135 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935082Ab0HFTw7 (ORCPT
+	id S965744Ab0HFTx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:53:27 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40042 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965695Ab0HFTxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:52:59 -0400
+	Fri, 6 Aug 2010 15:53:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=rnpHGEAfwUcj9NAxUSqdkYqR2H+QOwlNTb3RgN5pCKStliLJKO34018rX4naRZW7XI
-         bfggsAJ5/+wM+NBJI2wEi7i8vHDxFnC0EjDPiBXtR6/5DeeIOU6XECFIKMxYrEBr4hWk
-         DS01+5tEAWK05qwry7bFmMpvQitUKM5o4BFrE=
+        b=UtE+CIw6RRssexOmqLG0U1DozSDqy+mgilhJgvkqbtwDnIvC3ZwsaNkt7HnNEGW926
+         AaMn0YzQ6hAZmgIKaTym8BQDXmf9n2LqorYrd9PCjLY1+aliSDlIZHsAq4ucUdfx75EI
+         Xo021wvNq/kH/JNM+iww00k2D05K7G4h5HFX8=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jarod Wilson <jarod@redhat.com>,
-        Manu Abraham <abraham.manu@gmail.com>, Scott Davilla <davilla@4pi.com>,
-        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Mike McCormack <mikem@ring3k.org>,
+        Jeff Mahoney <jeffm@suse.com>, Julia Lawall <julia@diku.dk>,
+        Joe Perches <joe@perches.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 12/18] staging: crystalhd: call disable_pci_device() if pci_probe() failed
-Date: Fri,  6 Aug 2010 23:52:50 +0400
-Message-Id: <1281124373-13756-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 15/18] staging: rtl8187e: call disable_pci_device() if pci_probe() failed
+Date: Fri,  6 Aug 2010 23:53:09 +0400
+Message-Id: <1281124392-13877-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Driver should call disable_pci_device() if it returns from pci_probe()
-with error. Also it must not be called if pci_request_region() fails as
+with error. Also it must not be called if request_*_region() fails as
 it means that somebody uses device resources and rules the device.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/staging/crystalhd/crystalhd_lnx.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/staging/rtl8192e/r8192E_core.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
-index fbb80f0..0e52075 100644
---- a/drivers/staging/crystalhd/crystalhd_lnx.c
-+++ b/drivers/staging/crystalhd/crystalhd_lnx.c
-@@ -570,6 +570,8 @@ static int __devinit chd_dec_pci_probe(struct pci_dev *pdev,
- 	rc = chd_pci_reserve_mem(pinfo);
- 	if (rc) {
- 		BCMLOG_ERR("Failed to setup memory regions.\n");
-+		if (rc != -EBUSY)
-+			pci_disable_device(pdev);
- 		return -ENOMEM;
+diff --git a/drivers/staging/rtl8192e/r8192E_core.c b/drivers/staging/rtl8192e/r8192E_core.c
+index 17a806f..7ea2959 100644
+--- a/drivers/staging/rtl8192e/r8192E_core.c
++++ b/drivers/staging/rtl8192e/r8192E_core.c
+@@ -6325,6 +6325,8 @@ static int __devinit rtl8192_pci_probe(struct pci_dev *pdev,
+ 	struct net_device *dev = NULL;
+ 	struct r8192_priv *priv= NULL;
+ 	u8 unit = 0;
++	int ret = -ENODEV;
++	int pci_dev_busy = 0;
+ 
+ #ifdef CONFIG_RTL8192_IO_MAP
+ 	unsigned long pio_start, pio_len, pio_flags;
+@@ -6344,8 +6346,10 @@ static int __devinit rtl8192_pci_probe(struct pci_dev *pdev,
+ 	pci_set_dma_mask(pdev, 0xffffff00ULL);
+ 	pci_set_consistent_dma_mask(pdev,0xffffff00ULL);
+ 	dev = alloc_ieee80211(sizeof(struct r8192_priv));
+-	if (!dev)
+-		return -ENOMEM;
++	if (!dev) {
++		ret = -ENOMEM;
++		goto fail_free;
++	}
+ 
+ 	pci_set_drvdata(pdev, dev);
+ 	SET_NETDEV_DEV(dev, &pdev->dev);
+@@ -6373,6 +6377,7 @@ static int __devinit rtl8192_pci_probe(struct pci_dev *pdev,
+ 	//DMESG("IO space @ 0x%08lx", pio_start );
+ 	if( ! request_region( pio_start, pio_len, RTL819xE_MODULE_NAME ) ){
+ 		RT_TRACE(COMP_ERR,"request_region failed!");
++		pci_dev_busy = 1;
+ 		goto fail;
  	}
+ 
+@@ -6393,6 +6398,7 @@ static int __devinit rtl8192_pci_probe(struct pci_dev *pdev,
+ 	//DMESG("Memory mapped space @ 0x%08lx ", pmem_start);
+ 	if( ! request_mem_region(pmem_start, pmem_len, RTL819xE_MODULE_NAME)) {
+ 		RT_TRACE(COMP_ERR,"request_mem_region failed!");
++		pci_dev_busy = 1;
+ 		goto fail;
+ 	}
+ 
+@@ -6494,11 +6500,13 @@ fail:
+ 		free_ieee80211(dev);
+ 	}
+ 
+-	pci_disable_device(pdev);
++fail_free:
++	if (!pci_dev_busy)
++		pci_disable_device(pdev);
+ 
+ 	DMESG("wlan driver load failed\n");
+ 	pci_set_drvdata(pdev, NULL);
+-	return -ENODEV;
++	return ret;
+ 
+ }
  
 -- 
 1.7.0.4
