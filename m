@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab0HFEzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 00:55:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30707 "EHLO
+	id S933062Ab0HFE5S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 00:57:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33330 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab0HFEzJ (ORCPT
+	with ESMTP id S1751623Ab0HFE5N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 00:55:09 -0400
-Message-ID: <4C5B9469.3080409@kernel.org>
-Date: Thu, 05 Aug 2010 21:49:45 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Fri, 6 Aug 2010 00:57:13 -0400
+Message-ID: <4C5B89DB.5050106@oracle.com>
+Date: Fri, 06 Aug 2010 12:04:43 +0800
+From: Tao Ma <tao.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-References: <20100803.203814.59697285.davem@davemloft.net> 	<AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com> 	<AANLkTinU4+tcm2O_BVBFkHSdnx7JEPtM4sw_s--qdUKC@mail.gmail.com> <AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
-In-Reply-To: <AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+To: Tejun Heo <tj@kernel.org>
+CC: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jens.axboe@kernel.dk>,
+        stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
+        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and
+ SWRITE to match the corresponding BIO_RW_* bits
+References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net> <4C52A98A.7060507@kernel.org>	<20100802104227.79340b49@notabene> <4C56D30A.3000403@kernel.org> <x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C5B95A2.00FB,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4C5B95D9.0078:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 07:15 PM, Linus Torvalds wrote:
-> On Thu, Aug 5, 2010 at 7:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+Hi Tejun,
+
+On 08/06/2010 02:45 AM, Jeff Moyer wrote:
+> Tejun Heo<tj@kernel.org>  writes:
+>
+>> Commit a82afdf (block: use the same failfast bits for bio and request)
+>> moved BIO_RW_* bits around such that they match up with REQ_* bits.
+>> Unfortunately, fs.h hard coded READ, WRITE, READA and SWRITE as 0, 1,
+>> 2 and 3, and expected them to match with BIO_RW_* bits.  READ/WRITE
+>> didn't change but BIO_RW_AHEAD was moved to bit 4 instead of bit 1,
+>> breaking READA and SWRITE.
 >>
->>  CC      drivers/net/ixgbe/ixgbe_main.o
->> drivers/net/ixgbe/ixgbe_main.c: In function ‘ixgbe_select_queue’:
->> drivers/net/ixgbe/ixgbe_main.c:6159: error: ‘struct ixgbe_fcoe’ has no member named ‘up’
-> 
-> Hmm. You must have some other version of that file than I do. Line
-> 6159 is in ixgbe_init_module() in my source tree.
-> 
->                  Linus
+>> This patch updates READA and SWRITE such that they match the BIO_RW_*
+>> bits again.  A follow up patch will update the definitions to directly
+>> use BIO_RW_* bits so that this kind of breakage won't happen again.
+>>
+>> Stable: The offending commit a82afdf was released with v2.6.32, so
+>> this patch should be applied to all kernels since then but it must
+>> _NOT_ be applied to kernels earlier than that.
+If only this patch goes into stable, do we need to change RWA_MASK in 
+this patch also(I have seen you change it the 2/2)?
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=drivers/net/ixgbe/ixgbe_main.c;h=7d6a415bcf885633999e10ed795df49876d6c47e;hb=HEAD
+-#define RWA_MASK        2
++#define RWA_MASK        16
 
-6146 static u16 ixgbe_select_queue(struct net_device *dev, struct sk_buff *skb)
-6147 {
-6148         struct ixgbe_adapter *adapter = netdev_priv(dev);
-6149         int txq = smp_processor_id();
-6150
-6151 #ifdef IXGBE_FCOE
-6152         if ((skb->protocol == htons(ETH_P_FCOE)) ||
-6153             (skb->protocol == htons(ETH_P_FIP))) {
-6154                 if (adapter->flags & IXGBE_FLAG_FCOE_ENABLED) {
-6155                         txq &= (adapter->ring_feature[RING_F_FCOE].indices - 1);
-6156                         txq += adapter->ring_feature[RING_F_FCOE].mask;
-6157                         return txq;
-6158                 } else if (adapter->flags & IXGBE_FLAG_DCB_ENABLED) {
-6159                         txq = adapter->fcoe.up;
-6160                         return txq;
-6161                 }
-6162         }
-6163 #endif
+Regards,
+Tao
+
