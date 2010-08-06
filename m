@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762071Ab0HFUjC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:39:02 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60107 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762042Ab0HFUi6 (ORCPT
+	id S935069Ab0HFUoW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:44:22 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:33839 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762044Ab0HFUoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:38:58 -0400
-X-Authority-Analysis: v=1.1 cv=iAgpuTQS0MLtLwMsZiCHuoBwPeqvJBBqRrgqCYgBu0I= c=1 sm=0 a=vMBlIDAt6S4A:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=B1BknRpORHdQTdHxPEcA:9 a=E-CkAu8Vplo-6YxqupgWo32ACXIA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [PATCH] tracing: wake up tasks reading trace_pipe on write to
- trace_marker
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <20100727224408.GB4142@joi.lan>
-References: <20100727224408.GB4142@joi.lan>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 06 Aug 2010 16:38:56 -0400
-Message-ID: <1281127136.3352.13.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	Fri, 6 Aug 2010 16:44:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=RjRnA7QaDCMO5LfTxyvUKwRWMVFnfoLycInpXZfCw75ChJ0yyVP1OsQ1V3fLo4Vlix
+         H5pKb9L2JcPgCf9H4UgJaFzcPEGFEERMW2Rk6TGzlrnBm93VX1GjtmlWhqIYHVPy6/mG
+         IpoOb17xEw455bJZZIp6nKd7XF0T1AthztvVI=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Neil Leeder <nleeder@codeaurora.org>
+Subject: Re: [PATCH 0/1] mouse: add qci touchpad driver
+Date: Fri, 6 Aug 2010 13:44:11 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.4.5; x86_64; ; )
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+References: <4C5C713D.8010902@codeaurora.org>
+In-Reply-To: <4C5C713D.8010902@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008061344.13326.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-28 at 00:44 +0200, Marcin Slusarz wrote:
-> Currently we rely on other code periodically waking up trace reader.
-> If there aren't any other data than markers, reader will never be woken up.
-> Fix it.
+On Friday, August 06, 2010 01:31:57 pm Neil Leeder wrote:
+> This is an update of the driver that Quanta posted here a few days ago.
+> Quanta wrote the original version of the driver and I am picking up
+> maintenance for code aurora forum.
 > 
-> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> ---
->  kernel/trace/trace.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+> I've addressed the review comments. The only one that's outstanding is
+> the use of the sensitivity value. I don't see an easy way that userspace
+> would be able to apply the sensitivity scaling between the driver and
+> say xorg, so for now I've left it in the driver, but I'd welcome any
+> suggestions for improvement.
 > 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 086d363..02e04c8 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -1520,6 +1520,7 @@ int trace_array_vprintk(struct trace_array *tr,
->  	if (!filter_check_discard(call, entry, buffer, event)) {
->  		ring_buffer_unlock_commit(buffer, event);
->  		ftrace_trace_stack(buffer, irq_flags, 6, pc);
-> +		trace_wake_up();
->  	}
->  
 
-This can't work. trace_printk() and friends must be able to be used
-anywhere. This can cause race conditions with the rq locks in the
-scheduler.
+Doesn't "xset mouse" do what you want?
 
-But you do bring up a good idea. That is, perhaps we should have a way
-to attach to known safe tracepoints that we can hook to to check if a
-wake up should happen or not.
-
--- Steve
-
-
+-- 
+Dmitry
