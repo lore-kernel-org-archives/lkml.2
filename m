@@ -1,173 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935529Ab0HFWn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:43:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32424 "EHLO mx1.redhat.com"
+	id S935873Ab0HFWoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:44:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50517 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762152Ab0HFWgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1762151Ab0HFWgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 18:36:18 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
-Subject: [PATCH 10/38] whiteout: Split of ext2_append_link() from ext2_add_link()
-Date: Fri,  6 Aug 2010 15:34:56 -0700
-Message-Id: <1281134124-17041-11-git-send-email-vaurora@redhat.com>
+        David Woodhouse <dwmw2@infradead.org>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>, linux-mm@kvack.org
+Subject: [PATCH 09/38] whiteout: tmpfs whiteout support
+Date: Fri,  6 Aug 2010 15:34:55 -0700
+Message-Id: <1281134124-17041-10-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
-
-The ext2_append_link() is later used to find or append a directory
-entry to whiteout.
+Add support for whiteout dentries to tmpfs.  This includes adding
+support for whiteouts to d_genocide(), which is called to tear down
+pinned tmpfs dentries.  Whiteouts have to be persistent, so they have
+a pinning extra ref count that needs to be dropped by d_genocide().
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
+Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Theodore Tso <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Cc: linux-mm@kvack.org
 ---
- fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
+ fs/dcache.c |   13 +++++-
+ mm/shmem.c  |  145 +++++++++++++++++++++++++++++++++++++++++++++++++++++------
+ 2 files changed, 143 insertions(+), 15 deletions(-)
 
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 7516957..57207a9 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 80f059b..79b9f6a 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -2229,7 +2229,18 @@ resume:
+ 		struct list_head *tmp = next;
+ 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
+ 		next = tmp->next;
+-		if (d_unhashed(dentry)||!dentry->d_inode)
++		/*
++		 * Skip unhashed and negative dentries, but process
++		 * positive dentries and whiteouts.  A whiteout looks
++		 * kind of like a negative dentry for purposes of
++		 * lookup, but it has an extra pinning ref count
++		 * because it can't be evicted like a negative dentry
++		 * can.  What we care about here is ref counts - and
++		 * we need to drop the ref count on a whiteout before
++		 * we can evict it.
++		 */
++		if (d_unhashed(dentry)||(!dentry->d_inode &&
++					 !d_is_whiteout(dentry)))
+ 			continue;
+ 		if (!list_empty(&dentry->d_subdirs)) {
+ 			this_parent = dentry;
+diff --git a/mm/shmem.c b/mm/shmem.c
+index f65f840..a0a4fa5 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1805,6 +1805,76 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	return 0;
  }
  
- /*
-- *	Parent is locked.
-+ * Find or append a given dentry to the parent directory
-  */
--int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+static ext2_dirent * ext2_append_entry(struct dentry * dentry,
-+				       struct page ** page)
- {
- 	struct inode *dir = dentry->d_parent->d_inode;
- 	const char *name = dentry->d_name.name;
-@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	unsigned chunk_size = ext2_chunk_size(dir);
- 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
- 	unsigned short rec_len, name_len;
--	struct page *page = NULL;
--	ext2_dirent * de;
-+	ext2_dirent * de = NULL;
- 	unsigned long npages = dir_pages(dir);
- 	unsigned long n;
- 	char *kaddr;
--	loff_t pos;
--	int err;
- 
- 	/*
- 	 * We take care of directory expansion in the same loop.
-@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	for (n = 0; n <= npages; n++) {
- 		char *dir_end;
- 
--		page = ext2_get_page(dir, n, 0);
--		err = PTR_ERR(page);
--		if (IS_ERR(page))
-+		*page = ext2_get_page(dir, n, 0);
-+		de = ERR_PTR(PTR_ERR(*page));
-+		if (IS_ERR(*page))
- 			goto out;
--		lock_page(page);
--		kaddr = page_address(page);
-+		lock_page(*page);
-+		kaddr = page_address(*page);
- 		dir_end = kaddr + ext2_last_byte(dir, n);
- 		de = (ext2_dirent *)kaddr;
- 		kaddr += PAGE_CACHE_SIZE - reclen;
- 		while ((char *)de <= kaddr) {
- 			if ((char *)de == dir_end) {
- 				/* We hit i_size */
--				name_len = 0;
--				rec_len = chunk_size;
-+				de->name_len = 0;
- 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
- 				de->inode = 0;
- 				goto got_it;
-@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 			if (de->rec_len == 0) {
- 				ext2_error(dir->i_sb, __func__,
- 					"zero-length directory entry");
--				err = -EIO;
-+				de = ERR_PTR(-EIO);
- 				goto out_unlock;
- 			}
--			err = -EEXIST;
- 			if (ext2_match (namelen, name, de))
--				goto out_unlock;
-+				goto got_it;
- 			name_len = EXT2_DIR_REC_LEN(de->name_len);
- 			rec_len = ext2_rec_len_from_disk(de->rec_len);
- 			if (!de->inode && rec_len >= reclen)
-@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 				goto got_it;
- 			de = (ext2_dirent *) ((char *) de + rec_len);
- 		}
--		unlock_page(page);
--		ext2_put_page(page);
-+		unlock_page(*page);
-+		ext2_put_page(*page);
- 	}
-+
- 	BUG();
--	return -EINVAL;
- 
- got_it:
-+	return de;
-+	/* OFFSET_CACHE */
-+out_unlock:
-+	unlock_page(*page);
-+	ext2_put_page(*page);
-+out:
-+	return de;
-+}
++static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
++static int shmem_unlink(struct inode *dir, struct dentry *dentry);
 +
 +/*
-+ *	Parent is locked.
++ * This is the whiteout support for tmpfs. It uses one singleton whiteout
++ * inode per superblock thus it is very similar to shmem_link().
 + */
-+int ext2_add_link (struct dentry *dentry, struct inode *inode)
++static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
++			  struct dentry *new_dentry)
 +{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	unsigned short rec_len, name_len;
-+	ext2_dirent * de;
-+	struct page *page;
-+	loff_t pos;
-+	int err;
++	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
++	struct dentry *dentry;
 +
-+	de = ext2_append_entry(dentry, &page);
-+	if (IS_ERR(de))
-+		return PTR_ERR(de);
++	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
++		return -EPERM;
 +
-+	err = -EEXIST;
-+	if (ext2_match (namelen, name, de))
-+		goto out_unlock;
++	/* This gives us a proper initialized negative dentry */
++	dentry = simple_lookup(dir, new_dentry, NULL);
++	if (dentry && IS_ERR(dentry))
++		return PTR_ERR(dentry);
 +
-+got_it:
-+	name_len = EXT2_DIR_REC_LEN(de->name_len);
-+	rec_len = ext2_rec_len_from_disk(de->rec_len);
++	/*
++	 * No ordinary (disk based) filesystem counts whiteouts as inodes;
++	 * but each new link needs a new dentry, pinning lowmem, and
++	 * tmpfs dentries cannot be pruned until they are unlinked.
++	 */
++	if (sbinfo->max_inodes) {
++		spin_lock(&sbinfo->stat_lock);
++		if (!sbinfo->free_inodes) {
++			spin_unlock(&sbinfo->stat_lock);
++			return -ENOSPC;
++		}
++		sbinfo->free_inodes--;
++		spin_unlock(&sbinfo->stat_lock);
++	}
 +
- 	pos = page_offset(page) +
- 		(char*)de - (char*)page_address(page);
- 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-@@ -563,7 +594,6 @@ got_it:
- 	/* OFFSET_CACHE */
- out_put:
- 	ext2_put_page(page);
--out:
- 	return err;
- out_unlock:
- 	unlock_page(page);
++	if (old_dentry->d_inode) {
++		if (S_ISDIR(old_dentry->d_inode->i_mode))
++			shmem_rmdir(dir, old_dentry);
++		else
++			shmem_unlink(dir, old_dentry);
++	}
++
++	dir->i_size += BOGO_DIRENT_SIZE;
++	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
++	/* Extra pinning count for the created dentry */
++	dget(new_dentry);
++	spin_lock(&new_dentry->d_lock);
++	new_dentry->d_flags |= DCACHE_WHITEOUT;
++	spin_unlock(&new_dentry->d_lock);
++	return 0;
++}
++
++static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
++				struct inode *inode)
++{
++	if (d_is_whiteout(dentry)) {
++		/* Re-using an existing whiteout */
++		shmem_free_inode(dir->i_sb);
++		if (S_ISDIR(inode->i_mode))
++			inode->i_mode |= S_OPAQUE;
++	} else {
++		/* New dentry */
++		dir->i_size += BOGO_DIRENT_SIZE;
++		dget(dentry); /* Extra count - pin the dentry in core */
++	}
++	/* Will clear DCACHE_WHITEOUT flag */
++	d_instantiate(dentry, inode);
++
++}
+ /*
+  * File creation. Allocate an inode, and we're done..
+  */
+@@ -1833,10 +1903,8 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
+ #else
+ 		error = 0;
+ #endif
+-		dir->i_size += BOGO_DIRENT_SIZE;
++		shmem_d_instantiate(dir, dentry, inode);
+ 		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+-		d_instantiate(dentry, inode);
+-		dget(dentry); /* Extra count - pin the dentry in core */
+ 	}
+ 	return error;
+ }
+@@ -1874,12 +1942,11 @@ static int shmem_link(struct dentry *old_dentry, struct inode *dir, struct dentr
+ 	if (ret)
+ 		goto out;
+ 
+-	dir->i_size += BOGO_DIRENT_SIZE;
++	shmem_d_instantiate(dir, dentry, inode);
++
+ 	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+ 	inc_nlink(inode);
+ 	atomic_inc(&inode->i_count);	/* New dentry reference */
+-	dget(dentry);		/* Extra pinning count for the created dentry */
+-	d_instantiate(dentry, inode);
+ out:
+ 	return ret;
+ }
+@@ -1888,21 +1955,61 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 
+-	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
+-		shmem_free_inode(inode->i_sb);
++	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
++		shmem_free_inode(dir->i_sb);
+ 
++	if (inode) {
++		inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
++		drop_nlink(inode);
++	}
+ 	dir->i_size -= BOGO_DIRENT_SIZE;
+-	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+-	drop_nlink(inode);
+ 	dput(dentry);	/* Undo the count from "create" - this does all the work */
+ 	return 0;
+ }
+ 
++static void shmem_dir_unlink_whiteouts(struct inode *dir, struct dentry *dentry)
++{
++	if (!dentry->d_inode)
++		return;
++
++	/* Remove whiteouts from logical empty directory */
++	if (S_ISDIR(dentry->d_inode->i_mode) &&
++	    dentry->d_inode->i_sb->s_flags & MS_WHITEOUT) {
++		struct dentry *child, *next;
++		LIST_HEAD(list);
++
++		spin_lock(&dcache_lock);
++		list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
++			spin_lock(&child->d_lock);
++			if (d_is_whiteout(child)) {
++				__d_drop(child);
++				if (!list_empty(&child->d_lru)) {
++					list_del(&child->d_lru);
++					dentry_stat.nr_unused--;
++				}
++				list_add(&child->d_lru, &list);
++			}
++			spin_unlock(&child->d_lock);
++		}
++		spin_unlock(&dcache_lock);
++
++		list_for_each_entry_safe(child, next, &list, d_lru) {
++			spin_lock(&child->d_lock);
++			list_del_init(&child->d_lru);
++			spin_unlock(&child->d_lock);
++
++			shmem_unlink(dentry->d_inode, child);
++		}
++	}
++}
++
+ static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
+ {
+ 	if (!simple_empty(dentry))
+ 		return -ENOTEMPTY;
+ 
++	/* Remove whiteouts from logical empty directory */
++	shmem_dir_unlink_whiteouts(dir, dentry);
+ 	drop_nlink(dentry->d_inode);
+ 	drop_nlink(dir);
+ 	return shmem_unlink(dir, dentry);
+@@ -1911,7 +2018,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
+ /*
+  * The VFS layer already does all the dentry stuff for rename,
+  * we just have to decrement the usage count for the target if
+- * it exists so that the VFS layer correctly free's it when it
++ * it exists so that the VFS layer correctly frees it when it
+  * gets overwritten.
+  */
+ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry)
+@@ -1922,7 +2029,12 @@ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct
+ 	if (!simple_empty(new_dentry))
+ 		return -ENOTEMPTY;
+ 
++	if (d_is_whiteout(new_dentry))
++		shmem_unlink(new_dir, new_dentry);
++
+ 	if (new_dentry->d_inode) {
++		/* Remove whiteouts from logical empty directory */
++		shmem_dir_unlink_whiteouts(new_dir, new_dentry);
+ 		(void) shmem_unlink(new_dir, new_dentry);
+ 		if (they_are_dirs)
+ 			drop_nlink(old_dir);
+@@ -1987,10 +2099,8 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
+ 		unlock_page(page);
+ 		page_cache_release(page);
+ 	}
+-	dir->i_size += BOGO_DIRENT_SIZE;
++	shmem_d_instantiate(dir, dentry, inode);
+ 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
+-	d_instantiate(dentry, inode);
+-	dget(dentry);
+ 	return 0;
+ }
+ 
+@@ -2367,6 +2477,12 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!root)
+ 		goto failed_iput;
+ 	sb->s_root = root;
++
++#ifdef CONFIG_TMPFS
++	if (!(sb->s_flags & MS_NOUSER))
++		sb->s_flags |= MS_WHITEOUT;
++#endif
++
+ 	return 0;
+ 
+ failed_iput:
+@@ -2466,6 +2582,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
+ 	.rmdir		= shmem_rmdir,
+ 	.mknod		= shmem_mknod,
+ 	.rename		= shmem_rename,
++	.whiteout       = shmem_whiteout,
+ #endif
+ #ifdef CONFIG_TMPFS_POSIX_ACL
+ 	.setattr	= shmem_notify_change,
 -- 
 1.6.3.3
 
