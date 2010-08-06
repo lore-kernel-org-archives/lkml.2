@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935595Ab0HFSit (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:38:49 -0400
-Received: from kroah.org ([198.145.64.141]:48706 "EHLO coco.kroah.org"
+	id S964978Ab0HFSjZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:39:25 -0400
+Received: from kroah.org ([198.145.64.141]:48701 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964943Ab0HFSgE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:04 -0400
+	id S964941Ab0HFSgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:02 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
-Message-Id: <20100806183202.509051537@clark.site>
+Message-Id: <20100806183202.426076199@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:49 -0700
+Date: Fri, 06 Aug 2010 11:30:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [28/38] cfg80211: dont get expired BSSes
+Subject: [27/38] cfg80211: ignore spurious deauth
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,50 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit ccb6c1360f8dd43303c659db718e7e0b24175db5 upstream.
+commit 643f82e32f14faf0d0944c804203a6681b6b0a1e upstream.
 
-When kernel-internal users use cfg80211_get_bss()
-to get a reference to a BSS struct, they may end
-up getting one that would have been removed from
-the list if there had been any userspace access
-to the list. This leads to inconsistencies and
-problems.
+Ever since mac80211/drivers are no longer
+fully in charge of keeping track of the
+auth status, trying to make them do so will
+fail. Instead of warning and reporting the
+deauthentication to userspace, cfg80211 must
+simply ignore it so that spurious
+deauthentications, e.g. before starting
+authentication, aren't seen by userspace as
+actual deauthentications.
 
-Fix it by making cfg80211_get_bss() ignore BSSes
-that cfg80211_bss_expire() would remove.
-
-Fixes http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2180
-
-Reported-by: Jiajia Zheng <jiajia.zheng@intel.com>
-Tested-by: Jiajia Zheng <jiajia.zheng@intel.com>
+Reported-by: Paul Stewart <pstew@google.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/scan.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/wireless/mlme.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -275,6 +275,7 @@ struct cfg80211_bss *cfg80211_get_bss(st
- {
- 	struct cfg80211_registered_device *dev = wiphy_to_dev(wiphy);
- 	struct cfg80211_internal_bss *bss, *res = NULL;
-+	unsigned long now = jiffies;
+--- a/net/wireless/mlme.c
++++ b/net/wireless/mlme.c
+@@ -44,10 +44,10 @@ void cfg80211_send_rx_auth(struct net_de
+ 		}
+ 	}
  
- 	spin_lock_bh(&dev->bss_lock);
+-	WARN_ON(!done);
+-
+-	nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
+-	cfg80211_sme_rx_auth(dev, buf, len);
++	if (done) {
++		nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
++		cfg80211_sme_rx_auth(dev, buf, len);
++	}
  
-@@ -283,6 +284,10 @@ struct cfg80211_bss *cfg80211_get_bss(st
- 			continue;
- 		if (channel && bss->pub.channel != channel)
- 			continue;
-+		/* Don't get expired BSS structs */
-+		if (time_after(now, bss->ts + IEEE80211_SCAN_RESULT_EXPIRE) &&
-+		    !atomic_read(&bss->hold))
-+			continue;
- 		if (is_bss(&bss->pub, bssid, ssid, ssid_len)) {
- 			res = bss;
- 			kref_get(&res->ref);
+ 	wdev_unlock(wdev);
+ }
 
 
