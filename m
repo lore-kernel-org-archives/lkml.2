@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761930Ab0HFSxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:53:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59183 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761703Ab0HFSxf convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:53:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100805213308.GA13744@kroah.com>
-References: <20100805213308.GA13744@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 11:27:02 -0700
-Message-ID: <AANLkTikzUaTAAu1GqBGqNtvmpfG3z5_HjOCQoVEh9NO9@mail.gmail.com>
-Subject: Re: [GIT PATCH] STAGING merge for .36
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S935710Ab0HFTAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:00:48 -0400
+Received: from kroah.org ([198.145.64.141]:58581 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965094Ab0HFTAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:17 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:35 2010
+Message-Id: <20100806185835.552418009@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 06 Aug 2010 11:57:14 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [19/34] cfg80211: ignore spurious deauth
+In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 2:33 PM, Greg KH <greg@kroah.com> wrote:
-> Here's the big staging tree merge for the .36 kernel.
->
->  812 files changed, 106306 insertions(+), 33784 deletions(-)
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Hmm. How did you generate that diff? It's not what I get. I get
+------------------
 
- 812 files changed, 107586 insertions(+), 35064 deletions(-)
+From: Johannes Berg <johannes.berg@intel.com>
 
-which is sufficiently different that it makes me worry about what's going on.
+commit 643f82e32f14faf0d0944c804203a6681b6b0a1e upstream.
 
-I pulled it, because the shortlog matched, and it was all in staging
-(except for that one x86 mshyperv line), but I just wonder..
+Ever since mac80211/drivers are no longer
+fully in charge of keeping track of the
+auth status, trying to make them do so will
+fail. Instead of warning and reporting the
+deauthentication to userspace, cfg80211 must
+simply ignore it so that spurious
+deauthentications, e.g. before starting
+authentication, aren't seen by userspace as
+actual deauthentications.
 
-                Linus
+Reported-by: Paul Stewart <pstew@google.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ net/wireless/mlme.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+--- a/net/wireless/mlme.c
++++ b/net/wireless/mlme.c
+@@ -43,10 +43,10 @@ void cfg80211_send_rx_auth(struct net_de
+ 		}
+ 	}
+ 
+-	WARN_ON(!done);
+-
+-	nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
+-	cfg80211_sme_rx_auth(dev, buf, len);
++	if (done) {
++		nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
++		cfg80211_sme_rx_auth(dev, buf, len);
++	}
+ 
+ 	wdev_unlock(wdev);
+ }
+
+
