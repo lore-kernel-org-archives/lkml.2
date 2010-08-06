@@ -1,73 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab0HFIpv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 04:45:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46149 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755364Ab0HFIps (ORCPT
+	id S1760528Ab0HFIwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 04:52:24 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47268 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755317Ab0HFIwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 04:45:48 -0400
-Date: Fri, 6 Aug 2010 10:45:47 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Subject: Re: [PATCH] regulator: max1586 - fix a memory leak in
- max1586_pmic_remove()
-Message-ID: <20100806084547.GB2347@pengutronix.de>
-References: <1281072795.24426.3.camel@mola>
+	Fri, 6 Aug 2010 04:52:22 -0400
+Message-ID: <4C5BCD41.3040501@monstr.eu>
+Date: Fri, 06 Aug 2010 10:52:17 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zx4FCpZtqtKETZ7O"
-Content-Disposition: inline
-In-Reply-To: <1281072795.24426.3.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 08/43] memblock/microblaze: Use new accessors
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org> <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>
+In-Reply-To: <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Benjamin Herrenschmidt wrote:
+> CC: Michal Simek <monstr@monstr.eu>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
---zx4FCpZtqtKETZ7O
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch remove bug which I reported but there is another place which 
+needs to be changed.
 
-On Fri, Aug 06, 2010 at 01:33:15PM +0800, Axel Lin wrote:
-> In max1586_pmic_probe(), we allocate memory for max1586.
-> In max1586_pmic_remove(), current implementation only free rdev
-> which is a member of struct max1586_data.
-> Thus, there is a small memory leak when we unload the module.
->=20
-> This patch fixes the memory leak by passing max1586 to i2c clientdata,
-> and properly kfree(max1586) in max1586_pmic_remove().
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+I am not sure if my patch is correct but at least point you on places 
+which is causing compilation errors.
 
-Like with the max8660-patch:
+I tested your memblock branch with this fix and microblaze can boot.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Thanks,
+Michal
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+   CC      arch/microblaze/mm/init.o
+arch/microblaze/mm/init.c: In function 'mm_cmdline_setup':
+arch/microblaze/mm/init.c:236: error: 'struct memblock_type' has no 
+member named 'region'
+arch/microblaze/mm/init.c: In function 'mmu_init':
+arch/microblaze/mm/init.c:279: error: 'struct memblock_type' has no 
+member named 'region'
+arch/microblaze/mm/init.c:284: error: 'struct memblock_type' has no 
+member named 'region'
+arch/microblaze/mm/init.c:285: error: 'struct memblock_type' has no 
+member named 'region'
+arch/microblaze/mm/init.c:286: error: 'struct memblock_type' has no 
+member named 'region'
+make[1]: *** [arch/microblaze/mm/init.o] Error 1
+make: *** [arch/microblaze/mm] Error 2
 
---zx4FCpZtqtKETZ7O
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+index 32a702b..a9d7b9b 100644
+--- a/arch/microblaze/mm/init.c
++++ b/arch/microblaze/mm/init.c
+@@ -233,7 +233,7 @@ static void mm_cmdline_setup(void)
+                 if (maxmem && memory_size > maxmem) {
+                         memory_size = maxmem;
+                         memory_end = memory_start + memory_size;
+-                       memblock.memory.region[0].size = memory_size;
++                       memblock.memory.regions[0].size = memory_size;
+                 }
+         }
+  }
+@@ -276,14 +276,14 @@ asmlinkage void __init mmu_init(void)
+                 machine_restart(NULL);
+         }
 
-iEYEARECAAYFAkxby7sACgkQD27XaX1/VRtzSwCgzBU9KeiywfzedMWqE9Eob6fQ
-zvAAoKlOovy/HX1WdtwflpRF2v78IjRz
-=h0mN
------END PGP SIGNATURE-----
+-       if ((u32) memblock.memory.region[0].size < 0x1000000) {
++       if ((u32) memblock.memory.regions[0].size < 0x1000000) {
+                 printk(KERN_EMERG "Memory must be greater than 16MB\n");
+                 machine_restart(NULL);
+         }
+         /* Find main memory where the kernel is */
+-       memory_start = (u32) memblock.memory.region[0].base;
+-       memory_end = (u32) memblock.memory.region[0].base +
+-                               (u32) memblock.memory.region[0].size;
++       memory_start = (u32) memblock.memory.regions[0].base;
++       memory_end = (u32) memblock.memory.regions[0].base +
++                               (u32) memblock.memory.regions[0].size;
+         memory_size = memory_end - memory_start;
 
---zx4FCpZtqtKETZ7O--
+         mm_cmdline_setup(); /* FIXME parse args from command line - not 
+used */
+
+
+
+> ---
+>  arch/microblaze/mm/init.c |   20 +++++++++-----------
+>  1 files changed, 9 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+> index afd6494..32a702b 100644
+> --- a/arch/microblaze/mm/init.c
+> +++ b/arch/microblaze/mm/init.c
+> @@ -70,16 +70,16 @@ static void __init paging_init(void)
+>  
+>  void __init setup_memory(void)
+>  {
+> -	int i;
+>  	unsigned long map_size;
+> +	struct memblock_region *reg;
+> +
+>  #ifndef CONFIG_MMU
+>  	u32 kernel_align_start, kernel_align_size;
+>  
+>  	/* Find main memory where is the kernel */
+> -	for (i = 0; i < memblock.memory.cnt; i++) {
+> -		memory_start = (u32) memblock.memory.regions[i].base;
+> -		memory_end = (u32) memblock.memory.regions[i].base
+> -				+ (u32) memblock.memory.region[i].size;
+> +	for_each_memblock(memory, reg) {
+> +		memory_start = (u32)reg->base;
+> +		memory_end = (u32) reg->base + reg->size;
+>  		if ((memory_start <= (u32)_text) &&
+>  					((u32)_text <= memory_end)) {
+>  			memory_size = memory_end - memory_start;
+> @@ -147,12 +147,10 @@ void __init setup_memory(void)
+>  	free_bootmem(memory_start, memory_size);
+>  
+>  	/* reserve allocate blocks */
+> -	for (i = 0; i < memblock.reserved.cnt; i++) {
+> -		pr_debug("reserved %d - 0x%08x-0x%08x\n", i,
+> -			(u32) memblock.reserved.region[i].base,
+> -			(u32) memblock_size_bytes(&memblock.reserved, i));
+> -		reserve_bootmem(memblock.reserved.region[i].base,
+> -			memblock_size_bytes(&memblock.reserved, i) - 1, BOOTMEM_DEFAULT);
+> +	for_each_memblock(reserved, reg) {
+> +		pr_debug("reserved - 0x%08x-0x%08x\n",
+> +			 (u32) reg->base, (u32) reg->size);
+> +		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
+>  	}
+>  #ifdef CONFIG_MMU
+>  	init_bootmem_done = 1;
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
