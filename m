@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935877Ab0HFXCo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 19:02:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55005 "EHLO hera.kernel.org"
+	id S935938Ab0HFXET (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 19:04:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55038 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834Ab0HFXCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 19:02:41 -0400
-Date: Fri, 6 Aug 2010 23:02:25 GMT
-Message-Id: <201008062302.o76N2PR1016685@hera.kernel.org>
+	id S1751834Ab0HFXCz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 19:02:55 -0400
+Date: Fri, 6 Aug 2010 23:02:24 GMT
+Message-Id: <201008062302.o76N2OBk016668@hera.kernel.org>
 From: "H. Peter Anvin" <hpa@zytor.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/vmware for 2.6.36
-Cc: Alok N Kataria <akataria@vmware.com>,
+Subject: [GIT PULL] x86/olpc for 2.6.36
+Cc: Andres Salomon <dilinger@queued.net>,
         "H. Peter Anvin" <hpa@linux.intel.com>,
         "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -29,38 +29,355 @@ The following changes since commit fc1caf6eafb30ea185720e29f7f5eccca61ecd60:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-vmware-for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-olpc-for-linus
 
-Alok Kataria (1):
-      x86, vmware: Preset lpj values when on VMware.
+Andres Salomon (4):
+      x86, olpc: Add support for calling into OpenFirmware
+      x86, olpc: Add comment about implicit optimization barrier
+      x86, olpc: Use pr_debug() for EC commands
+      x86, olpc: Constify an olpc_ofw() arg
 
- arch/x86/kernel/cpu/vmware.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ Documentation/x86/zero-page.txt  |    1 +
+ arch/x86/Kconfig                 |    9 +++
+ arch/x86/include/asm/bootparam.h |   11 ++++-
+ arch/x86/include/asm/olpc_ofw.h  |   31 +++++++++++
+ arch/x86/kernel/Makefile         |    1 +
+ arch/x86/kernel/head_32.S        |    6 ++
+ arch/x86/kernel/olpc.c           |   20 +++----
+ arch/x86/kernel/olpc_ofw.c       |  106 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/setup.c          |    6 ++
+ 9 files changed, 178 insertions(+), 13 deletions(-)
+ create mode 100644 arch/x86/include/asm/olpc_ofw.h
+ create mode 100644 arch/x86/kernel/olpc_ofw.c
 
-diff --git a/arch/x86/kernel/cpu/vmware.c b/arch/x86/kernel/cpu/vmware.c
-index b9d1ff5..227b044 100644
---- a/arch/x86/kernel/cpu/vmware.c
-+++ b/arch/x86/kernel/cpu/vmware.c
-@@ -51,7 +51,7 @@ static inline int __vmware_platform(void)
+diff --git a/Documentation/x86/zero-page.txt b/Documentation/x86/zero-page.txt
+index feb37e1..cf5437d 100644
+--- a/Documentation/x86/zero-page.txt
++++ b/Documentation/x86/zero-page.txt
+@@ -18,6 +18,7 @@ Offset	Proto	Name		Meaning
+ 080/010	ALL	hd0_info	hd0 disk parameter, OBSOLETE!!
+ 090/010	ALL	hd1_info	hd1 disk parameter, OBSOLETE!!
+ 0A0/010	ALL	sys_desc_table	System description table (struct sys_desc_table)
++0B0/010	ALL	olpc_ofw_header	OLPC's OpenFirmware CIF and friends
+ 140/080	ALL	edid_info	Video mode setup (struct edid_info)
+ 1C0/020	ALL	efi_info	EFI 32 information (struct efi_info)
+ 1E0/004	ALL	alk_mem_k	Alternative mem check, in KB
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index dcb0593..71c194d 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2062,6 +2062,15 @@ config OLPC
+ 	  Add support for detecting the unique features of the OLPC
+ 	  XO hardware.
  
- static unsigned long vmware_get_tsc_khz(void)
- {
--	uint64_t tsc_hz;
-+	uint64_t tsc_hz, lpj;
- 	uint32_t eax, ebx, ecx, edx;
- 
- 	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
-@@ -62,6 +62,13 @@ static unsigned long vmware_get_tsc_khz(void)
- 	printk(KERN_INFO "TSC freq read from hypervisor : %lu.%03lu MHz\n",
- 			 (unsigned long) tsc_hz / 1000,
- 			 (unsigned long) tsc_hz % 1000);
++config OLPC_OPENFIRMWARE
++	bool "Support for OLPC's Open Firmware"
++	depends on !X86_64 && !X86_PAE
++	default y if OLPC
++	help
++	  This option adds support for the implementation of Open Firmware
++	  that is used on the OLPC XO-1 Children's Machine.
++	  If unsure, say N here.
 +
-+	if (!preset_lpj) {
-+		lpj = ((u64)tsc_hz * 1000);
-+		do_div(lpj, HZ);
-+		preset_lpj = lpj;
+ endif # X86_32
+ 
+ config K8_NB
+diff --git a/arch/x86/include/asm/bootparam.h b/arch/x86/include/asm/bootparam.h
+index 6be33d8..8e62185 100644
+--- a/arch/x86/include/asm/bootparam.h
++++ b/arch/x86/include/asm/bootparam.h
+@@ -70,6 +70,14 @@ struct sys_desc_table {
+ 	__u8  table[14];
+ };
+ 
++/* Gleaned from OFW's set-parameters in cpu/x86/pc/linux.fth */
++struct olpc_ofw_header {
++	__u32 ofw_magic;	/* OFW signature */
++	__u32 ofw_version;
++	__u32 cif_handler;	/* callback into OFW */
++	__u32 irq_desc_table;
++} __attribute__((packed));
++
+ struct efi_info {
+ 	__u32 efi_loader_signature;
+ 	__u32 efi_systab;
+@@ -92,7 +100,8 @@ struct boot_params {
+ 	__u8  hd0_info[16];	/* obsolete! */		/* 0x080 */
+ 	__u8  hd1_info[16];	/* obsolete! */		/* 0x090 */
+ 	struct sys_desc_table sys_desc_table;		/* 0x0a0 */
+-	__u8  _pad4[144];				/* 0x0b0 */
++	struct olpc_ofw_header olpc_ofw_header;		/* 0x0b0 */
++	__u8  _pad4[128];				/* 0x0c0 */
+ 	struct edid_info edid_info;			/* 0x140 */
+ 	struct efi_info efi_info;			/* 0x1c0 */
+ 	__u32 alt_mem_k;				/* 0x1e0 */
+diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
+new file mode 100644
+index 0000000..08fde47
+--- /dev/null
++++ b/arch/x86/include/asm/olpc_ofw.h
+@@ -0,0 +1,31 @@
++#ifndef _ASM_X86_OLPC_OFW_H
++#define _ASM_X86_OLPC_OFW_H
++
++/* index into the page table containing the entry OFW occupies */
++#define OLPC_OFW_PDE_NR 1022
++
++#define OLPC_OFW_SIG 0x2057464F	/* aka "OFW " */
++
++#ifdef CONFIG_OLPC_OPENFIRMWARE
++
++/* run an OFW command by calling into the firmware */
++#define olpc_ofw(name, args, res) \
++	__olpc_ofw((name), ARRAY_SIZE(args), args, ARRAY_SIZE(res), res)
++
++extern int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
++		void **res);
++
++/* determine whether OFW is available and lives in the proper memory */
++extern void olpc_ofw_detect(void);
++
++/* install OFW's pde permanently into the kernel's pgtable */
++extern void setup_olpc_ofw_pgd(void);
++
++#else /* !CONFIG_OLPC_OPENFIRMWARE */
++
++static inline void olpc_ofw_detect(void) { }
++static inline void setup_olpc_ofw_pgd(void) { }
++
++#endif /* !CONFIG_OLPC_OPENFIRMWARE */
++
++#endif /* _ASM_X86_OLPC_OFW_H */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index e77b220..0925676 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -104,6 +104,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
+ scx200-y			+= scx200_32.o
+ 
+ obj-$(CONFIG_OLPC)		+= olpc.o
++obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
+ obj-$(CONFIG_X86_MRST)		+= mrst.o
+ 
+ microcode-y				:= microcode_core.o
+diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
+index 37c3d4b..ff4c453 100644
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -131,6 +131,12 @@ ENTRY(startup_32)
+ 	movsl
+ 1:
+ 
++#ifdef CONFIG_OLPC_OPENFIRMWARE
++	/* save OFW's pgdir table for later use when calling into OFW */
++	movl %cr3, %eax
++	movl %eax, pa(olpc_ofw_pgd)
++#endif
++
+ #ifdef CONFIG_PARAVIRT
+ 	/* This is can only trip for a broken bootloader... */
+ 	cmpw $0x207, pa(boot_params + BP_version)
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 8297160..0e0cdde 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -21,10 +21,7 @@
+ #include <asm/geode.h>
+ #include <asm/setup.h>
+ #include <asm/olpc.h>
+-
+-#ifdef CONFIG_OPEN_FIRMWARE
+-#include <asm/ofw.h>
+-#endif
++#include <asm/olpc_ofw.h>
+ 
+ struct olpc_platform_t olpc_platform_info;
+ EXPORT_SYMBOL_GPL(olpc_platform_info);
+@@ -145,7 +142,7 @@ restart:
+ 	 * The OBF flag will sometimes misbehave due to what we believe
+ 	 * is a hardware quirk..
+ 	 */
+-	printk(KERN_DEBUG "olpc-ec:  running cmd 0x%x\n", cmd);
++	pr_devel("olpc-ec:  running cmd 0x%x\n", cmd);
+ 	outb(cmd, 0x6c);
+ 
+ 	if (wait_on_ibf(0x6c, 0)) {
+@@ -162,8 +159,7 @@ restart:
+ 						" EC accept data!\n");
+ 				goto err;
+ 			}
+-			printk(KERN_DEBUG "olpc-ec:  sending cmd arg 0x%x\n",
+-					inbuf[i]);
++			pr_devel("olpc-ec:  sending cmd arg 0x%x\n", inbuf[i]);
+ 			outb(inbuf[i], 0x68);
+ 		}
+ 	}
+@@ -176,8 +172,7 @@ restart:
+ 				goto restart;
+ 			}
+ 			outbuf[i] = inb(0x68);
+-			printk(KERN_DEBUG "olpc-ec:  received 0x%x\n",
+-					outbuf[i]);
++			pr_devel("olpc-ec:  received 0x%x\n", outbuf[i]);
+ 		}
+ 	}
+ 
+@@ -188,14 +183,15 @@ err:
+ }
+ EXPORT_SYMBOL_GPL(olpc_ec_cmd);
+ 
+-#ifdef CONFIG_OPEN_FIRMWARE
++#ifdef CONFIG_OLPC_OPENFIRMWARE
+ static void __init platform_detect(void)
+ {
+ 	size_t propsize;
+ 	__be32 rev;
++	const void *args[] = { NULL, "board-revision-int", &rev, (void *)4 };
++	void *res[] = { &propsize };
+ 
+-	if (ofw("getprop", 4, 1, NULL, "board-revision-int", &rev, 4,
+-			&propsize) || propsize != 4) {
++	if (olpc_ofw("getprop", args, res) || propsize != 4) {
+ 		printk(KERN_ERR "ofw: getprop call failed!\n");
+ 		rev = cpu_to_be32(0);
+ 	}
+diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+new file mode 100644
+index 0000000..3218aa7
+--- /dev/null
++++ b/arch/x86/kernel/olpc_ofw.c
+@@ -0,0 +1,106 @@
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/init.h>
++#include <asm/page.h>
++#include <asm/setup.h>
++#include <asm/io.h>
++#include <asm/pgtable.h>
++#include <asm/olpc_ofw.h>
++
++/* address of OFW callback interface; will be NULL if OFW isn't found */
++static int (*olpc_ofw_cif)(int *);
++
++/* page dir entry containing OFW's pgdir table; filled in by head_32.S */
++u32 olpc_ofw_pgd __initdata;
++
++static DEFINE_SPINLOCK(ofw_lock);
++
++#define MAXARGS 10
++
++void __init setup_olpc_ofw_pgd(void)
++{
++	pgd_t *base, *ofw_pde;
++
++	if (!olpc_ofw_cif)
++		return;
++
++	/* fetch OFW's PDE */
++	base = early_ioremap(olpc_ofw_pgd, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
++	if (!base) {
++		printk(KERN_ERR "failed to remap OFW's pgd - disabling OFW!\n");
++		olpc_ofw_cif = NULL;
++		return;
++	}
++	ofw_pde = &base[OLPC_OFW_PDE_NR];
++
++	/* install OFW's PDE permanently into the kernel's pgtable */
++	set_pgd(&swapper_pg_dir[OLPC_OFW_PDE_NR], *ofw_pde);
++	/* implicit optimization barrier here due to uninline function return */
++
++	early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
++}
++
++int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
++		void **res)
++{
++	int ofw_args[MAXARGS + 3];
++	unsigned long flags;
++	int ret, i, *p;
++
++	BUG_ON(nr_args + nr_res > MAXARGS);
++
++	if (!olpc_ofw_cif)
++		return -EIO;
++
++	ofw_args[0] = (int)name;
++	ofw_args[1] = nr_args;
++	ofw_args[2] = nr_res;
++
++	p = &ofw_args[3];
++	for (i = 0; i < nr_args; i++, p++)
++		*p = (int)args[i];
++
++	/* call into ofw */
++	spin_lock_irqsave(&ofw_lock, flags);
++	ret = olpc_ofw_cif(ofw_args);
++	spin_unlock_irqrestore(&ofw_lock, flags);
++
++	if (!ret) {
++		for (i = 0; i < nr_res; i++, p++)
++			*((int *)res[i]) = *p;
 +	}
 +
- 	return tsc_hz;
- }
++	return ret;
++}
++EXPORT_SYMBOL_GPL(__olpc_ofw);
++
++/* OFW cif _should_ be above this address */
++#define OFW_MIN 0xff000000
++
++/* OFW starts on a 1MB boundary */
++#define OFW_BOUND (1<<20)
++
++void __init olpc_ofw_detect(void)
++{
++	struct olpc_ofw_header *hdr = &boot_params.olpc_ofw_header;
++	unsigned long start;
++
++	/* ensure OFW booted us by checking for "OFW " string */
++	if (hdr->ofw_magic != OLPC_OFW_SIG)
++		return;
++
++	olpc_ofw_cif = (int (*)(int *))hdr->cif_handler;
++
++	if ((unsigned long)olpc_ofw_cif < OFW_MIN) {
++		printk(KERN_ERR "OFW detected, but cif has invalid address 0x%lx - disabling.\n",
++				(unsigned long)olpc_ofw_cif);
++		olpc_ofw_cif = NULL;
++		return;
++	}
++
++	/* determine where OFW starts in memory */
++	start = round_down((unsigned long)olpc_ofw_cif, OFW_BOUND);
++	printk(KERN_INFO "OFW detected in memory, cif @ 0x%lx (reserving top %ldMB)\n",
++			(unsigned long)olpc_ofw_cif, (-start) >> 20);
++	reserve_top_address(-start);
++}
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index b4ae4ac..b008e78 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -102,6 +102,7 @@
  
+ #include <asm/paravirt.h>
+ #include <asm/hypervisor.h>
++#include <asm/olpc_ofw.h>
+ 
+ #include <asm/percpu.h>
+ #include <asm/topology.h>
+@@ -736,10 +737,15 @@ void __init setup_arch(char **cmdline_p)
+ 	/* VMI may relocate the fixmap; do this before touching ioremap area */
+ 	vmi_init();
+ 
++	/* OFW also may relocate the fixmap */
++	olpc_ofw_detect();
++
+ 	early_trap_init();
+ 	early_cpu_init();
+ 	early_ioremap_init();
+ 
++	setup_olpc_ofw_pgd();
++
+ 	ROOT_DEV = old_decode_dev(boot_params.hdr.root_dev);
+ 	screen_info = boot_params.screen_info;
+ 	edid_info = boot_params.edid_info;
