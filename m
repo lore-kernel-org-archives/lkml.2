@@ -1,85 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934323Ab0HFBXE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:23:04 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39568 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934131Ab0HFBW7 convert rfc822-to-8bit (ORCPT
+	id S934502Ab0HFBZG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:25:06 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51396 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934131Ab0HFBZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:22:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=SRCXBIHncoSKPQGDKQo6msn0AbMBBoE3K0MN4VvyCQMNXtYpMpP+agko4J94szxDU
-	RMxTFOQS7fBx/m3+WFOcg==
+	Thu, 5 Aug 2010 21:25:01 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6065"; a="50063837"
+Message-ID: <4C5B646C.1030308@codeaurora.org>
+Date: Thu, 05 Aug 2010 18:25:00 -0700
+From: Patrick Pannuto <ppannuto@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12pre) Gecko/20100715 Shredder/3.0.7pre
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
-References: <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
-	<20100805004802.GP24163@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
-	<20100805151211.GA10080@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
-	<AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
-	<20100805203102.GN2447@linux.vnet.ibm.com>
-	<AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
-	<alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
-	<AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
-	<20100805230304.GQ2447@linux.vnet.ibm.com>
-	<AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
-	<alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
-	<AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com>
-	<alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
-Date: Thu, 5 Aug 2010 18:22:56 -0700
-Message-ID: <AANLkTimWqFkDWvGwVGWD94488gs+CXgpB9juwM5G11ud@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Brian Swetland <swetland@google.com>
-To: david@lang.hm
-Cc: paulmck@linux.vnet.ibm.com, kevin granade <kevin.granade@gmail.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "damm@opensource.se" <damm@opensource.se>,
+        "lethal@linux-sh.org" <lethal@linux-sh.org>,
+        "rjw@sisk.pl" <rjw@sisk.pl>,
+        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
+        zt.tmzt@gmail.com, magnus.damm@gmail.com
+Subject: Re: [PATCH] platform: Facilitate the creation of pseduo-platform
+ 	busses
+References: <4C59E654.1090403@codeaurora.org> <877hk56hiy.fsf@deeprootsystems.com> 	<4C5A0C68.9080500@codeaurora.org> <87fwytxdba.fsf@deeprootsystems.com> <AANLkTimCS4RV+8E_ZzX97=r5rmQR3nmizp0JYK+syLRa@mail.gmail.com>
+In-Reply-To: <AANLkTimCS4RV+8E_ZzX97=r5rmQR3nmizp0JYK+syLRa@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 6:01 PM,  <david@lang.hm> wrote:
-> On Thu, 5 Aug 2010, Brian Swetland wrote:
->> On Thu, Aug 5, 2010 at 5:16 PM,  <david@lang.hm> wrote:
->>>>>
->>>>> So for an mp3 playback, does an Android suspend between data fetches?
->>>>
->>>> It can if the latency is long enough (which is why I point out low
->>>> power audio which is usually high latency).  For low latency (system
->>>> sounds, etc) 10-25ms between buffers it's not practical to fully
->>>> suspend but we will go to the lowest power state in idle if possible.
->>>
->>> the playback is able to continue even with all the clocks stopped? that
->>> surprises me. I would hav expected it to be able to sleep while playing
->>> audio, but not do a full suspend.
+On 08/05/2010 04:16 PM, Grant Likely wrote:
+> On Thu, Aug 5, 2010 at 9:57 AM, Kevin Hilman
+> <khilman@deeprootsystems.com> wrote:
+>> Patrick Pannuto <ppannuto@codeaurora.org> writes:
 >>
->> Obviously not all clocks are stopped (the DSP and codec are powered
->> and clocked, for example), but yeah we can clock gate and power gate
->> the cpu and most other peripherals while audio is playing on a number
->> of ARM SoC designs available today (and the past few years).
->
-> does this then mean that you have multiple variations of suspend?
->
-> for example, one where the audio stuff is left powered, and one where it
-> isn't?
+>>> On 08/04/2010 05:16 PM, Kevin Hilman wrote:
+>>>> Patrick Pannuto <ppannuto@codeaurora.org> writes:
+>>>>
+>>>>> Inspiration for this comes from:
+>>>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
+>>>>
+>>>> Also, later in that thread I also wrote[1] what seems to be the core of
+>>>> what you've done here: namely, allow platform_devices and
+>>>> platform_drivers to to be used on custom busses.  Patch is at the end of
+>>>> this mail with a more focused changelog.  As Greg suggested in his reply
+>>>> to your first version, this part could be merged today, and the
+>>>> platform_bus_init stuff could be added later, after some more review.
+>>>> Some comments below...
+>>>>
+>>>
+>>> I can split this into 2 patches.
+>>
+>> Yes, I think that would be better.
+>>
+>>> Was your patch sent to linux-kernel or just linux-omap? I'm not on linux-omap...
+>>
+>> That thread was on linux-arm-kernel and linux-omap
+>>
+>>>
+>>>>> [snip]
+>>>>>
+>>>>> Which will allow the same driver to easily to used on either
+>>>>> the platform bus or the newly defined bus type.
+>>>>
+>>>> Except it requires a re-compile.
+>>>>
+>>>> Rather than doing this at compile time, it would be better to support
+>>>> legacy devices at runtime.  You could handle this by simply registering
+>>>> the driver on the custom bus and the platform_bus and let the bus
+>>>> matching code handle it.  Then, the same binary would work on both
+>>>> legacy and updated SoCs.
+>>>>
+>>>
+>>> Can you safely register a driver on more than one bus? I didn't think
+>>> that was safe -- normally it's impossible since you're calling
+>>>
+>>> struct BUS_TYPE_driver mydriver;
+>>> BUS_TYPE_driver_register(&mydriver)
+>>>
+>>> but now we have multiple "bus types" that are all actually platform type; still,
+>>> at a minimum you would need:
+>>>       struct platform_driver mydrvier1 = {
+>>>               .driver.bus = &sub_bus1,
+>>>       };
+>>>       struct platform_driver mydrvier2 = {
+>>>               .driver.bus = &sub_bus2,
+>>>       };
+>>> which would all point to the same driver functions, yet the respective devices
+>>> attached for the "same" driver would be on different buses. I fear this might
+>>> confuse some drivers. I don't think dynamic bus assignment is this easy
+>>>
+>>> In short: I do not believe the same driver can be registered on multiple
+>>> different buses -- if this is wrong, please correct me.
+>>
+>> It is possible, and currently done in powerpc land where some
+>> drivers handle devices on the platform_bus and the custom OF bus.
+> 
+> As of now, the of_platform_bus_type has been removed.  It was a bad
+> idea because it tried to encode non-bus-specific information into
+> something that was just a clone of the platform_bus.  Drivers that
+> worked on both had to be bound to both busses.  I do actually have
+> code that automatically registers a driver on more than one bus, but
+> it is rather a hack and was only a temporary measure.
+> 
+> The relevant question before going down this path is, "Is the
+> omap/sh/other-soc behaviour something fundamentally different from the
+> platform bus?  Or is it something complementary that would be better
+> handled with a notifier or some orthogonal method of adding new
+> behaviour?"
+> 
+> I don't have a problem with multiple platform_bus instances using the
+> same code (I did suggest it after all), but I do worry about muddying
+> the Linux device model or making it overly complex.  Binding single
+> drivers to multiple device types could be messy.
+> 
+> Cheers,
+> g.
 
-While the cpu (and the bulk of the system) is suspended, it's not
-uncommon for some peripherals to continue to operate -- for example a
-cellular radio, gps, low power audio playback, etc.  Details will vary
-depending on the SoC and board design.  It's not so much a different
-suspend mode (the system is still suspended), just a matter of whether
-a peripheral can operate independently (and if it is lower power for
-it to do so).
+>From your other email, the distinction of /bus_types/ versus /physical
+or logical buses/ was very valuable (thanks). I am becoming less
+convinced that I need this infrastructure or the ability to create
+pseudo-platform buses. Let me outline some thoughts below, which I
+think at least solves my problems ( ;) ), and if some of the OMAP folks
+and Alan could chime in as to whether they can apply something similar,
+or if they still have need of creating actual new bus types?
 
-Brian
+
+As we are exploring all of this, let me put a concrete (ish) scenario
+out there to discuss:
+
+        SUB_BUS1---DEVICE1
+       /
+CPU ---
+       \
+        SUB_BUS2---DEVICE2
+
+DEVICE1 and DEVICE2 are the same device (say, usb host controller, or
+whatever), and they should be driven by the same driver. However,
+physically they are attached to different buses.
+
+SUB_BUS1 and SUB_BUS2 are *different* and let's say require a different
+suspend method. If I understand correctly, the right way to build the
+topology would be:
+
+struct device_type SUB_BUS1_type = {
+	.name = "sub-bus1-type",
+	.pm   = &sub_bus1_pm_ops;
+};
+
+struct platform_device SUB_BUS1 = {
+	.init_name = "sub-bus1",
+	.dev.type  = &sub_bus1_type,
+};
+
+struct platform_device DEVICE1 = {
+	.name       = "device1",
+	.dev.parent = &SUB_BUS1.dev,
+};
+
+platform_device_register(&SUB_BUS1);
+platform_device_register(&DEVICE1);
+
+[analogous for *2]
+
+which would yield:
+
+/sys/bus/platform/devices/
+ |
+ |-SUB_BUS1
+ |  |
+ |  |-DEVICE1
+ |
+ |-SUB_BUS2
+ |  |
+ |  |-DEVICE2
+
+Which is the correct topology, and logically provides all the correct
+interfaces.  The only thing that becomes confusing now, is that SUB_BUS*
+is *actually* a physically different bus, yet it's not in /sys/bus;
+although I suppose this is actually how the world works presently (you
+don't see an individual entry in /sys/bus for each usb host controller,
+which is technically defining a sub-bus...)
+
+Thoughts? Am I understanding everything correctly?
+
+Is there anything more not covered by co-opting the device-type of SUB_BUS
+that people would still need the pseduo-platform-bus extensions for?
+
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
