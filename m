@@ -1,106 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935286Ab0HFCf4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 22:35:56 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:33512 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933390Ab0HFCfx (ORCPT
+	id S935316Ab0HFCgR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 22:36:17 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53237 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935259Ab0HFCfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 22:35:53 -0400
-Date: Fri, 6 Aug 2010 10:35:39 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: Initcall ordering problem (TTY vs modprobe vs MD5) and
-	cryptomgr problem
-Message-ID: <20100806023539.GA22774@gondor.apana.org.au>
-References: <23662.1281056463@redhat.com> <20100806011706.GA21657@gondor.apana.org.au> <20100806014057.GA22395@gondor.apana.org.au> <AANLkTi=+-Y2GOZYAZHeaX+op3XB9AY5S85rfJD3jSDvz@mail.gmail.com>
+	Thu, 5 Aug 2010 22:35:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cxGIX2WntDu+6br29ZVX1piiwWD+q3AqDI85LhNWsYAE/T74ycMuuCDWbSMRPVZ0dA
+         KB4V+YIIABw3nGDEntu+3neA4/BPfuv6kwtlxVHIt1YT5H05LGumHj2hzRjwUQZlCFi1
+         wtDkGMmoalbJYxGkOb1xnDrJErjKFecH/KLA0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=+-Y2GOZYAZHeaX+op3XB9AY5S85rfJD3jSDvz@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100805135149.98b2001b.sfr@canb.auug.org.au>
+References: <20100805135149.98b2001b.sfr@canb.auug.org.au>
+Date: Thu, 5 Aug 2010 21:35:50 -0500
+Message-ID: <AANLkTimW1pwO468c2iHNvEdzt42b-O4PeAKUgqN_30Jk@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the final tree (cifs 
+	tree related)
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wang Lei <wang840925@gmail.com>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 07:01:21PM -0700, Linus Torvalds wrote:
-> On Thu, Aug 5, 2010 at 6:40 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
-> >
-> > -config CRYPTO_MANAGER_TESTS
-> > -       bool "Run algolithms' self-tests"
-> > -       default y
-> > -       depends on CRYPTO_MANAGER2
-> > +config CRYPTO_MANAGER_DISABLE_TESTS
-> > +       bool "Disable run-time self tests"
-> > +       depends on CRYPTO_MANAGER2 && EMBEDDED
-> 
-> Why do you still want to force-enable those tests? I was going to
-> complain about the "default y" anyway, now I'm _really_ complaining,
-> because you've now made it impossible to disable those tests. Why?
+The fix for the missing err.h include is merged.   Not sure why I did
+not run into that on my Ubuntu test builds or Dave on his builds.
 
-Because it can save data.  Each cryptographic algorithm (such as
-AES) may have multiple impelmentations, some of which are hardware-
-based.
+Have not heard any feedback about the init.h change that Ben suggested yet.
 
-The purpose of these tests are to make a particular driver or
-implementation available only if it passes them.  So your encrypted
-disk/file system will not be subject to a hardware/software combo
-without at least some semblance of testing.
+On Wed, Aug 4, 2010 at 10:51 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Steve,
+>
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+>
+> net/dns_resolver/dns_key.c: In function 'init_dns_resolver':
+> net/dns_resolver/dns_key.c:170: error: implicit declaration of function 'IS_ERR'
+> net/dns_resolver/dns_key.c:171: error: implicit declaration of function 'PTR_ERR'
+> net/dns_resolver/dns_query.c: In function 'dns_query':
+> net/dns_resolver/dns_query.c:126: error: implicit declaration of function 'IS_ERR'
+> net/dns_resolver/dns_query.c:127: error: implicit declaration of function 'PTR_ERR'
+>
+> Caused by commit bae8da144bd6254d1e9cec2a7d6da7cade84e00e ("DNS: Separate
+> out CIFS DNS Resolver code").
+>
+> See Rule 1 in Documentation/SubmitChecklist.
+>
+> I have added this patch for today:
+>
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 5 Aug 2010 13:49:29 +1000
+> Subject: [PATCH] cifs: include linux/err.h for IS_ERR and PTR_ERR
+>
+> Fixes build errors:
+>
+> net/dns_resolver/dns_key.c: In function 'init_dns_resolver':
+> net/dns_resolver/dns_key.c:170: error: implicit declaration of function 'IS_ERR'
+> net/dns_resolver/dns_key.c:171: error: implicit declaration of function 'PTR_ERR'
+> net/dns_resolver/dns_query.c: In function 'dns_query':
+> net/dns_resolver/dns_query.c:126: error: implicit declaration of function 'IS_ERR'
+> net/dns_resolver/dns_query.c:127: error: implicit declaration of function 'PTR_ERR'
+>
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  net/dns_resolver/dns_key.c   |    1 +
+>  net/dns_resolver/dns_query.c |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+> index 1b1b411..400a04d 100644
+> --- a/net/dns_resolver/dns_key.c
+> +++ b/net/dns_resolver/dns_key.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/string.h>
+>  #include <linux/kernel.h>
+>  #include <linux/keyctl.h>
+> +#include <linux/err.h>
+>  #include <keys/dns_resolver-type.h>
+>  #include <keys/user-type.h>
+>  #include "internal.h"
+> diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+> index 6c0cf31..b33e1f7 100644
+> --- a/net/dns_resolver/dns_query.c
+> +++ b/net/dns_resolver/dns_query.c
+> @@ -39,6 +39,7 @@
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/dns_resolver.h>
+> +#include <linux/err.h>
+>  #include <keys/dns_resolver-type.h>
+>  #include <keys/user-type.h>
+>
+> --
+> 1.7.1
+>
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> http://www.canb.auug.org.au/~sfr/
+>
 
-The last thing you want to is to upgrade your kernel with a new
-hardware crypto driver that detects that you have a piece of rarely-
-used crypto hardeware, decides to use it and ends up making your
-data toast.
 
-But whatever, if you want the default to be no tests, that's fine.
-Here's the patch to do just that.
 
-commit 00ca28a507b215dcd121735f16764ea4173c4ff9
-Author: Herbert Xu <herbert@gondor.apana.org.au>
-Date:   Fri Aug 6 10:34:00 2010 +0800
-
-    crypto: testmgr - Default to no tests
-    
-    On Thu, Aug 05, 2010 at 07:01:21PM -0700, Linus Torvalds wrote:
-    > On Thu, Aug 5, 2010 at 6:40 PM, Herbert Xu <herbert@gondor.hengli.com.au> wrote:
-    > >
-    > > -config CRYPTO_MANAGER_TESTS
-    > > -       bool "Run algolithms' self-tests"
-    > > -       default y
-    > > -       depends on CRYPTO_MANAGER2
-    > > +config CRYPTO_MANAGER_DISABLE_TESTS
-    > > +       bool "Disable run-time self tests"
-    > > +       depends on CRYPTO_MANAGER2 && EMBEDDED
-    >
-    > Why do you still want to force-enable those tests? I was going to
-    > complain about the "default y" anyway, now I'm _really_ complaining,
-    > because you've now made it impossible to disable those tests. Why?
-    
-    As requested, this patch sets the default to y and removes the
-    EMBEDDED dependency.
-    
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 6f5c50f..e573077 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -103,7 +103,8 @@ config CRYPTO_MANAGER2
- 
- config CRYPTO_MANAGER_DISABLE_TESTS
- 	bool "Disable run-time self tests"
--	depends on CRYPTO_MANAGER2 && EMBEDDED
-+	default y
-+	depends on CRYPTO_MANAGER2
- 	help
- 	  Disable run-time self tests that normally take place at
- 	  algorithm registration.
-
-Cheers,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Thanks,
+
+Steve
