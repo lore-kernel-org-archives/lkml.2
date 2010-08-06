@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964978Ab0HFSjZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:39:25 -0400
-Received: from kroah.org ([198.145.64.141]:48701 "EHLO coco.kroah.org"
+	id S965017Ab0HFSjc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:39:32 -0400
+Received: from kroah.org ([198.145.64.141]:48695 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964941Ab0HFSgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:02 -0400
+	id S964940Ab0HFSgB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:01 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
-Message-Id: <20100806183202.426076199@clark.site>
+Message-Id: <20100806183202.340056119@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:48 -0700
+Date: Fri, 06 Aug 2010 11:30:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [27/38] cfg80211: ignore spurious deauth
+Subject: [26/38] ssb: Handle alternate SSPROM location
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,45 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 643f82e32f14faf0d0944c804203a6681b6b0a1e upstream.
+commit 9d1ac34ec3a67713308ae0883c3359c557f14d17 upstream.
 
-Ever since mac80211/drivers are no longer
-fully in charge of keeping track of the
-auth status, trying to make them do so will
-fail. Instead of warning and reporting the
-deauthentication to userspace, cfg80211 must
-simply ignore it so that spurious
-deauthentications, e.g. before starting
-authentication, aren't seen by userspace as
-actual deauthentications.
+In kernel Bugzilla #15825 (2 users), in a wireless mailing list thread
+(http://lists.infradead.org/pipermail/b43-dev/2010-May/000124.html), and on a
+netbook owned by John Linville
+(http://marc.info/?l=linux-wireless&m=127230751408818&w=4), there are reports
+of ssb failing to detect an SPROM at the normal location. After studying the
+MMIO trace dump for the Broadcom wl driver, it was determined that the affected
+boxes had a relocated SPROM.
 
-Reported-by: Paul Stewart <pstew@google.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+This patch fixes all systems that have reported this problem.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- net/wireless/mlme.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/ssb/driver_chipcommon.c |    1 +
+ drivers/ssb/pci.c               |   15 +++++++++++++--
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
---- a/net/wireless/mlme.c
-+++ b/net/wireless/mlme.c
-@@ -44,10 +44,10 @@ void cfg80211_send_rx_auth(struct net_de
- 		}
+--- a/drivers/ssb/driver_chipcommon.c
++++ b/drivers/ssb/driver_chipcommon.c
+@@ -235,6 +235,7 @@ void ssb_chipcommon_init(struct ssb_chip
+ 		return; /* We don't have a ChipCommon */
+ 	if (cc->dev->id.revision >= 11)
+ 		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
++	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
+ 	ssb_pmu_init(cc);
+ 	chipco_powercontrol_init(cc);
+ 	ssb_chipco_set_clockmode(cc, SSB_CLKMODE_FAST);
+--- a/drivers/ssb/pci.c
++++ b/drivers/ssb/pci.c
+@@ -626,11 +626,22 @@ static int ssb_pci_sprom_get(struct ssb_
+ 		return -ENODEV;
  	}
+ 	if (bus->chipco.dev) {	/* can be unavailible! */
+-		bus->sprom_offset = (bus->chipco.dev->id.revision < 31) ?
+-			SSB_SPROM_BASE1 : SSB_SPROM_BASE31;
++		/*
++		 * get SPROM offset: SSB_SPROM_BASE1 except for
++		 * chipcommon rev >= 31 or chip ID is 0x4312 and
++		 * chipcommon status & 3 == 2
++		 */
++		if (bus->chipco.dev->id.revision >= 31)
++			bus->sprom_offset = SSB_SPROM_BASE31;
++		else if (bus->chip_id == 0x4312 &&
++			 (bus->chipco.status & 0x03) == 2)
++			bus->sprom_offset = SSB_SPROM_BASE31;
++		else
++			bus->sprom_offset = SSB_SPROM_BASE1;
+ 	} else {
+ 		bus->sprom_offset = SSB_SPROM_BASE1;
+ 	}
++	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
  
--	WARN_ON(!done);
--
--	nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
--	cfg80211_sme_rx_auth(dev, buf, len);
-+	if (done) {
-+		nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
-+		cfg80211_sme_rx_auth(dev, buf, len);
-+	}
- 
- 	wdev_unlock(wdev);
- }
+ 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
+ 	if (!buf)
 
 
