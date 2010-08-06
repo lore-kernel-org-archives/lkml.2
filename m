@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935586Ab0HFSnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:43:18 -0400
-Received: from kroah.org ([198.145.64.141]:48596 "EHLO coco.kroah.org"
+	id S1761857Ab0HFSnw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:43:52 -0400
+Received: from kroah.org ([198.145.64.141]:48550 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761876Ab0HFSfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:01 2010
-Message-Id: <20100806183200.946105969@clark.site>
+	id S1761689Ab0HFSfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:00 2010
+Message-Id: <20100806183200.310072309@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:31 -0700
+Date: Fri, 06 Aug 2010 11:30:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dean Nelson <dnelson@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [10/38] e1000e: dont inadvertently re-set INTX_DISABLE
+        Tejun Heo <tj@kernel.org>
+Subject: [03/38] block_dev: always serialize exclusive open attempts
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,71 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dean Nelson <dnelson@redhat.com>
+From: Tejun Heo <htejun@gmail.com>
 
-commit 36f2407fe52c55566221f8c68c8fb808abffd2f5 upstream.
+commit e75aa85892b2ee78c79edac720868cbef16e62eb upstream.
 
-Should e1000_test_msi() fail to see an msi interrupt, it attempts to
-fallback to legacy INTx interrupts. But an error in the code may prevent
-this from happening correctly.
+bd_prepare_to_claim() incorrectly allowed multiple attempts for
+exclusive open to progress in parallel if the attempting holders are
+identical.  This triggered BUG_ON() as reported in the following bug.
 
-Before calling e1000_test_msi_interrupt(), e1000_test_msi() disables SERR
-by clearing the SERR bit from the just read PCI_COMMAND bits as it writes
-them back out.
+  https://bugzilla.kernel.org/show_bug.cgi?id=16393
 
-Upon return from calling e1000_test_msi_interrupt(), it re-enables SERR
-by writing out the version of PCI_COMMAND it had previously read.
+__bd_abort_claiming() is used to finish claiming blocks and doesn't
+work if multiple openers are inside a claiming block.  Allowing
+multiple parallel open attempts to continue doesn't gain anything as
+those are serialized down in the call chain anyway.  Fix it by always
+allowing only single open attempt in a claiming block.
 
-The problem with this is that e1000_test_msi_interrupt() calls
-pci_disable_msi(), which eventually ends up in pci_intx(). And because
-pci_intx() was called with enable set to 1, the INTX_DISABLE bit gets
-cleared from PCI_COMMAND, which is what we want. But when we get back to
-e1000_test_msi(), the INTX_DISABLE bit gets inadvertently re-set because
-of the attempt by e1000_test_msi() to re-enable SERR.
+This problem can easily be reproduced by adding a delay after
+bd_prepare_to_claim() and attempting to mount two partitions of a
+disk.
 
-The solution is to have e1000_test_msi() re-read the PCI_COMMAND bits as
-part of its attempt to re-enable SERR.
-
-During debugging/testing of this issue I found that not all the systems
-I ran on had the SERR bit set to begin with. And on some of the systems
-the same could be said for the INTX_DISABLE bit. Needless to say these
-latter systems didn't have a problem falling back to legacy INTx
-interrupts with the code as is.
-
-Signed-off-by: Dean Nelson <dnelson@redhat.com>
-Tested-by: Emil Tantilov <emil.s.tantilov@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/netdev.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ fs/block_dev.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -3419,13 +3419,18 @@ static int e1000_test_msi(struct e1000_a
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -681,8 +681,8 @@ retry:
+ 	if (!bd_may_claim(bdev, whole, holder))
+ 		return -EBUSY;
  
- 	/* disable SERR in case the MSI write causes a master abort */
- 	pci_read_config_word(adapter->pdev, PCI_COMMAND, &pci_cmd);
--	pci_write_config_word(adapter->pdev, PCI_COMMAND,
--			      pci_cmd & ~PCI_COMMAND_SERR);
-+	if (pci_cmd & PCI_COMMAND_SERR)
-+		pci_write_config_word(adapter->pdev, PCI_COMMAND,
-+				      pci_cmd & ~PCI_COMMAND_SERR);
+-	/* if someone else is claiming, wait for it to finish */
+-	if (whole->bd_claiming && whole->bd_claiming != holder) {
++	/* if claiming is already in progress, wait for it to finish */
++	if (whole->bd_claiming) {
+ 		wait_queue_head_t *wq = bit_waitqueue(&whole->bd_claiming, 0);
+ 		DEFINE_WAIT(wait);
  
- 	err = e1000_test_msi_interrupt(adapter);
- 
--	/* restore previous setting of command word */
--	pci_write_config_word(adapter->pdev, PCI_COMMAND, pci_cmd);
-+	/* re-enable SERR */
-+	if (pci_cmd & PCI_COMMAND_SERR) {
-+		pci_read_config_word(adapter->pdev, PCI_COMMAND, &pci_cmd);
-+		pci_cmd |= PCI_COMMAND_SERR;
-+		pci_write_config_word(adapter->pdev, PCI_COMMAND, pci_cmd);
-+	}
- 
- 	/* success ! */
- 	if (!err)
 
 
