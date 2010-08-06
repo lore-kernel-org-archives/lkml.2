@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965690Ab0HFTdc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:33:32 -0400
-Received: from kroah.org ([198.145.64.141]:43550 "EHLO coco.kroah.org"
+	id S1751247Ab0HFTdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:33:38 -0400
+Received: from kroah.org ([198.145.64.141]:43557 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965153Ab0HFT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S935072Ab0HFT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 15:28:07 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:16 2010
-Message-Id: <20100806192116.186301418@clark.site>
+Message-Id: <20100806192116.276811465@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:20:01 -0700
+Date: Fri, 06 Aug 2010 12:20:02 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [20/36] iwlwifi: fix scan abort
+Subject: [21/36] cfg80211: ignore spurious deauth
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit d28232b461b8d54b09e59325dbac8b0913ce2049 upstream.
+commit 643f82e32f14faf0d0944c804203a6681b6b0a1e upstream.
 
-Fix possible double priv->mutex lock introduced by commit
-a69b03e941abae00380fc6bc1877fb797a1b31e6
-"iwlwifi: cancel scan watchdog in iwl_bg_abort_scan" .
-We can not call cancel_delayed_work_sync(&priv->scan_check) with
-priv->mutex locked because workqueue function iwl_bg_scan_check()
-take that lock internally.
+Ever since mac80211/drivers are no longer
+fully in charge of keeping track of the
+auth status, trying to make them do so will
+fail. Instead of warning and reporting the
+deauthentication to userspace, cfg80211 must
+simply ignore it so that spurious
+deauthentications, e.g. before starting
+authentication, aren't seen by userspace as
+actual deauthentications.
 
-We do not need to synchronize when canceling priv->scan_check work.
-We can avoid races (sending double abort command or send no
-command at all) using STATUS_SCAN_ABORT bit. Moreover
-current iwl_bg_scan_check() code seems to be broken, as
-we should not send abort commands when currently aborting.
-
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Reported-by: Paul Stewart <pstew@google.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-scan.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ net/wireless/mlme.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -607,11 +607,10 @@ void iwl_bg_scan_check(struct work_struc
- 		return;
+--- a/net/wireless/mlme.c
++++ b/net/wireless/mlme.c
+@@ -44,10 +44,10 @@ void cfg80211_send_rx_auth(struct net_de
+ 		}
+ 	}
  
- 	mutex_lock(&priv->mutex);
--	if (test_bit(STATUS_SCANNING, &priv->status) ||
--	    test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
--		IWL_DEBUG_SCAN(priv, "Scan completion watchdog resetting "
--			"adapter (%dms)\n",
--			jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
-+	if (test_bit(STATUS_SCANNING, &priv->status) &&
-+	    !test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
-+		IWL_DEBUG_SCAN(priv, "Scan completion watchdog (%dms)\n",
-+			       jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
- 
- 		if (!test_bit(STATUS_EXIT_PENDING, &priv->status))
- 			iwl_send_scan_abort(priv);
-@@ -950,12 +949,11 @@ void iwl_bg_abort_scan(struct work_struc
- 	    !test_bit(STATUS_GEO_CONFIGURED, &priv->status))
- 		return;
- 
--	mutex_lock(&priv->mutex);
+-	WARN_ON(!done);
 -
--	cancel_delayed_work_sync(&priv->scan_check);
--	set_bit(STATUS_SCAN_ABORTING, &priv->status);
--	iwl_send_scan_abort(priv);
-+	cancel_delayed_work(&priv->scan_check);
+-	nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
+-	cfg80211_sme_rx_auth(dev, buf, len);
++	if (done) {
++		nl80211_send_rx_auth(rdev, dev, buf, len, GFP_KERNEL);
++		cfg80211_sme_rx_auth(dev, buf, len);
++	}
  
-+	mutex_lock(&priv->mutex);
-+	if (test_bit(STATUS_SCAN_ABORTING, &priv->status))
-+		iwl_send_scan_abort(priv);
- 	mutex_unlock(&priv->mutex);
+ 	wdev_unlock(wdev);
  }
- EXPORT_SYMBOL(iwl_bg_abort_scan);
 
 
