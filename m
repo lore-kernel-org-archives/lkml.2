@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934176Ab0HFA3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:29:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12215 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab0HFA30 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:29:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=pKxD8WsRSZdMwRDtz7tXP5ebodhFIUoZBzUla95sdqIAIrtKvDDR7xbDnsd8gWWca
-	vaBYIDQBJt01j6v48goFA==
-MIME-Version: 1.0
-In-Reply-To: <201008060141.46109.rjw@sisk.pl>
-References: <20100801054816.GI2470@linux.vnet.ibm.com>
-	<201008051734.06736.rjw@sisk.pl>
-	<AANLkTi=kDx440MrLnQEcT46b3gkahU5ZGc0oWrWF-D2g@mail.gmail.com>
-	<201008060141.46109.rjw@sisk.pl>
-Date: Thu, 5 Aug 2010 17:29:24 -0700
-Message-ID: <AANLkTin245wZsxeUh2HuONHqDNXFWpyzPsYv4PPuZYSb@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Brian Swetland <swetland@google.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1760166Ab0HFAc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:32:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33556 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754603Ab0HFAcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 20:32:55 -0400
+Subject: Re: [GIT PULL] first round of SCSI updates for the 2.6.36 merge 
+ window
+From: James Bottomley <James.Bottomley@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
+References: <1280895197.11045.317.camel@mulgrave.site>
+	 <AANLkTintTMXirWF+Y-CwK4dn8Mqk8=ba9_+yjX9P837V@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Aug 2010 19:32:48 -0500
+Message-ID: <1281054768.22157.2.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/5 Rafael J. Wysocki <rjw@sisk.pl>:
->>
->> Our wakelock stats currently have
->> (name,)count,expire_count,wake_count,active_since,total_time,sleep_time,max_time
->> and last_change. Not all of these are equally important (total_time is
->> most important followed by active_since), but you only have count.
->> Also as discussed before, many wakelocks/suspendblockers are not
->> associated with a struct device.
->
-> OK
->
-> How much of that is used in practice and what for exactly?
->
-> Do you _really_ have to debug the wakelocks in drivers that much?
+On Wed, 2010-08-04 at 15:51 -0700, Linus Torvalds wrote:
+> On Tue, Aug 3, 2010 at 9:13 PM, James Bottomley <James.Bottomley@suse.de> wrote:
+> >
+> > Alan Stern (3):
+> >      sd: add support for runtime PM
+> >      implement runtime Power Management
+> >      convert to the new PM framework
+> 
+> Guys, these kind of crazy games really aren't appropriate:
+> 
+>   +/* scsi_pm.c */
+>   +#ifdef CONFIG_PM_OPS
+>   +extern const struct dev_pm_ops scsi_bus_pm_ops;
+>   +#else
+>   +#define scsi_bus_pm_ops                (*NULL)
+>   +#endif
+> 
+> that's just crazy. Yes, I see how it's then used (address-of operator
+> turns it back into NULL), but the compiler warns about it
+> ("drivers/scsi/scsi_sysfs.c:384: warning: dereferencing ‘void *’
+> pointer") and I think the compiler is 100% correct about warning about
+> it.
 
-Debugging power related issues is pretty critical to building
-competitive mobile devices.
+Sigh ... I did actually check this because I thought the compiler would
+warn.  Apparently it only warns on certain versions.
 
-Throughout the several months of this discussion I have been
-continually scratching my head at this "debugability considered
-harmful" attitude that I see in reaction to our interest in having the
-ability (gated behind a config option even -- really, that'd be fine,
-not everyone need enable it) to gather useful stats and examine the
-state of the system.
+> It's not just the (*NULL) games, btw. The above can cause confusion.
+> It's ugly not just because it causes the compiler to warn, but because
+> you use a very subtle and non-standard way of using #define's, so that
+> when you look at the source code where this is used, it's not at all
+> obvious what is going on. The code looks like
+> 
+>     .pm             = &scsi_bus_pm_ops,
+> 
+> and dammit, it would be rather understandable if some _human_ that
+> reads that is also confused and thinks that the above means that the
+> .pm pointer can never be NULL. The address-of would certainly throw
+> me, and not necessarily at all make me grep for "could that possibly
+> be some crazy way to say NULL".
+> 
+> And there is absolutely no reason to play games like that. It would
+> have been entirely understandable if you just put the #ifdef in the C
+> code itself, or if you used a #define that just said
+> 
+>   #ifdef CONFIG_PM_OPS
+>   #define SCSI_BUS_PM_OPS &scsi_bus_pm_ops
+>   #else
+>   #define SCSI_BUS_PM_OPS NULL
+>   #endif
+> 
+> and I think it would be less confusing, and it wouldn't upset the compiler.
+> 
+> Yes, yes, I realize that we do these kinds of things for function
+> pointers all the time, so I do understand where the pattern comes
+> from. At the same time, I rather think that function pointers are a
+> bit different, and they don't have the whole address-of problem.
+> 
+> I guess I should be happy that you didn't use some linker tricks to
+> make "&scsi_bus_pm_ops" turn into NULL at link time. That could be
+> done too, and would have been even more subtly confusing.
 
-At this point it sounds like there's no interest in the solution we
-have, which works and has worked for a few years, and has been revised
-10+ times based on feedback here, and no interest in providing a
-solution that accomplishes similar functionality, so perhaps it's time
-for us to cut our losses and just go back to maintaining our patches
-instead of having the same arguments over and over again.
+Agreed.  Alan already sent a patch to fix it.  I'll add it for the final
+SCSI patch set.
 
-Brian
+James
+
+
