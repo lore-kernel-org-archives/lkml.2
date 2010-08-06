@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935508Ab0HFJNp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 05:13:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28117 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761083Ab0HFJJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 05:09:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,327,1278313200"; 
-   d="scan'208";a="593547772"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v9 02/16] Add a new struct for device to manipulate external buffer.
-Date: Fri,  6 Aug 2010 17:23:30 +0800
-Message-Id: <1281086624-5765-3-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1281086624-5765-2-git-send-email-xiaohui.xin@intel.com>
-References: <1281086624-5765-1-git-send-email-xiaohui.xin@intel.com>
- <1281086624-5765-2-git-send-email-xiaohui.xin@intel.com>
+	id S935505Ab0HFJOw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 05:14:52 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:52541 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab0HFJOr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 05:14:47 -0400
+Date: Fri, 6 Aug 2010 17:14:39 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Heinz Diehl <htd@fancy-poultry.org>
+Cc: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: typo in crypto kconfig ?
+Message-ID: <20100806091439.GA25891@gondor.apana.org.au>
+References: <201008060942.16082.toralf.foerster@gmx.de> <20100806085756.GA13458@fancy-poultry.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100806085756.GA13458@fancy-poultry.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Fri, Aug 06, 2010 at 10:57:56AM +0200, Heinz Diehl wrote:
+> On 06.08.2010, Toralf Förster wrote: 
+> 
+> > While configuring the kernel v2.6.35-3797-gfc1caf6 I read this :
+> > 
+> > ...
+> > Cryptographic API (CRYPTO) [Y/m/?] y
+> >   *
+> >   * Crypto core or helper
+> >   *
+> >   Cryptographic algorithm manager (CRYPTO_MANAGER) [M/y/?] m
+> >   Run algolithms' self-tests (CRYPTO_MANAGER_TESTS) [Y/n/?] (NEW) 
+> > 
+> > and wonder now whether it should be spelled "algorithm" instead ?
+> 
+> Yes, that's simply a typo, it should be "algorithm" of course.
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
----
- include/linux/netdevice.h |   22 +++++++++++++++++++++-
- 1 files changed, 21 insertions(+), 1 deletions(-)
+This is already gone in current crypt-2.6 tree.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index fa8b476..ba582e1 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -530,6 +530,25 @@ struct netdev_queue {
- 	unsigned long		tx_dropped;
- } ____cacheline_aligned_in_smp;
- 
-+/* Add a structure in structure net_device, the new field is
-+ * named as mp_port. It's for mediate passthru (zero-copy).
-+ * It contains the capability for the net device driver,
-+ * a socket, and an external buffer creator, external means
-+ * skb buffer belongs to the device may not be allocated from
-+ * kernel space.
-+ */
-+struct mpassthru_port	{
-+	int		hdr_len;
-+	int		data_len;
-+	int		npages;
-+	unsigned	flags;
-+	struct socket	*sock;
-+	int		vnet_hlen;
-+	struct skb_ext_page *(*ctor)(struct mpassthru_port *,
-+				struct sk_buff *, int);
-+	struct skb_ext_page *(*hash)(struct net_device *,
-+				struct page *);
-+};
- 
- /*
-  * This structure defines the management hooks for network devices.
-@@ -952,7 +971,8 @@ struct net_device {
- 	struct macvlan_port	*macvlan_port;
- 	/* GARP */
- 	struct garp_port	*garp_port;
--
-+	/* mpassthru */
-+	struct mpassthru_port	*mp_port;
- 	/* class/net/name entry */
- 	struct device		dev;
- 	/* space for optional device, statistics, and wireless sysfs groups */
+Thanks,
 -- 
-1.5.4.4
-
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
