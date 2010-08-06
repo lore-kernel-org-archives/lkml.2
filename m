@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934780Ab0HFOwY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 10:52:24 -0400
-Received: from caiajhbdcagg.dreamhost.com ([208.97.132.66]:60200 "EHLO
-	homiemail-a4.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759702Ab0HFOwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 10:52:21 -0400
-Subject: Re: [PATCH RESEND] Fix /proc/softirqs file formatting
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Keika Kobayashi <kobayashi.kk@ncos.nec.co.jp>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <4C56089B.9090405@ncos.nec.co.jp>
-References: <1280516809.1955.0.camel@cowboy>
-	 <4C56089B.9090405@ncos.nec.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Aug 2010 10:52:16 -0400
-Message-ID: <1281106336.1945.0.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S934961Ab0HFOx1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 10:53:27 -0400
+Received: from claw.goop.org ([74.207.240.146]:58234 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759702Ab0HFOxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 10:53:25 -0400
+Message-ID: <4C5C21E3.1020004@goop.org>
+Date: Fri, 06 Aug 2010 07:53:23 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Jan Beulich <JBeulich@novell.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Xen-devel <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
+        Nick Piggin <npiggin@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 02/12] x86/ticketlock: convert spin loop to C
+References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <cf01e01095f802dc5082e82a8e96c84903e929a6.1279328276.git.jeremy.fitzhardinge@citrix.com> <1280761639.1923.213.camel@laptop> <4C56E1A1.6020005@goop.org> <4C5C1F80020000780000EA6D@vpn.id2.novell.com>
+In-Reply-To: <4C5C1F80020000780000EA6D@vpn.id2.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-02 at 08:51 +0900, Keika Kobayashi wrote:
-> (2010/07/31 4:06), Davidlohr Bueso wrote:
-> > Hi,
-> > 
-> > The length of the BLOCK_IPOLL string is making it's value be printed too
-> > far to the right. This patch fixes this and makes the output a bit
-> > neater.
-> > 
-> > Currently:
-> >                 CPU0
-> >       HI:          0
-> >    TIMER:     599792
-> >   NET_TX:          2
-> >   NET_RX:          6
-> >    BLOCK:      80807
-> > BLOCK_IOPOLL:          0
-> >  TASKLET:      20012
-> >    SCHED:          0
-> >  HRTIMER:         63
-> >      RCU:     619279
-> > 
-> > With patch:
-> >                     CPU0
-> >           HI:          0
-> >        TIMER:     585582
-> >       NET_TX:          2
-> >       NET_RX:          6
-> >        BLOCK:      80320
-> > BLOCK_IOPOLL:          0
-> >      TASKLET:      19287
-> >        SCHED:          0
-> >      HRTIMER:         62
-> >          RCU:     604441
-> > 
-> > 
-> > 
-> > Thanks,
-> > Davidlohr
-> >  
-> > 
-> > Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> > ---
-> >  fs/proc/softirqs.c |    4 ++--
-> >  1 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/proc/softirqs.c b/fs/proc/softirqs.c
-> > index 1807c24..3799473 100644
-> > --- a/fs/proc/softirqs.c
-> > +++ b/fs/proc/softirqs.c
-> > @@ -10,13 +10,13 @@ static int show_softirqs(struct seq_file *p, void *v)
-> >  {
-> >  	int i, j;
-> >  
-> > -	seq_printf(p, "                ");
-> > +	seq_printf(p, "                    ");
-> >  	for_each_possible_cpu(i)
-> >  		seq_printf(p, "CPU%-8d", i);
-> >  	seq_printf(p, "\n");
-> >  
-> >  	for (i = 0; i < NR_SOFTIRQS; i++) {
-> > -		seq_printf(p, "%8s:", softirq_to_name[i]);
-> > +		seq_printf(p, "%12s:", softirq_to_name[i]);
-> >  		for_each_possible_cpu(j)
-> >  			seq_printf(p, " %10u", kstat_softirqs_cpu(i, j));
-> >  		seq_printf(p, "\n");
-> 
-> Sorry for late response.
-> 
-> It looks good to me.
-> 
-> // Keika Kobayashi
+  On 08/06/2010 05:43 AM, Jan Beulich wrote:
+> You certainly mean "the compiler currently treats this as being:" - I
+> don't think there's a guarantee it'll always be doing so.
+>
+>> 	for (;;) {
+>> 		if (inc.tickets.head == inc.tickets.tail)
+>> 			goto out;
+>> 		...
+>> 	}
+>> out:	barrier();
+>> }
+>>
+>> (Which would probably be a reasonable way to clarify the code.)
+> I therefore think it needs to be written this way.
 
-Then, if no one objects, can we get it added upstream?
+Agreed.
 
-Thanks,
-Davidlohr
-
+     J
