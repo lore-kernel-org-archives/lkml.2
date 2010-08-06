@@ -1,70 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761435Ab0HFPfR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:35:17 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42379 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757416Ab0HFPfN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:35:13 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec\@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang\, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>
-Subject: Re: A question of perf NMI handler
-References: <1280913670.20797.179.camel@minggr.sh.intel.com>
-	<20100804100116.GH26154@erda.amd.com>
-	<20100804140021.GN3353@redhat.com> <1280931093.1923.1194.camel@laptop>
-	<20100804145203.GP3353@redhat.com> <1280934161.1923.1294.camel@laptop>
-	<20100804151858.GB5130@lenovo> <20100804155002.GS3353@redhat.com>
-	<20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com>
-Date: Fri, 06 Aug 2010 17:35:06 +0200
-In-Reply-To: <20100804162026.GU3353@redhat.com> (Don Zickus's message of "Wed,
-	4 Aug 2010 12:20:26 -0400")
-Message-ID: <877hk3daad.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1761512Ab0HFPfa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:35:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761450Ab0HFPf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 11:35:27 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Fix init ordering of /dev/console vs callers of modprobe
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Fri, 06 Aug 2010 16:34:43 +0100
+Message-ID: <20100806153443.26610.87253.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don Zickus <dzickus@redhat.com> writes:
+Make /dev/console get initialised before any initialisation routine that
+invokes modprobe because if modprobe fails, it's going to want to open
+/dev/console, presumably to write an error message to.
 
-> On Wed, Aug 04, 2010 at 08:10:46PM +0400, Cyrill Gorcunov wrote:
->> On Wed, Aug 04, 2010 at 11:50:02AM -0400, Don Zickus wrote:
->> ...
->> > > 
->> > > Well, first I guess having Yinghai CC'ed is a bonus ;)
->> > > The second thing is that I don't get why perf handler can't be _last_
->> > > call in default_do_nmi, if there were any nmi with reason (serr or parity)
->> > > I think they should be calling first which of course don't eliminate
->> > > the former issue but somewhat make it weaken.
->> > 
->> > Because the reason registers are never set.  If they were, then the code
->> > wouldn't have to walk the notify_chain. :-)
->> > 
->> 
->> maybe we're talking about different things. i meant that if there is nmi
->> with a reason (from 0x61) the handling of such nmi should be done before
->> notify_die I think (if only I not miss something behind).
->
-> No we are talking about the same thing. :-)  And that code is already
-> there.  The problem is the bits in register 0x61 are not always set
-> correctly in the case of SERRs (well at least in all the cases I have
-> dealt with).  So you can easily can a flood of unknown nmis from an SERR
-> and register 0x61 would have the PERR/SERR bits set to 0.  Fun, huh?
+The problem with that is that if the /dev/console driver is not yet
+initialised, the chardev handler will call request_module() to invoke modprobe,
+which will fail, because we never compile /dev/console as a module.
 
-Some of this can be handled by APEI on newer systems (if the platform
-supports that).
+This will lead to a modprobe loop, showing the following in the kernel log:
 
-But not all unfortunately if you consider older systems.
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
+	request_module: runaway loop modprobe char-major-5-1
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+This can happen, for example, when the built in md5 module can't find the built
+in cryptomgr module (because the latter fails to initialise).  The md5 module
+comes before the call to tty_init(), presumably because 'crypto' comes before
+'drivers' alphabetically.
+
+Fix this by calling tty_init() from chrdev_init().
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ drivers/char/mem.c    |    2 +-
+ drivers/char/tty_io.c |    4 ++--
+ fs/char_dev.c         |    1 +
+ include/linux/tty.h   |    3 +++
+ 4 files changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index f54dab8..a398ecd 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -916,7 +916,7 @@ static int __init chr_dev_init(void)
+ 			      NULL, devlist[minor].name);
+ 	}
+ 
+-	return 0;
++	return tty_init();
+ }
+ 
+ fs_initcall(chr_dev_init);
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index d71f0fc..507441a 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -3128,7 +3128,7 @@ static struct cdev tty_cdev, console_cdev;
+  * Ok, now we can initialize the rest of the tty devices and can count
+  * on memory allocations, interrupts etc..
+  */
+-static int __init tty_init(void)
++int __init tty_init(void)
+ {
+ 	cdev_init(&tty_cdev, &tty_fops);
+ 	if (cdev_add(&tty_cdev, MKDEV(TTYAUX_MAJOR, 0), 1) ||
+@@ -3149,4 +3149,4 @@ static int __init tty_init(void)
+ #endif
+ 	return 0;
+ }
+-module_init(tty_init);
++
+diff --git a/fs/char_dev.c b/fs/char_dev.c
+index d6db933..f80a4f2 100644
+--- a/fs/char_dev.c
++++ b/fs/char_dev.c
+@@ -20,6 +20,7 @@
+ #include <linux/cdev.h>
+ #include <linux/mutex.h>
+ #include <linux/backing-dev.h>
++#include <linux/tty.h>
+ 
+ #include "internal.h"
+ 
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index 931078b..7802a24 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -552,6 +552,9 @@ static inline void tty_audit_push_task(struct task_struct *tsk,
+ }
+ #endif
+ 
++/* tty_io.c */
++extern int __init tty_init(void);
++
+ /* tty_ioctl.c */
+ extern int n_tty_ioctl_helper(struct tty_struct *tty, struct file *file,
+ 		       unsigned int cmd, unsigned long arg);
+
