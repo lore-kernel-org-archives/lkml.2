@@ -1,63 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965321Ab0HFTDo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:03:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54768 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965296Ab0HFTDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965298Ab0HFTDd (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 6 Aug 2010 15:03:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100805213528.GA13794@kroah.com>
-References: <20100805213528.GA13794@kroah.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 11:40:15 -0700
-Message-ID: <AANLkTikhq6FF4j+w-TXrPeq05NhvbhgqhJkW7tCw2+3c@mail.gmail.com>
-Subject: Re: [GIT PATCH] TTY patches for 2.6.36
-To: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Received: from kroah.org ([198.145.64.141]:58670 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965143Ab0HFTAe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:34 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
+Message-Id: <20100806185836.687168225@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 06 Aug 2010 11:57:27 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Ben Hutchings <ben@decadent.org.uk>
+Subject: [32/34] ssb: Look for SPROM at different offset on higher rev CC
+In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 2:35 PM, Greg KH <gregkh@suse.de> wrote:
->
-> This contains the big BKL removal of the tty layer, which has been
-> worked on now for a long time by Alan and Arnd.
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-Umm. No it doesn't.
+------------------
 
-It contains some crazy "BKL or mutex" choice layer, and the MUTEX
-choice is disabled unless you have EXPERIMENTAL set (and not the
-default even if it is set - but quite frankly, that doesn't matter,
-because asking about it is so fundamentally wrong in the first place
-that the whole default choice is totally meaningless).
+From: Rafał Miłecki <zajec5@gmail.com>
 
-That's just total and utter crud. Having a conditional BKL is _worse_
-than just having the BKL. It's crazy. It's stupid, it limits testing,
-and it's pure idiocy. Whoever thought that was a good idea was not
-thinking at all.
+commit ea2db495f92ad2cf3301623e60cb95b4062bc484 upstream.
 
-Either the locking fixes are improvements, or they aren't. If they are
-improvements, they should be unconditionally enabled, and the old
-locking should have been removed. And if they aren't, it shouldn't
-have been merged at all. The timid kind of "let the user choose"
-choice is STUPID.
+Our offset handling becomes even a little more hackish now. For some reason I
+do not understand all offsets as inrelative. It assumes base offset is 0x1000
+but it will work for now as we make offsets relative anyway by removing base
+0x1000. Should be cleaner however.
 
-Dammit, if the developer doesn't know which one is better, how the
-hell is a user supposed to know? Answer: he isn't. Making it a config
-option is fundamentally wrong.  Config options that ask questions that
-users cannot answer are WRONG. Really.
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I'm not pulling crazy sh*t like this. The _only_ thing that kconfig
-option does is basically mean that it doesn't get the kind of coverage
-in testing that it needs to get, and it confuses everybody. Not to
-mention having two totally different code-paths where there should be
-only one.
 
-Do do the highlander thing on that crud. Cut it off at the head, and
-make sure it never ever comes back to life.
+---
+ drivers/ssb/pci.c            |    9 ++++++---
+ include/linux/ssb/ssb.h      |    1 +
+ include/linux/ssb/ssb_regs.h |    3 ++-
+ 3 files changed, 9 insertions(+), 4 deletions(-)
 
-                  Linus
+--- a/drivers/ssb/pci.c
++++ b/drivers/ssb/pci.c
+@@ -167,7 +167,7 @@ err_pci:
+ }
+ 
+ /* Get the word-offset for a SSB_SPROM_XXX define. */
+-#define SPOFF(offset)	(((offset) - SSB_SPROM_BASE) / sizeof(u16))
++#define SPOFF(offset)	(((offset) - SSB_SPROM_BASE1) / sizeof(u16))
+ /* Helper to extract some _offset, which is one of the SSB_SPROM_XXX defines. */
+ #define SPEX16(_outvar, _offset, _mask, _shift)	\
+ 	out->_outvar = ((in[SPOFF(_offset)] & (_mask)) >> (_shift))
+@@ -253,7 +253,7 @@ static int sprom_do_read(struct ssb_bus
+ 	int i;
+ 
+ 	for (i = 0; i < bus->sprom_size; i++)
+-		sprom[i] = ioread16(bus->mmio + SSB_SPROM_BASE + (i * 2));
++		sprom[i] = ioread16(bus->mmio + bus->sprom_offset + (i * 2));
+ 
+ 	return 0;
+ }
+@@ -284,7 +284,7 @@ static int sprom_do_write(struct ssb_bus
+ 			ssb_printk("75%%");
+ 		else if (i % 2)
+ 			ssb_printk(".");
+-		writew(sprom[i], bus->mmio + SSB_SPROM_BASE + (i * 2));
++		writew(sprom[i], bus->mmio + bus->sprom_offset + (i * 2));
+ 		mmiowb();
+ 		msleep(20);
+ 	}
+@@ -625,6 +625,9 @@ static int ssb_pci_sprom_get(struct ssb_
+ 		return -ENODEV;
+ 	}
+ 
++	bus->sprom_offset = (bus->chipco.dev->id.revision < 31) ?
++		SSB_SPROM_BASE1 : SSB_SPROM_BASE31;
++
+ 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
+ 	if (!buf)
+ 		goto out;
+--- a/include/linux/ssb/ssb.h
++++ b/include/linux/ssb/ssb.h
+@@ -301,6 +301,7 @@ struct ssb_bus {
+ 	/* ID information about the Chip. */
+ 	u16 chip_id;
+ 	u16 chip_rev;
++	u16 sprom_offset;
+ 	u16 sprom_size;		/* number of words in sprom */
+ 	u8 chip_package;
+ 
+--- a/include/linux/ssb/ssb_regs.h
++++ b/include/linux/ssb/ssb_regs.h
+@@ -170,7 +170,8 @@
+ #define SSB_SPROMSIZE_WORDS_R4		220
+ #define SSB_SPROMSIZE_BYTES_R123	(SSB_SPROMSIZE_WORDS_R123 * sizeof(u16))
+ #define SSB_SPROMSIZE_BYTES_R4		(SSB_SPROMSIZE_WORDS_R4 * sizeof(u16))
+-#define SSB_SPROM_BASE			0x1000
++#define SSB_SPROM_BASE1			0x1000
++#define SSB_SPROM_BASE31		0x0800
+ #define SSB_SPROM_REVISION		0x107E
+ #define  SSB_SPROM_REVISION_REV		0x00FF	/* SPROM Revision number */
+ #define  SSB_SPROM_REVISION_CRC		0xFF00	/* SPROM CRC8 value */
+
+
