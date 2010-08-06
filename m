@@ -1,198 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934502Ab0HFBZG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:25:06 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:51396 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934131Ab0HFBZB (ORCPT
+	id S934524Ab0HFB0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:26:47 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57196 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934232Ab0HFB0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:25:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6065"; a="50063837"
-Message-ID: <4C5B646C.1030308@codeaurora.org>
-Date: Thu, 05 Aug 2010 18:25:00 -0700
-From: Patrick Pannuto <ppannuto@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12pre) Gecko/20100715 Shredder/3.0.7pre
+	Thu, 5 Aug 2010 21:26:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=I3+PUvN6Qwu5RV+LqRBulT7FKLv8zLAJZLPgORXXaJE2+HfPYaoN+gbnA776XxmiDb
+         koi3g7Y6uCWG4kQEtcuVtGY0+JaPvA/NCwyEcKk6I5mNPtqEgCdqbwwn0YZEuNx6QjKY
+         NqD7nif/6IJjRGWBwnsFKwhLVhbLwsAbfUFd8=
+Message-ID: <4C5B64EA.2000804@gmail.com>
+Date: Thu, 05 Aug 2010 18:27:06 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, alan@lxorguk.ukuu.org.uk,
-        zt.tmzt@gmail.com, magnus.damm@gmail.com
-Subject: Re: [PATCH] platform: Facilitate the creation of pseduo-platform
- 	busses
-References: <4C59E654.1090403@codeaurora.org> <877hk56hiy.fsf@deeprootsystems.com> 	<4C5A0C68.9080500@codeaurora.org> <87fwytxdba.fsf@deeprootsystems.com> <AANLkTimCS4RV+8E_ZzX97=r5rmQR3nmizp0JYK+syLRa@mail.gmail.com>
-In-Reply-To: <AANLkTimCS4RV+8E_ZzX97=r5rmQR3nmizp0JYK+syLRa@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
+        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
+        sam@ravnborg.org, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] kbuild: kconfig changes
+References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com>
+In-Reply-To: <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 04:16 PM, Grant Likely wrote:
-> On Thu, Aug 5, 2010 at 9:57 AM, Kevin Hilman
-> <khilman@deeprootsystems.com> wrote:
->> Patrick Pannuto <ppannuto@codeaurora.org> writes:
+On 08/05/2010 04:33 PM, Linus Torvalds wrote:
+>   On Wed, Aug 4, 2010 at 5:51 AM, Michal Marek<mmarek@suse.cz>  wrote:
 >>
->>> On 08/04/2010 05:16 PM, Kevin Hilman wrote:
->>>> Patrick Pannuto <ppannuto@codeaurora.org> writes:
->>>>
->>>>> Inspiration for this comes from:
->>>>> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg31161.html
->>>>
->>>> Also, later in that thread I also wrote[1] what seems to be the core of
->>>> what you've done here: namely, allow platform_devices and
->>>> platform_drivers to to be used on custom busses.  Patch is at the end of
->>>> this mail with a more focused changelog.  As Greg suggested in his reply
->>>> to your first version, this part could be merged today, and the
->>>> platform_bus_init stuff could be added later, after some more review.
->>>> Some comments below...
->>>>
->>>
->>> I can split this into 2 patches.
+>> this is the kconfig part of kbuild. We have four new *config targets:
+>> * oldnoconfig: set all new options to 'n'
+>> * listnewconfig: list all unset config options
+>> * alldefconfig: set all options to their defaults specified in Kconfig
+>>   files
+>> * savedefconfig: write a defconfig file with only the differences from
+>>   an alldefconfig (aka minimal defconfig)
 >>
->> Yes, I think that would be better.
->>
->>> Was your patch sent to linux-kernel or just linux-omap? I'm not on linux-omap...
->>
->> That thread was on linux-arm-kernel and linux-omap
->>
->>>
->>>>> [snip]
->>>>>
->>>>> Which will allow the same driver to easily to used on either
->>>>> the platform bus or the newly defined bus type.
->>>>
->>>> Except it requires a re-compile.
->>>>
->>>> Rather than doing this at compile time, it would be better to support
->>>> legacy devices at runtime.  You could handle this by simply registering
->>>> the driver on the custom bus and the platform_bus and let the bus
->>>> matching code handle it.  Then, the same binary would work on both
->>>> legacy and updated SoCs.
->>>>
->>>
->>> Can you safely register a driver on more than one bus? I didn't think
->>> that was safe -- normally it's impossible since you're calling
->>>
->>> struct BUS_TYPE_driver mydriver;
->>> BUS_TYPE_driver_register(&mydriver)
->>>
->>> but now we have multiple "bus types" that are all actually platform type; still,
->>> at a minimum you would need:
->>>       struct platform_driver mydrvier1 = {
->>>               .driver.bus = &sub_bus1,
->>>       };
->>>       struct platform_driver mydrvier2 = {
->>>               .driver.bus = &sub_bus2,
->>>       };
->>> which would all point to the same driver functions, yet the respective devices
->>> attached for the "same" driver would be on different buses. I fear this might
->>> confuse some drivers. I don't think dynamic bus assignment is this easy
->>>
->>> In short: I do not believe the same driver can be registered on multiple
->>> different buses -- if this is wrong, please correct me.
->>
->> It is possible, and currently done in powerpc land where some
->> drivers handle devices on the platform_bus and the custom OF bus.
-> 
-> As of now, the of_platform_bus_type has been removed.  It was a bad
-> idea because it tried to encode non-bus-specific information into
-> something that was just a clone of the platform_bus.  Drivers that
-> worked on both had to be bound to both busses.  I do actually have
-> code that automatically registers a driver on more than one bus, but
-> it is rather a hack and was only a temporary measure.
-> 
-> The relevant question before going down this path is, "Is the
-> omap/sh/other-soc behaviour something fundamentally different from the
-> platform bus?  Or is it something complementary that would be better
-> handled with a notifier or some orthogonal method of adding new
-> behaviour?"
-> 
-> I don't have a problem with multiple platform_bus instances using the
-> same code (I did suggest it after all), but I do worry about muddying
-> the Linux device model or making it overly complex.  Binding single
-> drivers to multiple device types could be messy.
-> 
-> Cheers,
-> g.
+>> Kconfig also warns when a select statement selects a symbol with unmet
+>> dependencies (which typically results in a broken config). Li Zefan did
+>> quite some usability fixes to the visual config interfaces.
+>
+> Hmm. This seems to make "make oldconfig" a _lot_ more verbose than it
+> used to be. In a very annoying way.
+>
+> I'm used to this (v2.6.35 "make oldconfig" with no changes):
+>
+>     [torvalds@i5 linux]$ make oldconfig
+>     scripts/kconfig/conf -o arch/x86/Kconfig
+>     #
+>     # configuration written to .config
+>     #
+>     [torvalds@i5 linux]$
+>
+> but now it prints _everything_. The old "oldconfig" only printed
+> things out when there was something to be asked about.
+>
+> This is a regression.
+>
+>                Linus
+>
 
->From your other email, the distinction of /bus_types/ versus /physical
-or logical buses/ was very valuable (thanks). I am becoming less
-convinced that I need this infrastructure or the ability to create
-pseudo-platform buses. Let me outline some thoughts below, which I
-think at least solves my problems ( ;) ), and if some of the OMAP folks
-and Alan could chime in as to whether they can apply something similar,
-or if they still have need of creating actual new bus types?
+With what I submitted I did not test make oldconfig, only make 
+menuconfig due to gcc 4.6.0 giving me a slew of warnings.
+ From looking at make oldconfig I do see a more detailed explanation of 
+what each option is(last I remember it was more of a line with y/n)but 
+then again you could be seeing something completly different.
 
+keep in mind not sure if this is with kconfig merge or not due to me 
+seeing make oldconfig react the same way with 2.6.35-rc6-00191-ga2dccdb
+and the current(pulled a few minuetes ago)
+but look kind of differently with 2.6.34(but could be wrong due to not 
+using make oldconfig that much).
+Now if this is with what I submitted then I'll have a look at it and see 
+if I can get this fixed.
 
-As we are exploring all of this, let me put a concrete (ish) scenario
-out there to discuss:
+Justin P. Mattock
 
-        SUB_BUS1---DEVICE1
-       /
-CPU ---
-       \
-        SUB_BUS2---DEVICE2
-
-DEVICE1 and DEVICE2 are the same device (say, usb host controller, or
-whatever), and they should be driven by the same driver. However,
-physically they are attached to different buses.
-
-SUB_BUS1 and SUB_BUS2 are *different* and let's say require a different
-suspend method. If I understand correctly, the right way to build the
-topology would be:
-
-struct device_type SUB_BUS1_type = {
-	.name = "sub-bus1-type",
-	.pm   = &sub_bus1_pm_ops;
-};
-
-struct platform_device SUB_BUS1 = {
-	.init_name = "sub-bus1",
-	.dev.type  = &sub_bus1_type,
-};
-
-struct platform_device DEVICE1 = {
-	.name       = "device1",
-	.dev.parent = &SUB_BUS1.dev,
-};
-
-platform_device_register(&SUB_BUS1);
-platform_device_register(&DEVICE1);
-
-[analogous for *2]
-
-which would yield:
-
-/sys/bus/platform/devices/
- |
- |-SUB_BUS1
- |  |
- |  |-DEVICE1
- |
- |-SUB_BUS2
- |  |
- |  |-DEVICE2
-
-Which is the correct topology, and logically provides all the correct
-interfaces.  The only thing that becomes confusing now, is that SUB_BUS*
-is *actually* a physically different bus, yet it's not in /sys/bus;
-although I suppose this is actually how the world works presently (you
-don't see an individual entry in /sys/bus for each usb host controller,
-which is technically defining a sub-bus...)
-
-Thoughts? Am I understanding everything correctly?
-
-Is there anything more not covered by co-opting the device-type of SUB_BUS
-that people would still need the pseduo-platform-bus extensions for?
-
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
