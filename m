@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934524Ab0HFB0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:26:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57196 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934232Ab0HFB0p (ORCPT
+	id S934589Ab0HFB1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:27:36 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61688 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934287Ab0HFB1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:26:45 -0400
+	Thu, 5 Aug 2010 21:27:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=I3+PUvN6Qwu5RV+LqRBulT7FKLv8zLAJZLPgORXXaJE2+HfPYaoN+gbnA776XxmiDb
-         koi3g7Y6uCWG4kQEtcuVtGY0+JaPvA/NCwyEcKk6I5mNPtqEgCdqbwwn0YZEuNx6QjKY
-         NqD7nif/6IJjRGWBwnsFKwhLVhbLwsAbfUFd8=
-Message-ID: <4C5B64EA.2000804@gmail.com>
-Date: Thu, 05 Aug 2010 18:27:06 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
-        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
-        sam@ravnborg.org, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] kbuild: kconfig changes
-References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com>
-In-Reply-To: <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=wMc3mlZo0au+1PiCf7cM3T9C0ra5+gbC0wUiMhxj+EuVYkrBQJFBMmVfc1qmkIHn0v
+         cj4Zo3+/BDMotkuNToYJfM7mogYIM+Ao/rDtIWcW6YJxIBqgAOfpSnyLEVFChIagnYCQ
+         k/1C9GRW18Ki/rg0+1OdzpeKIVXWpOoAN2+jg=
+Subject: Re: [PATCH 3/3] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Alex Dubov <oakad@yahoo.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281057246.19943.20.camel@Joe-Laptop.home>
+References: <1281018316-1466-1-git-send-email-maximlevitsky@gmail.com>
+	 <1281018316-1466-4-git-send-email-maximlevitsky@gmail.com>
+	 <1281057246.19943.20.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Aug 2010 04:27:26 +0300
+Message-ID: <1281058046.3513.2.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 04:33 PM, Linus Torvalds wrote:
->   On Wed, Aug 4, 2010 at 5:51 AM, Michal Marek<mmarek@suse.cz>  wrote:
->>
->> this is the kconfig part of kbuild. We have four new *config targets:
->> * oldnoconfig: set all new options to 'n'
->> * listnewconfig: list all unset config options
->> * alldefconfig: set all options to their defaults specified in Kconfig
->>   files
->> * savedefconfig: write a defconfig file with only the differences from
->>   an alldefconfig (aka minimal defconfig)
->>
->> Kconfig also warns when a select statement selects a symbol with unmet
->> dependencies (which typically results in a broken config). Li Zefan did
->> quite some usability fixes to the visual config interfaces.
->
-> Hmm. This seems to make "make oldconfig" a _lot_ more verbose than it
-> used to be. In a very annoying way.
->
-> I'm used to this (v2.6.35 "make oldconfig" with no changes):
->
->     [torvalds@i5 linux]$ make oldconfig
->     scripts/kconfig/conf -o arch/x86/Kconfig
->     #
->     # configuration written to .config
->     #
->     [torvalds@i5 linux]$
->
-> but now it prints _everything_. The old "oldconfig" only printed
-> things out when there was something to be asked about.
->
-> This is a regression.
->
->                Linus
->
+On Thu, 2010-08-05 at 18:14 -0700, Joe Perches wrote: 
+> On Thu, 2010-08-05 at 17:25 +0300, Maxim Levitsky wrote:
+> > Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> 
+> Trivial comments:
+> 
+> > ---
+> >  MAINTAINERS                    |    6 +
+> > +RICOH R5C592 MEMORYSTICK DRIVER
+> > +M:	Maxim Levitsky <maximlevitsky@gmail.com>
+> > +S:	Maintained
+> > +F:	drivers/memstick/host/r592.c
+> > +F:	drivers/memstick/host/r592.h
+> 
+> Patterns in maintainers can use wildcards
+Didn't know about that, thanks! 
+> 
+> F:	drivers/memstick/host/r592*
+> 
+> > --- /dev/null
+> > +++ b/drivers/memstick/host/r592.c
+> > @@ -0,0 +1,889 @@
+> []
+> > +static char *tpc_names[] = {
+> 
+> const ?
+Sure 
+> 
+> > +	"MS_TPC_READ_MG_STATUS",
+> > +	"MS_TPC_READ_LONG_DATA",
+> 
+> []
+> 
+> > +#define dbg(format, ...) \
+> > +	if (debug) \
+> > +		printk(KERN_DEBUG DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> > +
+> > +#define dbg_verbose(format, ...) \
+> > +	if (debug > 1) \
+> > +		printk(KERN_DEBUG DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> > +
+> > +#define dbg_reg(format, ...) \
+> > +	if (debug > 2) \
+> > +		printk(KERN_DEBUG DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> > +
+> 
+> These style macros should use do { if (test) print(); } while (9)
+> so they could be used without problems in if/else blocks.
+>  
+> Maybe it'd be better to have and use 1 macro with a level passed:
+> 
+> #define dbg(level, format, ...)						\
+> do {									\
+> 	if (debug > level)						\
+> 		printk(KERN_DEBUG pr_fmt(format), ##__VA_ARGS__);	\
+> } while (0)
+Thinking again about that, why not...
 
-With what I submitted I did not test make oldconfig, only make 
-menuconfig due to gcc 4.6.0 giving me a slew of warnings.
- From looking at make oldconfig I do see a more detailed explanation of 
-what each option is(last I remember it was more of a line with y/n)but 
-then again you could be seeing something completly different.
 
-keep in mind not sure if this is with kconfig merge or not due to me 
-seeing make oldconfig react the same way with 2.6.35-rc6-00191-ga2dccdb
-and the current(pulled a few minuetes ago)
-but look kind of differently with 2.6.34(but could be wrong due to not 
-using make oldconfig that much).
-Now if this is with what I submitted then I'll have a look at it and see 
-if I can get this fixed.
 
-Justin P. Mattock
+> 
+> > +#define message(format, ...) \
+> > +	printk(KERN_INFO DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> 
+> Why not just use pr_info?
+Will look at that.
+
+Best regards,
+Maxim Levitsky
+
+
 
