@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964855Ab0HFS20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:28:26 -0400
-Received: from kroah.org ([198.145.64.141]:36034 "EHLO coco.kroah.org"
+	id S1761824Ab0HFS2V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:28:21 -0400
+Received: from kroah.org ([198.145.64.141]:36022 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761799Ab0HFS2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:28:19 -0400
+	id S1761783Ab0HFS2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:28:18 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 10:56:11 2010
-Message-Id: <20100806175611.728174109@clark.site>
+Message-Id: <20100806175611.638902395@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 10:54:40 -0700
+Date: Fri, 06 Aug 2010 10:54:39 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [4/4] GFS2: rename causes kernel Oops
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [3/4] SCSI: enclosure: fix error path - actually return ERR_PTR() on error
 In-Reply-To: <20100806182735.GA15732@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bob Peterson <rpeterso@redhat.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 728a756b8fcd22d80e2dbba8117a8a3aafd3f203 upstream.
+commit a91c1be21704113b023919826c6d531da46656ef upstream.
 
-This patch fixes a kernel Oops in the GFS2 rename code.
+we also need to clean up and free the cdev.
 
-The problem was in the way the gfs2 directory code was trying
-to re-use sentinel directory entries.
-
-In the failing case, gfs2's rename function was renaming a
-file to another name that had the same non-trivial length.
-The file being renamed happened to be the first directory
-entry on the leaf block.
-
-First, the rename code (gfs2_rename in ops_inode.c) found the
-original directory entry and decided it could do its job by
-simply replacing the directory entry with another.  Therefore
-it determined correctly that no block allocations were needed.
-
-Next, the rename code deleted the old directory entry prior to
-replacing it with the new name.  Therefore, the soon-to-be
-replaced directory entry was temporarily made into a directory
-entry "sentinel" or a place holder at the start of a leaf block.
-
-Lastly, it went to re-add the replacement directory entry in
-that leaf block.  However, when gfs2_dirent_find_space was
-looking for space in the leaf block, it used the wrong value
-for the sentinel.  That threw off its calculations so later
-it decides it can't really re-use the sentinel and therefore
-must allocate a new leaf block.  But because it previously decided
-to re-use the directory entry, it didn't waste the time to
-grab a new block allocation for the inode.  Therefore, the
-inode's i_alloc pointer was still NULL and it crashes trying to
-reference it.
-
-In the case of sentinel directory entries, the entire dirent is
-reused, not just the "free space" portion of it, and therefore
-the function gfs2_dirent_find_space should use the value 0
-rather than GFS2_DIRENT_SIZE(0) for the actual dirent size.
-
-Fixing this calculation enables the reproducer programs to work
-properly.
-
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Reported-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/gfs2/dir.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/enclosure.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/fs/gfs2/dir.c
-+++ b/fs/gfs2/dir.c
-@@ -393,7 +393,7 @@ static int gfs2_dirent_find_space(const
- 	unsigned totlen = be16_to_cpu(dent->de_rec_len);
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -264,8 +264,11 @@ enclosure_component_register(struct encl
+ 	cdev->groups = enclosure_groups;
  
- 	if (gfs2_dirent_sentinel(dent))
--		actual = GFS2_DIRENT_SIZE(0);
-+		actual = 0;
- 	if (totlen - actual >= required)
- 		return 1;
- 	return 0;
+ 	err = device_register(cdev);
+-	if (err)
+-		ERR_PTR(err);
++	if (err) {
++		ecomp->number = -1;
++		put_device(cdev);
++		return ERR_PTR(err);
++	}
+ 
+ 	return ecomp;
+ }
 
 
