@@ -1,88 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965779Ab0HFWgp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:36:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60672 "EHLO mx1.redhat.com"
+	id S965804Ab0HFWgz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:36:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52047 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935110Ab0HFWgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 18:36:33 -0400
+	id S935018Ab0HFWgk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 18:36:40 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 37/38] union-mount: Implement union-aware setxattr()
-Date: Fri,  6 Aug 2010 15:35:23 -0700
-Message-Id: <1281134124-17041-38-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 18/38] union-mount: Introduce MNT_UNION and MS_UNION flags
+Date: Fri,  6 Aug 2010 15:35:04 -0700
+Message-Id: <1281134124-17041-19-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jan Blunck <jblunck@suse.de>
 
+Add per mountpoint flag for Union Mount support. You need additional patches
+to util-linux for that to work - see:
+
+git://git.kernel.org/pub/scm/utils/util-linux-ng/val/util-linux-ng.git
+
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/xattr.c |   34 +++++++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 7 deletions(-)
+ fs/namespace.c        |    5 ++++-
+ include/linux/fs.h    |    1 +
+ include/linux/mount.h |    4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 01bb813..7869788 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -19,7 +19,7 @@
- #include <linux/fsnotify.h>
- #include <linux/audit.h>
- #include <asm/uaccess.h>
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 984c331..f115cb6 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -809,6 +809,7 @@ static void show_mnt_opts(struct seq_file *m, struct vfsmount *mnt)
+ 		{ MNT_NODIRATIME, ",nodiratime" },
+ 		{ MNT_RELATIME, ",relatime" },
+ 		{ MNT_STRICTATIME, ",strictatime" },
++		{ MNT_UNION, ",union" },
+ 		{ 0, NULL }
+ 	};
+ 	const struct proc_fs_info *fs_infop;
+@@ -2008,10 +2009,12 @@ long do_mount(char *dev_name, char *dir_name, char *type_page,
+ 		mnt_flags &= ~(MNT_RELATIME | MNT_NOATIME);
+ 	if (flags & MS_RDONLY)
+ 		mnt_flags |= MNT_READONLY;
++	if (flags & MS_UNION)
++		mnt_flags |= MNT_UNION;
+ 
+ 	flags &= ~(MS_NOSUID | MS_NOEXEC | MS_NODEV | MS_ACTIVE |
+ 		   MS_NOATIME | MS_NODIRATIME | MS_RELATIME| MS_KERNMOUNT |
+-		   MS_STRICTATIME);
++		   MS_STRICTATIME | MS_UNION);
+ 
+ 	if (flags & MS_REMOUNT)
+ 		retval = do_remount(&path, flags & ~MS_REMOUNT, mnt_flags,
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 71ee74e..31cfa48 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -192,6 +192,7 @@ struct inodes_stat_t {
+ #define MS_REMOUNT	32	/* Alter flags of a mounted FS */
+ #define MS_MANDLOCK	64	/* Allow mandatory locks on an FS */
+ #define MS_DIRSYNC	128	/* Directory modifications are synchronous */
++#define MS_UNION	256	/* Merge namespace with FS mounted below */
+ #define MS_NOATIME	1024	/* Do not update access times. */
+ #define MS_NODIRATIME	2048	/* Do not update directory access times */
+ #define MS_BIND		4096
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 4bd0547..0302703 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -43,9 +43,9 @@ struct mnt_namespace;
+  */
+ #define MNT_SHARED_MASK	(MNT_UNBINDABLE)
+ #define MNT_PROPAGATION_MASK	(MNT_SHARED | MNT_UNBINDABLE)
++#define MNT_UNION	0x4000	/* top layer of a union mount */
+ 
 -
-+#include "union.h"
+-#define MNT_INTERNAL	0x4000
++#define MNT_INTERNAL	0x8000
  
- /*
-  * Check permissions for extended attribute access.  This is a bit complicated
-@@ -281,17 +281,37 @@ SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
- 		size_t, size, int, flags)
- {
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
-+	char *tmp;
- 	int error;
- 
--	error = user_path(pathname, &path);
-+	error = user_path_nd(AT_FDCWD, pathname, LOOKUP_FOLLOW, &nd, &path,
-+			     &tmp);
- 	if (error)
- 		return error;
--	error = mnt_want_write(path.mnt);
--	if (!error) {
--		error = setxattr(path.dentry, name, value, size, flags);
--		mnt_drop_write(path.mnt);
--	}
-+
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
-+
-+	error = mnt_want_write(mnt);
-+	if (error)
-+		goto out;
-+
-+	error = union_copyup(&nd, &path);
-+	if (error)
-+		goto out_drop_write;
-+
-+	error = setxattr(path.dentry, name, value, size, flags);
-+
-+out_drop_write:
-+	mnt_drop_write(mnt);
-+out:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
- 	return error;
- }
- 
+ struct vfsmount {
+ 	struct list_head mnt_hash;
 -- 
 1.6.3.3
 
