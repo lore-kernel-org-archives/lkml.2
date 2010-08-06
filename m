@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965192Ab0HFXhq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 19:37:46 -0400
-Received: from mail.lang.hm ([64.81.33.126]:33573 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761596Ab0HFXho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 19:37:44 -0400
-Date: Fri, 6 Aug 2010 16:35:59 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Brian Swetland <swetland@google.com>,
-        kevin granade <kevin.granade@gmail.com>,
-        Arve Hj?nnev?g <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <20100806181832.GJ2432@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1008061517130.30564@asgard.lang.hm>
-References: <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm> <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com> <20100805230304.GQ2447@linux.vnet.ibm.com> <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
- <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm> <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com> <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm> <20100806123047.GE31326@sirena.org.uk> <20100806172226.GH2432@linux.vnet.ibm.com>
- <20100806173325.GA25367@rakim.wolfsonmicro.main> <20100806181832.GJ2432@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S965221Ab0HFXiC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 19:38:02 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:43116 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965162Ab0HFXh7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 19:37:59 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Arjan van de Ven <arjan@infradead.org>,
+        "linux-pm\@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Ming Lei <tom.leiming@gmail.com>
+Subject: Re: [PATCH v2] pm: Add runtime PM statistics
+Organization: Deep Root Systems, LLC
+References: <20100710095254.5ab7291c@infradead.org>
+	<201007112326.07541.rjw@sisk.pl>
+	<20100711221646.35f11b70@infradead.org>
+	<201007132328.28853.rjw@sisk.pl> <4C3F2CEF.2090404@linux.intel.com>
+	<87bp9gpryb.fsf@deeprootsystems.com>
+	<4C5B5077.1060901@linux.intel.com>
+Date: Fri, 06 Aug 2010 16:37:56 -0700
+In-Reply-To: <4C5B5077.1060901@linux.intel.com> (Arjan van de Ven's message of
+	"Thu, 05 Aug 2010 16:59:51 -0700")
+Message-ID: <87wrs3mhwr.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Aug 2010, Paul E. McKenney wrote:
+Arjan van de Ven <arjan@linux.intel.com> writes:
 
-> On Fri, Aug 06, 2010 at 06:33:25PM +0100, Mark Brown wrote:
->> On Fri, Aug 06, 2010 at 10:22:26AM -0700, Paul E. McKenney wrote:
->>> On Fri, Aug 06, 2010 at 01:30:48PM +0100, Mark Brown wrote:
+> On 8/5/2010 4:20 PM, Kevin Hilman wrote:
+>> Arjan van de Ven<arjan@linux.intel.com>  writes:
 >>
->>>> this (the one following the rename to suspend blockers).  Essentially
->>>> what happens in a mainline context is that some subsystems can with
->>>> varying degress of optionality ignore some or all of the instruction to
->>>> suspend and keep bits of the system alive during suspend.
+>>    
+>>> +
+>>> +/**
+>>> + * update_pm_runtime_accounting - Update the time accounting of power
+>>> states
+>>> + * @dev: Device to update the accounting for
+>>> + *
+>>> + * In order to be able to have time accounting of the various power states
+>>> + * (as used by programs such as PowerTOP to show the effectiveness of
+>>> runtime
+>>> + * PM), we need to track the time spent in each state.
+>>> + * update_pm_runtime_accounting must be called each time before the
+>>> + * runtime_status field is updated, to account the time in the old state
+>>> + * correctly.
+>>> + */
+>>> +void update_pm_runtime_accounting(struct device *dev)
+>>> +{
+>>> +    unsigned long now = jiffies;
+>>> +    int delta;
+>>> +
+>>> +    delta = now - dev->power.accounting_timestamp;
+>>> +
+>>> +    if (delta<  0)
+>>> +        delta = 0;
+>>> +
+>>> +    dev->power.accounting_timestamp = now;
+>>> +
+>>> +    if (dev->power.disable_depth>  0)
+>>> +        return;
+>>> +
+>>> +    if (dev->power.runtime_status == RPM_SUSPENDED)
+>>> +        dev->power.suspended_jiffies += delta;
+>>> +    else
+>>> +        dev->power.active_jiffies += delta;
+>>> +}
+>>>      
+>> By using jiffies, I think we might miss events in drivers that are doing
+>> runtime PM transitions in short bursts.  On embedded systems with slow
+>> HZ, there could potentially be lots of transitions between ticks.
 >>
->>> This underscores a basic difference between servers and these embedded
->>> devices.  When you suspend a server, it is doing nothing, because servers
->>> rely very heavily on the CPUs.  In contrast, many embedded devices can
->>> perform useful work even when the CPUs are completely powered down.
->>
->> Well, not really from the Linux point of view.  It's not massively
->> different to something like keeping an ethernet controller sufficiently
->> alive to allow it to provide wake on LAN functionality while the system
->> is suspended in terms of what Linux has to do, and quite a few servers
->> have lights out management systems which aren't a million miles away
->> from the modem on a phone in terms of their relationship with the host
->> computer.
+>> It would be nicer to use clocksource-based time so transitions between
+>> jiffies could still be factored into the accounting.
+>>    
 >
-> The wake-on-LAN and the lights-out management systems are indeed
-> interesting examples, and actually pretty good ones.  The reason I
-> excluded them is that they don't do any application processing -- their
-> only purpose is the care and feeding of the system itself.  In contrast,
-> the embedded processors are able to do significant applications processing
-> (e.g., play back music) while any CPUs are completely shut down and most
-> of the memory is powered down as well.
+> you're absolutely right that the current mechanism is more "sampling
+> accuracy" (similar to most /proc info that shows up with top and
+> such).
+>
+> on the "slow HZ".. there is no more valid reason to not set HZ to
+> 1000... 
 
-one other significant issue is that on the PC, things like wake-on-LAN, 
-lights out management cards, etc require nothing from the main system 
-other than power. If they do something, they are sending the signal to the 
-chipset, which then wakes the system up. they don't interact with the main 
-processor/memory/etc at all.
+Probably, especially with tickless idle, but not so sure there is total
+agreement on this in the embedded world though...
 
-So as I see it, we need to do one of two things.
+> so we'll get 1 msec sampling rate basically.
+>
+> the problem with a more accurate clocksource is that it's
+> expensive. And more... the path to such clocksource itself might be
+> subject to power management ;-)
 
-1. change the suspend definition to allow for some things to not be 
-suspended
+What about using read_persistent_clock() then?  Then the arch/platform
+definition of this will determine the max sampling rate.
 
-or
+Kevin
 
-2. change the sleep/low-power mode definition to have a more standardized 
-way of turning things off, and extend it to allow clocks to be turned off 
-as well (today we have things able to be turned off, drive spin-down for 
-example, but per comments in this thread it's all one-off methods)
 
-to me #2 seems the better thing to do from a design/concept point of view
 
-David Lang
