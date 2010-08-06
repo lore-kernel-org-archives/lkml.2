@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934482Ab0HFKlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 06:41:24 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50934 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933047Ab0HFKlW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 06:41:22 -0400
-Date: Fri, 6 Aug 2010 11:41:20 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joonyoung Shim <jy0922.shim@samsung.com>
-Cc: lrg@slimlogic.co.uk, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: Fix WM8994 LDO enable gpio set when probed
-Message-ID: <20100806104120.GD398@rakim.wolfsonmicro.main>
-References: <1281060446-399-1-git-send-email-jy0922.shim@samsung.com>
+	id S934493Ab0HFKmR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 06:42:17 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:37316 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933047Ab0HFKmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 06:42:12 -0400
+X-ASG-Debug-ID: 1281091331-49cd00030000-xx1T2L
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C5BE701.1020800@fusionio.com>
+Date: Fri, 6 Aug 2010 12:42:09 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281060446-399-1-git-send-email-jy0922.shim@samsung.com>
-X-Cookie: "Pok pok pok, P'kok!"
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-ASG-Orig-Subj: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
+Subject: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
+References: <4C5BE640.2050801@fusionio.com>
+In-Reply-To: <4C5BE640.2050801@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1281091331
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 11:07:26AM +0900, Joonyoung Shim wrote:
-> The enable time needs to enable WM8994 LDO, but WM8994 LDO is enabled
-> without the enable time at the probe function. This can cause the
-> problem to try i2c operation before LDO is enabled.
+On 2010-08-06 12:38, Jens Axboe wrote:
+> Hi Linus,
+> 
+> This is the big round of updates for the IO bits for 2.6.36-rc1.
+> Not sure what happened on the excessive number of merges listed
+> as:
+> 
+>       Merge branch 'for-2.6.36' into for-next
+> 
+> as these should 1) just have been regular fast forwards, and 2)
+> not be listed under 2.6.36 when the pull was in the other
+> direction. I tend to run -git git versions, so perhaps there
+> was a bad version in there. I was planning on reshuffling
+> the branch, but it's 3 months of churn and fixups in there and
+> that would take me a while. Let me know if you absolutely
+> hate it and I'll do it.
 
-> This patch sets to 0 WM8994 LDO enable gpio when probed then if it is
-> requested to enable WM8994 LDO, will be enabled by enable interface of
-> regulator core with enable time.
+Oh, and the 'master' merges into for-2.6.36 were all done to
+resolve conflicts. I had to do two just this week after you
+starting pulling in changes from others, as they were beyond
+git to automatically resolve. So there are no excessive merges,
+just the weird listings for for-2.6.36 -> for-next.
 
-That's not what the patch actually does.  It's not changing the GPIO
-that is configured at all, it is changing the configuration of the flag
-which says if the GPIO has been enabled.  This made it very hard to
-follow what you're trying to do here.  The change itself is OK but
-please supply a better changelog (actually I think I may just rewrite
-the changelog for you and send on a new version to Liam - you'll be CCed
-if I do this).
+-- 
+Jens Axboe
 
-The underlying problem here is that due to the gpiolib API it's not
-possible for us to read the status of the GPIO when we inherit it at
-startup.  If the GPIO was already high when we started then the current
-code is fine, if it was low we don't have the delay.
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
