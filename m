@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760383Ab0HFAgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:36:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:55801 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753548Ab0HFAgV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:36:21 -0400
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-Cc: Yinghai Lu <yinghai@kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Maharana, Parag" <Parag.Maharana@lsi.com>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3DBD67FC4@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-	 <1277046060.5242.18.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
-	 <1277063250.5242.25.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
-	 <1277066924.5242.41.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
-	 <1280598371.2801.11.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3DBD67FC4@cosmail02.lsi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 05 Aug 2010 19:36:13 -0500
-Message-ID: <1281054973.22157.5.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1759283Ab0HFAna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:43:30 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:36035 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755782Ab0HFAn2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 20:43:28 -0400
+Date: Fri, 06 Aug 2010 09:43:34 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: linux-next: manual merge of the input tree with the s5p tree
+In-reply-to: <20100806102419.3e875933.sfr@canb.auug.org.au>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Joonyoung Shim'" <jy0922.shim@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Message-id: <004801cb3500$69824bd0$3c86e370$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acs0/cleAGnVUNgoTViB/9LOZnUgTQAAXshA
+References: <20100722114655.1140fb61.sfr@canb.auug.org.au>
+ <20100806102419.3e875933.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 14:44 -0600, Yang, Bo wrote:
-> I re-submitted all 12 patches.  Can you help to push them to main tree?
+Stephen Rothwell wrote:
+> 
+> Hi all,
+> 
+> On Thu, 22 Jul 2010 11:46:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au>
+> wrote:
+> >
+> > Today's linux-next merge of the input tree got a conflict in
+> > arch/arm/plat-samsung/include/plat/keypad.h between commit
+> > 1e3241300503df18a098dd35098f6975dcf622e2 ("ARM: SAMSUNG: Add keypad
+> > device support") from the s5p tree and commit
+> > 0fffed27f92d9d7a34de9fe017b7082b5958bb93 ("Input: samsung-keypad - Add
+> > samsung keypad driver") from the input tree.
+> >
+> > This just looks like two versions of the same driver (or two drivers
+> > sharing the same header) - please sort this out.  I have fixed up the
+> > header for today (by including both versions where necessary).
+> 
+> I got this again (something obviously changed a little) but the input
+> tree version is now in Linus' tree.  Please fix this up.
 
-That's actually not what I asked for.  I said please send the set of
-individually compilable patches.  I think that's something like 1-8
-rolled up as one patch with one change set and then the remaining 4 sent
-as individual patches.
+Hi Stephen,
 
-So let me put it this way. I'm sorry I managed to lose the tree I was
-trying to build for this.  However, I have two conferences and four
-talks coming up before the end of the merge window, so I have no time to
-do this again.  If you want this patch set in for 2.6.36, please redo it
-as indicated above ASAP.  Otherwise, I'll take another look when I get
-some free time.
+Yeah,
 
-James
+I know that Dmitry's 'Input: samsung-keypad...patch' which includes
+plat/keypad.h has been merged Linus' tree in this merge window.
+And Joonyoung's another patch which is in my tree needs to update it, but my
+tree is don't having it against Linus' 2.6.35.
 
+So happened conflict...how can/should I handle this...
+Should I rebase my tree against Linus' latest?
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
