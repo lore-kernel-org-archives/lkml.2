@@ -1,48 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935182Ab0HFCKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 22:10:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59286 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760584Ab0HFCKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 22:10:01 -0400
+	id S1761012Ab0HFCOE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 22:14:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17641 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760760Ab0HFCN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 22:13:58 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 2/2] DNS: Fixes for the DNS query module
+To: smfrench@gmail.com
+Cc: jlayton@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Date: Fri, 06 Aug 2010 03:13:52 +0100
+Message-ID: <20100806021352.29873.16452.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100806021347.29873.87087.stgit@warthog.procyon.org.uk>
+References: <20100806021347.29873.87087.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <4C5B64EA.2000804@gmail.com>
-References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> 
-	<4C5B64EA.2000804@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 5 Aug 2010 19:08:52 -0700
-Message-ID: <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
-Subject: Re: [GIT] kbuild: kconfig changes
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
-        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
-        sam@ravnborg.org, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 6:27 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
->
-> With what I submitted I did not test make oldconfig, only make menuconfig
-> due to gcc 4.6.0 giving me a slew of warnings.
-> From looking at make oldconfig I do see a more detailed explanation of what
-> each option is(last I remember it was more of a line with y/n)but then again
-> you could be seeing something completly different.
+Fixes for the DNS query module, including:
 
-Just test what I described:  do a "make oldconfig" (do it twice, if
-the first one needs to actually get some input). Do it on 2.6.35, and
-then on the current tree. Look at the _huge_ difference in output.
+ (1) Use 'negative' instead of '-ve' in the documentation.
 
-> Now if this is with what I submitted then I'll have a look at it and see if I can get this fixed.
+ (2) Mark the kdoc comment with '/**' on dns_query().
 
-I just did a quick git bisect. It's introduced by commit 4062f1a4c030
-("kconfig: use long options in conf") by Sam Ravnborg. Apparently that
-thing is totally buggy, and doesn't just change the option names, but
-actively breaks them.
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-                 Linus
+ Documentation/networking/dns_resolver.txt |    6 +++---
+ net/dns_resolver/dns_query.c              |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/networking/dns_resolver.txt b/Documentation/networking/dns_resolver.txt
+index d8e0ce1..aefd1e6 100644
+--- a/Documentation/networking/dns_resolver.txt
++++ b/Documentation/networking/dns_resolver.txt
+@@ -96,9 +96,9 @@ implemented in the module can be called after doing:
+      for the default query type it is just a list of comma-separated IPv4 and
+      IPv6 addresses.  The caller must free the result.
+ 
+-     The length of the result string is returned on success, and a -ve error
+-     code is returned otherwise.  -EKEYREJECTED will be returned if the DNS
+-     lookup failed.
++     The length of the result string is returned on success, and a negative
++     error code is returned otherwise.  -EKEYREJECTED will be returned if the
++     DNS lookup failed.
+ 
+      If _expiry is non-NULL, the expiry time (TTL) of the result will be
+      returned also.
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index b33e1f7..03d5255 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -45,7 +45,7 @@
+ 
+ #include "internal.h"
+ 
+-/*
++/**
+  * dns_query - Query the DNS
+  * @type: Query type (or NULL for straight host->IP lookup)
+  * @name: Name to look up
+
