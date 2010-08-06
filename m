@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935499Ab0HFK70 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 06:59:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38846 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756181Ab0HFK7U (ORCPT
+	id S1760675Ab0HFLPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 07:15:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41543 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267Ab0HFLPk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 06:59:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=aqOmJCBx3jSLmxW8jUBz3J+eqX9aTRzPePHvAlPFVsE7h2/6z5OwT4hUG6SLcxk4c3
-         K3oeaNT2BqNw3RkSaDukm0t14Vq4Odr04UGNmmk7K8Iho41/oDBKQq5sBeoWZaUGcC4l
-         vmXz/x9gxJ0AzePPeHcd3apdCa+0U38ijeLu0=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <209536.68480.qm@web37606.mail.mud.yahoo.com>
-References: <209536.68480.qm@web37606.mail.mud.yahoo.com>
+	Fri, 6 Aug 2010 07:15:40 -0400
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <1281089471.1947.399.camel@laptop>
+References: <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere>
+	 <20100714231117.GA22341@Krystal> <20100714233843.GD14533@nowhere>
+	 <20100715162631.GB30989@Krystal> <1280855904.1923.675.camel@laptop>
+	 <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+	 <1280903273.1923.682.camel@laptop> <20100804140605.GA29371@Krystal>
+	 <1280933410.1923.1267.camel@laptop>  <20100806014231.GA496@Krystal>
+	 <1281089471.1947.399.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 06 Aug 2010 13:59:15 +0300
-Message-ID: <1281092355.5213.6.camel@maxim-laptop>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 06 Aug 2010 13:14:58 +0200
+Message-ID: <1281093298.1947.476.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-06 at 00:59 -0700, Alex Dubov wrote: 
-> > 
-> > Btw, I want to add a callback from driver to card driver to
-> > be able to
-> > reset card in case of error (windows driver does that in
-> > case of any
-> > error)
-> > 
-> > I would use most of the mspro_block_resume for the
-> > implementation for
-> > mspro.
-> > 
-> > Any objections, suggestions?
-> > 
-> 
-> Just toggle a power on it. Power off/power on will do the full reset of
-> the controller and the media. You don't have to reinitialize it, as you
-> are sure that it's the same stick.
+On Fri, 2010-08-06 at 12:11 +0200, Peter Zijlstra wrote:
+> > You need to read the whole trace to find these cookies (even if it is just once
+> > at the beginning if you create an index).
 
-Yea, but after such reboot, the device will be in serial mode. So, I
-will need to send switch TPC to device. My driver doesn't know how to do
-that...., so it would be nice to have callback to the core.
+Even if you want to index all sync points you can quickly skip through
+the file using the sync-distance, after which you'll have, on average,
+only 1/2 avg-event-size to read before you find your next sync point.
 
-Best regards,
-Maxim Levitsky
+So suppose you have a 1M sync-distance, and an effective average event
+size of 128 bytes, then for a 4G file, you can find all sync points by
+only reading ~262144 bytes (not counting for the fact that the pagecache
+will bring in full pages, which would result in something like 16M to be
+read in total or somesuch -- which, again assumes read-ahead isn't going
+to play tricks on you).
 
