@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935341Ab0HFCyO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 22:54:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63892 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935307Ab0HFCyK (ORCPT
+	id S933027Ab0HFDUb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 23:20:31 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:38357 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755100Ab0HFDU2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 22:54:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=enbmqV8LUIVNzfLdeszyDB7vGGubYgnktlRCoFD0L+1yDe6RO0lQG+QaYy4derHea/
-         t3ntjsbhmnx3B4VSvitDWJ6msIR4xdnMB20GwI/fJBYfn0OXOMGM0QBYOmKU/pnWv1wf
-         +b0nI0Fkx5uWzWV3ZjJ/d1k/08Bzbb74/TOYY=
-Message-ID: <4C5B7968.7070303@gmail.com>
-Date: Thu, 05 Aug 2010 19:54:32 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
-        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
-        sam@ravnborg.org, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] kbuild: kconfig changes
-References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> 	<4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
-In-Reply-To: <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 5 Aug 2010 23:20:28 -0400
+Date: Fri, 06 Aug 2010 12:20:26 +0900
+From: Joonyoung Shim <jy0922.shim@samsung.com>
+Subject: Re: linux-next: manual merge of the input tree with the s5p tree
+In-reply-to: <20100806114314.6d15d4fb.sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Message-id: <4C5B7F7A.1000707@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.21 (Windows/20090302)
+References: <20100722114655.1140fb61.sfr@canb.auug.org.au>
+ <20100806102419.3e875933.sfr@canb.auug.org.au>
+ <004801cb3500$69824bd0$3c86e370$%kim@samsung.com>
+ <20100806114314.6d15d4fb.sfr@canb.auug.org.au>
+X-OriginalArrivalTime: 06 Aug 2010 03:20:26.0470 (UTC)
+ FILETIME=[50677060:01CB3516]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 07:08 PM, Linus Torvalds wrote:
-> On Thu, Aug 5, 2010 at 6:27 PM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
+On 8/6/2010 10:43 AM, Stephen Rothwell wrote:
+> Hi,
+> 
+> On Fri, 06 Aug 2010 09:43:34 +0900 Kukjin Kim <kgene.kim@samsung.com> wrote:
+>> I know that Dmitry's 'Input: samsung-keypad...patch' which includes
+>> plat/keypad.h has been merged Linus' tree in this merge window.
+>> And Joonyoung's another patch which is in my tree needs to update it, but my
+>> tree is don't having it against Linus' 2.6.35.
 >>
->> With what I submitted I did not test make oldconfig, only make menuconfig
->> due to gcc 4.6.0 giving me a slew of warnings.
->>  From looking at make oldconfig I do see a more detailed explanation of what
->> each option is(last I remember it was more of a line with y/n)but then again
->> you could be seeing something completly different.
->
-> Just test what I described:  do a "make oldconfig" (do it twice, if
-> the first one needs to actually get some input). Do it on 2.6.35, and
-> then on the current tree. Look at the _huge_ difference in output.
->
+>> So happened conflict...how can/should I handle this...
+>> Should I rebase my tree against Linus' latest?
+> 
+> Either rebase (worst), or just merge Linus' tree (better) into yours or
+> (best) merge what Dmitry merged into Linus' tree.  To do this last, you
+> need to merge commit d01d0756f75e7a5b4b43764ad45b83c4340f11d6 from Linus'
+> tree.  Doing this brings in the minimum amount of extra stuff to your
+> tree, but allows you to sort out the conflict.
+> 
 
-yeah I see what your hitting, just experienced what you posted
+Kukjin,
 
-	make oldconfig
-    scripts/kconfig/conf -o arch/x86/Kconfig
-    #
-    # configuration written to .config
-    #
+If you rebase and need, i can send updated patches. It uses "ARM:
+SAMSUNG: Add helper to clone and set platform data" patch of Ben Dooks.
 
-(just sits there)
-
-seemed to not want to go away.(doing a make menuconfig got
-make oldconfig to wake up of whatever it was in) as for reproducing
-(even though already bisected) seems once make oldconfig starts working 
-properly, hitting the above doesn't happen as easily.
-
-
->> Now if this is with what I submitted then I'll have a look at it and see if I can get this fixed.
->
-> I just did a quick git bisect. It's introduced by commit 4062f1a4c030
-> ("kconfig: use long options in conf") by Sam Ravnborg. Apparently that
-> thing is totally buggy, and doesn't just change the option names, but
-> actively breaks them.
->
->                   Linus
->
-
-cool..
-
-Justin P. Mattock
+Thanks.
