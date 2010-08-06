@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761342Ab0HFN3a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 09:29:30 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:15169 "EHLO
+	id S1761352Ab0HFNcL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 09:32:11 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:15362 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756334Ab0HFN32 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1761333Ab0HFNcG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 09:29:28 -0400
+	Fri, 6 Aug 2010 09:32:06 -0400
 MIME-version: 1.0
 Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Fri, 06 Aug 2010 15:31:00 +0200
+Date: Fri, 06 Aug 2010 15:33:39 +0200
 From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <201008030919.36575.hverkuil@xs4all.nl>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'FUJITA Tomonori'" <fujita.tomonori@lab.ntt.co.jp>,
-        linux-mm@kvack.org, "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Message-id: <op.vg0qhyki7p4s8u@pikus>
+Subject: Re: [PATCHv6 4/7] USB: gadget: composite: Better string override
+ handling
+In-reply-to: <312769.16763.qm@web180307.mail.gq1.yahoo.com>
+To: Greg KH <greg@kroah.com>, USB <linux-usb@vger.kernel.org>,
+        David Brownell <david-b@pacbell.net>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        Vladimir Pankratov <scriptkid@mail.ru>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <op.vg0qmdhd7p4s8u@pikus>
 Organization: Samsung Electronics
 Content-transfer-encoding: 8BIT
 User-Agent: Opera Mail/10.60 (Linux)
-References: <cover.1280151963.git.m.nazarewicz@samsung.com>
- <201008011526.13566.hverkuil@xs4all.nl> <op.vgticdzj7p4s8u@pikus>
- <201008030919.36575.hverkuil@xs4all.nl>
+References: <312769.16763.qm@web180307.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hans,
+On Thu, 05 Aug 2010 22:58:06 +0200, David Brownell <david-b@pacbell.net> wrote:
 
-I've just posted updated patchset.  It changes the way regions are
-reserved somehow so our discussion is not entirely applicable to a
-new version I think.
+> OK, I guess.  This version does not have the
+> hard-wired serial number some previous versions had.
 
-I preserved the original "map" there.  I came to a conclusion that
-your approach is not that different from what I had in mind but I
-noticed that with your syntax it's impossible to specify the order
-of regions to try. For instance that driver should first try region
-"foo" and then region "bar" and not the other way around.
-
-I'm looking forward to hearing your comments on the newest version
-of CMA.
+Great! Thanks!  At least it seems my patch makes sense now. :)
 
 -- 
 Best regards,                                        _     _
