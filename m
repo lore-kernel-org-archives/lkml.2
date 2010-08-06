@@ -1,98 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761246Ab0HFLQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 07:16:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63568 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761148Ab0HFLPv convert rfc822-to-8bit (ORCPT
+	id S1761236Ab0HFLSp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 07:18:45 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41727 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759228Ab0HFLSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 07:15:51 -0400
-Date: Fri, 6 Aug 2010 07:18:10 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeremy Allison <jra@samba.org>
-Cc: Steve French <smfrench@gmail.com>, Neil Brown <neilb@suse.de>,
-        utz lehmann <lkml123@s2y4n2c.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100806071810.5002dc2b@corrin.poochiereds.net>
-In-Reply-To: <AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<1280524978.2452.9.camel@segv.aura.of.mankind>
-	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
-	<20100805235218.GB31233@jeremy-laptop>
-	<20100806133836.49757af9@notabene>
-	<AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Aug 2010 07:18:41 -0400
+Date: Fri, 6 Aug 2010 12:18:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Robert Jarzmik <robert.jarzmik@free.fr>
+Subject: Re: [PATCH] regulator: max1586 - fix a memory leak in
+ max1586_pmic_remove()
+Message-ID: <20100806111839.GF398@rakim.wolfsonmicro.main>
+References: <1281072795.24426.3.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281072795.24426.3.camel@mola>
+X-Cookie: "Pok pok pok, P'kok!"
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Aug 2010 22:55:06 -0500
-Steve French <smfrench@gmail.com> wrote:
+On Fri, Aug 06, 2010 at 01:33:15PM +0800, Axel Lin wrote:
+> In max1586_pmic_probe(), we allocate memory for max1586.
+> In max1586_pmic_remove(), current implementation only free rdev
+> which is a member of struct max1586_data.
+> Thus, there is a small memory leak when we unload the module.
+> 
+> This patch fixes the memory leak by passing max1586 to i2c clientdata,
+> and properly kfree(max1586) in max1586_pmic_remove().
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-> On Thu, Aug 5, 2010 at 10:38 PM, Neil Brown <neilb@suse.de> wrote:
-> > On Thu, 5 Aug 2010 16:52:18 -0700
-> > Jeremy Allison <jra@samba.org> wrote:
-> 
-> >> Don't add it as an EA. It's *not* an EA, it's a timestamp.
-> >
-> > I'm curious.  Why do you particularly care what interface the kernel uses to
-> > provide you with access to this attribute?
-> >
-> > And given that it is an attribute that is not part of 'POSIX' or "UNIX", it
-> > would seem to be an extension - an extended attribute.
-> > As the Linux kernel does virtually nothing with this attribute except provide
-> > access, it seems to be a very different class of thing to other timestamps.
-> > Surely it is simply some storage associated with a file which is capable of
-> > storing a timestamp, which can be set or retrieved by an application, and
-> > which happens to be initialised to the current time when a file is created.
-> >
-> > Yes, to you it is a timestamp.  But to Linux it is a few bytes of
-> > user-settable metadata.  Sounds like an EA to me.
-> >
-> > Or do you really want something like BSD's 'btime' which as I understand it
-> > cannot be set.  Would that be really useful to you?
-> 
-> Obviously the cifs and SMB2 protocols which  Samba server support can
-> ask the server to set the create time of a file (this is handled
-> through xattrs today along with the "dos attribute" flags such as
-> archive/hidden/system), but certainly it is much more common (and
-> important) to read the creation time of an existing file.
-> 
-> 
-> > Is there something important that I am missing?
-> 
-> It is another syscall that Samba server would have to make - and xattr
-> performance is extremely slow on some file systems (although
-> presumably this one would be more likely to be stored in inode and
-> perhaps not as bad on ext4, cifs and a few others such as ntfs).
-> 
-> 
-
-Right. One has to consider that samba has to satisfy READDIRPLUS-like
-calls, and on a large directory all of those extra syscalls are likely
-to impact performance.
-
-In my view, the ideal thing would be to add this field as an EA and
-continue work on implementing xstat(). Adding it as an EA gives
-userland a way to set this value, without needing to add a new utimes()
-variant.
-
-If/when xstat becomes available, samba could use that instead of the EA
-for reading this value.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
