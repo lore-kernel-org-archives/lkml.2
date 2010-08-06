@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935277Ab0HFBrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:47:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47665 "EHLO
+	id S935265Ab0HFBrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:47:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47664 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935247Ab0HFBq6 (ORCPT
+	with ESMTP id S935243Ab0HFBq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 5 Aug 2010 21:46:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 06/10] perf ui: Add search by name/addr to the map__browser
-Date: Thu,  5 Aug 2010 22:46:13 -0300
-Message-Id: <1281059177-18747-7-git-send-email-acme@infradead.org>
+Subject: [PATCH 01/10] perf symbols: Store the symbol binding
+Date: Thu,  5 Aug 2010 22:46:08 -0300
+Message-Id: <1281059177-18747-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1281059177-18747-1-git-send-email-acme@infradead.org>
 References: <1281059177-18747-1-git-send-email-acme@infradead.org>
@@ -28,14 +28,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Only in verbose mode so as not to bloat struct symbol too much.
-
-The key used is '/', just like in vi, less, etc.
-
-More work is needed to allocate space on the symbol in a more clear way.
-
-This experiment shows how to do it for the hist_browser, in the main
-window.
+So that tools that wan't to act only on a subset of (weak, global,
+local) symbols can do so, such as the upcoming uprobes support in 'perf
+probe'.
 
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Mike Galbraith <efault@gmx.de>
@@ -45,191 +40,119 @@ Cc: Stephane Eranian <eranian@google.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-report.c |   18 +++++++-
- tools/perf/util/newt.c      |  109 +++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 117 insertions(+), 10 deletions(-)
+ tools/perf/util/symbol.c |   30 ++++++++++++++++++++++--------
+ tools/perf/util/symbol.h |    1 +
+ 2 files changed, 23 insertions(+), 8 deletions(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 2f4b929..4a7a743 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -478,8 +478,24 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
- 	 * so don't allocate extra space that won't be used in the stdio
- 	 * implementation.
- 	 */
--	if (use_browser > 0)
-+	if (use_browser > 0) {
- 		symbol_conf.priv_size = sizeof(struct sym_priv);
-+		/*
-+ 		 * For searching by name on the "Browse map details".
-+ 		 * providing it only in verbose mode not to bloat too
-+ 		 * much struct symbol.
-+ 		 */
-+		if (verbose) {
-+			/*
-+			 * XXX: Need to provide a less kludgy way to ask for
-+			 * more space per symbol, the u32 is for the index on
-+			 * the ui browser.
-+			 * See symbol__browser_index.
-+			 */
-+			symbol_conf.priv_size += sizeof(u32);
-+			symbol_conf.sort_by_name = true;
-+		}
-+	}
- 
- 	if (symbol__init() < 0)
- 		return -1;
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index f98a240..e2deae0 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -128,6 +128,39 @@ static void ui_helpline__puts(const char *msg)
- 	ui_helpline__push(msg);
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 6f0dd90..b6f5970 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -131,7 +131,8 @@ static void map_groups__fixup_end(struct map_groups *self)
+ 		__map_groups__fixup_end(self, i);
  }
  
-+static int ui_entry__read(const char *title, char *bf, size_t size, int width)
-+{
-+	struct newtExitStruct es;
-+	newtComponent form, entry;
-+	const char *result;
-+	int err = -1;
-+
-+	newtCenteredWindow(width, 1, title);
-+	form = newtForm(NULL, NULL, 0);
-+	if (form == NULL)
-+		return -1;
-+
-+	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
-+	if (entry == NULL)
-+		goto out_free_form;
-+
-+	newtFormAddComponent(form, entry);
-+	newtFormAddHotKey(form, NEWT_KEY_ENTER);
-+	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
-+	newtFormAddHotKey(form, NEWT_KEY_LEFT);
-+	newtFormAddHotKey(form, CTRL('c'));
-+	newtFormRun(form, &es);
-+
-+	if (result != NULL) {
-+		strncpy(bf, result, size);
-+		err = 0;
-+	}
-+out_free_form:
-+	newtPopWindow();
-+	newtFormDestroy(form);
-+	return 0;
-+}
-+
- static char browser__last_msg[1024];
- 
- int browser__show_help(const char *format, va_list ap)
-@@ -670,6 +703,67 @@ static void map_browser__write(struct ui_browser *self, void *nd, int row)
- 	slsmg_write_nstring(sym->name, mb->namelen);
- }
- 
-+/* FIXME uber-kludgy, see comment on cmd_report... */
-+static u32 *symbol__browser_index(struct symbol *self)
-+{
-+	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
-+}
-+
-+static int map_browser__search(struct map_browser *self)
-+{
-+	char target[512];
-+	struct symbol *sym;
-+	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
-+
-+	if (err)
-+		return err;
-+
-+	if (target[0] == '0' && tolower(target[1]) == 'x') {
-+		u64 addr = strtoull(target, NULL, 16);
-+		sym = map__find_symbol(self->map, addr, NULL);
-+	} else
-+		sym = map__find_symbol_by_name(self->map, target, NULL);
-+
-+	if (sym != NULL) {
-+		u32 *idx = symbol__browser_index(sym);
-+			
-+		self->b.first_visible_entry = &sym->rb_node;
-+		self->b.index = self->b.first_visible_entry_idx = *idx;
-+	} else
-+		ui_helpline__fpush("%s not found!", target);
-+
-+	return 0;
-+}
-+
-+static int map_browser__run(struct map_browser *self, struct newtExitStruct *es)
-+{
-+	if (ui_browser__show(&self->b, self->map->dso->long_name) < 0)
-+		return -1;
-+
-+	ui_helpline__fpush("Press <- or ESC to exit, %s / to search",
-+			   verbose ? "" : "restart with -v to use");
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
-+	if (verbose)
-+		newtFormAddHotKey(self->b.form, '/');
-+
-+	while (1) {
-+		ui_browser__run(&self->b, es);
-+
-+		if (es->reason != NEWT_EXIT_HOTKEY)
-+			break;
-+		if (verbose && es->u.key == '/')
-+			map_browser__search(self);
-+		else
-+			break;
-+	}
-+
-+	newtFormDestroy(self->b.form);
-+	newtPopWindow();
-+	ui_helpline__pop();
-+	return 0;
-+}
-+
- static int map__browse(struct map *self)
+-static struct symbol *symbol__new(u64 start, u64 len, const char *name)
++static struct symbol *symbol__new(u64 start, u64 len, u8 binding,
++				  const char *name)
  {
- 	struct map_browser mb = {
-@@ -679,14 +773,12 @@ static int map__browse(struct map *self)
- 			.seek	 = ui_browser__rb_tree_seek,
- 			.write	 = map_browser__write,
- 		},
-+		.map = self,
- 	};
- 	struct newtExitStruct es;
- 	struct rb_node *nd;
- 	char tmp[BITS_PER_LONG / 4];
- 	u64 maxaddr = 0;
--	int ret;
--
--	ui_helpline__push("Press <- or ESC to exit");
+ 	size_t namelen = strlen(name) + 1;
+ 	struct symbol *self = calloc(1, (symbol_conf.priv_size +
+@@ -144,6 +145,7 @@ static struct symbol *symbol__new(u64 start, u64 len, const char *name)
  
- 	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
- 		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
-@@ -695,17 +787,16 @@ static int map__browse(struct map *self)
- 			mb.namelen = pos->namelen;
- 		if (maxaddr < pos->end)
- 			maxaddr = pos->end;
-+		if (verbose) {
-+			u32 *idx = symbol__browser_index(pos);
-+			*idx = mb.b.nr_entries;
-+		}
- 		++mb.b.nr_entries;
- 	}
+ 	self->start   = start;
+ 	self->end     = len ? start + len - 1 : start;
++	self->binding = binding;
+ 	self->namelen = namelen - 1;
  
- 	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
- 	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
--	ui_browser__show(&mb.b, self->dso->long_name);
--	ret = ui_browser__run(&mb.b, &es);
--	newtFormDestroy(mb.b.form);
--	newtPopWindow();
--	ui_helpline__pop();
--	return ret;
-+	return map_browser__run(&mb, &es);
+ 	pr_debug4("%s: %s %#Lx-%#Lx\n", __func__, name, start, self->end);
+@@ -160,8 +162,11 @@ void symbol__delete(struct symbol *self)
+ 
+ static size_t symbol__fprintf(struct symbol *self, FILE *fp)
+ {
+-	return fprintf(fp, " %llx-%llx %s\n",
+-		       self->start, self->end, self->name);
++	return fprintf(fp, " %llx-%llx %c %s\n",
++		       self->start, self->end,
++		       self->binding == STB_GLOBAL ? 'g' :
++		       self->binding == STB_LOCAL  ? 'l' : 'w',
++		       self->name);
  }
  
- /* -------------------------------------------------------------------- */
+ void dso__set_long_name(struct dso *self, char *name)
+@@ -453,6 +458,14 @@ struct process_kallsyms_args {
+ 	struct dso *dso;
+ };
+ 
++static u8 kallsyms2elf_type(char type)
++{
++	if (type == 'W')
++		return STB_WEAK;
++
++	return isupper(type) ? STB_GLOBAL : STB_LOCAL;
++}
++
+ static int map__process_kallsym_symbol(void *arg, const char *name,
+ 				       char type, u64 start)
+ {
+@@ -466,7 +479,7 @@ static int map__process_kallsym_symbol(void *arg, const char *name,
+ 	/*
+ 	 * Will fix up the end later, when we have all symbols sorted.
+ 	 */
+-	sym = symbol__new(start, 0, name);
++	sym = symbol__new(start, 0, kallsyms2elf_type(type), name);
+ 
+ 	if (sym == NULL)
+ 		return -ENOMEM;
+@@ -661,7 +674,7 @@ static int dso__load_perf_map(struct dso *self, struct map *map,
+ 		if (len + 2 >= line_len)
+ 			continue;
+ 
+-		sym = symbol__new(start, size, line + len);
++		sym = symbol__new(start, size, STB_GLOBAL, line + len);
+ 
+ 		if (sym == NULL)
+ 			goto out_delete_line;
+@@ -873,7 +886,7 @@ static int dso__synthesize_plt_symbols(struct  dso *self, struct map *map,
+ 				 "%s@plt", elf_sym__name(&sym, symstrs));
+ 
+ 			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
+-					sympltname);
++					STB_GLOBAL, sympltname);
+ 			if (!f)
+ 				goto out_elf_end;
+ 
+@@ -895,7 +908,7 @@ static int dso__synthesize_plt_symbols(struct  dso *self, struct map *map,
+ 				 "%s@plt", elf_sym__name(&sym, symstrs));
+ 
+ 			f = symbol__new(plt_offset, shdr_plt.sh_entsize,
+-					sympltname);
++					STB_GLOBAL, sympltname);
+ 			if (!f)
+ 				goto out_elf_end;
+ 
+@@ -1146,7 +1159,8 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 		if (demangled != NULL)
+ 			elf_name = demangled;
+ new_symbol:
+-		f = symbol__new(sym.st_value, sym.st_size, elf_name);
++		f = symbol__new(sym.st_value, sym.st_size,
++				GELF_ST_BIND(sym.st_info), elf_name);
+ 		free(demangled);
+ 		if (!f)
+ 			goto out_elf_end;
+diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
+index 906be20..b7a8da4 100644
+--- a/tools/perf/util/symbol.h
++++ b/tools/perf/util/symbol.h
+@@ -53,6 +53,7 @@ struct symbol {
+ 	u64		start;
+ 	u64		end;
+ 	u16		namelen;
++	u8		binding;
+ 	char		name[0];
+ };
+ 
 -- 
 1.6.2.5
 
