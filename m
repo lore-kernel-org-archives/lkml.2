@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933931Ab0HFHSL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:18:11 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:56016 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933221Ab0HFHSH (ORCPT
+	id S933945Ab0HFHT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:19:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8385 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933221Ab0HFHTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:18:07 -0400
-X-AuditID: b753bd60-a8cc1ba000005a63-d8-4c5bb72b16b9
-Message-ID: <4C5BB727.80905@hitachi.com>
-Date: Fri, 06 Aug 2010 16:17:59 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 6 Aug 2010 03:19:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:x-system-of-record;
+	b=j/VbvtlYX6/ya4McDuw8ET0rBuXwIWLk79/oUkUcgJY3t47Nb8AoqfeLcxM+reix2
+	V4956yU6F8MAKMKSNybbg==
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [PATCH 1/2] [BUGFIX] perf probe: Fix to copy the type for raw
- parameters
-References: <4C577AD8.50808@hitachi.com>
-In-Reply-To: <4C577AD8.50808@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+In-Reply-To: <AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
+References: <1280969004-29530-1-git-send-email-mrubin@google.com> 
+	<1280969004-29530-3-git-send-email-mrubin@google.com> <20100805132433.d1d7927b.akpm@linux-foundation.org> 
+	<AANLkTik9AMf1pmsguB843UC9Qq6KxBcWiN_qyeiDPp1O@mail.gmail.com>
+From: Michael Rubin <mrubin@google.com>
+Date: Fri, 6 Aug 2010 00:19:00 -0700
+Message-ID: <AANLkTikFM9J9On85N9k6hKPfUz0w4LxZai6xfsHQz+-D@mail.gmail.com>
+Subject: Re: [PATCH 2/2] writeback: Adding pages_dirtied and 
+	pages_entered_writeback
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, jack@suse.cz, david@fromorbit.com, hch@lst.de,
+        axboe@kernel.dk
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Masami Hiramatsu wrote:
-> Copy type field if it is for raw parameters.
-> Without this fix, perf probe drops the type if user passes it
-> for raw parameters (e.g. %ax:u32 will be converted to %ax).
+On Thu, Aug 5, 2010 at 1:24 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> Wait.  These counters appear in /proc/vmstat.  So why create standalone
+> /proc/sys/vm files as well?
 
-Hi Arnaldo,
+Andrew I was thinking about this today. And I think there is a case
+for keeping the proc files.
+Christoph was the one who pointed out to me that is their proper home
+and I think he's right. Most if not all the tunables for writeback are
+there. When one is trying to find the state of the system's writeback
+activity that's the directory. Only having these variables in
+/proc/vmstat to me feels like a way to make sure that users who would
+need them won't find them unless they are reading source. And these
+are folks who aren't reading source.
 
-Could you pick these patches?
+/proc/vmstat _does_ look like a good place to put the thresholds as it
+already has similar values as the thresholds suck as
+kswapd_low_wmark_hit_quickly.
 
-Thank you,
-
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: linux-kernel@vger.kernel.org
-> ---
-> 
->  tools/perf/util/probe-finder.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-> index 840f1aa..b69d194 100644
-> --- a/tools/perf/util/probe-finder.c
-> +++ b/tools/perf/util/probe-finder.c
-> @@ -706,8 +706,12 @@ static int find_variable(Dwarf_Die *sp_die, struct probe_finder *pf)
->  		pf->tvar->value = strdup(pf->pvar->var);
->  		if (pf->tvar->value == NULL)
->  			return -ENOMEM;
-> -		else
-> -			return 0;
-> +		if (pf->pvar->type) {
-> +			pf->tvar->type = strdup(pf->pvar->type);
-> +			if (pf->tvar->type == NULL)
-> +				return -ENOMEM;
-> +		}
-> +		return 0;
->  	}
-> 
->  	pr_debug("Searching '%s' variable in context.\n",
-> 
-> 
-
+mrubin
