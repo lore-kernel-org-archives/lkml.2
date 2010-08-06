@@ -1,56 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762194Ab0HFXcP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 19:32:15 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:46954 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761200Ab0HFXcN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 19:32:13 -0400
-Date: Sat, 7 Aug 2010 08:32:07 +0900
-From: Simon Horman <horms@verge.net.au>
-To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [patch] MAINTAINERS: kexec-tools has moved
-Message-ID: <20100806233203.GA10040@verge.net.au>
-References: <20100729041641.GA32220@verge.net.au>
+	id S1762191Ab0HFXeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 19:34:37 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:35584 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab0HFXeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 19:34:36 -0400
+Date: Fri, 6 Aug 2010 16:34:31 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org
+Subject: Re: [GIT PULL] notification tree - try 37!
+Message-ID: <20100806233431.GW2927@count0.beaverton.ibm.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100729041641.GA32220@verge.net.au>
+In-Reply-To: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 29, 2010 at 01:16:41PM +0900, Simon Horman wrote:
-> Kexec tools has been moved to http://kernel.org/pub/linux/utils/kernel/kexec/
-> as user-space code shouldn't be in /pub/linux/kernel
+On Fri, Aug 06, 2010 at 11:58:39AM -0400, Eric Paris wrote:
+> Here it is again!  Another notification pull request!  There is still
+> future work to be done on notification, but nothing that I believe
+> others would call blocking or functional.  The work I plan to do
+> includes:
 > 
-> Signed-off-by: Simon Horman <horms@verge.net.au>
+> 1) Al has discussed the addition of a file_clone() call in the VFS which
+> would eliminate my use of __dentry_open() and would allow the removal of
+> the rather hideous FMODE_/O_NONOTIFY.
 
-Eric, ping.
+I did a quick search and can't find a mailing list post on this. Was
+it a private discussion or is there something I can read about what
+file_clone() will do?
 
-What is your preferred path for this change to get merged?
-
-> 
-> Index: linux-2.6/MAINTAINERS
-> ===================================================================
-> --- linux-2.6.orig/MAINTAINERS	2010-07-29 13:10:04.000000000 +0900
-> +++ linux-2.6/MAINTAINERS	2010-07-29 13:11:40.000000000 +0900
-> @@ -3334,7 +3334,7 @@ F:	drivers/s390/kvm/
->  
->  KEXEC
->  M:	Eric Biederman <ebiederm@xmission.com>
-> -W:	http://ftp.kernel.org/pub/linux/kernel/people/horms/kexec-tools/
-> +W:	http://kernel.org/pub/linux/utils/kernel/kexec/
->  L:	kexec@lists.infradead.org
->  S:	Maintained
->  F:	include/linux/kexec.h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Cheers,
+	-Matt Helsley
