@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761537Ab0HFPfu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:35:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47231 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758442Ab0HFPfp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:35:45 -0400
-Subject: [PATCH] usb: add device IDs for igotu to navman
-From: Ross Burton <ross@linux.intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@suse.de
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-63p1DNYvqfljc9sk9i/T"
-Organization: Intel
-Date: Fri, 06 Aug 2010 16:36:39 +0100
-Message-ID: <1281108999.3781.50.camel@flashheart.burtonini.com>
+	id S1761527Ab0HFPfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:35:39 -0400
+Received: from mail.perches.com ([173.55.12.10]:2306 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761450Ab0HFPff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 11:35:35 -0400
+Subject: Re: [PATCH 05/10] perf hists: Fixup addr snprintf width on 32 bit
+ arches
+From: Joe Perches <joe@perches.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <20100806142945.GC17509@ghostprotocols.net>
+References: <1281059177-18747-1-git-send-email-acme@infradead.org>
+	 <1281059177-18747-6-git-send-email-acme@infradead.org>
+	 <1281059887.19943.23.camel@Joe-Laptop.home>
+	 <20100806142945.GC17509@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Aug 2010 08:35:32 -0700
+Message-ID: <1281108932.17033.27.camel@Joe-Laptop.home>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-08-06 at 11:29 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Aug 05, 2010 at 06:58:07PM -0700, Joe Perches escreveu:
+> > On Thu, 2010-08-05 at 22:46 -0300, Arnaldo Carvalho de Melo wrote:
+> > > From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> > > By using BITS_PER_LONG/4 as the width specifier.
+> > []
+> > > diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+> > > index 1c61a4f..b62a553 100644
+> > > --- a/tools/perf/util/sort.c
+> > > +++ b/tools/perf/util/sort.c
+> > []
+> > > -		ret += repsep_snprintf(bf, size, "%#018llx %c ", self->ip, o);
+> > > +		ret += repsep_snprintf(bf, size, "%*Lx %c ",
+> > > +				       BITS_PER_LONG / 4, self->ip, o);
+> > []
+> > > -		ret += repsep_snprintf(bf + ret, size - ret, "%#016llx", self->ip);
+> > > +		ret += repsep_snprintf(bf + ret, size - ret, "%*Lx",
+> > > +				       BITS_PER_LONG / 4, self->ip);
+> > 
+> > This drops leading 0's.
+> 
+> Is this a problem? This removes clutter from the output, right?
 
---=-63p1DNYvqfljc9sk9i/T
-Content-Type: multipart/mixed; boundary="=-dZ/PU2opf1K8HpLFLQZb"
+Dunno, you made an output that looked like a pointer address,
 
+64 bit:
 
---=-dZ/PU2opf1K8HpLFLQZb
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+"0x0123456789abcdef" now is " 123456789abcdef"
 
-Hi Greg,
+32 bit:
 
-I recently bought a i-gotU USB GPS, and whilst hunting around for linux
-support discovered this post by you back in 2009:
+"0x0000000001234567" now is " 1234567"
 
-http://kerneltrap.org/mailarchive/linux-usb/2009/3/12/5148644
+snprintf(loc, size, "%#0*lx", BITS_PER_LONG / 4 + 2, (long))
+might be better.
 
->Try the navman driver instead.  You can either add the device id to the
-> driver and rebuild it, or do this before you plug the device in:
-> 	modprobe navman
-> 	echo -n "0x0df7 0x0900" > /sys/bus/usb-serial/drivers/navman/new_id
->=20
-> and then plug your device in and see if that works.
-=20
-I can confirm that the navman driver works with the right device IDs on
-my i-gotU GT-600, which has the same device IDs.  Attached is a patch
-adding the IDs.
-
-Ross
---=20
-Intel Open Source Technology Centre
-http://oss.intel.com/
-
---=-dZ/PU2opf1K8HpLFLQZb
-Content-Disposition: attachment; filename="0001-usb-add-device-IDs-for-igotu-to-navman.patch"
-Content-Type: text/x-patch; name="0001-usb-add-device-IDs-for-igotu-to-navman.patch";
-	charset="UTF-8"
-Content-Transfer-Encoding: base64
-
-RnJvbSBiYWQ4NTJhOTc2ODNmMjJmNjY3N2YzMTJiNzNhZTdhZTk3NDQyMTJiIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQ0KRnJvbTogUm9zcyBCdXJ0b24gPHJvc3NAbGludXguaW50ZWwuY29tPg0K
-RGF0ZTogRnJpLCA2IEF1ZyAyMDEwIDE2OjMxOjQ5ICswMTAwDQpTdWJqZWN0OiBbUEFUQ0hdIHVz
-YjogYWRkIGRldmljZSBJRHMgZm9yIGlnb3R1IHRvIG5hdm1hbg0KDQotLS0NCiBkcml2ZXJzL3Vz
-Yi9zZXJpYWwvbmF2bWFuLmMgfCAgICAxICsNCiAxIGZpbGVzIGNoYW5nZWQsIDEgaW5zZXJ0aW9u
-cygrKSwgMCBkZWxldGlvbnMoLSkNCg0KZGlmZiAtLWdpdCBhL2RyaXZlcnMvdXNiL3NlcmlhbC9u
-YXZtYW4uYyBiL2RyaXZlcnMvdXNiL3NlcmlhbC9uYXZtYW4uYw0KaW5kZXggYTZiMjA3Yy4uYzA0
-M2FhMSAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvdXNiL3NlcmlhbC9uYXZtYW4uYw0KKysrIGIvZHJp
-dmVycy91c2Ivc2VyaWFsL25hdm1hbi5jDQpAQCAtMjUsNiArMjUsNyBAQCBzdGF0aWMgaW50IGRl
-YnVnOw0KIA0KIHN0YXRpYyBjb25zdCBzdHJ1Y3QgdXNiX2RldmljZV9pZCBpZF90YWJsZVtdID0g
-ew0KIAl7IFVTQl9ERVZJQ0UoMHgwYTk5LCAweDAwMDEpIH0sCS8qIFRhbG9uIFRlY2hub2xvZ3kg
-ZGV2aWNlICovDQorICAgICAgICB7IFVTQl9ERVZJQ0UoMHgwZGY3LCAweDA5MDApIH0sIC8qIE1v
-YmlsZSBBY3Rpb24gaS1nb3RVICovDQogCXsgfSwNCiB9Ow0KIE1PRFVMRV9ERVZJQ0VfVEFCTEUo
-dXNiLCBpZF90YWJsZSk7DQotLSANCjEuNy4xDQoNCg==
+snprintf(loc, size, "%p", (void)long)
+might be best.
 
 
---=-dZ/PU2opf1K8HpLFLQZb--
 
---=-63p1DNYvqfljc9sk9i/T
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iD8DBQBMXCwFLQnkR9C0M98RAjuPAJ9CYUcmkcb5OX2ThdAWdfcVNosyRQCfe577
-IYDOcHtdk7lIuh5MpoyyD/U=
-=P+cS
------END PGP SIGNATURE-----
-
---=-63p1DNYvqfljc9sk9i/T--
