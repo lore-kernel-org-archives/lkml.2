@@ -1,185 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756998Ab0HFEhy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 00:37:54 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4548 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917Ab0HFEhv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 00:37:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=k3eH0lNZnVWcT2VkJDz7svOv9D1Tk90QOeYmFN68vrnlo41s1Nq7VWX91Ms3pFIAy
-	zWwJj2HMsrK4SMo0Z3oEg==
+	id S1758149Ab0HFElF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 00:41:05 -0400
+Received: from tuxonice.net ([74.207.252.127]:43479 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750920Ab0HFElD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 00:41:03 -0400
+X-Bogosity: Ham, spamicity=0.001491
+Message-ID: <4C5B925A.5000409@tuxonice.net>
+Date: Fri, 06 Aug 2010 14:40:58 +1000
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <20100806131053.411dce6d.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100805184434.3a29c0f9.kamezawa.hiroyu@jp.fujitsu.com> 
-	<20100805185713.4d09339e.kamezawa.hiroyu@jp.fujitsu.com> <xr93zkx0z8e5.fsf@ninji.mtv.corp.google.com> 
-	<20100806131053.411dce6d.kamezawa.hiroyu@jp.fujitsu.com>
-From: Greg Thelen <gthelen@google.com>
-Date: Thu, 5 Aug 2010 21:37:29 -0700
-Message-ID: <AANLkTikyGEE+z4yMZp8jEqEXd1V1aEeKBhyfU=baeq7=@mail.gmail.com>
-Subject: Re: [PATCH 1/4 -mm][memcg] quick ID lookup in memcg
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-mm@kvack.org,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        vgoyal@redhat.com, m-ikeda@ds.jp.nec.com,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Hugh Dickins <hughd@google.com>
+CC: Mark Lord <kernel@teksavvy.com>, LKML <linux-kernel@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>
+Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
+ 	used!
+References: <4C58C528.4000606@tuxonice.net>	<4C5960B0.7020003@teksavvy.com>	<4C59DA16.4020500@tuxonice.net>	<AANLkTik_PH-7T7OFtzaCtPbAHE6pqnYMUsjP25KtsRnR@mail.gmail.com>	<4C5A59FC.1030304@tuxonice.net> <AANLkTi=NMHkKduZzsLiiYt3=w8++8epb5aGrqv7V3-vB@mail.gmail.com>
+In-Reply-To: <AANLkTi=NMHkKduZzsLiiYt3=w8++8epb5aGrqv7V3-vB@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 9:10 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Thu, 05 Aug 2010 21:12:50 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
->>
->> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> >
->> > Now, memory cgroup has an ID per cgroup and make use of it at
->> >  - hierarchy walk,
->> >  - swap recording.
->> >
->> > This patch is for making more use of it. The final purpose is
->> > to replace page_cgroup->mem_cgroup's pointer to an unsigned short.
->> >
->> > This patch caches a pointer of memcg in an array. By this, we
->> > don't have to call css_lookup() which requires radix-hash walk.
->> > This saves some amount of memory footprint at lookup memcg via id.
->> >
->> > Changelog: 20100804
->> >  - fixed description in init/Kconfig
->> >
->> > Changelog: 20100730
->> >  - fixed rcu_read_unlock() placement.
->> >
->> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> > ---
->> >  init/Kconfig    |   10 ++++++++++
->> >  mm/memcontrol.c |   48 ++++++++++++++++++++++++++++++++++--------------
->> >  2 files changed, 44 insertions(+), 14 deletions(-)
->> >
->> > Index: mmotm-0727/mm/memcontrol.c
->> > ===================================================================
->> > --- mmotm-0727.orig/mm/memcontrol.c
->> > +++ mmotm-0727/mm/memcontrol.c
->> > @@ -292,6 +292,30 @@ static bool move_file(void)
->> >                                     &mc.to->move_charge_at_immigrate);
->> >  }
->> >
->> > +/* 0 is unused */
->> > +static atomic_t mem_cgroup_num;
->> > +#define NR_MEMCG_GROUPS (CONFIG_MEM_CGROUP_MAX_GROUPS + 1)
->> > +static struct mem_cgroup *mem_cgroups[NR_MEMCG_GROUPS] __read_mostly;
->> > +
->> > +static struct mem_cgroup *id_to_memcg(unsigned short id)
->> > +{
->> > +   /*
->> > +    * This array is set to NULL when mem_cgroup is freed.
->> > +    * IOW, there are no more references && rcu_synchronized().
->> > +    * This lookup-caching is safe.
->> > +    */
->> > +   if (unlikely(!mem_cgroups[id])) {
->> > +           struct cgroup_subsys_state *css;
->> > +
->> > +           rcu_read_lock();
->> > +           css = css_lookup(&mem_cgroup_subsys, id);
->> > +           rcu_read_unlock();
->> > +           if (!css)
->> > +                   return NULL;
->> > +           mem_cgroups[id] = container_of(css, struct mem_cgroup, css);
->> > +   }
->> > +   return mem_cgroups[id];
->> > +}
->>
->> I am worried that id may be larger than CONFIG_MEM_CGROUP_MAX_GROUPS and
->> cause an illegal array index.  I see that
->> mem_cgroup_uncharge_swapcache() uses css_id() to compute 'id'.
->> mem_cgroup_num ensures that there are never more than
->> CONFIG_MEM_CGROUP_MAX_GROUPS memcg active.  But do we have guarantee
->> that the that all of the css_id of each active memcg are less than
->> NR_MEMCG_GROUPS?
->>
-> Yes. kernel/cgroup.c's ID assign routine use the smallest number, always.
->
->
->
->> >  /*
->> >   * Maximum loops in mem_cgroup_hierarchical_reclaim(), used for soft
->> >   * limit reclaim to prevent infinite loops, if they ever occur.
->> > @@ -1824,18 +1848,7 @@ static void mem_cgroup_cancel_charge(str
->> >   * it's concern. (dropping refcnt from swap can be called against removed
->> >   * memcg.)
->> >   */
->> > -static struct mem_cgroup *mem_cgroup_lookup(unsigned short id)
->> > -{
->> > -   struct cgroup_subsys_state *css;
->> >
->> > -   /* ID 0 is unused ID */
->> > -   if (!id)
->> > -           return NULL;
->> > -   css = css_lookup(&mem_cgroup_subsys, id);
->> > -   if (!css)
->> > -           return NULL;
->> > -   return container_of(css, struct mem_cgroup, css);
->> > -}
->> >
->> >  struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
->> >  {
->> > @@ -1856,7 +1869,7 @@ struct mem_cgroup *try_get_mem_cgroup_fr
->> >             ent.val = page_private(page);
->> >             id = lookup_swap_cgroup(ent);
->> >             rcu_read_lock();
->> > -           mem = mem_cgroup_lookup(id);
->> > +           mem = id_to_memcg(id);
->> >             if (mem && !css_tryget(&mem->css))
->> >                     mem = NULL;
->> >             rcu_read_unlock();
->> > @@ -2208,7 +2221,7 @@ __mem_cgroup_commit_charge_swapin(struct
->> >
->> >             id = swap_cgroup_record(ent, 0);
->> >             rcu_read_lock();
->> > -           memcg = mem_cgroup_lookup(id);
->> > +           memcg = id_to_memcg(id);
->> >             if (memcg) {
->> >                     /*
->> >                      * This recorded memcg can be obsolete one. So, avoid
->> > @@ -2472,7 +2485,7 @@ void mem_cgroup_uncharge_swap(swp_entry_
->> >
->> >     id = swap_cgroup_record(ent, 0);
->> >     rcu_read_lock();
->> > -   memcg = mem_cgroup_lookup(id);
->> > +   memcg = id_to_memcg(id);
->> >     if (memcg) {
->> >             /*
->> >              * We uncharge this because swap is freed.
->> > @@ -3988,6 +4001,9 @@ static struct mem_cgroup *mem_cgroup_all
->> >     struct mem_cgroup *mem;
->> >     int size = sizeof(struct mem_cgroup);
->> >
->> > +   if (atomic_read(&mem_cgroup_num) == NR_MEMCG_GROUPS)
->> > +           return NULL;
->> > +
->>
->> I think that multiple tasks to be simultaneously running
->> mem_cgroup_create().  Therefore more than NR_MEMCG_GROUPS memcg may be
->> created.
->>
->
-> No. cgroup_mutex() is held.
->
-> Thanks,
-> -Kame
->
->
+Hi.
 
-I see that now.  Thank you clarification.  I am doing some testing on
-the patches now.
+On 06/08/10 11:15, Hugh Dickins wrote:
+> On Wed, Aug 4, 2010 at 11:28 PM, Nigel Cunningham<nigel@tuxonice.net>  wrote:
+>> On 05/08/10 13:58, Hugh Dickins wrote:
+>>> I agree it would make more sense to discard swap when freeing rather
+>>> than when allocating, I wish we could.  But at the freeing point we're
+>>> often holding a page_table spinlock at an outer level, and it's just
+>>> one page we're given to free.  Freeing is an operation you want to be
+>>> comfortable doing when you're short of resources, whereas discard is a
+>>> kind of I/O operation which needs resources.
+
+The more I think about this, the more it seems to me that doing the 
+discard at allocation time is just wrong. How about a strategy in which 
+you do the discard immediately if resources permit, or flag it as in 
+need of doing (at a future swap free of that page or swap off time) if 
+things are too pressured at the moment? I haven't put thought into what 
+data structures could be used for that - just want to ask for now if 
+you'd be happy with the idea of looking into a strategy like that.
+
+>>> It happens that in the allocation path, there was already a place at
+>>> which we scanned for a cluster of 1MB free (I'm thinking of 4kB pages
+>>> when I say 1MB), so that was the neatest point at which to site the
+>>> discard - though even there we have to be careful about racing
+>>> allocations.
+>>
+>> Makes sense when you put it like that :)
+>>
+>> I know it's a bit messier, but would it be possible for us to modify the
+>> behaviour depending on the reason for the allocation? (No page_table
+>> spinlock holding when we're hibernating).
+>
+> But if we moved it to the swap free, it would occur in the swap free
+> (if any) _prior_ to hibernating, when testing for hibernation would
+> just say "no".
+
+I see what you mean. I'm not so worried by that because if we're having 
+to free swap in order to hibernate, things are going to be slow anyway 
+and discards aren't going to stand out nearly so much.
+
+I'm much more concerned by the fact that we're currently doing discards 
+for swap that wasn't even being used. If I reboot, swapon and then 
+hibernate without having touched swap so far, I still get the 'hit' on 
+the whole 4GB. I don't think we should be storing on disk a "this hasn't 
+been used since last discarded" flag, so I'm looking for other solutions.
+
+>>> I did once try to go back and get it to work when freeing instead of
+>>> allocating, gathering the swap slots up then freeing when convenient.
+>>> It was messy, didn't work very well, and didn't show an improvement in
+>>> performance (on what we were testing at the time).
+>
+> When I tried gathering together the frees, there were just too many
+> short extents to make the discards worth doing that  way.
+
+Okay.
+
+>> For one or two at a time, I can see that would be the case. If it is
+>> possible to do the discard of pages used for hibernation after we're
+>> finished reading the image, that would be good. Even better would be to only
+>> do the discard for pages that were actually used and just do a simple free
+>> for ones that were only allocated.
+>
+> There are optimizations which could be done e.g. we discard the whole
+> of swap at swapon time, then re-discard each 1MB as we begin to
+> allocate from it.  Clearly that has a certain stupidity to it!  But
+> the initial discard of the whole of swap should be efficient and worth
+> doing.  We could keep track of which swap pages have already been
+> discarded since last used, but that would take up another... it's not
+> immediately clear to me whether it's another value or another bit of
+> the swap count.
+>
+> We could provide an interface for hibernation, to do a minimal number
+> of maximal range discards to suit hibernation (but we need to be very
+> careful about ongoing allocation, as in another thread).
+>
+> But are these things worth doing?  I think not.  Discard is supposed
+> to be helping not hindering: if the device only supports discard in a
+> way that's so inefficient, we'd do better to blacklist it as not
+> supporting discard at all.  My suspicion is that your SSD is of that
+> kind: that it used not to be recognized as supporting discard, but now
+> in 2.6.35 it is so recognized.  However, that's just a suspicion: let
+> me not slander your SSD when it may be my code or someone else's to
+> blame: needs testing.
+
+I've done the bisect now - spent the time today instead of on the place, 
+and it took me to fbbf055692aeb25c54c49d9ca84532de836fbba0. This is 
+Christoph's Hellwig's patch "block: fix DISCARD_BARRIER requests".
+
+Could the problem be that we're using DISCARD_FL_BARRIER too much? (I'm 
+still looking at the code here, so am writing without having thought 
+everything through _really_ carefully.
+
+>> Of course I'm talking in ideals without having an intimate knowledge of the
+>> swap allocation code or exactly how ugly the above would make it :)
+>>
+>>> I've not been able to test swap, with SSDs, for several months: that's
+>>> a dreadful regression you've found, thanks a lot for reporting it:
+>>> I'll be very interested to hear where you locate the cause.  If it
+>>> needs changes to the way swap does discard, so be it.
+>>
+>> I'm traveling to the US on Saturday and have apparently been given one of
+>> those nice seats with power, so I'll try and get the bisection done then.
+>
+> That would be helpful, but displays greater dedication than I'd offer myself!
+
+Done without an airplane now. I don't have to be credited with too much 
+dedication! :)
+
+Nigel
