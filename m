@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934901Ab0HFFY5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:24:57 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49946 "EHLO
+	id S935398Ab0HFFZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:25:05 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49947 "EHLO
 	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933733Ab0HFFPe (ORCPT
+	with ESMTP id S933728Ab0HFFPd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:15:34 -0400
+	Fri, 6 Aug 2010 01:15:33 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 13/43] memblock: Remove obsolete accessors
-Date: Fri,  6 Aug 2010 15:14:54 +1000
-Message-Id: <1281071724-28740-14-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 06/43] memblock/arm: Use memblock_region_is_memory() for omap fb
+Date: Fri,  6 Aug 2010 15:14:47 +1000
+Message-Id: <1281071724-28740-7-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -21,45 +21,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Instead of the deprecated memblock_find()
+
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |   23 -----------------------
- 1 files changed, 0 insertions(+), 23 deletions(-)
+ arch/arm/plat-omap/fb.c    |    6 +-----
+ drivers/video/omap2/vram.c |    8 ++------
+ 2 files changed, 3 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index c914112..7d70fdd 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -64,29 +64,6 @@ extern int memblock_find(struct memblock_region *res);
+diff --git a/arch/arm/plat-omap/fb.c b/arch/arm/plat-omap/fb.c
+index 05bf228..441af2b 100644
+--- a/arch/arm/plat-omap/fb.c
++++ b/arch/arm/plat-omap/fb.c
+@@ -173,11 +173,7 @@ static int check_fbmem_region(int region_idx, struct omapfb_mem_region *rg,
  
- extern void memblock_dump_all(void);
- 
--/* Obsolete accessors */
--static inline u64
--memblock_size_bytes(struct memblock_type *type, unsigned long region_nr)
--{
--	return type->regions[region_nr].size;
--}
--static inline u64
--memblock_size_pages(struct memblock_type *type, unsigned long region_nr)
--{
--	return memblock_size_bytes(type, region_nr) >> PAGE_SHIFT;
--}
--static inline u64
--memblock_start_pfn(struct memblock_type *type, unsigned long region_nr)
--{
--	return type->regions[region_nr].base >> PAGE_SHIFT;
--}
--static inline u64
--memblock_end_pfn(struct memblock_type *type, unsigned long region_nr)
--{
--	return memblock_start_pfn(type, region_nr) +
--	       memblock_size_pages(type, region_nr);
--}
+ static int valid_sdram(unsigned long addr, unsigned long size)
+ {
+-	struct memblock_region res;
 -
- /*
-  * pfn conversion functions
-  *
+-	res.base = addr;
+-	res.size = size;
+-	return !memblock_find(&res) && res.base == addr && res.size == size;
++	return memblock_region_is_memory(addr, size);
+ }
+ 
+ static int reserve_sdram(unsigned long addr, unsigned long size)
+diff --git a/drivers/video/omap2/vram.c b/drivers/video/omap2/vram.c
+index 0f2532b..34514a8 100644
+--- a/drivers/video/omap2/vram.c
++++ b/drivers/video/omap2/vram.c
+@@ -554,12 +554,8 @@ void __init omap_vram_reserve_sdram_memblock(void)
+ 	size = PAGE_ALIGN(size);
+ 
+ 	if (paddr) {
+-		struct memblock_region res;
+-
+-		res.base = paddr;
+-		res.size = size;
+-		if ((paddr & ~PAGE_MASK) || memblock_find(&res) ||
+-		    res.base != paddr || res.size != size) {
++		if ((paddr & ~PAGE_MASK) ||
++		    !memblock_region_is_memory(paddr, size)) {
+ 			pr_err("Illegal SDRAM region for VRAM\n");
+ 			return;
+ 		}
 -- 
 1.7.0.4
 
