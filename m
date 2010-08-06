@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935451Ab0HFIBc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 04:01:32 -0400
-Received: from web37604.mail.mud.yahoo.com ([209.191.87.87]:25255 "HELO
-	web37604.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933008Ab0HFIB2 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 04:01:28 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=DiPaqq+PRPXQjVGb0ELbt1gRj3IllS7OXTEaMKlx3ZtKqBP49wz3j9OC25tv0UuFCTI5oMyOfdV2WLkrP+P6cytcByvyKIV0WfD0iyl+I6zObBTxHG9d9cbcjLTURSpC3n+fOgiddoE6alwUpbqvtXRqXQe2SQS2CVLNzxaB3GU=;
-Message-ID: <939673.34027.qm@web37604.mail.mud.yahoo.com>
-X-YMail-OSG: u1lnrhEVM1kcgf9GJL1z13Fa1fiXfg2uVaPG0Vt49qjWTnx
- 6t9J6troDpab_H8fLfEiVMLaQLzecQrktkMs.nQOSa_48Uw72TfDCA.e24a_
- OsVXoeVlLhLUtYvf.0CqpLUb8J1u7I6p_WFq3gUDrIxGVxvmvQpuuAh9PBVZ
- n0l5kpWOr7Qaa.SD3iRGr3WQpD4TmNL8e0Q7NPNB30oCT.0rB9X2a7zHVh2w
- kqea3UQgr_ebY3RoZIMijCnC2T7hUeWx4CnuEhpS40Nk_JGkAUWLmIWml.z0
- BYH1On7Q_cwtioHzp64SEzVVO9q63kOK7754r7_w-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Fri, 6 Aug 2010 01:01:25 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281011437.9324.14.camel@maxim-laptop>
+	id S935448Ab0HFIFQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 04:05:16 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:45106 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933696Ab0HFIFK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 04:05:10 -0400
+Message-ID: <4C5BC232.1030304@free.fr>
+Date: Fri, 06 Aug 2010 10:05:06 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Kay Sievers <kay.sievers@vrfy.org>
+CC: Chris Friesen <cfriesen@nortel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: mount notification question
+References: <4C5734A2.7070400@free.fr> <4C59B444.7080609@nortel.com> 	<4C5B6065.7000700@free.fr> <AANLkTi=h633N2toWEHqwubVf8Hd21==+4Or7h=35d+Kr@mail.gmail.com>
+In-Reply-To: <AANLkTi=h633N2toWEHqwubVf8Hd21==+4Or7h=35d+Kr@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > 
-> > > 
-> > > Small question, can I use Pro-HG stick in my
-> reader that is
-> > > designed for
-> > > Standard/PRO only? Does your subsystem support
-> it?
-> > 
-> > It should work. It works for me on TI, which has no 8b
-> mode either.
-> In that case, is there an upper limit on sector size?
-> 
+On 08/06/2010 09:44 AM, Kay Sievers wrote:
+> On Fri, Aug 6, 2010 at 03:07, Daniel Lezcano<daniel.lezcano@free.fr>  wrote:
+>    
+>> On 08/04/2010 08:41 PM, Chris Friesen wrote:
+>>      
+>>> On 08/02/2010 03:12 PM, Daniel Lezcano wrote:
+>>>        
+>>>> is there a way to be notified when a mount occurs on the system ?
+>>>>          
+>>> Have you looked on google?  The link is a bit misleading but they do
+>>> give a way to do it (not using inotify).
+>>>
+>>> http://stackoverflow.com/questions/1113176/how-could-i-detect-when-a-directory-is-mounted-with-inotify
+>>>        
+>> Thanks a lot for the pointer. I am not sure this solution will work, because
+>> it is inadequate for watching a specific location in a container context
+>> separated by the mount and the network namespaces. We have multiple mount
+>> points at the same place (eg. the mount point inheritance, the container
+>> configuration and the init scripts may mount /dev or /var/run several time)
+>> and the network namespace separation will make impossible to watch udev
+>> event via a netlink socket. I didn't look at the inotify implementation but
+>> IMHO, it should be worth to add IN_MOUNT and IN_UNMOUNT events for inotify
+>> no ?
+>>      
+> These events wouldn't work, and they are long removed from the kernel
+> and don't exist.
+>
+> You need to poll() /proc/mounts, and any changes in it will wake you
+> up with POLL_ERR. /proc/mounts should be namespace aware.
+>    
 
-Good code has no artificially induced limits. Less than machine page.
+Ah, great ! I will look for this solution (I suppose I will probably 
+have to diff /proc/mounts but anyway ...)
 
+Thanks Kay and Chris for your help.
 
+   -- Daniel
 
-      
