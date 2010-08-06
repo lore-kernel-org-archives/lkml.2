@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933892Ab0HFFQA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:16:00 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49969 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933810Ab0HFFPi (ORCPT
+	id S933872Ab0HFFP6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:15:58 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:59793 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933815Ab0HFFPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:38 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 27/43] memblock: Move memblock_init() to the bottom of the file
-Date: Fri,  6 Aug 2010 15:15:08 +1000
-Message-Id: <1281071724-28740-28-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 40/43] memblock: Make MEMBLOCK_ERROR be 0
+Date: Fri,  6 Aug 2010 15:15:21 +1000
+Message-Id: <1281071724-28740-41-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -21,82 +21,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's a real PITA to have to search for it in the middle
+And ensure we don't hand out 0 as a valid allocation. We put the
+low limit at PAGE_SIZE arbitrarily.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |   54 +++++++++++++++++++++++++++---------------------------
- 1 files changed, 27 insertions(+), 27 deletions(-)
+ include/linux/memblock.h |    2 +-
+ mm/memblock.c            |    6 ++++++
+ 2 files changed, 7 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 1a9c29c..dfa6449 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -19,7 +19,7 @@
+ #include <asm/memblock.h>
+ 
+ #define INIT_MEMBLOCK_REGIONS	128
+-#define MEMBLOCK_ERROR		(~(phys_addr_t)0)
++#define MEMBLOCK_ERROR		0
+ 
+ struct memblock_region {
+ 	phys_addr_t base;
 diff --git a/mm/memblock.c b/mm/memblock.c
-index fc7f97b..ae856d4 100644
+index 85cfa1d..cb520df 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -107,33 +107,6 @@ static void memblock_coalesce_regions(struct memblock_type *type,
- 	memblock_remove_region(type, r2);
- }
+@@ -105,6 +105,12 @@ static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t en
+ 	phys_addr_t base, res_base;
+ 	long j;
  
--void __init memblock_init(void)
--{
--	/* Hookup the initial arrays */
--	memblock.memory.regions	= memblock_memory_init_regions;
--	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
--	memblock.reserved.regions	= memblock_reserved_init_regions;
--	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
--
--	/* Write a marker in the unused last array entry */
--	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
--	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
--
--	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
--	 * This simplifies the memblock_add() code below...
--	 */
--	memblock.memory.regions[0].base = 0;
--	memblock.memory.regions[0].size = 0;
--	memblock.memory.cnt = 1;
--
--	/* Ditto. */
--	memblock.reserved.regions[0].base = 0;
--	memblock.reserved.regions[0].size = 0;
--	memblock.reserved.cnt = 1;
--
--	memblock.current_limit = MEMBLOCK_ALLOC_ANYWHERE;
--}
--
- void __init memblock_analyze(void)
- {
- 	int i;
-@@ -543,3 +516,30 @@ void __init memblock_set_current_limit(phys_addr_t limit)
- 	memblock.current_limit = limit;
- }
- 
-+void __init memblock_init(void)
-+{
-+	/* Hookup the initial arrays */
-+	memblock.memory.regions	= memblock_memory_init_regions;
-+	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
-+	memblock.reserved.regions	= memblock_reserved_init_regions;
-+	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
-+
-+	/* Write a marker in the unused last array entry */
-+	memblock.memory.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
-+	memblock.reserved.regions[INIT_MEMBLOCK_REGIONS].base = (phys_addr_t)RED_INACTIVE;
-+
-+	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
-+	 * This simplifies the memblock_add() code below...
++	/* Prevent allocations returning 0 as it's also used to
++	 * indicate an allocation failure
 +	 */
-+	memblock.memory.regions[0].base = 0;
-+	memblock.memory.regions[0].size = 0;
-+	memblock.memory.cnt = 1;
++	if (start == 0)
++		start = PAGE_SIZE;
 +
-+	/* Ditto. */
-+	memblock.reserved.regions[0].base = 0;
-+	memblock.reserved.regions[0].size = 0;
-+	memblock.reserved.cnt = 1;
-+
-+	memblock.current_limit = MEMBLOCK_ALLOC_ANYWHERE;
-+}
-+
+ 	base = memblock_align_down((end - size), align);
+ 	while (start <= base) {
+ 		j = memblock_overlaps_region(&memblock.reserved, base, size);
 -- 
 1.7.0.4
 
