@@ -1,33 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934691Ab0HFFTq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:19:46 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38164
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933038Ab0HFFTl (ORCPT
+	id S934378Ab0HFFSU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:18:20 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43318 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933791Ab0HFFPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:19:41 -0400
-Date: Thu, 05 Aug 2010 22:19:56 -0700 (PDT)
-Message-Id: <20100805.221956.108762091.davem@davemloft.net>
-To: yinghai@kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4C5B965F.4020109@kernel.org>
-References: <AANLkTinU4+tcm2O_BVBFkHSdnx7JEPtM4sw_s--qdUKC@mail.gmail.com>
-	<AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
-	<4C5B965F.4020109@kernel.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 6 Aug 2010 01:15:36 -0400
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 25/43] memblock: Make memblock_find_region() out of memblock_alloc_region()
+Date: Fri,  6 Aug 2010 15:15:06 +1000
+Message-Id: <1281071724-28740-26-git-send-email-benh@kernel.crashing.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
+References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This function will be used to locate a free area to put the new memblock
+arrays when attempting to resize them. memblock_alloc_region() is gone,
+the two callsites now call memblock_add_region().
 
-We know about this FCOE build issue, it's config specific, and the
-Intel folks have a patch coming to me tonight that will fix this up.
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+v2. Fix membase_alloc_nid_region() conversion
+---
+ mm/memblock.c |   20 +++++++++-----------
+ 1 files changed, 9 insertions(+), 11 deletions(-)
 
-Thanks.
+diff --git a/mm/memblock.c b/mm/memblock.c
+index a925866..c1d2060 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -309,8 +309,8 @@ static phys_addr_t memblock_align_up(phys_addr_t addr, phys_addr_t size)
+ 	return (addr + (size - 1)) & ~(size - 1);
+ }
+ 
+-static phys_addr_t __init memblock_alloc_region(phys_addr_t start, phys_addr_t end,
+-					   phys_addr_t size, phys_addr_t align)
++static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
++					  phys_addr_t size, phys_addr_t align)
+ {
+ 	phys_addr_t base, res_base;
+ 	long j;
+@@ -318,12 +318,8 @@ static phys_addr_t __init memblock_alloc_region(phys_addr_t start, phys_addr_t e
+ 	base = memblock_align_down((end - size), align);
+ 	while (start <= base) {
+ 		j = memblock_overlaps_region(&memblock.reserved, base, size);
+-		if (j < 0) {
+-			/* this area isn't reserved, take it */
+-			if (memblock_add_region(&memblock.reserved, base, size) < 0)
+-				base = ~(phys_addr_t)0;
++		if (j < 0)
+ 			return base;
+-		}
+ 		res_base = memblock.reserved.regions[j].base;
+ 		if (res_base < size)
+ 			break;
+@@ -356,8 +352,9 @@ static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 
+ 		this_end = memblock_nid_range(start, end, &this_nid);
+ 		if (this_nid == nid) {
+-			phys_addr_t ret = memblock_alloc_region(start, this_end, size, align);
+-			if (ret != ~(phys_addr_t)0)
++			phys_addr_t ret = memblock_find_region(start, this_end, size, align);
++			if (ret != ~(phys_addr_t)0 &&
++			    memblock_add_region(&memblock.reserved, ret, size) >= 0)
+ 				return ret;
+ 		}
+ 		start = this_end;
+@@ -432,8 +429,9 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ 		if (memblocksize < size)
+ 			continue;
+ 		base = min(memblockbase + memblocksize, max_addr);
+-		res_base = memblock_alloc_region(memblockbase, base, size, align);
+-		if (res_base != ~(phys_addr_t)0)
++		res_base = memblock_find_region(memblockbase, base, size, align);
++		if (res_base != ~(phys_addr_t)0 &&
++		    memblock_add_region(&memblock.reserved, res_base, size) >= 0)
+ 			return res_base;
+ 	}
+ 	return 0;
+-- 
+1.7.0.4
+
