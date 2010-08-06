@@ -1,35 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965728Ab0HFT3q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:29:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51730 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965691Ab0HFT3L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:29:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100805220511.GA7040@comet.dominikbrodowski.net>
-References: <20100805220511.GA7040@comet.dominikbrodowski.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 12:28:31 -0700
-Message-ID: <AANLkTin1x7P-4p2grwd=0fYoCB53uDkxgOETzXqk12X1@mail.gmail.com>
-Subject: Re: [git pull] PCMCIA updates for 2.6.36
-To: torvalds@osdl.org, akpm@osdl.org, linux-pcmcia@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>
-Cc: akpm@linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S965654Ab0HFT2c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:28:32 -0400
+Received: from kroah.org ([198.145.64.141]:43534 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965117Ab0HFT2D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:28:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:16 2010
+Message-Id: <20100806192115.935728029@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Fri, 06 Aug 2010 12:19:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [17/36] ath9k_hw: fix an off-by-one error in the PDADC boundaries calculation
+In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 3:05 PM, Dominik Brodowski
-<linux@dominikbrodowski.net> wrote:
->
-> Please pull from that location. The diffstat and list of changes is below,
-> the individual diffs are sent (at least) to the linux-pcmcia list.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-Hmm. You hadn't done proper removal of dev_info_t from the staging
-drivers. I tried to fix it up by hand, but quite frankly, I may well
-have messed something up. Please do check the result.
+------------------
 
-                Linus
+From: Felix Fietkau <nbd@openwrt.org>
+
+commit 03b4776c408d2f4bf3a5d204e223724d154716d1 upstream.
+
+PDADC values were only generated for values surrounding the target
+index, however not for the target index itself, leading to a minor
+error in the generated curve.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/net/wireless/ath/ath9k/eeprom_def.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/net/wireless/ath/ath9k/eeprom_def.c
++++ b/drivers/net/wireless/ath/ath9k/eeprom_def.c
+@@ -721,7 +721,7 @@ static void ath9k_hw_get_def_gain_bounda
+ 				    vpdTableI[i][sizeCurrVpdTable - 2]);
+ 		vpdStep = (int16_t)((vpdStep < 1) ? 1 : vpdStep);
+ 
+-		if (tgtIndex > maxIndex) {
++		if (tgtIndex >= maxIndex) {
+ 			while ((ss <= tgtIndex) &&
+ 			       (k < (AR5416_NUM_PDADC_VALUES - 1))) {
+ 				tmpVal = (int16_t)((vpdTableI[i][sizeCurrVpdTable - 1] +
+
+
