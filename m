@@ -1,68 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934127Ab0HFAWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:22:17 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:58984 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756530Ab0HFAWN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:22:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=I5YxMD4SpEf9YMtKmzexfKM638Tq9Hu6lTNG9VJJdIAsif1/Tu16ICFeMw76yJL1Y
-	ERgzucTGw8mmDL+hzOssg==
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
-References: <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm>
-	<20100805004802.GP24163@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm>
-	<20100805151211.GA10080@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
-	<AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com>
-	<20100805203102.GN2447@linux.vnet.ibm.com>
-	<AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com>
-	<alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
-	<AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
-	<20100805230304.GQ2447@linux.vnet.ibm.com>
-	<AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
-	<alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
-Date: Thu, 5 Aug 2010 17:22:10 -0700
-Message-ID: <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Brian Swetland <swetland@google.com>
-To: david@lang.hm
-Cc: paulmck@linux.vnet.ibm.com, kevin granade <kevin.granade@gmail.com>,
-        =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S934150Ab0HFAY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:24:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34603 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756530Ab0HFAY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 20:24:26 -0400
+Date: Fri, 6 Aug 2010 10:24:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: linux-next: manual merge of the input tree with the s5p tree
+Message-Id: <20100806102419.3e875933.sfr@canb.auug.org.au>
+In-Reply-To: <20100722114655.1140fb61.sfr@canb.auug.org.au>
+References: <20100722114655.1140fb61.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__6_Aug_2010_10_24_19_+1000_X+sJZW5aoIUSUG03"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 5:16 PM,  <david@lang.hm> wrote:
->>>
->>> So for an mp3 playback, does an Android suspend between data fetches?
->>
->> It can if the latency is long enough (which is why I point out low
->> power audio which is usually high latency).  For low latency (system
->> sounds, etc) 10-25ms between buffers it's not practical to fully
->> suspend but we will go to the lowest power state in idle if possible.
+--Signature=_Fri__6_Aug_2010_10_24_19_+1000_X+sJZW5aoIUSUG03
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi all,
+
+On Thu, 22 Jul 2010 11:46:55 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
 >
-> the playback is able to continue even with all the clocks stopped? that
-> surprises me. I would hav expected it to be able to sleep while playing
-> audio, but not do a full suspend.
+> Today's linux-next merge of the input tree got a conflict in
+> arch/arm/plat-samsung/include/plat/keypad.h between commit
+> 1e3241300503df18a098dd35098f6975dcf622e2 ("ARM: SAMSUNG: Add keypad
+> device support") from the s5p tree and commit
+> 0fffed27f92d9d7a34de9fe017b7082b5958bb93 ("Input: samsung-keypad - Add
+> samsung keypad driver") from the input tree.
+>=20
+> This just looks like two versions of the same driver (or two drivers
+> sharing the same header) - please sort this out.  I have fixed up the
+> header for today (by including both versions where necessary).
 
-Obviously not all clocks are stopped (the DSP and codec are powered
-and clocked, for example), but yeah we can clock gate and power gate
-the cpu and most other peripherals while audio is playing on a number
-of ARM SoC designs available today (and the past few years).
+I got this again (something obviously changed a little) but the input
+tree version is now in Linus' tree.  Please fix this up.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Brian
+--Signature=_Fri__6_Aug_2010_10_24_19_+1000_X+sJZW5aoIUSUG03
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEbBAEBAgAGBQJMW1YzAAoJEDMEi1NhKgbsG48H91G7QEqU4sHSnyYxUesgmsLk
+XY24AGh4PRIjp3xy3nGRVR1IIKLjX0LHfo7L1wGuETAEmjtoLHtcLFoAySmu+MHt
+DQQaz8uuUx1UFBboJf/sgr4xV2Y7HJ0XefVz6GxCy0MsHRqF8wTO5ILhPDht6b+N
+9bzKsEaX1cO9AjcyscdFzMQhPuOLlhqipyN6BHjmPLctZViAsJRxcNtnyXyWuP6Q
+3+5/BQHPajyPdPCyZLuSG1C9t/n3fmDjbw7UCmoYq9FbYq6wNpYf584NNMRFAqiS
+TwCQNvsZGWskQC3SehVyWVzN10WL0K8ctmci4+C2cOWifFDQOiZvz20PimGKdA==
+=8Dt9
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__6_Aug_2010_10_24_19_+1000_X+sJZW5aoIUSUG03--
