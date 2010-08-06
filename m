@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761572Ab0HFT7T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:59:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53036 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759391Ab0HFT7O (ORCPT
+	id S1762000Ab0HFUBU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:01:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34890 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756868Ab0HFUBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:59:14 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [GIT PATCH] TTY patches for 2.6.36
-Date: Fri, 6 Aug 2010 21:58:45 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.92; x86_64; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <20100805213528.GA13794@kroah.com> <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk> <AANLkTimGoG97dtp_hmHBJwwo1stzZxLoKs4_jr+eQ=gJ@mail.gmail.com>
-In-Reply-To: <AANLkTimGoG97dtp_hmHBJwwo1stzZxLoKs4_jr+eQ=gJ@mail.gmail.com>
+	Fri, 6 Aug 2010 16:01:17 -0400
+Message-ID: <4C5C69F9.5020108@windriver.com>
+Date: Fri, 06 Aug 2010 15:00:57 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        kgdb-bugreport@lists.sourceforge.net,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: linux-next: Tree for August 6 (kgdboc)
+References: <20100806132758.6001d416.sfr@canb.auug.org.au> <20100806115344.52c712b7.randy.dunlap@oracle.com>
+In-Reply-To: <20100806115344.52c712b7.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008062158.46013.arnd@arndb.de>
-X-Provags-ID: V02:K0:J+qrxqs0iUmFbkLgt8Sd2S7Ane49HM78n9iPNQDBAxb
- pwqUdJgDsDILFP4IIjqc12jR18eLottZvsznU5HHxf3ajDW0wg
- xTv6zNAgb7ry6swNtZM4Aj30tVVF2v9cKw8xILGrRjUyd59Jgq
- +Nj5wVmwD6MYM9pQ3KkqaNEvZHc+Vq8N71VklZEYlWS1bwJe9E
- qOv9CmeV4uvNzm0tYiTiQ==
+X-OriginalArrivalTime: 06 Aug 2010 20:00:58.0633 (UTC) FILETIME=[165C8F90:01CB35A2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 August 2010 21:38:36 Linus Torvalds wrote:
-> I also don't want the BKL to show up in grep, even if the config
-> option for it were to be impossible to enable. If we've gotten far
-> enough that we can get rid of the BKL in the tty layer, we really
-> should get rid of it. Not leave it in some zombie limbo state.
+On 08/06/2010 01:53 PM, Randy Dunlap wrote:
+> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
+> 
+>> Hi all,
+>>
+>> As the merge window is open, please do not add 2.6.37 material to your
+>> linux-next included trees until after 2.6.36-rc1.
+>>
+>> Changes since 20100805:
+> 
+> 
+> ERROR: "con_debug_enter" [drivers/serial/kgdboc.ko] undefined!
+> ERROR: "vc_cons" [drivers/serial/kgdboc.ko] undefined!
+> ERROR: "fg_console" [drivers/serial/kgdboc.ko] undefined!
+> ERROR: "con_debug_leave" [drivers/serial/kgdboc.ko] undefined!
+> 
+> .config is attached.
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
-Ok, I've sent the replacement patch that does this, and I'm much
-happier with the outcome.
 
-If you apply this version, the only stronghold left for the BKL
-will be fs/lockd, everything else that's left is either simple
-to fix or highly obscure.
+Any possibility you can try this patch?
 
-	Arnd
+I'll push it into kgdb-next in just a few min, and I created another test against this.
+
+Thanks,
+Jason.
+
+
+diff --git a/include/linux/console.h b/include/linux/console.h
+index f76fc29..305e9c2 100644
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -79,8 +79,13 @@ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
++#ifdef CONFIG_HW_CONSOLE
+ int con_debug_enter(struct vc_data *vc);
+ int con_debug_leave(void);
++#else
++#define con_debug_enter()
++#define con_debug_leave()
++#endif
+ 
+ /* scroll */
+ #define SM_UP       (1)
