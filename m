@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761148Ab0HFLYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 07:24:08 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36490 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752267Ab0HFLYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 07:24:07 -0400
-Message-ID: <4C5BF0D5.1080505@kernel.dk>
-Date: Fri, 06 Aug 2010 13:24:05 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1761238Ab0HFL0l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 07:26:41 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:33143 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab0HFL0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 07:26:38 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: mingo@elte.hu, rostedt@goodmis.org, yhlu.kernel@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/2] apic: tracing IPI events
+References: <1281006578-5073-1-git-send-email-jolsa@redhat.com>
+Date: Fri, 06 Aug 2010 13:26:36 +0200
+In-Reply-To: <1281006578-5073-1-git-send-email-jolsa@redhat.com> (Jiri Olsa's
+	message of "Thu, 5 Aug 2010 13:09:36 +0200")
+Message-ID: <87bp9gc783.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Dmitry Monakhov <dmonakhov@openvz.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Resend: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-References: <87vd7o2f9z.fsf@dmon-lap.sw.ru> <4C5BEA4E.4070107@kernel.dk> <87mxt02dr5.fsf@dmon-lap.sw.ru>
-In-Reply-To: <87mxt02dr5.fsf@dmon-lap.sw.ru>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-08-06 13:15, Dmitry Monakhov wrote:
-> Jens Axboe <axboe@kernel.dk> writes:
-> 
->> On 2010-08-06 12:42, Dmitry Monakhov wrote:
->>> Hi Jens,
->>> Seems that my first mail was missed somewhere.  
->>> I've found couple of trivial issues in blkdev_issue_zeroout()
->>> implementation. Unfortunately I've miss during initial testing phase
->>> because always called it with BARRIER|WAIT flags.
->>
->> BTW, this:
->>
->> @@ -218,15 +222,18 @@ submit:
->>  		/* One of bios in the batch was completed with error.*/
->>  		ret = -EIO;
->>  
->> -	if (ret)
->> +	if (ret && ret != -ENOMEM)
->>  		goto out;
->>  
->>  	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
->>  		ret = -EOPNOTSUPP;
->>  		goto out;
->>  	}
->> -	if (nr_sects != 0)
->> +	if (nr_sects != 0) {
->> +		if (ret == -ENOMEM)
->> +			io_schedule();
->>  		goto submit;
->> +	}
->>  out:
->>  	return ret;
->>  }
->>
->> is broken. Either the caller sets __GFP_WAIT and then bio_alloc() will
->> not fail, or GFP_ATOMIC is used knowing that the call can fail and
->> return ENOMEM. Don't code in retry logic like this.
-> Ok, my fault and in fact i've done in explicitly. I just thought
-> that blk-layer is some times an exception from general GFP_ATOMIC rule
-> because in some places in blk-layer we stick to GFP_NOFAIL semantics
-> regardless to actual gfp flags.
-> 
-> New version attached.
+Jiri Olsa <jolsa@redhat.com> writes:
+>
+> please let me know what you think
 
-Thanks that looks better, now really added.
+You forgot to state why you want it?
 
+In generall the only case that should happen anytime commonly is mask,
+the others only for obscure uncommon paths.
+
+However there is already accounting for it in /proc/interrupts
+that can be easily sampled. Does adding additional tracing really give 
+any value?
+
+-Andi
 -- 
-Jens Axboe
-
+ak@linux.intel.com -- Speaking for myself only.
