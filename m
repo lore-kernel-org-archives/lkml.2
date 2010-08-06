@@ -1,47 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761981Ab0HFTqK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:46:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53072 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750969Ab0HFTqE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:46:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
-References: <20100805213528.GA13794@kroah.com> <AANLkTikhq6FF4j+w-TXrPeq05NhvbhgqhJkW7tCw2+3c@mail.gmail.com> 
-	<20100806185147.GB23853@suse.de> <20100806204552.7cb80fd0@lxorguk.ukuu.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 12:38:36 -0700
-Message-ID: <AANLkTimGoG97dtp_hmHBJwwo1stzZxLoKs4_jr+eQ=gJ@mail.gmail.com>
-Subject: Re: [GIT PATCH] TTY patches for 2.6.36
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <gregkh@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1761986Ab0HFTsY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:48:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42763 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750969Ab0HFTsW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:48:22 -0400
+Subject: Re: [PATCH] SELINUX: Fix build error.
+From: Eric Paris <eparis@redhat.com>
+To: torvalds@linux-foundation.org
+Cc: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        Eric Paris <eparis@parisplace.org>, linux-kernel@vger.kernel.org,
+        Ralf Baechle <ralf@linux-mips.org>, selinux@tycho.nsa.gov
+In-Reply-To: <20100806193756.GA24645@linux-mips.org>
+References: <20100806193756.GA24645@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 06 Aug 2010 15:47:33 -0400
+Message-ID: <1281124053.2609.9.camel@dhcp231-200.rdu.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 12:45 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->
-> Wouldn't it make more sense to simply turn it on as Linus suggested ?
+On Fri, 2010-08-06 at 20:37 +0100, Ralf Baechle wrote:
+> [...]
+>   CC      security/selinux/hooks.o
+> /home/ralf/src/linux/linux-mips/security/selinux/hooks.c: In function ‘selinux_inode_permission’:
+> /home/ralf/src/linux/linux-mips/security/selinux/hooks.c:2644:38: error: ‘FILE__AUDIT_ACCESS’ undeclared (first use in this function)
+> /home/ralf/src/linux/linux-mips/security/selinux/hooks.c:2644:38: note: each undeclared identifier is reported only once for each function it appears in
+> make[4]: *** [security/selinux/hooks.o] Error 1
+> make[3]: *** [security/selinux] Error 2
+> make[2]: *** [security] Error 2
+> make[1]: *** [sub-make] Error 2
+> make: *** [all] Error 2
+> 
+> This is cause by a stale security/selinux/av_permissions.h in the $(src)
+> directory which will override a more recent version in $(obj) that is it
+> appears to strike only when building with a separate object directory.
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
-I really do want the whole "there can be only one" highlander part.
+Acked-by: Eric Paris <eparis@redhat.com>
 
-Go all Christopher Lambert on it, and cut it off at the head so that
-it cannot resurface even by mistake. IOW, remove the config option
-entirely, and remove the #ifdef's that switch between the BKL and
-mutex case.
+Ralf is at least the second person I've seen who had this problem since
+the security tree merge.  The problem was not introduced in this merge,
+it's just this merge was the first time I added new things to that file,
+so it's the first time anyone would have noticed.  Introduced in
+8753f6bec352392 but not really a problem until b782e0a68d17894d9a.
 
-Otherwise somebody will enable the BKL code, and we'll miss the
-testing for that case. And getting testing is what the whole merge
-window is all about.
+It's easily worked around deleting all of of the automagically generated
+av_permissions.h files and letting them be regenerated but hardly anyone
+would realize they need to delete files by hand (make clean, git clean,
+etc won't delete it)
 
-I also don't want the BKL to show up in grep, even if the config
-option for it were to be impossible to enable. If we've gotten far
-enough that we can get rid of the BKL in the tty layer, we really
-should get rid of it. Not leave it in some zombie limbo state.
+I think James is traveling for a bit so I'm putting it out there for a
+faster track to inclusion.
 
-                    Linus
+-Eric
+
+>  security/selinux/Makefile |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/security/selinux/Makefile b/security/selinux/Makefile
+> index f013982..58d80f3 100644
+> --- a/security/selinux/Makefile
+> +++ b/security/selinux/Makefile
+> @@ -25,6 +25,6 @@ $(obj)/avc.o: $(obj)/flask.h
+>  quiet_cmd_flask = GEN     $(obj)/flask.h $(obj)/av_permissions.h
+>        cmd_flask = scripts/selinux/genheaders/genheaders $(obj)/flask.h $(obj)/av_permissions.h
+>  
+> -targets += flask.h
+> +targets += flask.h av_permissions.h
+>  $(obj)/flask.h: $(src)/include/classmap.h FORCE
+>  	$(call if_changed,flask)
+
+
