@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933647Ab0HFFN7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:13:59 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:37376 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab0HFFN5 (ORCPT
+	id S933711Ab0HFFPH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:15:07 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:62437 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab0HFFPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:13:57 -0400
-Date: Fri, 6 Aug 2010 07:13:54 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-        Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
-        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
-        ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kconfig: fix make oldconfig
-Message-ID: <20100806051354.GA24343@merkur.ravnborg.org>
-References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> <4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Fri, 6 Aug 2010 01:15:03 -0400
+Date: Fri, 06 Aug 2010 14:15:07 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: linux-next: manual merge of the input tree with the s5p tree
+In-reply-to: <4C5B7F7A.1000707@samsung.com>
+To: "'Joonyoung Shim'" <jy0922.shim@samsung.com>
+Cc: "'Stephen Rothwell'" <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>
+Message-id: <006e01cb3526$592816e0$0b7844a0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=UTF-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acs1FlAflJsx+5ImQ/+DMtMFNLg5hAACm1xg
+References: <20100722114655.1140fb61.sfr@canb.auug.org.au>
+ <20100806102419.3e875933.sfr@canb.auug.org.au>
+ <004801cb3500$69824bd0$3c86e370$%kim@samsung.com>
+ <20100806114314.6d15d4fb.sfr@canb.auug.org.au> <4C5B7F7A.1000707@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH] kconfig: fix make oldconfig
+Joonyoung Shim wrote:
+> 
+> On 8/6/2010 10:43 AM, Stephen Rothwell wrote:
+> > Hi,
+> >
+> > On Fri, 06 Aug 2010 09:43:34 +0900 Kukjin Kim <kgene.kim@samsung.com>
+> wrote:
+> >> I know that Dmitry's 'Input: samsung-keypad...patch' which includes
+> >> plat/keypad.h has been merged Linus' tree in this merge window.
+> >> And Joonyoung's another patch which is in my tree needs to update it, but my
+> >> tree is don't having it against Linus' 2.6.35.
+> >>
+> >> So happened conflict...how can/should I handle this...
+> >> Should I rebase my tree against Linus' latest?
+> >
+> > Either rebase (worst), or just merge Linus' tree (better) into yours or
+> > (best) merge what Dmitry merged into Linus' tree.  To do this last, you
+> > need to merge commit d01d0756f75e7a5b4b43764ad45b83c4340f11d6 from
+> Linus'
+> > tree.  Doing this brings in the minimum amount of extra stuff to your
+> > tree, but allows you to sort out the conflict.
+> >
+> 
+> Kukjin,
+> 
+> If you rebase and need, i can send updated patches. It uses "ARM:
+> SAMSUNG: Add helper to clone and set platform data" patch of Ben Dooks.
+> 
+> Thanks.
 
-Linus wrote:
- This seems to make "make oldconfig" a _lot_ more verbose than it
- used to be. In a very annoying way.
+Ok...please send it in today.
 
- I just did a quick git bisect. It's introduced by commit 4062f1a4c030
- ("kconfig: use long options in conf") by Sam Ravnborg. Apparently that
- thing is totally buggy, and doesn't just change the option names, but
- actively breaks them.
+I have a plan to send 'pull request' to Russell in this weekend or the beginning of next week.
 
-The old behaviour (from years ago) were reintroduced by accident.
-Fix this so we are back to the version that are silent
-if there is nothing to ask about.
+Thanks.
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
----
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
 
-Sorry for this regression. Dunno how I missed it.
-I guess I only tested "silentoldconfig".
-
-Following patch seems obviously correct but as I am on the way
-out of the door I could not do much testing.
-
-	Sam
-
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index 010600e..274f271 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -599,12 +599,12 @@ int main(int ac, char **av)
- 		break;
- 	case savedefconfig:
- 		break;
--	case oldconfig:
- 	case oldaskconfig:
- 		rootEntry = &rootmenu;
- 		conf(&rootmenu);
- 		input_mode = silentoldconfig;
- 		/* fall through */
-+	case oldconfig:
- 	case listnewconfig:
- 	case oldnoconfig:
- 	case silentoldconfig:
