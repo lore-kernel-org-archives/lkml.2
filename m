@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935069Ab0HFUoW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:44:22 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:33839 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762044Ab0HFUoU (ORCPT
+	id S935132Ab0HFUor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:44:47 -0400
+Received: from mail.windriver.com ([147.11.1.11]:43663 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935078Ab0HFUoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:44:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=RjRnA7QaDCMO5LfTxyvUKwRWMVFnfoLycInpXZfCw75ChJ0yyVP1OsQ1V3fLo4Vlix
-         H5pKb9L2JcPgCf9H4UgJaFzcPEGFEERMW2Rk6TGzlrnBm93VX1GjtmlWhqIYHVPy6/mG
-         IpoOb17xEw455bJZZIp6nKd7XF0T1AthztvVI=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Neil Leeder <nleeder@codeaurora.org>
-Subject: Re: [PATCH 0/1] mouse: add qci touchpad driver
-Date: Fri, 6 Aug 2010 13:44:11 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.35+; KDE/4.4.5; x86_64; ; )
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Horace Fu <horace.fu@quantatw.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-References: <4C5C713D.8010902@codeaurora.org>
-In-Reply-To: <4C5C713D.8010902@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008061344.13326.dmitry.torokhov@gmail.com>
+	Fri, 6 Aug 2010 16:44:44 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 1/1] console: Fix compilation regression
+Date: Fri,  6 Aug 2010 15:43:42 -0500
+Message-Id: <1281127422-15689-2-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1281127422-15689-1-git-send-email-jason.wessel@windriver.com>
+References: <1281127422-15689-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 06 Aug 2010 20:44:27.0433 (UTC) FILETIME=[2953D990:01CB35A8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, August 06, 2010 01:31:57 pm Neil Leeder wrote:
-> This is an update of the driver that Quanta posted here a few days ago.
-> Quanta wrote the original version of the driver and I am picking up
-> maintenance for code aurora forum.
-> 
-> I've addressed the review comments. The only one that's outstanding is
-> the use of the sensitivity value. I don't see an easy way that userspace
-> would be able to apply the sensitivity scaling between the driver and
-> say xorg, so for now I've left it in the driver, but I'd welcome any
-> suggestions for improvement.
-> 
+A regression of building without CONFIG_HW_CONSOLE was introduced with
+commit b45cfba4e9005d64d419718e7ff7f7cab44c1994 (vt,console,kdb:
+implement atomic console enter/leave functions).
 
-Doesn't "xset mouse" do what you want?
+ERROR: "con_debug_enter" [drivers/serial/kgdboc.ko] undefined!
+ERROR: "vc_cons" [drivers/serial/kgdboc.ko] undefined!
+ERROR: "fg_console" [drivers/serial/kgdboc.ko] undefined!
+ERROR: "con_debug_leave" [drivers/serial/kgdboc.ko] undefined!
 
+When there is no HW console the con_debug_enter and con_debug_leave
+functions should have no code.
+
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+---
+ include/linux/console.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/console.h b/include/linux/console.h
+index f76fc29..95cf6f0 100644
+--- a/include/linux/console.h
++++ b/include/linux/console.h
+@@ -79,8 +79,13 @@ int register_con_driver(const struct consw *csw, int first, int last);
+ int unregister_con_driver(const struct consw *csw);
+ int take_over_console(const struct consw *sw, int first, int last, int deflt);
+ void give_up_console(const struct consw *sw);
++#ifdef CONFIG_HW_CONSOLE
+ int con_debug_enter(struct vc_data *vc);
+ int con_debug_leave(void);
++#else
++#define con_debug_enter(vc) (0)
++#define con_debug_leave() (0)
++#endif
+ 
+ /* scroll */
+ #define SM_UP       (1)
 -- 
-Dmitry
+1.6.3.3
+
