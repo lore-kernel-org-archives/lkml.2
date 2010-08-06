@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965258Ab0HFTCh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:02:37 -0400
-Received: from kroah.org ([198.145.64.141]:58688 "EHLO coco.kroah.org"
+	id S965160Ab0HFTCm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:02:42 -0400
+Received: from kroah.org ([198.145.64.141]:58680 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965152Ab0HFTAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:37 -0400
+	id S965149Ab0HFTAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:36 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
-Message-Id: <20100806185836.849192569@clark.site>
+Message-Id: <20100806185836.769175875@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:29 -0700
+Date: Fri, 06 Aug 2010 11:57:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
+        Christoph Fritz <chf.fritz@googlemail.com>,
         "John W. Linville" <linville@tuxdriver.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
         Ben Hutchings <ben@decadent.org.uk>
-Subject: [34/34] ssb: Handle alternate SSPROM location
+Subject: [33/34] ssb: fix NULL ptr deref when pcihost_wrapper is used
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,66 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Christoph Fritz <chf.fritz@googlemail.com>
 
-commit 9d1ac34ec3a67713308ae0883c3359c557f14d17 upstream.
+commit da1fdb02d9200ff28b6f3a380d21930335fe5429 upstream.
 
-In kernel Bugzilla #15825 (2 users), in a wireless mailing list thread
-(http://lists.infradead.org/pipermail/b43-dev/2010-May/000124.html), and on a
-netbook owned by John Linville
-(http://marc.info/?l=linux-wireless&m=127230751408818&w=4), there are reports
-of ssb failing to detect an SPROM at the normal location. After studying the
-MMIO trace dump for the Broadcom wl driver, it was determined that the affected
-boxes had a relocated SPROM.
+Ethernet driver b44 does register ssb by it's pcihost_wrapper
+and doesn't set ssb_chipcommon. A check on this value
+introduced with commit d53cdbb94a52a920d5420ed64d986c3523a56743
+and ea2db495f92ad2cf3301623e60cb95b4062bc484 triggers:
 
-This patch fixes all systems that have reported this problem.
+BUG: unable to handle kernel NULL pointer dereference at 00000010
+IP: [<c1266c36>] ssb_is_sprom_available+0x16/0x30
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
 Cc: Ben Hutchings <ben@decadent.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ssb/driver_chipcommon.c |    1 +
- drivers/ssb/pci.c               |   15 +++++++++++++--
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ drivers/ssb/pci.c   |    9 ++++++---
+ drivers/ssb/sprom.c |    1 +
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
---- a/drivers/ssb/driver_chipcommon.c
-+++ b/drivers/ssb/driver_chipcommon.c
-@@ -235,6 +235,7 @@ void ssb_chipcommon_init(struct ssb_chip
- 		return; /* We don't have a ChipCommon */
- 	if (cc->dev->id.revision >= 11)
- 		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
-+	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
- 	ssb_pmu_init(cc);
- 	chipco_powercontrol_init(cc);
- 	ssb_chipco_set_clockmode(cc, SSB_CLKMODE_FAST);
 --- a/drivers/ssb/pci.c
 +++ b/drivers/ssb/pci.c
-@@ -625,11 +625,22 @@ static int ssb_pci_sprom_get(struct ssb_
+@@ -624,9 +624,12 @@ static int ssb_pci_sprom_get(struct ssb_
+ 		ssb_printk(KERN_ERR PFX "No SPROM available!\n");
  		return -ENODEV;
  	}
- 	if (bus->chipco.dev) {	/* can be unavailible! */
--		bus->sprom_offset = (bus->chipco.dev->id.revision < 31) ?
--			SSB_SPROM_BASE1 : SSB_SPROM_BASE31;
-+		/*
-+		 * get SPROM offset: SSB_SPROM_BASE1 except for
-+		 * chipcommon rev >= 31 or chip ID is 0x4312 and
-+		 * chipcommon status & 3 == 2
-+		 */
-+		if (bus->chipco.dev->id.revision >= 31)
-+			bus->sprom_offset = SSB_SPROM_BASE31;
-+		else if (bus->chip_id == 0x4312 &&
-+			 (bus->chipco.status & 0x03) == 2)
-+			bus->sprom_offset = SSB_SPROM_BASE31;
-+		else
-+			bus->sprom_offset = SSB_SPROM_BASE1;
- 	} else {
- 		bus->sprom_offset = SSB_SPROM_BASE1;
- 	}
-+	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
+-
+-	bus->sprom_offset = (bus->chipco.dev->id.revision < 31) ?
+-		SSB_SPROM_BASE1 : SSB_SPROM_BASE31;
++	if (bus->chipco.dev) {	/* can be unavailible! */
++		bus->sprom_offset = (bus->chipco.dev->id.revision < 31) ?
++			SSB_SPROM_BASE1 : SSB_SPROM_BASE31;
++	} else {
++		bus->sprom_offset = SSB_SPROM_BASE1;
++	}
  
  	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
  	if (!buf)
+--- a/drivers/ssb/sprom.c
++++ b/drivers/ssb/sprom.c
+@@ -188,6 +188,7 @@ bool ssb_is_sprom_available(struct ssb_b
+ 	/* this routine differs from specs as we do not access SPROM directly
+ 	   on PCMCIA */
+ 	if (bus->bustype == SSB_BUSTYPE_PCI &&
++	    bus->chipco.dev &&	/* can be unavailible! */
+ 	    bus->chipco.dev->id.revision >= 31)
+ 		return bus->chipco.capabilities & SSB_CHIPCO_CAP_SPROM;
+ 
 
 
