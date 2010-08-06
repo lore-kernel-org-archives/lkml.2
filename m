@@ -1,53 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935441Ab0HFHoU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:44:20 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:57203 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933570Ab0HFHoS convert rfc822-to-8bit (ORCPT
+	id S1760598Ab0HFHub (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:50:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55508 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752491Ab0HFHu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:44:18 -0400
+	Fri, 6 Aug 2010 03:50:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=ILCPFuMOoDFIIcKw2DBdIF3jlZw+bveyBgCxs2jEjKC7sZZNPdPAgTfinGdA6PvJ4A
+         v/+Mbts1cTy8MJb2Fq7jptPXwej7zOKsCZj0ymS8NsXsyO88p0LMKyJShIlG4XPb4n9k
+         vy3QpUrJkUiOqBQtTxmbc0rGQk+ZgtF/szZ1g=
+Date: Fri, 6 Aug 2010 09:49:53 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, nick.cheng@areca.com.tw
+Subject: Re: [PATCH 9/42] drivers/scsi: Adjust confusing if indentation
+Message-ID: <20100806074920.GR9031@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Julia Lawall <julia@diku.dk>,
+	"James E.J. Bottomley" <James.Bottomley@suse.de>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org, nick.cheng@areca.com.tw
+References: <Pine.LNX.4.64.1008052219190.31692@ask.diku.dk>
 MIME-Version: 1.0
-In-Reply-To: <4C5B6065.7000700@free.fr>
-References: <4C5734A2.7070400@free.fr> <4C59B444.7080609@nortel.com> 
-	<4C5B6065.7000700@free.fr>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 6 Aug 2010 09:44:02 +0200
-Message-ID: <AANLkTi=h633N2toWEHqwubVf8Hd21==+4Or7h=35d+Kr@mail.gmail.com>
-Subject: Re: mount notification question
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Chris Friesen <cfriesen@nortel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1008052219190.31692@ask.diku.dk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 03:07, Daniel Lezcano <daniel.lezcano@free.fr> wrote:
-> On 08/04/2010 08:41 PM, Chris Friesen wrote:
->> On 08/02/2010 03:12 PM, Daniel Lezcano wrote:
->>> is there a way to be notified when a mount occurs on the system ?
->>
->> Have you looked on google?  The link is a bit misleading but they do
->> give a way to do it (not using inotify).
->>
->> http://stackoverflow.com/questions/1113176/how-could-i-detect-when-a-directory-is-mounted-with-inotify
->
-> Thanks a lot for the pointer. I am not sure this solution will work, because
-> it is inadequate for watching a specific location in a container context
-> separated by the mount and the network namespaces. We have multiple mount
-> points at the same place (eg. the mount point inheritance, the container
-> configuration and the init scripts may mount /dev or /var/run several time)
-> and the network namespace separation will make impossible to watch udev
-> event via a netlink socket. I didn't look at the inotify implementation but
-> IMHO, it should be worth to add IN_MOUNT and IN_UNMOUNT events for inotify
-> no ?
 
-These events wouldn't work, and they are long removed from the kernel
-and don't exist.
+This should go to Nick Cheng.  He would know about the arcmsr driver.
 
-You need to poll() /proc/mounts, and any changes in it will wake you
-up with POLL_ERR. /proc/mounts should be namespace aware.
+regards,
+dan carpenter
 
-Kay
+On Thu, Aug 05, 2010 at 10:19:36PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Outdent the code following the if.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r disable braces4@
+> position p1,p2;
+> statement S1,S2;
+> @@
+> 
+> (
+> if (...) { ... }
+> |
+> if (...) S1@p1 S2@p2
+> )
+> 
+> @script:python@
+> p1 << r.p1;
+> p2 << r.p2;
+> @@
+> 
+> if (p1[0].column == p2[0].column):
+>   cocci.print_main("branch",p1)
+>   cocci.print_secs("after",p2)
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> This might be the wrong fix, however it doesn't change the current semantics.
+> 
+>  drivers/scsi/arcmsr/arcmsr_hba.c    |    4 ++--
+>  drivers/scsi/mpt2sas/mpt2sas_base.c |    2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+> index 95a895d..c4e5cdc 100644
+> --- a/drivers/scsi/arcmsr/arcmsr_hba.c
+> +++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+> @@ -877,8 +877,8 @@ static void arcmsr_report_ccb_state(struct AdapterControlBlock *acb,
+>  	if (!error) {
+>  		if (acb->devstate[id][lun] == ARECA_RAID_GONE)
+>  			acb->devstate[id][lun] = ARECA_RAID_GOOD;
+> -			ccb->pcmd->result = DID_OK << 16;
+> -			arcmsr_ccb_complete(ccb);
+> +		ccb->pcmd->result = DID_OK << 16;
+> +		arcmsr_ccb_complete(ccb);
+>  	}else{
+>  		switch (ccb->arcmsr_cdb.DeviceStatus) {
+>  		case ARCMSR_DEV_SELECT_TIMEOUT: {
+> diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> index 57bcd5c..12faf64 100644
+> --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
+> +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
+> @@ -534,7 +534,7 @@ _base_display_event_data(struct MPT2SAS_ADAPTER *ioc,
+>  		if (event_data->DiscoveryStatus)
+>  			printk("discovery_status(0x%08x)",
+>  			    le32_to_cpu(event_data->DiscoveryStatus));
+> -			printk("\n");
+> +		printk("\n");
+>  		return;
+>  	}
+>  	case MPI2_EVENT_SAS_BROADCAST_PRIMITIVE:
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
