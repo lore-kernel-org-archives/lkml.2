@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935300Ab0HFFSw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:18:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55787 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933784Ab0HFFSo (ORCPT
+	id S933822Ab0HFFTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:19:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52204 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935071Ab0HFFSr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:18:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=Rsp8HYfvuQJks+8/Ml1vZZaxQn2h4a27mtEEmw4jnNrOHWriDuIm9TPjHSUTCZdt71
-         bCcT4J2wmUj8dW8PkfAFaB3geR7ksXNR3UhBPBa3zOmUO/N1p5amht0K9ZiKEOFQ8qGu
-         1SWUjFj0WsUtBdhlJUWkFkWfStZGgEeHtQlFw=
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Michal Nazarewicz <mina86@mina86.com>
-Subject: Re: [PATCH 2/3] lib: vsprintf: optimised put_dec() for 32-bit machines
-Date: Fri, 6 Aug 2010 07:18:38 +0200
-User-Agent: KMail/1.8.2
-Cc: linux-kernel@vger.kernel.org, m.nazarewicz@samsung.com,
-        "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com> <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
-In-Reply-To: <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+	Fri, 6 Aug 2010 01:18:47 -0400
+Date: Thu, 5 Aug 2010 22:19:13 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>, "hpa@zytor.com" <hpa@zytor.com>
+Subject: Re: [patch]x86: avoid unnecessary tlb flush
+Message-Id: <20100805221913.4da0f8be.akpm@linux-foundation.org>
+In-Reply-To: <1281065308.29094.5.camel@sli10-desk.sh.intel.com>
+References: <1281065308.29094.5.camel@sli10-desk.sh.intel.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008060718.38345.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 06 August 2010 00:38, Michal Nazarewicz wrote:
-> The disadvantage is that the proposed function is 2.5-3.5 bigger.
-> Those are not big functions though -- we are talking here about
-> proposed function being below 512.
+On Fri, 06 Aug 2010 11:28:28 +0800 Shaohua Li <shaohua.li@intel.com> wrote:
 
-It's a slippery slope. Here's where it ends: glibc
-has memcpy() function which is "only" 8k of code or so.
-I'm not joking.
-
-
-
-> +#if BITS_PER_LONG == 64
+> In x86, access and dirty bits are set automatically by CPU when CPU accesses
+> memory. When we go into the code path of below flush_tlb_nonprotect_page(),
+> we already set dirty bit for pte and don't need flush tlb. This might mean
+> tlb entry in some CPUs hasn't dirty bit set, but this doesn't matter. When
+> the CPUs do page write, they will automatically check the bit and no software
+> involved. 
+> 
+> On the other hand, flush tlb in below position is harmful. Test creates CPU
+> number of threads, each thread writes to a same but random address in same vma
+> range and we measure the total time. Under a 4 socket system, original time is
+> 1.96s, while with the patch, the time is 0.8s. Under a 2 socket system, there is
+> 20% time cut too. perf shows a lot of time are taking to send ipi/handle ipi for
+> tlb flush.
+> 
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> ---
+>  arch/x86/include/asm/pgtable.h |    3 +++
+>  include/asm-generic/pgtable.h  |    4 ++++
+>  mm/memory.c                    |    2 +-
+>  3 files changed, 8 insertions(+), 1 deletion(-)
+> 
+> Index: linux/arch/x86/include/asm/pgtable.h
+> ===================================================================
+> --- linux.orig/arch/x86/include/asm/pgtable.h	2010-07-29 13:25:12.000000000 +0800
+> +++ linux/arch/x86/include/asm/pgtable.h	2010-08-03 09:02:07.000000000 +0800
+> @@ -603,6 +603,9 @@ static inline void ptep_set_wrprotect(st
+>  	pte_update(mm, addr, ptep);
+>  }
+>  
+> +#define __HAVE_ARCH_FLUSH_TLB_NONPROTECT_PAGE
+> +#define flush_tlb_nonprotect_page(vma, address)
 > +
-...  
-> +#else
-...
-> +/*
-> + * Based on code by Douglas W. Jones found at
-> + * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html#sixtyfour>.  This
-> + * performs no 64-bit division and hence should be faster on 32-bit
-> + * machines then the version of the function above.
-> + */
-> +static noinline_for_stack
-> +char *put_dec(char *buf, unsigned long long n)
-> +{
-> +	uint32_t d3, d2, d1, q;
-> +
-> +	if (!n) {
-> +		*buf++ = '0';
-> +		return buf;
-> +	}
-> +
-> +	d1  = (n >> 16) & 0xFFFF;
-> +	d2  = (n >> 32) & 0xFFFF;
-> +	d3  = (n >> 48) & 0xFFFF;
+>  /*
+>   * clone_pgd_range(pgd_t *dst, pgd_t *src, int count);
+>   *
+> Index: linux/include/asm-generic/pgtable.h
+> ===================================================================
+> --- linux.orig/include/asm-generic/pgtable.h	2010-07-29 13:25:12.000000000 +0800
+> +++ linux/include/asm-generic/pgtable.h	2010-08-03 09:02:07.000000000 +0800
+> @@ -129,6 +129,10 @@ static inline void ptep_set_wrprotect(st
+>  #define move_pte(pte, prot, old_addr, new_addr)	(pte)
+>  #endif
+>  
+> +#ifndef __HAVE_ARCH_FLUSH_TLB_NONPROTECT_PAGE
+> +#define flush_tlb_nonprotect_page(vma, address) flush_tlb_page(vma, address)
+> +#endif
 
-Are you assuming that sizeof(long long) == 8, always?
+The preferred technique here is
 
--- 
-vda
+#ifndef flush_tlb_nonprotect_page
+#define flush_tlb_nonprotect_page(vma, address) flush_tlb_page(vma, address)
+#endif
+
+so no need for __HAVE_ARCH_FLUSH_TLB_NONPROTECT_PAGE. 
+include/asm-generic/pgtable.h uses a mix of the two techniques.
+
