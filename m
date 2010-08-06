@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab0HFAHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:07:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52148 "EHLO
+	id S932628Ab0HFAKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:10:19 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:46540 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755696Ab0HFAHt (ORCPT
+	with ESMTP id S1754007Ab0HFAKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:07:49 -0400
+	Thu, 5 Aug 2010 20:10:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:content-type:date:message-id:mime-version
          :x-mailer:content-transfer-encoding;
-        b=aoWc6hiJcqrc6byagsmUzmMcHLtX+pbdtYIoMxs6B2B0vy4tmyCMVqiJsjsODS3qXu
-         pdT/o6y5cPQoJLftLNxnqaPuc7bd6QubZM8D50W3FONk8CD73rj1ZmcrnSk+I22uoNoZ
-         789z9mAeNKYxvnGwOzeDtDVLArkUwZ6v0fB8A=
-Subject: [PATCH 1/2 RESEND] regulator: lp3971 - remove unnecessary ret
-	value checking in lp3971_i2c_write()
+        b=DfjpEqfc9cWVHCpwi4ZyfOmfX3mOepGPqg++IURi79thlBTaZHMVgYKAaPwwKYsvmU
+         YKB366HCpwAj9Bjddh2B0m4/MT46msqrq0/vbtiiUQgjoijfuTMtvwxeEMOGXnwW/pSc
+         PDRUAVL2xzmrQ7ZnOHAszR7oYeKLMAO5liyM8=
+Subject: [PATCH 2/2 RESEND] regulator: lp3971 - remove redundant checking
+	for count in lp3971_i2c_read()
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
@@ -23,8 +23,8 @@ Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>
 Content-Type: text/plain
-Date: Fri, 06 Aug 2010 08:09:14 +0800
-Message-Id: <1281053354.12131.4.camel@mola>
+Date: Fri, 06 Aug 2010 08:11:45 +0800
+Message-Id: <1281053505.12131.7.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -39,7 +39,6 @@ Signed-off-by: Axel Lin <axel.lin@gmail.com>
 Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
 This resend adds regulator: prefix in the subject line.
-
  drivers/regulator/lp3971.c |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
