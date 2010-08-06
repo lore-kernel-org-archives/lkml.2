@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761824Ab0HFS2V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:28:21 -0400
-Received: from kroah.org ([198.145.64.141]:36022 "EHLO coco.kroah.org"
+	id S1761836Ab0HFS2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:28:22 -0400
+Received: from kroah.org ([198.145.64.141]:36030 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761783Ab0HFS2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:28:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 10:56:11 2010
-Message-Id: <20100806175611.638902395@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 10:54:39 -0700
+	id S1761797Ab0HFS2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:28:19 -0400
+Date: Fri, 6 Aug 2010 11:27:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [3/4] SCSI: enclosure: fix error path - actually return ERR_PTR() on error
-In-Reply-To: <20100806182735.GA15732@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [0/4] 2.6.27.50-stable review
+Message-ID: <20100806182735.GA15732@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.27.50 release.
+There are 4 patches in this series, all will be posted as a response to
+this one.  If anyone has any issues with these being applied, please let
+us know.  If anyone is a maintainer of the proper subsystem, and wants
+to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by August 8, 2010, 18:00:00 UTC.
+Anything received after that time might be too late.
 
-From: James Bottomley <James.Bottomley@suse.de>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.50-rc1.gz
+and the diffstat can be found below.
 
-commit a91c1be21704113b023919826c6d531da46656ef upstream.
+thanks,
 
-we also need to clean up and free the cdev.
+greg k-h
 
-Reported-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
+ Makefile                 |    2 +-
  drivers/misc/enclosure.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
-
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -264,8 +264,11 @@ enclosure_component_register(struct encl
- 	cdev->groups = enclosure_groups;
- 
- 	err = device_register(cdev);
--	if (err)
--		ERR_PTR(err);
-+	if (err) {
-+		ecomp->number = -1;
-+		put_device(cdev);
-+		return ERR_PTR(err);
-+	}
- 
- 	return ecomp;
- }
-
-
+ drivers/parisc/led.c     |    6 ++++--
+ fs/gfs2/dir.c            |    2 +-
+ fs/xfs/xfs_dfrag.c       |    5 ++++-
+ 5 files changed, 15 insertions(+), 7 deletions(-)
