@@ -1,34 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933903Ab0HFMEH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 08:04:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42057 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754479Ab0HFMED (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 08:04:03 -0400
-Date: Fri, 6 Aug 2010 08:03:58 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Cc: Josef Bacik <josef@redhat.com>, hch@infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: PATCH 3/6 - direct-io: do not merge logically non-contiguous
- requests
-Message-ID: <20100806120358.GA31601@infradead.org>
-References: <4C5BE8DB.5030503@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5BE8DB.5030503@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1761312Ab0HFMEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 08:04:38 -0400
+Received: from mxs.selfmail.ru ([77.221.143.26]:50438 "EHLO mxs.selfmail.ru"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752007Ab0HFMEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 08:04:35 -0400
+X-ACL-SPF: 
+Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests -
+ second fully working version - once again
+From: Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Reply-To: v.tolstov@selfip.ru
+To: Daniel Kiper <dkiper@net-space.pl>
+Cc: jeremy@goop.org, konrad.wilk@oracle.com, stefano.stabellini@eu.citrix.com,
+        linux-mm@kvack.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100806111147.GA31683@router-fw-old.local.net-space.pl>
+References: <20100806111147.GA31683@router-fw-old.local.net-space.pl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Selfip.Ru
+Date: Fri, 06 Aug 2010 16:03:18 +0400
+Message-ID: <1281096198.27692.6.camel@vase.work>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Something is deeply wrong here.  Raw block device access has a 1:1
-mapping between logical and physical block numbers.  They really should
-never be non-contiguous.
+В Птн, 06/08/2010 в 13:11 +0200, Daniel Kiper пишет:
+> Hi,
+> 
+> I am sending this e-mail once again because it probably
+> has been lost in abyss of Xen-devel/LKLM list.
+> 
+> Here is the second version of memory hotplug support
+> for Xen guests patch. This one cleanly applies to
+> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git
+> repository, xen/memory-hotplug head.
+
+Testing on sles 11 sp1 and opensuse 11.3. On results - send e-mail..
+
+-- 
+Vasiliy G Tolstov <v.tolstov@selfip.ru>
+Selfip.Ru
+
