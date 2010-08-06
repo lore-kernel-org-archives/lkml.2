@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964965Ab0HFSgO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:36:14 -0400
-Received: from kroah.org ([198.145.64.141]:48676 "EHLO coco.kroah.org"
+	id S964993Ab0HFShc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:37:32 -0400
+Received: from kroah.org ([198.145.64.141]:48756 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964927Ab0HFSf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
-Message-Id: <20100806183201.992421347@clark.site>
+	id S964964Ab0HFSgO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:03 2010
+Message-Id: <20100806183203.319759532@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:43 -0700
+Date: Fri, 06 Aug 2010 11:30:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [22/38] ath9k: fix TSF after reset on AR913x
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Christopher James Halse Rogers <chalserogers@gmail.com>,
+        Eric Anholt <eric@anholt.net>
+Subject: [37/38] drm/i915: Unset cursor if out-of-bounds upon mode change (v4)
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,68 +27,276 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit f860d526eb2939a1c37128900b5af2b6f3ff7f20 upstream.
+commit cda4b7d3a5b1dcbc0d8e7bad52134347798e9047 upstream.
 
-When issuing a reset, the TSF value is lost in the hardware because of
-the 913x specific cold reset. As with some AR9280 cards, the TSF needs
-to be preserved in software here.
+The docs warn that to position the cursor such that no part of it is
+visible on the pipe is an undefined operation. Avoid such circumstances
+upon changing the mode, or at any other time, by unsetting the cursor if
+it moves out of bounds.
 
-Additionally, there's an issue that frequently prevents a successful
-TSF write directly after the chip reset. In this case, repeating the
-TSF write after the initval-writes usually works.
+"For normal high resolution display modes, the cursor must have at least a
+single pixel positioned over the active screen.” (p143, p148 of the hardware
+registers docs).
 
-This patch detects failed TSF writes and recovers from them, taking
-into account the delay caused by the initval writes.
+Fixes:
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Reported-by: Björn Smedman <bjorn.smedman@venatech.se>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  Bug 24748 - [965G] Graphics crashes when resolution is changed with KMS
+              enabled
+  https://bugs.freedesktop.org/show_bug.cgi?id=24748
+
+v2: Only update the cursor registers if they change.
+v3: Fix the unsigned comparision of x,y against width,height.
+v4: Always set CUR.BASE or else the cursor may become corrupt.
+
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reported-by: Christian Eggers <ceggers@gmx.de>
+Cc: Christopher James Halse Rogers  <chalserogers@gmail.com>
+Signed-off-by: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c |  144 ++++++++++++++++++++++-------------
+ drivers/gpu/drm/i915/intel_drv.h     |    8 +
+ 2 files changed, 99 insertions(+), 53 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/hw.c
-+++ b/drivers/net/wireless/ath/ath9k/hw.c
-@@ -1268,7 +1268,8 @@ int ath9k_hw_reset(struct ath_hw *ah, st
- 	macStaId1 = REG_READ(ah, AR_STA_ID1) & AR_STA_ID1_BASE_RATE_11B;
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -42,6 +42,7 @@
+ bool intel_pipe_has_type (struct drm_crtc *crtc, int type);
+ static void intel_update_watermarks(struct drm_device *dev);
+ static void intel_increase_pllclock(struct drm_crtc *crtc, bool schedule);
++static void intel_crtc_update_cursor(struct drm_crtc *crtc);
  
- 	/* For chips on which RTC reset is done, save TSF before it gets cleared */
--	if (AR_SREV_9280(ah) && ah->eep_ops->get_eeprom(ah, EEP_OL_PWRCTRL))
-+	if (AR_SREV_9100(ah) ||
-+	    (AR_SREV_9280(ah) && ah->eep_ops->get_eeprom(ah, EEP_OL_PWRCTRL)))
- 		tsf = ath9k_hw_gettsf64(ah);
- 
- 	saveLedState = REG_READ(ah, AR_CFG_LED) &
-@@ -1300,7 +1301,7 @@ int ath9k_hw_reset(struct ath_hw *ah, st
+ typedef struct {
+     /* given values */
+@@ -3403,6 +3404,9 @@ static int intel_crtc_mode_set(struct dr
+ 		return -EINVAL;
  	}
  
- 	/* Restore TSF */
--	if (tsf && AR_SREV_9280(ah) && ah->eep_ops->get_eeprom(ah, EEP_OL_PWRCTRL))
-+	if (tsf)
- 		ath9k_hw_settsf64(ah, tsf);
- 
- 	if (AR_SREV_9280_10_OR_LATER(ah))
-@@ -1310,6 +1311,17 @@ int ath9k_hw_reset(struct ath_hw *ah, st
- 	if (r)
- 		return r;
- 
-+	/*
-+	 * Some AR91xx SoC devices frequently fail to accept TSF writes
-+	 * right after the chip reset. When that happens, write a new
-+	 * value after the initvals have been applied, with an offset
-+	 * based on measured time difference
-+	 */
-+	if (AR_SREV_9100(ah) && (ath9k_hw_gettsf64(ah) < tsf)) {
-+		tsf += 1500;
-+		ath9k_hw_settsf64(ah, tsf);
-+	}
++	/* Ensure that the cursor is valid for the new mode before changing... */
++	intel_crtc_update_cursor(crtc);
 +
- 	/* Setup MFP options for CCMP */
- 	if (AR_SREV_9280_20_OR_LATER(ah)) {
- 		/* Mask Retry(b11), PwrMgt(b12), MoreData(b13) to 0 in mgmt
+ 	if (is_lvds && dev_priv->lvds_downclock_avail) {
+ 		has_reduced_clock = limit->find_pll(limit, crtc,
+ 							    dev_priv->lvds_downclock,
+@@ -3939,6 +3943,85 @@ void intel_crtc_load_lut(struct drm_crtc
+ 	}
+ }
+ 
++/* If no-part of the cursor is visible on the framebuffer, then the GPU may hang... */
++static void intel_crtc_update_cursor(struct drm_crtc *crtc)
++{
++	struct drm_device *dev = crtc->dev;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
++	int pipe = intel_crtc->pipe;
++	int x = intel_crtc->cursor_x;
++	int y = intel_crtc->cursor_y;
++	uint32_t base, pos;
++	bool visible;
++
++	pos = 0;
++
++	if (crtc->fb) {
++		base = intel_crtc->cursor_addr;
++		if (x > (int) crtc->fb->width)
++			base = 0;
++
++		if (y > (int) crtc->fb->height)
++			base = 0;
++	} else
++		base = 0;
++
++	if (x < 0) {
++		if (x + intel_crtc->cursor_width < 0)
++			base = 0;
++
++		pos |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
++		x = -x;
++	}
++	pos |= x << CURSOR_X_SHIFT;
++
++	if (y < 0) {
++		if (y + intel_crtc->cursor_height < 0)
++			base = 0;
++
++		pos |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
++		y = -y;
++	}
++	pos |= y << CURSOR_Y_SHIFT;
++
++	visible = base != 0;
++	if (!visible && !intel_crtc->cursor_visble)
++		return;
++
++	I915_WRITE(pipe == 0 ? CURAPOS : CURBPOS, pos);
++	if (intel_crtc->cursor_visble != visible) {
++		uint32_t cntl = I915_READ(pipe == 0 ? CURACNTR : CURBCNTR);
++		if (base) {
++			/* Hooray for CUR*CNTR differences */
++			if (IS_MOBILE(dev) || IS_I9XX(dev)) {
++				cntl &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
++				cntl |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
++				cntl |= pipe << 28; /* Connect to correct pipe */
++			} else {
++				cntl &= ~(CURSOR_FORMAT_MASK);
++				cntl |= CURSOR_ENABLE;
++				cntl |= CURSOR_FORMAT_ARGB | CURSOR_GAMMA_ENABLE;
++			}
++		} else {
++			if (IS_MOBILE(dev) || IS_I9XX(dev)) {
++				cntl &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
++				cntl |= CURSOR_MODE_DISABLE;
++			} else {
++				cntl &= ~(CURSOR_ENABLE | CURSOR_GAMMA_ENABLE);
++			}
++		}
++		I915_WRITE(pipe == 0 ? CURACNTR : CURBCNTR, cntl);
++
++		intel_crtc->cursor_visble = visible;
++	}
++	/* and commit changes on next vblank */
++	I915_WRITE(pipe == 0 ? CURABASE : CURBBASE, base);
++
++	if (visible)
++		intel_mark_busy(dev, to_intel_framebuffer(crtc->fb)->obj);
++}
++
+ static int intel_crtc_cursor_set(struct drm_crtc *crtc,
+ 				 struct drm_file *file_priv,
+ 				 uint32_t handle,
+@@ -3949,11 +4032,7 @@ static int intel_crtc_cursor_set(struct
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+ 	struct drm_gem_object *bo;
+ 	struct drm_i915_gem_object *obj_priv;
+-	int pipe = intel_crtc->pipe;
+-	uint32_t control = (pipe == 0) ? CURACNTR : CURBCNTR;
+-	uint32_t base = (pipe == 0) ? CURABASE : CURBBASE;
+-	uint32_t temp = I915_READ(control);
+-	size_t addr;
++	uint32_t addr;
+ 	int ret;
+ 
+ 	DRM_DEBUG_KMS("\n");
+@@ -3961,12 +4040,6 @@ static int intel_crtc_cursor_set(struct
+ 	/* if we want to turn off the cursor ignore width and height */
+ 	if (!handle) {
+ 		DRM_DEBUG_KMS("cursor off\n");
+-		if (IS_MOBILE(dev) || IS_I9XX(dev)) {
+-			temp &= ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+-			temp |= CURSOR_MODE_DISABLE;
+-		} else {
+-			temp &= ~(CURSOR_ENABLE | CURSOR_GAMMA_ENABLE);
+-		}
+ 		addr = 0;
+ 		bo = NULL;
+ 		mutex_lock(&dev->struct_mutex);
+@@ -4008,7 +4081,8 @@ static int intel_crtc_cursor_set(struct
+ 
+ 		addr = obj_priv->gtt_offset;
+ 	} else {
+-		ret = i915_gem_attach_phys_object(dev, bo, (pipe == 0) ? I915_GEM_PHYS_CURSOR_0 : I915_GEM_PHYS_CURSOR_1);
++		ret = i915_gem_attach_phys_object(dev, bo,
++						  (intel_crtc->pipe == 0) ? I915_GEM_PHYS_CURSOR_0 : I915_GEM_PHYS_CURSOR_1);
+ 		if (ret) {
+ 			DRM_ERROR("failed to attach phys object\n");
+ 			goto fail_locked;
+@@ -4019,21 +4093,7 @@ static int intel_crtc_cursor_set(struct
+ 	if (!IS_I9XX(dev))
+ 		I915_WRITE(CURSIZE, (height << 12) | width);
+ 
+-	/* Hooray for CUR*CNTR differences */
+-	if (IS_MOBILE(dev) || IS_I9XX(dev)) {
+-		temp &= ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
+-		temp |= CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
+-		temp |= (pipe << 28); /* Connect to correct pipe */
+-	} else {
+-		temp &= ~(CURSOR_FORMAT_MASK);
+-		temp |= CURSOR_ENABLE;
+-		temp |= CURSOR_FORMAT_ARGB | CURSOR_GAMMA_ENABLE;
+-	}
+-
+  finish:
+-	I915_WRITE(control, temp);
+-	I915_WRITE(base, addr);
+-
+ 	if (intel_crtc->cursor_bo) {
+ 		if (dev_priv->info->cursor_needs_physical) {
+ 			if (intel_crtc->cursor_bo != bo)
+@@ -4047,6 +4107,10 @@ static int intel_crtc_cursor_set(struct
+ 
+ 	intel_crtc->cursor_addr = addr;
+ 	intel_crtc->cursor_bo = bo;
++	intel_crtc->cursor_width = width;
++	intel_crtc->cursor_height = height;
++
++	intel_crtc_update_cursor(crtc);
+ 
+ 	return 0;
+ fail_unpin:
+@@ -4060,34 +4124,12 @@ fail:
+ 
+ static int intel_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+ {
+-	struct drm_device *dev = crtc->dev;
+-	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	struct intel_crtc *intel_crtc = to_intel_crtc(crtc);
+-	struct intel_framebuffer *intel_fb;
+-	int pipe = intel_crtc->pipe;
+-	uint32_t temp = 0;
+-	uint32_t adder;
+-
+-	if (crtc->fb) {
+-		intel_fb = to_intel_framebuffer(crtc->fb);
+-		intel_mark_busy(dev, intel_fb->obj);
+-	}
+-
+-	if (x < 0) {
+-		temp |= CURSOR_POS_SIGN << CURSOR_X_SHIFT;
+-		x = -x;
+-	}
+-	if (y < 0) {
+-		temp |= CURSOR_POS_SIGN << CURSOR_Y_SHIFT;
+-		y = -y;
+-	}
+ 
+-	temp |= x << CURSOR_X_SHIFT;
+-	temp |= y << CURSOR_Y_SHIFT;
++	intel_crtc->cursor_x = x;
++	intel_crtc->cursor_y = y;
+ 
+-	adder = intel_crtc->cursor_addr;
+-	I915_WRITE((pipe == 0) ? CURAPOS : CURBPOS, temp);
+-	I915_WRITE((pipe == 0) ? CURABASE : CURBBASE, adder);
++	intel_crtc_update_cursor(crtc);
+ 
+ 	return 0;
+ }
+--- a/drivers/gpu/drm/i915/intel_drv.h
++++ b/drivers/gpu/drm/i915/intel_drv.h
+@@ -143,8 +143,6 @@ struct intel_crtc {
+ 	struct drm_crtc base;
+ 	enum pipe pipe;
+ 	enum plane plane;
+-	struct drm_gem_object *cursor_bo;
+-	uint32_t cursor_addr;
+ 	u8 lut_r[256], lut_g[256], lut_b[256];
+ 	int dpms_mode;
+ 	bool busy; /* is scanout buffer being updated frequently? */
+@@ -153,6 +151,12 @@ struct intel_crtc {
+ 	struct intel_overlay *overlay;
+ 	struct intel_unpin_work *unpin_work;
+ 	int fdi_lanes;
++
++	struct drm_gem_object *cursor_bo;
++	uint32_t cursor_addr;
++	int16_t cursor_x, cursor_y;
++	int16_t cursor_width, cursor_height;
++	bool cursor_visble;
+ };
+ 
+ #define to_intel_crtc(x) container_of(x, struct intel_crtc, base)
 
 
