@@ -1,76 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933746Ab0HFGSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 02:18:41 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:42942 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752198Ab0HFGSi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 02:18:38 -0400
-X-AuditID: b753bd60-a5cd7ba000000a18-48-4c5ba939c158
-Message-ID: <4C5BA937.5010504@hitachi.com>
-Date: Fri, 06 Aug 2010 15:18:31 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1756384Ab0HFGaW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 02:30:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59433 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752900Ab0HFGaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 02:30:18 -0400
+Message-ID: <4C5BABD3.6010303@kernel.org>
+Date: Fri, 06 Aug 2010 08:29:39 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>,
-        2nddept-manager@sdl.hitachi.co.jp
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-References: <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>	 <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal>	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>	 <1280855904.1923.675.camel@laptop> <20100803182556.GA13798@Krystal>	 <1280904410.1923.700.camel@laptop>  <20100804144539.GA4617@Krystal> <1280933788.1923.1281.camel@laptop>
-In-Reply-To: <1280933788.1923.1281.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+To: Tao Ma <tao.ma@oracle.com>
+CC: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jens.axboe@kernel.dk>,
+        stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
+        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
+Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and
+ SWRITE to match the corresponding BIO_RW_* bits
+References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net> <4C52A98A.7060507@kernel.org>	<20100802104227.79340b49@notabene> <4C56D30A.3000403@kernel.org> <x49y6ckc302.fsf@segfault.boston.devel.redhat.com> <4C5B89DB.5050106@oracle.com>
+In-Reply-To: <4C5B89DB.5050106@oracle.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEA
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 06 Aug 2010 06:29:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra wrote:
-> On Wed, 2010-08-04 at 10:45 -0400, Mathieu Desnoyers wrote:
+Hello,
+
+On 08/06/2010 06:04 AM, Tao Ma wrote:
+> If only this patch goes into stable, do we need to change RWA_MASK in this patch also(I have seen you change it the 2/2)?
 > 
->> How do you plan to read the data concurrently with the writer overwriting the
->> data while you are reading it without corruption ?
-> 
-> I don't consider reading while writing (in overwrite mode) a valid case.
-> 
-> If you want to use overwrite, stop the writer before reading it.
+> -#define RWA_MASK        2
+> +#define RWA_MASK        16
 
-For example, would you like to read system audit log always after
-stop the audit?
+Yeah, Neil already pointed it out and updated patch has been posted
+and merged.
 
-NO, that's a most important requirement for tracers, especially for
-system admins (they're the most important users of Linux) to check
-the system health and catch system troubles.
-
-For performance measurement and checking hotspot, one-shot tracing
-is enough. But it's just for developers. But for the real world
-computing, Linux is just an OS, users want to run their system,
-middleware and applications, without troubles. But when they hit
-a trouble, they wanna shoot it ASAP.
-The flight recorder mode is mainly for those users.
-
-Thank you,
+Thanks.
 
 -- 
-Masami HIRAMATSU
-2nd Research Dept.
-Hitachi, Ltd., Systems Development Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+tejun
