@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965126Ab0HFT2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:28:08 -0400
-Received: from kroah.org ([198.145.64.141]:43480 "EHLO coco.kroah.org"
+	id S965690Ab0HFTdc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:33:32 -0400
+Received: from kroah.org ([198.145.64.141]:43550 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935089Ab0HFT1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:27:51 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192114.950626346@clark.site>
+	id S965153Ab0HFT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:28:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:16 2010
+Message-Id: <20100806192116.186301418@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:47 -0700
+Date: Fri, 06 Aug 2010 12:20:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Juergen Beisert <j.beisert@pengutronix.de>,
-        Daniel Mack <daniel@caiaq.de>, Baruch Siach <baruch@tkos.co.il>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [06/36] arm/imx/gpio: add spinlock protection
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [20/36] iwlwifi: fix scan abort
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Baruch Siach <baruch@tkos.co.il>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
-commit 14cb0deb66fcfca8fdbef75da8c84b5405a8c767 upstream.
+commit d28232b461b8d54b09e59325dbac8b0913ce2049 upstream.
 
-The GPIO registers need protection from concurrent access for operations that
-are not atomic.
+Fix possible double priv->mutex lock introduced by commit
+a69b03e941abae00380fc6bc1877fb797a1b31e6
+"iwlwifi: cancel scan watchdog in iwl_bg_abort_scan" .
+We can not call cancel_delayed_work_sync(&priv->scan_check) with
+priv->mutex locked because workqueue function iwl_bg_scan_check()
+take that lock internally.
 
-Cc: Juergen Beisert <j.beisert@pengutronix.de>
-Cc: Daniel Mack <daniel@caiaq.de>
-Reported-by: rpkamiak@rockwellcollins.com
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+We do not need to synchronize when canceling priv->scan_check work.
+We can avoid races (sending double abort command or send no
+command at all) using STATUS_SCAN_ABORT bit. Moreover
+current iwl_bg_scan_check() code seems to be broken, as
+we should not send abort commands when currently aborting.
+
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/plat-mxc/gpio.c              |    8 ++++++++
- arch/arm/plat-mxc/include/mach/gpio.h |    1 +
- 2 files changed, 9 insertions(+)
+ drivers/net/wireless/iwlwifi/iwl-scan.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---- a/arch/arm/plat-mxc/gpio.c
-+++ b/arch/arm/plat-mxc/gpio.c
-@@ -215,13 +215,16 @@ static void _set_gpio_direction(struct g
- 	struct mxc_gpio_port *port =
- 		container_of(chip, struct mxc_gpio_port, chip);
- 	u32 l;
-+	unsigned long flags;
+--- a/drivers/net/wireless/iwlwifi/iwl-scan.c
++++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
+@@ -607,11 +607,10 @@ void iwl_bg_scan_check(struct work_struc
+ 		return;
  
-+	spin_lock_irqsave(&port->lock, flags);
- 	l = __raw_readl(port->base + GPIO_GDIR);
- 	if (dir)
- 		l |= 1 << offset;
- 	else
- 		l &= ~(1 << offset);
- 	__raw_writel(l, port->base + GPIO_GDIR);
-+	spin_unlock_irqrestore(&port->lock, flags);
+ 	mutex_lock(&priv->mutex);
+-	if (test_bit(STATUS_SCANNING, &priv->status) ||
+-	    test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
+-		IWL_DEBUG_SCAN(priv, "Scan completion watchdog resetting "
+-			"adapter (%dms)\n",
+-			jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
++	if (test_bit(STATUS_SCANNING, &priv->status) &&
++	    !test_bit(STATUS_SCAN_ABORTING, &priv->status)) {
++		IWL_DEBUG_SCAN(priv, "Scan completion watchdog (%dms)\n",
++			       jiffies_to_msecs(IWL_SCAN_CHECK_WATCHDOG));
+ 
+ 		if (!test_bit(STATUS_EXIT_PENDING, &priv->status))
+ 			iwl_send_scan_abort(priv);
+@@ -950,12 +949,11 @@ void iwl_bg_abort_scan(struct work_struc
+ 	    !test_bit(STATUS_GEO_CONFIGURED, &priv->status))
+ 		return;
+ 
+-	mutex_lock(&priv->mutex);
+-
+-	cancel_delayed_work_sync(&priv->scan_check);
+-	set_bit(STATUS_SCAN_ABORTING, &priv->status);
+-	iwl_send_scan_abort(priv);
++	cancel_delayed_work(&priv->scan_check);
+ 
++	mutex_lock(&priv->mutex);
++	if (test_bit(STATUS_SCAN_ABORTING, &priv->status))
++		iwl_send_scan_abort(priv);
+ 	mutex_unlock(&priv->mutex);
  }
- 
- static void mxc_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-@@ -230,9 +233,12 @@ static void mxc_gpio_set(struct gpio_chi
- 		container_of(chip, struct mxc_gpio_port, chip);
- 	void __iomem *reg = port->base + GPIO_DR;
- 	u32 l;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&port->lock, flags);
- 	l = (__raw_readl(reg) & (~(1 << offset))) | (value << offset);
- 	__raw_writel(l, reg);
-+	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- static int mxc_gpio_get(struct gpio_chip *chip, unsigned offset)
-@@ -286,6 +292,8 @@ int __init mxc_gpio_init(struct mxc_gpio
- 		port[i].chip.base = i * 32;
- 		port[i].chip.ngpio = 32;
- 
-+		spin_lock_init(&port[i].lock);
-+
- 		/* its a serious configuration bug when it fails */
- 		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
- 
---- a/arch/arm/plat-mxc/include/mach/gpio.h
-+++ b/arch/arm/plat-mxc/include/mach/gpio.h
-@@ -36,6 +36,7 @@ struct mxc_gpio_port {
- 	int virtual_irq_start;
- 	struct gpio_chip chip;
- 	u32 both_edges;
-+	spinlock_t lock;
- };
- 
- int mxc_gpio_init(struct mxc_gpio_port*, int);
+ EXPORT_SYMBOL(iwl_bg_abort_scan);
 
 
