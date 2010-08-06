@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935773Ab0HFTKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:10:24 -0400
-Received: from kroah.org ([198.145.64.141]:58611 "EHLO coco.kroah.org"
+	id S935797Ab0HFTK4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:10:56 -0400
+Received: from kroah.org ([198.145.64.141]:58599 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965123Ab0HFTAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
-Message-Id: <20100806185835.989589396@clark.site>
+	id S964980Ab0HFTAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:35 2010
+Message-Id: <20100806185835.814252156@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:19 -0700
+Date: Fri, 06 Aug 2010 11:57:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Airlie <airlied@redhat.com>, David Howells <dhowells@redhat.com>,
-        Kurt Garloff <garloff@suse.de>
-Subject: [24/34] slow-work: use get_ref wrapper instead of directly calling get_ref
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [22/34] SCSI: enclosure: fix error path - actually return ERR_PTR() on error
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,33 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 88be12c440cfa2fa3f5be83507360aac9ea1c54e upstream.
+commit a91c1be21704113b023919826c6d531da46656ef upstream.
 
-Otherwise we can get an oops if the user has no get_ref/put_ref
-requirement.
+we also need to clean up and free the cdev.
 
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Kurt Garloff <garloff@suse.de>
+Reported-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- kernel/slow-work.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/enclosure.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/kernel/slow-work.c
-+++ b/kernel/slow-work.c
-@@ -640,7 +640,7 @@ int delayed_slow_work_enqueue(struct del
- 			goto cancelled;
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -284,8 +284,11 @@ enclosure_component_register(struct encl
+ 	cdev->groups = enclosure_groups;
  
- 		/* the timer holds a reference whilst it is pending */
--		ret = work->ops->get_ref(work);
-+		ret = slow_work_get_ref(work);
- 		if (ret < 0)
- 			goto cant_get_ref;
+ 	err = device_register(cdev);
+-	if (err)
+-		ERR_PTR(err);
++	if (err) {
++		ecomp->number = -1;
++		put_device(cdev);
++		return ERR_PTR(err);
++	}
  
+ 	return ecomp;
+ }
 
 
