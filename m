@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933499Ab0HFFLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:11:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52226 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab0HFFLm (ORCPT
+	id S933647Ab0HFFN7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:13:59 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:37376 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab0HFFN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:11:42 -0400
-Message-ID: <4C5B965F.4020109@kernel.org>
-Date: Thu, 05 Aug 2010 21:58:07 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
+	Fri, 6 Aug 2010 01:13:57 -0400
+Date: Fri, 6 Aug 2010 07:13:54 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-References: <20100803.203814.59697285.davem@davemloft.net> 	<AANLkTimxv1y3QJ7s+ghi1FFCcwnUVWT1n6dvT-NNN=Oo@mail.gmail.com> 	<AANLkTinU4+tcm2O_BVBFkHSdnx7JEPtM4sw_s--qdUKC@mail.gmail.com> <AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
-In-Reply-To: <AANLkTi=3dVWKtgL2A=4xm_1VSk64--3Zk_fQBYUdAAn+@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C5B9963.0166,ss=1,fgs=0
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
+        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
+        ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] kconfig: fix make oldconfig
+Message-ID: <20100806051354.GA24343@merkur.ravnborg.org>
+References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> <4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 07:15 PM, Linus Torvalds wrote:
-> On Thu, Aug 5, 2010 at 7:04 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>
->>  CC      drivers/net/ixgbe/ixgbe_main.o
->> drivers/net/ixgbe/ixgbe_main.c: In function ‘ixgbe_select_queue’:
->> drivers/net/ixgbe/ixgbe_main.c:6159: error: ‘struct ixgbe_fcoe’ has no member named ‘up’
-> 
-> Hmm. You must have some other version of that file than I do. Line
-> 6159 is in ixgbe_init_module() in my source tree.
-> 
+[PATCH] kconfig: fix make oldconfig
 
-http://patchwork.ozlabs.org/patch/60777/
+Linus wrote:
+ This seems to make "make oldconfig" a _lot_ more verbose than it
+ used to be. In a very annoying way.
 
-Yinghai
+ I just did a quick git bisect. It's introduced by commit 4062f1a4c030
+ ("kconfig: use long options in conf") by Sam Ravnborg. Apparently that
+ thing is totally buggy, and doesn't just change the option names, but
+ actively breaks them.
+
+The old behaviour (from years ago) were reintroduced by accident.
+Fix this so we are back to the version that are silent
+if there is nothing to ask about.
+
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
+
+Sorry for this regression. Dunno how I missed it.
+I guess I only tested "silentoldconfig".
+
+Following patch seems obviously correct but as I am on the way
+out of the door I could not do much testing.
+
+	Sam
+
+diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
+index 010600e..274f271 100644
+--- a/scripts/kconfig/conf.c
++++ b/scripts/kconfig/conf.c
+@@ -599,12 +599,12 @@ int main(int ac, char **av)
+ 		break;
+ 	case savedefconfig:
+ 		break;
+-	case oldconfig:
+ 	case oldaskconfig:
+ 		rootEntry = &rootmenu;
+ 		conf(&rootmenu);
+ 		input_mode = silentoldconfig;
+ 		/* fall through */
++	case oldconfig:
+ 	case listnewconfig:
+ 	case oldnoconfig:
+ 	case silentoldconfig:
