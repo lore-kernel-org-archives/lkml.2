@@ -1,74 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760990Ab0HFCq0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 22:46:26 -0400
-Received: from cp-out9.libero.it ([212.52.84.109]:52043 "EHLO
-	cp-out9.libero.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390Ab0HFCqX (ORCPT
+	id S935341Ab0HFCyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 22:54:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63892 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935307Ab0HFCyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 22:46:23 -0400
-X-Greylist: delayed 347 seconds by postgrey-1.27 at vger.kernel.org; Thu, 05 Aug 2010 22:46:22 EDT
-Subject: Re: Skip looking for ioapic overrides when ioapics are not present
-From: Guido Trentalancia <guido@trentalancia.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain
-Date: Fri, 06 Aug 2010 04:40:33 +0200
-Message-Id: <1281062433.5716.18.camel@tesla.lan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	Thu, 5 Aug 2010 22:54:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=enbmqV8LUIVNzfLdeszyDB7vGGubYgnktlRCoFD0L+1yDe6RO0lQG+QaYy4derHea/
+         t3ntjsbhmnx3B4VSvitDWJ6msIR4xdnMB20GwI/fJBYfn0OXOMGM0QBYOmKU/pnWv1wf
+         +b0nI0Fkx5uWzWV3ZjJ/d1k/08Bzbb74/TOYY=
+Message-ID: <4C5B7968.7070303@gmail.com>
+Date: Thu, 05 Aug 2010 19:54:32 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Michal Marek <mmarek@suse.cz>, JBeulich@novell.com, aris@redhat.com,
+        catalin.marinas@arm.com, jacmet@sunsite.dk, lizf@cn.fujitsu.com,
+        sam@ravnborg.org, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] kbuild: kconfig changes
+References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> 	<4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
+In-Reply-To: <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have applied the patch below to the 2.6.35 kernel and it finally
-stopped reporting "Unable to locate IOAPIC for GSI..." on bootup.
-
->Eric W. Biederman writes on 2010-06-06 03:56:05
->Avinash Kurup <kurup.avinash@gmail.com> writes:
->
->> Hi Eric,
->>     I get the following errors while booting into 2.6.35-rc1. I did not
->> get these in 2.6.34 . The computer however boots and works fine, So its not
->> serious but the following errors are displayed in dmesg.
+On 08/05/2010 07:08 PM, Linus Torvalds wrote:
+> On Thu, Aug 5, 2010 at 6:27 PM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
 >>
->> [    0.089969] ERROR: Unable to locate IOAPIC for GSI 13
->> [    0.090556] ERROR: Unable to locate IOAPIC for GSI 8
->> [    0.091104] ERROR: Unable to locate IOAPIC for GSI 12
->> [    0.091375] ERROR: Unable to locate IOAPIC for GSI 1
->> [    0.093195] ERROR: Unable to locate IOAPIC for GSI 4
->> [    0.094342] ERROR: Unable to locate IOAPIC for GSI 10
->> [    0.096335] ERROR: Unable to locate IOAPIC for GSI 6
+>> With what I submitted I did not test make oldconfig, only make menuconfig
+>> due to gcc 4.6.0 giving me a slew of warnings.
+>>  From looking at make oldconfig I do see a more detailed explanation of what
+>> each option is(last I remember it was more of a line with y/n)but then again
+>> you could be seeing something completly different.
 >
->The new warning originates from acpi_get_override_irq, which I changed to
->use helper functions that warn when they fail.
->
->When IOAPICs and ACPI are enabled in a kernel and run on ACPI hardware
->that doesn't use the ioapics the pnp acpi code calls this function,
->looking for ACPI irq overrides.  ACPI irq overrides exist only in the
->ioapic case so this function will never succeed.  So make the function
->fail fast so we don't call into help functions that legitimately
->complain when they fail.
->
->Tested-by: Avinash Kurup <kurup.avinash@gmail.com>
->Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
->
->---
->
->diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
->index 33f3563..226a6d1 100644
->--- a/arch/x86/kernel/apic/io_apic.c
->+++ b/arch/x86/kernel/apic/io_apic.c
->@@ -4066,6 +4066,9 @@  int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
-> {
-> 	int ioapic, pin, idx;
-> 
->+	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
->+		return -1;
->+
-> 	if (skip_ioapic_setup)
-> 		return -1;
-> 
+> Just test what I described:  do a "make oldconfig" (do it twice, if
+> the first one needs to actually get some input). Do it on 2.6.35, and
+> then on the current tree. Look at the _huge_ difference in output.
 >
 
+yeah I see what your hitting, just experienced what you posted
 
+	make oldconfig
+    scripts/kconfig/conf -o arch/x86/Kconfig
+    #
+    # configuration written to .config
+    #
+
+(just sits there)
+
+seemed to not want to go away.(doing a make menuconfig got
+make oldconfig to wake up of whatever it was in) as for reproducing
+(even though already bisected) seems once make oldconfig starts working 
+properly, hitting the above doesn't happen as easily.
+
+
+>> Now if this is with what I submitted then I'll have a look at it and see if I can get this fixed.
+>
+> I just did a quick git bisect. It's introduced by commit 4062f1a4c030
+> ("kconfig: use long options in conf") by Sam Ravnborg. Apparently that
+> thing is totally buggy, and doesn't just change the option names, but
+> actively breaks them.
+>
+>                   Linus
+>
+
+cool..
+
+Justin P. Mattock
