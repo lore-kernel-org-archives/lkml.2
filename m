@@ -1,48 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965066Ab0HFVMt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 17:12:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35355 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964820Ab0HFVMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 17:12:47 -0400
-Message-ID: <4C5C7AC8.9050307@zytor.com>
-Date: Fri, 06 Aug 2010 14:12:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1761743Ab0HFVTL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 17:19:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61980 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392Ab0HFVTJ (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 6 Aug 2010 17:19:09 -0400
+Date: Fri, 6 Aug 2010 17:17:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Daniel Kiper <dkiper@net-space.pl>, stefano.stabellini@eu.citrix.com,
+        linux-mm@kvack.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org, v.tolstov@selfip.ru
+Subject: Re: [PATCH] GSoC 2010 - Memory hotplug support for Xen guests -
+ second fully working version - once again
+Message-ID: <20100806211726.GA18466@phenom.dumpdata.com>
+References: <20100806111147.GA31683@router-fw-old.local.net-space.pl>
+ <20100806163408.GA8678@phenom.dumpdata.com>
+ <4C5C6067.1000403@goop.org>
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: - <kd6lvw@yahoo.com>, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [00/38] 2.6.35.1-stable review
-References: <512689.43589.qm@web84207.mail.re3.yahoo.com> <20100806203443.GA24060@suse.de>
-In-Reply-To: <20100806203443.GA24060@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C5C6067.1000403@goop.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2010 01:34 PM, Greg KH wrote:
-> On Fri, Aug 06, 2010 at 01:22:10PM -0700, - wrote:
->> Does not include the fix to this bug (introduced in 2.6.35.0):
->>
->>     https://bugzilla.kernel.org/show_bug.cgi?id=16506
->>
->> Affected file:  arch/x86/lib/atomic64_386_32.S
->>
->> This issue causes a compile-time blocking failure.  The patch fixes the problem for older versions of BINUTILS equal to or more recent than the minimum required version currently listed in file Documentation/Changes.
->>
->> Patch:  https://bugzilla.kernel.org/attachment.cgi?id=27360
->>
->> Please include this in 2.6.35.1 and any other affected kernels.
->>
->> The problem was introduced on February 24 through March 1, 2010 by multiple commits, starting with commit a7e926abc3adfbd2e5e20d2b46177adb4e313915.
->>
->
-> Which exact patch that is in Linus's tree fixes the problem?  Do you
-> have the git commit id of it?  That's what I need here.
->
+> >Can you repost a patch that is on top of a virgin tree please?
+> 
+> I just thanked him for posting a delta ;)  I've pushed this into
+> xen/memory-hotplug so you can easily generate a complete diff with
+> "git diff v2.6.34..xen/memory-hotplug".
 
-Not upstream just yet.
-
-	-hpa
+Ahh, I didn't know you had it in your tree already. Will use the git
+diff for a more careful analysis.
