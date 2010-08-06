@@ -1,118 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964864Ab0HFSfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:35:37 -0400
-Received: from kroah.org ([198.145.64.141]:48578 "EHLO coco.kroah.org"
+	id S965063Ab0HFSmB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:42:01 -0400
+Received: from kroah.org ([198.145.64.141]:42878 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761857Ab0HFSf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:00 2010
-Message-Id: <20100806183200.774085783@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:29 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Stephen Hemminger <shemminger@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [08/38] arp_notify: allow drivers to explicitly request a notification event.
-In-Reply-To: <20100806183250.GA23019@kroah.com>
+	id S964905Ab0HFSlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:41:53 -0400
+Date: Fri, 6 Aug 2010 11:41:49 -0700
+From: Greg KH <greg@kroah.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [GIT PATCH] STAGING merge for .36
+Message-ID: <20100806184149.GA23308@kroah.com>
+References: <20100805213308.GA13744@kroah.com>
+ <AANLkTikzUaTAAu1GqBGqNtvmpfG3z5_HjOCQoVEh9NO9@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikzUaTAAu1GqBGqNtvmpfG3z5_HjOCQoVEh9NO9@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Aug 06, 2010 at 11:27:02AM -0700, Linus Torvalds wrote:
+> On Thu, Aug 5, 2010 at 2:33 PM, Greg KH <greg@kroah.com> wrote:
+> > Here's the big staging tree merge for the .36 kernel.
+> >
+> >  812 files changed, 106306 insertions(+), 33784 deletions(-)
+> 
+> Hmm. How did you generate that diff? It's not what I get. I get
+> 
+>  812 files changed, 107586 insertions(+), 35064 deletions(-)
+> 
+> which is sufficiently different that it makes me worry about what's going on.
 
-------------------
+Very odd.
 
-From: Ian Campbell <Ian.Campbell@citrix.com>
+I did:
+	git diff -M --stat --summary origin..HEAD
 
-commit 06c4648d46d1b757d6b9591a86810be79818b60c upstream.
+That's what I've been doing for a while now, and it has been working for
+the other trees.
 
-Currently such notifications are only generated when the device comes up or the
-address changes. However one use case for these notifications is to enable
-faster network recovery after a virtual machine migration (by causing switches
-to relearn their MAC tables). A migration appears to the network stack as a
-temporary loss of carrier and therefore does not trigger either of the current
-conditions. Rather than adding carrier up as a trigger (which can cause issues
-when interfaces a flapping) simply add an interface which the driver can use
-to explicitly trigger the notification.
+This one was a bit different in that I did have to pull from a different
+tree for one of the drivers, but that merged together nicely from what
+the end result looked like.
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Stephen Hemminger <shemminger@linux-foundation.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Should I do something else for my pull summaries?
 
----
- include/linux/netdevice.h |    2 ++
- include/linux/notifier.h  |    1 +
- net/ipv4/devinet.c        |    1 +
- net/sched/sch_generic.c   |   18 ++++++++++++++++++
- 4 files changed, 22 insertions(+)
+> I pulled it, because the shortlog matched, and it was all in staging
+> (except for that one x86 mshyperv line), but I just wonder..
 
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1775,6 +1775,8 @@ extern void netif_carrier_on(struct net_
- 
- extern void netif_carrier_off(struct net_device *dev);
- 
-+extern void netif_notify_peers(struct net_device *dev);
-+
- /**
-  *	netif_dormant_on - mark device as dormant.
-  *	@dev: network device
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -210,6 +210,7 @@ static inline int notifier_to_errno(int
- #define NETDEV_POST_INIT	0x0010
- #define NETDEV_UNREGISTER_BATCH 0x0011
- #define NETDEV_BONDING_DESLAVE  0x0012
-+#define NETDEV_NOTIFY_PEERS	0x0012
- 
- #define SYS_DOWN	0x0001	/* Notify of system down */
- #define SYS_RESTART	SYS_DOWN
---- a/net/ipv4/devinet.c
-+++ b/net/ipv4/devinet.c
-@@ -1081,6 +1081,7 @@ static int inetdev_event(struct notifier
- 		}
- 		ip_mc_up(in_dev);
- 		/* fall through */
-+	case NETDEV_NOTIFY_PEERS:
- 	case NETDEV_CHANGEADDR:
- 		/* Send gratuitous ARP to notify of link change */
- 		if (IN_DEV_ARP_NOTIFY(in_dev)) {
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -327,6 +327,24 @@ void netif_carrier_off(struct net_device
- }
- EXPORT_SYMBOL(netif_carrier_off);
- 
-+/**
-+ * 	netif_notify_peers - notify network peers about existence of @dev
-+ * 	@dev: network device
-+ *
-+ * Generate traffic such that interested network peers are aware of
-+ * @dev, such as by generating a gratuitous ARP. This may be used when
-+ * a device wants to inform the rest of the network about some sort of
-+ * reconfiguration such as a failover event or virtual machine
-+ * migration.
-+ */
-+void netif_notify_peers(struct net_device *dev)
-+{
-+	rtnl_lock();
-+	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, dev);
-+	rtnl_unlock();
-+}
-+EXPORT_SYMBOL(netif_notify_peers);
-+
- /* "NOOP" scheduler: the best scheduler, recommended for all interfaces
-    under all circumstances. It is difficult to invent anything faster or
-    cheaper.
+That's good, but I wonder as well.
 
+thanks,
 
+greg k-h
