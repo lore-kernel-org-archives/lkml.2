@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934300Ab0HFNye (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 09:54:34 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:55852 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761382Ab0HFNya (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 09:54:30 -0400
-Date: Fri, 6 Aug 2010 15:54:29 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Nir Tzachar <nir.tzachar@gmail.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, mmarek@suse.cz,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nconfig: add search support
-Message-ID: <20100806135429.GB25864@merkur.ravnborg.org>
-References: <AANLkTimyDwWtLbc682rW-QORjU0+r+txZO-iKAini1H1@mail.gmail.com> <1280838492-9942-1-git-send-email-nir.tzachar@gmail.com> <20100805100408.5b724047.randy.dunlap@oracle.com> <AANLkTi=9hBYy4k=tJBo38O98z_O646ZpStqNdEYWP3MO@mail.gmail.com>
+	id S1761403Ab0HFOAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 10:00:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54558 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756881Ab0HFOAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 10:00:30 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Boot-time dynamic debugging?
+Date: Fri, 6 Aug 2010 16:03:53 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: Jason Baron <jbaron@redhat.com>, Greg KH <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, bjorn.helgaas@hp.com
+References: <AANLkTiksVFpU+3iek4-TM2q=wSDGpW_nJAr8XtHT06LE@mail.gmail.com> <AANLkTi=k5nkUk9LOS=EGHGSq=5Qe8_L-1d3_t9byxMrt@mail.gmail.com> <201008021614.00038.trenn@suse.de>
+In-Reply-To: <201008021614.00038.trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=9hBYy4k=tJBo38O98z_O646ZpStqNdEYWP3MO@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008061603.54058.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>
-> >> Searching: pressing '/' triggers search mode. nconfig performs a
-> >>            regular string compare, case insensitive, starting at
-> >
-> > I would say: simple string compare
-> > "regular" has no meaning (at least for me) there.
+On Monday 02 August 2010 16:13:59 Thomas Renninger wrote:
+> On Monday 02 August 2010 15:53:24 Pekka Enberg wrote:
+...
+> > Btw, can you easily enable all dev_dbg() calls with the boot parameter?
+> I expect yes, but never explicitly tried it, dev_dbg should result in
+> printk(KERN_DEBUG ...) after some macro/inline func processing.
+My statement was wrong, from what I can see having a closer look:
+printk(KERN_DEBUG...) messages will not show up, but dev_dbg will:
+----------
+asmlinkage int printk(const char * fmt, ...)
+        __attribute__ ((format (printf, 1, 2))) __cold;
+static inline int printk(const char *s, ...)
+        __attribute__ ((format (printf, 1, 2)));
+----------
+I wonder whether the KERN_DEBUG can be differed at compile time
+and could also result in a dynamic_pr_debug...
 
-pressing '/' triggers interactive search mode. nconfig search for the
-string in the menu prompts (no regex support).
+----------
+#elif defined(CONFIG_DYNAMIC_DEBUG)
+/* dynamic_pr_debug() uses pr_fmt() internally so we don't need it here */
+#define pr_debug(fmt, ...) \
+        dynamic_pr_debug(fmt, ##__VA_ARGS__)
 
-[Just a suggestion for a bt different wording]
+#elif defined(CONFIG_DYNAMIC_DEBUG)
+#define dev_dbg(dev, format, ...)                    \
+do {                                                 \
+        dynamic_dev_dbg(dev, format, ##__VA_ARGS__); \
+}
+----------
 
-> > Maybe I should just stick to config symbol searches.  I don't think it's all
-> > that likely that people will know how each menu line text begins.
-> >
-> >
-> 
-> We can replace strcasecmp with strcasestr. I agree it would be more useful.
-
-This is better.
-
-> 
-> > As for the search UI, I'd rather that it be presented like the symbol search,
-> > in a box, instead of just a single line at the top of the screen.
-> 
-> But then it is not interactive. I was aiming for something similar to
-> vim's search, where the search is matched as you type and the only
-> free terminal real-estate to display the match string was at the top
-> of the screen. I think such a minimal design is better than a
-> cumbersome text box which displays the search results afterwards (as
-> is symbol search), as the search is only intended for the currently
-> displayed menu and the user would usually just want to save the extra
-> typing of navigating to a specific menu item.
-
-It was introduced to replace the "hotkey" support, and as such is useful.
-If we want to search for content of all prompts then we should extend
-the symbols search to do so.
-Maybe we should just let it search for both symbols _and_ propmts.
-
-If one search for HOTPLUG_CPU there is no hits in any propmts anyway.
-And if one search for "Pentium" there is no config symbol hits.
-
-	Sam
+      Thomas
