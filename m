@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761740Ab0HFSKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:10:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46766 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751136Ab0HFSKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:10:44 -0400
+	id S1761748Ab0HFSSm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:18:42 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:55056 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761657Ab0HFSSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:18:40 -0400
+Date: Fri, 6 Aug 2010 11:18:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
+        kevin granade <kevin.granade@gmail.com>,
+        Arve Hj?nnev?g <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100806181832.GJ2432@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm>
+ <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
+ <20100805230304.GQ2447@linux.vnet.ibm.com>
+ <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
+ <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
+ <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com>
+ <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
+ <20100806123047.GE31326@sirena.org.uk>
+ <20100806172226.GH2432@linux.vnet.ibm.com>
+ <20100806173325.GA25367@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
-In-Reply-To: <20100806175217.GA8944@merkur.ravnborg.org>
-References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTi=hYsksUJUsrETjFouLDiKhwQHgD2oQ7XLyrOC-@mail.gmail.com> 
-	<4C5B64EA.2000804@gmail.com> <AANLkTikpsvpHuB-mWVfmqTRRMvbvhJz2LmoYBgtn4NQE@mail.gmail.com> 
-	<20100806051354.GA24343@merkur.ravnborg.org> <4C5BE229.1090801@suse.cz> 
-	<AANLkTimWHnxbYzkJ1KhuS3DgTuSRz-gMnzEJvbsY835g@mail.gmail.com> 
-	<20100806175217.GA8944@merkur.ravnborg.org>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Fri, 6 Aug 2010 11:09:41 -0700
-Message-ID: <AANLkTimkngSrDFUcHOySkf22yY3Qr3p+m2qnwDzre+zk@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: fix make oldconfig
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>,
-        "Justin P. Mattock" <justinmattock@gmail.com>, JBeulich@novell.com,
-        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
-        lizf@cn.fujitsu.com, ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806173325.GA25367@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 10:52 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
->
-> Hmm, I wonder why you call oldconfig explicitly?
->
-> A plain "make -j16" executes "silentoldconfig" if there
-> is any changes in a Kconfig* file or in .config.
-> Just double checked and it works as I expected.
->
-> So you are asked if there is any new options anyway even
-> if you skip your "oldconfig" step.
+On Fri, Aug 06, 2010 at 06:33:25PM +0100, Mark Brown wrote:
+> On Fri, Aug 06, 2010 at 10:22:26AM -0700, Paul E. McKenney wrote:
+> > On Fri, Aug 06, 2010 at 01:30:48PM +0100, Mark Brown wrote:
+> 
+> > > this (the one following the rename to suspend blockers).  Essentially
+> > > what happens in a mainline context is that some subsystems can with
+> > > varying degress of optionality ignore some or all of the instruction to
+> > > suspend and keep bits of the system alive during suspend.
+> 
+> > This underscores a basic difference between servers and these embedded
+> > devices.  When you suspend a server, it is doing nothing, because servers
+> > rely very heavily on the CPUs.  In contrast, many embedded devices can
+> > perform useful work even when the CPUs are completely powered down.
+> 
+> Well, not really from the Linux point of view.  It's not massively
+> different to something like keeping an ethernet controller sufficiently
+> alive to allow it to provide wake on LAN functionality while the system
+> is suspended in terms of what Linux has to do, and quite a few servers
+> have lights out management systems which aren't a million miles away
+> from the modem on a phone in terms of their relationship with the host
+> computer.
 
-Try this:
+The wake-on-LAN and the lights-out management systems are indeed
+interesting examples, and actually pretty good ones.  The reason I
+excluded them is that they don't do any application processing -- their
+only purpose is the care and feeding of the system itself.  In contrast,
+the embedded processors are able to do significant applications processing
+(e.g., play back music) while any CPUs are completely shut down and most
+of the memory is powered down as well.
 
-   git clean -dqfx
-   make -j16 > ../makes
-
-It doesn't work, because "make silentconfig" will say
-
-  ***
-  *** You have not yet configured your kernel!
-  *** (missing kernel config file ".config")
-  ***
-  *** Please run some configurator (e.g. "make oldconfig" or
-  *** "make menuconfig" or "make xconfig").
-  ***
-
-which is why I always run "make oldconfig".
-
-Sure, I could do it only when I need to, but quite frankly, it's much
-easier to just always do the thing that works, rather than try
-something that doesn't work, do something else, and then re-try the
-thing that can fail.
-
-                     Linus
+							Thanx, Paul
