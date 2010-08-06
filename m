@@ -1,61 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab0HFE5S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 00:57:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33330 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab0HFE5N (ORCPT
+	id S1759000Ab0HFFKQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:10:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62453 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751623Ab0HFFKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 00:57:13 -0400
-Message-ID: <4C5B89DB.5050106@oracle.com>
-Date: Fri, 06 Aug 2010 12:04:43 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Fri, 6 Aug 2010 01:10:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=QWALsFEdXxAr3pCpA9jg788+B6DLfD0H7XH26amMATSkqjBidGE7OYjtcGOWzuTs3D
+         OlQFvGWT8SUIeebI9KfW0eKPgOwNBAd2htKa0xCeAkh0/kEtzj7hKmk74k0VJjC+phIz
+         wcbhGP0aC4psycv5qkHLY8KDWEYJeGT6NNsBw=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 3/3] lib: vsprintf: added a put_dec() test and benchmark tool
+Date: Fri, 6 Aug 2010 07:10:06 +0200
+User-Agent: KMail/1.8.2
+Cc: linux-kernel@vger.kernel.org, m.nazarewicz@samsung.com,
+        "Douglas W. Jones" <jones@cs.uiowa.edu>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com> <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com> <b3cd8c92d68f3ca7104be13841f1f66f7db9f7e1.1280872240.git.mina86@mina86.com>
+In-Reply-To: <b3cd8c92d68f3ca7104be13841f1f66f7db9f7e1.1280872240.git.mina86@mina86.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jens.axboe@kernel.dk>,
-        stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and
- SWRITE to match the corresponding BIO_RW_* bits
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net> <4C52A98A.7060507@kernel.org>	<20100802104227.79340b49@notabene> <4C56D30A.3000403@kernel.org> <x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49y6ckc302.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C5B95D9.0078:SCFMA4539814,ss=1,fgs=0
+Content-Disposition: inline
+Message-Id: <201008060710.06304.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Friday 06 August 2010 00:38, Michal Nazarewicz wrote:
+> This commit adds a test application for the put_dec() and
+> family of functions that are used by the previous two commits.
+> 
+> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 
-On 08/06/2010 02:45 AM, Jeff Moyer wrote:
-> Tejun Heo<tj@kernel.org>  writes:
->
->> Commit a82afdf (block: use the same failfast bits for bio and request)
->> moved BIO_RW_* bits around such that they match up with REQ_* bits.
->> Unfortunately, fs.h hard coded READ, WRITE, READA and SWRITE as 0, 1,
->> 2 and 3, and expected them to match with BIO_RW_* bits.  READ/WRITE
->> didn't change but BIO_RW_AHEAD was moved to bit 4 instead of bit 1,
->> breaking READA and SWRITE.
->>
->> This patch updates READA and SWRITE such that they match the BIO_RW_*
->> bits again.  A follow up patch will update the definitions to directly
->> use BIO_RW_* bits so that this kind of breakage won't happen again.
->>
->> Stable: The offending commit a82afdf was released with v2.6.32, so
->> this patch should be applied to all kernels since then but it must
->> _NOT_ be applied to kernels earlier than that.
-If only this patch goes into stable, do we need to change RWA_MASK in 
-this patch also(I have seen you change it the 2/2)?
+> +put-dec-test: put-dec-test.c
+> +	exec $(CC) $(CFLAGS) -o $@ $<
 
--#define RWA_MASK        2
-+#define RWA_MASK        16
+(1) Why exec?
+(2) Add -Wall, you'd be surprised
 
-Regards,
-Tao
 
+> +static uint64_t rand_64(void)
+> +{
+> +	uint64_t v = 0, m = 1;
+> +	for (;;) {
+> +		uint64_t n;
+> +		v = m * rand();
+> +		n = m + m * RAND_MAX;
+> +		if (n < m)
+> +			break;
+> +		m = n;
+> +	}
+> +	return v;
+> +}
+
+What this function do? Looks cryptic. In my testing, it picks 0
+quite often.
+
+
+> +static char buf1[24];
+
+Can you size the array safely, without assuming that long long
+is no wider than 64 bits?
+
+
+> +#define FUNC(func, outer, inner, correction, format, value) do {	\
+> +		struct timeval start;					\
+> +		unsigned i, o;						\
+> +		for (i = (inner); i--; ) {				\
+> +			typeof(value) v = (value);			\
+> +			ret |= test(#func, func(buf1, v), format, v);	\
+
+I'd add memset(buf1, 77, sizeof(buf1)) before test
+
+
+> +int main(int argc, char **argv) {
+> +	unsigned long iterations = 1000, i;
+> +	struct timeval correction;
+> +	int ret = 0;
+> +
+> +	srand(time(NULL));
+> +
+> +	if (argc > 1)
+> +		iterations = atoi(argv[1]);
+> +
+> +	gettimeofday(&correction, NULL);
+> +	for (i = 25000 * iterations; i; --i)
+> +		rand_64();
+> +	stop(NULL, &correction, NULL);
+
+Why is this "correction" thing needed? I looked at the entire machinery
+and I see no reason to have it.
+
+
+> +	puts(">> Benchmarks:\n\tput_dec_full()");
+> +	fflush(NULL);
+> +
+> +	FUNC(orig_put_dec_full, iterations, 100000, NULL, "%05u", i);
+
+You have variable named i, you pass it as macro parameter,
+but macro has local variable named i too.
+Is it an International Obfuscated C Code Contest entry?
+
+
+> +	FUNC(mod1_put_dec_full, iterations, 100000, NULL, "%05u", i);
+> +	FUNC(mod3_put_dec_full, iterations, 100000, NULL, "%05u", i);
+> +	FUNC(mod5_put_dec_full, iterations * 10, 10000, NULL, "%04u", i);
+
+> +	puts("\tput_dec_trunc()");
+> +	fflush(NULL);
+> +
+> +	FUNC(orig_put_dec_trunc, iterations, 100000, NULL, "%u", i);
+> +	FUNC(mod1_put_dec_trunc, iterations, 100000, NULL, "%u", i);
+> +	FUNC(mod3_put_dec_trunc, iterations, 100000, NULL, "%u", i);
+> +	FUNC(mod5_put_dec_trunc, iterations * 10, 10000, NULL, "%u", i);
+> +	FUNC(mod3_put_dec_8bit, iterations * 500, 256, NULL, "%u", i);
+
+> +	puts("\n\tput_dec()");
+> +	fflush(NULL);
+> +
+> +	FUNC(orig_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+
+"%llu" fmt is for unsigned long long, not uint64_t.
+
+
+> +	FUNC(mod1_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod2_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod3_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod4_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod5_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod6_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod7_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+> +	FUNC(mod8_put_dec, iterations / 4, 100000, &correction, "%llu", rand_64());
+
+Here a lot of CPU time is taken by rand() calls. Also, you use different
+values for different functions, which is wrong.
+
+
+-- 
+vda
