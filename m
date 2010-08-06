@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935224Ab0HFFW6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:22:58 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:57842 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933753Ab0HFFPe (ORCPT
+	id S935373Ab0HFFXI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:23:08 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49952 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933755Ab0HFFPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:34 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: [PATCH 09/43] memblock/sh: Use new accessors
-Date: Fri,  6 Aug 2010 15:14:50 +1000
-Message-Id: <1281071724-28740-10-git-send-email-benh@kernel.crashing.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 16/43] memblock: Factor the lowest level alloc function
+Date: Fri,  6 Aug 2010 15:14:57 +1000
+Message-Id: <1281071724-28740-17-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -22,59 +21,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/sh/mm/init.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+ mm/memblock.c |   59 ++++++++++++++++++++++++++------------------------------
+ 1 files changed, 27 insertions(+), 32 deletions(-)
 
-diff --git a/arch/sh/mm/init.c b/arch/sh/mm/init.c
-index d0e2491..b977475 100644
---- a/arch/sh/mm/init.c
-+++ b/arch/sh/mm/init.c
-@@ -200,7 +200,6 @@ static void __init bootmem_init_one_node(unsigned int nid)
- 	unsigned long total_pages, paddr;
- 	unsigned long end_pfn;
- 	struct pglist_data *p;
--	int i;
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 13807f2..e264e8c 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -294,8 +294,8 @@ static u64 memblock_align_up(u64 addr, u64 size)
+ 	return (addr + (size - 1)) & ~(size - 1);
+ }
  
- 	p = NODE_DATA(nid);
- 
-@@ -226,11 +225,12 @@ static void __init bootmem_init_one_node(unsigned int nid)
- 	 * reservations in other nodes.
- 	 */
- 	if (nid == 0) {
-+		struct memblock_region *reg;
-+
- 		/* Reserve the sections we're already using. */
--		for (i = 0; i < memblock.reserved.cnt; i++)
--			reserve_bootmem(memblock.reserved.region[i].base,
--					memblock_size_bytes(&memblock.reserved, i),
--					BOOTMEM_DEFAULT);
-+		for_each_memblock(reserved, reg) {
-+			reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
-+		}
- 	}
- 
- 	sparse_memory_present_with_active_regions(nid);
-@@ -238,13 +238,14 @@ static void __init bootmem_init_one_node(unsigned int nid)
- 
- static void __init do_init_bootmem(void)
+-static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+-					   u64 size, u64 align)
++static u64 __init memblock_alloc_region(u64 start, u64 end,
++				   u64 size, u64 align)
  {
-+	struct memblock_region *reg;
- 	int i;
+ 	u64 base, res_base;
+ 	long j;
+@@ -318,6 +318,13 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+ 	return ~(u64)0;
+ }
  
- 	/* Add active regions with valid PFNs. */
--	for (i = 0; i < memblock.memory.cnt; i++) {
-+	for_each_memblock(memory, reg) {
- 		unsigned long start_pfn, end_pfn;
--		start_pfn = memblock.memory.region[i].base >> PAGE_SHIFT;
--		end_pfn = start_pfn + memblock_size_pages(&memblock.memory, i);
-+		start_pfn = memblock_region_base_pfn(reg);
-+		end_pfn = memblock_region_end_pfn(reg);
- 		__add_active_range(0, start_pfn, end_pfn);
++u64 __weak __init memblock_nid_range(u64 start, u64 end, int *nid)
++{
++	*nid = 0;
++
++	return end;
++}
++
+ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 				       u64 size, u64 align, int nid)
+ {
+@@ -333,8 +340,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 
+ 		this_end = memblock_nid_range(start, end, &this_nid);
+ 		if (this_nid == nid) {
+-			u64 ret = memblock_alloc_nid_unreserved(start, this_end,
+-							   size, align);
++			u64 ret = memblock_alloc_region(start, this_end, size, align);
+ 			if (ret != ~(u64)0)
+ 				return ret;
+ 		}
+@@ -351,6 +357,10 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
+ 
+ 	BUG_ON(0 == size);
+ 
++	/* We do a bottom-up search for a region with the right
++	 * nid since that's easier considering how memblock_nid_range()
++	 * works
++	 */
+ 	size = memblock_align_up(size, align);
+ 
+ 	for (i = 0; i < mem->cnt; i++) {
+@@ -383,7 +393,7 @@ u64 __init memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 
+ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ {
+-	long i, j;
++	long i;
+ 	u64 base = 0;
+ 	u64 res_base;
+ 
+@@ -396,33 +406,24 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 	if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
+ 		max_addr = MEMBLOCK_REAL_LIMIT;
+ 
++	/* Pump up max_addr */
++	if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
++		max_addr = ~(u64)0;
++
++	/* We do a top-down search, this tends to limit memory
++	 * fragmentation by keeping early boot allocs near the
++	 * top of memory
++	 */
+ 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
+ 		u64 memblockbase = memblock.memory.regions[i].base;
+ 		u64 memblocksize = memblock.memory.regions[i].size;
+ 
+ 		if (memblocksize < size)
+ 			continue;
+-		if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
+-			base = memblock_align_down(memblockbase + memblocksize - size, align);
+-		else if (memblockbase < max_addr) {
+-			base = min(memblockbase + memblocksize, max_addr);
+-			base = memblock_align_down(base - size, align);
+-		} else
+-			continue;
+-
+-		while (base && memblockbase <= base) {
+-			j = memblock_overlaps_region(&memblock.reserved, base, size);
+-			if (j < 0) {
+-				/* this area isn't reserved, take it */
+-				if (memblock_add_region(&memblock.reserved, base, size) < 0)
+-					return 0;
+-				return base;
+-			}
+-			res_base = memblock.reserved.regions[j].base;
+-			if (res_base < size)
+-				break;
+-			base = memblock_align_down(res_base - size, align);
+-		}
++		base = min(memblockbase + memblocksize, max_addr);
++		res_base = memblock_alloc_region(memblockbase, base, size, align);
++		if (res_base != ~(u64)0)
++			return res_base;
  	}
+ 	return 0;
+ }
+@@ -528,9 +529,3 @@ int memblock_is_region_reserved(u64 base, u64 size)
+ 	return memblock_overlaps_region(&memblock.reserved, base, size) >= 0;
+ }
  
+-u64 __weak memblock_nid_range(u64 start, u64 end, int *nid)
+-{
+-	*nid = 0;
+-
+-	return end;
+-}
 -- 
 1.7.0.4
 
