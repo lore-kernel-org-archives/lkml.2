@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964928Ab0HFSf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:35:57 -0400
-Received: from kroah.org ([198.145.64.141]:48641 "EHLO coco.kroah.org"
+	id S964973Ab0HFSgV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:36:21 -0400
+Received: from kroah.org ([198.145.64.141]:48721 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964896Ab0HFSfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:01 2010
-Message-Id: <20100806183201.657200051@clark.site>
+	id S964951Ab0HFSgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:07 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
+Message-Id: <20100806183202.770722735@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:39 -0700
+Date: Fri, 06 Aug 2010 11:30:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [18/38] ath9k_hw: fix an off-by-one error in the PDADC boundaries calculation
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [31/38] SCSI: enclosure: fix error path - actually return ERR_PTR() on error
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: James Bottomley <James.Bottomley@suse.de>
 
-commit 03b4776c408d2f4bf3a5d204e223724d154716d1 upstream.
+commit a91c1be21704113b023919826c6d531da46656ef upstream.
 
-PDADC values were only generated for values surrounding the target
-index, however not for the target index itself, leading to a minor
-error in the generated curve.
+we also need to clean up and free the cdev.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/eeprom_def.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/enclosure.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/eeprom_def.c
-+++ b/drivers/net/wireless/ath/ath9k/eeprom_def.c
-@@ -729,7 +729,7 @@ static void ath9k_hw_get_def_gain_bounda
- 				    vpdTableI[i][sizeCurrVpdTable - 2]);
- 		vpdStep = (int16_t)((vpdStep < 1) ? 1 : vpdStep);
+--- a/drivers/misc/enclosure.c
++++ b/drivers/misc/enclosure.c
+@@ -285,8 +285,11 @@ enclosure_component_register(struct encl
+ 	cdev->groups = enclosure_groups;
  
--		if (tgtIndex > maxIndex) {
-+		if (tgtIndex >= maxIndex) {
- 			while ((ss <= tgtIndex) &&
- 			       (k < (AR5416_NUM_PDADC_VALUES - 1))) {
- 				tmpVal = (int16_t)((vpdTableI[i][sizeCurrVpdTable - 1] +
+ 	err = device_register(cdev);
+-	if (err)
+-		ERR_PTR(err);
++	if (err) {
++		ecomp->number = -1;
++		put_device(cdev);
++		return ERR_PTR(err);
++	}
+ 
+ 	return ecomp;
+ }
 
 
