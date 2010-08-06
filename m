@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756384Ab0HFGaW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 02:30:22 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59433 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752900Ab0HFGaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 02:30:18 -0400
-Message-ID: <4C5BABD3.6010303@kernel.org>
-Date: Fri, 06 Aug 2010 08:29:39 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1760203Ab0HFGsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 02:48:01 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46505 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab0HFGr6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 02:47:58 -0400
+X-SpamScore: -26
+X-BigFish: VPS-26(zz9370J98dN936eM4015Lzz1202hzz15d4Rz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L6PWRL-01-G2Z-02
+X-M-MSG: 
+From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Organization: AMD OSRC
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
+Date: Fri, 6 Aug 2010 08:30:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.32-24-generic; KDE/4.4.5; x86_64; ; )
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C52DF50.80009@kernel.org> <4C5AE1E2.6070601@gmail.com>
+In-Reply-To: <4C5AE1E2.6070601@gmail.com>
 MIME-Version: 1.0
-To: Tao Ma <tao.ma@oracle.com>
-CC: Jeff Moyer <jmoyer@redhat.com>, Jens Axboe <jens.axboe@kernel.dk>,
-        stable@kernel.org, Vladislav Bolkhovitin <vst@vlnb.net>,
-        Bryan Mesich <bryan.mesich@ndsu.edu>, scst-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        dm-devel@redhat.com, Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH RESEND 1/2 block#for-linus] bio, fs: update READA and
- SWRITE to match the corresponding BIO_RW_* bits
-References: <20100628010346.GA2376@atlantis.cc.ndsu.nodak.edu>	<4C28EFD6.2070203@vlnb.net>	<20100714190325.GA25148@atlantis.cc.ndsu.nodak.edu>	<4C3EF3AD.5070509@vlnb.net>	<20100723191844.GB31152@atlantis.cc.ndsu.nodak.edu>	<4C4D7DF5.9060909@vlnb.net>	<20100727220110.GF31152@atlantis.cc.ndsu.nodak.edu>	<4C5073F3.1060406@vlnb.net> <4C52A98A.7060507@kernel.org>	<20100802104227.79340b49@notabene> <4C56D30A.3000403@kernel.org> <x49y6ckc302.fsf@segfault.boston.devel.redhat.com> <4C5B89DB.5050106@oracle.com>
-In-Reply-To: <4C5B89DB.5050106@oracle.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 06 Aug 2010 06:29:45 +0000 (UTC)
+Message-ID: <201008060830.50889.stephan.diestelhorst@amd.com>
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Tejun,
 
-On 08/06/2010 06:04 AM, Tao Ma wrote:
-> If only this patch goes into stable, do we need to change RWA_MASK in this patch also(I have seen you change it the 2/2)?
-> 
-> -#define RWA_MASK        2
-> +#define RWA_MASK        16
+On Thursday 05 August 2010, 18:08:02 Tejun Heo wrote:
+> Can you please try the following patch and see whether the problem
+> goes away?
+<snip>
 
-Yeah, Neil already pointed it out and updated patch has been posted
-and merged.
+to which revision does the patch apply? I didn't get it to apply
+cleanly to Linus' kernel HEAD or the 2.6.34 stable tag. Maybe I am
+missing something, since I am a git-n00b (use Mercurial all the time)?
 
-Thanks.
-
+Thanks,
+  Stephan
 -- 
-tejun
+Stephan Diestelhorst, AMD Operating System Research Center
+stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
