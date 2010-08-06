@@ -1,105 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934064Ab0HFWHd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:07:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35037 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761821Ab0HFWH1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 18:07:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=azCQdrHJAOseAdDeBlpzNMmdONbnGRWJmsFU/NjJhzMVl47kH8ymQFXMVjENlGs8q
-	AV4vfzNukWHsmFIAqb66w==
+	id S935008Ab0HFWJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:09:57 -0400
+Received: from lucidpixels.com ([75.144.35.66]:60038 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761842Ab0HFWJz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 18:09:55 -0400
+Date: Fri, 6 Aug 2010 18:09:54 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: 2.6.35: cpu_idle bug report / on i7 870 cpu (x86_64)
+Message-ID: <alpine.DEB.2.00.1008061800530.5241@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4C5B925A.5000409@tuxonice.net>
-References: <4C58C528.4000606@tuxonice.net>
-	<4C5960B0.7020003@teksavvy.com>
-	<4C59DA16.4020500@tuxonice.net>
-	<AANLkTik_PH-7T7OFtzaCtPbAHE6pqnYMUsjP25KtsRnR@mail.gmail.com>
-	<4C5A59FC.1030304@tuxonice.net>
-	<AANLkTi=NMHkKduZzsLiiYt3=w8++8epb5aGrqv7V3-vB@mail.gmail.com>
-	<4C5B925A.5000409@tuxonice.net>
-Date: Fri, 6 Aug 2010 15:07:25 -0700
-Message-ID: <AANLkTinU24v6Mty54YL3gv3M5S+4jdN5vHD54KknchAG@mail.gmail.com>
-Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't 
-	used!
-From: Hugh Dickins <hughd@google.com>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Cc: Mark Lord <kernel@teksavvy.com>, LKML <linux-kernel@vger.kernel.org>,
-        pm list <linux-pm@lists.linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 9:40 PM, Nigel Cunningham <nigel@tuxonice.net> wrote:
-> On 06/08/10 11:15, Hugh Dickins wrote:
->> On Wed, Aug 4, 2010 at 11:28 PM, Nigel Cunningham<nigel@tuxonice.net>
->>  wrote:
->>>>> On 05/08/10 13:58, Hugh Dickins wrote:
->>>>
->>>> I agree it would make more sense to discard swap when freeing rather
->>>> than when allocating, I wish we could.  But at the freeing point we're
->>>> often holding a page_table spinlock at an outer level, and it's just
->>>> one page we're given to free.  Freeing is an operation you want to be
->>>> comfortable doing when you're short of resources, whereas discard is a
->>>> kind of I/O operation which needs resources.
->
-> The more I think about this, the more it seems to me that doing the discard
-> at allocation time is just wrong. How about a strategy in which you do the
-> discard immediately if resources permit, or flag it as in need of doing (at
-> a future swap free of that page or swap off time) if things are too
-> pressured at the moment? I haven't put thought into what data structures
-> could be used for that - just want to ask for now if you'd be happy with the
-> idea of looking into a strategy like that.
+Hi,
 
-We're going round in circles here.  I have already agreed with you
-that doing it at swap free time seems more natural, but explained that
-there are implementation difficulties there, so doing it at allocation
-time proved both much less messy and more efficient.  I can imagine
-advances that would sway me to putting in more effort there
-(duplicating the scan for a free 1MB every time a page of swap is
-freed? doesn't sound efficient to me, but if it saves us from an
-inefficiency of too many or too late discards, perhaps it could work
-out).  However, a recently introduced regression does not make a
-strong case for adding in hacks - not yet anyway.
+When cpu_idle is used alongside a core i7 cpu w/cpufreq, the system 
+exhibits delays when typing into a terminal via ssh or VNC, I had changed 
+a few options from 2.6.34 -> 2.6.35 and did not think the cpu_idle would 
+be at fault; however, after going through all of the options and disabling 
+it, the problem went away.
 
-> I've done the bisect now - spent the time today instead of on the place, and
+< >   Cpuidle Driver for Intel Processors
 
-That's great, many thanks!
+The system lags every so often when cpu_idle is enabled.  It is quite 
+annoying.
 
-> it took me to fbbf055692aeb25c54c49d9ca84532de836fbba0. This is Christoph's
-> Hellwig's patch "block: fix DISCARD_BARRIER requests".
+All disk subsystems/CPU/etc are OK-- that option causes some nasty side 
+effects.
 
-That's
-    block: fix DISCARD_BARRIER requests
+Kernel config: (w/cpu_idle) - exhibits the problem.
+http://home.comcast.net/~jpiszcz/20100806/config-20100806.1281129405
 
-    Filesystems assume that DISCARD_BARRIER are full barriers, so that they
-    don't have to track in-progress discard operation when submitting new I/O.
-    But currently we only treat them as elevator barriers, which don't
-    actually do the nessecary queue drains.
+Removed cpu_idle, problem is gone.
+http://home.comcast.net/~jpiszcz/20100806/config-20100806.1281131518
 
-where the discard barrier changes from REQ_SOFTBARRIER to REQ_HARDBARRIER.
+In addition, sometimes the system did not reboot (instead I hear the 
+speaker whining solid, not beeping, just a constant whine).
 
-If REQ_SOFTBARRIER means that the device is still free to reorder a
-write, which was issued after discard completion was reported, before
-the discard (so later discarding the data written), then certainly I
-agree with Christoph (now Cc'ed) that the REQ_HARDBARRIER is
-unavoidable there; but if not, then it's not needed for the swap case.
- I hope to gain a little more enlightenment on such barriers shortly.
+And sometimes it failed to reboot between kernel rebuilds.
 
-What does seem over the top to me, is for mm/swapfile.c's
-blkdev_issue_discard()s to be asking for both BLKDEV_IFL_WAIT and
-BLKDEV_IFL_BARRIER: those swap discards were originally written just
-to use barriers, without needing to wait for completion in there.  I'd
-be interested to hear if cutting out the BLKDEV_IFL_WAITs makes the
-swap discards behave acceptably again for you - but understand that
-you won't have a chance to try that until later next week.
+After cpu_idle has been removed from the kernel, all problems have went 
+away.
 
-Thanks,
-Hugh
+This may have already been reported but I did not find anything on it.
+
+Is this driver safe for i7 CPUs and/or who should be using it?
+
+Justin.
