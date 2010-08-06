@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938Ab0HFFUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:20:32 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41686 "EHLO
+	id S934694Ab0HFFUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:20:38 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41684 "EHLO
 	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933780Ab0HFFPg (ORCPT
+	with ESMTP id S933779Ab0HFFPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:36 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 32/43] memblock: Add "start" argument to memblock_find_base()
-Date: Fri,  6 Aug 2010 15:15:13 +1000
-Message-Id: <1281071724-28740-33-git-send-email-benh@kernel.crashing.org>
+Subject: [PATCH 31/43] memblock: Add arch function to control coalescing of memblock memory regions
+Date: Fri,  6 Aug 2010 15:15:12 +1000
+Message-Id: <1281071724-28740-32-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -21,84 +21,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To constraint the search of a region between two boundaries,
-which will be used by the new NUMA aware allocator among others.
+Some archs such as ARM want to avoid coalescing accross things such
+as the lowmem/highmem boundary or similar. This provides the option
+to control it via an arch callback for which a weak default is provided
+which always allows coalescing.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |   27 ++++++++++++++++-----------
- 1 files changed, 16 insertions(+), 11 deletions(-)
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |   19 ++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 150be93..e5e8f9d 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -72,6 +72,8 @@ extern void memblock_dump_all(void);
+ 
+ /* Provided by the architecture */
+ extern phys_addr_t memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid);
++extern int memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
++				   phys_addr_t addr2, phys_addr_t size2);
+ 
+ /**
+  * memblock_set_current_limit - Set the current allocation limit to allow
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 8715f09..468ff43 100644
+index 0787790..8715f09 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -117,19 +117,18 @@ static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t en
- 	return MEMBLOCK_ERROR;
+@@ -241,6 +241,12 @@ static int memblock_double_array(struct memblock_type *type)
+ 	return 0;
  }
  
--static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
-+static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align,
-+					phys_addr_t start, phys_addr_t end)
++extern int __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
++					  phys_addr_t addr2, phys_addr_t size2)
++{
++	return 1;
++}
++
+ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
  {
- 	long i;
--	phys_addr_t base = 0;
--	phys_addr_t res_base;
+ 	unsigned long coalesced = 0;
+@@ -262,6 +268,10 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+ 			return 0;
  
- 	BUG_ON(0 == size);
- 
- 	size = memblock_align_up(size, align);
- 
- 	/* Pump up max_addr */
--	if (max_addr == MEMBLOCK_ALLOC_ACCESSIBLE)
--		max_addr = memblock.current_limit;
-+	if (end == MEMBLOCK_ALLOC_ACCESSIBLE)
-+		end = memblock.current_limit;
- 
- 	/* We do a top-down search, this tends to limit memory
- 	 * fragmentation by keeping early boot allocs near the
-@@ -138,13 +137,19 @@ static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align
- 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
- 		phys_addr_t memblockbase = memblock.memory.regions[i].base;
- 		phys_addr_t memblocksize = memblock.memory.regions[i].size;
-+		phys_addr_t bottom, top, found;
- 
- 		if (memblocksize < size)
- 			continue;
--		base = min(memblockbase + memblocksize, max_addr);
--		res_base = memblock_find_region(memblockbase, base, size, align);
--		if (res_base != MEMBLOCK_ERROR)
--			return res_base;
-+		if ((memblockbase + memblocksize) <= start)
+ 		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
++		/* Check if arch allows coalescing */
++		if (adjacent != 0 && type == &memblock.memory &&
++		    !memblock_memory_can_coalesce(base, size, rgnbase, rgnsize))
 +			break;
-+		bottom = max(memblockbase, start);
-+		top = min(memblockbase + memblocksize, end);
-+		if (bottom >= top)
-+			continue;
-+		found = memblock_find_region(bottom, top, size, align);
-+		if (found != MEMBLOCK_ERROR)
-+			return found;
+ 		if (adjacent > 0) {
+ 			type->regions[i].base -= size;
+ 			type->regions[i].size += size;
+@@ -274,7 +284,14 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+ 		}
  	}
- 	return MEMBLOCK_ERROR;
- }
-@@ -204,7 +209,7 @@ static int memblock_double_array(struct memblock_type *type)
- 		new_array = kmalloc(new_size, GFP_KERNEL);
- 		addr = new_array == NULL ? MEMBLOCK_ERROR : __pa(new_array);
- 	} else
--		addr = memblock_find_base(new_size, sizeof(phys_addr_t), MEMBLOCK_ALLOC_ACCESSIBLE);
-+		addr = memblock_find_base(new_size, sizeof(phys_addr_t), 0, MEMBLOCK_ALLOC_ACCESSIBLE);
- 	if (addr == MEMBLOCK_ERROR) {
- 		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
- 		       memblock_type_name(type), type->max, type->max * 2);
-@@ -416,7 +421,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- 	 */
- 	size = memblock_align_up(size, align);
  
--	found = memblock_find_base(size, align, max_addr);
-+	found = memblock_find_base(size, align, 0, max_addr);
- 	if (found != MEMBLOCK_ERROR &&
- 	    memblock_add_region(&memblock.reserved, found, size) >= 0)
- 		return found;
+-	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1)) {
++	/* If we plugged a hole, we may want to also coalesce with the
++	 * next region
++	 */
++	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1) &&
++	    ((type != &memblock.memory || memblock_memory_can_coalesce(type->regions[i].base,
++							     type->regions[i].size,
++							     type->regions[i+1].base,
++							     type->regions[i+1].size)))) {
+ 		memblock_coalesce_regions(type, i, i+1);
+ 		coalesced++;
+ 	}
 -- 
 1.7.0.4
 
