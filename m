@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761479Ab0HFOsx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 10:48:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40398 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754948Ab0HFOsv (ORCPT
+	id S1761488Ab0HFOtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 10:49:09 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41742 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab0HFOtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 10:48:51 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: linux-kernel@vger.kernel.org, Joonyoung Shim <jy0922.shim@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, stable@kernel.org
-Subject: [PATCH] regulator: Default GPIO controlled WM8994 regulators to disabled
-Date: Fri,  6 Aug 2010 15:48:24 +0100
-Message-Id: <1281106104-6079-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 6 Aug 2010 10:49:05 -0400
+Date: Fri, 6 Aug 2010 16:49:39 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: "fweisbec@gmail.com" <fweisbec@gmail.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "rostedt@goodmis.org" <rostedt@goodmis.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH 7/9] perf: Export cpumap
+Message-ID: <20100806144939.GD21628@aftab>
+References: <1281104713-23141-1-git-send-email-bp@amd64.org>
+ <1281104713-23141-8-git-send-email-bp@amd64.org>
+ <20100806143912.GB13780@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806143912.GB13780@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joonyoung Shim <jy0922.shim@samsung.com>
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Fri, Aug 06, 2010 at 10:39:12AM -0400
 
-This ensures that if the GPIO was not enabled prior to the driver
-starting the regulator API will insert the required powerup ramp
-delay when it enables the regulator.  The gpiolib API does not
-provide this information.
+> Em Fri, Aug 06, 2010 at 04:25:11PM +0200, Borislav Petkov escreveu:
+> > From: Borislav Petkov <borislav.petkov@amd.com>
+> > 
+> > Export cpu counting and cpumap manipulating utils for general use. This
+> > pulls ctype.c along.
+> > 
+> > Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> 
+> Is this independent of previous patches? I.e. to be applied to current
+> perf/core?
 
-[Rewrote changelog to describe the actual change -- broonie.]
+I'm afraid not since earlier patches in the series introduce the
+toplevel Makefile that glues all the different tools/lib/* parts
+together. However, I could extract the toplevel Makefile parts and
+cpumap.c and ctype.c if you really need it now - I've been doing this so
+often lately that I could do it with my eyes closed now :o).
 
-Signed-off-by: Joonyoung Shim <jy0922.shim@samsung.com>
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: stable@kernel.org
----
- drivers/regulator/wm8994-regulator.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/regulator/wm8994-regulator.c b/drivers/regulator/wm8994-regulator.c
-index 5a1dc8a..03713bc 100644
---- a/drivers/regulator/wm8994-regulator.c
-+++ b/drivers/regulator/wm8994-regulator.c
-@@ -219,8 +219,6 @@ static __devinit int wm8994_ldo_probe(struct platform_device *pdev)
- 
- 	ldo->wm8994 = wm8994;
- 
--	ldo->is_enabled = true;
--
- 	if (pdata->ldo[id].enable && gpio_is_valid(pdata->ldo[id].enable)) {
- 		ldo->enable = pdata->ldo[id].enable;
- 
-@@ -237,7 +235,8 @@ static __devinit int wm8994_ldo_probe(struct platform_device *pdev)
- 				ret);
- 			goto err_gpio;
- 		}
--	}
-+	} else
-+		ldo->is_enabled = true;
- 
- 	ldo->regulator = regulator_register(&wm8994_ldo_desc[id], &pdev->dev,
- 					     pdata->ldo[id].init_data, ldo);
 -- 
-1.7.1
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
