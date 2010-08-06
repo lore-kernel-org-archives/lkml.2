@@ -1,101 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761911Ab0HFSoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:44:07 -0400
-Received: from kroah.org ([198.145.64.141]:48544 "EHLO coco.kroah.org"
+	id S1761712Ab0HFStb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:49:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36497 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761662Ab0HFSfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:00 2010
-Message-Id: <20100806183200.209512682@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:23 -0700
+	id S1752033Ab0HFSt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:49:29 -0400
+Date: Fri, 6 Aug 2010 11:49:21 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Juergen Beisert <j.beisert@pengutronix.de>,
-        Daniel Mack <daniel@caiaq.de>, Baruch Siach <baruch@tkos.co.il>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [02/38] arm/imx/gpio: add spinlock protection
-In-Reply-To: <20100806183250.GA23019@kroah.com>
+To: David Cross <david.cross@cypress.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PATCH: West Bridge Driver Kernel Support linux-2.6.35
+Message-ID: <20100806184921.GA23722@suse.de>
+References: <CF8CD4BB5F91431A975E9F2DEFEF8F42@stanford.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CF8CD4BB5F91431A975E9F2DEFEF8F42@stanford.edu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Aug 06, 2010 at 11:38:22AM -0700, David Cross wrote:
+> Re-Re-sending in plain text.
+> 
+> This is a driver for the Cypress West Bridge companion chip. Its function is
+> analogous to the North/South Bridges of PC environments applied to embedded
+> devices, in that it expands I/O and storage capabilities of an embedded
+> processor.
 
-------------------
+Odd, your patch contains a lot of stuff it shouldn't, here's the
+diffstat to show what I mean:
 
-From: Baruch Siach <baruch@tkos.co.il>
+ Documentation/dontdiff                             |11723 ++++++++++++++++++++-
+ arch/arm/mach-omap2/gpmc.c                         |    3 
+ block/modules.builtin                              |    2 
+ crypto/modules.builtin                             |   16 
+ drivers/block/modules.builtin                      |    2 
+ drivers/char/hw_random/modules.builtin             |    1 
+ drivers/char/modules.builtin                       |    1 
+ drivers/connector/modules.builtin                  |    1 
+ drivers/gpio/modules.builtin                       |    1 
+ drivers/hid/modules.builtin                        |    2 
+ drivers/hid/usbhid/modules.builtin                 |    1 
+ drivers/i2c/busses/modules.builtin                 |    1 
+ drivers/i2c/modules.builtin                        |    3 
+ drivers/input/keyboard/modules.builtin             |    2 
+ drivers/input/modules.builtin                      |    5 
+ drivers/input/serio/modules.builtin                |    3 
+ drivers/input/touchscreen/modules.builtin          |    1 
+ drivers/mmc/card/modules.builtin                   |    1 
+ drivers/mmc/core/modules.builtin                   |    1 
+ drivers/mmc/host/modules.builtin                   |    1 
+ drivers/mmc/modules.builtin                        |    3 
+ drivers/modules.builtin                            |   38 
+ drivers/net/modules.builtin                        |    4 
+ drivers/net/phy/modules.builtin                    |    2 
+ drivers/power/modules.builtin                      |    1 
+ drivers/rtc/modules.builtin                        |    2 
+ drivers/scsi/modules.builtin                       |    2 
+ drivers/serial/modules.builtin                     |    2 
+ drivers/spi/modules.builtin                        |    1 
+ drivers/staging/Kconfig                            |    2 
+ drivers/staging/Makefile                           |    1 
+ drivers/staging/westbridge/Kconfig                 |   34 
+ drivers/staging/westbridge/astoria/Kconfig         |    9 
+ drivers/staging/westbridge/astoria/Makefile        |   11 
+ drivers/staging/westbridge/astoria/api/Makefile    |   10 
+ drivers/staging/westbridge/astoria/block/Kconfig   |    9 
+ drivers/staging/westbridge/astoria/block/Makefile  |   11 
+ drivers/staging/westbridge/astoria/device/Kconfig  |    9 
+ drivers/staging/westbridge/astoria/device/Makefile |   14 
+ drivers/staging/westbridge/astoria/gadget/Kconfig  |    8 
+ drivers/staging/westbridge/astoria/gadget/Makefile |   11 
+ drivers/usb/core/modules.builtin                   |    1 
+ drivers/usb/modules.builtin                        |    2 
+ drivers/usb/mon/modules.builtin                    |    1 
+ drivers/usb/musb/modules.builtin                   |    1 
+ drivers/usb/otg/modules.builtin                    |    1 
+ drivers/w1/modules.builtin                         |    1 
+ fs/ext2/modules.builtin                            |    1 
+ fs/ext3/modules.builtin                            |    1 
+ fs/fat/inode.c                                     |    1 
+ fs/fat/modules.builtin                             |    3 
+ fs/jbd/modules.builtin                             |    1 
+ fs/lockd/modules.builtin                           |    1 
+ fs/modules.builtin                                 |   15 
+ fs/mpage.c                                         |   17 
+ fs/nfs/modules.builtin                             |    1 
+ fs/nfs_common/modules.builtin                      |    1 
+ fs/nls/modules.builtin                             |    3 
+ fs/quota/modules.builtin                           |    2 
+ lib/modules.builtin                                |    6 
+ lib/zlib_inflate/modules.builtin                   |    1 
+ modules.builtin                                    |   92 
+ net/ipv4/modules.builtin                           |    6 
+ net/key/modules.builtin                            |    1 
+ net/modules.builtin                                |   13 
+ net/packet/modules.builtin                         |    1 
+ net/sunrpc/auth_gss/modules.builtin                |    2 
+ net/sunrpc/modules.builtin                         |    3 
+ net/unix/modules.builtin                           |    1 
+ net/xfrm/modules.builtin                           |    1 
+ sound/core/modules.builtin                         |    1 
+ sound/modules.builtin                              |    2 
+ 72 files changed, 12101 insertions(+), 38 deletions(-)
 
-commit 14cb0deb66fcfca8fdbef75da8c84b5405a8c767 upstream.
+It's also line-wrapped, and doesn't contain a "Signed-off-by:" line so I
+can't apply it :(
 
-The GPIO registers need protection from concurrent access for operations that
-are not atomic.
+Oh, diffstat can't even read the diff properly, so what is above isn't
+what is really all there, the driver files do seem to be there, just not
+showing up properly.
 
-Cc: Juergen Beisert <j.beisert@pengutronix.de>
-Cc: Daniel Mack <daniel@caiaq.de>
-Reported-by: rpkamiak@rockwellcollins.com
-Signed-off-by: Baruch Siach <baruch@tkos.co.il>
-Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Care to fix this up and retry?
 
----
- arch/arm/plat-mxc/gpio.c              |    8 ++++++++
- arch/arm/plat-mxc/include/mach/gpio.h |    1 +
- 2 files changed, 9 insertions(+)
+thanks,
 
---- a/arch/arm/plat-mxc/gpio.c
-+++ b/arch/arm/plat-mxc/gpio.c
-@@ -214,13 +214,16 @@ static void _set_gpio_direction(struct g
- 	struct mxc_gpio_port *port =
- 		container_of(chip, struct mxc_gpio_port, chip);
- 	u32 l;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&port->lock, flags);
- 	l = __raw_readl(port->base + GPIO_GDIR);
- 	if (dir)
- 		l |= 1 << offset;
- 	else
- 		l &= ~(1 << offset);
- 	__raw_writel(l, port->base + GPIO_GDIR);
-+	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- static void mxc_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
-@@ -229,9 +232,12 @@ static void mxc_gpio_set(struct gpio_chi
- 		container_of(chip, struct mxc_gpio_port, chip);
- 	void __iomem *reg = port->base + GPIO_DR;
- 	u32 l;
-+	unsigned long flags;
- 
-+	spin_lock_irqsave(&port->lock, flags);
- 	l = (__raw_readl(reg) & (~(1 << offset))) | (value << offset);
- 	__raw_writel(l, reg);
-+	spin_unlock_irqrestore(&port->lock, flags);
- }
- 
- static int mxc_gpio_get(struct gpio_chip *chip, unsigned offset)
-@@ -285,6 +291,8 @@ int __init mxc_gpio_init(struct mxc_gpio
- 		port[i].chip.base = i * 32;
- 		port[i].chip.ngpio = 32;
- 
-+		spin_lock_init(&port[i].lock);
-+
- 		/* its a serious configuration bug when it fails */
- 		BUG_ON( gpiochip_add(&port[i].chip) < 0 );
- 
---- a/arch/arm/plat-mxc/include/mach/gpio.h
-+++ b/arch/arm/plat-mxc/include/mach/gpio.h
-@@ -36,6 +36,7 @@ struct mxc_gpio_port {
- 	int virtual_irq_start;
- 	struct gpio_chip chip;
- 	u32 both_edges;
-+	spinlock_t lock;
- };
- 
- int mxc_gpio_init(struct mxc_gpio_port*, int);
-
-
+greg k-h
