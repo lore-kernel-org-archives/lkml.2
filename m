@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935403Ab0HFHhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 03:37:25 -0400
-Received: from web37608.mail.mud.yahoo.com ([209.191.87.91]:29336 "HELO
-	web37608.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933957Ab0HFHhV convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 03:37:21 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=CdrEJ662IXfRDWlDlId59RC4SNHkAty2incvLWdbZuilwgVSdtBDxQiPEHyJ5l8SVVapUJxdT1hGoU83N56sJJh4d3gta1A9HHe2gJC/1/+tCVxKD9ni3rZ3OeDE3guxzZPlTIbIbxFHo3VbRvrTU46aJ9V13PILYAwD9q1o8wQ=;
-Message-ID: <796642.31110.qm@web37608.mail.mud.yahoo.com>
-X-YMail-OSG: .LmUwBgVM1kTPTiaZTKh3n4B.9qPELsUf.mTeIfk1uxbJCj
- QIXvpIhvJO3U2djhIvTpZAMtRY39I8LmEmz.hbNLcoTkREyofQLOMx2h3fmC
- CulBqglTHCwl8dxEwvRr8SGz0pqBFa9sVfChckIr3Bs3WixmxYZTKlm06..q
- 0OmvbyfJnYi72bANCQxJihB.BYVeN_BL0LRj2tY7uYSCRPi..8VBOfb114eB
- HkVqyP6qLJLu17U2wQb.C0v2mkew2qm0B9ZFJh.UDFMibkrYN3sqV6ZYm6CV
- ev6jZyHGaLtimwuK8IKdjpeKddhekN7ZADDJRj1M-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Fri, 6 Aug 2010 00:37:18 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 1/2] MEMSTICK: fix hangs on unexpected device removal in mspro_blk
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281030536.23959.20.camel@maxim-laptop>
+	id S935417Ab0HFHmY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 03:42:24 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:59771 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S933911Ab0HFHmV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 03:42:21 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18CLWwTAcYCOfvwtyJhN/n0Yc08YV+yaMQ22rhi2s
+	4ui8YgFek/d+Fq
+From: Toralf =?iso-8859-15?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: linux-kernel@vger.kernel.org
+Subject: typo in crypto kconfig ?
+Date: Fri, 6 Aug 2010 09:42:15 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201008060942.16082.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While configuring the kernel v2.6.35-3797-gfc1caf6 I read this :
 
-> 
-> By 'spec mandated geometry' you mean the fact the card
-> needs to be
-> broken into zones, somewhat like XD?
-> 
+...
+Cryptographic API (CRYPTO) [Y/m/?] y
+  *
+  * Crypto core or helper
+  *
+  Cryptographic algorithm manager (CRYPTO_MANAGER) [M/y/?] m
+  Run algolithms' self-tests (CRYPTO_MANAGER_TESTS) [Y/n/?] (NEW) 
 
-Yes, and in fancy fashion.
+and wonder now whether it should be spelled "algorithm" instead ?
 
-First zone should have at most 494 useful logical blocks, other zones - 496.
-16 physical blocks per zone are considered local spares, 2 first blocks in
-zone 1 must be identical and contain factory information.
+-- 
+MfG/Kind regards
+Toralf Förster
 
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
-
-      
