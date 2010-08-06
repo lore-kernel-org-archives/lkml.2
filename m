@@ -1,179 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933976Ab0HFUCj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 16:02:39 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52928 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756868Ab0HFUCh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 16:02:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=lDnDjOSzDF6h0m5FE6p5v8k4m4X/Y7r4F3o0eltc34kHom2lYimo1JSpCIBe7t9FHc
-         zjGfo9M441NstO0Mf8312n/zgfEuJaxx5oq7RnYBbF8G3H/7TRfcuyVCja5HbTBkzcZp
-         Hq42LcNKMir5WAwoMge+BmBvN8zTZGTAJWEFM=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Karsten Keil <isdn@linux-pingi.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Tilman Schmidt <tilman@imap.cc>, Tejun Heo <tj@kernel.org>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 10/18] isdn: hisax: call disable_pci_device() if pci_probe() failed
-Date: Sat,  7 Aug 2010 00:02:21 +0400
-Message-Id: <1281124949-14361-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S935046Ab0HFUDI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 16:03:08 -0400
+Received: from claw.goop.org ([74.207.240.146]:56846 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934215Ab0HFUDC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 16:03:02 -0400
+Message-ID: <4C5C6A74.1050106@goop.org>
+Date: Fri, 06 Aug 2010 13:03:00 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Xen-devel <xen-devel@lists.xensource.com>, Avi Kivity <avi@redhat.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [Xen-devel] [PATCH RFC 03/12] x86/ticketlock: Use C for __ticket_spin_unlock
+References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com> <f3622d39ae72573c586405ea6f1597eb39fc28d4.1279328276.git.jeremy.fitzhardinge@citrix.com> <20100720153845.GA9122@phenom.dumpdata.com> <4C45CC02.7030603@goop.org> <4C5C4AAB.3000606@zytor.com>
+In-Reply-To: <4C5C4AAB.3000606@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Driver should call disable_pci_device() if it returns from pci_probe()
-with error.
+  On 08/06/2010 10:47 AM, H. Peter Anvin wrote:
+> On 07/20/2010 09:17 AM, Jeremy Fitzhardinge wrote:
+>> "volatile" would be a compiler barrier, but it has no direct effect on,
+>> or relevence to, the CPU.  It just cares about the LOCK_PREFIX.  The
+>> "memory" clobber is probably unnecessary as well, since the constraints
+>> already tell the compiler the most important information.  We can add
+>> barriers separately as needed.
+>>
+> You absolutely need volatile, since otherwise you're permitting the
+> compiler to split, re-execute or even drop the code.  Anything else
+> might work, by accident, but it's not clean.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/isdn/hisax/avm_pci.c   |    2 ++
- drivers/isdn/hisax/elsa.c      |    5 +++++
- drivers/isdn/hisax/nj_u.c      |    2 ++
- drivers/isdn/hisax/sedlbauer.c |    3 +++
- drivers/isdn/hisax/w6692.c     |    6 +++++-
- 5 files changed, 17 insertions(+), 1 deletions(-)
+I don't think so in this case.  The instructions in question are 
+basically lock->waiters++/--; the only reason they need to be asm is 
+that they're locked.  But I'm not relying on them for any kind of 
+compiler or cpu ordering or barrier.  Where ordering is important, I 
+have explicit barrier()s to enforce it.
 
-diff --git a/drivers/isdn/hisax/avm_pci.c b/drivers/isdn/hisax/avm_pci.c
-index fcf4ed1..c503d7f 100644
---- a/drivers/isdn/hisax/avm_pci.c
-+++ b/drivers/isdn/hisax/avm_pci.c
-@@ -845,12 +845,14 @@ static int __devinit avm_pci_setup(struct IsdnCardState *cs)
- 		cs->irq = dev_avm->irq;
- 		if (!cs->irq) {
- 			printk(KERN_ERR "FritzPCI: No IRQ for PCI card found\n");
-+			pci_disable_device(dev_avm);
- 			return(0);
- 		}
- 
- 		cs->hw.avm.cfg_reg = pci_resource_start(dev_avm, 1);
- 		if (!cs->hw.avm.cfg_reg) {
- 			printk(KERN_ERR "FritzPCI: No IO-Adr for PCI card found\n");
-+			pci_disable_device(dev_avm);
- 			return(0);
- 		}
- 
-diff --git a/drivers/isdn/hisax/elsa.c b/drivers/isdn/hisax/elsa.c
-index 5d9d338..452429a 100644
---- a/drivers/isdn/hisax/elsa.c
-+++ b/drivers/isdn/hisax/elsa.c
-@@ -1034,12 +1034,14 @@ static int __devinit
- setup_elsa_pci(struct IsdnCard *card)
- {
- 	struct IsdnCardState *cs = card->cs;
-+	struct pci_dev *pdev;
- 
- 	cs->subtyp = 0;
- 	if ((dev_qs1000 = hisax_find_pci_device(PCI_VENDOR_ID_ELSA,
- 		PCI_DEVICE_ID_ELSA_MICROLINK, dev_qs1000))) {
- 		if (pci_enable_device(dev_qs1000))
- 			return(0);
-+		pdev = dev_qs1000;
- 		cs->subtyp = ELSA_QS1000PCI;
- 		cs->irq = dev_qs1000->irq;
- 		cs->hw.elsa.cfg = pci_resource_start(dev_qs1000, 1);
-@@ -1048,6 +1050,7 @@ setup_elsa_pci(struct IsdnCard *card)
- 		PCI_DEVICE_ID_ELSA_QS3000, dev_qs3000))) {
- 		if (pci_enable_device(dev_qs3000))
- 			return(0);
-+		pdev = dev_qs3000;
- 		cs->subtyp = ELSA_QS3000PCI;
- 		cs->irq = dev_qs3000->irq;
- 		cs->hw.elsa.cfg = pci_resource_start(dev_qs3000, 1);
-@@ -1058,11 +1061,13 @@ setup_elsa_pci(struct IsdnCard *card)
- 	}
- 	if (!cs->irq) {
- 		printk(KERN_WARNING "Elsa: No IRQ for PCI card found\n");
-+		pci_disable_device(pdev);
- 		return(0);
- 	}
- 
- 	if (!(cs->hw.elsa.base && cs->hw.elsa.cfg)) {
- 		printk(KERN_WARNING "Elsa: No IO-Adr for PCI card found\n");
-+		pci_disable_device(pdev);
- 		return(0);
- 	}
- 	if ((cs->hw.elsa.cfg & 0xff) || (cs->hw.elsa.base & 0xf)) {
-diff --git a/drivers/isdn/hisax/nj_u.c b/drivers/isdn/hisax/nj_u.c
-index 095e974..bc5afbe 100644
---- a/drivers/isdn/hisax/nj_u.c
-+++ b/drivers/isdn/hisax/nj_u.c
-@@ -137,11 +137,13 @@ static int __devinit nju_pci_probe(struct pci_dev *dev_netjet,
- 	cs->irq = dev_netjet->irq;
- 	if (!cs->irq) {
- 		printk(KERN_WARNING "NETspider-U: No IRQ for PCI card found\n");
-+		pci_disable_device(dev_netjet);
- 		return(0);
- 	}
- 	cs->hw.njet.base = pci_resource_start(dev_netjet, 0);
- 	if (!cs->hw.njet.base) {
- 		printk(KERN_WARNING "NETspider-U: No IO-Adr for PCI card found\n");
-+		pci_disable_device(dev_netjet);
- 		return(0);
- 	}
- 
-diff --git a/drivers/isdn/hisax/sedlbauer.c b/drivers/isdn/hisax/sedlbauer.c
-index 69dfc8d..dc9864b 100644
---- a/drivers/isdn/hisax/sedlbauer.c
-+++ b/drivers/isdn/hisax/sedlbauer.c
-@@ -614,6 +614,7 @@ setup_sedlbauer_pci(struct IsdnCard *card)
- 		cs->irq = dev_sedl->irq;
- 		if (!cs->irq) {
- 			printk(KERN_WARNING "Sedlbauer: No IRQ for PCI card found\n");
-+			pci_disable_device(dev_sedl);
- 			return(0);
- 		}
- 		cs->hw.sedl.cfg_reg = pci_resource_start(dev_sedl, 0);
-@@ -631,6 +632,7 @@ setup_sedlbauer_pci(struct IsdnCard *card)
- 		cs->hw.sedl.cfg_reg);
- 	if (sub_id != PCI_SUB_ID_SEDLBAUER) {
- 		printk(KERN_ERR "Sedlbauer: unknown sub id %#x\n", sub_id);
-+		pci_disable_device(dev_sedl);
- 		return(0);
- 	}
- 	if (sub_vendor_id == PCI_SUBVENDOR_SPEEDFAX_PYRAMID) {
-@@ -648,6 +650,7 @@ setup_sedlbauer_pci(struct IsdnCard *card)
- 	} else {
- 		printk(KERN_ERR "Sedlbauer: unknown sub vendor id %#x\n",
- 			sub_vendor_id);
-+		pci_disable_device(dev_sedl);
- 		return(0);
- 	}
- 
-diff --git a/drivers/isdn/hisax/w6692.c b/drivers/isdn/hisax/w6692.c
-index e2cfb6f..4221cab 100644
---- a/drivers/isdn/hisax/w6692.c
-+++ b/drivers/isdn/hisax/w6692.c
-@@ -1012,8 +1012,10 @@ setup_w6692(struct IsdnCard *card)
- 					    id_list[id_idx].device_id,
- 					    dev_w6692);
- 		if (dev_w6692) {
--			if (pci_enable_device(dev_w6692))
-+			if (pci_enable_device(dev_w6692)) {
-+				dev_w6692 = NULL;
- 				continue;
-+			}
- 			cs->subtyp = id_idx;
- 			break;
- 		}
-@@ -1040,10 +1042,12 @@ setup_w6692(struct IsdnCard *card)
- 	cs->irq = pci_irq;
- 	if (!cs->irq) {
- 		printk(KERN_WARNING "W6692: No IRQ for PCI card found\n");
-+		pci_disable_device(dev_w6692);
- 		return (0);
- 	}
- 	if (!pci_ioaddr) {
- 		printk(KERN_WARNING "W6692: NO I/O Base Address found\n");
-+		pci_disable_device(dev_w6692);
- 		return (0);
- 	}
- 	cs->hw.w6692.iobase = pci_ioaddr;
--- 
-1.7.0.4
-
+     J
