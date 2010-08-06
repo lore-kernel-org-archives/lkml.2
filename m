@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934975Ab0HFRJf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 13:09:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8202 "EHLO mx1.redhat.com"
+	id S1761618Ab0HFRNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 13:13:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61573 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933861Ab0HFRJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 13:09:32 -0400
-Date: Fri, 6 Aug 2010 13:09:08 -0400
+	id S1759310Ab0HFRMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 13:12:53 -0400
+Date: Fri, 6 Aug 2010 13:12:23 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Miklos Szeredi <miklos@szeredi.hu>
 Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 19/38] union-mount: Introduce union_dir structure and basic operations
-Message-ID: <20100806170908.GA16599@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-20-git-send-email-vaurora@redhat.com> <E1OgfJb-0000n9-KZ@pomaz-ex.szeredi.hu> <20100804194749.GA2134@shell> <E1OgxgQ-0002vU-BK@pomaz-ex.szeredi.hu>
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100806171223.GB16599@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804230421.GC29353@shell> <E1OgyOZ-000321-Fp@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1OgxgQ-0002vU-BK@pomaz-ex.szeredi.hu>
+In-Reply-To: <E1OgyOZ-000321-Fp@pomaz-ex.szeredi.hu>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 05, 2010 at 12:28:18PM +0200, Miklos Szeredi wrote:
+On Thu, Aug 05, 2010 at 01:13:55PM +0200, Miklos Szeredi wrote:
 > On Wed, 4 Aug 2010, Valerie Aurora wrote:
-> > > Why was the hash table concept dropped?  The header comment still
-> > > talks about that?
+> > > Another idea is to use an internal inode and make all fallthroughs be
+> > > hard links to that.
+> > > 
+> > > I think the same would work for whiteouts as well.  I don't like the
+> > > fact that whiteouts are invisible even when not mounted as part of a
+> > > union.
 > > 
-> > Simply, Al Viro didn't like it.  But note that the current
-> > implementation still uses part of the hash table solution.  You still
-> > have union_dir structures external to dentries for the read-only
-> > layers of the stack.  The change is from Al's observation that the
-> > topmost dentry could only be part of one stack.  Why do a lookup on
-> > the topmost dentry when you could keep an pointer to the stack in the
-> > dentry itself and skip the lookup?  Once you have the head of the
-> > stack, you don't need lookup for the rest of it.  This eliminates all
-> > the lookup machinery and the union hash table lock, which seems like a
-> > big win to me.
+> > I don't know if this helps, but I just wrote support for removing ext2
+> > whiteouts and fallthrus using tune2fs and e2fsck.  I think this does
+> > what people want from a "visible" whiteout feature without adding more
+> > complexity to the VFS.  It also takes away all consideration of race
+> > conditions and dentry conversion that happens with online removal of
+> > whiteouts and fallthrus.
+> > 
+> > What are your thoughts on what a visible whiteout/fallthru would look
+> > like?
 > 
-> That dentry field will be unused most of the time and we lose space
-> for d_iname for *all* filesystems.  On 64bit this results in max
-> inline name going from 32 down to 24 bytes.  On my root fs 7% of names
-> are 24-31 in length.  That's more than triple that of names which are
-> more than 32 in length.
+> Best would be if it didn't need any modification to filesystems.  All
+> this having to upgrade util-linux, e2fsprogs, having incompatible
+> filesystem features is a pain for users (just been through that).
 > 
-> Yeah, union mounts can be configured out, but that's not much
-> consolation for distros which want to enable this feature.
+> What we already have in most filesystems:
+> 
+>  - extended attributes, e.g. use the system.union.* namespace and
+>    denote whiteouts and falltroughs with such an attribute
+> 
+>  - hard links to make sure a separate inode is not necessary for each
+>    whiteout/fallthrough entry
+> 
+>  - some way for the user to easily identify such files when not
+>    mounted as part of a union e.g. make it a symlink pointing to
+>    "(deleted)" or whatever
+> 
+> Later the extended attributes can also be used for other things like
+> e.g. chmod()/chown() only copying up metadata, not data, and
+> indicating that data is still found on the lower layers.
 
-I'll bring it up with Al.
-
-> > The biggest drawback of the hash table in my mind was that it
-> > introduced a new global synchronization point in lookup.  Making it go
-> > fast would be dcache lookup optimization all over again.
-> 
-> I already asked this, but I'll ask again, what about doing this with a
-> union filesystem?  That solves this problem in one simple go, as well
-> as a host of others.
-> 
-> I'll do some experimenting because I feel it should be possible to do
-> all this in a union fs with most of the advantages of union mounts.
-> That doesn't mean it won't need any VFS support, but I think the
-> amount of VFS burden can be considerably reduced with that approach at
-> a small price (just dentry tree duplication).
-
-That would be great.  My theory on the current version is to do
-everything in the VFS except when it is much cleaner to make minor
-changes to the underlying fs.  I went this way because I'd worked on a
-stacked file system version and couldn't see how to avoid the
-complexity that unionfs ran into.  But a VFS/stacked fs hybrid might
-look nicer than a VFS/low-level fs hybrid.
+Just a quick note to say that my explicit design was to do as much as
+possible in the VFS, except when adding a little support to the
+low-level fs would make it significantly faster, simpler, and more
+correct.  I think for union mounts to perform moderately well, and to
+avoid namespace problems, we can't build it 100% out of existing file
+system parts like xattrs.  However, I could be wrong and I will
+definitely give any other implementation serious consideration.
 
 -VAL
