@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760838Ab0HFBIL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:08:11 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:53422 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760703Ab0HFBIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:08:09 -0400
-Message-ID: <4C5B6065.7000700@free.fr>
-Date: Fri, 06 Aug 2010 03:07:49 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Chris Friesen <cfriesen@nortel.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: mount notification question
-References: <4C5734A2.7070400@free.fr> <4C59B444.7080609@nortel.com>
-In-Reply-To: <4C59B444.7080609@nortel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760849Ab0HFBOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:14:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:2291 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753589Ab0HFBOJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 5 Aug 2010 21:14:09 -0400
+Subject: Re: [PATCH 3/3] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+From: Joe Perches <joe@perches.com>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Alex Dubov <oakad@yahoo.com>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281018316-1466-4-git-send-email-maximlevitsky@gmail.com>
+References: <1281018316-1466-1-git-send-email-maximlevitsky@gmail.com>
+	 <1281018316-1466-4-git-send-email-maximlevitsky@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 05 Aug 2010 18:14:06 -0700
+Message-ID: <1281057246.19943.20.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/04/2010 08:41 PM, Chris Friesen wrote:
-> On 08/02/2010 03:12 PM, Daniel Lezcano wrote:
->    
->> Hi all,
->>
->> is there a way to be notified when a mount occurs on the system ?
->>      
-> Have you looked on google?  The link is a bit misleading but they do
-> give a way to do it (not using inotify).
->
-> http://stackoverflow.com/questions/1113176/how-could-i-detect-when-a-directory-is-mounted-with-inotify
->    
+On Thu, 2010-08-05 at 17:25 +0300, Maxim Levitsky wrote:
+> Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
 
-Thanks a lot for the pointer. I am not sure this solution will work, 
-because it is inadequate for watching a specific location in a container 
-context separated by the mount and the network namespaces. We have 
-multiple mount points at the same place (eg. the mount point 
-inheritance, the container configuration and the init scripts may mount 
-/dev or /var/run several time) and the network namespace separation will 
-make impossible to watch udev event via a netlink socket. I didn't look 
-at the inotify implementation but IMHO, it should be worth to add 
-IN_MOUNT and IN_UNMOUNT events for inotify no ?
+Trivial comments:
 
-Thanks
-   -- Daniel
+> ---
+>  MAINTAINERS                    |    6 +
+> +RICOH R5C592 MEMORYSTICK DRIVER
+> +M:	Maxim Levitsky <maximlevitsky@gmail.com>
+> +S:	Maintained
+> +F:	drivers/memstick/host/r592.c
+> +F:	drivers/memstick/host/r592.h
+
+Patterns in maintainers can use wildcards
+
+F:	drivers/memstick/host/r592*
+
+> --- /dev/null
+> +++ b/drivers/memstick/host/r592.c
+> @@ -0,0 +1,889 @@
+[]
+> +static char *tpc_names[] = {
+
+const ?
+
+> +	"MS_TPC_READ_MG_STATUS",
+> +	"MS_TPC_READ_LONG_DATA",
+
+[]
+
+> +#define dbg(format, ...) \
+> +	if (debug) \
+> +		printk(KERN_DEBUG DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> +
+> +#define dbg_verbose(format, ...) \
+> +	if (debug > 1) \
+> +		printk(KERN_DEBUG DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> +
+> +#define dbg_reg(format, ...) \
+> +	if (debug > 2) \
+> +		printk(KERN_DEBUG DRV_NAME ": " format "\n", ## __VA_ARGS__)
+> +
+
+These style macros should use do { if (test) print(); } while (9)
+so they could be used without problems in if/else blocks.
+ 
+Maybe it'd be better to have and use 1 macro with a level passed:
+
+#define dbg(level, format, ...)						\
+do {									\
+	if (debug > level)						\
+		printk(KERN_DEBUG pr_fmt(format), ##__VA_ARGS__);	\
+} while (0)
+
+> +#define message(format, ...) \
+> +	printk(KERN_INFO DRV_NAME ": " format "\n", ## __VA_ARGS__)
+
+Why not just use pr_info?
+
 
