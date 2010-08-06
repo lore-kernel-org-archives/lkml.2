@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935034Ab0HFACq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 20:02:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65524 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935123Ab0HFACi (ORCPT
+	id S932771Ab0HFAHw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 20:07:52 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:52148 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755696Ab0HFAHt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 20:02:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100805091523U.fujita.tomonori@lab.ntt.co.jp>
-References: <AANLkTimK4NhXasetA4ZeeCeGSGySRNm8n=UgT+1oY_2g@mail.gmail.com>
-	<20100805091523U.fujita.tomonori@lab.ntt.co.jp>
-Date: Fri, 6 Aug 2010 10:02:36 +1000
-Message-ID: <AANLkTi=gAdLEaPfo==AMerh_kE2-+Va2oir-jHrNRu4u@mail.gmail.com>
-Subject: Re: Using Bootmem for large DMA buffers in the presence of the slab 
-	allocator
-From: Peter Crosthwaite <peter.crosthwaite@petalogix.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-kernel@vger.kernel.org, cl@linux-foundation.org,
-        penberg@cs.helsinki.fi, mpm@selenic.com, michal.simek@petalogix.com,
-        edgar.iglesias@petalogix.com, john.williams@petalogix.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 5 Aug 2010 20:07:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=aoWc6hiJcqrc6byagsmUzmMcHLtX+pbdtYIoMxs6B2B0vy4tmyCMVqiJsjsODS3qXu
+         pdT/o6y5cPQoJLftLNxnqaPuc7bd6QubZM8D50W3FONk8CD73rj1ZmcrnSk+I22uoNoZ
+         789z9mAeNKYxvnGwOzeDtDVLArkUwZ6v0fB8A=
+Subject: [PATCH 1/2 RESEND] regulator: lp3971 - remove unnecessary ret
+	value checking in lp3971_i2c_write()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain
+Date: Fri, 06 Aug 2010 08:09:14 +0800
+Message-Id: <1281053354.12131.4.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Everyone,
+We already check count value before calling i2c_smbus_read_byte_data(),
+no need to check it again.
 
-Thanks for your replies. I am going to stick with my start_kernel()
-edit until this CMA engine comes along.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+This resend adds regulator: prefix in the subject line.
 
-Regards,
-Peter
+ drivers/regulator/lp3971.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Thu, Aug 5, 2010 at 10:16 AM, FUJITA Tomonori
-<fujita.tomonori@lab.ntt.co.jp> wrote:
-> On Wed, 4 Aug 2010 16:07:52 +1000
-> Peter Crosthwaite <peter.crosthwaite@petalogix.com> wrote:
->
->> I am currently developing Kernel code to allocate and reserve a large
->> (64MB) contiguous buffer for DMA.
->
-> A buffer needs to be physically continuous (your hardware can't do
-> scatter gather)? If so, as already pointed out, there is no pretty
-> solution for it.
->
-> There are some drivers that need to do such so the issue has been
-> under discussion:
->
-> http://marc.info/?l=linux-mm&m=128015343705933&w=2
->
+diff --git a/drivers/regulator/lp3971.c b/drivers/regulator/lp3971.c
+index d4d9822..3bb82b6 100644
+--- a/drivers/regulator/lp3971.c
++++ b/drivers/regulator/lp3971.c
+@@ -377,7 +377,7 @@ static int lp3971_i2c_read(struct i2c_client *i2c, char reg, int count,
+ 	if (count != 1)
+ 		return -EIO;
+ 	ret = i2c_smbus_read_byte_data(i2c, reg);
+-	if (ret < 0 || count != 1)
++	if (ret < 0)
+ 		return -EIO;
+ 
+ 	*dest = ret;
+-- 
+1.5.4.3
+
+
+
