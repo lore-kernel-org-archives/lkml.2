@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933371Ab0HFDuW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 23:50:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40402 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755878Ab0HFDuU (ORCPT
+	id S933735Ab0HFDzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 23:55:11 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56717 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755878Ab0HFDzI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 23:50:20 -0400
+	Thu, 5 Aug 2010 23:55:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=t3ZWNrJnlXZdjxaccdyw9xYjo10kvutUuBuDo4qFvFKVswRLjeJxBYv/d1nJ/CDARb
-         bm37ZIHNR7Rhf7E2JU573c+Pmv2JlPVrhwXrrJM6nRtqD3wqgvpVsZAnncArRr8UB7CI
-         dcxTpX4JunAUw0UW0CluuaOuOuVPq3BOOYj4Q=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uJXSYa1P/23tefbyE0evFu2VQCP/NFyjvVY/lVFupMUTt/eRmnIZCuCWBX8haZiF+A
+         2iEAf1dQyfocAMofxQBClD/zI8ExYa4N59bOpucsDc9V/r74dQo7m+XOl5g1lQNVxwxw
+         wKgU/Cz3C3L62NfQxHSAkIDZUT43ECSavr/1g=
 MIME-Version: 1.0
-Date: Thu, 5 Aug 2010 21:50:17 -0600
-Message-ID: <AANLkTikV1-jK56yg35K5vt0JX2GoT6Uor+9N_9cfexcz@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Linux Kernel Debugger 2.6.35 x86_64 
-	08-05-2010
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20100806133836.49757af9@notabene>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<1280524978.2452.9.camel@segv.aura.of.mankind>
+	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	<20100805235218.GB31233@jeremy-laptop>
+	<20100806133836.49757af9@notabene>
+Date: Thu, 5 Aug 2010 22:55:06 -0500
+Message-ID: <AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Steve French <smfrench@gmail.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Jeremy Allison <jra@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CURRENT
-http://merkeydebugger.googlecode.com/files/mdb-2.6.35-x86_64-08-05-2010.patch
+On Thu, Aug 5, 2010 at 10:38 PM, Neil Brown <neilb@suse.de> wrote:
+> On Thu, 5 Aug 2010 16:52:18 -0700
+> Jeremy Allison <jra@samba.org> wrote:
 
-REPOSITORY
+>> Don't add it as an EA. It's *not* an EA, it's a timestamp.
+>
+> I'm curious.  Why do you particularly care what interface the kernel uses to
+> provide you with access to this attribute?
+>
+> And given that it is an attribute that is not part of 'POSIX' or "UNIX", it
+> would seem to be an extension - an extended attribute.
+> As the Linux kernel does virtually nothing with this attribute except provide
+> access, it seems to be a very different class of thing to other timestamps.
+> Surely it is simply some storage associated with a file which is capable of
+> storing a timestamp, which can be set or retrieved by an application, and
+> which happens to be initialised to the current time when a file is created.
+>
+> Yes, to you it is a timestamp.  But to Linux it is a few bytes of
+> user-settable metadata.  Sounds like an EA to me.
+>
+> Or do you really want something like BSD's 'btime' which as I understand it
+> cannot be set.  Would that be really useful to you?
 
-http://code.google.com/p/merkeydebugger/
-http://sourceforge.net/projects/merkeydebugger/
+Obviously the cifs and SMB2 protocols which  Samba server support can
+ask the server to set the create time of a file (this is handled
+through xattrs today along with the "dos attribute" flags such as
+archive/hidden/system), but certainly it is much more common (and
+important) to read the creation time of an existing file.
 
-FIXES:
-- move debug/mdb directories and build to kernel/debug/mdb to
-  where kdb and kgdb are located with the kernel debuggers
-- integrate into the kernel debug Makefile in kernel/debug/
-- fix fpu_alloc function in i386.h set to GFP_DMA instead of
-  GFP_KERNEL
-- fix sched.c exports
-- fix modules_use references in module.c
-- regression test UP and CONFIG_SMP x86_64 and ia32 version
-  2.6.35
 
-TODO:
-- Integrate GDB opcodes library for all Linux architectures
+> Is there something important that I am missing?
+
+It is another syscall that Samba server would have to make - and xattr
+performance is extremely slow on some file systems (although
+presumably this one would be more likely to be stored in inode and
+perhaps not as bad on ext4, cifs and a few others such as ntfs).
+
+
+-- 
+Thanks,
+
+Steve
