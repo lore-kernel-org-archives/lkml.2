@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965013Ab0HFSkk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:40:40 -0400
-Received: from kroah.org ([198.145.64.141]:48662 "EHLO coco.kroah.org"
+	id S965027Ab0HFSlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:41:08 -0400
+Received: from kroah.org ([198.145.64.141]:48636 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964918Ab0HFSfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:35:55 -0400
+	id S964894Ab0HFSfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:35:44 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:01 2010
-Message-Id: <20100806183201.824104398@clark.site>
+Message-Id: <20100806183201.312200862@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:41 -0700
+Date: Fri, 06 Aug 2010 11:30:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [20/38] ath9k: fix a buffer leak in A-MPDU completion
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: [14/38] ath9k: enable serialize_regmode for non-PCIE AR9160
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: John W. Linville <linville@tuxdriver.com>
 
-commit 73e194639d90594d06d0c10019c0ab4638869135 upstream.
+commit 4c85ab11ca56da1aa59b58c80cc6a356515cc645 upstream.
 
-When ath_tx_complete_aggr() is called, it's responsible for returning
-all buffers in the linked list. This was not done when the STA lookup
-failed, leading to a race condition that could leak a few buffers when
-a STA just disconnected.
-Fix this by immediately returning all buffers to the free list in this case.
+https://bugzilla.kernel.org/show_bug.cgi?id=16476
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Acked-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/wireless/ath/ath9k/hw.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -329,6 +329,7 @@ static void ath_tx_complete_aggr(struct
- 	int isaggr, txfail, txpending, sendbar = 0, needreset = 0, nbad = 0;
- 	bool rc_update = true;
- 	struct ieee80211_tx_rate rates[4];
-+	unsigned long flags;
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -537,7 +537,8 @@ static int __ath9k_hw_init(struct ath_hw
  
- 	skb = bf->bf_mpdu;
- 	hdr = (struct ieee80211_hdr *)skb->data;
-@@ -344,6 +345,10 @@ static void ath_tx_complete_aggr(struct
- 	sta = ieee80211_find_sta_by_hw(hw, hdr->addr1);
- 	if (!sta) {
- 		rcu_read_unlock();
-+
-+		spin_lock_irqsave(&sc->tx.txbuflock, flags);
-+		list_splice_tail_init(bf_q, &sc->tx.txbuf);
-+		spin_unlock_irqrestore(&sc->tx.txbuflock, flags);
- 		return;
- 	}
- 
+ 	if (ah->config.serialize_regmode == SER_REG_MODE_AUTO) {
+ 		if (ah->hw_version.macVersion == AR_SREV_VERSION_5416_PCI ||
+-		    (AR_SREV_9280(ah) && !ah->is_pciexpress)) {
++		    ((AR_SREV_9160(ah) || AR_SREV_9280(ah)) &&
++		     !ah->is_pciexpress)) {
+ 			ah->config.serialize_regmode =
+ 				SER_REG_MODE_ON;
+ 		} else {
 
 
