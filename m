@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965311Ab0HFTIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:08:30 -0400
-Received: from kroah.org ([198.145.64.141]:58656 "EHLO coco.kroah.org"
+	id S965291Ab0HFTJA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:09:00 -0400
+Received: from kroah.org ([198.145.64.141]:58640 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935704Ab0HFTAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:00:30 -0400
+	id S935638Ab0HFTA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:00:28 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:58:36 2010
-Message-Id: <20100806185836.523782243@clark.site>
+Message-Id: <20100806185836.358150448@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:57:25 -0700
+Date: Fri, 06 Aug 2010 11:57:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Larry Finger <Larry.Finger@lwfinger.net>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [30/34] Revert "ssb: Handle Netbook devices where the SPROM address is changed"
+        Takashi Iwai <tiwai@suse.de>, Matthew Garrett <mjg@redhat.com>,
+        Adam Jackson <ajax@redhat.com>, Eric Anholt <eric@anholt.net>
+Subject: [28/34] drm/i915: Fix LVDS presence check
 In-Reply-To: <20100806185853.GA28270@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,228 +26,141 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Greg Kroah-Hartman <gregkh@suse.de>
+Combined patches from 2.6.33 for fixing LVDS detection.
+7cf4f69d3f4511f443473954456cb91d5514756d
+    drm/i915: Don't set up the LVDS if it isn't in the BIOS device table.
+38b3037ee47fbd65a36bc7c39f60a900fbbe3b8e
+    drm/i915: Fix LVDS presence check
+6e36595a2131e7ed5ee2674be54b2713ba7f0490
+    drm/i915: Declare the new VBT parsing functions as static
+11ba159288f1bfc1a475c994e598f5fe423fde9d
+    drm/i915: Don't check for lid presence when detecting LVDS
 
-Turns out this isn't the best way to resolve this issue.  The
-individual patches will be applied instead.
-
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Ben Hutchings <ben@decadent.org.uk>
+Acked-by: Takashi Iwai <tiwai@suse.de>
+Cc: Matthew Garrett <mjg@redhat.com>
+Cc: Adam Jackson <ajax@redhat.com>
+Cc: Eric Anholt <eric@anholt.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ssb/driver_chipcommon.c           |    3 -
- drivers/ssb/driver_chipcommon_pmu.c       |   17 ++++++-----
- drivers/ssb/pci.c                         |   46 +++---------------------------
- drivers/ssb/sprom.c                       |   15 ---------
- include/linux/ssb/ssb.h                   |    1 
- include/linux/ssb/ssb_driver_chipcommon.h |    2 -
- include/linux/ssb/ssb_regs.h              |    3 -
- 7 files changed, 17 insertions(+), 70 deletions(-)
+ drivers/gpu/drm/i915/intel_lvds.c |   90 +++++++++++++-------------------------
+ 1 file changed, 33 insertions(+), 57 deletions(-)
 
---- a/drivers/ssb/driver_chipcommon.c
-+++ b/drivers/ssb/driver_chipcommon.c
-@@ -233,9 +233,6 @@ void ssb_chipcommon_init(struct ssb_chip
+--- a/drivers/gpu/drm/i915/intel_lvds.c
++++ b/drivers/gpu/drm/i915/intel_lvds.c
+@@ -901,64 +901,45 @@ static const struct dmi_system_id intel_
+ 	{ }	/* terminating entry */
+ };
+ 
+-#ifdef CONFIG_ACPI
+ /*
+- * check_lid_device -- check whether @handle is an ACPI LID device.
+- * @handle: ACPI device handle
+- * @level : depth in the ACPI namespace tree
+- * @context: the number of LID device when we find the device
+- * @rv: a return value to fill if desired (Not use)
++ * Enumerate the child dev array parsed from VBT to check whether
++ * the LVDS is present.
++ * If it is present, return 1.
++ * If it is not present, return false.
++ * If no child dev is parsed from VBT, it assumes that the LVDS is present.
++ * Note: The addin_offset should also be checked for LVDS panel.
++ * Only when it is non-zero, it is assumed that it is present.
+  */
+-static acpi_status
+-check_lid_device(acpi_handle handle, u32 level, void *context,
+-			void **return_value)
++static int lvds_is_present_in_vbt(struct drm_device *dev)
  {
- 	if (!cc->dev)
- 		return; /* We don't have a ChipCommon */
--	if (cc->dev->id.revision >= 11)
--		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
--	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
- 	ssb_pmu_init(cc);
- 	chipco_powercontrol_init(cc);
- 	ssb_chipco_set_clockmode(cc, SSB_CLKMODE_FAST);
---- a/drivers/ssb/driver_chipcommon_pmu.c
-+++ b/drivers/ssb/driver_chipcommon_pmu.c
-@@ -495,9 +495,9 @@ static void ssb_pmu_resources_init(struc
- 		chipco_write32(cc, SSB_CHIPCO_PMU_MAXRES_MSK, max_msk);
- }
- 
--/* http://bcm-v4.sipsolutions.net/802.11/SSB/PmuInit */
- void ssb_pmu_init(struct ssb_chipcommon *cc)
- {
-+	struct ssb_bus *bus = cc->dev->bus;
- 	u32 pmucap;
- 
- 	if (!(cc->capabilities & SSB_CHIPCO_CAP_PMU))
-@@ -509,12 +509,15 @@ void ssb_pmu_init(struct ssb_chipcommon
- 	ssb_dprintk(KERN_DEBUG PFX "Found rev %u PMU (capabilities 0x%08X)\n",
- 		    cc->pmu.rev, pmucap);
- 
--	if (cc->pmu.rev == 1)
--		chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,
--			      ~SSB_CHIPCO_PMU_CTL_NOILPONW);
--	else
--		chipco_set32(cc, SSB_CHIPCO_PMU_CTL,
--			     SSB_CHIPCO_PMU_CTL_NOILPONW);
-+	if (cc->pmu.rev >= 1) {
-+		if ((bus->chip_id == 0x4325) && (bus->chip_rev < 2)) {
-+			chipco_mask32(cc, SSB_CHIPCO_PMU_CTL,
-+				      ~SSB_CHIPCO_PMU_CTL_NOILPONW);
-+		} else {
-+			chipco_set32(cc, SSB_CHIPCO_PMU_CTL,
-+				     SSB_CHIPCO_PMU_CTL_NOILPONW);
-+		}
-+	}
- 	ssb_pmu_pll_init(cc);
- 	ssb_pmu_resources_init(cc);
- }
---- a/drivers/ssb/pci.c
-+++ b/drivers/ssb/pci.c
-@@ -22,7 +22,6 @@
- 
- #include "ssb_private.h"
- 
--bool ssb_is_sprom_available(struct ssb_bus *bus);
- 
- /* Define the following to 1 to enable a printk on each coreswitch. */
- #define SSB_VERBOSE_PCICORESWITCH_DEBUG		0
-@@ -168,7 +167,7 @@ err_pci:
- }
- 
- /* Get the word-offset for a SSB_SPROM_XXX define. */
--#define SPOFF(offset)	((offset) / sizeof(u16))
-+#define SPOFF(offset)	(((offset) - SSB_SPROM_BASE) / sizeof(u16))
- /* Helper to extract some _offset, which is one of the SSB_SPROM_XXX defines. */
- #define SPEX16(_outvar, _offset, _mask, _shift)	\
- 	out->_outvar = ((in[SPOFF(_offset)] & (_mask)) >> (_shift))
-@@ -253,13 +252,8 @@ static int sprom_do_read(struct ssb_bus
- {
- 	int i;
- 
--	/* Check if SPROM can be read */
--	if (ioread16(bus->mmio + bus->sprom_offset) == 0xFFFF) {
--		ssb_printk(KERN_ERR PFX "Unable to read SPROM\n");
--		return -ENODEV;
--	}
- 	for (i = 0; i < bus->sprom_size; i++)
--		sprom[i] = ioread16(bus->mmio + bus->sprom_offset + (i * 2));
-+		sprom[i] = ioread16(bus->mmio + SSB_SPROM_BASE + (i * 2));
- 
- 	return 0;
- }
-@@ -290,7 +284,7 @@ static int sprom_do_write(struct ssb_bus
- 			ssb_printk("75%%");
- 		else if (i % 2)
- 			ssb_printk(".");
--		writew(sprom[i], bus->mmio + bus->sprom_offset + (i * 2));
-+		writew(sprom[i], bus->mmio + SSB_SPROM_BASE + (i * 2));
- 		mmiowb();
- 		msleep(20);
- 	}
-@@ -626,49 +620,21 @@ static int ssb_pci_sprom_get(struct ssb_
- 	int err = -ENOMEM;
- 	u16 *buf;
- 
--	if (!ssb_is_sprom_available(bus)) {
--		ssb_printk(KERN_ERR PFX "No SPROM available!\n");
--		return -ENODEV;
--	}
--	if (bus->chipco.dev) {	/* can be unavailible! */
--		/*
--		 * get SPROM offset: SSB_SPROM_BASE1 except for
--		 * chipcommon rev >= 31 or chip ID is 0x4312 and
--		 * chipcommon status & 3 == 2
--		 */
--		if (bus->chipco.dev->id.revision >= 31)
--			bus->sprom_offset = SSB_SPROM_BASE31;
--		else if (bus->chip_id == 0x4312 &&
--			 (bus->chipco.status & 0x03) == 2)
--			bus->sprom_offset = SSB_SPROM_BASE31;
--		else
--			bus->sprom_offset = SSB_SPROM_BASE1;
--	} else {
--		bus->sprom_offset = SSB_SPROM_BASE1;
--	}
--	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
+-	struct acpi_device *acpi_dev;
+-	int *lid_present = context;
 -
- 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
- 	if (!buf)
- 		goto out;
- 	bus->sprom_size = SSB_SPROMSIZE_WORDS_R123;
--	err = sprom_do_read(bus, buf);
--	if (err)
--		goto out_free;
-+	sprom_do_read(bus, buf);
- 	err = sprom_check_crc(buf, bus->sprom_size);
- 	if (err) {
- 		/* try for a 440 byte SPROM - revision 4 and higher */
- 		kfree(buf);
- 		buf = kcalloc(SSB_SPROMSIZE_WORDS_R4, sizeof(u16),
- 			      GFP_KERNEL);
--		if (!buf) {
--			err = -ENOMEM;
-+		if (!buf)
- 			goto out;
--		}
- 		bus->sprom_size = SSB_SPROMSIZE_WORDS_R4;
--		err = sprom_do_read(bus, buf);
--		if (err)
--			goto out_free;
-+		sprom_do_read(bus, buf);
- 		err = sprom_check_crc(buf, bus->sprom_size);
- 		if (err) {
- 			/* All CRC attempts failed.
---- a/drivers/ssb/sprom.c
-+++ b/drivers/ssb/sprom.c
-@@ -179,18 +179,3 @@ const struct ssb_sprom *ssb_get_fallback
- {
- 	return fallback_sprom;
- }
+-	acpi_dev = NULL;
+-	/* Get the acpi device for device handle */
+-	if (acpi_bus_get_device(handle, &acpi_dev) || !acpi_dev) {
+-		/* If there is no ACPI device for handle, return */
+-		return AE_OK;
+-	}
 -
--/* http://bcm-v4.sipsolutions.net/802.11/IsSpromAvailable */
--bool ssb_is_sprom_available(struct ssb_bus *bus)
--{
--	/* status register only exists on chipcomon rev >= 11 and we need check
--	   for >= 31 only */
--	/* this routine differs from specs as we do not access SPROM directly
--	   on PCMCIA */
--	if (bus->bustype == SSB_BUSTYPE_PCI &&
--	    bus->chipco.dev &&	/* can be unavailible! */
--	    bus->chipco.dev->id.revision >= 31)
--		return bus->chipco.capabilities & SSB_CHIPCO_CAP_SPROM;
--
--	return true;
+-	if (!strncmp(acpi_device_hid(acpi_dev), "PNP0C0D", 7))
+-		*lid_present = 1;
++	struct drm_i915_private *dev_priv = dev->dev_private;
++	struct child_device_config *p_child;
++	int i, ret;
+ 
+-	return AE_OK;
 -}
---- a/include/linux/ssb/ssb.h
-+++ b/include/linux/ssb/ssb.h
-@@ -302,7 +302,6 @@ struct ssb_bus {
- 	u16 chip_id;
- 	u16 chip_rev;
- 	u16 sprom_size;		/* number of words in sprom */
--	u16 sprom_offset;
- 	u8 chip_package;
++	if (!dev_priv->child_dev_num)
++		return 1;
  
- 	/* List of devices (cores) on the backplane. */
---- a/include/linux/ssb/ssb_driver_chipcommon.h
-+++ b/include/linux/ssb/ssb_driver_chipcommon.h
-@@ -46,7 +46,6 @@
- #define   SSB_PLLTYPE_7			0x00038000	/* 25Mhz, 4 dividers */
- #define  SSB_CHIPCO_CAP_PCTL		0x00040000	/* Power Control */
- #define  SSB_CHIPCO_CAP_OTPS		0x00380000	/* OTP size */
--#define  SSB_CHIPCO_CAP_SPROM		0x40000000	/* SPROM present */
- #define  SSB_CHIPCO_CAP_OTPS_SHIFT	19
- #define  SSB_CHIPCO_CAP_OTPS_BASE	5
- #define  SSB_CHIPCO_CAP_JTAGM		0x00400000	/* JTAG master present */
-@@ -565,7 +564,6 @@ struct ssb_chipcommon_pmu {
- struct ssb_chipcommon {
- 	struct ssb_device *dev;
- 	u32 capabilities;
--	u32 status;
- 	/* Fast Powerup Delay constant */
- 	u16 fast_pwrup_delay;
- 	struct ssb_chipcommon_pmu pmu;
---- a/include/linux/ssb/ssb_regs.h
-+++ b/include/linux/ssb/ssb_regs.h
-@@ -170,8 +170,7 @@
- #define SSB_SPROMSIZE_WORDS_R4		220
- #define SSB_SPROMSIZE_BYTES_R123	(SSB_SPROMSIZE_WORDS_R123 * sizeof(u16))
- #define SSB_SPROMSIZE_BYTES_R4		(SSB_SPROMSIZE_WORDS_R4 * sizeof(u16))
--#define SSB_SPROM_BASE1			0x1000
--#define SSB_SPROM_BASE31		0x0800
-+#define SSB_SPROM_BASE			0x1000
- #define SSB_SPROM_REVISION		0x107E
- #define  SSB_SPROM_REVISION_REV		0x00FF	/* SPROM Revision number */
- #define  SSB_SPROM_REVISION_CRC		0xFF00	/* SPROM CRC8 value */
+-/**
+- * check whether there exists the ACPI LID device by enumerating the ACPI
+- * device tree.
+- */
+-static int intel_lid_present(void)
+-{
+-	int lid_present = 0;
++	ret = 0;
++	for (i = 0; i < dev_priv->child_dev_num; i++) {
++		p_child = dev_priv->child_dev + i;
++		/*
++		 * If the device type is not LFP, continue.
++		 * If the device type is 0x22, it is also regarded as LFP.
++		 */
++		if (p_child->device_type != DEVICE_TYPE_INT_LFP &&
++			p_child->device_type != DEVICE_TYPE_LFP)
++			continue;
+ 
+-	if (acpi_disabled) {
+-		/* If ACPI is disabled, there is no ACPI device tree to
+-		 * check, so assume the LID device would have been present.
++		/* The addin_offset should be checked. Only when it is
++		 * non-zero, it is regarded as present.
+ 		 */
+-		return 1;
++		if (p_child->addin_offset) {
++			ret = 1;
++			break;
++		}
+ 	}
+-
+-	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
+-				ACPI_UINT32_MAX,
+-				check_lid_device, &lid_present, NULL);
+-
+-	return lid_present;
+-}
+-#else
+-static int intel_lid_present(void)
+-{
+-	/* In the absence of ACPI built in, assume that the LID device would
+-	 * have been present.
+-	 */
+-	return 1;
++	return ret;
+ }
+-#endif
+ 
+ /**
+  * intel_lvds_init - setup LVDS connectors on this device
+@@ -983,15 +964,10 @@ void intel_lvds_init(struct drm_device *
+ 	if (dmi_check_system(intel_no_lvds))
+ 		return;
+ 
+-	/* Assume that any device without an ACPI LID device also doesn't
+-	 * have an integrated LVDS.  We would be better off parsing the BIOS
+-	 * to get a reliable indicator, but that code isn't written yet.
+-	 *
+-	 * In the case of all-in-one desktops using LVDS that we've seen,
+-	 * they're using SDVO LVDS.
+-	 */
+-	if (!intel_lid_present())
++	if (!lvds_is_present_in_vbt(dev)) {
++		DRM_DEBUG_KMS("LVDS is not present in VBT\n");
+ 		return;
++	}
+ 
+ 	if (IS_IGDNG(dev)) {
+ 		if ((I915_READ(PCH_LVDS) & LVDS_DETECTED) == 0)
 
 
