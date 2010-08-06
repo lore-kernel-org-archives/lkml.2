@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935869Ab0HFXJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 19:09:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:14986 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab0HFXJH (ORCPT
+	id S1762177Ab0HFXTX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 19:19:23 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41336 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751953Ab0HFXTU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 19:09:07 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6066"; a="50177755"
-Message-ID: <4C5C9606.7040304@codeaurora.org>
-Date: Fri, 06 Aug 2010 16:08:54 -0700
-From: Stepan Moskovchenko <stepanm@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	Fri, 6 Aug 2010 19:19:20 -0400
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: dwalker@codeaurora.org, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: msm: Add MSM IOMMU support.
-References: <1281062204-21880-1-git-send-email-stepanm@codeaurora.org> <20100806073333.GA14965@n2100.arm.linux.org.uk> <93bd044b61aed19a3571bc019af0252a.squirrel@www.codeaurora.org> <20100806085941.GA15852@n2100.arm.linux.org.uk>
-In-Reply-To: <20100806085941.GA15852@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100804125156.GA23464@sepie.suse.cz>
+References: <20100804125156.GA23464@sepie.suse.cz>
+Date: Fri, 6 Aug 2010 16:19:19 -0700
+Message-ID: <AANLkTinN4npO7qfSa-42B-Cq5mKZX+--H0=1SuSrWTEP@mail.gmail.com>
+Subject: Re: [GIT] kbuild: kconfig changes
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, JBeulich@novell.com,
+        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
+        justinmattock@gmail.com, lizf@cn.fujitsu.com, sam@ravnborg.org,
+        ulfalizer.lkml@gmail.com, zippel@linux-m68k.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 8/6/2010 1:59 AM, Russell King - ARM Linux wrote:
-> On Fri, Aug 06, 2010 at 01:17:46AM -0700, stepanm@codeaurora.org wrote:
->> Thank you for your comments. I will apply the fixes you have mentioned. I
->> am flushing the cache when I update the page table because the page table
->> lives in regular RAM that is mapped as cacheable on the CPU side, and in
->> the default configuration the IOMMU reads the page table from RAM.
-> That's fine, but use the right function.
+On Wed, Aug 4, 2010 at 5:51 AM, Michal Marek <mmarek@suse.cz> wrote:
+> Hi Linus,
 >
->> So, I
->> have put in the flush call to give the IOMMU a coherent view of the page
->> tables. I realize it is more efficient to just flush that specific part of
->> L2, but this is just the basic version of the driver and that optimization
->> will be eventually put in.
-> Here, you're talking about L2 again, but your code only touches the L1
-> cache.  I think you're confused about caching.
+> this is the kconfig part of kbuild. We have four new *config targets:
+> * oldnoconfig: set all new options to 'n'
+> * listnewconfig: list all unset config options
+> * alldefconfig: set all options to their defaults specified in Kconfig
+>  files
+> * savedefconfig: write a defconfig file with only the differences from
+>  an alldefconfig (aka minimal defconfig)
 >
->> What did you mean by:
->>> Any reason you can't have some kind of struct device instead?
->> Are you referring to the clock line? As far as I understand it, the kernel
->> tracks the clocks by a string name, but I can look into it further.
-> No.
+> Kconfig also warns when a select statement selects a symbol with unmet
+> dependencies (which typically results in a broken config). Li Zefan did
+> quite some usability fixes to the visual config interfaces.
 >
-> /**
->   * clk_get - lookup and obtain a reference to a clock producer.
->   * @dev: device for clock "consumer"
->   * @id: clock comsumer ID
->   *
->   * Returns a struct clk corresponding to the clock producer, or
->   * valid IS_ERR() condition containing errno.  The implementation
->   * uses @dev and @id to determine the clock consumer, and thereby
->   * the clock producer.  (IOW, @id may be identical strings, but
->   * clk_get may return different clock producers depending on @dev.)
+> Michal
 >
-> The intention is that 'id' is specific to each 'dev', and identifies
-> the connection on 'dev' that you want the clock for.  It's the
-> _consumer's_ name, nothing to do with the clock producer.
+> The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
 >
-> There's also clk_get_sys() if you don't have a struct device.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Russell,
-Thanks for the information. Getting the clock by the device as you 
-suggest should be fine. I believe I have addressed your other comments 
-as well. I've sent out a v2 patch. Please let me know what you think.
+>  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
+>
+> are available in the git repository at:
+>  git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git kconfig
+>
+> Aristeu Rozanski (1):
+>      kconfig: introduce nonint_oldconfig and loose_nonint_oldconfig
+>
+> Catalin Marinas (1):
+>      kbuild: Warn on selecting symbols with unmet direct dependencies
+>
+> Jan Beulich (1):
+>      kconfig: Don't write invisible choice values
 
-Thanks
-Steve
+This change prevents some the minimal defconfig options from working.
+Specifically our usb gadget drivers do not get set. Reverting this
+part of the changes fixes my problem, but I don't know what other side
+effects it may have:
+
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index e95718f..1797226 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -261,18 +261,14 @@ struct symbol *sym_choice_default(struct symbol *sym)
+ static struct symbol *sym_calc_choice(struct symbol *sym)
+ {
+        struct symbol *def_sym;
+-       struct property *prop;
+-       struct expr *e;
+-
+-       /* first calculate all choice values' visibilities */
+-       prop = sym_get_choice_prop(sym);
+-       expr_list_for_each_sym(prop->expr, e, def_sym)
+-               sym_calc_visibility(def_sym);
+
+        /* is the user choice visible? */
+        def_sym = sym->def[S_DEF_USER].val;
+-       if (def_sym && def_sym->visible != no)
+-               return def_sym;
++       if (def_sym) {
++               sym_calc_visibility(def_sym);
++               if (def_sym->visible != no)
++                       return def_sym;
++       }
+
+        def_sym = sym_choice_default(sym);
+
+
+-- 
+Arve Hjønnevåg
