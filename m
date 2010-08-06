@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856Ab0HFId3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 04:33:29 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:50979 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491Ab0HFId1 convert rfc822-to-8bit (ORCPT
+	id S1760042Ab0HFIj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 04:39:28 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:59477 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755326Ab0HFIjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 04:33:27 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Fri, 06 Aug 2010 10:34:57 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 3/3] lib: vsprintf: added a put_dec() test and benchmark
- tool
-In-reply-to: <201008060710.06304.vda.linux@googlemail.com>
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-id: <op.vg0csju97p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com>
- <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
- <b3cd8c92d68f3ca7104be13841f1f66f7db9f7e1.1280872240.git.mina86@mina86.com>
- <201008060710.06304.vda.linux@googlemail.com>
+	Fri, 6 Aug 2010 04:39:25 -0400
+Date: Fri, 6 Aug 2010 16:39:00 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Olivier Galibert <galibert@pobox.com>
+Cc: kyle@moffetthome.net, torvalds@linux-foundation.org,
+        herbert@gondor.hengli.com.au, dhowells@redhat.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: Initcall ordering problem (TTY vs modprobe vs MD5) and
+	cryptomgr problem
+Message-ID: <20100806083900.GA25385@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806080642.GA4642@dspnet.fr>
+Organization: Core
+X-Newsgroups: apana.lists.os.linux.cryptoapi,apana.lists.os.linux.kernel
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 06 Aug 2010 07:10:06 +0200, Denys Vlasenko <vda.linux@googlemail.com> wrote:
-
-> On Friday 06 August 2010 00:38, Michal Nazarewicz wrote:
->> This commit adds a test application for the put_dec() and
->> family of functions that are used by the previous two commits.
->>
->> Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Olivier Galibert <galibert@pobox.com> wrote:
 >
->> +put-dec-test: put-dec-test.c
->> +	exec $(CC) $(CFLAGS) -o $@ $<
->
-> (1) Why exec?
+> Of course in practice without the tests your boot would probably just
+> have failed.  Badly-decrypted root partitions tend to be noticed as
+> such long before trying to write to them.  Then you would have bitched
+> on the list and the driver would have been fixed or removed faster
+> than having to wait for you (or other people with the hardware issue)
+> to notice the spew in dmesg.
 
-Micro Makefile optimisation -- saves us a fork().
+So you'd rather have a box that doesn't boot rather than one
+that automatically falls back to software crypto allowing you
+to diagnose and report the problem.
 
-I'll try to fix the benchmark over the weekend and will post updated
-version.  Thanks for the comments.
+Yes that makes a lot of sense.
 
+Thanks,
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
