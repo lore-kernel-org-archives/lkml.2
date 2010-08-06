@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964973Ab0HFSgV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 14:36:21 -0400
-Received: from kroah.org ([198.145.64.141]:48721 "EHLO coco.kroah.org"
+	id S964939Ab0HFSga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 14:36:30 -0400
+Received: from kroah.org ([198.145.64.141]:48725 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964951Ab0HFSgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 14:36:07 -0400
+	id S964949Ab0HFSgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 14:36:08 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 11:32:02 2010
-Message-Id: <20100806183202.770722735@clark.site>
+Message-Id: <20100806183202.868751051@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 11:30:52 -0700
+Date: Fri, 06 Aug 2010 11:30:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [31/38] SCSI: enclosure: fix error path - actually return ERR_PTR() on error
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [32/38] xen: drop xen_sched_clock in favour of using plain wallclock time
 In-Reply-To: <20100806183250.GA23019@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: James Bottomley <James.Bottomley@suse.de>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-commit a91c1be21704113b023919826c6d531da46656ef upstream.
+commit 8a22b9996b001c88f2bfb54c6de6a05fc39e177a upstream.
 
-we also need to clean up and free the cdev.
+xen_sched_clock only counts unstolen time.  In principle this should
+be useful to the Linux scheduler so that it knows how much time a process
+actually consumed.  But in practice this doesn't work very well as the
+scheduler expects the sched_clock time to be synchronized between
+cpus.  It also uses sched_clock to measure the time a task spends
+sleeping, in which case "unstolen time" isn't meaningful.
 
-Reported-by: Jani Nikula <ext-jani.1.nikula@nokia.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+So just use plain xen_clocksource_read to return wallclock nanoseconds
+for sched_clock.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/misc/enclosure.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/x86/xen/enlighten.c |    2 +-
+ arch/x86/xen/time.c      |   39 ---------------------------------------
+ 2 files changed, 1 insertion(+), 40 deletions(-)
 
---- a/drivers/misc/enclosure.c
-+++ b/drivers/misc/enclosure.c
-@@ -285,8 +285,11 @@ enclosure_component_register(struct encl
- 	cdev->groups = enclosure_groups;
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -927,7 +927,7 @@ static const struct pv_init_ops xen_init
+ };
  
- 	err = device_register(cdev);
--	if (err)
--		ERR_PTR(err);
-+	if (err) {
-+		ecomp->number = -1;
-+		put_device(cdev);
-+		return ERR_PTR(err);
-+	}
+ static const struct pv_time_ops xen_time_ops __initdata = {
+-	.sched_clock = xen_sched_clock,
++	.sched_clock = xen_clocksource_read,
+ };
  
- 	return ecomp;
+ static const struct pv_cpu_ops xen_cpu_ops __initdata = {
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -155,45 +155,6 @@ static void do_stolen_accounting(void)
+ 	account_idle_ticks(ticks);
  }
+ 
+-/*
+- * Xen sched_clock implementation.  Returns the number of unstolen
+- * nanoseconds, which is nanoseconds the VCPU spent in RUNNING+BLOCKED
+- * states.
+- */
+-unsigned long long xen_sched_clock(void)
+-{
+-	struct vcpu_runstate_info state;
+-	cycle_t now;
+-	u64 ret;
+-	s64 offset;
+-
+-	/*
+-	 * Ideally sched_clock should be called on a per-cpu basis
+-	 * anyway, so preempt should already be disabled, but that's
+-	 * not current practice at the moment.
+-	 */
+-	preempt_disable();
+-
+-	now = xen_clocksource_read();
+-
+-	get_runstate_snapshot(&state);
+-
+-	WARN_ON(state.state != RUNSTATE_running);
+-
+-	offset = now - state.state_entry_time;
+-	if (offset < 0)
+-		offset = 0;
+-
+-	ret = state.time[RUNSTATE_blocked] +
+-		state.time[RUNSTATE_running] +
+-		offset;
+-
+-	preempt_enable();
+-
+-	return ret;
+-}
+-
+-
+ /* Get the TSC speed from Xen */
+ unsigned long xen_tsc_khz(void)
+ {
 
 
