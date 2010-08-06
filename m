@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934925Ab0HFMpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 08:45:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40828 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932232Ab0HFMpO (ORCPT
+	id S934933Ab0HFMqR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 08:46:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:32793 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab0HFMqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 08:45:14 -0400
+	Fri, 6 Aug 2010 08:46:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=KS/U6iSX2oVh6pWffxquTnqtkoFLvpPrX6UMC8AcS7hjuE54ZYjR0jc/P6BEBSKbjH
-         lxaSIaaPEGyRrr9NPWv6+v/Pc4eGdv9VS7tADbPc/gSL0+bUKhfxUzPNwlJfLsx9O318
-         X0yjxZ2VXvA/LqXenmHzFzjkdibgXVSk4RN40=
-Message-ID: <4C5C03D5.1040108@gmail.com>
-Date: Fri, 06 Aug 2010 13:45:09 +0100
-From: Andrew Benton <b3nton@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:2.0b3pre) Gecko/20100728 Shredder/3.2a1pre
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: make-3.82 and built in firmware
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ba+US2eiQtKmzd9MKwwTOrJVA8+vi10Qvu9g80hs32F0Wt09kGzcCUzdmUfwV5Moz9
+         5DhpBLmjtqcOqnWN+k0PoL5KPF+tb+0NxzQkWriWEZ5pdreLqzo4K/8bJkuvGBnEo3O2
+         YCkTUXP8jF1qrOEbUwxgIY029OW4wEdwHZc8A=
+From: Namhyung Kim <namhyung@gmail.com>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH] percpu: remove address_space attribute if !SMP
+Date: Fri,  6 Aug 2010 21:46:08 +0900
+Message-Id: <1281098768-5724-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello World
-I recently upgraded to the latest version of make, 3.82. One of the 
-problems I've had with it is that I can no longer recompile my kernel 
-with built in firmware enabled. If I have 
-CONFIG_FIRMWARE_IN_KERNEL=y
-then the build fails like so:
+percpu data has no special meaning in case of !CONFIG_SMP.
+This removes lots of sparse warnings.
 
-  IKCFG   kernel/config_data.h
-  CC      kernel/configs.o
-  LD      kernel/built-in.o
-make[2]: *** No rule to make target `/tmp/linux-build-dir/firmware/radeon/', needed by `firmware/radeon/R100_cp.bin.gen.S'.  Stop.
-make[1]: *** [firmware] Error 2
-make: *** [sub-make] Error 2
-andy:~/save/src/linux-2.6$ 
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-Please CC, I'm not subscribed
+diff --git a/include/linux/compiler.h b/include/linux/compiler.h
+index a5a472b..8dfd41d 100644
+--- a/include/linux/compiler.h
++++ b/include/linux/compiler.h
+@@ -15,7 +15,11 @@
+ # define __acquire(x)	__context__(x,1)
+ # define __release(x)	__context__(x,-1)
+ # define __cond_lock(x,c)	((c) ? ({ __acquire(x); 1; }) : 0)
+-# define __percpu	__attribute__((noderef, address_space(3)))
++# ifdef CONFIG_SMP
++#  define __percpu	__attribute__((noderef, address_space(3)))
++# else
++#  define __percpu
++# endif
+ extern void __chk_user_ptr(const volatile void __user *);
+ extern void __chk_io_ptr(const volatile void __iomem *);
+ #else
+-- 
+1.7.0.4
 
-Many thanks,
-
-Andy
