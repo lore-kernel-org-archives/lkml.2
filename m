@@ -1,122 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760973Ab0HFJEZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 05:04:25 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:35674 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760803Ab0HFJEW convert rfc822-to-8bit (ORCPT
+	id S1761089Ab0HFJEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 05:04:37 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53087 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760804Ab0HFJEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 05:04:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wSgb8sTo6fPvI2Pna2YIIXNoR/OR5Gq/XbRQ+LCu8mwOmHUPiLdvibordm6TT7z+Uk
-         /gMrrjPIf9Tl9o8hvknPdlAldw5koLoRzlkaSkyQQ9/uyQGXXFZX1lyZK9WK10/GQdob
-         ac3msrIAEQA/7UBIm4RaGBluJfhiGd2riz64Q=
+	Fri, 6 Aug 2010 05:04:23 -0400
+X-SpamScore: -36
+X-BigFish: VPS-36(zz1432N9370J98dN936eM9371Pzz1202hzz15d4Rz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L6Q3V1-02-G54-02
+X-M-MSG: 
+From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Organization: AMD OSRC
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
+Date: Fri, 6 Aug 2010 11:04:11 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.32-24-generic; KDE/4.4.5; x86_64; ; )
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008060830.50889.stephan.diestelhorst@amd.com> <4C5BB472.5000207@gmail.com>
+In-Reply-To: <4C5BB472.5000207@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1008052217240.31692@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052217240.31692@ask.diku.dk>
-Date: Fri, 6 Aug 2010 11:04:20 +0200
-Message-ID: <AANLkTikGYhWCVW1HqdhwqRHaph54S9U4eKi7nNLHktMV@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH 3/42] drivers/hwmon: Adjust confusing if 
-	indentation
-From: Charles Logan <cybercorecentre@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Rudolf Marek <r.marek@assembler.cz>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-ID: <201008061104.12574.stephan.diestelhorst@amd.com>
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrected:
+HI,
 
-> // <smpl>
-> @r disable braces5@
-> position p1,p2;
-> statement S1,S2;
-> @@
->
-> (
-> if (...) { ... }
-> |
-> if (...) S1@p1 S2@p2
-> )
->
-> @script:python@
-> p1 << r.p1;
-> p2 << r.p2;
-> @@
->
-> if (p1[0].column == p2[0].column):
->  cocci.print_main("branch",p4)
->  cocci.print_secs("after",p5)
-> // </smpl>
+On Friday 06 August 2010, 09:06:26 Tejun Heo wrote:
+> On 08/06/2010 08:30 AM, Stephan Diestelhorst wrote:
+> > On Thursday 05 August 2010, 18:08:02 Tejun Heo wrote:
+> >> Can you please try the following patch and see whether the problem
+> >> goes away?
+> > <snip>
+> > 
+> > to which revision does the patch apply? I didn't get it to apply
+> > cleanly to Linus' kernel HEAD or the 2.6.34 stable tag. Maybe I am
+> > missing something, since I am a git-n00b (use Mercurial all the time)?
+> 
+> It applies cleanly to v2.6.35.
 
+Arrrgh. My "great" company Exchange mail server thought it was a good
+idea to mess with the white-space of the mail. That's why the patch did
+not apply. Compiling and testing now, sorry.
 
+Stephan
 
-On Thu, Aug 5, 2010 at 10:17 PM, Julia Lawall <julia@diku.dk> wrote:
-> From: Julia Lawall <julia@diku.dk>
->
-> Move the if(err) statement after the if into the if branch indicated by its
-> indentation.  The preceding if(err) test implies that err cannot be nonzero
-> unless the if branch is taken.
->
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @r disable braces4@
-> position p1,p2;
-> statement S1,S2;
-> @@
->
-> (
-> if (...) { ... }
-> |
-> if (...) S1@p1 S2@p2
-> )
->
-> @script:python@
-> p1 << r.p1;
-> p2 << r.p2;
-> @@
->
-> if (p1[0].column == p2[0].column):
->  cocci.print_main("branch",p1)
->  cocci.print_secs("after",p2)
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <julia@diku.dk>
->
-> ---
->  drivers/hwmon/k8temp.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/hwmon/k8temp.c b/drivers/hwmon/k8temp.c
-> index 8bdf80d..b9bb3e0 100644
-> --- a/drivers/hwmon/k8temp.c
-> +++ b/drivers/hwmon/k8temp.c
-> @@ -252,12 +252,13 @@ static int __devinit k8temp_probe(struct pci_dev *pdev,
->                                   &sensor_dev_attr_temp3_input.dev_attr);
->                if (err)
->                        goto exit_remove;
-> -               if (data->sensorsp & SEL_PLACE)
-> +               if (data->sensorsp & SEL_PLACE) {
->                        err = device_create_file(&pdev->dev,
->                                           &sensor_dev_attr_temp4_input.
->                                           dev_attr);
->                        if (err)
->                                goto exit_remove;
-> +               }
->        }
->
->        err = device_create_file(&pdev->dev, &dev_attr_name);
->
-> _______________________________________________
-> lm-sensors mailing list
-> lm-sensors@lm-sensors.org
-> http://lists.lm-sensors.org/mailman/listinfo/lm-sensors
->
+-- 
+Stephan Diestelhorst, AMD Operating System Research Center
+stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
+
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
+
