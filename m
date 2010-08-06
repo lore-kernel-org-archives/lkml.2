@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934016Ab0HFFR2 (ORCPT <rfc822;w@1wt.eu>);
+	id S934628Ab0HFFRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:17:40 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39806 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934486Ab0HFFR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:17:28 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:43322 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933795Ab0HFFPh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:15:37 -0400
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
-        Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 39/43] memblock: Export MEMBLOCK_ERROR
-Date: Fri,  6 Aug 2010 15:15:20 +1000
-Message-Id: <1281071724-28740-40-git-send-email-benh@kernel.crashing.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
-References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
+Date: Fri, 6 Aug 2010 15:17:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Joonyoung Shim'" <jy0922.shim@samsung.com>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Dmitry Torokhov'" <dmitry.torokhov@gmail.com>,
+        "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the input tree with the s5p tree
+Message-Id: <20100806151719.b4b58107.sfr@canb.auug.org.au>
+In-Reply-To: <006b01cb3520$869ca6f0$93d5f4d0$%kim@samsung.com>
+References: <20100722114655.1140fb61.sfr@canb.auug.org.au>
+	<20100806102419.3e875933.sfr@canb.auug.org.au>
+	<004801cb3500$69824bd0$3c86e370$%kim@samsung.com>
+	<20100806114314.6d15d4fb.sfr@canb.auug.org.au>
+	<006b01cb3520$869ca6f0$93d5f4d0$%kim@samsung.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__6_Aug_2010_15_17_19_+1000_S1tAeL/I21Ivj4PC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yinghai Lu <yinghai@kernel.org>
+--Signature=_Fri__6_Aug_2010_15_17_19_+1000_S1tAeL/I21Ivj4PC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-will used by x86 memblock_x86_find_in_range_node and nobootmem replacement
+Hi,
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- include/linux/memblock.h |    3 ++-
- mm/memblock.c            |    2 --
- 2 files changed, 2 insertions(+), 3 deletions(-)
+On Fri, 06 Aug 2010 13:33:27 +0900 Kukjin Kim <kgene.kim@samsung.com> wrote:
+>
+> I will merge Dmitry's merge commit that you inform to me in my tree.
+> Then, conflict may be not happened tomorrow. :-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index eed0f9b..1a9c29c 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -18,7 +18,8 @@
- 
- #include <asm/memblock.h>
- 
--#define INIT_MEMBLOCK_REGIONS 128
-+#define INIT_MEMBLOCK_REGIONS	128
-+#define MEMBLOCK_ERROR		(~(phys_addr_t)0)
- 
- struct memblock_region {
- 	phys_addr_t base;
-diff --git a/mm/memblock.c b/mm/memblock.c
-index c3703ab..85cfa1d 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -27,8 +27,6 @@ int memblock_can_resize;
- static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
- static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
- 
--#define MEMBLOCK_ERROR	(~(phys_addr_t)0)
--
- /* inline so we don't get a warning when pr_debug is compiled out */
- static inline const char *memblock_type_name(struct memblock_type *type)
- {
--- 
-1.7.0.4
+OK.  Thanks.
 
+> I wonder...as you know, my tree will going to upstream through Russell's
+> tree...if his tree doesn't having it, is it no problem when he merges my
+> tree?
+> I mean, is it no problem that there are Dmitry's stuff which has been mer=
+ged
+> into Linus' in my tree when I'm sending 'pull request' to Russell?
+
+It should cause no problem to Russell or Linus - git is good at ignoring
+common subtrees when merging.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__6_Aug_2010_15_17_19_+1000_S1tAeL/I21Ivj4PC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMW5rfAAoJEDMEi1NhKgbsLfsH/1c5846LcsOquuqZvoMp61uj
+65m2NdiuPz6rMCg9aNvLXnfrrs/XuWWcvCxuyoi1X9eGnOxseR02ZFj8Ea3t8npY
+lhV/OdVKxAoKHpdbeQlKBheTMurQbdLq0oc7Od0p5p8oE8snBWnQ3DE3NQvn0YVV
+jEdD71U34WERveBouR0GI2aF+agGhAD7XyCV8xuWXXIEeAkKbd4bHYLhzyelq/89
+90DlSu1xqt5JpfBmDDos879fAeuOEJcBO+QzwH4aVkY6Tr9sUcFaKJvtDFxc5VeF
+DyK6O4iM+fvTyNXR6YaHGjOUQ8inym4GkaxS9Cby/U8LoMRr+AnxjHi24urQA+M=
+=WH1p
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__6_Aug_2010_15_17_19_+1000_S1tAeL/I21Ivj4PC--
