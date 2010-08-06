@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761484Ab0HFPUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 11:20:49 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:45480 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab0HFPUq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 11:20:46 -0400
-X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Fri, 06 Aug 2010 11:20:46 EDT
-Message-ID: <20100806181031.oirlcygghkwk4ggo@webmail.welho.com>
-Date: Fri, 06 Aug 2010 18:10:31 +0300
-From: Customer Service <info@msl.co.uk>
-Reply-to: msoftdept2010@w.cn
-To: undisclosed-recipients:;
-Subject: Microsoft Online Email Promo
+	id S1761410Ab0HFPXJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 11:23:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34679 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757449Ab0HFPXG convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 11:23:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
+In-Reply-To: <20100806080642.GA4642@dspnet.fr>
+References: <23662.1281056463@redhat.com> <20100806011706.GA21657@gondor.apana.org.au> 
+	<20100806014057.GA22395@gondor.apana.org.au> <AANLkTi=+-Y2GOZYAZHeaX+op3XB9AY5S85rfJD3jSDvz@mail.gmail.com> 
+	<20100806023539.GA22774@gondor.apana.org.au> <AANLkTimVOkAi1_G9B290fHRR3PbV4H9003VarAv_zbGn@mail.gmail.com> 
+	<AANLkTinVO0prEfkuOUFWA12q8HwrXS6do_hjw1EqygZu@mail.gmail.com> 
+	<20100806080642.GA4642@dspnet.fr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 6 Aug 2010 08:22:28 -0700
+Message-ID: <AANLkTi=TG8xWAtqr+3GxJZxQZ+hkjeViJJJCru-BdyxX@mail.gmail.com>
+Subject: Re: Initcall ordering problem (TTY vs modprobe vs MD5) and cryptomgr 
+	problem
+To: Olivier Galibert <galibert@pobox.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        David Howells <dhowells@redhat.com>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Aug 6, 2010 at 1:06 AM, Olivier Galibert <galibert@pobox.com> wrote:
+>
+> Maybe Linus would be happier if the self-tests were limited (by
+> default) to the hardware accelerators?  Having a software backup and
+> the risk of data loss indeed makes things different.
 
--- 
-MICROSOFT CUSTOMER SERVICE
-REFNO.:MS/75-A08055161/2010
-Batch: 044/05/ZY369
+No. I'd be happier if it was an OPTION.
 
-Dear E-mail Owner,
+And it damn well defaults to "off". Like all other options.
 
-You are a winner of the just concluded Microsoft Online Email Promo. You have
-therefore been approved to claim a total sum Five Hundred Thousand Great
-Britain Pounds (£500,000.00). Please this information are required for
-verification.
+Then, for people who use it, and worry (and distro test kernels etc),
+turn it on. But don't make it a forced feature, and don't make it
+something that people think they _should_ turn on.
 
-Name:...................
-Address:...............
-Country:...............
-Age:..................
-Gender:................
-Occupation:..............
-Phone and Fax:...............
-Winning E-mail Address:................
+I have crypto enabled, but I don't _use_ it. The upside for me is
+zero. Nil. Nada. And I bet that's the common case.
 
-Please contact:
-Owens Gibson
-Email: msoftdept2010@w.cn
+And dammit, it you don't trust the hardware, don't send the driver
+upstreams. And if you worry about alpha-particles, you should run a
+RAM test on every boot. But don't ask _me_ to run one.
 
-Telephone: +44-704-570-7201
+It's that simple.
 
-Crosswhite Anita
-Annoucer For Microsoft Online Email Promo
-
-
-
-
-
+                    Linus
