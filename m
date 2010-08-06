@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935828Ab0HFTfP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:35:15 -0400
-Received: from kroah.org ([198.145.64.141]:43502 "EHLO coco.kroah.org"
+	id S965098Ab0HFT1z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:27:55 -0400
+Received: from kroah.org ([198.145.64.141]:43459 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965095Ab0HFT14 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:27:56 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192115.310240234@clark.site>
+	id S935041Ab0HFT1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:27:47 -0400
+X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:14 2010
+Message-Id: <20100806192114.625731503@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:51 -0700
+Date: Fri, 06 Aug 2010 12:19:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [10/36] amd64_edac: Fix operator precendence error
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Subject: [02/36] NFS: kswapd must not block in nfs_release_page
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +25,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit 962b70a1eb22c467b95756a290c694e73da17f41 upstream.
+commit b608b283a962caaa280756bc8563016a71712acf upstream.
 
-The bitwise AND is of higher precedence, make that explicit.
+See https://bugzilla.kernel.org/show_bug.cgi?id=16056
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+If other processes are blocked waiting for kswapd to free up some memory so
+that they can make progress, then we cannot allow kswapd to block on those
+processes.
+
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/edac/amd64_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/file.c          |   13 +++++++++++--
+ fs/nfs/write.c         |    4 ++--
+ include/linux/nfs_fs.h |    1 +
+ 3 files changed, 14 insertions(+), 4 deletions(-)
 
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1679,7 +1679,7 @@ static void f10_map_sysaddr_to_csrow(str
- 	 * ganged. Otherwise @chan should already contain the channel at
- 	 * this point.
- 	 */
--	if (dct_ganging_enabled(pvt) && pvt->nbcfg & K8_NBCFG_CHIPKILL)
-+	if (dct_ganging_enabled(pvt) && (pvt->nbcfg & K8_NBCFG_CHIPKILL))
- 		chan = get_channel_from_ecc_syndrome(mci, syndrome);
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -27,6 +27,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/aio.h>
+ #include <linux/gfp.h>
++#include <linux/swap.h>
  
- 	if (chan >= 0)
+ #include <asm/uaccess.h>
+ #include <asm/system.h>
+@@ -489,11 +490,19 @@ static void nfs_invalidate_page(struct p
+  */
+ static int nfs_release_page(struct page *page, gfp_t gfp)
+ {
++	struct address_space *mapping = page->mapping;
++
+ 	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
+ 
+ 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
+-	if ((gfp & GFP_KERNEL) == GFP_KERNEL)
+-		nfs_wb_page(page->mapping->host, page);
++	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
++		int how = FLUSH_SYNC;
++
++		/* Don't let kswapd deadlock waiting for OOM RPC calls */
++		if (current_is_kswapd())
++			how = 0;
++		nfs_commit_inode(mapping->host, how);
++	}
+ 	/* If PagePrivate() is set, then the page is not freeable */
+ 	if (PagePrivate(page))
+ 		return 0;
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -1379,7 +1379,7 @@ static const struct rpc_call_ops nfs_com
+ 	.rpc_release = nfs_commit_release,
+ };
+ 
+-static int nfs_commit_inode(struct inode *inode, int how)
++int nfs_commit_inode(struct inode *inode, int how)
+ {
+ 	LIST_HEAD(head);
+ 	int may_wait = how & FLUSH_SYNC;
+@@ -1443,7 +1443,7 @@ out_mark_dirty:
+ 	return ret;
+ }
+ #else
+-static int nfs_commit_inode(struct inode *inode, int how)
++int nfs_commit_inode(struct inode *inode, int how)
+ {
+ 	return 0;
+ }
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -479,6 +479,7 @@ extern int nfs_wb_all(struct inode *inod
+ extern int nfs_wb_page(struct inode *inode, struct page* page);
+ extern int nfs_wb_page_cancel(struct inode *inode, struct page* page);
+ #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
++extern int  nfs_commit_inode(struct inode *, int);
+ extern struct nfs_write_data *nfs_commitdata_alloc(void);
+ extern void nfs_commit_free(struct nfs_write_data *wdata);
+ #endif
 
 
