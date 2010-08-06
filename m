@@ -1,231 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762157Ab0HFWgU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 18:36:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14296 "EHLO mx1.redhat.com"
+	id S1762171Ab0HFWgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 18:36:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50004 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760564Ab0HFWgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751780Ab0HFWgG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 18:36:06 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 06/38] whiteout: Add vfs_whiteout() and whiteout inode operation
-Date: Fri,  6 Aug 2010 15:34:52 -0700
-Message-Id: <1281134124-17041-7-git-send-email-vaurora@redhat.com>
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 01/38] VFS: Comment follow_mount() and friends
+Date: Fri,  6 Aug 2010 15:34:47 -0700
+Message-Id: <1281134124-17041-2-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 References: <1281134124-17041-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Add comments describing what the directions "up" and "down" mean and
+ref count handling to the VFS follow_mount() family of functions.
 
-Whiteout a given directory entry.  File systems that support whiteouts
-must implement the new ->whiteout() directory inode operation.
-
-XXX - Only whiteout when there is a matching entry in a lower layer.
-
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- Documentation/filesystems/vfs.txt |   10 +++++-
- fs/dcache.c                       |    4 ++-
- fs/namei.c                        |   73 ++++++++++++++++++++++++++++++++++++-
- include/linux/dcache.h            |    7 ++++
- include/linux/fs.h                |    2 +
- 5 files changed, 93 insertions(+), 3 deletions(-)
+ fs/namei.c     |   43 +++++++++++++++++++++++++++++++++++++++----
+ fs/namespace.c |   16 ++++++++++++++--
+ 2 files changed, 53 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 94677e7..964e0fc 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -308,7 +308,7 @@ struct inode_operations
- -----------------------
- 
- This describes how the VFS can manipulate an inode in your
--filesystem. As of kernel 2.6.22, the following members are defined:
-+filesystem. As of kernel 2.6.34, the following members are defined:
- 
- struct inode_operations {
- 	int (*create) (struct inode *,struct dentry *,int, struct nameidata *);
-@@ -319,6 +319,7 @@ struct inode_operations {
- 	int (*mkdir) (struct inode *,struct dentry *,int);
- 	int (*rmdir) (struct inode *,struct dentry *);
- 	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
-+	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
- 	int (*readlink) (struct dentry *, char __user *,int);
-@@ -382,6 +383,13 @@ otherwise noted.
- 	will probably need to call d_instantiate() just as you would
- 	in the create() method
- 
-+  whiteout: called by the rmdir(2) and unlink(2) system calls on a
-+        layered file system.  Only required if you want to support
-+        whiteouts.  The first dentry passed in is that for the old
-+        dentry if it exists, and a negative dentry otherwise.  The
-+        second is the dentry for the whiteout itself.  This method
-+        must unlink() or rmdir() the original entry if it exists.
-+
-   rename: called by the rename(2) system call to rename the object to
- 	have the parent and name given by the second inode and dentry.
- 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 86d4db1..80f059b 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -991,8 +991,10 @@ EXPORT_SYMBOL(d_alloc_name);
- /* the caller must hold dcache_lock */
- static void __d_instantiate(struct dentry *dentry, struct inode *inode)
- {
--	if (inode)
-+	if (inode) {
-+		dentry->d_flags &= ~DCACHE_WHITEOUT;
- 		list_add(&dentry->d_alias, &inode->i_dentry);
-+	}
- 	dentry->d_inode = inode;
- 	fsnotify_d_instantiate(dentry, inode);
- }
 diff --git a/fs/namei.c b/fs/namei.c
-index 7552e61..665d394 100644
+index 868d0cb..fd6df0d 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -1357,7 +1357,6 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
- 	if (!victim->d_inode)
- 		return -ENOENT;
- 
--	BUG_ON(victim->d_parent->d_inode != dir);
- 	audit_inode_child(victim, dir);
- 
- 	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
-@@ -2169,6 +2168,78 @@ SYSCALL_DEFINE2(mkdir, const char __user *, pathname, int, mode)
- 	return sys_mkdirat(AT_FDCWD, pathname, mode);
+@@ -597,6 +597,17 @@ loop:
+ 	return err;
  }
  
-+/**
-+ * vfs_whiteout: create a whiteout for the given directory entry
-+ * @dir: parent inode
-+ * @dentry: directory entry to whiteout
++/*
++ * follow_up - Find the mountpoint of path's vfsmount
 + *
-+ * Create a whiteout for the given directory entry.  A whiteout
-+ * prevents lookup from dropping down to a lower layer of a union
-+ * mounted file system.
++ * Given a path, find the mountpoint of its source file system.
++ * Replace @path with the path of the mountpoint in the parent mount.
++ * Up is towards /.
 + *
-+ * There are two important cases: (a) The directory entry to be
-+ * whited-out may already exist, in which case it must first be
-+ * deleted before we create the whiteout, and (b) no such directory
-+ * entry exists and we only have to create the whiteout itself.
-+ *
-+ * The caller must pass in a dentry for the directory entry to be
-+ * whited-out - a positive one if it exists, and a negative if not.
-+ * When this function returns, the caller should dput() the old, now
-+ * defunct dentry it passed in.  The dentry for the whiteout itself is
-+ * created inside this function.
++ * Return 1 if we went up a level and 0 if we were already at the
++ * root.
 + */
-+static int vfs_whiteout(struct inode *dir, struct dentry *old_dentry, int isdir)
-+{
-+	struct inode *old_inode = old_dentry->d_inode;
-+	struct dentry *parent, *whiteout;
-+	int err = 0;
 +
-+	BUG_ON(old_dentry->d_parent->d_inode != dir);
-+
-+	if (!dir->i_op || !dir->i_op->whiteout)
-+		return -EOPNOTSUPP;
-+
-+	/*
-+	 * If the old dentry is positive, then we have to delete this
-+	 * entry before we create the whiteout.  The file system
-+	 * ->whiteout() op does the actual delete, but we do all the
-+	 * VFS-level checks and changes here.
-+	 */
-+	if (old_inode) {
-+		mutex_lock(&old_inode->i_mutex);
-+		if (d_mountpoint(old_dentry)) {
-+			mutex_unlock(&old_inode->i_mutex);
-+			return -EBUSY;
-+		}
-+		if (isdir) {
-+			dentry_unhash(old_dentry);
-+			err = security_inode_rmdir(dir, old_dentry);
-+		} else {
-+			err = security_inode_unlink(dir, old_dentry);
-+		}
-+	}
-+
-+	parent = dget_parent(old_dentry);
-+	whiteout = d_alloc_name(parent, old_dentry->d_name.name);
-+
-+	if (!err)
-+		err = dir->i_op->whiteout(dir, old_dentry, whiteout);
-+
-+	if (old_inode) {
-+		mutex_unlock(&old_inode->i_mutex);
-+		if (!err) {
-+			fsnotify_link_count(old_inode);
-+			d_delete(old_dentry);
-+		}
-+		if (isdir)
-+			dput(old_dentry);
-+	}
-+
-+	dput(whiteout);
-+	dput(parent);
-+	return err;
-+}
-+
- /*
-  * We try to drop the dentry early: we should have
-  * a usage count of 2 if we're the only user of this
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index eebb617..7d650a2 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -188,6 +188,8 @@ d_iput:		no		no		no       yes
- 
- #define DCACHE_CANT_MOUNT	0x0100
- 
-+#define DCACHE_WHITEOUT		0x0200	/* Stop lookup in a unioned file system */
-+
- extern spinlock_t dcache_lock;
- extern seqlock_t rename_lock;
- 
-@@ -372,6 +374,11 @@ static inline void dont_mount(struct dentry *dentry)
- 	spin_unlock(&dentry->d_lock);
+ int follow_up(struct path *path)
+ {
+ 	struct vfsmount *parent;
+@@ -617,8 +628,22 @@ int follow_up(struct path *path)
+ 	return 1;
  }
  
-+static inline int d_is_whiteout(struct dentry *dentry)
-+{
-+	return (dentry->d_flags & DCACHE_WHITEOUT);
-+}
-+
- static inline struct dentry *dget_parent(struct dentry *dentry)
+-/* no need for dcache_lock, as serialization is taken care in
+- * namespace.c
++/*
++ * __follow_mount - Return the most recent mount at this mountpoint
++ *
++ * Given a mountpoint, find the most recently mounted file system at
++ * this mountpoint and return the path to its root dentry.  This is
++ * the file system that is visible, and it is in the direction of VFS
++ * "down" - away from the root of the mount tree.  See comments to
++ * lookup_mnt() for an example of "down."
++ *
++ * Does not decrement the refcount on the given mount even if it
++ * follows it to another mount and returns that path instead.
++ *
++ * Returns 0 if path was unchanged, 1 if we followed it to another mount.
++ *
++ * No need for dcache_lock, as serialization is taken care in
++ * namespace.c.
+  */
+ static int __follow_mount(struct path *path)
  {
- 	struct dentry *ret;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index eeb49d7..1f80897 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -209,6 +209,7 @@ struct inodes_stat_t {
- #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
- #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
- #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
-+#define MS_WHITEOUT	(1<<25) /* FS supports whiteout filetype */
- #define MS_ACTIVE	(1<<30)
- #define MS_NOUSER	(1<<31)
+@@ -637,6 +662,12 @@ static int __follow_mount(struct path *path)
+ 	return res;
+ }
  
-@@ -1527,6 +1528,7 @@ struct inode_operations {
- 	int (*mkdir) (struct inode *,struct dentry *,int);
- 	int (*rmdir) (struct inode *,struct dentry *);
- 	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
-+	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
- 	int (*rename) (struct inode *, struct dentry *,
- 			struct inode *, struct dentry *);
- 	int (*readlink) (struct dentry *, char __user *,int);
++/*
++ * Like __follow_mount, but no return value and drops references to
++ * both mnt and dentry of the given path if it follows to another
++ * mount.
++ */
++
+ static void follow_mount(struct path *path)
+ {
+ 	while (d_mountpoint(path->dentry)) {
+@@ -650,8 +681,12 @@ static void follow_mount(struct path *path)
+ 	}
+ }
+ 
+-/* no need for dcache_lock, as serialization is taken care in
+- * namespace.c
++/*
++ * Like follow_mount(), but traverses only one layer instead of
++ * continuing until it runs out.
++ *
++ * No need for dcache_lock, as serialization is taken care in
++ * namespace.c.
+  */
+ int follow_down(struct path *path)
+ {
+diff --git a/fs/namespace.c b/fs/namespace.c
+index 88058de..b8a66db 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -433,8 +433,20 @@ struct vfsmount *__lookup_mnt(struct vfsmount *mnt, struct dentry *dentry,
+ }
+ 
+ /*
+- * lookup_mnt increments the ref count before returning
+- * the vfsmount struct.
++ * lookup_mnt - Return the first child mount mounted at path
++ *
++ * "First" means first mounted chronologically.  If you create the
++ * following mounts:
++ *
++ * mount /dev/sda1 /mnt
++ * mount /dev/sda2 /mnt
++ * mount /dev/sda3 /mnt
++ *
++ * Then lookup_mnt() on the base /mnt dentry in the root mount will
++ * return successively the root dentry and vfsmount of /dev/sda1, then
++ * /dev/sda2, then /dev/sda3, then NULL.
++ *
++ * lookup_mnt takes a reference to the found vfsmount.
+  */
+ struct vfsmount *lookup_mnt(struct path *path)
+ {
 -- 
 1.6.3.3
 
