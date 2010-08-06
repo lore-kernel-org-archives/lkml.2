@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935847Ab0HFTf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:35:57 -0400
-Received: from kroah.org ([198.145.64.141]:43493 "EHLO coco.kroah.org"
+	id S965675Ab0HFTgC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:36:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59488 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964922Ab0HFT1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:27:54 -0400
-X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192115.122688191@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:49 -0700
+	id S935652Ab0HFT1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:27:53 -0400
+Date: Fri, 6 Aug 2010 12:16:54 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Doug Thompson <dougthompson@xmission.com>
-Subject: [08/36] amd64_edac: Fix DCT base address selector
-In-Reply-To: <20100806192649.GA1614@kroah.com>
+To: Thomas Backlund <tmb@mandriva.org>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [00/38] 2.6.35.1-stable review
+Message-ID: <20100806191654.GA28919@suse.de>
+References: <20100806183250.GA23019@kroah.com>
+ <4C5C5F26.7000905@mandriva.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C5C5F26.7000905@mandriva.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+On Fri, Aug 06, 2010 at 10:14:46PM +0300, Thomas Backlund wrote:
+> 06.08.2010 21:32, Greg KH skrev:
+> >This is the start of the stable review cycle for the 2.6.35.1 release.
+> >There are 38 patches in this series, all will be posted as a response to
+> >this one.  If anyone has any issues with these being applied, please let
+> >us know.  If anyone is a maintainer of the proper subsystem, and wants
+> >to add a Signed-off-by: line to the patch, please respond with it.
+> >
+> >Responses should be made by August 8, 2010, 18:00:00 UTC.
+> >Anything received after that time might be too late.
+> >
+> >The whole patch series can be found in one patch at:
+> >	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.35.1-rc1.gz
+> >and the diffstat can be found below.
+> >
+> >thanks,
+> >
+> >greg k-h
+> 
+> 
+> I think this one should be added as soon as possible too:
+> 
+> 
+> >Gitweb:     http://git.kernel.org/linus/396e894d289d69bacf5acd983c97cd6e21a14c08
+> >Commit:     396e894d289d69bacf5acd983c97cd6e21a14c08
 
-------------------
+As it just landed in Linus's tree about an hour ago, it was a bit late
+for this release.
 
-From: Borislav Petkov <borislav.petkov@amd.com>
+I'll queue it up for the next .35 release after this one.
 
-commit 9975a5f22a4fcc8d08035c65439900a983f891ad upstream.
+thanks,
 
-The correct check is to verify whether in high range we're below 4GB
-and not to extract the DctSelBaseAddr again. See "2.8.5 Routing DRAM
-Requests" in the F10h BKDG.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Acked-by: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/edac/amd64_edac.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/drivers/edac/amd64_edac.c
-+++ b/drivers/edac/amd64_edac.c
-@@ -1430,7 +1430,7 @@ static inline u64 f10_get_base_addr_offs
- 	u64 chan_off;
- 
- 	if (hi_range_sel) {
--		if (!(dct_sel_base_addr & 0xFFFFF800) &&
-+		if (!(dct_sel_base_addr & 0xFFFF0000) &&
- 		   hole_valid && (sys_addr >= 0x100000000ULL))
- 			chan_off = hole_off << 16;
- 		else
-
-
+greg k-h
