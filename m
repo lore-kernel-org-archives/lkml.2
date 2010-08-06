@@ -1,97 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934871Ab0HFFSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:18:42 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41687 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933784Ab0HFFPg (ORCPT
+	id S935300Ab0HFFSw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:18:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55787 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933784Ab0HFFSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 01:15:36 -0400
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 36/43] memblock: Add debugfs files to dump the arrays content
-Date: Fri,  6 Aug 2010 15:15:17 +1000
-Message-Id: <1281071724-28740-37-git-send-email-benh@kernel.crashing.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
-References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
+	Fri, 6 Aug 2010 01:18:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=Rsp8HYfvuQJks+8/Ml1vZZaxQn2h4a27mtEEmw4jnNrOHWriDuIm9TPjHSUTCZdt71
+         bCcT4J2wmUj8dW8PkfAFaB3geR7ksXNR3UhBPBa3zOmUO/N1p5amht0K9ZiKEOFQ8qGu
+         1SWUjFj0WsUtBdhlJUWkFkWfStZGgEeHtQlFw=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCH 2/3] lib: vsprintf: optimised put_dec() for 32-bit machines
+Date: Fri, 6 Aug 2010 07:18:38 +0200
+User-Agent: KMail/1.8.2
+Cc: linux-kernel@vger.kernel.org, m.nazarewicz@samsung.com,
+        "Douglas W. Jones" <jones@cs.uiowa.edu>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <f894e94adccb940ef904983fa039a28e12217f48.1280872240.git.mina86@mina86.com> <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
+In-Reply-To: <0543dae0f66ba8e0ce42ce3adf1fe31704eb240d.1280872240.git.mina86@mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201008060718.38345.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- mm/memblock.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 51 insertions(+), 0 deletions(-)
+On Friday 06 August 2010 00:38, Michal Nazarewicz wrote:
+> The disadvantage is that the proposed function is 2.5-3.5 bigger.
+> Those are not big functions though -- we are talking here about
+> proposed function being below 512.
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 9de5fcd..cc15be2 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -16,6 +16,8 @@
- #include <linux/bitops.h>
- #include <linux/poison.h>
- #include <linux/pfn.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
- #include <linux/memblock.h>
- 
- struct memblock memblock;
-@@ -740,3 +742,52 @@ static int __init early_memblock(char *p)
- }
- early_param("memblock", early_memblock);
- 
-+#ifdef CONFIG_DEBUG_FS
-+
-+static int memblock_debug_show(struct seq_file *m, void *private)
-+{
-+	struct memblock_type *type = m->private;
-+	struct memblock_region *reg;
-+	int i;
-+
-+	for (i = 0; i < type->cnt; i++) {
-+		reg = &type->regions[i];
-+		seq_printf(m, "%4d: ", i);
-+		if (sizeof(phys_addr_t) == 4)
-+			seq_printf(m, "0x%08lx..0x%08lx\n",
-+				   (unsigned long)reg->base,
-+				   (unsigned long)(reg->base + reg->size - 1));
-+		else
-+			seq_printf(m, "0x%016llx..0x%016llx\n",
-+				   (unsigned long long)reg->base,
-+				   (unsigned long long)(reg->base + reg->size - 1));
-+
-+	}
-+	return 0;
-+}
-+
-+static int memblock_debug_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, memblock_debug_show, inode->i_private);
-+}
-+
-+static const struct file_operations memblock_debug_fops = {
-+	.open = memblock_debug_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static int __init memblock_init_debugfs(void)
-+{
-+	struct dentry *root = debugfs_create_dir("memblock", NULL);
-+	if (!root)
-+		return -ENXIO;
-+	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
-+	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
-+
-+	return 0;
-+}
-+__initcall(memblock_init_debugfs);
-+
-+#endif /* CONFIG_DEBUG_FS */
+It's a slippery slope. Here's where it ends: glibc
+has memcpy() function which is "only" 8k of code or so.
+I'm not joking.
+
+
+
+> +#if BITS_PER_LONG == 64
+> +
+...  
+> +#else
+...
+> +/*
+> + * Based on code by Douglas W. Jones found at
+> + * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html#sixtyfour>.  This
+> + * performs no 64-bit division and hence should be faster on 32-bit
+> + * machines then the version of the function above.
+> + */
+> +static noinline_for_stack
+> +char *put_dec(char *buf, unsigned long long n)
+> +{
+> +	uint32_t d3, d2, d1, q;
+> +
+> +	if (!n) {
+> +		*buf++ = '0';
+> +		return buf;
+> +	}
+> +
+> +	d1  = (n >> 16) & 0xFFFF;
+> +	d2  = (n >> 32) & 0xFFFF;
+> +	d3  = (n >> 48) & 0xFFFF;
+
+Are you assuming that sizeof(long long) == 8, always?
+
 -- 
-1.7.0.4
-
+vda
