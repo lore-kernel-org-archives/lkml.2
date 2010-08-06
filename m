@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965617Ab0HFT2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 15:28:23 -0400
-Received: from kroah.org ([198.145.64.141]:43513 "EHLO coco.kroah.org"
+	id S965663Ab0HFT2g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 15:28:36 -0400
+Received: from kroah.org ([198.145.64.141]:43530 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935778Ab0HFT16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 15:27:58 -0400
+	id S965116Ab0HFT2C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 15:28:02 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug  6 12:21:15 2010
-Message-Id: <20100806192115.486537088@clark.site>
+Message-Id: <20100806192115.848091818@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 06 Aug 2010 12:19:53 -0700
+Date: Fri, 06 Aug 2010 12:19:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [12/36] e1000e: 82577/82578 PHY register access issues
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [16/36] ath9k: fix a potential buffer leak in the STA teardown path
 In-Reply-To: <20100806192649.GA1614@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,38 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit ff847ac2d3e90edd94674c28bade25ae1e6a2e49 upstream.
+commit 2b40994cabd2f545d5c11d3a65dcee6f6f9155f8 upstream.
 
-The MAC-PHY interconnect on 82577/82578 uses a power management feature
-(called K1) which must be disabled when in 1Gbps due to a hardware issue on
-these parts.  The #define bit setting used to enable/disable K1 is
-incorrect and can cause PHY register accesses to stop working altogether
-until the next device reset.  This patch sets the register correctly.
+It looks like it might be possible for a TID to be paused, while still
+holding some queued buffers, however ath_tx_node_cleanup currently only
+iterates over active TIDs.
+Fix this by always checking every allocated TID for the STA that is being
+cleaned up.
 
-This issue is present in kernels since 2.6.32.
-
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e1000e/hw.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |   56 +++++++++++++++++-----------------
+ 1 file changed, 28 insertions(+), 28 deletions(-)
 
---- a/drivers/net/e1000e/hw.h
-+++ b/drivers/net/e1000e/hw.h
-@@ -306,7 +306,7 @@ enum e1e_registers {
- #define E1000_KMRNCTRLSTA_INBAND_PARAM	0x9    /* Kumeran InBand Parameters */
- #define E1000_KMRNCTRLSTA_DIAG_NELPBK	0x1000 /* Nearend Loopback mode */
- #define E1000_KMRNCTRLSTA_K1_CONFIG	0x7
--#define E1000_KMRNCTRLSTA_K1_ENABLE	0x140E
-+#define E1000_KMRNCTRLSTA_K1_ENABLE	0x0002
- #define E1000_KMRNCTRLSTA_K1_DISABLE	0x1400
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2230,37 +2230,37 @@ void ath_tx_node_init(struct ath_softc *
  
- #define IFE_PHY_EXTENDED_STATUS_CONTROL	0x10
+ void ath_tx_node_cleanup(struct ath_softc *sc, struct ath_node *an)
+ {
+-	int i;
+-	struct ath_atx_ac *ac, *ac_tmp;
+-	struct ath_atx_tid *tid, *tid_tmp;
++	struct ath_atx_ac *ac;
++	struct ath_atx_tid *tid;
+ 	struct ath_txq *txq;
++	int i, tidno;
+ 
+-	for (i = 0; i < ATH9K_NUM_TX_QUEUES; i++) {
+-		if (ATH_TXQ_SETUP(sc, i)) {
+-			txq = &sc->tx.txq[i];
+-
+-			spin_lock_bh(&txq->axq_lock);
+-
+-			list_for_each_entry_safe(ac,
+-					ac_tmp, &txq->axq_acq, list) {
+-				tid = list_first_entry(&ac->tid_q,
+-						struct ath_atx_tid, list);
+-				if (tid && tid->an != an)
+-					continue;
+-				list_del(&ac->list);
+-				ac->sched = false;
+-
+-				list_for_each_entry_safe(tid,
+-						tid_tmp, &ac->tid_q, list) {
+-					list_del(&tid->list);
+-					tid->sched = false;
+-					ath_tid_drain(sc, txq, tid);
+-					tid->state &= ~AGGR_ADDBA_COMPLETE;
+-					tid->state &= ~AGGR_CLEANUP;
+-				}
+-			}
++	for (tidno = 0, tid = &an->tid[tidno];
++	     tidno < WME_NUM_TID; tidno++, tid++) {
++		i = tid->ac->qnum;
+ 
+-			spin_unlock_bh(&txq->axq_lock);
++		if (!ATH_TXQ_SETUP(sc, i))
++			continue;
++
++		txq = &sc->tx.txq[i];
++		ac = tid->ac;
++
++		spin_lock_bh(&txq->axq_lock);
++
++		if (tid->sched) {
++			list_del(&tid->list);
++			tid->sched = false;
+ 		}
++
++		if (ac->sched) {
++			list_del(&ac->list);
++			tid->ac->sched = false;
++		}
++
++		ath_tid_drain(sc, txq, tid);
++		tid->state &= ~AGGR_ADDBA_COMPLETE;
++		tid->state &= ~AGGR_CLEANUP;
++
++		spin_unlock_bh(&txq->axq_lock);
+ 	}
+ }
 
 
