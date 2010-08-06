@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935227Ab0HFBqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 5 Aug 2010 21:46:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33532 "EHLO
+	id S935281Ab0HFBrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 5 Aug 2010 21:47:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:33557 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935206Ab0HFBqk (ORCPT
+	with ESMTP id S935246Ab0HFBq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 5 Aug 2010 21:46:40 -0400
+	Thu, 5 Aug 2010 21:46:57 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrea Gelmini <andrea.gelmini@gelma.net>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andrea Gelmini <andrea.gelmini@gelma.net>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Julia Lawall <julia@diku.dk>, Masami Hiramatsu <mhiramat@redhat.com>,
+        Mike Galbraith <efault@gmx.de>, Nick Piggin <npiggin@suse.de>,
+        Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 08/10] perf trace: Clean up #includes
-Date: Thu,  5 Aug 2010 22:46:15 -0300
-Message-Id: <1281059177-18747-9-git-send-email-acme@infradead.org>
+        Peter Zijlstra <peterz@infradead.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Stephane Eranian <eranian@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [GIT PULL 00/10] perf/core improvements and fixes
+Date: Thu,  5 Aug 2010 22:46:07 -0300
+Message-Id: <1281059177-18747-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1281059177-18747-1-git-send-email-acme@infradead.org>
-References: <1281059177-18747-1-git-send-email-acme@infradead.org>
 X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrea Gelmini <andrea.gelmini@gelma.net>
+Hi Ingo,
 
-Removed duplicated #includes util/trace-event.h and
-util/exec_cmd.h.
-Grouped and sorted all the #includes.
+        Please pull from:
 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <1281016299-23958-14-git-send-email-andrea.gelmini@gelma.net>
-Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-trace.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
 
-diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
-index 294da72..40a6a29 100644
---- a/tools/perf/builtin-trace.c
-+++ b/tools/perf/builtin-trace.c
-@@ -1,13 +1,16 @@
- #include "builtin.h"
- 
--#include "util/util.h"
-+#include "perf.h"
- #include "util/cache.h"
-+#include "util/debug.h"
-+#include "util/exec_cmd.h"
-+#include "util/header.h"
-+#include "util/parse-options.h"
-+#include "util/session.h"
- #include "util/symbol.h"
- #include "util/thread.h"
--#include "util/header.h"
--#include "util/exec_cmd.h"
- #include "util/trace-event.h"
--#include "util/session.h"
-+#include "util/util.h"
- 
- static char const		*script_name;
- static char const		*generate_script_lang;
-@@ -59,14 +62,6 @@ static int cleanup_scripting(void)
- 	return scripting_ops->stop_script();
- }
- 
--#include "util/parse-options.h"
--
--#include "perf.h"
--#include "util/debug.h"
--
--#include "util/trace-event.h"
--#include "util/exec_cmd.h"
--
- static char const		*input_name = "perf.data";
- 
- static int process_sample_event(event_t *event, struct perf_session *session)
--- 
-1.6.2.5
+Regards,
+
+- Arnaldo
+
+Andrea Gelmini (2):
+  perf probe: Remove duplicated #include
+  perf trace: Clean up #includes
+
+Arnaldo Carvalho de Melo (7):
+  perf symbols: Store the symbol binding
+  perf ui: Add a map browser
+  perf ui: Shorten ui_browser->refresh_entries to refresh
+  perf hists: Handle verbose in hists__sort_list_width
+  perf hists: Fixup addr snprintf width on 32 bit arches
+  perf ui: Add search by name/addr to the map__browser
+  perf report: Speed up exit path
+
+Julia Lawall (1):
+  perf timechart: Adjust confusing if indentation
+
+ tools/perf/builtin-report.c    |   31 +++++-
+ tools/perf/builtin-timechart.c |    4 +-
+ tools/perf/builtin-trace.c     |   19 +--
+ tools/perf/util/hist.c         |    3 +
+ tools/perf/util/newt.c         |  242 +++++++++++++++++++++++++++++++++++++--
+ tools/perf/util/probe-finder.c |    1 -
+ tools/perf/util/sort.c         |    6 +-
+ tools/perf/util/symbol.c       |   30 ++++--
+ tools/perf/util/symbol.h       |    1 +
+ 9 files changed, 297 insertions(+), 40 deletions(-)
 
