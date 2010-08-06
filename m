@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760707Ab0HFIJS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 04:09:18 -0400
-Received: from mail.lang.hm ([64.81.33.126]:58828 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755872Ab0HFIJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 04:09:09 -0400
-Date: Fri, 6 Aug 2010 01:07:47 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Brian Swetland <swetland@google.com>
-cc: paulmck@linux.vnet.ibm.com, kevin granade <kevin.granade@gmail.com>,
-        =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <AANLkTimWqFkDWvGwVGWD94488gs+CXgpB9juwM5G11ud@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1008060106260.30564@asgard.lang.hm>
-References: <alpine.DEB.2.00.1008041722060.6545@asgard.lang.hm> <20100805004802.GP24163@linux.vnet.ibm.com> <alpine.DEB.2.00.1008042208350.25170@asgard.lang.hm> <20100805151211.GA10080@linux.vnet.ibm.com> <alpine.DEB.2.00.1008050832010.25170@asgard.lang.hm>
- <AANLkTi=Yyyc-hOPbkJtsnKCVzncnFq8DPnonmyckekwm@mail.gmail.com> <20100805203102.GN2447@linux.vnet.ibm.com> <AANLkTimaaLSwVusJ=w5-QptoauBnHH0JvCvmWUr0y+KD@mail.gmail.com> <alpine.DEB.2.00.1008051453450.30632@asgard.lang.hm> <AANLkTikCCeMG=DAQ04xqkvqH9tngBWyBA5VQTD4_15xU@mail.gmail.com>
- <20100805230304.GQ2447@linux.vnet.ibm.com> <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com> <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm> <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com> <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
- <AANLkTimWqFkDWvGwVGWD94488gs+CXgpB9juwM5G11ud@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="680960-1185624910-1281082068=:30564"
+	id S934128Ab0HFIPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 04:15:43 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:42963 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759216Ab0HFIPg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 04:15:36 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, tytso@mit.edu,
+        linux-ext4@vger.kernel.org
+In-reply-to: <20100805233019.GA30761@shell> (message from Valerie Aurora on
+	Thu, 5 Aug 2010 19:30:19 -0400)
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804224831.GB29353@shell> <E1Ogxol-0002xs-De@pomaz-ex.szeredi.hu> <20100805233019.GA30761@shell>
+Message-Id: <E1OhI5C-0005PG-3G@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Fri, 06 Aug 2010 10:15:14 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Thu, 5 Aug 2010, Valerie Aurora wrote:
+> On Thu, Aug 05, 2010 at 12:36:55PM +0200, Miklos Szeredi wrote:
+> > On Wed, 4 Aug 2010, Valerie Aurora wrote:
+> > > --zYM0uCDKw75PZbzx
+> > > Content-Type: text/plain; charset=us-ascii
+> > > Content-Disposition: inline
+> > > 
+> > > On Wed, Aug 04, 2010 at 04:44:10PM +0200, Miklos Szeredi wrote:
+> > > > On Tue, 15 Jun 2010, Valerie Aurora wrote:
+> > > > > Add support for fallthru directory entries to ext2.
+> > > > 
+> > > > If a previously used ext2 filesystem with is mounted again then
+> > > > fallthroughs don't appear to work as expected.  Stat returns ENOENT
+> > > > for these entries.
+> > > > 
+> > > > Can't see anything obviously wrong with the code.
+> > > 
+> > > Hm, I wrote one test case for this that worked (attached).  Can you
+> > > give me more details on your test case?  Thanks,
+> 
+> Cool, thanks.  Yes, I suppose the fallthrus should be ignored if they
+> don't fall through to anything.
 
---680960-1185624910-1281082068=:30564
-Content-Type: TEXT/PLAIN; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+That's not the case here.  They _should_ fall through to ext3.img, yet
+apparently after ovl.img being mounted again they don't seem to work.
 
-On Thu, 5 Aug 2010, Brian Swetland wrote:
+Note, ovl.img starts out as a completely empty filesystem.
 
-> On Thu, Aug 5, 2010 at 6:01 PM,  <david@lang.hm> wrote:
->> On Thu, 5 Aug 2010, Brian Swetland wrote:
->>> On Thu, Aug 5, 2010 at 5:16 PM,  <david@lang.hm> wrote:
->>>>>>
->>>>>> So for an mp3 playback, does an Android suspend between data fetches?
->>>>>
->>>>> It can if the latency is long enough (which is why I point out low
->>>>> power audio which is usually high latency).  For low latency (system
->>>>> sounds, etc) 10-25ms between buffers it's not practical to fully
->>>>> suspend but we will go to the lowest power state in idle if possible.
->>>>
->>>> the playback is able to continue even with all the clocks stopped? that
->>>> surprises me. I would hav expected it to be able to sleep while playing
->>>> audio, but not do a full suspend.
->>>
->>> Obviously not all clocks are stopped (the DSP and codec are powered
->>> and clocked, for example), but yeah we can clock gate and power gate
->>> the cpu and most other peripherals while audio is playing on a number
->>> of ARM SoC designs available today (and the past few years).
->>
->> does this then mean that you have multiple variations of suspend?
->>
->> for example, one where the audio stuff is left powered, and one where it
->> isn't?
->
-> While the cpu (and the bulk of the system) is suspended, it's not
-> uncommon for some peripherals to continue to operate -- for example a
-> cellular radio, gps, low power audio playback, etc.  Details will vary
-> depending on the SoC and board design.  It's not so much a different
-> suspend mode (the system is still suspended), just a matter of whether
-> a peripheral can operate independently (and if it is lower power for
-> it to do so).
+The difference between your test case and mine mitght be that yours
+not only reads the directory but stats the files as well, while mine
+does not.
 
-this helps, but isn't quite what I was trying to ask.
+Thanks,
+Miklos
 
-on a given piece of hardware, does suspend always leave the same 
-peripherals on, or do you sometimes power more things down than other 
-times when suspending?
 
-David Lang
---680960-1185624910-1281082068=:30564--
+> 
+> > uml:~# mount -oloop -r ext3-2.img /mnt/img/
+> > uml:~# mount -oloop -r ext3.img /mnt/img/
+> > uml:~# losetup -f ovl.img 
+> > uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> > uml:~# "ls" /mnt/img
+> > bunion  lost+found  union
+> > uml:~# "ls" /mnt/img/union
+> > 1  2  3
+> > uml:~# "ls" /mnt/img/union/1
+> > a  x
+> > uml:~# umount /mnt/img/
+> > uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> > uml:~# ls -l /mnt/img/  
+> > total 14
+> > drwxr-xr-x 2 root root  1024 Aug  5 09:56 bunion
+> > drwx------ 2 root root 12288 Aug  5 09:41 lost+found
+> > drwxr-xr-x 3 root root  1024 Aug  5 09:56 union
+> > uml:~# ls -l /mnt/img/union/
+> > ls: cannot access /mnt/img/union/3: No such file or directory
+> > ls: cannot access /mnt/img/union/2: No such file or directory
+> > total 1
+> > drwxr-xr-x 2 root root 1024 Aug  5 09:56 1
+> > ?????????? ? ?    ?       ?            ? 2
+> > ?????????? ? ?    ?       ?            ? 3
+> > uml:~# ls -l /mnt/img/union/1
+> > ls: cannot access /mnt/img/union/1/a: No such file or directory
+> > ls: cannot access /mnt/img/union/1/x: No such file or directory
+> > total 0
+> > ?????????? ? ? ? ?            ? a
+> > ?????????? ? ? ? ?            ? x
+> > uml:~# 
+> > 
+> > Thanks,
+> > Miklos
+> 
