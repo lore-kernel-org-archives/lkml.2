@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935356Ab0HFFXv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 01:23:51 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:41667 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933751Ab0HFFPe (ORCPT
+	id S933867Ab0HFFYL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 01:24:11 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:50347 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933741Ab0HFFPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 6 Aug 2010 01:15:34 -0400
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, torvalds@linux-foundation.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michal Simek <monstr@monstr.eu>
-Subject: [PATCH 08/43] memblock/microblaze: Use new accessors
-Date: Fri,  6 Aug 2010 15:14:49 +1000
-Message-Id: <1281071724-28740-9-git-send-email-benh@kernel.crashing.org>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 04/43] memblock: Implement memblock_is_memory and memblock_is_region_memory
+Date: Fri,  6 Aug 2010 15:14:45 +1000
+Message-Id: <1281071724-28740-5-git-send-email-benh@kernel.crashing.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
 References: <1281071724-28740-1-git-send-email-benh@kernel.crashing.org>
@@ -22,55 +21,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CC: Michal Simek <monstr@monstr.eu>
+To make it fast, we steal ARM's binary search for memblock_is_memory()
+and we use that to also the replace existing implementation of
+memblock_is_reserved().
+
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/microblaze/mm/init.c |   20 +++++++++-----------
- 1 files changed, 9 insertions(+), 11 deletions(-)
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |   42 ++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 36 insertions(+), 8 deletions(-)
 
-diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
-index afd6494..32a702b 100644
---- a/arch/microblaze/mm/init.c
-+++ b/arch/microblaze/mm/init.c
-@@ -70,16 +70,16 @@ static void __init paging_init(void)
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 4b69313..47bceb1 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -56,6 +56,8 @@ extern u64 __init __memblock_alloc_base(u64 size,
+ extern u64 __init memblock_phys_mem_size(void);
+ extern u64 memblock_end_of_DRAM(void);
+ extern void __init memblock_enforce_memory_limit(u64 memory_limit);
++extern int memblock_is_memory(u64 addr);
++extern int memblock_is_region_memory(u64 base, u64 size);
+ extern int __init memblock_is_reserved(u64 addr);
+ extern int memblock_is_region_reserved(u64 base, u64 size);
+ extern int memblock_find(struct memblock_region *res);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 6f407cc..aa88c62 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -487,17 +487,43 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ 	}
+ }
  
- void __init setup_memory(void)
++static int memblock_search(struct memblock_type *type, u64 addr)
++{
++	unsigned int left = 0, right = type->cnt;
++
++	do {
++		unsigned int mid = (right + left) / 2;
++
++		if (addr < type->regions[mid].base)
++			right = mid;
++		else if (addr >= (type->regions[mid].base +
++				  type->regions[mid].size))
++			left = mid + 1;
++		else
++			return mid;
++	} while (left < right);
++	return -1;
++}
++
+ int __init memblock_is_reserved(u64 addr)
  {
 -	int i;
- 	unsigned long map_size;
-+	struct memblock_region *reg;
-+
- #ifndef CONFIG_MMU
- 	u32 kernel_align_start, kernel_align_size;
++	return memblock_search(&memblock.reserved, addr) != -1;
++}
  
- 	/* Find main memory where is the kernel */
--	for (i = 0; i < memblock.memory.cnt; i++) {
--		memory_start = (u32) memblock.memory.regions[i].base;
--		memory_end = (u32) memblock.memory.regions[i].base
--				+ (u32) memblock.memory.region[i].size;
-+	for_each_memblock(memory, reg) {
-+		memory_start = (u32)reg->base;
-+		memory_end = (u32) reg->base + reg->size;
- 		if ((memory_start <= (u32)_text) &&
- 					((u32)_text <= memory_end)) {
- 			memory_size = memory_end - memory_start;
-@@ -147,12 +147,10 @@ void __init setup_memory(void)
- 	free_bootmem(memory_start, memory_size);
- 
- 	/* reserve allocate blocks */
 -	for (i = 0; i < memblock.reserved.cnt; i++) {
--		pr_debug("reserved %d - 0x%08x-0x%08x\n", i,
--			(u32) memblock.reserved.region[i].base,
--			(u32) memblock_size_bytes(&memblock.reserved, i));
--		reserve_bootmem(memblock.reserved.region[i].base,
--			memblock_size_bytes(&memblock.reserved, i) - 1, BOOTMEM_DEFAULT);
-+	for_each_memblock(reserved, reg) {
-+		pr_debug("reserved - 0x%08x-0x%08x\n",
-+			 (u32) reg->base, (u32) reg->size);
-+		reserve_bootmem(reg->base, reg->size, BOOTMEM_DEFAULT);
- 	}
- #ifdef CONFIG_MMU
- 	init_bootmem_done = 1;
+-		u64 upper = memblock.reserved.regions[i].base +
+-			memblock.reserved.regions[i].size - 1;
+-		if ((addr >= memblock.reserved.regions[i].base) && (addr <= upper))
+-			return 1;
+-	}
+-	return 0;
++int memblock_is_memory(u64 addr)
++{
++	return memblock_search(&memblock.memory, addr) != -1;
++}
++
++int memblock_is_region_memory(u64 base, u64 size)
++{
++	int idx = memblock_search(&memblock.reserved, base);
++
++	if (idx == -1)
++		return 0;
++	return memblock.reserved.regions[idx].base <= base &&
++		(memblock.reserved.regions[idx].base +
++		 memblock.reserved.regions[idx].size) >= (base + size);
+ }
+ 
+ int memblock_is_region_reserved(u64 base, u64 size)
 -- 
 1.7.0.4
 
