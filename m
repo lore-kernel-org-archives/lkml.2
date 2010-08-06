@@ -1,135 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761234Ab0HFLPz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 07:15:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:50258 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab0HFLPr (ORCPT
+	id S1761246Ab0HFLQA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 07:16:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63568 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761148Ab0HFLPv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 07:15:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
-         :user-agent:mime-version:content-type;
-        b=cGEIH8mOL+jdEeOYzjzDs3K69gnD0W8x/YRXPM1tsAslSXJBsOSRxYOIPVBqhHqW+g
-         zQ0fxy/Z/VsAzQUnVQLoaL4coLD3NIqT6H0N+Odh0Ti3go2gg59XbGQ+r2LSFiA2G9aB
-         2v6jOn3UuX41IrH65kzePWRLNk9U0J09pMEK0=
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Resend: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-References: <87vd7o2f9z.fsf@dmon-lap.sw.ru> <4C5BEA4E.4070107@kernel.dk>
-Date: Fri, 06 Aug 2010 15:15:42 +0400
-In-Reply-To: <4C5BEA4E.4070107@kernel.dk> (Jens Axboe's message of "Fri, 06
-	Aug 2010 12:56:14 +0200")
-Message-ID: <87mxt02dr5.fsf@dmon-lap.sw.ru>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="=-=-="
+	Fri, 6 Aug 2010 07:15:51 -0400
+Date: Fri, 6 Aug 2010 07:18:10 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jeremy Allison <jra@samba.org>
+Cc: Steve French <smfrench@gmail.com>, Neil Brown <neilb@suse.de>,
+        utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100806071810.5002dc2b@corrin.poochiereds.net>
+In-Reply-To: <AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<1280524978.2452.9.camel@segv.aura.of.mankind>
+	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	<20100805235218.GB31233@jeremy-laptop>
+	<20100806133836.49757af9@notabene>
+	<AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
+On Thu, 5 Aug 2010 22:55:06 -0500
+Steve French <smfrench@gmail.com> wrote:
 
-Jens Axboe <axboe@kernel.dk> writes:
+> On Thu, Aug 5, 2010 at 10:38 PM, Neil Brown <neilb@suse.de> wrote:
+> > On Thu, 5 Aug 2010 16:52:18 -0700
+> > Jeremy Allison <jra@samba.org> wrote:
+> 
+> >> Don't add it as an EA. It's *not* an EA, it's a timestamp.
+> >
+> > I'm curious.  Why do you particularly care what interface the kernel uses to
+> > provide you with access to this attribute?
+> >
+> > And given that it is an attribute that is not part of 'POSIX' or "UNIX", it
+> > would seem to be an extension - an extended attribute.
+> > As the Linux kernel does virtually nothing with this attribute except provide
+> > access, it seems to be a very different class of thing to other timestamps.
+> > Surely it is simply some storage associated with a file which is capable of
+> > storing a timestamp, which can be set or retrieved by an application, and
+> > which happens to be initialised to the current time when a file is created.
+> >
+> > Yes, to you it is a timestamp.  But to Linux it is a few bytes of
+> > user-settable metadata.  Sounds like an EA to me.
+> >
+> > Or do you really want something like BSD's 'btime' which as I understand it
+> > cannot be set.  Would that be really useful to you?
+> 
+> Obviously the cifs and SMB2 protocols which  Samba server support can
+> ask the server to set the create time of a file (this is handled
+> through xattrs today along with the "dos attribute" flags such as
+> archive/hidden/system), but certainly it is much more common (and
+> important) to read the creation time of an existing file.
+> 
+> 
+> > Is there something important that I am missing?
+> 
+> It is another syscall that Samba server would have to make - and xattr
+> performance is extremely slow on some file systems (although
+> presumably this one would be more likely to be stored in inode and
+> perhaps not as bad on ext4, cifs and a few others such as ntfs).
+> 
+> 
 
-> On 2010-08-06 12:42, Dmitry Monakhov wrote:
->> Hi Jens,
->> Seems that my first mail was missed somewhere.  
->> I've found couple of trivial issues in blkdev_issue_zeroout()
->> implementation. Unfortunately I've miss during initial testing phase
->> because always called it with BARRIER|WAIT flags.
->
-> BTW, this:
->
-> @@ -218,15 +222,18 @@ submit:
->  		/* One of bios in the batch was completed with error.*/
->  		ret = -EIO;
->  
-> -	if (ret)
-> +	if (ret && ret != -ENOMEM)
->  		goto out;
->  
->  	if (test_bit(BIO_EOPNOTSUPP, &bb.flags)) {
->  		ret = -EOPNOTSUPP;
->  		goto out;
->  	}
-> -	if (nr_sects != 0)
-> +	if (nr_sects != 0) {
-> +		if (ret == -ENOMEM)
-> +			io_schedule();
->  		goto submit;
-> +	}
->  out:
->  	return ret;
->  }
->
-> is broken. Either the caller sets __GFP_WAIT and then bio_alloc() will
-> not fail, or GFP_ATOMIC is used knowing that the call can fail and
-> return ENOMEM. Don't code in retry logic like this.
-Ok, my fault and in fact i've done in explicitly. I just thought
-that blk-layer is some times an exception from general GFP_ATOMIC rule
-because in some places in blk-layer we stick to GFP_NOFAIL semantics
-regardless to actual gfp flags.
+Right. One has to consider that samba has to satisfy READDIRPLUS-like
+calls, and on a large directory all of those extra syscalls are likely
+to impact performance.
 
-New version attached.
+In my view, the ideal thing would be to add this field as an EA and
+continue work on implementing xstat(). Adding it as an EA gives
+userland a way to set this value, without needing to add a new utimes()
+variant.
 
---=-=-=
-Content-Disposition: inline;
- filename=0001-blkdev-fix-blkdev_issue_zeroout-return-value.patch
+If/when xstat becomes available, samba could use that instead of the EA
+for reading this value.
 
->From 32236cd453f070807a91631a2de12478f872edd3 Mon Sep 17 00:00:00 2001
-From: Dmitry Monakhov <dmonakhov@openvz.org>
-Date: Fri, 6 Aug 2010 15:06:01 +0400
-Subject: [PATCH] blkdev: fix blkdev_issue_zeroout return value
-
-- If function called without barrier option retvalue is incorrect
-
-Signed-off-by: Dmitry Monakhov <dmonakhov@openvz.org>
----
- block/blk-lib.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/block/blk-lib.c b/block/blk-lib.c
-index 5d793e1..c1fc55a 100644
---- a/block/blk-lib.c
-+++ b/block/blk-lib.c
-@@ -145,7 +145,7 @@ static void bio_batch_end_io(struct bio *bio, int err)
- int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			sector_t nr_sects, gfp_t gfp_mask, unsigned long flags)
- {
--	int ret = 0;
-+	int ret;
- 	struct bio *bio;
- 	struct bio_batch bb;
- 	unsigned int sz, issued = 0;
-@@ -163,11 +163,14 @@ int blkdev_issue_zeroout(struct block_device *bdev, sector_t sector,
- 			return ret;
- 	}
- submit:
-+	ret = 0;
- 	while (nr_sects != 0) {
- 		bio = bio_alloc(gfp_mask,
- 				min(nr_sects, (sector_t)BIO_MAX_PAGES));
--		if (!bio)
-+		if (!bio) {
-+			ret = -ENOMEM;
- 			break;
-+		}
- 
- 		bio->bi_sector = sector;
- 		bio->bi_bdev   = bdev;
-@@ -186,6 +189,7 @@ submit:
- 			if (ret < (sz << 9))
- 				break;
- 		}
-+		ret = 0;
- 		issued++;
- 		submit_bio(WRITE, bio);
- 	}
 -- 
-1.6.6.1
-
-
---=-=-=--
+Jeff Layton <jlayton@redhat.com>
