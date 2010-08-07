@@ -1,151 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab0HGVRd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 17:17:33 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:35238 "EHLO e5.ny.us.ibm.com"
+	id S1754494Ab0HGVWN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 17:22:13 -0400
+Received: from mail.lang.hm ([64.81.33.126]:57612 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab0HGVRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 17:17:31 -0400
-Date: Sat, 7 Aug 2010 14:17:28 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jason Wessel <jason.wessel@windriver.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: linux-next: manual merge of the kgdb tree with Linus' tree
-Message-ID: <20100807211728.GA28829@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100807140542.bea61032.sfr@canb.auug.org.au>
+	id S1754244Ab0HGVWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 17:22:12 -0400
+Date: Sat, 7 Aug 2010 14:20:02 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: "Ted Ts'o" <tytso@mit.edu>, Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <20100807153225.GD19600@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008071403000.30564@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100804195704.GA23681@linux.vnet.ibm.com> <20100806225453.GA3947@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm> <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+ <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm> <20100807061558.GA28087@thunk.org> <alpine.DEB.2.00.1008070206010.30564@asgard.lang.hm> <20100807153225.GD19600@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100807140542.bea61032.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 02:05:42PM +1000, Stephen Rothwell wrote:
-> Hi Jason,
-> 
-> Today's linux-next merge of the kgdb tree got a conflict in
-> include/linux/rcupdate.h between commits
-> 551d55a944b143ef26fbd482d1c463199d6f65cf ("tree/tiny rcu: Add debug RCU
-> head objects") and f5155b33277c9678041a27869165619bb34f722f ("rcu: add an
-> rcu_dereference_index_check()") from Linus' tree and commit
-> 9e213357d0aeaeb81e213cfd3b9415db5fccc1b5 ("rcu,debug_core: allow the
-> kernel debugger to reset the rcu stall timer") from the kgdb tree.
+On Sat, 7 Aug 2010, Paul E. McKenney wrote:
 
-Hello, Jason,
+> On Sat, Aug 07, 2010 at 02:38:35AM -0700, david@lang.hm wrote:
+>> On Sat, 7 Aug 2010, Ted Ts'o wrote:
+>>
+>>> On Fri, Aug 06, 2010 at 08:14:09PM -0700, david@lang.hm wrote:
+>>
+>>> So the real key here is to take most applications, which may be
+>>> written using techniques that might be considered well written from a
+>>> laptop point of view, but not for a cell phone, and not require
+>>> modifications.  Even though the application writer might think it's
+>>> doing well by waking up every 15 seconds, if the laptop lid is down,
+>>> or if the screen is off, for **most** applications, it should be
+>>> forcibly put to sleep.
+>>>
+>>> It's only the rare applications that should really be allowed to run
+>>> while screen is off.  And it's only those applications that need
+>>> modifications to use suspend blocker.  From your earlier comments, it
+>>> seems that this is the key point which you are missing.  (No doubt,
+>>> some of these applications that do need to know about suspend blockers
+>>> are important ones; ones that make sure the battery isn't about to
+>>> blow up, or ones which silently wake up every 10-15 minutes to pull
+>>> down fresh mail for you from your mail server.  But those applications
+>>> are the exception, not the rule.)
+>>
+>> the question is what it takes to make an application privilaged like this.
+>>
+>> what I proposed was to make it possible for the user/admin to select
+>> what applications are allowed to keep the system awake.
+>
+> The Android guys do the same.
+>
+>> wakelocks require that the application developer decide that they
+>> want to keep the system awake as well as the user/admin
+>
+> Whereas you require that the application developer redesign/rewrite
+> applications to decide when to keep the system awake, e.g., by carefully
+> determining when to idle themselves.  The difference is that the Android
+> developer need only release a suspend blocker.  In contrast, you are
+> requiring that the developer rewrite all the code that follows the point
+> where the Android developer would release a suspend blocker.
+>
+> Your way seems to require that the developer do more work for the
+> same result.  Why?
 
-Just trying to make sure I understand this...
+portability, and the fact that it will save more power even when the 
+system is prevented from suspending.
 
-This cannot be a "stop the machine" debugger, because otherwise the
-jiffies counter would stop and you would not get RCU CPU stall warnings.
+>> take your example of a mail client waking up every 15 min.
+>>
+>> with Android it needs to be privilaged to grab the wakelock while
+>> fetching the mail, it also needs to use a privilaged API to set the
+>> wakeups to wake it up at those times.
+>>
+>> with what I proposed all you need to do is to tag the application as
+>> power privilaged and then if the application sleeps for 15 min
+>> between doing thing the system will wake up every 15 min, work for a
+>> short time, then go back to sleep.
+>>
+>>
+>> if you want to put everything to sleep when the screen blanks,
+>> that's trivial to do.
+>>
+>> the fun starts when you want to say that there are some things you
+>> don't want to put to sleep.
+>
+> Which is in fact a critical requirement that you appear to have been
+> ignoring in your words above.
 
-It might be a "stop the machine" debugger, but where the jiffies counter
-catches up quickly as soon as the machine restarts.  In this case,
-your patch would be a reasonable approach, but RCU CPU stall warnings
-are going to be the least of your problems.  Actually, I have only seen
-one piece of your patch.  Could you please send me the rest of it?
+I admit that the way I wrote this is confusing, but I don't think I am 
+ignoring this requirement. the example above was how an application that 
+the system is not wanting to put to sleep would run with the two 
+mechansims.
 
-If you are permitting some tasks to run while others are halted,
-then the RCU CPU stall is simply a symptom of an underlying problem,
-namely that if you halt a task in an RCU read-side critical section
-for long enough, you will OOM the system.
+>> do you let some processes run while halting others?
+>>   in which case how do you prevent deadlocks?
+>>     on the other hand, sleeping again is simple, you sleep when
+>> there is nothing more to run
+>> or do you let wasteful processes run while you are awake?
+>>   this avoids deadlocks, but how do you decide when to sleep again?
+>>
+>>
+>> Android approaches this by requiring that any program that a user
+>> may want to keep running must be modified to use wakelocks.
+>>
+>> My suggestion was that the system ignore other processes when
+>> deciding if the system is idle enough to put to sleep.
+>
+> But your suggestion seems to require quite a bit more coding effort for
+> little gain.  The Android developer can just release a suspend blocker,
+> and in contrast, a developer using your proposal needs to rewrite all
+> the code following the point at which the Android developer released the
+> suspend blocker.  So why are you saying that your is approach better?  ;-)
 
-							Thanx, Paul
+no, the coder needs to make his code not do unnessasary things. Even with 
+a wakelock this is needed for the system to be able to use lower power 
+modes while the system is not going to do a suspend anyway.
 
-> Just overlapping additions.  I fixed it up (see below) and can carry the
-> fix for a while.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc include/linux/rcupdate.h
-> index 9fbc54a,585efef..0000000
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@@ -529,74 -517,12 +529,82 @@@ extern void call_rcu(struct rcu_head *h
->   extern void call_rcu_bh(struct rcu_head *head,
->   			void (*func)(struct rcu_head *head));
->   
->  +/*
->  + * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
->  + * by call_rcu() and rcu callback execution, and are therefore not part of the
->  + * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
->  + */
->  +
->  +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
->  +# define STATE_RCU_HEAD_READY	0
->  +# define STATE_RCU_HEAD_QUEUED	1
->  +
->  +extern struct debug_obj_descr rcuhead_debug_descr;
->  +
->  +static inline void debug_rcu_head_queue(struct rcu_head *head)
->  +{
->  +	debug_object_activate(head, &rcuhead_debug_descr);
->  +	debug_object_active_state(head, &rcuhead_debug_descr,
->  +				  STATE_RCU_HEAD_READY,
->  +				  STATE_RCU_HEAD_QUEUED);
->  +}
->  +
->  +static inline void debug_rcu_head_unqueue(struct rcu_head *head)
->  +{
->  +	debug_object_active_state(head, &rcuhead_debug_descr,
->  +				  STATE_RCU_HEAD_QUEUED,
->  +				  STATE_RCU_HEAD_READY);
->  +	debug_object_deactivate(head, &rcuhead_debug_descr);
->  +}
->  +#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
->  +static inline void debug_rcu_head_queue(struct rcu_head *head)
->  +{
->  +}
->  +
->  +static inline void debug_rcu_head_unqueue(struct rcu_head *head)
->  +{
->  +}
->  +#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
->  +
->  +#ifndef CONFIG_PROVE_RCU
->  +#define __do_rcu_dereference_check(c) do { } while (0)
->  +#endif /* #ifdef CONFIG_PROVE_RCU */
->  +
->  +#define __rcu_dereference_index_check(p, c) \
->  +	({ \
->  +		typeof(p) _________p1 = ACCESS_ONCE(p); \
->  +		__do_rcu_dereference_check(c); \
->  +		smp_read_barrier_depends(); \
->  +		(_________p1); \
->  +	})
->  +
->  +/**
->  + * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
->  + * @p: The pointer to read, prior to dereferencing
->  + * @c: The conditions under which the dereference will take place
->  + *
->  + * Similar to rcu_dereference_check(), but omits the sparse checking.
->  + * This allows rcu_dereference_index_check() to be used on integers,
->  + * which can then be used as array indices.  Attempting to use
->  + * rcu_dereference_check() on an integer will give compiler warnings
->  + * because the sparse address-space mechanism relies on dereferencing
->  + * the RCU-protected pointer.  Dereferencing integers is not something
->  + * that even gcc will put up with.
->  + *
->  + * Note that this function does not implicitly check for RCU read-side
->  + * critical sections.  If this function gains lots of uses, it might
->  + * make sense to provide versions for each flavor of RCU, but it does
->  + * not make sense as of early 2010.
->  + */
->  +#define rcu_dereference_index_check(p, c) \
->  +	__rcu_dereference_index_check((p), (c))
->  +
-> + #ifdef CONFIG_RCU_CPU_STALL_DETECTOR
-> + extern void rcu_cpu_stall_reset(void);
-> + #else /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
-> + static void rcu_cpu_stall_reset()
-> + {
-> + }
-> + #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
-> + 
->   #endif /* __LINUX_RCUPDATE_H */
+I am say that if the coder does that, the coder should not also have to 
+code in wakelocks.
+
+I want it to be as easy as possible to port applications between mobile 
+platforms. On most platforms wakelocks are not needed because standard 
+idle/sleep/suspend mechanisms are good enough. Android allows other 
+applications to run that confuse the idle/sleep/suspend mechanisms, so 
+something needs to be done to cut through the confusion. Android does this 
+by creating a new API to control this, I'm suggesting that there should be 
+a way to tell the system to ignore the other applications so that the 
+existing mechanisms can make good decisions again.
+
+David Lang
