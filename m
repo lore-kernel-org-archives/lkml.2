@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762534Ab0HGCzB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 22:55:01 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61033 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762502Ab0HGCyy convert rfc822-to-8bit (ORCPT
+	id S1761210Ab0HGDHU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 23:07:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43432 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab0HGDHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 22:54:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100807100123.886d3a1e.sfr@canb.auug.org.au>
-References: <20100806183839.32149.6238.stgit@angua> <20100807100123.886d3a1e.sfr@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 6 Aug 2010 20:54:34 -0600
-X-Google-Sender-Auth: SXPSPT61iEofMNMUbdefHelKSBQ
-Message-ID: <AANLkTikt5xR0jYL_m6+vO2bkcxSBA8DwffRDbDae8OmA@mail.gmail.com>
-Subject: Re: [PATCH] powerpc: fix i8042 module build error
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: martyn.welch@ge.com, benh@kernel.crashing.org,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Aug 2010 23:07:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=wD4IUBE/lEZ09Q1V9/AUWggjfTVpuU3dvwtLz5nCFavZu211sP3zEjqiOhn0GdGz9e
+         zkkl/6DE7vOBSTZyioL9I1PM268+nwLNCdkyfVM6/RdYPa51U+ugZA5kCnrMjyN0EMyu
+         Dd6KPUv5lbIEWAWe0IbMWz/Rf/FBgbPomqC3E=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
+        John Kacur <jkacur@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] bkl core updates for 2.6.36
+Date: Sat,  7 Aug 2010 05:07:10 +0200
+Message-Id: <1281150430-5510-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 6:01 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
->
-> On Fri, 06 Aug 2010 12:42:12 -0600 Grant Likely <grant.likely@secretlab.ca> wrote:
->>
->> of_i8042_{kbd,aux}_irq needs to be exported
->>
->> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
->> ---
->>
->> Stephen and Ben, this fixes up the build error in linux-next.  If you prefer,
->> I can stuff this patch into my next-powerpc branch.  Ben, I've got other
->> commits in that branch that I'll be sending to you early next week anyway.
->
-> This failure also exists in Linus' tree, so the earlier this goes to
-> Linus the better.
+Linus,
 
-Okay then.  Ben, I'll send out my pull request out right away so
-you've got it if you want to use it.
+Please pull the bkl/core branch that can be found at:
 
-Cheers,
-g.
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> http://www.canb.auug.org.au/~sfr/
->
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	bkl/core
+
+Thanks,
+	Frederic
+---
+
+Arnd Bergmann (2):
+      init: Remove the BKL from startup code
+      do_coredump: Do not take BKL
 
 
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+ fs/exec.c            |    7 -------
+ init/main.c          |    5 -----
+ kernel/trace/trace.c |    8 --------
+ 3 files changed, 0 insertions(+), 20 deletions(-)
