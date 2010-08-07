@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762090Ab0HGCV2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 22:21:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46338 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab0HGCVY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 22:21:24 -0400
-Date: Sat, 7 Aug 2010 12:21:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Karen Higgins <karen.higgins@qlogic.com>,
-        Ravi Anand <ravi.anand@qlogic.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: linux-next: build warnings in Linus'  tree
-Message-Id: <20100807122116.e6421ea0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__7_Aug_2010_12_21_16_+1000_b4Bn5By3RW2..scu"
+	id S1761876Ab0HGClj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 22:41:39 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:44019 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752458Ab0HGClh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 22:41:37 -0400
+Date: Fri, 6 Aug 2010 22:41:36 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: david@lang.hm
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <arve@android.com>, <mjg59@srcf.ucam.org>, <pavel@ucw.cz>,
+        <florian@mickler.org>, <rjw@sisk.pl>, <swetland@google.com>,
+        <peterz@infradead.org>, <tglx@linutronix.de>,
+        <alan@lxorguk.ukuu.org.uk>, <menage@google.com>, <david-b@pacbell.net>,
+        <James.Bottomley@suse.de>, <tytso@mit.edu>, <arjan@infradead.org>,
+        <swmike@swm.pp.se>, <galibert@pobox.com>, <dipankar@in.ibm.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <alpine.DEB.2.00.1008061800580.30564@asgard.lang.hm>
+Message-ID: <Pine.LNX.4.44L0.1008062219590.14923-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__7_Aug_2010_12_21_16_+1000_b4Bn5By3RW2..scu
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 6 Aug 2010 david@lang.hm wrote:
 
-Hi all,
+> From this discussion, it looks to me like Android wants two key features 
+> that they don't see a way to get today
 
-today's linux-next build (x86_64 allmodconfig) of Linus' tree produced
-these warnings:
+I have largely kept out of this discussion, but this was so outrageous 
+I had to say something.
 
-drivers/scsi/qla4xxx/ql4_nx.c: In function 'qla4_8xxx_get_flash_info':
-drivers/scsi/qla4xxx/ql4_nx.c:1952: warning: 'mid' may be used uninitialize=
-d in this function
-drivers/scsi/qla4xxx/ql4_nx.c:1952: note: 'mid' was declared here
-drivers/scsi/qla4xxx/ql4_nx.c:1952: warning: 'fid' may be used uninitialize=
-d in this function
-drivers/scsi/qla4xxx/ql4_nx.c:1952: note: 'fid' was declared here
+> 1. the ability to decide to suspend while there are still some 
+> 'unimportant' apps running.
 
-Introduced by commit f4f5df23bf72208d0c2f1d8be629839924c2f4c2 ("[SCSI]
-qla4xxx: Added support for ISP82XX").  I don't think that these are false
-positives.
+While this may be true in some literal sense, it certainly is not the
+best way to view the situation.  Linux already has the ability to
+suspend (or to decide to suspend) whenever you want.  What Android has
+added is the ability to suspend conditionally, based on whether or not
+some applications or drivers want to keep the system running.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Furthermore, this statement leaves out the primary purpose of
+wakelocks: to avoid races between suspending and wakeup events.  And it
+also ignores a very important distinction: the difference between
+drivers and applications.  Wakelocks are used by both, but it has been
+shown that only the wakelocks used by drivers need to be implemented in
+the kernel -- the others can be implemented entirely in userspace.
 
---Signature=_Sat__7_Aug_2010_12_21_16_+1000_b4Bn5By3RW2..scu
-Content-Type: application/pgp-signature
+All of these issues are addressed by Raphael's new wakeup_events code.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> 2. changes to idle/suspend so that they can get into a state of lower 
+> power consumption thatn any existing idle state (by being able to disable 
+> clocks), but still have some parts of the system powered (so that they are 
+> more awake than suspend)
 
-iQEcBAEBAgAGBQJMXMMcAAoJEDMEi1NhKgbsrlgIAIXsQM88aiKKZaZrVOYmOXz+
-GxSFwnkWOxcGFIsRpsRdUPJyBv5w0RN0jxf4VBHbdx6TRyAyBVn8OFkRu8zjk7KY
-A4DBzyiC/ZrJkwMb+YqE6x6QkxPKD4iEobtqRHsWuO4zJXDyXTKamPZZH3UksLuS
-GQNTgn86yplClb+w6ffYip5rXlEJ7o68MWiKR0Nm7g3AF7EfPW/if4/wLY++Rzyh
-CXO+wbh6BR57X6wvOew5PsjhSY21PUdNJXXh6MwMIF0lOWrBWZ5Cwrf4hi3RTTmE
-dOBfE9jZFuB2R3e+cc8UoPnHm9Zh7LmMPt46Afy25Sf3d50zSuPRQ136JA23bDc=
-=+H9c
------END PGP SIGNATURE-----
+This is nonsense.  Nothing was changed.  Instead, Android implemented
+system suspend on their platform in a way that would leave some devices
+running while the rest of the system powered down.  There's nothing out
+of the ordinary about this.  Platforms are free to implement system
+suspend in whatever way they deem most appropriate.  On modern PCs, the 
+most appropriate technique is to go into ACPI's S3 or S4 state.  On 
+embedded systems, the technique will vary from one platform to another.
 
---Signature=_Sat__7_Aug_2010_12_21_16_+1000_b4Bn5By3RW2..scu--
+> If these two features were available, I think that the rest of what they 
+> are looking for could be built up without requireing other changes.
+
+They already _are_ available.  Admittedly, only since quite recently.  
+(Rafael's new code was accepted during the 2.6.36 merge window.)
+
+> In addition to these key features, the fact that they use suspend much 
+> more frequently means that the race condition between deciding to freeze 
+> and wake events happening is far more likely to cause them problems, so 
+> improvements in this area are needed. I don't think that there is any 
+> fundamental opposition to these improvements, just questions on how best 
+> to do it without causing performance problems.
+
+By now, I think most of these questions have been answered.
+
+On a slightly different tack, I have noticed that email discussions
+concerning Android's wakelocks tend to evolve (I almost wrote
+"devolve") along one of two paths: Either they start talking about ways
+to integrate Android's goals into the mainline kernel, or else they
+start complaining about the fact that Android uses system suspend so
+aggressively and try to find ways to use deep-idle to achieve
+equivalent results.  Although the second path generally ends up being
+much less productive than the first, it is the one that most
+discussions seem to end up taking.  Large portions of _this_ thread 
+have tended in that direction.
+
+Alan Stern
+
