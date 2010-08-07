@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761607Ab0HGJJT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 05:09:19 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41594 "EHLO mgw2.diku.dk"
+	id S1762332Ab0HGJJe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 05:09:34 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41604 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753036Ab0HGJJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 05:09:17 -0400
-Date: Sat, 7 Aug 2010 11:09:13 +0200 (CEST)
+	id S1761582Ab0HGJJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 05:09:31 -0400
+Date: Sat, 7 Aug 2010 11:09:29 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
-        ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/2] fs/ocfs2/dlm: Eliminate update of list_for_each_entry
+To: Artem Bityutskiy <dedekind1@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/2] drivers/mtd/ubi: Eliminate update of list_for_each_entry
  loop cursor
-Message-ID: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
+Message-ID: <Pine.LNX.4.64.1008071109140.5821@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,7 +23,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Julia Lawall <julia@diku.dk>
 
 list_for_each_entry uses its first argument to move from one element to the
-next, so modifying it can break the iteration.
+next, so modifying it can break the iteration.  The variable re1 is already
+used within the loop as a temporary variable, and is not live here.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -51,27 +52,35 @@ list_for_each_entry@p1(x,...) S
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-I don't know whether this is the right solution, but it seems plausible
-considering the subsequent test on lock.  In any case, setting lock to NULL
-and then going back to the top of the loop does not work.
+ drivers/mtd/ubi/cdev.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
- fs/ocfs2/dlm/dlmrecovery.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
-index 9dfaac7..7084a11 100644
---- a/fs/ocfs2/dlm/dlmrecovery.c
-+++ b/fs/ocfs2/dlm/dlmrecovery.c
-@@ -1792,10 +1792,10 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
- 				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
-+					if (lock->ml.cookie != ml->cookie) {
- 						lock = NULL;
--					else
- 						break;
-+					}
- 				}
- 				if (lock)
- 					break;
+diff --git a/drivers/mtd/ubi/cdev.c b/drivers/mtd/ubi/cdev.c
+index 4dfa6b9..3d2d1a6 100644
+--- a/drivers/mtd/ubi/cdev.c
++++ b/drivers/mtd/ubi/cdev.c
+@@ -798,18 +798,18 @@ static int rename_volumes(struct ubi_device *ubi,
+ 			goto out_free;
+ 		}
+ 
+-		re = kzalloc(sizeof(struct ubi_rename_entry), GFP_KERNEL);
+-		if (!re) {
++		re1 = kzalloc(sizeof(struct ubi_rename_entry), GFP_KERNEL);
++		if (!re1) {
+ 			err = -ENOMEM;
+ 			ubi_close_volume(desc);
+ 			goto out_free;
+ 		}
+ 
+-		re->remove = 1;
+-		re->desc = desc;
+-		list_add(&re->list, &rename_list);
++		re1->remove = 1;
++		re1->desc = desc;
++		list_add(&re1->list, &rename_list);
+ 		dbg_msg("will remove volume %d, name \"%s\"",
+-			re->desc->vol->vol_id, re->desc->vol->name);
++			re1->desc->vol->vol_id, re1->desc->vol->name);
+ 	}
+ 
+ 	mutex_lock(&ubi->device_mutex);
