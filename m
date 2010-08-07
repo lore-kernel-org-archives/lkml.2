@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291Ab0HGEt6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 00:49:58 -0400
-Received: from mail.lang.hm ([64.81.33.126]:48781 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab0HGEtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 00:49:55 -0400
-Date: Fri, 6 Aug 2010 21:49:51 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Sam Ravnborg <sam@ravnborg.org>
-cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: KCONFIG savedefconfig
-In-Reply-To: <20100807040916.GB30520@merkur.ravnborg.org>
-Message-ID: <alpine.DEB.2.00.1008062146260.30564@asgard.lang.hm>
-References: <alpine.DEB.2.00.1008062024320.30564@asgard.lang.hm> <20100807040916.GB30520@merkur.ravnborg.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752692Ab0HGFEX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 01:04:23 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:49555 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752323Ab0HGFET (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 01:04:19 -0400
+Message-Id: <201008070504.o7754Daw083381@www262.sakura.ne.jp>
+Subject: Re: tomoyo-init (tomoyo-tools) results in kernel panic on kernel 2.6.35-git2/3
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: kawime@gmx.de
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Transfer-Encoding: 7bit
+Date: Sat, 07 Aug 2010 14:04:13 +0900
+References: <op.vg0yh9gtgp7xae@127.0.0.1>
+In-Reply-To: <op.vg0yh9gtgp7xae@127.0.0.1>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 06082010 #3879218, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Aug 2010, Sam Ravnborg wrote:
+Hello.
 
-> On Fri, Aug 06, 2010 at 08:25:43PM -0700, david@lang.hm wrote:
->> when savedefconfig decides what to write out, what does it do for things
->> that are not at the default, but were set to not be default as part of
->> dependancy resolution?
->
-> The short version:
-> Any symbol that does not have default value are written to
-> the defconfig file.
->
-> Using the defconfig file as input or using the full config file
-> as input shall result in the same configuration.
-> If not you found a bug we need to fix.
+Karsten Mehrhoff wrote:
+> Hi, i just compiled the 2.6.35-git3 kernel on my computer using debian 64 bit
+> as i did with all other kernels before.
+> Booting the git2/3 kernel results in a kernel panic because of
+> /sbin/tomoyo-init.
+> 
+> No problem with the 2.6.35 kernel.
+> 
+> I've to remane /sbin/tomoyo-init to boot the kernel.
+> Now i purged tomoyo-tools version 2.2.0-20100225 (aptitude purge tomoyo-tool) and everything works ok.
+> Sorry, i forgot to backup the tomoyo-init script.
+> 
+> $ uname -a
+> Linux xxxxxx 2.6.35-git3 #4 SMP Fri Aug 6 15:22:08 CEST 2010 x86_64 GNU/Linux
 
-Ok, so I take this to mean that if selecting one symbol forces selection 
-of another, then both symbols will be written to the defconfig file, even 
-though only the first would be needed to recreate the full file.
+Thank you for using TOMOYO. TOMOYO has changed a lot in 2.6.36. Therefore,
+you need to upgrade tomoyo-tools package. I'm testing it now.
+You can upgrade it by doing
 
-this is a wonderful step forward, I'm just trying to understand the 
-nuances of it.
+# wget -O tomoyo-tools.tar.gz 'http://sourceforge.jp/projects/tomoyo/svn/view/trunk/2.3.x/tomoyo-tools.tar.gz?root=tomoyo&view=tar'
+# tar -zxf tomoyo-tools.tar.gz
+# make -C tomoyo-tools/ install
 
-David Lang
+Then, please delete (or rename) /etc/tomoyo/ directory and run
+/usr/lib/tomoyo/init_policy .
 
-> Arve found one bug I have to look into - pending feedback.
-> And I have found one bug related to tristate choice values.
->
-> So a bit work is needed to make it ready :-(
-> But it works for most of the defconfig we have today.
+Please see http://tomoyo.sourceforge.jp/2.3/ for more information.
+
+Thank you.
