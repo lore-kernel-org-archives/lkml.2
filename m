@@ -1,109 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762293Ab0HGAgs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 20:36:48 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:47393 "EHLO e6.ny.us.ibm.com"
+	id S1752226Ab0HGAhK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 20:37:10 -0400
+Received: from ns1.cypress.com ([157.95.67.4]:39095 "EHLO ns1.cypress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab0HGAgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 20:36:46 -0400
-Date: Fri, 6 Aug 2010 17:36:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
-        kevin granade <kevin.granade@gmail.com>,
-        Arve Hj?nnev?g <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100807003642.GQ2432@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTinatKEBfHhMnKc5wbys13P81PKWSc+nxccgHe-Y@mail.gmail.com>
- <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm>
- <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com>
- <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
- <20100806123047.GE31326@sirena.org.uk>
- <20100806172226.GH2432@linux.vnet.ibm.com>
- <20100806173325.GA25367@rakim.wolfsonmicro.main>
- <20100806181832.GJ2432@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008061517130.30564@asgard.lang.hm>
- <20100807001431.GA3252@opensource.wolfsonmicro.com>
+	id S1752311Ab0HGAhH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 20:37:07 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100807001431.GA3252@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
+Date: Fri, 6 Aug 2010 17:32:31 -0700
+Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC09C4860A@labamba.mis.cypress.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
+Thread-Index: Acs08wac7LUJHYW7Qfmn5zlVQF9oFwA0pUKQ
+References: <Kevin McNeely <kev@cypress.com> <1281031924-3032-1-git-send-email-kev@cypress.com> <4C5B4404.6010602@euromail.se>
+From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
+To: "Henrik Rydberg" <rydberg@euromail.se>
+Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "David Brown" <davidb@codeaurora.org>,
+        "Trilok Soni" <tsoni@codeaurora.org>,
+        "Fred" <fwk@ubuntu.linuxcertified.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Eric Miao" <eric.y.miao@gmail.com>, "Ben Dooks" <ben-linux@fluff.org>,
+        "Simtec Linux Team" <linux@simtec.co.uk>,
+        "Todd Fischer" <todd.fischer@ridgerun.com>,
+        "Arnaud Patard" <arnaud.patard@rtp-net.org>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 07 Aug 2010 00:32:32.0907 (UTC) FILETIME=[068175B0:01CB35C8]
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 01:14:32AM +0100, Mark Brown wrote:
-> On Fri, Aug 06, 2010 at 04:35:59PM -0700, david@lang.hm wrote:
-> > On Fri, 6 Aug 2010, Paul E. McKenney wrote:
-> 
-> Guys, please try to cut unneeded text from the quotes - it makes it much
-> easier to find the new text.
-> 
-> >>> Well, not really from the Linux point of view.  It's not massively
-> >>> different to something like keeping an ethernet controller sufficiently
-> >>> alive to allow it to provide wake on LAN functionality while the system
-> 
-> >> The wake-on-LAN and the lights-out management systems are indeed
-> >> interesting examples, and actually pretty good ones.  The reason I
-> >> excluded them is that they don't do any application processing -- their
-> >> only purpose is the care and feeding of the system itself.  In contrast,
-> >> the embedded processors are able to do significant applications processing
-> >> (e.g., play back music) while any CPUs are completely shut down and most
-> >> of the memory is powered down as well.
-> 
-> This isn't a particularly meaningful distinction, things like the LoM
-> systems on servers are generally at least as capable as things like the
-> DSPs doing tasks like offloaded MP3 decode and often provide useful
-> services in themselves (like system monitoring).  It's really just
-> semantics to treat them differently to something like a cellular modem -
-> at a high level they're both just independant processors ticking away
-> without the application processor.
+Hello Henrick,
 
-I agree that a smartphone's cellular modem can be argued to be very
-similar to wake-on-LAN.  The smartphone applications that seem to me
-to be very different from wake-on-LAN are things like audio playback,
-where the system is providing service to the user during the time that
-it is suspended.
-
-> > one other significant issue is that on the PC, things like wake-on-LAN,  
-> > lights out management cards, etc require nothing from the main system  
-> > other than power. If they do something, they are sending the signal to 
-> > the chipset, which then wakes the system up. they don't interact with the 
-> > main processor/memory/etc at all.
+> -----Original Message-----
+> From: Henrik Rydberg [mailto:rydberg@euromail.se]
+> Sent: Thursday, August 05, 2010 4:07 PM
+> To: Kevin McNeely
+> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Fred; Samuel Ortiz;
+Eric
+> Miao; Ben Dooks; Simtec Linux Team; Todd Fischer; Arnaud Patard;
+Sascha
+> Hauer; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init
+> submit
 > 
-> I don't see that it makes much difference what gets kept alive - at the
-> end of the day the point is that we're making a decision to keep bits of
-> the system alive over suspend.
-
-The distinction is whether or not the system is perceived to be actively
-doing something useful while it is suspended.  Yes, this is subjective,
-but the distinction is still important.
-
-> > So as I see it, we need to do one of two things.
+> On 08/05/2010 08:12 PM, Kevin McNeely wrote:
 > 
-> > 1. change the suspend definition to allow for some things to not be  
-> > suspended
+> > From: Fred <fwk@ubuntu.linuxcertified.com>
+> >
+> > This is a new touchscreen driver for the Cypress Semiconductor
+> > cyttsp family of devices.  This updated driver is for both the i2c
+> and spi
+> > versions of the devices. The driver code consists of common core
+code
+> for
+> > both i2c and spi driver.  This submission is in response to review
+> comments
+> > from the initial submission.
+> >
+> > Signed-off-by: Kevin McNeely <kev@cypress.com>
+> > ---
 > 
-> This is essentially what's already happening.
-
-The time-of-day clock is certainly a case in point here.  ;-)
-
-							Thanx, Paul
-
-> > 2. change the sleep/low-power mode definition to have a more standardized 
-> > way of turning things off, and extend it to allow clocks to be turned off 
-> > as well (today we have things able to be turned off, drive spin-down for  
-> > example, but per comments in this thread it's all one-off methods)
 > 
-> Currently things like clock trees are frequently managed orthogonaly to
-> the system power state to at least some extent anyway - for example,
-> perfectly normal wake events like button presses will often require
-> clocks for things like debouncing.
+> General impression: There is a lot of useful code in here, but as
+> already
+> pointed out, well over half of it should not be part of the kernel
+> driver.
+> 
+> Suggestion 1: Clean out the internal state code and use MT protocol B
+> instead.
+> 
+> Suggestion 2: Cut out the single touch calculation, as already pointed
+> out by
+> Trilok. Why not submit it to the mtdev project instead? The problem is
+> generic
+> to all new MT drivers, so a common solution while waiting for full MT
+> support in
+> userspace could be useful.
+
+I will remove the ST code and polling completely.
+
+However, I would like to keep the MT Protocol A.  Our solution allows
+The platform builder to select to use MT protocol B or not as part of 
+platform_data in the board configuration. If it makes more sense,
+I can reverse the code to default to protocol B and allow the platform
+builder developer to select protocol A.
+
+Thank you for the invitation to submit to the mtdev project.
+I defer to Dmitry if I should make the next update into the mtdev
+project.
+
+Thank you for your review.
+-kev
+
+> 
+> Thanks,
+> Henrik
+
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
+
