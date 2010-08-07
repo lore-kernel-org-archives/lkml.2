@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761491Ab0HGIzx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 04:55:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63413 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753246Ab0HGIzu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 04:55:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PRJfMVuZSHor7AhK1flMpM06m3lGHmDFFwVM5YcS6BvgjdB29ZTDWG25A2IKagzaHJ
-         V1IlBWjxTspxOy7Y5aiObq4csCWpp4loWPWBjJHtseDfKp2ELjtmVAeLPp5TQdSvdNXU
-         +8ldkYloL/WWilUCwbWggGWOjpVI8xjyU5z6M=
-Date: Sat, 7 Aug 2010 12:55:12 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: Dan Carpenter <error27@gmail.com>, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rakib Mullick <rakib.mullick@gmail.com>,
-        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/18] char: moxa: call disable_pci_device() if
- pci_probe() failed
-Message-ID: <20100807085512.GA5783@albatros>
-References: <1281124152-12630-1-git-send-email-segooon@gmail.com>
- <20100807072205.GW9031@bicker>
+	id S1761522Ab0HGJDX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 05:03:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48350 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752618Ab0HGJDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 05:03:20 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: david@lang.hm
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Sat, 7 Aug 2010 11:01:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        kevin granade <kevin.granade@gmail.com>,
+        "Arve Hj?nnev?g" <arve@android.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+References: <20100805230304.GQ2447@linux.vnet.ibm.com> <20100807001431.GA3252@opensource.wolfsonmicro.com> <alpine.DEB.2.00.1008061741460.30564@asgard.lang.hm>
+In-Reply-To: <alpine.DEB.2.00.1008061741460.30564@asgard.lang.hm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100807072205.GW9031@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008071101.25384.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 09:22 +0200, Dan Carpenter wrote:
-> On Fri, Aug 06, 2010 at 11:49:10PM +0400, Kulikov Vasiliy wrote:
-> > Driver should call disable_pci_device() if it returns from pci_probe()
-> > with error. Also it must not be called if pci_request_region() fails as
-> > it means that somebody uses device resources and rules the device.
-> > 
+On Saturday, August 07, 2010, david@lang.hm wrote:
+> On Sat, 7 Aug 2010, Mark Brown wrote:
 > 
-> I think we should disable it actually.  The comments on
-> pci_enable_device() and pci_disable_device() say that only the first and
-> last callers actually enable and disable it.  The others just increment
-> or decrement a counter.
-
-See this thread: http://lkml.org/lkml/2005/2/13/82
-
-Specifically this mail:
-
-    Date    Mon, 14 Feb 2005 14:51:26 -0500
-    From    Jeff Garzik <>
-
-    ...
-    You also need to consider situations such as out-of-tree drivers 
-    for the same hardware (might not use PCI API), and situations where you 
-    have peer devices discovered and used (PCI API doesn't have "hey, <this> 
-    device is associated with <current driver>, too" capability).
-    ...
-
-Searching for 'pci_disable_device() inurl:lkml' doesn't give me newer info
-aboud this problem, so I think it's better to play safe.
-
-
+> > On Fri, Aug 06, 2010 at 04:35:59PM -0700, david@lang.hm wrote:
+> >> On Fri, 6 Aug 2010, Paul E. McKenney wrote:
+... 
+> What we want to have happen in an ideal world is
 > 
-> regards,
-> dan carpenter
+> when the storage isn't needed (between reads) the storage should shutdown 
+> to as low a power state as possible.
 > 
-> > Move pci_enable_device() after checking moxa_boards[] to remove senseless
-> > pci_enable_device()/pci_disable_device().
-> > 
-> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> > ---
-> >  drivers/char/moxa.c |   12 +++++++-----
-> >  1 files changed, 7 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/char/moxa.c b/drivers/char/moxa.c
-> > index 107b0bd..0ea5aeb 100644
-> > --- a/drivers/char/moxa.c
-> > +++ b/drivers/char/moxa.c
-> > @@ -939,11 +939,6 @@ static int __devinit moxa_pci_probe(struct pci_dev *pdev,
-> >  	int board_type = ent->driver_data;
-> >  	int retval;
-> >  
-> > -	retval = pci_enable_device(pdev);
-> > -	if (retval) {
-> > -		dev_err(&pdev->dev, "can't enable pci device\n");
-> > -		goto err;
-> > -	}
-> >  
-> >  	for (i = 0; i < MAX_BOARDS; i++)
-> >  		if (moxa_boards[i].basemem == NULL)
-> > @@ -956,6 +951,12 @@ static int __devinit moxa_pci_probe(struct pci_dev *pdev,
-> >  		goto err;
-> >  	}
-> >  
-> > +	retval = pci_enable_device(pdev);
-> > +	if (retval) {
-> > +		dev_err(&pdev->dev, "can't enable pci device\n");
-> > +		goto err;
-> > +	}
-> > +
-> >  	board = &moxa_boards[i];
-> >  
-> >  	retval = pci_request_region(pdev, 2, "moxa-base");
-> > @@ -1001,6 +1002,7 @@ err_base:
-> >  	board->basemem = NULL;
-> >  err_reg:
-> >  	pci_release_region(pdev, 2);
-> > +	pci_disable_device(pdev);
-> >  err:
-> >  	return retval;
-> >  }
-> > -- 
-> > 1.7.0.4
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> when the CPU isn't needed (between decoding bursts) the CPU and as much of 
+> the system as possible (potentially including some banks of RAM) should 
+> shutdown to as low a power state as possible.
+
+Unfortunately, the criteria for "not being needed" are not really
+straightforward and one of the wakelocks' roles is to work around this issue.
+
+> today there are two ways of this happening, via the idle approach (on 
+> everything except Android), or via suspend (on Android)
+> 
+> Given that many platforms cannot go to into suspend while still playing 
+> audio, the idle approach is not going to be able to be eliminated (and in 
+> fact will be the most common approach to be used/deugged in terms of the 
+> types of platforms), it seems to me that there may be a significant amount 
+> of value in seeing if there is a way to change Android to use this 
+> approach as well instead of having two different systems competing to do 
+> the same job.
+
+There is a fundamental obstacle to that, though.  Namely, the Android
+developers say that the idle-based approach doesn't lead to sufficient energy
+savings due to periodic timers and "polling applications".  Technically that
+boils down to the interrupt sources that remain active in the idle-based case
+and that are shut down during suspend.  If you found a way to deactivate all of
+them from the idle context in a non-racy fashion, that would probably satisfy
+the Android's needs too.
+
+Thanks,
+Rafael
