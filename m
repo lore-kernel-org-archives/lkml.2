@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754020Ab0HGRh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 13:37:28 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35289 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752745Ab0HGRh0 (ORCPT
+	id S1753733Ab0HGR4s (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 13:56:48 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:36033 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752865Ab0HGR4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 13:37:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=fG/LKyACjcvXgMEvn7x4bWzgZpFpbPXFG1xUEFhfif3oNYa/vz2N/RLw2kUgJkx6jK
-         G2FJOysXFUMhg3Fo1LWfh4tucxqLQisCFCiLiuAgNFNm0z+SNorBY62TcAC4/8OppOo4
-         ThN8fYv3v1Y0OScV/OIbuDqZOziHJgHuxCQWQ=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] [CPUFREQ] add missing __percpu markup in pcc-cpufreq.c
-Date: Sun,  8 Aug 2010 02:37:23 +0900
-Message-Id: <1281202643-26709-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 7 Aug 2010 13:56:47 -0400
+Subject: Re: make 3.82 fails on powerpc defconfig update [was: Linux 2.6.35]
+From: Paul Smith <psmith@gnu.org>
+Reply-To: psmith@gnu.org
+To: Thomas Backlund <tmb@mandriva.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@ozlabs.org, bug-make@gnu.org
+In-Reply-To: <4C5686FF.9010803@mandriva.org>
+References: <AANLkTim8FALeVG+NPLNLEQChu=dPD=GHSpnxmZHYgsNx@mail.gmail.com>
+	 <4C5686FF.9010803@mandriva.org>
+Content-Type: text/plain; charset="us-ascii"
+Organization: GNU's Not Unix!
+Date: Sat, 07 Aug 2010 13:56:43 -0400
+Message-ID: <1281203803.5923.164.camel@homebase>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {678:box531.bluehost.com:madscie1:mad-scientist.us} {sentby:smtp auth 146.115.68.18 authed with paul+mad-scientist.us}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pcc_cpu_info is a percpu pointer but was missing __percpu markup.
-Add it.
+On Mon, 2010-08-02 at 11:51 +0300, Thomas Backlund wrote:
+> BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage%
+> treeImage.% cuImage.% simpleImage.%
+> 
+> Now, I dont know if this is "intended breakage" by the make update, or 
+> if the Makefile needs to be updated....
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The change is intentional.  Note, though, that this syntax was always
+dodgy, even in previous versions of GNU make.
 
-diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-index a36de5b..994230d 100644
---- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-+++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-@@ -110,7 +110,7 @@ struct pcc_cpu {
- 	u32 output_offset;
- };
- 
--static struct pcc_cpu *pcc_cpu_info;
-+static struct pcc_cpu __percpu *pcc_cpu_info;
- 
- static int pcc_cpufreq_verify(struct cpufreq_policy *policy)
- {
+If you wrote it exactly as you did, where all the explicit targets come
+first and all the implicit targets come second, then it seems to have
+been interpreted correctly.
+
+However, if you did it any other way (for example, put some explicit
+targets after the first implicit target) then make would silently throw
+away all the targets starting with the first implicit target.
+
+Since the syntax used here wasn't ever described in the documentation,
+rather than reworking it as a new feature I decided to follow the docs
+and disallow it, and be verbose about the error.
+
 -- 
-1.7.0.4
+-------------------------------------------------------------------------------
+ Paul D. Smith <psmith@gnu.org>          Find some GNU make tips at:
+ http://www.gnu.org                      http://make.mad-scientist.net
+ "Please remain calm...I may be mad, but I am a professional." --Mad Scientist
 
