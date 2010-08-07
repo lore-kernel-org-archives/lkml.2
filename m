@@ -1,152 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762506Ab0HGDTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 23:19:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47535 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168Ab0HGDT1 convert rfc822-to-8bit (ORCPT
+	id S1762502Ab0HGDVi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 23:21:38 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55424 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab0HGDVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 23:19:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1008061505070.9303-100000@netrider.rowland.org>
-References: <AANLkTinQD3ggLFVd2KvX95U2B_j=ZJquZgiBGieukJ+r@mail.gmail.com>
-	<Pine.LNX.4.44L0.1008061505070.9303-100000@netrider.rowland.org>
-Date: Fri, 6 Aug 2010 20:19:26 -0700
-Message-ID: <AANLkTinS_UyhRNMnViK_4aA4ve3thHhLthC+OM7cUMZc@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, swetland@google.com,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 6 Aug 2010 23:21:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:organization:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=pPvtvFeEUTQeUru2AEIgHACt+PIlrOFnohnvN1ozGtSxP6YKNjFalZfbM/ezaXZivf
+         fekGn8R9vWBVps/XIvINIyyQm9cb2Eog3fovOGn3EE/2Spo2G11Y9hGdvGP/uiFD9Y3b
+         91qKjOicfk5GLfcnUEJqnz4iu3kzQIEsF8R70=
+Date: Sat, 7 Aug 2010 19:21:22 +0800
+From: Ming Lei <tom.leiming@gmail.com>
+To: linux-kernel@vger.kernel.org, gregkh@suse.de
+Subject: TTY: warning in tty_lock on 2.6.35+gregkh tree
+Message-ID: <20100807192122.2005c856@tom-lei>
+Organization: private
+X-Mailer: Claws Mail 3.7.3 (GTK+ 2.16.6; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/6 Alan Stern <stern@rowland.harvard.edu>:
-> On Thu, 5 Aug 2010, Arve Hjønnevåg wrote:
->
->> count, tells you how many times the wakelock was activated. If a
->> wakelock prevented suspend for a long time a large count tells you it
->> handled a lot of events while a small count tells you it took a long
->> time to process the events, or the wakelock was not released properly.
->
-> As noted, we already have this.
->
 
-Almost. We have it when a device is passed in.
+Hi,
 
->> expire_count, tells you how many times the timeout expired. For the
->> input event wakelock in the android kernel (which has a timeout) an
->> expire count that matches the count tells you that someone opened an
->> input device but is not reading from it (this has happened several
->> times).
->
-> This is a little tricky.  Rafael's model currently does not allow
-> wakeup events started by pm_wakeup_event() to be cancelled any way
-> other than by having their timer expire.  This essentially means that
-> for some devices, expire_count will always be the same as count and for
-> others it will always be 0.  To change this would require adding an
-> extra timer struct, which could be done (in fact, an earlier version of
-> the code included it).  It would be nice if we could avoid the need.
->
-> Does Android use any kernel-internal wakelocks both with a timer and
-> with active cancellation?
->
+Following the ttty warning during kernel boot, seems it is for a long time
+in gregkh's tree.
 
-I don't know if they are all kernel-internal but these drivers appear
-to use timeouts and active cancellation on the same wakelock:
-wifi driver, mmc core, alarm driver, evdev (suspend blocker version
-removes the timeout).
-
->> wake_count, tells you that this is the first wakelock that was
->> acquired in the resume path. This is currently less useful than I
->> would like on the Nexus One since it is usually "SMD_RPCCALL" which
->> does not tell me a lot.
->
-> This could be done easily enough, but if it's not very useful then
-> there's no point.
->
-It is useful there is no other way to tell what triggered a wakeup,
-but it would probably be better to just track wakeup interrupts/events
-elsewhere.
-
->> active_since, tells you how long a a still active wakelock has been
->> active. If someone activated a wakelock and never released it, it will
->> be obvious here.
->
-> Easily added.  But you didn't mention any field saying whether the
-> wakelock is currently active.  That could be added too (although it
-> would be racy -- but for detecting unreleased wakelocks you wouldn't
-> care).
->
-
-These are the reported stats, not the fields in the stats structure.
-The wakelock code has an active flag. If we want to keep the
-pm_stay_wake nesting (which I would argue against), we would need an
-active count. It would also require a handle, which is a change Rafael
-said would not fly.
-
->> total_time, total time the wake lock has been active. This one should
->> be obvious.
->
-> Also easily added.
->
-Only with a handle passed to all the calls.
-
->> sleep_time, total time the wake lock has been active when the screen was off.
->
-> Not applicable to general systems.  Is there anything like it that
-> _would_ apply in general?
->
-
-The screen off is how it is used on android, the stats is keyed of
-what user space wrote to /sys/power/state. If "on" was written the
-sleep time is not updated.
-
->> max_time, longest time the wakelock was active uninterrupted. This
->> used less often, but the battery on a device was draining fast, but
->> the problem went away before looking at the stats this will show if a
->> wakelock was active for a long time.
->
-> Again, easily added.  The only drawback is that all these additions
-> will bloat the size of struct device.  Of course, that's why you used
-> separately-allocated structures for your wakelocks.  Maybe we can
-> change to do the same; it seems likely that the majority of device
-> structures won't ever be used for wakeup events.
->
-
-Since many wakelocks are not associated with s struct device we need a
-separate object for this anyway.
-
->> >> and I would prefer that the kernel interfaces would
->> >> encourage drivers to block suspend until user space has consumed the
->> >> event, which works for the android user space, instead of just long
->> >> enough to work with a hypothetical user space power manager.
->
-> Rafael doesn't _discourage_ drivers from doing this.  However you have
-> to keep in mind that many kernel developers are accustomed to working
-> on systems (mostly PCs) with a different range of hardware devices from
-> embedded systems like your phones.  With PCI devices(*), for example,
-> there's no clear point where a wakeup event gets handed off to
-> userspace.
->
-> On the other hand, there's no reason the input layer shouldn't use
-> pm_stay_awake and pm_relax.  It simply hasn't been implemented yet.
-...
-
-The merged user space interface makes this unclear to me. When I first
-used suspend on android I had a power manager process that opened all
-the input devices and reset a screen off timeout every time there was
-an input event. If the input layer uses pm_stay_awake to block suspend
-when the queue is not empty, this will deadlock with the current
-interface since reading the wake count will block forever if an input
-event occurred right after the power manager decides to suspend.
-
--- 
-Arve Hjønnevåg
+[    0.660082] ------------[ cut here ]------------
+[    0.660088] WARNING: at include/linux/tty.h:590 tty_lock+0x24/0x3e()
+[    0.660089] Hardware name:        
+[    0.660091] Modules linked in:
+[    0.660094] Pid: 1, comm: swapper Not tainted 2.6.35-gkh-wl+ #51
+[    0.660096] Call Trace:
+[    0.660101]  [<ffffffff8104766a>] warn_slowpath_common+0x80/0x98
+[    0.660105]  [<ffffffff81047697>] warn_slowpath_null+0x15/0x17
+[    0.660108]  [<ffffffff8123a5a3>] tty_lock+0x24/0x3e
+[    0.660111]  [<ffffffff8123d69c>] tty_open+0x60/0x4a4
+[    0.660115]  [<ffffffff810e81be>] chrdev_open+0x134/0x155
+[    0.660118]  [<ffffffff810e808a>] ? chrdev_open+0x0/0x155
+[    0.660122]  [<ffffffff810e4074>] __dentry_open+0x147/0x27d
+[    0.660125]  [<ffffffff810e426f>] nameidata_to_filp+0x3a/0x4b
+[    0.660137]  [<ffffffff810ef69c>] do_last+0x472/0x5b9
+[    0.660140]  [<ffffffff810efc1b>] do_filp_open+0x1ee/0x5f1
+[    0.660144]  [<ffffffff8106164a>] ? sched_clock_cpu+0xc3/0xce
+[    0.660147]  [<ffffffff8106aba1>] ? lockstat_clock+0x11/0x13
+[    0.660151]  [<ffffffff8136ff42>] ? _raw_spin_unlock+0x3e/0x4c
+[    0.660155]  [<ffffffff810f99f5>] ? alloc_fd+0x111/0x123
+[    0.660158]  [<ffffffff810e3e44>] do_sys_open+0x5e/0x10a
+[    0.660162]  [<ffffffff81059765>] ? flush_workqueue+0x0/0xa7
+[    0.660166]  [<ffffffff810e3f19>] sys_open+0x1b/0x1d
+[    0.660170]  [<ffffffff81892745>] kernel_init+0x1b5/0x222
+[    0.660174]  [<ffffffff8100a8e4>] kernel_thread_helper+0x4/0x10
+[    0.660177]  [<ffffffff81370694>] ? restore_args+0x0/0x30
+[    0.660181]  [<ffffffff81892590>] ? kernel_init+0x0/0x222
+[    0.660183]  [<ffffffff8100a8e0>] ? kernel_thread_helper+0x0/0x10
+[    0.660185] ---[ end trace f777fed7c0166a97 ]---
+[    0.660369] ------------[ cut here ]------------
+[    0.660372] WARNING: at include/linux/tty.h:590 tty_lock+0x24/0x3e()
+[    0.660374] Hardware name:        
+[    0.660375] Modules linked in:
+[    0.660378] Pid: 1, comm: swapper Tainted: G        W   2.6.35-gkh-wl+ #51
+[    0.660379] Call Trace:
+[    0.660382]  [<ffffffff8104766a>] warn_slowpath_common+0x80/0x98
+[    0.660386]  [<ffffffff81047697>] warn_slowpath_null+0x15/0x17
+[    0.660388]  [<ffffffff8123a5a3>] tty_lock+0x24/0x3e
+[    0.660391]  [<ffffffff8123dab9>] tty_open+0x47d/0x4a4
+[    0.660394]  [<ffffffff810e81be>] chrdev_open+0x134/0x155
+[    0.660397]  [<ffffffff810e808a>] ? chrdev_open+0x0/0x155
+[    0.660399]  [<ffffffff810e4074>] __dentry_open+0x147/0x27d
+[    0.660402]  [<ffffffff810e426f>] nameidata_to_filp+0x3a/0x4b
+[    0.660405]  [<ffffffff810ef69c>] do_last+0x472/0x5b9
+[    0.660408]  [<ffffffff810efc1b>] do_filp_open+0x1ee/0x5f1
+[    0.660411]  [<ffffffff8106164a>] ? sched_clock_cpu+0xc3/0xce
+[    0.660414]  [<ffffffff8106aba1>] ? lockstat_clock+0x11/0x13
+[    0.660417]  [<ffffffff8136ff42>] ? _raw_spin_unlock+0x3e/0x4c
+[    0.660420]  [<ffffffff810f99f5>] ? alloc_fd+0x111/0x123
+[    0.660430]  [<ffffffff810e3e44>] do_sys_open+0x5e/0x10a
+[    0.660433]  [<ffffffff81059765>] ? flush_workqueue+0x0/0xa7
+[    0.660437]  [<ffffffff810e3f19>] sys_open+0x1b/0x1d
+[    0.660440]  [<ffffffff81892745>] kernel_init+0x1b5/0x222
+[    0.660443]  [<ffffffff8100a8e4>] kernel_thread_helper+0x4/0x10
+[    0.660446]  [<ffffffff81370694>] ? restore_args+0x0/0x30
+[    0.660449]  [<ffffffff81892590>] ? kernel_init+0x0/0x222
+[    0.660452]  [<ffffffff8100a8e0>] ? kernel_thread_helper+0x0/0x10
+[    0.660454] ---[ end trace f777fed7c0166a98 ]---
