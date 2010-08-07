@@ -1,134 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762439Ab0HGCmq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 22:42:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:65170 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab0HGCmm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 22:42:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mpU5jFedN0WYrPJOp+ZN+kBs7wQZ+zB66zEzHHYe3QVoTQqXKnM7/W3PBVyoEK5eX5
-         p5K6Wcfd1h5L2oQHZ04z4DgZ+52DTfh2meXG6V5LjF/SoIXNf24Inby1tBYLeajgsNWf
-         E8Fu11l3yiF9ERvG1Ah65G3+7QURZP94RiXks=
-MIME-Version: 1.0
-In-Reply-To: <20100807102901.6a0b53e7@notabene>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<1280524978.2452.9.camel@segv.aura.of.mankind>
-	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
-	<20100805235218.GB31233@jeremy-laptop>
-	<20100806133836.49757af9@notabene>
-	<AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
-	<20100807093057.7683bedd@notabene>
-	<AANLkTikDBg5Brt=55Tsu8ozk0aVx=srpxP=U-sFqeBYL@mail.gmail.com>
-	<20100807102901.6a0b53e7@notabene>
-Date: Fri, 6 Aug 2010 21:42:41 -0500
-Message-ID: <AANLkTinEFFAWMu62j2sCPy=ArExZNm2miJOGoXbG65jC@mail.gmail.com>
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
-	file stats available [ver #6]
-From: Steve French <smfrench@gmail.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Jeremy Allison <jra@samba.org>, Jeff Layton <jlayton@redhat.com>,
-        utz lehmann <lkml123@s2y4n2c.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1762479Ab0HGCp1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 22:45:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33563 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761146Ab0HGCpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 22:45:22 -0400
+Date: Sat, 7 Aug 2010 12:45:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning after merge of the ext4 tree
+Message-Id: <20100807124515.d26dc4e0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__7_Aug_2010_12_45_15_+1000_e3Yb1WqZSG955S/r"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 7:29 PM, Neil Brown <neilb@suse.de> wrote:
-> On Fri, 6 Aug 2010 18:58:42 -0500
-> Steve French <smfrench@gmail.com> wrote:
->
->> On Fri, Aug 6, 2010 at 6:30 PM, Neil Brown <neilb@suse.de> wrote:
->> > On Thu, 5 Aug 2010 22:55:06 -0500
->> > Steve French <smfrench@gmail.com> wrote:
->> >
->> >> On Thu, Aug 5, 2010 at 10:38 PM, Neil Brown <neilb@suse.de> wrote:
->> >> > On Thu, 5 Aug 2010 16:52:18 -0700
->> >> > Jeremy Allison <jra@samba.org> wrote:
->> >>
->> >> >> Don't add it as an EA. It's *not* an EA, it's a timestamp.
->> >> >
->> >> > I'm curious.  Why do you particularly care what interface the kernel uses to
->> >> > provide you with access to this attribute?
->> >> >
->> >> > And given that it is an attribute that is not part of 'POSIX' or "UNIX", it
->> >> > would seem to be an extension - an extended attribute.
->> >> > As the Linux kernel does virtually nothing with this attribute except provide
->> >> > access, it seems to be a very different class of thing to other timestamps.
->> >> > Surely it is simply some storage associated with a file which is capable of
->> >> > storing a timestamp, which can be set or retrieved by an application, and
->> >> > which happens to be initialised to the current time when a file is created.
->> >> >
->> >> > Yes, to you it is a timestamp.  But to Linux it is a few bytes of
->> >> > user-settable metadata.  Sounds like an EA to me.
->> >> >
->> >> > Or do you really want something like BSD's 'btime' which as I understand it
->> >> > cannot be set.  Would that be really useful to you?
->> >>
->> >> Obviously the cifs and SMB2 protocols which  Samba server support can
->> >> ask the server to set the create time of a file (this is handled
->> >> through xattrs today along with the "dos attribute" flags such as
->> >> archive/hidden/system), but certainly it is much more common (and
->> >> important) to read the creation time of an existing file.
->> >>
->> >
->> > Just a point of clarification - when you say it is common and important to be
->> > able to read the creation time on an existing file, and you still talking in
->> > the context of cifs/smb windows compatibility, or are you talking in the
->> > broader context?
->> > If you are referring to a broader context could be please give more details
->> > because I have not heard any mention of any real value of creation-time out
->> > side of window interoperability - have such a use clearly documented would
->> > assist the conversation I think.
->> >
->> > If on the other hand you are just referring the the windows interoperability
->> > context ... given that you have to read an EA if the create-time has been
->> > changed, you will always have to read and EA so having something else is
->> > pointless ... or I'm missing something.
->>
->> There are other cases, less common than cifs and smb2.   One
->> that comes to mind is NFS version 4, but there are a few other
->> cases that I have heard of (backup/archive applications).
->> The RFC recommends that servers return attribute 50 (creation
->> time).  See below text:
->>
->>    time_create         50   nfstime4       R/W      The time of creation
->>                                                     of the object.  This
->>                                                     attribute does not
->>                                                     have any relation to
->>                                                     the traditional UNIX
->>                                                     file attribute
->>                                                     "ctime" or "change
->>                                                     time".
->
-> I really don't think NFSv4 is a separate justification.  I'm fairly sure
-> that attribute was only including in NFSv4 for enhanced Windows
-> compatibility (windows interoperation was a big issue during the protocol
-> development).
+--Signature=_Sat__7_Aug_2010_12_45_15_+1000_e3Yb1WqZSG955S/r
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Perhaps also useful for MacOS (and other BSD), not just Windows,
-although MacOS may use cifs more often than nfs.
+Hi Ted,
 
+After merging the ext4 tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
+fs/jbd2/transaction.c: In function 'start_this_handle':
+fs/jbd2/transaction.c:98: warning: unused variable 'ts'
 
+Introduced by commit 8dd420466c7bfc459fa04680bd5690bfc41a4553 ("jbd2:
+Remove t_handle_lock from start_this_handle()") which modev the only uses
+of this variable inside a section of code protected by CONFIG_JBD2_DEBUG.
 
--- 
-Thanks,
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Steve
+--Signature=_Sat__7_Aug_2010_12_45_15_+1000_e3Yb1WqZSG955S/r
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMXMi7AAoJEDMEi1NhKgbsKSsH/1xquYPmFZQQYrvxEAAujVx9
+9a8PQli9foDA5HlvMmWSOeL8sArhGv489xypnzBNvtVeK1+EkBhd5Ebliss7NMXY
+PKR1X6dq1Nihnw9kCmxiT78bP7SOdPwcHWpgIavAxli7zDR/For5eb/RX1syfXmv
+FbJkIdaHA8QKpN1n3rY01Xxk1pSTyTCP6GtTPemxXqkq81hvFTfR2oavBRrjnxxN
+LcNI/3WSbO7yy66Nbz1LQ/kisdHADk7uyTpcr9JzS5eovVh8bUMeWhg27O9LiSqX
+5d7C8/ic9uVavh0fIkAHNd+MdgZnUgRWazvXyMxo+2qIOjJfmCHzXl4grr5GrjA=
+=NV82
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__7_Aug_2010_12_45_15_+1000_e3Yb1WqZSG955S/r--
