@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480Ab0HGP7H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 11:59:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59353 "EHLO
+	id S1753570Ab0HGQDX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 12:03:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41716 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab0HGP7F (ORCPT
+	with ESMTP id S1752513Ab0HGQDV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 11:59:05 -0400
+	Sat, 7 Aug 2010 12:03:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NvBGz008TT7OSxBm13dnoxKQczaCPmU+HddRtPk6jjKoCpovjt9kMHT7rZ6RBBOLRQ
-         Knl1lfsmukQwBJOqKAIjnwIgEWPD4sfqdc01wSjW+c6SWytz0apz1i5TGCJ1xZMMwYcU
-         GNWCidBltp2gqle9tSQA64B7W9eWOE6ajUUtg=
+        b=jXnLzchF/1KWiHAfC3OGgLpAIV0EYb/KkULKO4qmMrYJRrL5PGClOezEwVtAZPNkvA
+         HSJYWGKAKhT7sDvprF37CFd7BXoKGV/zIleHiNtfgKaQS3z46du2eaY59ZnP2bB8hw9n
+         lylASDio+T2B7p0gHxpv+OWBs/ropN1DgoLfs=
 Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
 From: Maxim Levitsky <maximlevitsky@gmail.com>
 To: Alex Dubov <oakad@yahoo.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <494015.19325.qm@web37608.mail.mud.yahoo.com>
-References: <494015.19325.qm@web37608.mail.mud.yahoo.com>
+In-Reply-To: <815343.24396.qm@web37602.mail.mud.yahoo.com>
+References: <815343.24396.qm@web37602.mail.mud.yahoo.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 Aug 2010 18:58:58 +0300
-Message-ID: <1281196738.3300.2.camel@maxim-laptop>
+Date: Sat, 07 Aug 2010 19:03:15 +0300
+Message-ID: <1281196995.3300.6.camel@maxim-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,74 +30,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-07 at 06:15 -0700, Alex Dubov wrote: 
-> > > > > > > > 
-> > > > > > > > That's how its called in the
-> > spec.
-> > > > > > > > Sectors can be larger than
-> > 512b on
-> > > > Pro-HG sticks, and
-> > > > > > > there's additional
-> > > > > > > > TPC_READ/WRITE_QUAD_DATA
-> > which operates
-> > > > on larger
-> > > > > > > quantities.
-> > > > > > > But not on ordinary PRO, right?
-> > > > > > 
-> > > > > > Pro sectors are normally 512 bytes.
-> > > > > > 
-> > > > > > > 
-> > > > > > > Small question, can I use Pro-HG
-> > stick in my
-> > > > reader that is
-> > > > > > > designed for
-> > > > > > > Standard/PRO only? Does your
-> > subsystem
-> > > > support it?
-> > > > > > 
-> > > > > > It should work. It works for me on TI,
-> > which has
-> > > > no 8b mode either.
-> > > > > In that case, is there an upper limit on
-> > sector size?
-> > > > Also, you don't use the MS_TPC_READ_QUAD_DATA at
-> > all.
-> > > > So mspro_blk.c won't work with >512
-> > bytes/sector disk?
-> > > > Or there is some compatibility?
+On Sat, 2010-08-07 at 06:12 -0700, Alex Dubov wrote: 
+> > > > 
+> > > > Btw, I want to add a callback from driver to card
+> > driver to
+> > > > be able to
+> > > > reset card in case of error (windows driver does
+> > that in
+> > > > case of any
+> > > > error)
+> > > > 
+> > > > I would use most of the mspro_block_resume for
+> > the
+> > > > implementation for
+> > > > mspro.
+> > > > 
+> > > > Any objections, suggestions?
 > > > > 
 > > > 
-> > > The code can work with arbitrarily sized pages, 512b
-> > > value is not hard coded. All that is needed is to
-> > slightly alter 
-> > > h_mspro_block_transfer_data function, given, of
-> > course, that adapters
-> > > support longer transfer 
+> > > Just toggle a power on it. Power off/power on will do
+> > the full reset of
+> > > the controller and the media. You don't have to
+> > reinitialize it, as you
+> > > are sure that it's the same stick.
 > > 
-> > No, I mean if I go and buy memstick PRO HG, that has >
-> > 512 bytes/sector,
-> > will it work with current code?
-> > 
-> > Btw, there is currently no way of telling core about
-> > maximum transfer
-> > length.
-> > Here absolute maximum is 1024 (number of bit that _might_
-> > hold TPC
-> > length), and FIFO size is 512 bytes (maybe its possible to
-> > use fifo
-> > twice)
+> > Yea, but after such reboot, the device will be in serial
+> > mode. So, I
+> > will need to send switch TPC to device. My driver doesn't
+> > know how to do
+> > that...., so it would be nice to have callback to the
+> > core.
 > > 
 > 
-> On TI adapters, FIFO can be reused and DMA restarted. Jmicron adapters are
-> funny beasts, but their team is keen to support MSpro-HG, so at some
-> point it will be fully possible, though, probably, not with every version
-> of the chipset.
-> 
+> Lets ask a different question: why do you think this
+> particular functionality is needed at all? Have you encountered any
+> problems which require it (I haven't, btw)?
 
-I still need an answer for whether HG sticks need MS_TPC_READ_QUAD_DATA
-to be used.
+I would image using this to verify that stick is still in place on I/O
+error.
 
-But anyway, I buy a HG stick and see how it works.
+If I just power  down/up it, it will loose state, for example IO mode,
+reg range, etc...
+
+But anyway, this isn't very important.
 
 Best regards,
 Maxim Levitsky
