@@ -1,128 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754658Ab0HGFsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 01:48:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38438 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab0HGFsm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 01:48:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=wsJUC9YhaEh9MnuzPbo25WdjB9HHeKRedzUcgzx5EkiQnCVJzUfNrIZhvj638/yrKk
-         v2gS7Fhl5HutMXz4JbqzJ5IEhp1gn4bAI0xRQ4+UtMZ5zzqL6pyZ74ee3sgWVn2FVRBT
-         4wXzTmCJhJyw4NxiQ7Vq4ahGA9kleVML7tDJA=
-MIME-Version: 1.0
-Date: Fri, 6 Aug 2010 22:48:40 -0700
-Message-ID: <AANLkTinPtkUsVz6GYBgYMfgGKTJ88cyRfvdLcjtE5m4x@mail.gmail.com>
-Subject: kernel BUG at fs/ext4/mballoc.c:2993!
-From: Justin Mattock <justinmattock@gmail.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: gcc@gcc.gnu.org, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754320Ab0HGGHV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 02:07:21 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60556 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752685Ab0HGGHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 02:07:19 -0400
+Date: Sat, 7 Aug 2010 16:07:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for August 7
+Message-Id: <20100807160710.b7c8d838.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__7_Aug_2010_16_07_10_+1000_RT.Wl3w.PluO2O7U"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hello,
-I just built a fresh clfs system using the tutorial.. right now Im
-able to boot and am able to login, the system seems to be running as
-it should except for when I try to install gmp and/or do a /sbin/lilo
-I see a message appear on screen(below) then if I do any kind of
-command(dmesg > dmesg) I get a stuck screen. has there been anything
-similar to the below message?
+--Signature=_Sat__7_Aug_2010_16_07_10_+1000_RT.Wl3w.PluO2O7U
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-keep in mind the kernel I'm using is 2.6.35-rc6 which on other
-machines(same type of system) run just fine without such message.
+Hi all,
 
-only real thing different that I did with this build was build the
-latest gcc with gmp/mpfr/mpc inside gcc source directory instead of
-installing them on the system then using the switches to there
-location.
+As the merge window is open, please do not add 2.6.37 material to your
+linux-next included trees until after 2.6.36-rc1.
 
+Changes since 20100806:
 
+The s5p tree lost a conflict.
 
-<0>[   48.976957] ------------[ cut here ]------------
-<2>[   48.977187] kernel BUG at fs/ext4/mballoc.c:2993!
-<0>[   48.977415] invalid opcode: 0000 [#1] SMP
+The mips tree lost its conflicts.
 
-<0>[   48.977694] last sysfs file: /sys/devices/virtual/vc/vcsa12/uevent
-<4>[   48.977873] CPU 0
-<4>[   48.977873] Modules linked in: uvcvideo videodev v4l1_compat
-firewire_ohci firewire_core ohci1394 i2c_nforce2 ohci_hcd forcedeth
-evdev thermal button aes_x86_64 lzo lzo_decompress lzo_compress tun
-kvm_intel ipcomp xfrm_ipcomp crypto_null sha256_generic cbc
-des_generic cast5 blowfish serpent camellia twofish twofish_common ctr
-ah4 esp4 authenc adm1021 raw1394 ieee1394 uhci_hcd ehci_hcd hci_uart
-rfcomm btusb hidp l2cap bluetooth coretemp acpi_cpufreq processor
-mperf appletouch applesmc
-<4>[   48.977873]
-<4>[   48.977873] Pid: 1482, comm: lilo Not tainted 2.6.35-rc6 #1
-Mac-F2218FC8/iMac9,1
-<4>[   48.977873] RIP: 0010:[<ffffffff81150b02>]  [<ffffffff81150b02>]
-ext4_mb_normalize_request+0x2d3/0x342
-<4>[   48.977873] RSP: 0018:ffff880137a6fa88  EFLAGS: 00010206
-<4>[   48.977873] RAX: ffff88013eef0000 RBX: ffff880138ee5000 RCX:
-0000000000000010
-<4>[   48.977873] RDX: 0000000000000010 RSI: 0000000000000010 RDI:
-ffff88013eee1568
-<4>[   48.977873] RBP: ffff880137a6fad8 R08: 000000000001fff0 R09:
-ffff880137a6fb08
-<4>[   48.977873] R10: 0000000100006e10 R11: ffff880137a6fc30 R12:
-0000000000000010
-<4>[   48.977873] R13: ffff880137a6fc10 R14: 000000000001fff0 R15:
-0000000000020000
-<4>[   48.977873] FS:  00007f58b5b65700(0000)
-GS:ffff880001a00000(0000) knlGS:0000000000000000
-<4>[   48.977873] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-<4>[   48.977873] CR2: 0000000000669018 CR3: 0000000138463000 CR4:
-00000000000406f0
-<4>[   48.977873] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-<4>[   48.977873] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-<4>[   48.977873] Process lilo (pid: 1482, threadinfo
-ffff880137a6e000, task ffff880137310f60)
-<0>[   48.977873] Stack:
-<4>[   48.977873]  0000000000000000 0000000000008050 ffff880138faaca8
-0002000081150729
-<4>[   48.977873] <0> ffff880137a6fb08 ffff880137a6fc10
-ffff880137a6fc64 ffff88013eee1568
-<4>[   48.977873] <0> ffff880138ee5000 0000000000000000
-ffff880137a6fb58 ffffffff81154ca0
-<0>[   48.977873] Call Trace:
-<4>[   48.977873]  [<ffffffff81154ca0>] ext4_mb_new_blocks+0x173/0x3d3
-<4>[   48.977873]  [<ffffffff8114a36f>] ? ext4_ext_find_extent+0x45/0x2a6
-<4>[   48.977873]  [<ffffffff8114d2f6>] ext4_ext_map_blocks+0x1732/0x1aeb
-<4>[   48.977873]  [<ffffffff811cc9e4>] ?
-radix_tree_gang_lookup_tag_slot+0x81/0xa2
-<4>[   48.977873]  [<ffffffff810bb944>] ? pagevec_lookup_tag+0x20/0x29
-<4>[   48.977873]  [<ffffffff8113477b>] ext4_map_blocks+0x115/0x1f4
-<4>[   48.977873]  [<ffffffff8113672b>] mpage_da_map_blocks+0xeb/0x364
-<4>[   48.977873]  [<ffffffff81144cf9>] ? ext4_journal_start_sb+0xc7/0x103
-<4>[   48.977873]  [<ffffffff811370b5>] ext4_da_writepages+0x330/0x579
-<4>[   48.977873]  [<ffffffff813e88a9>] ? mutex_unlock+0x9/0xb
-<4>[   48.977873]  [<ffffffff810b555f>] ? generic_file_aio_write+0x84/0xa4
-<4>[   48.977873]  [<ffffffff810bafa7>] do_writepages+0x1f/0x28
-<4>[   48.977873]  [<ffffffff810b4f5c>] __filemap_fdatawrite_range+0x4e/0x50
-<4>[   48.977873]  [<ffffffff810b4fee>] filemap_write_and_wait_range+0x28/0x51
-<4>[   48.977873]  [<ffffffff811030ca>] vfs_fsync_range+0x36/0x79
-<4>[   48.977873]  [<ffffffff8110316b>] vfs_fsync+0x17/0x19
-<4>[   48.977873]  [<ffffffff81103196>] do_fsync+0x29/0x3e
-<4>[   48.977873]  [<ffffffff81103433>] sys_fdatasync+0xe/0x12
-<4>[   48.977873]  [<ffffffff810263c2>] system_call_fastpath+0x16/0x1b
-<0>[   48.977873] Code: 44 8b 45 b8 8b 43 10 89 c2 49 39 d7 7f 07 41
-39 c4 76 02 0f 0b 4d 85 f6 74 11 48 8b 7b 08 48 8b 87 28 03 00 00 4c
-3b 70 10 76 02 <0f> 0b 44 89 63 20 44 89 43 2c 49 8b 75 28 48 85 f6 74
-1f 41 8b
-<1>[   48.977873] RIP  [<ffffffff81150b02>]
-ext4_mb_normalize_request+0x2d3/0x342
-<4>[   48.977873]  RSP <ffff880137a6fa88>
-<4>[   48.994547] ---[ end trace 5f3a007a6b3c50ca ]---
+The genesis tree lost its conflict.
 
+The cifs tree lost its build failure.
 
+The mtd tree gained a conflict against Linus' tree.
 
+The block tree lost its conflict.
 
--- 
-Justin P. Mattock
+The kgdb tree gained a conflict against Linus' tree and a build failure
+so I used the version from next-20100806.
+
+The tip tree lost its conflicts.
+
+The staging-next tree lost its conflicts.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 169 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+Merging tegra/for-next
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+CONFLICT (content): Merge conflict in drivers/Makefile
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Applying: ceph: update for removal of request flag wrappers
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+CONFLICT (content): Merge conflict in fs/ext4/inode.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_aops.c
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/nilfs2/super.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_aops.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+Applying: v9fs: fixup for inode_setattr being removed
+Applying: xfs: update tracing for clear_inode to evit_inode transition
+Applying: cifs: fix for clear_inode -> evict_inode API change
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+CONFLICT (content): Merge conflict in drivers/xen/Kconfig
+CONFLICT (content): Merge conflict in drivers/xen/Makefile
+CONFLICT (content): Merge conflict in include/xen/xen-ops.h
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ux500/devices-db8500.c
+Merging net/master
+Merging wireless/master
+Merging mtd/master
+CONFLICT (content): Merge conflict in drivers/mtd/maps/Kconfig
+CONFLICT (delete/modify): drivers/mtd/maps/redwood.c deleted in mtd/master =
+and modified in HEAD. Version HEAD of drivers/mtd/maps/redwood.c left in tr=
+ee.
+$ git rm -f drivers/mtd/maps/redwood.c
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in arch/um/drivers/hostaudio_kern.c
+CONFLICT (content): Merge conflict in kernel/module.c
+Applying: nfs: update for module_param_named API change
+Applying: AppArmor: update for module_param_named API change
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+CONFLICT (content): Merge conflict in drivers/md/dm.c
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+CONFLICT (content): Merge conflict in drivers/power/Kconfig
+CONFLICT (content): Merge conflict in drivers/power/Makefile
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+CONFLICT (content): Merge conflict in include/linux/rcupdate.h
+$ git reset --hard HEAD^
+Merging refs/next/20100806/kgdb
+CONFLICT (content): Merge conflict in Documentation/DocBook/kgdb.tmpl
+CONFLICT (content): Merge conflict in include/linux/console.h
+CONFLICT (content): Merge conflict in kernel/trace/trace.h
+[master c2fc336] Merge commit 'refs/next/20100806/kgdb'
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/io.h
+CONFLICT (content): Merge conflict in arch/arm/kernel/entry-armv.S
+CONFLICT (content): Merge conflict in arch/arm/mm/cache-l2x0.c
+CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
+CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
+CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
+CONFLICT (content): Merge conflict in include/asm-generic/unistd.h
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging tip/auto-latest
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/sata_fsl.c
+CONFLICT (content): Merge conflict in drivers/ata/sata_mv.c
+CONFLICT (content): Merge conflict in drivers/ata/sata_nv.c
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+CONFLICT (content): Merge conflict in fs/cifs/cifsfs.c
+CONFLICT (content): Merge conflict in fs/cifs/cifsglob.h
+CONFLICT (content): Merge conflict in fs/cifs/file.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+CONFLICT (content): Merge conflict in include/linux/workqueue.h
+CONFLICT (content): Merge conflict in kernel/trace/Kconfig
+CONFLICT (content): Merge conflict in kernel/workqueue.c
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+CONFLICT (content): Merge conflict in mm/memory-failure.c
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+CONFLICT (content): Merge conflict in drivers/char/vt.c
+CONFLICT (content): Merge conflict in include/linux/serial_core.h
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Sat__7_Aug_2010_16_07_10_+1000_RT.Wl3w.PluO2O7U
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMXPgOAAoJEDMEi1NhKgbsOOIH/1zoCtrx5g1bKmJxGHz4Fwfs
+WvABPMra/Rithq96k91YhmmBiHlgyZmUdu1w4tzrJOniR9KW0HThZ9TUSScHPu0I
+Xs5MoYhydrskEZ7FZXwhPXpY0c7aDQMQReZzG2zIvGVL71TMaXizqd2x5miwtt8/
+iCJPyg62GtPSperiqUdaEjfOVTOoJvKO3IVS2fXQ+FXoIg0j2p0sD2RNxCqTv+17
+wumXcfp0IJEAzWFY3484n0IhaYwfQpk0pAGarf5ZqNrewhh1lNfViFePqzcRjhyr
+WhU0xPH0Bfks+iD0XZLsSebP08WfA95L81OLEj3GM1EKesvexC1GNCQcaRLvh+4=
+=GPPO
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__7_Aug_2010_16_07_10_+1000_RT.Wl3w.PluO2O7U--
