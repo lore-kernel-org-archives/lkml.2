@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753377Ab0HGMZR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 08:25:17 -0400
-Received: from lo.gmane.org ([80.91.229.12]:35271 "EHLO lo.gmane.org"
+	id S1761576Ab0HGMZr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 08:25:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36955 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752996Ab0HGMZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 08:25:13 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Alexander Clouter <alex@digriz.org.uk>
-Subject: Re: [PATCH]exit.c: support larger exit code
-Date: Sat, 7 Aug 2010 11:41:33 +0100
-Message-ID: <trpvi7-qh6.ln1@chipmunk.wormnet.eu>
-References: <14414B36FFA0F1418CB707361EAA199A0194F7D2@CNBEEXC006.nsn-intra.net> <20100806124456.GA9107@redhat.com>
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
-User-Agent: tin/1.9.3-20080506 ("Dalintober") (UNIX) (Linux/2.6.26-2-sparc64-smp (sparc64))
+	id S1753053Ab0HGMZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 08:25:45 -0400
+Message-ID: <4C5D50AF.2070906@kernel.org>
+Date: Sat, 07 Aug 2010 14:25:19 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: percpu: handle __percpu notations in UP accessors
+References: <1281119187-12640-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1281119187-12640-1-git-send-email-namhyung@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 07 Aug 2010 12:25:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov <oleg@redhat.com> wrote:
->>
->> Nowadays userspace application use systemcall exit/exit_group only
->> support one byte exit code.
->> In some cases this exit code range is too small for some "big
->> application"(like telecom software, 255 is not enough).
->>
->> So we can give some "big application" a chance to get larger exit code
->> from child process.
->> For other application don't want use larger exit code, they can use
->> marco WEXITSTATUS to get lower one byte exit code.
->>
->> #define WEXITSTATUS(status)   __WEXITSTATUS (__WAIT_INT (status))
->> --- stdlib.h
->> #define       __WEXITSTATUS(status)   (((status) & 0xff00) >> 8)
->> --- usrbits/waitstatus.h
->>
->>
->> diff --git a/kernel/exit.c b/kernel/exit.c
->> index ceffc67..8b13676 100644
->> --- a/kernel/exit.c
->> +++ b/kernel/exit.c
->> @@ -1045,7 +1045,7 @@ EXPORT_SYMBOL(complete_and_exit);
->>
->>  SYSCALL_DEFINE1(exit, int, error_code)
->>  {
->> -       do_exit((error_code&0xff)<<8);
->> +       do_exit(error_code << 8);
->>  }
->>
->>  /*
->> @@ -1086,7 +1086,7 @@ do_group_exit(int exit_code)
->>   */
->>  SYSCALL_DEFINE1(exit_group, int, error_code)
->>  {
->> -       do_group_exit((error_code & 0xff) << 8);
->> +       do_group_exit(error_code << 8);
->>         /* NOTREACHED */
->>         return 0;
->>  }
-> 
-> Hmm. Looking at this patch, I am wondering what was the reason for the
-> current one-byte limitation.
->
-The one byte limitation I think is all that is needed to give an 
-impression and *hint* of what went wrong, it was not ever meant to cover 
-every possible error that the child process could report.  Even "small 
-programs" could generate $BIGNUM error codes it could be argued.
+>From 18cb2aef91b37dbce2bec2f39bb1dddd0e9dd838 Mon Sep 17 00:00:00 2001
+From: Namhyung Kim <namhyung@gmail.com>
+Date: Sat, 7 Aug 2010 03:26:23 +0900
 
-Looking at the list for reserved exitcodes[1] everything covers 
-operational use and then if you look to /usr/include/sysexits.h for an 
-idea of the 'spirit' behind exitcodes, it is pretty clear it is all 
-rather 'generic' and vague to the precise reason, but it categorises 
-the type of error to maybe something the parent could gracefully handle.  
-It is not a freetext communications channel :)
+UP accessors didn't take care of __percpu notations leading to a lot
+of spurious sparse warnings on UP configurations.  Fix it.
 
-If you have $BIGNUM outcomes of errors, you probably should not be using 
-the exitcode path to communicate this information back up, although I 
-would agree it looks like very natural solution.  I would be more 
-inclined to pass up to the parent this information via a pipe (whether 
-that is via stdout, stderr or even a filesystem located pipe).  No doubt 
-if you are trying to return $BIGNUM error codes, you probably want to 
-look more to an approach based on the one covered in RFC3463; there if 
-you return a sysexits.h type code then the child's STDOUT is consulted 
-for the extended error code reason...I think this approach is *very* 
-nice.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Applied to wq#for-next w/ slight commit description and whitespace
+updates.
 
-Cheers
+Thanks.
 
-[1] http://tldp.org/LDP/abs/html/exitcodes.html#EXITCODESREF
-[2] http://tools.ietf.org/html/rfc3463
+ include/asm-generic/percpu.h |   15 ++++++++++-----
+ include/linux/percpu.h       |    2 +-
+ 2 files changed, 11 insertions(+), 6 deletions(-)
 
+diff --git a/include/asm-generic/percpu.h b/include/asm-generic/percpu.h
+index b5043a9..08923b6 100644
+--- a/include/asm-generic/percpu.h
++++ b/include/asm-generic/percpu.h
+@@ -70,11 +70,16 @@ extern void setup_per_cpu_areas(void);
+
+ #else /* ! SMP */
+
+-#define per_cpu(var, cpu)			(*((void)(cpu), &(var)))
+-#define __get_cpu_var(var)			(var)
+-#define __raw_get_cpu_var(var)			(var)
+-#define this_cpu_ptr(ptr) per_cpu_ptr(ptr, 0)
+-#define __this_cpu_ptr(ptr) this_cpu_ptr(ptr)
++#define VERIFY_PERCPU_PTR(__p) ({			\
++	__verify_pcpu_ptr((__p));			\
++	(typeof(*(__p)) __kernel __force *)(__p);	\
++})
++
++#define per_cpu(var, cpu)	(*((void)(cpu), VERIFY_PERCPU_PTR(&(var))))
++#define __get_cpu_var(var)	(*VERIFY_PERCPU_PTR(&(var)))
++#define __raw_get_cpu_var(var)	(*VERIFY_PERCPU_PTR(&(var)))
++#define this_cpu_ptr(ptr)	per_cpu_ptr(ptr, 0)
++#define __this_cpu_ptr(ptr)	this_cpu_ptr(ptr)
+
+ #endif	/* SMP */
+
+diff --git a/include/linux/percpu.h b/include/linux/percpu.h
+index b8b9084..49466b1 100644
+--- a/include/linux/percpu.h
++++ b/include/linux/percpu.h
+@@ -149,7 +149,7 @@ extern void __init percpu_init_late(void);
+
+ #else /* CONFIG_SMP */
+
+-#define per_cpu_ptr(ptr, cpu) ({ (void)(cpu); (ptr); })
++#define per_cpu_ptr(ptr, cpu) ({ (void)(cpu); VERIFY_PERCPU_PTR((ptr)); })
+
+ /* can't distinguish from other static vars, always false */
+ static inline bool is_kernel_percpu_address(unsigned long addr)
 -- 
-Alexander Clouter
-.sigmonster says: If in doubt, mumble.
+1.7.1
 
