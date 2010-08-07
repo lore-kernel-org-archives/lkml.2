@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753558Ab0HGNHW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 09:07:22 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38536 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751515Ab0HGNHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 09:07:21 -0400
-Date: Sat, 7 Aug 2010 14:07:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
-        kevin granade <kevin.granade@gmail.com>,
-        Arve Hj?nnev?g <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-Message-ID: <20100807130718.GC11817@opensource.wolfsonmicro.com>
-References: <alpine.DEB.2.00.1008051715520.30632@asgard.lang.hm> <AANLkTikOuY-q42mDRmxc-9W0uLeJeW-hiFG26WrV7CfU@mail.gmail.com> <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm> <20100806123047.GE31326@sirena.org.uk> <20100806172226.GH2432@linux.vnet.ibm.com> <20100806173325.GA25367@rakim.wolfsonmicro.main> <20100806181832.GJ2432@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061517130.30564@asgard.lang.hm> <20100807001431.GA3252@opensource.wolfsonmicro.com> <20100807003642.GQ2432@linux.vnet.ibm.com>
+	id S1759223Ab0HGNMy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 09:12:54 -0400
+Received: from web37602.mail.mud.yahoo.com ([209.191.87.85]:43088 "HELO
+	web37602.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753021Ab0HGNMw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 09:12:52 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=SL8xh8vzUvy1w50tfh73izfGRN3JuiowNuJu4K7NCasBnftnF1rdDsndlZAA2a2OTM7LXVzZ9cFdHxaEU4RuaVFRQPFDLy0LlPtWr3uu1dB1/w2w4IzMupSS2UDcY+1zY8JL1MFloW/LU0L2OFxkdt93KH+dkXeHORwps8LhYK8=;
+Message-ID: <815343.24396.qm@web37602.mail.mud.yahoo.com>
+X-YMail-OSG: qZ1Nt.oVM1n7KAkuLip4R6u3lCOKxJDpCeMcVIK6UJvCNO_
+ EGefKDyXpngb5a4lanvTXlzWyjs0NFxuTXl8LBvJmQDemEJq0sIh2FDvz9dX
+ TYLem38z4srcjjE93DdpLa6VVLVmAAp2xBbVCe5d9r5QJ5Mse.9yW7rNPNEP
+ Qtb886oklPY15SoXdCMY9PSagEcBKsTsRj8rP3ax68vdO8e12MVfGbLzSFCp
+ Azz8ODTRHOrD_8cZoxy9e5eyVWolFUnN4X3q3z_GefNKD0vOZsHb4j6VTwOp
+ 8C9by8evwELWeAehjrjdBPc3EitR9paqlU5s22iA-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Sat, 7 Aug 2010 06:12:49 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281092355.5213.6.camel@maxim-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100807003642.GQ2432@linux.vnet.ibm.com>
-X-Cookie: You will forget that you ever knew me.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 05:36:42PM -0700, Paul E. McKenney wrote:
-> On Sat, Aug 07, 2010 at 01:14:32AM +0100, Mark Brown wrote:
+> > > 
+> > > Btw, I want to add a callback from driver to card
+> driver to
+> > > be able to
+> > > reset card in case of error (windows driver does
+> that in
+> > > case of any
+> > > error)
+> > > 
+> > > I would use most of the mspro_block_resume for
+> the
+> > > implementation for
+> > > mspro.
+> > > 
+> > > Any objections, suggestions?
+> > > 
+> > 
+> > Just toggle a power on it. Power off/power on will do
+> the full reset of
+> > the controller and the media. You don't have to
+> reinitialize it, as you
+> > are sure that it's the same stick.
+> 
+> Yea, but after such reboot, the device will be in serial
+> mode. So, I
+> will need to send switch TPC to device. My driver doesn't
+> know how to do
+> that...., so it would be nice to have callback to the
+> core.
+> 
 
-> > services in themselves (like system monitoring).  It's really just
-> > semantics to treat them differently to something like a cellular modem -
-> > at a high level they're both just independant processors ticking away
-> > without the application processor.
+Lets ask a different question: why do you think this
+particular functionality is needed at all? Have you encountered any
+problems which require it (I haven't, btw)?
 
-> I agree that a smartphone's cellular modem can be argued to be very
-> similar to wake-on-LAN.  The smartphone applications that seem to me
-> to be very different from wake-on-LAN are things like audio playback,
-> where the system is providing service to the user during the time that
-> it is suspended.
+Windows drivers do a lot of things, but it does not mean all of them must
+be copied literally.
 
-The cellular modem case includes not just hanging off the network but
-also being on a call - the voice path for a phone call doesn't need the
-CPU to do anything.  It's probably best to view a phone as a bunch of
-interconnected systems that happen to sit in the same box, and there's
-various design decisions that can be taken about which systems own the
-shared components.
+
+
+      
