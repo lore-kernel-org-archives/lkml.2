@@ -1,57 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753176Ab0HGHw5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 03:52:57 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:49340 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094Ab0HGHwz (ORCPT
+	id S1761378Ab0HGHyT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 03:54:19 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62257 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094Ab0HGHyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 03:52:55 -0400
-Subject: Re: [PATCH 1/2] lib: more scalable list_sort()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Don Mullis <don.mullis@gmail.com>
-Cc: linux-kernel@vger.kernel.org, airlied@redhat.com, andi@firstfloor.org,
-        david@fromorbit.com
-In-Reply-To: <1280930682.15689.71.camel@localhost>
-References: <87fx609i29.fsf@gmail.com> <1280930682.15689.71.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 07 Aug 2010 10:50:36 +0300
-Message-ID: <1281167436.7760.0.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 07 Aug 2010 07:52:19.0562 (UTC) FILETIME=[762D7CA0:01CB3605]
-X-Nokia-AV: Clean
+	Sat, 7 Aug 2010 03:54:13 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ming Lei <tom.leiming@gmail.com>
+Subject: Re: TTY: warning in tty_lock on 2.6.35+gregkh tree
+Date: Sat, 7 Aug 2010 09:54:07 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, gregkh@suse.de
+References: <20100807192122.2005c856@tom-lei>
+In-Reply-To: <20100807192122.2005c856@tom-lei>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008070954.08613.arnd@arndb.de>
+X-Provags-ID: V02:K0:60nlKiMIChSiX71F1SWTUtYFiRiFl1L302jBe1OFPyS
+ vTI+6SnKI2q5vQOPnF+pJjuA9SM7g1De+SgIfU/k7+1KrH09YM
+ pduqJWAZ1MshKRkBEvj43ADokJeKf8/bCY9hNJ3nVPNiWj+lmS
+ DxDO6hVZglUMAkKnGW8WCHenImTzvhWhIQUpe907sDYBzQBdU+
+ 5MIXBY16vCFBbOipVKcyg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-04 at 17:04 +0300, Artem Bityutskiy wrote:
-> On Wed, 2010-01-20 at 20:51 -0800, Don Mullis wrote:
-> > The use of list_sort() by UBIFS looks like it could generate long
-> > lists; this alternative implementation scales better, reaching ~3x
-> > performance gain as list length approaches the L2 cache size.
-> > 
-> > Stand-alone program timings were run on a Core 2 duo L1=32KB L2=4MB,
-> > gcc-4.4, with flags extracted from an Ubuntu kernel build.  Object
-> > size is 552 bytes versus 405 for Mark J. Roberts' code.
-> > 
-> > Worst case for either implementation is a list length just over a POT,
-> > and to roughly the same degree, so here are results for a range of
-> > 2^N+1 lengths.  List elements were 16 bytes each including malloc
-> > overhead; random initial order.
-> 
-> This patch breaks UBIFS. I did not have time to dig deeper, but the
-> symptoms is that list_sort() calls the 'cmp()' function with bogus
-> 'struct list_head *a' parameter, which did not exist in the original
-> list.
+On Saturday 07 August 2010, Ming Lei wrote:
+> Following the ttty warning during kernel boot, seems it is for a long time
+> in gregkh's tree.
 
-Sorry, it appeared to be that UBIFS 'cmp()' function is broken, so your
-patches revealed the issue. Sorry for noise and thanks for revealing
-UBIFS problem!
+The fix for this is in the bkl/core tree, meaning it doesn't show up
+in the linux-next tree.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+The warning by itself is harmless, so there was no strict need to
+coordinate this better. In fact, with the removal of the optional
+BKL behavior, I believe the warning is now gone from the tty
+tree as well.
 
+	Arnd
