@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762622Ab0HGLJo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 07:09:44 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59974 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752904Ab0HGLJm (ORCPT
+	id S1761882Ab0HGLTd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 07:19:33 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41120 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751133Ab0HGLTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 07:09:42 -0400
-Message-ID: <4C5D3EEF.2080806@windriver.com>
-Date: Sat, 07 Aug 2010 06:09:35 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build error after merge of the kgdb tree
-References: <20100807142122.a305ed8a.sfr@canb.auug.org.au>
-In-Reply-To: <20100807142122.a305ed8a.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 7 Aug 2010 07:19:32 -0400
+Date: Sat, 7 Aug 2010 12:33:33 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tty_io: add an API to get device corresponding to
+ tty_struct
+Message-ID: <20100807123333.614169f1@lxorguk.ukuu.org.uk>
+In-Reply-To: <1281174902-6298-1-git-send-email-dbaryshkov@gmail.com>
+References: <20100806165844.GB3364@suse.de>
+	<1281174902-6298-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Aug 2010 11:09:37.0001 (UTC) FILETIME=[05D75590:01CB3621]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/06/2010 11:21 PM, Stephen Rothwell wrote:
-> Hi Jason,
->
-> After merging the kgdb tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this error (and hundreds of similar
-> errors/warnings):
->
-> In file included from include/linux/rculist.h:10,
->                  from include/linux/dcache.h:6,
->                  from include/linux/fs.h:375,
->                  from include/linux/security.h:25,
->                  from security/min_addr.c:3:
-> include/linux/rcupdate.h:606: warning: function declaration isn't a prototype
->
->   
+On Sat,  7 Aug 2010 13:55:02 +0400
+Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
 
-I removed the kgdb rcu stall detector patches from the queue until they
-are re-worked against the latest rcu changes pending in linux-next.
+> Some device drivers (mostly tty line disciplines) would like to have way
+> to get a struct device instancve corresponding to passed tty_struct. Add
+> respective API call.
 
-Thanks,
-Jason.
+Most of the kernel simply keeps a parent device pointer in the struct. If
+we have a lookup method then we'll simply end up with a struct device in
+each tty ldisc struct instead, and it will be harder to clean up later.
+
+I think I'd much rather see this set when the tty is created and always
+available. That would also let the whole tty layer use dev_err() and
+friends usefully ?
+
+Alan
