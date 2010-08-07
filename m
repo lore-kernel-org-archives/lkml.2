@@ -1,109 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762612Ab0HGKp0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 06:45:26 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:56470 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab0HGKpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 06:45:24 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6066"; a="50085881"
-Message-ID: <4C5D3926.6050307@codeaurora.org>
-Date: Sat, 07 Aug 2010 16:14:54 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Neil Leeder <nleeder@codeaurora.org>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Horace Fu <horace.fu@quantatw.com>,
-        Mandeep Singh Baines <msb@chromium.org>
-Subject: Re: [PATCH 1/1] mouse: add qci touchpad driver
-References: <1281126776-20014-1-git-send-email-nleeder@codeaurora.org>
-In-Reply-To: <1281126776-20014-1-git-send-email-nleeder@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1762615Ab0HGLEn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 07:04:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51419 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753241Ab0HGLEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 07:04:40 -0400
+Date: Sat, 7 Aug 2010 21:04:22 +1000
+From: Neil Brown <neilb@suse.de>
+To: Jeff Layton <jlayton@samba.org>
+Cc: Steve French <smfrench@gmail.com>, Jeremy Allison <jra@samba.org>,
+        utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100807210422.0b8ce265@notabene>
+In-Reply-To: <20100807063400.6bd1776f@tlielax.poochiereds.net>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<1280524978.2452.9.camel@segv.aura.of.mankind>
+	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	<20100805235218.GB31233@jeremy-laptop>
+	<20100806133836.49757af9@notabene>
+	<AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
+	<20100807093057.7683bedd@notabene>
+	<AANLkTikDBg5Brt=55Tsu8ozk0aVx=srpxP=U-sFqeBYL@mail.gmail.com>
+	<20100807102901.6a0b53e7@notabene>
+	<AANLkTinEFFAWMu62j2sCPy=ArExZNm2miJOGoXbG65jC@mail.gmail.com>
+	<AANLkTik7KhgF=pkpdEcsYM75NVXNmU4ynzdh3KWknTEL@mail.gmail.com>
+	<20100807133240.02883b83@notabene>
+	<20100807063400.6bd1776f@tlielax.poochiereds.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+On Sat, 7 Aug 2010 06:34:00 -0400
+Jeff Layton <jlayton@samba.org> wrote:
 
-On 8/7/2010 2:02 AM, Neil Leeder wrote:
-> This driver is for the QCI trackpad used on Quanta smartbooks
+> On Sat, 7 Aug 2010 13:32:40 +1000
+> Neil Brown <neilb@suse.de> wrote:
 > 
-> Review URL: http://codereview.chromium.org/724001
+> > So we are left with an attribute that is needed for windows compatibility,
+> > and so just needs to be understood by samba and wine.  Some filesystems might
+> > support it efficiently, others might require the use of generic
+> > extended-attributes, still others might not support it at all (I guess you
+> > store it in some 'tdb' and hope it works well enough).
+> > 
+> > Core-linux doesn't really need to know about this - there just needs to be a
+> > channel to pass it between samba/wine and the filesystem. xattr still seems
+> > the best mechanism to pass this stuff around.  Team-samba can negotiate with
+> > fs developers to optimise/accelerate certain attributes, and linux-VFS
+> > doesn't need to know or care (except maybe to provide generic non-blocking or
+> > multiple-access interfaces).
+> > 
+> 
+> IIUC, you're saying that we should basically just have samba stuff the
+> current time into an xattr when it creates the file and leave the
+> filesystems alone. If so, I disagree here.
 
-Do we need such URLs? 
+I'm not quite saying that (though there is a temptation).  Some attributes
+are initialised by the filesystem rather than by common code.  i_uid is a
+simple example.  I have no problem with the filesystem initialising the
+storage that is used for this well-known-EA to the current time at creation.
+This would be part of what team-samba negotiated with FS developers.
 
-> +
-> +/*
-> + * Driver communicates over i2c to nuvoTon WPCE775x Embedded Controller,
-> + * which has touchpad attached through PS/2 interface.
-> + */
+> 
+> The problem with treating this as *just* an xattr is that it doesn't
+> account for files that are created outside of samba but are then shared
+> out by it.
 
-Why this driver is not developed through MFD architecture then? nuvoTon chip
-looks like multi-function chip, isn't it?
+If something is created in a different universe, then brought into this one -
+when is its date of birth?  The moment of creation, or the moment of entry
+into this universe?   If both universes have a common time line (altough
+with a 10 year offset) then I guess the former, though I think it is a bit of
+a philosophical point.... :-)
 
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/input.h>
-> +#include <linux/gpio.h>
-> +#include <linux/delay.h>
-> +#include <linux/input/qci_touchpad.h>
-> +
-> +#define TOUCHPAD_ID_NAME          "qci-i2cpad"
-> +#define TOUCHPAD_NAME             "QCI Touchpad"
-> +#define TOUCHPAD_DEVICE           "/qci_touchpad/input0"
-> +#define TOUCHPAD_CMD_ENABLE       0xF4
-> +#define TOUCHPAD_READ_DATA_LEN    3
-> +
-> +struct i2ctpad_drv_data {
-> +	struct i2c_client *ti2c_client;
-> +	struct input_dev *qcitp_dev;
-> +	unsigned int qcitp_gpio;
-> +	unsigned int qcitp_irq;
-> +	char ecdata[8];
-> +	bool opened;
-> +};
-> +
-> +
-> +static const struct i2c_device_id qcitp_idtable[] = {
-> +	{ TOUCHPAD_ID_NAME, 0 },
+> 
+> To handle this correctly, I believe it needs to be initialized by the
+> kernel to the current time whenever an inode is created, even if samba
+> doesn't create it. After that, it can be treated as just another xattr.
+> 
+Yes, I suspect that would be ideal, and trivial for the fs to implement (it
+has to initialise it to something after all).
 
-This should be chip name instead of driver or ID name I think. 
+i.e. I agree.
 
-> +
-> +	err = gpio_request(context->qcitp_gpio, "qci-pad");
-> +	if (err) {
-> +		pr_err("[QCI TouchPad] gpio request failed\n");
-> +		goto gpio_request_fail;
-> +	}
-> +
-> +	context->qcitp_irq = gpio_to_irq(context->qcitp_gpio);
-
-Please set the direction of the gpio as input, gpio_direction_input, even though gpios
-are coming as input by default.
-
-> +
-> +static int __devexit qcitp_remove(struct i2c_client *client)
-> +{
-> +	struct i2ctpad_drv_data *context = i2c_get_clientdata(client);
-> +
-> +	free_irq(context->qcitp_irq, context);
-> +	gpio_free(context->qcitp_gpio);
-> +	input_unregister_device(context->qcitp_dev);
-> +	i2c_set_clientdata(client, NULL);
-
-Not required in latest kernels.
-
----Trilok Soni
-
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+NeilBrown
