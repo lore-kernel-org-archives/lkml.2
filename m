@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753506Ab0HGILe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 04:11:34 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:26654 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab0HGILA (ORCPT
+	id S1753475Ab0HGIOc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 04:14:32 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:26426 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab0HGIO3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 04:11:00 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Don Mullis <don.mullis@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] lib/Kconfig.debug: add list_sort debugging switch
-Date: Sat,  7 Aug 2010 11:10:40 +0300
-Message-Id: <1281168645-18413-2-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
-References: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 07 Aug 2010 08:10:55.0281 (UTC) FILETIME=[0F32B210:01CB3608]
-X-Nokia-AV: Clean
+	Sat, 7 Aug 2010 04:14:29 -0400
+From: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Karen Higgins <karen.higgins@qlogic.com>,
+        Ravi Anand <ravi.anand@qlogic.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Date: Sat, 7 Aug 2010 01:13:12 -0700
+Subject: RE: linux-next: build warnings in Linus'  tree
+Thread-Topic: linux-next: build warnings in Linus'  tree
+Thread-Index: Acs11z8uoc4A85r2Q0mi6dQFDQ5HdQAMDEwA
+Message-ID: <5E4F49720D0BAD499EE1F01232234BA87128E7CBE3@AVEXMB1.qlogic.org>
+References: <20100807122116.e6421ea0.sfr@canb.auug.org.au>
+In-Reply-To: <20100807122116.e6421ea0.sfr@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+>-----Original Message-----
+>From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+>Sent: Saturday, August 07, 2010 7:51 AM
+>To: Vikas Chaudhary
+>Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Karen
+>Higgins; Ravi Anand; James Bottomley
+>Subject: linux-next: build warnings in Linus' tree
+>
+>Hi all,
+>
+>today's linux-next build (x86_64 allmodconfig) of Linus' tree produced
+>these warnings:
+>
+>drivers/scsi/qla4xxx/ql4_nx.c: In function 'qla4_8xxx_get_flash_info':
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: warning: 'mid' may be used
+>uninitialized in this function
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: note: 'mid' was declared here
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: warning: 'fid' may be used
+>uninitialized in this function
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: note: 'fid' was declared here
+>
+>Introduced by commit f4f5df23bf72208d0c2f1d8be629839924c2f4c2 ("[SCSI]
+>qla4xxx: Added support for ISP82XX").  I don't think that these are false
+>positives.
+>
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
----
- lib/Kconfig.debug |    9 +++++++++
- lib/list_sort.c   |    4 ++--
- 2 files changed, 11 insertions(+), 2 deletions(-)
+Yes, Sorry. I am sending patch in next mail on top of latest
+scsi-misc-2.6 tree to fix this warning. 
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index e722e9d..4d5adde 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -684,6 +684,15 @@ config DEBUG_LIST
- 
- 	  If unsure, say N.
- 
-+config TEST_LIST_SORT
-+	bool "Linked list sorting test"
-+	depends on DEBUG_KERNEL
-+	help
-+	  Enable this to turn on 'list_sort()' function test. This test is
-+	  executed only once during system boot, so affects only boot time.
-+
-+	  If unsure, say N.
-+
- config DEBUG_SG
- 	bool "Debug SG table operations"
- 	depends on DEBUG_KERNEL
-diff --git a/lib/list_sort.c b/lib/list_sort.c
-index 4b5cb79..9dd8d4a 100644
---- a/lib/list_sort.c
-+++ b/lib/list_sort.c
-@@ -141,7 +141,7 @@ void list_sort(void *priv, struct list_head *head,
- }
- EXPORT_SYMBOL(list_sort);
- 
--#ifdef DEBUG_LIST_SORT
-+#ifdef CONFIG_TEST_LIST_SORT
- struct debug_el {
- 	struct list_head l_h;
- 	int value;
-@@ -214,4 +214,4 @@ static int __init list_sort_test(void)
- 	return 0;
- }
- module_init(list_sort_test);
--#endif
-+#endif /* CONFIG_TEST_LIST_SORT */
--- 
-1.7.1.1
-
+>--
+>Cheers,
+>Stephen Rothwell                    sfr@canb.auug.org.au
+>http://www.canb.auug.org.au/~sfr/
