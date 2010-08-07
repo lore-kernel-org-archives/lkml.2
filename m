@@ -1,162 +1,193 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754187Ab0HGVBX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 17:01:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44213 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753216Ab0HGVBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 17:01:21 -0400
+	id S1754304Ab0HGVDq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 17:03:46 -0400
+Received: from mail.lang.hm ([64.81.33.126]:35639 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216Ab0HGVDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 17:03:45 -0400
+Date: Sat, 7 Aug 2010 14:01:52 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, menage@google.com,
+        David Brownell <david-b@pacbell.net>, James.Bottomley@suse.de,
+        tytso@mit.edu, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <Pine.LNX.4.44L0.1008070857120.20673-100000@netrider.rowland.org>
+Message-ID: <alpine.DEB.2.00.1008071338480.30564@asgard.lang.hm>
+References: <Pine.LNX.4.44L0.1008070857120.20673-100000@netrider.rowland.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4C5D0BE2.3050209@fusionio.com>
-References: <4C5BE640.2050801@fusionio.com> <AANLkTindzwVR93MN=6HpevQZh5EqfvnmbzEj9OeG-PLJ@mail.gmail.com> 
-	<4C5D0BE2.3050209@fusionio.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 7 Aug 2010 14:00:24 -0700
-Message-ID: <AANLkTi=KkPhw8nA9PmQ7D8atKjTYXVCixUt=FHHNMy+S@mail.gmail.com>
-Subject: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 7, 2010 at 12:31 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+On Sat, 7 Aug 2010, Alan Stern wrote:
+
+> On Fri, 6 Aug 2010 david@lang.hm wrote:
 >
-> Sometimes urgent patches will sit in for-linus and then I will merge
-> those in to for-2.6.36 to save Stephen the hassle of carrying conflict
-> update patches.
+>>>> 1. the ability to decide to suspend while there are still some
+>>>> 'unimportant' apps running.
+>>>
+>>> While this may be true in some literal sense, it certainly is not the
+>>> best way to view the situation.  Linux already has the ability to
+>>> suspend (or to decide to suspend) whenever you want.  What Android has
+>>> added is the ability to suspend conditionally, based on whether or not
+>>> some applications or drivers want to keep the system running.
+>>
+>> Ok, aside from possibly drivers, what' stopping this from being done on a
+>> valilla system today?
+>
+> Nothing much.  Mainly just the fact that Rafael's code is so new.  It
+> hasn't yet been integrated into the drivers that should use it.
 
-The merges I saw weren't even urgent, because you had never actually
-pushed them to me as such for the previous release. So both sides of
-the merge was "for-2.3.36" as far as I can tell. That's what makes me
-think there's some odd duplication of branches with no point (except
-to make the history look ugly).
+makes sense.
 
-Now, don't get me wrong - I _like_ branches. I love it when people
-maintain different branches for different features, and then merge
-them together in order for me to pull them (or just ask me to pull
-multiple branches). See for example merge commit  415cb47998 that
-Pekka did to create one single thing for me to pull when he had
-maintained four different topic branches. Or see the x86 "tip" pulls
-from Ingo, Thomas and Peter as an example of just asking me to pull
-multiple branches separately.
+>>> Furthermore, this statement leaves out the primary purpose of
+>>> wakelocks: to avoid races between suspending and wakeup events.  And it
+>>> also ignores a very important distinction: the difference between
+>>> drivers and applications.  Wakelocks are used by both, but it has been
+>>> shown that only the wakelocks used by drivers need to be implemented in
+>>> the kernel -- the others can be implemented entirely in userspace.
+>>
+>> Ok, this is the first I've heard in this discussion that wakelocks would
+>> not be available to userspace. In fact it was explicitly stated that
+>> userspace applications called IOCTLs to get/release the wakelock.
+>
+> Android's wakelock implementation does make wakelocks available to
+> userspace.  In Rafael's approach there is nothing comparable.  Instead
+> "userspace wakelock"-equivalents have to be handled by a power manager
+> program.
 
-So branches (and the merges that go with them) are a wonderful thing
-when they _clarify_ history. I don't mind merges at all in that case.
-When the merge has a reason for existing, it's actually a good thing,
-and one guiding model for that is to ask yourself "Does this merge
-message make sense and tell people something interesting"?
+And the question to the Android people is if they consider this acceptable 
+or think that this means that the vanilla can't support them.
 
-So just to take a look at that merge by Pekka:
+>> many of my objections (voiced in another thread) about Android specific
+>> features are not relavent if the wakelock in userspace is just part of
+>> that application framework and not tied into the kernel.
+>>
+>>> All of these issues are addressed by Raphael's new wakeup_events code.
+>>
+>> Ok, then why is there still discussion about wakelocks at all if Raphael
+>> has implemnetd the needed kernel functionality and userspace is Android
+>> SDK specific?
+>
+> This thread started when Paul posted his list of requirements for
+> Android power management (or power management in general).  It wasn't
+> really specific to wakelocks, but people brought them up when
+> discussing how those requirements are currently being met.
+>
+> In fact, it seems to me that _you_ are the person most responsible for
+> prolonging this discussion.
 
-  commit 415cb47998c5
-  Merge: 9fe6206f4006 78b435368fcd d602dabaeba7 2bce64858442 bc6488e91078
-  Author: Pekka Enberg <penberg@cs.helsinki.fi>
-  Date:   Wed Aug 4 22:04:43 2010 +0300
+I'll admit to that, but it seems like there is still new information 
+comeing up about the requirements, as well as the current implementation.
 
-      Merge branches 'slab/fixes', 'slob/fixes', 'slub/cleanups' and
-'slub/fixes' into for-linus
+>>>> If these two features were available, I think that the rest of what they
+>>>> are looking for could be built up without requireing other changes.
+>>>
+>>> They already _are_ available.  Admittedly, only since quite recently.
+>>> (Rafael's new code was accepted during the 2.6.36 merge window.)
+>>
+>> Do Brian and Arve agree that this solves their problem?
+>
+> I think you should ask them instead of asking me.
 
-and even outside of the history itself, I'd argue that the merge
-message already tells you _why_ the merge was done. Despite it being
-just the trivial automatic merge message that git generates on its
-own. The merge actually clarifies history, I think.
+Since they are following this thread, this was intended to be asking them 
+torespond.
 
-So one guiding light for doing merges is really just to ask yourself
-whether the merge message will actually tell anybody anything. And in
-particular, merge messages like
+>> to be fair, there have been numerous complaints about suspend being
+>> separate from deep sleep long before Android. Linus' blow-up that resulted
+>> in Hibernation and Suspend being separated from each other is a case in
+>> point. He was making the point that there shouldn't be a difference
+>> between the deepest sleep and suspend.
+>
+> This may be controversial, but I think Rafael will agree when I say
+> that (in this one respect) Linus was wrong.  Separating hibernation
+> from suspend makes sense, and I agree that the differences between
+> deepest idle and suspend should be minimized.  But to get rid of them
+> altogether would be wrong (and probably not possible anyway).
 
-   Merge branch 'master' into for-2.6.36
+if you thing the differences should be minimized, why do you think that 
+getting rid of them would be wrong?
 
-don't do that. Think about it as an outsider: what does the above tell
-anybody? It looks like it has no relevant information in it. That's a
-hint that the merge simply shouldn't have been done.
+I know that Rafael disagrees with Linus, because he has not implemented 
+what Linus suggested.
 
-It's just a _hint_ though. I'm not saying that the merge message
-always has to be a revelation. I'm just saying that a merge message
-like "Merge branch 'master' ..." should raise red flags.
+>> As deep sleep gains the ability to use even less power and as suspend
+>> gains the ability to leave things on sometimes, the difference between
+>> them is dissapearing. I wouldn't be at all surprised to see them start
+>> overlaping soon. So it's not that I think Android should use deep sleeps
+>> instead of suspend, but rather that suspend should just be the deepest
+>> sleep, one mechanism instead of two.
+>
+> I disagree.  There are critical differences between them:
+>
+> 	Suspend uses the freezer and idle doesn't.
+>
+> 	Suspend generally forces devices to go into their low-power
+> 	states immediately, whereas idle tends to leave unused devices
+> 	at full power for some time before going to low power (to
+> 	minimize average latency).
 
-Now, the "into for-2.6.36" part is still informative. But if there are
-multiple merges of the same branch into that same thing, then that is
-another red flag, bringing up the question "why did he merge something
-that wasn't ready yet".
+this sounds like policy, not capability.
 
-What I'm trying to say is that if you start thinking about what the
-merge messages tell outsiders, then you probably are thinking about
-merges the right way. And if the automatic git messages don't seem to
-tell the reason, one thing you can actually do is to do
+> 	Overall, suspend generally has longer latency than idle.  (This
+> 	varies among platforms.)
 
-  git pull --no-commit ....
-  git commit
+even different idle modes have different latency
 
-and edit the merge message manually to explain what/why the merge does
-(or you could do "git commit --amend" after the pull, but I would
-encourage people to do the commit separately if only because it
-actually shows that you thought about the issue _before_ you did the
-pull rather than as a "oops, that merge message was uninformative, let
-me fix it up" after-the-fact)
+> 	The set of wakeup sources (including timers) is different.
 
-> I tend to merge in your tree when I _know_ there's a conflict there,
-> since it's much easier to fix things up when they happen and the change
-> is fresh, than wait potentially 2-3 months and then have to resolve
-> everything in one go.
+I agree that they are different, but don't they also vary within sleep or 
+suspend as well?
 
-Now, this is a good reason for a merge. But:
- - make that reason known
-and
- - DON'T DO THIS WHILE THE CODE IS STILL UNDER DEVELOPMENT
+> 	On some systems, suspend uses platform-specific mechanisms to
+> 	go into lower power states than are available to idle.
 
-I'm shouting, because the second thing is what really gets me: daily
-merges. If you are doing daily merges for conflict resolution, that's
-a big big red flag. That means that you're merging stuff while it's
-still being developed.
+the exact mechanism to go into low-power states is platform specific to 
+start with (there are some very popular platforms admittedly, like the PC 
+ACPI modes)
 
-So the "let's do a merge to avoid hard merges much later" is a good
-reason to merge, but in that case do point it out, and do it after the
-development has died down, and after you know that you aren't going to
-have another thing that will also clash.
+as I see it
 
-In other words, wait a few days. Or even a week or two. Don't think
-"Oh, I just applied something that I know will clash, so let's merge
-it now". Let the code calm down, and make sure it's all done. And
-never _ever_ merge a random point. If the merge window is months away,
-you'll know that there is going to be a few -rc releases still, so
-there's ample time to just wait a week or so, and then do a merge like
+Sleep
 
-   # I know this is going to have conflicts, so I'm not even doing --no-commit
+a policy engine to decide when to sleep, how deeply to sleep, what to 
+disable, what will wake you up (this includes taking into account desired 
+latency, and the amount of power/time needed to get in and out of the 
+various modes)
 
-   git merge v2.6.35-rc5
+platform specific mechanisms for transitioning in and out of the modes.
 
-   # edit the message to say _why_ you're merging an -rc release,
-talking about resolving the conflicts early
 
-see? If you do this, your history will suddenly make sense. There
-won't be the daily merges, and the merges that _are_ there are
-actually explanatory. A bad merge has turned into a good merge, and
-history doesn't look ugly.
+Suspend
 
-So again, I'm not saying that merges are bad. I'm saying that random
-and unexplained merges are bad.
+a policy engine to decide when to suspend, what to leave enabled when you 
+supend, what will wake you i[
 
-> But if you don't like that way of doing things, I will stop and just
-> keep for-2.6.X+1 patches in a branch that is based off 2.6.X and never
-> updated. I will try that for the next release and see how that goes.
+platform specific mechanisms for transition in and out of suspend. I view 
+use of the freezer to be one of these mechansims.
 
-It's worth trying. In fact, it might be worth trying having a few
-different branches, especially since there has been several clearly
-different development threads for the block layer. It would be
-_beautiful_ if you were to send me a couple of different pull requests
-for things like "fix writeback" and "update cfs", and they'd be
-independent. Because I think they really _are_ independent things.
 
-But see above. Merges per se are not evil or bad. But thoughtless
-merges are bad (and quite frankly, I don't mind a _couple_ of
-unnecessary merges. It's when I see the daily kind that I go "no,
-there's something seriously wrong here". So none of this is about hard
-rules that have to be followed 100%, it's more flexible than that).
+Somewhere amoung this mess are things like spinning down drives, disabling 
+inactive network interfaces, etc. I don't knwo if those are run from the 
+sleep policy engine, or if there is a third policy engine to decide these 
+things.
 
-Give it a try,
 
-               Linus
+why should there be multiple different policy engines making power 
+management decisions? it seems to me like these policy engines can and 
+should be merged, with the resulting engine able to trigger all the 
+existing mechanisms for transitioning between modes.
+
+David Lang
