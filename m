@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798Ab0HGEn2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 00:43:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42233 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab0HGEnZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 00:43:25 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100807040101.GA30520@merkur.ravnborg.org>
-References: <20100804125156.GA23464@sepie.suse.cz>
-	<AANLkTinN4npO7qfSa-42B-Cq5mKZX+--H0=1SuSrWTEP@mail.gmail.com>
-	<20100807040101.GA30520@merkur.ravnborg.org>
-Date: Fri, 6 Aug 2010 21:43:24 -0700
-Message-ID: <AANLkTinOWBfsncSZw3bvHa6Mp+eb5dzibKSV15OKgW2M@mail.gmail.com>
-Subject: Re: [GIT] kbuild: kconfig changes
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+	id S1752291Ab0HGEt6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 00:49:58 -0400
+Received: from mail.lang.hm ([64.81.33.126]:48781 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab0HGEtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 00:49:55 -0400
+Date: Fri, 6 Aug 2010 21:49:51 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
 To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>,
-        Linus Torvalds <torvalds@linux-foundation.org>, JBeulich@novell.com,
-        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
-        justinmattock@gmail.com, lizf@cn.fujitsu.com, ulfalizer.lkml@gmail.com,
-        zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: KCONFIG savedefconfig
+In-Reply-To: <20100807040916.GB30520@merkur.ravnborg.org>
+Message-ID: <alpine.DEB.2.00.1008062146260.30564@asgard.lang.hm>
+References: <alpine.DEB.2.00.1008062024320.30564@asgard.lang.hm> <20100807040916.GB30520@merkur.ravnborg.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 9:01 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
->>
->> This change prevents some the minimal defconfig options from working.
->> Specifically our usb gadget drivers do not get set.
+On Sat, 7 Aug 2010, Sam Ravnborg wrote:
+
+> On Fri, Aug 06, 2010 at 08:25:43PM -0700, david@lang.hm wrote:
+>> when savedefconfig decides what to write out, what does it do for things
+>> that are not at the default, but were set to not be default as part of
+>> dependancy resolution?
 >
-> Can you help me reproduce this?
+> The short version:
+> Any symbol that does not have default value are written to
+> the defconfig file.
 >
-> I have found an issue with choice values in combination with
-> tristate logic that fails. I hope this is something similar.
+> Using the defconfig file as input or using the full config file
+> as input shall result in the same configuration.
+> If not you found a bug we need to fix.
+
+Ok, so I take this to mean that if selecting one symbol forces selection 
+of another, then both symbols will be written to the defconfig file, even 
+though only the first would be needed to recreate the full file.
+
+this is a wonderful step forward, I'm just trying to understand the 
+nuances of it.
+
+David Lang
+
+> Arve found one bug I have to look into - pending feedback.
+> And I have found one bug related to tristate choice values.
 >
-
-It is probably the same problem. The gadget driver that was not set is
-not buildable as a module (it is not in the mainline kernel). If I
-select another gadget driver instead it just gets changed to build as
-a module instead.
-
-If you create a file, arch/arm/configs/test_defconfig with the following:
-CONFIG_MODULES=y
-CONFIG_USB_GADGET=y
-CONFIG_USB_MASS_STORAGE=y
-
-then "make test_defconfig" results in .config having:
-CONFIG_USB_MASS_STORAGE=m
-
- (at least if you are set up to compile for arm)
-
--- 
-Arve Hjønnevåg
+> So a bit work is needed to make it ready :-(
+> But it works for most of the defconfig we have today.
