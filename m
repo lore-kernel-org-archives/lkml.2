@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752557Ab0HGPXP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 11:23:15 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:56658 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab0HGPXN (ORCPT
+	id S1752884Ab0HGP05 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 11:26:57 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:32917 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752117Ab0HGP0z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 11:23:13 -0400
-Date: Sat, 7 Aug 2010 17:23:09 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 4/4] input: dynamically allocate ABS information
-Message-ID: <20100807152309.GF17833@buzzloop.caiaq.de>
-References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
- <1274289757-2723-5-git-send-email-daniel@caiaq.de>
- <20100524160805.GO30801@buzzloop.caiaq.de>
- <20100524161527.GC3182@core.coreip.homeip.net>
- <20100616083903.GU17833@buzzloop.caiaq.de>
- <20100721083048.GA21558@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721083048.GA21558@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 7 Aug 2010 11:26:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=MIcgTaRzMapzdfkp04J5hZXuSaOfPIG6SNRpv06YVFlVdnfEAoDY8bIYRGv0E5HrEy
+         zq5pQEo+bOznk90sqBi84Opx5W4hHNvvUiS32JbqNTV5Bf5ypmLtbhyB7SB0mU4h5A0g
+         zOPP2dNL/geNXxNCCbWWAw8DWS/r9YhuCxTug=
+From: Namhyung Kim <namhyung@gmail.com>
+To: tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] percpu: add missing markup in mm/memcontrol.c
+Date: Sun,  8 Aug 2010 00:26:52 +0900
+Message-Id: <1281194812-18052-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+mem_cgroup->stat is a percpu pointer but was missing __percpu markup.
+Add it.
 
-sorry for the late reply on this, I guess I haven't been much help
-around here lately.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ mm/memcontrol.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Wed, Jul 21, 2010 at 01:30:48AM -0700, Dmitry Torokhov wrote:
-> The approach is pretty solid, with the exception that I do not think
-> we'd save much if we allocate every axis data separately (as I mentioned
-> in one of my earlier mails).
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 20a8193..edf5011 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -252,7 +252,7 @@ struct mem_cgroup {
+ 	/*
+ 	 * percpu counter.
+ 	 */
+-	struct mem_cgroup_stat_cpu *stat;
++	struct mem_cgroup_stat_cpu __percpu *stat;
+ };
+ 
+ /* Stuffs for move charges at task migration. */
+-- 
+1.7.0.4
 
-Agreed. We at least save the memory for all input devices that don't
-have absolute axis at all.
-
-> Coudl you please take a look at the following patches and let me know if
-> you see something wrong.
-
-I checked the patches and tried them locally on my desktop, and I can't
-see any breakage, but we might need more coverage for testing.
-
-Will you push them to the .36 merge window or is it too late for this?
-
-Many thanks for your help :)
-
-Daniel
