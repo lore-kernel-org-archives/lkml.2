@@ -1,32 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab0HGWO2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 18:14:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65037 "EHLO
+	id S1754718Ab0HGWPx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 18:15:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48706 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab0HGWO0 (ORCPT
+	with ESMTP id S1754587Ab0HGWPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 18:14:26 -0400
+	Sat, 7 Aug 2010 18:15:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:user-agent;
-        b=BCyoYV4ynveT2z4Iz8NNVenvWDAC3xtduBZbf7bcwnTMUIUapIDdz0MuGutpyQhyZy
-         N8YaiuT8x8aV2YdeNwolRxb2XnjVuzPePASPc/kTzLVsV1iOO1By1bFugI/kQ5K09D1N
-         Ch6V7UG5didsbTPZ6O4NVV29rhWDrMLW7xJP4=
-Date: Sun, 8 Aug 2010 00:13:58 +0200
+        b=ji2G5qGIR63GfTc5hL8HJ1MZpnPbPwyPdxlxRaJizVyZhGk4ZCAEjEKoQBl3F75bDI
+         7qoAojRPuFh0s/BUiJSP//bpHprxiSTHdsJw5MontDMIxMJbZbovSBbVLeUhF/ZFoNcV
+         o3Q07D4PsQCuHe7dE+VqfBwvodRX3tE8KgZIw=
+Date: Sun, 8 Aug 2010 00:15:17 +0200
 From: Dan Carpenter <error27@gmail.com>
-To: Jing Huang <huangj@brocade.com>
+To: James Smart <james.smart@emulex.com>
 Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Krishna Gudipati <kgudipat@brocade.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] bfa: dereferencing before testing
-Message-ID: <20100807221358.GB9031@bicker>
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] lpfc: change spin_lock_irq() to spin_lock()
+Message-ID: <20100807221517.GC9031@bicker>
 Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Jing Huang <huangj@brocade.com>,
+	James Smart <james.smart@emulex.com>,
 	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	Krishna Gudipati <kgudipat@brocade.com>, linux-scsi@vger.kernel.org,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	Alex Iannicelli <alex.iannicelli@emulex.com>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -35,26 +37,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I moved the dereference of "port" after the check to verify it was
-non-NULL.
+In lpfc_cleanup_pending_mbox() we already have IRQs disabled so we don't
+need to disable them again.
+
+Also in lpfc_sli_intr_handler() there is a typo where it has
+spin_unlock_irq() instead of just spin_unlock().
 
 Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-diff --git a/drivers/scsi/bfa/lport_api.c b/drivers/scsi/bfa/lport_api.c
-index 72b3f50..5cd356a 100644
---- a/drivers/scsi/bfa/lport_api.c
-+++ b/drivers/scsi/bfa/lport_api.c
-@@ -149,11 +149,12 @@ bfa_fcs_port_get_rport_max_speed(struct bfa_fcs_port_s *port)
- 	enum bfa_pport_speed max_speed = 0;
- 	struct bfa_pport_attr_s pport_attr;
- 	enum bfa_pport_speed pport_speed, rport_speed;
--	bfa_boolean_t     trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
-+	bfa_boolean_t trl_enabled;
+diff --git a/drivers/scsi/lpfc/lpfc_sli.c b/drivers/scsi/lpfc/lpfc_sli.c
+index e758eae..f772a7e 100644
+--- a/drivers/scsi/lpfc/lpfc_sli.c
++++ b/drivers/scsi/lpfc/lpfc_sli.c
+@@ -8460,7 +8460,7 @@ lpfc_sli_intr_handler(int irq, void *dev_id)
+ 	 * If there is deferred error attention, do not check for any interrupt.
+ 	 */
+ 	if (unlikely(phba->hba_flag & DEFER_ERATT)) {
+-		spin_unlock_irq(&phba->hbalock);
++		spin_unlock(&phba->hbalock);
+ 		return IRQ_NONE;
+ 	}
  
- 	if (port == NULL)
- 		return 0;
- 
-+	trl_enabled = bfa_fcport_is_ratelim(port->fcs->bfa);
- 	fcs = port->fcs;
- 
- 	/*
+@@ -12813,9 +12813,9 @@ lpfc_cleanup_pending_mbox(struct lpfc_vport *vport)
+ 			}
+ 			ndlp = (struct lpfc_nodelist *) mb->context2;
+ 			if (ndlp) {
+-				spin_lock_irq(shost->host_lock);
++				spin_lock(shost->host_lock);
+ 				ndlp->nlp_flag &= ~NLP_IGNR_REG_CMPL;
+-				spin_unlock_irq(shost->host_lock);
++				spin_unlock(shost->host_lock);
+ 				lpfc_nlp_put(ndlp);
+ 				mb->context2 = NULL;
+ 			}
+@@ -12831,9 +12831,9 @@ lpfc_cleanup_pending_mbox(struct lpfc_vport *vport)
+ 		if (mb->u.mb.mbxCommand == MBX_REG_LOGIN64) {
+ 			ndlp = (struct lpfc_nodelist *) mb->context2;
+ 			if (ndlp) {
+-				spin_lock_irq(shost->host_lock);
++				spin_lock(shost->host_lock);
+ 				ndlp->nlp_flag &= ~NLP_IGNR_REG_CMPL;
+-				spin_unlock_irq(shost->host_lock);
++				spin_unlock(shost->host_lock);
+ 				lpfc_nlp_put(ndlp);
+ 				mb->context2 = NULL;
+ 			}
