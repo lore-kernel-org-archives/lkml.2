@@ -1,51 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762636Ab0HGNNN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 09:13:13 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63693 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762625Ab0HGNNK convert rfc822-to-8bit (ORCPT
+	id S1762625Ab0HGNPs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 09:15:48 -0400
+Received: from ns.store20.com ([212.7.7.16]:39269 "EHLO store20.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753491Ab0HGNPq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 09:13:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=EVijAxFojVCkGUXhPHVnh2vmjR06IAlqtqHd3XtGjXFyocdX9FRonvJSqxoKFDnnVZ
-         whGZ8/hYZwihPgwLmJyeuLb1OQadSUId5f8OnmGbXY507cIS6CXyJzdHzkp0AbUYLycQ
-         sX8aBgDEQ+RT5UGHXWYm4abWyVfd45yx8PBBA=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinrZmt82eegi1n+YCH5eifj_B-h2m-oCwzMHnjF@mail.gmail.com>
-References: <AANLkTinrZmt82eegi1n+YCH5eifj_B-h2m-oCwzMHnjF@mail.gmail.com>
-Date: Sat, 7 Aug 2010 18:43:08 +0530
-Message-ID: <AANLkTim_fq8C-KZz+wJhcTESTt2AHJCv6VTueVOs7429@mail.gmail.com>
-Subject: Re: Support For Magiccard's ENDURA Card printer support.
-From: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-To: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 7 Aug 2010 09:15:46 -0400
+Subject: [BISECTED/2.6.35+] Regression: Machine runs really slowly after
+ commit f12a15be
+From: Priit Laes <plaes@plaes.org>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: johnstul@us.ibm.com, tglx@linutronix.de
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Sat, 07 Aug 2010 16:15:41 +0300
+Message-ID: <1281186941.23274.5.camel@chi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+Following commit makes my Dell Latitude D610 machine (x86_32) run really-really slow...
 
-  any one adressing it ?
+f12a15be63d1de9a35971f35f06b73088fa25c3a is the first bad commit
+commit f12a15be63d1de9a35971f35f06b73088fa25c3a
+Author: John Stultz <johnstul@us.ibm.com>
+Date:   Tue Jul 13 17:56:27 2010 -0700
 
-Thanks in advance,
-Prabhu
+    x86: Convert common clocksources to use clocksource_register_hz/khz
+    
+    This converts the most common of the x86 clocksources over to use
+    clocksource_register_hz/khz.
+    
+    Signed-off-by: John Stultz <johnstul@us.ibm.com>
+    LKML-Reference: <1279068988-21864-11-git-send-email-johnstul@us.ibm.com>
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-On Sat, Aug 7, 2010 at 2:38 PM, Prabhu Chawandi
-<prabhu.chavandi@gmail.com> wrote:
-> Hi All,
->      I have got Magiccard's  ENDURA Card printer, which I am trying
-> to use on linux.   Can I get any clues, whether this device is
-> supported by Linux kernel.
-> This Device has the USB interface. If not support, what I have to do
-> to get it working on Linux.
->
-> Your inputs are invaluable.
->
-> Thanks,
-> Prabhu
->
+:040000 040000 264bcae0fcf10c54412a6c9df83b295e8c7e089b 8fc84146e6f34006cca10681afcc9869362a1cfc M	arch
+:040000 040000 a5f57efb367b7915d96c50fb123c053e58756423 874a8252ec8f7c9a5422e0b78834981902ad122d M	drivers
