@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617Ab0HGLhW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 07:37:22 -0400
-Received: from ozlabs.org ([203.10.76.45]:42696 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753389Ab0HGLhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 07:37:20 -0400
-Date: Sat, 7 Aug 2010 21:37:09 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT pull] timekeeping updates for 2.6.36
-Message-ID: <20100807113709.GA6242@brick.ozlabs.ibm.com>
-References: <alpine.LFD.2.00.1008060016300.3225@localhost.localdomain>
- <AANLkTi=UXQ2EfSNNAudHeEGybaNJpzz6ku8RcfRzOpct@mail.gmail.com>
+	id S1762224Ab0HGLvT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 07:51:19 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:45058 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246Ab0HGLvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 07:51:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=aXSiMqQ9lGyxdrpleZh3HIG11g/t4X7ARq1UkRs5QX+czWs1SsqzvENqq9eFw5lCi0
+         RH7ISfF2bA63xn3UMiVPwMMREy2ghQuhSIWBu8RAX694b77LvzAN6ISaDzqRBPO4qF2A
+         ANlOxl0QcvzR+7YJwOyFu9atV6r0IiZS7g5/U=
+Date: Sat, 7 Aug 2010 13:50:38 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: James Morris <jmorris@namei.org>, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] apparmor: issue with ns name without a following profile
+Message-ID: <20100807110639.GY9031@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	John Johansen <john.johansen@canonical.com>,
+	James Morris <jmorris@namei.org>,
+	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=UXQ2EfSNNAudHeEGybaNJpzz6ku8RcfRzOpct@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 01:25:22PM -0700, Linus Torvalds wrote:
+If we have a ns name without a following profile then in the original
+code it did "*ns_name = &name[1];".  "name" is NULL so "*ns_name" is
+0x1.  That isn't useful and could cause an oops when this function is
+called from aa_remove_profiles(). 
 
-> Well, it just resulted in another merge conflict, but I resolved it
-> the same way you had resolved your cherry-picks. However, I wanted to
-> let people know, so that the powerpc guys can re-verify that whole
-> vsyscall timer change.
-> 
-> So Paul, Ben, please check out that I didn't screw something up in there.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+---
+I'm not very familiar with this code and I haven't tested my fix. 
+Sorry.  Please review carefully.
 
-Looks fine, thanks.
-
-Paul.
+diff --git a/security/apparmor/lib.c b/security/apparmor/lib.c
+index 6e85cdb..da34011 100644
+--- a/security/apparmor/lib.c
++++ b/security/apparmor/lib.c
+@@ -44,10 +44,12 @@ char *aa_split_fqname(char *fqname, char **ns_name)
+ 			/* overwrite ':' with \0 */
+ 			*split = 0;
+ 			name = skip_spaces(split + 1);
+-		} else
++			*ns_name = &name[1];
++		} else {
+ 			/* a ns name without a following profile is allowed */
++			*ns_name = &name[1];
+ 			name = NULL;
+-		*ns_name = &name[1];
++		}
+ 	}
+ 	if (name && *name == 0)
+ 		name = NULL;
