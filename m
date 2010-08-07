@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762216Ab0HGL3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 07:29:23 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:38751 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1762020Ab0HGL3U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 07:29:20 -0400
-Date: Sat, 7 Aug 2010 13:29:18 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Komuro <komurojun-mbn@nifty.com>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/18] pcmcia: pd6729: call disable_pci_device() if
-	pci_probe() failed
-Message-ID: <20100807112918.GB17845@isilmar-3.linta.de>
-Mail-Followup-To: Kulikov Vasiliy <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org, Komuro <komurojun-mbn@nifty.com>,
-	Wolfram Sang <w.sang@pengutronix.de>,
-	"David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-	linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1281124366-13716-1-git-send-email-segooon@gmail.com>
+	id S1762235Ab0HGLaz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 07:30:55 -0400
+Received: from www17.your-server.de ([213.133.104.17]:33140 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755617Ab0HGLay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 07:30:54 -0400
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.36: commit f12a15 makes computer really slow
+Date: Sat, 7 Aug 2010 13:29:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-04772-gc3ddf62-dirty; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281124366-13716-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008071329.38590.thomas@m3y3r.de>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 11:52:44PM +0400, Kulikov Vasiliy wrote:
-> Driver should call disable_pci_device() if it returns from pci_probe()
-> with error. Also it must not be called if pci_request_region() fails as
-> it means that somebody uses device resources and rules the device.
+I need to revert commit f12a15 to have a workable computer:
 
-But that would mean that a driver first enables a device, then fails to make
-use of it, and then can't disable it? This doesn't look right to me. The
-first part of the patch looks fine, though.
+commit f12a15be63d1de9a35971f35f06b73088fa25c3a
+Author: John Stultz <johnstul@us.ibm.com>
+Date:   Tue Jul 13 17:56:27 2010 -0700
 
-Best,
-	Dominik
+    x86: Convert common clocksources to use clocksource_register_hz/khz
+    
+    This converts the most common of the x86 clocksources over to use
+    clocksource_register_hz/khz.
 
 
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/pcmcia/pd6729.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/pcmcia/pd6729.c b/drivers/pcmcia/pd6729.c
-> index b8a869a..1858c3a 100644
-> --- a/drivers/pcmcia/pd6729.c
-> +++ b/drivers/pcmcia/pd6729.c
-> @@ -646,7 +646,7 @@ static int __devinit pd6729_pci_probe(struct pci_dev *dev,
->  	if (!pci_resource_start(dev, 0)) {
->  		dev_warn(&dev->dev, "refusing to load the driver as the "
->  			"io_base is NULL.\n");
-> -		goto err_out_free_mem;
-> +		goto err_out_disable;
->  	}
->  
->  	dev_info(&dev->dev, "Cirrus PD6729 PCI to PCMCIA Bridge at 0x%llx "
-> @@ -666,7 +666,7 @@ static int __devinit pd6729_pci_probe(struct pci_dev *dev,
->  	ret = pci_request_regions(dev, "pd6729");
->  	if (ret) {
->  		dev_warn(&dev->dev, "pci request region failed.\n");
-> -		goto err_out_disable;
-> +		goto err_out_free_mem;
->  	}
->  
->  	if (dev->irq == NO_IRQ)
-> -- 
-> 1.7.0.4
-> 
+/proc/timer_list:
+[...]
+
+Tick Device: mode:     1
+Broadcast device
+Clock Event Device: hpet
+ max_delta_ns:   149983005959
+ min_delta_ns:   5000
+ mult:           61496114
+ shift:          32
+ mode:           3
+ next_event:     271895610827 nsecs
+ set_next_event: hpet_legacy_next_event
+ set_mode:       hpet_legacy_set_mode
+ event_handler:  tick_handle_oneshot_broadcast
+ retries:        1
+tick_broadcast_mask: 00000001
+tick_broadcast_oneshot_mask: 00000000
+
+
+Tick Device: mode:     1
+Per CPU device: 0
+Clock Event Device: lapic
+ max_delta_ns:   672727706
+ min_delta_ns:   1202
+ mult:           53556279
+ shift:          32
+ mode:           3
+ next_event:     271766639490 nsecs
+ set_next_event: lapic_next_event
+ set_mode:       lapic_timer_setup
+ event_handler:  hrtimer_interrupt
+ retries:        8
+
+This is an x86_32 box.
