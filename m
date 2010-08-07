@@ -1,44 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0HGSid (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 14:38:33 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:63856 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab0HGSib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 14:38:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=UdwFLPgkLjD82eBcZiET4vsAtevT6TaTZ4GrsEpnuIgopa5kk6O6gxPjPIGeM2XrA3
-         x9IMRBo4F2uLvcSCt0aRcWrc/u75OmYg5d2V7s8gOyC751oZEqcMFoxy6EFZ3gNsoJfw
-         84+oxiGZgnXIG1EbwoCt1iFZExFV/uhEO9yoU=
+	id S1753305Ab0HGSob (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 14:44:31 -0400
+Received: from 91-205-74-44.arpa.teredo.pl ([91.205.74.44]:51666 "EHLO
+	s2.pdg.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367Ab0HGSo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 14:44:27 -0400
+X-Greylist: delayed 1962 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Aug 2010 14:44:27 EDT
+Date: Sat, 7 Aug 2010 20:01:11 +0200
+To: linux-kernel@vger.kernel.org
+From: Quality Compare Ltd <linkexchange@removals-in-london.co.uk>
+Subject: Link exchange request
+Message-ID: <f6309bf07da5edcc77a62d3b78359e5e@localhost.localdomain>
+X-Priority: 3
+X-Mailer: Microsoft Office Outlook 12.0
 MIME-Version: 1.0
-Date: Sat, 7 Aug 2010 20:38:30 +0200
-Message-ID: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
-Subject: UIO DMA to userspace question
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: Tom Lyon <pugs@cisco.com>, mst@redhat.com, hjk@linutronix.de,
-        gregkh@suse.de, chrisw@sous-sol.org, joro@8bytes.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello all,
+Dear Sir / Madam
 
-can I use the UIO framework for the following?
+I am currently in the process of building links for www.removals-in-london.co.uk. As you probably know the link exchange between two websites helps both your site and mine to rank highly in search engines such as Google, Yahoo and MSN.
 
-The userspace portion of the driver allocates memory in user-space
-using malloc() - usually resulting in a scatter pages in physical
-memory.
-The UIO kernel portion of the driver maps those using pci_map_sg().
+If you are interested in the link exchange please choose any category you like: http://www.removals-in-london.co.uk/useful-links.php and let me know. I will add your link within a jiffy.
 
-Is this possible, or does the UIO framework assume memory for DMA is
-allocated in kernel space?
+If you are not interested in reciprocal links I can also offer 3 way links.
+
+My linking details:
+Title: House removals London
+URL: http://www.removals-in-london.co.uk/
+Description: House removals in London. Home removal services London. Removal companies London
+
+Alternate option: Copy & Paste the following code into your web page:
+<a href="http://www.removals-in-london.co.uk/" target="_blank"> <b><u>Home removals London</u></b></a><br>House removals in London. Home removal services London. Removal companies London.
+
+I look forward to hearing from you soon.
+
+ps. If you are not the person dealing with link exchange please pass on this email to your link manager or web-master.
+
+kind regards
+
+Piotr
+linkexchange@removals-in-london.co.uk
 
 
-Thanks,
--- 
-Leon
