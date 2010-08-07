@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753860Ab0HGQr3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 12:47:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55463 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717Ab0HGQr2 (ORCPT
+	id S1752371Ab0HGRRd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 13:17:33 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62284 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751514Ab0HGRRc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 12:47:28 -0400
+	Sat, 7 Aug 2010 13:17:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ZV/qnlXHbZow65zc+yF3LgG8YWbigfm8oHYZ+sbx/C6A8TAuIs3wFm4B10Lb4cNEqf
-         eY6sPdP08GL2M47CVM4G4ryPYwc5KIRl501Y01ZkI4zCWwP5YWh6x/I6GRcX+0TiTfDZ
-         x0xZp4BRL2zib5g1vY9mN0GwD1WUwS6yNIlAY=
+        b=suU4sV9206BBbUGsTItwpKsotPo3exjM8we5TgmGivtQ7leh9lnrA2MGIOEEyB33qW
+         rDCEw4i39fB68s+eowSTtuUaDs6J8jrCV3EAWvihARx9AyCkx2g6xO9PeedANGThCzeH
+         /SqYqhWTTTVdLljZopxcgVaapUl9g5AnVtNPo=
 From: Namhyung Kim <namhyung@gmail.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-        Steffen Klassert <steffen.klassert@secunet.com>
+To: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org
 Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] padata: add missing __percpu markup in include/linux/padata.h
-Date: Sun,  8 Aug 2010 01:47:25 +0900
-Message-Id: <1281199645-26274-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH] ACPI: add missing __percpu markup in arch/x86/kernel/acpi/cstate.c
+Date: Sun,  8 Aug 2010 02:17:29 +0900
+Message-Id: <1281201449-31158-1-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-parallel_data->queue is a percpu pointer but was missing __percpu markup.
+cpu_cstate_entry is a percpu pointer but was missing __percpu markup.
 Add it.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- include/linux/padata.h |   18 +++++++++---------
- 1 files changed, 9 insertions(+), 9 deletions(-)
+ arch/x86/kernel/acpi/cstate.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/padata.h b/include/linux/padata.h
-index 8d84062..67df560 100644
---- a/include/linux/padata.h
-+++ b/include/linux/padata.h
-@@ -96,15 +96,15 @@ struct padata_queue {
-  * @timer: Reorder timer.
-  */
- struct parallel_data {
--	struct padata_instance	*pinst;
--	struct padata_queue	*queue;
--	atomic_t		seq_nr;
--	atomic_t		reorder_objects;
--	atomic_t                refcnt;
--	unsigned int		max_seq_nr;
--	cpumask_var_t		cpumask;
--	spinlock_t              lock;
--	struct timer_list       timer;
-+	struct padata_instance		*pinst;
-+	struct padata_queue __percpu	*queue;
-+	atomic_t			seq_nr;
-+	atomic_t			reorder_objects;
-+	atomic_t                	refcnt;
-+	unsigned int			max_seq_nr;
-+	cpumask_var_t			cpumask;
-+	spinlock_t              	lock;
-+	struct timer_list       	timer;
+diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
+index fb7a5f0..fb16f17 100644
+--- a/arch/x86/kernel/acpi/cstate.c
++++ b/arch/x86/kernel/acpi/cstate.c
+@@ -61,7 +61,7 @@ struct cstate_entry {
+ 		unsigned int ecx;
+ 	} states[ACPI_PROCESSOR_MAX_POWER];
  };
+-static struct cstate_entry *cpu_cstate_entry;	/* per CPU ptr */
++static struct cstate_entry __percpu *cpu_cstate_entry;	/* per CPU ptr */
  
- /**
+ static short mwait_supported[ACPI_PROCESSOR_MAX_POWER];
+ 
 -- 
 1.7.0.4
 
