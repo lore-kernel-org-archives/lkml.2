@@ -1,76 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762361Ab0HGJPe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 05:15:34 -0400
-Received: from mx6.orcon.net.nz ([219.88.242.56]:46373 "EHLO mx6.orcon.net.nz"
+	id S1753417Ab0HGJkU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 05:40:20 -0400
+Received: from mail.lang.hm ([64.81.33.126]:39105 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762325Ab0HGJPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 05:15:32 -0400
-From: Michael Cree <mcree@orcon.net.nz>
-To: linux-kernel@vger.kernel.org
-Cc: Michael Cree <mcree@orcon.net.nz>, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        stable@kernel.org
-Subject: [PATCH] alpha: Fix printk format errors
-Date: Sat,  7 Aug 2010 21:15:07 +1200
-Message-Id: <1281172507-3595-1-git-send-email-mcree@orcon.net.nz>
-X-Mailer: git-send-email 1.7.1
+	id S1753163Ab0HGJkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 05:40:18 -0400
+Date: Sat, 7 Aug 2010 02:38:35 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Ted Ts'o" <tytso@mit.edu>
+cc: Brian Swetland <swetland@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <20100807061558.GA28087@thunk.org>
+Message-ID: <alpine.DEB.2.00.1008070206010.30564@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100804195704.GA23681@linux.vnet.ibm.com> <20100806225453.GA3947@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm> <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+ <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm> <20100807061558.GA28087@thunk.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-DSPAM-Check: by mx6.orcon.net.nz on Sat, 07 Aug 2010 21:15:30 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Sat Aug  7 21:15:30 2010
-X-DSPAM-Confidence: 0.6568
-X-DSPAM-Probability: 0.0000
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When compiling alpha generic build get errors such as:
-arch/alpha/kernel/err_marvel.c: In function ‘marvel_print_err_cyc’:
-arch/alpha/kernel/err_marvel.c:119: error: format ‘%ld’ expects type ‘long int’, but argument 6 has type ‘u64’
+On Sat, 7 Aug 2010, Ted Ts'o wrote:
 
-Replaced a number of %ld format specifiers with %lld since u64
-is unsigned long long.
+> On Fri, Aug 06, 2010 at 08:14:09PM -0700, david@lang.hm wrote:
+>>
+>> that description sounds far more like normal sleep power management
+>> that suspending. especially since they want to set timers to wake
+>> the system up and the defining characteristic of suspend (according
+>> to this thread) is that timers don't fire while suspended.
+>>
+>> as I am seeing it, there are two reasons why this don't "just work"
+>>
+>> 1. sleeping can't currently save as much power as suspending
+>
+> No, I don't think that's the case at all.  The key thing here is that
+> *most* applications don't need to be modified to use suspend locks,
+> because even though they might be in an event loop, when the user user
+> turns off the display, the user generally doesn't want it doing things
+> on their behalf.
+>
+> Again, take for example the Mac Book, since Apple has gotten this
+> right for most users' use cases.  When you close the lid, you even if
+> the application is under the misguided belief that it should be
+> checking every five seconds to see whether or not the web page has
+> reloaded --- actually, that's not what you want.  You probably want
+> the application to be forcibly put to sleep.  So the whole point of
+> the suspend blocker design is that you don't have to modify most
+> applications; they just simply get put to sleep when you close the
+> MacBook lid, or, in the case of the Android device, you push the
+> button that turns off the screen.
 
-Signed-off-by: Michael Cree <mcree@orcon.net.nz>
----
- arch/alpha/kernel/err_marvel.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+this doesn't require wakelocks or anything else new. all it takes is 
+setting the policy that you don't want anything to run when the lid is 
+closed and a switch to detect the lid being closed. Laptops have been 
+doing this for years.
 
-diff --git a/arch/alpha/kernel/err_marvel.c b/arch/alpha/kernel/err_marvel.c
-index 52a79df..c7f2a62 100644
---- a/arch/alpha/kernel/err_marvel.c
-+++ b/arch/alpha/kernel/err_marvel.c
-@@ -109,7 +109,7 @@ marvel_print_err_cyc(u64 err_cyc)
- #define IO7__ERR_CYC__CYCLE__M	(0x7)
- 
- 	printk("%s        Packet In Error: %s\n"
--	       "%s        Error in %s, cycle %ld%s%s\n",
-+	       "%s        Error in %s, cycle %lld%s%s\n",
- 	       err_print_prefix, 
- 	       packet_desc[EXTRACT(err_cyc, IO7__ERR_CYC__PACKET)],
- 	       err_print_prefix,
-@@ -313,7 +313,7 @@ marvel_print_po7_ugbge_sym(u64 ugbge_sym)
- 	}
- 
- 	printk("%s      Up Hose Garbage Symptom:\n"
--	       "%s        Source Port: %ld - Dest PID: %ld - OpCode: %s\n", 
-+	       "%s        Source Port: %lld - Dest PID: %lld - OpCode: %s\n", 
- 	       err_print_prefix,
- 	       err_print_prefix, 
- 	       EXTRACT(ugbge_sym, IO7__PO7_UGBGE_SYM__UPH_SRC_PORT),
-@@ -552,7 +552,7 @@ marvel_print_pox_spl_cmplt(u64 spl_cmplt)
- #define IO7__POX_SPLCMPLT__REM_BYTE_COUNT__M	(0xfff)
- 
- 	printk("%s      Split Completion Error:\n"	
--	       "%s         Source (Bus:Dev:Func): %ld:%ld:%ld\n",
-+	       "%s         Source (Bus:Dev:Func): %lld:%lld:%lld\n",
- 	       err_print_prefix,
- 	       err_print_prefix,
- 	       EXTRACT(spl_cmplt, IO7__POX_SPLCMPLT__SOURCE_BUS),
--- 
-1.7.1
+> So the reason why this doesn't work is that power management for small
+> mobile devices *is* different from power management for laptops and
+> data center servers, and if you want a rich application ecosystem,
+> it's best if you don't require them to be specially tuned to use the
+> absolute minimum power.  (And that means waking up every 30 seconds
+> might be too much; as Brian and Arve have pointed out, with the G1 in
+> airplane mode, the CPU might be waking up once every half hour or more
+> --- and at that rate, powertop will be waking up the CPU more than
+> Android system would be doing so.)
 
+note that nothing that I have proposed would wake up a sleeping system. 
+the 'every several seconds' thing that I proposed was that on a system 
+that's fully awake, busy and doesn't want to sleep, there would be a 
+context switch periodically by a privilaged process so that the system 
+would not end up deciding it was idle and halt everything. Now that I 
+think about this more, it's not needed if you want to override this to 
+keep everything running for a significant amount of time, just change the 
+power saving mode from "sleep if a privilaged task isn't running" to 
+"disable suspend". This can be done today by changing the right sysfs 
+value. normal privilaged processes would never need to do this, only 
+gatekeeper daemons that want to let unprivilaged processes run even if no 
+privilaged processes want to run would need to do this (i.e. in the 
+current system, whatever process controls the screen would probably be 
+right)
+
+> So the real key here is to take most applications, which may be
+> written using techniques that might be considered well written from a
+> laptop point of view, but not for a cell phone, and not require
+> modifications.  Even though the application writer might think it's
+> doing well by waking up every 15 seconds, if the laptop lid is down,
+> or if the screen is off, for **most** applications, it should be
+> forcibly put to sleep.
+>
+> It's only the rare applications that should really be allowed to run
+> while screen is off.  And it's only those applications that need
+> modifications to use suspend blocker.  From your earlier comments, it
+> seems that this is the key point which you are missing.  (No doubt,
+> some of these applications that do need to know about suspend blockers
+> are important ones; ones that make sure the battery isn't about to
+> blow up, or ones which silently wake up every 10-15 minutes to pull
+> down fresh mail for you from your mail server.  But those applications
+> are the exception, not the rule.)
+
+the question is what it takes to make an application privilaged like this.
+
+what I proposed was to make it possible for the user/admin to select what 
+applications are allowed to keep the system awake.
+
+wakelocks require that the application developer decide that they want to 
+keep the system awake as well as the user/admin
+
+take your example of a mail client waking up every 15 min.
+
+with Android it needs to be privilaged to grab the wakelock while fetching 
+the mail, it also needs to use a privilaged API to set the wakeups to wake 
+it up at those times.
+
+with what I proposed all you need to do is to tag the application as power 
+privilaged and then if the application sleeps for 15 min between doing 
+thing the system will wake up every 15 min, work for a short time, then go 
+back to sleep.
+
+
+if you want to put everything to sleep when the screen blanks, that's 
+trivial to do.
+
+the fun starts when you want to say that there are some things you don't 
+want to put to sleep.
+
+do you let some processes run while halting others?
+   in which case how do you prevent deadlocks?
+     on the other hand, sleeping again is simple, you sleep when there 
+is nothing more to run
+or do you let wasteful processes run while you are awake?
+   this avoids deadlocks, but how do you decide when to sleep again?
+
+
+Android approaches this by requiring that any program that a user may want 
+to keep running must be modified to use wakelocks.
+
+My suggestion was that the system ignore other processes when deciding if 
+the system is idle enough to put to sleep.
+
+Yes the Android approach works reasonably well on the phones where 
+everything must currently be custom developed anyway (due to screen and UI 
+constraints), but as Android starts getting used on laptops and other 
+larger devices is that really still the right approach? or would it be 
+better to have something that could use standard software in the 
+privilaged mode?
+
+to use your example of a mail client, why should someone not be able to 
+use fetchmail to get their mail instead of requiring that fetchmail be 
+modified to use wavelocks (or a substatute written)?
+
+
+
+the theoretical best approach would probably look nothing like either of 
+these. Instead it would probably either
+
+forbid privilaged processes from having blocking dependancies on 
+unprivilaged processes (you can then just halt the unprivilaged processes 
+when you blank the screen and let idle sleep deal with the privilged 
+processes)
+
+or
+
+use something like priority inheritance through userspace so that if a 
+privilaged process blocks on something where it's waiting for an 
+unprivilaged process, that unprivilaged process gets woken up and allowed 
+to run until it unblocks the privilaged process.
+
+both of these have been deemed too hard
+
+David Lang
