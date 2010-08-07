@@ -1,52 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab0HGTRz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 15:17:55 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34831 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752728Ab0HGTRy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 15:17:54 -0400
+	id S1753663Ab0HGTes (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 15:34:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49116 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753054Ab0HGTer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 15:34:47 -0400
+Message-ID: <4C5DB537.1090006@kernel.org>
+Date: Sat, 07 Aug 2010 21:34:15 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-X-Originating-IP: [94.237.226.193]
-Date: Sat, 7 Aug 2010 23:17:52 +0400
-Message-ID: <AANLkTimHMAwi158ycRh_nRYPYUTSkww-psdFai-LsTsb@mail.gmail.com>
-Subject: [PATCH] tcp: no md5sig option size check bug
-From: Dmitry Popov <dp@highloadlab.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        James Morris <jmorris@namei.org>, Patrick McHardy <kaber@trash.net>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
-Cc: "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Gilad Ben-Yossef <gilad@codefidence.com>,
-        Yony Amit <yony@comsleep.com>, Ori Finkelman <ori@comsleep.com>,
-        =?ISO-8859-1?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] intel_idle: add missing __percpu markup
+References: <1281204603-13406-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1281204603-13406-1-git-send-email-namhyung@gmail.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 07 Aug 2010 19:34:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
+On 08/07/2010 08:10 PM, Namhyung Kim wrote:
+> intel_idle_cpuidle_devices is a percpu pointer but was missing __percpu markup.
+> Add it.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-tcp_parse_md5sig_option doesn't check md5sig option (TCPOPT_MD5SIG)
-length, but tcp_v[46]_inbound_md5_hash assume that it's at least 16
-bytes long.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Signed-off-by: Dmitry Popov <dp@highloadlab.com>
----
- net/ipv4/tcp_input.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index 3c426cb..e663b78 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3930,7 +3930,7 @@ u8 *tcp_parse_md5sig_option(struct tcphdr *th)
- 			if (opsize < 2 || opsize > length)
- 				return NULL;
- 			if (opcode == TCPOPT_MD5SIG)
--				return ptr;
-+				return opsize == TCPOLEN_MD5SIG ? ptr : NULL;
- 		}
- 		ptr += opsize - 2;
- 		length -= opsize;
+-- 
+tejun
