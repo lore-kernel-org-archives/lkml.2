@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762381Ab0HGJze (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 05:55:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47997 "EHLO
+	id S1762565Ab0HGJ4J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 05:56:09 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:33985 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753102Ab0HGJzc (ORCPT
+	with ESMTP id S1762343Ab0HGJ4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 05:55:32 -0400
+	Sat, 7 Aug 2010 05:56:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=iHFGh43gveNv24953xyLSCQ1BQLrahjmyIH7bsb0unhG2Vs/KBDcmkih2W/LwO2BK6
-         +AJ/N28LhL2qPJwS8GLkaUWOpcwx68xN/vg//xFgPMq3FuihzcIWX47xlY2Qp6FsCUbr
-         Osdt3ciXP2AgmqTsW48EX71pK/jAXVm6xRg8c=
+        b=FU01FmoZzTd2CuyByQoryw/RC8rjqzKeNUi+lPXeRCOKtE0bUuqblqZPS0RpdvzzkS
+         NS23td/O1oH65LqdPQXDWJtulZb45TjFDNMHRWMKtwEi9dXN1R31DvNQxlyIeVYSfzpu
+         cDZax3qJXZP8FkCaEMV7gW4Fdv5KY6LT9tG/E=
 From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] tty_io: add an API to get device corresponding to tty_struct
-Date: Sat,  7 Aug 2010 13:55:02 +0400
-Message-Id: <1281174902-6298-1-git-send-email-dbaryshkov@gmail.com>
+Subject: [PATCH 2/2] serport: place serport serio device correctly in the device tree
+Date: Sat,  7 Aug 2010 13:55:39 +0400
+Message-Id: <1281174939-6349-1-git-send-email-dbaryshkov@gmail.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100806165844.GB3364@suse.de>
-References: <20100806165844.GB3364@suse.de>
+In-Reply-To: <20100806165758.GA3364@suse.de>
+References: <20100806165758.GA3364@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some device drivers (mostly tty line disciplines) would like to have way
-to get a struct device instancve corresponding to passed tty_struct. Add
-respective API call.
+Make serport serio device to be a child of corresponding tty device
+instead of just hanging at /sys/devices/serioX.
 
 Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
 ---
- drivers/char/tty_io.c |   21 +++++++++++++++++++++
- include/linux/tty.h   |    1 +
- 2 files changed, 22 insertions(+), 0 deletions(-)
+ drivers/input/serio/serport.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index d71f0fc..dcdc8fc 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -3017,6 +3017,27 @@ dev_t tty_devnum(struct tty_struct *tty)
- }
- EXPORT_SYMBOL(tty_devnum);
- 
-+static int dev_match_devt(struct device *dev, void *data)
-+{
-+	dev_t *devt = data;
-+	return dev->devt == *devt;
-+}
-+
-+/**
-+ * 	tty_get_device - get a device corresponding to tty
-+ * 	@tty: the struct that describes the tty device
-+ *
-+ * 	Returns a pointer to the struct device for this tty device
-+ * 	(or NULL in case of error). Returned device has it's refcount
-+ * 	incremented by 1, so you should call put_device() after usage.
-+ */
-+struct device *tty_get_device(struct tty_struct *tty)
-+{
-+	dev_t devt = tty_devnum(tty);
-+	return class_find_device(tty_class, NULL, &devt, dev_match_devt);
-+}
-+EXPORT_SYMBOL(tty_get_device);
-+
- void proc_clear_tty(struct task_struct *p)
+diff --git a/drivers/input/serio/serport.c b/drivers/input/serio/serport.c
+index 6d34511..d3d832a 100644
+--- a/drivers/input/serio/serport.c
++++ b/drivers/input/serio/serport.c
+@@ -148,6 +148,7 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
  {
- 	unsigned long flags;
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 931078b..5038433 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -451,6 +451,7 @@ extern int tty_mode_ioctl(struct tty_struct *tty, struct file *file,
- 			unsigned int cmd, unsigned long arg);
- extern int tty_perform_flush(struct tty_struct *tty, unsigned long arg);
- extern dev_t tty_devnum(struct tty_struct *tty);
-+struct device *tty_get_device(struct tty_struct *tty);
- extern void proc_clear_tty(struct task_struct *p);
- extern struct tty_struct *get_current_tty(void);
- extern void tty_default_fops(struct file_operations *fops);
+ 	struct serport *serport = (struct serport*) tty->disc_data;
+ 	struct serio *serio;
++	struct device *parent;
+ 	char name[64];
+ 
+ 	if (test_and_set_bit(SERPORT_BUSY, &serport->flags))
+@@ -157,6 +158,8 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
+ 	if (!serio)
+ 		return -ENOMEM;
+ 
++	parent = tty_get_device(tty);
++
+ 	strlcpy(serio->name, "Serial port", sizeof(serio->name));
+ 	snprintf(serio->phys, sizeof(serio->phys), "%s/serio0", tty_name(tty, name));
+ 	serio->id = serport->id;
+@@ -165,6 +168,7 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
+ 	serio->open = serport_serio_open;
+ 	serio->close = serport_serio_close;
+ 	serio->port_data = serport;
++	serio->dev.parent = parent;
+ 
+ 	serio_register_port(serport->serio);
+ 	printk(KERN_INFO "serio: Serial port %s\n", tty_name(tty, name));
+@@ -173,6 +177,8 @@ static ssize_t serport_ldisc_read(struct tty_struct * tty, struct file * file, u
+ 	serio_unregister_port(serport->serio);
+ 	serport->serio = NULL;
+ 
++	put_device(parent);
++
+ 	clear_bit(SERPORT_DEAD, &serport->flags);
+ 	clear_bit(SERPORT_BUSY, &serport->flags);
+ 
 -- 
 1.7.1
 
