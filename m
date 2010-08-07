@@ -1,78 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab0HGVPm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 17:15:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45874 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752720Ab0HGVPl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 17:15:41 -0400
+	id S1754476Ab0HGVRd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 17:17:33 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:35238 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753630Ab0HGVRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 17:17:31 -0400
+Date: Sat, 7 Aug 2010 14:17:28 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jason Wessel <jason.wessel@windriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: linux-next: manual merge of the kgdb tree with Linus' tree
+Message-ID: <20100807211728.GA28829@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100807140542.bea61032.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <4C5D0C79.5010103@fusionio.com>
-References: <4C5BE640.2050801@fusionio.com> <AANLkTindzwVR93MN=6HpevQZh5EqfvnmbzEj9OeG-PLJ@mail.gmail.com> 
-	<AANLkTi=WyWdERdyM+X5VOTX02_O_5GqV9hBQ145RmMWg@mail.gmail.com> 
-	<4C5D0C79.5010103@fusionio.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 7 Aug 2010 14:15:15 -0700
-Message-ID: <AANLkTincMAv0OLYHSqHNwrhfKBC-yQHhgWdqKYHoJNOf@mail.gmail.com>
-Subject: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100807140542.bea61032.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 7, 2010 at 12:34 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->
-> OK, so a question on this. Say a bug surfaces in the middle of the
-> release and we push in a change to fix that at 2.6.36-rc3 time. This
-> same patch will not apply directly to the branch holding 2.6.37 patches
-> due to code reshuffling or whatnot. How do you want that handled? I
-> can't pull in your branch and resolve it. The merge conflict may not be
-> visible to you until 2.6.36 is released and I want to offload the
-> patches to you, but it will be visible in linux-next pretty much
-> immediately.
+On Sat, Aug 07, 2010 at 02:05:42PM +1000, Stephen Rothwell wrote:
+> Hi Jason,
+> 
+> Today's linux-next merge of the kgdb tree got a conflict in
+> include/linux/rcupdate.h between commits
+> 551d55a944b143ef26fbd482d1c463199d6f65cf ("tree/tiny rcu: Add debug RCU
+> head objects") and f5155b33277c9678041a27869165619bb34f722f ("rcu: add an
+> rcu_dereference_index_check()") from Linus' tree and commit
+> 9e213357d0aeaeb81e213cfd3b9415db5fccc1b5 ("rcu,debug_core: allow the
+> kernel debugger to reset the rcu stall timer") from the kgdb tree.
 
-So I think there's a few possible answers to that.
+Hello, Jason,
 
-One is the one I outlined in my previous email: merge the next -rc
-tag, and explain why you merged it in the commit message. That not
-only makes the merge commit message be way more informative ("Merge
-commit v2.6.3x-rcy" rather than "Merge branch 'master'"), but it also
-automatically acts as a "rate limiter" for the merges.
+Just trying to make sure I understand this...
 
-Now, that may cause problems for linux-next for a few days too, since
-I think linux-next always starts from some random tree-of-the-day of
-mine. That itself may be more indicative of a linux-next problem,
-though. It might well make sense to base linux-next itself on the
-latest tagged release rather than on some random daily thing (and if
-the things that get merged _into_ linux-next then are based on a
-random daily thing and bring linux-next forward, then that's a problem
-with the trees getting merged - they shouldn't be doing that either).
+This cannot be a "stop the machine" debugger, because otherwise the
+jiffies counter would stop and you would not get RCU CPU stall warnings.
 
-The other possibility is for you to do throw-away merges just for
-linux-next. That way _you_ do the merge (not Stephen or one of the
-linux-next helpers), but the merge is going only into for-next, not
-into your for-2.6.36 branch. "git rerere" will help you re-do the same
-merge for future for-next trees - the same way linux-next already
-generally only needs to do the merge resolution once.
+It might be a "stop the machine" debugger, but where the jiffies counter
+catches up quickly as soon as the machine restarts.  In this case,
+your patch would be a reasonable approach, but RCU CPU stall warnings
+are going to be the least of your problems.  Actually, I have only seen
+one piece of your patch.  Could you please send me the rest of it?
 
-Then, when you actually want to send it to me, at that point (if it's
-a really complicated merge and you know it's too complex for me), you
-can do one final merge into 'for-linus' before you send me the pull
-request. Again, git rerere will help you re-use your previous merge
-resolutions.
+If you are permitting some tasks to run while others are halted,
+then the RCU CPU stall is simply a symptom of an underlying problem,
+namely that if you halt a task in an RCU read-side critical section
+for long enough, you will OOM the system.
 
-Or don't merge at all when you send it to me, and only do the merge if
-I then reply with "ok, that's too complicated for me".
+							Thanx, Paul
 
-I will _never_ complain about you sending me something I can't merge.
-I may throw it back at you, but I won't complain about you trying to
-give me merge work.  I really do like knowing about the conflicts.
-
-Of course, if I do the merge conflict resolution I may then see
-something odd and complain about it. Something I might not have even
-noticed if it hadn't been pointed out to me by the conflict ;)
-
-                       Linus
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix for a while.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc include/linux/rcupdate.h
+> index 9fbc54a,585efef..0000000
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@@ -529,74 -517,12 +529,82 @@@ extern void call_rcu(struct rcu_head *h
+>   extern void call_rcu_bh(struct rcu_head *head,
+>   			void (*func)(struct rcu_head *head));
+>   
+>  +/*
+>  + * debug_rcu_head_queue()/debug_rcu_head_unqueue() are used internally
+>  + * by call_rcu() and rcu callback execution, and are therefore not part of the
+>  + * RCU API. Leaving in rcupdate.h because they are used by all RCU flavors.
+>  + */
+>  +
+>  +#ifdef CONFIG_DEBUG_OBJECTS_RCU_HEAD
+>  +# define STATE_RCU_HEAD_READY	0
+>  +# define STATE_RCU_HEAD_QUEUED	1
+>  +
+>  +extern struct debug_obj_descr rcuhead_debug_descr;
+>  +
+>  +static inline void debug_rcu_head_queue(struct rcu_head *head)
+>  +{
+>  +	debug_object_activate(head, &rcuhead_debug_descr);
+>  +	debug_object_active_state(head, &rcuhead_debug_descr,
+>  +				  STATE_RCU_HEAD_READY,
+>  +				  STATE_RCU_HEAD_QUEUED);
+>  +}
+>  +
+>  +static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+>  +{
+>  +	debug_object_active_state(head, &rcuhead_debug_descr,
+>  +				  STATE_RCU_HEAD_QUEUED,
+>  +				  STATE_RCU_HEAD_READY);
+>  +	debug_object_deactivate(head, &rcuhead_debug_descr);
+>  +}
+>  +#else	/* !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+>  +static inline void debug_rcu_head_queue(struct rcu_head *head)
+>  +{
+>  +}
+>  +
+>  +static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+>  +{
+>  +}
+>  +#endif	/* #else !CONFIG_DEBUG_OBJECTS_RCU_HEAD */
+>  +
+>  +#ifndef CONFIG_PROVE_RCU
+>  +#define __do_rcu_dereference_check(c) do { } while (0)
+>  +#endif /* #ifdef CONFIG_PROVE_RCU */
+>  +
+>  +#define __rcu_dereference_index_check(p, c) \
+>  +	({ \
+>  +		typeof(p) _________p1 = ACCESS_ONCE(p); \
+>  +		__do_rcu_dereference_check(c); \
+>  +		smp_read_barrier_depends(); \
+>  +		(_________p1); \
+>  +	})
+>  +
+>  +/**
+>  + * rcu_dereference_index_check() - rcu_dereference for indices with debug checking
+>  + * @p: The pointer to read, prior to dereferencing
+>  + * @c: The conditions under which the dereference will take place
+>  + *
+>  + * Similar to rcu_dereference_check(), but omits the sparse checking.
+>  + * This allows rcu_dereference_index_check() to be used on integers,
+>  + * which can then be used as array indices.  Attempting to use
+>  + * rcu_dereference_check() on an integer will give compiler warnings
+>  + * because the sparse address-space mechanism relies on dereferencing
+>  + * the RCU-protected pointer.  Dereferencing integers is not something
+>  + * that even gcc will put up with.
+>  + *
+>  + * Note that this function does not implicitly check for RCU read-side
+>  + * critical sections.  If this function gains lots of uses, it might
+>  + * make sense to provide versions for each flavor of RCU, but it does
+>  + * not make sense as of early 2010.
+>  + */
+>  +#define rcu_dereference_index_check(p, c) \
+>  +	__rcu_dereference_index_check((p), (c))
+>  +
+> + #ifdef CONFIG_RCU_CPU_STALL_DETECTOR
+> + extern void rcu_cpu_stall_reset(void);
+> + #else /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+> + static void rcu_cpu_stall_reset()
+> + {
+> + }
+> + #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+> + 
+>   #endif /* __LINUX_RCUPDATE_H */
