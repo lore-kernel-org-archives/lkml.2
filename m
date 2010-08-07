@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762332Ab0HGJJe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 05:09:34 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41604 "EHLO mgw2.diku.dk"
+	id S1753319Ab0HGJMN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 05:12:13 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48386 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761582Ab0HGJJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 05:09:31 -0400
-Date: Sat, 7 Aug 2010 11:09:29 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/2] drivers/mtd/ubi: Eliminate update of list_for_each_entry
- loop cursor
-Message-ID: <Pine.LNX.4.64.1008071109140.5821@ask.diku.dk>
+	id S1753299Ab0HGJMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 05:12:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Ted Ts'o" <tytso@mit.edu>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Date: Sat, 7 Aug 2010 11:11:05 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm> <20100807061558.GA28087@thunk.org>
+In-Reply-To: <20100807061558.GA28087@thunk.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008071111.05585.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Saturday, August 07, 2010, Ted Ts'o wrote:
+> On Fri, Aug 06, 2010 at 08:14:09PM -0700, david@lang.hm wrote:
+> > 
+> > that description sounds far more like normal sleep power management
+> > that suspending. especially since they want to set timers to wake
+> > the system up and the defining characteristic of suspend (according
+> > to this thread) is that timers don't fire while suspended.
+> > 
+> > as I am seeing it, there are two reasons why this don't "just work"
+> > 
+> > 1. sleeping can't currently save as much power as suspending
+> 
+> No, I don't think that's the case at all.  The key thing here is that
+> *most* applications don't need to be modified to use suspend locks,
+> because even though they might be in an event loop, when the user user
+> turns off the display, the user generally doesn't want it doing things
+> on their behalf.
+> 
+> Again, take for example the Mac Book, since Apple has gotten this
+> right for most users' use cases.  When you close the lid, you even if
+> the application is under the misguided belief that it should be
+> checking every five seconds to see whether or not the web page has
+> reloaded --- actually, that's not what you want.  You probably want
+> the application to be forcibly put to sleep.  So the whole point of
+> the suspend blocker design is that you don't have to modify most
+> applications; they just simply get put to sleep when you close the
+> MacBook lid, or, in the case of the Android device, you push the
+> button that turns off the screen.
 
-list_for_each_entry uses its first argument to move from one element to the
-next, so modifying it can break the iteration.  The variable re1 is already
-used within the loop as a temporary variable, and is not live here.
+But in principle that need not mean suspending the entire system.
+To get applications out of the way, you need to freeze user space.
+However, that's not sufficient, because in addition to that you need to
+prevent deactivate the majority of interrupt sources to avoid waking up the
+CPU (from C-states) too often.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@r@
-iterator name list_for_each_entry;
-expression x,E;
-position p1,p2;
-@@
-
-list_for_each_entry@p1(x,...) { <... x =@p2 E ...> }
-
-@@
-expression x,E;
-position r.p1,r.p2;
-statement S;
-@@
-
-*x =@p2 E
-...
-list_for_each_entry@p1(x,...) S
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/mtd/ubi/cdev.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/mtd/ubi/cdev.c b/drivers/mtd/ubi/cdev.c
-index 4dfa6b9..3d2d1a6 100644
---- a/drivers/mtd/ubi/cdev.c
-+++ b/drivers/mtd/ubi/cdev.c
-@@ -798,18 +798,18 @@ static int rename_volumes(struct ubi_device *ubi,
- 			goto out_free;
- 		}
- 
--		re = kzalloc(sizeof(struct ubi_rename_entry), GFP_KERNEL);
--		if (!re) {
-+		re1 = kzalloc(sizeof(struct ubi_rename_entry), GFP_KERNEL);
-+		if (!re1) {
- 			err = -ENOMEM;
- 			ubi_close_volume(desc);
- 			goto out_free;
- 		}
- 
--		re->remove = 1;
--		re->desc = desc;
--		list_add(&re->list, &rename_list);
-+		re1->remove = 1;
-+		re1->desc = desc;
-+		list_add(&re1->list, &rename_list);
- 		dbg_msg("will remove volume %d, name \"%s\"",
--			re->desc->vol->vol_id, re->desc->vol->name);
-+			re1->desc->vol->vol_id, re1->desc->vol->name);
- 	}
- 
- 	mutex_lock(&ubi->device_mutex);
+Thanks,
+Rafael
