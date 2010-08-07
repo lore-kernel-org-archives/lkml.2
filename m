@@ -1,143 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761347Ab0HGDJj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 23:09:39 -0400
-Received: from mail.lang.hm ([64.81.33.126]:33349 "EHLO bifrost.lang.hm"
+	id S1762198Ab0HGDPa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 23:15:30 -0400
+Received: from mail.lang.hm ([64.81.33.126]:43031 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab0HGDJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 23:09:37 -0400
-Date: Fri, 6 Aug 2010 20:08:06 -0700 (PDT)
+	id S1751124Ab0HGDP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 6 Aug 2010 23:15:29 -0400
+Date: Fri, 6 Aug 2010 20:14:09 -0700 (PDT)
 From: david@lang.hm
 X-X-Sender: dlang@asgard.lang.hm
-To: Alan Stern <stern@rowland.harvard.edu>
+To: Brian Swetland <swetland@google.com>
 cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
         linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, swetland@google.com,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
         peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
         menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
         tytso@mit.edu, arjan@infradead.org, swmike@swm.pp.se,
         galibert@pobox.com, dipankar@in.ibm.com
 Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-In-Reply-To: <Pine.LNX.4.44L0.1008062219590.14923-100000@netrider.rowland.org>
-Message-ID: <alpine.DEB.2.00.1008061950050.30564@asgard.lang.hm>
-References: <Pine.LNX.4.44L0.1008062219590.14923-100000@netrider.rowland.org>
+In-Reply-To: <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
+References: <20100731175841.GA9367@linux.vnet.ibm.com> <20100804195704.GA23681@linux.vnet.ibm.com> <20100806225453.GA3947@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
+ <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Aug 2010, Alan Stern wrote:
+On Fri, 6 Aug 2010, Brian Swetland wrote:
 
-> On Fri, 6 Aug 2010 david@lang.hm wrote:
+> On Fri, Aug 6, 2010 at 4:59 PM,  <david@lang.hm> wrote:
+>>
+>> now, android is betting that the apps are all developed specifically for the
+>> android from scratch, so having a different API is acceptable, even if it
+>> cuts them off from the rest of the *nix applications. For a phone this is
+>> not neccessarily an unreasonable stance, but as Android moves into the
+>> spaces where normal applications are in use (netbooks and tablets), this
+>> becomes a much shakier stance to take.
 >
->> From this discussion, it looks to me like Android wants two key features
->> that they don't see a way to get today
+> "Normal" apps work reasonably well -- they get halted when the screen
+> turns off, just like they do when my laptop suspends.
 >
-> I have largely kept out of this discussion, but this was so outrageous
-> I had to say something.
+> Wakelocks are useful for mobile-centric apps that you want to keep
+> running in the background, wake up and do work when the device is
+> "asleep", etc.
 
-sorry for misunderstanding things, thank you for speaking up to correct 
-the misunderstanding.
+that description sounds far more like normal sleep power management that 
+suspending. especially since they want to set timers to wake the system up 
+and the defining characteristic of suspend (according to this thread) is 
+that timers don't fire while suspended.
 
->> 1. the ability to decide to suspend while there are still some
->> 'unimportant' apps running.
->
-> While this may be true in some literal sense, it certainly is not the
-> best way to view the situation.  Linux already has the ability to
-> suspend (or to decide to suspend) whenever you want.  What Android has
-> added is the ability to suspend conditionally, based on whether or not
-> some applications or drivers want to keep the system running.
+as I am seeing it, there are two reasons why this don't "just work"
 
-Ok, aside from possibly drivers, what' stopping this from being done on a 
-valilla system today?
+1. sleeping can't currently save as much power as suspending
 
-> Furthermore, this statement leaves out the primary purpose of
-> wakelocks: to avoid races between suspending and wakeup events.  And it
-> also ignores a very important distinction: the difference between
-> drivers and applications.  Wakelocks are used by both, but it has been
-> shown that only the wakelocks used by drivers need to be implemented in
-> the kernel -- the others can be implemented entirely in userspace.
-
-Ok, this is the first I've heard in this discussion that wakelocks would 
-not be available to userspace. In fact it was explicitly stated that 
-userspace applications called IOCTLs to get/release the wakelock.
-
-many of my objections (voiced in another thread) about Android specific 
-features are not relavent if the wakelock in userspace is just part of 
-that application framework and not tied into the kernel.
-
-> All of these issues are addressed by Raphael's new wakeup_events code.
-
-Ok, then why is there still discussion about wakelocks at all if Raphael 
-has implemnetd the needed kernel functionality and userspace is Android 
-SDK specific? the heated replys from some people about what Android needs 
-(from people who I assumed were Android maintainers due to the way they 
-were answering questions) sure didn't sound like this was a solved 
-problem.
-
->> 2. changes to idle/suspend so that they can get into a state of lower
->> power consumption thatn any existing idle state (by being able to disable
->> clocks), but still have some parts of the system powered (so that they are
->> more awake than suspend)
->
-> This is nonsense.  Nothing was changed.  Instead, Android implemented
-> system suspend on their platform in a way that would leave some devices
-> running while the rest of the system powered down.  There's nothing out
-> of the ordinary about this.  Platforms are free to implement system
-> suspend in whatever way they deem most appropriate.  On modern PCs, the
-> most appropriate technique is to go into ACPI's S3 or S4 state.  On
-> embedded systems, the technique will vary from one platform to another.
-
-the difference is that not all suspends on Android are the same, 
-sometimes when you suspend you power down the audio components, sometimes 
-you don't.
-
-As far as I am aware (and please correct meif I am mistaken), this is 
-significantly different from suspend elsewhere where suspend always takes 
-you to the same state.
-
->> If these two features were available, I think that the rest of what they
->> are looking for could be built up without requireing other changes.
->
-> They already _are_ available.  Admittedly, only since quite recently.
-> (Rafael's new code was accepted during the 2.6.36 merge window.)
-
-Do Brian and Arve agree that this solves their problem?
-
->> In addition to these key features, the fact that they use suspend much
->> more frequently means that the race condition between deciding to freeze
->> and wake events happening is far more likely to cause them problems, so
->> improvements in this area are needed. I don't think that there is any
->> fundamental opposition to these improvements, just questions on how best
->> to do it without causing performance problems.
->
-> By now, I think most of these questions have been answered.
->
-> On a slightly different tack, I have noticed that email discussions
-> concerning Android's wakelocks tend to evolve (I almost wrote
-> "devolve") along one of two paths: Either they start talking about ways
-> to integrate Android's goals into the mainline kernel, or else they
-> start complaining about the fact that Android uses system suspend so
-> aggressively and try to find ways to use deep-idle to achieve
-> equivalent results.  Although the second path generally ends up being
-> much less productive than the first, it is the one that most
-> discussions seem to end up taking.  Large portions of _this_ thread
-> have tended in that direction.
-
-to be fair, there have been numerous complaints about suspend being 
-separate from deep sleep long before Android. Linus' blow-up that resulted 
-in Hibernation and Suspend being separated from each other is a case in 
-point. He was making the point that there shouldn't be a difference 
-between the deepest sleep and suspend.
-
-As deep sleep gains the ability to use even less power and as suspend 
-gains the ability to leave things on sometimes, the difference between 
-them is dissapearing. I wouldn't be at all surprised to see them start 
-overlaping soon. So it's not that I think Android should use deep sleeps 
-instead of suspend, but rather that suspend should just be the deepest 
-sleep, one mechanism instead of two.
+2. the current logic for deciding to sleep can't ignore the other apps on 
+the system.
 
 David Lang
