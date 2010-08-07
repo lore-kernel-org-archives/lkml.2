@@ -1,97 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761876Ab0HGClj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 22:41:39 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:44019 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752458Ab0HGClh (ORCPT
+	id S1762439Ab0HGCmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 22:42:46 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:65170 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766Ab0HGCmm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 22:41:37 -0400
-Date: Fri, 6 Aug 2010 22:41:36 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: david@lang.hm
-cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <arve@android.com>, <mjg59@srcf.ucam.org>, <pavel@ucw.cz>,
-        <florian@mickler.org>, <rjw@sisk.pl>, <swetland@google.com>,
-        <peterz@infradead.org>, <tglx@linutronix.de>,
-        <alan@lxorguk.ukuu.org.uk>, <menage@google.com>, <david-b@pacbell.net>,
-        <James.Bottomley@suse.de>, <tytso@mit.edu>, <arjan@infradead.org>,
-        <swmike@swm.pp.se>, <galibert@pobox.com>, <dipankar@in.ibm.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-In-Reply-To: <alpine.DEB.2.00.1008061800580.30564@asgard.lang.hm>
-Message-ID: <Pine.LNX.4.44L0.1008062219590.14923-100000@netrider.rowland.org>
+	Fri, 6 Aug 2010 22:42:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mpU5jFedN0WYrPJOp+ZN+kBs7wQZ+zB66zEzHHYe3QVoTQqXKnM7/W3PBVyoEK5eX5
+         p5K6Wcfd1h5L2oQHZ04z4DgZ+52DTfh2meXG6V5LjF/SoIXNf24Inby1tBYLeajgsNWf
+         E8Fu11l3yiF9ERvG1Ah65G3+7QURZP94RiXks=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100807102901.6a0b53e7@notabene>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<1280524978.2452.9.camel@segv.aura.of.mankind>
+	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	<20100805235218.GB31233@jeremy-laptop>
+	<20100806133836.49757af9@notabene>
+	<AANLkTinVCLVpqLtA2X=1mOkxX7Re61_ZYsUix_XTvZ5D@mail.gmail.com>
+	<20100807093057.7683bedd@notabene>
+	<AANLkTikDBg5Brt=55Tsu8ozk0aVx=srpxP=U-sFqeBYL@mail.gmail.com>
+	<20100807102901.6a0b53e7@notabene>
+Date: Fri, 6 Aug 2010 21:42:41 -0500
+Message-ID: <AANLkTinEFFAWMu62j2sCPy=ArExZNm2miJOGoXbG65jC@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Steve French <smfrench@gmail.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Jeremy Allison <jra@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 6 Aug 2010 david@lang.hm wrote:
+On Fri, Aug 6, 2010 at 7:29 PM, Neil Brown <neilb@suse.de> wrote:
+> On Fri, 6 Aug 2010 18:58:42 -0500
+> Steve French <smfrench@gmail.com> wrote:
+>
+>> On Fri, Aug 6, 2010 at 6:30 PM, Neil Brown <neilb@suse.de> wrote:
+>> > On Thu, 5 Aug 2010 22:55:06 -0500
+>> > Steve French <smfrench@gmail.com> wrote:
+>> >
+>> >> On Thu, Aug 5, 2010 at 10:38 PM, Neil Brown <neilb@suse.de> wrote:
+>> >> > On Thu, 5 Aug 2010 16:52:18 -0700
+>> >> > Jeremy Allison <jra@samba.org> wrote:
+>> >>
+>> >> >> Don't add it as an EA. It's *not* an EA, it's a timestamp.
+>> >> >
+>> >> > I'm curious.  Why do you particularly care what interface the kernel uses to
+>> >> > provide you with access to this attribute?
+>> >> >
+>> >> > And given that it is an attribute that is not part of 'POSIX' or "UNIX", it
+>> >> > would seem to be an extension - an extended attribute.
+>> >> > As the Linux kernel does virtually nothing with this attribute except provide
+>> >> > access, it seems to be a very different class of thing to other timestamps.
+>> >> > Surely it is simply some storage associated with a file which is capable of
+>> >> > storing a timestamp, which can be set or retrieved by an application, and
+>> >> > which happens to be initialised to the current time when a file is created.
+>> >> >
+>> >> > Yes, to you it is a timestamp.  But to Linux it is a few bytes of
+>> >> > user-settable metadata.  Sounds like an EA to me.
+>> >> >
+>> >> > Or do you really want something like BSD's 'btime' which as I understand it
+>> >> > cannot be set.  Would that be really useful to you?
+>> >>
+>> >> Obviously the cifs and SMB2 protocols which  Samba server support can
+>> >> ask the server to set the create time of a file (this is handled
+>> >> through xattrs today along with the "dos attribute" flags such as
+>> >> archive/hidden/system), but certainly it is much more common (and
+>> >> important) to read the creation time of an existing file.
+>> >>
+>> >
+>> > Just a point of clarification - when you say it is common and important to be
+>> > able to read the creation time on an existing file, and you still talking in
+>> > the context of cifs/smb windows compatibility, or are you talking in the
+>> > broader context?
+>> > If you are referring to a broader context could be please give more details
+>> > because I have not heard any mention of any real value of creation-time out
+>> > side of window interoperability - have such a use clearly documented would
+>> > assist the conversation I think.
+>> >
+>> > If on the other hand you are just referring the the windows interoperability
+>> > context ... given that you have to read an EA if the create-time has been
+>> > changed, you will always have to read and EA so having something else is
+>> > pointless ... or I'm missing something.
+>>
+>> There are other cases, less common than cifs and smb2.   One
+>> that comes to mind is NFS version 4, but there are a few other
+>> cases that I have heard of (backup/archive applications).
+>> The RFC recommends that servers return attribute 50 (creation
+>> time).  See below text:
+>>
+>>    time_create         50   nfstime4       R/W      The time of creation
+>>                                                     of the object.  This
+>>                                                     attribute does not
+>>                                                     have any relation to
+>>                                                     the traditional UNIX
+>>                                                     file attribute
+>>                                                     "ctime" or "change
+>>                                                     time".
+>
+> I really don't think NFSv4 is a separate justification.  I'm fairly sure
+> that attribute was only including in NFSv4 for enhanced Windows
+> compatibility (windows interoperation was a big issue during the protocol
+> development).
 
-> From this discussion, it looks to me like Android wants two key features 
-> that they don't see a way to get today
+Perhaps also useful for MacOS (and other BSD), not just Windows,
+although MacOS may use cifs more often than nfs.
 
-I have largely kept out of this discussion, but this was so outrageous 
-I had to say something.
 
-> 1. the ability to decide to suspend while there are still some 
-> 'unimportant' apps running.
 
-While this may be true in some literal sense, it certainly is not the
-best way to view the situation.  Linux already has the ability to
-suspend (or to decide to suspend) whenever you want.  What Android has
-added is the ability to suspend conditionally, based on whether or not
-some applications or drivers want to keep the system running.
 
-Furthermore, this statement leaves out the primary purpose of
-wakelocks: to avoid races between suspending and wakeup events.  And it
-also ignores a very important distinction: the difference between
-drivers and applications.  Wakelocks are used by both, but it has been
-shown that only the wakelocks used by drivers need to be implemented in
-the kernel -- the others can be implemented entirely in userspace.
+-- 
+Thanks,
 
-All of these issues are addressed by Raphael's new wakeup_events code.
-
-> 2. changes to idle/suspend so that they can get into a state of lower 
-> power consumption thatn any existing idle state (by being able to disable 
-> clocks), but still have some parts of the system powered (so that they are 
-> more awake than suspend)
-
-This is nonsense.  Nothing was changed.  Instead, Android implemented
-system suspend on their platform in a way that would leave some devices
-running while the rest of the system powered down.  There's nothing out
-of the ordinary about this.  Platforms are free to implement system
-suspend in whatever way they deem most appropriate.  On modern PCs, the 
-most appropriate technique is to go into ACPI's S3 or S4 state.  On 
-embedded systems, the technique will vary from one platform to another.
-
-> If these two features were available, I think that the rest of what they 
-> are looking for could be built up without requireing other changes.
-
-They already _are_ available.  Admittedly, only since quite recently.  
-(Rafael's new code was accepted during the 2.6.36 merge window.)
-
-> In addition to these key features, the fact that they use suspend much 
-> more frequently means that the race condition between deciding to freeze 
-> and wake events happening is far more likely to cause them problems, so 
-> improvements in this area are needed. I don't think that there is any 
-> fundamental opposition to these improvements, just questions on how best 
-> to do it without causing performance problems.
-
-By now, I think most of these questions have been answered.
-
-On a slightly different tack, I have noticed that email discussions
-concerning Android's wakelocks tend to evolve (I almost wrote
-"devolve") along one of two paths: Either they start talking about ways
-to integrate Android's goals into the mainline kernel, or else they
-start complaining about the fact that Android uses system suspend so
-aggressively and try to find ways to use deep-idle to achieve
-equivalent results.  Although the second path generally ends up being
-much less productive than the first, it is the one that most
-discussions seem to end up taking.  Large portions of _this_ thread 
-have tended in that direction.
-
-Alan Stern
-
+Steve
