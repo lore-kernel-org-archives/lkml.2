@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab0HGSKI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 14:10:08 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49162 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834Ab0HGSKG (ORCPT
+	id S1753243Ab0HGSid (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 14:38:33 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:63856 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab0HGSib (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 14:10:06 -0400
+	Sat, 7 Aug 2010 14:38:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=MttJWgLfESD3yMx1kViWeHRbYZ9JJp1XvhfYhmjn/dUEFyaC6WjQfgv3YyaujHtlRh
-         eKkMqfquhOjY1nRpML9LO1guY5TYJVVTfREduNk94rMRpZa9Z3FHuBwn1R+aBhbBWNlI
-         fNws2oCPqg+oThSP81Maozz/B5NrBTw5FkKd0=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Len Brown <lenb@kernel.org>, linux-pm@lists.linux-foundation.org
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH] intel_idle: add missing __percpu markup
-Date: Sun,  8 Aug 2010 03:10:03 +0900
-Message-Id: <1281204603-13406-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=UdwFLPgkLjD82eBcZiET4vsAtevT6TaTZ4GrsEpnuIgopa5kk6O6gxPjPIGeM2XrA3
+         x9IMRBo4F2uLvcSCt0aRcWrc/u75OmYg5d2V7s8gOyC751oZEqcMFoxy6EFZ3gNsoJfw
+         84+oxiGZgnXIG1EbwoCt1iFZExFV/uhEO9yoU=
+MIME-Version: 1.0
+Date: Sat, 7 Aug 2010 20:38:30 +0200
+Message-ID: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
+Subject: UIO DMA to userspace question
+From: Leon Woestenberg <leon.woestenberg@gmail.com>
+To: Tom Lyon <pugs@cisco.com>, mst@redhat.com, hjk@linutronix.de,
+        gregkh@suse.de, chrisw@sous-sol.org, joro@8bytes.org, avi@redhat.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-intel_idle_cpuidle_devices is a percpu pointer but was missing __percpu markup.
-Add it.
+Hello all,
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- drivers/idle/intel_idle.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+can I use the UIO framework for the following?
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-index 54f0fb4..d86ce30 100755
---- a/drivers/idle/intel_idle.c
-+++ b/drivers/idle/intel_idle.c
-@@ -85,7 +85,7 @@ static int (*choose_substate)(int);
- /* Reliable LAPIC Timer States, bit 1 for C1 etc.  */
- static unsigned int lapic_timer_reliable_states;
- 
--static struct cpuidle_device *intel_idle_cpuidle_devices;
-+static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
- static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state);
- 
- static struct cpuidle_state *cpuidle_state_table;
+The userspace portion of the driver allocates memory in user-space
+using malloc() - usually resulting in a scatter pages in physical
+memory.
+The UIO kernel portion of the driver maps those using pci_map_sg().
+
+Is this possible, or does the UIO framework assume memory for DMA is
+allocated in kernel space?
+
+
+Thanks,
 -- 
-1.7.0.4
-
+Leon
