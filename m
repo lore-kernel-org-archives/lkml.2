@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762675Ab0HGNfO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 09:35:14 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:33475 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1762658Ab0HGNfL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 09:35:11 -0400
-Date: Sat, 7 Aug 2010 09:35:10 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>, <david@lang.hm>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <pavel@ucw.cz>, <florian@mickler.org>, <swetland@google.com>,
-        <peterz@infradead.org>, <tglx@linutronix.de>,
-        <alan@lxorguk.ukuu.org.uk>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-In-Reply-To: <201008071049.38237.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1008070926260.20673-100000@netrider.rowland.org>
+	id S1762680Ab0HGNjx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 09:39:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24730 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762655Ab0HGNjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 09:39:52 -0400
+Message-ID: <4C5D61E7.9090008@redhat.com>
+Date: Sat, 07 Aug 2010 09:38:47 -0400
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: Greg KH <greg@kroah.com>, Stefan Bader <stefan.bader@canonical.com>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [Stable-review] [116/165] ext4: dont return to userspace
+ after freezing the fs with a mutex held
+References: <20100730171510.105264205@clark.site> <4C56B45E.9010601@canonical.com> <4C56FA35.7060607@redhat.com> <20100802184806.GA16878@kroah.com> <20100807040732.GB16342@khazad-dum.debian.net>
+In-Reply-To: <20100807040732.GB16342@khazad-dum.debian.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Aug 2010, Rafael J. Wysocki wrote:
+Henrique de Moraes Holschuh wrote:
+> On Mon, 02 Aug 2010, Greg KH wrote:
+>> On Mon, Aug 02, 2010 at 12:02:45PM -0500, Eric Sandeen wrote:
+>>> On 08/02/2010 07:04 AM, Stefan Bader wrote:
+>>>> We have reports about this patch breaking lvm snapshhots. Eric, there is a patch
+>>>> mentioned which is supposed to fix things but its not upstream, yet.
+>>>> Do you know what happened to that?
+>>> right, patch below is needed to fix things.
+>>>
+>>> Ted just acked it on the list recently; Greg, I'd either drop 116/165
+>>> for now, or include the patch below which should be upstream soon...
+>> I can't take anything that isn't upstream yet.
+>>
+>> And I just released with this patch in the kernel, should I do a revert
+>> and do a new release?
+> 
+> Any answers on this?
+> 
 
-> > Arguably not every PCI interrupt should be regarded as a wakeup event, so
-> > I think we can simply say in the cases when that's necessary the driver should
-> > be responsible for using pm_wakeup_event() or pm_stay_awake() / pm_relax() as
-> > appropriate.
-> > 
-> > My patch only added it to the bus-level code which covered the PME-based
-> > wakeup events that _cannot_ be handled by device drivers.
+Yes, I'd revert it for now, I'm afraid, if the other patch isn't upstream
+yet.
 
-In other words, your bus-level changes were a necessary but not
-sufficient start.  I can buy that.
+Sorry about that,
 
-> Also please note that it depends a good deal on the definition of a "wakeup
-> event".  Under the definition used when my patch was being developed, ie. that
-> wakeup events are the events that would wake up the system from a sleep state,
-> PCI interrupts cannot be wakeup events, unless the given device remains in the
-> full power state although the system has been suspended (standard PCI devices
-> are not allowed to generate signals except for PME from low-power states).
-
-Um, what do you mean by "event"?  Let's take a concrete example.  
-Suppose you have a system where you want USB plug or unplug events to
-cause a wakeup.  This is relevant to the discussion at hand if your USB
-host controller is a PCI device.
-
-By your reckoning, a plug or unplug event that occurs while the system
-is asleep would be a wakeup event by definition.  And yet you say that
-the same plug or unplug event occurring while the controller was at
-full power would not count as a wakeup event?  And in particular, it 
-should not prevent the system from suspending before the event can be
-fully processed?  That doesn't make sense.  The same event is the same 
-event, regardless of the context in which it occurs.  If it is treated 
-as a wakeup event in context then it should be treated as a wakeup 
-event in other contexts too.
-
-Alan Stern
-
+-Eric
