@@ -1,162 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762308Ab0HGAnw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 6 Aug 2010 20:43:52 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:40173 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752243Ab0HGAns convert rfc822-to-8bit (ORCPT
+	id S1762302Ab0HGAp5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 6 Aug 2010 20:45:57 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:49371 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752311Ab0HGApz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 6 Aug 2010 20:43:48 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Fri, 6 Aug 2010 20:45:55 -0400
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Simon Horman <horms@verge.net.au>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch] MAINTAINERS: kexec-tools has moved
+References: <20100729041641.GA32220@verge.net.au>
+	<20100806233203.GA10040@verge.net.au> <4C5C9BC2.8020502@zytor.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Fri, 06 Aug 2010 17:45:50 -0700
+In-Reply-To: <4C5C9BC2.8020502@zytor.com> (H. Peter Anvin's message of "Fri\, 06 Aug 2010 16\:33\:22 -0700")
+Message-ID: <m1sk2rtflt.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
-Date: Fri, 6 Aug 2010 17:39:32 -0700
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC09C4860C@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
-Thread-Index: Acs04i5aDGJxUCOdRfWXuETVvW9VKgA5jeGQ
-References: <kev@cypress.com> <1281031924-3032-1-git-send-email-kev@cypress.com> <4C5B22F8.1030204@codeaurora.org> <20100805210705.GA20063@core.coreip.homeip.net>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "Trilok Soni" <tsoni@codeaurora.org>
-Cc: "David Brown" <davidb@codeaurora.org>,
-        "Fred" <fwk@ubuntu.linuxcertified.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>, "Ben Dooks" <ben-linux@fluff.org>,
-        "Simtec Linux Team" <linux@simtec.co.uk>,
-        "Todd Fischer" <todd.fischer@ridgerun.com>,
-        "Arnaud Patard" <arnaud.patard@rtp-net.org>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>,
-        "Henrik Rydberg" <rydberg@euromail.se>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 07 Aug 2010 00:39:33.0006 (UTC) FILETIME=[00E77AE0:01CB35C9]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Dmitry,
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-> -----Original Message-----
-> From: Dmitry Torokhov [mailto:dmitry.torokhov@gmail.com]
-> Sent: Thursday, August 05, 2010 2:07 PM
-> To: Trilok Soni
-> Cc: Kevin McNeely; David Brown; Fred; Samuel Ortiz; Eric Miao; Ben
-> Dooks; Simtec Linux Team; Todd Fischer; Arnaud Patard; Sascha Hauer;
-> Henrik Rydberg; linux-input@vger.kernel.org; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init
-> submit
-> 
-> On Fri, Aug 06, 2010 at 02:15:44AM +0530, Trilok Soni wrote:
-> > > +
-> > > +/*
+> On 08/06/2010 04:32 PM, Simon Horman wrote:
+>> On Thu, Jul 29, 2010 at 01:16:41PM +0900, Simon Horman wrote:
+>>> Kexec tools has been moved to http://kernel.org/pub/linux/utils/kernel/kexec/
+>>> as user-space code shouldn't be in /pub/linux/kernel
+>>>
+>>> Signed-off-by: Simon Horman <horms@verge.net.au>
+>> 
+>> Eric, ping.
+>> 
+>> What is your preferred path for this change to get merged?
+>> 
+>>>
+>>> Index: linux-2.6/MAINTAINERS
+>>> ===================================================================
+>>> --- linux-2.6.orig/MAINTAINERS	2010-07-29 13:10:04.000000000 +0900
+>>> +++ linux-2.6/MAINTAINERS	2010-07-29 13:11:40.000000000 +0900
+>>> @@ -3334,7 +3334,7 @@ F:	drivers/s390/kvm/
+>>>  
+>>>  KEXEC
+>>>  M:	Eric Biederman <ebiederm@xmission.com>
+>>> -W:	http://ftp.kernel.org/pub/linux/kernel/people/horms/kexec-tools/
+>>> +W:	http://kernel.org/pub/linux/utils/kernel/kexec/
+>>>  L:	kexec@lists.infradead.org
+>>>  S:	Maintained
+>>>  F:	include/linux/kexec.h
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
 >
-***********************************************************************
-> *
-> > > + * The cyttsp_xy_worker function reads the XY coordinates and
-> sends them to
-> > > + * the input layer.  It is scheduled from the interrupt (or
-> timer).
-> > > + *
->
-***********************************************************************
-> **/
-> > > +void handle_single_touch(struct cyttsp_xydata *xy, struct
-> cyttsp_track_data *t,
-> > > +			 struct cyttsp *ts)
-> > > +{
-> >
-> > functions should be "static". I would leave a decision to Dmitry if
-> he wants the driver
-> > to support old single touch protocol hacked up with HAT_xx bits so
-> that driver can support
-> > two touches with the old single touch protocol itself.
-> 
-> The ABS_HAT* bits should go away. They were gross abuse even when we
-> did
-> not have MT protocol and shoudl not be used at all now that we do have
-> it. I will be cleaning up older drivers (like Elantech) to get rid of
-> them.
+> Eric is on vacation this week, AFAIK.
 
-I will remove the ST code completely.
+I am on vacation..  However having made the mistake of checking my email.
 
-> 
-> Multitouch devices shouls support either A or B MT protocol. SInce
-this
-> device seems to be supporting tracking in hardware it shoudl simply
-> adhere to protocol B to limit kernel->userspace traffict and be done
-> with it.
-> 
-> ...
+Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-I have responded to Henrik's review about protocol A and B.
-I would like to keep protocol A for now and just change the default
-to Protocol B?
+I guess I don't have a particular favorite path for something to make
+it to MAINTAINERS.  But since we have move the location of the the
+userspace repository merging this somehow seems like a good idea.
 
-> 
-> > > +
-> > > +/* schedulable worker entry for timer polling method */
-> > > +void cyttsp_xy_worker_(struct work_struct *work)
-> > > +{
-> > > +	struct cyttsp *ts = container_of(work, struct cyttsp, work);
-> > > +	cyttsp_xy_worker(ts);
-> > > +}
-> >
-> > I would really prefer that you remove the polling method from this
-> code as it will simplify
-> > a code lot. We can delete the whole workqueue because as you will be
-> using request_threaded_irq(...),
-> > you will not need any workqueue.
-> >
-> 
-> Seconded. Polling is hardly useful on real production setup as it will
-> drain battery in no time.
-> 
+As I am on vacation I'm not motivated to push this to Linus, or much
+of anywhere else, which sucks because the merge window is open right
+now.  I think historically patches like this have gone through Andrew.
 
-I will remove polling completely.
-
-> > > +
-> > > +static int cyttsp_i2c_init(void)
-> > > +{
-> >
-> > Please add __init like
-> >
-> > static int __init cyttsp_i2c_init(void)
-> >
-> > > +	int retval;
-> > > +	retval = i2c_add_driver(&cyttsp_i2c_driver);
-> > > +	printk(KERN_INFO "%s: Cypress TrueTouch(R) Standard Product I2C
-"
-> > > +		"Touchscreen Driver (Built %s @ %s) returned %d\n",
-> > > +		 __func__, __DATE__, __TIME__, retval);
-> > > +
-> 
-> And lose printk as well. The boot is exremely noisy as it is...
-> 
-> 	return i2c_add_driver(&cyttsp_i2c_driver);
-> 
-> is all that is needed.
-
-I will make this change.
-
-Thank you for your review.
--kev
-
-> 
-> --
-> Dmitry
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+Eric
