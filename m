@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762235Ab0HGLaz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 07:30:55 -0400
-Received: from www17.your-server.de ([213.133.104.17]:33140 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab0HGLay (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 07:30:54 -0400
-From: Thomas Meyer <thomas@m3y3r.de>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.36: commit f12a15 makes computer really slow
-Date: Sat, 7 Aug 2010 13:29:38 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-04772-gc3ddf62-dirty; KDE/4.4.5; i686; ; )
+	id S1755617Ab0HGLhW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 07:37:22 -0400
+Received: from ozlabs.org ([203.10.76.45]:42696 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753389Ab0HGLhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 07:37:20 -0400
+Date: Sat, 7 Aug 2010 21:37:09 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT pull] timekeeping updates for 2.6.36
+Message-ID: <20100807113709.GA6242@brick.ozlabs.ibm.com>
+References: <alpine.LFD.2.00.1008060016300.3225@localhost.localdomain>
+ <AANLkTi=UXQ2EfSNNAudHeEGybaNJpzz6ku8RcfRzOpct@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008071329.38590.thomas@m3y3r.de>
-X-Authenticated-Sender: thomas@m3y3r.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=UXQ2EfSNNAudHeEGybaNJpzz6ku8RcfRzOpct@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I need to revert commit f12a15 to have a workable computer:
+On Fri, Aug 06, 2010 at 01:25:22PM -0700, Linus Torvalds wrote:
 
-commit f12a15be63d1de9a35971f35f06b73088fa25c3a
-Author: John Stultz <johnstul@us.ibm.com>
-Date:   Tue Jul 13 17:56:27 2010 -0700
+> Well, it just resulted in another merge conflict, but I resolved it
+> the same way you had resolved your cherry-picks. However, I wanted to
+> let people know, so that the powerpc guys can re-verify that whole
+> vsyscall timer change.
+> 
+> So Paul, Ben, please check out that I didn't screw something up in there.
 
-    x86: Convert common clocksources to use clocksource_register_hz/khz
-    
-    This converts the most common of the x86 clocksources over to use
-    clocksource_register_hz/khz.
+Looks fine, thanks.
 
-
-/proc/timer_list:
-[...]
-
-Tick Device: mode:     1
-Broadcast device
-Clock Event Device: hpet
- max_delta_ns:   149983005959
- min_delta_ns:   5000
- mult:           61496114
- shift:          32
- mode:           3
- next_event:     271895610827 nsecs
- set_next_event: hpet_legacy_next_event
- set_mode:       hpet_legacy_set_mode
- event_handler:  tick_handle_oneshot_broadcast
- retries:        1
-tick_broadcast_mask: 00000001
-tick_broadcast_oneshot_mask: 00000000
-
-
-Tick Device: mode:     1
-Per CPU device: 0
-Clock Event Device: lapic
- max_delta_ns:   672727706
- min_delta_ns:   1202
- mult:           53556279
- shift:          32
- mode:           3
- next_event:     271766639490 nsecs
- set_next_event: lapic_next_event
- set_mode:       lapic_timer_setup
- event_handler:  hrtimer_interrupt
- retries:        8
-
-This is an x86_32 box.
+Paul.
