@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0HGR2g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 13:28:36 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43211 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751615Ab0HGR2e convert rfc822-to-8bit (ORCPT
+	id S1754020Ab0HGRh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 13:37:28 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35289 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752745Ab0HGRh0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 13:28:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimHbcF+fz=aBMLdhLo2s-rhfNvaPCtqE8nYJ8aT@mail.gmail.com>
-References: <4C58A7AA.8020007@codeaurora.org> <20100803235631.GA17759@suse.de> 
-	<4C58AE15.6090900@codeaurora.org> <20100804000945.GA19729@suse.de> 
-	<4C58B1B6.9050005@quicinc.com> <AANLkTikVzh9=DvvUPbKmDeo6k2-pPVSnjH+GxAPdQFO4@mail.gmail.com> 
-	<20100806142727.GB4921@suse.de> <AANLkTi=VbVed09=u-Ea0L8c_CWZ_CLLjWH9ZjD2dyg6Y@mail.gmail.com> 
-	<20100806234635.GC16793@suse.de> <AANLkTimHbcF+fz=aBMLdhLo2s-rhfNvaPCtqE8nYJ8aT@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sat, 7 Aug 2010 11:28:13 -0600
-X-Google-Sender-Auth: 4FREdLR1Ml4Wb-1OTnFUodx1dsc
-Message-ID: <AANLkTimjXd=SL61KvjDfvJ-JtXsSVW9pwOYBFUHX0mVp@mail.gmail.com>
-Subject: Re: [RFC PATCH] platform: Faciliatate the creation of pseduo-platform 
-	busses
-To: Greg KH <gregkh@suse.de>
-Cc: Patrick Pannuto <ppannuto@quicinc.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "dtor@mail.ru" <dtor@mail.ru>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 7 Aug 2010 13:37:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fG/LKyACjcvXgMEvn7x4bWzgZpFpbPXFG1xUEFhfif3oNYa/vz2N/RLw2kUgJkx6jK
+         G2FJOysXFUMhg3Fo1LWfh4tucxqLQisCFCiLiuAgNFNm0z+SNorBY62TcAC4/8OppOo4
+         ThN8fYv3v1Y0OScV/OIbuDqZOziHJgHuxCQWQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Dave Jones <davej@redhat.com>, cpufreq@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH] [CPUFREQ] add missing __percpu markup in pcc-cpufreq.c
+Date: Sun,  8 Aug 2010 02:37:23 +0900
+Message-Id: <1281202643-26709-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 7, 2010 at 12:35 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Fri, Aug 6, 2010 at 5:46 PM, Greg KH <gregkh@suse.de> wrote:
->> That would be nice, but take your "standard" PC today:
->>        > ls /sys/devices/platform/
->>        Fixed MDIO bus.0  i8042  pcspkr  power  serial8250  uevent vesafb.0
->>
->> There are tty devices below the serial port, which is nice to see, but
->> the others?  I don't know what type of bus they would be on, do you?
-[...]
-> I wouldn't have any problem modifying those specific drivers to
-> register under something like /sys/devices/legacy, but I don't really
-> think it is in any way necessary.
+pcc_cpu_info is a percpu pointer but was missing __percpu markup.
+Add it.
 
-Or for that matter, make those drivers explicitly use
-/sys/devices/platform so that I don't cause churn on PCs.  :-)  I'd
-like to be rid of it as default behaviour for embedded though.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-g.
+diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
+index a36de5b..994230d 100644
+--- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
+@@ -110,7 +110,7 @@ struct pcc_cpu {
+ 	u32 output_offset;
+ };
+ 
+-static struct pcc_cpu *pcc_cpu_info;
++static struct pcc_cpu __percpu *pcc_cpu_info;
+ 
+ static int pcc_cpufreq_verify(struct cpufreq_policy *policy)
+ {
+-- 
+1.7.0.4
+
