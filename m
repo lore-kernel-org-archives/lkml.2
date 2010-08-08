@@ -1,144 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755032Ab0HHWqJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 18:46:09 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60066 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569Ab0HHWqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 18:46:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=HAMdKMevuS/4eRxhM6kxDqdFWGut2jQpyJuyZYopNRNxruJY9VYYC2fJ8kDgVevryD
-         vBApZenPxghb7s5Ca0zX70lh1b/fftq9MufjtO3LkWYS7rVyDpUeJRIcJDIBOG0nqXRi
-         qoAG0YmHyraVSdWuAhNgMZcBpJIfDqG6OKzUY=
-From: Shawn Bohrer <shawn.bohrer@gmail.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Shawn Bohrer <shawn.bohrer@gmail.com>
-Subject: [PATCH] hrtimer: make epoll_wait() use the hrtimer range feature
-Date: Sun,  8 Aug 2010 17:45:32 -0500
-Message-Id: <1281307532-3235-1-git-send-email-shawn.bohrer@gmail.com>
-X-Mailer: git-send-email 1.7.2.1
+	id S1755068Ab0HHXHe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 19:07:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48280 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754946Ab0HHXHd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 19:07:33 -0400
+Date: Mon, 9 Aug 2010 09:07:03 +1000
+From: Neil Brown <neilb@suse.de>
+To: Jeremy Allison <jra@samba.org>
+Cc: Jeff Layton <jlayton@redhat.com>, utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100809090703.304d21c7@notabene>
+In-Reply-To: <20100808121208.GA7329@jeremy-laptop>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<1280524978.2452.9.camel@segv.aura.of.mankind>
+	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	<20100805235218.GB31233@jeremy-laptop>
+	<20100806133836.49757af9@notabene>
+	<20100808121208.GA7329@jeremy-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This make epoll use hrtimers for the timeout value which prevents
-epoll_wait() from timing out up to a millisecond early.
+On Sun, 8 Aug 2010 05:12:09 -0700
+Jeremy Allison <jra@samba.org> wrote:
 
-This mirrors the behavior of select() and poll().
+> On Fri, Aug 06, 2010 at 01:38:36PM +1000, Neil Brown wrote:
+> > I'm curious.  Why do you particularly care what interface the kernel uses to
+> > provide you with access to this attribute?
+> 
+> It's a matter of taste. The *BSD's have this right IMHO. It
+> should be part of the stat information. A file timestamp is not
+> an EA. Making it available that way just feels like an appalingly
+> tasteless kludge. It offends the artist in me :-).
 
-Signed-off-by: Shawn Bohrer <shawn.bohrer@gmail.com>
----
- fs/eventpoll.c       |   35 +++++++++++++++++++----------------
- fs/select.c          |    2 +-
- include/linux/poll.h |    2 ++
- 3 files changed, 22 insertions(+), 17 deletions(-)
+Unfortunately whenever you work on a collaborative project someone has to make
+concessions to taste, as we all taste different.. (or have different taste..
+or something).
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 3817149..728f56c 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -77,9 +77,6 @@
- /* Maximum number of nesting allowed inside epoll sets */
- #define EP_MAX_NESTS 4
- 
--/* Maximum msec timeout value storeable in a long int */
--#define EP_MAX_MSTIMEO min(1000ULL * MAX_SCHEDULE_TIMEOUT / HZ, (LONG_MAX - 999ULL) / HZ)
--
- #define EP_MAX_EVENTS (INT_MAX / sizeof(struct epoll_event))
- 
- #define EP_UNACTIVE_PTR ((void *) -1L)
-@@ -1116,18 +1113,22 @@ static int ep_send_events(struct eventpoll *ep,
- static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
- 		   int maxevents, long timeout)
- {
--	int res, eavail;
-+	int res, eavail, timed_out = 0;
- 	unsigned long flags;
--	long jtimeout;
-+	long slack;
- 	wait_queue_t wait;
--
--	/*
--	 * Calculate the timeout by checking for the "infinite" value (-1)
--	 * and the overflow condition. The passed timeout is in milliseconds,
--	 * that why (t * HZ) / 1000.
--	 */
--	jtimeout = (timeout < 0 || timeout >= EP_MAX_MSTIMEO) ?
--		MAX_SCHEDULE_TIMEOUT : (timeout * HZ + 999) / 1000;
-+	struct timespec end_time;
-+	ktime_t expires, *to = NULL;
-+
-+	if (timeout > 0) {
-+		ktime_get_ts(&end_time);
-+		timespec_add_ns(&end_time, (u64)timeout * NSEC_PER_MSEC);
-+		slack = estimate_accuracy(&end_time);
-+		to = &expires;
-+		*to = timespec_to_ktime(end_time);
-+	} else if (timeout == 0) {
-+		timed_out = 1;
-+	}
- 
- retry:
- 	spin_lock_irqsave(&ep->lock, flags);
-@@ -1149,7 +1150,7 @@ retry:
- 			 * to TASK_INTERRUPTIBLE before doing the checks.
- 			 */
- 			set_current_state(TASK_INTERRUPTIBLE);
--			if (!list_empty(&ep->rdllist) || !jtimeout)
-+			if (!list_empty(&ep->rdllist) || timed_out)
- 				break;
- 			if (signal_pending(current)) {
- 				res = -EINTR;
-@@ -1157,7 +1158,9 @@ retry:
- 			}
- 
- 			spin_unlock_irqrestore(&ep->lock, flags);
--			jtimeout = schedule_timeout(jtimeout);
-+			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
-+				timed_out = 1;
-+
- 			spin_lock_irqsave(&ep->lock, flags);
- 		}
- 		__remove_wait_queue(&ep->wq, &wait);
-@@ -1175,7 +1178,7 @@ retry:
- 	 * more luck.
- 	 */
- 	if (!res && eavail &&
--	    !(res = ep_send_events(ep, events, maxevents)) && jtimeout)
-+	    !(res = ep_send_events(ep, events, maxevents)) && !timed_out)
- 		goto retry;
- 
- 	return res;
-diff --git a/fs/select.c b/fs/select.c
-index 500a669..003cb77 100644
---- a/fs/select.c
-+++ b/fs/select.c
-@@ -67,7 +67,7 @@ static long __estimate_accuracy(struct timespec *tv)
- 	return slack;
- }
- 
--static long estimate_accuracy(struct timespec *tv)
-+long estimate_accuracy(struct timespec *tv)
- {
- 	unsigned long ret;
- 	struct timespec now;
-diff --git a/include/linux/poll.h b/include/linux/poll.h
-index 600cc1f..52be81f 100644
---- a/include/linux/poll.h
-+++ b/include/linux/poll.h
-@@ -73,6 +73,8 @@ extern void poll_initwait(struct poll_wqueues *pwq);
- extern void poll_freewait(struct poll_wqueues *pwq);
- extern int poll_schedule_timeout(struct poll_wqueues *pwq, int state,
- 				 ktime_t *expires, unsigned long slack);
-+extern long estimate_accuracy(struct timespec *tv);
-+
- 
- static inline int poll_schedule(struct poll_wqueues *pwq, int state)
- {
--- 
-1.7.2.1
+So I think it is very important to clearly differentiate the practical issues
+from the aesthetic issues as I think we can hope for unity on the former, but
+never on the latter.
 
+> 
+> > Or do you really want something like BSD's 'btime' which as I understand it
+> > cannot be set.  Would that be really useful to you?
+> 
+> It is *already* useful to us, and is widely used in
+> existing code. The occasions when btime is set are
+> relatively rare, and at that point we store it in a
+> separate EA for Windows reporting purposes.
+
+I'm probably sounding like a scratched record, but when you say "is widely
+used" do you mean "is used in samba which is widely used" or do you mean "is
+used in a wide variety of applications"?
+
+Because if you are only saying the former, then I don't think we should copy
+BSD, but rather I think we should provide exactly the semantics that are most
+useful to samba - and that would seem to be creation-time and DOS flags which
+the filesystem can store directly in the inode and which samba can access
+cheaply.
+(and I would prefer to use xattrs, but that is a taste thing and as I'm not
+writing the code, I don't get to choose the taste).
+
+But if you are saying the later, then sharing those details might help us see
+that copying bsd is actually the best thing to do, or maybe that something
+else is better.
+
+I'm just afraid that if some new interface is added without clear,
+comprehensive and up-front justification then we will end up getting a
+sub-optimal interface.
+
+NeilBrown
