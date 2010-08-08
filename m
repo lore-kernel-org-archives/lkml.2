@@ -1,60 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab0HHMMN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 08:12:13 -0400
-Received: from fn.samba.org ([216.83.154.106]:38119 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667Ab0HHMML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 08:12:11 -0400
-Date: Sun, 8 Aug 2010 05:12:09 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Jeremy Allison <jra@samba.org>, Jeff Layton <jlayton@redhat.com>,
-        utz lehmann <lkml123@s2y4n2c.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100808121208.GA7329@jeremy-laptop>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
- <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
- <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
- <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
- <1280524978.2452.9.camel@segv.aura.of.mankind>
- <20100801092529.5e6ba0e0@corrin.poochiereds.net>
- <20100805235218.GB31233@jeremy-laptop>
- <20100806133836.49757af9@notabene>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100806133836.49757af9@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753866Ab0HHMXk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 08:23:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43386 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723Ab0HHMXg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 08:23:36 -0400
+Subject: RE: [PATCH 1/2] mtdpart: memory accessor interface for MTD layer
+From: David Woodhouse <dwmw2@infradead.org>
+To: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+Cc: "'David Brownell'" <david-b@pacbell.net>,
+        "'Bernd Schmidt'" <bernd.schmidt@analog.com>,
+        "'Nicolas Pitre'" <nico@fluxnic.net>,
+        "'Kevin Hilman'" <khilman@deeprootsystems.com>,
+        linux-kernel@vger.kernel.org, "'David Howells'" <dhowells@redhat.com>,
+        "'David Brownell'" <dbrownell@users.sourceforge.net>,
+        linux-mtd@lists.infradead.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>
+In-Reply-To: <000401cb3533$5c982470$15c86d50$@raj@ti.com>
+References: <350720.60481.qm@web180309.mail.gq1.yahoo.com>
+	 <1280920127.19499.20.camel@localhost>
+	 <000401cb3533$5c982470$15c86d50$@raj@ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 Aug 2010 13:23:18 +0100
+Message-ID: <1281270198.19967.258.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 01:38:36PM +1000, Neil Brown wrote:
-> I'm curious.  Why do you particularly care what interface the kernel uses to
-> provide you with access to this attribute?
+On Fri, 2010-08-06 at 12:18 +0530, Sudhakar Rajashekhara wrote:
+> 
+> Thanks for the feedback. I'll be re-working on this patch and will
+> re-post
+> the updated patch soon. 
 
-It's a matter of taste. The *BSD's have this right IMHO. It
-should be part of the stat information. A file timestamp is not
-an EA. Making it available that way just feels like an appalingly
-tasteless kludge. It offends the artist in me :-).
+Start with this, perhaps...
 
-> Or do you really want something like BSD's 'btime' which as I understand it
-> cannot be set.  Would that be really useful to you?
+Subject: mtd/partitions: Add add_mtd_partitions_ret() function
 
-It is *already* useful to us, and is widely used in
-existing code. The occasions when btime is set are
-relatively rare, and at that point we store it in a
-separate EA for Windows reporting purposes.
+Some callers want access to the MTD devices which get registered for
+them when they call add_mtd_partitions(). Add a variant on the function
+which does that.
 
-Jeremy.
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+
+diff --git a/drivers/mtd/mtdpart.c b/drivers/mtd/mtdpart.c
+index 4c539de..b9ee79b 100644
+--- a/drivers/mtd/mtdpart.c
++++ b/drivers/mtd/mtdpart.c
+@@ -522,26 +522,36 @@ out_register:
+  * for reasons of data integrity.
+  */
+ 
+-int add_mtd_partitions(struct mtd_info *master,
+-		       const struct mtd_partition *parts,
+-		       int nbparts)
++int add_mtd_partitions_ret(struct mtd_info *master,
++			   const struct mtd_partition *parts,
++			   int nbparts, struct mtd_info ***mtds_ret)
+ {
+ 	struct mtd_part *slave;
+ 	uint64_t cur_offset = 0;
++	struct mtd_info **mtds = NULL;
+ 	int i;
+ 
+ 	printk(KERN_NOTICE "Creating %d MTD partitions on \"%s\":\n", nbparts, master->name);
+ 
++	if (mtds_ret) {
++		mtds = kmalloc(sizeof(*mtds) * nbparts, GFP_KERNEL);
++		if (!mtds)
++			return -ENOMEM;
++	}
+ 	for (i = 0; i < nbparts; i++) {
+ 		slave = add_one_partition(master, parts + i, i, cur_offset);
+-		if (!slave)
++		if (!slave) {
++			kfree(mtds);
+ 			return -ENOMEM;
++		}
+ 		cur_offset = slave->offset + slave->mtd.size;
+ 	}
+ 
++	if (mtds_ret)
++		*mtds_ret = mtds;
+ 	return 0;
+ }
+-EXPORT_SYMBOL(add_mtd_partitions);
++EXPORT_SYMBOL_GPL(add_mtd_partitions_ret);
+ 
+ static DEFINE_SPINLOCK(part_parser_lock);
+ static LIST_HEAD(part_parsers);
+diff --git a/include/linux/mtd/partitions.h b/include/linux/mtd/partitions.h
+index 274b619..f7935fa 100644
+--- a/include/linux/mtd/partitions.h
++++ b/include/linux/mtd/partitions.h
+@@ -49,9 +49,12 @@ struct mtd_partition {
+ 
+ struct mtd_info;
+ 
+-int add_mtd_partitions(struct mtd_info *, const struct mtd_partition *, int);
++int add_mtd_partitions_ret(struct mtd_info *, const struct mtd_partition *, int,
++			   struct mtd_info ***);
+ int del_mtd_partitions(struct mtd_info *);
+ 
++#define add_mtd_partitions(m, p, n) add_mtd_partitions_ret(m, p, n, NULL)
++
+ /*
+  * Functions dealing with the various ways of partitioning the space
+  */
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
