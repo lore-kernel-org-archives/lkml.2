@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751183Ab0HHTmM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 15:42:12 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:43642 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750774Ab0HHTmL (ORCPT
+	id S1751646Ab0HHT5S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 15:57:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51197 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750904Ab0HHT5R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 15:42:11 -0400
-Date: Sun, 8 Aug 2010 15:42:08 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        <david@lang.hm>, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        <linux-pm@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <pavel@ucw.cz>, <florian@mickler.org>, <swetland@google.com>,
-        <peterz@infradead.org>, <tglx@linutronix.de>,
-        <alan@lxorguk.ukuu.org.uk>
+	Sun, 8 Aug 2010 15:57:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
 Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Sun, 8 Aug 2010 21:55:29 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+References: <AANLkTinQD3ggLFVd2KvX95U2B_j=ZJquZgiBGieukJ+r@mail.gmail.com> <201008071044.37486.rjw@sisk.pl> <AANLkTinebiC=9Xd-D_sOwmvA8w_YPWMdhTYz2NRbZ7jH@mail.gmail.com>
 In-Reply-To: <AANLkTinebiC=9Xd-D_sOwmvA8w_YPWMdhTYz2NRbZ7jH@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1008081507510.6810-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201008082155.29866.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 7 Aug 2010, Arve Hjønnevåg wrote:
-
+On Saturday, August 07, 2010, Arve Hjønnevåg wrote:
+> 2010/8/7 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Saturday, August 07, 2010, Arve Hjønnevåg wrote:
+> >> 2010/8/6 Alan Stern <stern@rowland.harvard.edu>:
+> >> > On Thu, 5 Aug 2010, Arve Hjønnevåg wrote:
+> >> >
+> >> >> count, tells you how many times the wakelock was activated. If a
+> >> >> wakelock prevented suspend for a long time a large count tells you it
+> >> >> handled a lot of events while a small count tells you it took a long
+> >> >> time to process the events, or the wakelock was not released properly.
+> >> >
+> >> > As noted, we already have this.
+> >> >
+> >>
+> >> Almost. We have it when a device is passed in.
+> >
+> > Sure.  And what are the other cases (details, please)?
+> >
+> 
 > The suspend blockers I added I my suspend blocker patchset were not
-> directly associated with a device.
-
-For the benefit of those who don't remember the details of that
-patchset, can you list again the suspend blockers/wakelocks that aren't
-directly associated with a device?  (No need to mention things coming
-from userspace -- those are obviously unrelated to any device.)
-
-> The evdev changes could be modified
+> directly associated with a device. The evdev changes could be modified
 > to share a device, but it would give less detail since a separate
 > queue is created for each client that opens the device.
 
-I don't understand enough about how the input layer works.  Does it 
-create a new queue each time an input device file is opened?  And each 
-input event gets added to all of the queues?  And each queue gets a 
-corresponding wakelock?
+OK, that's a good argument.
 
-If these surmises are right then I can see how relying on devices alone 
-wouldn't give enough information.  There could be two separate programs 
-both reading input events, and you wouldn't know which one was 
-responsible for failing to drain its queue.
-
-> The suspend
-> blocking work api would have to change so the caller to passes a
-> device in, which I think would make that api less flexible.
-
-Maybe.  There aren't enough examples coded up yet to be sure.  At this 
-point we could easily make the device argument required instead of 
-optional, and we could add a device argument to pm_relax.
-
-> Mostly the
+> The suspend blocking work api would have to change so the caller to passes
+> a device in, which I think would make that api less flexible. Mostly the
 > problem is that we need separate stats for wakelocks created by a
 > single driver. For instance we will still need a user-space interface
 > to block suspend on android devices (lower level services than the
@@ -68,23 +65,28 @@ optional, and we could add a device argument to pm_relax.
 > struct we have to create a new device for every wakelock user space
 > creates in the kernel.
 
-In the scheme we're talking about, the suspend-blocking interface for
-uesrspace would be located entirely in the power manager.  Hence it
-could maintain all the necessary statistics, without involving the
-kernel.  During early stages of system startup, before the power
-manager is running, lower-level services would not be able to block
-suspend.  This wouldn't matter because at those times the system simply
-would not ever suspend -- because suspends have to be initiated by the
-power manager.
+Well, what about managing these stats in user space?
 
 > There is also the issue of reading the stats. It is a lot easier to
 > read a single stats file, than looping though every device on the
 > system (when most of the devices never block suspend).
 
-I agree, it should be possible to simplify this and perhaps at the same 
-time avoid adding all the wakeup-related fields to every device 
-structure.
+It seems you can have a list of the "interesting" ones.
 
+> >> >> expire_count, tells you how many times the timeout expired. For the
+> >> >> input event wakelock in the android kernel (which has a timeout) an
+> >> >> expire count that matches the count tells you that someone opened an
+> >> >> input device but is not reading from it (this has happened several
+> >> >> times).
+> >> >
+> >> > This is a little tricky.  Rafael's model currently does not allow
+> >> > wakeup events started by pm_wakeup_event() to be cancelled any way
+> >> > other than by having their timer expire.  This essentially means that
+> >> > for some devices, expire_count will always be the same as count and for
+> >> > others it will always be 0.  To change this would require adding an
+> >> > extra timer struct, which could be done (in fact, an earlier version of
+> >> > the code included it).  It would be nice if we could avoid the need.
+> >> >
 > >> > Does Android use any kernel-internal wakelocks both with a timer and
 > >> > with active cancellation?
 > >> >
@@ -93,43 +95,106 @@ structure.
 > >> to use timeouts and active cancellation on the same wakelock:
 > >> wifi driver, mmc core, alarm driver, evdev (suspend blocker version
 > >> removes the timeout).
+> >
+> > You previously said you didn't need timeouted wakelocks in the kernel, so
+> > I guess that was incorrect.
+> >
+> 
+> I don't know what you are reffering to. We have always stated that we
+> need timeouts in the kernel to pass events through other kernel layers
+> that do not use wakelocks (that list is much longer than the list
+> above which mixes timeouts and unlock on the same wakelock). The only
+> feature we do not use is the timeout feature in the user space
+> interface to kernel wakelocks.
 
-Roughly speaking, what do the timings work out to be?  That is, how 
-long are the timeouts for these wakelocks, how long does it usually 
-take for one of them to be actively cancelled, and what percentage of 
-them end up timing out?
+Now that's more clear, thanks.
 
+> >> >> wake_count, tells you that this is the first wakelock that was
+> >> >> acquired in the resume path. This is currently less useful than I
+> >> >> would like on the Nexus One since it is usually "SMD_RPCCALL" which
+> >> >> does not tell me a lot.
+> >> >
+> >> > This could be done easily enough, but if it's not very useful then
+> >> > there's no point.
+> >> >
+> >> It is useful there is no other way to tell what triggered a wakeup,
+> >> but it would probably be better to just track wakeup interrupts/events
+> >> elsewhere.
+> >>
+> >> >> active_since, tells you how long a a still active wakelock has been
+> >> >> active. If someone activated a wakelock and never released it, it will
+> >> >> be obvious here.
+> >> >
+> >> > Easily added.  But you didn't mention any field saying whether the
+> >> > wakelock is currently active.  That could be added too (although it
+> >> > would be racy -- but for detecting unreleased wakelocks you wouldn't
+> >> > care).
+> >> >
+> >>
+> >> These are the reported stats, not the fields in the stats structure.
 > >> The wakelock code has an active flag. If we want to keep the
 > >> pm_stay_wake nesting (which I would argue against), we would need an
 > >> active count. It would also require a handle, which is a change Rafael
 > >> said would not fly.
+> >>
+> >> >> total_time, total time the wake lock has been active. This one should
+> >> >> be obvious.
+> >> >
+> >> > Also easily added.
+> >> >
+> >> Only with a handle passed to all the calls.
+> >
+> > Well, I'm kind of tired of this "my solution is the only acceptable one"
+> > mindset.  IMHO, it's totally counter productive.
+> >
+> 
+> How do you propose to track how long a driver has blocked suspend when
+> you have an unblock call that takes no arguments.
 
-Never mind the handles for now.  As for the nesting, we effectively
-don't have it when the pm_wakeup_event interface is used.  The
-pm_stay_awake/pm_relax interface _is_ nested, but since that interface
-isn't used anywhere yet, we can't say whether it really should be 
-nested or not.  Maybe we'll find out in the end that it shouldn't be.  
-
-Consider an input event queue as a typical case.  You would call
-pm_stay_awake when an item is added to an empty queue, and you would
-call pm_relax when the last item is removed from a queue.  The nesting 
-count would never be > 1, so it wouldn't make any difference either 
-way.
+You can extend pm_relax() to take a dev argument and measure the time between
+pm_stay_awake() and pm_relax() called for the same device.
 
 > >> >> sleep_time, total time the wake lock has been active when the screen was off.
 > >> >
-> >> > Not applicable to general systems.  Is there anything like it that
+> >> > Not applicable to general systems.  Is there anything like it that
 > >> > _would_ apply in general?
 > >> >
 > >>
 > >> The screen off is how it is used on android, the stats is keyed of
 > >> what user space wrote to /sys/power/state. If "on" was written the
 > >> sleep time is not updated.
-
-I guess we could keep track of pm_stay_awake or pm_wakeup_event calls
-made between a read and write of /sys/power/wakeup_count (i.e., while
-events_check_enabled is set).  Would that be roughly equivalent?
-
+> >>
+> >> >> max_time, longest time the wakelock was active uninterrupted. This
+> >> >> used less often, but the battery on a device was draining fast, but
+> >> >> the problem went away before looking at the stats this will show if a
+> >> >> wakelock was active for a long time.
+> >> >
+> >> > Again, easily added.  The only drawback is that all these additions
+> >> > will bloat the size of struct device.  Of course, that's why you used
+> >> > separately-allocated structures for your wakelocks.  Maybe we can
+> >> > change to do the same; it seems likely that the majority of device
+> >> > structures won't ever be used for wakeup events.
+> >> >
+> >>
+> >> Since many wakelocks are not associated with s struct device we need a
+> >> separate object for this anyway.
+> >>
+> >> >> >> and I would prefer that the kernel interfaces would
+> >> >> >> encourage drivers to block suspend until user space has consumed the
+> >> >> >> event, which works for the android user space, instead of just long
+> >> >> >> enough to work with a hypothetical user space power manager.
+> >> >
+> >> > Rafael doesn't _discourage_ drivers from doing this.  However you have
+> >> > to keep in mind that many kernel developers are accustomed to working
+> >> > on systems (mostly PCs) with a different range of hardware devices from
+> >> > embedded systems like your phones.  With PCI devices(*), for example,
+> >> > there's no clear point where a wakeup event gets handed off to
+> >> > userspace.
+> >> >
+> >> > On the other hand, there's no reason the input layer shouldn't use
+> >> > pm_stay_awake and pm_relax.  It simply hasn't been implemented yet.
+> >> ...
+> >>
 > >> The merged user space interface makes this unclear to me. When I first
 > >> used suspend on android I had a power manager process that opened all
 > >> the input devices and reset a screen off timeout every time there was
@@ -143,11 +208,14 @@ events_check_enabled is set).  Would that be roughly equivalent?
 > 
 > How? Your pm_get_wakeup_count function loops until events_in_progress becomes 0.
 
-The problem is that the same task is reading /sys/power/wakeup_count 
-(thus waiting for an input event queue to drain) and also reading an 
-input event queue.  Clearly this will result in deadlock, but there 
-must be a reasonably simple way around it.  For example, carry out 
-those two activities in separate threads.
+So, to deadlock with it you'd have to call pm_stay_awake() and wait for it to
+complete.  However, right now there are no means by which user space can call
+pm_stay_awake(), so this can't happen.
 
-Alan Stern
+Of course, if you add pm_stay_awake() to an ioctl() code path, you should make
+sure that whoever uses that ioctl() won't be waiting for the power manager to
+read from /sys/power/wakeup_count.  I guess your point is that this isn't
+possible to achieve?
 
+Thanks,
+Rafael
