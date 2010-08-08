@@ -1,36 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753903Ab0HHM01 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 08:26:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50617 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753723Ab0HHM0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 08:26:25 -0400
-Message-ID: <4C5EA247.4020508@kernel.org>
-Date: Sun, 08 Aug 2010 14:25:43 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1753947Ab0HHMkc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 08:40:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51272 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab0HHMk3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 08:40:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=he8R0KQgEHDFAtaz1vd4PjoTe9LOEDroiP/poA5W9Y6BCWUsqmCPrAliFspnqI+4tn
+         ujoE7wmr/Lx4bE4oqxhtoJC5Iwqa19uoHusqqV1M3S1NYDVggpEzlWXKG67QiiSvztjZ
+         bI5CgyHcwkSpU4wo4HtEUM9bvcJNAynaFS+7w=
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] workqueue: add missing __percpu markup in kernel/workqueue.c
-References: <4C5D512A.2070103@kernel.org> <1281189239-14600-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1281189239-14600-1-git-send-email-namhyung@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 08 Aug 2010 12:26:24 +0000 (UTC)
+In-Reply-To: <20100806225453.GA3947@linux.vnet.ibm.com>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100804195704.GA23681@linux.vnet.ibm.com>
+	<20100806225453.GA3947@linux.vnet.ibm.com>
+Date: Sun, 8 Aug 2010 15:40:28 +0300
+Message-ID: <AANLkTik3qF2yScLJiDBWLN5=Ez0FsvbOo0M76WbOAGvO@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, david@lang.hm, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, tytso@mit.edu,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2010 03:53 PM, Namhyung Kim wrote:
-> works is a percpu pointer but was missing __percpu markup.
-> Add it.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+On Sat, Aug 7, 2010 at 1:54 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> o       "Ill-behaved application" AKA "untrusted application" AKA
+>        "crappy application".
 
-Applied to wq#for-linus.  Thanks.
+> o       "PM-driving application" are applications that are permitted
+>        to acquire suspend blockers on Android.
+
+These definitions are wrong.
+
+1) There are trusted applications that misbehave (the user clicks Yes
+when asked about PM permissions)
+2) There are untrusted applications that are power optimized (The user
+clicks No)
+
+The proponents of suspend blockers in user-space have tried to ignore
+this fact, but the truth is that PM permissions and power optimization
+are orthogonal to each other.
 
 -- 
-tejun
+Felipe Contreras
