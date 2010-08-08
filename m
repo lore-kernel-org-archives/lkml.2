@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753804Ab0HHMDM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 08:03:12 -0400
-Received: from depni.sinp.msu.ru ([213.131.7.21]:34706 "EHLO depni.sinp.msu.ru"
+	id S1753847Ab0HHMMN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 08:12:13 -0400
+Received: from fn.samba.org ([216.83.154.106]:38119 "EHLO lists.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753626Ab0HHMDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 08:03:06 -0400
-From: Serge Belyshev <belyshev@depni.sinp.msu.ru>
-To: Alexander Graf <agraf@suse.de>
-Cc: Dieter Ries <mail@dieterries.net>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
-References: <1258373983-8693-1-git-send-email-avi@redhat.com>
-	<1258373983-8693-24-git-send-email-avi@redhat.com>
-	<4BA1504A.3090801@dieterries.net>
-	<808FF008-53B9-4271-904C-117A24ADF18C@suse.de>
-	<20100317224002.GA5156@Localhorst.asterix.local>
-	<59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de>
-	<20100318071131.GC24062@Localhorst.asterix.local>
-	<4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de>
-Date: Sun, 08 Aug 2010 12:02:57 +0000
-In-Reply-To: <4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de> (Alexander Graf's
-	message of "Thu, 18 Mar 2010 08:17:01 +0100")
-Message-ID: <87ocddz4zy.fsf@depni.sinp.msu.ru>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1753667Ab0HHMML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 08:12:11 -0400
+Date: Sun, 8 Aug 2010 05:12:09 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Jeremy Allison <jra@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100808121208.GA7329@jeremy-laptop>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+ <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+ <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+ <30448.1279800887@redhat.com>
+ <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+ <1280524978.2452.9.camel@segv.aura.of.mankind>
+ <20100801092529.5e6ba0e0@corrin.poochiereds.net>
+ <20100805235218.GB31233@jeremy-laptop>
+ <20100806133836.49757af9@notabene>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100806133836.49757af9@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi! Since the above patch went in
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=10474ae8
-I have exactly the same problem as Dieter.
+On Fri, Aug 06, 2010 at 01:38:36PM +1000, Neil Brown wrote:
+> I'm curious.  Why do you particularly care what interface the kernel uses to
+> provide you with access to this attribute?
 
->>> If that's the case I'd say you have a broken BIOS or bootloader.
->> 
->> You are right, it seems to be always cpu0. I'll check my BIOS and flash
->> a newer version if available.
->
-> Please do. If that doesn't help ping me again. I'll write up a quirk patch then.
->
+It's a matter of taste. The *BSD's have this right IMHO. It
+should be part of the stat information. A file timestamp is not
+an EA. Making it available that way just feels like an appalingly
+tasteless kludge. It offends the artist in me :-).
 
-My h/w is a bit different (cpu: 9850 B3, mb: GA-MA790FX-DQ6 bios F7b),
-but I cannot use latest available BIOS (F7d) as it breaks my SAS controller.
+> Or do you really want something like BSD's 'btime' which as I understand it
+> cannot be set.  Would that be really useful to you?
 
-So I guess I need the quirk patch.
+It is *already* useful to us, and is widely used in
+existing code. The occasions when btime is set are
+relatively rare, and at that point we store it in a
+separate EA for Windows reporting purposes.
+
+Jeremy.
