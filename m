@@ -1,133 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab0HHJzP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 05:55:15 -0400
-Received: from mx0.vr-web.de ([195.200.35.198]:59044 "EHLO mx0.vr-web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752288Ab0HHJzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 05:55:10 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Aug 2010 05:55:10 EDT
-From: Andreas <andihartmann@01019freenet.de>
-X-Newsgroups: linux.kernel
-Subject: rt61pci - bad performance
-Date: Sun, 08 Aug 2010 11:49:49 +0200
-Organization: privat
-Message-ID: <i3lug9$bfn$1@ID-44327.news.uni-berlin.de>
+	id S1752874Ab0HHKFW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 06:05:22 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:29974 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752349Ab0HHKFS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 06:05:18 -0400
+Subject: Re: [PATCH 0/6] improve list_sort test
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Don Mullis <don.mullis@gmail.com>
+Cc: linux-kernel@vger.kernel.org, David Airlie <airlied@linux.ie>,
+        Dave Chinner <david@fromorbit.com>
+In-Reply-To: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
+References: <1281168645-18413-1-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 08 Aug 2010 13:03:09 +0300
+Message-ID: <1281261789.2384.11.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: abuse@arcor.de
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.3a6pre) Gecko/20100803 SeaMonkey/2.1a2
-To: linux-kernel@vger.kernel.org
-X-BitDefender-Scanner: Clean, Agent: BitDefender Courier 3.0.2 on
- vrwf203, sigver: 7.28621
-X-BitDefender-CF-Stamp: none
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 08 Aug 2010 10:04:50.0864 (UTC) FILETIME=[23EFA300:01CB36E1]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
+On Sat, 2010-08-07 at 11:10 +0300, Artem Bityutskiy wrote:
+> Hi,
+> 
+> while hunting a non-existing bug in 'list_sort()', I've improved the
+> 'list_sort_test()' function which tests the 'list_sort()' library call. Although
+> at the end I found a bug in my code, but not in 'list_sort()', I think my
+> clean-ups and improvements are worth merging because they make the test function
+> better.
 
-I've got the following hardware
+Actually, your 'list_sort()' version does have a problem. I found out
+that it calls 'cmp(priv, a, b)' with 'a = b' sometimes, and in these
+cases 'a' and 'b' can point to something which is not a valid element of
+the original list. Probably a senitel or something like that.
 
+It is easy to work around this by adding:
 
-01:05.0 Network controller: RaLink RT2561/RT61 rev B 802.11g
-         Subsystem: Micro-Star International Co., Ltd. Device b833
-         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- 
-ParErr- Stepping- SERR- FastB2B- DisINTx-
-         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=slow >TAbort- 
-<TAbort- <MAbort- >SERR- <PERR- INTx-
-         Latency: 128, Cache Line Size: 64 bytes
-         Interrupt: pin A routed to IRQ 21
-         Region 0: Memory at cc000000 (32-bit, non-prefetchable) [size=32K]
-         Capabilities: [40] Power Management version 2
-                 Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA 
-PME(D0-,D1-,D2-,D3hot-,D3cold-)
-                 Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-         Kernel driver in use: ndiswrapper
+if (a == b)
+	return 0;
 
+in the 'cmp()' function, but this is nevertheless a bug (not too bad,
+though) and should be fixed. Also, the fact that 'cmp()' is called with
+'a==b' sometimes should be documented.
 
-running on a 32bit notebook with kernel 2.6.34-12-desktop (OpenSuSE 
-11.3). There is no difference between the compat-wireless-modules 
-2010-07-20 and the original modules shipped with the openSuSE 11.3 kernel.
+I'm CC-ing 2 other users of 'list_sort()' for head-ups (xfs, drm).
 
-If the rt61-chip is connected to a AP using rt61pci, the best 
-throughput, which can be achieved (at the same place), is about 1,7 
-MBytes/s.
+I've fixed assertions in UBIFS using the following patch:
 
-kernel: [  656.112190] cfg80211: Calling CRDA to update world regulatory 
-domain
-kernel: [  656.112267] cfg80211: Calling CRDA for country: DE
-kernel: [  656.169518] cfg80211: Regulatory domain changed to country: DE
-kernel: [  656.169524]     (start_freq - end_freq @ bandwidth), 
-(max_antenna_gain, max_eirp)
-kernel: [  656.169528]     (2400000 KHz - 2483500 KHz @ 40000 KHz), 
-(N/A, 2000 mBm)
-kernel: [  656.169532]     (5150000 KHz - 5350000 KHz @ 40000 KHz), 
-(N/A, 2000 mBm)
-kernel: [  656.169535]     (5470000 KHz - 5725000 KHz @ 40000 KHz), 
-(N/A, 2698 mBm)
-kernel: [  656.206228] rt61pci 0000:01:05.0: PCI INT A -> GSI 21 (level, 
-low) -> IRQ 21
-kernel: [  656.219941] phy0: Selected rate control algorithm 'minstrel'
-kernel: [  656.222216] Registered led device: rt61pci-phy0::radio
-kernel: [  656.222658] Registered led device: rt61pci-phy0::assoc
-kernel: notebook1 ifup:     wlan0     device: RaLink RT2561/RT61 rev B 
-802.11g
+===========================================================================
 
+>From 3ea1708e2d0462dc8eaf1076ebf973d82700952b Mon Sep 17 00:00:00 2001
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Date: Sun, 8 Aug 2010 12:45:23 +0300
+Subject: [PATCHv2 8/9] UBIFS: fix assertion warnings in comparison function
 
+When running the integrity test ('integck' from mtd-utils) on current
+UBIFS on 2.6.35, I see that assertions in UBIFS 'list_sort()' comparison
+functions trigger sometimes, e.g.:
 
-wlan0     IEEE 802.11bg  ESSID:"--------"
-           Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
-           Bit Rate=1 Mb/s   Tx-Power=5 dBm
-           Retry  long limit:7   RTS thr:off   Fragment thr:off
-           Encryption key:off
-           Power Management:off
-           Link Quality=38/70  Signal level=-72 dBm
-           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-           Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+UBIFS assert failed in data_nodes_cmp at 132 (pid 28311)
 
-The throughput is measured with ping -f -s 7000 and xosview -n.
+My investigation showed that this happens when 'list_sort()' calls the 'cmp()'
+function with equivalent arguments. In this case, the 'struct list_head'
+parameter, passed to 'cmp()' is bogus, and it does not belong to any element in
+the original list.
 
+And this issue seems to be introduced by commit:
 
+commit 835cc0c8477fdbc59e0217891d6f11061b1ac4e2
+Author: Don Mullis <don.mullis@gmail.com>
+Date:   Fri Mar 5 13:43:15 2010 -0800
 
+It is easy to work around the issue by doing:
 
-If I'm using ndiswrapper with the windows driver, first of all, I can 
-see additional information in iwconfig:
+if (a == b)
+	return 0;
 
-wlan0     IEEE 802.11g  ESSID:"--------"
-           Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
-           Bit Rate=54 Mb/s   Tx-Power:20 dBm   Sensitivity=-121 dBm
-           RTS thr=2347 B   Fragment thr=2346 B
-           Encryption key:some key   Security mode:restricted
-           Power Management:off
-           Link Quality:62/100  Signal level:-56 dBm  Noise level:-96 dBm
-           Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
-           Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+in UBIFS. It works, but 'lib_sort()' should nevertheless be fixed. Although it
+is harmless to have this piece of code in UBIFS.
 
+This patch adds that code to both UBIFS 'cmp()' functions:
+'data_nodes_cmp()' and 'nondata_nodes_cmp()'.
 
-There is a switch for sensitivity (which is not supported with rt61pci) 
-and the link quality compared with ndiswrapper is worse (38% to 62%).
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+---
+ fs/ubifs/gc.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-The following is remarkably too:
-ndiswrapper uses a Tx-Power of 20 dBm, rt61pci only 5 dBm. I don't know, 
-why rt61pci uses 5 dBm. It's a hard limit and I can't set it on a value 
-higher than 5 unless the driver is patched. Nevertheless, setting a 
-higher value (of 20 dBm) by patch does not mean to get a better performance.
-Ndiswrapper shows an encryption key, rt61pci not. Does it mean, that 
-rt61pci doesn't use hardware encryption?
-
-
-With ndiswrapper, the rt61pci-chip achieves a throughput of 2,6 MBytes/s 
-- that's about 1 MByte/s more than rt61pci.
-
-I have to say, that the difference between rt61pci and ndiswrapper gets 
-worse if the link quality is getting more badly. Or in other words: 
-ndiswrapper handles bad connections better then rt61pci.
+diff --git a/fs/ubifs/gc.c b/fs/ubifs/gc.c
+index 8dbe36f..84ab9aa 100644
+--- a/fs/ubifs/gc.c
++++ b/fs/ubifs/gc.c
+@@ -125,6 +125,9 @@ int data_nodes_cmp(void *priv, struct list_head *a, struct list_head *b)
+ 	struct ubifs_scan_node *sa, *sb;
+ 
+ 	cond_resched();
++	if (a == b)
++		return 0;
++
+ 	sa = list_entry(a, struct ubifs_scan_node, list);
+ 	sb = list_entry(b, struct ubifs_scan_node, list);
+ 
+@@ -165,6 +168,9 @@ int nondata_nodes_cmp(void *priv, struct list_head *a, struct list_head *b)
+ 	struct ubifs_scan_node *sa, *sb;
+ 
+ 	cond_resched();
++	if (a == b)
++		return 0;
++
+ 	sa = list_entry(a, struct ubifs_scan_node, list);
+ 	sb = list_entry(b, struct ubifs_scan_node, list);
+ 
+-- 
+1.7.1.1
 
 
-Do you have any idea to get rt61pci working as fast as ndiswrapper?
 
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-Kind regards,
-Andreas
