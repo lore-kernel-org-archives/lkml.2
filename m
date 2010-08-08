@@ -1,295 +1,406 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0HHQD2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 12:03:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17460 "EHLO mx1.redhat.com"
+	id S1754528Ab0HHQDp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 12:03:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41384 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754537Ab0HHPyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:54:39 -0400
+	id S1754517Ab0HHPyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:54:37 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>, linux-mm@kvack.org
-Subject: [PATCH 09/39] whiteout: tmpfs whiteout support
-Date: Sun,  8 Aug 2010 11:52:26 -0400
-Message-Id: <1281282776-5447-10-git-send-email-vaurora@redhat.com>
+        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: [PATCH 11/39] whiteout: ext2 whiteout support
+Date: Sun,  8 Aug 2010 11:52:28 -0400
+Message-Id: <1281282776-5447-12-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for whiteout dentries to tmpfs.  This includes adding
-support for whiteouts to d_genocide(), which is called to tear down
-pinned tmpfs dentries.  Whiteouts have to be persistent, so they have
-a pinning extra ref count that needs to be dropped by d_genocide().
+From: Jan Blunck <jblunck@suse.de>
+
+This patch adds whiteout support to EXT2. A whiteout is an empty directory
+entry (inode == 0) with the file type set to EXT2_FT_WHT. Therefore it
+allocates space in directories. Due to being implemented as a filetype it is
+necessary to have the EXT2_FEATURE_INCOMPAT_FILETYPE flag set.
+
+XXX - Needs serious review.  Al wonders: What happens with a delete at
+the beginning of a block?  Will we find the matching dentry or the
+first empty space?
 
 Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-Cc: linux-mm@kvack.org
+Cc: Theodore Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
 ---
- fs/dcache.c |   13 +++++-
- mm/shmem.c  |  145 +++++++++++++++++++++++++++++++++++++++++++++++++++++------
- 2 files changed, 143 insertions(+), 15 deletions(-)
+ fs/ext2/dir.c           |   96 +++++++++++++++++++++++++++++++++++++++++++++--
+ fs/ext2/ext2.h          |    3 +
+ fs/ext2/inode.c         |   11 ++++-
+ fs/ext2/namei.c         |   63 +++++++++++++++++++++++++++++-
+ fs/ext2/super.c         |    5 ++
+ include/linux/ext2_fs.h |    4 ++
+ 6 files changed, 172 insertions(+), 10 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index 80f059b..79b9f6a 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2229,7 +2229,18 @@ resume:
- 		struct list_head *tmp = next;
- 		struct dentry *dentry = list_entry(tmp, struct dentry, d_u.d_child);
- 		next = tmp->next;
--		if (d_unhashed(dentry)||!dentry->d_inode)
-+		/*
-+		 * Skip unhashed and negative dentries, but process
-+		 * positive dentries and whiteouts.  A whiteout looks
-+		 * kind of like a negative dentry for purposes of
-+		 * lookup, but it has an extra pinning ref count
-+		 * because it can't be evicted like a negative dentry
-+		 * can.  What we care about here is ref counts - and
-+		 * we need to drop the ref count on a whiteout before
-+		 * we can evict it.
-+		 */
-+		if (d_unhashed(dentry)||(!dentry->d_inode &&
-+					 !d_is_whiteout(dentry)))
- 			continue;
- 		if (!list_empty(&dentry->d_subdirs)) {
- 			this_parent = dentry;
-diff --git a/mm/shmem.c b/mm/shmem.c
-index f65f840..a0a4fa5 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1805,6 +1805,76 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return 0;
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 57207a9..030bd46 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -219,7 +219,7 @@ static inline int ext2_match (int len, const char * const name,
+ {
+ 	if (len != de->name_len)
+ 		return 0;
+-	if (!de->inode)
++	if (!de->inode && (de->file_type != EXT2_FT_WHT))
+ 		return 0;
+ 	return !memcmp(name, de->name, len);
+ }
+@@ -255,6 +255,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
+ 	[EXT2_FT_FIFO]		= DT_FIFO,
+ 	[EXT2_FT_SOCK]		= DT_SOCK,
+ 	[EXT2_FT_SYMLINK]	= DT_LNK,
++	[EXT2_FT_WHT]		= DT_WHT,
+ };
+ 
+ #define S_SHIFT 12
+@@ -448,6 +449,26 @@ ino_t ext2_inode_by_name(struct inode *dir, struct qstr *child)
+ 	return res;
  }
  
-+static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
-+static int shmem_unlink(struct inode *dir, struct dentry *dentry);
-+
-+/*
-+ * This is the whiteout support for tmpfs. It uses one singleton whiteout
-+ * inode per superblock thus it is very similar to shmem_link().
-+ */
-+static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
-+			  struct dentry *new_dentry)
++/* Special version for filetype based whiteout support */
++ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
 +{
-+	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
-+	struct dentry *dentry;
++	ino_t res = 0;
++	struct ext2_dir_entry_2 *de;
++	struct page *page;
 +
-+	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
-+		return -EPERM;
-+
-+	/* This gives us a proper initialized negative dentry */
-+	dentry = simple_lookup(dir, new_dentry, NULL);
-+	if (dentry && IS_ERR(dentry))
-+		return PTR_ERR(dentry);
-+
-+	/*
-+	 * No ordinary (disk based) filesystem counts whiteouts as inodes;
-+	 * but each new link needs a new dentry, pinning lowmem, and
-+	 * tmpfs dentries cannot be pruned until they are unlinked.
-+	 */
-+	if (sbinfo->max_inodes) {
-+		spin_lock(&sbinfo->stat_lock);
-+		if (!sbinfo->free_inodes) {
-+			spin_unlock(&sbinfo->stat_lock);
-+			return -ENOSPC;
++	de = ext2_find_entry (dir, &dentry->d_name, &page);
++	if (de) {
++		res = le32_to_cpu(de->inode);
++		if (!res && de->file_type == EXT2_FT_WHT) {
++			spin_lock(&dentry->d_lock);
++			dentry->d_flags |= DCACHE_WHITEOUT;
++			spin_unlock(&dentry->d_lock);
 +		}
-+		sbinfo->free_inodes--;
-+		spin_unlock(&sbinfo->stat_lock);
++		ext2_put_page(page);
++	}
++	return res;
++}
++
+ /* Releases the page */
+ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
+ 		   struct page *page, struct inode *inode, int update_times)
+@@ -523,7 +544,8 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 				goto got_it;
+ 			name_len = EXT2_DIR_REC_LEN(de->name_len);
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+-			if (!de->inode && rec_len >= reclen)
++			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
++			    (rec_len >= reclen))
+ 				goto got_it;
+ 			if (rec_len >= name_len + reclen)
+ 				goto got_it;
+@@ -564,8 +586,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 		return PTR_ERR(de);
+ 
+ 	err = -EEXIST;
+-	if (ext2_match (namelen, name, de))
++	if (ext2_match (namelen, name, de)) {
++		if (de->file_type == EXT2_FT_WHT)
++			goto got_it;
+ 		goto out_unlock;
++	}
+ 
+ got_it:
+ 	name_len = EXT2_DIR_REC_LEN(de->name_len);
+@@ -577,7 +602,8 @@ got_it:
+ 							&page, NULL);
+ 	if (err)
+ 		goto out_unlock;
+-	if (de->inode) {
++	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
++			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+ 		de->rec_len = ext2_rec_len_to_disk(name_len);
+@@ -646,6 +672,68 @@ out:
+ 	return err;
+ }
+ 
++int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
++			 struct ext2_dir_entry_2 * de, struct page * page)
++{
++	const char *name = dentry->d_name.name;
++	int namelen = dentry->d_name.len;
++	unsigned short rec_len, name_len;
++	loff_t pos;
++	int err;
++
++	if (!de) {
++		de = ext2_append_entry(dentry, &page);
++		BUG_ON(!de);
 +	}
 +
-+	if (old_dentry->d_inode) {
-+		if (S_ISDIR(old_dentry->d_inode->i_mode))
-+			shmem_rmdir(dir, old_dentry);
-+		else
-+			shmem_unlink(dir, old_dentry);
++	err = -EEXIST;
++	if (ext2_match (namelen, name, de) &&
++	    (de->file_type == EXT2_FT_WHT)) {
++		ext2_error(dir->i_sb, __func__,
++			   "entry is already a whiteout in directory #%lu",
++			   dir->i_ino);
++		goto out_unlock;
 +	}
 +
-+	dir->i_size += BOGO_DIRENT_SIZE;
-+	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+	/* Extra pinning count for the created dentry */
-+	dget(new_dentry);
++	name_len = EXT2_DIR_REC_LEN(de->name_len);
++	rec_len = ext2_rec_len_from_disk(de->rec_len);
++
++	pos = page_offset(page) +
++		(char*)de - (char*)page_address(page);
++	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
++							&page, NULL);
++	if (err)
++		goto out_unlock;
++	/*
++	 * We whiteout an existing entry. Do what ext2_delete_entry() would do,
++	 * except that we don't need to merge with the previous entry since
++	 * we are going to reuse it.
++	 */
++	if (ext2_match (namelen, name, de))
++		de->inode = 0;
++	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
++		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
++		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
++		de->rec_len = ext2_rec_len_to_disk(name_len);
++		de = de1;
++	}
++	de->name_len = namelen;
++	memcpy(de->name, name, namelen);
++	de->inode = 0;
++	de->file_type = EXT2_FT_WHT;
++	err = ext2_commit_chunk(page, pos, rec_len);
++	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
++	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
++	mark_inode_dirty(dir);
++	/* OFFSET_CACHE */
++out_put:
++	ext2_put_page(page);
++	return err;
++out_unlock:
++	unlock_page(page);
++	goto out_put;
++}
++
+ /*
+  * Set the first fragment of directory.
+  */
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index 52b34f1..89ab2f7 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -102,9 +102,12 @@ extern void ext2_rsv_window_add(struct super_block *sb, struct ext2_reserve_wind
+ /* dir.c */
+ extern int ext2_add_link (struct dentry *, struct inode *);
+ extern ino_t ext2_inode_by_name(struct inode *, struct qstr *);
++extern ino_t ext2_inode_by_dentry(struct inode *, struct dentry *);
+ extern int ext2_make_empty(struct inode *, struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *, struct page **);
+ extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
++extern int ext2_whiteout_entry (struct inode *, struct dentry *,
++				struct ext2_dir_entry_2 *, struct page *);
+ extern int ext2_empty_dir (struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
+ extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
+diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
+index 3675088..f31b872 100644
+--- a/fs/ext2/inode.c
++++ b/fs/ext2/inode.c
+@@ -1261,7 +1261,8 @@ void ext2_set_inode_flags(struct inode *inode)
+ {
+ 	unsigned int flags = EXT2_I(inode)->i_flags;
+ 
+-	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
++	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC|
++			    S_OPAQUE);
+ 	if (flags & EXT2_SYNC_FL)
+ 		inode->i_flags |= S_SYNC;
+ 	if (flags & EXT2_APPEND_FL)
+@@ -1272,6 +1273,8 @@ void ext2_set_inode_flags(struct inode *inode)
+ 		inode->i_flags |= S_NOATIME;
+ 	if (flags & EXT2_DIRSYNC_FL)
+ 		inode->i_flags |= S_DIRSYNC;
++	if (flags & EXT2_OPAQUE_FL)
++		inode->i_flags |= S_OPAQUE;
+ }
+ 
+ /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
+@@ -1279,8 +1282,8 @@ void ext2_get_inode_flags(struct ext2_inode_info *ei)
+ {
+ 	unsigned int flags = ei->vfs_inode.i_flags;
+ 
+-	ei->i_flags &= ~(EXT2_SYNC_FL|EXT2_APPEND_FL|
+-			EXT2_IMMUTABLE_FL|EXT2_NOATIME_FL|EXT2_DIRSYNC_FL);
++	ei->i_flags &= ~(EXT2_SYNC_FL|EXT2_APPEND_FL|EXT2_IMMUTABLE_FL|
++			 EXT2_NOATIME_FL|EXT2_DIRSYNC_FL|EXT2_OPAQUE_FL);
+ 	if (flags & S_SYNC)
+ 		ei->i_flags |= EXT2_SYNC_FL;
+ 	if (flags & S_APPEND)
+@@ -1291,6 +1294,8 @@ void ext2_get_inode_flags(struct ext2_inode_info *ei)
+ 		ei->i_flags |= EXT2_NOATIME_FL;
+ 	if (flags & S_DIRSYNC)
+ 		ei->i_flags |= EXT2_DIRSYNC_FL;
++	if (flags & S_OPAQUE)
++		ei->i_flags |= EXT2_OPAQUE_FL;
+ }
+ 
+ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 71efb0e..8f92dd0 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -55,15 +55,16 @@ static inline int ext2_add_nondir(struct dentry *dentry, struct inode *inode)
+  * Methods themselves.
+  */
+ 
+-static struct dentry *ext2_lookup(struct inode * dir, struct dentry *dentry, struct nameidata *nd)
++static struct dentry *ext2_lookup(struct inode * dir, struct dentry *dentry,
++				  struct nameidata *nd)
+ {
+ 	struct inode * inode;
+ 	ino_t ino;
+-	
++
+ 	if (dentry->d_name.len > EXT2_NAME_LEN)
+ 		return ERR_PTR(-ENAMETOOLONG);
+ 
+-	ino = ext2_inode_by_name(dir, &dentry->d_name);
++	ino = ext2_inode_by_dentry(dir, dentry);
+ 	inode = NULL;
+ 	if (ino) {
+ 		inode = ext2_iget(dir->i_sb, ino);
+@@ -307,6 +308,61 @@ static int ext2_rmdir (struct inode * dir, struct dentry *dentry)
+ 	return err;
+ }
+ 
++/*
++ * Create a whiteout for the dentry
++ */
++static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
++			 struct dentry *new_dentry)
++{
++	struct inode * inode = dentry->d_inode;
++	struct ext2_dir_entry_2 * de = NULL;
++	struct page * page;
++	int err = -ENOTEMPTY;
++
++	if (!EXT2_HAS_INCOMPAT_FEATURE(dir->i_sb,
++				       EXT2_FEATURE_INCOMPAT_FILETYPE)) {
++		ext2_error (dir->i_sb, "ext2_whiteout",
++			    "can't set whiteout filetype");
++		err = -EPERM;
++		goto out;
++	}
++
++	dquot_initialize(dir);
++
++	if (inode) {
++		if (S_ISDIR(inode->i_mode) && !ext2_empty_dir(inode))
++			goto out;
++
++		err = -ENOENT;
++		de = ext2_find_entry (dir, &dentry->d_name, &page);
++		if (!de)
++			goto out;
++		lock_page(page);
++	}
++
++	err = ext2_whiteout_entry (dir, dentry, de, page);
++	if (err)
++		goto out;
++
 +	spin_lock(&new_dentry->d_lock);
 +	new_dentry->d_flags |= DCACHE_WHITEOUT;
 +	spin_unlock(&new_dentry->d_lock);
-+	return 0;
-+}
++	d_add(new_dentry, NULL);
 +
-+static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
-+				struct inode *inode)
-+{
-+	if (d_is_whiteout(dentry)) {
-+		/* Re-using an existing whiteout */
-+		shmem_free_inode(dir->i_sb);
-+		if (S_ISDIR(inode->i_mode))
-+			inode->i_mode |= S_OPAQUE;
-+	} else {
-+		/* New dentry */
-+		dir->i_size += BOGO_DIRENT_SIZE;
-+		dget(dentry); /* Extra count - pin the dentry in core */
-+	}
-+	/* Will clear DCACHE_WHITEOUT flag */
-+	d_instantiate(dentry, inode);
-+
-+}
- /*
-  * File creation. Allocate an inode, and we're done..
-  */
-@@ -1833,10 +1903,8 @@ shmem_mknod(struct inode *dir, struct dentry *dentry, int mode, dev_t dev)
- #else
- 		error = 0;
- #endif
--		dir->i_size += BOGO_DIRENT_SIZE;
-+		shmem_d_instantiate(dir, dentry, inode);
- 		dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--		d_instantiate(dentry, inode);
--		dget(dentry); /* Extra count - pin the dentry in core */
- 	}
- 	return error;
- }
-@@ -1874,12 +1942,11 @@ static int shmem_link(struct dentry *old_dentry, struct inode *dir, struct dentr
- 	if (ret)
- 		goto out;
- 
--	dir->i_size += BOGO_DIRENT_SIZE;
-+	shmem_d_instantiate(dir, dentry, inode);
-+
- 	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
- 	inc_nlink(inode);
- 	atomic_inc(&inode->i_count);	/* New dentry reference */
--	dget(dentry);		/* Extra pinning count for the created dentry */
--	d_instantiate(dentry, inode);
- out:
- 	return ret;
- }
-@@ -1888,21 +1955,61 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
- {
- 	struct inode *inode = dentry->d_inode;
- 
--	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
--		shmem_free_inode(inode->i_sb);
-+	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
-+		shmem_free_inode(dir->i_sb);
- 
 +	if (inode) {
-+		inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+		drop_nlink(inode);
-+	}
- 	dir->i_size -= BOGO_DIRENT_SIZE;
--	inode->i_ctime = dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--	drop_nlink(inode);
- 	dput(dentry);	/* Undo the count from "create" - this does all the work */
- 	return 0;
- }
- 
-+static void shmem_dir_unlink_whiteouts(struct inode *dir, struct dentry *dentry)
-+{
-+	if (!dentry->d_inode)
-+		return;
-+
-+	/* Remove whiteouts from logical empty directory */
-+	if (S_ISDIR(dentry->d_inode->i_mode) &&
-+	    dentry->d_inode->i_sb->s_flags & MS_WHITEOUT) {
-+		struct dentry *child, *next;
-+		LIST_HEAD(list);
-+
-+		spin_lock(&dcache_lock);
-+		list_for_each_entry(child, &dentry->d_subdirs, d_u.d_child) {
-+			spin_lock(&child->d_lock);
-+			if (d_is_whiteout(child)) {
-+				__d_drop(child);
-+				if (!list_empty(&child->d_lru)) {
-+					list_del(&child->d_lru);
-+					dentry_stat.nr_unused--;
-+				}
-+				list_add(&child->d_lru, &list);
-+			}
-+			spin_unlock(&child->d_lock);
-+		}
-+		spin_unlock(&dcache_lock);
-+
-+		list_for_each_entry_safe(child, next, &list, d_lru) {
-+			spin_lock(&child->d_lock);
-+			list_del_init(&child->d_lru);
-+			spin_unlock(&child->d_lock);
-+
-+			shmem_unlink(dentry->d_inode, child);
++		inode->i_ctime = dir->i_ctime;
++		inode_dec_link_count(inode);
++		if (S_ISDIR(inode->i_mode)) {
++			inode->i_size = 0;
++			inode_dec_link_count(inode);
++			inode_dec_link_count(dir);
 +		}
 +	}
++	err = 0;
++out:
++	return err;
 +}
 +
- static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
+ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	struct inode * new_dir,	struct dentry * new_dentry )
  {
- 	if (!simple_empty(dentry))
- 		return -ENOTEMPTY;
- 
-+	/* Remove whiteouts from logical empty directory */
-+	shmem_dir_unlink_whiteouts(dir, dentry);
- 	drop_nlink(dentry->d_inode);
- 	drop_nlink(dir);
- 	return shmem_unlink(dir, dentry);
-@@ -1911,7 +2018,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry)
- /*
-  * The VFS layer already does all the dentry stuff for rename,
-  * we just have to decrement the usage count for the target if
-- * it exists so that the VFS layer correctly free's it when it
-+ * it exists so that the VFS layer correctly frees it when it
-  * gets overwritten.
-  */
- static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry)
-@@ -1922,7 +2029,12 @@ static int shmem_rename(struct inode *old_dir, struct dentry *old_dentry, struct
- 	if (!simple_empty(new_dentry))
- 		return -ENOTEMPTY;
- 
-+	if (d_is_whiteout(new_dentry))
-+		shmem_unlink(new_dir, new_dentry);
+@@ -409,6 +465,7 @@ const struct inode_operations ext2_dir_inode_operations = {
+ 	.mkdir		= ext2_mkdir,
+ 	.rmdir		= ext2_rmdir,
+ 	.mknod		= ext2_mknod,
++	.whiteout	= ext2_whiteout,
+ 	.rename		= ext2_rename,
+ #ifdef CONFIG_EXT2_FS_XATTR
+ 	.setxattr	= generic_setxattr,
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 7ff43f4..704521b 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1092,9 +1092,14 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (EXT2_HAS_COMPAT_FEATURE(sb, EXT3_FEATURE_COMPAT_HAS_JOURNAL))
+ 		ext2_msg(sb, KERN_WARNING,
+ 			"warning: mounting ext3 filesystem as ext2");
 +
- 	if (new_dentry->d_inode) {
-+		/* Remove whiteouts from logical empty directory */
-+		shmem_dir_unlink_whiteouts(new_dir, new_dentry);
- 		(void) shmem_unlink(new_dir, new_dentry);
- 		if (they_are_dirs)
- 			drop_nlink(old_dir);
-@@ -1987,10 +2099,8 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
- 		unlock_page(page);
- 		page_cache_release(page);
- 	}
--	dir->i_size += BOGO_DIRENT_SIZE;
-+	shmem_d_instantiate(dir, dentry, inode);
- 	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
--	d_instantiate(dentry, inode);
--	dget(dentry);
- 	return 0;
- }
- 
-@@ -2367,6 +2477,12 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
- 	if (!root)
- 		goto failed_iput;
- 	sb->s_root = root;
-+
-+#ifdef CONFIG_TMPFS
-+	if (!(sb->s_flags & MS_NOUSER))
++	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_WHITEOUT))
 +		sb->s_flags |= MS_WHITEOUT;
-+#endif
++
+ 	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
+ 		sb->s_flags |= MS_RDONLY;
+ 	ext2_write_super(sb);
 +
  	return 0;
  
- failed_iput:
-@@ -2466,6 +2582,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
- 	.rmdir		= shmem_rmdir,
- 	.mknod		= shmem_mknod,
- 	.rename		= shmem_rename,
-+	.whiteout       = shmem_whiteout,
- #endif
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	.setattr	= shmem_notify_change,
+ cantfind_ext2:
+diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+index 2dfa707..b0fb356 100644
+--- a/include/linux/ext2_fs.h
++++ b/include/linux/ext2_fs.h
+@@ -189,6 +189,7 @@ struct ext2_group_desc
+ #define EXT2_NOTAIL_FL			FS_NOTAIL_FL	/* file tail should not be merged */
+ #define EXT2_DIRSYNC_FL			FS_DIRSYNC_FL	/* dirsync behaviour (directories only) */
+ #define EXT2_TOPDIR_FL			FS_TOPDIR_FL	/* Top of directory hierarchies*/
++#define EXT2_OPAQUE_FL			FS_OPAQUE_FL	/* Dir is opaque */
+ #define EXT2_RESERVED_FL		FS_RESERVED_FL	/* reserved for ext2 lib */
+ 
+ #define EXT2_FL_USER_VISIBLE		FS_FL_USER_VISIBLE	/* User visible flags */
+@@ -503,10 +504,12 @@ struct ext2_super_block {
+ #define EXT3_FEATURE_INCOMPAT_RECOVER		0x0004
+ #define EXT3_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008
+ #define EXT2_FEATURE_INCOMPAT_META_BG		0x0010
++#define EXT2_FEATURE_INCOMPAT_WHITEOUT		0x0020
+ #define EXT2_FEATURE_INCOMPAT_ANY		0xffffffff
+ 
+ #define EXT2_FEATURE_COMPAT_SUPP	EXT2_FEATURE_COMPAT_EXT_ATTR
+ #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT2_FEATURE_INCOMPAT_FILETYPE| \
++					 EXT2_FEATURE_INCOMPAT_WHITEOUT| \
+ 					 EXT2_FEATURE_INCOMPAT_META_BG)
+ #define EXT2_FEATURE_RO_COMPAT_SUPP	(EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER| \
+ 					 EXT2_FEATURE_RO_COMPAT_LARGE_FILE| \
+@@ -573,6 +576,7 @@ enum {
+ 	EXT2_FT_FIFO		= 5,
+ 	EXT2_FT_SOCK		= 6,
+ 	EXT2_FT_SYMLINK		= 7,
++	EXT2_FT_WHT		= 8,
+ 	EXT2_FT_MAX
+ };
+ 
 -- 
 1.6.3.3
 
