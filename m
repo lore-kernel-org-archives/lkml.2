@@ -1,49 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab0HHOOZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 10:14:25 -0400
-Received: from imap.ru.mvista.com ([213.79.90.228]:30619 "EHLO
-	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754103Ab0HHOOX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 10:14:23 -0400
-Date: Sun, 8 Aug 2010 18:14:22 +0400
-From: Anton Vorontsov <avorontsov@mvista.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: [PATCH] mmc_spi: Fix unterminated of_match_table
-Message-ID: <20100808141422.GA9670@oksana.dev.rtsoft.ru>
+	id S1754189Ab0HHO0q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 10:26:46 -0400
+Received: from web37604.mail.mud.yahoo.com ([209.191.87.87]:23441 "HELO
+	web37604.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754161Ab0HHO0p convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 10:26:45 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=okzPCI4NaUdcQWyK+6a6QXxe/ZFEYEx8rxrqd1T1gvxMnlXgJm/qv15x4X/cAXIFkucZv8JV+zf3DHhEcoD1F99ivwbFh5CA7Pl3+/LcVSaQZ5X6yR7B66oU/50r8vywA3ukODFTYCt7+dCcXlsNPRUVJgrNNSW62eajiu/CFGE=;
+Message-ID: <518887.35250.qm@web37604.mail.mud.yahoo.com>
+X-YMail-OSG: geFCnaQVM1k.PhenF.wAqGHfKWm_ar1rCpzC7CuvaiKN8xi
+ zuFuBaYEsDnTTd2jGw5uuIMXCXJxAnnF8jw3GjuTgWJb0zuIZwIVzWvEwevc
+ rZxyyS1bci4CrixVx2liOyJxFI5BLUvah8uleWZYWBsTekKdMSplaO8Mb0mF
+ mI4x3wU5QNE01cyrCt.vofAYI8iqgmkYiON4SQog32o8GIQjpsTzp0SGL28W
+ b.rcUBF6.Nf1t6DDguiWE3YHsCSFrnOka7vYp3sxGaNjQMgJIRhTFEn22KcB
+ Gg3W6Jk335wbSH9XQ4toCTYECueLo_1HlmPgFTqYV
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Sun, 8 Aug 2010 07:26:42 -0700 (PDT)
+From: Alex Dubov <oakad@yahoo.com>
+Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281212565.3300.20.camel@maxim-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 2ffe8c5f323c3b9749bf7bc2375d909d20bdbb15 ("of: refactor
-of_modalias_node() and remove explicit match table"), introduced
-an unterminated of_match_table, which may cause kernel to oops.
+> Hi,
+> 
+> I have few more questions about memsticks.
+> 
+> First of all, I need an explanation of overwrite flag.
+> You already explained it to me once, but I still not sure
+> about few
+> things.
 
-This patch fixes the issue by adding an empty device ID.
+Overwrite register can be accessed either as part of extra data access
+or separately (CP_OVERWRITE access mode).
 
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
----
- drivers/mmc/host/mmc_spi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> #define MEMSTICK_OVERWRITE_UDST  0x10
+> This one I understand, thinking about xD again, I think it
+> is very
+> handy.
+> 
+> My idea (from xD of course) is that copyonwrite is done
+> this way:
+> 
+> 1. read old sector
+> 2. allocate new sector
+> 2. write what was just read to new sector.
+> 3. erase old sector.
 
-diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
-index 7b0f3ef..1145ea0 100644
---- a/drivers/mmc/host/mmc_spi.c
-+++ b/drivers/mmc/host/mmc_spi.c
-@@ -1536,6 +1536,7 @@ static int __devexit mmc_spi_remove(struct spi_device *spi)
- #if defined(CONFIG_OF)
- static struct of_device_id mmc_spi_of_match_table[] __devinitdata = {
- 	{ .compatible = "mmc-spi-slot", },
-+	{},
- };
- #endif
- 
--- 
-1.7.0.5
+This is correct.
+
+> 
+> Could you explain when I need to set and reset the
+> MEMSTICK_OVERWRITE_UDST?
+
+UDST flag should be set when you're marking the block for
+reallocation during the read/modify/write cycle. You read the existing
+physical block, mark it with UDST flag (setting it to zero), then write
+different physical block on behalf of the same logical one, then erase the
+original block. The UDST flag is supposed to guard against a situation,
+whereupon power fails during the write cycle and you're left with two
+physical blocks mapped to the same logical one (so the one marked with
+zero UDST value is supposedly "known good").
+
+
+> 
+> 
+> #define MEMSTICK_OVERWRITE_PGST1 0x20
+> #define MEMSTICK_OVERWRITE_PGST0 0x40
+> I suppose these indicate that page(sector) contains
+> incorrect data, just
+> like in xD there is page status?
+> Again, better explanation is welcome.
+> Also, should I touch that flag when I update sector?
+> 
+> 
+> 
+> #define MEMSTICK_OVERWRITE_BKST  0x80
+> This marks bad blocks?
+
+BKST set to zero indicates that the whole block is bad and shouldn't be
+used.
+
+PGST1:0 has several values:
+11:  default, r/w page
+10: reserved value, shouldn't be used
+01: page is read-only (soft write-protect)
+00: page is accessible, but the value is not guaranteed (faulty page that
+sort-of works)
+
+That's what the spec says.
+
+> 
+> 
+> 
+> Another question is about write of oob data.
+> When I write it, overwrite flag is updated, or I need to
+> use
+> MEMSTICK_CP_OVERWRITE to update it?
+> I think former is true.
+
+As I mentioned above, it can be accessed either as part of extra data
+or separately.
+
+> 
+> When I write a sector, I just write 0 to management flag,
+> right?
+
+You shouldn't touch management_flag at all, as far as I can tell.
+It's only used to indicate special purpose blocks, such as factory
+written boot blocks, volatile look-up table blocks (for systems with
+tight RAM requirements) and DRM marked blocks which I has no info about.
+
+> 
+> 
+> And last question,
+> If I use MEMSTICK_CP_BLOCK, can I start reading a block
+> from non-zero
+> page offset?
+
+Yes, it starts from the user specified page address and auto increments it
+until the current block end is hit.
+
+> 
+> 
+> And surely last question, what is 'MS_CMD_BLOCK_END'
+
+This command is used to terminate the currently ongoing block operation.
+If you are using one of the auto-increment modes (with CP_BLOCK set) but
+do not want to access all the pages until the block end, you must issue
+this command after the desired number of pages is transferred to return
+the media's state machine to the initial state. This command never hurts,
+as you can guess.
+
+> 
+> 
+> Thanks again for all help so far,
+> 
+
+You're welcome.
+
+
+
+      
