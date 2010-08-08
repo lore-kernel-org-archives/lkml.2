@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753349Ab0HHIbY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 04:31:24 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36746
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751214Ab0HHIbW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 04:31:22 -0400
-Date: Sun, 08 Aug 2010 01:31:41 -0700 (PDT)
-Message-Id: <20100808.013141.267939698.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: sparclinux@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] of/sparc: fix build regression from of_device changes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100808071628.11437.93510.stgit@angua>
-References: <20100808071628.11437.93510.stgit@angua>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753383Ab0HHIuX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 04:50:23 -0400
+Received: from sh.osrg.net ([192.16.179.4]:45662 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753242Ab0HHIuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 04:50:20 -0400
+Date: Sun, 8 Aug 2010 17:50:13 +0900
+To: janos.haar@netcenter.hu
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: scsi emulation - question
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <0f7601cb35be$d93998c0$0400a8c0@dcccs>
+References: <0f7601cb35be$d93998c0$0400a8c0@dcccs>
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100808174914A.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 08 Aug 2010 17:50:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 08 Aug 2010 01:19:38 -0600
+On Sat, 7 Aug 2010 01:26:45 +0200
+"Janos Haar" <janos.haar@netcenter.hu> wrote:
 
-> Commit id 1636f8ac2b08410df4766449f7c86b912443cd99 (sparc/of: Move
-> of_device fields into struct pdev_archdata) missed fixing up the
-> n2_core.c and greth.c drivers.  This patch makes the required changes.
-> 
-> Reported-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
-> 
-> David, I've currently got this one in my next-devicetree branch.  You
-> can either pick it up, or it can go out when I ask Linus to pull on
-> Monday or Tuesday.
+> I am looking for a solution wich can emulate SCSI device from a block device 
+> like loop.
+> I need the sg device but not for special commands, but for reading and 
+> writing only.
+> I have found only one solution until now, but i want to find better and 
+> faster.
+> The actually working is ISCSI target and initiator in one pc.
+> But this opens up port, and makes a lot of IP packets even if i use lo for 
+> this, wich is only a waste of time and resources.
 
-Please ask Linus to pull your copy, thanks Grant.
+scsi-debug should work for you.
