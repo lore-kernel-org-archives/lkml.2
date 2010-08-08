@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468Ab0HHKyP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 06:54:15 -0400
-Received: from mx2.fusionio.com ([64.244.102.31]:45006 "EHLO mx2.fusionio.com"
+	id S1753472Ab0HHLBE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 07:01:04 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:47314 "EHLO mx1.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753229Ab0HHKyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 06:54:10 -0400
-X-ASG-Debug-ID: 1281264848-0e7200010000-xx1T2L
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
+	id S1753229Ab0HHLA7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 07:00:59 -0400
+X-ASG-Debug-ID: 1281265258-43ef00030000-xx1T2L
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-bin/mark.cgi
 X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4C5E8CCF.4020809@fusionio.com>
-Date: Sun, 8 Aug 2010 06:54:07 -0400
+Message-ID: <4C5E8E6A.6030901@fusionio.com>
+Date: Sun, 8 Aug 2010 07:00:58 -0400
 From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
 To: Linus Torvalds <torvalds@linux-foundation.org>
 CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 X-ASG-Orig-Subj: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
 Subject: Re: [GIT PULL] block/IO bits for 2.6.36-rc1
-References: <4C5BE640.2050801@fusionio.com> <AANLkTindzwVR93MN=6HpevQZh5EqfvnmbzEj9OeG-PLJ@mail.gmail.com> 	<4C5D0BE2.3050209@fusionio.com> <AANLkTi=KkPhw8nA9PmQ7D8atKjTYXVCixUt=FHHNMy+S@mail.gmail.com>
-In-Reply-To: <AANLkTi=KkPhw8nA9PmQ7D8atKjTYXVCixUt=FHHNMy+S@mail.gmail.com>
+References: <4C5BE640.2050801@fusionio.com> <AANLkTindzwVR93MN=6HpevQZh5EqfvnmbzEj9OeG-PLJ@mail.gmail.com> 	<AANLkTi=WyWdERdyM+X5VOTX02_O_5GqV9hBQ145RmMWg@mail.gmail.com> 	<4C5D0C79.5010103@fusionio.com> <AANLkTincMAv0OLYHSqHNwrhfKBC-yQHhgWdqKYHoJNOf@mail.gmail.com>
+In-Reply-To: <AANLkTincMAv0OLYHSqHNwrhfKBC-yQHhgWdqKYHoJNOf@mail.gmail.com>
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1281264849
+X-Barracuda-Start-Time: 1281265258
 X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/2010 05:00 PM, Linus Torvalds wrote:
-> On Sat, Aug 7, 2010 at 12:31 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+On 08/07/2010 05:15 PM, Linus Torvalds wrote:
+> On Sat, Aug 7, 2010 at 12:34 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
 >>
->> Sometimes urgent patches will sit in for-linus and then I will merge
->> those in to for-2.6.36 to save Stephen the hassle of carrying conflict
->> update patches.
+>> OK, so a question on this. Say a bug surfaces in the middle of the
+>> release and we push in a change to fix that at 2.6.36-rc3 time. This
+>> same patch will not apply directly to the branch holding 2.6.37 patches
+>> due to code reshuffling or whatnot. How do you want that handled? I
+>> can't pull in your branch and resolve it. The merge conflict may not be
+>> visible to you until 2.6.36 is released and I want to offload the
+>> patches to you, but it will be visible in linux-next pretty much
+>> immediately.
 > 
-> The merges I saw weren't even urgent, because you had never actually
-> pushed them to me as such for the previous release. So both sides of
-> the merge was "for-2.3.36" as far as I can tell. That's what makes me
-> think there's some odd duplication of branches with no point (except
-> to make the history look ugly).
-
-No, the for-2.6.36 -> for-next was nothing urgent, just me being too
-eager updating for-next. Those should never have been merges.
-
-> Now, don't get me wrong - I _like_ branches. I love it when people
-> maintain different branches for different features, and then merge
-> them together in order for me to pull them (or just ask me to pull
-> multiple branches). See for example merge commit  415cb47998 that
-> Pekka did to create one single thing for me to pull when he had
-> maintained four different topic branches. Or see the x86 "tip" pulls
-> from Ingo, Thomas and Peter as an example of just asking me to pull
-> multiple branches separately.
-
-I will likely take the same approach that Pekka did, at least if there
-are merge issues before sending it out.
-
-[snip lots of good info]
-
->> But if you don't like that way of doing things, I will stop and just
->> keep for-2.6.X+1 patches in a branch that is based off 2.6.X and never
->> updated. I will try that for the next release and see how that goes.
+> So I think there's a few possible answers to that.
 > 
-> It's worth trying. In fact, it might be worth trying having a few
-> different branches, especially since there has been several clearly
-> different development threads for the block layer. It would be
-> _beautiful_ if you were to send me a couple of different pull requests
-> for things like "fix writeback" and "update cfs", and they'd be
-> independent. Because I think they really _are_ independent things.
-
-Yes, there tends to be several indepent topics of development in there.
-Core block bits, io scheduler, writeback, splice, driver updates, etc. I
-will clearly separate them. I think the biggest part of the problem is
-that it earlier was just core block and IO scheduler, but it evolved
-into something more. And my current approach just doesn't work for that,
-since it's gotten progressively worse over the last 2-3 releases.
-
-> But see above. Merges per se are not evil or bad. But thoughtless
-> merges are bad (and quite frankly, I don't mind a _couple_ of
-> unnecessary merges. It's when I see the daily kind that I go "no,
-> there's something seriously wrong here". So none of this is about hard
-> rules that have to be followed 100%, it's more flexible than that).
+> One is the one I outlined in my previous email: merge the next -rc
+> tag, and explain why you merged it in the commit message. That not
+> only makes the merge commit message be way more informative ("Merge
+> commit v2.6.3x-rcy" rather than "Merge branch 'master'"), but it also
+> automatically acts as a "rate limiter" for the merges.
 > 
-> Give it a try,
+> Now, that may cause problems for linux-next for a few days too, since
+> I think linux-next always starts from some random tree-of-the-day of
+> mine. That itself may be more indicative of a linux-next problem,
+> though. It might well make sense to base linux-next itself on the
+> latest tagged release rather than on some random daily thing (and if
+> the things that get merged _into_ linux-next then are based on a
+> random daily thing and bring linux-next forward, then that's a problem
+> with the trees getting merged - they shouldn't be doing that either).
+> 
+> The other possibility is for you to do throw-away merges just for
+> linux-next. That way _you_ do the merge (not Stephen or one of the
+> linux-next helpers), but the merge is going only into for-next, not
+> into your for-2.6.36 branch. "git rerere" will help you re-do the same
+> merge for future for-next trees - the same way linux-next already
+> generally only needs to do the merge resolution once.
 
-Will do :-)
+I can easily do it for for-next, merge things together there, test, and
+then push it out. That will save Stephen the hassle. I think that basing
+linux-next off the latest -rc is a good idea, instead of it being random
+snap of the day. That should make his job easier as well.
+
+I like the idea of just keeping the for-2.6.X branch based off 2.6.X-1
+the whole cycle, since it means that downstream folks never get anything
+when pulling my tree that wasn't done or merged there.
+
+> Then, when you actually want to send it to me, at that point (if it's
+> a really complicated merge and you know it's too complex for me), you
+> can do one final merge into 'for-linus' before you send me the pull
+> request. Again, git rerere will help you re-use your previous merge
+> resolutions.
+> 
+> Or don't merge at all when you send it to me, and only do the merge if
+> I then reply with "ok, that's too complicated for me".
+> 
+> I will _never_ complain about you sending me something I can't merge.
+> I may throw it back at you, but I won't complain about you trying to
+> give me merge work.  I really do like knowing about the conflicts.
+> 
+> Of course, if I do the merge conflict resolution I may then see
+> something odd and complain about it. Something I might not have even
+> noticed if it hadn't been pointed out to me by the conflict ;)
+
+On the merges, I just prefer to do them myself since I think I'm in the
+best possible position to do it. Plus the non-easy merges tend to be
+interesting to do, at least it's a less mundane part of assembling
+peoples bits and pieces together.
 
 -- 
 Jens Axboe
