@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753989Ab0HHMxj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 08:53:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786Ab0HHMxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 08:53:38 -0400
-Date: Sun, 8 Aug 2010 08:53:01 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Jeremy Allison <jra@samba.org>
-Cc: Neil Brown <neilb@suse.de>, utz lehmann <lkml123@s2y4n2c.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100808085301.24f53e5a@tlielax.poochiereds.net>
-In-Reply-To: <20100808121208.GA7329@jeremy-laptop>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<1280524978.2452.9.camel@segv.aura.of.mankind>
-	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
-	<20100805235218.GB31233@jeremy-laptop>
-	<20100806133836.49757af9@notabene>
-	<20100808121208.GA7329@jeremy-laptop>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754045Ab0HHMxz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 08:53:55 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50000 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab0HHMxx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 08:53:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=vuVDYAKhheTJr6qpxsbYqTpEazMpj4ysXEs/Hp/6X9m+O8P495QfmEA2sucoq13K+S
+         dGn6yivgjIh/JGiLzAvSc2Wvlf0z30tLIMU22ThTvoNHyHO83fjW3FJbvEsnlyGoEWXa
+         8jKxaSbLewvPZ82fwbrjvAREn29EIzlsq2GjQ=
+MIME-Version: 1.0
+In-Reply-To: <20100807061558.GA28087@thunk.org>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100804195704.GA23681@linux.vnet.ibm.com>
+	<20100806225453.GA3947@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
+	<AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+	<alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
+	<20100807061558.GA28087@thunk.org>
+Date: Sun, 8 Aug 2010 15:53:52 +0300
+Message-ID: <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 8 Aug 2010 05:12:09 -0700
-Jeremy Allison <jra@samba.org> wrote:
+On Sat, Aug 7, 2010 at 9:15 AM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Fri, Aug 06, 2010 at 08:14:09PM -0700, david@lang.hm wrote:
+>> 1. sleeping can't currently save as much power as suspending
+>
+> No, I don't think that's the case at all.  The key thing here is that
+> *most* applications don't need to be modified to use suspend locks,
+> because even though they might be in an event loop, when the user user
+> turns off the display, the user generally doesn't want it doing things
+> on their behalf.
 
-> On Fri, Aug 06, 2010 at 01:38:36PM +1000, Neil Brown wrote:
-> > I'm curious.  Why do you particularly care what interface the kernel uses to
-> > provide you with access to this attribute?
-> 
-> It's a matter of taste. The *BSD's have this right IMHO. It
-> should be part of the stat information. A file timestamp is not
-> an EA. Making it available that way just feels like an appalingly
-> tasteless kludge. It offends the artist in me :-).
-> 
+You are overgeneralizing; there are many applications that run in the
+background, and you want to keep them running even when the display is
+off.
 
-It would be more convenient if this were part of stat() but adding a
-new stat call is non-trivial. Even if we did that, it still doesn't
-solve the problem of being able to set the create time. The fact that
-that's rarely done doesn't really matter much -- we ought to shoot for
-the semantics that are needed to handle this properly.
+You seen to be concentrating on UI-only applications, for those it's
+worth noting that Android provides separate mechanisms for power
+saving. Since Android doesn't have true multi-tasking, the
+applications must serialize their states so that the next time they
+are opened they seem to have not been closed. So, the current active
+UI application can be closed while turning off the display, and
+re-opened later.
 
-If we do settle on a xstat() interface, it might also end up being able
-to report things like selinux labels which are also available and
-settable via xattr. I don't see a problem with presenting the same data
-via multiple interfaces. If presenting this data via xattr solves the
-immediate problem of being able to properly store and report the create
-time then it seems like a win.
-
-> > Or do you really want something like BSD's 'btime' which as I understand it
-> > cannot be set.  Would that be really useful to you?
-> 
-> It is *already* useful to us, and is widely used in
-> existing code. The occasions when btime is set are
-> relatively rare, and at that point we store it in a
-> separate EA for Windows reporting purposes.
-> 
-
-If that's the case, don't you have to query for this EA every time you
-need to return the create time anyway? If so, then doing this really
-isn't any more costly -- you'd just be querying a different EA, right?
+User-space suspend blockers are relevant for background services, and
+as it has been discussed before; suspend blockers (not activating
+them) might actually degrade power usage.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Felipe Contreras
