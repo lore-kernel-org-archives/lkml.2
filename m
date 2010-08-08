@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754732Ab0HHVX3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 17:23:29 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:54949 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754034Ab0HHVX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 17:23:28 -0400
-Date: Sun, 8 Aug 2010 23:23:11 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [PATCH] lockup_detector: Make DETECT_HUNT_TASK default depend on
- LOCKUP_DETECTOR
-Message-ID: <20100808212311.GA7194@elte.hu>
-References: <4C58C7FF.5060906@cn.fujitsu.com>
- <20100806005801.GB5436@nowhere>
- <20100807070135.GC23108@elte.hu>
- <20100808195839.GA5387@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100808195839.GA5387@nowhere>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1754835Ab0HHViP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 17:38:15 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59945 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab0HHViN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 17:38:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LWaOfBNEGCPZu+YROi3ec0YL71W8YCtOMZR+Gcuh4pRqiAaiCRzLtwp+GBW9soFHqZ
+         gfFUs2OPVYs5SI1LAyBXc/OYpyJR4mm+Qmba11/6y9K9Zfbc2rI66S+et/3mgcNiH7zV
+         YChyxwSg1Fviv+9XPaY9B0XtReoLhiVa5BaMI=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: remove __phys_reloc_hide
+Date: Mon,  9 Aug 2010 06:38:10 +0900
+Message-Id: <1281303490-390-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+remove unnecessary use of RELOC_HIDE(). It only does simple addition of ptr
+and offset, and in this case, offset 0, does nothing. It does NOT do anything
+with linker relocation things. I could find no reason to use it.
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+The only user of __phys_reloc_hide() was __pa_symbol() so it can be removed
+safely here.
 
-> > The thing is, CONFIG_DETECT_SOFTLOCKUP was default-y before, so many 
-> > people had it enabled [and had it forced-enabled if DEBUG_KERNEL was off], 
-> > even if they didnt really want or need it.
-> 
-> Hmm. It was:
-> 
-> config DETECT_SOFTLOCKUP
-> 	bool "Detect Soft Lockups"
-> 	depends on DEBUG_KERNEL && !S390
-> 	default y
-> 
-> It means it's default enabled only if DEBUG_KERNEL, right? Then if you don't 
-> select CONFIG_DEBUG_KERNEL, it's fine as it won't be selected.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ arch/x86/include/asm/page.h          |    5 ++---
+ arch/x86/include/asm/page_32.h       |    1 -
+ arch/x86/include/asm/page_64_types.h |    1 -
+ 3 files changed, 2 insertions(+), 5 deletions(-)
 
-Indeed, you are right.
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 625c3f0..3da2a8e 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -35,9 +35,8 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
+ 
+ #define __pa(x)		__phys_addr((unsigned long)(x))
+ #define __pa_nodebug(x)	__phys_addr_nodebug((unsigned long)(x))
+-/* __pa_symbol should be used for C visible symbols.
+-   This seems to be the official gcc blessed way to do such arithmetic. */
+-#define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
++/* __pa_symbol should be used for C visible symbols. */
++#define __pa_symbol(x)	__pa(x)
+ 
+ #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
+ 
+diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
+index da4e762..e78e52a 100644
+--- a/arch/x86/include/asm/page_32.h
++++ b/arch/x86/include/asm/page_32.h
+@@ -15,7 +15,6 @@ extern unsigned long __phys_addr(unsigned long);
+ #else
+ #define __phys_addr(x)		__phys_addr_nodebug(x)
+ #endif
+-#define __phys_reloc_hide(x)	RELOC_HIDE((x), 0)
+ 
+ #ifdef CONFIG_FLATMEM
+ #define pfn_valid(pfn)		((pfn) < max_mapnr)
+diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
+index 7639dbf..5a63066 100644
+--- a/arch/x86/include/asm/page_64_types.h
++++ b/arch/x86/include/asm/page_64_types.h
+@@ -59,7 +59,6 @@ extern unsigned long max_pfn;
+ extern unsigned long phys_base;
+ 
+ extern unsigned long __phys_addr(unsigned long);
+-#define __phys_reloc_hide(x)	(x)
+ 
+ #define vmemmap ((struct page *)VMEMMAP_START)
+ 
+-- 
+1.7.0.4
 
-Anyway, i think the general point remains: i'm not sure we should 
-default-enable this feature.
-
-> But I agree with you. There is a bunch of config options for which selection 
-> is a duty when you are a kernel developer: PROVE_LOCKING, DETECT_HUNG_TASK, 
-> DEBUG_PREEMPT, PROVE_RCU, etc... Because they all show (or prove we can 
-> have) bugs that one might miss without these options. Softlockups are rarely 
-> part of them because even without the lockup detector enabled, you'll 
-> observe something is wrong.
-
-Note that it's now detecting all kinds of lockups: softlockups, hard lockups 
-and even unkillable hung tasks.
-
-	Ingo
