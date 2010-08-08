@@ -1,173 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab0HHQD7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 12:03:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5405 "EHLO mx1.redhat.com"
+	id S1754790Ab0HHQEb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 12:04:31 -0400
+Received: from THUNK.ORG ([69.25.196.29]:36440 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab0HHPyh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:54:37 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
-Subject: [PATCH 10/39] whiteout: Split of ext2_append_link() from ext2_add_link()
-Date: Sun,  8 Aug 2010 11:52:27 -0400
-Message-Id: <1281282776-5447-11-git-send-email-vaurora@redhat.com>
-In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
-References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
+	id S1754235Ab0HHQE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 12:04:28 -0400
+Date: Sun, 8 Aug 2010 12:04:04 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org, miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
+        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V17 10/12] vfs: Export file system uuid via
+ /proc/<pid>mountinfo
+Message-ID: <20100808160404.GC3635@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+	corbet@lwn.net, neilb@suse.de, npiggin@suse.de,
+	hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu,
+	linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+	philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+References: <1279566727-16598-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+ <1279566727-16598-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279566727-16598-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Stupid nit-pick in the subject line/patch summary:
 
-The ext2_append_link() is later used to find or append a directory
-entry to whiteout.
+s;/proc/<pid>mountinfo;/proc/<pid>/mountinfo;
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: Theodore Tso <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org
----
- fs/ext2/dir.c |   70 ++++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 50 insertions(+), 20 deletions(-)
-
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 7516957..57207a9 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -472,9 +472,10 @@ void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
- }
- 
- /*
-- *	Parent is locked.
-+ * Find or append a given dentry to the parent directory
-  */
--int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+static ext2_dirent * ext2_append_entry(struct dentry * dentry,
-+				       struct page ** page)
- {
- 	struct inode *dir = dentry->d_parent->d_inode;
- 	const char *name = dentry->d_name.name;
-@@ -482,13 +483,10 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	unsigned chunk_size = ext2_chunk_size(dir);
- 	unsigned reclen = EXT2_DIR_REC_LEN(namelen);
- 	unsigned short rec_len, name_len;
--	struct page *page = NULL;
--	ext2_dirent * de;
-+	ext2_dirent * de = NULL;
- 	unsigned long npages = dir_pages(dir);
- 	unsigned long n;
- 	char *kaddr;
--	loff_t pos;
--	int err;
- 
- 	/*
- 	 * We take care of directory expansion in the same loop.
-@@ -498,20 +496,19 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 	for (n = 0; n <= npages; n++) {
- 		char *dir_end;
- 
--		page = ext2_get_page(dir, n, 0);
--		err = PTR_ERR(page);
--		if (IS_ERR(page))
-+		*page = ext2_get_page(dir, n, 0);
-+		de = ERR_PTR(PTR_ERR(*page));
-+		if (IS_ERR(*page))
- 			goto out;
--		lock_page(page);
--		kaddr = page_address(page);
-+		lock_page(*page);
-+		kaddr = page_address(*page);
- 		dir_end = kaddr + ext2_last_byte(dir, n);
- 		de = (ext2_dirent *)kaddr;
- 		kaddr += PAGE_CACHE_SIZE - reclen;
- 		while ((char *)de <= kaddr) {
- 			if ((char *)de == dir_end) {
- 				/* We hit i_size */
--				name_len = 0;
--				rec_len = chunk_size;
-+				de->name_len = 0;
- 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
- 				de->inode = 0;
- 				goto got_it;
-@@ -519,12 +516,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 			if (de->rec_len == 0) {
- 				ext2_error(dir->i_sb, __func__,
- 					"zero-length directory entry");
--				err = -EIO;
-+				de = ERR_PTR(-EIO);
- 				goto out_unlock;
- 			}
--			err = -EEXIST;
- 			if (ext2_match (namelen, name, de))
--				goto out_unlock;
-+				goto got_it;
- 			name_len = EXT2_DIR_REC_LEN(de->name_len);
- 			rec_len = ext2_rec_len_from_disk(de->rec_len);
- 			if (!de->inode && rec_len >= reclen)
-@@ -533,13 +529,48 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
- 				goto got_it;
- 			de = (ext2_dirent *) ((char *) de + rec_len);
- 		}
--		unlock_page(page);
--		ext2_put_page(page);
-+		unlock_page(*page);
-+		ext2_put_page(*page);
- 	}
-+
- 	BUG();
--	return -EINVAL;
- 
- got_it:
-+	return de;
-+	/* OFFSET_CACHE */
-+out_unlock:
-+	unlock_page(*page);
-+	ext2_put_page(*page);
-+out:
-+	return de;
-+}
-+
-+/*
-+ *	Parent is locked.
-+ */
-+int ext2_add_link (struct dentry *dentry, struct inode *inode)
-+{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	unsigned short rec_len, name_len;
-+	ext2_dirent * de;
-+	struct page *page;
-+	loff_t pos;
-+	int err;
-+
-+	de = ext2_append_entry(dentry, &page);
-+	if (IS_ERR(de))
-+		return PTR_ERR(de);
-+
-+	err = -EEXIST;
-+	if (ext2_match (namelen, name, de))
-+		goto out_unlock;
-+
-+got_it:
-+	name_len = EXT2_DIR_REC_LEN(de->name_len);
-+	rec_len = ext2_rec_len_from_disk(de->rec_len);
-+
- 	pos = page_offset(page) +
- 		(char*)de - (char*)page_address(page);
- 	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-@@ -563,7 +594,6 @@ got_it:
- 	/* OFFSET_CACHE */
- out_put:
- 	ext2_put_page(page);
--out:
- 	return err;
- out_unlock:
- 	unlock_page(page);
--- 
-1.6.3.3
-
+						- Ted
