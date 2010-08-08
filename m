@@ -1,160 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363Ab0HHPHb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:07:31 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65304 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753415Ab0HHPHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:07:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=tP7ewycFNSK/HeYtX9lVXdJCQzlvcchvLqT4fEfx8bUV3bAUplR+USY12FujVux8WI
-         +F3/8iXXA10p+esWAR+0PMtTtW4hU9gS5HG0fLf5h1CgCNWDgBUskKFhk5DuJps2afwV
-         jPj7v2yonJqp0z+FNgsCi+Tkb0V6mhRy+0wDc=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <518887.35250.qm@web37604.mail.mud.yahoo.com>
-References: <518887.35250.qm@web37604.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 08 Aug 2010 18:07:24 +0300
-Message-ID: <1281280044.10030.27.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754389Ab0HHPSF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:18:05 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:20242 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754302Ab0HHPSD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:18:03 -0400
+Message-ID: <4C5ECAA4.9050606@bfs.de>
+Date: Sun, 08 Aug 2010 17:17:56 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+MIME-Version: 1.0
+To: Roberto Rodriguez Alkala <rralcala@gmail.com>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] stating: otus: fix compile warning and some style issues
+References: <1281225149.10826.5.camel@lenovo>
+In-Reply-To: <1281225149.10826.5.camel@lenovo>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-08-08 at 07:26 -0700, Alex Dubov wrote: 
-> > Hi,
-> > 
-> > I have few more questions about memsticks.
-> > 
-> > First of all, I need an explanation of overwrite flag.
-> > You already explained it to me once, but I still not sure
-> > about few
-> > things.
-> 
-> Overwrite register can be accessed either as part of extra data access
-> or separately (CP_OVERWRITE access mode).
-> 
-> > 
-> > #define MEMSTICK_OVERWRITE_UDST  0x10
-> > This one I understand, thinking about xD again, I think it
-> > is very
-> > handy.
-> > 
-> > My idea (from xD of course) is that copyonwrite is done
-> > this way:
-> > 
-> > 1. read old sector
-> > 2. allocate new sector
-> > 2. write what was just read to new sector.
-> > 3. erase old sector.
-> 
-> This is correct.
-> 
-> > 
-> > Could you explain when I need to set and reset the
-> > MEMSTICK_OVERWRITE_UDST?
-> 
-> UDST flag should be set when you're marking the block for
-> reallocation during the read/modify/write cycle. You read the existing
-> physical block, mark it with UDST flag (setting it to zero), then write
-> different physical block on behalf of the same logical one, then erase the
-> original block. The UDST flag is supposed to guard against a situation,
-> whereupon power fails during the write cycle and you're left with two
-> physical blocks mapped to the same logical one (so the one marked with
-> zero UDST value is supposedly "known good").
 
-> 
-> 
-> > 
-> > 
-> > #define MEMSTICK_OVERWRITE_PGST1 0x20
-> > #define MEMSTICK_OVERWRITE_PGST0 0x40
-> > I suppose these indicate that page(sector) contains
-> > incorrect data, just
-> > like in xD there is page status?
-> > Again, better explanation is welcome.
-> > Also, should I touch that flag when I update sector?
-> > 
-> > 
-> > 
-> > #define MEMSTICK_OVERWRITE_BKST  0x80
-> > This marks bad blocks?
-> 
-> BKST set to zero indicates that the whole block is bad and shouldn't be
-> used.
-> 
-> PGST1:0 has several values:
-> 11:  default, r/w page
-> 10: reserved value, shouldn't be used
-> 01: page is read-only (soft write-protect)
-> 00: page is accessible, but the value is not guaranteed (faulty page that
-> sort-of works)
-> 
-> That's what the spec says.
 
-Thank you very much. 
+Roberto Rodriguez Alkala schrieb:
+> In today linux-next I got a compile warning in staging/otus driver. 
+> This patch solves the issue and also improves the coding style.
 > 
-> > 
-> > 
-> > 
-> > Another question is about write of oob data.
-> > When I write it, overwrite flag is updated, or I need to
-> > use
-> > MEMSTICK_CP_OVERWRITE to update it?
-> > I think former is true.
+> Signed-off-by: Roberto Rodriguez Alcala <rralcala@gmail.com>
+> ---
+>  drivers/staging/otus/80211core/ratectrl.c |   26 +++++++++-----------------
+>  1 files changed, 9 insertions(+), 17 deletions(-)
 > 
-> As I mentioned above, it can be accessed either as part of extra data
-> or separately.
-> 
-> > 
-> > When I write a sector, I just write 0 to management flag,
-> > right?
-> 
-> You shouldn't touch management_flag at all, as far as I can tell.
-> It's only used to indicate special purpose blocks, such as factory
-> written boot blocks, volatile look-up table blocks (for systems with
-> tight RAM requirements) and DRM marked blocks which I has no info about.
-> 
-> > 
-> > 
-> > And last question,
-> > If I use MEMSTICK_CP_BLOCK, can I start reading a block
-> > from non-zero
-> > page offset?
-> 
-> Yes, it starts from the user specified page address and auto increments it
-> until the current block end is hit.
-> 
-> > 
-> > 
-> > And surely last question, what is 'MS_CMD_BLOCK_END'
-> 
-> This command is used to terminate the currently ongoing block operation.
-> If you are using one of the auto-increment modes (with CP_BLOCK set) but
-> do not want to access all the pages until the block end, you must issue
-> this command after the desired number of pages is transferred to return
-> the media's state machine to the initial state. This command never hurts,
-> as you can guess.
-That what I expected, thanks! 
-> 
-> > 
-> > 
-> > Thanks again for all help so far,
-> > 
-> 
-> You're welcome.
+> diff --git a/drivers/staging/otus/80211core/ratectrl.c b/drivers/staging/otus/80211core/ratectrl.c
+> index a1abe2f..283b2b5 100644
+> --- a/drivers/staging/otus/80211core/ratectrl.c
+> +++ b/drivers/staging/otus/80211core/ratectrl.c
+> @@ -422,23 +422,15 @@ u8_t zfRateCtrlRateDiff(struct zsRcCell* rcCell, u8_t retryRate)
+>      u16_t i;
+>  
+>      /* Find retryRate in operationRateSet[] */
+> -    for (i=0; i<rcCell->operationRateCount; i++)
+> -    {
+> -        if (retryRate == rcCell->operationRateSet[i])
+> -        {
+> -            if (i < rcCell->currentRateIndex)
+> -            {
+> -                return ((rcCell->currentRateIndex - i)+1)>>1;
+> -            }
+> -            else if (i == rcCell->currentRateIndex == 0)
+> -            {
+> -                return 1;
+> -            }
+> -            else
+> -            {
+> -                return 0;
+> -            }
+> -        }
+> +    for (i = 0; i < rcCell->operationRateCount; i++) {
+> +	if (retryRate == rcCell->operationRateSet[i]) {
+> +		if (i < rcCell->currentRateIndex)
+> +			return ((rcCell->currentRateIndex - i)+1)>>1;
+> +		else if (i == rcCell->currentRateIndex && i == 0)
+> +			return 1;
+> +		else
+> +			return 0;
+> +	}
+>      }
+>      /* TODO : retry rate not in operation rate set */
+>      zm_msg1_tx(ZM_LV_0, "Not in operation rate set:", retryRate);
 
-Thank you very much!
 
-Best regards,
-Maxim Levitsky
+mmh, it is a matter of taste but to improve readablity
+i would make the special case i=0 first and let the  loop
+start with i=1. /* untested code below, assuming rcCell->currentRateIndex>=0 */
 
+ if ( retryRate == rcCell->operationRateSet[0] && rcCell->currentRateIndex== 0 )
+	return 1;
+
+  for (i = 1; i < rcCell->operationRateCount; i++) {
+               if (i < rcCell->currentRateIndex)
+                  return ((rcCell->currentRateIndex - i)+1)>>1;
+               else
+                  return 0;
+   }
+
+
+
+just my 2 cents,
+
+re,
+ wh
