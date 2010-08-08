@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755094Ab0HHP4F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:56:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45090 "EHLO mx1.redhat.com"
+	id S1755109Ab0HHP4I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:56:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25698 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755067Ab0HHP4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:56:00 -0400
+	id S1755065Ab0HHPz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:59 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 38/39] union-mount: Implement union-aware setxattr()
-Date: Sun,  8 Aug 2010 11:52:55 -0400
-Message-Id: <1281282776-5447-39-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 39/39] union-mount: Implement union-aware lsetxattr()
+Date: Sun,  8 Aug 2010 11:52:56 -0400
+Message-Id: <1281282776-5447-40-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,23 +23,14 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/xattr.c |   34 +++++++++++++++++++++++++++-------
- 1 files changed, 27 insertions(+), 7 deletions(-)
+ fs/xattr.c |   31 +++++++++++++++++++++++++------
+ 1 files changed, 25 insertions(+), 6 deletions(-)
 
 diff --git a/fs/xattr.c b/fs/xattr.c
-index 01bb813..7869788 100644
+index 7869788..67815eb 100644
 --- a/fs/xattr.c
 +++ b/fs/xattr.c
-@@ -19,7 +19,7 @@
- #include <linux/fsnotify.h>
- #include <linux/audit.h>
- #include <asm/uaccess.h>
--
-+#include "union.h"
- 
- /*
-  * Check permissions for extended attribute access.  This is a bit complicated
-@@ -281,17 +281,37 @@ SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
+@@ -320,17 +320,36 @@ SYSCALL_DEFINE5(lsetxattr, const char __user *, pathname,
  		size_t, size, int, flags)
  {
  	struct path path;
@@ -48,9 +39,8 @@ index 01bb813..7869788 100644
 +	char *tmp;
  	int error;
  
--	error = user_path(pathname, &path);
-+	error = user_path_nd(AT_FDCWD, pathname, LOOKUP_FOLLOW, &nd, &path,
-+			     &tmp);
+-	error = user_lpath(pathname, &path);
++	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
  	if (error)
  		return error;
 -	error = mnt_want_write(path.mnt);
