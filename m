@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab0HHP4I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:56:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25698 "EHLO mx1.redhat.com"
+	id S1755042Ab0HHPzz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:55:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39601 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755065Ab0HHPz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:55:59 -0400
+	id S1754987Ab0HHPzu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:50 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 39/39] union-mount: Implement union-aware lsetxattr()
-Date: Sun,  8 Aug 2010 11:52:56 -0400
-Message-Id: <1281282776-5447-40-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 33/39] union-mount: Implement union-aware chown()
+Date: Sun,  8 Aug 2010 11:52:50 -0400
+Message-Id: <1281282776-5447-34-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,15 +23,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/xattr.c |   31 +++++++++++++++++++++++++------
- 1 files changed, 25 insertions(+), 6 deletions(-)
+ fs/open.c |   23 ++++++++++++++++++++---
+ 1 files changed, 20 insertions(+), 3 deletions(-)
 
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 7869788..67815eb 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -320,17 +320,36 @@ SYSCALL_DEFINE5(lsetxattr, const char __user *, pathname,
- 		size_t, size, int, flags)
+diff --git a/fs/open.c b/fs/open.c
+index fc56da0..8588b31 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -552,18 +552,35 @@ static int chown_common(struct path *path, uid_t user, gid_t group)
+ SYSCALL_DEFINE3(chown, const char __user *, filename, uid_t, user, gid_t, group)
  {
  	struct path path;
 +	struct nameidata nd;
@@ -39,15 +39,12 @@ index 7869788..67815eb 100644
 +	char *tmp;
  	int error;
  
--	error = user_lpath(pathname, &path);
-+	error = user_path_nd(AT_FDCWD, pathname, 0, &nd, &path, &tmp);
+-	error = user_path(filename, &path);
++	error = user_path_nd(AT_FDCWD, filename, LOOKUP_FOLLOW,
++				     &nd, &path, &tmp);
  	if (error)
- 		return error;
+ 		goto out;
 -	error = mnt_want_write(path.mnt);
--	if (!error) {
--		error = setxattr(path.dentry, name, value, size, flags);
--		mnt_drop_write(path.mnt);
--	}
 +
 +	if (IS_DIR_UNIONED(nd.path.dentry))
 +		mnt = nd.path.mnt;
@@ -55,24 +52,23 @@ index 7869788..67815eb 100644
 +		mnt = path.mnt;
 +
 +	error = mnt_want_write(mnt);
-+	if (error)
-+		goto out;
+ 	if (error)
+ 		goto out_release;
 +
 +	error = union_copyup(&nd, &path);
 +	if (error)
 +		goto out_drop_write;
-+
-+	error = setxattr(path.dentry, name, value, size, flags);
-+
+ 	error = chown_common(&path, user, group);
+-	mnt_drop_write(path.mnt);
 +out_drop_write:
 +	mnt_drop_write(mnt);
-+out:
+ out_release:
  	path_put(&path);
 +	path_put(&nd.path);
 +	putname(tmp);
+ out:
  	return error;
  }
- 
 -- 
 1.6.3.3
 
