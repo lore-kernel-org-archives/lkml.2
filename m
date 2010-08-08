@@ -1,104 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754396Ab0HHPyp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:54:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28801 "EHLO mx1.redhat.com"
+	id S1754471Ab0HHPzF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:55:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1061 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754456Ab0HHPyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:54:22 -0400
+	id S1754726Ab0HHPy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:54:57 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 07/39] whiteout: Set opaque flag if new directory was previously a whiteout
-Date: Sun,  8 Aug 2010 11:52:24 -0400
-Message-Id: <1281282776-5447-8-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 16/39] union-mount: Introduce union_dir structure and basic operations
+Date: Sun,  8 Aug 2010 11:52:33 -0400
+Message-Id: <1281282776-5447-17-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+This patch adds the basic structures and operations of VFS-based union
+mounts (but not the ability to mount or lookup unioned file systems).
+Each directory in a unioned file system has an associated union stack
+created when the directory is first looked up.  The union stack is a
+union_dir structure kept in a hash table indexed by mount and dentry
+of the directory; thus, specific paths are unioned, not dentries
+alone.  The union_dir keeps a pointer to the upper path and the lower
+path and can be looked up by either path.  Currently only two layers
+are supported, but the union_dir struct is flexible enough to allow
+more than two layers.
 
-If we mkdir() a directory on the top layer of a union, we don't want
-entries from a matching directory on the lower layer to "show through"
-suddenly.  To prevent this, we set the opaque flag on a directory if
-there was previously a white-out with the same name. (If there is no
-white-out and the directory exists in a lower layer, then mkdir() will
-fail with EEXIST.)
+This particular version of union mounts is based on ideas by Jan
+Blunck, Bharata B. Rao, and many others.
 
-Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/namei.c         |   11 ++++++++++-
- include/linux/fs.h |    5 +++++
- 2 files changed, 15 insertions(+), 1 deletions(-)
+ fs/Kconfig             |   13 +++++
+ fs/Makefile            |    1 +
+ fs/dcache.c            |    3 +
+ fs/union.c             |  119 ++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/union.h             |   66 ++++++++++++++++++++++++++
+ include/linux/dcache.h |    5 ++-
+ 6 files changed, 206 insertions(+), 1 deletions(-)
+ create mode 100644 fs/union.c
+ create mode 100644 fs/union.h
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 665d394..cd8b0d0 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2108,6 +2108,7 @@ SYSCALL_DEFINE3(mknod, const char __user *, filename, int, mode, unsigned, dev)
- int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
- {
- 	int error = may_create(dir, dentry);
-+	int opaque = 0;
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 5f85b59..47409c9 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -59,6 +59,19 @@ source "fs/notify/Kconfig"
  
- 	if (error)
- 		return error;
-@@ -2120,9 +2121,17 @@ int vfs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
- 	if (error)
- 		return error;
+ source "fs/quota/Kconfig"
  
-+	if (d_is_whiteout(dentry))
-+		opaque = 1;
++config UNION_MOUNT
++       bool "Union mounts (writable overlays) (EXPERIMENTAL)"
++       depends on EXPERIMENTAL
++       help
++         Union mounts allow you to mount a transparent writable
++	 layer over a read-only file system, for example, an ext3
++	 partition on a hard drive over a CD-ROM root file system
++	 image.
 +
- 	error = dir->i_op->mkdir(dir, dentry, mode);
--	if (!error)
-+	if (!error) {
- 		fsnotify_mkdir(dir, dentry);
-+		if (opaque) {
-+			dentry->d_inode->i_flags |= S_OPAQUE;
-+			mark_inode_dirty(dentry->d_inode);
-+		}
++	 See <file:Documentation/filesystems/union-mounts.txt> for details.
++
++	 If unsure, say N.
++
+ source "fs/autofs/Kconfig"
+ source "fs/autofs4/Kconfig"
+ source "fs/fuse/Kconfig"
+diff --git a/fs/Makefile b/fs/Makefile
+index e6ec1d3..936acf0 100644
+--- a/fs/Makefile
++++ b/fs/Makefile
+@@ -52,6 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
+ obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
+ 
+ obj-y				+= quota/
++obj-$(CONFIG_UNION_MOUNT)	+= union.o
+ 
+ obj-$(CONFIG_PROC_FS)		+= proc/
+ obj-y				+= partitions/
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 249d077..456030d 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -959,6 +959,9 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
+ 	INIT_LIST_HEAD(&dentry->d_lru);
+ 	INIT_LIST_HEAD(&dentry->d_subdirs);
+ 	INIT_LIST_HEAD(&dentry->d_alias);
++#ifdef CONFIG_UNION_MOUNT
++	dentry->d_union_dir = NULL;
++#endif
+ 
+ 	if (parent) {
+ 		dentry->d_parent = dget(parent);
+diff --git a/fs/union.c b/fs/union.c
+new file mode 100644
+index 0000000..02abb7c
+--- /dev/null
++++ b/fs/union.c
+@@ -0,0 +1,119 @@
++ /*
++ * VFS-based union mounts for Linux
++ *
++ * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
++ * Copyright (C) 2007-2009 Novell Inc.
++ * Copyright (C) 2009-2010 Red Hat, Inc.
++ *
++ *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
++ *              Valerie Aurora <vaurora@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/bootmem.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/fs.h>
++#include <linux/mount.h>
++#include <linux/fs_struct.h>
++#include <linux/slab.h>
++
++#include "union.h"
++
++static struct kmem_cache *union_cache;
++
++static int __init init_union(void)
++{
++	union_cache = KMEM_CACHE(union_dir, SLAB_PANIC | SLAB_MEM_SPREAD);
++	return 0;
++}
++
++fs_initcall(init_union);
++
++/**
++ * union_alloc - allocate a union_dir
++ *
++ * @path: path of directory underneath another directory
++ *
++ * Allocate a union_dir for this directory.  We only allocate
++ * union_dirs for the second and lower layers - the read-only layers.
++ * Top-level dentries don't have a union_dir, just a pointer to the
++ * union_dir of the directory in the layer below it.  u_lower is
++ * initialized to NULL by default.  If there is another layer below
++ * this and a matching directory in the layer, then we allocate a
++ * union_dir for it and then set u_lower of the above union_dir to
++ * point to it.
++ */
++
++static struct union_dir *union_alloc(struct path *path)
++{
++	struct union_dir *ud;
++
++	BUG_ON(!S_ISDIR(path->dentry->d_inode->i_mode));
++
++	ud = kmem_cache_alloc(union_cache, GFP_ATOMIC);
++	if (!ud)
++		return NULL;
++
++	ud->u_this = *path;
++	ud->u_lower = NULL;
++
++	return ud;
++}
++
++static void union_put(struct union_dir *ud)
++{
++	path_put(&ud->u_this);
++	kmem_cache_free(union_cache, ud);
++}
++
++/**
++ * union_add_dir - Add another layer to a unioned directory
++ *
++ * @upper - directory in the previous layer
++ * @lower - directory in the current layer
++ * @next_ud - location of pointer to this union_dir
++ *
++ * Must have a reference (i.e., call path_get()) to @lower before
++ * passing to this function.
++ */
++
++int union_add_dir(struct path *upper, struct path *lower,
++		  struct union_dir **next_ud)
++{
++	struct union_dir *ud;
++
++	BUG_ON(*next_ud != NULL);
++
++	ud = union_alloc(lower);
++	if (!ud)
++		return -ENOMEM;
++	*next_ud = ud;
++
++	return 0;
++}
++
++/**
++ * d_free_unions - free all unions for this dentry
++ *
++ * @dentry - topmost dentry in the union stack to remove
++ *
++ * This must be called when freeing a dentry.
++ */
++void d_free_unions(struct dentry *dentry)
++{
++	struct union_dir *this, *next;
++
++	this = dentry->d_union_dir;
++
++	while (this != NULL) {
++		next = this->u_lower;
++		union_put(this);
++		this = next;
 +	}
- 	return error;
- }
- 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1f80897..1dbe156 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -236,6 +236,7 @@ struct inodes_stat_t {
- #define S_NOCMTIME	128	/* Do not update file c/mtime */
- #define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
- #define S_PRIVATE	512	/* Inode is fs-internal */
-+#define S_OPAQUE	1024	/* Directory is opaque */
- 
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -270,6 +271,7 @@ struct inodes_stat_t {
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
- #define IS_SWAPFILE(inode)	((inode)->i_flags & S_SWAPFILE)
- #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
-+#define IS_OPAQUE(inode)	((inode)->i_flags & S_OPAQUE)
- 
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
-@@ -351,8 +353,11 @@ struct inodes_stat_t {
- #define FS_NOTAIL_FL			0x00008000 /* file tail should not be merged */
- #define FS_DIRSYNC_FL			0x00010000 /* dirsync behaviour (directories only) */
- #define FS_TOPDIR_FL			0x00020000 /* Top of directory hierarchies*/
-+/* 0x00040000 is used by ext4 */
- #define FS_EXTENT_FL			0x00080000 /* Extents */
- #define FS_DIRECTIO_FL			0x00100000 /* Use direct i/o */
-+/* 0x00200000 and 0x00400000 also used by ext4 */
-+#define FS_OPAQUE_FL			0x00800000 /* Dir is opaque */
- #define FS_RESERVED_FL			0x80000000 /* reserved for ext2 lib */
- 
- #define FS_FL_USER_VISIBLE		0x0003DFFF /* User visible flags */
++	dentry->d_union_dir = NULL;
++}
+diff --git a/fs/union.h b/fs/union.h
+new file mode 100644
+index 0000000..04efc1f
+--- /dev/null
++++ b/fs/union.h
+@@ -0,0 +1,66 @@
++ /*
++ * VFS-based union mounts for Linux
++ *
++ * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
++ * Copyright (C) 2007-2009 Novell Inc.
++ * Copyright (C) 2009-2010 Red Hat, Inc.
++ *
++ *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
++ *              Valerie Aurora <vaurora@redhat.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++#ifndef __LINUX_UNION_H
++#define __LINUX_UNION_H
++#ifdef __KERNEL__
++
++#ifdef CONFIG_UNION_MOUNT
++
++/*
++ * WARNING! Confusing terminology alert.
++ *
++ * Note that the directions "up" and "down" in union mounts are the
++ * opposite of "up" and "down" in normal VFS operation terminology.
++ * "up" in the rest of the VFS means "towards the root of the mount
++ * tree."  If you mount B on top of A, following B "up" will get you
++ * A.  In union mounts, "up" means "towards the most recently mounted
++ * layer of the union stack."  If you union mount B on top of A,
++ * following A "up" will get you to B.  Another way to put it is that
++ * "up" in the VFS means going from this mount towards the direction
++ * of its mnt->mnt_parent pointer, but "up" in union mounts means
++ * going in the opposite direction (until you run out of union
++ * layers).
++ */
++
++/*
++ * The union_dir structure.  Basically just a singly-linked list with
++ * a pointer to the referenced dentry, whose head is d_union_dir in
++ * the dentry of the topmost directory.  We can't link this list
++ * purely through list elements in the dentry because lower layer
++ * dentries can be part of multiple union stacks.  However, the
++ * topmost dentry is only part of one union stack.  So we point at the
++ * lower layer dentries through a linked list rooted in the topmost
++ * dentry.
++ */
++struct union_dir {
++	struct path u_this;		/* this is me */
++	struct union_dir *u_lower;	/* this is what I overlay */
++};
++
++#define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
++
++extern int union_add_dir(struct path *, struct path *, struct union_dir **);
++extern void d_free_unions(struct dentry *);
++
++#else /* CONFIG_UNION_MOUNT */
++
++#define IS_MNT_UNION(x)			(0)
++#define union_add_dir(x, y, z)		({ BUG(); (NULL); })
++#define d_free_unions(x)		do { } while (0)
++
++#endif	/* CONFIG_UNION_MOUNT */
++#endif	/* __KERNEL__ */
++#endif	/* __LINUX_UNION_H */
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 0904716..84657da 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -100,7 +100,10 @@ struct dentry {
+ 	struct hlist_node d_hash;	/* lookup hash list */
+ 	struct dentry *d_parent;	/* parent directory */
+ 	struct qstr d_name;
+-
++	/* XXX Changes size of dentry, perhaps should be re-tuned. */
++#ifdef CONFIG_UNION_MOUNT
++	struct union_dir *d_union_dir;	/* head of union stack */
++#endif
+ 	struct list_head d_lru;		/* LRU list */
+ 	/*
+ 	 * d_child and d_rcu can share memory
 -- 
 1.6.3.3
 
