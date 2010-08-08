@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab0HHTPT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 15:15:19 -0400
-Received: from mms3.broadcom.com ([216.31.210.19]:1877 "EHLO MMS3.broadcom.com"
+	id S1755494Ab0HHTT1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 15:19:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51103 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754633Ab0HHTPR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 15:15:17 -0400
-X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
-Subject: Re: [PATCH 32/42] drivers/net/bnx2x: Adjust confusing if
- indentation
-From: "Eilon Greenstein" <eilong@broadcom.com>
-Reply-to: eilong@broadcom.com
-To: "Dan Carpenter" <error27@gmail.com>
-cc: "Julia Lawall" <julia@diku.dk>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        yanivr@broadcom.com
-In-Reply-To: <20100806070749.GP9031@bicker>
-References: <Pine.LNX.4.64.1008052226210.31692@ask.diku.dk>
- <20100806070749.GP9031@bicker>
-Organization: Broadcom
-Date: Sun, 8 Aug 2010 22:14:53 +0300
-Message-ID: <1281294893.21680.5.camel@lb-tlvb-eilong.il.broadcom.com>
+	id S1754537Ab0HHTTZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 15:19:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Date: Sun, 8 Aug 2010 21:17:38 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, david@lang.hm,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+References: <AANLkTinQD3ggLFVd2KvX95U2B_j=ZJquZgiBGieukJ+r@mail.gmail.com> <AANLkTinebiC=9Xd-D_sOwmvA8w_YPWMdhTYz2NRbZ7jH@mail.gmail.com> <AANLkTim-a6qHL_Xo+iVUW4p79EMMRssa0-AqZenNSYJr@mail.gmail.com>
+In-Reply-To: <AANLkTim-a6qHL_Xo+iVUW4p79EMMRssa0-AqZenNSYJr@mail.gmail.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3
-X-WSS-ID: 6041DDBD3KC69703802-01-01
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008082117.39082.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-06 at 00:07 -0700, Dan Carpenter wrote:
-> On Thu, Aug 05, 2010 at 10:26:38PM +0200, Julia Lawall wrote:
-> > ---
-> > This patch doesn't change the semantics of the code.  But it might not be
-> > what is intended.
-> > 
+On Saturday, August 07, 2010, Arve Hjønnevåg wrote:
+> 2010/8/7 Arve Hjønnevåg <arve@android.com>:
+> > 2010/8/7 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> On Saturday, August 07, 2010, Arve Hjønnevåg wrote:
+> >>> 2010/8/6 Alan Stern <stern@rowland.harvard.edu>:
+> >>> > On Thu, 5 Aug 2010, Arve Hjønnevåg wrote:
+> ...
+> >>> >> total_time, total time the wake lock has been active. This one should
+> >>> >> be obvious.
+> >>> >
+> >>> > Also easily added.
+> >>> >
+> >>> Only with a handle passed to all the calls.
+> >>
+> >> Well, I'm kind of tired of this "my solution is the only acceptable one"
+> >> mindset.  IMHO, it's totally counter productive.
+> >>
+> >
+> > How do you propose to track how long a driver has blocked suspend when
+> > you have an unblock call that takes no arguments.
+> >
 > 
-> I think there may have been some if statements which were removed before
-> the code was merged into the kernel?  Here is another one from that same
-> function.  Someone can roll this in with your patch.
-> 
+> Also, I did not not see a response to my question about why you don't
+> want to pass a handle.
 
-Thanks Dan. We will send a more complete patch series for this file once
-net-next is open again.
+It doesn't really matter what I personally want.  In fact, I'm not totally
+opposed to that idea, although there are disadvantages (eg. a "handle"
+would really mean a pointer to an object with certain life cycle that needs to
+be managed by the caller and it's not that clear to me who should manage the
+objects that the PCI wakeup code would pass to pm_wakeup_event(), for one
+example).  I sent a pull request for your original patchset to Linus after all. :-)
 
+I said I didn't think "it would fly", meaning that I was afraid the other kernel
+developers wouldn't like that change.
 
+The reason why I think so is that you'd like to add a whole new infrastructure
+whose only purpose would be debugging that would only be useful to systems
+using opportunistic suspend.  That, however, is only Android right now and it
+cannot use the mainline kernel for other reasons, so basically we would add
+infrastructure that's useful to no one.
+
+Thanks,
+Rafael
