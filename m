@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335Ab0HHPBb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:01:31 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53170 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752273Ab0HHPBa convert rfc822-to-8bit (ORCPT
+	id S1754342Ab0HHPDF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:03:05 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58704 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752273Ab0HHPDB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:01:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=V8BCH8a8zyYDGBt7bmTTsi/C9MkYyNjaUYqkmdeLiQUbdE84zs1K8QR0kLQBdfepY2
-         4Mj1VD89EwUd0MNXAFCE/VBn7amd0wmxQYbAnI5aSQ2+MYxzKJGkWjslz5N0PVUD2lic
-         IrYxZMRL2OOOKvkGB16CCjU9H5SHEauL0Z8cg=
+	Sun, 8 Aug 2010 11:03:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <201008081658.19790.arnd@arndb.de>
-References: <AANLkTi=G9+wqWhJmX7QarQXeSw-8qASXMrz6mKvbBNw2@mail.gmail.com>
-	<201008081658.19790.arnd@arndb.de>
-Date: Sun, 8 Aug 2010 16:01:29 +0100
-Message-ID: <AANLkTi=Fhjx4p00N_-6392hAG7=B0FqApedLj2sriKvL@mail.gmail.com>
-Subject: Re: [2.6.35 patch] add missing unlock_kernel calls...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Roger Lucas <vt8231@hiddenengine.co.uk>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100808141422.GA9670@oksana.dev.rtsoft.ru>
+References: <20100808141422.GA9670@oksana.dev.rtsoft.ru>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 8 Aug 2010 09:02:40 -0600
+X-Google-Sender-Auth: UcdDe_VmcluC_jJE0eOtyn0Atwg
+Message-ID: <AANLkTin3pWr02GytxH=c7Z=HGocc0kDJu=tfWR_7PzU3@mail.gmail.com>
+Subject: Re: [PATCH] mmc_spi: Fix unterminated of_match_table
+To: Anton Vorontsov <avorontsov@mvista.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8 August 2010 15:58, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Sunday 08 August 2010, Daniel J Blueman wrote:
->> Hi Roger,
->>
->> Here is a fix for 2.6.36-rc1:
->>
->> Ensure the BKL is dropped along all paths.
->>
->> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
->>
->> diff --git a/drivers/hid/usbhid/hiddev.c b/drivers/hid/usbhid/hiddev.c
->> index c24d2fa..53263e7 100644
->> --- a/drivers/hid/usbhid/hiddev.c
->> +++ b/drivers/hid/usbhid/hiddev.c
->> @@ -271,16 +271,18 @@ static int hiddev_open(struct inode *inode,
->> struct file *file)
->>       lock_kernel();
->>       i = iminor(inode) - HIDDEV_MINOR_BASE;
->>
->> -     if (i >= HIDDEV_MINORS || i < 0 || !hiddev_table[i])
->> +     if (i >= HIDDEV_MINORS || i < 0 || !hiddev_table[i]) {
->> +             unlock_kernel();
->>               return -ENODEV;
->> +     }
->>
->> -     if (!(list = kzalloc(sizeof(struct hiddev_list), GFP_KERNEL)))
->> +     if (!(list = kzalloc(sizeof(struct hiddev_list), GFP_KERNEL))) {
->> +             unlock_kernel();
->>               return -ENOMEM;
->> -     mutex_init(&list->thread_lock);
->> +     }
->>
->> +     mutex_init(&list->thread_lock);
->>       list->hiddev = hiddev_table[i];
->> -
->> -
->>       file->private_data = list;
->>
->>       /*
+On Sun, Aug 8, 2010 at 8:14 AM, Anton Vorontsov <avorontsov@mvista.com> wrote:
+> commit 2ffe8c5f323c3b9749bf7bc2375d909d20bdbb15 ("of: refactor
+> of_modalias_node() and remove explicit match table"), introduced
+> an unterminated of_match_table, which may cause kernel to oops.
 >
-> This should no longer be needed, since the BKL is not taken
-> in this code any more.
+> This patch fixes the issue by adding an empty device ID.
+>
+> Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
 
-All the more better then, thanks to your BKL removal patches.
+Thanks Anton.  Merged into my next-devicetree branch.
 
-Thanks,
-  Daniel
+g.
+
+> ---
+>  drivers/mmc/host/mmc_spi.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+> index 7b0f3ef..1145ea0 100644
+> --- a/drivers/mmc/host/mmc_spi.c
+> +++ b/drivers/mmc/host/mmc_spi.c
+> @@ -1536,6 +1536,7 @@ static int __devexit mmc_spi_remove(struct spi_device *spi)
+>  #if defined(CONFIG_OF)
+>  static struct of_device_id mmc_spi_of_match_table[] __devinitdata = {
+>        { .compatible = "mmc-spi-slot", },
+> +       {},
+>  };
+>  #endif
+>
+> --
+> 1.7.0.5
+>
+
+
+
 -- 
-Daniel J Blueman
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
