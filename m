@@ -1,161 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669Ab0HHPyv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:54:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64680 "EHLO mx1.redhat.com"
+	id S1755010Ab0HHQCA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 12:02:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4426 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754488Ab0HHPy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:54:29 -0400
+	id S1754656Ab0HHPyv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:54:51 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-        Valerie Aurora <vaurora@redhat.com>, linux-nfs@vger.kernel.org,
-        "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>
-Subject: [PATCH 05/39] whiteout/NFSD: Don't return information about whiteouts to userspace
-Date: Sun,  8 Aug 2010 11:52:22 -0400
-Message-Id: <1281282776-5447-6-git-send-email-vaurora@redhat.com>
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 13/39] fallthru: Basic fallthru definitions
+Date: Sun,  8 Aug 2010 11:52:30 -0400
+Message-Id: <1281282776-5447-14-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan Blunck <jblunck@suse.de>
+Define the fallthru dcache flag and file system op.  Mask out the
+DCACHE_FALLTHRU flag on dentry creation.  Actual users and changes to
+lookup come in later patches.
 
-Userspace isn't ready for handling another file type, so silently drop
-whiteout directory entries before they leave the kernel.
-
-Signed-off-by: Jan Blunck <jblunck@suse.de>
-Signed-off-by: David Woodhouse <dwmw2@infradead.org>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: linux-nfs@vger.kernel.org
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
 ---
- fs/compat.c       |    9 +++++++++
- fs/nfsd/nfs3xdr.c |    5 +++++
- fs/nfsd/nfs4xdr.c |    5 +++++
- fs/nfsd/nfsxdr.c  |    4 ++++
- fs/readdir.c      |    9 +++++++++
- 5 files changed, 32 insertions(+), 0 deletions(-)
+ Documentation/filesystems/vfs.txt |    6 ++++++
+ fs/dcache.c                       |    2 +-
+ include/linux/dcache.h            |    7 +++++++
+ include/linux/fs.h                |    2 ++
+ 4 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/fs/compat.c b/fs/compat.c
-index 6490d21..7e7b3a4 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -912,6 +912,9 @@ static int compat_fillonedir(void *__buf, const char *name, int namlen,
- 	struct compat_old_linux_dirent __user *dirent;
- 	compat_ulong_t d_ino;
+diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+index 964e0fc..bbaefa9 100644
+--- a/Documentation/filesystems/vfs.txt
++++ b/Documentation/filesystems/vfs.txt
+@@ -320,6 +320,7 @@ struct inode_operations {
+ 	int (*rmdir) (struct inode *,struct dentry *);
+ 	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
+ 	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
++	int (*fallthru) (struct inode *, struct dentry *);
+ 	int (*rename) (struct inode *, struct dentry *,
+ 			struct inode *, struct dentry *);
+ 	int (*readlink) (struct dentry *, char __user *,int);
+@@ -390,6 +391,11 @@ otherwise noted.
+         second is the dentry for the whiteout itself.  This method
+         must unlink() or rmdir() the original entry if it exists.
  
-+	if (d_type == DT_WHT)
-+		return 0;
++  fallthru: called by the readdir(2) system call on a layered file
++        system.  Only required if you want to support fallthrus.
++        Fallthrus are place-holders for directory entries visible from
++        a lower level file system.
 +
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -983,6 +986,9 @@ static int compat_filldir(void *__buf, const char *name, int namlen,
- 	compat_ulong_t d_ino;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(compat_long_t));
+   rename: called by the rename(2) system call to rename the object to
+ 	have the parent and name given by the second inode and dentry.
  
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -1072,6 +1078,9 @@ static int compat_filldir64(void * __buf, const char * name, int namlen, loff_t
- 	int reclen = ALIGN(jj + namlen + 1, sizeof(u64));
- 	u64 off;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-diff --git a/fs/nfsd/nfs3xdr.c b/fs/nfsd/nfs3xdr.c
-index 2a533a0..9b96f5a 100644
---- a/fs/nfsd/nfs3xdr.c
-+++ b/fs/nfsd/nfs3xdr.c
-@@ -885,6 +885,11 @@ encode_entry(struct readdir_cd *ccd, const char *name, int namlen,
- 	int		elen;		/* estimated entry length in words */
- 	int		num_entry_words = 0;	/* actual number of words */
- 
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
-+
- 	if (cd->offset) {
- 		u64 offset64 = offset;
- 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index ac17a70..fb67254 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2279,6 +2279,11 @@ nfsd4_encode_dirent(void *ccdv, const char *name, int namlen,
- 		return 0;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index 79b9f6a..249d077 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -992,7 +992,7 @@ EXPORT_SYMBOL(d_alloc_name);
+ static void __d_instantiate(struct dentry *dentry, struct inode *inode)
+ {
+ 	if (inode) {
+-		dentry->d_flags &= ~DCACHE_WHITEOUT;
++		dentry->d_flags &= ~(DCACHE_WHITEOUT|DCACHE_FALLTHRU);
+ 		list_add(&dentry->d_alias, &inode->i_dentry);
  	}
+ 	dentry->d_inode = inode;
+diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+index 7d650a2..0904716 100644
+--- a/include/linux/dcache.h
++++ b/include/linux/dcache.h
+@@ -190,6 +190,8 @@ d_iput:		no		no		no       yes
  
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
+ #define DCACHE_WHITEOUT		0x0200	/* Stop lookup in a unioned file system */
+ 
++#define DCACHE_FALLTHRU		0x0400	/* Continue lookup below an opaque dir */
 +
- 	if (cd->offset)
- 		xdr_encode_hyper(cd->offset, (u64) offset);
+ extern spinlock_t dcache_lock;
+ extern seqlock_t rename_lock;
  
-diff --git a/fs/nfsd/nfsxdr.c b/fs/nfsd/nfsxdr.c
-index 4ce005d..0e57d4b 100644
---- a/fs/nfsd/nfsxdr.c
-+++ b/fs/nfsd/nfsxdr.c
-@@ -503,6 +503,10 @@ nfssvc_encode_entry(void *ccdv, const char *name,
- 			namlen, name, offset, ino);
- 	 */
+@@ -379,6 +381,11 @@ static inline int d_is_whiteout(struct dentry *dentry)
+ 	return (dentry->d_flags & DCACHE_WHITEOUT);
+ }
  
-+	if (d_type == DT_WHT) {
-+		cd->common.err = nfs_ok;
-+		return 0;
-+	}
- 	if (offset > ~((u32) 0)) {
- 		cd->common.err = nfserr_fbig;
- 		return -EINVAL;
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 7723401..3a48491 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -77,6 +77,9 @@ static int fillonedir(void * __buf, const char * name, int namlen, loff_t offset
- 	struct old_linux_dirent __user * dirent;
- 	unsigned long d_ino;
- 
-+	if (d_type == DT_WHT)
-+		return 0;
++static inline int d_is_fallthru(struct dentry *dentry)
++{
++	return (dentry->d_flags & DCACHE_FALLTHRU);
++}
 +
- 	if (buf->result)
- 		return -EINVAL;
- 	d_ino = ino;
-@@ -154,6 +157,9 @@ static int filldir(void * __buf, const char * name, int namlen, loff_t offset,
- 	unsigned long d_ino;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 2, sizeof(long));
+ static inline struct dentry *dget_parent(struct dentry *dentry)
+ {
+ 	struct dentry *ret;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 1dbe156..71ee74e 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -210,6 +210,7 @@ struct inodes_stat_t {
+ #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+ #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
+ #define MS_WHITEOUT	(1<<25) /* FS supports whiteout filetype */
++#define MS_FALLTHRU	(1<<26) /* FS supports fallthru filetype */
+ #define MS_ACTIVE	(1<<30)
+ #define MS_NOUSER	(1<<31)
  
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
-@@ -239,6 +245,9 @@ static int filldir64(void * __buf, const char * name, int namlen, loff_t offset,
- 	struct getdents_callback64 * buf = (struct getdents_callback64 *) __buf;
- 	int reclen = ALIGN(NAME_OFFSET(dirent) + namlen + 1, sizeof(u64));
- 
-+	if (d_type == DT_WHT)
-+		return 0;
-+
- 	buf->error = -EINVAL;	/* only used if we fail.. */
- 	if (reclen > buf->count)
- 		return -EINVAL;
+@@ -1534,6 +1535,7 @@ struct inode_operations {
+ 	int (*rmdir) (struct inode *,struct dentry *);
+ 	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
+ 	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
++	int (*fallthru) (struct inode *, struct dentry *);
+ 	int (*rename) (struct inode *, struct dentry *,
+ 			struct inode *, struct dentry *);
+ 	int (*readlink) (struct dentry *, char __user *,int);
 -- 
 1.6.3.3
 
