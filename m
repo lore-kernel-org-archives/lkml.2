@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118Ab0HGX7k (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 19:59:40 -0400
-Received: from ns2.netcenter.hu ([195.228.155.139]:45579 "EHLO mail.1-click.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752595Ab0HGX7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 19:59:39 -0400
-X-Greylist: delayed 1891 seconds by postgrey-1.27 at vger.kernel.org; Sat, 07 Aug 2010 19:59:39 EDT
-Message-ID: <0f7601cb35be$d93998c0$0400a8c0@dcccs>
-From: "Janos Haar" <janos.haar@netcenter.hu>
-To: <linux-kernel@vger.kernel.org>
-Subject: scsi emulation - question
-Date: Sat, 7 Aug 2010 01:26:45 +0200
+	id S1752982Ab0HHAjQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 20:39:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52642 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751117Ab0HHAjO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 20:39:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RB5FRJ6+QGrFtiYGM3EJcrPVYLbOF2L09VM5toUicr65YxWo7mS0+qJv4d85y6sVlV
+         Ch4V+cyIEJNMdja+j20rNH0VY5zVMeESpBymAtbM0f92XiNPNL2LL47yrNpfCJligBiQ
+         1mRVAvWoochWJqWeU+XFB83Nph9ng0upkrdcU=
+Date: Sun, 8 Aug 2010 04:38:46 +0400
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] tty_io: add an API to get device corresponding to
+ tty_struct
+Message-ID: <20100808003846.GA9123@doriath.ww600.siemens.net>
+References: <20100806165844.GB3364@suse.de>
+ <1281174902-6298-1-git-send-email-dbaryshkov@gmail.com>
+ <20100807123333.614169f1@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-2";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3664
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3664
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100807123333.614169f1@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello list,
+On Sat, Aug 07, 2010 at 12:33:33PM +0100, Alan Cox wrote:
+> On Sat,  7 Aug 2010 13:55:02 +0400
+> Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
+> 
+> > Some device drivers (mostly tty line disciplines) would like to have way
+> > to get a struct device instancve corresponding to passed tty_struct. Add
+> > respective API call.
+> 
+> Most of the kernel simply keeps a parent device pointer in the struct. If
+> we have a lookup method then we'll simply end up with a struct device in
+> each tty ldisc struct instead, and it will be harder to clean up later.
 
-Sorry for this off-topic question, but i had no good idea where to ask.
+The proposed usage (at least what we did in the second patch and what
+I did in IEEE 802.15.4 tty driver) is to use this device pointer to
+set up parent node for all devices created on top of given tty port.
 
-I am looking for a solution wich can emulate SCSI device from a block device 
-like loop.
-I need the sg device but not for special commands, but for reading and 
-writing only.
-I have found only one solution until now, but i want to find better and 
-faster.
-The actually working is ISCSI target and initiator in one pc.
-But this opens up port, and makes a lot of IP packets even if i use lo for 
-this, wich is only a waste of time and resources.
+> I think I'd much rather see this set when the tty is created and always
+> available. That would also let the whole tty layer use dev_err() and
+> friends usefully ?
 
-Is there any solution for this allready?
-Or somebody can help me where to search?
-I am thinking to modify the ide-scsi to use blockdev instead of IDE 
-layer....
+I was afraid of messing with tty layer in such way, as it's a bit too
+complex for me.
 
-Thanks,
-Janos Haar 
+Do you mean adding struct device pointer to struct tty_struct (easy),
+or refactoring code so, that struct tty_struct contains embedded
+struct device and uses it for refcounting & stuff?
+
+-- 
+With best wishes
+Dmitry
 
