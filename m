@@ -1,305 +1,413 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755005Ab0HHP7d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:59:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54563 "EHLO mx1.redhat.com"
+	id S1754885Ab0HHQAE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 12:00:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6910 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab0HHPzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:55:18 -0400
+	id S1754778Ab0HHPzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:08 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
-Subject: [PATCH 23/39] fallthru: ext2 fallthru support
-Date: Sun,  8 Aug 2010 11:52:40 -0400
-Message-Id: <1281282776-5447-24-git-send-email-vaurora@redhat.com>
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
+Subject: [PATCH 18/39] union-mount: Support for union mounting file systems
+Date: Sun,  8 Aug 2010 11:52:35 -0400
+Message-Id: <1281282776-5447-19-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for fallthru directory entries to ext2.
+Create and tear down union mount structures on mount.  Check
+requirements for union mounts.  This version clones the read-only
+mounts as one big tree and points to them from the superblock of the
+topmost layer file system.
 
-Cc: Theodore Tso <tytso@mit.edu>
-Cc: linux-ext4@vger.kernel.org
+Thanks to Felix Fietkau <nbd@openwrt.org> for a bug fix and Miklos
+Szeredi <miklos@szeredi.hu> for better mount error messages.
+
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: Jan Blunck <jblunck@suse.de>
 ---
- fs/ext2/dir.c           |   92 ++++++++++++++++++++++++++++++++++++++++++++--
- fs/ext2/ext2.h          |    1 +
- fs/ext2/namei.c         |   22 +++++++++++
- fs/ext2/super.c         |    2 +
- include/linux/ext2_fs.h |    4 ++
- 5 files changed, 117 insertions(+), 4 deletions(-)
+ fs/namespace.c        |  255 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ fs/super.c            |    1 +
+ include/linux/fs.h    |    7 ++
+ include/linux/mount.h |    2 +
+ 4 files changed, 263 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-index 030bd46..f19651e 100644
---- a/fs/ext2/dir.c
-+++ b/fs/ext2/dir.c
-@@ -219,7 +219,8 @@ static inline int ext2_match (int len, const char * const name,
- {
- 	if (len != de->name_len)
- 		return 0;
--	if (!de->inode && (de->file_type != EXT2_FT_WHT))
-+	if (!de->inode && ((de->file_type != EXT2_FT_WHT) &&
-+			   (de->file_type != EXT2_FT_FALLTHRU)))
- 		return 0;
- 	return !memcmp(name, de->name, len);
- }
-@@ -256,6 +257,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
- 	[EXT2_FT_SOCK]		= DT_SOCK,
- 	[EXT2_FT_SYMLINK]	= DT_LNK,
- 	[EXT2_FT_WHT]		= DT_WHT,
-+	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
- };
+diff --git a/fs/namespace.c b/fs/namespace.c
+index f115cb6..aa6a132 100644
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -33,6 +33,7 @@
+ #include <asm/unistd.h>
+ #include "pnode.h"
+ #include "internal.h"
++#include "union.h"
  
- #define S_SHIFT 12
-@@ -342,6 +344,24 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
- 					ext2_put_page(page);
- 					return 0;
- 				}
-+			} else if (de->file_type == EXT2_FT_FALLTHRU) {
-+				int over;
-+				unsigned char d_type = DT_UNKNOWN;
-+				ino_t ino;
-+				int err;
-+
-+				offset = (char *)de - kaddr;
-+				err = generic_readdir_fallthru(filp->f_path.dentry, de->name,
-+							       de->name_len, &ino, &d_type);
-+				if (!err) {
-+					over = filldir(dirent, de->name, de->name_len,
-+						       (n<<PAGE_CACHE_SHIFT) | offset,
-+						       ino, d_type);
-+					if (over) {
-+						ext2_put_page(page);
-+						return 0;
-+					}
-+				}
- 			}
- 			filp->f_pos += ext2_rec_len_from_disk(de->rec_len);
- 		}
-@@ -463,6 +483,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
- 			spin_lock(&dentry->d_lock);
- 			dentry->d_flags |= DCACHE_WHITEOUT;
- 			spin_unlock(&dentry->d_lock);
-+		} else if(!res && de->file_type == EXT2_FT_FALLTHRU) {
-+			spin_lock(&dentry->d_lock);
-+			dentry->d_flags |= DCACHE_FALLTHRU;
-+			spin_unlock(&dentry->d_lock);
- 		}
- 		ext2_put_page(page);
- 	}
-@@ -532,6 +556,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
- 				de->name_len = 0;
- 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
- 				de->inode = 0;
-+				de->file_type = 0;
- 				goto got_it;
- 			}
- 			if (de->rec_len == 0) {
-@@ -545,6 +570,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
- 			name_len = EXT2_DIR_REC_LEN(de->name_len);
- 			rec_len = ext2_rec_len_from_disk(de->rec_len);
- 			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
-+			    (de->file_type != EXT2_FT_FALLTHRU) &&
- 			    (rec_len >= reclen))
- 				goto got_it;
- 			if (rec_len >= name_len + reclen)
-@@ -587,7 +613,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ #define HASH_SHIFT ilog2(PAGE_SIZE / sizeof(struct list_head))
+ #define HASH_SIZE (1UL << HASH_SHIFT)
+@@ -1050,6 +1051,7 @@ void umount_tree(struct vfsmount *mnt, int propagate, struct list_head *kill)
+ 		propagate_umount(kill);
  
- 	err = -EEXIST;
- 	if (ext2_match (namelen, name, de)) {
--		if (de->file_type == EXT2_FT_WHT)
-+		if ((de->file_type == EXT2_FT_WHT) ||
-+		    (de->file_type == EXT2_FT_FALLTHRU))
- 			goto got_it;
- 		goto out_unlock;
- 	}
-@@ -602,7 +629,8 @@ got_it:
- 							&page, NULL);
- 	if (err)
- 		goto out_unlock;
--	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
-+	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
-+			   (de->file_type == EXT2_FT_FALLTHRU)) &&
- 			  !ext2_match (namelen, name, de))) {
- 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
- 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
-@@ -627,6 +655,60 @@ out_unlock:
+ 	list_for_each_entry(p, kill, mnt_hash) {
++		d_free_unions(p->mnt_root);
+ 		list_del_init(&p->mnt_expire);
+ 		list_del_init(&p->mnt_list);
+ 		__touch_mnt_namespace(p->mnt_ns);
+@@ -1333,6 +1335,217 @@ static int invent_group_ids(struct vfsmount *mnt, bool recurse)
+ 	return 0;
  }
  
- /*
-+ * Create a fallthru entry.
++/**
++ * check_mnt_union - mount-time checks for union mount
++ *
++ * @mntpnt: path of the mountpoint the new mount will be on
++ * @topmost_mnt: vfsmount of the new file system to be mounted
++ * @mnt_flags: mount flags for the new file system
++ *
++ * Mount-time check of upper and lower layer file systems to see if we
++ * can union mount one on the other.
++ *
++ * The rules:
++ *
++ * Lower layer(s) and submounts read-only: We can't deal with
++ * namespace changes in the lower layers of a union, so the lower
++ * layer must be read-only.  Note that we could possibly convert a
++ * read-write unioned mount into a read-only mount here.
++ *
++ * Lower layer(s) and submounts not shared: The lower layer(s) of a
++ * union mount must not have any changes to its namespace.  Therefore,
++ * it must not be part of any mount event propagation group - i.e.,
++ * shared or slave.
++ *
++ * Union only at roots of file systems: Only permit unioning of file
++ * systems at their root directories.  This allows us to mark entire
++ * mounts as unioned.  Otherwise we must slowly and expensively work
++ * our way up a path looking for a unioned directory before we know if
++ * a path is from a unioned lower layer.
++ *
++ * Topmost layer must be writable to support our readdir()
++ * solution of copying up all lower level entries to the
++ * topmost layer.
++ *
++ * Topmost file system must support whiteouts and fallthrus.
++ *
++ * Topmost file system can't be mounted elsewhere. XXX implement some
++ * kind of marker in the superblock so subsequent mounts are not
++ * possible.
++ *
 + */
-+int ext2_fallthru_entry (struct inode *dir, struct dentry *dentry)
++
++static int
++check_mnt_union(struct path *mntpnt, struct vfsmount *topmost_mnt, int mnt_flags)
 +{
-+	const char *name = dentry->d_name.name;
-+	int namelen = dentry->d_name.len;
-+	unsigned short rec_len, name_len;
-+	ext2_dirent * de;
-+	struct page *page;
-+	loff_t pos;
-+	int err;
++	struct vfsmount *p, *lower_mnt = mntpnt->mnt;
 +
-+	de = ext2_append_entry(dentry, &page);
-+	if (IS_ERR(de))
-+		return PTR_ERR(de);
++	if (!(mnt_flags & MNT_UNION))
++		return 0;
 +
-+	err = -EEXIST;
-+	if (ext2_match (namelen, name, de))
-+		goto out_unlock;
-+
-+	name_len = EXT2_DIR_REC_LEN(de->name_len);
-+	rec_len = ext2_rec_len_from_disk(de->rec_len);
-+
-+	pos = page_offset(page) +
-+		(char*)de - (char*)page_address(page);
-+	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-+							&page, NULL);
-+	if (err)
-+		goto out_unlock;
-+	if (de->inode || (de->file_type == EXT2_FT_WHT) ||
-+	    (de->file_type == EXT2_FT_FALLTHRU)) {
-+		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
-+		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
-+		de->rec_len = ext2_rec_len_to_disk(name_len);
-+		de = de1;
++#ifndef CONFIG_UNION_MOUNT
++	printk(KERN_INFO "union mount: not supported by the kernel\n");
++	return -EINVAL;
++#endif
++	for (p = lower_mnt; p; p = next_mnt(p, lower_mnt)) {
++		if (!(p->mnt_sb->s_flags & MS_RDONLY))
++			return -EBUSY;
++		if (IS_MNT_SHARED(p) || IS_MNT_SLAVE(p))
++			return -EBUSY;
 +	}
-+	de->name_len = namelen;
-+	memcpy(de->name, name, namelen);
-+	de->inode = 0;
-+	de->file_type = EXT2_FT_FALLTHRU;
-+	err = ext2_commit_chunk(page, pos, rec_len);
-+	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
-+	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
-+	mark_inode_dirty(dir);
-+	/* OFFSET_CACHE */
-+out_put:
-+	ext2_put_page(page);
-+	return err;
-+out_unlock:
-+	unlock_page(page);
-+	goto out_put;
-+}
 +
-+/*
-  * ext2_delete_entry deletes a directory entry by merging it with the
-  * previous entry. Page is up-to-date. Releases the page.
-  */
-@@ -711,7 +793,9 @@ int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
- 	 */
- 	if (ext2_match (namelen, name, de))
- 		de->inode = 0;
--	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
-+	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
-+			   (de->file_type == EXT2_FT_FALLTHRU)) &&
-+			  !ext2_match (namelen, name, de))) {
- 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
- 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
- 		de->rec_len = ext2_rec_len_to_disk(name_len);
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index 89ab2f7..1504814 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -108,6 +108,7 @@ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *,
- extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
- extern int ext2_whiteout_entry (struct inode *, struct dentry *,
- 				struct ext2_dir_entry_2 *, struct page *);
-+extern int ext2_fallthru_entry (struct inode *, struct dentry *);
- extern int ext2_empty_dir (struct inode *);
- extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
- extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index 8f92dd0..af4052f 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -345,6 +345,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
- 		goto out;
- 
- 	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
- 	new_dentry->d_flags |= DCACHE_WHITEOUT;
- 	spin_unlock(&new_dentry->d_lock);
- 	d_add(new_dentry, NULL);
-@@ -363,6 +364,26 @@ out:
- 	return err;
- }
- 
-+/*
-+ * Create a fallthru entry.
-+ */
-+static int ext2_fallthru (struct inode *dir, struct dentry *dentry)
-+{
-+	int err;
++	if (!IS_ROOT(mntpnt->dentry)) {
++		printk(KERN_INFO "union mount: mount point must be a root dir\n");
++		return -EINVAL;
++	}
 +
-+	dquot_initialize(dir);
++	if (mnt_flags & MNT_READONLY)
++		return -EROFS;
 +
-+	err = ext2_fallthru_entry(dir, dentry);
-+	if (err)
-+		return err;
++	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT)) {
++		printk(KERN_INFO "union mount: whiteouts not supported by fs\n");
++		return -EINVAL;
++	}
 +
-+	d_instantiate(dentry, NULL);
-+	spin_lock(&dentry->d_lock);
-+	dentry->d_flags |= DCACHE_FALLTHRU;
-+	spin_unlock(&dentry->d_lock);
++	if (!(topmost_mnt->mnt_sb->s_flags & MS_FALLTHRU)) {
++		printk(KERN_INFO "union mount: fallthrus not supported by fs\n");
++		return -EINVAL;
++	}
++
++	/* XXX top level mount should only be mounted once */
++
 +	return 0;
 +}
 +
- static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
- 	struct inode * new_dir,	struct dentry * new_dentry )
- {
-@@ -466,6 +487,7 @@ const struct inode_operations ext2_dir_inode_operations = {
- 	.rmdir		= ext2_rmdir,
- 	.mknod		= ext2_mknod,
- 	.whiteout	= ext2_whiteout,
-+	.fallthru	= ext2_fallthru,
- 	.rename		= ext2_rename,
- #ifdef CONFIG_EXT2_FS_XATTR
- 	.setxattr	= generic_setxattr,
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 704521b..76eba1e 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -1095,6 +1095,8 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
++void put_union_sb(struct super_block *sb)
++{
++	struct vfsmount *p, *mnt;
++	LIST_HEAD(umount_list);
++
++	if (!sb->s_ro_union_mnts)
++		return;
++	mnt = sb->s_ro_union_mnts;
++	for (p = mnt; p; p = next_mnt(p, mnt))
++		dec_hard_readonly_users(p);
++	spin_lock(&vfsmount_lock);
++	umount_tree(mnt, 0, &umount_list);
++	spin_unlock(&vfsmount_lock);
++	release_mounts(&umount_list);
++}
++
++static void cleanup_mnt_union(struct vfsmount *topmost_mnt)
++{
++	d_free_unions(topmost_mnt->mnt_root);
++	put_union_sb(topmost_mnt->mnt_sb);
++}
++
++/*
++ * find_union_root - Find the "lowest" (union low) mount to be unioned
++ */
++
++static struct vfsmount *find_union_root(struct vfsmount *topmost_mnt, struct path *mntpnt)
++{
++	struct path this_layer = *mntpnt;
++	struct vfsmount *lowest_mnt = NULL;
++
++	while(check_mnt_union(&this_layer, topmost_mnt, MNT_UNION) == 0) {
++		lowest_mnt = this_layer.mnt;
++		this_layer.dentry = this_layer.mnt->mnt_mountpoint;
++		this_layer.mnt = this_layer.mnt->mnt_parent;
++	}
++	return lowest_mnt;
++}
++
++/*
++ * Build the union stack for the root dir.  Note that topmost_mnt is
++ * not connected to the mount tree yet and that the cloned tree is not
++ * either.
++ */
++
++static int build_root_union(struct vfsmount *topmost_mnt, struct vfsmount *clone_root)
++{
++	struct union_dir **next_ud;
++	struct path upper, lower;
++	struct vfsmount *p, *mnt;
++	int err = 0;
++
++	/*
++	 * Find the topmost read-only mount, starting from the root
++	 * of the cloned tree of read-only mounts. __lookup_mnt() and
++	 * friends don't work because the cloned tree is not mounted
++	 * anywhere.
++	 */
++	mnt = clone_root;
++	for (p = clone_root; p; p = next_mnt(p, clone_root)) {
++		if ((p->mnt_parent == mnt) &&
++		    (p->mnt_mountpoint == mnt->mnt_root))
++			mnt = p;
++	}
++
++	/* Build the root union stack */
++	upper.mnt = topmost_mnt;
++	upper.dentry = topmost_mnt->mnt_root;
++	next_ud = &upper.dentry->d_union_dir;
++
++	while (upper.mnt != clone_root) {
++		lower.mnt = mntget(mnt);
++		lower.dentry = dget(mnt->mnt_root);
++		err = union_add_dir(&upper, &lower, next_ud);
++		if (err)
++			goto out;
++		next_ud = &(*next_ud)->u_lower;
++		upper = lower;
++		mnt = mnt->mnt_parent;
++	}
++out:
++	return err;
++}
++
++/**
++ * prepare_mnt_union - do setup necessary for a union mount
++ *
++ * @topmost_mnt: vfsmount of topmost layer
++ * @mntpnt: path of requested mountpoint
++ *
++ * We union every underlying file system that is mounted on the same
++ * mountpoint (well, pathname), read-only, and not shared.  We clone
++ * the entire underlying read-only mount tree and keep a pointer to it
++ * from the topmost file system's superblock.
++ *
++ * XXX - Maybe should take # of layers to go down as an argument. But
++ * how to pass this in through mount options? All solutions look ugly.
++ */
++
++static int prepare_mnt_union(struct vfsmount *topmost_mnt, struct path *mntpnt)
++{
++	struct super_block *sb = topmost_mnt->mnt_sb;
++	struct vfsmount *p, *clone_root;
++	int err;
++
++	clone_root = find_union_root(topmost_mnt, mntpnt);
++	if (!clone_root)
++		return 0; /* Nothing to union */
++
++	/* Clone the whole mount tree that we're going to union. */
++	err = -ENOMEM;
++	sb->s_ro_union_mnts = copy_tree(clone_root, clone_root->mnt_root,
++					CL_COPY_ALL | CL_PRIVATE);
++	if (!sb->s_ro_union_mnts)
++		goto out;
++
++	for (p = sb->s_ro_union_mnts; p; p = next_mnt(p, sb->s_ro_union_mnts))
++		inc_hard_readonly_users(p);
++
++	err = build_root_union(topmost_mnt, clone_root);
++	if (err)
++		goto out;
++
++	return 0;
++out:
++	cleanup_mnt_union(topmost_mnt);
++	return err;
++}
++
+ /*
+  *  @source_mnt : mount tree to be attached
+  *  @nd         : place the mount tree @source_mnt is attached
+@@ -1410,9 +1623,16 @@ static int attach_recursive_mnt(struct vfsmount *source_mnt,
+ 		if (err)
+ 			goto out;
+ 	}
++
++	if (!parent_path && IS_MNT_UNION(source_mnt)) {
++		err = prepare_mnt_union(source_mnt, path);
++		if (err)
++			goto out_cleanup_ids;
++	}
++
+ 	err = propagate_mnt(dest_mnt, dest_dentry, source_mnt, &tree_list);
+ 	if (err)
+-		goto out_cleanup_ids;
++		goto out_cleanup_union;
  
- 	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_WHITEOUT))
- 		sb->s_flags |= MS_WHITEOUT;
-+	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_FALLTHRU))
-+		sb->s_flags |= MS_FALLTHRU;
+ 	spin_lock(&vfsmount_lock);
  
- 	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
- 		sb->s_flags |= MS_RDONLY;
-diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
-index b0fb356..1a6f929 100644
---- a/include/linux/ext2_fs.h
-+++ b/include/linux/ext2_fs.h
-@@ -505,11 +505,14 @@ struct ext2_super_block {
- #define EXT3_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008
- #define EXT2_FEATURE_INCOMPAT_META_BG		0x0010
- #define EXT2_FEATURE_INCOMPAT_WHITEOUT		0x0020
-+/* ext3/4 incompat flags take up the intervening constants */
-+#define EXT2_FEATURE_INCOMPAT_FALLTHRU		0x2000
- #define EXT2_FEATURE_INCOMPAT_ANY		0xffffffff
+@@ -1436,6 +1656,9 @@ static int attach_recursive_mnt(struct vfsmount *source_mnt,
+ 	spin_unlock(&vfsmount_lock);
+ 	return 0;
  
- #define EXT2_FEATURE_COMPAT_SUPP	EXT2_FEATURE_COMPAT_EXT_ATTR
- #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT2_FEATURE_INCOMPAT_FILETYPE| \
- 					 EXT2_FEATURE_INCOMPAT_WHITEOUT| \
-+					 EXT2_FEATURE_INCOMPAT_FALLTHRU| \
- 					 EXT2_FEATURE_INCOMPAT_META_BG)
- #define EXT2_FEATURE_RO_COMPAT_SUPP	(EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER| \
- 					 EXT2_FEATURE_RO_COMPAT_LARGE_FILE| \
-@@ -577,6 +580,7 @@ enum {
- 	EXT2_FT_SOCK		= 6,
- 	EXT2_FT_SYMLINK		= 7,
- 	EXT2_FT_WHT		= 8,
-+	EXT2_FT_FALLTHRU	= 9,
- 	EXT2_FT_MAX
++ out_cleanup_union:
++	if (IS_MNT_UNION(source_mnt))
++		cleanup_mnt_union(source_mnt);
+  out_cleanup_ids:
+ 	if (IS_MNT_SHARED(dest_mnt))
+ 		cleanup_group_ids(source_mnt, NULL);
+@@ -1482,6 +1705,17 @@ static int do_change_type(struct path *path, int flag)
+ 		return -EINVAL;
+ 
+ 	down_write(&namespace_sem);
++
++	/*
++	 * Mounts of file systems with read-only users can't deal with
++	 * mount/umount propagation events - it's the moral equivalent
++	 * of rm -rf dir/ or the like.
++	 */
++	if (sb_is_hard_readonly(mnt->mnt_sb)) {
++		err = -EROFS;
++		goto out_unlock;
++	}
++
+ 	if (type == MS_SHARED) {
+ 		err = invent_group_ids(mnt, recurse);
+ 		if (err)
+@@ -1519,6 +1753,9 @@ static int do_loopback(struct path *path, char *old_name,
+ 	err = -EINVAL;
+ 	if (IS_MNT_UNBINDABLE(old_path.mnt))
+ 		goto out;
++	/* Mount part of a union mount elsewhere? The mind boggles. */
++	if (IS_MNT_UNION(old_path.mnt))
++		goto out;
+ 
+ 	if (!check_mnt(path->mnt) || !check_mnt(old_path.mnt))
+ 		goto out;
+@@ -1540,7 +1777,6 @@ static int do_loopback(struct path *path, char *old_name,
+ 		spin_unlock(&vfsmount_lock);
+ 		release_mounts(&umount_list);
+ 	}
+-
+ out:
+ 	up_write(&namespace_sem);
+ 	path_put(&old_path);
+@@ -1581,6 +1817,17 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
+ 	if (!check_mnt(path->mnt))
+ 		return -EINVAL;
+ 
++	if (mnt_flags & MNT_UNION)
++		return -EINVAL;
++
++	if ((path->mnt->mnt_flags & MNT_UNION) &&
++	    !(mnt_flags & MNT_UNION))
++		return -EINVAL;
++
++	if ((path->mnt->mnt_flags & MNT_UNION) &&
++	    (mnt_flags & MNT_READONLY))
++		return -EINVAL;
++
+ 	if (path->dentry != path->mnt->mnt_root)
+ 		return -EINVAL;
+ 
+@@ -1743,6 +1990,10 @@ int do_add_mount(struct vfsmount *newmnt, struct path *path,
+ 	if (S_ISLNK(newmnt->mnt_root->d_inode->i_mode))
+ 		goto unlock;
+ 
++	err = check_mnt_union(path, newmnt, mnt_flags);
++	if (err)
++		goto unlock;
++
+ 	newmnt->mnt_flags = mnt_flags;
+ 	if ((err = graft_tree(newmnt, path)))
+ 		goto unlock;
+diff --git a/fs/super.c b/fs/super.c
+index 86bdf1f..bdfe98f 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -160,6 +160,7 @@ void deactivate_locked_super(struct super_block *s)
+ 	if (atomic_dec_and_test(&s->s_active)) {
+ 		fs->kill_sb(s);
+ 		put_filesystem(fs);
++		put_union_sb(s);
+ 		put_super(s);
+ 	} else {
+ 		up_write(&s->s_umount);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 31cfa48..b88d088 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1397,6 +1397,13 @@ struct super_block {
+ 	 * read-only.
+ 	 */
+ 	int s_hard_readonly_users;
++
++	/*
++	 * If this is the topmost file system in a union mount, this
++	 * points to the root of the private cloned vfsmount tree of
++	 * the read-only mounts in this union.
++	 */
++	struct vfsmount *s_ro_union_mnts;
  };
  
+ extern struct timespec current_fs_time(struct super_block *sb);
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 0302703..17d3d27 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -136,4 +136,6 @@ extern void mark_mounts_for_expiry(struct list_head *mounts);
+ 
+ extern dev_t name_to_dev_t(char *name);
+ 
++extern void put_union_sb(struct super_block *sb);
++
+ #endif /* _LINUX_MOUNT_H */
 -- 
 1.6.3.3
 
