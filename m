@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415Ab0HHP6i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:58:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
+	id S1754901Ab0HHPzg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:55:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28604 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754382Ab0HHPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:55:37 -0400
+	id S1754860Ab0HHPzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:31 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 29/39] union-mount: Implement union-aware access()/faccessat()
-Date: Sun,  8 Aug 2010 11:52:46 -0400
-Message-Id: <1281282776-5447-30-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 27/39] VFS: Create user_path_nd() to lookup both parent and target
+Date: Sun,  8 Aug 2010 11:52:44 -0400
+Message-Id: <1281282776-5447-28-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For union mounts, a file located on the lower layer will incorrectly
-return EROFS on an access check.  To fix this, use the new
-path_permission() call, which ignores a read-only lower layer file
-system if the target will be copied up to the topmost file system.
+Proof-of-concept implementation of user_path_nd().  Lookup both the
+parent and the target of a user-supplied filename, to supply later to
+union copyup routines.
+
+XXX - Inefficient, racy, gets the parent of the symlink instead of the
+parent of the target.  Al Viro would like to see something more like
+this:
+
+user_path_mumble() looks up and returns:
+
+parent nameidata
+positive topmost dentry of target
+negative dentry of target from the topmost layer (if it doesn't exist on top)
+
+Both the positive lower dentry and negative topmost dentry are passed
+to the following code, like do_chown().  The tests for permissions and
+such-like are performed on the positive lower dentry.  When it comes
+time to actually modify the target, we call union_copyup() with both
+positive and negative dentries (and the parent nameidata).
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/open.c |   21 +++++++++++++++++----
- 1 files changed, 17 insertions(+), 4 deletions(-)
+ fs/namei.c            |   31 +++++++++++++++++++++++++++++++
+ include/linux/namei.h |    2 ++
+ 2 files changed, 33 insertions(+), 0 deletions(-)
 
-diff --git a/fs/open.c b/fs/open.c
-index 5463266..fc56da0 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -31,6 +31,7 @@
- #include <linux/ima.h>
+diff --git a/fs/namei.c b/fs/namei.c
+index 74d6852..e7b02fa 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1546,6 +1546,37 @@ static int user_path_parent(int dfd, const char __user *path,
+ 	return error;
+ }
  
- #include "internal.h"
-+#include "union.h"
- 
- int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
- 	struct file *filp)
-@@ -288,7 +289,10 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	const struct cred *old_cred;
- 	struct cred *override_cred;
- 	struct path path;
-+	struct nameidata nd;
-+	struct vfsmount *mnt;
- 	struct inode *inode;
-+	char *tmp;
- 	int res;
- 
- 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
-@@ -312,10 +316,17 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 
- 	old_cred = override_creds(override_cred);
- 
--	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+	res = user_path_nd(dfd, filename, LOOKUP_FOLLOW,
-+				   &nd, &path, &tmp);
- 	if (res)
- 		goto out;
- 
-+	/* For union mounts, use the topmost mnt's permissions */
-+	if (IS_DIR_UNIONED(nd.path.dentry))
-+		mnt = nd.path.mnt;
-+	else
-+		mnt = path.mnt;
++int user_path_nd(int dfd, const char __user *filename,
++			 unsigned flags, struct nameidata *parent_nd,
++			 struct path *child, char **tmp)
++{
++	struct nameidata child_nd;
++	char *s = getname(filename);
++	int error;
 +
- 	inode = path.dentry->d_inode;
++	if (IS_ERR(s))
++		return PTR_ERR(s);
++
++	/* Lookup parent */
++	error = do_path_lookup(dfd, s, LOOKUP_PARENT, parent_nd);
++	if (error)
++		goto out_putname;
++
++	/* Lookup child - XXX optimize, racy */
++	error = do_path_lookup(dfd, s, flags, &child_nd);
++	if (error)
++		goto out_path_put;
++	*child = child_nd.path;
++	*tmp = s;
++	return 0;
++
++out_path_put:
++	path_put(&parent_nd->path);
++out_putname:
++	putname(s);
++	return error;
++}
++
+ /*
+  * It's inline, so penalty for filesystems that don't use sticky bit is
+  * minimal.
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 05b441d..83dc8b5 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -58,6 +58,8 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+ #define LOOKUP_RENAME_TARGET	0x0800
  
- 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
-@@ -324,11 +335,11 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 		 * with the "noexec" flag.
- 		 */
- 		res = -EACCES;
--		if (path.mnt->mnt_flags & MNT_NOEXEC)
-+		if (mnt->mnt_flags & MNT_NOEXEC)
- 			goto out_path_release;
- 	}
+ extern int user_path_at(int, const char __user *, unsigned, struct path *);
++extern int user_path_nd(int, const char __user *, unsigned,
++			struct nameidata *, struct path *, char **);
  
--	res = inode_permission(inode, mode | MAY_ACCESS);
-+	res = path_permission(&path, &nd.path, mode | MAY_ACCESS);
- 	/* SuS v2 requires we report a read only fs too */
- 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
- 		goto out_path_release;
-@@ -342,11 +353,13 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	 * inherently racy and know that the fs may change
- 	 * state before we even see this result.
- 	 */
--	if (__mnt_is_readonly(path.mnt))
-+	if (__mnt_is_readonly(mnt))
- 		res = -EROFS;
- 
- out_path_release:
- 	path_put(&path);
-+	path_put(&nd.path);
-+	putname(tmp);
- out:
- 	revert_creds(old_cred);
- 	put_cred(override_cred);
+ #define user_path(name, path) user_path_at(AT_FDCWD, name, LOOKUP_FOLLOW, path)
+ #define user_lpath(name, path) user_path_at(AT_FDCWD, name, 0, path)
 -- 
 1.6.3.3
 
