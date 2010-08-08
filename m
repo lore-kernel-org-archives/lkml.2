@@ -1,48 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646Ab0HHDYG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 7 Aug 2010 23:24:06 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36918
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752085Ab0HHDX6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 7 Aug 2010 23:23:58 -0400
-Date: Sat, 07 Aug 2010 20:24:16 -0700 (PDT)
-Message-Id: <20100807.202416.124037373.davem@davemloft.net>
-To: dp@highloadlab.com
-Cc: kuznet@ms2.inr.ac.ru, jmorris@namei.org, kaber@trash.net,
-        yoshfuji@linux-ipv6.org, pekkas@netcore.fi, gilad@codefidence.com,
-        yony@comsleep.com, ori@comsleep.com, ilpo.jarvinen@helsinki.fi,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] tcp: no md5sig option size check bug
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTimHMAwi158ycRh_nRYPYUTSkww-psdFai-LsTsb@mail.gmail.com>
-References: <AANLkTimHMAwi158ycRh_nRYPYUTSkww-psdFai-LsTsb@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752732Ab0HHD2b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 7 Aug 2010 23:28:31 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:48613 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752302Ab0HHD22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 7 Aug 2010 23:28:28 -0400
+X-Authenticated: #24385162
+X-Provags-ID: V01U2FsdGVkX183LFUsgfM3iKQhT2EqvvUT3byiX6ZdAotp/I55bC
+	jp4qt8W3TFhEuk
+MIME-Version: 1.0
+Reply-To: cyp@abwesend.de
+Date: Sun, 8 Aug 2010 05:28:25 +0200
+Message-ID: <AANLkTi=i3RP6x8ns09-6r4UCVay56U=DA3Ln_VupHbh5@mail.gmail.com>
+Subject: signo issues in arch/x86/kernel/traps.c
+From: cyp@abwesend.de
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Popov <dp@highloadlab.com>
-Date: Sat, 7 Aug 2010 23:17:52 +0400
+There are several  -- to me, peculiar -- signal number choices being
+made in arch/x86/kernel/traps.c. Here are my observations...
 
-> From: Dmitry Popov <dp@highloadlab.com>
-> 
-> tcp_parse_md5sig_option doesn't check md5sig option (TCPOPT_MD5SIG)
-> length, but tcp_v[46]_inbound_md5_hash assume that it's at least 16
-> bytes long.
-> 
-> Signed-off-by: Dmitry Popov <dp@highloadlab.com>
+#1. Exception 9 -- "coprocessor segment overrun" -- should not be
+forwarded, leave alone forwarded as a SIGFPE. Exception 9 is not a
+fault, but an abort-class exception. The task _must_ die. Exception 9
+occurs when a discrete coprocessor -- i.e. one that is not on the same
+die as the processor -- writes to an operand in memory that crosses a
+page boundary, _and_ one page is writeable but the other is not. So,
+under these conditions, when the coprocessor writes to mem, part of
+the write succeeds and the other part fails. Since the operand in
+memory then contains garbage, subsequent cpu and fpu instructions must
+be prevented from using it, and with the fpu confused (should its
+state be that from before or after the computation that precipitated
+the write?), the task cannot be allowed to recover from the exception.
 
-I'll apply this, but the memcmp() we do against this pointer is always
-safe because there's at least skb_shared_info()'s worth of valid
-memory past skb->data guarenteed at all times which is much larger
-than 16 bytes.
+Incidentally: it seems that the math emulator is trying to avoid just
+that sort of partial-write-success situation with all the limits
+checking that its doing. (pm_address() in math-emu/get_address.c)
+Perhaps a uaccess function for atomic writes (either write completely
+or not at all) would be generally useful?
 
-So at worst we'd access garbage, but never past a valid piece of
-allocated memory.
+#2. An exception 7 -- "device not available" -- exception should not
+result in a SIGFPE being sent to the task. An FPE can -- nomen est
+omen -- (what is it with traps.c's reticence in passing siginfo?)
+precipitate fiddling with the state of the (non-existent) fpu, which
+will naturally trip another "device not available". Since the "device
+not available" exception is just a particular kind of "cannot handle
+this opcode" event, and the appropriate signal for "cannot handle this
+opcode" events is SIGILL, exception 7 should cause a SIGILL.
 
-Thanks.
+#3. Exception 12 -- named "stack segment" in traps.c -- should
+translate into a SEGV, not a SIGBUS. Exception 12 is a segment
+violation, even if it is a particular kind of segment violation. The
+"Stack-Segment Fault" is the %ss selector's equivalent of a GPF that
+occurs for an access with %cs/ds/es/fs/gs. Just as loading
+cs/es/ds/fs/gs with a bad/null selector will trip exception 13, so
+will loading ss with a bad/null selector cause an exception 12. The
+principle function of exception 12 is to automatically grow an
+expand-down stack segment when an access occurs beyond the limit
+defined in the %ss selector's descriptor. But a simple mov <bad
+address>, %ebp; mov (%ebp), %eax can trip it too since %ebp is
+implicitly based against %ss. Not functionally any different from a
+simple mov <bad address>, %ebx; mov (%ebx), %eax. I can't think of any
+reason why exception 12 should be a SIGBUS while exception 13 is a
+SEGV.
+
+#4. Exception 5 -- "bounds" -- should not translate to a SEGV.
+Exception 5 occurs when a programmer deliberately wants to test
+whether an integer is within a certain range, for which he/she uses
+the BOUND instruction.
+if (foo < range.lo || foo > range.hi)
+  printf("hey! out of bounds\n");
+The if() is simple signed integer math comparison, not a bad memory
+access. (if there were a fault accessing range.{hi|lo}, the exception
+being raised would be a GPF, not a bounds).
+
+#5. Exception 4 -- "overflow" -- should probably not translate to a
+SEGV. Exception 4 ("interrupt 4"), generated by INTO, is like
+exception 3 ("interrupt 3"), generated by INT3. It too is a trap-class
+exception, and really a debug instruction. As with all trap-class
+exceptions, the task's eip is pointing to the next instruction, and a
+simple ret will seamlessly continue execution as if nothing had
+happened (unlike a real SEGV). In this sense, its probably not a good
+idea to deal with it as a SEGV. There is also no violation there,
+leave alone a segment violation. It isn't like an INT x for an
+unhandled interrupt vector. After all, the interrupt is being handled.
+I suggest treating it just like int3 is treated. i.e. SIGTRAP.
+
+Regards,
+Cyrus
