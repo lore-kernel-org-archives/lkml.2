@@ -1,270 +1,305 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab0HHPzS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:55:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63368 "EHLO mx1.redhat.com"
+	id S1755005Ab0HHP7d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:59:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54563 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754803Ab0HHPzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:55:14 -0400
+	id S1754829Ab0HHPzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:18 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
-        Felix Fietkau <nbd@openwrt.org>
-Subject: [PATCH 21/39] union-mount: Copy up directory entries on first readdir()
-Date: Sun,  8 Aug 2010 11:52:38 -0400
-Message-Id: <1281282776-5447-22-git-send-email-vaurora@redhat.com>
+        Theodore Tso <tytso@mit.edu>, linux-ext4@vger.kernel.org
+Subject: [PATCH 23/39] fallthru: ext2 fallthru support
+Date: Sun,  8 Aug 2010 11:52:40 -0400
+Message-Id: <1281282776-5447-24-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-readdir() in union mounts is implemented by copying up all visible
-directory entries from the lower level directories to the topmost
-directory.  Directory entries that refer to lower level file system
-objects are marked as "fallthru" in the topmost directory.
+Add support for fallthru directory entries to ext2.
 
-Thanks to Felix Fietkau <nbd@openwrt.org> for a bug fix.
-
-XXX - How to deal with fallthrus in lower layers?
-
+Cc: Theodore Tso <tytso@mit.edu>
+Cc: linux-ext4@vger.kernel.org
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 ---
- fs/readdir.c |    9 +++
- fs/union.c   |  162 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/union.h   |    2 +
- 3 files changed, 173 insertions(+), 0 deletions(-)
+ fs/ext2/dir.c           |   92 ++++++++++++++++++++++++++++++++++++++++++++--
+ fs/ext2/ext2.h          |    1 +
+ fs/ext2/namei.c         |   22 +++++++++++
+ fs/ext2/super.c         |    2 +
+ include/linux/ext2_fs.h |    4 ++
+ 5 files changed, 117 insertions(+), 4 deletions(-)
 
-diff --git a/fs/readdir.c b/fs/readdir.c
-index 3a48491..dd3eae1 100644
---- a/fs/readdir.c
-+++ b/fs/readdir.c
-@@ -19,6 +19,8 @@
- 
- #include <asm/uaccess.h>
- 
-+#include "union.h"
-+
- int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+index 030bd46..f19651e 100644
+--- a/fs/ext2/dir.c
++++ b/fs/ext2/dir.c
+@@ -219,7 +219,8 @@ static inline int ext2_match (int len, const char * const name,
  {
- 	struct inode *inode = file->f_path.dentry->d_inode;
-@@ -36,9 +38,16 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
- 
- 	res = -ENOENT;
- 	if (!IS_DEADDIR(inode)) {
-+		if (IS_DIR_UNIONED(file->f_path.dentry) && !IS_OPAQUE(inode)) {
-+			res = union_copyup_dir(&file->f_path);
-+			if (res)
-+				goto out_unlock;
-+		}
-+
- 		res = file->f_op->readdir(file, buf, filler);
- 		file_accessed(file);
- 	}
-+out_unlock:
- 	mutex_unlock(&inode->i_mutex);
- out:
- 	return res;
-diff --git a/fs/union.c b/fs/union.c
-index c089c02..917248d 100644
---- a/fs/union.c
-+++ b/fs/union.c
-@@ -22,6 +22,8 @@
- #include <linux/fs_struct.h>
- #include <linux/slab.h>
- #include <linux/namei.h>
-+#include <linux/file.h>
-+#include <linux/security.h>
- 
- #include "union.h"
- 
-@@ -211,3 +213,163 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
- 
- 	return res;
+ 	if (len != de->name_len)
+ 		return 0;
+-	if (!de->inode && (de->file_type != EXT2_FT_WHT))
++	if (!de->inode && ((de->file_type != EXT2_FT_WHT) &&
++			   (de->file_type != EXT2_FT_FALLTHRU)))
+ 		return 0;
+ 	return !memcmp(name, de->name, len);
  }
+@@ -256,6 +257,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
+ 	[EXT2_FT_SOCK]		= DT_SOCK,
+ 	[EXT2_FT_SYMLINK]	= DT_LNK,
+ 	[EXT2_FT_WHT]		= DT_WHT,
++	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
+ };
+ 
+ #define S_SHIFT 12
+@@ -342,6 +344,24 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
+ 					ext2_put_page(page);
+ 					return 0;
+ 				}
++			} else if (de->file_type == EXT2_FT_FALLTHRU) {
++				int over;
++				unsigned char d_type = DT_UNKNOWN;
++				ino_t ino;
++				int err;
 +
-+/**
-+ * union_copyup_dir_one - copy up a single directory entry
-+ *
-+ * Individual directory entry copyup function for union_copyup_dir.
-+ * We get the entries from higher level layers first.
++				offset = (char *)de - kaddr;
++				err = generic_readdir_fallthru(filp->f_path.dentry, de->name,
++							       de->name_len, &ino, &d_type);
++				if (!err) {
++					over = filldir(dirent, de->name, de->name_len,
++						       (n<<PAGE_CACHE_SHIFT) | offset,
++						       ino, d_type);
++					if (over) {
++						ext2_put_page(page);
++						return 0;
++					}
++				}
+ 			}
+ 			filp->f_pos += ext2_rec_len_from_disk(de->rec_len);
+ 		}
+@@ -463,6 +483,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
+ 			spin_lock(&dentry->d_lock);
+ 			dentry->d_flags |= DCACHE_WHITEOUT;
+ 			spin_unlock(&dentry->d_lock);
++		} else if(!res && de->file_type == EXT2_FT_FALLTHRU) {
++			spin_lock(&dentry->d_lock);
++			dentry->d_flags |= DCACHE_FALLTHRU;
++			spin_unlock(&dentry->d_lock);
+ 		}
+ 		ext2_put_page(page);
+ 	}
+@@ -532,6 +556,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 				de->name_len = 0;
+ 				de->rec_len = ext2_rec_len_to_disk(chunk_size);
+ 				de->inode = 0;
++				de->file_type = 0;
+ 				goto got_it;
+ 			}
+ 			if (de->rec_len == 0) {
+@@ -545,6 +570,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+ 			name_len = EXT2_DIR_REC_LEN(de->name_len);
+ 			rec_len = ext2_rec_len_from_disk(de->rec_len);
+ 			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
++			    (de->file_type != EXT2_FT_FALLTHRU) &&
+ 			    (rec_len >= reclen))
+ 				goto got_it;
+ 			if (rec_len >= name_len + reclen)
+@@ -587,7 +613,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+ 
+ 	err = -EEXIST;
+ 	if (ext2_match (namelen, name, de)) {
+-		if (de->file_type == EXT2_FT_WHT)
++		if ((de->file_type == EXT2_FT_WHT) ||
++		    (de->file_type == EXT2_FT_FALLTHRU))
+ 			goto got_it;
+ 		goto out_unlock;
+ 	}
+@@ -602,7 +629,8 @@ got_it:
+ 							&page, NULL);
+ 	if (err)
+ 		goto out_unlock;
+-	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
++	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
++			   (de->file_type == EXT2_FT_FALLTHRU)) &&
+ 			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+@@ -627,6 +655,60 @@ out_unlock:
+ }
+ 
+ /*
++ * Create a fallthru entry.
 + */
-+
-+static int union_copyup_dir_one(void *buf, const char *name, int namlen,
-+				loff_t offset, u64 ino, unsigned int d_type)
++int ext2_fallthru_entry (struct inode *dir, struct dentry *dentry)
 +{
-+	struct dentry *topmost_dentry = (struct dentry *) buf;
-+	struct dentry *dentry;
-+	int err = 0;
++	const char *name = dentry->d_name.name;
++	int namelen = dentry->d_name.len;
++	unsigned short rec_len, name_len;
++	ext2_dirent * de;
++	struct page *page;
++	loff_t pos;
++	int err;
 +
-+	switch (namlen) {
-+	case 2:
-+		if (name[1] != '.')
-+			break;
-+	case 1:
-+		if (name[0] != '.')
-+			break;
-+		return 0;
++	de = ext2_append_entry(dentry, &page);
++	if (IS_ERR(de))
++		return PTR_ERR(de);
++
++	err = -EEXIST;
++	if (ext2_match (namelen, name, de))
++		goto out_unlock;
++
++	name_len = EXT2_DIR_REC_LEN(de->name_len);
++	rec_len = ext2_rec_len_from_disk(de->rec_len);
++
++	pos = page_offset(page) +
++		(char*)de - (char*)page_address(page);
++	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
++							&page, NULL);
++	if (err)
++		goto out_unlock;
++	if (de->inode || (de->file_type == EXT2_FT_WHT) ||
++	    (de->file_type == EXT2_FT_FALLTHRU)) {
++		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
++		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
++		de->rec_len = ext2_rec_len_to_disk(name_len);
++		de = de1;
 +	}
-+
-+	/* Lookup this entry in the topmost directory */
-+	dentry = lookup_one_len(name, topmost_dentry, namlen);
-+
-+	if (IS_ERR(dentry)) {
-+		printk(KERN_WARNING "%s: error looking up %s\n", __func__,
-+		       dentry->d_name.name);
-+		err = PTR_ERR(dentry);
-+		goto out;
-+	}
-+
-+	/*
-+	 * If the entry already exists, one of the following is true:
-+	 * it was already copied up (due to an earlier lookup), an
-+	 * entry with the same name already exists on the topmost file
-+	 * system, it is a whiteout, or it is a fallthru.  In each
-+	 * case, the top level entry masks any entries from lower file
-+	 * systems, so don't copy up this entry.
-+	 */
-+	if (dentry->d_inode || d_is_whiteout(dentry) || d_is_fallthru(dentry))
-+		goto out_dput;
-+
-+	/*
-+	 * If the entry doesn't exist, create a fallthru entry in the
-+	 * topmost file system.  All possible directory types are
-+	 * used, so each file system must implement its own way of
-+	 * storing a fallthru entry.
-+	 */
-+	err = topmost_dentry->d_inode->i_op->fallthru(topmost_dentry->d_inode,
-+						      dentry);
-+out_dput:
-+	dput(dentry);
-+out:
++	de->name_len = namelen;
++	memcpy(de->name, name, namelen);
++	de->inode = 0;
++	de->file_type = EXT2_FT_FALLTHRU;
++	err = ext2_commit_chunk(page, pos, rec_len);
++	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
++	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
++	mark_inode_dirty(dir);
++	/* OFFSET_CACHE */
++out_put:
++	ext2_put_page(page);
 +	return err;
++out_unlock:
++	unlock_page(page);
++	goto out_put;
 +}
 +
-+/**
-+ * union_copyup_dir - copy up low-level directory entries to topmost dir
-+ *
-+ * readdir() is difficult to support on union file systems for two
-+ * reasons: We must eliminate duplicates and apply whiteouts, and we
-+ * must return something in f_pos that lets us restart in the same
-+ * place when we return.  Our solution is to, on first readdir() of
-+ * the directory, copy up all visible entries from the low-level file
-+ * systems and mark the entries that refer to low-level file system
-+ * objects as "fallthru" entries.
-+ *
-+ * Locking strategy: We hold the topmost dir's i_mutex on entry.  We
-+ * grab the i_mutex on lower directories one by one.  So the locking
-+ * order is:
-+ *
-+ * Writable/topmost layers > Read-only/lower layers
-+ *
-+ * So there is no problem with lock ordering for union stacks with
-+ * multiple lower layers.  E.g.:
-+ *
-+ * (topmost) A->B->C (bottom)
-+ * (topmost) D->C->B (bottom)
-+ *
++/*
+  * ext2_delete_entry deletes a directory entry by merging it with the
+  * previous entry. Page is up-to-date. Releases the page.
+  */
+@@ -711,7 +793,9 @@ int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
+ 	 */
+ 	if (ext2_match (namelen, name, de))
+ 		de->inode = 0;
+-	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
++	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
++			   (de->file_type == EXT2_FT_FALLTHRU)) &&
++			  !ext2_match (namelen, name, de))) {
+ 		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+ 		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+ 		de->rec_len = ext2_rec_len_to_disk(name_len);
+diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+index 89ab2f7..1504814 100644
+--- a/fs/ext2/ext2.h
++++ b/fs/ext2/ext2.h
+@@ -108,6 +108,7 @@ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *,
+ extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
+ extern int ext2_whiteout_entry (struct inode *, struct dentry *,
+ 				struct ext2_dir_entry_2 *, struct page *);
++extern int ext2_fallthru_entry (struct inode *, struct dentry *);
+ extern int ext2_empty_dir (struct inode *);
+ extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
+ extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
+diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+index 8f92dd0..af4052f 100644
+--- a/fs/ext2/namei.c
++++ b/fs/ext2/namei.c
+@@ -345,6 +345,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
+ 		goto out;
+ 
+ 	spin_lock(&new_dentry->d_lock);
++	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
+ 	new_dentry->d_flags |= DCACHE_WHITEOUT;
+ 	spin_unlock(&new_dentry->d_lock);
+ 	d_add(new_dentry, NULL);
+@@ -363,6 +364,26 @@ out:
+ 	return err;
+ }
+ 
++/*
++ * Create a fallthru entry.
 + */
-+
-+int union_copyup_dir(struct path *topmost_path)
++static int ext2_fallthru (struct inode *dir, struct dentry *dentry)
 +{
-+	struct dentry *topmost_dentry = topmost_path->dentry;
-+	struct union_dir *ud;
-+	int res = 0;
++	int err;
 +
-+	BUG_ON(IS_OPAQUE(topmost_dentry->d_inode));
++	dquot_initialize(dir);
 +
-+	if (!topmost_dentry->d_inode->i_op || !topmost_dentry->d_inode->i_op->fallthru)
-+		return -EOPNOTSUPP;
++	err = ext2_fallthru_entry(dir, dentry);
++	if (err)
++		return err;
 +
-+	res = mnt_want_write(topmost_path->mnt);
-+	if (res)
-+		return res;
-+
-+	for (ud = topmost_path->dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
-+		struct file * ftmp;
-+		struct inode * inode;
-+		struct path path;
-+
-+		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
-+		path = ud->u_this;
-+		/* dentry_open() doesn't get a path reference itself */
-+		path_get(&path);
-+		ftmp = dentry_open(path.dentry, path.mnt,
-+				   O_RDONLY | O_DIRECTORY | O_NOATIME,
-+				   current_cred());
-+		if (IS_ERR(ftmp)) {
-+			printk (KERN_ERR "unable to open dir %s for "
-+				"directory copyup: %ld\n",
-+				path.dentry->d_name.name, PTR_ERR(ftmp));
-+			path_put(&path);
-+			res = PTR_ERR(ftmp);
-+			break;
-+		}
-+
-+		inode = path.dentry->d_inode;
-+		mutex_lock(&inode->i_mutex);
-+
-+		res = -ENOENT;
-+		if (IS_DEADDIR(inode))
-+			goto out_fput;
-+		/*
-+		 * Read the whole directory, calling our directory
-+		 * entry copyup function on each entry.  Pass in the
-+		 * topmost dentry as our private data so we can create
-+		 * new entries in the topmost directory.
-+		 */
-+		res = ftmp->f_op->readdir(ftmp, topmost_dentry,
-+					  union_copyup_dir_one);
-+out_fput:
-+		mutex_unlock(&inode->i_mutex);
-+		fput(ftmp);
-+
-+		if (res)
-+			break;
-+
-+		/* XXX Should process directories below an opaque
-+		 * directory in case there are fallthrus in it */
-+		if (IS_OPAQUE(path.dentry->d_inode))
-+			break;
-+	}
-+	/*
-+	 * Mark this dir opaque to show that we have already copied up
-+	 * the lower entries.  Be sure to do this AFTER the directory
-+	 * entries have been copied up in case of a crash.
-+	 */
-+	if (!res) {
-+		topmost_dentry->d_inode->i_flags |= S_OPAQUE;
-+		mark_inode_dirty(topmost_dentry->d_inode);
-+	}
-+
-+	mnt_drop_write(topmost_path->mnt);
-+	return res;
++	d_instantiate(dentry, NULL);
++	spin_lock(&dentry->d_lock);
++	dentry->d_flags |= DCACHE_FALLTHRU;
++	spin_unlock(&dentry->d_lock);
++	return 0;
 +}
-diff --git a/fs/union.h b/fs/union.h
-index 505f132..80c2421 100644
---- a/fs/union.h
-+++ b/fs/union.h
-@@ -58,6 +58,7 @@ extern void d_free_unions(struct dentry *);
- int needs_lookup_union(struct path *, struct path *);
- int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
- 			     struct path *);
-+extern int union_copyup_dir(struct path *);
++
+ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+ 	struct inode * new_dir,	struct dentry * new_dentry )
+ {
+@@ -466,6 +487,7 @@ const struct inode_operations ext2_dir_inode_operations = {
+ 	.rmdir		= ext2_rmdir,
+ 	.mknod		= ext2_mknod,
+ 	.whiteout	= ext2_whiteout,
++	.fallthru	= ext2_fallthru,
+ 	.rename		= ext2_rename,
+ #ifdef CONFIG_EXT2_FS_XATTR
+ 	.setxattr	= generic_setxattr,
+diff --git a/fs/ext2/super.c b/fs/ext2/super.c
+index 704521b..76eba1e 100644
+--- a/fs/ext2/super.c
++++ b/fs/ext2/super.c
+@@ -1095,6 +1095,8 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
  
- #else /* CONFIG_UNION_MOUNT */
+ 	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_WHITEOUT))
+ 		sb->s_flags |= MS_WHITEOUT;
++	if (EXT2_HAS_INCOMPAT_FEATURE(sb, EXT2_FEATURE_INCOMPAT_FALLTHRU))
++		sb->s_flags |= MS_FALLTHRU;
  
-@@ -67,6 +68,7 @@ int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
- #define d_free_unions(x)		do { } while (0)
- #define needs_lookup_union(x, y)	({ (0); })
- #define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
-+#define union_copyup_dir(x)		({ BUG(); (0); })
+ 	if (ext2_setup_super (sb, es, sb->s_flags & MS_RDONLY))
+ 		sb->s_flags |= MS_RDONLY;
+diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+index b0fb356..1a6f929 100644
+--- a/include/linux/ext2_fs.h
++++ b/include/linux/ext2_fs.h
+@@ -505,11 +505,14 @@ struct ext2_super_block {
+ #define EXT3_FEATURE_INCOMPAT_JOURNAL_DEV	0x0008
+ #define EXT2_FEATURE_INCOMPAT_META_BG		0x0010
+ #define EXT2_FEATURE_INCOMPAT_WHITEOUT		0x0020
++/* ext3/4 incompat flags take up the intervening constants */
++#define EXT2_FEATURE_INCOMPAT_FALLTHRU		0x2000
+ #define EXT2_FEATURE_INCOMPAT_ANY		0xffffffff
  
- #endif	/* CONFIG_UNION_MOUNT */
- #endif	/* __KERNEL__ */
+ #define EXT2_FEATURE_COMPAT_SUPP	EXT2_FEATURE_COMPAT_EXT_ATTR
+ #define EXT2_FEATURE_INCOMPAT_SUPP	(EXT2_FEATURE_INCOMPAT_FILETYPE| \
+ 					 EXT2_FEATURE_INCOMPAT_WHITEOUT| \
++					 EXT2_FEATURE_INCOMPAT_FALLTHRU| \
+ 					 EXT2_FEATURE_INCOMPAT_META_BG)
+ #define EXT2_FEATURE_RO_COMPAT_SUPP	(EXT2_FEATURE_RO_COMPAT_SPARSE_SUPER| \
+ 					 EXT2_FEATURE_RO_COMPAT_LARGE_FILE| \
+@@ -577,6 +580,7 @@ enum {
+ 	EXT2_FT_SOCK		= 6,
+ 	EXT2_FT_SYMLINK		= 7,
+ 	EXT2_FT_WHT		= 8,
++	EXT2_FT_FALLTHRU	= 9,
+ 	EXT2_FT_MAX
+ };
+ 
 -- 
 1.6.3.3
 
