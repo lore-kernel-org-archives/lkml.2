@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab0HHMmO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 08:42:14 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:38624 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753543Ab0HHMmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 08:42:13 -0400
-Date: Sun, 8 Aug 2010 13:56:29 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] tty_io: add an API to get device corresponding to
- tty_struct
-Message-ID: <20100808135629.489d19ec@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100808003846.GA9123@doriath.ww600.siemens.net>
-References: <20100806165844.GB3364@suse.de>
-	<1281174902-6298-1-git-send-email-dbaryshkov@gmail.com>
-	<20100807123333.614169f1@lxorguk.ukuu.org.uk>
-	<20100808003846.GA9123@doriath.ww600.siemens.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753969Ab0HHMoO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 08:44:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36362 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753597Ab0HHMoN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 08:44:13 -0400
+Message-ID: <4C5EA651.7080009@kernel.org>
+Date: Sun, 08 Aug 2010 14:42:57 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Huang Shijie <shijie8@gmail.com>
+CC: akpm@linux-foundation.org, linux-mm@kvack.org,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] percpu: fix a memory leak in pcpu_extend_area_map()
+References: <1281261197-8816-1-git-send-email-shijie8@gmail.com>
+In-Reply-To: <1281261197-8816-1-git-send-email-shijie8@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 08 Aug 2010 12:43:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I was afraid of messing with tty layer in such way, as it's a bit too
-> complex for me.
-> 
-> Do you mean adding struct device pointer to struct tty_struct (easy),
-> or refactoring code so, that struct tty_struct contains embedded
-> struct device and uses it for refcounting & stuff?
+>From 206c53730b8b1707becca7a868ea8d14ebee24d2 Mon Sep 17 00:00:00 2001
+From: Huang Shijie <shijie8@gmail.com>
+Date: Sun, 8 Aug 2010 14:39:07 +0200
 
-The former.
+The original code did not free the old map.  This patch fixes it.
 
-Alan
+tj: use @old as memcpy source instead of @chunk->map, and indentation
+    and description update
+
+Signed-off-by: Huang Shijie <shijie8@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Patch applied to percpu#for-linus w/ some updates.  Thanks a lot for
+catching this.
+
+ mm/percpu.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/mm/percpu.c b/mm/percpu.c
+index e61dc2c..a1830d8 100644
+--- a/mm/percpu.c
++++ b/mm/percpu.c
+@@ -393,7 +393,9 @@ static int pcpu_extend_area_map(struct pcpu_chunk *chunk, int new_alloc)
+ 		goto out_unlock;
+
+ 	old_size = chunk->map_alloc * sizeof(chunk->map[0]);
+-	memcpy(new, chunk->map, old_size);
++	old = chunk->map;
++
++	memcpy(new, old, old_size);
+
+ 	chunk->map_alloc = new_alloc;
+ 	chunk->map = new;
+-- 
+1.7.1
+
