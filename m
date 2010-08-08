@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027Ab0HHM7f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 08:59:35 -0400
-Received: from server109-228-4-14.live-servers.net ([109.228.4.14]:51696 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753959Ab0HHM7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 08:59:33 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: linux-kernel@vger.kernel.org
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] x86/hpet: Use the FSEC_PER_SEC constant for femto-second periods
-Date: Sun,  8 Aug 2010 13:58:31 +0100
-Message-Id: <1281272311-13820-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.7.1
-X-Originating-IP: 78.156.66.37
+	id S1754058Ab0HHNFI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 09:05:08 -0400
+Received: from fn.samba.org ([216.83.154.106]:59077 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753936Ab0HHNFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 09:05:05 -0400
+Date: Sun, 8 Aug 2010 06:05:01 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: Jeremy Allison <jra@samba.org>, Neil Brown <neilb@suse.de>,
+        utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100808130501.GA9851@jeremy-laptop>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+ <30448.1279800887@redhat.com>
+ <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+ <1280524978.2452.9.camel@segv.aura.of.mankind>
+ <20100801092529.5e6ba0e0@corrin.poochiereds.net>
+ <20100805235218.GB31233@jeremy-laptop>
+ <20100806133836.49757af9@notabene>
+ <20100808121208.GA7329@jeremy-laptop>
+ <20100808085301.24f53e5a@tlielax.poochiereds.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100808085301.24f53e5a@tlielax.poochiereds.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current computation, introduced with f12a15be63, of FSEC_PER_SEC using
-the multiplication of (FSEC_PER_NSEC * NSEC_PER_SEC) is performed only
-with 32bit integers on small machines, resulting in an overflow and a
-*very* short intervals being programmed.  An interrupt storm follows.
+On Sun, Aug 08, 2010 at 08:53:01AM -0400, Jeff Layton wrote:
+> 
+> It would be more convenient if this were part of stat() but adding a
+> new stat call is non-trivial. Even if we did that, it still doesn't
+> solve the problem of being able to set the create time. The fact that
+> that's rarely done doesn't really matter much -- we ought to shoot for
+> the semantics that are needed to handle this properly.
 
-Note that we also have to specify FSEC_PER_SEC as being long long to
-overcome the same limitations.
+*BSD didn't. They just added something that was useful to UNIX.
+I'd be happy with that. We don't need to ape Windows in everything.
+The coming ACL disaster will show that (we will go from an ACL
+model that is slightly too complex to use, to one that is impossibly
+complex to use :-).
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/hpet.c |    4 ++--
- include/linux/time.h   |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+> If that's the case, don't you have to query for this EA every time you
+> need to return the create time anyway? If so, then doing this really
+> isn't any more costly -- you'd just be querying a different EA, right?
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 33dbcc4..351f9c0 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -582,7 +582,7 @@ static void init_one_hpet_msi_clockevent(struct hpet_dev *hdev, int cpu)
- 	 * scaled math multiplication factor for nanosecond to hpet tick
- 	 * conversion.
- 	 */
--	hpet_freq = 1000000000000000ULL;
-+	hpet_freq = FSEC_PER_SEC;
- 	do_div(hpet_freq, hpet_period);
- 	evt->mult = div_sc((unsigned long) hpet_freq,
- 				      NSEC_PER_SEC, evt->shift);
-@@ -837,7 +837,7 @@ static int hpet_clocksource_register(void)
- 	 * cyc/sec = FSEC_PER_SEC/hpet_period(fsec/cyc)
- 	 * cyc/sec = (FSEC_PER_NSEC * NSEC_PER_SEC)/hpet_period
- 	 */
--	hpet_freq = FSEC_PER_NSEC * NSEC_PER_SEC;
-+	hpet_freq = FSEC_PER_SEC;
- 	do_div(hpet_freq, hpet_period);
- 	clocksource_register_hz(&clocksource_hpet, (u32)hpet_freq);
- 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index cb34e35..1261270 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -38,7 +38,7 @@ extern struct timezone sys_tz;
- #define NSEC_PER_MSEC	1000000L
- #define USEC_PER_SEC	1000000L
- #define NSEC_PER_SEC	1000000000L
--#define FSEC_PER_SEC	1000000000000000L
-+#define FSEC_PER_SEC	1000000000000000LL
- 
- #define TIME_T_MAX	(time_t)((1UL << ((sizeof(time_t) << 3) - 1)) - 1)
- 
--- 
-1.7.1
+No, we'd be querying an additional EA. The EA we query contains
+the DOS attribues as well as the create time.
 
+Jeremy.
