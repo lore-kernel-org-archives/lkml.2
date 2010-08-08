@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753834Ab0HHSIL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 14:08:11 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:51997 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753197Ab0HHSIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 14:08:09 -0400
-Date: Sun, 8 Aug 2010 11:07:49 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
-        alan@lxorguk.ukuu.org.uk, david@lang.hm, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, tytso@mit.edu,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100808180749.GG19600@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
- <20100804195704.GA23681@linux.vnet.ibm.com>
- <20100806225453.GA3947@linux.vnet.ibm.com>
- <AANLkTik3qF2yScLJiDBWLN5=Ez0FsvbOo0M76WbOAGvO@mail.gmail.com>
+	id S1754226Ab0HHS0K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 14:26:10 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:35776 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab0HHS0I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 14:26:08 -0400
+Date: Sun, 8 Aug 2010 20:25:58 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+        Sven Neumann <s.neumann@raumfeld.com>,
+        Michael Hirsch <m.hirsch@raumfeld.com>, ath5k-devel@venema.h4ckr.net
+Subject: Re: wireless: Problems with ath5k and 2.6.35
+Message-ID: <20100808182558.GC10432@buzzloop.caiaq.de>
+References: <20100807172108.GA15974@buzzloop.caiaq.de>
+ <4C5E68C1.9070403@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTik3qF2yScLJiDBWLN5=Ez0FsvbOo0M76WbOAGvO@mail.gmail.com>
+In-Reply-To: <4C5E68C1.9070403@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 08, 2010 at 03:40:28PM +0300, Felipe Contreras wrote:
-> On Sat, Aug 7, 2010 at 1:54 AM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > o       "Ill-behaved application" AKA "untrusted application" AKA
-> >        "crappy application".
+Hi Jiri,
+
+On Sun, Aug 08, 2010 at 10:20:17AM +0200, Jiri Slaby wrote:
+> On 08/07/2010 07:21 PM, Daniel Mack wrote:
+> > [    2.142771] ath5k 0000:00:0c.0: guessed PCI INT A -> IRQ 9
+> > [    2.148319] ath5k 0000:00:0c.0: sharing IRQ 9 with 0000:00:01.2
+> > [    2.154548] ath5k 0000:00:0c.0: registered as 'phy0'
+> > [    3.126593] irq 9: nobody cared (try booting with the "irqpoll" option)
+> > [    3.130015] Pid: 1, comm: swapper Not tainted 2.6.35+ #1
+> > [    3.130015] Call Trace:
+> > [    3.130015]  [<c013e984>] __report_bad_irq+0x2e/0x6f
+> > [    3.130015]  [<c013eab5>] note_interrupt+0xf0/0x147
+> > [    3.130015]  [<c013f076>] handle_level_irq+0x6d/0x99
+> > [    3.130015]  [<c0103bf6>] handle_irq+0x1a/0x20
+> > [    3.130015]  [<c0103810>] do_IRQ+0x33/0x88
+> > [    3.130015]  [<c0102a69>] common_interrupt+0x29/0x30
+> > [    3.130015]  [<c0120e3c>] ? __do_softirq+0x34/0xca
+> > [    3.130015]  [<c0120ef7>] do_softirq+0x25/0x2a
+> > [    3.130015]  [<c0120fb7>] irq_exit+0x28/0x57
+> > [    3.130015]  [<c0103850>] do_IRQ+0x73/0x88
+> > [    3.130015]  [<c0102a69>] common_interrupt+0x29/0x30
+> > [    3.130015]  [<c013007b>] ? __async_schedule+0x38/0xe9
+> > [    3.130015]  [<c013e420>] ? __setup_irq+0x1d8/0x259
+> > [    3.130015]  [<c013e544>] request_threaded_irq+0xa3/0xd0
+> > [    3.130015]  [<c02486e5>] ? ath5k_intr+0x0/0x28b
+> > [    3.130015]  [<c032e15c>] ath5k_pci_probe+0x2f4/0x13c5
 > 
-> > o       "PM-driving application" are applications that are permitted
-> >        to acquire suspend blockers on Android.
-> 
-> These definitions are wrong.
+> The interrupt came right after enabled in probe function with
+> ATH_STAT_INVALID still set. Is this really a 2.6.34 regression? The only
+> difference I see that we now (in .35) use MIB interrrupts.
 
-Indeed they are, given the way you quoted small portions of them.  ;-)
+I can't tell exactly when things broke, but appearantly, it worked in
+2.6.31.4. I'll get back to this issue in some days when I have access to
+the hardware again. I would also bisect this topic then if neccessary.
 
-> 1) There are trusted applications that misbehave (the user clicks Yes
-> when asked about PM permissions)
 
-These would be buggy PM-driving applications.  Of course, any type of
-application might have bugs, including PM-driving applications.
+Thanks,
+Daniel
 
-> 2) There are untrusted applications that are power optimized (The user
-> clicks No)
-
-I did indeed exclude this category by saying "power-optimized applications
-are those PM-driving applications that have been aggressively tuned
-to reduce power consumption."  The reason I excluded this case is that
-that there are a number of cases where removing the PM-driving attribute
-could destroy the power optimization.
-
-If you have an example power-optimized application that retains its
-power-optimized property despite lacking PM-driving privileges, please
-put it forward.  In doing so, please keep two things in mind:
-
-1.	The definition of power-optimized is more aggressive than many
-	people are used to -- look at http://lkml.org/lkml/2010/8/4/409
-	and search for "POWER-OPTIMIZED APPLICATIONS".
-
-2.	In a number of the implementations that do not use suspend blockers,
-	-all- applications are in effect PM-driving applications.
-	So it is quite possible that different people are using subtly
-	different flavors of the "PM-driving applications" definition.
-
-	For example, an Android person might consider a application to
-	be PM-driving only if it is permitted to use suspend blockers,
-	while a Maemo person might consider an application to be
-	PM-driving if it had permission to invoke pm_qos functions.
-	If these two hypothetical people each try to apply their
-	definition of PM-driving to each others' platforms, they will
-	likely have severe problems communicating with each other,
-	right?  ;-)
-
-But if you do have a good example, perhaps I will need to change my
-definition of power-optimized application.
-
-> The proponents of suspend blockers in user-space have tried to ignore
-> this fact, but the truth is that PM permissions and power optimization
-> are orthogonal to each other.
-
-In fact, you might have noticed that the proponents of each platform
-have been quite persistent in shouting past each other from the warmth
-and security of their own particular viewpoints.  ;-)
-
-							Thanx, Paul
