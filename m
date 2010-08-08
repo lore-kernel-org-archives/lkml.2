@@ -1,206 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab0HHQCy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 12:02:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51085 "EHLO mx1.redhat.com"
+	id S1754529Ab0HHPyi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:54:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28112 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579Ab0HHPym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:54:42 -0400
+	id S1754247Ab0HHPyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:54:15 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>,
-        Valerie Aurora <vaurora@redhat.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Subject: [PATCH 12/39] whiteout: jffs2 whiteout support
-Date: Sun,  8 Aug 2010 11:52:29 -0400
-Message-Id: <1281282776-5447-13-git-send-email-vaurora@redhat.com>
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 02/39] VFS: Make lookup_hash() return a struct path
+Date: Sun,  8 Aug 2010 11:52:19 -0400
+Message-Id: <1281282776-5447-3-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Jan Blunck <jblunck@suse.de>
 
-Add support for whiteout dentries to jffs2.
+This patch changes lookup_hash() into returning a struct path.
 
-XXX - David Woodhouse suggests several changes and provides an
-untested patch.  See:
+XXX - Check for correctness, otherwise obvious
 
-http://patchwork.ozlabs.org/patch/50466/
-
-XXX - Backward compatibility?  Creating a whiteout on a JFFS2 file
-system can only happen if it is deliberately mounted "-o union" so
-there is some way to prevent creation of whiteouts on a file system
-you want to later mount with an earlier (no support for whiteout) file
-system.  However, ext2/3 has much more robust methods (explicit fs
-feature flag) to prevent such an occurance.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: Jan Blunck <jblunck@suse.de>
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: linux-mtd@lists.infradead.org
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
 ---
- fs/jffs2/dir.c        |   72 +++++++++++++++++++++++++++++++++++++++++++++++-
- fs/jffs2/fs.c         |    4 +++
- fs/jffs2/super.c      |    2 +-
- include/linux/jffs2.h |    2 +
- 4 files changed, 77 insertions(+), 3 deletions(-)
+ fs/namei.c |  113 ++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 57 insertions(+), 56 deletions(-)
 
-diff --git a/fs/jffs2/dir.c b/fs/jffs2/dir.c
-index 166062a..4798586 100644
---- a/fs/jffs2/dir.c
-+++ b/fs/jffs2/dir.c
-@@ -34,6 +34,8 @@ static int jffs2_mknod (struct inode *,struct dentry *,int,dev_t);
- static int jffs2_rename (struct inode *, struct dentry *,
- 			 struct inode *, struct dentry *);
- 
-+static int jffs2_whiteout (struct inode *, struct dentry *, struct dentry *);
-+
- const struct file_operations jffs2_dir_operations =
- {
- 	.read =		generic_read_dir,
-@@ -56,6 +58,7 @@ const struct inode_operations jffs2_dir_inode_operations =
- 	.mknod =	jffs2_mknod,
- 	.rename =	jffs2_rename,
- 	.check_acl =	jffs2_check_acl,
-+	.whiteout =     jffs2_whiteout,
- 	.setattr =	jffs2_setattr,
- 	.setxattr =	jffs2_setxattr,
- 	.getxattr =	jffs2_getxattr,
-@@ -98,8 +101,14 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
- 			fd = fd_list;
- 		}
- 	}
--	if (fd)
--		ino = fd->ino;
-+	if (fd) {
-+		spin_lock(&target->d_lock);
-+		if (fd->type == DT_WHT)
-+			target->d_flags |= DCACHE_WHITEOUT;
-+		else
-+			ino = fd->ino;
-+		spin_unlock(&target->d_lock);
-+	}
- 	mutex_unlock(&dir_f->sem);
- 	if (ino) {
- 		inode = jffs2_iget(dir_i->i_sb, ino);
-@@ -502,6 +511,11 @@ static int jffs2_mkdir (struct inode *dir_i, struct dentry *dentry, int mode)
- 		return PTR_ERR(inode);
- 	}
- 
-+	if (dentry->d_flags & DCACHE_WHITEOUT) {
-+		inode->i_flags |= S_OPAQUE;
-+		ri->flags = cpu_to_je16(JFFS2_INO_FLAG_OPAQUE);
-+	}
-+
- 	inode->i_op = &jffs2_dir_inode_operations;
- 	inode->i_fop = &jffs2_dir_operations;
- 
-@@ -784,6 +798,60 @@ static int jffs2_mknod (struct inode *dir_i, struct dentry *dentry, int mode, de
- 	return ret;
+diff --git a/fs/namei.c b/fs/namei.c
+index fd6df0d..735f54b 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1156,7 +1156,7 @@ int vfs_path_lookup(struct dentry *dentry, struct vfsmount *mnt,
  }
  
-+static int jffs2_whiteout (struct inode *dir, struct dentry *old_dentry,
-+			   struct dentry *new_dentry)
-+{
-+	struct jffs2_sb_info *c = JFFS2_SB_INFO(dir->i_sb);
-+	struct jffs2_inode_info *victim_f = NULL;
-+	uint32_t now;
-+	int ret;
-+
-+	/* If it's a directory, then check whether it is really empty */
-+	if (new_dentry->d_inode) {
-+		victim_f = JFFS2_INODE_INFO(old_dentry->d_inode);
-+		if (S_ISDIR(old_dentry->d_inode->i_mode)) {
-+			struct jffs2_full_dirent *fd;
-+
-+			mutex_lock(&victim_f->sem);
-+			for (fd = victim_f->dents; fd; fd = fd->next) {
-+				if (fd->ino) {
-+					mutex_unlock(&victim_f->sem);
-+					return -ENOTEMPTY;
-+				}
-+			}
-+			mutex_unlock(&victim_f->sem);
-+		}
-+	}
-+
-+	now = get_seconds();
-+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(dir), 0, DT_WHT,
-+			    new_dentry->d_name.name, new_dentry->d_name.len, now);
-+	if (ret)
-+		return ret;
-+
-+	spin_lock(&new_dentry->d_lock);
-+	new_dentry->d_flags |= DCACHE_WHITEOUT;
-+	spin_unlock(&new_dentry->d_lock);
-+	d_add(new_dentry, NULL);
-+
-+	if (victim_f) {
-+		/* There was a victim. Kill it off nicely */
-+		drop_nlink(old_dentry->d_inode);
-+		/* Don't oops if the victim was a dirent pointing to an
-+		   inode which didn't exist. */
-+		if (victim_f->inocache) {
-+			mutex_lock(&victim_f->sem);
-+			if (S_ISDIR(old_dentry->d_inode->i_mode))
-+				victim_f->inocache->pino_nlink = 0;
-+			else
-+				victim_f->inocache->pino_nlink--;
-+			mutex_unlock(&victim_f->sem);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
- 			 struct inode *new_dir_i, struct dentry *new_dentry)
+ static struct dentry *__lookup_hash(struct qstr *name,
+-		struct dentry *base, struct nameidata *nd)
++				    struct dentry *base, struct nameidata *nd)
  {
-diff --git a/fs/jffs2/fs.c b/fs/jffs2/fs.c
-index 459d39d..cdb2667 100644
---- a/fs/jffs2/fs.c
-+++ b/fs/jffs2/fs.c
-@@ -301,6 +301,10 @@ struct inode *jffs2_iget(struct super_block *sb, unsigned long ino)
+ 	struct dentry *dentry;
+ 	struct inode *inode;
+@@ -1213,14 +1213,22 @@ out:
+  * needs parent already locked. Doesn't follow mounts.
+  * SMP-safe.
+  */
+-static struct dentry *lookup_hash(struct nameidata *nd)
++static int lookup_hash(struct nameidata *nd, struct qstr *name,
++		       struct path *path)
+ {
+ 	int err;
  
- 		inode->i_op = &jffs2_dir_inode_operations;
- 		inode->i_fop = &jffs2_dir_operations;
-+
-+		if (je16_to_cpu(latest_node.flags) & JFFS2_INO_FLAG_OPAQUE)
-+			inode->i_flags |= S_OPAQUE;
-+
- 		break;
+ 	err = exec_permission(nd->path.dentry->d_inode);
+ 	if (err)
+-		return ERR_PTR(err);
+-	return __lookup_hash(&nd->last, nd->path.dentry, nd);
++		return err;
++	path->mnt = nd->path.mnt;
++	path->dentry =  __lookup_hash(name, nd->path.dentry, nd);
++	if (IS_ERR(path->dentry)) {
++		err = PTR_ERR(path->dentry);
++		path->dentry = NULL;
++		path->mnt = NULL;
++	}
++	return err;
+ }
+ 
+ static int __lookup_one_len(const char *name, struct qstr *this,
+@@ -1702,12 +1710,9 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 
+ 	/* OK, it's O_CREAT */
+ 	mutex_lock(&dir->d_inode->i_mutex);
++	error = lookup_hash(nd, &nd->last, path);
+ 
+-	path->dentry = lookup_hash(nd);
+-	path->mnt = nd->path.mnt;
+-
+-	error = PTR_ERR(path->dentry);
+-	if (IS_ERR(path->dentry)) {
++	if (error) {
+ 		mutex_unlock(&dir->d_inode->i_mutex);
+ 		goto exit;
  	}
- 	case S_IFREG:
-diff --git a/fs/jffs2/super.c b/fs/jffs2/super.c
-index 511e2d6..f998679 100644
---- a/fs/jffs2/super.c
-+++ b/fs/jffs2/super.c
-@@ -170,7 +170,7 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
+@@ -1959,7 +1964,8 @@ EXPORT_SYMBOL(filp_open);
+  */
+ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ {
+-	struct dentry *dentry = ERR_PTR(-EEXIST);
++	struct path path;
++	int err;
  
- 	sb->s_op = &jffs2_super_operations;
- 	sb->s_export_op = &jffs2_export_ops;
--	sb->s_flags = sb->s_flags | MS_NOATIME;
-+	sb->s_flags = sb->s_flags | MS_NOATIME | MS_WHITEOUT;
- 	sb->s_xattr = jffs2_xattr_handlers;
- #ifdef CONFIG_JFFS2_FS_POSIX_ACL
- 	sb->s_flags |= MS_POSIXACL;
-diff --git a/include/linux/jffs2.h b/include/linux/jffs2.h
-index 0874ab5..cc6347f 100644
---- a/include/linux/jffs2.h
-+++ b/include/linux/jffs2.h
-@@ -87,6 +87,8 @@
- #define JFFS2_INO_FLAG_USERCOMPR  2	/* User has requested a specific
- 					   compression type */
+ 	mutex_lock_nested(&nd->path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+ 	/*
+@@ -1967,7 +1973,7 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * (foo/., foo/.., /////)
+ 	 */
+ 	if (nd->last_type != LAST_NORM)
+-		goto fail;
++		return ERR_PTR(-EEXIST);
+ 	nd->flags &= ~LOOKUP_PARENT;
+ 	nd->flags |= LOOKUP_CREATE | LOOKUP_EXCL;
+ 	nd->intent.open.flags = O_EXCL;
+@@ -1975,11 +1981,11 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	/*
+ 	 * Do the final lookup.
+ 	 */
+-	dentry = lookup_hash(nd);
+-	if (IS_ERR(dentry))
+-		goto fail;
++	err = lookup_hash(nd, &nd->last, &path);
++	if (err)
++		return ERR_PTR(err);
  
-+#define JFFS2_INO_FLAG_OPAQUE     4	/* Directory is opaque (for union mounts) */
+-	if (dentry->d_inode)
++	if (path.dentry->d_inode)
+ 		goto eexist;
+ 	/*
+ 	 * Special case - lookup gave negative, but... we had foo/bar/
+@@ -1988,15 +1994,14 @@ struct dentry *lookup_create(struct nameidata *nd, int is_dir)
+ 	 * been asking for (non-existent) directory. -ENOENT for you.
+ 	 */
+ 	if (unlikely(!is_dir && nd->last.name[nd->last.len])) {
+-		dput(dentry);
+-		dentry = ERR_PTR(-ENOENT);
++		dput(path.dentry);
++		return ERR_PTR(-ENOENT);
+ 	}
+-	return dentry;
 +
++	return path.dentry;
+ eexist:
+-	dput(dentry);
+-	dentry = ERR_PTR(-EEXIST);
+-fail:
+-	return dentry;
++	path_put_conditional(&path, nd);
++	return ERR_PTR(-EEXIST);
+ }
+ EXPORT_SYMBOL_GPL(lookup_create);
  
- /* These can go once we've made sure we've caught all uses without
-    byteswapping */
+@@ -2231,7 +2236,7 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ {
+ 	int error = 0;
+ 	char * name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 
+ 	error = user_path_parent(dfd, pathname, &nd, &name);
+@@ -2253,21 +2258,20 @@ static long do_rmdir(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (IS_ERR(dentry))
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (error)
+ 		goto exit2;
+ 	error = mnt_want_write(nd.path.mnt);
+ 	if (error)
+ 		goto exit3;
+-	error = security_path_rmdir(&nd.path, dentry);
++	error = security_path_rmdir(&nd.path, path.dentry);
+ 	if (error)
+ 		goto exit4;
+-	error = vfs_rmdir(nd.path.dentry->d_inode, dentry);
++	error = vfs_rmdir(nd.path.dentry->d_inode, path.dentry);
+ exit4:
+ 	mnt_drop_write(nd.path.mnt);
+ exit3:
+-	dput(dentry);
++	path_put_conditional(&path, &nd);
+ exit2:
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ exit1:
+@@ -2323,7 +2327,7 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ {
+ 	int error;
+ 	char *name;
+-	struct dentry *dentry;
++	struct path path;
+ 	struct nameidata nd;
+ 	struct inode *inode = NULL;
+ 
+@@ -2338,26 +2342,25 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+ 	nd.flags &= ~LOOKUP_PARENT;
+ 
+ 	mutex_lock_nested(&nd.path.dentry->d_inode->i_mutex, I_MUTEX_PARENT);
+-	dentry = lookup_hash(&nd);
+-	error = PTR_ERR(dentry);
+-	if (!IS_ERR(dentry)) {
++	error = lookup_hash(&nd, &nd.last, &path);
++	if (!error) {
+ 		/* Why not before? Because we want correct error value */
+ 		if (nd.last.name[nd.last.len])
+ 			goto slashes;
+-		inode = dentry->d_inode;
++		inode = path.dentry->d_inode;
+ 		if (inode)
+ 			atomic_inc(&inode->i_count);
+ 		error = mnt_want_write(nd.path.mnt);
+ 		if (error)
+ 			goto exit2;
+-		error = security_path_unlink(&nd.path, dentry);
++		error = security_path_unlink(&nd.path, path.dentry);
+ 		if (error)
+ 			goto exit3;
+-		error = vfs_unlink(nd.path.dentry->d_inode, dentry);
++		error = vfs_unlink(nd.path.dentry->d_inode, path.dentry);
+ exit3:
+ 		mnt_drop_write(nd.path.mnt);
+ 	exit2:
+-		dput(dentry);
++		path_put_conditional(&path, &nd);
+ 	}
+ 	mutex_unlock(&nd.path.dentry->d_inode->i_mutex);
+ 	if (inode)
+@@ -2368,8 +2371,8 @@ exit1:
+ 	return error;
+ 
+ slashes:
+-	error = !dentry->d_inode ? -ENOENT :
+-		S_ISDIR(dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
++	error = !path.dentry->d_inode ? -ENOENT :
++		S_ISDIR(path.dentry->d_inode->i_mode) ? -EISDIR : -ENOTDIR;
+ 	goto exit2;
+ }
+ 
+@@ -2707,7 +2710,7 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 		int, newdfd, const char __user *, newname)
+ {
+ 	struct dentry *old_dir, *new_dir;
+-	struct dentry *old_dentry, *new_dentry;
++	struct path old, new;
+ 	struct dentry *trap;
+ 	struct nameidata oldnd, newnd;
+ 	char *from;
+@@ -2741,16 +2744,15 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 
+ 	trap = lock_rename(new_dir, old_dir);
+ 
+-	old_dentry = lookup_hash(&oldnd);
+-	error = PTR_ERR(old_dentry);
+-	if (IS_ERR(old_dentry))
++	error = lookup_hash(&oldnd, &oldnd.last, &old);
++	if (error)
+ 		goto exit3;
+ 	/* source must exist */
+ 	error = -ENOENT;
+-	if (!old_dentry->d_inode)
++	if (!old.dentry->d_inode)
+ 		goto exit4;
+ 	/* unless the source is a directory trailing slashes give -ENOTDIR */
+-	if (!S_ISDIR(old_dentry->d_inode->i_mode)) {
++	if (!S_ISDIR(old.dentry->d_inode->i_mode)) {
+ 		error = -ENOTDIR;
+ 		if (oldnd.last.name[oldnd.last.len])
+ 			goto exit4;
+@@ -2759,32 +2761,31 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
+ 	}
+ 	/* source should not be ancestor of target */
+ 	error = -EINVAL;
+-	if (old_dentry == trap)
++	if (old.dentry == trap)
+ 		goto exit4;
+-	new_dentry = lookup_hash(&newnd);
+-	error = PTR_ERR(new_dentry);
+-	if (IS_ERR(new_dentry))
++	error = lookup_hash(&newnd, &newnd.last, &new);
++	if (error)
+ 		goto exit4;
+ 	/* target should not be an ancestor of source */
+ 	error = -ENOTEMPTY;
+-	if (new_dentry == trap)
++	if (new.dentry == trap)
+ 		goto exit5;
+ 
+ 	error = mnt_want_write(oldnd.path.mnt);
+ 	if (error)
+ 		goto exit5;
+-	error = security_path_rename(&oldnd.path, old_dentry,
+-				     &newnd.path, new_dentry);
++	error = security_path_rename(&oldnd.path, old.dentry,
++				     &newnd.path, new.dentry);
+ 	if (error)
+ 		goto exit6;
+-	error = vfs_rename(old_dir->d_inode, old_dentry,
+-				   new_dir->d_inode, new_dentry);
++	error = vfs_rename(old_dir->d_inode, old.dentry,
++				   new_dir->d_inode, new.dentry);
+ exit6:
+ 	mnt_drop_write(oldnd.path.mnt);
+ exit5:
+-	dput(new_dentry);
++	path_put_conditional(&new, &newnd);
+ exit4:
+-	dput(old_dentry);
++	path_put_conditional(&old, &oldnd);
+ exit3:
+ 	unlock_rename(new_dir, old_dir);
+ exit2:
 -- 
 1.6.3.3
 
