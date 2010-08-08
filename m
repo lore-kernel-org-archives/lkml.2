@@ -1,84 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835Ab0HHViP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 17:38:15 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59945 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754665Ab0HHViN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 17:38:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=LWaOfBNEGCPZu+YROi3ec0YL71W8YCtOMZR+Gcuh4pRqiAaiCRzLtwp+GBW9soFHqZ
-         gfFUs2OPVYs5SI1LAyBXc/OYpyJR4mm+Qmba11/6y9K9Zfbc2rI66S+et/3mgcNiH7zV
-         YChyxwSg1Fviv+9XPaY9B0XtReoLhiVa5BaMI=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: remove __phys_reloc_hide
-Date: Mon,  9 Aug 2010 06:38:10 +0900
-Message-Id: <1281303490-390-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754886Ab0HHVij (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 17:38:39 -0400
+Received: from THUNK.ORG ([69.25.196.29]:35653 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754665Ab0HHVih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 17:38:37 -0400
+Date: Sun, 8 Aug 2010 17:38:21 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100808213821.GD3635@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
+	Brian Swetland <swetland@google.com>,
+	"Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+	arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+	florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+	peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+	menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+	arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+	dipankar@in.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100804195704.GA23681@linux.vnet.ibm.com>
+ <20100806225453.GA3947@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
+ <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+ <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
+ <20100807061558.GA28087@thunk.org>
+ <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
+ <20100808155719.GB3635@thunk.org>
+ <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove unnecessary use of RELOC_HIDE(). It only does simple addition of ptr
-and offset, and in this case, offset 0, does nothing. It does NOT do anything
-with linker relocation things. I could find no reason to use it.
+On Sun, Aug 08, 2010 at 08:40:28PM +0300, Felipe Contreras wrote:
+> 
+> My guess is you haven't used a truly multi-tasking device like the
+> N900; now that I've got used to it, I consider that functionality
+> *essential*.
 
-The only user of __phys_reloc_hide() was __pa_symbol() so it can be removed
-safely here.
+I've used an N800, and I wasn't impressed; if anything, the fact that
+I have to worry about manually killing off applications when memory
+gets low, I actually thought it was incredibly sucky.  It was a
+miniature, badly done laptop.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/include/asm/page.h          |    5 ++---
- arch/x86/include/asm/page_32.h       |    1 -
- arch/x86/include/asm/page_64_types.h |    1 -
- 3 files changed, 2 insertions(+), 5 deletions(-)
+Maybe the N900 is different, but the bigger question is what do you
+mean by "multi-tasking"?  Definitions are critical here, which is why
+Paul was so careful in his definitions section of his document.
 
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 625c3f0..3da2a8e 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -35,9 +35,8 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
- 
- #define __pa(x)		__phys_addr((unsigned long)(x))
- #define __pa_nodebug(x)	__phys_addr_nodebug((unsigned long)(x))
--/* __pa_symbol should be used for C visible symbols.
--   This seems to be the official gcc blessed way to do such arithmetic. */
--#define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
-+/* __pa_symbol should be used for C visible symbols. */
-+#define __pa_symbol(x)	__pa(x)
- 
- #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
- 
-diff --git a/arch/x86/include/asm/page_32.h b/arch/x86/include/asm/page_32.h
-index da4e762..e78e52a 100644
---- a/arch/x86/include/asm/page_32.h
-+++ b/arch/x86/include/asm/page_32.h
-@@ -15,7 +15,6 @@ extern unsigned long __phys_addr(unsigned long);
- #else
- #define __phys_addr(x)		__phys_addr_nodebug(x)
- #endif
--#define __phys_reloc_hide(x)	RELOC_HIDE((x), 0)
- 
- #ifdef CONFIG_FLATMEM
- #define pfn_valid(pfn)		((pfn) < max_mapnr)
-diff --git a/arch/x86/include/asm/page_64_types.h b/arch/x86/include/asm/page_64_types.h
-index 7639dbf..5a63066 100644
---- a/arch/x86/include/asm/page_64_types.h
-+++ b/arch/x86/include/asm/page_64_types.h
-@@ -59,7 +59,6 @@ extern unsigned long max_pfn;
- extern unsigned long phys_base;
- 
- extern unsigned long __phys_addr(unsigned long);
--#define __phys_reloc_hide(x)	(x)
- 
- #define vmemmap ((struct page *)VMEMMAP_START)
- 
--- 
-1.7.0.4
+Do you mean:
 
+  * allowing multiple processes running at the same time?
+  * allowing some applications to be able to update mail, play audio,
+    upload location information so your friends know where you are?
+  * allowing arbitrary applications that users can interact with
+    simultaneously (which implies a window manager, the need to have
+    the concept of window focus for keyboard input), etc?
+
+or something else?
+
+> The argument in favor of suspend blockers is that you could take
+> applications that are not designed for embedded, and make them run on
+> an embedded device without draining excessive battery life; those
+> applications would have to be background services not conflicting with
+> Android's design.
+> 
+> I agree there probably would not be that many background apps, and
+> probably even less ported background apps, but that is actually an
+> argument against suspend blockers.
+> 
+> The rest of the apps (UI apps), cannot be ported, but have to be
+> written specifically for Android, and therefore should have PM in
+> mind, and not require suspend blockers to have good power usage.
+
+If you are using a GUI framework which is optimized for a single-
+application-focus-at-a-time UI that isn't GNOME or KDE, then that will
+require the applications to be written.  However, that's not because
+of suspend-blockers.
+
+If you assume a GUI framework which is flexible enough --- maybe Qt
+falls into this category, maybe not --- for the rest of the
+applications, they don't need to *know* about suspend blockers, and
+they certainly do't have to be rewritten or modified specifically for
+suspend blockers.  So if your argument is that applications that don't
+need bacground services (which you've admitted comprises majority of
+applicatios) need to be modified or written specifically to support
+suspend blockers, that's simply not true.  They don't need to be
+modified at all.
+
+As far as whether they *should* require suspend blockers to be in the
+kernel to get power usage that is suitable for cell phone batteries, I
+would agree that in the ideal world, it would be nice if you could
+have applications that make the correct performance/battery
+utilization tradeoff for devices running on 800 mWh batteries, 94,000
+mWh batteries, and while running on the AC mains.  But I don't believe
+that it's likely to be true, and if you want to try to beat up on
+application writers one at a time to be power optimized --- as far as
+I'm concerned, that's an argument *for* suspend blockers, since I'm
+not big believer in plans that begin, "First, you command the tides of
+the sea to go back", King Canute style.  :-)
+
+						- Ted
