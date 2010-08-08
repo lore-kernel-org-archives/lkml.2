@@ -1,43 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752938Ab0HHGOo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 02:14:44 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:63922 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab0HHGOn (ORCPT
+	id S1753137Ab0HHGnN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 02:43:13 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47857 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214Ab0HHGnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 02:14:43 -0400
+	Sun, 8 Aug 2010 02:43:10 -0400
+Date: Sun, 8 Aug 2010 15:42:03 +0900 (JST)
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 1/7] vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>
+In-Reply-To: <20100805150232.GE25688@csn.ul.ie>
+References: <20100805151125.31BA.A69D9226@jp.fujitsu.com> <20100805150232.GE25688@csn.ul.ie>
+Message-Id: <20100808153750.5AC6.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20100807.225629.90779399.davem@davemloft.net>
-References: <20100807.225009.43057146.davem@davemloft.net> 
-	<20100807.225629.90779399.davem@davemloft.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 8 Aug 2010 00:14:23 -0600
-X-Google-Sender-Auth: tNzjpyLXT16KPRiWe6s1HUxMgA8
-Message-ID: <AANLkTikXQ+SduYPZo1DcVH+T7+Od_vkf0CdcWSkp100V@mail.gmail.com>
-Subject: Re: OF change bustage...
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 7, 2010 at 11:56 PM, David Miller <davem@davemloft.net> wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Sat, 07 Aug 2010 22:50:09 -0700 (PDT)
->
->> drivers/crypto/n2_core.c: In function 'find_devino_index':
->> drivers/crypto/n2_core.c:1583:21: error: 'struct platform_device' has no member named 'num_irqs'
->> drivers/crypto/n2_core.c: In function 'spu_map_ino':
->> drivers/crypto/n2_core.c:1606:14: error: 'struct platform_device' has no member named 'irqs'
->>
->> Looks simply like missing "archdata." prefixes.
->
-> Same problem in drivers/net/greth.c
+> This patch (as well as most of the series) will reject against current mmotm
+> because of other reclaim-related patches already in there. The resolutions
+> are not too hard but bear it in mind.
 
-Yup in both cases.  I missed fixing them up in commit
-1636f8ac2b08410df4766449f7c86b912443cd99.  I'm test-building a patch
-right now.
+I was working on latest published mmotm. but yes, current akpm private mmotm
+incluse your reclaim related change.
 
-g.
+That said, I need to rework them later.
+
+
+
