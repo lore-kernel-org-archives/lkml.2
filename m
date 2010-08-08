@@ -1,218 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0HHP7A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:59:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6068 "EHLO mx1.redhat.com"
+	id S1754831Ab0HHPzS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:55:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63368 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754878Ab0HHPz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:55:26 -0400
+	id S1754803Ab0HHPzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:14 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 25/39] fallthru: tmpfs fallthru support
-Date: Sun,  8 Aug 2010 11:52:42 -0400
-Message-Id: <1281282776-5447-26-git-send-email-vaurora@redhat.com>
+        linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>,
+        Felix Fietkau <nbd@openwrt.org>
+Subject: [PATCH 21/39] union-mount: Copy up directory entries on first readdir()
+Date: Sun,  8 Aug 2010 11:52:38 -0400
+Message-Id: <1281282776-5447-22-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for fallthru directory entries to tmpfs
+readdir() in union mounts is implemented by copying up all visible
+directory entries from the lower level directories to the topmost
+directory.  Directory entries that refer to lower level file system
+objects are marked as "fallthru" in the topmost directory.
+
+Thanks to Felix Fietkau <nbd@openwrt.org> for a bug fix.
+
+XXX - How to deal with fallthrus in lower layers?
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 ---
- fs/dcache.c |    3 +-
- fs/libfs.c  |   23 ++++++++++++++++++--
- mm/shmem.c  |   64 +++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 3 files changed, 78 insertions(+), 12 deletions(-)
+ fs/readdir.c |    9 +++
+ fs/union.c   |  162 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/union.h   |    2 +
+ 3 files changed, 173 insertions(+), 0 deletions(-)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index ed7f15a..4fe51a9 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -2254,7 +2254,8 @@ resume:
- 		 * we can evict it.
- 		 */
- 		if (d_unhashed(dentry)||(!dentry->d_inode &&
--					 !d_is_whiteout(dentry)))
-+					 !d_is_whiteout(dentry) &&
-+					 !d_is_fallthru(dentry)))
- 			continue;
- 		if (!list_empty(&dentry->d_subdirs)) {
- 			this_parent = dentry;
-diff --git a/fs/libfs.c b/fs/libfs.c
-index dcaf972..1172f1a 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -130,6 +130,7 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 	struct dentry *cursor = filp->private_data;
- 	struct list_head *p, *q = &cursor->d_u.d_child;
- 	ino_t ino;
-+	char d_type;
- 	int i = filp->f_pos;
+diff --git a/fs/readdir.c b/fs/readdir.c
+index 3a48491..dd3eae1 100644
+--- a/fs/readdir.c
++++ b/fs/readdir.c
+@@ -19,6 +19,8 @@
  
- 	switch (i) {
-@@ -155,14 +156,30 @@ int dcache_readdir(struct file * filp, void * dirent, filldir_t filldir)
- 			for (p=q->next; p != &dentry->d_subdirs; p=p->next) {
- 				struct dentry *next;
- 				next = list_entry(p, struct dentry, d_u.d_child);
--				if (d_unhashed(next) || !next->d_inode)
-+				if (d_unhashed(next) || (!next->d_inode && !d_is_fallthru(next)))
- 					continue;
+ #include <asm/uaccess.h>
  
- 				spin_unlock(&dcache_lock);
-+				if (d_is_fallthru(next)) {
-+					/*
-+					 * Fallthru lookup should never fail on tmpfs (except
-+					 * ENOMEM and the like).  If fallthru fails, better to
-+					 * fake up return values than crash.
-+					 */
-+					ino = 1;
-+					d_type = DT_UNKNOWN;
-+					generic_readdir_fallthru(filp->f_path.dentry,
-+								       next->d_name.name,
-+								       next->d_name.len,
-+								       &ino, &d_type);
-+				} else {
-+					ino = next->d_inode->i_ino;
-+					d_type = dt_type(next->d_inode);
-+				}
++#include "union.h"
 +
- 				if (filldir(dirent, next->d_name.name, 
- 					    next->d_name.len, filp->f_pos, 
--					    next->d_inode->i_ino, 
--					    dt_type(next->d_inode)) < 0)
-+					    ino, d_type) < 0)
- 					return 0;
- 				spin_lock(&dcache_lock);
- 				/* next is still alive */
-diff --git a/mm/shmem.c b/mm/shmem.c
-index a0a4fa5..eab3f27 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -1809,8 +1809,7 @@ static int shmem_rmdir(struct inode *dir, struct dentry *dentry);
- static int shmem_unlink(struct inode *dir, struct dentry *dentry);
+ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+ {
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+@@ -36,9 +38,16 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
  
- /*
-- * This is the whiteout support for tmpfs. It uses one singleton whiteout
-- * inode per superblock thus it is very similar to shmem_link().
-+ * Create a dentry to signify a whiteout.
-  */
- static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
- 			  struct dentry *new_dentry)
-@@ -1841,8 +1840,10 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
- 		spin_unlock(&sbinfo->stat_lock);
+ 	res = -ENOENT;
+ 	if (!IS_DEADDIR(inode)) {
++		if (IS_DIR_UNIONED(file->f_path.dentry) && !IS_OPAQUE(inode)) {
++			res = union_copyup_dir(&file->f_path);
++			if (res)
++				goto out_unlock;
++		}
++
+ 		res = file->f_op->readdir(file, buf, filler);
+ 		file_accessed(file);
  	}
++out_unlock:
+ 	mutex_unlock(&inode->i_mutex);
+ out:
+ 	return res;
+diff --git a/fs/union.c b/fs/union.c
+index c089c02..917248d 100644
+--- a/fs/union.c
++++ b/fs/union.c
+@@ -22,6 +22,8 @@
+ #include <linux/fs_struct.h>
+ #include <linux/slab.h>
+ #include <linux/namei.h>
++#include <linux/file.h>
++#include <linux/security.h>
  
--	if (old_dentry->d_inode) {
--		if (S_ISDIR(old_dentry->d_inode->i_mode))
-+	if (old_dentry->d_inode || d_is_fallthru(old_dentry)) {
-+		/* A fallthru for a dir is treated like a regular link */
-+		if (old_dentry->d_inode &&
-+		    S_ISDIR(old_dentry->d_inode->i_mode))
- 			shmem_rmdir(dir, old_dentry);
- 		else
- 			shmem_unlink(dir, old_dentry);
-@@ -1859,6 +1860,48 @@ static int shmem_whiteout(struct inode *dir, struct dentry *old_dentry,
+ #include "union.h"
+ 
+@@ -211,3 +213,163 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
+ 
+ 	return res;
  }
- 
- static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
-+				struct inode *inode);
 +
-+/*
-+ * Create a dentry to signify a fallthru.  A fallthru in tmpfs is the
-+ * logical equivalent of an in-kernel readdir() cache.  It can't be
-+ * deleted until the file system is unmounted.
++/**
++ * union_copyup_dir_one - copy up a single directory entry
++ *
++ * Individual directory entry copyup function for union_copyup_dir.
++ * We get the entries from higher level layers first.
 + */
-+static int shmem_fallthru(struct inode *dir, struct dentry *dentry)
++
++static int union_copyup_dir_one(void *buf, const char *name, int namlen,
++				loff_t offset, u64 ino, unsigned int d_type)
 +{
-+	struct shmem_sb_info *sbinfo = SHMEM_SB(dir->i_sb);
++	struct dentry *topmost_dentry = (struct dentry *) buf;
++	struct dentry *dentry;
++	int err = 0;
 +
-+	/* FIXME: this is stupid */
-+	if (!(dir->i_sb->s_flags & MS_WHITEOUT))
-+		return -EPERM;
++	switch (namlen) {
++	case 2:
++		if (name[1] != '.')
++			break;
++	case 1:
++		if (name[0] != '.')
++			break;
++		return 0;
++	}
 +
-+	if (dentry->d_inode || d_is_fallthru(dentry) || d_is_whiteout(dentry))
-+		return -EEXIST;
++	/* Lookup this entry in the topmost directory */
++	dentry = lookup_one_len(name, topmost_dentry, namlen);
++
++	if (IS_ERR(dentry)) {
++		printk(KERN_WARNING "%s: error looking up %s\n", __func__,
++		       dentry->d_name.name);
++		err = PTR_ERR(dentry);
++		goto out;
++	}
 +
 +	/*
-+	 * Each new link needs a new dentry, pinning lowmem, and tmpfs
-+	 * dentries cannot be pruned until they are unlinked.
++	 * If the entry already exists, one of the following is true:
++	 * it was already copied up (due to an earlier lookup), an
++	 * entry with the same name already exists on the topmost file
++	 * system, it is a whiteout, or it is a fallthru.  In each
++	 * case, the top level entry masks any entries from lower file
++	 * systems, so don't copy up this entry.
 +	 */
-+	if (sbinfo->max_inodes) {
-+		spin_lock(&sbinfo->stat_lock);
-+		if (!sbinfo->free_inodes) {
-+			spin_unlock(&sbinfo->stat_lock);
-+			return -ENOSPC;
-+		}
-+		sbinfo->free_inodes--;
-+		spin_unlock(&sbinfo->stat_lock);
-+	}
++	if (dentry->d_inode || d_is_whiteout(dentry) || d_is_fallthru(dentry))
++		goto out_dput;
 +
-+	shmem_d_instantiate(dir, dentry, NULL);
-+	dir->i_ctime = dir->i_mtime = CURRENT_TIME;
-+
-+	spin_lock(&dentry->d_lock);
-+	dentry->d_flags |= DCACHE_FALLTHRU;
-+	spin_unlock(&dentry->d_lock);
-+	return 0;
++	/*
++	 * If the entry doesn't exist, create a fallthru entry in the
++	 * topmost file system.  All possible directory types are
++	 * used, so each file system must implement its own way of
++	 * storing a fallthru entry.
++	 */
++	err = topmost_dentry->d_inode->i_op->fallthru(topmost_dentry->d_inode,
++						      dentry);
++out_dput:
++	dput(dentry);
++out:
++	return err;
 +}
 +
-+static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
- 				struct inode *inode)
- {
- 	if (d_is_whiteout(dentry)) {
-@@ -1866,14 +1909,15 @@ static void shmem_d_instantiate(struct inode *dir, struct dentry *dentry,
- 		shmem_free_inode(dir->i_sb);
- 		if (S_ISDIR(inode->i_mode))
- 			inode->i_mode |= S_OPAQUE;
-+	} else if (d_is_fallthru(dentry)) {
-+		shmem_free_inode(dir->i_sb);
- 	} else {
- 		/* New dentry */
- 		dir->i_size += BOGO_DIRENT_SIZE;
- 		dget(dentry); /* Extra count - pin the dentry in core */
- 	}
--	/* Will clear DCACHE_WHITEOUT flag */
-+	/* Will clear DCACHE_WHITEOUT and DCACHE_FALLTHRU flags */
- 	d_instantiate(dentry, inode);
--
- }
- /*
-  * File creation. Allocate an inode, and we're done..
-@@ -1955,7 +1999,8 @@ static int shmem_unlink(struct inode *dir, struct dentry *dentry)
- {
- 	struct inode *inode = dentry->d_inode;
- 
--	if (d_is_whiteout(dentry) || (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
-+	if (d_is_whiteout(dentry) || d_is_fallthru(dentry) ||
-+	    (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode)))
- 		shmem_free_inode(dir->i_sb);
- 
- 	if (inode) {
-@@ -2479,8 +2524,10 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
- 	sb->s_root = root;
- 
- #ifdef CONFIG_TMPFS
--	if (!(sb->s_flags & MS_NOUSER))
-+	if (!(sb->s_flags & MS_NOUSER)) {
- 		sb->s_flags |= MS_WHITEOUT;
-+		sb->s_flags |= MS_FALLTHRU;
++/**
++ * union_copyup_dir - copy up low-level directory entries to topmost dir
++ *
++ * readdir() is difficult to support on union file systems for two
++ * reasons: We must eliminate duplicates and apply whiteouts, and we
++ * must return something in f_pos that lets us restart in the same
++ * place when we return.  Our solution is to, on first readdir() of
++ * the directory, copy up all visible entries from the low-level file
++ * systems and mark the entries that refer to low-level file system
++ * objects as "fallthru" entries.
++ *
++ * Locking strategy: We hold the topmost dir's i_mutex on entry.  We
++ * grab the i_mutex on lower directories one by one.  So the locking
++ * order is:
++ *
++ * Writable/topmost layers > Read-only/lower layers
++ *
++ * So there is no problem with lock ordering for union stacks with
++ * multiple lower layers.  E.g.:
++ *
++ * (topmost) A->B->C (bottom)
++ * (topmost) D->C->B (bottom)
++ *
++ */
++
++int union_copyup_dir(struct path *topmost_path)
++{
++	struct dentry *topmost_dentry = topmost_path->dentry;
++	struct union_dir *ud;
++	int res = 0;
++
++	BUG_ON(IS_OPAQUE(topmost_dentry->d_inode));
++
++	if (!topmost_dentry->d_inode->i_op || !topmost_dentry->d_inode->i_op->fallthru)
++		return -EOPNOTSUPP;
++
++	res = mnt_want_write(topmost_path->mnt);
++	if (res)
++		return res;
++
++	for (ud = topmost_path->dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
++		struct file * ftmp;
++		struct inode * inode;
++		struct path path;
++
++		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
++		path = ud->u_this;
++		/* dentry_open() doesn't get a path reference itself */
++		path_get(&path);
++		ftmp = dentry_open(path.dentry, path.mnt,
++				   O_RDONLY | O_DIRECTORY | O_NOATIME,
++				   current_cred());
++		if (IS_ERR(ftmp)) {
++			printk (KERN_ERR "unable to open dir %s for "
++				"directory copyup: %ld\n",
++				path.dentry->d_name.name, PTR_ERR(ftmp));
++			path_put(&path);
++			res = PTR_ERR(ftmp);
++			break;
++		}
++
++		inode = path.dentry->d_inode;
++		mutex_lock(&inode->i_mutex);
++
++		res = -ENOENT;
++		if (IS_DEADDIR(inode))
++			goto out_fput;
++		/*
++		 * Read the whole directory, calling our directory
++		 * entry copyup function on each entry.  Pass in the
++		 * topmost dentry as our private data so we can create
++		 * new entries in the topmost directory.
++		 */
++		res = ftmp->f_op->readdir(ftmp, topmost_dentry,
++					  union_copyup_dir_one);
++out_fput:
++		mutex_unlock(&inode->i_mutex);
++		fput(ftmp);
++
++		if (res)
++			break;
++
++		/* XXX Should process directories below an opaque
++		 * directory in case there are fallthrus in it */
++		if (IS_OPAQUE(path.dentry->d_inode))
++			break;
 +	}
- #endif
++	/*
++	 * Mark this dir opaque to show that we have already copied up
++	 * the lower entries.  Be sure to do this AFTER the directory
++	 * entries have been copied up in case of a crash.
++	 */
++	if (!res) {
++		topmost_dentry->d_inode->i_flags |= S_OPAQUE;
++		mark_inode_dirty(topmost_dentry->d_inode);
++	}
++
++	mnt_drop_write(topmost_path->mnt);
++	return res;
++}
+diff --git a/fs/union.h b/fs/union.h
+index 505f132..80c2421 100644
+--- a/fs/union.h
++++ b/fs/union.h
+@@ -58,6 +58,7 @@ extern void d_free_unions(struct dentry *);
+ int needs_lookup_union(struct path *, struct path *);
+ int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
+ 			     struct path *);
++extern int union_copyup_dir(struct path *);
  
- 	return 0;
-@@ -2583,6 +2630,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
- 	.mknod		= shmem_mknod,
- 	.rename		= shmem_rename,
- 	.whiteout       = shmem_whiteout,
-+	.fallthru       = shmem_fallthru,
- #endif
- #ifdef CONFIG_TMPFS_POSIX_ACL
- 	.setattr	= shmem_notify_change,
+ #else /* CONFIG_UNION_MOUNT */
+ 
+@@ -67,6 +68,7 @@ int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
+ #define d_free_unions(x)		do { } while (0)
+ #define needs_lookup_union(x, y)	({ (0); })
+ #define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
++#define union_copyup_dir(x)		({ BUG(); (0); })
+ 
+ #endif	/* CONFIG_UNION_MOUNT */
+ #endif	/* __KERNEL__ */
 -- 
 1.6.3.3
 
