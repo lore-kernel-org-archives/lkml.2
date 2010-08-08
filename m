@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab0HHRKx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 13:10:53 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64232 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750712Ab0HHRKv (ORCPT
+	id S1752036Ab0HHRKz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 13:10:55 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56283 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750712Ab0HHRKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 13:10:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DOagB3uLkrCnztnjnh6j9v6qbK0RPtKnMC8m+9wXOraQWH6dtDIcD70TGNoYfA9Nr3
-         NgCKe5mHbdT1WbNxCf4VRS9IjpH2Gqrq28kCp1jgzVjvyGc5+5iDjTch2NfcVf20tKjH
-         nlzbNQY/S6T3ts7LvsRu/Tk4MjbMhXGpBXOGs=
-From: nir.tzachar@gmail.com
-To: sam@ravnborg.org, mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        nir.tzachar@gmail.com
-Subject: resend [PATCH] nconfig: properly map function keys.
-Date: Sun,  8 Aug 2010 20:11:00 +0300
-Message-Id: <1281287460-32332-1-git-send-email-nir.tzachar@gmail.com>
-X-Mailer: git-send-email 1.6.4.4
-In-Reply-To: <20100808154233.GB4205@merkur.ravnborg.org>
-References: <20100808154233.GB4205@merkur.ravnborg.org>
+	Sun, 8 Aug 2010 13:10:54 -0400
+Date: Sun, 8 Aug 2010 18:09:56 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Brian Swetland <swetland@google.com>,
+        kevin granade <kevin.granade@gmail.com>,
+        Arve Hj?nnev?g <arve@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Arjan van de Ven <arjan@infradead.org>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, florian@mickler.org, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk
+Subject: Re: Attempted summary of suspend-blockers LKML thread
+Message-ID: <20100808170956.GA9014@srcf.ucam.org>
+References: <20100806172226.GH2432@linux.vnet.ibm.com> <20100806173325.GA25367@rakim.wolfsonmicro.main> <20100806181832.GJ2432@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061517130.30564@asgard.lang.hm> <20100807001431.GA3252@opensource.wolfsonmicro.com> <alpine.DEB.2.00.1008061741460.30564@asgard.lang.hm> <20100807062828.GB28087@thunk.org> <AANLkTinTfKRfAUJqggcK9Cgo9BTXfqMjJ2SXZS=D1bmT@mail.gmail.com> <20100808160810.GA7968@srcf.ucam.org> <AANLkTik3FN5tTO8sgwz32b8s2SLnc8D1=14yU-a2betp@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik3FN5tTO8sgwz32b8s2SLnc8D1=14yU-a2betp@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nir Tzachar <nir.tzachar@gmail.com>
+On Sun, Aug 08, 2010 at 08:08:33PM +0300, Felipe Contreras wrote:
+> On Sun, Aug 8, 2010 at 7:08 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > It's clearly possible for a pathological Android application to destroy
+> > the power management policy. But to do that, the author would have to
+> > explicitly take a wakelock. That's difficult to do by accident.
+> 
+> The writer can take a wakelock the whole time the application is
+> running (isn't that the typical case?), because perhaps the author
+> realizes that way the application works correctly, or he copy-pasted
+> it from somewhere else.
 
-Previous patch was missing a '~' in F7.
+No, that's not the typical case.
 
-When $TERM=xterm,xterm-color,vt220 map function keys properly.
-
-Signed-off-by: Nir Tzachar <nir.tzachar@gmail.com>
----
- scripts/kconfig/nconf.c |   23 ++++++++++++++++++++---
- 1 files changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
-index c6feb41..a641a66 100644
---- a/scripts/kconfig/nconf.c
-+++ b/scripts/kconfig/nconf.c
-@@ -1537,13 +1537,13 @@ int main(int ac, char **av)
- 
- 	/* Initialize curses */
- 	initscr();
--	/* set color theme */
--	set_colors();
--
- 	cbreak();
- 	noecho();
- 	keypad(stdscr, TRUE);
- 	curs_set(0);
-+	/* set color theme */
-+	set_colors();
-+
- 
- 	if (COLS < 75 || LINES < 20) {
- 		endwin();
-@@ -1552,6 +1552,23 @@ int main(int ac, char **av)
- 		return 1;
- 	}
- 
-+	const char *term = getenv("TERM");
-+	if (strcmp(term, "xterm") == 0 ||
-+	    strcmp(term, "xterm-color") == 0 ||
-+	    strcmp(term, "vt220") == 0) {
-+		define_key("\033[H", KEY_HOME);
-+		define_key("\033[F", KEY_END);
-+		define_key("\033OP", KEY_F(1));
-+		define_key("\033OQ", KEY_F(2));
-+		define_key("\033OR", KEY_F(3));
-+		define_key("\033OS", KEY_F(4));
-+		define_key("\033[16~", KEY_F(5));
-+		define_key("\033[17~", KEY_F(6));
-+		define_key("\033[18~", KEY_F(7));
-+		define_key("\033[19~", KEY_F(8));
-+		define_key("\033[20~", KEY_F(9));
-+	}
-+
- 	notimeout(stdscr, FALSE);
- 	ESCDELAY = 1;
- 
 -- 
-1.6.4.4
-
+Matthew Garrett | mjg59@srcf.ucam.org
