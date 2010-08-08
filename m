@@ -1,683 +1,354 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab0HHTbE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 15:31:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57712 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755497Ab0HHTbA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 15:31:00 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] AFS: Implement an autocell mount capability
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Wang Lei <wang840925@gmail.com>, David Howells <dhowells@redhat.com>
-Date: Sun, 08 Aug 2010 20:30:39 +0100
-Message-ID: <20100808193039.20403.67383.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1755550Ab0HHTbP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 15:31:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51858 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0HHTbL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 15:31:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=d+9thftC4SXu+OxdMRi3RkAZ0XmXMAokn+N3DsDaShriUBUjlzIOEpbnlp6L6SFrGo
+         I3KoscIEOgOjLG5QbVod6ochKMKV5+IJj6xPwZHuEgZ3dyhWymF4OGVBP6i8lejn5QvB
+         kDry4aUFvHEiThOcnAv9tXBeoaayKSWwl1l+4=
+From: Michal Nazarewicz <mina86@mina86.com>
+To: linux-kernel@vger.kernel.org
+Cc: m.nazarewicz@samsung.com, Michal Nazarewicz <mina86@mina86.com>,
+        "Douglas W. Jones" <jones@cs.uiowa.edu>,
+        Denis Vlasenko <vda.linux@googlemail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCHv2 2/3] lib: vsprintf: optimised put_dec() for 32-bit machines
+Date: Sun,  8 Aug 2010 21:29:56 +0200
+Message-Id: <419733287a42072a658f0f74d0b1901132178b75.1281295424.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <6f90103dea29739de0f4f0ede3f3da68afe84343.1281295424.git.mina86@mina86.com>
+References: <6f90103dea29739de0f4f0ede3f3da68afe84343.1281295424.git.mina86@mina86.com>
+To: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: wanglei <wang840925@gmail.com>
+Existing put_dec() function uses a do_div() function for
+dividing the 64-bit argument.  On 32-bit machines this may be
+a costly operation.  This patch, replaces the put_dec()
+function on 32-bit processors to one that performs no 64-bit
+divisions.
 
-Implement the ability for the root directory of a mounted AFS filesystem to
-accept lookups of arbitrary directory names, to interpet the names as the names
-of cells, to look the cell names up in the DNS for AFSDB records and to mount
-the root.cell volume of the nominated cell on the pseudo-directory created by
-lookup.
-
-This facility is requested by passing:
-
-	-o autocell
-
-to the mountpoint for which this is desired, usually the /afs mount.
-
-
-To use this facility, a DNS upcall program is required for AFSDB records.  This
-can be obtained from:
-
-	http://people.redhat.com/~dhowells/afs/dns.afsdb.c
-
-It should be compiled with -lresolv and -lkeyutils and installed as, say:
-
-	/usr/sbin/dns.afsdb
-
-Then the following line needs to be added to /sbin/request-key.conf:
-
-	create	dns_resolver afsdb:*	*	/usr/sbin/dns.afsdb %k
-
-This can be tested by mounting AFS, say:
-
-	insmod dns_resolver.ko
-	insmod af-rxrpc.ko
-	insmod kafs.ko rootcell=grand.central.org
-	mount -t afs "#grand.central.org:root.cell." /afs -o autocell
-
-and doing:
-
-	ls /afs/grand.central.org/
-
-which should show:
-
-	archive/  cvs/  doc/  local/  project/  service/  software/  user/  www/
-
-if it works.
-
-Signed-off-by: Wang Lei <wang840925@gmail.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
 ---
+ lib/vsprintf.c |  114 +++++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 108 insertions(+), 6 deletions(-)
 
- fs/afs/cell.c     |   52 +++++++++++++++++++++++---------
- fs/afs/dir.c      |   47 ++++++++++++++++++++++++++++-
- fs/afs/inode.c    |   86 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- fs/afs/internal.h |   11 ++++++-
- fs/afs/mntpt.c    |   78 ++++++++++++++++++++++++++++++++++--------------
- fs/afs/proc.c     |    2 +
- fs/afs/super.c    |   20 ++++++++++--
- 7 files changed, 250 insertions(+), 46 deletions(-)
+Compared to previous version: the code is used only if:
+1. if long long is 64-bit (ie. ULLONG_MAX == 2**64-1), and
+2. user did not select optimisation for size with Kconfig.
 
-diff --git a/fs/afs/cell.c b/fs/afs/cell.c
-index acbefec..025fc46 100644
---- a/fs/afs/cell.c
-+++ b/fs/afs/cell.c
-@@ -31,21 +31,20 @@ static struct afs_cell *afs_cell_root;
-  * allocate a cell record and fill in its name, VL server address list and
-  * allocate an anonymous key
-  */
--static struct afs_cell *afs_cell_alloc(const char *name, char *vllist)
-+static struct afs_cell *afs_cell_alloc(const char *name, unsigned namelen,
-+				       char *vllist)
- {
- 	struct afs_cell *cell;
- 	struct key *key;
--	size_t namelen;
- 	char keyname[4 + AFS_MAXCELLNAME + 1], *cp, *dp, *next;
- 	char  *dvllist = NULL, *_vllist = NULL;
- 	char  delimiter = ':';
- 	int ret;
- 
--	_enter("%s,%s", name, vllist);
-+	_enter("%*.*s,%s", namelen, namelen, name ?: "", vllist);
- 
- 	BUG_ON(!name); /* TODO: want to look up "this cell" in the cache */
- 
--	namelen = strlen(name);
- 	if (namelen > AFS_MAXCELLNAME) {
- 		_leave(" = -ENAMETOOLONG");
- 		return ERR_PTR(-ENAMETOOLONG);
-@@ -143,26 +142,29 @@ error:
+
+I did some benchmark on the following processors:
+
+ARM     : ARMv7 Processor rev 2 (v7l)                   (32-bit)
+Atom    : Intel(R) Atom(TM) CPU N270 @ 1.60GHz          (32-bit)
+
+(I'm skipping 64-bit machines as this patch is intended only for
+32-bit).
+
+Here are the results (normalised to the fastest/smallest):
+
+                    :        ARM       Atom
+-- Speed ----------------------------------
+orig_put_dec        :   9.333822   2.083110  Original
+mod1_put_dec        :   9.282045   1.904564
+mod2_put_dec        :   9.260409   1.910302
+mod3_put_dec        :   9.320053   1.905689  Proposed by previous patch
+mod4_put_dec        :   9.297146   1.933971
+mod5_put_dec        :  13.034318   2.434942
+mod6_put_dec        :   1.000000   1.000000  Proposed by this patch
+mod7_put_dec        :   1.009574   1.014147
+mod8_put_dec        :   7.226004   1.953460
+-- Size -----------------------------------
+orig_put_dec        :   1.000000   1.000000  Original
+mod1_put_dec        :   1.000000   1.000000
+mod2_put_dec        :   1.361111   1.403226
+mod3_put_dec        :   1.000000   1.000000  Proposed by previous patch
+mod4_put_dec        :   1.361111   1.403226
+mod5_put_dec        :   1.000000   1.000000
+mod6_put_dec        :   2.555556   3.508065  Proposed by this patch
+mod7_put_dec        :   2.833333   3.911290
+mod8_put_dec        :   2.027778   2.258065
+
+
+Source of the benchmark as well as code of all the modified version of
+functions is included with the third patch of the benchmark.
+
+
+As it can be obsevred, proposed version of the put_dec function is
+twice as fast as the original version on Atom and almost 10 times
+faster on ARM.  I imagine that it may be similar on other "embedded"
+processors.
+
+This may be skewed by the fact that the benchmark is using GCC's
+64-bit division operator instead of kernel's do_div but it would
+appear that by avoiding 64-bit division something can be gained.
+
+The disadvantage is that the proposed function is 2.5-3.5 bigger.
+Those are not big functions though -- we are talking here about
+proposed function being below 512 -- and the adventage in speed seem
+non-marginal.
+
+No matter, because of it's size, it's not chosen if user selected
+optimisation for size (CONFIG_CC_OPTIMIZE_FOR_SIZE).
+
+
+The drawback of this function is also that the patch adds a bit of
+code.  It could be questionable whether it's worth optimising that
+much.  Anyway, posting in case someone decides that it is or will be
+simply interested. :)
+
+
+I'm currently running 2.6.35 with this patch applied.  It applies just
+fine on -next and I've run it on ARM.
+
+
+PS. From Mr. Jones site: "Nonetheless, before relying on the material
+here, it would be prudent to check the arithmetic!" hence I checked
+all the calculations myself and everything seemed fine.  I've also run
+test applitacion several times so it tested a few 64-bit numbers.
+Here's a "bc" script which calculates all the numbers:
+
+
+# You can feed "bc" with this file to check the numbers
+
+x = 2^16
+
+print "n =\t1 * n0 +\n\t", x, " * n1 +\n\t", x^2, " * n2 +\n\t", x^3, " * n3\n"
+
+print "0 <= n0, n1, n2, n3 <= ", x - 1, "\n"
+
+# n  =                  1 * n0 +    0 <= n0 <= 65535
+#                  6 5536 * n1 +    0 <= n1 <= 65535
+#            42 9496 7296 * n2 +    0 <= n2 <= 65535
+#      281 4749 7671 0656 * n3      0 <= n3 <= 65535
+
+n0 = x - 1
+n1 = x - 1
+n2 = x - 1
+n3 = x - 1
+
+# n  =              10^ 0 * d0 +
+#                   10^ 4 * d1 +
+#                   10^ 8 * d2 +
+#                   10^12 * d3 +
+#                   10^16 * d4
+
+a0 =  656 * n3 + 7296 * n2 + 5536 * n1 +   1 * n0
+print "0 <= a0 <= ", a0, "\n"
+# 0 <= a0 <=   884 001 615
+
+a1 = 7671 * n3 + 9496 * n2 +    6 * n1
+print "0 <= a1 <= ", a1, "\n"
+# 0 <= a1 <= 1 125 432 555
+
+a2 = 4749 * n3 +   42 * n2
+print "0 <= a2 <= ", a2, "\n"
+# 0 <= a2 <=   313 978 185
+
+a3 =  281 * n3
+print "0 <= a3 <= ", a3, "\n"
+# 0 <= a3 <=    18 415 335
+
+
+b0 = a0
+print "0 <= b0 <= ", b0, "\n0 <= c1 <= ", b0 / 10000, "\n"
+# 0 <= d0 <=   884 001 615
+# 0 <= c1 <=        88 400
+
+b1 = a1 + b0 / 10000
+print "0 <= b1 <= ", b1, "\n0 <= c2 <= ", b1 / 10000, "\n"
+# 0 <= d1 <= 1 125 520 955
+# 0 <= c2 <=       112 552
+
+b2 = a2 + b1 / 10000
+print "0 <= b2 <= ", b2, "\n0 <= c3 <= ", b2 / 10000, "\n"
+# 0 <= d2 <=   314 090 737
+# 0 <= c3 <=        31 409
+
+b3 = a3 + b2 / 10000
+print "0 <= b3 <= ", b3, "\n0 <= c4 <= ", b3 / 10000, "\n"
+# 0 <= d3 <=    18 446 744
+# 0 <= c4 <=         1 844
+
+b4 = a4 + b3 / 10000
+print "0 <= b4 <= ", b4, "\n"
+# 0 <= b4 <=         1 844
+
+
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index 35764f6..cf0aa9e 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -278,6 +278,9 @@ int skip_atoi(const char **s)
+ 	return i;
  }
  
++#if BITS_PER_LONG != 32 || defined CONFIG_CC_OPTIMIZE_FOR_SIZE || \
++	ULLONG_MAX != 18446744073709551615ULL
++
  /*
-- * create a cell record
-- * - "name" is the name of the cell
-- * - "vllist" is a colon separated list of IP addresses in "a.b.c.d" format
-+ * afs_cell_crate() - create a cell record
-+ * @name:	is the name of the cell.
-+ * @namsesz:	is the strlen of the cell name.
-+ * @vllist:	is a colon separated list of IP addresses in "a.b.c.d" format.
-+ * @retref:	is T to return the cell reference when the cell exists.
+  * Decimal conversion is by far the most typical, and is used
+  * for /proc and /sys data. This directly impacts e.g. top performance
+@@ -287,7 +290,7 @@ int skip_atoi(const char **s)
+  * Formats correctly any integer in [0, 9999].
   */
--struct afs_cell *afs_cell_create(const char *name, char *vllist)
-+struct afs_cell *afs_cell_create(const char *name, unsigned namesz,
-+				 char *vllist, bool retref)
+ static noinline_for_stack
+-char *put_dec_full(char *buf, unsigned q)
++char *put_dec_full5(char *buf, unsigned q)
  {
- 	struct afs_cell *cell;
- 	int ret;
+ 	unsigned r;
+ 	char a = '0';
+@@ -335,7 +338,7 @@ char *put_dec_full(char *buf, unsigned q)
  
--	_enter("%s,%s", name, vllist);
-+	_enter("%*.*s,%s", namesz, namesz, name ?: "", vllist);
+ /* Same as above but do not pad with zeros. */
+ static noinline_for_stack
+-char *put_dec_trunc(char *buf, unsigned q)
++char *put_dec_trunc5(char *buf, unsigned q)
+ {
+ 	unsigned r;
  
- 	down_write(&afs_cells_sem);
- 	read_lock(&afs_cells_lock);
- 	list_for_each_entry(cell, &afs_cells, link) {
--		if (strcasecmp(cell->name, name) == 0)
-+		if (strncasecmp(cell->name, name, namesz) == 0)
- 			goto duplicate_name;
+@@ -344,7 +347,7 @@ char *put_dec_trunc(char *buf, unsigned q)
+ 	 * if we can just call the _full version of this function.
+ 	 */
+ 	if (q > 9999)
+-		return put_dec_full(buf, q);
++		return put_dec_full5(buf, q);
+ 
+ 	r   = (q * 0xcccd) >> 19;
+ 	*buf++ = (q - 10 * r) + '0';
+@@ -372,12 +375,111 @@ char *put_dec(char *buf, unsigned long long num)
+ 	while (1) {
+ 		unsigned rem;
+ 		if (num < 100000)
+-			return put_dec_trunc(buf, num);
++			return put_dec_trunc5(buf, num);
+ 		rem = do_div(num, 100000);
+-		buf = put_dec_full(buf, rem);
++		buf = put_dec_full5(buf, rem);
  	}
- 	read_unlock(&afs_cells_lock);
+ }
  
--	cell = afs_cell_alloc(name, vllist);
-+	cell = afs_cell_alloc(name, namesz, vllist);
- 	if (IS_ERR(cell)) {
- 		_leave(" = %ld", PTR_ERR(cell));
- 		up_write(&afs_cells_sem);
-@@ -202,8 +204,18 @@ error:
- 	return ERR_PTR(ret);
- 
- duplicate_name:
-+	if (retref && !IS_ERR(cell))
-+		afs_get_cell(cell);
++/* This is used by ip4_string(). */
++#define put_dec_8bit put_dec_trunc5
 +
- 	read_unlock(&afs_cells_lock);
- 	up_write(&afs_cells_sem);
++#else /* BITS_PER_LONG == 32 && !OPTIMIZE_FOR_SIZE && ULLONG_MAX == 2^64-1 */
 +
-+	if (retref) {
-+		_leave(" = %p", cell);
-+		return cell;
++/*
++ * This is similar to the put_dec_full5() above expect it handles
++ * numbers from 0 to 9999 (ie. at most four digits).  It is used by
++ * the put_dec() below which is optimised for 32-bit processors.
++ */
++static noinline_for_stack
++char *put_dec_full4(char *buf, unsigned q)
++{
++	unsigned r;
++
++	r      = (q * 0xcccd) >> 19;
++	*buf++ = (q - 10 * r) + '0';
++
++	q      = (r * 0x199a) >> 16;
++	*buf++ = (r - 10 * q)  + '0';
++
++	r      = (q * 0xcd) >> 11;
++	*buf++ = (q - 10 * r)  + '0';
++
++	*buf++ = r + '0';
++
++	return buf;
++}
++
++/*
++ * Similar to above but handles only 8-bit operands and does not pad
++ * with zeros.  Used by ip4_string().
++ */
++static noinline_for_stack
++char *put_dec_8bit(char *buf, unsigned q)
++{
++	unsigned r;
++
++	r      = (q * 0xcd) >> 11;
++	*buf++ = (q - 10 * r) + '0';
++
++	if (r) {
++		q      = (r * 0xd) >> 7;
++		*buf++ = (r - 10 * q)  + '0';
++
++		if (q)
++			*buf++ = q + '0';
 +	}
 +
-+	_leave(" = -EEXIST");
- 	return ERR_PTR(-EEXIST);
- }
- 
-@@ -234,7 +246,7 @@ int afs_cell_init(char *rootcell)
- 		*cp++ = 0;
- 
- 	/* allocate a cell record for the root cell */
--	new_root = afs_cell_create(rootcell, cp);
-+	new_root = afs_cell_create(rootcell, strlen(rootcell), cp, false);
- 	if (IS_ERR(new_root)) {
- 		_leave(" = %ld", PTR_ERR(new_root));
- 		return PTR_ERR(new_root);
-@@ -254,11 +266,12 @@ int afs_cell_init(char *rootcell)
- /*
-  * lookup a cell record
-  */
--struct afs_cell *afs_cell_lookup(const char *name, unsigned namesz)
-+struct afs_cell *afs_cell_lookup(const char *name, unsigned namesz,
-+				 bool dns_cell)
- {
- 	struct afs_cell *cell;
- 
--	_enter("\"%*.*s\",", namesz, namesz, name ? name : "");
-+	_enter("\"%*.*s\",", namesz, namesz, name ?: "");
- 
- 	down_read(&afs_cells_sem);
- 	read_lock(&afs_cells_lock);
-@@ -272,6 +285,8 @@ struct afs_cell *afs_cell_lookup(const char *name, unsigned namesz)
- 			}
- 		}
- 		cell = ERR_PTR(-ENOENT);
-+		if (dns_cell)
-+			goto create_cell;
- 	found:
- 		;
- 	} else {
-@@ -294,6 +309,15 @@ struct afs_cell *afs_cell_lookup(const char *name, unsigned namesz)
- 	up_read(&afs_cells_sem);
- 	_leave(" = %p", cell);
- 	return cell;
++	return buf;
++}
 +
-+create_cell:
-+	read_unlock(&afs_cells_lock);
-+	up_read(&afs_cells_sem);
-+
-+	cell = afs_cell_create(name, namesz, NULL, true);
-+
-+	_leave(" = %p", cell);
-+	return cell;
- }
- 
- #if 0
-diff --git a/fs/afs/dir.c b/fs/afs/dir.c
-index b42d5cc..0d38c09 100644
---- a/fs/afs/dir.c
-+++ b/fs/afs/dir.c
-@@ -477,6 +477,40 @@ static int afs_do_lookup(struct inode *dir, struct dentry *dentry,
- }
- 
- /*
-+ * Try to auto mount the mountpoint with pseudo directory, if the autocell
-+ * operation is setted.
++/*
++ * Based on code by Douglas W. Jones found at
++ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html#sixtyfour>.  This
++ * performs no 64-bit division and hence should be faster on 32-bit
++ * machines then the version of the function above.
 + */
-+static struct inode *afs_try_auto_mntpt(
-+	int ret, struct dentry *dentry, struct inode *dir, struct key *key,
-+	struct afs_fid *fid)
++static noinline_for_stack
++char *put_dec(char *buf, unsigned long long n)
 +{
-+	const char *devname = dentry->d_name.name;
-+	struct afs_vnode *vnode = AFS_FS_I(dir);
-+	struct inode *inode;
++	uint32_t d3, d2, d1, q;
 +
-+	_enter("%d, %p{%s}, {%x:%u}, %p",
-+	       ret, dentry, devname, vnode->fid.vid, vnode->fid.vnode, key);
-+
-+	if (ret != -ENOENT ||
-+	    !test_bit(AFS_VNODE_AUTOCELL, &vnode->flags))
-+		goto out;
-+
-+	inode = afs_iget_autocell(dir, devname, strlen(devname), key);
-+	if (IS_ERR(inode)) {
-+		ret = PTR_ERR(inode);
-+		goto out;
++	if (!n) {
++		*buf++ = '0';
++		return buf;
 +	}
 +
-+	*fid = AFS_FS_I(inode)->fid;
-+	_leave("= %p", inode);
-+	return inode;
++	d1  = (n >> 16) & 0xFFFF;
++	d2  = (n >> 32) & 0xFFFF;
++	d3  = (n >> 48) & 0xFFFF;
 +
-+out:
-+	_leave("= %d", ret);
-+	return ERR_PTR(ret);
++	q   = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
++
++	buf = put_dec_full4(buf, q % 10000);
++	q   = q / 10000;
++
++	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
++	buf = put_dec_full4(buf, d1 % 10000);
++	q   = d1 / 10000;
++
++	d2  = q + 4749 * d3 + 42 * d2;
++	buf = put_dec_full4(buf, d2 % 10000);
++	q   = d2 / 10000;
++
++	d3  = q + 281 * d3;
++	buf = put_dec_full4(buf, d3 % 10000);
++	q   = d3 / 10000;
++
++	buf = put_dec_full4(buf, q);
++
++	while (buf[-1] == '0')
++		--buf;
++
++	return buf;
 +}
 +
-+/*
-  * look up an entry in a directory
-  */
- static struct dentry *afs_lookup(struct inode *dir, struct dentry *dentry,
-@@ -520,6 +554,13 @@ static struct dentry *afs_lookup(struct inode *dir, struct dentry *dentry,
- 
- 	ret = afs_do_lookup(dir, dentry, &fid, key);
- 	if (ret < 0) {
-+		inode = afs_try_auto_mntpt(ret, dentry, dir, key, &fid);
-+		if (!IS_ERR(inode)) {
-+			key_put(key);
-+			goto success;
-+		}
++#endif
 +
-+		ret = PTR_ERR(inode);
- 		key_put(key);
- 		if (ret == -ENOENT) {
- 			d_add(dentry, NULL);
-@@ -539,6 +580,7 @@ static struct dentry *afs_lookup(struct inode *dir, struct dentry *dentry,
- 		return ERR_CAST(inode);
+ #define ZEROPAD	1		/* pad with zero */
+ #define SIGN	2		/* unsigned/signed long */
+ #define PLUS	4		/* show plus */
+@@ -751,7 +853,7 @@ char *ip4_string(char *p, const u8 *addr, const char *fmt)
  	}
- 
-+success:
- 	dentry->d_op = &afs_fs_dentry_operations;
- 
- 	d_add(dentry, inode);
-@@ -696,8 +738,9 @@ static int afs_d_delete(struct dentry *dentry)
- 		goto zap;
- 
- 	if (dentry->d_inode &&
--	    test_bit(AFS_VNODE_DELETED, &AFS_FS_I(dentry->d_inode)->flags))
--			goto zap;
-+	    (test_bit(AFS_VNODE_DELETED,   &AFS_FS_I(dentry->d_inode)->flags) ||
-+	     test_bit(AFS_VNODE_PSEUDODIR, &AFS_FS_I(dentry->d_inode)->flags)))
-+		goto zap;
- 
- 	_leave(" = 0 [keep]");
- 	return 0;
-diff --git a/fs/afs/inode.c b/fs/afs/inode.c
-index d00b312..85119fb3 100644
---- a/fs/afs/inode.c
-+++ b/fs/afs/inode.c
-@@ -19,6 +19,8 @@
- #include <linux/fs.h>
- #include <linux/pagemap.h>
- #include <linux/sched.h>
-+#include <linux/mount.h>
-+#include <linux/namei.h>
- #include "internal.h"
- 
- struct afs_iget_data {
-@@ -102,6 +104,16 @@ static int afs_iget5_test(struct inode *inode, void *opaque)
- }
- 
- /*
-+ * iget5() comparator for inode created by autocell operations
-+ *
-+ * These pseudo inodes don't match anything.
-+ */
-+static int afs_iget5_autocell_test(struct inode *inode, void *opaque)
-+{
-+	return 0;
-+}
-+
-+/*
-  * iget5() inode initialiser
-  */
- static int afs_iget5_set(struct inode *inode, void *opaque)
-@@ -118,6 +130,67 @@ static int afs_iget5_set(struct inode *inode, void *opaque)
- }
- 
- /*
-+ * inode retrieval for autocell
-+ */
-+struct inode *afs_iget_autocell(struct inode *dir, const char *dev_name,
-+				int namesz, struct key *key)
-+{
-+	struct afs_iget_data data;
-+	struct afs_super_info *as;
-+	struct afs_vnode *vnode;
-+	struct super_block *sb;
-+	struct inode *inode;
-+	static atomic_t afs_autocell_ino;
-+
-+	_enter("{%x:%u},%*.*s,",
-+	       AFS_FS_I(dir)->fid.vid, AFS_FS_I(dir)->fid.vnode,
-+	       namesz, namesz, dev_name ?: "");
-+
-+	sb = dir->i_sb;
-+	as = sb->s_fs_info;
-+	data.volume = as->volume;
-+	data.fid.vid = as->volume->vid;
-+	data.fid.unique = 0;
-+	data.fid.vnode = 0;
-+
-+	inode = iget5_locked(sb, atomic_inc_return(&afs_autocell_ino),
-+			     afs_iget5_autocell_test, afs_iget5_set,
-+			     &data);
-+	if (!inode) {
-+		_leave(" = -ENOMEM");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	_debug("GOT INODE %p { ino=%lu, vl=%x, vn=%x, u=%x }",
-+	       inode, inode->i_ino, data.fid.vid, data.fid.vnode,
-+	       data.fid.unique);
-+
-+	vnode = AFS_FS_I(inode);
-+
-+	/* there shouldn't be an existing inode */
-+	BUG_ON(!(inode->i_state & I_NEW));
-+
-+	inode->i_size		= 0;
-+	inode->i_mode		= S_IFDIR | S_IRUGO | S_IXUGO;
-+	inode->i_op		= &afs_autocell_inode_operations;
-+	inode->i_nlink		= 2;
-+	inode->i_uid		= 0;
-+	inode->i_gid		= 0;
-+	inode->i_ctime.tv_sec	= get_seconds();
-+	inode->i_ctime.tv_nsec	= 0;
-+	inode->i_atime		= inode->i_mtime = inode->i_ctime;
-+	inode->i_blocks		= 0;
-+	inode->i_version	= 0;
-+	inode->i_generation	= 0;
-+
-+	set_bit(AFS_VNODE_PSEUDODIR, &vnode->flags);
-+	inode->i_flags |= S_NOATIME;
-+	unlock_new_inode(inode);
-+	_leave(" = %p", inode);
-+	return inode;
-+}
-+
-+/*
-  * inode retrieval
-  */
- struct inode *afs_iget(struct super_block *sb, struct key *key,
-@@ -314,6 +387,19 @@ int afs_getattr(struct vfsmount *mnt, struct dentry *dentry,
- }
- 
- /*
-+ * discard an AFS inode
-+ */
-+void afs_drop_inode(struct inode *inode)
-+{
-+	_enter("");
-+
-+	if (test_bit(AFS_VNODE_PSEUDODIR, &AFS_FS_I(inode)->flags))
-+		generic_delete_inode(inode);
-+	else
-+		generic_drop_inode(inode);
-+}
-+
-+/*
-  * clear an AFS inode
-  */
- void afs_clear_inode(struct inode *inode)
-diff --git a/fs/afs/internal.h b/fs/afs/internal.h
-index 5f679b7..181ef06 100644
---- a/fs/afs/internal.h
-+++ b/fs/afs/internal.h
-@@ -42,6 +42,7 @@ typedef enum {
- struct afs_mount_params {
- 	bool			rwpath;		/* T if the parent should be considered R/W */
- 	bool			force;		/* T to force cell type */
-+	bool			autocell;	/* T if set auto mount operation */
- 	afs_voltype_t		type;		/* type of volume requested */
- 	int			volnamesz;	/* size of volume name */
- 	const char		*volname;	/* name of volume to mount */
-@@ -358,6 +359,8 @@ struct afs_vnode {
- #define AFS_VNODE_READLOCKED	7		/* set if vnode is read-locked on the server */
- #define AFS_VNODE_WRITELOCKED	8		/* set if vnode is write-locked on the server */
- #define AFS_VNODE_UNLOCKING	9		/* set if vnode is being unlocked on the server */
-+#define AFS_VNODE_AUTOCELL	10		/* set if Vnode is an auto mount point */
-+#define AFS_VNODE_PSEUDODIR	11		/* set if Vnode is a pseudo directory */
- 
- 	long			acl_order;	/* ACL check count (callback break count) */
- 
-@@ -468,8 +471,8 @@ extern struct list_head afs_proc_cells;
- 
- #define afs_get_cell(C) do { atomic_inc(&(C)->usage); } while(0)
- extern int afs_cell_init(char *);
--extern struct afs_cell *afs_cell_create(const char *, char *);
--extern struct afs_cell *afs_cell_lookup(const char *, unsigned);
-+extern struct afs_cell *afs_cell_create(const char *, unsigned, char *, bool);
-+extern struct afs_cell *afs_cell_lookup(const char *, unsigned, bool);
- extern struct afs_cell *afs_grab_cell(struct afs_cell *);
- extern void afs_put_cell(struct afs_cell *);
- extern void afs_cell_purge(void);
-@@ -558,6 +561,8 @@ extern int afs_fs_release_lock(struct afs_server *, struct key *,
- /*
-  * inode.c
-  */
-+extern struct inode *afs_iget_autocell(struct inode *, const char *, int,
-+				       struct key *);
- extern struct inode *afs_iget(struct super_block *, struct key *,
- 			      struct afs_fid *, struct afs_file_status *,
- 			      struct afs_callback *);
-@@ -565,6 +570,7 @@ extern void afs_zap_data(struct afs_vnode *);
- extern int afs_validate(struct afs_vnode *, struct key *);
- extern int afs_getattr(struct vfsmount *, struct dentry *, struct kstat *);
- extern int afs_setattr(struct dentry *, struct iattr *);
-+extern void afs_drop_inode(struct inode *);
- extern void afs_clear_inode(struct inode *);
- 
- /*
-@@ -581,6 +587,7 @@ extern int afs_abort_to_error(u32);
-  * mntpt.c
-  */
- extern const struct inode_operations afs_mntpt_inode_operations;
-+extern const struct inode_operations afs_autocell_inode_operations;
- extern const struct file_operations afs_mntpt_file_operations;
- 
- extern int afs_mntpt_check_symlink(struct afs_vnode *, struct key *);
-diff --git a/fs/afs/mntpt.c b/fs/afs/mntpt.c
-index a9e2303..6d55268 100644
---- a/fs/afs/mntpt.c
-+++ b/fs/afs/mntpt.c
-@@ -38,6 +38,11 @@ const struct inode_operations afs_mntpt_inode_operations = {
- 	.getattr	= afs_getattr,
- };
- 
-+const struct inode_operations afs_autocell_inode_operations = {
-+	.follow_link	= afs_mntpt_follow_link,
-+	.getattr	= afs_getattr,
-+};
-+
- static LIST_HEAD(afs_vfsmounts);
- static DECLARE_DELAYED_WORK(afs_mntpt_expiry_timer, afs_mntpt_expiry_timed_out);
- 
-@@ -136,20 +141,16 @@ static struct vfsmount *afs_mntpt_do_automount(struct dentry *mntpt)
- {
- 	struct afs_super_info *super;
- 	struct vfsmount *mnt;
-+	struct afs_vnode *vnode;
- 	struct page *page;
--	size_t size;
--	char *buf, *devname, *options;
-+	char *devname, *options;
-+	bool rwpath = false;
- 	int ret;
- 
- 	_enter("{%s}", mntpt->d_name.name);
- 
- 	BUG_ON(!mntpt->d_inode);
- 
--	ret = -EINVAL;
--	size = mntpt->d_inode->i_size;
--	if (size > PAGE_SIZE - 1)
--		goto error_no_devname;
--
- 	ret = -ENOMEM;
- 	devname = (char *) get_zeroed_page(GFP_KERNEL);
- 	if (!devname)
-@@ -159,28 +160,59 @@ static struct vfsmount *afs_mntpt_do_automount(struct dentry *mntpt)
- 	if (!options)
- 		goto error_no_options;
- 
--	/* read the contents of the AFS special symlink */
--	page = read_mapping_page(mntpt->d_inode->i_mapping, 0, NULL);
--	if (IS_ERR(page)) {
--		ret = PTR_ERR(page);
--		goto error_no_page;
-+	vnode = AFS_FS_I(mntpt->d_inode);
-+	if (test_bit(AFS_VNODE_PSEUDODIR, &vnode->flags)) {
-+		/* if the directory is a pseudo directory, use the d_name */
-+		static const char afs_root_cell[] = ":root.cell.";
-+		unsigned size = mntpt->d_name.len;
-+
-+		ret = -ENOENT;
-+		if (size < 2 || size > AFS_MAXCELLNAME)
-+			goto error_no_page;
-+
-+		if (mntpt->d_name.name[0] == '.') {
-+			devname[0] = '#';
-+			memcpy(devname + 1, mntpt->d_name.name, size - 1);
-+			memcpy(devname + size, afs_root_cell,
-+			       sizeof(afs_root_cell));
-+			rwpath = true;
-+		} else {
-+			devname[0] = '%';
-+			memcpy(devname + 1, mntpt->d_name.name, size);
-+			memcpy(devname + size + 1, afs_root_cell,
-+			       sizeof(afs_root_cell));
-+		}
-+	} else {
-+		/* read the contents of the AFS special symlink */
-+		loff_t size = i_size_read(mntpt->d_inode);
-+		char *buf;
-+
-+		ret = -EINVAL;
-+		if (size > PAGE_SIZE - 1)
-+			goto error_no_page;
-+
-+		page = read_mapping_page(mntpt->d_inode->i_mapping, 0, NULL);
-+		if (IS_ERR(page)) {
-+			ret = PTR_ERR(page);
-+			goto error_no_page;
-+		}
-+
-+		ret = -EIO;
-+		if (PageError(page))
-+			goto error;
-+
-+		buf = kmap_atomic(page, KM_USER0);
-+		memcpy(devname, buf, size);
-+		kunmap_atomic(buf, KM_USER0);
-+		page_cache_release(page);
-+		page = NULL;
- 	}
- 
--	ret = -EIO;
--	if (PageError(page))
--		goto error;
--
--	buf = kmap_atomic(page, KM_USER0);
--	memcpy(devname, buf, size);
--	kunmap_atomic(buf, KM_USER0);
--	page_cache_release(page);
--	page = NULL;
--
- 	/* work out what options we want */
- 	super = AFS_FS_S(mntpt->d_sb);
- 	memcpy(options, "cell=", 5);
- 	strcpy(options + 5, super->volume->cell->name);
--	if (super->volume->type == AFSVL_RWVOL)
-+	if (super->volume->type == AFSVL_RWVOL || rwpath)
- 		strcat(options, ",rwpath");
- 
- 	/* try and do the mount */
-diff --git a/fs/afs/proc.c b/fs/afs/proc.c
-index 852739d..096b23f 100644
---- a/fs/afs/proc.c
-+++ b/fs/afs/proc.c
-@@ -294,7 +294,7 @@ static ssize_t afs_proc_cells_write(struct file *file, const char __user *buf,
- 	if (strcmp(kbuf, "add") == 0) {
- 		struct afs_cell *cell;
- 
--		cell = afs_cell_create(name, args);
-+		cell = afs_cell_create(name, strlen(name), args, false);
- 		if (IS_ERR(cell)) {
- 			ret = PTR_ERR(cell);
- 			goto done;
-diff --git a/fs/afs/super.c b/fs/afs/super.c
-index e932e5a..80e40ab 100644
---- a/fs/afs/super.c
-+++ b/fs/afs/super.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/mount.h>
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/smp_lock.h>
-@@ -48,6 +49,7 @@ struct file_system_type afs_fs_type = {
- static const struct super_operations afs_super_ops = {
- 	.statfs		= afs_statfs,
- 	.alloc_inode	= afs_alloc_inode,
-+	.drop_inode	= afs_drop_inode,
- 	.destroy_inode	= afs_destroy_inode,
- 	.clear_inode	= afs_clear_inode,
- 	.put_super	= afs_put_super,
-@@ -62,12 +64,14 @@ enum {
- 	afs_opt_cell,
- 	afs_opt_rwpath,
- 	afs_opt_vol,
-+	afs_opt_autocell,
- };
- 
- static const match_table_t afs_options_list = {
- 	{ afs_opt_cell,		"cell=%s"	},
- 	{ afs_opt_rwpath,	"rwpath"	},
- 	{ afs_opt_vol,		"vol=%s"	},
-+	{ afs_opt_autocell,	"autocell"	},
- 	{ afs_no_opt,		NULL		},
- };
- 
-@@ -151,7 +155,8 @@ static int afs_parse_options(struct afs_mount_params *params,
- 		switch (token) {
- 		case afs_opt_cell:
- 			cell = afs_cell_lookup(args[0].from,
--					       args[0].to - args[0].from);
-+					       args[0].to - args[0].from,
-+					       false);
- 			if (IS_ERR(cell))
- 				return PTR_ERR(cell);
- 			afs_put_cell(params->cell);
-@@ -166,6 +171,10 @@ static int afs_parse_options(struct afs_mount_params *params,
- 			*devname = args[0].from;
- 			break;
- 
-+		case afs_opt_autocell:
-+			params->autocell = 1;
-+			break;
-+
- 		default:
- 			printk(KERN_ERR "kAFS:"
- 			       " Unknown or invalid mount option: '%s'\n", p);
-@@ -252,10 +261,10 @@ static int afs_parse_device_name(struct afs_mount_params *params,
- 
- 	/* lookup the cell record */
- 	if (cellname || !params->cell) {
--		cell = afs_cell_lookup(cellname, cellnamesz);
-+		cell = afs_cell_lookup(cellname, cellnamesz, true);
- 		if (IS_ERR(cell)) {
--			printk(KERN_ERR "kAFS: unable to lookup cell '%s'\n",
--			       cellname ?: "");
-+			printk(KERN_ERR "kAFS: unable to lookup cell '%*.*s'\n",
-+			       cellnamesz, cellnamesz, cellname ?: "");
- 			return PTR_ERR(cell);
- 		}
- 		afs_put_cell(params->cell);
-@@ -321,6 +330,9 @@ static int afs_fill_super(struct super_block *sb, void *data)
- 	if (IS_ERR(inode))
- 		goto error_inode;
- 
-+	if (params->autocell)
-+		set_bit(AFS_VNODE_AUTOCELL, &AFS_FS_I(inode)->flags);
-+
- 	ret = -ENOMEM;
- 	root = d_alloc_root(inode);
- 	if (!root)
+ 	for (i = 0; i < 4; i++) {
+ 		char temp[3];	/* hold each IP quad in reverse order */
+-		int digits = put_dec_trunc(temp, addr[index]) - temp;
++		int digits = put_dec_8bit(temp, addr[index]) - temp;
+ 		if (leading_zeros) {
+ 			if (digits < 3)
+ 				*p++ = '0';
+-- 
+1.7.1
 
