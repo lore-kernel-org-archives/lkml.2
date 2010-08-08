@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753758Ab0HHSC3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 14:02:29 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37560 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab0HHSC1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 14:02:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=grYawMf7FZ/fv5NVv/6oHVTkd44OAORLDg+gkqVKpV/nHsYN5VcvipZE4DkQfb6BQ
-	7ohIZjYv+9VH4lGOUa29Q==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100804195704.GA23681@linux.vnet.ibm.com>
-	<20100806225453.GA3947@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
-	<AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
-	<alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
-	<20100807061558.GA28087@thunk.org>
-	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
-	<20100808155719.GB3635@thunk.org>
-	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
-Date: Sun, 8 Aug 2010 11:02:21 -0700
-Message-ID: <AANLkTim4dH2p3KXB1wUi793y7darf1xzfXV0bm34gFQu@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-From: Brian Swetland <swetland@google.com>
+	id S1753834Ab0HHSIL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 14:08:11 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:51997 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753197Ab0HHSIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 14:08:09 -0400
+Date: Sun, 8 Aug 2010 11:07:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
         arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
         florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        swetland@google.com, peterz@infradead.org, tglx@linutronix.de,
+        alan@lxorguk.ukuu.org.uk, david@lang.hm, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, tytso@mit.edu,
         arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
         dipankar@in.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100808180749.GG19600@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100804195704.GA23681@linux.vnet.ibm.com>
+ <20100806225453.GA3947@linux.vnet.ibm.com>
+ <AANLkTik3qF2yScLJiDBWLN5=Ez0FsvbOo0M76WbOAGvO@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik3qF2yScLJiDBWLN5=Ez0FsvbOo0M76WbOAGvO@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 8, 2010 at 10:40 AM, Felipe Contreras
-<felipe.contreras@gmail.com> wrote:
->> This goes back to your first assertion that there are *many*
->> applications that need to run in the background. Â I just don't think
->> that's true. Â There will be a few, and probably more than just the
->> restricted set allowed (and programmed) by Apple. Â But not *many*.
->
-> The argument in favor of suspend blockers is that you could take
-> applications that are not designed for embedded, and make them run on
-> an embedded device without draining excessive battery life; those
-> applications would have to be background services not conflicting with
-> Android's design.
->
-> I agree there probably would not be that many background apps, and
-> probably even less ported background apps, but that is actually an
-> argument against suspend blockers.
->
-> The rest of the apps (UI apps), cannot be ported, but have to be
-> written specifically for Android, and therefore should have PM in
-> mind, and not require suspend blockers to have good power usage.
+On Sun, Aug 08, 2010 at 03:40:28PM +0300, Felipe Contreras wrote:
+> On Sat, Aug 7, 2010 at 1:54 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > o       "Ill-behaved application" AKA "untrusted application" AKA
+> >        "crappy application".
+> 
+> > o       "PM-driving application" are applications that are permitted
+> >        to acquire suspend blockers on Android.
+> 
+> These definitions are wrong.
 
-I think there's some confusion here.
+Indeed they are, given the way you quoted small portions of them.  ;-)
 
-The default operating mode for Android is to aggressively reach the
-lowest possible power state (typically full suspend).  suspend
-blockers are used by applications to inform the system that they are
-currently doing work which requires immediate processing, so the
-system will avoid fully suspending until that work is done.  You could
-think of it as setting your laptop power management settings to be
-"blank screen after 60 seconds, power down 5 seconds after blanking",
-except that there's also a mechanism for apps to hold off on that
-power down if they're doing important work, and a lot more ways to
-wakeup beyond opening the lid or pushing the power button.
+> 1) There are trusted applications that misbehave (the user clicks Yes
+> when asked about PM permissions)
 
-Straight-forward UI apps don't actually require much special handling
--- it's preferable that they do busy-wait on things, but even when
-power is not an issue, wasting cpu spinning needlessly is frowned
-upon, so this isn't a special request.  There's nothing stopping
-somebody from writing an Android app that acts as a bridge to X11 apps
-(embedding an X server, etc) and making it possible for native X11
-apps to coexist with the Android composition model.  I'm a little
-surprised nobody has done so, actually.  I figured *somebody* would
-decide that they like their phone but absolutely need to run xclock or
-something locally as a first class app.
+These would be buggy PM-driving applications.  Of course, any type of
+application might have bugs, including PM-driving applications.
 
-The Android app model does say that if you're not in the foreground
-(from a UI standpoint) you should save your state, as you may be
-terminated if the system runs low on resources.  The system only does
-this when it has to -- generally when we bottom out on memory.  On
-devices with sufficient memory, it's quite common for many apps to
-remain resident for days-weeks -- I've seen as many as 45-50 apps
-running on my nexus one.
+> 2) There are untrusted applications that are power optimized (The user
+> clicks No)
 
-I am a little puzzled by the assertion that Android lasks "true
-multitasking", but that's another discussion entirely.  We certainly
-don't lack for many concurrent processes and threads...
+I did indeed exclude this category by saying "power-optimized applications
+are those PM-driving applications that have been aggressively tuned
+to reduce power consumption."  The reason I excluded this case is that
+that there are a number of cases where removing the PM-driving attribute
+could destroy the power optimization.
 
-Brian
+If you have an example power-optimized application that retains its
+power-optimized property despite lacking PM-driving privileges, please
+put it forward.  In doing so, please keep two things in mind:
+
+1.	The definition of power-optimized is more aggressive than many
+	people are used to -- look at http://lkml.org/lkml/2010/8/4/409
+	and search for "POWER-OPTIMIZED APPLICATIONS".
+
+2.	In a number of the implementations that do not use suspend blockers,
+	-all- applications are in effect PM-driving applications.
+	So it is quite possible that different people are using subtly
+	different flavors of the "PM-driving applications" definition.
+
+	For example, an Android person might consider a application to
+	be PM-driving only if it is permitted to use suspend blockers,
+	while a Maemo person might consider an application to be
+	PM-driving if it had permission to invoke pm_qos functions.
+	If these two hypothetical people each try to apply their
+	definition of PM-driving to each others' platforms, they will
+	likely have severe problems communicating with each other,
+	right?  ;-)
+
+But if you do have a good example, perhaps I will need to change my
+definition of power-optimized application.
+
+> The proponents of suspend blockers in user-space have tried to ignore
+> this fact, but the truth is that PM permissions and power optimization
+> are orthogonal to each other.
+
+In fact, you might have noticed that the proponents of each platform
+have been quite persistent in shouting past each other from the warmth
+and security of their own particular viewpoints.  ;-)
+
+							Thanx, Paul
