@@ -1,173 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab0HHPzj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 11:55:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65183 "EHLO mx1.redhat.com"
+	id S1754415Ab0HHP6i (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 11:58:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54899 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754614Ab0HHPz3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 11:55:29 -0400
+	id S1754382Ab0HHPzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 11:55:37 -0400
 From: Valerie Aurora <vaurora@redhat.com>
 To: Alexander Viro <viro@zeniv.linux.org.uk>
 Cc: Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         linux-fsdevel@vger.kernel.org, Valerie Aurora <vaurora@redhat.com>
-Subject: [PATCH 26/39] VFS: Split inode_permission() and create path_permission()
-Date: Sun,  8 Aug 2010 11:52:43 -0400
-Message-Id: <1281282776-5447-27-git-send-email-vaurora@redhat.com>
+Subject: [PATCH 29/39] union-mount: Implement union-aware access()/faccessat()
+Date: Sun,  8 Aug 2010 11:52:46 -0400
+Message-Id: <1281282776-5447-30-git-send-email-vaurora@redhat.com>
 In-Reply-To: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split inode_permission() into inode and file-system-dependent parts.
-Create path_permission() to check permission based on the path to the
-inode.  This is for union mounts, in which an inode can be located on
-a read-only lower layer file system but is still writable, since we
-will copy it up to the writable top layer file system.  So in that
-case, we want to ignore MS_RDONLY on the lower layer.  To make this
-decision, we must know the path (vfsmount, dentry) of both the target
-and its parent.
-
-XXX - so ugly!
+For union mounts, a file located on the lower layer will incorrectly
+return EROFS on an access check.  To fix this, use the new
+path_permission() call, which ignores a read-only lower layer file
+system if the target will be copied up to the topmost file system.
 
 Signed-off-by: Valerie Aurora <vaurora@redhat.com>
 ---
- fs/namei.c         |   92 ++++++++++++++++++++++++++++++++++++++++++++--------
- include/linux/fs.h |    1 +
- 2 files changed, 79 insertions(+), 14 deletions(-)
+ fs/open.c |   21 +++++++++++++++++----
+ 1 files changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 2d30a5b..74d6852 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -241,29 +241,20 @@ int generic_permission(struct inode *inode, int mask,
- }
+diff --git a/fs/open.c b/fs/open.c
+index 5463266..fc56da0 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -31,6 +31,7 @@
+ #include <linux/ima.h>
  
- /**
-- * inode_permission  -  check for access rights to a given inode
-+ * __inode_permission  -  check for access rights to a given inode
-  * @inode:	inode to check permission on
-  * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-  *
-  * Used to check for read/write/execute permissions on an inode.
-- * We use "fsuid" for this, letting us set arbitrary permissions
-- * for filesystem access without changing the "normal" uids which
-- * are used for other things.
-+ *
-+ * This does not check for a read-only file system.  You probably want
-+ * inode_permission().
-  */
--int inode_permission(struct inode *inode, int mask)
-+static int __inode_permission(struct inode *inode, int mask)
- {
- 	int retval;
+ #include "internal.h"
++#include "union.h"
  
- 	if (mask & MAY_WRITE) {
--		umode_t mode = inode->i_mode;
--
--		/*
--		 * Nobody gets write access to a read-only fs.
--		 */
--		if (IS_RDONLY(inode) &&
--		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
--			return -EROFS;
--
- 		/*
- 		 * Nobody gets write access to an immutable file.
- 		 */
-@@ -288,6 +279,79 @@ int inode_permission(struct inode *inode, int mask)
- }
- 
- /**
-+ * sb_permission  -  check superblock-level permissions
-+ * @sb: superblock of inode to check permission on
-+ * @mask: right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Separate out file-system wide checks from inode-specific permission
-+ * checks.  In particular, union mounts want to check the read-only
-+ * status of the top-level file system, not the lower.
-+ */
-+int sb_permission(struct super_block *sb, struct inode *inode, int mask)
-+{
-+	if (mask & MAY_WRITE) {
-+		umode_t mode = inode->i_mode;
-+
-+		/*
-+		 * Nobody gets write access to a read-only fs.
-+		 */
-+		if ((sb->s_flags & MS_RDONLY) &&
-+		    (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)))
-+			return -EROFS;
-+	}
-+	return 0;
-+}
-+
-+/**
-+ * inode_permission  -  check for access rights to a given inode
-+ * @inode:	inode to check permission on
-+ * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Used to check for read/write/execute permissions on an inode.
-+ * We use "fsuid" for this, letting us set arbitrary permissions
-+ * for filesystem access without changing the "normal" uids which
-+ * are used for other things.
-+ */
-+int inode_permission(struct inode *inode, int mask)
-+{
-+	int retval;
-+
-+	retval = sb_permission(inode->i_sb, inode, mask);
-+	if (retval)
-+		return retval;
-+	return __inode_permission(inode, mask);
-+}
-+
-+/**
-+ * path_permission - check for inode access rights depending on path
-+ * @path: path of inode to check
-+ * @parent_path: path of inode's parent
-+ * @mask: right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-+ *
-+ * Like inode_permission, but used to check for permission when the
-+ * file may potentially be copied up between union layers.
-+ */
-+
-+int path_permission(struct path *path, struct path *parent_path, int mask)
-+{
+ int do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+ 	struct file *filp)
+@@ -288,7 +289,10 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	const struct cred *old_cred;
+ 	struct cred *override_cred;
+ 	struct path path;
++	struct nameidata nd;
 +	struct vfsmount *mnt;
-+	int retval;
-+
-+	/* Catch some reversal of args */
-+	BUG_ON(!S_ISDIR(parent_path->dentry->d_inode->i_mode));
-+
-+	if (IS_MNT_UNION(parent_path->mnt))
-+		mnt = parent_path->mnt;
+ 	struct inode *inode;
++	char *tmp;
+ 	int res;
+ 
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+@@ -312,10 +316,17 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 
+ 	old_cred = override_creds(override_cred);
+ 
+-	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++	res = user_path_nd(dfd, filename, LOOKUP_FOLLOW,
++				   &nd, &path, &tmp);
+ 	if (res)
+ 		goto out;
+ 
++	/* For union mounts, use the topmost mnt's permissions */
++	if (IS_DIR_UNIONED(nd.path.dentry))
++		mnt = nd.path.mnt;
 +	else
-+		mnt = path->mnt;
++		mnt = path.mnt;
 +
-+	retval = sb_permission(mnt->mnt_sb, path->dentry->d_inode, mask);
-+	if (retval)
-+		return retval;
-+	return __inode_permission(path->dentry->d_inode, mask);
-+}
-+
-+/**
-  * file_permission  -  check for additional access rights to a given file
-  * @file:	file to check access rights for
-  * @mask:	right to check for (%MAY_READ, %MAY_WRITE, %MAY_EXEC)
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 3675501..7b2a553 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2138,6 +2138,7 @@ extern sector_t bmap(struct inode *, sector_t);
- #endif
- extern int notify_change(struct dentry *, struct iattr *);
- extern int inode_permission(struct inode *, int);
-+extern int path_permission(struct path *, struct path *, int);
- extern int generic_permission(struct inode *, int,
- 		int (*check_acl)(struct inode *, int));
- extern int generic_readdir_fallthru(struct dentry *topmost_dentry, const char *name,
+ 	inode = path.dentry->d_inode;
+ 
+ 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
+@@ -324,11 +335,11 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 		 * with the "noexec" flag.
+ 		 */
+ 		res = -EACCES;
+-		if (path.mnt->mnt_flags & MNT_NOEXEC)
++		if (mnt->mnt_flags & MNT_NOEXEC)
+ 			goto out_path_release;
+ 	}
+ 
+-	res = inode_permission(inode, mode | MAY_ACCESS);
++	res = path_permission(&path, &nd.path, mode | MAY_ACCESS);
+ 	/* SuS v2 requires we report a read only fs too */
+ 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
+ 		goto out_path_release;
+@@ -342,11 +353,13 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	 * inherently racy and know that the fs may change
+ 	 * state before we even see this result.
+ 	 */
+-	if (__mnt_is_readonly(path.mnt))
++	if (__mnt_is_readonly(mnt))
+ 		res = -EROFS;
+ 
+ out_path_release:
+ 	path_put(&path);
++	path_put(&nd.path);
++	putname(tmp);
+ out:
+ 	revert_creds(old_cred);
+ 	put_cred(override_cred);
 -- 
 1.6.3.3
 
