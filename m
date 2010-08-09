@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab0HIOqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 10:46:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63811 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756716Ab0HIOqs convert rfc822-to-8bit (ORCPT
+	id S1756830Ab0HIOxv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 10:53:51 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54914 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756685Ab0HIOxt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 10:46:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=MrB6c7htUSHGegBk6rGnY9/AOFGy4MU41xvuXXM5/c0mJixt5Jx7EDZ/qEw6Ne72WX
-         DXeLP0JsQ7cBgwRnRJNJFcdEuMnLYpXBGREo4y4wHgzL+53ZLFrzpL67jx1/pE05ZF1r
-         gw53m78QO63IHDjci0hBs085oaRa97rQnG9dw=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Subject: Re: 2.6.35: suspicious rcu_dereference_check() usage
-Date: Mon, 9 Aug 2010 16:46:40 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <4C594740.1090608@vlnb.net>
-In-Reply-To: <4C594740.1090608@vlnb.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201008091646.40611.maciej.rutecki@gmail.com>
+	Mon, 9 Aug 2010 10:53:49 -0400
+Date: Mon, 9 Aug 2010 16:08:19 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 1/2] tty: add tty_struct->dev pointer to corresponding
+ device instance
+Message-ID: <20100809160819.42e8c84e@lxorguk.ukuu.org.uk>
+In-Reply-To: <1281363770-23598-1-git-send-email-dbaryshkov@gmail.com>
+References: <1281363770-23598-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On środa, 4 sierpnia 2010 o 12:56:00 Vladislav Bolkhovitin wrote:
-> Hello,
-> 
-> Today I gave a first try to 2.6.35 and it immediately produced:
-> 
+On Mon,  9 Aug 2010 18:22:49 +0400
+Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16549
-for your bug report, please add your address to the CC list in there, thanks!
+> Some device drivers (mostly tty line disciplines) would like to have way
+> know a struct device instance corresponding to passed tty_struct. Add
+> a struct device pointer to struct tty_struct and populate it during
+> initialize_tty_struct().
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Acked-by: Alan Cox <alan@linux.intel.com>
