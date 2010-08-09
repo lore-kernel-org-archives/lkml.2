@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757085Ab0HIPCl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 11:02:41 -0400
+	id S1756948Ab0HIPDP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 11:03:15 -0400
 Received: from mailout2.w1.samsung.com ([210.118.77.12]:36742 "EHLO
 	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756913Ab0HIPBO (ORCPT
+	with ESMTP id S1756880Ab0HIPBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 11:01:14 -0400
-Date: Mon, 09 Aug 2010 17:02:33 +0200
+	Mon, 9 Aug 2010 11:01:11 -0400
+Date: Mon, 09 Aug 2010 17:02:29 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv7 8/8] usb: gadget: mass_storage: optional SCSI WRITE FUA bit
-In-reply-to: <1a8a7e76daf68acaeecf4334848703318355a3a2.1281365237.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv7 4/8] USB: gadget: mass_storage: moved strings handling code
+ to composite
+In-reply-to: <9219d2c4e7b60f2ad1455b6c702604e84ef90e1b.1281365237.git.m.nazarewicz@samsung.com>
 To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
         USB <linux-usb@vger.kernel.org>
 Cc: linux-kernel@vger.kernel.org, Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Denis Karpov <ext-denis.2.karpov@nokia.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Message-id: <3e2dabb188e85bde4b942193be4414e53c604e04.1281365237.git.m.nazarewicz@samsung.com>
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <fd2e70a236743436c0c2e88eb3b32e4564571e32.1281365237.git.m.nazarewicz@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
 Content-type: TEXT/PLAIN
@@ -27,101 +25,154 @@ References: <cover.1281365237.git.m.nazarewicz@samsung.com>
  <49ebe5a39e05aa55a19d33a2141736d215873f86.1281365237.git.m.nazarewicz@samsung.com>
  <b4fe56570ecb77ec6acbab4502f7ad87b72885e1.1281365237.git.m.nazarewicz@samsung.com>
  <9219d2c4e7b60f2ad1455b6c702604e84ef90e1b.1281365237.git.m.nazarewicz@samsung.com>
- <fd2e70a236743436c0c2e88eb3b32e4564571e32.1281365237.git.m.nazarewicz@samsung.com>
- <e37b282da3898486df3fc33cbb1de5e1b6bc26c3.1281365237.git.m.nazarewicz@samsung.com>
- <dadbebba90720630077702d19240acca9fdb2182.1281365237.git.m.nazarewicz@samsung.com>
- <1a8a7e76daf68acaeecf4334848703318355a3a2.1281365237.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The nofua parameter (optionally ignore SCSI WRITE FUA) was added
-to the File Storage Gadget some time ago.  This patch adds the
-same functionality to the Mass Storage Function.
+This patch removes string registration from the Mass Storage
+Gadget.  With recent changes to the composite framework, all
+that we need is handled by the composite layer.  This means
+composite registers a string ID for manufacturer and product.
+
+This also adds the "needs_serial" so that composite layer will
+issue a warning if user space fails to provide the iSerialNumber
+module parameter.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/f_mass_storage.c |   15 ++++++++++++++-
- 1 files changed, 14 insertions(+), 1 deletions(-)
+ drivers/usb/gadget/mass_storage.c |   72 +++---------------------------------
+ 1 files changed, 6 insertions(+), 66 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 32cce02..ec97232 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -73,6 +73,8 @@
-  *				being removable.
-  *	->cdrom		Flag specifying that LUN shall be reported as
-  *				being a CD-ROM.
-+ *	->nofua		Flag specifying that FUA flag in SCSI WRITE(10,12)
-+ *				commands for this LUN shall be ignored.
-  *
-  *	lun_name_format	A printf-like format for names of the LUN
-  *				devices.  This determines how the
-@@ -127,6 +129,8 @@
-  *			Default true, boolean for removable media.
-  *	cdrom=b[,b...]	Default false, boolean for whether to emulate
-  *				a CD-ROM drive.
-+ *	nofua=b[,b...]	Default false, booleans for ignore FUA flag
-+ *				in SCSI WRITE(10,12) commands
-  *	luns=N		Default N = number of filenames, number of
-  *				LUNs to support.
-  *	stall		Default determined according to the type of
-@@ -409,6 +413,7 @@ struct fsg_config {
- 		char ro;
- 		char removable;
- 		char cdrom;
-+		char nofua;
- 	} luns[FSG_MAX_LUNS];
- 
- 	const char		*lun_name_format;
-@@ -887,7 +892,7 @@ static int do_write(struct fsg_common *common)
- 			curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
- 			return -EINVAL;
- 		}
--		if (common->cmnd[1] & 0x08) {	/* FUA */
-+		if (!curlun->nofua && (common->cmnd[1] & 0x08)) { /* FUA */
- 			spin_lock(&curlun->filp->f_lock);
- 			curlun->filp->f_flags |= O_SYNC;
- 			spin_unlock(&curlun->filp->f_lock);
-@@ -2662,6 +2667,7 @@ static int fsg_main_thread(void *common_)
- 
- /* Write permission is checked per LUN in store_*() functions. */
- static DEVICE_ATTR(ro, 0644, fsg_show_ro, fsg_store_ro);
-+static DEVICE_ATTR(nofua, 0644, fsg_show_nofua, fsg_store_nofua);
- static DEVICE_ATTR(file, 0644, fsg_show_file, fsg_store_file);
- 
- 
-@@ -2768,6 +2774,9 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 		rc = device_create_file(&curlun->dev, &dev_attr_file);
- 		if (rc)
- 			goto error_luns;
-+		rc = device_create_file(&curlun->dev, &dev_attr_nofua);
-+		if (rc)
-+			goto error_luns;
- 
- 		if (lcfg->filename) {
- 			rc = fsg_lun_open(curlun, lcfg->filename);
-@@ -3069,8 +3078,10 @@ struct fsg_module_parameters {
- 	int		ro[FSG_MAX_LUNS];
- 	int		removable[FSG_MAX_LUNS];
- 	int		cdrom[FSG_MAX_LUNS];
-+	int		nofua[FSG_MAX_LUNS];
- 
- 	unsigned int	file_count, ro_count, removable_count, cdrom_count;
-+	unsigned int	nofua_count;
- 	unsigned int	luns;	/* nluns */
- 	int		stall;	/* can_stall */
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 585f255..493d153 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -75,10 +75,6 @@ static struct usb_device_descriptor msg_device_desc = {
+ 	/* Vendor and product id can be overridden by module parameters.  */
+ 	.idVendor =		cpu_to_le16(FSG_VENDOR_ID),
+ 	.idProduct =		cpu_to_le16(FSG_PRODUCT_ID),
+-	/* .bcdDevice = f(hardware) */
+-	/* .iManufacturer = DYNAMIC */
+-	/* .iProduct = DYNAMIC */
+-	/* NO SERIAL NUMBER */
+ 	.bNumConfigurations =	1,
  };
-@@ -3096,6 +3107,8 @@ struct fsg_module_parameters {
- 				"true to simulate removable media");	\
- 	_FSG_MODULE_PARAM_ARRAY(prefix, params, cdrom, bool,		\
- 				"true to simulate CD-ROM instead of disk"); \
-+	_FSG_MODULE_PARAM_ARRAY(prefix, params, nofua, bool,		\
-+				"true to ignore SCSI WRITE(10,12) FUA bit"); \
- 	_FSG_MODULE_PARAM(prefix, params, luns, uint,			\
- 			  "number of LUNs");				\
- 	_FSG_MODULE_PARAM(prefix, params, stall, bool,			\
+ 
+@@ -86,7 +82,8 @@ static struct usb_otg_descriptor otg_descriptor = {
+ 	.bLength =		sizeof otg_descriptor,
+ 	.bDescriptorType =	USB_DT_OTG,
+ 
+-	/* REVISIT SRP-only hardware is possible, although
++	/*
++	 * REVISIT SRP-only hardware is possible, although
+ 	 * it would not be called "OTG" ...
+ 	 */
+ 	.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
+@@ -98,33 +95,6 @@ static const struct usb_descriptor_header *otg_desc[] = {
+ };
+ 
+ 
+-/* string IDs are assigned dynamically */
+-
+-#define STRING_MANUFACTURER_IDX		0
+-#define STRING_PRODUCT_IDX		1
+-#define STRING_CONFIGURATION_IDX	2
+-
+-static char manufacturer[50];
+-
+-static struct usb_string strings_dev[] = {
+-	[STRING_MANUFACTURER_IDX].s = manufacturer,
+-	[STRING_PRODUCT_IDX].s = DRIVER_DESC,
+-	[STRING_CONFIGURATION_IDX].s = "Self Powered",
+-	{  } /* end of list */
+-};
+-
+-static struct usb_gadget_strings stringtab_dev = {
+-	.language	= 0x0409,	/* en-us */
+-	.strings	= strings_dev,
+-};
+-
+-static struct usb_gadget_strings *dev_strings[] = {
+-	&stringtab_dev,
+-	NULL,
+-};
+-
+-
+-
+ /****************************** Configurations ******************************/
+ 
+ static struct fsg_module_parameters mod_data = {
+@@ -173,52 +143,22 @@ static struct usb_configuration msg_config_driver = {
+ 	.label			= "Linux File-Backed Storage",
+ 	.bind			= msg_do_config,
+ 	.bConfigurationValue	= 1,
+-	/* .iConfiguration = DYNAMIC */
+ 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
+ };
+ 
+ 
+-
+ /****************************** Gadget Bind ******************************/
+ 
+-
+ static int __ref msg_bind(struct usb_composite_dev *cdev)
+ {
+-	struct usb_gadget *gadget = cdev->gadget;
+ 	int status;
+ 
+-	/* Allocate string descriptor numbers ... note that string
+-	 * contents can be overridden by the composite_dev glue.
+-	 */
+-
+-	/* device descriptor strings: manufacturer, product */
+-	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
+-	         init_utsname()->sysname, init_utsname()->release,
+-	         gadget->name);
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_MANUFACTURER_IDX].id = status;
+-	msg_device_desc.iManufacturer = status;
+-
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_PRODUCT_IDX].id = status;
+-	msg_device_desc.iProduct = status;
+-
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_CONFIGURATION_IDX].id = status;
+-	msg_config_driver.iConfiguration = status;
+-
+-	/* register our second configuration */
+ 	status = usb_add_config(cdev, &msg_config_driver);
+ 	if (status < 0)
+ 		return status;
+ 
+-	dev_info(&gadget->dev, DRIVER_DESC ", version: " DRIVER_VERSION "\n");
++	dev_info(&cdev->gadget->dev,
++		 DRIVER_DESC ", version: " DRIVER_VERSION "\n");
+ 	set_bit(0, &msg_registered);
+ 	return 0;
+ }
+@@ -226,12 +166,12 @@ static int __ref msg_bind(struct usb_composite_dev *cdev)
+ 
+ /****************************** Some noise ******************************/
+ 
+-
+ static struct usb_composite_driver msg_driver = {
+ 	.name		= "g_mass_storage",
+ 	.dev		= &msg_device_desc,
+-	.strings	= dev_strings,
+ 	.bind		= msg_bind,
++	.iProduct	= DRIVER_DESC,
++	.needs_serial	= 1,
+ };
+ 
+ MODULE_DESCRIPTION(DRIVER_DESC);
 -- 
 1.7.1
 
