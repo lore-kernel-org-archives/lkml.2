@@ -1,81 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab0HISRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:17:17 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:40932 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409Ab0HISQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:16:59 -0400
-Date: Mon, 9 Aug 2010 11:16:38 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Felipe Contreras <felipe.contreras@gmail.com>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100809181638.GI3026@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100806225453.GA3947@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
- <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
- <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
- <20100807061558.GA28087@thunk.org>
- <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
- <20100808155719.GB3635@thunk.org>
- <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
- <20100808213821.GD3635@thunk.org>
- <20100809112453.77210acc@lxorguk.ukuu.org.uk>
+	id S1753440Ab0HISR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:17:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20761 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201Ab0HISRU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 14:17:20 -0400
+Message-ID: <4C6045EF.9010103@oracle.com>
+Date: Mon, 09 Aug 2010 11:16:15 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100809112453.77210acc@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+CC: linux-media@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 7 (IR)
+References: <20100807160710.b7c8d838.sfr@canb.auug.org.au>	<20100807203920.83134a60.randy.dunlap@oracle.com>	<20100808135511.269f670c.randy.dunlap@oracle.com>	<4C5F9C2E.50001@redhat.com> <20100809075255.97d18a66.randy.dunlap@oracle.com> <4C603DB1.9030706@redhat.com> <4C604196.6060100@redhat.com>
+In-Reply-To: <4C604196.6060100@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 11:24:53AM +0100, Alan Cox wrote:
-
-[ . . . ]
-
-> > would agree that in the ideal world, it would be nice if you could
-> > have applications that make the correct performance/battery
-> > utilization tradeoff for devices running on 800 mWh batteries, 94,000
-> > mWh batteries, and while running on the AC mains.  But I don't believe
-> > that it's likely to be true, and if you want to try to beat up on
-> > application writers one at a time to be power optimized --- as far as
-> > I'm concerned, that's an argument *for* suspend blockers, since I'm
-> > not big believer in plans that begin, "First, you command the tides of
-> > the sea to go back", King Canute style.  :-)
+On 08/09/10 10:57, Mauro Carvalho Chehab wrote:
+> Em 09-08-2010 14:41, Mauro Carvalho Chehab escreveu:
+>> Em 09-08-2010 11:52, Randy Dunlap escreveu:
+>>>> Hmm... clearly, there are some bad dependencies at the Kconfig. Maybe ir-core were compiled
+>>>> as module, while some drivers as built-in.
+>>>>
+>>>> Could you please pass the .config file for this build?
+>>>
+>>>
+>>> Sorry, config-r5101 is now attached.
+>>
+>> Hmm... when building it, I'm getting an interesting warning:
+>>
+>> warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT || VIDEO_SAA7134 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT || VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || VIDEO_TLG2300 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && SND && DVB_CORE || VIDEO_CX231XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || DVB_BUDGET_CI && MEDIA_SUPPORT && DVB_C
+A
+> PT
+>> URE_DRIVERS && DVB_CORE && DVB_BUDGET_CORE && I2C && INPUT || DVB_DM1105 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C && INPUT || VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+>>
+>> This warning seems to explain what's going wrong.
+>>
+>> I'll make patch(es) to address this issue.
 > 
-> Suspend blockers drive the system policy part way into the apps, that in
-> turn makes the apps very vulnerable to change in their environment because
-> you've specialised them. I am sure that in the Android world it's
-> considered fine, and that the marketing and business people even like
-> this binding together - but it doesn't generalise and will blow up in
-> people's faces in the future.
 > 
-> To consider your tide analogy - suspend blockers is like trying to
-> program the waves individually. Show me a suspend blocker aware open
-> office patch 8)
+> Ok, This patch (together with the previous one) seemed to solve the issue.
+> 
 
-But wouldn't an office suite run as a power-oblivious application on an
-Android device?  After all, office applications do not need to run when
-the screen is turned off, so these the applications do not need to use
-suspend blockers.  That said, I could easily imagine that significant
-work would be required to make OpenOffice run on Android, not due to
-suspend blockers, but rather due to Android's unusual user space.
+Yes, together they fix both build problems.  Thanks.
 
-On devices that do not have suspend blockers, a normal application runs
-in a manner similar to a hypothetical Android application that acquires
-a suspend blocker when it starts and holds that suspend blocker until
-it exits.  In contrast with Android, this situation requires that each
-and every application be carefully written to avoid battery drain,
-which I suspect is what Ted is getting at with his King Canute analogy.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-							Thanx, Paul
+
+> 
+> commit 0a706cf23aee2f6349f4b076f966038efb788a49
+> Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+> Date:   Mon Aug 9 14:45:02 2010 -0300
+> 
+>     V4L/DVB: fix Kconfig to depends on VIDEO_IR
+>     
+>     warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT || VIDEO_SAA7134 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT || VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || VIDEO_TLG2300 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && SND && DVB_CORE || VIDEO_CX231XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || DVB_BUDGET_CI && MEDIA_SUPPORT && DV
+B_
+> CAPTURE_DRIVERS && DVB_CORE && DVB_BUDGET_CORE && I2C && INPUT || DVB_DM1105 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C && INPUT || VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+>     
+>     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> 
+> diff --git a/drivers/media/dvb/dm1105/Kconfig b/drivers/media/dvb/dm1105/Kconfig
+> index 6952392..a6ceb08 100644
+> --- a/drivers/media/dvb/dm1105/Kconfig
+> +++ b/drivers/media/dvb/dm1105/Kconfig
+> @@ -9,7 +9,7 @@ config DVB_DM1105
+>  	select DVB_CX24116 if !DVB_FE_CUSTOMISE
+>  	select DVB_SI21XX if !DVB_FE_CUSTOMISE
+>  	select DVB_DS3000 if !DVB_FE_CUSTOMISE
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	help
+>  	  Support for cards based on the SDMC DM1105 PCI chip like
+>  	  DvbWorld 2002
+> diff --git a/drivers/media/dvb/ttpci/Kconfig b/drivers/media/dvb/ttpci/Kconfig
+> index 32a7ec6..debea8d 100644
+> --- a/drivers/media/dvb/ttpci/Kconfig
+> +++ b/drivers/media/dvb/ttpci/Kconfig
+> @@ -98,7 +98,7 @@ config DVB_BUDGET_CI
+>  	select DVB_LNBP21 if !DVB_FE_CUSTOMISE
+>  	select DVB_TDA10023 if !DVB_FE_CUSTOMISE
+>  	select MEDIA_TUNER_TDA827X if !MEDIA_TUNER_CUSTOMISE
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	help
+>  	  Support for simple SAA7146 based DVB cards
+>  	  (so called Budget- or Nova-PCI cards) without onboard
+> diff --git a/drivers/media/video/bt8xx/Kconfig b/drivers/media/video/bt8xx/Kconfig
+> index 3077c45..1a4a89f 100644
+> --- a/drivers/media/video/bt8xx/Kconfig
+> +++ b/drivers/media/video/bt8xx/Kconfig
+> @@ -4,7 +4,7 @@ config VIDEO_BT848
+>  	select I2C_ALGOBIT
+>  	select VIDEO_BTCX
+>  	select VIDEOBUF_DMA_SG
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+>  	select VIDEO_MSP3400 if VIDEO_HELPER_CHIPS_AUTO
+> diff --git a/drivers/media/video/cx18/Kconfig b/drivers/media/video/cx18/Kconfig
+> index baf7e91..76c054d 100644
+> --- a/drivers/media/video/cx18/Kconfig
+> +++ b/drivers/media/video/cx18/Kconfig
+> @@ -3,7 +3,7 @@ config VIDEO_CX18
+>  	depends on VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL
+>  	depends on INPUT	# due to VIDEO_IR
+>  	select I2C_ALGOBIT
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+>  	select VIDEO_CX2341X
+> diff --git a/drivers/media/video/cx231xx/Kconfig b/drivers/media/video/cx231xx/Kconfig
+> index 477d4ab..5ac7ece 100644
+> --- a/drivers/media/video/cx231xx/Kconfig
+> +++ b/drivers/media/video/cx231xx/Kconfig
+> @@ -3,7 +3,7 @@ config VIDEO_CX231XX
+>  	depends on VIDEO_DEV && I2C && INPUT
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEOBUF_VMALLOC
+>  	select VIDEO_CX25840
+>  
+> diff --git a/drivers/media/video/cx88/Kconfig b/drivers/media/video/cx88/Kconfig
+> index c7e5851..99dbae1 100644
+> --- a/drivers/media/video/cx88/Kconfig
+> +++ b/drivers/media/video/cx88/Kconfig
+> @@ -6,7 +6,7 @@ config VIDEO_CX88
+>  	select VIDEOBUF_DMA_SG
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEO_WM8775 if VIDEO_HELPER_CHIPS_AUTO
+>  	---help---
+>  	  This is a video4linux driver for Conexant 2388x based
+> diff --git a/drivers/media/video/em28xx/Kconfig b/drivers/media/video/em28xx/Kconfig
+> index c7be0e0..66aefd6 100644
+> --- a/drivers/media/video/em28xx/Kconfig
+> +++ b/drivers/media/video/em28xx/Kconfig
+> @@ -3,7 +3,7 @@ config VIDEO_EM28XX
+>  	depends on VIDEO_DEV && I2C && INPUT
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEOBUF_VMALLOC
+>  	select VIDEO_SAA711X if VIDEO_HELPER_CHIPS_AUTO
+>  	select VIDEO_TVP5150 if VIDEO_HELPER_CHIPS_AUTO
+> diff --git a/drivers/media/video/ivtv/Kconfig b/drivers/media/video/ivtv/Kconfig
+> index c46bfb1..be4af1f 100644
+> --- a/drivers/media/video/ivtv/Kconfig
+> +++ b/drivers/media/video/ivtv/Kconfig
+> @@ -3,7 +3,7 @@ config VIDEO_IVTV
+>  	depends on VIDEO_V4L2 && PCI && I2C
+>  	depends on INPUT   # due to VIDEO_IR
+>  	select I2C_ALGOBIT
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+>  	select VIDEO_CX2341X
+> diff --git a/drivers/media/video/saa7134/Kconfig b/drivers/media/video/saa7134/Kconfig
+> index 22bfd62..fda005e 100644
+> --- a/drivers/media/video/saa7134/Kconfig
+> +++ b/drivers/media/video/saa7134/Kconfig
+> @@ -2,7 +2,7 @@ config VIDEO_SAA7134
+>  	tristate "Philips SAA7134 support"
+>  	depends on VIDEO_DEV && PCI && I2C && INPUT
+>  	select VIDEOBUF_DMA_SG
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+>  	select CRC32
+> diff --git a/drivers/media/video/tlg2300/Kconfig b/drivers/media/video/tlg2300/Kconfig
+> index 2c29ec6..1686ebf 100644
+> --- a/drivers/media/video/tlg2300/Kconfig
+> +++ b/drivers/media/video/tlg2300/Kconfig
+> @@ -3,7 +3,7 @@ config VIDEO_TLG2300
+>  	depends on VIDEO_DEV && I2C && INPUT && SND && DVB_CORE
+>  	select VIDEO_TUNER
+>  	select VIDEO_TVEEPROM
+> -	select VIDEO_IR
+> +	depends on VIDEO_IR
+>  	select VIDEOBUF_VMALLOC
+>  	select SND_PCM
+>  	select VIDEOBUF_DVB
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
