@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577Ab0HIHcL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:32:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45918 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755497Ab0HIHcE (ORCPT
+	id S1755543Ab0HIHeS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:34:18 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:12488 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755418Ab0HIHeQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:32:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=aZ1HAAcm5APWJ0JAdkAjHAiMaV8N6xaOH9oNCYuP5j89nOfGvJRIPlGHTxvF8FGnAk
-         75451Q4vKZBB2D3gzF18jlNzesehOOIjn2Br7YsAUO5KOpWeuXXbVaB3VxWfcd3Yteur
-         PX7uar9aPc0R9V6LmxixhBZUaPsbW3OZDNb94=
-Message-ID: <4C5FAF04.9070705@gmail.com>
-Date: Mon, 09 Aug 2010 00:32:20 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Mon, 9 Aug 2010 03:34:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=odNJcWTbsQYSXwv5Ljc9F2yZOPHcWWS8VgE1z/bfoa5CrBX9xRE/ZBJ+tlw2S79vo
+	Vz8biodwIIGB+IebU5hqQ==
 MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@st.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-References: <4C5F9B25.8080401@st.com> <4C5FA35E.50309@gmail.com> <4C5FA66D.7060404@st.com>
-In-Reply-To: <4C5FA66D.7060404@st.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100809072618.GB1586@ucw.cz>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100804195704.GA23681@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+	<20100809072618.GB1586@ucw.cz>
+Date: Mon, 9 Aug 2010 00:34:12 -0700
+Message-ID: <AANLkTikd6SvRH_u5hhEfqKRbYnwVpU0PN-NSUEtGyiA9@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
+From: Brian Swetland <swetland@google.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, tytso@mit.edu,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/08/2010 11:55 PM, viresh kumar wrote:
-> On 8/9/2010 12:12 PM, Justin P. Mattock wrote:
->> On 08/08/2010 11:07 PM, viresh kumar wrote:
->>>> Hello,
->>>>
->>>> Mail server in ST has recently changed and now we have Microsoft
->>>> exchange server. We are using thunderbird as mail client.
->>>> What we observed with this server is that patch are broken now while
->>>> sending as well as receiving. Tabs are replaced by spaces and may
->>>> be some other too which we haven't observed.
->>>>
->>>> Has anybody found a solution to this kind of issues? Are there any
->>>> workarounds possible?
->>>>
+On Mon, Aug 9, 2010 at 12:26 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> >I should have asked this earlier...  What exactly are the apps'
+>> >compatibility constraints?  Source-level APIs?  Byte-code class-library
+>> >invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
+>> >words, syscall)?
 >>
->> still trying to figure this out with thunderbird.. but did notice in
->> Documentation/email-clients.txt and SubmittingPatches
->> there's info about that(just haven't gotten around to reading use git
->> send-email for patches)
->>
->> hope this helps.
+>> For Java/Dalvik apps, the wakelock API is pertty high level -- it
+>> talks to a service via RPC (Binder) that actually interacts with the
+>> kernel.  Changing the basic kernel<->userspace interface (within
 >
-> I missed this information in my last mail. We are using git send-email for
-> sending patches. As patches will go through Microsoft exchange server only,
-> so they are broken.
->
-> viresh.
->
+> Strange. Arve claimed that open/close is too slow, and few
+> microseconds faster ioctl is needed, and now we learn it actually uses
+> RPC.
 
+For the high level Java API, yes.  For lower level userspace code,
+like the code that processes keypresses, the kernel interface is used
+directly.  I think an open/close per keypress would be a bit
+excessive, for example.  In any case, that ignores the fact that it's
+useful to have statistics, which are tricky to maintain meaningfully
+if you destroy the handle after use every time (by closing the fd).
 
-hmm.. then I don't know the answer to that.. always send through git 
-send-email(patches)and things are good(knock-on-wood)always ran into 
-issues with copy/pasting onto thunderbird. Hopefully somebody else with 
-more knowledge of using git send-email patches through microsoft 
-exchange answers this..
-
-side note: maybe postfix or some type of wrapper around the wording 
-message(utf-8) to keep microsoft from mangling things or 
-something.(tough to say though)
-
-Justin P. Mattock
+Brian
