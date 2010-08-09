@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249Ab0HIWP1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 18:15:27 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:59619 "EHLO e4.ny.us.ibm.com"
+	id S1757281Ab0HIWPa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 18:15:30 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:49295 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757197Ab0HIWPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757189Ab0HIWPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Aug 2010 18:15:21 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,13 +13,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH tip/core/rcu 01/10] rcu head remove init
-Date: Mon,  9 Aug 2010 15:15:02 -0700
-Message-Id: <1281392111-25060-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH tip/core/rcu 07/10] rcu: Fix RCU_FANOUT help message
+Date: Mon,  9 Aug 2010 15:15:08 -0700
+Message-Id: <1281392111-25060-7-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100809221447.GA24358@linux.vnet.ibm.com>
 References: <20100809221447.GA24358@linux.vnet.ibm.com>
@@ -27,55 +24,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Commit cf244dc01bf68 added a fourth level to the TREE_RCU hierarchy,
+but the RCU_FANOUT help message still said "cube root".  This commit
+fixes this to "fourth root" and also emphasizes that production
+systems are well-served by the default.  (Stress-testing RCU itself
+uses small RCU_FANOUT values in order to test large-system code paths
+on small(er) systems.)
 
-RCU heads really don't need to be initialized. Their state before call_rcu()
-really does not matter.
-
-We need to keep init/destroy_rcu_head_on_stack() though, since we want
-debugobjects to be able to keep track of these objects.
-
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: David S. Miller <davem@davemloft.net>
-CC: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: akpm@linux-foundation.org
-CC: mingo@elte.hu
-CC: laijs@cn.fujitsu.com
-CC: dipankar@in.ibm.com
-CC: josh@joshtriplett.org
-CC: dvhltc@us.ibm.com
-CC: niv@us.ibm.com
-CC: tglx@linutronix.de
-CC: peterz@infradead.org
-CC: rostedt@goodmis.org
-CC: Valdis.Kletnieks@vt.edu
-CC: dhowells@redhat.com
-CC: eric.dumazet@gmail.com
-CC: Alexey Dobriyan <adobriyan@gmail.com>
+Located-by: John Kacur <jkacur@redhat.com>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- include/linux/rcupdate.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ init/Kconfig |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 3e1b662..27b44b3 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -75,12 +75,6 @@ extern void rcu_init(void);
- #error "Unknown RCU implementation specified to kernel configuration"
- #endif
+diff --git a/init/Kconfig b/init/Kconfig
+index 9366954..7faa5d8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -384,9 +384,12 @@ config RCU_FANOUT
+ 	help
+ 	  This option controls the fanout of hierarchical implementations
+ 	  of RCU, allowing RCU to work efficiently on machines with
+-	  large numbers of CPUs.  This value must be at least the cube
+-	  root of NR_CPUS, which allows NR_CPUS up to 32,768 for 32-bit
+-	  systems and up to 262,144 for 64-bit systems.
++	  large numbers of CPUs.  This value must be at least the fourth
++	  root of NR_CPUS, which allows NR_CPUS to be insanely large.
++	  The default value of RCU_FANOUT should be used for production
++	  systems, but if you are stress-testing the RCU implementation
++	  itself, small RCU_FANOUT values allow you to test large-system
++	  code paths on small(er) systems.
  
--#define RCU_HEAD_INIT	{ .next = NULL, .func = NULL }
--#define RCU_HEAD(head) struct rcu_head head = RCU_HEAD_INIT
--#define INIT_RCU_HEAD(ptr) do { \
--       (ptr)->next = NULL; (ptr)->func = NULL; \
--} while (0)
--
- /*
-  * init_rcu_head_on_stack()/destroy_rcu_head_on_stack() are needed for dynamic
-  * initialization and destruction of rcu_head on the stack. rcu_head structures
+ 	  Select a specific number if testing RCU itself.
+ 	  Take the default if unsure.
 -- 
 1.7.0.6
 
