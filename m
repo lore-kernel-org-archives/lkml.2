@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab0HIQbL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 12:31:11 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:46909 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597Ab0HIQbC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 12:31:02 -0400
-Date: Mon, 9 Aug 2010 09:30:44 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.35-rc3-git8 - include/linux/fdtable.h:88 invoked
- rcu_dereference_check() without protection!
-Message-ID: <20100809163044.GD3026@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTinof0k28rk4rMr66aubxcRL2rFa5ZEArj1lqD3o@mail.gmail.com>
+	id S1757104Ab0HIQdk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 12:33:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37763 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597Ab0HIQdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 12:33:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Pf5yldZd6JRirotQid0062trR6PE4Vc3TV45ueY/q0JwjpKy758xl88ebrikOav0Ji
+         MVjXeoNV5i62hQyA+uMrO6PlmhdL8eIh6r8wyR46dFAAEv1pv+E+yvqjNUEBxTJZnpCL
+         5vMXlVjPqKmBAaNxdGs9j+O0EAOITd4VRLqk0=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 1/1] integer overflow issue in 'appletouch' driver
+Date: Mon, 9 Aug 2010 09:33:32 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.33.6-147.2.4.fc13.x86_64; KDE/4.4.5; x86_64; ; )
+Cc: Vadim Zaliva <lord@crocodile.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <E64899AA-23A5-49D7-8C91-B94A095290E0@crocodile.org> <9D74DA20-E3C8-43BC-B529-82605F64637F@crocodile.org> <1281325390.2168.64.camel@pasglop>
+In-Reply-To: <1281325390.2168.64.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinof0k28rk4rMr66aubxcRL2rFa5ZEArj1lqD3o@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008090933.32446.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 04, 2010 at 06:04:20PM -0400, Miles Lane wrote:
-> [ 1619.938226] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [ 1619.938230] ---------------------------------------------------
-> [ 1619.938235] include/linux/fdtable.h:88 invoked
-> rcu_dereference_check() without protection!
-> [ 1619.938239]
-> [ 1619.938240] other info that might help us debug this:
-> [ 1619.938242]
-> [ 1619.938245]
-> [ 1619.938246] rcu_scheduler_active = 1, debug_locks = 1
-> [ 1619.938250] no locks held by dbus-daemon/4254.
-> [ 1619.938253]
-> [ 1619.938254] stack backtrace:
-> [ 1619.938260] Pid: 4254, comm: dbus-daemon Not tainted 2.6.35-rc3-git8 #5
-> [ 1619.938264] Call Trace:
-> [ 1619.938277]  [<ffffffff8106756a>] lockdep_rcu_dereference+0x9d/0xa6
-> [ 1619.938286]  [<ffffffff810cae92>] fcheck_files+0xb1/0xca
-> [ 1619.938292]  [<ffffffff810caf03>] fget_light+0x35/0x96
-> [ 1619.938300]  [<ffffffff810d8d5e>] do_sys_poll+0x1ff/0x3e5
-> [ 1619.938307]  [<ffffffff810d8572>] ? __pollwait+0x0/0xc7
-> [ 1619.938314]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938320]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938327]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938333]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938340]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938346]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938353]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938359]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938365]  [<ffffffff810d8639>] ? pollwake+0x0/0x4f
-> [ 1619.938374]  [<ffffffff810d90d8>] sys_poll+0x50/0xba
-> [ 1619.938383]  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
+On Sunday, August 08, 2010 08:43:09 pm Benjamin Herrenschmidt wrote:
+> On Sun, 2010-08-08 at 18:24 -0700, Vadim Zaliva wrote:
+> > I have tested the patch on device I had
+> > I will have an access to it to retest later thus week. We can wait for my
+> > test to try to identify how my PowerBook is different from yours. Or you
+> > can roll the patch back.
+> 
+> I'd rather roll the patch back for now. I'll send the revert as part of
+> the next powerpc update. We'll sort things out then.
 
-Hello, Miles!
+I'll be sending pull request to Linus this evening and should take care of
+this as well. I guess we need to pull it out of stable as well since Vadim's
+thouchpad was usable even with older code but some touchpads are completely
+broken now.
 
-Thank you again for your continued testing!
+We can re-instate the fix later when we make sure it works fr everyone.
 
-I believe that this one has been fixed by commit 844b9a8707f, which was
-added in v2.6.35-rc6.  This commit added rcu_my_thread_group_empty()
-to the list of rcu_dereference_check() conditions in the
-rcu_dereference_check_fdtable() macro.
+Thanks.
 
-							Thanx, Paul
+-- 
+Dmitry
