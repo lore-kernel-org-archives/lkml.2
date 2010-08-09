@@ -1,123 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab0HINYo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 09:24:44 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56680 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756244Ab0HINYl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 09:24:41 -0400
-Message-ID: <4C600171.5020405@canonical.com>
-Date: Mon, 09 Aug 2010 21:24:01 +0800
-From: Bryan Wu <bryan.wu@canonical.com>
-Reply-To: bryan.wu@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	id S1756590Ab0HIN0N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 09:26:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756452Ab0HIN0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 09:26:11 -0400
+Message-ID: <4C60021B.2070109@redhat.com>
+Date: Mon, 09 Aug 2010 10:26:51 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: felipe.balbi@nokia.com, linux-usb@vger.kernel.org
-CC: david-b@pacbell.net, kernel-team@lists.ubuntu.com,
-        linux-kernel@vger.kernel.org, ricardo.salveti@canonical.com,
-        linux-omap@vger.kernel.org
-Subject: Re: [PATCH] musb: move usb_add_hcd to the core init code from gadget
- code (v2)
-References: <1279895783-7313-1-git-send-email-bryan.wu@canonical.com>
-In-Reply-To: <1279895783-7313-1-git-send-email-bryan.wu@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-media@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 7 (IR)
+References: <20100807160710.b7c8d838.sfr@canb.auug.org.au>	<20100807203920.83134a60.randy.dunlap@oracle.com> <20100808135511.269f670c.randy.dunlap@oracle.com>
+In-Reply-To: <20100808135511.269f670c.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+Hi Randy,
 
-Any comments on this patch?
+Em 08-08-2010 17:55, Randy Dunlap escreveu:
+> On Sat, 7 Aug 2010 20:39:20 -0700 Randy Dunlap wrote:
+> 
+> [adding linux-media]
+> 
+>> On Sat, 7 Aug 2010 16:07:10 +1000 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> As the merge window is open, please do not add 2.6.37 material to your
+>>> linux-next included trees until after 2.6.36-rc1.
+>>>
+>>> Changes since 20100806:
+>>
+>> 2 sets of IR build errors (2 .config files attached):
+>>
 
-Thanks a lot,
--Bryan
+The patch bellow should fix the issue. The bad thing is that, if you deselect
+IR_CORE, several drivers like bttv would be deselected too.
 
+So, a further action would be to work on some solution for it.
 
-On 07/23/2010 10:36 PM, Bryan Wu wrote:
-> BugLink: http://bugs.launchpad.net/bugs/608312
->
-> v2:
-> fix the building error on latest 2.6.35-rc kernel, since v1 was generated in
-> 2.6.33 kernel.
->
-> v1:
-> usb_add_hcd was only called when we insmod the gadget class module or built-in
-> that gadget class driver. If musb is configured as OTG controller, we need to
-> insmod or built-in gadget class driver to make our Host mode fucntion works.
->
-> In our Ubuntu system, normally we compiled all the gadget class drivers as
-> modules. Then users can insmod the gadget modules as they want. But without the
-> gadget class driver running, we needs host function to support common USB
-> devices.
->
-> This patch fix this issue and tested on omap3 beagle board and Gumstix board.
->
-> Signed-off-by: Bryan Wu<bryan.wu@canonical.com>
-> ---
->   drivers/usb/musb/musb_core.c   |   13 +++++--------
->   drivers/usb/musb/musb_gadget.c |   18 ------------------
->   2 files changed, 5 insertions(+), 26 deletions(-)
->
-> diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
-> index 3b795c5..1b6d74c 100644
-> --- a/drivers/usb/musb/musb_core.c
-> +++ b/drivers/usb/musb/musb_core.c
-> @@ -1583,14 +1583,6 @@ irqreturn_t musb_interrupt(struct musb *musb)
->   		(devctl&  MUSB_DEVCTL_HM) ? "host" : "peripheral",
->   		musb->int_usb, musb->int_tx, musb->int_rx);
->
-> -#ifdef CONFIG_USB_GADGET_MUSB_HDRC
-> -	if (is_otg_enabled(musb) || is_peripheral_enabled(musb))
-> -		if (!musb->gadget_driver) {
-> -			DBG(5, "No gadget driver loaded\n");
-> -			return IRQ_HANDLED;
-> -		}
-> -#endif
-> -
->   	/* the core can interrupt us for multiple reasons; docs have
->   	 * a generic interrupt flowchart to follow
->   	 */
-> @@ -2128,6 +2120,11 @@ bad_config:
->
->   		status = musb_gadget_setup(musb);
->
-> +		if (is_otg_enabled(musb)) {
-> +			status = usb_add_hcd(musb_to_hcd(musb), -1, 0);
-> +			musb_start(musb);
-> +		}
-> +
->   		DBG(1, "%s mode, status %d, dev%02x\n",
->   			is_otg_enabled(musb) ? "OTG" : "PERIPHERAL",
->   			status,
-> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-> index 6fca870..9e55534 100644
-> --- a/drivers/usb/musb/musb_gadget.c
-> +++ b/drivers/usb/musb/musb_gadget.c
-> @@ -1761,24 +1761,6 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
->   		otg_set_peripheral(musb->xceiv,&musb->g);
->
->   		spin_unlock_irqrestore(&musb->lock, flags);
-> -
-> -		if (is_otg_enabled(musb)) {
-> -			DBG(3, "OTG startup...\n");
-> -
-> -			/* REVISIT:  funcall to other code, which also
-> -			 * handles power budgeting ... this way also
-> -			 * ensures HdrcStart is indirectly called.
-> -			 */
-> -			retval = usb_add_hcd(musb_to_hcd(musb), -1, 0);
-> -			if (retval<  0) {
-> -				DBG(1, "add_hcd failed, %d\n", retval);
-> -				spin_lock_irqsave(&musb->lock, flags);
-> -				otg_set_peripheral(musb->xceiv, NULL);
-> -				musb->gadget_driver = NULL;
-> -				musb->g.dev.driver = NULL;
-> -				spin_unlock_irqrestore(&musb->lock, flags);
-> -			}
-> -		}
->   	}
->
->   	return retval;
+The first alternative would be to write some stubs at ir-core.h to allow
+compiling the V4L/DVB drivers without IR support, removing the "depends on"
+for those drivers. The bad thing is that the subsystem headers will have some
+#ifs there.
 
+Another alternative would be to do this inside the drivers and/or drivers headers.
+In general, at driver level, there are just one or two functions called in order
+to activate/deactivate the remote controllers. So, IMHO, this would provide a cleaner
+way.
+
+I'll likely do some patches using the second alternative and see how it will look like.
+
+Cheers,
+Mauro.
+
+---
+
+commit c4cc9655223f7592a310d897429a4d8dfbf2259b
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Mon Aug 9 10:07:20 2010 -0300
+
+    V4L/DVB: Fix IR_CORE dependencies
+    
+    As pointed by Randy Dunlap <randy.dunlap@oracle.com>:
+    > ERROR: "ir_keydown" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+    > ERROR: "__ir_input_register" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+    > ERROR: "get_rc_map" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+    > ERROR: "ir_input_unregister" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+    > ERROR: "get_rc_map" [drivers/media/video/cx88/cx88xx.ko] undefined!
+    > ERROR: "ir_repeat" [drivers/media/video/cx88/cx88xx.ko] undefined!
+    > ERROR: "ir_input_unregister" [drivers/media/video/cx88/cx88xx.ko] undefined!
+    > ERROR: "ir_keydown" [drivers/media/video/cx88/cx88xx.ko] undefined!
+    > ERROR: "__ir_input_register" [drivers/media/video/cx88/cx88xx.ko] undefined!
+    > ERROR: "get_rc_map" [drivers/media/video/bt8xx/bttv.ko] undefined!
+    > ERROR: "ir_input_unregister" [drivers/media/video/bt8xx/bttv.ko] undefined!
+    > ERROR: "__ir_input_register" [drivers/media/video/bt8xx/bttv.ko] undefined!
+    > ERROR: "ir_g_keycode_from_table" [drivers/media/IR/ir-common.ko] undefined!
+    >
+    >
+    > #5101:
+    > (.text+0x8306e2): undefined reference to `ir_core_debug'
+    > (.text+0x830729): undefined reference to `ir_core_debug'
+    > ir-functions.c:(.text+0x830906): undefined reference to `ir_core_debug'
+    > (.text+0x8309d8): undefined reference to `ir_g_keycode_from_table'
+    > (.text+0x830acf): undefined reference to `ir_core_debug'
+    > (.text+0x830b92): undefined reference to `ir_core_debug'
+    > (.text+0x830bef): undefined reference to `ir_core_debug'
+    > (.text+0x830c6a): undefined reference to `ir_core_debug'
+    > (.text+0x830cf7): undefined reference to `ir_core_debug'
+    > budget-ci.c:(.text+0x89f5c8): undefined reference to `ir_keydown'
+    > budget-ci.c:(.text+0x8a0c58): undefined reference to `get_rc_map'
+    > budget-ci.c:(.text+0x8a0c80): undefined reference to `__ir_input_register'
+    > budget-ci.c:(.text+0x8a0ee0): undefined reference to `get_rc_map'
+    > budget-ci.c:(.text+0x8a11cd): undefined reference to `ir_input_unregister'
+    > (.text+0x8a8adb): undefined reference to `ir_input_unregister'
+    > dvb-usb-remote.c:(.text+0x8a9188): undefined reference to `get_rc_map'
+    > dvb-usb-remote.c:(.text+0x8a91b1): undefined reference to `__ir_input_register'
+    > dvb-usb-remote.c:(.text+0x8a9238): undefined reference to `get_rc_map'
+    > dib0700_core.c:(.text+0x8b04ca): undefined reference to `ir_keydown'
+    > dib0700_devices.c:(.text+0x8b2ea8): undefined reference to `ir_keydown'
+    > dib0700_devices.c:(.text+0x8b2ef0): undefined reference to `ir_keydown'
+    
+    Those breakages seem to be caused by two bad things at IR_CORE Kconfig:
+    
+    1) cx23885 is using select for IR_CORE;
+    2) the dvb-usb and sms dependency for IR_CORE were missing.
+    
+    While here, allow users to un-select IR.
+    
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/IR/Kconfig b/drivers/media/IR/Kconfig
+index 30e0491..490c57c 100644
+--- a/drivers/media/IR/Kconfig
++++ b/drivers/media/IR/Kconfig
+@@ -2,14 +2,21 @@ menuconfig IR_CORE
+ 	tristate "Infrared remote controller adapters"
+ 	depends on INPUT
+ 	default INPUT
++	---help---
++	  Enable support for Remote Controllers on Linux. This is
++	  needed in order to support several video capture adapters.
+ 
+-if IR_CORE
++	  Enable this option if you have a video capture board even
++	  if you don't need IR, as otherwise, you may not be able to
++	  compile the driver for your adapter.
+ 
+ config VIDEO_IR
+ 	tristate
+ 	depends on IR_CORE
+ 	default IR_CORE
+ 
++if IR_CORE
++
+ config LIRC
+ 	tristate
+ 	default y
+diff --git a/drivers/media/dvb/dvb-usb/Kconfig b/drivers/media/dvb/dvb-usb/Kconfig
+index 553b48a..fdc19bb 100644
+--- a/drivers/media/dvb/dvb-usb/Kconfig
++++ b/drivers/media/dvb/dvb-usb/Kconfig
+@@ -1,6 +1,6 @@
+ config DVB_USB
+ 	tristate "Support for various USB DVB devices"
+-	depends on DVB_CORE && USB && I2C && INPUT
++	depends on DVB_CORE && USB && I2C && IR_CORE
+ 	help
+ 	  By enabling this you will be able to choose the various supported
+ 	  USB1.1 and USB2.0 DVB devices.
+diff --git a/drivers/media/dvb/siano/Kconfig b/drivers/media/dvb/siano/Kconfig
+index 85a222c..e520bce 100644
+--- a/drivers/media/dvb/siano/Kconfig
++++ b/drivers/media/dvb/siano/Kconfig
+@@ -4,7 +4,7 @@
+ 
+ config SMS_SIANO_MDTV
+ 	tristate "Siano SMS1xxx based MDTV receiver"
+-	depends on DVB_CORE && INPUT && HAS_DMA
++	depends on DVB_CORE && IR_CORE && HAS_DMA
+ 	---help---
+ 	  Choose Y or M here if you have MDTV receiver with a Siano chipset.
+ 
+diff --git a/drivers/media/video/cx23885/Kconfig b/drivers/media/video/cx23885/Kconfig
+index 768f000..e1367b3 100644
+--- a/drivers/media/video/cx23885/Kconfig
++++ b/drivers/media/video/cx23885/Kconfig
+@@ -5,7 +5,7 @@ config VIDEO_CX23885
+ 	select VIDEO_BTCX
+ 	select VIDEO_TUNER
+ 	select VIDEO_TVEEPROM
+-	select IR_CORE
++	depends on IR_CORE
+ 	select VIDEOBUF_DVB
+ 	select VIDEOBUF_DMA_SG
+ 	select VIDEO_CX25840
