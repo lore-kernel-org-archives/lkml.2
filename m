@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab0HIGta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 02:49:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35520 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab0HIGt3 (ORCPT
+	id S1755415Ab0HIGtk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 02:49:40 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49509 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755400Ab0HIGti (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 02:49:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=hNIDcburJ38fRR6vyXvGXZNH5XpO30wIZyimr/nPbJ6o4snLcXESezouR8bDtscdm2
-         EYm0LH9OV78QgqU5/NGw5ZJlUH5Ye1gfchzb43DB+Bzy8EId6aj9ybq5igers5niCtx4
-         nDa+RnXL1n42GLaU+GabPTubG8O8TRrKonHgQ=
-Subject: [PATCH 3/4] mfd: wm831x-core - fix incorrect kfree(i2c) in
-	i2c_driver probe callback handler
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain
-Date: Mon, 09 Aug 2010 14:51:15 +0800
-Message-Id: <1281336675.18804.6.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Aug 2010 02:49:38 -0400
+Date: Mon, 9 Aug 2010 08:49:36 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Felipe Balbi <felipe.balbi@nokia.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Section Mismatches
+Message-ID: <20100809064936.GA14690@pengutronix.de>
+References: <20100804111156.GD19377@nokia.com> <20100804122659.GA13814@pengutronix.de> <20100809060831.GF2841@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100809060831.GF2841@nokia.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c_client received in probe() should not be kfree()'d.
+Hello Felipe,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/wm831x-core.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+On Mon, Aug 09, 2010 at 09:08:31AM +0300, Felipe Balbi wrote:
+> On Wed, Aug 04, 2010 at 02:26:59PM +0200, ext Uwe Kleine-König wrote:
+>> Hi Felipe,
+>>
+>> On Wed, Aug 04, 2010 at 02:11:56PM +0300, Felipe Balbi wrote:
+>>> I see that your commit 0db252452378aa7a9e001a13226e1cd1dc61453d removed
+>>> the *_driver from the symbol whitelist when referencing init section
+>>> (heh, it took a while), but could you explain what's the rationale
+>>> behind that ?
+>> The rational is that it's AFAIK wrong if a driver references a function
+>> that lives in .init.text.
+>
+> how about all the driver structures ? should they remove __init from  
+> probe() or stop saving the probe() function's pointer ?
+>
+> That can be done for e.g. platform drivers, but for cpufreq_driver  
+> structures, I can't see a way to avoid a section mismatch (not without  
+> changing the cpufreq code a bit, at least). And, to me, that init has to  
+> live in the .init.text section as it's pretty much only called to  
+> initialize the frequency table for the cpu.
+I think they need handling similar handling like the usb gadget drivers.
 
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index cb94e7e..1e7aaaf 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -1757,10 +1757,8 @@ static int wm831x_i2c_probe(struct i2c_client *i2c,
- 	struct wm831x *wm831x;
- 
- 	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
--	if (wm831x == NULL) {
--		kfree(i2c);
-+	if (wm831x == NULL)
- 		return -ENOMEM;
--	}
- 
- 	i2c_set_clientdata(i2c, wm831x);
- 	wm831x->dev = &i2c->dev;
+See
+
+	http://thread.gmane.org/gmane.linux.ports.ppc.embedded/37291/focus=34468
+
+for the changes I suggested there.
+
+Best regards
+Uwe
+
 -- 
-1.5.4.3
-
-
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
