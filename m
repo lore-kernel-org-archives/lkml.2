@@ -1,108 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab0HIVJt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 17:09:49 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:55427 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755586Ab0HIVJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 17:09:48 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v2] x86, UV: make kdump avoid stack dumps
-Cc: mingo@elte.hu, hpa@zytor.com
-Message-Id: <E1OiZcw-0001Hb-2g@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Mon, 09 Aug 2010 16:11:22 -0500
+	id S1756248Ab0HIVT0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 17:19:26 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:25602 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755237Ab0HIVTZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 17:19:25 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=7Awd4vsLCzQA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10
+ a=xqWC_Br6kY4A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=C-FMxcPHgfcgdeUZAkEA:9
+ a=MFPhBHoM948ecDh_grnvu8pGcX8A:4 a=CjuIK1q_8ugA:10
+Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <20100809195324.GG2109@tux1.beaverton.ibm.com>
+Date: Mon, 9 Aug 2010 17:19:22 -0400
+Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca>
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com>
+To: djwong@us.ibm.com
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2010-08-09, at 15:53, Darrick J. Wong wrote:
+> This patch attempts to coordinate barrier requests being sent in by fsync.  Instead of each fsync call initiating its own barrier, there's now a flag to indicate if (0) no barriers are ongoing, (1) we're delaying a short time to collect other fsync threads, or (2) we're actually in-progress on a barrier.
+> 
+> So, if someone calls ext4_sync_file and no barriers are in progress, the flag shifts from 0->1 and the thread delays for 500us to see if there are any other threads that are close behind in ext4_sync_file.  After that wait, the state transitions to 2 and the barrier is issued.  Once that's done, the state goes back to 0 and a completion is signalled.
 
-This replaces Version 1 of this patch, which broke the build when
-CONFIG_KEXEC and CONFIG_CRASH_DUMP were configured off.  In that case
-the storage for the 'in_crash_kexec' flag was never built.
+You shouldn't use a fixed delay for the thread.  500us _seems_ reasonable, if you have a single HDD.  If you have an SSD, or an NVRAM-backed array, then 2000 IOPS is a serious limitation.
 
-This v2 was submitted on 7/22, but apparently never seen (probably too close
-in date and name to v1, sent on 7/20).
+What is done in the JBD2 code is to scale the commit sleep interval based on the average commit time.  In fact, the ext4_force_commit-> ...->jbd2_journal_force_commit() call will itself be waiting in the jbd2 code to merge journal commits.  It looks like we are duplicating some of this machinery in ext4_sync_file() already.
 
-This version defines that flag as 0 if CONFIG_KEXEC is not set.
-The patch is tested with all combinations of those two options.
+It seems like a better idea to have a single piece of code to wait to merge the IOs.  For the non-journal ext4 filesystems it should implement the wait for merges explicitly, otherwise it should defer the wait to jbd2.
+
+Cheers, Andreas
 
 
-UV NMI callback's should not write stack dumps when a kdump is to be written.
 
-When invoking the crash kernel to write a dump, kdump_nmi_shootdown_cpus()
-uses NMI's to get all the cpu's to save their register context and halt.
 
-But the NMI interrupt handler runs a callback list.  This patch sets a flag
-to prevent any of those callbacks from interfering with the halt of the cpu.
 
-For UV, which currently has the only callback to which this is relevant, the
-uv_handle_nmi() callback should not do dumping of stacks.
-
-The 'in_crash_kexec' flag is defined as an extern in kdebug.h firstly
-because x2apic_uv_x.c includes it.  Secondly because some future callback
-might need the flag to know that it should not enter the debugger.
-(Such a scenario was in fact present in the 2.6.32 kernel, SuSE distribution,
- where a call to kdb needed to be avoided.)
-
-Diffed against 2.6.35
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
----
- arch/x86/include/asm/kdebug.h      |    6 ++++++
- arch/x86/kernel/apic/x2apic_uv_x.c |    4 ++++
- arch/x86/kernel/crash.c            |    3 +++
- 3 files changed, 13 insertions(+)
-
-Index: 100722.linux-tip/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- 100722.linux-tip.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ 100722.linux-tip/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -604,6 +604,10 @@ int uv_handle_nmi(struct notifier_block
- {
- 	if (reason != DIE_NMI_IPI)
- 		return NOTIFY_OK;
-+
-+	if (in_crash_kexec)
-+		/* do nothing if entering the crash kernel */
-+		return NOTIFY_OK;
- 	/*
- 	 * Use a lock so only one cpu prints at a time
- 	 * to prevent intermixed output.
-Index: 100722.linux-tip/arch/x86/kernel/crash.c
-===================================================================
---- 100722.linux-tip.orig/arch/x86/kernel/crash.c
-+++ 100722.linux-tip/arch/x86/kernel/crash.c
-@@ -28,6 +28,8 @@
- #include <asm/reboot.h>
- #include <asm/virtext.h>
- 
-+int in_crash_kexec;
-+
- #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
- 
- static void kdump_nmi_callback(int cpu, struct die_args *args)
-@@ -61,6 +63,7 @@ static void kdump_nmi_callback(int cpu,
- 
- static void kdump_nmi_shootdown_cpus(void)
- {
-+	in_crash_kexec = 1;
- 	nmi_shootdown_cpus(kdump_nmi_callback);
- 
- 	disable_local_APIC();
-Index: 100722.linux-tip/arch/x86/include/asm/kdebug.h
-===================================================================
---- 100722.linux-tip.orig/arch/x86/include/asm/kdebug.h
-+++ 100722.linux-tip/arch/x86/include/asm/kdebug.h
-@@ -33,5 +33,11 @@ extern void __show_regs(struct pt_regs *
- extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
- extern void oops_end(unsigned long, struct pt_regs *, int signr);
-+#ifdef CONFIG_KEXEC
-+extern int in_crash_kexec;
-+#else
-+/* no crash dump is ever in progress if no crash kernel can be kexec'd */
-+#define in_crash_kexec 0
-+#endif
- 
- #endif /* _ASM_X86_KDEBUG_H */
