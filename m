@@ -1,37 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab0HIKnJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 06:43:09 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:47214 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756076Ab0HIKnH (ORCPT
+	id S1756148Ab0HIKrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 06:47:51 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43309 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755678Ab0HIKrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 06:43:07 -0400
-Date: Mon, 9 Aug 2010 11:57:35 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alexander Clouter <alex@digriz.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]exit.c: support larger exit code
-Message-ID: <20100809115735.0ca4951e@lxorguk.ukuu.org.uk>
-In-Reply-To: <dlq4j7-0tp.ln1@chipmunk.wormnet.eu>
-References: <14414B36FFA0F1418CB707361EAA199A0194FB16@CNBEEXC006.nsn-intra.net>
-	<dlq4j7-0tp.ln1@chipmunk.wormnet.eu>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Aug 2010 06:47:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=r7iCLEGJDmnk9FeH2eVSt5pBwea4cGZNet1ecbhwuFf0V7zvPCjGLNiyI7FyDY0BZo
+         1gd168kHuHZB4epdzQMImuiWMYS5sdRFcrV40VEhihKj0MKYRzNf8Iwp5Mh8MH9/+MPh
+         RDugY93R1neDgr1lVxWd3k2Pw3D5ihu8vxntM=
+MIME-Version: 1.0
+Date: Mon, 9 Aug 2010 11:47:48 +0100
+Message-ID: <AANLkTimCtN1hten5v+tdwG9yiKsFmSMPcQU-eLefDQkc@mail.gmail.com>
+Subject: [PATCH] Function btree_get_extent: Incorrect if-else if statement
+From: =?ISO-8859-1?Q?Andr=E9_Nogueira?= <andre.neo.net@gmail.com>
+To: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> There is probably a deeper reason as errno.h/errno-base.h all seem to be 
-> one byte return codes too.  I'm starting to ponder if that top three 
-> bytes are meant to carry some other information?
+The btree_get_extent function (in file disk-io.c) calls the
+add_extent_mapping (in file extent_map.c). The add_extent_mapping
+function can return two values: 0 or -EEXIST.
 
-man 2 wait
+After the call, it is used an if-else if statement. If the result is
+-EEXIST, the if statement is executed. If the result is 0, the else if
+statement will not be executed because it is false.
 
-and also note that int was 16bits in the times when Unix wait/exit
-behaviour was formulated.
+Thank you.
 
-Alan
+Signed-off-by: Andre Nogueira <andre.neo.net@gmail.com>
+
+---
+ fs/btrfs/disk-io.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 34f7c37..76eb161 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -164,7 +164,7 @@ static struct extent_map *btree_get_extent(struct
+inode *inode,
+ 						   failed_len);
+ 			ret = -EIO;
+ 		}
+-	} else if (ret) {
++	} else {
+ 		free_extent_map(em);
+ 		em = NULL;
+ 	}
+-- 
+1.6.3.3
