@@ -1,115 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab0HITwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 15:52:49 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:38369 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755795Ab0HITwr (ORCPT
+	id S1756097Ab0HIUC4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 16:02:56 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52964 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755797Ab0HIUCx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 15:52:47 -0400
-Subject: Re: [BISECTED/2.6.35+] Regression: Machine runs really slowly
- after commit f12a15be
-From: john stultz <johnstul@us.ibm.com>
-To: Alexey Fisher <bug-track@fisher-privat.net>
-Cc: Priit Laes <plaes@plaes.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-        tglx@linutronix.de, Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <1281382707.22355.0.camel@mini>
-References: <1281186941.23274.5.camel@chi>
-	 <1281380498.2444.2.camel@localhost.localdomain>
-	 <1281382707.22355.0.camel@mini>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Aug 2010 12:51:58 -0700
-Message-ID: <1281383518.2444.7.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Aug 2010 16:02:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vDqflKEOi0S/TYNRP189zqH3s8PeqXLcHpcTCsBWEqjvmQZX5dxM14Sr6aetUzMY53
+         49sMo9ucy63NVUWulk1QTxSvkByb0PSRFCZt3q9nmcRCIc4Wvz7AbYgJk8FY+eAGcfcq
+         y/K2U5MplqecoR7lf79MPS49N9HZ287T5f3Ek=
+Date: Tue, 10 Aug 2010 00:02:45 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100809200245.GF6056@lenovo>
+References: <20100804151858.GB5130@lenovo> <20100804155002.GS3353@redhat.com> <20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo> <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo> <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100809194829.GB26154@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-09 at 21:38 +0200, Alexey Fisher wrote:
-> cat /sys/devices/system/clocksource/clocksource0/current_clocksource 
-> hpet
+On Mon, Aug 09, 2010 at 09:48:29PM +0200, Robert Richter wrote:
+> On 06.08.10 10:21:31, Don Zickus wrote:
+> > On Fri, Aug 06, 2010 at 08:52:03AM +0200, Robert Richter wrote:
 > 
-> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
-> hpet acpi_pm 
+> > > I was playing around with it yesterday trying to fix this. My idea is
+> > > to skip an unkown nmi if the privious nmi was a *handled* perfctr
+> > 
+> > You might want to add a little more logic that says *handled* _and_ had
+> > more than one perfctr trigger.  Most of the time only one perfctr is
+> > probably triggering, so you might be eating unknown_nmi's needlessly.
+> > 
+> > Just a thought.
+> 
+> Yes, that's true. It could be implemented on top of the patch below.
+> 
+> > 
+> > > nmi. I will probably post an rfc patch early next week.
+> 
+> Here it comes:
+> 
 
+Thanks Robert! Looks good to me, one nit below.
 
-On Mon, 2010-08-09 at 22:43 +0300, Priit Laes wrote:
-> cat /sys/devices/system/clocksource/clocksource0/current_clocksource
-> hpet
-> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
-> hpet acpi_pm 
+> From d2739578199d881ae6a9537c1b96a0efd1cdea43 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Thu, 5 Aug 2010 16:19:59 +0200
+> Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
+>
+... 
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index f2da20f..c3cd159 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -1200,12 +1200,16 @@ void perf_events_lapic_init(void)
+>  	apic_write(APIC_LVTPC, APIC_DM_NMI);
+>  }
+>  
+> +static DEFINE_PER_CPU(unsigned int, perfctr_handled);
+> +
+>  static int __kprobes
+>  perf_event_nmi_handler(struct notifier_block *self,
+>  			 unsigned long cmd, void *__args)
+>  {
+>  	struct die_args *args = __args;
+>  	struct pt_regs *regs;
+> +	unsigned int this_nmi;
+> +	unsigned int prev_nmi;
+>  
+>  	if (!atomic_read(&active_events))
+>  		return NOTIFY_DONE;
+> @@ -1214,7 +1218,26 @@ perf_event_nmi_handler(struct notifier_block *self,
+>  	case DIE_NMI:
+>  	case DIE_NMI_IPI:
+>  		break;
+> -
+> +	case DIE_NMIUNKNOWN:
+> +		/*
+> +		 * This one could be our NMI, two events could trigger
+> +		 * 'simultaneously' raising two back-to-back NMIs. If
+> +		 * the first NMI handles both, the latter will be
+> +		 * empty and daze the CPU.
+> +		 *
+> +		 * So, we drop this unknown NMI if the previous NMI
+> +		 * was handling a perfctr. Otherwise we pass it and
+> +		 * let the kernel handle the unknown nmi.
+> +		 *
+> +		 * Note: this could be improved if we drop unknown
+> +		 * NMIs only if we handled more than one perfctr in
+> +		 * the previous NMI.
+> +		 */
+> +		this_nmi = percpu_read(irq_stat.__nmi_count);
+> +		prev_nmi = __get_cpu_var(perfctr_handled);
+> +		if (this_nmi == prev_nmi + 1)
+> +			return NOTIFY_STOP;
+> +		return NOTIFY_DONE;
+>  	default:
+>  		return NOTIFY_DONE;
+>  	}
+> @@ -1222,14 +1245,12 @@ perf_event_nmi_handler(struct notifier_block *self,
+>  	regs = args->regs;
+>  
+>  	apic_write(APIC_LVTPC, APIC_DM_NMI);
 
+If only I'm not missing something this apic_write should go up to
+"case DIE_NMIUNKNOWN" site, no?
 
-Ok. Good. Chris Wilson has created the following patch which should
-hopefully resolve this issue. It would be great if you could try booting
-with it to verify that there are no other problems lurking here.
-
-Thanks again for the great bug reporting!
-
-thanks
--john
-
-
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: [PATCH] x86/hpet: Use the FSEC_PER_SEC constant for femto-second
- periods
-
-The current computation, introduced with f12a15be63, of FSEC_PER_SEC using
-the multiplication of (FSEC_PER_NSEC * NSEC_PER_SEC) is performed only
-with 32bit integers on small machines, resulting in an overflow and a
-*very* short intervals being programmed.  An interrupt storm follows.
-
-Note that we also have to specify FSEC_PER_SEC as being long long to
-overcome the same limitations.
-
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/hpet.c |    4 ++--
- include/linux/time.h   |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index 33dbcc4..351f9c0 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -582,7 +582,7 @@ static void init_one_hpet_msi_clockevent(struct hpet_dev *hdev, int cpu)
- 	 * scaled math multiplication factor for nanosecond to hpet tick
- 	 * conversion.
- 	 */
--	hpet_freq = 1000000000000000ULL;
-+	hpet_freq = FSEC_PER_SEC;
- 	do_div(hpet_freq, hpet_period);
- 	evt->mult = div_sc((unsigned long) hpet_freq,
- 				      NSEC_PER_SEC, evt->shift);
-@@ -837,7 +837,7 @@ static int hpet_clocksource_register(void)
- 	 * cyc/sec = FSEC_PER_SEC/hpet_period(fsec/cyc)
- 	 * cyc/sec = (FSEC_PER_NSEC * NSEC_PER_SEC)/hpet_period
- 	 */
--	hpet_freq = FSEC_PER_NSEC * NSEC_PER_SEC;
-+	hpet_freq = FSEC_PER_SEC;
- 	do_div(hpet_freq, hpet_period);
- 	clocksource_register_hz(&clocksource_hpet, (u32)hpet_freq);
-
-diff --git a/include/linux/time.h b/include/linux/time.h
-index cb34e35..1261270 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -38,7 +38,7 @@ extern struct timezone sys_tz;
- #define NSEC_PER_MSEC	1000000L
- #define USEC_PER_SEC	1000000L
- #define NSEC_PER_SEC	1000000000L
--#define FSEC_PER_SEC	1000000000000000L
-+#define FSEC_PER_SEC	1000000000000000LL
-
- #define TIME_T_MAX	(time_t)((1UL << ((sizeof(time_t) << 3) - 1)) - 1)
-
--- 
-1.7.1
-
-
-
-
+	-- Cyrill
