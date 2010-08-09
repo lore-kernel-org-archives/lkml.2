@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0HIGuB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 02:50:01 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49520 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487Ab0HIGt7 (ORCPT
+	id S1755425Ab0HIGuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 02:50:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47232 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754922Ab0HIGub (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 02:49:59 -0400
-Date: Mon, 9 Aug 2010 08:49:57 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-Message-ID: <20100809064957.GB16661@pengutronix.de>
-References: <4C5F9B25.8080401@st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C5F9B25.8080401@st.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 9 Aug 2010 02:50:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=MS79qC21hjE0PSvE3Hobx9lPRykfowkxtJG42ToH7J7PADQPdnVb5S6Zy/y2N8/zAD
+         18VEUB1qqoIujEEgatAOhs51SKHErDvR1ApLdMjB75dqjGX7xtjfttpH/yOYt1BkJbfs
+         U79mcN+f4UoLr8LOjM4jZjmgmylFFp66d//wU=
+Subject: [PATCH 4/4] mfd: wm8994-core - fix incorrect kfree(i2c) in
+	i2c_driver probe callback handler
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Content-Type: text/plain
+Date: Mon, 09 Aug 2010 14:52:16 +0800
+Message-Id: <1281336736.18804.7.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The i2c_client received in probe() should not be kfree()'d.
 
-On Mon, Aug 09, 2010 at 11:37:33AM +0530, viresh kumar wrote:
-> Hello,
-> 
-> Mail server in ST has recently changed and now we have Microsoft
-> exchange server. We are using thunderbird as mail client.
-> What we observed with this server is that patch are broken now while
-> sending as well as receiving. Tabs are replaced by spaces and may
-> be some other too which we haven't observed.
-unlucky you.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/wm8994-core.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
+index 69533f5..b3b2aaf 100644
+--- a/drivers/mfd/wm8994-core.c
++++ b/drivers/mfd/wm8994-core.c
+@@ -497,10 +497,8 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
+ 	struct wm8994 *wm8994;
  
-> Has anybody found a solution to this kind of issues? Are there any
-> workarounds possible?
-git.git has some tips for thunderbird, see
-
-	http://git.kernel.org/?p=git/git.git;a=blob;f=Documentation/SubmittingPatches;hb=HEAD
-
-and look for the section titled "Thunderbird" (small surprise).
-
-Best regards
-Uwe
-
+ 	wm8994 = kzalloc(sizeof(struct wm8994), GFP_KERNEL);
+-	if (wm8994 == NULL) {
+-		kfree(i2c);
++	if (wm8994 == NULL)
+ 		return -ENOMEM;
+-	}
+ 
+ 	i2c_set_clientdata(i2c, wm8994);
+ 	wm8994->dev = &i2c->dev;
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.5.4.3
+
+
+
