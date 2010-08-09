@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197Ab0HITc2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 15:32:28 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37938 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754982Ab0HITc1 convert rfc822-to-8bit (ORCPT
+	id S1755311Ab0HITc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 15:32:56 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52814 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061Ab0HITcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 15:32:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=tlqK9iXedf8xo0DYARodo/Hx7juM+LgOg4+1uOLtOFVEstj4glHaqdzeR+UHXOB7g
-	DaTvg+kXFJfN2tWRA6Zyw==
+	Mon, 9 Aug 2010 15:32:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=E8n2/1lGruLx1HSKg/kcSC9oqzq7wqu7D68hMVaidWHfisApgKckM1MKUfAiuNm8Be
+         lKwGrPCDVPG1nh+d7b6AlAkWC5PRQE1G7lHvh/vQBXfYEBrsxj2KkacFi0BIvMrig+6O
+         fL8bjZ15YF0tjV6dvJPd7KkHz+0dU0ZSC5DqE=
+Date: Mon, 9 Aug 2010 23:32:46 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: herbert@gondor.hengli.com.au, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: n2 RNG driver bogus cast removal
+Message-ID: <20100809193246.GA11374@albatros>
+References: <20100809.004514.73697921.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <20100809201822.441905f7@lxorguk.ukuu.org.uk>
-References: <20100806225453.GA3947@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
-	<AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
-	<alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
-	<20100807061558.GA28087@thunk.org>
-	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
-	<20100808155719.GB3635@thunk.org>
-	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
-	<20100808213821.GD3635@thunk.org>
-	<20100809112453.77210acc@lxorguk.ukuu.org.uk>
-	<20100809181638.GI3026@linux.vnet.ibm.com>
-	<20100809201822.441905f7@lxorguk.ukuu.org.uk>
-Date: Mon, 9 Aug 2010 12:32:21 -0700
-Message-ID: <AANLkTimEQ9PMZ+D-U2M-SuejcuHhGk=_MrkFLBx9WtoC@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-From: Brian Swetland <swetland@google.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: paulmck@linux.vnet.ibm.com, "Ted Ts'o" <tytso@mit.edu>,
-        Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100809.004514.73697921.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 9, 2010 at 12:18 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> But wouldn't an office suite run as a power-oblivious application on an
->> Android device?  After all, office applications do not need to run when
->
-> I was waiting for soemone to leap down the pit I dug  Office suites have
-> some quite important background activities. Consider the case of a power
-> oblivious Open Office. You type a critical document, you suspend, your
-> phone battery dies a bit later, you lost your document. Office suites do
-> timed backing up as one simple obvious example. That could become a power
-> aware behaviour but the truely power oblivious office suite is a myth.
->
->> the screen is turned off, so these the applications do not need to use
->> suspend blockers.  That said, I could easily imagine that significant
->> work would be required to make OpenOffice run on Android, not due to
->> suspend blockers, but rather due to Android's unusual user space.
->
-> You are tightly linking suspend blockers with Android. If they were a
-> sensible general solution they would be generic not tied closely to
-> Android
+On Mon, Aug 09, 2010 at 00:45 -0700, David Miller wrote:
+> 
+> Kulikov, can you at least build test your patches?  Casts are not
+> always incorrect, particularly when private cookies are "unsigned
+> long" as is the case here:
+> 
+> drivers/char/hw_random/n2-drv.c: In function ‘n2rng_data_read’:
+> drivers/char/hw_random/n2-drv.c:390: warning: initialization makes pointer from integer without a cast
+Ahh, shame on me... I'd compiled this on x86 and looked through error
+log, I wrongly pointed out that there is no error at this line. As I see
+now, this tactic is incorrect. I'd not do this any more, sorry for
+this...
 
-Doesn't the same problem exist on my linux laptop?  I write out my
-manifesto in open office, close the lid of my laptop, the system
-suspends before my huge document finishes writing out, later my
-battery dies or I foolishly remove it or whatnot...  the main
-difference seems to be that laptops, with their big 'ol batteries, are
-less aggressive about power management and the result is wider windows
-before and less frequent wakeups from suspend and thus better odds at
-missing the race condition.
-
-As Arve has pointed out previously, there are a number of uses for
-suspend blockers, even on plugged-into-the-wall systems -- take his
-example of wanting his mythtv backend to power down when not busy, but
-never power down when he happens to be using it on console, or issues
-with multiple services that want to wake up and keep the device awake
-while working.
-
-Brian
+> 
+> Herbert, please revert this change, thanks.  And I suspect there
+> might be more of these hwrng driver duds that went into the tree,
+> it's worth checking out. :-)
+> 
+> Thanks.
+> 
+> commit 8b9cfdca9c52f7d39c3ccfac1668e31c20c9f42e
+> Author: Kulikov Vasiliy <segooon@gmail.com>
+> Date:   Mon Jul 5 21:25:06 2010 +0800
+> 
+>     hwrng: n2-drv - remove casts from void*
+>     
+>     Remove unnesessary casts from void*.
+>     
+>     Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+>     Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+> 
