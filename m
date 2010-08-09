@@ -1,71 +1,372 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754277Ab0HISi6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:38:58 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:63924 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075Ab0HISi4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:38:56 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Andy Whitcroft <apw@canonical.com>
-Subject: Re: [GIT PATCH] TTY patches for 2.6.36
-Date: Mon, 9 Aug 2010 20:38:49 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Greg KH <gregkh@suse.de>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-References: <20100805213528.GA13794@kroah.com> <20100806202228.GA6153@suse.de> <AANLkTinaQz22DAzrcvYREWAe9AFv8enC88Gu_9o_Ghg-@mail.gmail.com>
-In-Reply-To: <AANLkTinaQz22DAzrcvYREWAe9AFv8enC88Gu_9o_Ghg-@mail.gmail.com>
+	id S1753926Ab0HISkF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:40:05 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:44301 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752606Ab0HISkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 14:40:03 -0400
+Message-ID: <4C604B7F.5040105@austin.ibm.com>
+Date: Mon, 09 Aug 2010 13:39:59 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
+Subject: [PATCH 5/8] v5  Allow memory_block to span multiple memory sections
+References: <4C60407C.2080608@austin.ibm.com>
+In-Reply-To: <4C60407C.2080608@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008092038.49439.arnd@arndb.de>
-X-Provags-ID: V02:K0:EiU5+nbEz2RdiPFCOuY1BmlzTvDmJLsL2CS23p3oZno
- YV9k24QXawMmp7A0FZWIPe8zdB8ai+I6DJ81NU3ikabv8ARUqM
- GCTJzgwWfZA6AvtVhEb/K2XWhwRccit1rXWURoKckPGUVy+M7+
- mrUCSOp9Wh/paDXLKWIIVI8NzeAGlLISz1JWgwo9WODwwhKggN
- P5f1Uymd4BWqbR+mqPOKA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 August 2010, Andy Whitcroft wrote:
-> With the new locking the BTM is held in place of the BKL, which
-> effectivly means throughout open and close processing, which
-> effectively means all TTY open/closes are serialised throughout
-> regardless of the length of the shutdown processing.  The EIO appears
-> to be no longer returnable.
-> 
-> Is this change in semantics expected?  If not, it is likely something
-> which could be addressed separately after merging, as long as we are
-> aware.
+Update the memory sysfs code that each sysfs memory directory is now
+considered a memory block that can contain multiple memory sections per
+memory block.  The default size of each memory block is SECTION_SIZE_BITS
+to maintain the current behavior of having a single memory section per
+memory block (i.e. one sysfs directory per memory section).
 
-I audited (or tried to) all code that is able to sleep while holding the
-BTM. In the cases that looked like they might sleep long, I added explicit
-tty_unlock()/tty_lock() pairs around the sleeping code.
+For architectures that want to have memory blocks span multiple
+memory sections they need only define their own memory_block_size_bytes()
+routine.
 
-Code that potentially sleeps but should not do so for an indefinite
-time (e.g. kmalloc(GFP_KERNEL)), I did not do this and still hold the BKL.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-This means the code shifted to holding the BTM more often than it used
-to hold the BKL, but for cases where we wait on user or hardware interaction,
-it should still behave as it used to. If you found a place where this
-is not true, that is probably an oversight and we should add explicit
-tty_unlock() statements around it.
+---
+ drivers/base/memory.c |  148 ++++++++++++++++++++++++++++++++++----------------
+ 1 file changed, 103 insertions(+), 45 deletions(-)
 
-The problem is that we cannot easily give up the BTM while already holding
-tty_port->mutex, tty_port->buf_mutex, console_semaphore, tty->termios_mutex
-or tty->atomic_write_lock, which would give an AB-BA deadlock without
-the autorelease semantics of the BKL. Similarly, any wait_event or
-flush_work_queue potentially has the same problem (besides the fact that
-it can self-deadlock what it waits for tried to take the BTM). Auditing
-all these was the bulk of the work for the conversion.
+Index: linux-2.6/drivers/base/memory.c
+===================================================================
+--- linux-2.6.orig/drivers/base/memory.c	2010-08-09 07:50:20.000000000 -0500
++++ linux-2.6/drivers/base/memory.c	2010-08-09 07:50:28.000000000 -0500
+@@ -30,6 +30,14 @@
+ static DEFINE_MUTEX(mem_sysfs_mutex);
+ 
+ #define MEMORY_CLASS_NAME	"memory"
++#define MIN_MEMORY_BLOCK_SIZE	(1 << SECTION_SIZE_BITS)
++
++static int sections_per_block;
++
++static inline int base_memory_block_id(int section_nr)
++{
++	return (section_nr / sections_per_block) * sections_per_block;
++}
+ 
+ static struct sysdev_class memory_sysdev_class = {
+ 	.name = MEMORY_CLASS_NAME,
+@@ -84,22 +92,21 @@ EXPORT_SYMBOL(unregister_memory_isolate_
+  * register_memory - Setup a sysfs device for a memory block
+  */
+ static
+-int register_memory(struct memory_block *memory, struct mem_section *section)
++int register_memory(struct memory_block *memory)
+ {
+ 	int error;
+ 
+ 	memory->sysdev.cls = &memory_sysdev_class;
+-	memory->sysdev.id = __section_nr(section);
++	memory->sysdev.id = memory->start_phys_index;
+ 
+ 	error = sysdev_register(&memory->sysdev);
+ 	return error;
+ }
+ 
+ static void
+-unregister_memory(struct memory_block *memory, struct mem_section *section)
++unregister_memory(struct memory_block *memory)
+ {
+ 	BUG_ON(memory->sysdev.cls != &memory_sysdev_class);
+-	BUG_ON(memory->sysdev.id != __section_nr(section));
+ 
+ 	/* drop the ref. we got in remove_memory_block() */
+ 	kobject_put(&memory->sysdev.kobj);
+@@ -133,13 +140,16 @@ static ssize_t show_mem_end_phys_index(s
+ static ssize_t show_mem_removable(struct sys_device *dev,
+ 			struct sysdev_attribute *attr, char *buf)
+ {
+-	unsigned long start_pfn;
+-	int ret;
++	unsigned long i, pfn;
++	int ret = 1;
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, sysdev);
+ 
+-	start_pfn = section_nr_to_pfn(mem->start_phys_index);
+-	ret = is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
++	for (i = mem->start_phys_index; i <= mem->end_phys_index; i++) {
++		pfn = section_nr_to_pfn(i);
++		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
++	}
++
+ 	return sprintf(buf, "%d\n", ret);
+ }
+ 
+@@ -192,17 +202,14 @@ int memory_isolate_notify(unsigned long
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+-memory_block_action(struct memory_block *mem, unsigned long action)
++memory_section_action(unsigned long phys_index, unsigned long action)
+ {
+ 	int i;
+-	unsigned long psection;
+ 	unsigned long start_pfn, start_paddr;
+ 	struct page *first_page;
+ 	int ret;
+-	int old_state = mem->state;
+ 
+-	psection = mem->start_phys_index;
+-	first_page = pfn_to_page(psection << PFN_SECTION_SHIFT);
++	first_page = pfn_to_page(phys_index << PFN_SECTION_SHIFT);
+ 
+ 	/*
+ 	 * The probe routines leave the pages reserved, just
+@@ -215,8 +222,8 @@ memory_block_action(struct memory_block
+ 				continue;
+ 
+ 			printk(KERN_WARNING "section number %ld page number %d "
+-				"not reserved, was it already online? \n",
+-				psection, i);
++				"not reserved, was it already online?\n",
++				phys_index, i);
+ 			return -EBUSY;
+ 		}
+ 	}
+@@ -227,18 +234,13 @@ memory_block_action(struct memory_block
+ 			ret = online_pages(start_pfn, PAGES_PER_SECTION);
+ 			break;
+ 		case MEM_OFFLINE:
+-			mem->state = MEM_GOING_OFFLINE;
+ 			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+ 			ret = remove_memory(start_paddr,
+ 					    PAGES_PER_SECTION << PAGE_SHIFT);
+-			if (ret) {
+-				mem->state = old_state;
+-				break;
+-			}
+ 			break;
+ 		default:
+-			WARN(1, KERN_WARNING "%s(%p, %ld) unknown action: %ld\n",
+-					__func__, mem, action, action);
++			WARN(1, KERN_WARNING "%s(%ld, %ld) unknown action: "
++			     "%ld\n", __func__, phys_index, action, action);
+ 			ret = -EINVAL;
+ 	}
+ 
+@@ -248,7 +250,7 @@ memory_block_action(struct memory_block
+ static int memory_block_change_state(struct memory_block *mem,
+ 		unsigned long to_state, unsigned long from_state_req)
+ {
+-	int ret = 0;
++	int i, ret = 0;
+ 	mutex_lock(&mem->state_mutex);
+ 
+ 	if (mem->state != from_state_req) {
+@@ -256,8 +258,21 @@ static int memory_block_change_state(str
+ 		goto out;
+ 	}
+ 
+-	ret = memory_block_action(mem, to_state);
+-	if (!ret)
++	if (to_state == MEM_OFFLINE)
++		mem->state = MEM_GOING_OFFLINE;
++
++	for (i = mem->start_phys_index; i <= mem->end_phys_index; i++) {
++		ret = memory_section_action(i, to_state);
++		if (ret)
++			break;
++	}
++
++	if (ret) {
++		for (i = mem->start_phys_index; i <= mem->end_phys_index; i++)
++			memory_section_action(i, from_state_req);
++
++		mem->state = from_state_req;
++	} else
+ 		mem->state = to_state;
+ 
+ out:
+@@ -270,20 +285,15 @@ store_mem_state(struct sys_device *dev,
+ 		struct sysdev_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct memory_block *mem;
+-	unsigned int phys_section_nr;
+ 	int ret = -EINVAL;
+ 
+ 	mem = container_of(dev, struct memory_block, sysdev);
+-	phys_section_nr = mem->start_phys_index;
+-
+-	if (!present_section_nr(phys_section_nr))
+-		goto out;
+ 
+ 	if (!strncmp(buf, "online", min((int)count, 6)))
+ 		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
+ 	else if(!strncmp(buf, "offline", min((int)count, 7)))
+ 		ret = memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
+-out:
++
+ 	if (ret)
+ 		return ret;
+ 	return count;
+@@ -460,12 +470,13 @@ struct memory_block *find_memory_block(s
+ 	struct sys_device *sysdev;
+ 	struct memory_block *mem;
+ 	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
++	int block_id = base_memory_block_id(__section_nr(section));
+ 
+ 	/*
+ 	 * This only works because we know that section == sysdev->id
+ 	 * slightly redundant with sysdev_register()
+ 	 */
+-	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
++	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, block_id);
+ 
+ 	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
+ 	if (!kobj)
+@@ -477,26 +488,26 @@ struct memory_block *find_memory_block(s
+ 	return mem;
+ }
+ 
+-static int add_memory_block(int nid, struct mem_section *section,
+-			unsigned long state, enum mem_add_context context)
++static int init_memory_block(struct memory_block **memory,
++			     struct mem_section *section, unsigned long state)
+ {
+-	struct memory_block *mem = kzalloc(sizeof(*mem), GFP_KERNEL);
++	struct memory_block *mem;
+ 	unsigned long start_pfn;
+ 	int ret = 0;
+ 
++	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+ 	if (!mem)
+ 		return -ENOMEM;
+ 
+-	mutex_lock(&mem_sysfs_mutex);
+-
+-	mem->start_phys_index = __section_nr(section);
++	mem->start_phys_index = base_memory_block_id(__section_nr(section));
++	mem->end_phys_index = mem->start_phys_index + sections_per_block - 1;
+ 	mem->state = state;
+ 	atomic_inc(&mem->section_count);
+ 	mutex_init(&mem->state_mutex);
+ 	start_pfn = section_nr_to_pfn(mem->start_phys_index);
+ 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+ 
+-	ret = register_memory(mem, section);
++	ret = register_memory(mem);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, phys_index);
+ 	if (!ret)
+@@ -507,8 +518,29 @@ static int add_memory_block(int nid, str
+ 		ret = mem_create_simple_file(mem, phys_device);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, removable);
++
++	*memory = mem;
++	return ret;
++}
++
++static int add_memory_section(int nid, struct mem_section *section,
++			unsigned long state, enum mem_add_context context)
++{
++	struct memory_block *mem;
++	int ret = 0;
++
++	mutex_lock(&mem_sysfs_mutex);
++
++	mem = find_memory_block(section);
++	if (mem) {
++		atomic_inc(&mem->section_count);
++		kobject_put(&mem->sysdev.kobj);
++	} else
++		ret = init_memory_block(&mem, section, state);
++
+ 	if (!ret) {
+-		if (context == HOTPLUG)
++		if (context == HOTPLUG &&
++		    atomic_read(&mem->section_count) == sections_per_block)
+ 			ret = register_mem_sect_under_node(mem, nid);
+ 	}
+ 
+@@ -531,8 +563,10 @@ int remove_memory_block(unsigned long no
+ 		mem_remove_simple_file(mem, state);
+ 		mem_remove_simple_file(mem, phys_device);
+ 		mem_remove_simple_file(mem, removable);
+-		unregister_memory(mem, section);
+-	}
++		unregister_memory(mem);
++		kfree(mem);
++	} else
++		kobject_put(&mem->sysdev.kobj);
+ 
+ 	mutex_unlock(&mem_sysfs_mutex);
+ 	return 0;
+@@ -544,7 +578,7 @@ int remove_memory_block(unsigned long no
+  */
+ int register_new_memory(int nid, struct mem_section *section)
+ {
+-	return add_memory_block(nid, section, MEM_OFFLINE, HOTPLUG);
++	return add_memory_section(nid, section, MEM_OFFLINE, HOTPLUG);
+ }
+ 
+ int unregister_memory_section(struct mem_section *section)
+@@ -555,6 +589,26 @@ int unregister_memory_section(struct mem
+ 	return remove_memory_block(0, section, 0);
+ }
+ 
++u32 __weak memory_block_size_bytes(void)
++{
++	return MIN_MEMORY_BLOCK_SIZE;
++}
++
++static u32 get_memory_block_size(void)
++{
++	u32 block_sz;
++
++	block_sz = memory_block_size_bytes();
++
++	/* Validate blk_sz is a power of 2 and not less than section size */
++	if ((block_sz & (block_sz - 1)) || (block_sz < MIN_MEMORY_BLOCK_SIZE)) {
++		WARN_ON(1);
++		block_sz = MIN_MEMORY_BLOCK_SIZE;
++	}
++
++	return block_sz;
++}
++
+ /*
+  * Initialize the sysfs support for memory devices...
+  */
+@@ -563,12 +617,16 @@ int __init memory_dev_init(void)
+ 	unsigned int i;
+ 	int ret;
+ 	int err;
++	int block_sz;
+ 
+ 	memory_sysdev_class.kset.uevent_ops = &memory_uevent_ops;
+ 	ret = sysdev_class_register(&memory_sysdev_class);
+ 	if (ret)
+ 		goto out;
+ 
++	block_sz = get_memory_block_size();
++	sections_per_block = block_sz / MIN_MEMORY_BLOCK_SIZE;
++
+ 	/*
+ 	 * Create entries for memory sections that were found
+ 	 * during boot and have been initialized
+@@ -576,8 +634,8 @@ int __init memory_dev_init(void)
+ 	for (i = 0; i < NR_MEM_SECTIONS; i++) {
+ 		if (!present_section_nr(i))
+ 			continue;
+-		err = add_memory_block(0, __nr_to_section(i), MEM_ONLINE,
+-				       BOOT);
++		err = add_memory_section(0, __nr_to_section(i), MEM_ONLINE,
++					 BOOT);
+ 		if (!ret)
+ 			ret = err;
+ 	}
 
-I did not specifically audit for the case where tty_open() returns -EIO,
-but I'd hope that it would be covered by the method I used for the
-conversion.
-
-	Arnd
