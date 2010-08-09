@@ -1,27 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629Ab0HIScN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:32:13 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:33049 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547Ab0HIScM (ORCPT
+	id S1753806Ab0HISev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:34:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57280 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab0HISeu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:32:12 -0400
+	Mon, 9 Aug 2010 14:34:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=UUkKKYUVYnC0obN3M7Qkhfk2cXEQ2yw0V5jDrrhHdEyzrJpNNSMfqe8FNUlmMEjV8s
-         Eyb6j+Yz+gBwQm+XduT0Igp8S1UNs/yR6knP4h+yLwql0XHR8RLZeJ1NfR8eGSmO1w22
-         Uu73BxjEao1jzVSpIWd7d1d6bWsr0Mo6ETqMk=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=BB8hHf7ZTjJ16CKsvFQEr3xL2jKQ2+ELqA4fVJxDxZFtyDq5n3RMkYS2DXNMlyP8qX
+         ntBNsNB5mzcPD7CBQFk8TSW1BX1NIQChKl+qE3DPdz9NmV02lnNwOGvIYdQNZ+EZCdEL
+         UOX8OtGgCmZH51IaUb5PT4HiRMgrEHJJtW1z0=
 MIME-Version: 1.0
-In-Reply-To: <1281374816-904-8-git-send-email-ngupta@vflare.org>
+In-Reply-To: <1281374816-904-2-git-send-email-ngupta@vflare.org>
 References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
-	<1281374816-904-8-git-send-email-ngupta@vflare.org>
-Date: Mon, 9 Aug 2010 21:32:11 +0300
-X-Google-Sender-Auth: Kr7sn1hLNaeprvjyouI0-d1WYCc
-Message-ID: <AANLkTikwN08QsfRNwa-4=qOu8mKkGoEUHdxUC5n8u3Ve@mail.gmail.com>
-Subject: Re: [PATCH 07/10] Increase compressed page size threshold
+	<1281374816-904-2-git-send-email-ngupta@vflare.org>
+Date: Mon, 9 Aug 2010 21:34:48 +0300
+X-Google-Sender-Auth: xAKPYR5T_l06jiYMIKQyc4O9iMc
+Message-ID: <AANLkTimuPK=1+xNMKfV=G1sSG60+=fa7eA3142JJZZ6p@mail.gmail.com>
+Subject: Re: [PATCH 01/10] Replace ioctls with sysfs interface
 From: Pekka Enberg <penberg@kernel.org>
 To: Nitin Gupta <ngupta@vflare.org>
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
@@ -30,27 +31,76 @@ Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nitin,
-
 On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
-> Compression takes much more time than decompression. So, its quite
-> wasteful in terms of both CPU cycles and memory usage to have a very
-> low compressed page size threshold and thereby storing such not-so-well
-> compressible pages as-is (uncompressed). So, increasing it from
-> PAGE_SIZE/2 to PAGE_SIZE/8*7. A low threshold was useful when we had
-> "backing swap" support where we could forward such pages to the backing
-> device (applicable only when zram was used as swap disk).
+> Creates per-device sysfs nodes in /sys/block/zram<id>/
+> Currently following stats are exported:
+>  - disksize
+>  - num_reads
+>  - num_writes
+>  - invalid_io
+>  - zero_pages
+>  - orig_data_size
+>  - compr_data_size
+>  - mem_used_total
 >
-> It is not yet configurable through sysfs but may be exported in future,
-> along with threshold for average compression ratio.
+> By default, disksize is set to 0. So, to start using
+> a zram device, fist write a disksize value and then
+> initialize device by writing any positive value to
+> initstate. For example:
+>
+>        # initialize /dev/zram0 with 50MB disksize
+>        echo 50*1024*1024 | bc > /sys/block/zram0/disksize
+>        echo 1 > /sys/block/zram0/initstate
+>
+> When done using a disk, issue reset to free its memory
+> by writing any positive value to reset node:
+>
+>        echo 1 > /sys/block/zram0/reset
+>
+> This change also obviates the need for 'rzscontrol' utility.
 >
 > Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 
-The description makes sense but lacks any real data. What kind of
-workloads did you test this with? Where does it help most? How much?
+Looks good to me (but I'm not a sysfs guy).
 
-                        Pekka
+Acked-by: Pekka Enberg <penberg@kernel.org>
+
+>  /* Module params (documentation at end) */
+> -static unsigned int num_devices;
+> +unsigned int num_devices;
+> +
+> +static void zram_stat_inc(u32 *v)
+> +{
+> +       *v = *v + 1;
+> +}
+> +
+> +static void zram_stat_dec(u32 *v)
+> +{
+> +       *v = *v - 1;
+> +}
+> +
+> +static void zram_stat64_add(struct zram *zram, u64 *v, u64 inc)
+> +{
+> +       spin_lock(&zram->stat64_lock);
+> +       *v = *v + inc;
+> +       spin_unlock(&zram->stat64_lock);
+> +}
+> +
+> +static void zram_stat64_sub(struct zram *zram, u64 *v, u64 dec)
+> +{
+> +       spin_lock(&zram->stat64_lock);
+> +       *v = *v - dec;
+> +       spin_unlock(&zram->stat64_lock);
+> +}
+> +
+> +static void zram_stat64_inc(struct zram *zram, u64 *v)
+> +{
+> +       zram_stat64_add(zram, v, 1);
+> +}
+
+These could probably use atomic_inc(), atomic64_inc(), and friends, no?
