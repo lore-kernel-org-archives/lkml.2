@@ -1,63 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753940Ab0HIR1k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:27:40 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:59158 "EHLO e5.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753697Ab0HIR1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 13:27:32 -0400
-Date: Mon, 9 Aug 2010 10:27:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, dhowells@redhat.com
-Subject: Re: 2.6.35 - INFO: kernel/exit.c:1387 invoked
- rcu_dereference_check() without protection!
-Message-ID: <20100809172719.GG3026@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTimULDfJ9n2XxNmtq8yUcNRfAywHpiDDXRKtev10@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimULDfJ9n2XxNmtq8yUcNRfAywHpiDDXRKtev10@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754015Ab0HIR1u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:27:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60296 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752630Ab0HIR1q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 13:27:46 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+To: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
+Cc: Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 10/10] Document sysfs entries
+Date: Mon,  9 Aug 2010 22:56:56 +0530
+Message-Id: <1281374816-904-11-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 03, 2010 at 11:20:58PM -0400, Miles Lane wrote:
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> kernel/exit.c:1387 invoked rcu_dereference_check() without protection!
-> 
-> other info that might help us debug this:
-> 
-> rcu_scheduler_active = 1, debug_locks = 1
-> 2 locks held by init/1:
->  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff81045ca8>] do_wait+0xa9/0x1fa
->  #1:  (&(&sighand->siglock)->rlock){......}, at: [<ffffffff810457e8>]
-> wait_consider_task+0x5e1/0x9f8
-> 
-> stack backtrace:
-> Pid: 1, comm: init Not tainted 2.6.35 #15
-> Call Trace:
->  [<ffffffff8106759c>] lockdep_rcu_dereference+0x9d/0xa6
->  [<ffffffff81045877>] wait_consider_task+0x670/0x9f8
->  [<ffffffff81045d14>] do_wait+0x115/0x1fa
->  [<ffffffff81045f41>] sys_waitid+0x7f/0x178
->  [<ffffffff81009cba>] ? sysret_check+0x2e/0x69
->  [<ffffffff8104454e>] ? child_wait_callback+0x0/0x53
->  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+---
+ Documentation/ABI/testing/sysfs-block-zram |   99 ++++++++++++++++++++++++++++
+ 1 files changed, 99 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-block-zram
 
-This one is interesting.  The ->sighand->siglock is held, but the
-rcu_dereference_check() check condition requires that either the
-task is dead or that we are in an RCU read-side critical section.
-The comment preceding the call to __task_cred() claims that we
-"don't need the RCU readlock here as we're holding a spinlock."
-This comment dates back to 2008, so might be obsolete.
+diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
+new file mode 100644
+index 0000000..c8b3b48
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-block-zram
+@@ -0,0 +1,99 @@
++What:		/sys/block/zram<id>/disksize
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The disksize file is read-write and specifies the disk size
++		which represents the limit on the *uncompressed* worth of data
++		that can be stored in this disk.
++
++What:		/sys/block/zram<id>/initstate
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The disksize file is read-only and shows the initialization
++		state of the device.
++
++What:		/sys/block/zram<id>/reset
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The disksize file is write-only and allows resetting the
++		device. The reset operation frees all the memory assocaited
++		with this device.
++
++What:		/sys/block/zram<id>/num_reads
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The num_reads file is read-only and specifies the number of
++		reads (failed or successful) done on this device.
++
++What:		/sys/block/zram<id>/num_writes
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The num_writes file is read-only and specifies the number of
++		writes (failed or successful) done on this device.
++
++What:		/sys/block/zram<id>/invalid_io
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The invalid_io file is read-only and specifies the number of
++		non-page-size-aligned I/O requests issued to this device.
++
++What:		/sys/block/zram<id>/notify_free
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The notify_free file is read-only and specifies the number of
++		swap slot free notifications received by this device. These
++		notifications are send to a swap block device when a swap slot
++		is freed. This statistic is applicable only when this disk is
++		being used as a swap disk.
++
++What:		/sys/block/zram<id>/discard
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The discard file is read-only and specifies the number of
++		discard requests received by this device. These requests
++		provide information to block device regarding blocks which are
++		no longer used by filesystem.
++
++What:		/sys/block/zram<id>/zero_pages
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The zero_pages file is read-only and specifies number of zero
++		filled pages written to this disk. No memory is allocated for
++		such pages.
++
++What:		/sys/block/zram<id>/orig_data_size
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The orig_data_size file is read-only and specifies uncompressed
++		size of data stored in this disk. This excludes zero-filled
++		pages (zero_pages) since no memory is allocated for them.
++		Unit: bytes
++
++What:		/sys/block/zram<id>/compr_data_size
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The compr_data_size file is read-only and specifies compressed
++		size of data stored in this disk. So, compression ratio can be
++		calculated using orig_data_size and this statistic.
++		Unit: bytes
++
++What:		/sys/block/zram<id>/mem_used_total
++Date:		August 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The mem_used_total file is read-only and specifies the amount
++		of memory, including allocator fragmentation and metadata
++		overhead, allocated for this disk. So, allocator space
++		efficiency can be calculated using compr_data_size and this
++		statistic.
++		Unit: bytes
+\ No newline at end of file
+-- 
+1.7.2.1
 
-David, should we enclose the __task_cred() in wait_task_stopped()
-with rcu_read_lock()?  Or would it be better to add a check to
-__task_cred() checking for ->sighand->siglock?  Or do we need to
-do something else entirely?  ;-)
-
-							Thanx, Paul
