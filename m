@@ -1,156 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab0HIOfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 10:35:34 -0400
-Received: from smtp-gw11.han.skanova.net ([81.236.55.20]:44760 "EHLO
-	smtp-gw11.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756676Ab0HIOfc (ORCPT
+	id S1756771Ab0HIOfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 10:35:20 -0400
+Received: from smtp-gw21.han.skanova.net ([81.236.55.21]:46477 "EHLO
+	smtp-gw21.han.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756451Ab0HIOfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 10:35:32 -0400
-Subject: [PATCH 2/2 v3] mfd: Add timberdale video-in driver to timberdale
+	Mon, 9 Aug 2010 10:35:18 -0400
+Subject: [PATCH 0/2 v3] media, mfd: Add timberdale video-in driver
 From: Richard =?ISO-8859-1?Q?R=F6jfors?= 
 	<richard.rojfors@pelagicore.com>
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
         Samuel Ortiz <sameo@linux.intel.com>,
-        Douglas Schilling Landgraf <dougsland@gmail.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Douglas Schilling Landgraf <dougsland@gmail.com>, p.osciak@samsung.com
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Aug 2010 16:35:29 +0200
-Message-ID: <1281364529.5762.30.camel@debian>
+Date: Mon, 09 Aug 2010 16:35:14 +0200
+Message-ID: <1281364514.5762.28.camel@debian>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines platform data for the video-in driver
-and adds it to all configurations of timberdale.
+To follow are three patches.
 
-Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
----
-diff --git a/drivers/mfd/timberdale.c b/drivers/mfd/timberdale.c
-index ac59950..d4a95bd 100644
---- a/drivers/mfd/timberdale.c
-+++ b/drivers/mfd/timberdale.c
-@@ -40,6 +40,7 @@
- #include <linux/spi/mc33880.h>
- 
- #include <media/timb_radio.h>
-+#include <media/timb_video.h>
- 
- #include <linux/timb_dma.h>
- 
-@@ -238,6 +239,22 @@ static const __devinitconst struct resource timberdale_uartlite_resources[] = {
- 	},
- };
- 
-+static __devinitdata struct i2c_board_info timberdale_adv7180_i2c_board_info = {
-+	/* Requires jumper JP9 to be off */
-+	I2C_BOARD_INFO("adv7180", 0x42 >> 1),
-+	.irq = IRQ_TIMBERDALE_ADV7180
-+};
-+
-+static __devinitdata struct timb_video_platform_data
-+	timberdale_video_platform_data = {
-+	.dma_channel = DMA_VIDEO_RX,
-+	.i2c_adapter = 0,
-+	.encoder = {
-+		.module_name = "adv7180",
-+		.info = &timberdale_adv7180_i2c_board_info
-+	}
-+};
-+
- static const __devinitconst struct resource timberdale_radio_resources[] = {
- 	{
- 		.start	= RDSOFFSET,
-@@ -272,6 +289,18 @@ static __devinitdata struct timb_radio_platform_data
- 	}
- };
- 
-+static const __devinitconst struct resource timberdale_video_resources[] = {
-+	{
-+		.start	= LOGIWOFFSET,
-+		.end	= LOGIWEND,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	/*
-+	note that the "frame buffer" is located in DMA area
-+	starting at 0x1200000
-+	*/
-+};
-+
- static __devinitdata struct timb_dma_platform_data timb_dma_platform_data = {
- 	.nr_channels = 10,
- 	.channels = {
-@@ -372,6 +401,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg0[] = {
- 		.data_size = sizeof(timberdale_gpio_platform_data),
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-@@ -430,6 +466,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg1[] = {
- 		.resources = timberdale_mlogicore_resources,
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-@@ -478,6 +521,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg2[] = {
- 		.data_size = sizeof(timberdale_gpio_platform_data),
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-@@ -521,6 +571,13 @@ static __devinitdata struct mfd_cell timberdale_cells_bar0_cfg3[] = {
- 		.data_size = sizeof(timberdale_gpio_platform_data),
- 	},
- 	{
-+		.name = "timb-video",
-+		.num_resources = ARRAY_SIZE(timberdale_video_resources),
-+		.resources = timberdale_video_resources,
-+		.platform_data = &timberdale_video_platform_data,
-+		.data_size = sizeof(timberdale_video_platform_data),
-+	},
-+	{
- 		.name = "timb-radio",
- 		.num_resources = ARRAY_SIZE(timberdale_radio_resources),
- 		.resources = timberdale_radio_resources,
-diff --git a/drivers/mfd/timberdale.h b/drivers/mfd/timberdale.h
-index c11bf6e..4412acd 100644
---- a/drivers/mfd/timberdale.h
-+++ b/drivers/mfd/timberdale.h
-@@ -23,7 +23,7 @@
- #ifndef MFD_TIMBERDALE_H
- #define MFD_TIMBERDALE_H
- 
--#define DRV_VERSION		"0.2"
-+#define DRV_VERSION		"0.3"
- 
- /* This driver only support versions >= 3.8 and < 4.0  */
- #define TIMB_SUPPORTED_MAJOR	3
+Since last patch I removed the uncached buffers patch, it
+needs to be investigated further.
+
+The first adds the timberdale video-in driver to the media tree.
+
+The second adds it to the timberdale MFD driver.
+
+Samuel and Mauro hope you can support and solve the potential merge
+issue between your two trees.
+
+Thanks
+--Richard
 
