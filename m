@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756317Ab0HIMV6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 08:21:58 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:60223 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756028Ab0HIMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 08:21:57 -0400
-Date: Mon, 9 Aug 2010 13:21:47 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <david.s.daney@gmail.com>
-Cc: Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
-        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org
-Subject: Re: [PATCH] MIPS: remove RELOC_HIDE on __pa_symbol
-Message-ID: <20100809122147.GA23053@linux-mips.org>
-References: <1281297456-2711-1-git-send-email-namhyung@gmail.com>
- <4C5F8ED8.90301@gmail.com>
+	id S1756363Ab0HIM10 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 08:27:26 -0400
+Received: from miranda.se.axis.com ([193.13.178.8]:34919 "EHLO
+	miranda.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756326Ab0HIM1Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 08:27:24 -0400
+Date: Mon, 9 Aug 2010 14:26:28 +0200
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-serial@vger.kernel.org
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>,
+        Claudio Scordino <claudio@evidence.eu.com>
+Subject: [GIT PULL] arch/cris changes for 2.6.36
+Message-ID: <20100809122628.GC17485@axis.com>
+References: <20100806085337.GA17485@axis.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C5F8ED8.90301@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100806085337.GA17485@axis.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 08, 2010 at 10:15:04PM -0700, David Daney wrote:
+Hi Linus,
 
->  On 08/08/2010 12:57 PM, Namhyung Kim wrote:
-> >remove unneccessary use of RELOC_HIDE(). It does simple addition of ptr and
-> >offset and in this case (offset 0) does practically nothing. It does NOT do
-> >anything with linker relocation.
-> >
-> 
-> Maybe you could explain in more detail the problems you are having
-> with the current definition of __pa_symbol().  I would be hesitant
-> to change this bit of black magic unless there is a concrete problem
-> you are trying to solve.
+I lost one patch in the last pull request (sorry Claudio), please pull the below tree
+which adds an ioctl to the CRISv10 serial driver.
 
-RELOC_HIDE was originally added by 6007b903dfe5f1d13e0c711ac2894bdd4a61b1ad
-(lmo) rsp. 8431fd094d625b94d364fe393076ccef88e6ce18 (kernel.org).  A
-discussion can be found in lkml posting
-a2ebde260608230500o3407b108hc03debb9da6e62c@mail.gmail.com> which is
-archived at
 
-    http://lists.linuxcoding.com/kernel/2006-q3/msg17360.html
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+  Linus Torvalds (1):
+        Linux 2.6.35
 
-I felt this was dubious by the time it was added and probably should go?
+are available in the git repository at:
 
-  Ralf
+  git://www.jni.nu/cris.git rs485fix
+
+Claudio Scordino (1):
+      CRIS: ioctl for getting RS485 information
+
+ arch/cris/include/asm/ioctls.h |    1 +
+ drivers/serial/crisv10.c       |   11 +++++++++++
+ 2 files changed, 12 insertions(+), 0 deletions(-)
+
+
+Thanks again,
+
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
