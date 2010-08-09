@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab0HIIxA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 04:53:00 -0400
-Received: from www84.your-server.de ([213.133.104.84]:40984 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab0HIIw7 (ORCPT
+	id S1755714Ab0HII7V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 04:59:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:32967 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab0HII7U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 04:52:59 -0400
-Subject: Re: [PATCH] Add quick erase format option
-From: Stefani Seibold <stefani@seibold.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-In-Reply-To: <1281343038.12908.25.camel@localhost>
-References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
-	 <1281343038.12908.25.camel@localhost>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 09 Aug 2010 10:52:54 +0200
-Message-ID: <1281343974.18398.13.camel@wall-e.seibold.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 9 Aug 2010 04:59:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <201008091603464245121@gmail.com>
+References: <201008091603464245121@gmail.com>
+Date: Mon, 9 Aug 2010 09:59:14 +0100
+Message-ID: <AANLkTin4LygQPrXgEmLDw1_q241MYp_rqT3Gt7zbMRn8@mail.gmail.com>
+Subject: Re: how to transplant a driver from 2.4 to 2.6?
+From: Valeo de Vries <valeo@valeo.co.cc>
+To: hacklu <embedway.linux@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, den 09.08.2010, 09:37 +0100 schrieb David Woodhouse:
-> On Mon, 2010-08-09 at 09:25 +0100, stefani@seibold.net wrote:
-> > From: Stefani Seibold <stefani@seibold.net>
-> > 
-> > This patch add a quick format option which skips erasing of already erased
-> > flash blocks. This is useful for first time production environments where
-> > the flash arrived erased.
-> > 
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net> 
-> 
-> This scares me, given the lengths we had to go to in JFFS2 to cope with
-> blocks which *look* like they're erased, but which actually start losing
-> data as soon as you start writing to them because the erase didn't
-> complete.
-> 
+On 9 August 2010 09:03, hacklu <embedway.linux@gmail.com> wrote:
+>  I have a driver project programmed under the 2.4 kernel.
+> but now ,I want to transplant it to 2.6.
+> the driver has some directions;
+> like 1/1.c  2/2.c  3/3_1.c 3_2.c
+> in this case ,how can I imtate the   template Makefile   of 2.6's driver
+>
+> [...]
 
-I know the drawback. This is why it is only an option which must be
-enabled. And in most use cases there is a subsequent ubimkvol, which
-will fail if the flash is not correct initialized.
+Fortunately for me, I've not been unlucky enough to need to port 2.4
+drivers myself, so I can't tell you the exact steps. However there are
+many articles and guides on the 'net that can: a google search for
+"linux kernel porting driver 2.4 2.6" will suffice; just look at the
+first few hits. If you need more help on Kconfig this may also help
+you: http://www.kernel.org/doc/Documentation/kbuild/kconfig-language.txt
+.
 
-Flash are normally delivered erased. So this save in our production
-environment (Nokia Siemens Networks) about 5 minutes per device (256 MB
-NOR CFI Flash).
-
-The old JFFS2 was very fast to install the first time on a flash, it was
-only a simple mount of the MTD partition. 
-
-Which the quick format option i have now only a slightly first time
-installation overhead compared to JFFS2. Without this option the
-overhead is more than 5 minutes.
-
-- Stefani
-
-
+Valeo
