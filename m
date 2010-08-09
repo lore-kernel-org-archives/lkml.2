@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab0HIHQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:16:30 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:37089 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399Ab0HIHQ2 (ORCPT
+	id S1755452Ab0HIHWa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:22:30 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53486 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab0HIHW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:16:28 -0400
-Date: Mon, 9 Aug 2010 09:16:25 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: Sachin Sant <sachinp@in.ibm.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, swen@vnet.ibm.com
-Subject: Re: 2.6.35-git6: s390 build failure (drivers/s390/scsi/zfcp_qdio.c)
-Message-ID: <20100809071625.GA3401@schmichrtp.mainz.de.ibm.com>
-References: <4C5E9365.5030804@in.ibm.com>
+	Mon, 9 Aug 2010 03:22:29 -0400
+Date: Mon, 9 Aug 2010 09:22:26 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: remove __phys_reloc_hide
+Message-ID: <20100809072226.GD29524@basil.fritz.box>
+References: <1281303490-390-1-git-send-email-namhyung@gmail.com>
+ <87k4o08fv9.fsf@basil.nowhere.org>
+ <1281336031.976.11.camel@leonhard>
+ <20100809064441.GC29524@basil.fritz.box>
+ <1281337485.976.24.camel@leonhard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C5E9365.5030804@in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1281337485.976.24.camel@leonhard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 08, 2010 at 04:52:13PM +0530, Sachin Sant wrote:
-> Latest 2.6.35 git - 2.6.35-git6 (cd816a0d8...) fails to build
-> on a s390 box with following error :
+On Mon, Aug 09, 2010 at 04:04:45PM +0900, Namhyung Kim wrote:
+> > It hides the value conversion from the compiler through asm()
+> > 
+> > -Andi
+> > 
 > 
-> drivers/s390/scsi/zfcp_erp.c: In function 'zfcp_erp_thread':
-> drivers/s390/scsi/zfcp_erp.c:1337: warning: frame size of 'zfcp_erp_thread' is 280 bytes
-> drivers/s390/scsi/zfcp_qdio.c: In function 'zfcp_qdio_siosl':
-> drivers/s390/scsi/zfcp_qdio.c:467: error: implicit declaration of function 'ccw_device_siosl'
-> make[2]: *** [drivers/s390/scsi/zfcp_qdio.o] Error 1
-> 
-> This problem seem to have been introduced with git2 (3cfc2c42c1c...) via
-> commit 339f4f4eab80caa6cf0d39fb057ad6ddb84ba91e
-> 
-> [SCSI] zfcp: Trigger logging in the FCP channel on qdio error conditions
+> Yes, indeed. But for what? __pa_symbol() is just used to get the address
+> of some linker symbols in forms of unsigned long which has same bit
+> representation as pointer in x86 (and all supported archs). So do we
+> still need it or am I missing something?
 
-The zfcp commit calls a function that is introduced with
-"[S390] cio: CHSC SIOSL Support"
-http://148.100.100.18/cgi-bin/gitweb.cgi?p=linux-2.6.git;a=commit;h=c40306ed03b25a71e8a6cb7162e970d9a29c4242
+The original reason was that the C standard allows the compiler
+to make some assumptions on the pointer arithmetic that is done 
+on symbol addresses (e.g. no wrapping). This is exploited
+by the optimizer in the compiler to generate better code.
 
-This patch should be part of the s390 patches for the 2.6.36 merge
-window. To build the kernel now, either remove the zfcp patch or apply
-the cio patch.
+This lead to a miscompilation on PowerPC a couple of years back at 
+least with the va->pa conversion.
 
-Christof
+After that RELOC_HIDE was introduced after funelling the
+symbol address through an empty asm statement was recommended 
+as the official way to do this by the gcc developers.
+
+I think x86-64 does not normally wrap here, but it's 
+still safer to do it this way.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
