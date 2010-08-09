@@ -1,59 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687Ab0HIVtD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 17:49:03 -0400
-Received: from THUNK.ORG ([69.25.196.29]:40433 "EHLO thunker.thunk.org"
+	id S1756983Ab0HIVzW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 17:55:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52226 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752606Ab0HIVtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 17:49:01 -0400
-Date: Mon, 9 Aug 2010 17:48:52 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] ext4 update for 2.6.36
-Message-ID: <20100809214852.GK3635@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <E1OhETF-0005P6-7v@tytso-glaptop>
- <AANLkTinJQ7DQK8_0ngHrbZugFBCgyM5ETUPhcDSmYGP6@mail.gmail.com>
+	id S1755325Ab0HIVzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 17:55:20 -0400
+Message-ID: <4C607916.80803@kernel.org>
+Date: Mon, 09 Aug 2010 23:54:30 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinJQ7DQK8_0ngHrbZugFBCgyM5ETUPhcDSmYGP6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, namhyung@gmail.com,
+        w41ter@gmail.com, Markus Trippelsdorf <markus@trippelsdorf.de>,
+        David Airlie <airlied@linux.ie>
+Subject: [GIT PULL] workqueue: fixes for v2.6.36
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 09 Aug 2010 21:54:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 01:17:46PM -0700, Linus Torvalds wrote:
-> On Thu, Aug 5, 2010 at 9:23 PM, Theodore Ts'o <tytso@mit.edu> wrote:
-> >
-> > Which is hopefully what you want.  If you want exactly what is shown
-> > below, you can also pull the "next" branch, which omits the merge, and
-> > then you can deal with the merge conflict by hand.  The results should
-> > be the same either way.
-> 
-> I did that just to see what it looked like.
-> 
-> One annoyance: I now get
-> 
->   fs/jbd2/transaction.c: In function ‘start_this_handle’:
->   fs/jbd2/transaction.c:98: warning: unused variable ‘ts’
-> 
-> due to that 'ts' thing only being used for the CONFIG_JBD2_DEBUG case.
-> Please fix. I'd suggest putting that CONFIG_JBD2_DEBUG code in a
-> helper function of its own, and declaring 'ts' there instead.
-> Suggested patch (but with a horrible helper function name) attached.
+Hello,
 
-This is what I have in the ext4 tree.  I'll be sending a pull request
-in a day or two with this and maybe one or two other fixups if they
-arise.  So far the post-integration testing I've done looks good,
-though.
+Please pull from the following branch to receive workqueue fixes for
+v2.6.36.
 
-						- Ted
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-linus
 
+The branch contains three patches.  One is major and the other are
+minor.
+
+workqueue is now initialized during early_init and thus relies on
+workqueue_cpu_callback() being called for non boot cpus during boot.
+However, the cpu callback was registered as hotcpu_notifier and didn't
+get called if CONFIG_CPU_HOTPLUG was disabled.  This is fixed by
+changing it to cpu_notifier.
+
+One of the minor two adds missing __percpu notation and the other
+removes spurious warning messages caused by incorrect conversion from
+slow-work to wq.
+
+Thanks.
+
+Namhyung Kim (1):
+      workqueue: add missing __percpu markup in kernel/workqueue.c
+
+Tejun Heo (2):
+      workqueue: workqueue_cpu_callback() should be cpu_notifier instead of hotcpu_notifier
+      drm: fix fallouts from slow-work -> wq conversion
+
+ drivers/gpu/drm/drm_crtc_helper.c |   16 ++++------------
+ kernel/workqueue.c                |    4 ++--
+ 2 files changed, 6 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
+index 4598130..b9e4dbf 100644
+--- a/drivers/gpu/drm/drm_crtc_helper.c
++++ b/drivers/gpu/drm/drm_crtc_helper.c
+@@ -839,7 +839,6 @@ static void output_poll_execute(struct work_struct *work)
+ 	struct drm_connector *connector;
+ 	enum drm_connector_status old_status, status;
+ 	bool repoll = false, changed = false;
+-	int ret;
+
+ 	mutex_lock(&dev->mode_config.mutex);
+ 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+@@ -874,11 +873,8 @@ static void output_poll_execute(struct work_struct *work)
+ 			dev->mode_config.funcs->output_poll_changed(dev);
+ 	}
+
+-	if (repoll) {
+-		ret = queue_delayed_work(system_nrt_wq, delayed_work, DRM_OUTPUT_POLL_PERIOD);
+-		if (ret)
+-			DRM_ERROR("delayed enqueue failed %d\n", ret);
+-	}
++	if (repoll)
++		queue_delayed_work(system_nrt_wq, delayed_work, DRM_OUTPUT_POLL_PERIOD);
+ }
+
+ void drm_kms_helper_poll_disable(struct drm_device *dev)
+@@ -893,18 +889,14 @@ void drm_kms_helper_poll_enable(struct drm_device *dev)
+ {
+ 	bool poll = false;
+ 	struct drm_connector *connector;
+-	int ret;
+
+ 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
+ 		if (connector->polled)
+ 			poll = true;
+ 	}
+
+-	if (poll) {
+-		ret = queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
+-		if (ret)
+-			DRM_ERROR("delayed enqueue failed %d\n", ret);
+-	}
++	if (poll)
++		queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
+ }
+ EXPORT_SYMBOL(drm_kms_helper_poll_enable);
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 9ca34cd..2994a0e 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2568,7 +2568,7 @@ EXPORT_SYMBOL(schedule_delayed_work_on);
+ int schedule_on_each_cpu(work_func_t func)
+ {
+ 	int cpu;
+-	struct work_struct *works;
++	struct work_struct __percpu *works;
+
+ 	works = alloc_percpu(struct work_struct);
+ 	if (!works)
+@@ -3527,7 +3527,7 @@ static int __init init_workqueues(void)
+ 	unsigned int cpu;
+ 	int i;
+
+-	hotcpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
++	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
+
+ 	/* initialize gcwqs */
+ 	for_each_gcwq_cpu(cpu) {
