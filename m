@@ -1,136 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab0HIPUT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 11:20:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35735 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713Ab0HIPUN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 11:20:13 -0400
-Date: Mon, 9 Aug 2010 17:20:10 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 2/3] usb gadget: don't save bind callback in struct
-	usb_composite_driver
-Message-ID: <20100809152010.GE27747@pengutronix.de>
-References: <3decda614c6d8732c018417558d74ed942e76c82.1281359651.git.m.nazarewicz@samsung.com> <e465429de034460cdc6eff4e3502d2be83264f82.1281359651.git.m.nazarewicz@samsung.com>
+	id S1756896Ab0HIPXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 11:23:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756713Ab0HIPXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 11:23:32 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] DNS: If the DNS server returns an error,
+	allow that to be cached [ver #2]
+To: smfrench@gmail.com, jlayton@redhat.com
+Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Wang Lei <wang840925@gmail.com>, David Howells <dhowells@redhat.com>
+Date: Mon, 09 Aug 2010 16:23:22 +0100
+Message-ID: <20100809152322.17164.23320.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <e465429de034460cdc6eff4e3502d2be83264f82.1281359651.git.m.nazarewicz@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michał,
+From: Wang Lei <wang840925@gmail.com>
 
-On Mon, Aug 09, 2010 at 03:33:49PM +0200, Michal Nazarewicz wrote:
-> The bind function is most of the time only called at init time so there
-> is no need to save a pointer to it in the composite driver structure.
-> 
-> This fixes many section mismatches reported by modpost.
-> 
-> Signed-off-by: Michał Nazarewicz <m.nazarewicz@samsung.com>
-> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> ---
->  drivers/usb/gadget/audio.c        |    3 +--
->  drivers/usb/gadget/cdc2.c         |    3 +--
->  drivers/usb/gadget/composite.c    |   19 +++++++++++++------
->  drivers/usb/gadget/ether.c        |    3 +--
->  drivers/usb/gadget/g_ffs.c        |    3 +--
->  drivers/usb/gadget/hid.c          |    3 +--
->  drivers/usb/gadget/mass_storage.c |    3 +--
->  drivers/usb/gadget/multi.c        |    3 +--
->  drivers/usb/gadget/serial.c       |    3 +--
->  drivers/usb/gadget/webcam.c       |    3 +--
->  drivers/usb/gadget/zero.c         |    3 +--
->  include/linux/usb/composite.h     |   15 +++------------
->  12 files changed, 26 insertions(+), 38 deletions(-)
-> 
-> This replaces Uwe's patch which used __refdata for instances of struct
-> usb_composite_driver.  This patch replaces usb_composite_register() with
-> usb_composite_probe() in similar fashion to other two Uwe's patches.
-> 
-> diff --git a/drivers/usb/gadget/audio.c b/drivers/usb/gadget/audio.c
-> index a62af7b..5a65fbb 100644
-> --- a/drivers/usb/gadget/audio.c
-> +++ b/drivers/usb/gadget/audio.c
-> @@ -166,13 +166,12 @@ static struct usb_composite_driver audio_driver = {
->  	.name		= "g_audio",
->  	.dev		= &device_desc,
->  	.strings	= audio_strings,
-> -	.bind		= audio_bind,
->  	.unbind		= __exit_p(audio_unbind),
->  };
->  
->  static int __init init(void)
->  {
-> -	return usb_composite_register(&audio_driver);
-> +	return usb_composite_probe(&audio_driver, audio_bind);
->  }
->  module_init(init);
->  
-> diff --git a/drivers/usb/gadget/cdc2.c b/drivers/usb/gadget/cdc2.c
-> index 928137d..1f2a9b1 100644
-> --- a/drivers/usb/gadget/cdc2.c
-> +++ b/drivers/usb/gadget/cdc2.c
-> @@ -245,7 +245,6 @@ static struct usb_composite_driver cdc_driver = {
->  	.name		= "g_cdc",
->  	.dev		= &device_desc,
->  	.strings	= dev_strings,
-> -	.bind		= cdc_bind,
->  	.unbind		= __exit_p(cdc_unbind),
->  };
->  
-> @@ -255,7 +254,7 @@ MODULE_LICENSE("GPL");
->  
->  static int __init init(void)
->  {
-> -	return usb_composite_register(&cdc_driver);
-> +	return usb_composite_probe(&cdc_driver, cdc_bind);
->  }
->  module_init(init);
->  
-> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-> index 4590c6a..3cafda7 100644
-> --- a/drivers/usb/gadget/composite.c
-> +++ b/drivers/usb/gadget/composite.c
-> @@ -39,6 +39,7 @@
->  #define USB_BUFSIZ	1024
->  
->  static struct usb_composite_driver *composite;
-> +static int (*composite_gadget_bind)(struct usb_composite_dev *cdev);
-This can be __initdata, can't it?
+If the DNS server returns an error, allow that to be cached in the DNS resolver
+key in lieu of a value.  Userspace passes the desired error number as an option
+in the payload:
 
-I thought about usb_composite_drivers, too, and wondered if it would be
-sensible to change the additional argument of usb_gadget_probe_driver to
-struct usb_gadget_probe_data *probe_data.  Then you could do the
-following
+	"#dnserror=<number>"
 
-	struct usb_composite_probe_data {
-		struct usb_gadget_probe_data usb_probe_data;
-		int (*composite_gadget_bind)(struct usb_composite_dev *);
-	}
+Userspace must map h_errno from the name resolution routines to an appropriate
+Linux error before passing it up.  Something like the following mapping is
+recommended:
 
-and in composite_bind use container_of to get the gadget_bind function.
+	[HOST_NOT_FOUND]	= ENODATA,
+	[TRY_AGAIN]		= EAGAIN,
+	[NO_RECOVERY]		= ECONNREFUSED,
+	[NO_DATA]		= ENODATA,
 
-Maybe that's overengineered though.  As there is already a dependency on
-a global variable (i.e. composite) your patch doesn't make it much
-worse.  Just my 0.02€.
+in lieu of Linux errors specifically for representing name service errors.  The
+filesystem must map these errors appropropriately before passing them to
+userspace.  AFS is made to map ENODATA and EAGAIN to EDESTADDRREQ for the
+return to userspace; ECONNREFUSED is allowed to stand as is.
+
+The error can be seen in /proc/keys as a negative number after the description
+of the key.  Compare, for example, the following key entries:
+
+2f97238c I--Q--     1  53s 3f010000     0     0 dns_resol afsdb:grand.centrall.org: -61
+338bfbbe I--Q--     1  59m 3f010000     0     0 dns_resol afsdb:grand.central.org: 37
+
+
+If the error option is supplied in the payload, the main part of the payload is
+discarded.  The key should have an expiry time set by userspace.
+
+Signed-off-by: Wang Lei <wang840925@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/afs/cell.c                |    4 ++
+ net/dns_resolver/dns_key.c   |   92 ++++++++++++++++++++++++++++++++++++++++--
+ net/dns_resolver/dns_query.c |    5 ++
+ 3 files changed, 96 insertions(+), 5 deletions(-)
+
+diff --git a/fs/afs/cell.c b/fs/afs/cell.c
+index ffea35c..d076588 100644
+--- a/fs/afs/cell.c
++++ b/fs/afs/cell.c
+@@ -73,6 +73,10 @@ static struct afs_cell *afs_cell_alloc(const char *name, char *vllist)
+ 	if (!vllist || strlen(vllist) < 7) {
+ 		ret = dns_query("afsdb", name, namelen, "ipv4", &dvllist, NULL);
+ 		if (ret < 0) {
++			if (ret == -ENODATA || ret == -EAGAIN || ret == -ENOKEY)
++				/* translate these errors into something
++				 * userspace might understand */
++				ret = -EDESTADDRREQ;
+ 			_leave(" = %d", ret);
+ 			return ERR_PTR(ret);
+ 		}
+diff --git a/net/dns_resolver/dns_key.c b/net/dns_resolver/dns_key.c
+index 400a04d..739435a 100644
+--- a/net/dns_resolver/dns_key.c
++++ b/net/dns_resolver/dns_key.c
+@@ -29,6 +29,7 @@
+ #include <linux/kernel.h>
+ #include <linux/keyctl.h>
+ #include <linux/err.h>
++#include <linux/seq_file.h>
+ #include <keys/dns_resolver-type.h>
+ #include <keys/user-type.h>
+ #include "internal.h"
+@@ -43,6 +44,8 @@ MODULE_PARM_DESC(debug, "DNS Resolver debugging mask");
  
-Best regards
-Uwe
+ const struct cred *dns_resolver_cache;
+ 
++#define	DNS_ERRORNO_OPTION	"dnserror"
++
+ /*
+  * Instantiate a user defined key for dns_resolver.
+  *
+@@ -59,9 +62,10 @@ static int
+ dns_resolver_instantiate(struct key *key, const void *_data, size_t datalen)
+ {
+ 	struct user_key_payload *upayload;
++	unsigned long derrno;
+ 	int ret;
+ 	size_t result_len = 0;
+-	const char *data = _data, *opt;
++	const char *data = _data, *end, *opt;
+ 
+ 	kenter("%%%d,%s,'%s',%zu",
+ 	       key->serial, key->description, data, datalen);
+@@ -71,13 +75,77 @@ dns_resolver_instantiate(struct key *key, const void *_data, size_t datalen)
+ 	datalen--;
+ 
+ 	/* deal with any options embedded in the data */
++	end = data + datalen;
+ 	opt = memchr(data, '#', datalen);
+ 	if (!opt) {
+-		kdebug("no options currently supported");
+-		return -EINVAL;
++		/* no options: the entire data is the result */
++		kdebug("no options");
++		result_len = datalen;
++	} else {
++		const char *next_opt;
++
++		result_len = opt - data;
++		opt++;
++		kdebug("options: '%s'", opt);
++		do {
++			const char *eq;
++			int opt_len, opt_nlen, opt_vlen, tmp;
++
++			next_opt = memchr(opt, '#', end - opt) ?: end;
++			opt_len = next_opt - opt;
++			if (!opt_len) {
++				printk(KERN_WARNING
++				       "Empty option to dns_resolver key %d\n",
++				       key->serial);
++				return -EINVAL;
++			}
++
++			eq = memchr(opt, '=', opt_len) ?: end;
++			opt_nlen = eq - opt;
++			eq++;
++			opt_vlen = next_opt - eq; /* will be -1 if no value */
++
++			tmp = opt_vlen >= 0 ? opt_vlen : 0;
++			kdebug("option '%*.*s' val '%*.*s'",
++			       opt_nlen, opt_nlen, opt, tmp, tmp, eq);
++
++			/* see if it's an error number representing a DNS error
++			 * that's to be recorded as the result in this key */
++			if (opt_nlen == sizeof(DNS_ERRORNO_OPTION) - 1 &&
++			    memcmp(opt, DNS_ERRORNO_OPTION, opt_nlen) == 0) {
++				kdebug("dns error number option");
++				if (opt_vlen <= 0)
++					goto bad_option_value;
++
++				ret = strict_strtoul(eq, 10, &derrno);
++				if (ret < 0)
++					goto bad_option_value;
++
++				if (derrno < 1 || derrno > 511)
++					goto bad_option_value;
++
++				kdebug("dns error no. = %lu", derrno);
++				key->type_data.x[0] = -derrno;
++				continue;
++			}
++
++		bad_option_value:
++			printk(KERN_WARNING
++			       "Option '%*.*s' to dns_resolver key %d:"
++			       " bad/missing value\n",
++			       opt_nlen, opt_nlen, opt, key->serial);
++			return -EINVAL;
++		} while (opt = next_opt + 1, opt < end);
++	}
++
++	/* don't cache the result if we're caching an error saying there's no
++	 * result */
++	if (key->type_data.x[0]) {
++		kleave(" = 0 [h_error %ld]", key->type_data.x[0]);
++		return 0;
+ 	}
+ 
+-	result_len = datalen;
++	kdebug("store result");
+ 	ret = key_payload_reserve(key, result_len);
+ 	if (ret < 0)
+ 		return -EINVAL;
+@@ -135,13 +203,27 @@ no_match:
+ 	return ret;
+ }
+ 
++/*
++ * Describe a DNS key
++ */
++static void dns_resolver_describe(const struct key *key, struct seq_file *m)
++{
++	int err = key->type_data.x[0];
++
++	seq_puts(m, key->description);
++	if (err)
++		seq_printf(m, ": %d", err);
++	else
++		seq_printf(m, ": %u", key->datalen);
++}
++
+ struct key_type key_type_dns_resolver = {
+ 	.name		= "dns_resolver",
+ 	.instantiate	= dns_resolver_instantiate,
+ 	.match		= dns_resolver_match,
+ 	.revoke		= user_revoke,
+ 	.destroy	= user_destroy,
+-	.describe	= user_describe,
++	.describe	= dns_resolver_describe,
+ 	.read		= user_read,
+ };
+ 
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index 03d5255..c32be29 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -136,6 +136,11 @@ int dns_query(const char *type, const char *name, size_t namelen,
+ 	if (ret < 0)
+ 		goto put;
+ 
++	/* If the DNS server gave an error, return that to the caller */
++	ret = rkey->type_data.x[0];
++	if (ret)
++		goto put;
++
+ 	upayload = rcu_dereference_protected(rkey->payload.data,
+ 					     lockdep_is_held(&rkey->sem));
+ 	len = upayload->datalen;
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
