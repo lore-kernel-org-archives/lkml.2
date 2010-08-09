@@ -1,44 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab0HIVXt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 17:23:49 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55591 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196Ab0HIVXs (ORCPT
+	id S1756838Ab0HIV3H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 17:29:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54948 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756623Ab0HIV3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 17:23:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=M4xHJDBBw6On9wbRW6F5H8ncl5u7E9ifNQlZaH02j9X42ePLmRvvJWMv/FFzEJGAgw
-         8U8lErj6rInzXeIqaQdBFmNK+yw3WyFcetQE9PLRS1Wm1te4f5IklcKoFDLq2XqbbxiI
-         i8erQww2rSaPDsG4B3rtRSRLbfdN+H2chSzsQ=
-Message-ID: <4C6071DC.3010100@gmail.com>
-Date: Mon, 09 Aug 2010 18:23:40 -0300
-From: "Tomas M." <tmezzadra@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100806 Lanikai/3.1.2
-MIME-Version: 1.0
-To: Roberto Oppedisano <roberto.oppedisano@infracom.it>
-CC: Paul Rolland <rol@as2917.net>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.35 suspend regression (bisected)
-References: <4C4C9E40.7070209@infracom.it> <20100804083732.3d8dae69@tux.DEF.witbe.net> <4C59192F.3010304@infracom.it>
-In-Reply-To: <4C59192F.3010304@infracom.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Aug 2010 17:29:06 -0400
+Subject: Re: Query: Patches break with Microsoft exchange server.
+From: David Woodhouse <dwmw2@infradead.org>
+To: Mihai =?UTF-8?Q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+        viresh kumar <viresh.kumar@st.com>,
+        Matti Aarnio <matti.aarnio@zmailer.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <201008092115.25992.mihai.dontu@gmail.com>
+References: <4C5F9B25.8080401@st.com>
+	 <201008091735.11105.mihai.dontu@gmail.com> <4C6040FC.2020702@gmail.com>
+	 <201008092115.25992.mihai.dontu@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Aug 2010 22:28:58 +0100
+Message-ID: <1281389338.7143.32.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.6 
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-08-09 at 21:15 +0300, Mihai Donțu wrote:
+> 
+> Wait. I don't think we're on the same page here. I'm talking about message 
+> signing (which does not require the receiving end to have any key - it's the 
+> same plain text e-mail with a blob after it) while you refer to actually 
+> encrypting the message. Mm? Or am I being extremely slow today? :-) 
 
-> Hello Roland,
->     I did reply on the same thread confirming that that's the same 
-> issue I was having and that the proposed workaround did work for me.
-> After some days of testing I'm observing sporadic lockup on resume 
-> (not in suspend as in my original report), but I think this is another 
-> issue.
->
+Only when you assume that Exchange would pass signed messages without
+corrupting them. It really is that broken.
 
-something like this? https://bugzilla.kernel.org/show_bug.cgi?id=16396
+-- 
+dwmw2
 
-check my last post there
