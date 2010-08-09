@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab0HIKwk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 06:52:40 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40655 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756123Ab0HIKwj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 06:52:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tyDbSgVjuoVMSTJy9yI/P1/txHSq+q32wV+8gvJ1TbpRIw6c+YGkGZnMSgMxvGgtGX
-         5lR0Kd9uTE6hrQFrZfQzjbQeyB+uvT3DAx4ZNlZKqoQLqmm6lRrv4j+LGX+Fx0NdNUTl
-         pUcpSJRJ1VLztavAAnXkJb8rItvI4+mtAMaCU=
+	id S1756196Ab0HILMb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 07:12:31 -0400
+Received: from www.tglx.de ([62.245.132.106]:49594 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756076Ab0HILM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 07:12:29 -0400
+Date: Mon, 9 Aug 2010 13:11:56 +0200
+From: "Hans J. Koch" <hjk@linutronix.de>
+To: Leon Woestenberg <leon.woestenberg@gmail.com>
+Cc: Tom Lyon <pugs@cisco.com>, mst@redhat.com, hjk@linutronix.de,
+        gregkh@suse.de, chrisw@sous-sol.org, joro@8bytes.org, avi@redhat.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: UIO DMA to userspace question
+Message-ID: <20100809111155.GB2569@local>
+References: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4d9f94eea017dfb5c1931aecd56c7b3de92de1ad.1281002833.git.m.nazarewicz@samsung.com>
-References: <cover.1281002833.git.m.nazarewicz@samsung.com>
-	<4d9f94eea017dfb5c1931aecd56c7b3de92de1ad.1281002833.git.m.nazarewicz@samsung.com>
-Date: Mon, 9 Aug 2010 13:52:38 +0300
-Message-ID: <AANLkTi=CMekYvS5yLFmjhKHJovFFmoE1tEfXCYOWTUX4@mail.gmail.com>
-Subject: Re: [PATCHv6 1/7] USB: gadget: storage_common: fixed warning building 
-	mass storage function
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
-        USB <linux-usb@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 1:27 PM, Michal Nazarewicz
-<m.nazarewicz@samsung.com> wrote:
-> The "nofua" attribute is used in the File-Storage Gadget but the
-> functions handling it are defined in storage_common.c (which may be
-> not a bad thing if anyone will want to port tho "nofua" attribute to
-> mass storage function) which causes the following warnings:
->
-> drivers/usb/gadget/storage_common.c:718: \
->  warning: ‘fsg_show_nofua’ defined but not used
-> drivers/usb/gadget/storage_common.c:782: \
->  warning: ‘fsg_store_nofua’ defined but not used
->
-> Adding __maybe_unused fixes this issue.
->
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-> ---
->  drivers/usb/gadget/storage_common.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
->
-> diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-> index 484acfb..3379cc3 100644
-> --- a/drivers/usb/gadget/storage_common.c
-> +++ b/drivers/usb/gadget/storage_common.c
-> @@ -715,8 +715,8 @@ static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
->                                  : curlun->initially_ro);
->  }
->
-> -static ssize_t fsg_show_nofua(struct device *dev, struct device_attribute *attr,
-> -                             char *buf)
-> +static ssize_t __maybe_unused
-> +fsg_show_nofua(struct device *dev, struct device_attribute *attr, char *buf)
->  {
->        struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
->
-> @@ -779,9 +779,9 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
->        return rc;
->  }
->
-> -static ssize_t fsg_store_nofua(struct device *dev,
-> -                              struct device_attribute *attr,
-> -                              const char *buf, size_t count)
-> +static ssize_t __maybe_unused
-> +fsg_store_nofua(struct device *dev, struct device_attribute *attr,
-> +               const char *buf, size_t count)
->  {
->        struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
->        unsigned long   nofua;
-> --
-> 1.7.1
->
->
+On Sat, Aug 07, 2010 at 08:38:30PM +0200, Leon Woestenberg wrote:
+> Hello all,
+> 
+> can I use the UIO framework for the following?
+> 
+> The userspace portion of the driver allocates memory in user-space
+> using malloc() - usually resulting in a scatter pages in physical
+> memory.
+> The UIO kernel portion of the driver maps those using pci_map_sg().
+> 
+> Is this possible, or does the UIO framework assume memory for DMA is
+> allocated in kernel space?
 
-Acked-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+You would have to write your own mmap() function and and set the pointer
+to it in struct uio_info->mmap. Have a look at uio_mmap() in
+drivers/uio/uio.c to see when your function will be called, and what is
+checked before that call.
 
--- 
-With Best Regards,
-Andy Shevchenko
+If that works, we might invent a new UIO_MEM_* type, and move your function
+over to the UIO core, if this is interesting for other people.
+
+Anyway, sooner or later we should have a generic way of handling DMA in
+UIO. The topic comes up every few month, but nobody came up with an
+acceptable solution yet. It should probably be a separate uio_dma device,
+e.g. for a /dev/uio0 you'll get a /dev/uio_dma0 if the driver sets a flag
+indicating it needs DMA support. This new uio_dma device should then have
+an API (to be defined, without ioctl if possible) that provides the
+necessary functionality. But that's just a thought ATM. Ideas/patches are
+welcome.
+
+Thanks,
+Hans
+
