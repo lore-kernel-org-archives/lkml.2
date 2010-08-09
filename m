@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756940Ab0HIWpF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 18:45:05 -0400
-Received: from rtp-iport-1.cisco.com ([64.102.122.148]:18707 "EHLO
-	rtp-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754343Ab0HIWpD (ORCPT
+	id S1757170Ab0HIWpX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 18:45:23 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55779 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757100Ab0HIWpT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 18:45:03 -0400
-Authentication-Results: rtp-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAEMiYEytJV2a/2dsb2JhbACgUXGoHJtbhToEhCY
-X-IronPort-AV: E=Sophos;i="4.55,345,1278288000"; 
-   d="scan'208";a="145478014"
-From: Roland Dreier <rdreier@cisco.com>
-To: torvalds@linux-foundation.org, akpm@linux-foundation.org
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-X-Message-Flag: Warning: May contain useful information
-Date: Mon, 09 Aug 2010 15:44:58 -0700
-Message-ID: <adad3trz9qt.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 9 Aug 2010 18:45:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Z6hmUH2WEU+GdOoQAA8aHE0K3HFRUfp6Ynq1ujxEk14csdQn01l+XMjGuZPTtRLyE6
+         kNuDg0w3WUQ5P/1pSNuj9lBjTZRzxoQkNVxw6bJPZXaZ07gG5UDTgiWuDWVpDlmPoWb5
+         92/deNOx7gRnhQGXBUz39vQZEwaRjXHwBiWvg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <1281344743-2029-2-git-send-email-s.hauer@pengutronix.de>
+References: <1281344743-2029-1-git-send-email-s.hauer@pengutronix.de>
+	<1281344743-2029-2-git-send-email-s.hauer@pengutronix.de>
+Date: Tue, 10 Aug 2010 00:45:17 +0200
+Message-ID: <AANLkTimtQrmrW-pNWX=0J9GMsGrS-5-LZKkxdHDSuSxW@mail.gmail.com>
+Subject: Re: [PATCH 1/8] ARM i.MX dma: implement wrapper for dma functions
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        linux kernel <linux-kernel@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull from
+2010/8/9 Sascha Hauer <s.hauer@pengutronix.de>:
 
-    master.kernel.org:/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+> Currently there is only one i.MX DMA implementation in the tree,
+> the one for i.MX1/21/27. The SDMA support for i.MX25/31/35/51 can
+> be implemented similarly. This wrapper for the DMA is implemented
+> so that drivers do not have to care about the implementation
+> present and don't have to #ifdef DMA support
+>
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+> (...)
+> +struct imx_dma_operations {
+> +       int (*config_channel)(int channel, struct imx_dma_config *cfg);
+> +       int (*setup_single)(int channel, dma_addr_t mem, int dma_length,
+> +               unsigned int dmamode);
+> +       int (*setup_sg)(int channel, struct scatterlist *sg,
+> +                       unsigned int sgcount, unsigned int dma_length,
+> +                       unsigned int dmamode);
+> +       void (*enable)(int channel);
+> +       void (*disable)(int channel);
+> +       int (*request)(enum imx_dma_prio);
+> +       void (*free)(int channel);
+> +       int num_channels;
+> +};
 
-This tree is also available from kernel.org mirrors at:
+This is just getting *so* close to the drivers/dma dmaengine API.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git for-linus
+We decided to use the damengine for all our DMA drivers and we
+haven't regretted one bit.
 
-This will get one cxgb4 patch that I was holding until prerequisites
-merged through the net tree.
+There has been some noise about too many drivers stacking up
+below arch/arm instead of going to the apropriate subsystem, can't
+you atleast contemplate using the dmaengine and help us improve
+that subsystem?
 
-Steve Wise (1):
-      RDMA/cxgb4: Obtain RDMA QID ranges from LLD/FW
+I sent some patches to Dan which essentially is a single-buffer
+(non-sglist) API, which is all I see missing to fit this need.
 
- drivers/infiniband/hw/cxgb4/device.c   |    9 +++++++--
- drivers/infiniband/hw/cxgb4/resource.c |    7 ++++---
- drivers/infiniband/hw/cxgb4/t4.h       |    2 --
- 3 files changed, 11 insertions(+), 7 deletions(-)
-
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+Yours,
+Linus Walleij
