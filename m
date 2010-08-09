@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab0HIJo1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 05:44:27 -0400
-Received: from mga14.intel.com ([143.182.124.37]:17905 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755969Ab0HIJo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 05:44:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,341,1278313200"; 
-   d="scan'208";a="309721924"
-Date: Mon, 9 Aug 2010 11:44:30 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/4] mfd: max8998 - fix incorrect kfree(i2c) in
- i2c_driver probe callback handler
-Message-ID: <20100809094429.GC2513@sortiz-mobl>
-References: <1281336496.18804.2.camel@mola>
- <20100809091530.GB2513@sortiz-mobl>
- <1281346572.3035.5.camel@odin>
+	id S1756025Ab0HIJqe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 05:46:34 -0400
+Received: from smtp-out-166.synserver.de ([212.40.180.166]:1058 "HELO
+	smtp-out-165.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S1755919Ab0HIJqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 05:46:33 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 9347
+Date: Mon, 9 Aug 2010 11:46:30 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, walt <w41ter@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH wq#for-linus] workqueue: workqueue_cpu_callback()
+ should be cpu_notifier not hotcpu_notifier
+Message-ID: <20100809094630.GA1603@arch.tripp.de>
+References: <i3n3dh$t48$1@dough.gmane.org>
+ <20100809063742.GA1632@arch.tripp.de>
+ <20100809083053.GB2169@osiris.boeblingen.de.ibm.com>
+ <20100809083451.GC2169@osiris.boeblingen.de.ibm.com>
+ <4C5FC49B.9040208@kernel.org>
+ <4C5FCC14.6030901@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1281346572.3035.5.camel@odin>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4C5FCC14.6030901@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 10:36:12AM +0100, Liam Girdwood wrote:
-> On Mon, 2010-08-09 at 11:15 +0200, Samuel Ortiz wrote:
-> > Hi Axel,
-> > 
-> > On Mon, Aug 09, 2010 at 02:48:16PM +0800, Axel Lin wrote:
-> > > The i2c_client received in probe() should not be kfree()'d.
-> > This should go through Liam's tree, I'm  CC'ing him to this thread.
+On Mon, Aug 09, 2010 at 11:36:20AM +0200, Tejun Heo wrote:
+> Commit 6ee0578b (workqueue: mark init_workqueues as early_initcall)
+> made workqueue SMP initialization depend on workqueue_cpu_callback(),
+> which however was registered as hotcpu_notifier() and didn't get
+> called if CONFIG_HOTPLUG_CPU is not set.  This made gcwqs on non-boot
+> CPUs not create their initial workers leading to boot failures.  Fix
+> it by making it a cpu_notifier.
 > 
-> Thanks, I assume I have you Ack too ?
-Yup, sorry about that:
-Signed-off-by: Samuel Ortiz <sameo@linux.intel.com>
+> So, something like this.  Can you please verify the fix?
 
-Cheers,
-Samuel.
-
- 
-> Thanks
-> 
-> Liam
-> -- 
-> Freelance Developer, SlimLogic Ltd
-> ASoC and Voltage Regulator Maintainer.
-> http://www.slimlogic.co.uk
-> 
+This fixes the boot problem here. Thanks.
+(The drm delayed enqueue problem, which I mentioned earlier still
+persists.)
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+»A man who doesn't know he is in prison can never escape.«
+William S. Burroughs
