@@ -1,32 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455Ab0HIH0a (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:26:30 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:49507 "EHLO
+	id S1755481Ab0HIH07 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:26:59 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49608 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752064Ab0HIH03 (ORCPT
+	by vger.kernel.org with ESMTP id S1755441Ab0HIH05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:26:29 -0400
-Date: Mon, 9 Aug 2010 09:26:18 +0200
+	Mon, 9 Aug 2010 03:26:57 -0400
+Date: Mon, 9 Aug 2010 09:26:46 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: david@lang.hm
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-        rjw@sisk.pl, stern@rowland.harvard.edu, swetland@google.com,
-        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-        tytso@mit.edu, arjan@infradead.org, swmike@swm.pp.se,
-        galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
-Message-ID: <20100809072618.GB1586@ucw.cz>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
- <20100804195704.GA23681@linux.vnet.ibm.com>
- <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Hugh Dickins <hughd@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Ondrej Zary <linux@rainbow-software.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@in.ibm.com>
+Subject: Re: Memory corruption during hibernation since 2.6.31
+Message-ID: <20100809072646.GD1463@ucw.cz>
+References: <201007282334.08063.rjw@sisk.pl>
+ <20100729132325.59871484.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100729142245.4AA5.A69D9226@jp.fujitsu.com>
+ <20100729142429.58b49dce.kamezawa.hiroyu@jp.fujitsu.com>
+ <alpine.DEB.1.00.1007291027410.7491@tigran.mtv.corp.google.com>
+ <20100729185529.GW16655@random.random>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+In-Reply-To: <20100729185529.GW16655@random.random>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,18 +37,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> >I should have asked this earlier...  What exactly are the apps'
-> >compatibility constraints?  Source-level APIs?  Byte-code class-library
-> >invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
-> >words, syscall)?
+> > I've CC'ed Andrea because we were having an offline conversation about
+> > whether ksmd (and his khugepaged) need to set_freezable(); and I wonder
+> > if this swap bug underlies his interest, though he was mainly worrying
+> > about I/O in progress.
 > 
-> For Java/Dalvik apps, the wakelock API is pertty high level -- it
-> talks to a service via RPC (Binder) that actually interacts with the
-> kernel.  Changing the basic kernel<->userspace interface (within
+> My opinion is that with current freezer model it is needed for suspend
+> to disk. The kthread_should_stop seems useless for kswapd/ksmd, but
+> I'm afraid it might get useful in the future so just to stay on the
+> safe side I added it to khugepaged as well, but it's contributing to
+> the pollution.
+> 
+> I've no idea why the freezing isn't preemptive (through the scheduler,
+> all these kernel threads are obviously lowlatency beasts) by default
 
-Strange. Arve claimed that open/close is too slow, and few
-microseconds faster ioctl is needed, and now we learn it actually uses
-RPC.
+Hibernation woulld like all  tasks frozen with no locks held - so that
+write to disk does not have to care about locking.
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
