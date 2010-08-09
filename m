@@ -1,72 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0HIJP2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 05:15:28 -0400
-Received: from mga03.intel.com ([143.182.124.21]:41221 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab0HIJP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 05:15:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,341,1278313200"; 
-   d="scan'208";a="309715081"
-Date: Mon, 9 Aug 2010 11:15:31 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH 1/4] mfd: max8998 - fix incorrect kfree(i2c) in
- i2c_driver probe callback handler
-Message-ID: <20100809091530.GB2513@sortiz-mobl>
-References: <1281336496.18804.2.camel@mola>
+	id S1755928Ab0HIJWw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 05:22:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51538 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755840Ab0HIJWu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 05:22:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=iJ/L0uib8Fk8ieg2CmnuEypi5vBxFNirMc2R30DR1KQ1x7ukj4kkhp52GGZgj1w41X
+         fGN9p9wI7FnoHa7V0WdZ/YzA0ponkrkTJTlyN+w4iP9Td/jPXEnpyoHc9lDfoUf/W+XO
+         pB4THz/1g6nI+ZU/rDY0BeADwexBbHLZVSWAo=
+Message-ID: <4C5FC8FA.5070600@gmail.com>
+Date: Mon, 09 Aug 2010 02:23:06 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281336496.18804.2.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Weber <weber@corscience.de>,
+        Mike Frysinger <vapier.adi@gmail.com>,
+        Paulo Marques <pmarques@grupopie.com>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Michael Neuling <mikey@neuling.org>
+Subject: Re: [PATCH]Documentation update broken web addresses.
+References: <1279943484-31069-1-git-send-email-justinmattock@gmail.com> <4C547464.6000505@gmail.com> <alpine.LNX.2.00.1008041521480.29919@pobox.suse.cz> <4C596C75.9070505@gmail.com> <alpine.LNX.2.00.1008091112320.29919@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1008091112320.29919@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+On 08/09/2010 02:13 AM, Jiri Kosina wrote:
+> On Wed, 4 Aug 2010, Justin P. Mattock wrote:
+>
+>>> I have now applied it. Please keep in mind, for your future submissions,
+>>> to make sure that you handle UTF-8 correctly. I had to manually fix your
+>>> patch for files in Japaneese, Korean and Chineese languages.
+>>>
+>>> Thanks,
+>>>
+>>
+>> thanks!!
+>> yeah I did see those where churned up, but couldnt figure out why sending
+>> individually the language came out fine, but with the whole lot the churn
+>> would happen.
+>>
+>> just to make sure there was a change(not sure if you received my previous
+>> post) with an address at:
+>>
+>> Documentation/filesystems/affs.txt
+>> (https://patchwork.kernel.org/patch/113264/)
+>>
+>> this address seems to be a better location
+>> http://www.amigaemulator.org/
+>>
+>> wanted to wait until if I received other such changes before resending again,
+>> but it's too late it's already applied
+>
+> The patch is already in Linus' tree, so if there are any changed that
+> should be applied on top of your previous patch, please send them my way.
+>
+> Thanks,
+>
 
-On Mon, Aug 09, 2010 at 02:48:16PM +0800, Axel Lin wrote:
-> The i2c_client received in probe() should not be kfree()'d.
-This should go through Liam's tree, I'm  CC'ing him to this thread.
 
-Cheers,
-Samuel.
+alright.. cool.. I'll have a look and see. also keep in mind theres also 
+the rest of the kernel that probably should be checked I don't mind 
+going through that.. but will take some time and patience etc...
 
-
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/mfd/max8998.c |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-> index 0d68de2..73e6f5c 100644
-> --- a/drivers/mfd/max8998.c
-> +++ b/drivers/mfd/max8998.c
-> @@ -89,10 +89,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
->  	int ret = 0;
->  
->  	max8998 = kzalloc(sizeof(struct max8998_dev), GFP_KERNEL);
-> -	if (max8998 == NULL) {
-> -		kfree(i2c);
-> +	if (max8998 == NULL)
->  		return -ENOMEM;
-> -	}
->  
->  	i2c_set_clientdata(i2c, max8998);
->  	max8998->dev = &i2c->dev;
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Justin P. Mattock
