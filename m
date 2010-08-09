@@ -1,70 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab0HIXqN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 19:46:13 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:40666 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757233Ab0HIXqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 19:46:11 -0400
-Date: Mon, 9 Aug 2010 16:38:05 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger@dilger.ca>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
-Message-ID: <20100809233805.GH2109@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S932082Ab0HIXvF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 19:51:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37965 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757268Ab0HIXvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 19:51:03 -0400
+Date: Mon, 9 Aug 2010 16:48:37 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg KH <greg@kroah.com>, David Woodhouse <dwmw2@infradead.org>,
+        Mike Frysinger <vapier@gentoo.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kevin Curtis <kevin.curtis@farsite.co.uk>,
+        Phillip Lougher <phillip@lougher.demon.co.uk>,
+        Faisal Latif <faisal.latif@intel.com>,
+        Chien Tung <chien.tin.tung@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Samuel Ortiz <samuel.ortiz@intel.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-wireless@vger.kernel.org, x86@kernel.org,
+        linux-rdma@vger.kernel.org
+Subject: Re: i386 allmodconfig, current mainline
+Message-Id: <20100809164837.b0c34ef1.randy.dunlap@oracle.com>
+In-Reply-To: <20100809164346.6e30cf8c.akpm@linux-foundation.org>
+References: <20100809164346.6e30cf8c.akpm@linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 05:19:22PM -0400, Andreas Dilger wrote:
-> On 2010-08-09, at 15:53, Darrick J. Wong wrote:
-> > This patch attempts to coordinate barrier requests being sent in by fsync.
-> > Instead of each fsync call initiating its own barrier, there's now a flag
-> > to indicate if (0) no barriers are ongoing, (1) we're delaying a short time
-> > to collect other fsync threads, or (2) we're actually in-progress on a
-> > barrier.
-> > 
-> > So, if someone calls ext4_sync_file and no barriers are in progress, the
-> > flag shifts from 0->1 and the thread delays for 500us to see if there are
-> > any other threads that are close behind in ext4_sync_file.  After that
-> > wait, the state transitions to 2 and the barrier is issued.  Once that's
-> > done, the state goes back to 0 and a completion is signalled.
+On Mon, 9 Aug 2010 16:43:46 -0700 Andrew Morton wrote:
+
 > 
-> You shouldn't use a fixed delay for the thread.  500us _seems_ reasonable, if
-> you have a single HDD.  If you have an SSD, or an NVRAM-backed array, then
-> 2000 IOPS is a serious limitation.
+> Guys.  What's goin' on out there?
+> 
+> 
+> drivers/power/olpc_battery.c:387: error: unknown field 'owner' specified in initializer
+> drivers/power/olpc_battery.c:387: warning: initialization from incompatible pointer type
+> make[2]: *** [drivers/power/olpc_battery.o] Error 1
+> make[1]: *** [drivers/power] Error 2
 
-2000 fsyncs per second, anyway.  I wasn't explicitly trying to limit any other
-types of IO.
+David Woodhouse fixed this one today.
 
-> What is done in the JBD2 code is to scale the commit sleep interval based on
-> the average commit time.  In fact, the ext4_force_commit->
-> ...->jbd2_journal_force_commit() call will itself be waiting in the jbd2 code
-> to merge journal commits.  It looks like we are duplicating some of this
-> machinery in ext4_sync_file() already.
 
-I actually picked 500us arbitrarily because it seemed to work, even for SSDs.
-It was a convenient test vehicle, and not much more.  That said, I like your
-recommendation much better.  I'll look into that.
+> fs/squashfs/xattr.c:37: warning: 'squashfs_xattr_handler' declared inline after being called
+> fs/squashfs/xattr.c:37: warning: previous declaration of 'squashfs_xattr_handler' was here
 
-> It seems like a better idea to have a single piece of code to wait to merge
-> the IOs.  For the non-journal ext4 filesystems it should implement the wait
-> for merges explicitly, otherwise it should defer the wait to jbd2.
+I see this one on one system (with gcc 4.1.2) but not on f11 with gcc 4.4.1,
+although it should be OK to "fix" it.
 
-I wondered if this would have been better off in the block layer than ext4?
-Though I suppose that could imply two kinds of flush: flush-immediately, and
-flush-shortly.  I intend to try those flush drain elimination patches before I
-think about this much more.
 
---D
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
