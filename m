@@ -1,107 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab0HISo2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:44:28 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51631 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219Ab0HISo1 (ORCPT
+	id S1754610Ab0HISom (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:44:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53307 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754500Ab0HISok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:44:27 -0400
-Message-ID: <4C604C62.7060509@austin.ibm.com>
-Date: Mon, 09 Aug 2010 13:43:46 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	Mon, 9 Aug 2010 14:44:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=roli35UC9HAgMMnyDwjms2j613I8JNgAh0JMEMk2ScyTG9V0J6I4PYogKfBUdmun0p
+         SsxCDkLrb6l0EqEQBzje+D0x3Mmd/IBngkEMUCW+CoOIPSW6/ZPGGH4+4q080RCoyRP+
+         pxUhedgeQix+GmlIdauc2cmrLd58CtqbTEjnE=
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
-Subject: [PATCH 8/8] v5  Update memory-hotplug documentation
-References: <4C60407C.2080608@austin.ibm.com>
-In-Reply-To: <4C60407C.2080608@austin.ibm.com>
+In-Reply-To: <1281374816-904-4-git-send-email-ngupta@vflare.org>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+	<1281374816-904-4-git-send-email-ngupta@vflare.org>
+Date: Mon, 9 Aug 2010 21:44:39 +0300
+X-Google-Sender-Auth: cUsQNSymFbX31abYjN_vvaw52QA
+Message-ID: <AANLkTimC=YGQKDmjsYir7iUwc9AtfkmJrcrrNptk0wZz@mail.gmail.com>
+Subject: Re: [PATCH 03/10] Use percpu stats
+From: Pekka Enberg <penberg@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the memory hotplug documentation to reflect the new behaviors of
-memory blocks reflected in sysfs.
+On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
+> Also remove references to removed stats (ex: good_comress).
+>
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 
-Signed-off-by: Nathan Fontent <nfont@austin.ibm.com>
-
----
- Documentation/memory-hotplug.txt |   46 +++++++++++++++++++++++++--------------
- 1 file changed, 30 insertions(+), 16 deletions(-)
-
-Index: linux-2.6/Documentation/memory-hotplug.txt
-===================================================================
---- linux-2.6.orig/Documentation/memory-hotplug.txt	2010-08-09 07:36:48.000000000 -0500
-+++ linux-2.6/Documentation/memory-hotplug.txt	2010-08-09 07:59:54.000000000 -0500
-@@ -126,36 +126,50 @@ config options.
- --------------------------------
- 4 sysfs files for memory hotplug
- --------------------------------
--All sections have their device information under /sys/devices/system/memory as
-+All sections have their device information in sysfs.  Each section is part of
-+a memory block under /sys/devices/system/memory as
- 
- /sys/devices/system/memory/memoryXXX
--(XXX is section id.)
-+(XXX is the section id.)
- 
--Now, XXX is defined as start_address_of_section / section_size.
-+Now, XXX is defined as (start_address_of_section / section_size) of the first
-+section contained in the memory block.  The files 'phys_index' and
-+'end_phys_index' under each directory report the beginning and end section id's
-+for the memory block covered by the sysfs directory.  It is expected that all
-+memory sections in this range are present and no memory holes exist in the
-+range. Currently there is no way to determine if there is a memory hole, but
-+the existence of one should not affect the hotplug capabilities of the memory
-+block.
- 
- For example, assume 1GiB section size. A device for a memory starting at
- 0x100000000 is /sys/device/system/memory/memory4
- (0x100000000 / 1Gib = 4)
- This device covers address range [0x100000000 ... 0x140000000)
- 
--Under each section, you can see 4 files.
-+Under each section, you can see 5 files.
- 
--/sys/devices/system/memory/memoryXXX/phys_index
-+/sys/devices/system/memory/memoryXXX/start_phys_index
-+/sys/devices/system/memory/memoryXXX/end_phys_index
- /sys/devices/system/memory/memoryXXX/phys_device
- /sys/devices/system/memory/memoryXXX/state
- /sys/devices/system/memory/memoryXXX/removable
- 
--'phys_index' : read-only and contains section id, same as XXX.
--'state'      : read-write
--               at read:  contains online/offline state of memory.
--               at write: user can specify "online", "offline" command
--'phys_device': read-only: designed to show the name of physical memory device.
--               This is not well implemented now.
--'removable'  : read-only: contains an integer value indicating
--               whether the memory section is removable or not
--               removable.  A value of 1 indicates that the memory
--               section is removable and a value of 0 indicates that
--               it is not removable.
-+'phys_index'      : read-only and contains section id of the first section
-+		    in the memory block, same as XXX.
-+'end_phys_index'  : read-only and contains section id of the last section
-+		    in the memory block.
-+'state'           : read-write
-+                    at read:  contains online/offline state of memory.
-+                    at write: user can specify "online", "offline" command
-+                    which will be performed on al sections in the block.
-+'phys_device'     : read-only: designed to show the name of physical memory
-+                    device.  This is not well implemented now.
-+'removable'       : read-only: contains an integer value indicating
-+                    whether the memory block is removable or not
-+                    removable.  A value of 1 indicates that the memory
-+                    block is removable and a value of 0 indicates that
-+                    it is not removable. A memory block is removable only if
-+                    every section in the block is removable.
- 
- NOTE:
-   These directories/files appear after physical memory hotplug phase.
-
+Acked-by: Pekka Enberg <penberg@kernel.org>
