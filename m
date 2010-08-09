@@ -1,88 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756291Ab0HINRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 09:17:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48888 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753193Ab0HINRF convert rfc822-to-8bit (ORCPT
+	id S1756459Ab0HINWy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 09:22:54 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:58446 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756258Ab0HINWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 09:17:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GU7C2c6CM/lSGLLKbf4wwW/UxHsMgOAq+uO37Or3v23XjxGQtgbtcl6hsF3IuIMn1w
-         hQ9Genhu+RUkW3A+YG0a8qrZj7y6qswg5u+5bAiipEuUx+vy8xIsFhg3lqBmWhvXKKBw
-         5U/IQJSEUeWXBWUTJ0f2mk9xSIkRfanVF0JTM=
+	Mon, 9 Aug 2010 09:22:53 -0400
 MIME-Version: 1.0
-In-Reply-To: <1281002322.1923.1708.camel@laptop>
-References: <AANLkTinNr28LM6NfsmbbmmV28mCzUugTTSI_Bq6N9-8C@mail.gmail.com>
-	<1281002322.1923.1708.camel@laptop>
-Date: Mon, 9 Aug 2010 18:47:01 +0530
-Message-ID: <AANLkTi=Tyh2cBtffOthiYcu=+ZHWW8FfSeFwLUq84Q3y@mail.gmail.com>
-Subject: Re: clock drift in set_task_cpu()
-From: Jack Daniel <wanders.thirst@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20100809103618.GE11340@nokia.com>
+References: <1275563341-31078-1-git-send-email-felipe.balbi@nokia.com> 
+	<20100809103618.GE11340@nokia.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 9 Aug 2010 07:22:31 -0600
+X-Google-Sender-Auth: IG74P6gfBb8tk93BSQB21lkPTQM
+Message-ID: <AANLkTinA72_YkcyN=1q04CDG5uW8PiOz5+jg9nTN7PuE@mail.gmail.com>
+Subject: Re: [PATCH] spi: omap2_mcspi: make use of dev_vdbg()
+To: felipe.balbi@nokia.com
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Tereshonkov Roman (Nokia-D/Helsinki)" <roman.tereshonkov@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Brownell <david-b@pacbell.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o79DN2A3020376
 
-On Thu, Aug 5, 2010 at 3:28 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-07-21 at 17:10 +0530, Jack Daniel wrote:
->> On a Xeon 55xx with 8 CPU's, I found out the new_rq->clock value is
->> sometimes larger than old_rq->clock and so clock_offset tends to warp
->> around leading to incorrect values.
+On Mon, Aug 9, 2010 at 4:36 AM, Felipe Balbi <felipe.balbi@nokia.com> wrote:
+> On Thu, Jun 03, 2010 at 01:09:01PM +0200, Balbi Felipe (Nokia-D/Helsinki)
+> wrote:
+>>
+>> From: Felipe Balbi <felipe.balbi@nokia.com>
+>>
+>> dev_vdbg() is only compiled when VERBOSE is defined, so
+>> there's no need to wrap dev_dbg() on #ifdef VERBOSE .. #endif
+>> as we can use dev_vdbg() directly.
+>>
+>> Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+>> ---
 >
-> What values get incorrect, do you observe vruntime funnies or only the
-> schedstat values?
+> ping, any comments to this one ? It's been pending for quite a long time.
 
-Just the schedstat values, did not observe anything wrong with vruntime.
+It didn't get sent to the spi-devel-general list, so it didn't get
+picked up by patchwork and wasn't there for me to pick up when I was
+collecting stuff for .36.
 
->
->>  You have very correctly noted in
->> the commit header that all functions that access set_task_cpu() must
->> do so after a call to sched_clock_remote(), in this case the function
->> is sched_fork(). I validated by adding update_rq_clock(old_rq); into
->> set_task_cpu() and that seems to fix the issue.
->
-> Ah, so the problem is that task_fork_fair() does the task placement
-> without updated rq clocks? In which case I think we should at least do
-> an update_rq_clock(rq) in there (see the below patch).
-
-Yes, this is indeed the problem and your patch seems to fix the issue.
+g.
 
 >
->> But I noticed that
->> since CONFIG_HAVE_UNSTABLE_SCHED_CLOCK is already set, if
->> (sched_clock_stable)  in sched_clock_cpu() will yield to true and the
->> flow never gets to sched_clock_remote() or sched_clock_local().
+>> drivers/spi/omap2_mcspi.c |   36 +++++++++---------------------------
+>> 1 files changed, 9 insertions(+), 27 deletions(-)
+>>
+>> diff --git a/drivers/spi/omap2_mcspi.c b/drivers/spi/omap2_mcspi.c
+>> index b3a94ca..d703927 100644
+>> --- a/drivers/spi/omap2_mcspi.c
+>> +++ b/drivers/spi/omap2_mcspi.c
+>> @@ -489,10 +489,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                        dev_err(&spi->dev, "TXS timed
+>> out\n");
+>>                                        goto out;
+>>                                }
+>> -#ifdef VERBOSE
+>> -                               dev_dbg(&spi->dev, "write-%d %02x\n",
+>> +                               dev_vdbg(&spi->dev, "write-%d %02x\n",
+>>                                                word_len, *tx);
+>> -#endif
+>>                                __raw_writel(*tx++, tx_reg);
+>>                        }
+>>                        if (rx != NULL) {
+>> @@ -506,10 +504,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                    (l & OMAP2_MCSPI_CHCONF_TURBO)) {
+>>                                        omap2_mcspi_set_enable(spi, 0);
+>>                                        *rx++ = __raw_readl(rx_reg);
+>> -#ifdef VERBOSE
+>> -                                       dev_dbg(&spi->dev, "read-%d
+>> %02x\n",
+>> +                                       dev_vdbg(&spi->dev, "read-%d
+>> %02x\n",
+>>                                                    word_len, *(rx - 1));
+>> -#endif
+>>                                        if
+>> (mcspi_wait_for_reg_bit(chstat_reg,
+>>                                                OMAP2_MCSPI_CHSTAT_RXS) <
+>> 0) {
+>>                                                dev_err(&spi->dev,
+>> @@ -522,10 +518,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                }
+>>
+>>                                *rx++ = __raw_readl(rx_reg);
+>> -#ifdef VERBOSE
+>> -                               dev_dbg(&spi->dev, "read-%d %02x\n",
+>> +                               dev_vdbg(&spi->dev, "read-%d %02x\n",
+>>                                                word_len, *(rx - 1));
+>> -#endif
+>>                        }
+>>                } while (c);
+>>        } else if (word_len <= 16) {
+>> @@ -542,10 +536,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                        dev_err(&spi->dev, "TXS timed
+>> out\n");
+>>                                        goto out;
+>>                                }
+>> -#ifdef VERBOSE
+>> -                               dev_dbg(&spi->dev, "write-%d %04x\n",
+>> +                               dev_vdbg(&spi->dev, "write-%d %04x\n",
+>>                                                word_len, *tx);
+>> -#endif
+>>                                __raw_writel(*tx++, tx_reg);
+>>                        }
+>>                        if (rx != NULL) {
+>> @@ -559,10 +551,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                    (l & OMAP2_MCSPI_CHCONF_TURBO)) {
+>>                                        omap2_mcspi_set_enable(spi, 0);
+>>                                        *rx++ = __raw_readl(rx_reg);
+>> -#ifdef VERBOSE
+>> -                                       dev_dbg(&spi->dev, "read-%d
+>> %04x\n",
+>> +                                       dev_vdbg(&spi->dev, "read-%d
+>> %04x\n",
+>>                                                    word_len, *(rx - 1));
+>> -#endif
+>>                                        if
+>> (mcspi_wait_for_reg_bit(chstat_reg,
+>>                                                OMAP2_MCSPI_CHSTAT_RXS) <
+>> 0) {
+>>                                                dev_err(&spi->dev,
+>> @@ -575,10 +565,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                }
+>>
+>>                                *rx++ = __raw_readl(rx_reg);
+>> -#ifdef VERBOSE
+>> -                               dev_dbg(&spi->dev, "read-%d %04x\n",
+>> +                               dev_vdbg(&spi->dev, "read-%d %04x\n",
+>>                                                word_len, *(rx - 1));
+>> -#endif
+>>                        }
+>>                } while (c);
+>>        } else if (word_len <= 32) {
+>> @@ -595,10 +583,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                        dev_err(&spi->dev, "TXS timed
+>> out\n");
+>>                                        goto out;
+>>                                }
+>> -#ifdef VERBOSE
+>> -                               dev_dbg(&spi->dev, "write-%d %08x\n",
+>> +                               dev_vdbg(&spi->dev, "write-%d %08x\n",
+>>                                                word_len, *tx);
+>> -#endif
+>>                                __raw_writel(*tx++, tx_reg);
+>>                        }
+>>                        if (rx != NULL) {
+>> @@ -612,10 +598,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                    (l & OMAP2_MCSPI_CHCONF_TURBO)) {
+>>                                        omap2_mcspi_set_enable(spi, 0);
+>>                                        *rx++ = __raw_readl(rx_reg);
+>> -#ifdef VERBOSE
+>> -                                       dev_dbg(&spi->dev, "read-%d
+>> %08x\n",
+>> +                                       dev_vdbg(&spi->dev, "read-%d
+>> %08x\n",
+>>                                                    word_len, *(rx - 1));
+>> -#endif
+>>                                        if
+>> (mcspi_wait_for_reg_bit(chstat_reg,
+>>                                                OMAP2_MCSPI_CHSTAT_RXS) <
+>> 0) {
+>>                                                dev_err(&spi->dev,
+>> @@ -628,10 +612,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct
+>> spi_transfer *xfer)
+>>                                }
+>>
+>>                                *rx++ = __raw_readl(rx_reg);
+>> -#ifdef VERBOSE
+>> -                               dev_dbg(&spi->dev, "read-%d %08x\n",
+>> +                               dev_vdbg(&spi->dev, "read-%d %08x\n",
+>>                                                word_len, *(rx - 1));
+>> -#endif
+>>                        }
+>>                } while (c);
+>>        }
+>> --
+>> 1.7.1
 >
-> sched_clock_stable being true implies the clock is stable across cores
-> and thus it shouldn't matter. Or are you saying you're seeing it being
-> set and still have issues?
+> --
+> balbi
+>
+> DefectiveByDesign.org
 >
 
-Please ignore these comments, initial debugging set me on the wrong
-foot, to suggest that TSC is unstable.
 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 9910e1b..f816e74 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3751,6 +3751,8 @@ static void task_fork_fair(struct task_struct *p)
->
->        raw_spin_lock_irqsave(&rq->lock, flags);
->
-> +       update_rq_clock(rq);
 
-As you rightly pointed out above, updating the clocks in
-task_fork_fair() will rightly fix the issue. Can get rid of rest of
-the update_rq_clock() functions as they (like you said), are expensive
-and I tested commenting them out.
-
-Thanks,
-Jack
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
