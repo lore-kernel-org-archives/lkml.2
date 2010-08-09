@@ -1,92 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0HIVUm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 17:20:42 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44500 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756589Ab0HIVUj (ORCPT
+	id S1756508Ab0HIVXt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 17:23:49 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55591 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab0HIVXs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 17:20:39 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 1/2] timekeeping: Fix overflow in rawtime tv_nsec on 32 bit archs
-Date: Mon,  9 Aug 2010 14:20:09 -0700
-Message-Id: <1281388810-25806-2-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1281388810-25806-1-git-send-email-johnstul@us.ibm.com>
-References: <1281388810-25806-1-git-send-email-johnstul@us.ibm.com>
+	Mon, 9 Aug 2010 17:23:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=M4xHJDBBw6On9wbRW6F5H8ncl5u7E9ifNQlZaH02j9X42ePLmRvvJWMv/FFzEJGAgw
+         8U8lErj6rInzXeIqaQdBFmNK+yw3WyFcetQE9PLRS1Wm1te4f5IklcKoFDLq2XqbbxiI
+         i8erQww2rSaPDsG4B3rtRSRLbfdN+H2chSzsQ=
+Message-ID: <4C6071DC.3010100@gmail.com>
+Date: Mon, 09 Aug 2010 18:23:40 -0300
+From: "Tomas M." <tmezzadra@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100806 Lanikai/3.1.2
+MIME-Version: 1.0
+To: Roberto Oppedisano <roberto.oppedisano@infracom.it>
+CC: Paul Rolland <rol@as2917.net>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35 suspend regression (bisected)
+References: <4C4C9E40.7070209@infracom.it> <20100804083732.3d8dae69@tux.DEF.witbe.net> <4C59192F.3010304@infracom.it>
+In-Reply-To: <4C59192F.3010304@infracom.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Wessel <jason.wessel@windriver.com>
 
-The tv_nsec is a long and when added to the shifted interval it can wrap
-and become negative which later causes looping problems in the
-getrawmonotonic().  The edge case occurs when the system has slept for
-a short period of time of ~2 seconds.
+> Hello Roland,
+>     I did reply on the same thread confirming that that's the same 
+> issue I was having and that the proposed workaround did work for me.
+> After some days of testing I'm observing sporadic lockup on resume 
+> (not in suspend as in my original report), but I think this is another 
+> issue.
+>
 
-A trace printk of the values in this patch illustrate the problem:
+something like this? https://bugzilla.kernel.org/show_bug.cgi?id=16396
 
-ftrace time stamp: log
-43.716079: logarithmic_accumulation: raw: 3d0913 tv_nsec d687faa
-43.718513: logarithmic_accumulation: raw: 3d0913 tv_nsec da588bd
-43.722161: logarithmic_accumulation: raw: 3d0913 tv_nsec de291d0
-46.349925: logarithmic_accumulation: raw: 7a122600 tv_nsec e1f9ae3
-46.349930: logarithmic_accumulation: raw: 1e848980 tv_nsec 8831c0e3
-
-The kernel starts looping at 46.349925 in the getrawmonotonic() due to
-the negative value from adding the raw value to tv_nsec.
-
-A simple solution is to accumulate into a u64, and then normalize it
-to a timespec_t.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-
-Reworked variable names and sipmlified some of the code.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-
-CC: Thomas Gleixner <tglx@linutronix.de>
-CC: H. Peter Anvin <hpa@zytor.com>
----
- kernel/time/timekeeping.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e14c839..e960d82 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -690,6 +690,7 @@ static void timekeeping_adjust(s64 offset)
- static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- {
- 	u64 nsecps = (u64)NSEC_PER_SEC << timekeeper.shift;
-+	u64 raw_nsecs;
- 
- 	/* If the offset is smaller then a shifted interval, do nothing */
- 	if (offset < timekeeper.cycle_interval<<shift)
-@@ -706,12 +707,14 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 		second_overflow();
- 	}
- 
--	/* Accumulate into raw time */
--	raw_time.tv_nsec += timekeeper.raw_interval << shift;;
--	while (raw_time.tv_nsec >= NSEC_PER_SEC) {
--		raw_time.tv_nsec -= NSEC_PER_SEC;
-+	/* Accumulate raw time */
-+	raw_nsecs = timekeeper.raw_interval << shift;
-+	raw_nsecs += raw_time.tv_nsec;
-+	while (raw_nsecs >= NSEC_PER_SEC) {
-+		raw_nsecs -= NSEC_PER_SEC;
- 		raw_time.tv_sec++;
- 	}
-+	raw_time.tv_nsec = raw_nsecs;
- 
- 	/* Accumulate error between NTP and clock interval */
- 	timekeeper.ntp_error += tick_length << shift;
--- 
-1.6.0.4
-
+check my last post there
