@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab0HIR1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:27:52 -0400
+	id S1754173Ab0HIR2l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:28:41 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:60296 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab0HIR1i (ORCPT
+	with ESMTP id S1753213Ab0HIR1G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 13:27:38 -0400
+	Mon, 9 Aug 2010 13:27:06 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
 Cc: Linux Driver Project <devel@driverdev.osuosl.org>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 09/10] Update zram documentation
-Date: Mon,  9 Aug 2010 22:56:55 +0530
-Message-Id: <1281374816-904-10-git-send-email-ngupta@vflare.org>
+Subject: [PATCH 04/10] Use percpu buffers
+Date: Mon,  9 Aug 2010 22:56:50 +0530
+Message-Id: <1281374816-904-5-git-send-email-ngupta@vflare.org>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1281374816-904-1-git-send-email-ngupta@vflare.org>
 References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
@@ -23,106 +23,350 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update zram documentation to reflect transition form
-ioctl to sysfs interface.
+This also removes the (mutex) lock which was used to
+protect these buffers.
+
+Tests with fio on dual core showed improvement of about
+20% for write speed.
+
+fio job description:
+
+[global]
+bs=4k
+ioengine=libaio
+iodepth=8
+size=1g
+direct=1
+runtime=60
+directory=/mnt/zdisk
+verify=meta
+verify=0x1234567890abcdef
+numjobs=2
+
+[seq-write]
+rw=write
+
+Speedup was negligible with iodepth of 4 or less. Maybe
+gains will be more visible with higher number of cores.
+
+Results with above job file:
+Before:
+  WRITE: io=2,048MB, aggrb=70,725KB/s
+  WRITE: io=2,048MB, aggrb=71,938KB/s
+  WRITE: io=2,048MB, aggrb=70,461KB/s
+
+After:
+  WRITE: io=2,048MB, aggrb=86,691KB/s
+  WRITE: io=2,048MB, aggrb=87,025KB/s
+  WRITE: io=2,048MB, aggrb=88,700KB/s
+
+Speedup: ~20%
+
+Read performance remained almost the same since the read
+path was lockless earlier also (LZO decompressor does not
+require any additional buffer).
 
 Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- drivers/staging/zram/zram.txt |   58 +++++++++++++++++++++++++---------------
- 1 files changed, 36 insertions(+), 22 deletions(-)
+ drivers/staging/zram/zram_drv.c |  136 +++++++++++++++++++++++++--------------
+ drivers/staging/zram/zram_drv.h |    4 -
+ 2 files changed, 88 insertions(+), 52 deletions(-)
 
-diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
-index 520edc1..5f75d29 100644
---- a/drivers/staging/zram/zram.txt
-+++ b/drivers/staging/zram/zram.txt
-@@ -5,33 +5,35 @@ Project home: http://compcache.googlecode.com/
+diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
+index f111b86..c16e09a 100644
+--- a/drivers/staging/zram/zram_drv.c
++++ b/drivers/staging/zram/zram_drv.c
+@@ -17,13 +17,14 @@
  
- * Introduction
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+-#include <linux/bio.h>
+ #include <linux/bitops.h>
+ #include <linux/blkdev.h>
+ #include <linux/buffer_head.h>
++#include <linux/cpu.h>
+ #include <linux/device.h>
+ #include <linux/genhd.h>
+ #include <linux/highmem.h>
++#include <linux/notifier.h>
+ #include <linux/slab.h>
+ #include <linux/lzo.h>
+ #include <linux/string.h>
+@@ -31,6 +32,9 @@
  
--The zram module creates RAM based block devices: /dev/ramX (X = 0, 1, ...).
--Pages written to these disks are compressed and stored in memory itself.
--These disks allow very fast I/O and compression provides good amounts of
--memory savings.
-+The zram module creates RAM based block devices named /dev/zram<id>
-+(<id> = 0, 1, ...). Pages written to these disks are compressed and stored
-+in memory itself. These disks allow very fast I/O and compression provides
-+good amounts of memory savings. Some of the usecases include /tmp storage,
-+use as swap disks, various caches under /var and maybe many more :)
+ #include "zram_drv.h"
  
--See project home for use cases, performance numbers and a lot more.
++static DEFINE_PER_CPU(unsigned char *, compress_buffer);
++static DEFINE_PER_CPU(unsigned char *, compress_workmem);
++
+ /* Globals */
+ static int zram_major;
+ struct zram *devices;
+@@ -290,10 +294,10 @@ static int zram_write(struct zram *zram, struct bio *bio)
+ 		size_t clen;
+ 		struct zobj_header *zheader;
+ 		struct page *page, *page_store;
++		unsigned char *zbuffer, *zworkmem;
+ 		unsigned char *user_mem, *cmem, *src;
+ 
+ 		page = bvec->bv_page;
+-		src = zram->compress_buffer;
+ 
+ 		/*
+ 		 * System overwrites unused sectors. Free memory associated
+@@ -303,38 +307,41 @@ static int zram_write(struct zram *zram, struct bio *bio)
+ 				zram_test_flag(zram, index, ZRAM_ZERO))
+ 			zram_free_page(zram, index);
+ 
+-		mutex_lock(&zram->lock);
++		preempt_disable();
++		zbuffer = __get_cpu_var(compress_buffer);
++		zworkmem = __get_cpu_var(compress_workmem);
++		if (unlikely(!zbuffer || !zworkmem)) {
++			preempt_enable();
++			goto out;
++		}
+ 
++		src = zbuffer;
+ 		user_mem = kmap_atomic(page, KM_USER0);
+ 		if (page_zero_filled(user_mem)) {
+ 			kunmap_atomic(user_mem, KM_USER0);
+-			mutex_unlock(&zram->lock);
++			preempt_enable();
+ 			zram_inc_stat(zram, ZRAM_STAT_PAGES_ZERO);
+ 			zram_set_flag(zram, index, ZRAM_ZERO);
+ 			continue;
+ 		}
+ 
+ 		ret = lzo1x_1_compress(user_mem, PAGE_SIZE, src, &clen,
+-					zram->compress_workmem);
++					zworkmem);
+ 
+ 		kunmap_atomic(user_mem, KM_USER0);
+ 
+ 		if (unlikely(ret != LZO_E_OK)) {
+-			mutex_unlock(&zram->lock);
++			preempt_enable();
+ 			pr_err("Compression failed! err=%d\n", ret);
+ 			goto out;
+ 		}
+ 
+-		/*
+-		 * Page is incompressible. Store it as-is (uncompressed)
+-		 * since we do not want to return too many disk write
+-		 * errors which has side effect of hanging the system.
+-		 */
++		 /* Page is incompressible. Store it as-is (uncompressed) */
+ 		if (unlikely(clen > max_zpage_size)) {
+ 			clen = PAGE_SIZE;
+-			page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
++			page_store = alloc_page(GFP_NOWAIT | __GFP_HIGHMEM);
+ 			if (unlikely(!page_store)) {
+-				mutex_unlock(&zram->lock);
++				preempt_enable();
+ 				pr_info("Error allocating memory for "
+ 					"incompressible page: %u\n", index);
+ 				goto out;
+@@ -350,8 +357,8 @@ static int zram_write(struct zram *zram, struct bio *bio)
+ 
+ 		if (xv_malloc(zram->mem_pool, clen + sizeof(*zheader),
+ 				&zram->table[index].page, &offset,
+-				GFP_NOIO | __GFP_HIGHMEM)) {
+-			mutex_unlock(&zram->lock);
++				GFP_NOWAIT | __GFP_HIGHMEM)) {
++			preempt_enable();
+ 			pr_info("Error allocating memory for compressed "
+ 				"page: %u, size=%zu\n", index, clen);
+ 			goto out;
+@@ -363,18 +370,10 @@ memstore:
+ 		cmem = kmap_atomic(zram->table[index].page, KM_USER1) +
+ 				zram->table[index].offset;
+ 
+-#if 0
+-		/* Back-reference needed for memory defragmentation */
+-		if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
+-			zheader = (struct zobj_header *)cmem;
+-			zheader->table_idx = index;
+-			cmem += sizeof(*zheader);
+-		}
+-#endif
 -
--Individual zram devices are configured and initialized using zramconfig
--userspace utility as shown in examples below. See zramconfig man page for
--more details.
-+Statistics for individual zram devices are exported through sysfs nodes at
-+/sys/block/zram<id>/
- 
- * Usage
- 
- Following shows a typical sequence of steps for using zram.
- 
--1) Load Modules:
-+1) Load Module:
- 	modprobe zram num_devices=4
--	This creates 4 (uninitialized) devices: /dev/zram{0,1,2,3}
-+	This creates 4 devices: /dev/zram{0,1,2,3}
- 	(num_devices parameter is optional. Default: 1)
- 
--2) Initialize:
--	Use zramconfig utility to configure and initialize individual
--	zram devices. For example:
--	zramconfig /dev/zram0 --init # uses default value of disksize_kb
--	zramconfig /dev/zram1 --disksize_kb=102400 # 100MB /dev/zram1
-+2) Set Disksize (Optional):
-+	Set disk size by writing the value to sysfs node 'disksize'
-+	(in bytes). If disksize is not given, default value of 25%
-+	of RAM is used.
+ 		memcpy(cmem, src, clen);
+-
+ 		kunmap_atomic(cmem, KM_USER1);
++		preempt_enable();
 +
-+	# Initialize /dev/zram0 with 50MB disksize
-+	echo $((50*1024*1024)) > /sys/block/zram0/disksize
+ 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
+ 			kunmap_atomic(src, KM_USER0);
  
--	*See zramconfig man page for more details and examples*
-+	NOTE: disksize cannot be changed if the disk contains any
-+	data. So, for such a disk, you need to issue 'reset' (see below)
-+	before you can change its disksize.
+@@ -382,7 +381,6 @@ memstore:
+ 		zram_add_stat(zram, ZRAM_STAT_COMPR_SIZE, clen);
+ 		zram_inc_stat(zram, ZRAM_STAT_PAGES_STORED);
  
- 3) Activate:
- 	mkswap /dev/zram0
-@@ -41,17 +43,29 @@ Following shows a typical sequence of steps for using zram.
- 	mount /dev/zram1 /tmp
+-		mutex_unlock(&zram->lock);
+ 		index++;
+ 	}
  
- 4) Stats:
--	zramconfig /dev/zram0 --stats
--	zramconfig /dev/zram1 --stats
-+	Per-device statistics are exported as various nodes under
-+	/sys/block/zram<id>/
-+		disksize
-+		num_reads
-+		num_writes
-+		invalid_io
-+		notify_free
-+		discard
-+		zero_pages
-+		orig_data_size
-+		compr_data_size
-+		mem_used_total
+@@ -446,13 +444,6 @@ void zram_reset_device(struct zram *zram)
+ 	mutex_lock(&zram->init_lock);
+ 	zram->init_done = 0;
  
- 5) Deactivate:
- 	swapoff /dev/zram0
- 	umount /dev/zram1
+-	/* Free various per-device buffers */
+-	kfree(zram->compress_workmem);
+-	free_pages((unsigned long)zram->compress_buffer, 1);
+-
+-	zram->compress_workmem = NULL;
+-	zram->compress_buffer = NULL;
+-
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+ 		struct page *page;
+@@ -497,20 +488,6 @@ int zram_init_device(struct zram *zram)
  
- 6) Reset:
--	zramconfig /dev/zram0 --reset
--	zramconfig /dev/zram1 --reset
--	(This frees memory allocated for the given device).
-+	Write any positive value to 'reset' sysfs node
-+	echo 1 > /sys/block/zram0/reset
-+	echo 1 > /sys/block/zram1/reset
+ 	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
+ 
+-	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
+-	if (!zram->compress_workmem) {
+-		pr_err("Error allocating compressor working memory!\n");
+-		ret = -ENOMEM;
+-		goto fail;
+-	}
+-
+-	zram->compress_buffer = (void *)__get_free_pages(__GFP_ZERO, 1);
+-	if (!zram->compress_buffer) {
+-		pr_err("Error allocating compressor buffer space\n");
+-		ret = -ENOMEM;
+-		goto fail;
+-	}
+-
+ 	num_pages = zram->disksize >> PAGE_SHIFT;
+ 	zram->table = vmalloc(num_pages * sizeof(*zram->table));
+ 	if (!zram->table) {
+@@ -573,7 +550,6 @@ static int create_device(struct zram *zram, int device_id)
+ {
+ 	int ret = 0;
+ 
+-	mutex_init(&zram->lock);
+ 	mutex_init(&zram->init_lock);
+ 
+ 	zram->queue = blk_alloc_queue(GFP_KERNEL);
+@@ -649,9 +625,46 @@ static void destroy_device(struct zram *zram)
+ 		blk_cleanup_queue(zram->queue);
+ }
+ 
++/*
++ * Callback for CPU hotplug events. Allocates percpu compression buffers.
++ */
++static int zram_cpu_notify(struct notifier_block *nb, unsigned long action,
++			void *pcpu)
++{
++	int cpu = (long)pcpu;
 +
-+	(This frees all the memory allocated for the given device).
++	switch (action) {
++	case CPU_UP_PREPARE:
++		per_cpu(compress_buffer, cpu) = (void *)__get_free_pages(
++					GFP_KERNEL | __GFP_ZERO, 1);
++		per_cpu(compress_workmem, cpu) = kzalloc(
++					LZO1X_MEM_COMPRESS, GFP_KERNEL);
++
++		break;
++	case CPU_DEAD:
++	case CPU_UP_CANCELED:
++		free_pages((unsigned long)(per_cpu(compress_buffer, cpu)), 1);
++		per_cpu(compress_buffer, cpu) = NULL;
++
++		kfree(per_cpu(compress_buffer, cpu));
++		per_cpu(compress_buffer, cpu) = NULL;
++
++		break;
++	default:
++		break;
++	}
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block zram_cpu_nb = {
++	.notifier_call = zram_cpu_notify
++};
++
+ static int __init zram_init(void)
+ {
+ 	int ret, dev_id;
++	unsigned int cpu;
  
+ 	if (num_devices > max_num_devices) {
+ 		pr_warning("Invalid value for num_devices: %u\n",
+@@ -660,6 +673,20 @@ static int __init zram_init(void)
+ 		goto out;
+ 	}
  
- Please report any problems at:
++	ret = register_cpu_notifier(&zram_cpu_nb);
++	if (ret)
++		goto out;
++
++	for_each_online_cpu(cpu) {
++		void *pcpu = (void *)(long)cpu;
++		zram_cpu_notify(&zram_cpu_nb, CPU_UP_PREPARE, pcpu);
++		if (!per_cpu(compress_buffer, cpu) ||
++					!per_cpu(compress_workmem, cpu)) {
++			ret = -ENOMEM;
++			goto out;
++		}
++	}
++
+ 	zram_major = register_blkdev(0, "zram");
+ 	if (zram_major <= 0) {
+ 		pr_warning("Unable to get major number\n");
+@@ -694,12 +721,18 @@ free_devices:
+ unregister:
+ 	unregister_blkdev(zram_major, "zram");
+ out:
++	for_each_online_cpu(cpu) {
++		void *pcpu = (void *)(long)cpu;
++		zram_cpu_notify(&zram_cpu_nb, CPU_UP_CANCELED, pcpu);
++	}
++
+ 	return ret;
+ }
+ 
+ static void __exit zram_exit(void)
+ {
+ 	int i;
++	unsigned int cpu;
+ 	struct zram *zram;
+ 
+ 	for (i = 0; i < num_devices; i++) {
+@@ -712,6 +745,13 @@ static void __exit zram_exit(void)
+ 
+ 	unregister_blkdev(zram_major, "zram");
+ 
++	for_each_online_cpu(cpu) {
++		void *pcpu = (void *)(long)cpu;
++		zram_cpu_notify(&zram_cpu_nb, CPU_UP_CANCELED, pcpu);
++	}
++
++	unregister_cpu_notifier(&zram_cpu_nb);
++
+ 	kfree(devices);
+ 	pr_debug("Cleanup done!\n");
+ }
+diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
+index 88fddb4..21c97f6 100644
+--- a/drivers/staging/zram/zram_drv.h
++++ b/drivers/staging/zram/zram_drv.h
+@@ -103,11 +103,7 @@ struct zram_stats_cpu {
+ 
+ struct zram {
+ 	struct xv_pool *mem_pool;
+-	void *compress_workmem;
+-	void *compress_buffer;
+ 	struct table *table;
+-	struct mutex lock;	/* protect compression buffers against
+-				 * concurrent writes */
+ 	struct request_queue *queue;
+ 	struct gendisk *disk;
+ 	int init_done;
 -- 
 1.7.2.1
 
