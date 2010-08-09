@@ -1,112 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab0HIKOL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 06:14:11 -0400
-Received: from smtp-out-166.synserver.de ([212.40.180.166]:1073 "HELO
-	smtp-out-165.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1755836Ab0HIKOJ (ORCPT
+	id S1756086Ab0HIKSe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 06:18:34 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50254 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755835Ab0HIKSc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 06:14:09 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 31059
-Date: Mon, 9 Aug 2010 12:14:06 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Tejun Heo <htejun@gmail.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, walt <w41ter@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        David Airlie <airlied@linux.ie>, DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: [PATCH wq#for-linus] drm: fix a fallout from slow-work -> wq
- conversion
-Message-ID: <20100809101406.GA1633@arch.tripp.de>
-References: <i3n3dh$t48$1@dough.gmane.org>
- <20100809063742.GA1632@arch.tripp.de>
- <20100809083053.GB2169@osiris.boeblingen.de.ibm.com>
- <20100809083451.GC2169@osiris.boeblingen.de.ibm.com>
- <4C5FC49B.9040208@kernel.org>
- <4C5FCC14.6030901@gmail.com>
- <20100809094630.GA1603@arch.tripp.de>
- <4C5FCF0C.2000100@gmail.com>
- <4C5FD1D1.9060302@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C5FD1D1.9060302@gmail.com>
+	Mon, 9 Aug 2010 06:18:32 -0400
+Date: Mon, 9 Aug 2010 11:24:53 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100809112453.77210acc@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100808213821.GD3635@thunk.org>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+	<20100804195704.GA23681@linux.vnet.ibm.com>
+	<20100806225453.GA3947@linux.vnet.ibm.com>
+	<alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
+	<AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+	<alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
+	<20100807061558.GA28087@thunk.org>
+	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
+	<20100808155719.GB3635@thunk.org>
+	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
+	<20100808213821.GD3635@thunk.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 12:00:49PM +0200, Tejun Heo wrote:
-> Commit 991ea75c (drm: use workqueue instead of slow-work), which made
-> drm to use wq instead of slow-work, didn't account for the return
-> value difference between delayed_slow_work_enqueue() and
-> queue_delayed_work().  The former returns 0 on success and -errno on
-> failures while the latter never fails and only uses the return value
-> to indicate whether the work was already pending or not.
-> 
-> This misconversion triggered spurious error messages.  Remove the now
-> unnecessary return value check and error message.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> Cc: David Airlie <airlied@linux.ie>
-> Cc: dri-devel@lists.freedesktop.org
-> ---
-> Markus, it's almost trivial but it would be great if you can test this
-> one too.
+> I have to worry about manually killing off applications when memory
+> gets low, I actually thought it was incredibly sucky.  It was a
+> miniature, badly done laptop.
 
-Looks good, but drm_kms_helper_poll_disable needs the same treatment.
+Likewise I thought the lack of proper multi-tasking apps in Android was
+comically bad. Nice device completely wrecked by the inability to flip
+between running apps each with their own screen - something that was old
+tech in 1990.
 
+It's no use looking at this from an "In my opinion" angle. A proper
+solution works for most if not all opinions except maybe around corner
+cases.
 
-diff --git a/drivers/gpu/drm/drm_crtc_helper.c b/drivers/gpu/drm/drm_crtc_helper.c
-index 4598130..b9e4dbf 100644
---- a/drivers/gpu/drm/drm_crtc_helper.c
-+++ b/drivers/gpu/drm/drm_crtc_helper.c
-@@ -839,7 +839,6 @@ static void output_poll_execute(struct work_struct *work)
- 	struct drm_connector *connector;
- 	enum drm_connector_status old_status, status;
- 	bool repoll = false, changed = false;
--	int ret;
- 
- 	mutex_lock(&dev->mode_config.mutex);
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
-@@ -874,11 +873,8 @@ static void output_poll_execute(struct work_struct *work)
- 			dev->mode_config.funcs->output_poll_changed(dev);
- 	}
- 
--	if (repoll) {
--		ret = queue_delayed_work(system_nrt_wq, delayed_work, DRM_OUTPUT_POLL_PERIOD);
--		if (ret)
--			DRM_ERROR("delayed enqueue failed %d\n", ret);
--	}
-+	if (repoll)
-+		queue_delayed_work(system_nrt_wq, delayed_work, DRM_OUTPUT_POLL_PERIOD);
- }
- 
- void drm_kms_helper_poll_disable(struct drm_device *dev)
-@@ -893,18 +889,14 @@ void drm_kms_helper_poll_enable(struct drm_device *dev)
- {
- 	bool poll = false;
- 	struct drm_connector *connector;
--	int ret;
- 
- 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
- 		if (connector->polled)
- 			poll = true;
- 	}
- 
--	if (poll) {
--		ret = queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
--		if (ret)
--			DRM_ERROR("delayed enqueue failed %d\n", ret);
--	}
-+	if (poll)
-+		queue_delayed_work(system_nrt_wq, &dev->mode_config.output_poll_work, DRM_OUTPUT_POLL_PERIOD);
- }
- EXPORT_SYMBOL(drm_kms_helper_poll_enable);
- 
--- 
-»A man who doesn't know he is in prison can never escape.«
-William S. Burroughs
+>   * allowing arbitrary applications that users can interact with
+>     simultaneously (which implies a window manager, the need to have
+>     the concept of window focus for keyboard input), etc?
+
+That's also untrue as anyone who has worked in industrial control or
+entertainment systems will tell you. You may well have fourteen apps
+driving fourteen display/input devices and no window manager.
+
+> would agree that in the ideal world, it would be nice if you could
+> have applications that make the correct performance/battery
+> utilization tradeoff for devices running on 800 mWh batteries, 94,000
+> mWh batteries, and while running on the AC mains.  But I don't believe
+> that it's likely to be true, and if you want to try to beat up on
+> application writers one at a time to be power optimized --- as far as
+> I'm concerned, that's an argument *for* suspend blockers, since I'm
+> not big believer in plans that begin, "First, you command the tides of
+> the sea to go back", King Canute style.  :-)
+
+Suspend blockers drive the system policy part way into the apps, that in
+turn makes the apps very vulnerable to change in their environment because
+you've specialised them. I am sure that in the Android world it's
+considered fine, and that the marketing and business people even like
+this binding together - but it doesn't generalise and will blow up in
+people's faces in the future.
+
+To consider your tide analogy - suspend blockers is like trying to
+program the waves individually. Show me a suspend blocker aware open
+office patch 8)
+
