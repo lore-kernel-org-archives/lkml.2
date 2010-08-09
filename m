@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab0HIR1u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:27:50 -0400
+	id S1754090Ab0HIR1w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:27:52 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:60296 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab0HIR1q (ORCPT
+	with ESMTP id S1753110Ab0HIR1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 13:27:46 -0400
+	Mon, 9 Aug 2010 13:27:38 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
 Cc: Linux Driver Project <devel@driverdev.osuosl.org>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 10/10] Document sysfs entries
-Date: Mon,  9 Aug 2010 22:56:56 +0530
-Message-Id: <1281374816-904-11-git-send-email-ngupta@vflare.org>
+Subject: [PATCH 09/10] Update zram documentation
+Date: Mon,  9 Aug 2010 22:56:55 +0530
+Message-Id: <1281374816-904-10-git-send-email-ngupta@vflare.org>
 X-Mailer: git-send-email 1.7.2.1
 In-Reply-To: <1281374816-904-1-git-send-email-ngupta@vflare.org>
 References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
@@ -23,118 +23,106 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Update zram documentation to reflect transition form
+ioctl to sysfs interface.
+
 Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- Documentation/ABI/testing/sysfs-block-zram |   99 ++++++++++++++++++++++++++++
- 1 files changed, 99 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-block-zram
+ drivers/staging/zram/zram.txt |   58 +++++++++++++++++++++++++---------------
+ 1 files changed, 36 insertions(+), 22 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-block-zram b/Documentation/ABI/testing/sysfs-block-zram
-new file mode 100644
-index 0000000..c8b3b48
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-block-zram
-@@ -0,0 +1,99 @@
-+What:		/sys/block/zram<id>/disksize
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The disksize file is read-write and specifies the disk size
-+		which represents the limit on the *uncompressed* worth of data
-+		that can be stored in this disk.
+diff --git a/drivers/staging/zram/zram.txt b/drivers/staging/zram/zram.txt
+index 520edc1..5f75d29 100644
+--- a/drivers/staging/zram/zram.txt
++++ b/drivers/staging/zram/zram.txt
+@@ -5,33 +5,35 @@ Project home: http://compcache.googlecode.com/
+ 
+ * Introduction
+ 
+-The zram module creates RAM based block devices: /dev/ramX (X = 0, 1, ...).
+-Pages written to these disks are compressed and stored in memory itself.
+-These disks allow very fast I/O and compression provides good amounts of
+-memory savings.
++The zram module creates RAM based block devices named /dev/zram<id>
++(<id> = 0, 1, ...). Pages written to these disks are compressed and stored
++in memory itself. These disks allow very fast I/O and compression provides
++good amounts of memory savings. Some of the usecases include /tmp storage,
++use as swap disks, various caches under /var and maybe many more :)
+ 
+-See project home for use cases, performance numbers and a lot more.
+-
+-Individual zram devices are configured and initialized using zramconfig
+-userspace utility as shown in examples below. See zramconfig man page for
+-more details.
++Statistics for individual zram devices are exported through sysfs nodes at
++/sys/block/zram<id>/
+ 
+ * Usage
+ 
+ Following shows a typical sequence of steps for using zram.
+ 
+-1) Load Modules:
++1) Load Module:
+ 	modprobe zram num_devices=4
+-	This creates 4 (uninitialized) devices: /dev/zram{0,1,2,3}
++	This creates 4 devices: /dev/zram{0,1,2,3}
+ 	(num_devices parameter is optional. Default: 1)
+ 
+-2) Initialize:
+-	Use zramconfig utility to configure and initialize individual
+-	zram devices. For example:
+-	zramconfig /dev/zram0 --init # uses default value of disksize_kb
+-	zramconfig /dev/zram1 --disksize_kb=102400 # 100MB /dev/zram1
++2) Set Disksize (Optional):
++	Set disk size by writing the value to sysfs node 'disksize'
++	(in bytes). If disksize is not given, default value of 25%
++	of RAM is used.
 +
-+What:		/sys/block/zram<id>/initstate
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The disksize file is read-only and shows the initialization
-+		state of the device.
++	# Initialize /dev/zram0 with 50MB disksize
++	echo $((50*1024*1024)) > /sys/block/zram0/disksize
+ 
+-	*See zramconfig man page for more details and examples*
++	NOTE: disksize cannot be changed if the disk contains any
++	data. So, for such a disk, you need to issue 'reset' (see below)
++	before you can change its disksize.
+ 
+ 3) Activate:
+ 	mkswap /dev/zram0
+@@ -41,17 +43,29 @@ Following shows a typical sequence of steps for using zram.
+ 	mount /dev/zram1 /tmp
+ 
+ 4) Stats:
+-	zramconfig /dev/zram0 --stats
+-	zramconfig /dev/zram1 --stats
++	Per-device statistics are exported as various nodes under
++	/sys/block/zram<id>/
++		disksize
++		num_reads
++		num_writes
++		invalid_io
++		notify_free
++		discard
++		zero_pages
++		orig_data_size
++		compr_data_size
++		mem_used_total
+ 
+ 5) Deactivate:
+ 	swapoff /dev/zram0
+ 	umount /dev/zram1
+ 
+ 6) Reset:
+-	zramconfig /dev/zram0 --reset
+-	zramconfig /dev/zram1 --reset
+-	(This frees memory allocated for the given device).
++	Write any positive value to 'reset' sysfs node
++	echo 1 > /sys/block/zram0/reset
++	echo 1 > /sys/block/zram1/reset
 +
-+What:		/sys/block/zram<id>/reset
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The disksize file is write-only and allows resetting the
-+		device. The reset operation frees all the memory assocaited
-+		with this device.
-+
-+What:		/sys/block/zram<id>/num_reads
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The num_reads file is read-only and specifies the number of
-+		reads (failed or successful) done on this device.
-+
-+What:		/sys/block/zram<id>/num_writes
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The num_writes file is read-only and specifies the number of
-+		writes (failed or successful) done on this device.
-+
-+What:		/sys/block/zram<id>/invalid_io
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The invalid_io file is read-only and specifies the number of
-+		non-page-size-aligned I/O requests issued to this device.
-+
-+What:		/sys/block/zram<id>/notify_free
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The notify_free file is read-only and specifies the number of
-+		swap slot free notifications received by this device. These
-+		notifications are send to a swap block device when a swap slot
-+		is freed. This statistic is applicable only when this disk is
-+		being used as a swap disk.
-+
-+What:		/sys/block/zram<id>/discard
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The discard file is read-only and specifies the number of
-+		discard requests received by this device. These requests
-+		provide information to block device regarding blocks which are
-+		no longer used by filesystem.
-+
-+What:		/sys/block/zram<id>/zero_pages
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The zero_pages file is read-only and specifies number of zero
-+		filled pages written to this disk. No memory is allocated for
-+		such pages.
-+
-+What:		/sys/block/zram<id>/orig_data_size
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The orig_data_size file is read-only and specifies uncompressed
-+		size of data stored in this disk. This excludes zero-filled
-+		pages (zero_pages) since no memory is allocated for them.
-+		Unit: bytes
-+
-+What:		/sys/block/zram<id>/compr_data_size
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The compr_data_size file is read-only and specifies compressed
-+		size of data stored in this disk. So, compression ratio can be
-+		calculated using orig_data_size and this statistic.
-+		Unit: bytes
-+
-+What:		/sys/block/zram<id>/mem_used_total
-+Date:		August 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The mem_used_total file is read-only and specifies the amount
-+		of memory, including allocator fragmentation and metadata
-+		overhead, allocated for this disk. So, allocator space
-+		efficiency can be calculated using compr_data_size and this
-+		statistic.
-+		Unit: bytes
-\ No newline at end of file
++	(This frees all the memory allocated for the given device).
+ 
+ 
+ Please report any problems at:
 -- 
 1.7.2.1
 
