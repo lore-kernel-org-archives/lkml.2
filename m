@@ -1,372 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab0HIR2l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:28:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60296 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753213Ab0HIR1G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 13:27:06 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
-Cc: Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 04/10] Use percpu buffers
-Date: Mon,  9 Aug 2010 22:56:50 +0530
-Message-Id: <1281374816-904-5-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1281374816-904-1-git-send-email-ngupta@vflare.org>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+	id S1752244Ab0HIRk1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:40:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62307 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751420Ab0HIRkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 13:40:25 -0400
+Message-ID: <4C603DB1.9030706@redhat.com>
+Date: Mon, 09 Aug 2010 14:41:05 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-media@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 7 (IR)
+References: <20100807160710.b7c8d838.sfr@canb.auug.org.au>	<20100807203920.83134a60.randy.dunlap@oracle.com>	<20100808135511.269f670c.randy.dunlap@oracle.com>	<4C5F9C2E.50001@redhat.com> <20100809075255.97d18a66.randy.dunlap@oracle.com>
+In-Reply-To: <20100809075255.97d18a66.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This also removes the (mutex) lock which was used to
-protect these buffers.
+Em 09-08-2010 11:52, Randy Dunlap escreveu:
+> On Mon, 09 Aug 2010 03:11:58 -0300 Mauro Carvalho Chehab wrote:
+> 
+>> Em 08-08-2010 17:55, Randy Dunlap escreveu:
+>>> On Sat, 7 Aug 2010 20:39:20 -0700 Randy Dunlap wrote:
+>>>
+>>> [adding linux-media]
+>>>
+>>>> On Sat, 7 Aug 2010 16:07:10 +1000 Stephen Rothwell wrote:
+>>>>
+>>>>> Hi all,
+>>>>>
+>>>>> As the merge window is open, please do not add 2.6.37 material to your
+>>>>> linux-next included trees until after 2.6.36-rc1.
+>>>>>
+>>>>> Changes since 20100806:
+>>>>
+>>>> 2 sets of IR build errors (2 .config files attached):
+>>>>
+>>>> #5091:
+>>>> ERROR: "ir_keydown" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+>>>> ERROR: "__ir_input_register" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+>>>> ERROR: "get_rc_map" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+>>>> ERROR: "ir_input_unregister" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+>>>> ERROR: "get_rc_map" [drivers/media/video/cx88/cx88xx.ko] undefined!
+>>>> ERROR: "ir_repeat" [drivers/media/video/cx88/cx88xx.ko] undefined!
+>>>> ERROR: "ir_input_unregister" [drivers/media/video/cx88/cx88xx.ko] undefined!
+>>>> ERROR: "ir_keydown" [drivers/media/video/cx88/cx88xx.ko] undefined!
+>>>> ERROR: "__ir_input_register" [drivers/media/video/cx88/cx88xx.ko] undefined!
+>>>> ERROR: "get_rc_map" [drivers/media/video/bt8xx/bttv.ko] undefined!
+>>>> ERROR: "ir_input_unregister" [drivers/media/video/bt8xx/bttv.ko] undefined!
+>>>> ERROR: "__ir_input_register" [drivers/media/video/bt8xx/bttv.ko] undefined!
+>>>> ERROR: "ir_g_keycode_from_table" [drivers/media/IR/ir-common.ko] undefined!
+>>>>
+>>>>
+>>>> #5101:
+>>>> (.text+0x8306e2): undefined reference to `ir_core_debug'
+>>>> (.text+0x830729): undefined reference to `ir_core_debug'
+>>>> ir-functions.c:(.text+0x830906): undefined reference to `ir_core_debug'
+>>>> (.text+0x8309d8): undefined reference to `ir_g_keycode_from_table'
+>>>> (.text+0x830acf): undefined reference to `ir_core_debug'
+>>>> (.text+0x830b92): undefined reference to `ir_core_debug'
+>>>> (.text+0x830bef): undefined reference to `ir_core_debug'
+>>>> (.text+0x830c6a): undefined reference to `ir_core_debug'
+>>>> (.text+0x830cf7): undefined reference to `ir_core_debug'
+>>>> budget-ci.c:(.text+0x89f5c8): undefined reference to `ir_keydown'
+>>>> budget-ci.c:(.text+0x8a0c58): undefined reference to `get_rc_map'
+>>>> budget-ci.c:(.text+0x8a0c80): undefined reference to `__ir_input_register'
+>>>> budget-ci.c:(.text+0x8a0ee0): undefined reference to `get_rc_map'
+>>>> budget-ci.c:(.text+0x8a11cd): undefined reference to `ir_input_unregister'
+>>>> (.text+0x8a8adb): undefined reference to `ir_input_unregister'
+>>>> dvb-usb-remote.c:(.text+0x8a9188): undefined reference to `get_rc_map'
+>>>> dvb-usb-remote.c:(.text+0x8a91b1): undefined reference to `__ir_input_register'
+>>>> dvb-usb-remote.c:(.text+0x8a9238): undefined reference to `get_rc_map'
+>>>> dib0700_core.c:(.text+0x8b04ca): undefined reference to `ir_keydown'
+>>>> dib0700_devices.c:(.text+0x8b2ea8): undefined reference to `ir_keydown'
+>>>> dib0700_devices.c:(.text+0x8b2ef0): undefined reference to `ir_keydown'
+>>
+>> Hmm... clearly, there are some bad dependencies at the Kconfig. Maybe ir-core were compiled
+>> as module, while some drivers as built-in.
+>>
+>> Could you please pass the .config file for this build?
+> 
+> 
+> Sorry, config-r5101 is now attached.
 
-Tests with fio on dual core showed improvement of about
-20% for write speed.
+Hmm... when building it, I'm getting an interesting warning:
 
-fio job description:
+warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT || VIDEO_SAA7134 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT || VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || VIDEO_TLG2300 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && SND && DVB_CORE || VIDEO_CX231XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || DVB_BUDGET_CI && MEDIA_SUPPORT && DVB_CAPT
+URE_DRIVERS && DVB_CORE && DVB_BUDGET_CORE && I2C && INPUT || DVB_DM1105 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C && INPUT || VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
 
-[global]
-bs=4k
-ioengine=libaio
-iodepth=8
-size=1g
-direct=1
-runtime=60
-directory=/mnt/zdisk
-verify=meta
-verify=0x1234567890abcdef
-numjobs=2
+This warning seems to explain what's going wrong.
 
-[seq-write]
-rw=write
+I'll make patch(es) to address this issue.
 
-Speedup was negligible with iodepth of 4 or less. Maybe
-gains will be more visible with higher number of cores.
-
-Results with above job file:
-Before:
-  WRITE: io=2,048MB, aggrb=70,725KB/s
-  WRITE: io=2,048MB, aggrb=71,938KB/s
-  WRITE: io=2,048MB, aggrb=70,461KB/s
-
-After:
-  WRITE: io=2,048MB, aggrb=86,691KB/s
-  WRITE: io=2,048MB, aggrb=87,025KB/s
-  WRITE: io=2,048MB, aggrb=88,700KB/s
-
-Speedup: ~20%
-
-Read performance remained almost the same since the read
-path was lockless earlier also (LZO decompressor does not
-require any additional buffer).
-
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
----
- drivers/staging/zram/zram_drv.c |  136 +++++++++++++++++++++++++--------------
- drivers/staging/zram/zram_drv.h |    4 -
- 2 files changed, 88 insertions(+), 52 deletions(-)
-
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index f111b86..c16e09a 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -17,13 +17,14 @@
- 
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/bio.h>
- #include <linux/bitops.h>
- #include <linux/blkdev.h>
- #include <linux/buffer_head.h>
-+#include <linux/cpu.h>
- #include <linux/device.h>
- #include <linux/genhd.h>
- #include <linux/highmem.h>
-+#include <linux/notifier.h>
- #include <linux/slab.h>
- #include <linux/lzo.h>
- #include <linux/string.h>
-@@ -31,6 +32,9 @@
- 
- #include "zram_drv.h"
- 
-+static DEFINE_PER_CPU(unsigned char *, compress_buffer);
-+static DEFINE_PER_CPU(unsigned char *, compress_workmem);
-+
- /* Globals */
- static int zram_major;
- struct zram *devices;
-@@ -290,10 +294,10 @@ static int zram_write(struct zram *zram, struct bio *bio)
- 		size_t clen;
- 		struct zobj_header *zheader;
- 		struct page *page, *page_store;
-+		unsigned char *zbuffer, *zworkmem;
- 		unsigned char *user_mem, *cmem, *src;
- 
- 		page = bvec->bv_page;
--		src = zram->compress_buffer;
- 
- 		/*
- 		 * System overwrites unused sectors. Free memory associated
-@@ -303,38 +307,41 @@ static int zram_write(struct zram *zram, struct bio *bio)
- 				zram_test_flag(zram, index, ZRAM_ZERO))
- 			zram_free_page(zram, index);
- 
--		mutex_lock(&zram->lock);
-+		preempt_disable();
-+		zbuffer = __get_cpu_var(compress_buffer);
-+		zworkmem = __get_cpu_var(compress_workmem);
-+		if (unlikely(!zbuffer || !zworkmem)) {
-+			preempt_enable();
-+			goto out;
-+		}
- 
-+		src = zbuffer;
- 		user_mem = kmap_atomic(page, KM_USER0);
- 		if (page_zero_filled(user_mem)) {
- 			kunmap_atomic(user_mem, KM_USER0);
--			mutex_unlock(&zram->lock);
-+			preempt_enable();
- 			zram_inc_stat(zram, ZRAM_STAT_PAGES_ZERO);
- 			zram_set_flag(zram, index, ZRAM_ZERO);
- 			continue;
- 		}
- 
- 		ret = lzo1x_1_compress(user_mem, PAGE_SIZE, src, &clen,
--					zram->compress_workmem);
-+					zworkmem);
- 
- 		kunmap_atomic(user_mem, KM_USER0);
- 
- 		if (unlikely(ret != LZO_E_OK)) {
--			mutex_unlock(&zram->lock);
-+			preempt_enable();
- 			pr_err("Compression failed! err=%d\n", ret);
- 			goto out;
- 		}
- 
--		/*
--		 * Page is incompressible. Store it as-is (uncompressed)
--		 * since we do not want to return too many disk write
--		 * errors which has side effect of hanging the system.
--		 */
-+		 /* Page is incompressible. Store it as-is (uncompressed) */
- 		if (unlikely(clen > max_zpage_size)) {
- 			clen = PAGE_SIZE;
--			page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
-+			page_store = alloc_page(GFP_NOWAIT | __GFP_HIGHMEM);
- 			if (unlikely(!page_store)) {
--				mutex_unlock(&zram->lock);
-+				preempt_enable();
- 				pr_info("Error allocating memory for "
- 					"incompressible page: %u\n", index);
- 				goto out;
-@@ -350,8 +357,8 @@ static int zram_write(struct zram *zram, struct bio *bio)
- 
- 		if (xv_malloc(zram->mem_pool, clen + sizeof(*zheader),
- 				&zram->table[index].page, &offset,
--				GFP_NOIO | __GFP_HIGHMEM)) {
--			mutex_unlock(&zram->lock);
-+				GFP_NOWAIT | __GFP_HIGHMEM)) {
-+			preempt_enable();
- 			pr_info("Error allocating memory for compressed "
- 				"page: %u, size=%zu\n", index, clen);
- 			goto out;
-@@ -363,18 +370,10 @@ memstore:
- 		cmem = kmap_atomic(zram->table[index].page, KM_USER1) +
- 				zram->table[index].offset;
- 
--#if 0
--		/* Back-reference needed for memory defragmentation */
--		if (!zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)) {
--			zheader = (struct zobj_header *)cmem;
--			zheader->table_idx = index;
--			cmem += sizeof(*zheader);
--		}
--#endif
--
- 		memcpy(cmem, src, clen);
--
- 		kunmap_atomic(cmem, KM_USER1);
-+		preempt_enable();
-+
- 		if (unlikely(zram_test_flag(zram, index, ZRAM_UNCOMPRESSED)))
- 			kunmap_atomic(src, KM_USER0);
- 
-@@ -382,7 +381,6 @@ memstore:
- 		zram_add_stat(zram, ZRAM_STAT_COMPR_SIZE, clen);
- 		zram_inc_stat(zram, ZRAM_STAT_PAGES_STORED);
- 
--		mutex_unlock(&zram->lock);
- 		index++;
- 	}
- 
-@@ -446,13 +444,6 @@ void zram_reset_device(struct zram *zram)
- 	mutex_lock(&zram->init_lock);
- 	zram->init_done = 0;
- 
--	/* Free various per-device buffers */
--	kfree(zram->compress_workmem);
--	free_pages((unsigned long)zram->compress_buffer, 1);
--
--	zram->compress_workmem = NULL;
--	zram->compress_buffer = NULL;
--
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
- 		struct page *page;
-@@ -497,20 +488,6 @@ int zram_init_device(struct zram *zram)
- 
- 	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
- 
--	zram->compress_workmem = kzalloc(LZO1X_MEM_COMPRESS, GFP_KERNEL);
--	if (!zram->compress_workmem) {
--		pr_err("Error allocating compressor working memory!\n");
--		ret = -ENOMEM;
--		goto fail;
--	}
--
--	zram->compress_buffer = (void *)__get_free_pages(__GFP_ZERO, 1);
--	if (!zram->compress_buffer) {
--		pr_err("Error allocating compressor buffer space\n");
--		ret = -ENOMEM;
--		goto fail;
--	}
--
- 	num_pages = zram->disksize >> PAGE_SHIFT;
- 	zram->table = vmalloc(num_pages * sizeof(*zram->table));
- 	if (!zram->table) {
-@@ -573,7 +550,6 @@ static int create_device(struct zram *zram, int device_id)
- {
- 	int ret = 0;
- 
--	mutex_init(&zram->lock);
- 	mutex_init(&zram->init_lock);
- 
- 	zram->queue = blk_alloc_queue(GFP_KERNEL);
-@@ -649,9 +625,46 @@ static void destroy_device(struct zram *zram)
- 		blk_cleanup_queue(zram->queue);
- }
- 
-+/*
-+ * Callback for CPU hotplug events. Allocates percpu compression buffers.
-+ */
-+static int zram_cpu_notify(struct notifier_block *nb, unsigned long action,
-+			void *pcpu)
-+{
-+	int cpu = (long)pcpu;
-+
-+	switch (action) {
-+	case CPU_UP_PREPARE:
-+		per_cpu(compress_buffer, cpu) = (void *)__get_free_pages(
-+					GFP_KERNEL | __GFP_ZERO, 1);
-+		per_cpu(compress_workmem, cpu) = kzalloc(
-+					LZO1X_MEM_COMPRESS, GFP_KERNEL);
-+
-+		break;
-+	case CPU_DEAD:
-+	case CPU_UP_CANCELED:
-+		free_pages((unsigned long)(per_cpu(compress_buffer, cpu)), 1);
-+		per_cpu(compress_buffer, cpu) = NULL;
-+
-+		kfree(per_cpu(compress_buffer, cpu));
-+		per_cpu(compress_buffer, cpu) = NULL;
-+
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block zram_cpu_nb = {
-+	.notifier_call = zram_cpu_notify
-+};
-+
- static int __init zram_init(void)
- {
- 	int ret, dev_id;
-+	unsigned int cpu;
- 
- 	if (num_devices > max_num_devices) {
- 		pr_warning("Invalid value for num_devices: %u\n",
-@@ -660,6 +673,20 @@ static int __init zram_init(void)
- 		goto out;
- 	}
- 
-+	ret = register_cpu_notifier(&zram_cpu_nb);
-+	if (ret)
-+		goto out;
-+
-+	for_each_online_cpu(cpu) {
-+		void *pcpu = (void *)(long)cpu;
-+		zram_cpu_notify(&zram_cpu_nb, CPU_UP_PREPARE, pcpu);
-+		if (!per_cpu(compress_buffer, cpu) ||
-+					!per_cpu(compress_workmem, cpu)) {
-+			ret = -ENOMEM;
-+			goto out;
-+		}
-+	}
-+
- 	zram_major = register_blkdev(0, "zram");
- 	if (zram_major <= 0) {
- 		pr_warning("Unable to get major number\n");
-@@ -694,12 +721,18 @@ free_devices:
- unregister:
- 	unregister_blkdev(zram_major, "zram");
- out:
-+	for_each_online_cpu(cpu) {
-+		void *pcpu = (void *)(long)cpu;
-+		zram_cpu_notify(&zram_cpu_nb, CPU_UP_CANCELED, pcpu);
-+	}
-+
- 	return ret;
- }
- 
- static void __exit zram_exit(void)
- {
- 	int i;
-+	unsigned int cpu;
- 	struct zram *zram;
- 
- 	for (i = 0; i < num_devices; i++) {
-@@ -712,6 +745,13 @@ static void __exit zram_exit(void)
- 
- 	unregister_blkdev(zram_major, "zram");
- 
-+	for_each_online_cpu(cpu) {
-+		void *pcpu = (void *)(long)cpu;
-+		zram_cpu_notify(&zram_cpu_nb, CPU_UP_CANCELED, pcpu);
-+	}
-+
-+	unregister_cpu_notifier(&zram_cpu_nb);
-+
- 	kfree(devices);
- 	pr_debug("Cleanup done!\n");
- }
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index 88fddb4..21c97f6 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -103,11 +103,7 @@ struct zram_stats_cpu {
- 
- struct zram {
- 	struct xv_pool *mem_pool;
--	void *compress_workmem;
--	void *compress_buffer;
- 	struct table *table;
--	struct mutex lock;	/* protect compression buffers against
--				 * concurrent writes */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
--- 
-1.7.2.1
-
+Thanks,
+Mauro.
