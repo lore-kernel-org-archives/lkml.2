@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab0HIHo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:44:58 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53228
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751484Ab0HIHoz (ORCPT
+	id S1755629Ab0HIHrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:47:35 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:61969 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462Ab0HIHre (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:44:55 -0400
-Date: Mon, 09 Aug 2010 00:45:14 -0700 (PDT)
-Message-Id: <20100809.004514.73697921.davem@davemloft.net>
-To: segooon@gmail.com
-CC: herbert@gondor.hengli.com.au, linux-crypto@vger.kernel.org,
+	Mon, 9 Aug 2010 03:47:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OdC5aGOBApiVwl/GyFTiopgoCGDza28ZBKKxhk9mzCK7V7kFphaJIggRcAZfg43g8/
+         nbPx18xvnVf6/W3qIyhZY8+spobPKjzNXg2ZVU/c0wimiNvo7X2x9LchbhkykV8EYeJ+
+         rjP1Ob7cfwtjheJBFoAQeE8SFokINYzp9iQ4o=
+Subject: Re: [PATCH] x86: remove __phys_reloc_hide
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
         linux-kernel@vger.kernel.org
-Subject: n2 RNG driver bogus cast removal
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+In-Reply-To: <20100809072226.GD29524@basil.fritz.box>
+References: <1281303490-390-1-git-send-email-namhyung@gmail.com>
+	 <87k4o08fv9.fsf@basil.nowhere.org> <1281336031.976.11.camel@leonhard>
+	 <20100809064441.GC29524@basil.fritz.box> <1281337485.976.24.camel@leonhard>
+	 <20100809072226.GD29524@basil.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Aug 2010 16:47:39 +0900
+Message-ID: <1281340059.976.27.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o797j3TF018080
+
+2010-08-09 (ì›”), 09:22 +0200, Andi Kleen:
+
+> The original reason was that the C standard allows the compiler
+> to make some assumptions on the pointer arithmetic that is done 
+> on symbol addresses (e.g. no wrapping). This is exploited
+> by the optimizer in the compiler to generate better code.
+> 
+> This lead to a miscompilation on PowerPC a couple of years back at 
+> least with the va->pa conversion.
+> 
+> After that RELOC_HIDE was introduced after funelling the
+> symbol address through an empty asm statement was recommended 
+> as the official way to do this by the gcc developers.
+> 
+> I think x86-64 does not normally wrap here, but it's 
+> still safer to do it this way.
+> 
+> -Andi
+
+OK, then. Thanks for the comment.
+
+p.s. The funny thing I found is there's no use of RELOC_HIDE on
+arch/powerpc. Hmm...
+
+-- 
+Regards,
+Namhyung Kim
 
 
-Kulikov, can you at least build test your patches?  Casts are not
-always incorrect, particularly when private cookies are "unsigned
-long" as is the case here:
-
-drivers/char/hw_random/n2-drv.c: In function ¡n2rng_data_read¢:
-drivers/char/hw_random/n2-drv.c:390: warning: initialization makes pointer from integer without a cast
-
-Herbert, please revert this change, thanks.  And I suspect there
-might be more of these hwrng driver duds that went into the tree,
-it's worth checking out. :-)
-
-Thanks.
-
-commit 8b9cfdca9c52f7d39c3ccfac1668e31c20c9f42e
-Author: Kulikov Vasiliy <segooon@gmail.com>
-Date:   Mon Jul 5 21:25:06 2010 +0800
-
-    hwrng: n2-drv - remove casts from void*
-    
-    Remove unnesessary casts from void*.
-    
-    Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
