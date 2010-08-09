@@ -1,186 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab0HIPzy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 11:55:54 -0400
-Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:36134 "EHLO
-	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756603Ab0HIPzw (ORCPT
+	id S1756963Ab0HIP4c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 11:56:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15536 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756794Ab0HIP4a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 11:55:52 -0400
-X-Greylist: delayed 1565 seconds by postgrey-1.27 at vger.kernel.org; Mon, 09 Aug 2010 11:55:50 EDT
-Message-ID: <4C601ECD.2070503@st.com>
-Date: Mon, 9 Aug 2010 16:29:17 +0100
-From: Stuart Menefy <stuart.menefy@st.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+	Mon, 9 Aug 2010 11:56:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,344,1278313200"; 
+   d="scan'208";a="645893599"
+From: "Moore, Robert" <robert.moore@intel.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>,
+        "Brown, Len" <len.brown@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 9 Aug 2010 08:56:28 -0700
+Subject: RE: [PATCH] ACPI: Fix wrong atomicity check in preemption point
+Thread-Topic: [PATCH] ACPI: Fix wrong atomicity check in preemption point
+Thread-Index: Acs14gjWb/+Qm0wnSjGavtyVtQ6eDQB+VIfA
+Message-ID: <4911F71203A09E4D9981D27F9D830858AC6DB2A6@orsmsx503.amr.corp.intel.com>
+References: <1281152316-5907-1-git-send-regression-fweisbec@gmail.com>
+In-Reply-To: <1281152316-5907-1-git-send-regression-fweisbec@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sh: remove RELOC_HIDE on exception handlers and syscall
- routines
-References: <1281300825-3327-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1281300825-3327-1-git-send-email-namhyung@gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unfortunately these are necessary, although it is nothing to do with linker
-relocation. These functions take a struct pt_regs as a parameter (not a
-pointer), and modify some of the fields of that structure. We needed a way
-to ensure that gcc didn't optimise away those assignments - to gcc
-they appear to be assignments to a local variable, so quite legitimately
-get optimised away. So we used RELOC_HIDE() as a way of doing that.
+I'll be happy to include this in the aclinux.h file if the day ever comes when it is stable.
 
-A clearer way to do this would be to pass in a struct pt_regs pointer,
-but that would require going via a stub function which loads up the
-pointer.
 
-Stuart
-
-On 08/08/10 21:53, Namhyung Kim wrote:
-> remove unneccessary use of RELOC_HIDE(). It does simple addition of ptr and
-> offset and in this case (offset 0) does practically nothing. It does NOT do
-> anything with linker relocation.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  arch/sh/include/asm/system.h |    2 +-
->  arch/sh/kernel/process_32.c  |    8 ++++----
->  arch/sh/kernel/signal_32.c   |    6 +++---
->  arch/sh/kernel/sys_sh32.c    |    2 +-
->  arch/sh/kernel/traps_32.c    |    6 +++---
->  5 files changed, 12 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/sh/include/asm/system.h b/arch/sh/include/asm/system.h
-> index 0bd7a17..8125c6c 100644
-> --- a/arch/sh/include/asm/system.h
-> +++ b/arch/sh/include/asm/system.h
-> @@ -154,7 +154,7 @@ asmlinkage void name##_trap_handler(unsigned long r4, unsigned long r5,	\
->  				    struct pt_regs __regs)
->  
->  #define TRAP_HANDLER_DECL				\
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);	\
-> +	struct pt_regs *regs = &__regs;			\
->  	unsigned int vec = regs->tra;			\
->  	(void)vec;
->  #else
-> diff --git a/arch/sh/kernel/process_32.c b/arch/sh/kernel/process_32.c
-> index 0529819..95c9de1 100644
-> --- a/arch/sh/kernel/process_32.c
-> +++ b/arch/sh/kernel/process_32.c
-> @@ -253,7 +253,7 @@ asmlinkage int sys_fork(unsigned long r4, unsigned long r5,
->  			struct pt_regs __regs)
->  {
->  #ifdef CONFIG_MMU
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	return do_fork(SIGCHLD, regs->regs[15], regs, 0, NULL, NULL);
->  #else
->  	/* fork almost works, enough to trick you into looking elsewhere :-( */
-> @@ -266,7 +266,7 @@ asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
->  			 unsigned long child_tidptr,
->  			 struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	if (!newsp)
->  		newsp = regs->regs[15];
->  	return do_fork(clone_flags, newsp, regs, 0,
-> @@ -288,7 +288,7 @@ asmlinkage int sys_vfork(unsigned long r4, unsigned long r5,
->  			 unsigned long r6, unsigned long r7,
->  			 struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	return do_fork(CLONE_VFORK | CLONE_VM | SIGCHLD, regs->regs[15], regs,
->  		       0, NULL, NULL);
->  }
-> @@ -300,7 +300,7 @@ asmlinkage int sys_execve(char __user *ufilename, char __user * __user *uargv,
->  			  char __user * __user *uenvp, unsigned long r7,
->  			  struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	int error;
->  	char *filename;
->  
-> diff --git a/arch/sh/kernel/signal_32.c b/arch/sh/kernel/signal_32.c
-> index 579cd2c..76843cb 100644
-> --- a/arch/sh/kernel/signal_32.c
-> +++ b/arch/sh/kernel/signal_32.c
-> @@ -109,7 +109,7 @@ sys_sigaltstack(const stack_t __user *uss, stack_t __user *uoss,
->  		unsigned long r6, unsigned long r7,
->  		struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  
->  	return do_sigaltstack(uss, uoss, regs->regs[15]);
->  }
-> @@ -222,7 +222,7 @@ asmlinkage int sys_sigreturn(unsigned long r4, unsigned long r5,
->  			     unsigned long r6, unsigned long r7,
->  			     struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	struct sigframe __user *frame = (struct sigframe __user *)regs->regs[15];
->  	sigset_t set;
->  	int r0;
-> @@ -259,7 +259,7 @@ asmlinkage int sys_rt_sigreturn(unsigned long r4, unsigned long r5,
->  				unsigned long r6, unsigned long r7,
->  				struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	struct rt_sigframe __user *frame = (struct rt_sigframe __user *)regs->regs[15];
->  	sigset_t set;
->  	int r0;
-> diff --git a/arch/sh/kernel/sys_sh32.c b/arch/sh/kernel/sys_sh32.c
-> index eb68bfd..1d96ad2 100644
-> --- a/arch/sh/kernel/sys_sh32.c
-> +++ b/arch/sh/kernel/sys_sh32.c
-> @@ -25,7 +25,7 @@ asmlinkage int sys_sh_pipe(unsigned long r4, unsigned long r5,
->  	unsigned long r6, unsigned long r7,
->  	struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	int fd[2];
->  	int error;
->  
-> diff --git a/arch/sh/kernel/traps_32.c b/arch/sh/kernel/traps_32.c
-> index c3d86fa..107cccb 100644
-> --- a/arch/sh/kernel/traps_32.c
-> +++ b/arch/sh/kernel/traps_32.c
-> @@ -666,7 +666,7 @@ asmlinkage void do_reserved_inst(unsigned long r4, unsigned long r5,
->  				unsigned long r6, unsigned long r7,
->  				struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	unsigned long error_code;
->  	struct task_struct *tsk = current;
->  
-> @@ -754,7 +754,7 @@ asmlinkage void do_illegal_slot_inst(unsigned long r4, unsigned long r5,
->  				unsigned long r6, unsigned long r7,
->  				struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	unsigned long inst;
->  	struct task_struct *tsk = current;
->  
-> @@ -783,7 +783,7 @@ asmlinkage void do_exception_error(unsigned long r4, unsigned long r5,
->  				   unsigned long r6, unsigned long r7,
->  				   struct pt_regs __regs)
->  {
-> -	struct pt_regs *regs = RELOC_HIDE(&__regs, 0);
-> +	struct pt_regs *regs = &__regs;
->  	long ex;
->  
->  	ex = lookup_exception_vector();
+>-----Original Message-----
+>From: Frederic Weisbecker [mailto:fweisbec@gmail.com]
+>Sent: Friday, August 06, 2010 8:39 PM
+>To: Brown, Len
+>Cc: LKML; Frederic Weisbecker; Moore, Robert
+>Subject: [PATCH] ACPI: Fix wrong atomicity check in preemption point
+>
+>The acpi preemption point checks the atomicity of the context
+>using in_atomic_preempt_off(). This helper must be used only
+>to check the atomicity before a prior call to preempt_disable(),
+>which is not what we want here.
+>
+>What we want is to simply check if we are in an atomic section.
+>This helper is actually only used by the scheduler for particular
+>needs and shouldn't be used outside.
+>
+>The check made here is then always wrong. We will schedule only if
+>preemption has been disabled once. It never has been a problem
+>during the boot because premption is disabled and moreover the BKL
+>is held, so we increase twice the preempt count. But now that
+>we drop the bkl from the boot, the preempt count is only increased
+>once, and then we schedule in the acpi preemption point while we
+>shouldn't.
+>
+>In fact using such in_atomic*() like helpers is quite fragile to
+>guess if we can schedule, but still, in_atomic() is less buggy than
+>what was there before.
+>
+>This fixes:
+>
+>[    0.008086] BUG: scheduling while atomic: swapper/0/0x10000002
+>[    0.008167] no locks held by swapper/0.
+>[    0.008243] Modules linked in:
+>[    0.008356] Pid: 0, comm: swapper Not tainted 2.6.35+ #793
+>[    0.008437] Call Trace:
+>[    0.008519]  [<ffffffff8106eab3>] ? __debug_show_held_locks+0x13/0x30
+>[    0.008605]  [<ffffffff81039a65>] __schedule_bug+0x85/0x90
+>[    0.008690]  [<ffffffff815edf20>] schedule+0x670/0x840
+>[    0.008775]  [<ffffffff8129ff88>] ? acpi_os_release_object+0x9/0xd
+>[    0.008860]  [<ffffffff812beca0>] ? acpi_ps_free_op+0x22/0x24
+>[    0.008944]  [<ffffffff8103ccd5>] __cond_resched+0x25/0x40
+>[    0.009008]  [<ffffffff815ee1ed>] _cond_resched+0x2d/0x40
+>[    0.009091]  [<ffffffff812bdf4a>] acpi_ps_complete_op+0x292/0x2a8
+>[    0.009174]  [<ffffffff812be7b6>] acpi_ps_parse_loop+0x856/0x9ac
+>[    0.010008]  [<ffffffff812bd81d>] acpi_ps_parse_aml+0x9a/0x2b9
+>[    0.010092]  [<ffffffff812bc048>] acpi_ns_one_complete_parse+0xfc/0x117
+>[    0.010176]  [<ffffffff812bc07f>] acpi_ns_parse_table+0x1c/0x35
+>[    0.010259]  [<ffffffff812b9606>] acpi_ns_load_table+0x4a/0x8c
+>[    0.010343]  [<ffffffff812c075f>] acpi_load_tables+0xa0/0x164
+>[    0.010429]  [<ffffffff819751e1>] ? acpi_initialize_subsystem+0x69/0x91
+>[    0.010513]  [<ffffffff819740df>] acpi_early_init+0x6c/0xf7
+>[    0.010598]  [<ffffffff8194fd68>] start_kernel+0x3b3/0x3fb
+>[    0.010681]  [<ffffffff8194f26d>] x86_64_start_reservations+0x7d/0x89
+>[    0.010765]  [<ffffffff8194f359>] x86_64_start_kernel+0xe0/0xf2
+>
+>Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>Cc: Bob Moore <robert.moore@intel.com>
+>---
+> include/acpi/platform/aclinux.h |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/include/acpi/platform/aclinux.h
+>b/include/acpi/platform/aclinux.h
+>index e5039a2..8da1e8c 100644
+>--- a/include/acpi/platform/aclinux.h
+>+++ b/include/acpi/platform/aclinux.h
+>@@ -152,7 +152,7 @@ static inline void *acpi_os_acquire_object(acpi_cache_t
+>* cache)
+> #include <linux/hardirq.h>
+> #define ACPI_PREEMPTION_POINT() \
+> 	do { \
+>-		if (!in_atomic_preempt_off() && !irqs_disabled()) \
+>+		if (!in_atomic() && !irqs_disabled()) \
+> 			cond_resched(); \
+> 	} while (0)
+>
+>--
+>1.6.2.3
 
