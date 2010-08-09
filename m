@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab0HIK1t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 06:27:49 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48877
+	id S1756137Ab0HIK16 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 06:27:58 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48882
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756106Ab0HIK1q (ORCPT
+	by vger.kernel.org with ESMTP id S1756119Ab0HIK1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 06:27:46 -0400
-Date: Mon, 09 Aug 2010 03:28:06 -0700 (PDT)
-Message-Id: <20100809.032806.226789571.davem@davemloft.net>
+	Mon, 9 Aug 2010 06:27:49 -0400
+Date: Mon, 09 Aug 2010 03:28:09 -0700 (PDT)
+Message-Id: <20100809.032809.71101140.davem@davemloft.net>
 To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+CC: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [GIT] Sparc
+Subject: [GIT] IDE
 From: David Miller <davem@davemloft.net>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
@@ -23,14 +23,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Just some misc sparc64 bits:
+Just a few minor changes:
 
-1) Add missing ID to sparc64 parport support.
+1) Warning fix in tx493xide from Atsushi Nemoto.
 
-2) Sync sparc64's perf_arch_get_caller_regs() with recent changes.
+2) Request completion fix in ide-cd driver from Borislav Petkov
 
-3) Toss user-copy check code, it never worked properly on sparc for
-   whatever reason and just adds warning noise to the logs.
+3) memdup_user conversion from Julia Lawall
+
+4) Fix typo in VT6415 device table entry, from Yann Dirson
 
 Please pull, thanks a lot!
 
@@ -40,19 +41,23 @@ The following changes since commit 45d7f32c7a43cbb9592886d38190e379e2eb2226:
 
 are available in the git repository at:
 
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/ide-2.6.git master
 
-David S. Miller (4):
-      sparc64: Add missing ID to parport probing code.
-      sparc64: Fix perf_arch_get_caller_regs().
-      sparc: Kill user copy check code.
-      sparc64: Update defconfig.
+Atsushi Nemoto (1):
+      tx493xide: use min_t() macro instead of min()
 
- arch/sparc/Kconfig.debug             |   14 ------
- arch/sparc/configs/sparc64_defconfig |   67 +++++++++++++++++-------------
- arch/sparc/include/asm/parport.h     |    4 ++
- arch/sparc/include/asm/perf_event.h  |   25 +++++++++--
- arch/sparc/include/asm/uaccess_32.h  |   15 -------
- arch/sparc/include/asm/uaccess_64.h  |   23 ++--------
- arch/sparc/kernel/helpers.S          |   75 ----------------------------------
- 7 files changed, 68 insertions(+), 155 deletions(-)
+Borislav Petkov (1):
+      ide-cd: Do not access completed requests in the irq handler
+
+Julia Lawall (1):
+      drivers/ide: Use memdup_user
+
+Yann Dirson (1):
+      via82cxxx: fix typo for VT6415 PCIE PATA IDE Host Controller support.
+
+ drivers/ide/ide-cd.c       |   14 +++++++++++---
+ drivers/ide/ide-taskfile.c |   10 +++-------
+ drivers/ide/tx4938ide.c    |    2 +-
+ drivers/ide/tx4939ide.c    |    2 +-
+ drivers/ide/via82cxxx.c    |    2 +-
+ 5 files changed, 17 insertions(+), 13 deletions(-)
