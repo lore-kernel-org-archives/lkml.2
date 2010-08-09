@@ -1,78 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753432Ab0HISa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:30:58 -0400
-Received: from mail.lang.hm ([64.81.33.126]:42933 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752547Ab0HISa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:30:57 -0400
-Date: Mon, 9 Aug 2010 11:28:02 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-In-Reply-To: <20100809181638.GI3026@linux.vnet.ibm.com>
-Message-ID: <alpine.DEB.2.00.1008091122220.23481@asgard.lang.hm>
-References: <20100806225453.GA3947@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm> <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com> <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm> <20100807061558.GA28087@thunk.org>
- <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com> <20100808155719.GB3635@thunk.org> <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com> <20100808213821.GD3635@thunk.org> <20100809112453.77210acc@lxorguk.ukuu.org.uk>
- <20100809181638.GI3026@linux.vnet.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753629Ab0HIScN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:32:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:33049 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab0HIScM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 14:32:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=UUkKKYUVYnC0obN3M7Qkhfk2cXEQ2yw0V5jDrrhHdEyzrJpNNSMfqe8FNUlmMEjV8s
+         Eyb6j+Yz+gBwQm+XduT0Igp8S1UNs/yR6knP4h+yLwql0XHR8RLZeJ1NfR8eGSmO1w22
+         Uu73BxjEao1jzVSpIWd7d1d6bWsr0Mo6ETqMk=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <1281374816-904-8-git-send-email-ngupta@vflare.org>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+	<1281374816-904-8-git-send-email-ngupta@vflare.org>
+Date: Mon, 9 Aug 2010 21:32:11 +0300
+X-Google-Sender-Auth: Kr7sn1hLNaeprvjyouI0-d1WYCc
+Message-ID: <AANLkTikwN08QsfRNwa-4=qOu8mKkGoEUHdxUC5n8u3Ve@mail.gmail.com>
+Subject: Re: [PATCH 07/10] Increase compressed page size threshold
+From: Pekka Enberg <penberg@kernel.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Aug 2010, Paul E. McKenney wrote:
+Hi Nitin,
 
-> On Mon, Aug 09, 2010 at 11:24:53AM +0100, Alan Cox wrote:
+On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
+> Compression takes much more time than decompression. So, its quite
+> wasteful in terms of both CPU cycles and memory usage to have a very
+> low compressed page size threshold and thereby storing such not-so-well
+> compressible pages as-is (uncompressed). So, increasing it from
+> PAGE_SIZE/2 to PAGE_SIZE/8*7. A low threshold was useful when we had
+> "backing swap" support where we could forward such pages to the backing
+> device (applicable only when zram was used as swap disk).
 >
-> [ . . . ]
+> It is not yet configurable through sysfs but may be exported in future,
+> along with threshold for average compression ratio.
 >
->>> would agree that in the ideal world, it would be nice if you could
->>> have applications that make the correct performance/battery
->>> utilization tradeoff for devices running on 800 mWh batteries, 94,000
->>> mWh batteries, and while running on the AC mains.  But I don't believe
->>> that it's likely to be true, and if you want to try to beat up on
->>> application writers one at a time to be power optimized --- as far as
->>> I'm concerned, that's an argument *for* suspend blockers, since I'm
->>> not big believer in plans that begin, "First, you command the tides of
->>> the sea to go back", King Canute style.  :-)
->>
->> Suspend blockers drive the system policy part way into the apps, that in
->> turn makes the apps very vulnerable to change in their environment because
->> you've specialised them. I am sure that in the Android world it's
->> considered fine, and that the marketing and business people even like
->> this binding together - but it doesn't generalise and will blow up in
->> people's faces in the future.
->>
->> To consider your tide analogy - suspend blockers is like trying to
->> program the waves individually. Show me a suspend blocker aware open
->> office patch 8)
->
-> But wouldn't an office suite run as a power-oblivious application on an
-> Android device?  After all, office applications do not need to run when
-> the screen is turned off, so these the applications do not need to use
-> suspend blockers.  That said, I could easily imagine that significant
-> work would be required to make OpenOffice run on Android, not due to
-> suspend blockers, but rather due to Android's unusual user space.
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 
-pick your application if you don't like the example.
+The description makes sense but lacks any real data. What kind of
+workloads did you test this with? Where does it help most? How much?
 
-but also, which android system should the applicaton be written for? the 
-phone with a 800maH battery or a larger device with a 94,000maH battery?
-
-well bahaved applications (not doing unnecessary wakeups, etc) are well 
-bahaved, no matter what system they are on (explicitly setting allowable 
-timer fuzz is linux specific, but will again help on any system)
-
-David Lang
+                        Pekka
