@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0HIJNN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 05:13:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33303 "EHLO mx1.suse.de"
+	id S1755926Ab0HIJP2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 05:15:28 -0400
+Received: from mga03.intel.com ([143.182.124.21]:41221 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab0HIJNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 05:13:12 -0400
-Date: Mon, 9 Aug 2010 11:13:09 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Weber <weber@corscience.de>,
-        Mike Frysinger <vapier.adi@gmail.com>,
-        Paulo Marques <pmarques@grupopie.com>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Michael Neuling <mikey@neuling.org>
-Subject: Re: [PATCH]Documentation update broken web addresses.
-In-Reply-To: <4C596C75.9070505@gmail.com>
-Message-ID: <alpine.LNX.2.00.1008091112320.29919@pobox.suse.cz>
-References: <1279943484-31069-1-git-send-email-justinmattock@gmail.com> <4C547464.6000505@gmail.com> <alpine.LNX.2.00.1008041521480.29919@pobox.suse.cz> <4C596C75.9070505@gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755834Ab0HIJP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 05:15:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,341,1278313200"; 
+   d="scan'208";a="309715081"
+Date: Mon, 9 Aug 2010 11:15:31 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH 1/4] mfd: max8998 - fix incorrect kfree(i2c) in
+ i2c_driver probe callback handler
+Message-ID: <20100809091530.GB2513@sortiz-mobl>
+References: <1281336496.18804.2.camel@mola>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281336496.18804.2.camel@mola>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Justin P. Mattock wrote:
+Hi Axel,
 
-> > I have now applied it. Please keep in mind, for your future submissions,
-> > to make sure that you handle UTF-8 correctly. I had to manually fix your
-> > patch for files in Japaneese, Korean and Chineese languages.
-> > 
-> > Thanks,
-> > 
-> 
-> thanks!!
-> yeah I did see those where churned up, but couldnt figure out why sending
-> individually the language came out fine, but with the whole lot the churn
-> would happen.
-> 
-> just to make sure there was a change(not sure if you received my previous
-> post) with an address at:
-> 
-> Documentation/filesystems/affs.txt
-> (https://patchwork.kernel.org/patch/113264/)
-> 
-> this address seems to be a better location
-> http://www.amigaemulator.org/
-> 
-> wanted to wait until if I received other such changes before resending again,
-> but it's too late it's already applied
+On Mon, Aug 09, 2010 at 02:48:16PM +0800, Axel Lin wrote:
+> The i2c_client received in probe() should not be kfree()'d.
+This should go through Liam's tree, I'm  CC'ing him to this thread.
 
-The patch is already in Linus' tree, so if there are any changed that 
-should be applied on top of your previous patch, please send them my way.
+Cheers,
+Samuel.
 
-Thanks,
+
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/mfd/max8998.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+> index 0d68de2..73e6f5c 100644
+> --- a/drivers/mfd/max8998.c
+> +++ b/drivers/mfd/max8998.c
+> @@ -89,10 +89,8 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+>  	int ret = 0;
+>  
+>  	max8998 = kzalloc(sizeof(struct max8998_dev), GFP_KERNEL);
+> -	if (max8998 == NULL) {
+> -		kfree(i2c);
+> +	if (max8998 == NULL)
+>  		return -ENOMEM;
+> -	}
+>  
+>  	i2c_set_clientdata(i2c, max8998);
+>  	max8998->dev = &i2c->dev;
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Intel Open Source Technology Centre
+http://oss.intel.com/
