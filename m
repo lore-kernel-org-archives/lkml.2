@@ -1,30 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab0HIXRB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 19:17:01 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:52968 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754288Ab0HIXRA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 19:17:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=Ii0UjC1LE6OX8hA0mfcPOjdW+4igvQg6Aj4X/r8NUIZ1V8P1+fvrreXkfHMhiN+JGl
-         QXlh3wiNjGLVIGyidUx0dU+lYEcZJ5aqaLENd5uvHuSV4Iua+34GoJ5LP2Y9/0uvnwtw
-         OtUMRCjEi4XHTDd+2Im4dYq2esMinCrD8hzuU=
-From: wellsk40@gmail.com
-To: rtc-linux@googlegroups.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: RTC: LPC32xx: Introduce RTC driver for the LPC32xx
-Date: Mon,  9 Aug 2010 09:17:28 -0700
-Message-Id: <1281370650-29520-1-git-send-email-wellsk40@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1757251Ab0HIXWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 19:22:12 -0400
+Received: from mailsrv.mmediu.ro ([194.102.67.7]:38630 "EHLO mailsrv.mmediu.ro"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756802Ab0HIXWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 19:22:10 -0400
+Message-ID: <49c9b7cb3a037a91b1904d18f2a9c9db.squirrel@webmail.mmediu.ro>
+Date: Mon, 9 Aug 2010 19:12:16 +0200
+Subject: Re
+From: "Cindy Howard." <euro@yahoo.co.uk>
+Reply-To: euro8@btinternet.com
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-BitDefender-Spam: No (0)
+X-BitDefender-SpamStamp: v1, build 2.8.85.101981, SQMD Hits: Timeout,
+ rbl score: 0(0), bayes score: 500(0), pbayes score: 241(0), neunet
+ score: 500(0), flags: [NN_MILLION_DOLLAR], SQMD:
+ e54538fb069424e13083b0717e65ef92.fuzzy.fzrbl.org, total: 0(775)
+X-BitDefender-CF-Stamp: none
+X-BitDefender-Scanner: Clean, Agent: BitDefender qmail 3.1.0 on
+ mailsrv.mmediu.ro, sigver: 7.33271
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds support for the LPC32xx built-in RTC. This is
-a persistent RTC with alarm on it's own power domain and a
-dedicated oscillator. UIE emulation is used for *_UIE_* ioctls.
+Your e-mail address has just won  £1,000,000,00 (One million pounds
+sterling) in this year online Euro Lottery promo 2010.
+
+REF No: UK/9420X2/68/OSY, BATCH No: 074/05/ZY369/OSY
+
+Contact: Mr.Kelvin Brown
+Email : euro8@btinternet.com
+
+FULL NAMES:_____ADDRESS:_______
+TELEPHONE NUMBER:______SEX:______
+COUNTRY:______STATE _______
+
+Sincerely,
+Mrs.Cindy Howard.
+
+
+--
+This mail was scanned by BitDefender
+For more information please visit http://www.bitdefender.com/
 
