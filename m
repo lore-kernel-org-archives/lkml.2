@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab0HIVan (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 17:30:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60459 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756689Ab0HIVam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 17:30:42 -0400
-Message-ID: <4C60733C.2040405@kernel.org>
-Date: Mon, 09 Aug 2010 23:29:32 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1756864Ab0HIVlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 17:41:39 -0400
+Received: from exprod7og110.obsmtp.com ([64.18.2.173]:34695 "EHLO
+	exprod7og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754537Ab0HIVli (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 17:41:38 -0400
+Message-ID: <4C607608.8080305@genband.com>
+Date: Mon, 09 Aug 2010 15:41:28 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Jens Axboe <axboe@kernel.dk>, Daniel Walker <dwalker@codeaurora.org>,
-        Jeff Garzik <jeff@garzik.org>, David Howells <dhowells@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Steve French <sfrench@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andy Walls <awalls@radix.net>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [GIT PULL] workqueue for v2.6.36
-References: <4C596D21.4080101@kernel.org> <AANLkTimfmJsUSMw9AuOo3sf_n8hUUMDqvAD13FhZZans@mail.gmail.com> 	<20100809200945.GA1595@arch.tripp.de> <AANLkTikS=N7sW0eJJRRJrTXMuihuCmxRP=TFmYi0=7Et@mail.gmail.com>
-In-Reply-To: <AANLkTikS=N7sW0eJJRRJrTXMuihuCmxRP=TFmYi0=7Et@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
+To: Rob Donovan <rob@proivrc.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: FCNTL Performance problem
+References: <013501cb372f$912ce420$b386ac60$@proivrc.com>
+In-Reply-To: <013501cb372f$912ce420$b386ac60$@proivrc.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 09 Aug 2010 21:29:31 +0000 (UTC)
+X-OriginalArrivalTime: 09 Aug 2010 21:41:30.0311 (UTC) FILETIME=[A0C2D570:01CB380B]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17560.002
+X-TM-AS-Result: No--12.882600-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+On 08/08/2010 01:26 PM, Rob Donovan wrote:
 
-On 08/09/2010 10:18 PM, Linus Torvalds wrote:
-> On Mon, Aug 9, 2010 at 1:09 PM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
->> On Mon, Aug 09, 2010 at 01:05:31PM -0700, Linus Torvalds wrote:
->>>
->>> I'll bisect it all the way, but thought I'd let you know.
->>
->> No need to, it's already fixed:
->> http://lkml.org/lkml/2010/8/9/94
+
+> The problem is, when you have lots of F_RDLCK locks being created and
+> released, then it slows down any F_WRLCK with F_SETLKW locks massively.
+
+> Is there anything that can possibly be done in the kernel to help this, as I
+> would have thought this could cause problems with other people?
 > 
-> Right you are. That patch fixes it for me too.
-> 
-> Tejun, please send me a pull request for the fixes (or patches). I
-> hate picking up patches that haven't been explicitly sent to me.
+> One possible solution would be that when the write lock tries to get a lock
+> and cant, its actually puts its lock in a queue of some kind, so that the
+> other reads that are about to start can see that, and they 'queue' and wait
+> for the write lock first.. I'm obviously not a kernel coder, so I have no
+> idea of the effects of something like that, hence this post. 
 
-Oh, sorry about that.  I was gonna send a pull request tomorrow.
-Sending it right now.
+What you're seeing is classical "reader priority" behaviour.  The
+alternative is "writer priority".  I don't think POSIX specifies which
+behaviour to use, so it's up to the various implementations.
 
-Thanks.
+If you really need writer priority, how about building your own lock
+object in userspace on top of fcntl locks?
 
 -- 
-tejun
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
