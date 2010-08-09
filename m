@@ -1,89 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab0HIL3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 07:29:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50540 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756133Ab0HIL3R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 07:29:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Lo+M1KIt3DtoWQrquEwXi/pam9ZhAhwAgOHE3yEloIyevFE/6wLoOKzFcn9ZASLX4h
-         agdqB9fQjaF3l5XE3QEShuHjez0xeVMzauS5oENrPHMcztMNMs1E/YOlbKhV1CZMbgfd
-         J3DODHKtggOiGhPQiebMGXH6d6u0m8Cy7NfKE=
-Subject: Re: [PATCH] Add quick erase format option
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Stefani Seibold <stefani@seibold.net>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-In-Reply-To: <1281343974.18398.13.camel@wall-e.seibold.net>
-References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
-	 <1281343038.12908.25.camel@localhost>
-	 <1281343974.18398.13.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Aug 2010 14:29:04 +0300
-Message-ID: <1281353344.2332.8.camel@brekeke>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+	id S1756249Ab0HILve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 07:51:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20129 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756202Ab0HILvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 07:51:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] NFS: Use kernel DNS resolver
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-nfs@vger.kernel.org, smfrench@gmail.com,
+        linux-kernel@vger.kernel.org, Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        David Howells <dhowells@redhat.com>
+Date: Mon, 09 Aug 2010 12:50:46 +0100
+Message-ID: <20100809115046.1461.7584.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-09 at 10:52 +0200, Stefani Seibold wrote:
-> Am Montag, den 09.08.2010, 09:37 +0100 schrieb David Woodhouse:
-> > On Mon, 2010-08-09 at 09:25 +0100, stefani@seibold.net wrote:
-> > > From: Stefani Seibold <stefani@seibold.net>
-> > > 
-> > > This patch add a quick format option which skips erasing of already erased
-> > > flash blocks. This is useful for first time production environments where
-> > > the flash arrived erased.
-> > > 
-> > > Signed-off-by: Stefani Seibold <stefani@seibold.net> 
-> > 
-> > This scares me, given the lengths we had to go to in JFFS2 to cope with
-> > blocks which *look* like they're erased, but which actually start losing
-> > data as soon as you start writing to them because the erase didn't
-> > complete.
-> > 
-> 
-> I know the drawback. This is why it is only an option which must be
-> enabled. And in most use cases there is a subsequent ubimkvol, which
-> will fail if the flash is not correct initialized.
-> 
-> Flash are normally delivered erased. So this save in our production
-> environment (Nokia Siemens Networks) about 5 minutes per device (256 MB
-> NOR CFI Flash).
-> 
-> The old JFFS2 was very fast to install the first time on a flash, it was
-> only a simple mount of the MTD partition. 
+From: Bryan Schumaker <bjschuma@netapp.com>
 
-Not sure what you do, but both UBI and UBIFS auto-format flash if it is
-empty, and attaching empty flash should be very fast.
+Use the kernel DNS resolver to translate hostnames to IP addresses.  Create a
+new config option to choose between the legacy DNS resolver and the new
+resolver.
 
-But yes, the first volume creation ioctl will block until everything is
-erased, although this is just an implementation issue and in theory,
-fixable.
+Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-> Which the quick format option i have now only a slightly first time
-> installation overhead compared to JFFS2. Without this option the
-> overhead is more than 5 minutes.
+ fs/nfs/Kconfig       |   16 ++++++++++++++++
+ fs/nfs/dns_resolve.c |   24 ++++++++++++++++++++++++
+ fs/nfs/dns_resolve.h |   12 ++++++++++++
+ 3 files changed, 52 insertions(+), 0 deletions(-)
 
-Are you flashing an UBI image in production? Then what you can do if you
-want to be faster is to flash only the blocks which contain image date,
-and leave the rest intact, UBI will erase them and write EC header to
-them when you first boot the device.
-
-So I think it is better to add an --pristine-flash option, or something
-like this. In this case ubiformat won't erase anything, and will assume
-everything is 0xFFed without reading. This should be faster and I think
-is better to do.
-
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index cc1bb33..c5bbdca 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -100,3 +100,19 @@ config NFS_FSCACHE
+ 	help
+ 	  Say Y here if you want NFS data to be cached locally on disc through
+ 	  the general filesystem cache manager
++
++config NFS_USE_LEGACY_DNS
++	bool "Use the legacy NFS DNS resolver"
++	depends on NFS_V4
++	help
++	  The kernel now provides a method for translating a host name into an
++	  IP address.  Select Y here if you would rather use your own DNS
++	  resolver script.
++
++	  If unsure, say N
++
++config NFS_USE_KERNEL_DNS
++	bool
++	depends on NFS_V4 && !NFS_USE_LEGACY_DNS
++	select DNS_RESOLVER
++	default y
+diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
+index 76fd235..dba50a5 100644
+--- a/fs/nfs/dns_resolve.c
++++ b/fs/nfs/dns_resolve.c
+@@ -6,6 +6,29 @@
+  * Resolves DNS hostnames into valid ip addresses
+  */
+ 
++#ifdef CONFIG_NFS_USE_KERNEL_DNS
++
++#include <linux/sunrpc/clnt.h>
++#include <linux/dns_resolver.h>
++
++ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
++		struct sockaddr *sa, size_t salen)
++{
++	ssize_t ret;
++	char *ip_addr = NULL;
++	int ip_len;
++
++	ip_len = dns_query(NULL, name, namelen, NULL, &ip_addr, NULL);
++	if (ip_len > 0)
++		ret = rpc_pton(ip_addr, ip_len, sa, salen);
++	else
++		ret = -ESRCH;
++	kfree(ip_addr);
++	return ret;
++}
++
++#else
++
+ #include <linux/hash.h>
+ #include <linux/string.h>
+ #include <linux/kmod.h>
+@@ -346,3 +369,4 @@ void nfs_dns_resolver_destroy(void)
+ 	nfs_cache_unregister(&nfs_dns_resolve);
+ }
+ 
++#endif
+diff --git a/fs/nfs/dns_resolve.h b/fs/nfs/dns_resolve.h
+index a3f0938..199bb55 100644
+--- a/fs/nfs/dns_resolve.h
++++ b/fs/nfs/dns_resolve.h
+@@ -6,8 +6,20 @@
+ 
+ #define NFS_DNS_HOSTNAME_MAXLEN	(128)
+ 
++
++#ifdef CONFIG_NFS_USE_KERNEL_DNS
++static inline int nfs_dns_resolver_init(void)
++{
++	return 0;
++}
++
++static inline void nfs_dns_resolver_destroy(void)
++{}
++#else
+ extern int nfs_dns_resolver_init(void);
+ extern void nfs_dns_resolver_destroy(void);
++#endif
++
+ extern ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
+ 		struct sockaddr *sa, size_t salen);
+ 
 
