@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324Ab0HIRZv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:25:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46003 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751113Ab0HIRZt (ORCPT
+	id S1752696Ab0HIR0l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:26:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60296 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613Ab0HIR0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 13:25:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xkcD18Jb7lLSUwvkPfyC0R1Egc/eAaRYonnYt1xyfhxei/tv2rocYxcXkxY8EqaV6z
-         CKIv76Ot2fQspg3by/GgJHm/AfwmMR4lXyg1Ae8ioESgSJSGMuU6/9jY5Y2Yc3Isal4o
-         +jeMd/k38aWfC5DZbjjGIcrwIV6KBjYhJEP6c=
-Date: Mon, 9 Aug 2010 21:25:42 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Andres Salomon <dilinger@collabora.co.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 4 (olpc_battery)
-Message-ID: <20100809172542.GA6388@oksana.dev.rtsoft.ru>
-References: <20100804151035.14678528.sfr@canb.auug.org.au>
- <20100804094755.e0377eb0.randy.dunlap@oracle.com>
- <20100809093925.1ff3dc11.randy.dunlap@oracle.com>
- <1281374272.7143.23.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1281374272.7143.23.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 9 Aug 2010 13:26:39 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+To: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
+Cc: Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 00/10] zram: various improvements and cleanups
+Date: Mon,  9 Aug 2010 22:56:46 +0530
+Message-Id: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 06:17:52PM +0100, David Woodhouse wrote:
-[...]
-> > > drivers/power/olpc_battery.c:387: error: unknown field 'owner' specified in initializer
-> > > drivers/power/olpc_battery.c:387: warning: excess elements in struct initializer
-> > > drivers/power/olpc_battery.c:387: warning: (near initialization for 'olpc_bat_eeprom.attr')
-> > > 
-> > > 
-> > > The .owner field has been dropped from the attr struct.
-> > 
-> > 
-> > Build still fails in linux-next 20100809.
-> 
-> Anton, please pull from git://git.infradead.org/~dwmw2/battery-2.6.git
-> (or I can just push it, but I figured I'd ask first).
+The zram module creates RAM based block devices named /dev/zram<id>
+(<id> = 0, 1, ...). Pages written to these disks are compressed and stored
+in memory itself.
 
-Pulled and pushed back out, thanks!
+One of the major changes done is the replacement of ioctls with sysfs
+interface. One of the advantages of this approach is we no longer depend on the
+userspace tool (rzscontrol) which was used to set various parameters and check
+statistics. Maintaining updated version of rzscontrol as changes were done to
+ioctls, statistics exported etc. was a major pain.
+
+Another significant change is the introduction of percpu stats and compression
+buffers. Earlier, we had per-device buffers protected by a mutex. This was a
+major bottleneck on multi-core systems. With these changes, benchmarks with
+fio[1] showed a speedup of about 20% for write performance on dual-core
+system (see patch 4/10 description for details).
+
+
+For easier testing, a single patch against 2.6.35-git8 has been uploaded at:
+http://compcache.googlecode.com/hg/sub-projects/mainline/zram_2.6.36-rc0.patch
+
+[1] fio I/O benchmarking tool: http://freshmeat.net/projects/fio/
+
+Nitin Gupta (10):
+  Replace ioctls with sysfs interface
+  Remove need for explicit device initialization
+  Use percpu stats
+  Use percpu buffers
+  Reduce per table entry overhead by 4 bytes
+  Block discard support
+  Increase compressed page size threshold
+  Some cleanups
+  Update zram documentation
+  Document sysfs entries
+
+ Documentation/ABI/testing/sysfs-block-zram |   99 ++++
+ drivers/staging/zram/Kconfig               |   12 -
+ drivers/staging/zram/Makefile              |    2 +-
+ drivers/staging/zram/xvmalloc.c            |   22 +-
+ drivers/staging/zram/zram.txt              |   58 ++-
+ drivers/staging/zram/zram_drv.c            |  670 ++++++++++++++--------------
+ drivers/staging/zram/zram_drv.h            |  138 ++----
+ drivers/staging/zram/zram_ioctl.h          |   41 --
+ drivers/staging/zram/zram_sysfs.c          |  253 +++++++++++
+ 9 files changed, 760 insertions(+), 535 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-block-zram
+ delete mode 100644 drivers/staging/zram/zram_ioctl.h
+ create mode 100644 drivers/staging/zram/zram_sysfs.c
 
 -- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+1.7.2.1
+
