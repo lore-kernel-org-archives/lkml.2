@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752979Ab0HISPa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:15:30 -0400
-Received: from mail.bitdefender.com ([91.199.104.2]:49106 "EHLO
-	mail.bitdefender.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029Ab0HISP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:15:29 -0400
-From: Mihai =?utf-8?q?Don=C8=9Bu?= <mihai.dontu@gmail.com>
-Organization: Home
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-Date: Mon, 9 Aug 2010 21:15:25 +0300
-Cc: viresh kumar <viresh.kumar@st.com>,
-        Matti Aarnio <matti.aarnio@zmailer.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <4C5F9B25.8080401@st.com> <201008091735.11105.mihai.dontu@gmail.com> <4C6040FC.2020702@gmail.com>
-In-Reply-To: <4C6040FC.2020702@gmail.com>
+	id S1753075Ab0HISRR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:17:17 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:40932 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751409Ab0HISQ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 14:16:59 -0400
+Date: Mon, 9 Aug 2010 11:16:38 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Felipe Contreras <felipe.contreras@gmail.com>,
+        david@lang.hm, Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100809181638.GI3026@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100806225453.GA3947@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm>
+ <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
+ <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
+ <20100807061558.GA28087@thunk.org>
+ <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
+ <20100808155719.GB3635@thunk.org>
+ <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
+ <20100808213821.GD3635@thunk.org>
+ <20100809112453.77210acc@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201008092115.25992.mihai.dontu@gmail.com>
-X-BitDefender-Spam: No (592)
-X-BitDefender-SpamStamp: v1, build 2.8.85.101985, rbl score: 0(0),
- bayes score: 500(0), pbayes score: 500(0), neunet score: 592(592),
- flags: [NN_S_ENDS_IN_FULLSTOP_BGU; NN_LEGIT_SUMM_400_WORDS], SQMD:
- 690e444a78ad77329fe0e7f63b3f00ca.fuzzy.fzrbl.org, total: 592(775)
-X-BitDefender-Scanner: Clean, Agent: BitDefender qmail 3.1.0 on
- elfie.dsd.hq, sigver: 7.33272
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100809112453.77210acc@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 09 August 2010 20:55:08 Justin P. Mattock wrote:
-> On 08/09/2010 07:35 AM, Mihai Donțu wrote:
-> > On Monday 09 August 2010 12:43:16 Justin P. Mattock wrote:
-> >> On 08/09/2010 02:35 AM, viresh kumar wrote:
-> >>> On 8/9/2010 2:31 PM, Matti Aarnio wrote:
-> >>>> On Mon, Aug 09, 2010 at 12:26:24PM +0530, viresh kumar wrote:
-> >>>>>> I missed this information in my last mail. We are using git
-> >>>>>> send-email for sending patches. As patches will go through
-> >>>>>> Microsoft exchange server only, so they are broken.
-> >>>> 
-> >>>> Let your boss complain to your IT keepers.
-> >>>> "These are Machine-to-Machine messages, they must not be modified!"
-> >>>> 
-> >>>> 
-> >>>> It would probably be "against corporate policy" to use gmail for these
-> >>>> emails...
-> >>> 
-> >>> We got one solution: Upgrade Exchange server to SP2.
-> >>> Lets see if our IT department does this upgradation.
-> >> 
-> >> that or just blast them with some cryptology..i.e. pretty sure if your
-> >> message was encapsulated(AH/ESP) they couldn't tweak it.. but then
-> >> sending such encryption to a public list would require a _key_ on the
-> >> other side.. wishful thinking...
-> >> (just a thought)...
-> > 
-> > Shouldn't just signing the message be enough? The server (normally) would
-> > not alter it, otherwise it will break the signature (which is a too
-> > obvious bug even for Microsoft). Or am I missing something here?
-> > 
-> > PS: A local SMTP with DKIM signing capabilities could be another
-> > possibility, assuming Exchange does not break such signatures.
+On Mon, Aug 09, 2010 at 11:24:53AM +0100, Alan Cox wrote:
+
+[ . . . ]
+
+> > would agree that in the ideal world, it would be nice if you could
+> > have applications that make the correct performance/battery
+> > utilization tradeoff for devices running on 800 mWh batteries, 94,000
+> > mWh batteries, and while running on the AC mains.  But I don't believe
+> > that it's likely to be true, and if you want to try to beat up on
+> > application writers one at a time to be power optimized --- as far as
+> > I'm concerned, that's an argument *for* suspend blockers, since I'm
+> > not big believer in plans that begin, "First, you command the tides of
+> > the sea to go back", King Canute style.  :-)
 > 
-> yeah that would probably be just enough to get through without Microsoft
-> mucking around with the font etc.., but the biggest problem(I see) with
-> the encryption is having the key on the other end of the line.
+> Suspend blockers drive the system policy part way into the apps, that in
+> turn makes the apps very vulnerable to change in their environment because
+> you've specialised them. I am sure that in the Android world it's
+> considered fine, and that the marketing and business people even like
+> this binding together - but it doesn't generalise and will blow up in
+> people's faces in the future.
+> 
+> To consider your tide analogy - suspend blockers is like trying to
+> program the waves individually. Show me a suspend blocker aware open
+> office patch 8)
 
-Wait. I don't think we're on the same page here. I'm talking about message 
-signing (which does not require the receiving end to have any key - it's the 
-same plain text e-mail with a blob after it) while you refer to actually 
-encrypting the message. Mm? Or am I being extremely slow today? :-)
+But wouldn't an office suite run as a power-oblivious application on an
+Android device?  After all, office applications do not need to run when
+the screen is turned off, so these the applications do not need to use
+suspend blockers.  That said, I could easily imagine that significant
+work would be required to make OpenOffice run on Android, not due to
+suspend blockers, but rather due to Android's unusual user space.
 
--- 
-Mihai Donțu
+On devices that do not have suspend blockers, a normal application runs
+in a manner similar to a hypothetical Android application that acquires
+a suspend blocker when it starts and holds that suspend blocker until
+it exits.  In contrast with Android, this situation requires that each
+and every application be carefully written to avoid battery drain,
+which I suspect is what Ted is getting at with his King Canute analogy.
+
+							Thanx, Paul
