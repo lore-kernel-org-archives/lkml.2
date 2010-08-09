@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab0HIQzv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 12:55:51 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:51764 "EHLO mx2.netapp.com"
+	id S1752551Ab0HIRIh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:08:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:13031 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757165Ab0HIQzt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 12:55:49 -0400
+	id S1750989Ab0HIRIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 13:08:36 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,344,1278313200"; 
-   d="scan'208";a="424954983"
-Subject: RE: [PATCH] [Bug 16494] NFS client over TCP hangs due to packet
- loss
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Andy Chittenden <andyc.bluearc@gmail.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'David Miller'" <davem@davemloft.net>, kuznet@ms2.inr.ac.ru,
-        pekkas@netcore.fi, jmorris@namei.org, yoshfuji@linux-ipv6.org,
-        kaber@trash.net, eric.dumazet@gmail.com,
-        William.Allen.Simpson@gmail.com, gilad@codefidence.com,
-        ilpo.jarvinen@helsinki.fi, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        "'J. Bruce Fields'" <bfields@fieldses.org>,
-        "'Neil Brown'" <neilb@suse.de>,
-        "'Chuck Lever'" <chuck.lever@oracle.com>,
-        "'Benny Halevy'" <bhalevy@panasas.com>,
-        "'Alexandros Batsakis'" <batsakis@netapp.com>,
-        "'Joe Perches'" <joe@perches.com>, Andy Chittenden <andyc@bluearc.com>
-In-Reply-To: <4c5fc9f3.487e0e0a.2960.ffffe4ec@mx.google.com>
-References: <4c57cfe8.887b0e0a.2f79.4772@mx.google.com>
-	 <20100803.012144.267950450.davem@davemloft.net>
-	 <20100803021110.f0b3877b.akpm@linux-foundation.org>
-	 <4C57EE9A.7040308@gmail.com>  <4c5ad0d6.42ecd80a.47d7.0dfc@mx.google.com>
-	 <1281037822.2948.49.camel@heimdal.trondhjem.org>
-	 <4c5bd64a.4a2ae30a.0283.0551@mx.google.com>
-	 <4c5fc9f3.487e0e0a.2960.ffffe4ec@mx.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Mon, 09 Aug 2010 12:55:27 -0400
-Message-ID: <1281372927.8950.3.camel@heimdal.trondhjem.org>
+   d="scan'208";a="594369690"
+Subject: Re: [PATCH wq#for-linus] workqueue: workqueue_cpu_callback()
+ should be cpu_notifier not hotcpu_notifier
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Tejun Heo <htejun@gmail.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>, walt <w41ter@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C5FCC14.6030901@gmail.com>
+References: <i3n3dh$t48$1@dough.gmane.org>
+	 <20100809063742.GA1632@arch.tripp.de>
+	 <20100809083053.GB2169@osiris.boeblingen.de.ibm.com>
+	 <20100809083451.GC2169@osiris.boeblingen.de.ibm.com>
+	 <4C5FC49B.9040208@kernel.org>  <4C5FCC14.6030901@gmail.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Mon, 09 Aug 2010 10:07:54 -0700
+Message-Id: <1281373674.2734.7.camel@sbsiddha-MOBL3.sc.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 09 Aug 2010 16:55:29.0400 (UTC) FILETIME=[AC0F9F80:01CB37E3]
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-09 at 10:27 +0100, Andy Chittenden wrote:
-> A weekend run with that patch applied to 2.6.34.2 was successful. As nobody has objected, what's the next step to getting it applied to the official source trees?
+On Mon, 2010-08-09 at 02:36 -0700, Tejun Heo wrote:
+> Commit 6ee0578b (workqueue: mark init_workqueues as early_initcall)
+> made workqueue SMP initialization depend on workqueue_cpu_callback(),
+> which however was registered as hotcpu_notifier() and didn't get
+> called if CONFIG_HOTPLUG_CPU is not set.  This made gcwqs on non-boot
+> CPUs not create their initial workers leading to boot failures.  Fix
+> it by making it a cpu_notifier.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-and-bisected-by: walt <w41ter@gmail.com>
+> ---
+> So, something like this.  Can you please verify the fix?
+> 
+> Thanks.
+> 
+>  kernel/workqueue.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index da6c482..2994a0e 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -3527,7 +3527,7 @@ static int __init init_workqueues(void)
+>  	unsigned int cpu;
+>  	int i;
+> 
+> -	hotcpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
+> +	cpu_notifier(workqueue_cpu_callback, CPU_PRI_WORKQUEUE);
+> 
+>  	/* initialize gcwqs */
+>  	for_each_gcwq_cpu(cpu) {
 
-Please resend me a version with a cleaned up changelog entry. I can then
-push it as a bugfix.
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Cheers
-  Trond
