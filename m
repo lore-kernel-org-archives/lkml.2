@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab0HINu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 09:50:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2777 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756155Ab0HINu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 09:50:26 -0400
-Date: Mon, 9 Aug 2010 09:49:17 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Li Zefan <lizf@cn.fujitsu.com>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] lockup_detector: Make DETECT_HUNT_TASK default depend on
- LOCKUP_DETECTOR
-Message-ID: <20100809134917.GD2604@redhat.com>
-References: <4C58C7FF.5060906@cn.fujitsu.com>
- <20100806005801.GB5436@nowhere>
- <20100807070135.GC23108@elte.hu>
- <20100808195839.GA5387@nowhere>
- <20100809080740.GA2169@osiris.boeblingen.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100809080740.GA2169@osiris.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756624Ab0HINyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 09:54:35 -0400
+Received: from www84.your-server.de ([213.133.104.84]:50199 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756548Ab0HINye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 09:54:34 -0400
+Subject: Re: [PATCH] Add quick erase format option
+From: Stefani Seibold <stefani@seibold.net>
+To: dedekind1@gmail.com
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "Enzinger, Robert (EXT-Other - DE/Munich)" 
+	<robert.enzinger.ext@nsn.com>
+In-Reply-To: <1281353344.2332.8.camel@brekeke>
+References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
+	 <1281343038.12908.25.camel@localhost>
+	 <1281343974.18398.13.camel@wall-e.seibold.net>
+	 <1281353344.2332.8.camel@brekeke>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 09 Aug 2010 15:37:07 +0200
+Message-ID: <1281361027.19869.40.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 10:07:40AM +0200, Heiko Carstens wrote:
-> On Sun, Aug 08, 2010 at 09:58:42PM +0200, Frederic Weisbecker wrote:
-> > > Maybe a better change would be to make it more generally available - right now 
-> > > it's:
+Am Montag, den 09.08.2010, 14:29 +0300 schrieb Artem Bityutskiy: 
+> On Mon, 2010-08-09 at 10:52 +0200, Stefani Seibold wrote:
+> > Am Montag, den 09.08.2010, 09:37 +0100 schrieb David Woodhouse:
+> > > On Mon, 2010-08-09 at 09:25 +0100, stefani@seibold.net wrote:
+> > > > From: Stefani Seibold <stefani@seibold.net>
+> > > > 
+> > > > This patch add a quick format option which skips erasing of already erased
+> > > > flash blocks. This is useful for first time production environments where
+> > > > the flash arrived erased.
+> > > > 
+> > > > Signed-off-by: Stefani Seibold <stefani@seibold.net> 
 > > > 
-> > >  config LOCKUP_DETECTOR
-> > >          bool "Detect Hard and Soft Lockups"
-> > >          depends on DEBUG_KERNEL && !S390
+> > > This scares me, given the lengths we had to go to in JFFS2 to cope with
+> > > blocks which *look* like they're erased, but which actually start losing
+> > > data as soon as you start writing to them because the erase didn't
+> > > complete.
 > > > 
-> > > which means that it cannot be enabled when DEBUG_KERNEL is off.
-> > > 
-> > > So i think we should:
-> > > 
-> > >  - Remove the s390 hack and add an ARCH_HAS_LOCKUP_DETECTOR flag
 > > 
+> > I know the drawback. This is why it is only an option which must be
+> > enabled. And in most use cases there is a subsequent ubimkvol, which
+> > will fail if the flash is not correct initialized.
 > > 
+> > Flash are normally delivered erased. So this save in our production
+> > environment (Nokia Siemens Networks) about 5 minutes per device (256 MB
+> > NOR CFI Flash).
 > > 
-> > If we do this, we'll need to add this config on every archs but s390.
-> > We should better have ARCH_WANT_NO_LOCKUP_DETECTOR. I know that
-> > "negative" meaning configs suck, but otherwise we would lose this
-> > support on many archs.
-> > 
-> > Why s390 doesn't want the softlockup detector to begin with?
+> > The old JFFS2 was very fast to install the first time on a flash, it was
+> > only a simple mount of the MTD partition. 
 > 
-> If I remember correctly then we disabled that back then because we got
-> false positives. The reason for those were that the softlockup detector
-> did not take steal time into account.
-> E.g. if a guest cpu runs for 10 seconds, but the hypervisor would steal
-> 9 seconds in order to run other guest cpus this specific cpu would still
-> think it ran for 10 seconds and therefore would generate invalid warnings.
+> Not sure what you do, but both UBI and UBIFS auto-format flash if it is
+> empty, and attaching empty flash should be very fast.
+> 
 
-I have learned recently that is applies to all virtual machines including
-KVM, Xen and VMWare(?).  However, you only see this when you overload the
-hypervisor with lots of guests.  Which is why you normally don't see this
-on those types of guests.
+I was never able to mount UBIFS without a previous ubimkvol, despite the
+flash is already erased.
 
-But any time based detection debug features (softlockup, hardlockup,
-hung_task) could potentially run into this.
+> But yes, the first volume creation ioctl will block until everything is
+> erased, although this is just an implementation issue and in theory,
+> fixable.
+> 
 
-Cheers,
-Don
+Here are my timing results for mounting an empty flash as UBIFS:
+
+ubiattach /dev/ubi_ctrl -m 5 -d 1         -->   2.023 sec
+ubimkvol /dev/ubi1 -m -N flash            --> 294.574 sec
+mount -t ubifs -o sync ubi1:flash /mnt    -->   0.221 sec
+
+or
+
+ubiformat /dev/mtd5                       --> 299.111 sec
+ubiattach /dev/ubi_ctrl -m 5 -d 1         -->   0.129 sec
+ubimkvol /dev/ubi1 -m -N flash            -->   1.784 sec
+mount -t ubifs -o sync ubi1:flash /mnt    -->   0.220 sec
+
+So there is no real benefit between an empty flash and a formated flash.
+
+And this are the timing results for formating and mounting an empty
+flash with my patched ubiformat tool:
+
+ubiformat /dev/mtd5 -E                    -->   5.475 sec
+ubiattach /dev/ubi_ctrl -m 5 -d 1         -->   0.130 sec
+ubimkvol /dev/ubi1 -m -N flash            -->   1.699 sec
+mount -t ubifs -o sync ubi1:flash /mnt    -->   0.220 sec
+
+As you can see this is 296,818 vs. 7,522 or 40 times faster!
+
+But maybe i do something wrong. Could you explain this?
+
+> > Which the quick format option i have now only a slightly first time
+> > installation overhead compared to JFFS2. Without this option the
+> > overhead is more than 5 minutes.
+> 
+> Are you flashing an UBI image in production? Then what you can do if you
+> want to be faster is to flash only the blocks which contain image date,
+> and leave the rest intact, UBI will erase them and write EC header to
+> them when you first boot the device.
+> 
+
+No, we only initialize the flash, mount the UBIFS it and copy files. 
+
+> So I think it is better to add an --pristine-flash option, or something
+> like this. In this case ubiformat won't erase anything, and will assume
+> everything is 0xFFed without reading. This should be faster and I think
+> is better to do.
+> 
+
+My patch assumes nothing, it check if the EC header is 0xff and i think
+this is safer than your suggestion. My patch skips the erase if all
+bytes in the header are 0xff skip, otherwise erase it.
+
+- Stefani
+
 
