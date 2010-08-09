@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756625Ab0HIUJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 16:09:53 -0400
-Received: from smtp-out-181.synserver.de ([212.40.180.181]:1046 "HELO
-	smtp-out-178.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1755815Ab0HIUJw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 16:09:52 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 9989
-Date: Mon, 9 Aug 2010 22:09:45 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Jens Axboe <axboe@kernel.dk>,
-        Daniel Walker <dwalker@codeaurora.org>, Jeff Garzik <jeff@garzik.org>,
-        David Howells <dhowells@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steven Whitehouse <swhiteho@redhat.com>,
-        Steve French <sfrench@samba.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andy Walls <awalls@radix.net>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [GIT PULL] workqueue for v2.6.36
-Message-ID: <20100809200945.GA1595@arch.tripp.de>
-References: <4C596D21.4080101@kernel.org>
- <AANLkTimfmJsUSMw9AuOo3sf_n8hUUMDqvAD13FhZZans@mail.gmail.com>
+	id S1756604Ab0HIUP1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 16:15:27 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39052 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753764Ab0HIUP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 16:15:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,345,1278313200"; 
+   d="scan'208";a="594423103"
+Message-ID: <4C6061DE.4030300@linux.intel.com>
+Date: Mon, 09 Aug 2010 13:15:26 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Organization: Intel Open Source Technology Center
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimfmJsUSMw9AuOo3sf_n8hUUMDqvAD13FhZZans@mail.gmail.com>
+To: bifferos <bifferos@yahoo.co.uk>
+CC: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        florian@openwrt.org, mark@bifferos.com, tglx@linutronix.de,
+        Ingo Molnar <mingo@elte.hu>, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/cpu] x86, cpu: RDC doesn't have CPUID, which is what
+ c_ident is
+References: <66994.33108.qm@web27001.mail.ukl.yahoo.com>
+In-Reply-To: <66994.33108.qm@web27001.mail.ukl.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 01:05:31PM -0700, Linus Torvalds wrote:
-> On Wed, Aug 4, 2010 at 6:37 AM, Tejun Heo <tj@kernel.org> wrote:
-> >
-> > Please consider pulling from
-> >
-> >  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-linus
+On 08/09/2010 02:33 AM, bifferos wrote:
 > 
-> Hmm. So I pulled, because I think it is the right thing in the long
-> run. But right now I'm bisecting a non-booting machine, and it seems
-> to be due to the workqueue pull.
+> The quick fix for this is:
 > 
-> It's not fully bisected yet, but the only remaining thing I actually
-> enable is workqueues. The symptom is a machine that stops at
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index 490dac6..06a2dac 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -497,6 +497,9 @@ static void __cpuinit get_cpu_vendor(struct cpuinfo_x86 *c)
+>                if (!cpu_devs[i])
+>                        break;
 > 
->   ...
->   dracut: Starting plymouth daemon
->   dracut: Scanning devices sda2  for LVM volume groups
->   dracut: Reading all physical volumes. This may take a while...
->   dracut: Found volume group "VolGroup" using metadata type lvm2
+> +               if (!cpu_devs[i]->c_ident[0])
+> +                       continue;
+> +
+>                if (!strcmp(v, cpu_devs[i]->c_ident[0]) ||
+>                    (cpu_devs[i]->c_ident[1] &&
+>                     !strcmp(v, cpu_devs[i]->c_ident[1]))) {
 > 
-> and the next thing I'd expect to see is the mounting of the filesystem
-> and the SElinux notifications. And I never do.
 > 
-> I'll bisect it all the way, but thought I'd let you know.
+> however, Peter's requirement to remove c_ident renders my patch 
+> somewhat less useful back on RDC.  /proc/cpuinfo then lists the 
+> vendor as 'RDC' (an improvement over not applying the patch) and 
+> the model name as '486' (also an improvement), but for some 
+> reason the variants in my case statement then no longer make it 
+> through to /proc/info.  I don't think this is a big deal, and I
+> still think the patch is worth applying with this change.
+> 
 
-No need to, it's already fixed:
-http://lkml.org/lkml/2010/8/9/94
--- 
-»A man who doesn't know he is in prison can never escape.«
-William S. Burroughs
+Well, as I said, the generic code probably needs to change somewhat to
+print that stuff.
+
+	-hpa
