@@ -1,83 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0HIPfO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 11:35:14 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:64361 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0HIPfM convert rfc822-to-8bit (ORCPT
+	id S1756752Ab0HIPv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 11:51:27 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:45690 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998Ab0HIPv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 11:35:12 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Mon, 09 Aug 2010 17:36:47 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 2/3] usb gadget: don't save bind callback in struct
- usb_composite_driver
-In-reply-to: <20100809152010.GE27747@pengutronix.de>
-To: =?utf-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Message-id: <op.vg6gblz87p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <3decda614c6d8732c018417558d74ed942e76c82.1281359651.git.m.nazarewicz@samsung.com>
- <e465429de034460cdc6eff4e3502d2be83264f82.1281359651.git.m.nazarewicz@samsung.com>
- <20100809152010.GE27747@pengutronix.de>
+	Mon, 9 Aug 2010 11:51:26 -0400
+Message-ID: <4C6023EC.10001@cs.helsinki.fi>
+Date: Mon, 09 Aug 2010 18:51:08 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+        Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] slub: add missing __percpu markup in mm/slub_def.h
+References: <1281119187-12640-4-git-send-email-namhyung@gmail.com> <4C5D51A2.8030306@kernel.org>
+In-Reply-To: <4C5D51A2.8030306@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Aug 09, 2010 at 03:33:49PM +0200, Michal Nazarewicz wrote:
->> The bind function is most of the time only called at init time so there
->> is no need to save a pointer to it in the composite driver structure.
->>
->> This fixes many section mismatches reported by modpost.
+Tejun Heo wrote:
+> From: Namhyung Kim <namhyung@gmail.com>
+> 
+> kmem_cache->cpu_slab is a percpu pointer but was missing __percpu
+> markup.  Add it.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Acked-by: Tejun Heo <tj@kernel.org>
+> ---
+> Christoph, Pekka, can you please route this through slab tree?
 
->> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
->> --- a/drivers/usb/gadget/composite.c
->> +++ b/drivers/usb/gadget/composite.c
->> @@ -39,6 +39,7 @@
->>  #define USB_BUFSIZ	1024
->>
->>  static struct usb_composite_driver *composite;
->> +static int (*composite_gadget_bind)(struct usb_composite_dev *cdev);
-
-On Mon, 09 Aug 2010 17:20:10 +0200, Uwe Kleine-König wrote:
-> This can be __initdata, can't it?
-
-No.  g_ffs.c uses usb_composite_probe() not only in init so neither
-usb_composite_probe() nor this new variable can be in init section.
-
-> I thought about usb_composite_drivers, too, and wondered if it would be
-> sensible to change the additional argument of usb_gadget_probe_driver to
-> struct usb_gadget_probe_data *probe_data.  Then you could do the
-> following
->
-> 	struct usb_composite_probe_data {
-> 		struct usb_gadget_probe_data usb_probe_data;
-> 		int (*composite_gadget_bind)(struct usb_composite_dev *);
-> 	}
->
-> and in composite_bind use container_of to get the gadget_bind function.
-
-Yes, this seems sensible, however I'm not sure if it's worth the effort.
-Note that the whole gadget API is designed in a way that there can be
-only one gadget registered so that passing private data with
-usb_gadget_probe_driver() as well as with usb_composite_probe() is not
-really crucial and we can manage with global variables.
-
-> Maybe that's overengineered though.  As there is already a dependency on
-> a global variable (i.e. composite) your patch doesn't make it much
-> worse.  Just my 0.02€.
-
-Yep, that was my reasoning as well.
-
-I guess we'll have to worry about it when (if) boards with many UDCs
-became common. ;)
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Applied, thanks!
