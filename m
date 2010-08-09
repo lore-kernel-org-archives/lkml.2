@@ -1,106 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab0HISev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:34:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57280 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab0HISeu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:34:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BB8hHf7ZTjJ16CKsvFQEr3xL2jKQ2+ELqA4fVJxDxZFtyDq5n3RMkYS2DXNMlyP8qX
-         ntBNsNB5mzcPD7CBQFk8TSW1BX1NIQChKl+qE3DPdz9NmV02lnNwOGvIYdQNZ+EZCdEL
-         UOX8OtGgCmZH51IaUb5PT4HiRMgrEHJJtW1z0=
+	id S1753962Ab0HISfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:35:43 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:40798 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363Ab0HISfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 14:35:41 -0400
+Message-ID: <4C604A6E.1030403@austin.ibm.com>
+Date: Mon, 09 Aug 2010 13:35:26 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-In-Reply-To: <1281374816-904-2-git-send-email-ngupta@vflare.org>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
-	<1281374816-904-2-git-send-email-ngupta@vflare.org>
-Date: Mon, 9 Aug 2010 21:34:48 +0300
-X-Google-Sender-Auth: xAKPYR5T_l06jiYMIKQyc4O9iMc
-Message-ID: <AANLkTimuPK=1+xNMKfV=G1sSG60+=fa7eA3142JJZZ6p@mail.gmail.com>
-Subject: Re: [PATCH 01/10] Replace ioctls with sysfs interface
-From: Pekka Enberg <penberg@kernel.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
+Subject: [PATCH 1/8] v5 Move the find_memory_block() routine up
+References: <4C60407C.2080608@austin.ibm.com>
+In-Reply-To: <4C60407C.2080608@austin.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
-> Creates per-device sysfs nodes in /sys/block/zram<id>/
-> Currently following stats are exported:
->  - disksize
->  - num_reads
->  - num_writes
->  - invalid_io
->  - zero_pages
->  - orig_data_size
->  - compr_data_size
->  - mem_used_total
->
-> By default, disksize is set to 0. So, to start using
-> a zram device, fist write a disksize value and then
-> initialize device by writing any positive value to
-> initstate. For example:
->
->        # initialize /dev/zram0 with 50MB disksize
->        echo 50*1024*1024 | bc > /sys/block/zram0/disksize
->        echo 1 > /sys/block/zram0/initstate
->
-> When done using a disk, issue reset to free its memory
-> by writing any positive value to reset node:
->
->        echo 1 > /sys/block/zram0/reset
->
-> This change also obviates the need for 'rzscontrol' utility.
->
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Move the find_me mory_block() routine up to avoid needing a forward
+declaration in subsequent patches.
 
-Looks good to me (but I'm not a sysfs guy).
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-Acked-by: Pekka Enberg <penberg@kernel.org>
+---
+ drivers/base/memory.c |   62 +++++++++++++++++++++++++-------------------------
+ 1 file changed, 31 insertions(+), 31 deletions(-)
 
->  /* Module params (documentation at end) */
-> -static unsigned int num_devices;
-> +unsigned int num_devices;
-> +
-> +static void zram_stat_inc(u32 *v)
-> +{
-> +       *v = *v + 1;
-> +}
-> +
-> +static void zram_stat_dec(u32 *v)
-> +{
-> +       *v = *v - 1;
-> +}
-> +
-> +static void zram_stat64_add(struct zram *zram, u64 *v, u64 inc)
-> +{
-> +       spin_lock(&zram->stat64_lock);
-> +       *v = *v + inc;
-> +       spin_unlock(&zram->stat64_lock);
-> +}
-> +
-> +static void zram_stat64_sub(struct zram *zram, u64 *v, u64 dec)
-> +{
-> +       spin_lock(&zram->stat64_lock);
-> +       *v = *v - dec;
-> +       spin_unlock(&zram->stat64_lock);
-> +}
-> +
-> +static void zram_stat64_inc(struct zram *zram, u64 *v)
-> +{
-> +       zram_stat64_add(zram, v, 1);
-> +}
+Index: linux-2.6/drivers/base/memory.c
+===================================================================
+--- linux-2.6.orig/drivers/base/memory.c	2010-08-09 07:36:55.000000000 -0500
++++ linux-2.6/drivers/base/memory.c	2010-08-09 07:44:21.000000000 -0500
+@@ -435,6 +435,37 @@ int __weak arch_get_memory_phys_device(u
+ 	return 0;
+ }
+ 
++/*
++ * For now, we have a linear search to go find the appropriate
++ * memory_block corresponding to a particular phys_index. If
++ * this gets to be a real problem, we can always use a radix
++ * tree or something here.
++ *
++ * This could be made generic for all sysdev classes.
++ */
++struct memory_block *find_memory_block(struct mem_section *section)
++{
++	struct kobject *kobj;
++	struct sys_device *sysdev;
++	struct memory_block *mem;
++	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
++
++	/*
++	 * This only works because we know that section == sysdev->id
++	 * slightly redundant with sysdev_register()
++	 */
++	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
++
++	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
++	if (!kobj)
++		return NULL;
++
++	sysdev = container_of(kobj, struct sys_device, kobj);
++	mem = container_of(sysdev, struct memory_block, sysdev);
++
++	return mem;
++}
++
+ static int add_memory_block(int nid, struct mem_section *section,
+ 			unsigned long state, enum mem_add_context context)
+ {
+@@ -468,37 +499,6 @@ static int add_memory_block(int nid, str
+ 	return ret;
+ }
+ 
+-/*
+- * For now, we have a linear search to go find the appropriate
+- * memory_block corresponding to a particular phys_index. If
+- * this gets to be a real problem, we can always use a radix
+- * tree or something here.
+- *
+- * This could be made generic for all sysdev classes.
+- */
+-struct memory_block *find_memory_block(struct mem_section *section)
+-{
+-	struct kobject *kobj;
+-	struct sys_device *sysdev;
+-	struct memory_block *mem;
+-	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
+-
+-	/*
+-	 * This only works because we know that section == sysdev->id
+-	 * slightly redundant with sysdev_register()
+-	 */
+-	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
+-
+-	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
+-	if (!kobj)
+-		return NULL;
+-
+-	sysdev = container_of(kobj, struct sys_device, kobj);
+-	mem = container_of(sysdev, struct memory_block, sysdev);
+-
+-	return mem;
+-}
+-
+ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		int phys_device)
+ {
 
-These could probably use atomic_inc(), atomic64_inc(), and friends, no?
