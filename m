@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755993Ab0HIJgS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 05:36:18 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:37062 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755933Ab0HIJgQ (ORCPT
+	id S1756007Ab0HIJgZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 05:36:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39544 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756000Ab0HIJgW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 05:36:16 -0400
-Message-ID: <4C5FCBE1.2080303@st.com>
-Date: Mon, 9 Aug 2010 15:05:29 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.1
-MIME-Version: 1.0
-To: Matti Aarnio <matti.aarnio@zmailer.org>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-References: <4C5F9B25.8080401@st.com> <20100809064957.GB16661@pengutronix.de> <4C5FA698.90904@st.com> <20100809090137.GP13165@mea-ext.zmailer.org>
-In-Reply-To: <20100809090137.GP13165@mea-ext.zmailer.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Mon, 9 Aug 2010 05:36:22 -0400
+Subject: Re: [PATCH 1/4] mfd: max8998 - fix incorrect kfree(i2c) in
+ i2c_driver probe callback handler
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <20100809091530.GB2513@sortiz-mobl>
+References: <1281336496.18804.2.camel@mola>
+	 <20100809091530.GB2513@sortiz-mobl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Aug 2010 10:36:12 +0100
+Message-ID: <1281346572.3035.5.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/9/2010 2:31 PM, Matti Aarnio wrote:
-> On Mon, Aug 09, 2010 at 12:26:24PM +0530, viresh kumar wrote:
->> > 
->> > I missed this information in my last mail. We are using git send-email for
->> > sending patches. As patches will go through Microsoft exchange server only,
->> > so they are broken.
->> > 
-> Let your boss complain to your IT keepers.
-> "These are Machine-to-Machine messages, they must not be modified!"
+On Mon, 2010-08-09 at 11:15 +0200, Samuel Ortiz wrote:
+> Hi Axel,
 > 
-> 
-> It would probably be "against corporate policy" to use gmail for these emails...
-> 
+> On Mon, Aug 09, 2010 at 02:48:16PM +0800, Axel Lin wrote:
+> > The i2c_client received in probe() should not be kfree()'d.
+> This should go through Liam's tree, I'm  CC'ing him to this thread.
 
-We got one solution: Upgrade Exchange server to SP2.
-Lets see if our IT department does this upgradation.
+Thanks, I assume I have you Ack too ?
 
-viresh.
+Thanks
+
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
