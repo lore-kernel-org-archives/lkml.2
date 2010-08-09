@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0HIDZo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 23:25:44 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:65313 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753495Ab0HIDZm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 23:25:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=p+tVsdPa4J6GJKxFYw3H7etDmcsl7TedpevaoraweatqrcLLCiBIOZBJYFDtGaK82g
-         I2YPVh1maUpBC74kJUDGFdnaZGD38gLTXL4TQWgCc0vFy7aSNCnbl6IHTifxEj9z/kap
-         iQmYme3WaBmAMSofWH4prrm+UgH5J+w/6+Rug=
-Subject: [PATCH] regulator: tps6507x - add missing platform_set_drvdata in
-	tps6507x_pmic_probe
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Anuj Aggarwal <anuj.aggarwal@ti.com>
-Content-Type: text/plain
-Date: Mon, 09 Aug 2010 11:27:25 +0800
-Message-Id: <1281324445.12901.1.camel@mola>
+	id S1755387Ab0HIDnZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 23:43:25 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39776 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755135Ab0HIDnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 23:43:24 -0400
+Subject: Re: [PATCH 1/1] integer overflow issue in 'appletouch' driver
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Vadim Zaliva <lord@crocodile.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <9D74DA20-E3C8-43BC-B529-82605F64637F@crocodile.org>
+References: <E64899AA-23A5-49D7-8C91-B94A095290E0@crocodile.org>
+	 <1268034117.3819.1.camel@jlt3.sipsolutions.net>
+	 <36779F26-DB1B-46ED-8635-01B03E559B55@crocodile.org>
+	 <20100310062227.GB2445@core.coreip.homeip.net>
+	 <87k4o234lx.fsf@depni.sinp.msu.ru>
+	 <1281196050.4431.4.camel@jlt3.sipsolutions.net>
+	 <1281313223.2168.46.camel@pasglop>
+	 <9D74DA20-E3C8-43BC-B529-82605F64637F@crocodile.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Aug 2010 13:43:09 +1000
+Message-ID: <1281325390.2168.64.camel@pasglop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should call platform_set_drvdata() before calling platform_get_drvdata().
+On Sun, 2010-08-08 at 18:24 -0700, Vadim Zaliva wrote:
+> I have tested the patch on device I had       
+> I will have an access to it to retest later thus week. We can wait for my
+> test to try to identify how my PowerBook is different from yours. Or you
+> can roll the patch back.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps6507x-regulator.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I'd rather roll the patch back for now. I'll send the revert as part of
+the next powerpc update. We'll sort things out then.
 
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index 8152d65..fbe21f7 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -614,6 +614,7 @@ int tps6507x_pmic_probe(struct platform_device *pdev)
- 	}
- 
- 	tps6507x_dev->pmic = tps;
-+	platform_set_drvdata(pdev, tps6507x_dev);
- 
- 	return 0;
- 
-@@ -640,6 +641,7 @@ static int __devexit tps6507x_pmic_remove(struct platform_device *pdev)
- 	for (i = 0; i < TPS6507X_NUM_REGULATOR; i++)
- 		regulator_unregister(tps->rdev[i]);
- 
-+	platform_set_drvdata(pdev, NULL);
- 	kfree(tps);
- 
- 	return 0;
--- 
-1.5.4.3
+Cheers,
+Ben.
 
+> 
+> --
+> Sent from my iPhone
+> 
+> On Aug 8, 2010, at 17:20, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+> 
+> > 
+> >>> My device is 05ac:020e "fountain", actually generates *signed* values,
+> >>> thus the patch completely breaks it.
+> >> 
+> >> I think Ben might have the same issue. I guess we need per-touchpad
+> >> functions to read the data.
+> > 
+> > Yup, I confirm, same deal. This patch completely breaks it on my
+> > powerbook (same USB ID)
+> > 
+> > Should we revert the commit for now ?
+> > 
+> > Cheers,
+> > Ben.
+> > 
 
 
