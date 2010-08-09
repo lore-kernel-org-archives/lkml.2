@@ -1,485 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab0HIFQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 01:16:19 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:40658 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775Ab0HIFQR convert rfc822-to-8bit (ORCPT
+	id S1752851Ab0HIFS0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 01:18:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:3208 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758Ab0HIFSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 01:16:17 -0400
+	Mon, 9 Aug 2010 01:18:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6068"; a="50340005"
+Message-ID: <9fdd7342a81ae903d6a64bc3c8234c45.squirrel@www.codeaurora.org>
+In-Reply-To: <20100807135644.GA7318@n2100.arm.linux.org.uk>
+References: <1281135881-6479-1-git-send-email-stepanm@codeaurora.org>
+    <20100807135644.GA7318@n2100.arm.linux.org.uk>
+Date: Sun, 8 Aug 2010 22:18:21 -0700 (PDT)
+Subject: Re: [PATCH v2] arm: msm: Add MSM IOMMU support.
+From: "Stepan Moskovchenko" <stepanm@codeaurora.org>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Cc: "Stepan Moskovchenko" <stepanm@codeaurora.org>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <20100808231030.1d555250@dev.queued.net>
-References: <20100808231030.1d555250@dev.queued.net>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 8 Aug 2010 23:15:56 -0600
-X-Google-Sender-Auth: o_5FAQjE_X9oitp9NemslGrSCc8
-Message-ID: <AANLkTikJf0ZzgXv3nVBMvXVWpfaGuB-qeUsEYZHRuJMF@mail.gmail.com>
-Subject: Re: [PATCH 1/3] sparc: break out some PROM device-tree building code 
-	out into drivers/of
-To: Andres Salomon <dilinger@queued.net>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-        davem@davemloft.net, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 8, 2010 at 9:10 PM, Andres Salomon <dilinger@queued.net> wrote:
->
-> Transitioning into making this useful for architectures other than sparc.
->
-> Signed-off-by: Andres Salomon <dilinger@queued.net>
+Russell,
 
-I assume this is just a verbatim copy.  If so, looks fine to me, but I
-won't pick it up yet since you'll be respinning patches 2 and 3
-anyway.
+Tomorrow I will fix the style / iomem / other issues tomorrow and clean up
+the failure paths. I have some questions for you, inline.
 
-g.
+>> +		iommu_drvdata = dev_get_drvdata(ctx_drvdata->pdev->dev.parent);
+>
+> Please explain what's going on here with parent devices.  What device is
+> pdev referring to, and what is pdev->dev.parent ?  It seems quite dodgy
+> to just expect a certain device relationship without checking that the
+> device is what is expected (eg, it's non-NULL, it's of the right bus type,
+> and it appears to be suitably named) before dereferencing its driver data.
 
-> ---
->  arch/sparc/kernel/prom_common.c |  190 +----------------------------------
->  drivers/of/pdt.c                |  217 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 218 insertions(+), 189 deletions(-)
->  create mode 100644 drivers/of/pdt.c
->
-> diff --git a/arch/sparc/kernel/prom_common.c b/arch/sparc/kernel/prom_common.c
-> index 40123a6..7b454f6 100644
-> --- a/arch/sparc/kernel/prom_common.c
-> +++ b/arch/sparc/kernel/prom_common.c
-> @@ -26,8 +26,6 @@
->
->  #include "prom.h"
->
-> -void (*prom_build_more)(struct device_node *dp, struct device_node ***nextp);
-> -
->  struct device_node *of_console_device;
->  EXPORT_SYMBOL(of_console_device);
->
-> @@ -119,192 +117,6 @@ int of_find_in_proplist(const char *list, const char *match, int len)
->  }
->  EXPORT_SYMBOL(of_find_in_proplist);
->
-> -unsigned int prom_unique_id;
-> -
-> -static struct property * __init build_one_prop(phandle node, char *prev,
-> -                                              char *special_name,
-> -                                              void *special_val,
-> -                                              int special_len)
-> -{
-> -       static struct property *tmp = NULL;
-> -       struct property *p;
-> -       const char *name;
-> -
-> -       if (tmp) {
-> -               p = tmp;
-> -               memset(p, 0, sizeof(*p) + 32);
-> -               tmp = NULL;
-> -       } else {
-> -               p = prom_early_alloc(sizeof(struct property) + 32);
-> -               p->unique_id = prom_unique_id++;
-> -       }
-> -
-> -       p->name = (char *) (p + 1);
-> -       if (special_name) {
-> -               strcpy(p->name, special_name);
-> -               p->length = special_len;
-> -               p->value = prom_early_alloc(special_len);
-> -               memcpy(p->value, special_val, special_len);
-> -       } else {
-> -               if (prev == NULL) {
-> -                       name = prom_firstprop(node, p->name);
-> -               } else {
-> -                       name = prom_nextprop(node, prev, p->name);
-> -               }
-> -
-> -               if (!name || strlen(name) == 0) {
-> -                       tmp = p;
-> -                       return NULL;
-> -               }
-> -#ifdef CONFIG_SPARC32
-> -               strcpy(p->name, name);
-> -#endif
-> -               p->length = prom_getproplen(node, p->name);
-> -               if (p->length <= 0) {
-> -                       p->length = 0;
-> -               } else {
-> -                       int len;
-> -
-> -                       p->value = prom_early_alloc(p->length + 1);
-> -                       len = prom_getproperty(node, p->name, p->value,
-> -                                              p->length);
-> -                       if (len <= 0)
-> -                               p->length = 0;
-> -                       ((unsigned char *)p->value)[p->length] = '\0';
-> -               }
-> -       }
-> -       return p;
-> -}
-> -
-> -static struct property * __init build_prop_list(phandle node)
-> -{
-> -       struct property *head, *tail;
-> -
-> -       head = tail = build_one_prop(node, NULL,
-> -                                    ".node", &node, sizeof(node));
-> -
-> -       tail->next = build_one_prop(node, NULL, NULL, NULL, 0);
-> -       tail = tail->next;
-> -       while(tail) {
-> -               tail->next = build_one_prop(node, tail->name,
-> -                                           NULL, NULL, 0);
-> -               tail = tail->next;
-> -       }
-> -
-> -       return head;
-> -}
-> -
-> -static char * __init get_one_property(phandle node, const char *name)
-> -{
-> -       char *buf = "<NULL>";
-> -       int len;
-> -
-> -       len = prom_getproplen(node, name);
-> -       if (len > 0) {
-> -               buf = prom_early_alloc(len);
-> -               len = prom_getproperty(node, name, buf, len);
-> -       }
-> -
-> -       return buf;
-> -}
-> -
-> -static struct device_node * __init prom_create_node(phandle node,
-> -                                                   struct device_node *parent)
-> -{
-> -       struct device_node *dp;
-> -
-> -       if (!node)
-> -               return NULL;
-> -
-> -       dp = prom_early_alloc(sizeof(*dp));
-> -       dp->unique_id = prom_unique_id++;
-> -       dp->parent = parent;
-> -
-> -       kref_init(&dp->kref);
-> -
-> -       dp->name = get_one_property(node, "name");
-> -       dp->type = get_one_property(node, "device_type");
-> -       dp->phandle = node;
-> -
-> -       dp->properties = build_prop_list(node);
-> -
-> -       irq_trans_init(dp);
-> -
-> -       return dp;
-> -}
-> -
-> -char * __init build_full_name(struct device_node *dp)
-> -{
-> -       int len, ourlen, plen;
-> -       char *n;
-> -
-> -       plen = strlen(dp->parent->full_name);
-> -       ourlen = strlen(dp->path_component_name);
-> -       len = ourlen + plen + 2;
-> -
-> -       n = prom_early_alloc(len);
-> -       strcpy(n, dp->parent->full_name);
-> -       if (!of_is_root_node(dp->parent)) {
-> -               strcpy(n + plen, "/");
-> -               plen++;
-> -       }
-> -       strcpy(n + plen, dp->path_component_name);
-> -
-> -       return n;
-> -}
-> -
-> -static struct device_node * __init prom_build_tree(struct device_node *parent,
-> -                                                  phandle node,
-> -                                                  struct device_node ***nextp)
-> -{
-> -       struct device_node *ret = NULL, *prev_sibling = NULL;
-> -       struct device_node *dp;
-> -
-> -       while (1) {
-> -               dp = prom_create_node(node, parent);
-> -               if (!dp)
-> -                       break;
-> -
-> -               if (prev_sibling)
-> -                       prev_sibling->sibling = dp;
-> -
-> -               if (!ret)
-> -                       ret = dp;
-> -               prev_sibling = dp;
-> -
-> -               *(*nextp) = dp;
-> -               *nextp = &dp->allnext;
-> -
-> -               dp->path_component_name = build_path_component(dp);
-> -               dp->full_name = build_full_name(dp);
-> -
-> -               dp->child = prom_build_tree(dp, prom_getchild(node), nextp);
-> -
-> -               if (prom_build_more)
-> -                       prom_build_more(dp, nextp);
-> -
-> -               node = prom_getsibling(node);
-> -       }
-> -
-> -       return ret;
-> -}
-> -
->  unsigned int prom_early_allocated __initdata;
->
-> -void __init prom_build_devicetree(void)
-> -{
-> -       struct device_node **nextp;
-> -
-> -       allnodes = prom_create_node(prom_root_node, NULL);
-> -       allnodes->path_component_name = "";
-> -       allnodes->full_name = "/";
-> -
-> -       nextp = &allnodes->allnext;
-> -       allnodes->child = prom_build_tree(allnodes,
-> -                                         prom_getchild(allnodes->phandle),
-> -                                         &nextp);
-> -       of_console_init();
-> -
-> -       printk("PROM: Built device tree with %u bytes of memory.\n",
-> -              prom_early_allocated);
-> -}
-> +#include "../../../drivers/of/pdt.c"
-> diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-> new file mode 100644
-> index 0000000..61d9477
-> --- /dev/null
-> +++ b/drivers/of/pdt.c
-> @@ -0,0 +1,217 @@
-> +/* prom_common.c: OF device tree support common code.
-> + *
-> + * Paul Mackerras      August 1996.
-> + * Copyright (C) 1996-2005 Paul Mackerras.
-> + *
-> + *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
-> + *    {engebret|bergner}@us.ibm.com
-> + *
-> + *  Adapted for sparc by David S. Miller davem@davemloft.net
-> + *
-> + *      This program is free software; you can redistribute it and/or
-> + *      modify it under the terms of the GNU General Public License
-> + *      as published by the Free Software Foundation; either version
-> + *      2 of the License, or (at your option) any later version.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/errno.h>
-> +#include <linux/mutex.h>
-> +#include <linux/slab.h>
-> +#include <linux/of.h>
-> +#include <asm/prom.h>
-> +#include <asm/oplib.h>
-> +#include <asm/leon.h>
-> +
-> +void (*prom_build_more)(struct device_node *dp, struct device_node ***nextp);
-> +
-> +unsigned int prom_unique_id;
-> +
-> +static struct property * __init build_one_prop(phandle node, char *prev,
-> +                                              char *special_name,
-> +                                              void *special_val,
-> +                                              int special_len)
-> +{
-> +       static struct property *tmp = NULL;
-> +       struct property *p;
-> +       const char *name;
-> +
-> +       if (tmp) {
-> +               p = tmp;
-> +               memset(p, 0, sizeof(*p) + 32);
-> +               tmp = NULL;
-> +       } else {
-> +               p = prom_early_alloc(sizeof(struct property) + 32);
-> +               p->unique_id = prom_unique_id++;
-> +       }
-> +
-> +       p->name = (char *) (p + 1);
-> +       if (special_name) {
-> +               strcpy(p->name, special_name);
-> +               p->length = special_len;
-> +               p->value = prom_early_alloc(special_len);
-> +               memcpy(p->value, special_val, special_len);
-> +       } else {
-> +               if (prev == NULL) {
-> +                       name = prom_firstprop(node, p->name);
-> +               } else {
-> +                       name = prom_nextprop(node, prev, p->name);
-> +               }
-> +
-> +               if (!name || strlen(name) == 0) {
-> +                       tmp = p;
-> +                       return NULL;
-> +               }
-> +#ifdef CONFIG_SPARC32
-> +               strcpy(p->name, name);
-> +#endif
-> +               p->length = prom_getproplen(node, p->name);
-> +               if (p->length <= 0) {
-> +                       p->length = 0;
-> +               } else {
-> +                       int len;
-> +
-> +                       p->value = prom_early_alloc(p->length + 1);
-> +                       len = prom_getproperty(node, p->name, p->value,
-> +                                              p->length);
-> +                       if (len <= 0)
-> +                               p->length = 0;
-> +                       ((unsigned char *)p->value)[p->length] = '\0';
-> +               }
-> +       }
-> +       return p;
-> +}
-> +
-> +static struct property * __init build_prop_list(phandle node)
-> +{
-> +       struct property *head, *tail;
-> +
-> +       head = tail = build_one_prop(node, NULL,
-> +                                    ".node", &node, sizeof(node));
-> +
-> +       tail->next = build_one_prop(node, NULL, NULL, NULL, 0);
-> +       tail = tail->next;
-> +       while(tail) {
-> +               tail->next = build_one_prop(node, tail->name,
-> +                                           NULL, NULL, 0);
-> +               tail = tail->next;
-> +       }
-> +
-> +       return head;
-> +}
-> +
-> +static char * __init get_one_property(phandle node, const char *name)
-> +{
-> +       char *buf = "<NULL>";
-> +       int len;
-> +
-> +       len = prom_getproplen(node, name);
-> +       if (len > 0) {
-> +               buf = prom_early_alloc(len);
-> +               len = prom_getproperty(node, name, buf, len);
-> +       }
-> +
-> +       return buf;
-> +}
-> +
-> +static struct device_node * __init prom_create_node(phandle node,
-> +                                                   struct device_node *parent)
-> +{
-> +       struct device_node *dp;
-> +
-> +       if (!node)
-> +               return NULL;
-> +
-> +       dp = prom_early_alloc(sizeof(*dp));
-> +       dp->unique_id = prom_unique_id++;
-> +       dp->parent = parent;
-> +
-> +       kref_init(&dp->kref);
-> +
-> +       dp->name = get_one_property(node, "name");
-> +       dp->type = get_one_property(node, "device_type");
-> +       dp->phandle = node;
-> +
-> +       dp->properties = build_prop_list(node);
-> +
-> +       irq_trans_init(dp);
-> +
-> +       return dp;
-> +}
-> +
-> +char * __init build_full_name(struct device_node *dp)
-> +{
-> +       int len, ourlen, plen;
-> +       char *n;
-> +
-> +       plen = strlen(dp->parent->full_name);
-> +       ourlen = strlen(dp->path_component_name);
-> +       len = ourlen + plen + 2;
-> +
-> +       n = prom_early_alloc(len);
-> +       strcpy(n, dp->parent->full_name);
-> +       if (!of_is_root_node(dp->parent)) {
-> +               strcpy(n + plen, "/");
-> +               plen++;
-> +       }
-> +       strcpy(n + plen, dp->path_component_name);
-> +
-> +       return n;
-> +}
-> +
-> +static struct device_node * __init prom_build_tree(struct device_node *parent,
-> +                                                  phandle node,
-> +                                                  struct device_node ***nextp)
-> +{
-> +       struct device_node *ret = NULL, *prev_sibling = NULL;
-> +       struct device_node *dp;
-> +
-> +       while (1) {
-> +               dp = prom_create_node(node, parent);
-> +               if (!dp)
-> +                       break;
-> +
-> +               if (prev_sibling)
-> +                       prev_sibling->sibling = dp;
-> +
-> +               if (!ret)
-> +                       ret = dp;
-> +               prev_sibling = dp;
-> +
-> +               *(*nextp) = dp;
-> +               *nextp = &dp->allnext;
-> +
-> +               dp->path_component_name = build_path_component(dp);
-> +               dp->full_name = build_full_name(dp);
-> +
-> +               dp->child = prom_build_tree(dp, prom_getchild(node), nextp);
-> +
-> +               if (prom_build_more)
-> +                       prom_build_more(dp, nextp);
-> +
-> +               node = prom_getsibling(node);
-> +       }
-> +
-> +       return ret;
-> +}
-> +
-> +void __init prom_build_devicetree(void)
-> +{
-> +       struct device_node **nextp;
-> +
-> +       allnodes = prom_create_node(prom_root_node, NULL);
-> +       allnodes->path_component_name = "";
-> +       allnodes->full_name = "/";
-> +
-> +       nextp = &allnodes->allnext;
-> +       allnodes->child = prom_build_tree(allnodes,
-> +                       prom_getchild(allnodes->phandle),
-> +                       &nextp);
-> +
-> +       of_console_init();
-> +
-> +       printk("PROM: Built device tree with %u bytes of memory.\n",
-> +              prom_early_allocated);
-> +}
-> +
-> --
-> 1.5.6.5
->
->
+I could see why this seems confusing. pdev->dev.parent is the IOMMU
+context's parent device. There is a device hierarchy here. Each IOMMU
+device has multiple IOMMU *context* devices as children. These are
+physical, actual translation contexts, with their own distinct sets of
+registers. The parent device (the IOMMU) also has a number of "global"
+registers that are shared among the translation contexts. It is
+impractical to lump the global register space and the context bank
+registers into one device because the translation contexts are effectively
+their own IOMMUs that can be separately managed. Additionally, the number
+of translation contexts varies among IOMMUs in the system. So, in this
+particular case, the driver needs to know the ioremapped address of the
+IOMMU, so it references the driverdata of the parent device (the IOMMU
+itself) to get it. There will never be a context "by itself", ie, a
+context's parent will always be an IOMMU device, so the operation of
+referencing the parent's data will always be safe. But I can put in some
+sanity checks for the pointers if you wish.
 
 
+>> +static void msm_iommu_domain_destroy(struct iommu_domain *domain)
+>> +{
+>> +	struct msm_priv *priv = (struct msm_priv *) domain->priv;
+>
+> 	struct msm_priv *priv = domain->priv;
+>
+> Should this be outside msm_iommu_lock?
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+domain->priv should always be unchanged if the domain is still "valid".
+The contents of domain->priv may change, but domain->priv does not get
+reassigned (until being set to null right as domain is being freed), so I
+put this outside the spinlock. Arguably, you could have a problem if a
+function is trying to use the domain *as it's being freed*, but then
+bigger problems will arise. I will make the change, though.
+
+
+>> +	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+>> +	return;
+>> +fail_inval:
+>> +	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+>> +	return;
+>
+> Does this need to be repeated?
+
+I had initially operated under the assumption that unmap() could return a
+failure code. I will clean this up.
+
+
+>> +#ifndef CONFIG_IOMMU_PGTABLES_L2
+>
+> I think you mean:
+> #ifndef CONFIG_IOMMU_PGTABLES_L1
+>
+> because as I've said to you several times now, flush_cache_all() is about
+> flushing data out of the L1 cache only.  It does NOT affect L2 cache.
+
+I do mean to flush the L2 cache here (ie, flush the data from whatever
+cache it may be in, all the way to RAM). I believed that
+v7_flush_cache_all() (and hence, flush_cache_all() as was suggested by you
+as a replacement) would flush the L1 and L2. The comment in cache-v7.S
+suggests that the function will "Flush the entire cache system." (line 81)
+which sounds like L2 ought to be included (and the observed behavior seems
+to agree). I just need the pagetable in RAM to reflect the latest changes
+made by the driver, so that the IOMMU can get to it if it hasn't been
+configured to access the L2 cache on its own. Could you please suggest a
+correct way to flush the L2 cache?
+
+>> +static int msm_iommu_unmap(struct iommu_domain *domain, unsigned long
+>> va,
+>> +			    int gfp_order)
+>
+> What does 'gfp_order' have to do with get_free_pages in this function?
+> Wouldn't just 'order' be more appropriate?
+
+I called it 'gfp_order' because that is how linux/iommu.h names that
+parameter in the IOMMU API. I guess 'order' *is* more appropriate... I'll
+fix it.
+
+
+>> +	/* Upper 20 bits from PAR, lower 12 from VA */
+>> +	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+>> +	return (par & 0xFFFFF000) | (va & 0x00000FFF);
+>> +fail_nodev:
+>> +	spin_unlock_irqrestore(&msm_iommu_lock, flags);
+>> +	return -ENODEV;
+>
+> Hmm, returning -ve numbers and addresses... how do you tell the difference
+> between the two in the calling function?
+
+That is a good question. I am not sure how to handle the error conditions
+in this case. My first idea was to just return 0 for all iova-to-phys
+faults, but 0 too is a legitimate address (although kind of a dodgy one).
+But it may be better to return 0 for the error case. Also, the translation
+hardware will not generate a fault interrupt if it's doing a translation
+at the request of the CPU (as opposed to when it's being addressed by a
+client) but I can manually ask the IOMMU to generate a translation fault
+interrupt if iova_to_phys results in a fault (at least we'll know
+something is wrong). I am not sure which approach is the best, but am
+leaning towards just returning 0 on errors. What do you think is best?
+
+> I'm also sure you can do better with these exit paths in a similar way to
+> what I've illustrated above.
+
+Yup, I'll fix it. I will try to post a revised patch tomorrow, after I get
+some sleep in me (I guess it will be the evening where you are).
+
+Thanks
+Steve
+
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
