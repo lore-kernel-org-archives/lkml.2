@@ -1,198 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab0HIW4q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 18:56:46 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:45913 "EHLO gir.skynet.ie"
+	id S1757236Ab0HIW4z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 18:56:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:32959 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755055Ab0HIW4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 18:56:41 -0400
-Date: Mon, 9 Aug 2010 23:56:26 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm tree some more bits
-Message-ID: <alpine.DEB.2.00.1008092349350.20864@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1259364222-1281394586=:20864"
+	id S1757162Ab0HIW4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 18:56:53 -0400
+Date: Tue, 10 Aug 2010 08:56:41 +1000
+From: Neil Brown <neilb@suse.de>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+Message-ID: <20100810085641.2b9a714c@notabene>
+In-Reply-To: <1281282776-5447-15-git-send-email-vaurora@redhat.com>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
+	<1281282776-5447-15-git-send-email-vaurora@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---29444707-1259364222-1281394586=:20864
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+On Sun,  8 Aug 2010 11:52:31 -0400
+Valerie Aurora <vaurora@redhat.com> wrote:
 
 
-The main reason for this, is Ben got a nvidia fermi card and added 
-modesetting support just before the window opened, there is no accel 
-support, but having kms support for these GPUs is a good start. Its all 
-the GTX4xx cards.
+> +A union mount layers one read-write file system over one or more
+> +read-only file systems, with all writes going to the writable file
+> +system.  The namespace of both file systems appears as a combined
+> +whole to userland, with files and directories on the writable file
+> +system covering up any files or directories with matching pathnames on
+> +the read-only file system.  The read-write file system is the
+> +"topmost" or "upper" file system and the read-only file systems are
+> +the "lower" file systems.  A few use cases:
+> +
+> +- Root file system on CD with writes saved to hard drive (LiveCD)
+> +- Multiple virtual machines with the same starting root file system
+> +- Cluster with NFS mounted root on clients
+> +
+> +Most if not all of these problems could be solved with a COW block
+> +device or a clustered file system (include NFS mounts).  However, for
+> +some use cases, sharing is more efficient and better performing if
+> +done at the file system namespace level.  COW block devices only
+> +increase their divergence as time goes on, and a fully coherent
+> +writable file system is unnecessary synchronization overhead if no
+> +other client needs to see the writes.
 
-The other bulk is because ajax moved a load of modes to their own header 
-file because they were making things ugly, Alex added support for a new 
-modesetting object that we are seeing used on radeons in the field, with 
-this they can bring up a monitor in a few configurations that aren't 
-possible before. Also there is an API change to the hyperz info ioctl we 
-just added that we'd really like to make before -rc1 along with an oops 
-fixer in that function.
+Thanks for including lots of documentation!
+Given how intrusive this patch set is, I would really like the see the
+justification above fleshed out a bit more.
 
-Also myself and BenH discussed fixing pci domains a long time ago, and we 
-forgot to finish the job, so his patch to make drm work on non-0 domains 
-without breaking userspace is in here finally.
+What would be particularly valuable would be real-life use cases where
+someone has put this to work and found that it genuinely meets a need.
+I realise there can be a bit of a chicken/egg issue there, but if you do have
+anything it would be good to include it.
+A particular need for this is that fact that a number of standard features
+are not going to be supported and it would be good to be sure that there are
+real cases that don't need those.
 
-The following changes since commit 96576a9e1a0cdb8a43d3af5846be0948f52b4460:
+...
 
-  agp: intel-agp: do not use PCI resources before pci_enable_device() (2010-08-05 12:28:25 +1000)
+> +Non-features
+> +------------
+> +
+> +Features we do not currently plan to support in union mounts:
+> +
+> +Online upgrade: E.g., installing software on a file system NFS
+> +exported to clients while the clients are still up and running.
+> +Allowing the read-only bottom layer of a union mount to change
+> +invalidates our locking strategy.
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-core-next
+I wonder if the restriction is not more serious than this.
+Given the prevalence of "copy-up", particularly of directories, I would think
+that even off-line upgrade would not be supported.
+If the upgrade adds a file in a directory that has already been read (and
+hence copied-up), or changes a file that has been chmodded, then the upgrade
+will not be completely visible, which sounds dangerous.
 
-Adam Jackson (5):
-      drm: Remove unused fields from drm_display_info
-      drm/edid: Add detailed block walk for CEA extensions
-      drm/edid: Add detailed block walk for VTB extensions
-      drm/edid: Rewrite mode parse to use the generic detailed block walk
-      drm/edid: Split mode lists out to their own header for readability
+Don't you have to require (or strongly recommend) that the underlying
+filesystem remain unchanged while the on-top filesystem exists, not just
+while it is mounted ??
 
-Alex Deucher (7):
-      drm/radeon/kms: clean up r6xx/r7xx blit init
-      drm/radeon/kms: r600 CS parser fixes
-      drm/radeon/kms: unify i2c handling
-      drm/radeon/kms: rework combios i2c handling
-      drm/radeon/kms: add support for router objects
-      drm/radeon/kms: add additional quirk for Acer rv620 laptop
-      drm/radeon/kms: mark 3D power states as performance
 
-Ben Skeggs (11):
-      drm/nv50: use custom i2c algo for dp auxch
-      drm/nouveau: remove unused ttm bo list
-      drm/nvc0: starting point for GF100 support, everything stubbed
-      drm/nvc0: allow INIT_GPIO
-      drm/nvc0: implement memory detection
-      drm/nvc0: rudimentary instmem support
-      drm/nvc0: fix evo dma object so we display something
-      drm/nvc0: implement crtc pll setting
-      drm/nvc0: backup bar3 channel on suspend
-      drm/nouveau: reduce severity of some "error" messages
-      drm/nvc0: fix typo in PRAMIN flush
 
-Benjamin Herrenschmidt (1):
-      drm: Fix support for PCI domains
+As a counter-position for you or others to write cogent arguments against,
+and to then include those arguments in the justification section,  I would
+like to present my preferred approach, which is essentially that the problem
+is better solved at the block layer or the distro layer.
 
-Chris Wilson (3):
-      drm: Propagate error code from fb_create()
-      drm: Only set DPMS once on the CRTC not after every encoder.
-      drm: Use ENOENT consistently for the error return for an unmatched handle.
+A distro-layer solution would be appropriate when you want a common root
+filesystem with per-host configuration, whether in an NFS cluster of a
+virtual-machine cluster.
+This involved every file that might need configuration being made a symlink
+to e.g. /local, and every instance mounts some local directory on /local.
+e.g.  mount --bind /local-`hostname` /local
 
-Dan Carpenter (2):
-      drm/nouveau: unwind on load errors
-      radeon: handle errors in radeon_hwmon_init()
+This is obviously less transparent, but it is also more predictable (you
+know exactly what can and cannot be changed by an upgraded on the shared
+filesystem).
 
-Dave Airlie (1):
-      Merge remote branch 'nouveau/for-airlied' of /ssd/git/drm-nouveau-next into drm-core-next
+A convincing use case that required NFS sharing and required signficantly
+more customisation that just some config file would be a good
+counter-argument to this.
 
-Dr. David Alan Gilbert (1):
-      drm/radeon/kms: add missing copy from user
+I see two block-layer solutions.  The obvious is a COW block device as you
+have mentioned.  I am not convinced that it is as bad as you think.
+Particularly if the COW device could advertise that it handles small
+'discard' requests efficiently, and if filesystems could then send small
+discard requests whenever appropriate, the wastage due to divergence need not
+be too great.
+In any case, some hard numbers like "Performing a kernel compile on a COW
+device requires N meg of space while using a union-mounted filesystem it
+requires M ( << N) meg of space" would help a lot.  (of course that is a silly
+test as we would use "make O=/somewhere/else", not COW or Union for that
+task).
 
-Francisco Jerez (13):
-      drm/nouveau: Fix AGP reset when AGP FW is already enabled on init.
-      drm/nouveau: Don't pass misaligned offsets to io_mapping_map_atomic_wc().
-      drm/nouveau: Fix the INIT_CONFIGURE_PREINIT BIOS opcode.
-      drm/nouveau: Ack the context switch interrupt before switching contexts.
-      drm/nv10: Fix up switching of NV10TCL_DMA_VTXBUF.
-      drm/nv17-nv4x: Attempt to init some external TMDS transmitters.
-      drm/nouveau: No need to set slave TV encoder configs explicitly.
-      drm/nv30: Workaround dual TMDS brain damage.
-      drm/nouveau: Init dcb->or on cards that have no usable DCB table.
-      drm/i2c/ch7006: Don't use POWER_LEVEL_FULL_POWER_OFF on early chip versions.
-      drm/nv04: Fix up SGRAM density detection.
-      drm/nv30: Fix PFB init for nv31.
-      drm/nouveau: Fix DCB TMDS config parsing.
+The second solution would be filesystem specific, and hence a good selling
+point of a new up-and-coming filesystem.
+If a filesystem was comfortable with data on multiple devices, and was able
+to copy-on-write files, then it should be relatively easy to give it a
+read-only device and a clean read-write device, and tell it write all changes
+only to the second device (and never update even the filesystem metadata on
+the first device).  The filesystem could then make effective use of any space
+available in the second device, without wastage.
 
-James Simmons (1):
-      drm: expand gamma_set
 
-Marcin Ko¶cielnicki (2):
-      drm/nouveau: implement init table op 0x57, INIT_LTIME
-      drm/nouveau: implement init table opcodex 0x5e and 0x9a
+> +Thank you for reading!
 
-Marek Ol¹ák (1):
-      drm/radeon: add a way to revoke hyper-z access
+Thank you for writing!
 
- drivers/gpu/drm/drm_crtc.c                  |    6 +-
- drivers/gpu/drm/drm_crtc_helper.c           |   10 +-
- drivers/gpu/drm/drm_edid.c                  |  841 +++++++++------------------
- drivers/gpu/drm/drm_edid_modes.h            |  380 ++++++++++++
- drivers/gpu/drm/drm_gem.c                   |    2 +-
- drivers/gpu/drm/drm_ioctl.c                 |    1 +
- drivers/gpu/drm/i2c/ch7006_drv.c            |    1 +
- drivers/gpu/drm/i2c/ch7006_mode.c           |    5 +-
- drivers/gpu/drm/i2c/ch7006_priv.h           |    1 +
- drivers/gpu/drm/i915/i915_gem.c             |   26 +-
- drivers/gpu/drm/i915/i915_gem_tiling.c      |    4 +-
- drivers/gpu/drm/i915/intel_display.c        |   15 +-
- drivers/gpu/drm/i915/intel_fb.c             |    4 +-
- drivers/gpu/drm/nouveau/Makefile            |    8 +-
- drivers/gpu/drm/nouveau/nouveau_bios.c      |  194 ++++++-
- drivers/gpu/drm/nouveau/nouveau_bios.h      |    1 +
- drivers/gpu/drm/nouveau/nouveau_bo.c        |    6 -
- drivers/gpu/drm/nouveau/nouveau_connector.c |   19 +-
- drivers/gpu/drm/nouveau/nouveau_display.c   |    6 +-
- drivers/gpu/drm/nouveau/nouveau_dp.c        |   87 ++--
- drivers/gpu/drm/nouveau/nouveau_drv.h       |   45 ++-
- drivers/gpu/drm/nouveau/nouveau_encoder.h   |    6 +
- drivers/gpu/drm/nouveau/nouveau_fbcon.c     |    2 +
- drivers/gpu/drm/nouveau/nouveau_gem.c       |    8 +-
- drivers/gpu/drm/nouveau/nouveau_hw.c        |   11 +-
- drivers/gpu/drm/nouveau/nouveau_i2c.c       |   41 +-
- drivers/gpu/drm/nouveau/nouveau_i2c.h       |    8 +-
- drivers/gpu/drm/nouveau/nouveau_irq.c       |    6 +-
- drivers/gpu/drm/nouveau/nouveau_mem.c       |   15 +-
- drivers/gpu/drm/nouveau/nouveau_reg.h       |   18 +-
- drivers/gpu/drm/nouveau/nouveau_state.c     |   91 +++-
- drivers/gpu/drm/nouveau/nv04_crtc.c         |   15 +-
- drivers/gpu/drm/nouveau/nv04_dfp.c          |   73 +++
- drivers/gpu/drm/nouveau/nv04_tv.c           |   10 +-
- drivers/gpu/drm/nouveau/nv10_graph.c        |  175 ++++--
- drivers/gpu/drm/nouveau/nv30_fb.c           |   24 +-
- drivers/gpu/drm/nouveau/nv50_crtc.c         |   34 +-
- drivers/gpu/drm/nouveau/nv50_display.c      |    5 +-
- drivers/gpu/drm/nouveau/nvc0_fb.c           |   38 ++
- drivers/gpu/drm/nouveau/nvc0_fifo.c         |   96 +++
- drivers/gpu/drm/nouveau/nvc0_graph.c        |   75 +++
- drivers/gpu/drm/nouveau/nvc0_instmem.c      |  232 ++++++++
- drivers/gpu/drm/radeon/r600.c               |   14 +-
- drivers/gpu/drm/radeon/r600_blit_kms.c      |   16 +-
- drivers/gpu/drm/radeon/r600_cs.c            |   27 +-
- drivers/gpu/drm/radeon/radeon.h             |    2 +
- drivers/gpu/drm/radeon/radeon_atombios.c    |  180 +++++-
- drivers/gpu/drm/radeon/radeon_combios.c     |  388 ++++++-------
- drivers/gpu/drm/radeon/radeon_connectors.c  |   45 +-
- drivers/gpu/drm/radeon/radeon_cs.c          |    2 +-
- drivers/gpu/drm/radeon/radeon_cursor.c      |    2 +-
- drivers/gpu/drm/radeon/radeon_display.c     |   34 +-
- drivers/gpu/drm/radeon/radeon_gem.c         |   12 +-
- drivers/gpu/drm/radeon/radeon_i2c.c         |   82 +++
- drivers/gpu/drm/radeon/radeon_kms.c         |   28 +-
- drivers/gpu/drm/radeon/radeon_mode.h        |   24 +
- drivers/gpu/drm/radeon/radeon_pm.c          |   24 +-
- drivers/gpu/drm/radeon/rv770.c              |   14 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c         |    8 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c         |    2 +-
- include/drm/drmP.h                          |   22 +-
- include/drm/drm_core.h                      |    2 +-
- include/drm/drm_crtc.h                      |   37 +--
- include/drm/drm_edid.h                      |    6 +
- 64 files changed, 2431 insertions(+), 1185 deletions(-)
- create mode 100644 drivers/gpu/drm/drm_edid_modes.h
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_fb.c
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_fifo.c
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_graph.c
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_instmem.c
---29444707-1259364222-1281394586=:20864--
+NeilBrown
