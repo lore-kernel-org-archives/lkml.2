@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0HIOpY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 10:45:24 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48651 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756618Ab0HIOpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 10:45:22 -0400
-Date: Mon, 9 Aug 2010 16:45:19 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: "Desai, Kashyap" <Kashyap.Desai@lsi.com>
-Cc: Dan Carpenter <error27@gmail.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-        "Moore, Eric" <Eric.Moore@lsi.com>
-Subject: RE: [PATCH] scsi: mpt2sas: Add space in printk
-In-Reply-To: <1C9608B8A4CD534FB19C7C7543CBB24902991CD597@inbmail02.lsi.com>
-Message-ID: <Pine.LNX.4.64.1008091644280.28909@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052219190.31692@ask.diku.dk> <20100806075914.GS9031@bicker>
- <1C9608B8A4CD534FB19C7C7543CBB24902991CD597@inbmail02.lsi.com>
+	id S1756818Ab0HIOqu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 10:46:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63811 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716Ab0HIOqs convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 10:46:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=MrB6c7htUSHGegBk6rGnY9/AOFGy4MU41xvuXXM5/c0mJixt5Jx7EDZ/qEw6Ne72WX
+         DXeLP0JsQ7cBgwRnRJNJFcdEuMnLYpXBGREo4y4wHgzL+53ZLFrzpL67jx1/pE05ZF1r
+         gw53m78QO63IHDjci0hBs085oaRa97rQnG9dw=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Subject: Re: 2.6.35: suspicious rcu_dereference_check() usage
+Date: Mon, 9 Aug 2010 16:46:40 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <4C594740.1090608@vlnb.net>
+In-Reply-To: <4C594740.1090608@vlnb.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008091646.40611.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Aug 2010, Desai, Kashyap wrote:
-
+On środa, 4 sierpnia 2010 o 12:56:00 Vladislav Bolkhovitin wrote:
+> Hello,
 > 
+> Today I gave a first try to 2.6.35 and it immediately produced:
 > 
-> > -----Original Message-----
-> > From: Dan Carpenter [mailto:error27@gmail.com]
-> > Sent: Friday, August 06, 2010 1:29 PM
-> > To: Julia Lawall
-> > Cc: James E.J. Bottomley; linux-scsi@vger.kernel.org; linux-
-> > kernel@vger.kernel.org; kernel-janitors@vger.kernel.org; Moore, Eric;
-> > Desai, Kashyap
-> > Subject: [PATCH] scsi: mpt2sas: Add space in printk
-> > 
-> > Add a space in the output:
-> > old:  Discovery: (stop)discovery_status(0x%08x)
-> > new:  Discovery: (stop) discovery_status(0x%08x)
-> > 
-> > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> > ---
-> > This goes on top of Julia's [PATCH 9/42] drivers/scsi: Adjust
-> > confusing if indentation
-> > 
-> > diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c
-> > b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> > index 12faf64..562b909 100644
-> > --- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-> > +++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-> > @@ -532,7 +532,7 @@ _base_display_event_data(struct MPT2SAS_ADAPTER
-> > *ioc,
-> >  		    (event_data->ReasonCode ==
-> > MPI2_EVENT_SAS_DISC_RC_STARTED) ?
-> >  		    "start" : "stop");
-> >  		if (event_data->DiscoveryStatus)
-> > -			printk("discovery_status(0x%08x)",
-> > +			printk(" discovery_status(0x%08x)",
-> I don't see any significant reason for changing print. It not adding any benefit.
 
-It would look a little nicer to have a space after the ) that is printed 
-by the previous statement.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16549
+for your bug report, please add your address to the CC list in there, thanks!
 
-julia
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
