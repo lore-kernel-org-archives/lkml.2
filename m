@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab0HIMI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 08:08:27 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:47451 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756372Ab0HIMIV (ORCPT
+	id S1756433Ab0HIMIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 08:08:35 -0400
+Received: from eu1sys200aog103.obsmtp.com ([207.126.144.115]:41524 "EHLO
+	eu1sys200aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756379Ab0HIMIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 08:08:21 -0400
+	Mon, 9 Aug 2010 08:08:25 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Dan Williams <dan.j.williams@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
         Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 05/14] DMAENGINE: ste_dma40: fix bug related to callback handling
-Date: Mon, 9 Aug 2010 14:08:10 +0200
-Message-ID: <1281355690-13211-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 06/14] DMAENGINE: ste_dma40: removed a few magic numbers
+Date: Mon, 9 Aug 2010 14:08:18 +0200
+Message-ID: <1281355698-13261-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.3.3
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -23,184 +23,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-The callback got called even when it was not supposed to. Also
-removed some not needed interrupt trigger on/off code.
+Make sure to extract the revision field explicitly and document
+what bits are being accessed here without magic numbers.
 
 Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c    |   17 +++++------------
- drivers/dma/ste_dma40_ll.c |   13 ++++++-------
- drivers/dma/ste_dma40_ll.h |    7 +++----
- 3 files changed, 14 insertions(+), 23 deletions(-)
+ drivers/dma/ste_dma40.c    |   18 ++++++++++++------
+ drivers/dma/ste_dma40_ll.h |    3 +++
+ 2 files changed, 15 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 1adaebf..a6a7d66 100644
+index a6a7d66..c042103 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -878,7 +878,7 @@ static void dma_tasklet(unsigned long data)
+@@ -41,7 +41,7 @@
+ #define D40_ALLOC_LOG_FREE	0
  
- 	spin_unlock_irqrestore(&d40c->lock, flags);
+ /* Hardware designer of the block */
+-#define D40_PERIPHID2_DESIGNER 0x8
++#define D40_HW_DESIGNER 0x8
  
--	if (callback)
-+	if (callback && (d40d_fin->txd.flags & DMA_PREP_INTERRUPT))
- 		callback(callback_param);
- 
- 	return;
-@@ -1583,7 +1583,6 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					 d40d->lli_log.src,
- 					 d40c->log_def.lcsp1,
- 					 d40c->dma_cfg.src_info.data_width,
--					 dma_flags & DMA_PREP_INTERRUPT,
- 					 d40d->lli_tx_len,
- 					 d40c->base->plat_data->llis_per_log);
- 
-@@ -1593,7 +1592,6 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					 d40d->lli_log.dst,
- 					 d40c->log_def.lcsp3,
- 					 d40c->dma_cfg.dst_info.data_width,
--					 dma_flags & DMA_PREP_INTERRUPT,
- 					 d40d->lli_tx_len,
- 					 d40c->base->plat_data->llis_per_log);
- 
-@@ -1612,8 +1610,7 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					d40d->lli_phy.src_addr,
- 					d40c->src_def_cfg,
- 					d40c->dma_cfg.src_info.data_width,
--					d40c->dma_cfg.src_info.psize,
--					true);
-+					d40c->dma_cfg.src_info.psize);
- 
- 		if (res < 0)
- 			goto err;
-@@ -1625,8 +1622,7 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 					d40d->lli_phy.dst_addr,
- 					d40c->dst_def_cfg,
- 					d40c->dma_cfg.dst_info.data_width,
--					d40c->dma_cfg.dst_info.psize,
--					true);
-+					d40c->dma_cfg.dst_info.psize);
- 
- 		if (res < 0)
- 			goto err;
-@@ -1913,7 +1909,6 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
- 				       d40c->dma_cfg.src_info.data_width,
- 				       d40c->dma_cfg.dst_info.data_width,
- 				       direction,
--				       dma_flags & DMA_PREP_INTERRUPT,
- 				       dev_addr, d40d->lli_tx_len,
- 				       d40c->base->plat_data->llis_per_log);
- 
-@@ -1965,8 +1960,7 @@ static int d40_prep_slave_sg_phy(struct d40_desc *d40d,
- 				d40d->lli_phy.src_addr,
- 				d40c->src_def_cfg,
- 				d40c->dma_cfg.src_info.data_width,
--				d40c->dma_cfg.src_info.psize,
--				true);
-+				d40c->dma_cfg.src_info.psize);
- 	if (res < 0)
- 		return res;
- 
-@@ -1977,8 +1971,7 @@ static int d40_prep_slave_sg_phy(struct d40_desc *d40d,
- 				d40d->lli_phy.dst_addr,
- 				d40c->dst_def_cfg,
- 				d40c->dma_cfg.dst_info.data_width,
--				d40c->dma_cfg.dst_info.psize,
--				 true);
-+				d40c->dma_cfg.dst_info.psize);
- 	if (res < 0)
- 		return res;
- 
-diff --git a/drivers/dma/ste_dma40_ll.c b/drivers/dma/ste_dma40_ll.c
-index d937f76..6707672 100644
---- a/drivers/dma/ste_dma40_ll.c
-+++ b/drivers/dma/ste_dma40_ll.c
-@@ -197,8 +197,7 @@ int d40_phy_sg_to_lli(struct scatterlist *sg,
- 		      dma_addr_t lli_phys,
- 		      u32 reg_cfg,
- 		      u32 data_width,
--		      int psize,
--		      bool term_int)
-+		      int psize)
- {
- 	int total_size = 0;
+ /**
+  * enum 40_command - The different commands and/or statuses.
+@@ -2438,6 +2438,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	int num_phy_chans;
  	int i;
-@@ -309,7 +308,7 @@ int d40_log_sg_to_dev(struct d40_lcla_elem *lcla,
- 		      u32 src_data_width,
- 		      u32 dst_data_width,
- 		      enum dma_data_direction direction,
--		      bool term_int, dma_addr_t dev_addr, int max_len,
-+		      dma_addr_t dev_addr, int max_len,
- 		      int llis_per_log)
- {
- 	int total_size = 0;
-@@ -356,7 +355,7 @@ int d40_log_sg_to_dev(struct d40_lcla_elem *lcla,
- 					 next_lli_off_dst,
- 					 lcsp->lcsp3, dst_data_width,
- 					 /* No next == terminal interrupt */
--					 term_int && !next_lli_off_dst,
-+					 !next_lli_off_dst,
- 					 false);
- 		} else {
- 			d40_log_fill_lli(&lli->dst[i],
-@@ -365,7 +364,7 @@ int d40_log_sg_to_dev(struct d40_lcla_elem *lcla,
- 					 next_lli_off_dst,
- 					 lcsp->lcsp3, dst_data_width,
- 					 /* No next == terminal interrupt */
--					 term_int && !next_lli_off_dst,
-+					 !next_lli_off_dst,
- 					 true);
- 			d40_log_fill_lli(&lli->src[i],
- 					 dev_addr,
-@@ -385,7 +384,7 @@ int d40_log_sg_to_lli(int lcla_id,
- 		      struct d40_log_lli *lli_sg,
- 		      u32 lcsp13, /* src or dst*/
- 		      u32 data_width,
--		      bool term_int, int max_len, int llis_per_log)
-+		      int max_len, int llis_per_log)
- {
- 	int total_size = 0;
- 	struct scatterlist *current_sg = sg;
-@@ -414,7 +413,7 @@ int d40_log_sg_to_lli(int lcla_id,
- 				 sg_dma_len(current_sg),
- 				 next_lli_off,
- 				 lcsp13, data_width,
--				 term_int && !next_lli_off,
-+				 !next_lli_off,
- 				 true);
+ 	u32 val;
++	u32 rev;
+ 
+ 	clk = clk_get(&pdev->dev, NULL);
+ 
+@@ -2476,21 +2477,26 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		}
  	}
- 	return total_size;
+ 
+-	/* Get silicon revision */
++	/* Get silicon revision and designer */
+ 	val = readl(virtbase + D40_DREG_PERIPHID2);
+ 
+-	if ((val & 0xf) != D40_PERIPHID2_DESIGNER) {
++	if ((val & D40_DREG_PERIPHID2_DESIGNER_MASK) !=
++	    D40_HW_DESIGNER) {
+ 		dev_err(&pdev->dev,
+ 			"[%s] Unknown designer! Got %x wanted %x\n",
+-			__func__, val & 0xf, D40_PERIPHID2_DESIGNER);
++			__func__, val & D40_DREG_PERIPHID2_DESIGNER_MASK,
++			D40_HW_DESIGNER);
+ 		goto failure;
+ 	}
+ 
++	rev = (val & D40_DREG_PERIPHID2_REV_MASK) >>
++		D40_DREG_PERIPHID2_REV_POS;
++
+ 	/* The number of physical channels on this HW */
+ 	num_phy_chans = 4 * (readl(virtbase + D40_DREG_ICFG) & 0x7) + 4;
+ 
+ 	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x\n",
+-		 (val >> 4) & 0xf, res->start);
++		 rev, res->start);
+ 
+ 	plat_data = pdev->dev.platform_data;
+ 
+@@ -2512,7 +2518,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		goto failure;
+ 	}
+ 
+-	base->rev = (val >> 4) & 0xf;
++	base->rev = rev;
+ 	base->clk = clk;
+ 	base->num_phy_chans = num_phy_chans;
+ 	base->num_log_chans = num_log_chans;
 diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
-index 9c0fa2f..0c468c3 100644
+index 0c468c3..7a6acec 100644
 --- a/drivers/dma/ste_dma40_ll.h
 +++ b/drivers/dma/ste_dma40_ll.h
-@@ -302,8 +302,7 @@ int d40_phy_sg_to_lli(struct scatterlist *sg,
- 		      dma_addr_t lli_phys,
- 		      u32 reg_cfg,
- 		      u32 data_width,
--		      int psize,
--		      bool term_int);
-+		      int psize);
- 
- int d40_phy_fill_lli(struct d40_phy_lli *lli,
- 		     dma_addr_t data,
-@@ -336,7 +335,7 @@ int d40_log_sg_to_dev(struct d40_lcla_elem *lcla,
- 		      u32 src_data_width,
- 		      u32 dst_data_width,
- 		      enum dma_data_direction direction,
--		      bool term_int, dma_addr_t dev_addr, int max_len,
-+		      dma_addr_t dev_addr, int max_len,
- 		      int llis_per_log);
- 
- int d40_log_lli_write(struct d40_log_lli_full *lcpa,
-@@ -352,6 +351,6 @@ int d40_log_sg_to_lli(int lcla_id,
- 		      struct d40_log_lli *lli_sg,
- 		      u32 lcsp13, /* src or dst*/
- 		      u32 data_width,
--		      bool term_int, int max_len, int llis_per_log);
-+		      int max_len, int llis_per_log);
- 
- #endif /* STE_DMA40_LLI_H */
+@@ -163,6 +163,9 @@
+ #define D40_DREG_PERIPHID0	0xFE0
+ #define D40_DREG_PERIPHID1	0xFE4
+ #define D40_DREG_PERIPHID2	0xFE8
++#define D40_DREG_PERIPHID2_REV_POS 4
++#define D40_DREG_PERIPHID2_REV_MASK (0xf << D40_DREG_PERIPHID2_REV_POS)
++#define D40_DREG_PERIPHID2_DESIGNER_MASK 0xf
+ #define D40_DREG_PERIPHID3	0xFEC
+ #define D40_DREG_CELLID0	0xFF0
+ #define D40_DREG_CELLID1	0xFF4
 -- 
 1.6.3.3
 
