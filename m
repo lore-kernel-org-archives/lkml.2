@@ -1,128 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0HII0L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 04:26:11 -0400
-Received: from www84.your-server.de ([213.133.104.84]:51262 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484Ab0HII0J (ORCPT
+	id S1755762Ab0HII3I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 04:29:08 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:57592 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755677Ab0HII3G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 04:26:09 -0400
-From: stefani@seibold.net
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        linux-mtd@lists.infradead.org,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Artem Bityutskiy <dedekind1@gmail.com>
-Cc: stefani@seibold.net
-Subject: [PATCH] Add quick erase format option
-Date: Mon,  9 Aug 2010 10:25:53 +0200
-Message-Id: <1281342353-18180-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.7.2
-X-Authenticated-Sender: stefani@seibold.net
+	Mon, 9 Aug 2010 04:29:06 -0400
+Date: Mon, 9 Aug 2010 10:30:53 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: walt <w41ter@gmail.com>, linux-kernel@vger.kernel.org, tj@kernel.org
+Subject: Re: [BISECTED] Today's Linus.git hangs during boot: can't find the
+ floppy controller
+Message-ID: <20100809083053.GB2169@osiris.boeblingen.de.ibm.com>
+References: <i3n3dh$t48$1@dough.gmane.org>
+ <20100809063742.GA1632@arch.tripp.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100809063742.GA1632@arch.tripp.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+On Mon, Aug 09, 2010 at 08:37:42AM +0200, Markus Trippelsdorf wrote:
+> On Sun, Aug 08, 2010 at 01:17:53PM -0700, walt wrote:
+> > This commit produces the error:
+> > 
+> > commit 6ee0578b4daaea01c96b172c6aacca43fd9807a6
+> > Author: Suresh Siddha <suresh.b.siddha@intel.com>
+> > Date:   Fri Jul 30 14:57:37 2010 -0700
+> > 
+> >     workqueue: mark init_workqueues() as early_initcall()
+> > 
+> >     Mark init_workqueues() as early_initcall() and thus it will be initialized
+> >     before smp bringup. init_workqueues() registers for the hotcpu notifier
+> >     and thus it should cope with the processors that are brought online after
+> >     the workqueues are initialized.
+> > 
+> >     x86 smp bringup code uses workqueues and uses a workaround for the
+> >     cold boot process (as the workqueues are initialized post smp_init()).
+> >     Marking init_workqueues() as early_initcall() will pave the way for
+> >     cleaning up this code.
+> > 
+> >     Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> >     Signed-off-by: Tejun Heo <tj@kernel.org>
+> >     Cc: Oleg Nesterov <oleg@redhat.com>
+> >     Cc: Andrew Morton <akpm@linux-foundation.org>
+> > 
+> > 
+> > Just after the error message about the floppy controller not found, the
+> > machine hangs for two minutes and then this message:
+> > 
+> > task swapper:1 blocked for greater than 120 seconds, followed by a stack
+> > trace, and again every two minutes AFAICT.
+> > 
+> > I'm not including all the gory messages and stack traces because I'm
+> > hoping you'll know what the problem is without them. (Fingers crossed.)
+> > 
+> > BTW, I see this problem only on my dual-core machine, not the older single
+> > single processor machine, as I would expect from reading the commit message.
+> > (Both machine have properly functioning floppy drives.)
+> 
+> (Added Tejun to CC)
+> 
+> I see a similar problem here. The kernel will boot, but the system will
+> not initialize (no X11). 
+> After reverting the commit, the system starts normally and the only
+> workqueue problem left is drm related:
 
-This patch add a quick format option which skips erasing of already erased
-flash blocks. This is useful for first time production environments where
-the flash arrived erased.
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- ubi-utils/src/ubiformat.c |   29 ++++++++++++++++++++++++++---
- 1 files changed, 26 insertions(+), 3 deletions(-)
-
-diff --git a/ubi-utils/src/ubiformat.c b/ubi-utils/src/ubiformat.c
-index 4e27e4f..8e33334 100644
---- a/ubi-utils/src/ubiformat.c
-+++ b/ubi-utils/src/ubiformat.c
-@@ -45,7 +45,7 @@
- #include "common.h"
- #include "ubiutils-common.h"
- 
--#define PROGRAM_VERSION "1.5"
-+#define PROGRAM_VERSION "1.6"
- #define PROGRAM_NAME    "ubiformat"
- 
- /* The variables below are set by command line arguments */
-@@ -55,6 +55,7 @@ struct args {
- 	unsigned int verbose:1;
- 	unsigned int override_ec:1;
- 	unsigned int novtbl:1;
-+	unsigned int quick:1;
- 	unsigned int manual_subpage;
- 	int subpage_size;
- 	int vid_hdr_offs;
-@@ -94,6 +95,7 @@ static const char *optionsstr =
- "                             (default is 1)\n"
- "-Q, --image-seq=<num>        32-bit UBI image sequence number to use\n"
- "                             (by default a random number is picked)\n"
-+"-E, --erase-quick            erase only used blocks\n"
- "-y, --yes                    assume the answer is \"yes\" for all question\n"
- "                             this program would otherwise ask\n"
- "-q, --quiet                  suppress progress percentage information\n"
-@@ -125,6 +127,7 @@ static const struct option long_options[] = {
- 	{ .name = "ubi-ver",         .has_arg = 1, .flag = NULL, .val = 'x' },
- 	{ .name = "help",            .has_arg = 0, .flag = NULL, .val = 'h' },
- 	{ .name = "version",         .has_arg = 0, .flag = NULL, .val = 'V' },
-+	{ .name = "erase-quick",     .has_arg = 0, .flag = NULL, .val = 'E' },
- 	{ NULL, 0, NULL, 0},
- };
- 
-@@ -138,7 +141,7 @@ static int parse_opt(int argc, char * const argv[])
- 		char *endp;
- 		unsigned long int image_seq;
- 
--		key = getopt_long(argc, argv, "nh?Vyqve:x:s:O:f:S:", long_options, NULL);
-+		key = getopt_long(argc, argv, "nh?Vyqve:x:s:O:f:S:E", long_options, NULL);
- 		if (key == -1)
- 			break;
- 
-@@ -202,6 +205,10 @@ static int parse_opt(int argc, char * const argv[])
- 			break;
- 
- 
-+		case 'E':
-+			args.quick = 1;
-+			break;
-+
- 		case 'v':
- 			args.verbose = 1;
- 			break;
-@@ -600,7 +607,20 @@ static int format(libmtd_t libmtd, const struct mtd_dev_info *mtd,
- 			ec = si->ec[eb] + 1;
- 		else
- 			ec = si->mean_ec;
--		ubigen_init_ec_hdr(ui, hdr, ec);
-+
-+		if (args.quick) {
-+			err = mtd_read(mtd, args.node_fd, eb, 0, hdr, write_size);
-+			if (!err) {
-+				int i;
-+
-+				for(i = 0; i != write_size; i++) {
-+					if (((unsigned char *)hdr)[i] != 0xff)
-+						break;
-+				}
-+				if (i == write_size)
-+					goto skip_erase;
-+			}
-+		}
- 
- 		if (args.verbose) {
- 			normsg_cont("eraseblock %d: erase", eb);
-@@ -621,6 +641,9 @@ static int format(libmtd_t libmtd, const struct mtd_dev_info *mtd,
- 			continue;
- 		}
- 
-+skip_erase:
-+		ubigen_init_ec_hdr(ui, hdr, ec);
-+
- 		if ((eb1 == -1 || eb2 == -1) && !novtbl) {
- 			if (eb1 == -1) {
- 				eb1 = eb;
--- 
-1.7.2
-
+I would guess that both of you have CONFIG_HOTPLUG_CPU disabled and enabling
+that config option will make the problem disappear.
+>From the problem description and the patch it looks like it got screwed up
+the same way I did two years ago.
+See commits a802dd0eb5fc97a50cf1abb1f788a8f6cc5db635 and
+4403b406d4369a275d483ece6ddee0088cc0d592.
