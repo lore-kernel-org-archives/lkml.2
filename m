@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab0HIS1E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 14:27:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:36960 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752191Ab0HIS1C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 14:27:02 -0400
-Message-ID: <4C60484B.8030002@windriver.com>
-Date: Mon, 09 Aug 2010 13:26:19 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1753432Ab0HISa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 14:30:58 -0400
+Received: from mail.lang.hm ([64.81.33.126]:42933 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752547Ab0HISa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 14:30:57 -0400
+Date: Mon, 9 Aug 2010 11:28:02 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <20100809181638.GI3026@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008091122220.23481@asgard.lang.hm>
+References: <20100806225453.GA3947@linux.vnet.ibm.com> <alpine.DEB.2.00.1008061651530.30564@asgard.lang.hm> <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com> <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm> <20100807061558.GA28087@thunk.org>
+ <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com> <20100808155719.GB3635@thunk.org> <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com> <20100808213821.GD3635@thunk.org> <20100809112453.77210acc@lxorguk.ukuu.org.uk>
+ <20100809181638.GI3026@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH 2/2] rcu,debug_core: allow the kernel debugger to
- reset the rcu stall timer
-References: <1281330732-17164-1-git-send-email-jason.wessel@windriver.com> <1281330732-17164-2-git-send-email-jason.wessel@windriver.com> <1281330732-17164-3-git-send-email-jason.wessel@windriver.com> <20100809174353.GH3026@linux.vnet.ibm.com>
-In-Reply-To: <20100809174353.GH3026@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Aug 2010 18:26:23.0166 (UTC) FILETIME=[5EC245E0:01CB37F0]
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2010 12:43 PM, Paul E. McKenney wrote:
-> On Mon, Aug 09, 2010 at 12:12:12AM -0500, Jason Wessel wrote:
+On Mon, 9 Aug 2010, Paul E. McKenney wrote:
+
+> On Mon, Aug 09, 2010 at 11:24:53AM +0100, Alan Cox wrote:
 >
->> +void rcu_cpu_stall_reset(void)
->> +{
->> +    rcu_sched_state.jiffies_stall = 0;
->> +    rcu_bh_state.jiffies_stall = 0;
->> +}
->> +
+> [ . . . ]
 >
-> OK, so you are suppressing RCU CPU stall warnings for rcu_sched and
-> rcu_bh, but not for preemptible RCU.  I believe that you want all of
-> them covered.
+>>> would agree that in the ideal world, it would be nice if you could
+>>> have applications that make the correct performance/battery
+>>> utilization tradeoff for devices running on 800 mWh batteries, 94,000
+>>> mWh batteries, and while running on the AC mains.  But I don't believe
+>>> that it's likely to be true, and if you want to try to beat up on
+>>> application writers one at a time to be power optimized --- as far as
+>>> I'm concerned, that's an argument *for* suspend blockers, since I'm
+>>> not big believer in plans that begin, "First, you command the tides of
+>>> the sea to go back", King Canute style.  :-)
+>>
+>> Suspend blockers drive the system policy part way into the apps, that in
+>> turn makes the apps very vulnerable to change in their environment because
+>> you've specialised them. I am sure that in the Android world it's
+>> considered fine, and that the marketing and business people even like
+>> this binding together - but it doesn't generalise and will blow up in
+>> people's faces in the future.
+>>
+>> To consider your tide analogy - suspend blockers is like trying to
+>> program the waves individually. Show me a suspend blocker aware open
+>> office patch 8)
 >
+> But wouldn't an office suite run as a power-oblivious application on an
+> Android device?  After all, office applications do not need to run when
+> the screen is turned off, so these the applications do not need to use
+> suspend blockers.  That said, I could easily imagine that significant
+> work would be required to make OpenOffice run on Android, not due to
+> suspend blockers, but rather due to Android's unusual user space.
 
-What is the state variable for the preemptible RCU I had not hit a
-warning in my testing so I must needs some more test cases. :-)
+pick your application if you don't like the example.
 
-> I have a number of recent patches that allow RCU CPU stall warnings to
-> be suppressed, one of which allows them to be suppressed using sysfs.
-> Would that work for you, or do you need an in-kernel interface?
->
+but also, which android system should the applicaton be written for? the 
+phone with a 800maH battery or a larger device with a 94,000maH battery?
 
-We need an in-kernel interface for sure.
+well bahaved applications (not doing unnecessary wakeups, etc) are well 
+bahaved, no matter what system they are on (explicitly setting allowable 
+timer fuzz is linux specific, but will again help on any system)
 
-> If you do need an in-kernel interface, I could export (and probably
-> rename) rcu_panic(), which is a static in 2.6.35.  This assumes that you
-> never want to re-enable RCU CPU stall warnings once you suppress them,
-> which is what your patch appears to do.
->
-> So, if I export a suppress_rcu_cpu_stall() function that permanently
-> disabled RCU CPU stall warnings, would that work for you?  (They could
-> be manually re-enabled via sysfs.)
->
-
-This is an RFC patch for a reason.  The intent behind the interface is
-to allow for one stall check cycle to go by after resuming kernel
-execution and after that the normal rules are in play.  Code flow
-wise, it looked like the easiest thing to do was set the jiffies_stall
-value to zero and then exit when the.  The patch I created was
-supposed to only ignore one stall cycle.
-
-Here is the pseudo code.
-
-/* before restarting kernel execution zero out the jiffies_stall  value.
-
-__rcu_pending() {
-
-    check_cpu_stall();  <- Here we check if the stall val is set to zero
-and just return
-    /* do all normal work */
-
-}
-
-In the normal flow of things rc_start_gp() will ultimately call
-record_gp_stall_check_time which updates the jiffies_stall back to non
-zero and the stall accounting is back in play.
-
-
-Jason.
+David Lang
