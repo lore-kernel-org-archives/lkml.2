@@ -1,292 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab0HIR1h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:27:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60296 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753110Ab0HIR1c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753940Ab0HIR1k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:27:40 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:59158 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697Ab0HIR1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 9 Aug 2010 13:27:32 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>
-Cc: Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 08/10] Some cleanups
-Date: Mon,  9 Aug 2010 22:56:54 +0530
-Message-Id: <1281374816-904-9-git-send-email-ngupta@vflare.org>
-X-Mailer: git-send-email 1.7.2.1
-In-Reply-To: <1281374816-904-1-git-send-email-ngupta@vflare.org>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+Date: Mon, 9 Aug 2010 10:27:19 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Miles Lane <miles.lane@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, dhowells@redhat.com
+Subject: Re: 2.6.35 - INFO: kernel/exit.c:1387 invoked
+ rcu_dereference_check() without protection!
+Message-ID: <20100809172719.GG3026@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTimULDfJ9n2XxNmtq8yUcNRfAywHpiDDXRKtev10@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimULDfJ9n2XxNmtq8yUcNRfAywHpiDDXRKtev10@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - xvmalloc: Remove unnecessary stat_{inc,dec} and increment
-   pages_stored directly
- - xvmalloc: Initialize pointers with NULL instead of 0
- - zram: Remove verbose message when use sets insane disksize
- - zram: Mark some messages as pr_debug
- - zram: Refine some comments
+On Tue, Aug 03, 2010 at 11:20:58PM -0400, Miles Lane wrote:
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> kernel/exit.c:1387 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
+> 
+> rcu_scheduler_active = 1, debug_locks = 1
+> 2 locks held by init/1:
+>  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff81045ca8>] do_wait+0xa9/0x1fa
+>  #1:  (&(&sighand->siglock)->rlock){......}, at: [<ffffffff810457e8>]
+> wait_consider_task+0x5e1/0x9f8
+> 
+> stack backtrace:
+> Pid: 1, comm: init Not tainted 2.6.35 #15
+> Call Trace:
+>  [<ffffffff8106759c>] lockdep_rcu_dereference+0x9d/0xa6
+>  [<ffffffff81045877>] wait_consider_task+0x670/0x9f8
+>  [<ffffffff81045d14>] do_wait+0x115/0x1fa
+>  [<ffffffff81045f41>] sys_waitid+0x7f/0x178
+>  [<ffffffff81009cba>] ? sysret_check+0x2e/0x69
+>  [<ffffffff8104454e>] ? child_wait_callback+0x0/0x53
+>  [<ffffffff81009c82>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
----
- drivers/staging/zram/xvmalloc.c |   22 ++++-------------
- drivers/staging/zram/zram_drv.c |   49 +++++++++++++-------------------------
- drivers/staging/zram/zram_drv.h |   26 ++++----------------
- 3 files changed, 28 insertions(+), 69 deletions(-)
+This one is interesting.  The ->sighand->siglock is held, but the
+rcu_dereference_check() check condition requires that either the
+task is dead or that we are in an RCU read-side critical section.
+The comment preceding the call to __task_cred() claims that we
+"don't need the RCU readlock here as we're holding a spinlock."
+This comment dates back to 2008, so might be obsolete.
 
-diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
-index 3fdbb8a..6268f65 100644
---- a/drivers/staging/zram/xvmalloc.c
-+++ b/drivers/staging/zram/xvmalloc.c
-@@ -20,16 +20,6 @@
- #include "xvmalloc.h"
- #include "xvmalloc_int.h"
- 
--static void stat_inc(u64 *value)
--{
--	*value = *value + 1;
--}
--
--static void stat_dec(u64 *value)
--{
--	*value = *value - 1;
--}
--
- static int test_flag(struct block_header *block, enum blockflags flag)
- {
- 	return block->prev & BIT(flag);
-@@ -187,7 +177,7 @@ static void insert_block(struct xv_pool *pool, struct page *page, u32 offset,
- 	slindex = get_index_for_insert(block->size);
- 	flindex = slindex / BITS_PER_LONG;
- 
--	block->link.prev_page = 0;
-+	block->link.prev_page = NULL;
- 	block->link.prev_offset = 0;
- 	block->link.next_page = pool->freelist[slindex].page;
- 	block->link.next_offset = pool->freelist[slindex].offset;
-@@ -217,7 +207,7 @@ static void remove_block_head(struct xv_pool *pool,
- 
- 	pool->freelist[slindex].page = block->link.next_page;
- 	pool->freelist[slindex].offset = block->link.next_offset;
--	block->link.prev_page = 0;
-+	block->link.prev_page = NULL;
- 	block->link.prev_offset = 0;
- 
- 	if (!pool->freelist[slindex].page) {
-@@ -232,7 +222,7 @@ static void remove_block_head(struct xv_pool *pool,
- 		 */
- 		tmpblock = get_ptr_atomic(pool->freelist[slindex].page,
- 				pool->freelist[slindex].offset, KM_USER1);
--		tmpblock->link.prev_page = 0;
-+		tmpblock->link.prev_page = NULL;
- 		tmpblock->link.prev_offset = 0;
- 		put_ptr_atomic(tmpblock, KM_USER1);
- 	}
-@@ -284,7 +274,7 @@ static int grow_pool(struct xv_pool *pool, gfp_t flags)
- 	if (unlikely(!page))
- 		return -ENOMEM;
- 
--	stat_inc(&pool->total_pages);
-+	pool->total_pages++;
- 
- 	spin_lock(&pool->lock);
- 	block = get_ptr_atomic(page, 0, KM_USER0);
-@@ -361,8 +351,6 @@ int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
- 
- 	if (!*page) {
- 		spin_unlock(&pool->lock);
--		if (flags & GFP_NOWAIT)
--			return -ENOMEM;
- 		error = grow_pool(pool, flags);
- 		if (unlikely(error))
- 			return error;
-@@ -472,7 +460,7 @@ void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
- 		spin_unlock(&pool->lock);
- 
- 		__free_page(page);
--		stat_dec(&pool->total_pages);
-+		pool->total_pages--;
- 		return;
- 	}
- 
-diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-index 0f9785f..42aa271 100644
---- a/drivers/staging/zram/zram_drv.c
-+++ b/drivers/staging/zram/zram_drv.c
-@@ -9,7 +9,7 @@
-  * Released under the terms of 3-clause BSD License
-  * Released under the terms of GNU General Public License Version 2.0
-  *
-- * Project home: http://compcache.googlecode.com
-+ * Project home: http://compcache.googlecode.com/
-  */
- 
- #define KMSG_COMPONENT "zram"
-@@ -130,33 +130,15 @@ static void zram_insert_obj(struct zram *zram, u32 index, struct page *page,
- 	zram->table[index].addr = addr;
- }
- 
--static void zram_set_disksize(struct zram *zram, size_t totalram_bytes)
-+static u64 zram_default_disksize(void)
- {
--	if (!zram->disksize) {
--		pr_info(
--		"disk size not provided. You can use disksize_kb module "
--		"param to specify size.\nUsing default: (%u%% of RAM).\n",
--		default_disksize_perc_ram
--		);
--		zram->disksize = default_disksize_perc_ram *
--					(totalram_bytes / 100);
--	}
-+	u64 disksize;
- 
--	if (zram->disksize > 2 * (totalram_bytes)) {
--		pr_info(
--		"There is little point creating a zram of greater than "
--		"twice the size of memory since we expect a 2:1 compression "
--		"ratio. Note that zram uses about 0.1%% of the size of "
--		"the disk when not in use so a huge zram is "
--		"wasteful.\n"
--		"\tMemory Size: %zu kB\n"
--		"\tSize you selected: %llu kB\n"
--		"Continuing anyway ...\n",
--		totalram_bytes >> 10, zram->disksize
--		);
--	}
-+	disksize = default_disksize_perc_ram *
-+			(totalram_pages / 100);
-+	disksize = (disksize << PAGE_SHIFT) & PAGE_MASK;
- 
--	zram->disksize &= PAGE_MASK;
-+	return disksize;
- }
- 
- static void zram_free_page(struct zram *zram, size_t index)
-@@ -459,7 +441,7 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
- 	int ret = 0;
- 	struct zram *zram = queue->queuedata;
- 
--	if (!valid_io_request(zram, bio)) {
-+	if (unlikely(!valid_io_request(zram, bio))) {
- 		zram_inc_stat(zram, ZRAM_STAT_INVALID_IO);
- 		bio_io_error(bio);
- 		return 0;
-@@ -504,7 +486,7 @@ void zram_reset_device(struct zram *zram)
- 	/* Reset stats */
- 	memset(&zram->stats, 0, sizeof(zram->stats));
- 
--	zram->disksize = 0;
-+	zram->disksize = zram_default_disksize();
- 	mutex_unlock(&zram->init_lock);
- }
- 
-@@ -520,7 +502,8 @@ int zram_init_device(struct zram *zram)
- 		return 0;
- 	}
- 
--	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
-+	if (!zram->disksize)
-+		zram->disksize = zram_default_disksize();
- 
- 	num_pages = zram->disksize >> PAGE_SHIFT;
- 	zram->table = vmalloc(num_pages * sizeof(*zram->table));
-@@ -566,7 +549,8 @@ fail:
- 	return ret;
- }
- 
--void zram_slot_free_notify(struct block_device *bdev, unsigned long index)
-+static void zram_slot_free_notify(struct block_device *bdev,
-+				unsigned long index)
- {
- 	struct zram *zram;
- 
-@@ -614,8 +598,9 @@ static int create_device(struct zram *zram, int device_id)
- 	zram->disk->private_data = zram;
- 	snprintf(zram->disk->disk_name, 16, "zram%d", device_id);
- 
--	/* Actual capacity set using syfs (/sys/block/zram<id>/disksize */
--	set_capacity(zram->disk, 0);
-+	/* Custom size can be set using syfs (/sys/block/zram<id>/disksize) */
-+	zram->disksize = zram_default_disksize();
-+	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
- 
- 	/*
- 	 * To ensure that we always get PAGE_SIZE aligned
-@@ -739,7 +724,7 @@ static int __init zram_init(void)
- 	}
- 
- 	/* Allocate the device array and initialize each one */
--	pr_info("Creating %u devices ...\n", num_devices);
-+	pr_debug("Creating %u devices ...\n", num_devices);
- 	devices = kzalloc(num_devices * sizeof(struct zram), GFP_KERNEL);
- 	if (!devices) {
- 		ret = -ENOMEM;
-diff --git a/drivers/staging/zram/zram_drv.h b/drivers/staging/zram/zram_drv.h
-index bcc51ea..2cf36db 100644
---- a/drivers/staging/zram/zram_drv.h
-+++ b/drivers/staging/zram/zram_drv.h
-@@ -9,7 +9,7 @@
-  * Released under the terms of 3-clause BSD License
-  * Released under the terms of GNU General Public License Version 2.0
-  *
-- * Project home: http://compcache.googlecode.com
-+ * Project home: http://compcache.googlecode.com/
-  */
- 
- #ifndef _ZRAM_DRV_H_
-@@ -26,18 +26,6 @@
-  */
- static const unsigned max_num_devices = 32;
- 
--/*
-- * Stored at beginning of each compressed object.
-- *
-- * It stores back-reference to table entry which points to this
-- * object. This is required to support memory defragmentation.
-- */
--struct zobj_header {
--#if 0
--	u32 table_idx;
--#endif
--};
--
- /*-- Configurable parameters */
- 
- /* Default zram disk size: 25% of total RAM */
-@@ -50,8 +38,7 @@ static const unsigned default_disksize_perc_ram = 25;
- static const unsigned max_zpage_size = PAGE_SIZE / 8 * 7;
- 
- /*
-- * NOTE: max_zpage_size must be less than or equal to:
-- *   XV_MAX_ALLOC_SIZE - sizeof(struct zobj_header)
-+ * NOTE: max_zpage_size must be less than or equal to XV_MAX_ALLOC_SIZE
-  * otherwise, xv_malloc() would always return failure.
-  */
- 
-@@ -92,16 +79,15 @@ struct zram {
- 	struct table *table;
- 	struct request_queue *queue;
- 	struct gendisk *disk;
--	int init_done;
-+	unsigned int init_done;
- 	/* Prevent concurrent execution of device init and reset */
- 	struct mutex init_lock;
- 	/*
- 	 * This is the limit on amount of *uncompressed* worth of data
--	 * we can store in a disk.
-+	 * we can store in a disk (in bytes).
- 	 */
--	u64 disksize;	/* bytes */
--
--	struct zram_stats_cpu *stats;
-+	u64 disksize;
-+	struct zram_stats_cpu *stats;	/* percpu stats */
- };
- 
- extern struct zram *devices;
--- 
-1.7.2.1
+David, should we enclose the __task_cred() in wait_task_stopped()
+with rcu_read_lock()?  Or would it be better to add a check to
+__task_cred() checking for ->sighand->siglock?  Or do we need to
+do something else entirely?  ;-)
 
+							Thanx, Paul
