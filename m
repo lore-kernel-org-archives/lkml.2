@@ -1,128 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab0HICAm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 22:00:42 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:47994 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752917Ab0HICAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 22:00:40 -0400
-X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Aug 2010 22:00:40 EDT
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [net-2.6 PATCH v2 2/2] igbvf.txt: Add igbvf Documentation
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        bphilips@novell.com, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Sun, 08 Aug 2010 18:54:31 -0700
-Message-ID: <20100809015431.832.45021.stgit@localhost.localdomain>
-In-Reply-To: <20100809015410.832.85025.stgit@localhost.localdomain>
-References: <20100809015410.832.85025.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1755287Ab0HICFP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 22:05:15 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60673 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752917Ab0HICFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 22:05:12 -0400
+Date: Mon, 9 Aug 2010 12:05:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anatolij Gustschin <agust@denx.de>
+Subject: linux-next: manual merge of the spi tree with the devicetree tree
+Message-Id: <20100809120509.be36a4fa.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds documentation for the igbvf (igb virtual function driver).
+Hi Grant,
 
-  v2:
-   - Removed trailing white space
-   - Removed Ethtool version info
+Today's linux-next merge of the spi tree got a conflict in
+drivers/spi/mpc512x_psc_spi.c between commit
+2dc11581376829303b98eadb2de253bee065a56a ("of/device: Replace struct
+of_device with struct platform_device") from the devicetree tree and
+commit cf40f082f8d3a98e28af02af20d00d2500eb6a65 ("spi/mpc5121: change
+annotations for probe and remove functions") from the spi tree.
 
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Tested-by: Jeff Pieper <jeffrey.e.pieper@intel.com>
+I fixed it up (as suggested by you - see below) and can carry the fix as
+necessary.
+
+I also added this merge fix patch (as suggest by you):
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 9 Aug 2010 12:02:19 +1000
+Subject: [PATCH] spi: update for of_device to platform_device replacement
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ drivers/ata/sata_dwc_460ex.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
- Documentation/networking/igbvf.txt |   80 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 80 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/networking/igbvf.txt
+diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
+index ea24c1e..2673a3d 100644
+--- a/drivers/ata/sata_dwc_460ex.c
++++ b/drivers/ata/sata_dwc_460ex.c
+@@ -1588,7 +1588,7 @@ static const struct ata_port_info sata_dwc_port_info[] = {
+ 	},
+ };
+ 
+-static int sata_dwc_probe(struct of_device *ofdev,
++static int sata_dwc_probe(struct platform_device *ofdev,
+ 			const struct of_device_id *match)
+ {
+ 	struct sata_dwc_device *hsdev;
+@@ -1702,7 +1702,7 @@ error_out:
+ 	return err;
+ }
+ 
+-static int sata_dwc_remove(struct of_device *ofdev)
++static int sata_dwc_remove(struct platform_device *ofdev)
+ {
+ 	struct device *dev = &ofdev->dev;
+ 	struct ata_host *host = dev_get_drvdata(dev);
+-- 
+1.7.1
 
-diff --git a/Documentation/networking/igbvf.txt b/Documentation/networking/igbvf.txt
-new file mode 100644
-index 0000000..e945472
---- /dev/null
-+++ b/Documentation/networking/igbvf.txt
-@@ -0,0 +1,80 @@
-+Linux* Base Driver for Intel(R) Network Connection
-+==================================================
-+
-+Intel Gigabit Linux driver.
-+Copyright(c) 1999 - 2010 Intel Corporation.
-+
-+Contents
-+========
-+
-+- Identifying Your Adapter
-+- Additional Configurations
-+- Support
-+
-+This file describes the igbvf Linux* Base Driver for Intel Network Connection.
-+
-+The igbvf driver supports 82576-based virtual function devices that can only
-+be activated on kernels that support SR-IOV. SR-IOV requires the correct
-+platform and OS support.
-+
-+The igbvf driver requires the igb driver, version 2.0 or later. The igbvf
-+driver supports virtual functions generated by the igb driver with a max_vfs
-+value of 1 or greater. For more information on the max_vfs parameter refer
-+to the README included with the igb driver.
-+
-+The guest OS loading the igbvf driver must support MSI-X interrupts.
-+
-+This driver is only supported as a loadable module at this time.  Intel is
-+not supplying patches against the kernel source to allow for static linking
-+of the driver.  For questions related to hardware requirements, refer to the
-+documentation supplied with your Intel Gigabit adapter.  All hardware
-+requirements listed apply to use with Linux.
-+
-+Instructions on updating ethtool can be found in the section "Additional
-+Configurations" later in this document.
-+
-+VLANs: There is a limit of a total of 32 shared VLANs to 1 or more VFs.
-+
-+Identifying Your Adapter
-+========================
-+
-+The igbvf driver supports 82576-based virtual function devices that can only
-+be activated on kernels that support SR-IOV.
-+
-+For more information on how to identify your adapter, go to the Adapter &
-+Driver ID Guide at:
-+
-+    http://support.intel.com/support/go/network/adapter/idguide.htm
-+
-+For the latest Intel network drivers for Linux, refer to the following
-+website.  In the search field, enter your adapter name or type, or use the
-+networking link on the left to search for your adapter:
-+
-+    http://downloadcenter.intel.com/scripts-df-external/Support_Intel.aspx
-+
-+Additional Configurations
-+=========================
-+
-+  Ethtool
-+  -------
-+  The driver utilizes the ethtool interface for driver configuration and
-+  diagnostics, as well as displaying statistical information.
-+
-+  http://sourceforge.net/projects/gkernel.
-+
-+Support
-+=======
-+
-+For general information, go to the Intel support website at:
-+
-+    http://support.intel.com
-+
-+or the Intel Wired Networking project hosted by Sourceforge at:
-+
-+    http://sourceforge.net/projects/e1000
-+
-+If an issue is identified with the released source code on the supported
-+kernel with a supported adapter, email the specific information related
-+to the issue to e1000-devel@lists.sf.net
-+
-+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/spi/mpc512x_psc_spi.c
+index cddbfce,c8d69fc..0000000
+--- a/drivers/spi/mpc512x_psc_spi.c
++++ b/drivers/spi/mpc512x_psc_spi.c
+@@@ -507,8 -505,8 +507,8 @@@ static int __devexit mpc512x_psc_spi_do
+  	return 0;
+  }
+  
+- static int __init mpc512x_psc_spi_of_probe(struct platform_device *op,
+ -static int __devinit mpc512x_psc_spi_of_probe(struct of_device *op,
+ -					      const struct of_device_id *match)
+++static int __devinit mpc512x_psc_spi_of_probe(struct platform_device *op,
+ +					   const struct of_device_id *match)
+  {
+  	const u32 *regaddr_p;
+  	u64 regaddr64, size64;
+@@@ -539,7 -537,7 +539,7 @@@
+  				irq_of_parse_and_map(op->dev.of_node, 0), id);
+  }
+  
+- static int __exit mpc512x_psc_spi_of_remove(struct platform_device *op)
+ -static int __devexit mpc512x_psc_spi_of_remove(struct of_device *op)
+++static int __devexit mpc512x_psc_spi_of_remove(struct platform_device *op)
+  {
+  	return mpc512x_psc_spi_do_remove(&op->dev);
+  }
