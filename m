@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470Ab0HIHWt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:22:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:33139 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943Ab0HIHWh convert rfc822-to-8bit (ORCPT
+	id S1755455Ab0HIH0a (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:26:30 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49507 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752064Ab0HIH03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:22:37 -0400
+	Mon, 9 Aug 2010 03:26:29 -0400
+Date: Mon, 9 Aug 2010 09:26:18 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: david@lang.hm
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, swetland@google.com,
+        peterz@infradead.org, tglx@linutronix.de, alan@lxorguk.ukuu.org.uk,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        tytso@mit.edu, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
+Message-ID: <20100809072618.GB1586@ucw.cz>
+References: <20100731175841.GA9367@linux.vnet.ibm.com>
+ <20100804195704.GA23681@linux.vnet.ibm.com>
+ <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
 MIME-Version: 1.0
-In-Reply-To: <4C5FA698.90904@st.com>
-References: <4C5F9B25.8080401@st.com>
-	<20100809064957.GB16661@pengutronix.de>
-	<4C5FA698.90904@st.com>
-Date: Mon, 9 Aug 2010 08:19:10 +0100
-Message-ID: <AANLkTi=qj2gM-c=P+5MQTB=ScR4J6GPW70RoQHr4H748@mail.gmail.com>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-From: Valeo de Vries <valeo@valeo.co.cc>
-To: viresh kumar <viresh.kumar@st.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/9 viresh kumar <viresh.kumar@st.com>:
-> On 8/9/2010 12:19 PM, Uwe Kleine-König wrote:
->> Hello,
->>
->> On Mon, Aug 09, 2010 at 11:37:33AM +0530, viresh kumar wrote:
->>> > Hello,
->>> >
->>> > Mail server in ST has recently changed and now we have Microsoft
->>> > exchange server. We are using thunderbird as mail client.
->>> > What we observed with this server is that patch are broken now while
->>> > sending as well as receiving. Tabs are replaced by spaces and may
->>> > be some other too which we haven't observed.
->> unlucky you.
->>
->>> > Has anybody found a solution to this kind of issues? Are there any
->>> > workarounds possible?
->> git.git has some tips for thunderbird, see
->>
->>       http://git.kernel.org/?p=git/git.git;a=blob;f=Documentation/SubmittingPatches;hb=HEAD
->>
->> and look for the section titled "Thunderbird" (small surprise).
->
-> I missed this information in my last mail. We are using git send-email for
-> sending patches. As patches will go through Microsoft exchange server only,
-> so they are broken.
->
-> With previous server everything was working fine.
+Hi!
 
-You might want to take a look at
-http://bombadil.infradead.org/~mcgrof/MS-exchange-sucks-for-patches/
-for a possible explanation. Long story short: upgrade Exchange, or use
-a different SMTP server that doesn't try to be smarter than its users
-(or should that be an SMTP server that isn't just plain
-arse-backwards?).
+> >I should have asked this earlier...  What exactly are the apps'
+> >compatibility constraints?  Source-level APIs?  Byte-code class-library
+> >invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
+> >words, syscall)?
+> 
+> For Java/Dalvik apps, the wakelock API is pertty high level -- it
+> talks to a service via RPC (Binder) that actually interacts with the
+> kernel.  Changing the basic kernel<->userspace interface (within
 
-Valeo
+Strange. Arve claimed that open/close is too slow, and few
+microseconds faster ioctl is needed, and now we learn it actually uses
+RPC.
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
