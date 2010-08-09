@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab0HIHeS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:34:18 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:12488 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755418Ab0HIHeQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:34:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=odNJcWTbsQYSXwv5Ljc9F2yZOPHcWWS8VgE1z/bfoa5CrBX9xRE/ZBJ+tlw2S79vo
-	Vz8biodwIIGB+IebU5hqQ==
-MIME-Version: 1.0
-In-Reply-To: <20100809072618.GB1586@ucw.cz>
-References: <20100731175841.GA9367@linux.vnet.ibm.com>
-	<20100804195704.GA23681@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008050616340.25170@asgard.lang.hm>
-	<20100809072618.GB1586@ucw.cz>
-Date: Mon, 9 Aug 2010 00:34:12 -0700
-Message-ID: <AANLkTikd6SvRH_u5hhEfqKRbYnwVpU0PN-NSUEtGyiA9@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take two
-From: Brian Swetland <swetland@google.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: david@lang.hm, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
-        tglx@linutronix.de, alan@lxorguk.ukuu.org.uk, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, tytso@mit.edu,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Content-Type: text/plain; charset=UTF-8
+	id S1755591Ab0HIHfB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:35:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41917 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755418Ab0HIHfA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 03:35:00 -0400
+References: <1281324445.12901.1.camel@mola> (sfid-20100809_042548_456204_B2C4C107)
+Message-Id: <CA50E81F-C114-4734-9EF4-88CFD1487DB6@opensource.wolfsonmicro.com>
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+In-Reply-To: <1281324445.12901.1.camel@mola> (sfid-20100809_042548_456204_B2C4C107)
+Content-Type: text/plain;
+	charset=us-ascii
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+X-Mailer: iPad Mail (7B405)
+Mime-Version: 1.0 (iPad Mail 7B405)
+Subject: Re: [PATCH] regulator: tps6507x - add missing platform_set_drvdata in tps6507x_pmic_probe
+Date: Mon, 9 Aug 2010 08:35:08 +0100
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Anuj Aggarwal <anuj.aggarwal@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 9, 2010 at 12:26 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> >I should have asked this earlier...  What exactly are the apps'
->> >compatibility constraints?  Source-level APIs?  Byte-code class-library
->> >invocations?  C/C++ dynamic linking?  C/C++ static linking (in other
->> >words, syscall)?
->>
->> For Java/Dalvik apps, the wakelock API is pertty high level -- it
->> talks to a service via RPC (Binder) that actually interacts with the
->> kernel.  Changing the basic kernel<->userspace interface (within
->
-> Strange. Arve claimed that open/close is too slow, and few
-> microseconds faster ioctl is needed, and now we learn it actually uses
-> RPC.
 
-For the high level Java API, yes.  For lower level userspace code,
-like the code that processes keypresses, the kernel interface is used
-directly.  I think an open/close per keypress would be a bit
-excessive, for example.  In any case, that ignores the fact that it's
-useful to have statistics, which are tricky to maintain meaningfully
-if you destroy the handle after use every time (by closing the fd).
+On 9 Aug 2010, at 04:27, Axel Lin <axel.lin@gmail.com> wrote:
 
-Brian
+> We should call platform_set_drvdata() before calling platform_get_drvdata().
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> drivers/regulator/tps6507x-regulator.c |    2 ++
+> 1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+> index 8152d65..fbe21f7 100644
+> --- a/drivers/regulator/tps6507x-regulator.c
+> +++ b/drivers/regulator/tps6507x-regulator.c
+> @@ -614,6 +614,7 @@ int tps6507x_pmic_probe(struct platform_device *pdev)
+>  	}
+> 
+>  	tps6507x_dev->pmic = tps;
+> +	platform_set_drvdata(pdev, tps6507x_dev);
+> 
+>  	return 0;
+> 
+> @@ -640,6 +641,7 @@ static int __devexit tps6507x_pmic_remove(struct platform_device *pdev)
+>  	for (i = 0; i < TPS6507X_NUM_REGULATOR; i++)
+>  		regulator_unregister(tps->rdev[i]);
+> 
+> +	platform_set_drvdata(pdev, NULL);
+>  	kfree(tps);
+
+This is not needed - we're unbinding the driver so should no longer be looking at the driver data.
+
+> 
+>  	return 0;
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
