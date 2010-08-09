@@ -1,102 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244Ab0HIRk1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 13:40:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62307 "EHLO mx1.redhat.com"
+	id S1752630Ab0HIRoT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 13:44:19 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:47011 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751420Ab0HIRkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 13:40:25 -0400
-Message-ID: <4C603DB1.9030706@redhat.com>
-Date: Mon, 09 Aug 2010 14:41:05 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Red Hat/3.1.1-1.el6 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1751219Ab0HIRoJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 13:44:09 -0400
+Date: Mon, 9 Aug 2010 10:43:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH 2/2] rcu,debug_core: allow the kernel debugger to
+ reset the rcu stall timer
+Message-ID: <20100809174353.GH3026@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1281330732-17164-1-git-send-email-jason.wessel@windriver.com>
+ <1281330732-17164-2-git-send-email-jason.wessel@windriver.com>
+ <1281330732-17164-3-git-send-email-jason.wessel@windriver.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-media@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 7 (IR)
-References: <20100807160710.b7c8d838.sfr@canb.auug.org.au>	<20100807203920.83134a60.randy.dunlap@oracle.com>	<20100808135511.269f670c.randy.dunlap@oracle.com>	<4C5F9C2E.50001@redhat.com> <20100809075255.97d18a66.randy.dunlap@oracle.com>
-In-Reply-To: <20100809075255.97d18a66.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281330732-17164-3-git-send-email-jason.wessel@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 09-08-2010 11:52, Randy Dunlap escreveu:
-> On Mon, 09 Aug 2010 03:11:58 -0300 Mauro Carvalho Chehab wrote:
+On Mon, Aug 09, 2010 at 12:12:12AM -0500, Jason Wessel wrote:
+> When returning from the kernel debugger allow a reset of the rcu
+> jiffies_stall value to prevent the rcu stall detector from sending NMI
+> events which stack dumps on all the cpus in the system.
+
+Thank you for forwarding this!
+
+A couple of questions below.
+
+> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+> CC: Dipankar Sarma <dipankar@in.ibm.com>
+> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> CC: Ingo Molnar <mingo@elte.hu>
+> ---
+>  include/linux/rcupdate.h  |    8 ++++++++
+>  kernel/debug/debug_core.c |    2 ++
+>  kernel/rcutree.c          |    9 +++++++++
+>  3 files changed, 19 insertions(+), 0 deletions(-)
 > 
->> Em 08-08-2010 17:55, Randy Dunlap escreveu:
->>> On Sat, 7 Aug 2010 20:39:20 -0700 Randy Dunlap wrote:
->>>
->>> [adding linux-media]
->>>
->>>> On Sat, 7 Aug 2010 16:07:10 +1000 Stephen Rothwell wrote:
->>>>
->>>>> Hi all,
->>>>>
->>>>> As the merge window is open, please do not add 2.6.37 material to your
->>>>> linux-next included trees until after 2.6.36-rc1.
->>>>>
->>>>> Changes since 20100806:
->>>>
->>>> 2 sets of IR build errors (2 .config files attached):
->>>>
->>>> #5091:
->>>> ERROR: "ir_keydown" [drivers/media/video/ir-kbd-i2c.ko] undefined!
->>>> ERROR: "__ir_input_register" [drivers/media/video/ir-kbd-i2c.ko] undefined!
->>>> ERROR: "get_rc_map" [drivers/media/video/ir-kbd-i2c.ko] undefined!
->>>> ERROR: "ir_input_unregister" [drivers/media/video/ir-kbd-i2c.ko] undefined!
->>>> ERROR: "get_rc_map" [drivers/media/video/cx88/cx88xx.ko] undefined!
->>>> ERROR: "ir_repeat" [drivers/media/video/cx88/cx88xx.ko] undefined!
->>>> ERROR: "ir_input_unregister" [drivers/media/video/cx88/cx88xx.ko] undefined!
->>>> ERROR: "ir_keydown" [drivers/media/video/cx88/cx88xx.ko] undefined!
->>>> ERROR: "__ir_input_register" [drivers/media/video/cx88/cx88xx.ko] undefined!
->>>> ERROR: "get_rc_map" [drivers/media/video/bt8xx/bttv.ko] undefined!
->>>> ERROR: "ir_input_unregister" [drivers/media/video/bt8xx/bttv.ko] undefined!
->>>> ERROR: "__ir_input_register" [drivers/media/video/bt8xx/bttv.ko] undefined!
->>>> ERROR: "ir_g_keycode_from_table" [drivers/media/IR/ir-common.ko] undefined!
->>>>
->>>>
->>>> #5101:
->>>> (.text+0x8306e2): undefined reference to `ir_core_debug'
->>>> (.text+0x830729): undefined reference to `ir_core_debug'
->>>> ir-functions.c:(.text+0x830906): undefined reference to `ir_core_debug'
->>>> (.text+0x8309d8): undefined reference to `ir_g_keycode_from_table'
->>>> (.text+0x830acf): undefined reference to `ir_core_debug'
->>>> (.text+0x830b92): undefined reference to `ir_core_debug'
->>>> (.text+0x830bef): undefined reference to `ir_core_debug'
->>>> (.text+0x830c6a): undefined reference to `ir_core_debug'
->>>> (.text+0x830cf7): undefined reference to `ir_core_debug'
->>>> budget-ci.c:(.text+0x89f5c8): undefined reference to `ir_keydown'
->>>> budget-ci.c:(.text+0x8a0c58): undefined reference to `get_rc_map'
->>>> budget-ci.c:(.text+0x8a0c80): undefined reference to `__ir_input_register'
->>>> budget-ci.c:(.text+0x8a0ee0): undefined reference to `get_rc_map'
->>>> budget-ci.c:(.text+0x8a11cd): undefined reference to `ir_input_unregister'
->>>> (.text+0x8a8adb): undefined reference to `ir_input_unregister'
->>>> dvb-usb-remote.c:(.text+0x8a9188): undefined reference to `get_rc_map'
->>>> dvb-usb-remote.c:(.text+0x8a91b1): undefined reference to `__ir_input_register'
->>>> dvb-usb-remote.c:(.text+0x8a9238): undefined reference to `get_rc_map'
->>>> dib0700_core.c:(.text+0x8b04ca): undefined reference to `ir_keydown'
->>>> dib0700_devices.c:(.text+0x8b2ea8): undefined reference to `ir_keydown'
->>>> dib0700_devices.c:(.text+0x8b2ef0): undefined reference to `ir_keydown'
->>
->> Hmm... clearly, there are some bad dependencies at the Kconfig. Maybe ir-core were compiled
->> as module, while some drivers as built-in.
->>
->> Could you please pass the .config file for this build?
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 9fbc54a..abd3ab6 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -599,4 +599,12 @@ static inline void debug_rcu_head_unqueue(struct rcu_head *head)
+>  #define rcu_dereference_index_check(p, c) \
+>  	__rcu_dereference_index_check((p), (c))
 > 
+> +#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
+> +extern void rcu_cpu_stall_reset(void);
+> +#else /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+> +static inline void rcu_cpu_stall_reset(void)
+> +{
+> +}
+> +#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+> +
+>  #endif /* __LINUX_RCUPDATE_H */
+> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
+> index e4d6819..1600e90 100644
+> --- a/kernel/debug/debug_core.c
+> +++ b/kernel/debug/debug_core.c
+> @@ -47,6 +47,7 @@
+>  #include <linux/pid.h>
+>  #include <linux/smp.h>
+>  #include <linux/mm.h>
+> +#include <linux/rcupdate.h>
 > 
-> Sorry, config-r5101 is now attached.
+>  #include <asm/cacheflush.h>
+>  #include <asm/byteorder.h>
+> @@ -474,6 +475,7 @@ static void dbg_touch_watchdogs(void)
+>  {
+>  	touch_softlockup_watchdog_sync();
+>  	clocksource_touch_watchdog();
+> +	rcu_cpu_stall_reset();
+>  }
+> 
+>  static int kgdb_cpu_enter(struct kgdb_state *ks, struct pt_regs *regs)
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index d5bc439..209b755 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -532,6 +532,9 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+> 
+>  	if (rcu_cpu_stall_panicking)
+>  		return;
+> +	/* Gracefully handle a watch dog reset when jiffies_stall == 0 */
+> +	if (!rsp->jiffies_stall)
+> +		return;
+>  	delta = jiffies - rsp->jiffies_stall;
+>  	rnp = rdp->mynode;
+>  	if ((rnp->qsmask & rdp->grpmask) && delta >= 0) {
+> @@ -561,6 +564,12 @@ static void __init check_cpu_stall_init(void)
+>  	atomic_notifier_chain_register(&panic_notifier_list, &rcu_panic_block);
+>  }
+> 
+> +void rcu_cpu_stall_reset(void)
+> +{
+> +	rcu_sched_state.jiffies_stall = 0;
+> +	rcu_bh_state.jiffies_stall = 0;
+> +}
+> +
 
-Hmm... when building it, I'm getting an interesting warning:
+OK, so you are suppressing RCU CPU stall warnings for rcu_sched and
+rcu_bh, but not for preemptible RCU.  I believe that you want all of
+them covered.
 
-warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT || VIDEO_SAA7134 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT || VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || VIDEO_TLG2300 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && SND && DVB_CORE || VIDEO_CX231XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT || DVB_BUDGET_CI && MEDIA_SUPPORT && DVB_CAPT
-URE_DRIVERS && DVB_CORE && DVB_BUDGET_CORE && I2C && INPUT || DVB_DM1105 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C && INPUT || VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+I have a number of recent patches that allow RCU CPU stall warnings to
+be suppressed, one of which allows them to be suppressed using sysfs.
+Would that work for you, or do you need an in-kernel interface?
 
-This warning seems to explain what's going wrong.
+If you do need an in-kernel interface, I could export (and probably
+rename) rcu_panic(), which is a static in 2.6.35.  This assumes that you
+never want to re-enable RCU CPU stall warnings once you suppress them,
+which is what your patch appears to do.
 
-I'll make patch(es) to address this issue.
+So, if I export a suppress_rcu_cpu_stall() function that permanently
+disabled RCU CPU stall warnings, would that work for you?  (They could
+be manually re-enabled via sysfs.)
 
-Thanks,
-Mauro.
+>  #else /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+> 
+>  static void record_gp_stall_check_time(struct rcu_state *rsp)
+> -- 
+> 1.6.3.3
+> 
