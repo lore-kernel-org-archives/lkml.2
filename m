@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab0HIGuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 02:50:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47232 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754922Ab0HIGub (ORCPT
+	id S1755404Ab0HIGzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 02:55:54 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:51721 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754093Ab0HIGzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 02:50:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=MS79qC21hjE0PSvE3Hobx9lPRykfowkxtJG42ToH7J7PADQPdnVb5S6Zy/y2N8/zAD
-         18VEUB1qqoIujEEgatAOhs51SKHErDvR1ApLdMjB75dqjGX7xtjfttpH/yOYt1BkJbfs
-         U79mcN+f4UoLr8LOjM4jZjmgmylFFp66d//wU=
-Subject: [PATCH 4/4] mfd: wm8994-core - fix incorrect kfree(i2c) in
-	i2c_driver probe callback handler
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain
-Date: Mon, 09 Aug 2010 14:52:16 +0800
-Message-Id: <1281336736.18804.7.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Mon, 9 Aug 2010 02:55:52 -0400
+Message-ID: <4C5FA66D.7060404@st.com>
+Date: Mon, 9 Aug 2010 12:25:41 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.1
+MIME-Version: 1.0
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+References: <4C5F9B25.8080401@st.com> <4C5FA35E.50309@gmail.com>
+In-Reply-To: <4C5FA35E.50309@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c_client received in probe() should not be kfree()'d.
+On 8/9/2010 12:12 PM, Justin P. Mattock wrote:
+> On 08/08/2010 11:07 PM, viresh kumar wrote:
+>> > Hello,
+>> >
+>> > Mail server in ST has recently changed and now we have Microsoft
+>> > exchange server. We are using thunderbird as mail client.
+>> > What we observed with this server is that patch are broken now while
+>> > sending as well as receiving. Tabs are replaced by spaces and may
+>> > be some other too which we haven't observed.
+>> >
+>> > Has anybody found a solution to this kind of issues? Are there any
+>> > workarounds possible?
+>> >
+>
+> still trying to figure this out with thunderbird.. but did notice in 
+> Documentation/email-clients.txt and SubmittingPatches
+> there's info about that(just haven't gotten around to reading use git 
+> send-email for patches)
+> 
+> hope this helps.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/mfd/wm8994-core.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+I missed this information in my last mail. We are using git send-email for
+sending patches. As patches will go through Microsoft exchange server only,
+so they are broken.
 
-diff --git a/drivers/mfd/wm8994-core.c b/drivers/mfd/wm8994-core.c
-index 69533f5..b3b2aaf 100644
---- a/drivers/mfd/wm8994-core.c
-+++ b/drivers/mfd/wm8994-core.c
-@@ -497,10 +497,8 @@ static int wm8994_i2c_probe(struct i2c_client *i2c,
- 	struct wm8994 *wm8994;
- 
- 	wm8994 = kzalloc(sizeof(struct wm8994), GFP_KERNEL);
--	if (wm8994 == NULL) {
--		kfree(i2c);
-+	if (wm8994 == NULL)
- 		return -ENOMEM;
--	}
- 
- 	i2c_set_clientdata(i2c, wm8994);
- 	wm8994->dev = &i2c->dev;
--- 
-1.5.4.3
-
-
-
+viresh.
