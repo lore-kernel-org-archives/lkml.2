@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755727Ab0HIIgK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 04:36:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58701 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755258Ab0HIIgI (ORCPT
+	id S1755754Ab0HIIhp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 04:37:45 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40895 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab0HIIho (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 04:36:08 -0400
-Subject: Re: [PATCH] regulator: max8660 - fix a memory leak in
- max8660_remove()
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Wolfram Sang <w.sang@pengutronix.de>
-In-Reply-To: <1281072927.24426.5.camel@mola>
-References: <1281072927.24426.5.camel@mola>
+	Mon, 9 Aug 2010 04:37:44 -0400
+Subject: Re: [PATCH] Add quick erase format option
+From: David Woodhouse <dwmw2@infradead.org>
+To: "stefani@seibold.net" <stefani@seibold.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+In-Reply-To: <1281342353-18180-1-git-send-email-stefani@seibold.net>
+References: <1281342353-18180-1-git-send-email-stefani@seibold.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Aug 2010 09:36:00 +0100
-Message-ID: <1281342960.3035.4.camel@odin>
+Date: Mon, 09 Aug 2010 09:37:18 +0100
+Message-ID: <1281343038.12908.25.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.31.6 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-06 at 13:35 +0800, Axel Lin wrote:
-> In max8660_probe(), we allocate memory for max660.
-> In max8660_remove(), current implementation only free rdev
-> which is a member of struct max8660.
-> Thus, there is a small memory leak when we unload the module.
+On Mon, 2010-08-09 at 09:25 +0100, stefani@seibold.net wrote:
+> From: Stefani Seibold <stefani@seibold.net>
 > 
-> This patch fixes the memory leak by passing max660 to i2c clientdata,
-> and properly kfree(max8660) in max8660_remove().
+> This patch add a quick format option which skips erasing of already erased
+> flash blocks. This is useful for first time production environments where
+> the flash arrived erased.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/max8660.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
+> Signed-off-by: Stefani Seibold <stefani@seibold.net> 
 
-Applied.
+This scares me, given the lengths we had to go to in JFFS2 to cope with
+blocks which *look* like they're erased, but which actually start losing
+data as soon as you start writing to them because the erase didn't
+complete.
 
-Thanks
-
-Liam
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
 
