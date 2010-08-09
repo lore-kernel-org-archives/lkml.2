@@ -1,169 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755732Ab0HITvx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 15:51:53 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:17528 "EHLO
-	TX2EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755612Ab0HITvt (ORCPT
+	id S1756135Ab0HITxb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 15:53:31 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:34595 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755269Ab0HITxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 15:51:49 -0400
-X-SpamScore: -6
-X-BigFish: VPS-6(z3cfcs329eqz14e0M1db9M1432N98dN936eMzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L6WHOV-02-IDR-02
-X-M-MSG: 
-Date: Mon, 9 Aug 2010 21:48:29 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Don Zickus <dzickus@redhat.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
-Message-ID: <20100809194829.GB26154@erda.amd.com>
-References: <1280934161.1923.1294.camel@laptop>
- <20100804151858.GB5130@lenovo>
- <20100804155002.GS3353@redhat.com>
- <20100804161046.GC5130@lenovo>
- <20100804162026.GU3353@redhat.com>
- <20100804163930.GE5130@lenovo>
- <20100804184806.GL26154@erda.amd.com>
- <20100804192634.GG5130@lenovo>
- <20100806065203.GR26154@erda.amd.com>
- <20100806142131.GA1874@redhat.com>
+	Mon, 9 Aug 2010 15:53:30 -0400
+Date: Mon, 9 Aug 2010 12:53:24 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: [RFC v3] ext4: Combine barrier requests coming from fsync
+Message-ID: <20100809195324.GG2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100806142131.GA1874@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <20100806070424.GD2109@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.08.10 10:21:31, Don Zickus wrote:
-> On Fri, Aug 06, 2010 at 08:52:03AM +0200, Robert Richter wrote:
+This patch attempts to coordinate barrier requests being sent in by fsync.
+Instead of each fsync call initiating its own barrier, there's now a flag to
+indicate if (0) no barriers are ongoing, (1) we're delaying a short time to
+collect other fsync threads, or (2) we're actually in-progress on a barrier.
 
-> > I was playing around with it yesterday trying to fix this. My idea is
-> > to skip an unkown nmi if the privious nmi was a *handled* perfctr
-> 
-> You might want to add a little more logic that says *handled* _and_ had
-> more than one perfctr trigger.  Most of the time only one perfctr is
-> probably triggering, so you might be eating unknown_nmi's needlessly.
-> 
-> Just a thought.
+So, if someone calls ext4_sync_file and no barriers are in progress, the flag
+shifts from 0->1 and the thread delays for 500us to see if there are any other
+threads that are close behind in ext4_sync_file.  After that wait, the state
+transitions to 2 and the barrier is issued.  Once that's done, the state goes
+back to 0 and a completion is signalled.
 
-Yes, that's true. It could be implemented on top of the patch below.
+Those close-behind threads see the flag is already 1, and go to sleep until the
+completion is signalled.  Instead of issuing a barrier themselves, they simply
+wait for that first thread to do it for them.
 
-> 
-> > nmi. I will probably post an rfc patch early next week.
+Without Jan's prior barrier generation patch, I can run my 5min fsync-happy
+workload and see the barrier count drop from ~150000 to ~37000, and the
+transaction rate increase from ~630 to ~680.
 
-Here it comes:
+With Jan's patch, I see the barrier count drop from ~18000 to ~12000, and the
+transaction rate jumps from ~720 to ~760 when using this patch.
 
->From d2739578199d881ae6a9537c1b96a0efd1cdea43 Mon Sep 17 00:00:00 2001
-From: Robert Richter <robert.richter@amd.com>
-Date: Thu, 5 Aug 2010 16:19:59 +0200
-Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
+There are some things to clean up -- the wait duration probably ought to be a
+mount option and not a module parameter, but this is just a test patch.  I'm
+also not sure that it won't totally eat the performance of a single thread that
+calls fsync frequently, though ... that seems like sort of bad behavior.
+If you set the delay time to 0 you get the old behavior.
 
-When perfctrs are running it is valid to have unhandled nmis, two
-events could trigger 'simultaneously' raising two back-to-back
-NMIs. If the first NMI handles both, the latter will be empty and daze
-the CPU.
+I'm wondering at this point if this is useful?  Ted, is this the sort of fsync
+coordination that you were looking for?
 
-The solution to avoid an 'unknown nmi' massage in this case was simply
-to stop the nmi handler chain when perfctrs are runnning by stating
-the nmi was handled. This has the drawback that a) we can not detect
-unknown nmis anymore, and b) subsequent nmi handlers are not called.
-
-This patch addresses this. Now, we drop this unknown NMI only if the
-previous NMI was handling a perfctr. Otherwise we pass it and let the
-kernel handle the unknown nmi. The check runs only if no nmi handler
-could handle the nmi (DIE_NMIUNKNOWN case).
-
-We could improve this further by checking if perf was handling more
-than one counter. Otherwise we may pass the unknown nmi too.
-
-Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   39 +++++++++++++++++++++++++++++--------
- 1 files changed, 30 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index f2da20f..c3cd159 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1200,12 +1200,16 @@ void perf_events_lapic_init(void)
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
- }
+ fs/ext4/ext4.h  |    5 +++++
+ fs/ext4/fsync.c |   47 +++++++++++++++++++++++++++++++++++++++++++----
+ fs/ext4/super.c |    4 ++++
+ 3 files changed, 52 insertions(+), 4 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 19a4de5..e51535a 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -1143,6 +1143,11 @@ struct ext4_sb_info {
  
-+static DEFINE_PER_CPU(unsigned int, perfctr_handled);
+ 	/* workqueue for dio unwritten */
+ 	struct workqueue_struct *dio_unwritten_wq;
 +
- static int __kprobes
- perf_event_nmi_handler(struct notifier_block *self,
- 			 unsigned long cmd, void *__args)
- {
- 	struct die_args *args = __args;
- 	struct pt_regs *regs;
-+	unsigned int this_nmi;
-+	unsigned int prev_nmi;
++	/* fsync barrier reduction */
++	spinlock_t barrier_flag_lock;
++	int in_barrier;
++	struct completion barrier_completion;
+ };
  
- 	if (!atomic_read(&active_events))
- 		return NOTIFY_DONE;
-@@ -1214,7 +1218,26 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	case DIE_NMI:
- 	case DIE_NMI_IPI:
- 		break;
--
-+	case DIE_NMIUNKNOWN:
-+		/*
-+		 * This one could be our NMI, two events could trigger
-+		 * 'simultaneously' raising two back-to-back NMIs. If
-+		 * the first NMI handles both, the latter will be
-+		 * empty and daze the CPU.
-+		 *
-+		 * So, we drop this unknown NMI if the previous NMI
-+		 * was handling a perfctr. Otherwise we pass it and
-+		 * let the kernel handle the unknown nmi.
-+		 *
-+		 * Note: this could be improved if we drop unknown
-+		 * NMIs only if we handled more than one perfctr in
-+		 * the previous NMI.
-+		 */
-+		this_nmi = percpu_read(irq_stat.__nmi_count);
-+		prev_nmi = __get_cpu_var(perfctr_handled);
-+		if (this_nmi == prev_nmi + 1)
-+			return NOTIFY_STOP;
-+		return NOTIFY_DONE;
- 	default:
- 		return NOTIFY_DONE;
+ static inline struct ext4_sb_info *EXT4_SB(struct super_block *sb)
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index 592adf2..c5afb45 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -57,6 +57,10 @@ static void ext4_sync_parent(struct inode *inode)
  	}
-@@ -1222,14 +1245,12 @@ perf_event_nmi_handler(struct notifier_block *self,
- 	regs = args->regs;
- 
- 	apic_write(APIC_LVTPC, APIC_DM_NMI);
--	/*
--	 * Can't rely on the handled return value to say it was our NMI, two
--	 * events could trigger 'simultaneously' raising two back-to-back NMIs.
--	 *
--	 * If the first NMI handles both, the latter will be empty and daze
--	 * the CPU.
--	 */
--	x86_pmu.handle_irq(regs);
-+
-+	if (!x86_pmu.handle_irq(regs))
-+		return NOTIFY_DONE;
-+
-+	/* handled */
-+	__get_cpu_var(perfctr_handled) = percpu_read(irq_stat.__nmi_count);
- 
- 	return NOTIFY_STOP;
  }
--- 
-1.7.1.1
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+ 
++static int barrier_wait = 500;
++module_param(barrier_wait, int, 0644);
++MODULE_PARM_DESC(barrier_wait, "fsync barrier wait time (usec)");
++
+ /*
+  * akpm: A new design for ext4_sync_file().
+  *
+@@ -75,7 +79,8 @@ int ext4_sync_file(struct file *file, int datasync)
+ {
+ 	struct inode *inode = file->f_mapping->host;
+ 	struct ext4_inode_info *ei = EXT4_I(inode);
+-	journal_t *journal = EXT4_SB(inode->i_sb)->s_journal;
++	struct ext4_sb_info *sb = EXT4_SB(inode->i_sb);
++	journal_t *journal = sb->s_journal;
+ 	int ret;
+ 	tid_t commit_tid;
+ 
+@@ -130,8 +135,42 @@ int ext4_sync_file(struct file *file, int datasync)
+ 			blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL,
+ 					NULL, BLKDEV_IFL_WAIT);
+ 		ret = jbd2_log_wait_commit(journal, commit_tid);
+-	} else if (journal->j_flags & JBD2_BARRIER)
+-		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL,
+-			BLKDEV_IFL_WAIT);
++	} else if (journal->j_flags & JBD2_BARRIER) {
++		if (!barrier_wait) {
++			blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL,
++				BLKDEV_IFL_WAIT);
++			goto fast_out;
++		}
++again:
++		spin_lock(&sb->barrier_flag_lock);
++		if (sb->in_barrier == 2) {
++			spin_unlock(&sb->barrier_flag_lock);
++			ret = wait_for_completion_interruptible(&sb->barrier_completion);
++			goto again;
++		} else if (sb->in_barrier) {
++			spin_unlock(&sb->barrier_flag_lock);
++			ret = wait_for_completion_interruptible(&sb->barrier_completion);
++		} else {
++			sb->in_barrier = 1;
++			INIT_COMPLETION(sb->barrier_completion);
++			spin_unlock(&sb->barrier_flag_lock);
++
++			udelay(barrier_wait);
++
++			spin_lock(&sb->barrier_flag_lock);
++			sb->in_barrier = 2;
++			spin_unlock(&sb->barrier_flag_lock);
++
++			blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL, BLKDEV_IFL_WAIT);
++			complete_all(&sb->barrier_completion);
++
++			spin_lock(&sb->barrier_flag_lock);
++			sb->in_barrier = 0;
++			spin_unlock(&sb->barrier_flag_lock);
++		}
++fast_out:
++		if (!ret)
++			ext4_clear_inode_state(inode, EXT4_STATE_DIRTY_DATA);
++	}
+ 	return ret;
+ }
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index 4e8983a..0dc96d2 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -3045,6 +3045,10 @@ no_journal:
+ 	ext4_msg(sb, KERN_INFO, "mounted filesystem with%s. "
+ 		"Opts: %s", descr, orig_data);
+ 
++	EXT4_SB(sb)->in_barrier = 0;
++	spin_lock_init(&EXT4_SB(sb)->barrier_flag_lock);
++	init_completion(&EXT4_SB(sb)->barrier_completion);
++
+ 	lock_kernel();
+ 	kfree(orig_data);
+ 	return 0;
