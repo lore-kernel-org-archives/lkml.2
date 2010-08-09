@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab0HIHrf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 03:47:35 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61969 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462Ab0HIHre (ORCPT
+	id S1755649Ab0HIHsJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 03:48:09 -0400
+Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:55899 "EHLO
+	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755548Ab0HIHsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 03:47:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=OdC5aGOBApiVwl/GyFTiopgoCGDza28ZBKKxhk9mzCK7V7kFphaJIggRcAZfg43g8/
-         nbPx18xvnVf6/W3qIyhZY8+spobPKjzNXg2ZVU/c0wimiNvo7X2x9LchbhkykV8EYeJ+
-         rjP1Ob7cfwtjheJBFoAQeE8SFokINYzp9iQ4o=
-Subject: Re: [PATCH] x86: remove __phys_reloc_hide
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100809072226.GD29524@basil.fritz.box>
-References: <1281303490-390-1-git-send-email-namhyung@gmail.com>
-	 <87k4o08fv9.fsf@basil.nowhere.org> <1281336031.976.11.camel@leonhard>
-	 <20100809064441.GC29524@basil.fritz.box> <1281337485.976.24.camel@leonhard>
-	 <20100809072226.GD29524@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 09 Aug 2010 16:47:39 +0900
-Message-ID: <1281340059.976.27.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 9 Aug 2010 03:48:07 -0400
+Message-ID: <4C5FB2AC.40605@st.com>
+Date: Mon, 9 Aug 2010 13:17:56 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2 ThunderBrowse/3.3.1
+MIME-Version: 1.0
+To: Valeo de Vries <valeo@valeo.co.cc>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+References: <4C5F9B25.8080401@st.com>	<20100809064957.GB16661@pengutronix.de>	<4C5FA698.90904@st.com> <AANLkTi=qj2gM-c=P+5MQTB=ScR4J6GPW70RoQHr4H748@mail.gmail.com>
+In-Reply-To: <AANLkTi=qj2gM-c=P+5MQTB=ScR4J6GPW70RoQHr4H748@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-08-09 (ì›”), 09:22 +0200, Andi Kleen:
+On 8/9/2010 12:49 PM, Valeo de Vries wrote:
+> 2010/8/9 viresh kumar <viresh.kumar@st.com>:
+>> > On 8/9/2010 12:19 PM, Uwe Kleine-König wrote:
+>>> >> Hello,
+>>> >>
+>>> >> On Mon, Aug 09, 2010 at 11:37:33AM +0530, viresh kumar wrote:
+>>>>> >>> > Hello,
+>>>>> >>> >
+>>>>> >>> > Mail server in ST has recently changed and now we have Microsoft
+>>>>> >>> > exchange server. We are using thunderbird as mail client.
+>>>>> >>> > What we observed with this server is that patch are broken now while
+>>>>> >>> > sending as well as receiving. Tabs are replaced by spaces and may
+>>>>> >>> > be some other too which we haven't observed.
+>>> >> unlucky you.
+>>> >>
+>>>>> >>> > Has anybody found a solution to this kind of issues? Are there any
+>>>>> >>> > workarounds possible?
+>>> >> git.git has some tips for thunderbird, see
+>>> >>
+>>> >>       http://git.kernel.org/?p=git/git.git;a=blob;f=Documentation/SubmittingPatches;hb=HEAD
+>>> >>
+>>> >> and look for the section titled "Thunderbird" (small surprise).
+>> >
+>> > I missed this information in my last mail. We are using git send-email for
+>> > sending patches. As patches will go through Microsoft exchange server only,
+>> > so they are broken.
+>> >
+>> > With previous server everything was working fine.
+> You might want to take a look at
+> http://bombadil.infradead.org/~mcgrof/MS-exchange-sucks-for-patches/
+> for a possible explanation. Long story short: upgrade Exchange, or use
+> a different SMTP server that doesn't try to be smarter than its users
+> (or should that be an SMTP server that isn't just plain
+> arse-backwards?).
 
-> The original reason was that the C standard allows the compiler
-> to make some assumptions on the pointer arithmetic that is done 
-> on symbol addresses (e.g. no wrapping). This is exploited
-> by the optimizer in the compiler to generate better code.
-> 
-> This lead to a miscompilation on PowerPC a couple of years back at 
-> least with the va->pa conversion.
-> 
-> After that RELOC_HIDE was introduced after funelling the
-> symbol address through an empty asm statement was recommended 
-> as the official way to do this by the gcc developers.
-> 
-> I think x86-64 does not normally wrap here, but it's 
-> still safer to do it this way.
-> 
-> -Andi
+Valeo,
 
-OK, then. Thanks for the comment.
+Thanks for this. It really helped us.
 
-p.s. The funny thing I found is there's no use of RELOC_HIDE on
-arch/powerpc. Hmm...
-
--- 
-Regards,
-Namhyung Kim
-
-
+viresh.
