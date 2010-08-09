@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab0HITc4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 15:32:56 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52814 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab0HITcx (ORCPT
+	id S1755289Ab0HITgk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 15:36:40 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:37481 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753381Ab0HITgj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 15:32:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=E8n2/1lGruLx1HSKg/kcSC9oqzq7wqu7D68hMVaidWHfisApgKckM1MKUfAiuNm8Be
-         lKwGrPCDVPG1nh+d7b6AlAkWC5PRQE1G7lHvh/vQBXfYEBrsxj2KkacFi0BIvMrig+6O
-         fL8bjZ15YF0tjV6dvJPd7KkHz+0dU0ZSC5DqE=
-Date: Mon, 9 Aug 2010 23:32:46 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: herbert@gondor.hengli.com.au, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: n2 RNG driver bogus cast removal
-Message-ID: <20100809193246.GA11374@albatros>
-References: <20100809.004514.73697921.davem@davemloft.net>
+	Mon, 9 Aug 2010 15:36:39 -0400
+Date: Mon, 9 Aug 2010 12:36:09 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
+	are no dirty pages.
+Message-ID: <20100809193609.GF2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100806071356.GE2109@tux1.beaverton.ibm.com> <20100806180454.GA24583@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100809.004514.73697921.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100806180454.GA24583@thunk.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 00:45 -0700, David Miller wrote:
+On Fri, Aug 06, 2010 at 02:04:54PM -0400, Ted Ts'o wrote:
+> On Fri, Aug 06, 2010 at 12:13:56AM -0700, Darrick J. Wong wrote:
+> > Yes, it's a proxy for something else.  One of our larger products would like to
+> > use fsync() to flush dirty data out to disk (right now it looks like they use
+> > O_SYNC), but they're concerned that the many threads they use can create an
+> > fsync() storm.  So, they wanted to know how to mitigate the effects of those
+> > storms.  Not calling fsync() except when they really need to guarantee a disk
+> > write is a good start, but I'd like to get ahead of them to pick off more low
+> > hanging fruit like the barrier coordination and not sending barriers when
+> > there's no dirty data ... before they run into it. :)
 > 
-> Kulikov, can you at least build test your patches?  Casts are not
-> always incorrect, particularly when private cookies are "unsigned
-> long" as is the case here:
-> 
-> drivers/char/hw_random/n2-drv.c: In function ‘n2rng_data_read’:
-> drivers/char/hw_random/n2-drv.c:390: warning: initialization makes pointer from integer without a cast
-Ahh, shame on me... I'd compiled this on x86 and looked through error
-log, I wrongly pointed out that there is no error at this line. As I see
-now, this tactic is incorrect. I'd not do this any more, sorry for
-this...
+> Do they need a barrier operation, or do they just want to initiate the
+> I/O?  One of the reasons I found it hard to believe you would have
+> multiple threads all fsync()'ing the same file is that keeping the the
+> file consistent is very hard to do in such a scenario.  Maintaining
+> ACID-level consistency without a single thread which coordinates when
+> commit records gets written is I'm sure theoretically possible, but in
+> practice, I wasn't sure any applications would actually be _written_
+> that way.
 
-> 
-> Herbert, please revert this change, thanks.  And I suspect there
-> might be more of these hwrng driver duds that went into the tree,
-> it's worth checking out. :-)
-> 
-> Thanks.
-> 
-> commit 8b9cfdca9c52f7d39c3ccfac1668e31c20c9f42e
-> Author: Kulikov Vasiliy <segooon@gmail.com>
-> Date:   Mon Jul 5 21:25:06 2010 +0800
-> 
->     hwrng: n2-drv - remove casts from void*
->     
->     Remove unnesessary casts from void*.
->     
->     Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
->     Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
-> 
+> If the goal is just to make sure I/O is getting initiated, without
+> necessarily waiting for assurance that a specific file write has hit
+> the disk platters, it may be that the Linux-specific
+> sync_file_range(2) system call might be a far more efficient way of
+> achieving those ends.  Without more details about what this product is
+> doing, it's hard to say, of course.
+
+I don't know for sure, though given what I've seen of the app behavior I
+suspect they simply want the disk cache flushed, and don't need the full
+ordering semantics.  That said, I do think they want to make sure that data
+actually hits the disk platters.
+
+--D
