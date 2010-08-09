@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab0HIMJK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 08:09:10 -0400
-Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:42507 "EHLO
-	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756410Ab0HIMJE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 08:09:04 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>, Jonas Aaberg <jonas.aberg@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 10/14] DMAENGINE: ste_dma40: fix possible use of uninitialized variable
-Date: Mon, 9 Aug 2010 14:08:49 +0200
-Message-ID: <1281355729-13464-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1756317Ab0HIMV6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 08:21:58 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:60223 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756028Ab0HIMV5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 08:21:57 -0400
+Date: Mon, 9 Aug 2010 13:21:47 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: David Daney <david.s.daney@gmail.com>
+Cc: Namhyung Kim <namhyung@gmail.com>, linux-kernel@vger.kernel.org,
+        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org
+Subject: Re: [PATCH] MIPS: remove RELOC_HIDE on __pa_symbol
+Message-ID: <20100809122147.GA23053@linux-mips.org>
+References: <1281297456-2711-1-git-send-email-namhyung@gmail.com>
+ <4C5F8ED8.90301@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C5F8ED8.90301@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jonas Aaberg <jonas.aberg@stericsson.com>
+On Sun, Aug 08, 2010 at 10:15:04PM -0700, David Daney wrote:
 
-Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/dma/ste_dma40.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+>  On 08/08/2010 12:57 PM, Namhyung Kim wrote:
+> >remove unneccessary use of RELOC_HIDE(). It does simple addition of ptr and
+> >offset and in this case (offset 0) does practically nothing. It does NOT do
+> >anything with linker relocation.
+> >
+> 
+> Maybe you could explain in more detail the problems you are having
+> with the current definition of __pa_symbol().  I would be hesitant
+> to change this bit of black magic unless there is a concrete problem
+> you are trying to solve.
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 2b209fa..ac325e9 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -684,12 +684,12 @@ static void d40_config_write(struct d40_chan *d40c)
- 
- static void d40_desc_load(struct d40_chan *d40c, struct d40_desc *d40d)
- {
--	if (d40d->lli_phy.dst && d40d->lli_phy.src) {
-+	if (d40c->log_num == D40_PHY_CHAN) {
- 		d40_phy_lli_write(d40c->base->virtbase,
- 				  d40c->phy_chan->num,
- 				  d40d->lli_phy.dst,
- 				  d40d->lli_phy.src);
--	} else if (d40d->lli_log.dst && d40d->lli_log.src) {
-+	} else {
- 		struct d40_log_lli *src = d40d->lli_log.src;
- 		struct d40_log_lli *dst = d40d->lli_log.dst;
- 		int s;
--- 
-1.6.3.3
+RELOC_HIDE was originally added by 6007b903dfe5f1d13e0c711ac2894bdd4a61b1ad
+(lmo) rsp. 8431fd094d625b94d364fe393076ccef88e6ce18 (kernel.org).  A
+discussion can be found in lkml posting
+a2ebde260608230500o3407b108hc03debb9da6e62c@mail.gmail.com> which is
+archived at
 
+    http://lists.linuxcoding.com/kernel/2006-q3/msg17360.html
+
+I felt this was dubious by the time it was added and probably should go?
+
+  Ralf
