@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756196Ab0HILMb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 07:12:31 -0400
-Received: from www.tglx.de ([62.245.132.106]:49594 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab0HILM3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 07:12:29 -0400
-Date: Mon, 9 Aug 2010 13:11:56 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: Leon Woestenberg <leon.woestenberg@gmail.com>
-Cc: Tom Lyon <pugs@cisco.com>, mst@redhat.com, hjk@linutronix.de,
-        gregkh@suse.de, chrisw@sous-sol.org, joro@8bytes.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: UIO DMA to userspace question
-Message-ID: <20100809111155.GB2569@local>
-References: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756230Ab0HILV4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 07:21:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49504 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756101Ab0HILVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 07:21:53 -0400
+From: Dave Martin <dave.martin@linaro.org>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Dave Martin <dave.martin@linaro.org>
+Subject: [PATCH 0/1] perf symbols: ignore mapping symbols on ARM
+Date: Mon,  9 Aug 2010 12:21:17 +0100
+Message-Id: <1281352878-8735-1-git-send-email-dave.martin@linaro.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 08:38:30PM +0200, Leon Woestenberg wrote:
-> Hello all,
-> 
-> can I use the UIO framework for the following?
-> 
-> The userspace portion of the driver allocates memory in user-space
-> using malloc() - usually resulting in a scatter pages in physical
-> memory.
-> The UIO kernel portion of the driver maps those using pci_map_sg().
-> 
-> Is this possible, or does the UIO framework assume memory for DMA is
-> allocated in kernel space?
+Applies to linux-2.6-tip/master or acme/perf-core
 
-You would have to write your own mmap() function and and set the pointer
-to it in struct uio_info->mmap. Have a look at uio_mmap() in
-drivers/uio/uio.c to see when your function will be called, and what is
-checked before that call.
+ARM ELF files use symbols with special names $a, $t, $d to
+identify regions of ARM code, Thumb code and data within code
+sections.  This can cause confusing output from the perf tools,
+especially for partially stripped binaries, or binaries
+containing user-added zero-sized symbols (which may occur in
+hand-written assembler which hasn't been fully annotated with
+.size directives).
 
-If that works, we might invent a new UIO_MEM_* type, and move your function
-over to the UIO core, if this is interesting for other people.
+This patch filters out these symbols at load time.
 
-Anyway, sooner or later we should have a generic way of handling DMA in
-UIO. The topic comes up every few month, but nobody came up with an
-acceptable solution yet. It should probably be a separate uio_dma device,
-e.g. for a /dev/uio0 you'll get a /dev/uio_dma0 if the driver sets a flag
-indicating it needs DMA support. This new uio_dma device should then have
-an API (to be defined, without ioctl if possible) that provides the
-necessary functionality. But that's just a thought ATM. Ideas/patches are
-welcome.
+Addressing architecture-specific cases in this way could get
+quite messy-- if one architecture-specific hack is needed in
+the symbol loading loop, more might be needed over time.
+Adding a generic per-architecture symbol filtering hook might
+help to mitigate this if more cases need to be supported.
 
-Thanks,
-Hans
+Switching to libbfd as a generic image-handling backend for all
+architectures might be a better long-term solution, since
+libelf seems to be essentially a low-level parsing library only
+at this stage, and doesn't deal with all the architecture
+specifics.  There's a generic bfd_is_target_special_symbol()
+function which is used by binutils to filter out architecture-
+specific symbols which are not "normal" symbols, which could
+help us for this case.
+
+Dave Martin (1):
+  perf symbols: ignore mapping symbols on ARM
+
+ tools/perf/util/symbol.c |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
 
