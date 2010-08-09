@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab0HITgk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 15:36:40 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37481 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753381Ab0HITgj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 15:36:39 -0400
-Date: Mon, 9 Aug 2010 12:36:09 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v2] ext4: Don't send extra barrier during fsync if there
-	are no dirty pages.
-Message-ID: <20100809193609.GF2109@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100806071356.GE2109@tux1.beaverton.ibm.com> <20100806180454.GA24583@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100806180454.GA24583@thunk.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1755367Ab0HITic (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 15:38:32 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:39661 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754707Ab0HITib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 15:38:31 -0400
+X-Authenticated: #23875046
+X-Provags-ID: V01U2FsdGVkX1+HUypDWCaHd5dvKcvGKcAPG5BRtbGOxNuh/XGf20
+	oxtDYfUxDennCQ
+Subject: Re: [BISECTED/2.6.35+] Regression: Machine runs really slowly
+ after commit f12a15be
+From: Alexey Fisher <bug-track@fisher-privat.net>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Priit Laes <plaes@plaes.org>, linux-kernel <linux-kernel@vger.kernel.org>,
+        tglx@linutronix.de
+In-Reply-To: <1281380498.2444.2.camel@localhost.localdomain>
+References: <1281186941.23274.5.camel@chi>
+	 <1281380498.2444.2.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 09 Aug 2010 21:38:27 +0200
+Message-ID: <1281382707.22355.0.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 06, 2010 at 02:04:54PM -0400, Ted Ts'o wrote:
-> On Fri, Aug 06, 2010 at 12:13:56AM -0700, Darrick J. Wong wrote:
-> > Yes, it's a proxy for something else.  One of our larger products would like to
-> > use fsync() to flush dirty data out to disk (right now it looks like they use
-> > O_SYNC), but they're concerned that the many threads they use can create an
-> > fsync() storm.  So, they wanted to know how to mitigate the effects of those
-> > storms.  Not calling fsync() except when they really need to guarantee a disk
-> > write is a good start, but I'd like to get ahead of them to pick off more low
-> > hanging fruit like the barrier coordination and not sending barriers when
-> > there's no dirty data ... before they run into it. :)
+Am Montag, den 09.08.2010, 12:01 -0700 schrieb john stultz:
+> On Sat, 2010-08-07 at 16:15 +0300, Priit Laes wrote:
+> > Following commit makes my Dell Latitude D610 machine (x86_32) run really-really slow...
+> > 
+> > f12a15be63d1de9a35971f35f06b73088fa25c3a is the first bad commit
+> > commit f12a15be63d1de9a35971f35f06b73088fa25c3a
+> > Author: John Stultz <johnstul@us.ibm.com>
 > 
-> Do they need a barrier operation, or do they just want to initiate the
-> I/O?  One of the reasons I found it hard to believe you would have
-> multiple threads all fsync()'ing the same file is that keeping the the
-> file consistent is very hard to do in such a scenario.  Maintaining
-> ACID-level consistency without a single thread which coordinates when
-> commit records gets written is I'm sure theoretically possible, but in
-> practice, I wasn't sure any applications would actually be _written_
-> that way.
+> On Sat, 2010-08-07 at 23:04 +0200, Alexey Fisher wrote: 
+> > Hallo John,
+> > i have regression after commit f12a15be6.
+> > With this patch my netbook (Asus Eeepc 1005) starting really slow. It
+> > looks like printk comes 1/min.
+> 
+> Hi Priit, Alexey,
+> 	Thanks so much for the testing and bisecting the issue down!
+> 
+> Could you both please provide the output of:
+> cat /sys/devices/system/clocksource/clocksource0/current_clocksource 
+> cat /sys/devices/system/clocksource/clocksource0/available_clocksource
 
-> If the goal is just to make sure I/O is getting initiated, without
-> necessarily waiting for assurance that a specific file write has hit
-> the disk platters, it may be that the Linux-specific
-> sync_file_range(2) system call might be a far more efficient way of
-> achieving those ends.  Without more details about what this product is
-> doing, it's hard to say, of course.
 
-I don't know for sure, though given what I've seen of the app behavior I
-suspect they simply want the disk cache flushed, and don't need the full
-ordering semantics.  That said, I do think they want to make sure that data
-actually hits the disk platters.
+cat /sys/devices/system/clocksource/clocksource0/current_clocksource 
+hpet
 
---D
+cat /sys/devices/system/clocksource/clocksource0/available_clocksource
+hpet acpi_pm 
+
+
