@@ -1,36 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab0HIOxv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 10:53:51 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54914 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756685Ab0HIOxt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 10:53:49 -0400
-Date: Mon, 9 Aug 2010 16:08:19 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/2] tty: add tty_struct->dev pointer to corresponding
- device instance
-Message-ID: <20100809160819.42e8c84e@lxorguk.ukuu.org.uk>
-In-Reply-To: <1281363770-23598-1-git-send-email-dbaryshkov@gmail.com>
-References: <1281363770-23598-1-git-send-email-dbaryshkov@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756850Ab0HIOyN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 10:54:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756840Ab0HIOyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 10:54:10 -0400
+Date: Mon, 9 Aug 2010 11:53:58 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Dave Martin <dave.martin@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] perf symbols: ignore mapping symbols on ARM
+Message-ID: <20100809145358.GE17509@ghostprotocols.net>
+References: <1281352878-8735-1-git-send-email-dave.martin@linaro.org> <1281352878-8735-2-git-send-email-dave.martin@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281352878-8735-2-git-send-email-dave.martin@linaro.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon,  9 Aug 2010 18:22:49 +0400
-Dmitry Eremin-Solenikov <dbaryshkov@gmail.com> wrote:
+Em Mon, Aug 09, 2010 at 12:21:18PM +0100, Dave Martin escreveu:
+> +		/* Reject ARM ELF "mapping symbols": these aren't unique and
+> +		 * don't identify functions, so will confuse the profile
+> +		 * output: */
+> +		if (ehdr.e_machine == EM_ARM) {
+> +			if (!strcmp(elf_name, "$a") ||
+> +			    !strcmp(elf_name, "$d") ||
+> +			    !strcmp(elf_name, "$t"))
+> +				continue;
+> +		}
+> +
 
-> Some device drivers (mostly tty line disciplines) would like to have way
-> know a struct device instance corresponding to passed tty_struct. Add
-> a struct device pointer to struct tty_struct and populate it during
-> initialize_tty_struct().
-
-Acked-by: Alan Cox <alan@linux.intel.com>
+Thanks, applied.
