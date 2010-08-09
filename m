@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0HICFP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 8 Aug 2010 22:05:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60673 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752917Ab0HICFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 8 Aug 2010 22:05:12 -0400
-Date: Mon, 9 Aug 2010 12:05:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anatolij Gustschin <agust@denx.de>
-Subject: linux-next: manual merge of the spi tree with the devicetree tree
-Message-Id: <20100809120509.be36a4fa.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755290Ab0HICdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 8 Aug 2010 22:33:22 -0400
+Received: from mamba.crocodile.org ([216.218.215.112]:43829 "EHLO
+	periplum.crocodile.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752917Ab0HICdV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 8 Aug 2010 22:33:21 -0400
+X-Greylist: delayed 4041 seconds by postgrey-1.27 at vger.kernel.org; Sun, 08 Aug 2010 22:33:21 EDT
+References: <E64899AA-23A5-49D7-8C91-B94A095290E0@crocodile.org> <1268034117.3819.1.camel@jlt3.sipsolutions.net> <36779F26-DB1B-46ED-8635-01B03E559B55@crocodile.org> <20100310062227.GB2445@core.coreip.homeip.net> <87k4o234lx.fsf@depni.sinp.msu.ru> <1281196050.4431.4.camel@jlt3.sipsolutions.net> <1281313223.2168.46.camel@pasglop>
+In-Reply-To: <1281313223.2168.46.camel@pasglop>
+Mime-Version: 1.0 (iPhone Mail 8A306)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <9D74DA20-E3C8-43BC-B529-82605F64637F@crocodile.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Serge Belyshev <belyshev@depni.sinp.msu.ru>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-Mailer: iPhone Mail (8A306)
+From: Vadim Zaliva <lord@crocodile.org>
+Subject: Re: [PATCH 1/1] integer overflow issue in 'appletouch' driver
+Date: Sun, 8 Aug 2010 18:24:39 -0700
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+I have tested the patch on device I had       
+I will have an access to it to retest later thus week. We can wait for my test to try to identify how my PowerBook is different from yours. Or you can roll the patch back. 
 
-Today's linux-next merge of the spi tree got a conflict in
-drivers/spi/mpc512x_psc_spi.c between commit
-2dc11581376829303b98eadb2de253bee065a56a ("of/device: Replace struct
-of_device with struct platform_device") from the devicetree tree and
-commit cf40f082f8d3a98e28af02af20d00d2500eb6a65 ("spi/mpc5121: change
-annotations for probe and remove functions") from the spi tree.
+--
+Sent from my iPhone
 
-I fixed it up (as suggested by you - see below) and can carry the fix as
-necessary.
+On Aug 8, 2010, at 17:20, Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
 
-I also added this merge fix patch (as suggest by you):
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 9 Aug 2010 12:02:19 +1000
-Subject: [PATCH] spi: update for of_device to platform_device replacement
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/ata/sata_dwc_460ex.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
-index ea24c1e..2673a3d 100644
---- a/drivers/ata/sata_dwc_460ex.c
-+++ b/drivers/ata/sata_dwc_460ex.c
-@@ -1588,7 +1588,7 @@ static const struct ata_port_info sata_dwc_port_info[] = {
- 	},
- };
- 
--static int sata_dwc_probe(struct of_device *ofdev,
-+static int sata_dwc_probe(struct platform_device *ofdev,
- 			const struct of_device_id *match)
- {
- 	struct sata_dwc_device *hsdev;
-@@ -1702,7 +1702,7 @@ error_out:
- 	return err;
- }
- 
--static int sata_dwc_remove(struct of_device *ofdev)
-+static int sata_dwc_remove(struct platform_device *ofdev)
- {
- 	struct device *dev = &ofdev->dev;
- 	struct ata_host *host = dev_get_drvdata(dev);
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc drivers/spi/mpc512x_psc_spi.c
-index cddbfce,c8d69fc..0000000
---- a/drivers/spi/mpc512x_psc_spi.c
-+++ b/drivers/spi/mpc512x_psc_spi.c
-@@@ -507,8 -505,8 +507,8 @@@ static int __devexit mpc512x_psc_spi_do
-  	return 0;
-  }
-  
-- static int __init mpc512x_psc_spi_of_probe(struct platform_device *op,
- -static int __devinit mpc512x_psc_spi_of_probe(struct of_device *op,
- -					      const struct of_device_id *match)
-++static int __devinit mpc512x_psc_spi_of_probe(struct platform_device *op,
- +					   const struct of_device_id *match)
-  {
-  	const u32 *regaddr_p;
-  	u64 regaddr64, size64;
-@@@ -539,7 -537,7 +539,7 @@@
-  				irq_of_parse_and_map(op->dev.of_node, 0), id);
-  }
-  
-- static int __exit mpc512x_psc_spi_of_remove(struct platform_device *op)
- -static int __devexit mpc512x_psc_spi_of_remove(struct of_device *op)
-++static int __devexit mpc512x_psc_spi_of_remove(struct platform_device *op)
-  {
-  	return mpc512x_psc_spi_do_remove(&op->dev);
-  }
+> 
+>>> My device is 05ac:020e "fountain", actually generates *signed* values,
+>>> thus the patch completely breaks it.
+>> 
+>> I think Ben might have the same issue. I guess we need per-touchpad
+>> functions to read the data.
+> 
+> Yup, I confirm, same deal. This patch completely breaks it on my
+> powerbook (same USB ID)
+> 
+> Should we revert the commit for now ?
+> 
+> Cheers,
+> Ben.
+> 
