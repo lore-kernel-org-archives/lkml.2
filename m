@@ -1,78 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932251Ab0HJPRx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:17:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47479 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab0HJPRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:17:49 -0400
-Date: Wed, 11 Aug 2010 01:17:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        James Smart <james.smart@emulex.com>,
-        Eric Biederman <ebiederm@aristanetworks.com>,
-        Benjamin Thery <benjamin.thery@bull.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>, linuxppc-dev@ozlabs.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Nick Cheng <nick.cheng@areca.com.tw>, Dmitry Torokhov <dtor@mail.ru>,
-        Tejun Heo <tj@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-scsi@vger.kernel.org,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>
-Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
-Message-Id: <20100811011733.16243ddb.sfr@canb.auug.org.au>
-In-Reply-To: <20100810154337.006a0df9@hyperion.delvare>
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-	<AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
-	<20100802233128.GA21286@kroah.com>
-	<20100810154337.006a0df9@hyperion.delvare>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n"
+	id S932235Ab0HJPTe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:19:34 -0400
+Received: from 70.mail-out.ovh.net ([91.121.185.63]:36759 "HELO
+	70.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932236Ab0HJPT1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:19:27 -0400
+Message-ID: <4C616DF9.1070309@example.com>
+Date: Tue, 10 Aug 2010 17:19:21 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
+MIME-Version: 1.0
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+CC: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: BUG: scheduling while atomic: swapper/0/0x10000002
+References: <20100810142951.GA7156@arch.tripp.de>
+In-Reply-To: <20100810142951.GA7156@arch.tripp.de>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 7924927969963700553
+X-Ovh-Remote: 95.49.243.143 (afjj143.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 10.08.2010 16:29, Markus Trippelsdorf wrote:
 
-Hi Jean,
-
-On Tue, 10 Aug 2010 15:43:37 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+> This bug already has two patches available to fix it:
 >
-> Related bug?
->=20
-> https://bugzilla.kernel.org/show_bug.cgi?id=3D16544
+> http://lkml.org/lkml/2010/8/6/672
+> https://patchwork.kernel.org/patch/113092/
 
-Yep, fixed in linux-next today - hopefully the fix is on its way to Linus.
+None of them works for me. I do:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+cat patch.txt | patch -p1
 
---Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n
-Content-Type: application/pgp-signature
+And get:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+aapi205:/usr/src/linux# cat ../smp-bug.txt | patch -p1
+patching file include/acpi/platform/aclinux.h
+Hunk #1 FAILED at 152.
+1 out of 1 hunk FAILED -- saving rejects to file 
+include/acpi/platform/aclinux.h.rej
 
-iQEcBAEBAgAGBQJMYW2NAAoJEDMEi1NhKgbsDHoIAKI+LxF3i365ZTQjPgodUhMi
-fyVQUKttBZBHDK59URtJ6NlLEUspb7iLiOCqbmu6HSq+7wZsax0/7Kq8FKjD87/s
-uko9t9WELvZCtNhQ2PnehUYUOWhO5SCnYgJyzZOCrFZWDpmA3Hl3MSpxNs5drOin
-QiKtx2x5ldf03I205RHYDbBy/w1XZegG4fG/M/nTrdzO1B2EfLStYpjY5G49C+Lw
-qP120VrFb7BsCs7uHIl9750MV0GHiVfGNpQDcaIGJv5TNPAyvoZhUyC9C0eTQfj6
-xHZnf32ihT9Ugrx5qRSpjEaR34atvkQwaZGC+BejZzrfvhl8/3WnAYegvli/zOk=
-=Qznw
------END PGP SIGNATURE-----
+Help me please.
 
---Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n--
+Regards,
+
+Piotr Hosowicz
+
+-- 
+Zatrzymuje siê samochód na sejmowym parkingu. Podchodzi do niego 
+ochroniarz i mówi:
+- Pan tu parkuje?! Tu Sejm ... Ministrowie, politycy, pos³owiei ...
+- Dziêki, w³±czê alarm.
+NP: Peter Green Splinter Group - There's A River
+NB: 2.6.35-git9
