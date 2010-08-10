@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757905Ab0HJURZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:17:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35968 "EHLO
+	id S1757960Ab0HJUR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:17:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35967 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757811Ab0HJUPr (ORCPT
+	with ESMTP id S1757789Ab0HJUPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 10 Aug 2010 16:15:47 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 5/9] perf ui: Move map browser to util/ui/browsers/
-Date: Tue, 10 Aug 2010 17:15:35 -0300
-Message-Id: <1281471339-10878-6-git-send-email-acme@infradead.org>
+Subject: [PATCH 2/9] perf ui: Move ui_helpline routines to separate file in util/ui/
+Date: Tue, 10 Aug 2010 17:15:32 -0300
+Message-Id: <1281471339-10878-3-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1281471339-10878-1-git-send-email-acme@infradead.org>
 References: <1281471339-10878-1-git-send-email-acme@infradead.org>
@@ -27,398 +27,148 @@ From: Arnaldo Carvalho de Melo <acme@redhat.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Makefile               |    5 +
- tools/perf/util/newt.c            |  156 +-----------------------------------
- tools/perf/util/ui/browsers/map.c |  163 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/ui/browsers/map.h |    6 ++
- 4 files changed, 175 insertions(+), 155 deletions(-)
- create mode 100644 tools/perf/util/ui/browsers/map.c
- create mode 100644 tools/perf/util/ui/browsers/map.h
+ tools/perf/Makefile           |    2 +
+ tools/perf/util/newt.c        |   38 +-----------------------------------
+ tools/perf/util/ui/helpline.c |   43 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/ui/helpline.h |    9 ++++++++
+ 4 files changed, 55 insertions(+), 37 deletions(-)
+ create mode 100644 tools/perf/util/ui/helpline.c
+ create mode 100644 tools/perf/util/ui/helpline.h
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index ae443b6..d118020 100644
+index d5bce76..d77a101 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -570,9 +570,11 @@ else
+@@ -569,7 +569,9 @@ else
+ 		EXTLIBS += -lnewt -lslang
  		LIB_OBJS += $(OUTPUT)util/newt.o
  		LIB_OBJS += $(OUTPUT)util/ui/browser.o
- 		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
-+		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
- 		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
- 		LIB_OBJS += $(OUTPUT)util/ui/progress.o
++		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
  		LIB_H += util/ui/browser.h
-+		LIB_H += util/ui/browsers/map.h
- 		LIB_H += util/ui/helpline.h
- 		LIB_H += util/ui/libslang.h
- 		LIB_H += util/ui/progress.h
-@@ -982,6 +984,9 @@ $(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
- $(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
- 
-+$(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
-+	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
-+
- $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
- 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
++		LIB_H += util/ui/helpline.h
+ 	endif
+ endif
  
 diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index f188258..b596926 100644
+index 9768be3..23f3b7d 100644
 --- a/tools/perf/util/newt.c
 +++ b/tools/perf/util/newt.c
-@@ -16,42 +16,10 @@
+@@ -24,6 +24,7 @@
+ #include "sort.h"
  #include "symbol.h"
  #include "ui/browser.h"
- #include "ui/helpline.h"
-+#include "ui/browsers/map.h"
++#include "ui/helpline.h"
  
- newtComponent newt_form__new(void);
- 
--static int ui_entry__read(const char *title, char *bf, size_t size, int width)
--{
--	struct newtExitStruct es;
--	newtComponent form, entry;
--	const char *result;
--	int err = -1;
--
--	newtCenteredWindow(width, 1, title);
--	form = newtForm(NULL, NULL, 0);
--	if (form == NULL)
--		return -1;
--
--	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
--	if (entry == NULL)
--		goto out_free_form;
--
--	newtFormAddComponent(form, entry);
--	newtFormAddHotKey(form, NEWT_KEY_ENTER);
--	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
--	newtFormAddHotKey(form, NEWT_KEY_LEFT);
--	newtFormAddHotKey(form, CTRL('c'));
--	newtFormRun(form, &es);
--
--	if (result != NULL) {
--		strncpy(bf, result, size);
--		err = 0;
--	}
--out_free_form:
--	newtPopWindow();
--	newtFormDestroy(form);
--	return 0;
--}
--
- char browser__last_msg[1024];
- 
- int browser__show_help(const char *format, va_list ap)
-@@ -182,128 +150,6 @@ static char *callchain_list__sym_name(struct callchain_list *self,
- 	return bf;
+ #if SLANG_VERSION < 20104
+ #define slsmg_printf(msg, args...) SLsmg_printf((char *)msg, ##args)
+@@ -94,43 +95,6 @@ void ui_progress__delete(struct ui_progress *self)
+ 	free(self);
  }
  
--/* -------------------------------------------------------------------- */
--
--struct map_browser {
--	struct ui_browser b;
--	struct map	  *map;
--	u16		  namelen;
--	u8		  addrlen;
--};
--
--static void map_browser__write(struct ui_browser *self, void *nd, int row)
+-static void ui_helpline__pop(void)
 -{
--	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
--	struct map_browser *mb = container_of(self, struct map_browser, b);
--	bool current_entry = ui_browser__is_current_entry(self, row);
--	int color = ui_browser__percent_color(0, current_entry);
--
--	SLsmg_set_color(color);
--	slsmg_printf("%*llx %*llx %c ",
--		     mb->addrlen, sym->start, mb->addrlen, sym->end,
--		     sym->binding == STB_GLOBAL ? 'g' :
--		     sym->binding == STB_LOCAL  ? 'l' : 'w');
--	slsmg_write_nstring(sym->name, mb->namelen);
+-	newtPopHelpLine();
 -}
 -
--/* FIXME uber-kludgy, see comment on cmd_report... */
--static u32 *symbol__browser_index(struct symbol *self)
+-static void ui_helpline__push(const char *msg)
 -{
--	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
+-	newtPushHelpLine(msg);
 -}
 -
--static int map_browser__search(struct map_browser *self)
+-static void ui_helpline__vpush(const char *fmt, va_list ap)
 -{
--	char target[512];
--	struct symbol *sym;
--	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
+-	char *s;
 -
--	if (err)
--		return err;
--
--	if (target[0] == '0' && tolower(target[1]) == 'x') {
--		u64 addr = strtoull(target, NULL, 16);
--		sym = map__find_symbol(self->map, addr, NULL);
--	} else
--		sym = map__find_symbol_by_name(self->map, target, NULL);
--
--	if (sym != NULL) {
--		u32 *idx = symbol__browser_index(sym);
--			
--		self->b.top = &sym->rb_node;
--		self->b.index = self->b.top_idx = *idx;
--	} else
--		ui_helpline__fpush("%s not found!", target);
--
--	return 0;
--}
--
--static int map_browser__run(struct map_browser *self, struct newtExitStruct *es)
--{
--	if (ui_browser__show(&self->b, self->map->dso->long_name) < 0)
--		return -1;
--
--	ui_helpline__fpush("Press <- or ESC to exit, %s / to search",
--			   verbose ? "" : "restart with -v to use");
--	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
--	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
--	if (verbose)
--		newtFormAddHotKey(self->b.form, '/');
--
--	while (1) {
--		ui_browser__run(&self->b, es);
--
--		if (es->reason != NEWT_EXIT_HOTKEY)
--			break;
--		if (verbose && es->u.key == '/')
--			map_browser__search(self);
--		else
--			break;
+-	if (vasprintf(&s, fmt, ap) < 0)
+-		vfprintf(stderr, fmt, ap);
+-	else {
+-		ui_helpline__push(s);
+-		free(s);
 -	}
+-}
 -
--	newtFormDestroy(self->b.form);
--	newtPopWindow();
+-static void ui_helpline__fpush(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	ui_helpline__vpush(fmt, ap);
+-	va_end(ap);
+-}
+-
+-static void ui_helpline__puts(const char *msg)
+-{
 -	ui_helpline__pop();
--	return 0;
+-	ui_helpline__push(msg);
 -}
 -
--static int map__browse(struct map *self)
--{
--	struct map_browser mb = {
--		.b = {
--			.entries = &self->dso->symbols[self->type],
--			.refresh = ui_browser__rb_tree_refresh,
--			.seek	 = ui_browser__rb_tree_seek,
--			.write	 = map_browser__write,
--		},
--		.map = self,
--	};
--	struct newtExitStruct es;
--	struct rb_node *nd;
--	char tmp[BITS_PER_LONG / 4];
--	u64 maxaddr = 0;
--
--	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
--		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
--
--		if (mb.namelen < pos->namelen)
--			mb.namelen = pos->namelen;
--		if (maxaddr < pos->end)
--			maxaddr = pos->end;
--		if (verbose) {
--			u32 *idx = symbol__browser_index(pos);
--			*idx = mb.b.nr_entries;
--		}
--		++mb.b.nr_entries;
--	}
--
--	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
--	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
--	return map_browser__run(&mb, &es);
--}
--
--/* -------------------------------------------------------------------- */
--
- struct hist_browser {
- 	struct ui_browser   b;
- 	struct hists	    *hists;
-diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
+ static int ui_entry__read(const char *title, char *bf, size_t size, int width)
+ {
+ 	struct newtExitStruct es;
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
 new file mode 100644
-index 0000000..b79f0c9
+index 0000000..6a11e13
 --- /dev/null
-+++ b/tools/perf/util/ui/browsers/map.c
-@@ -0,0 +1,163 @@
-+#include "../libslang.h"
-+#include <elf.h>
++++ b/tools/perf/util/ui/helpline.c
+@@ -0,0 +1,43 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <stdlib.h>
 +#include <newt.h>
-+#include <sys/ttydefaults.h>
-+#include <ctype.h>
-+#include <string.h>
-+#include <linux/bitops.h>
-+#include "../../debug.h"
-+#include "../../symbol.h"
-+#include "../browser.h"
-+#include "../helpline.h"
-+#include "map.h"
 +
-+static int ui_entry__read(const char *title, char *bf, size_t size, int width)
++#include "helpline.h"
++
++void ui_helpline__pop(void)
 +{
-+	struct newtExitStruct es;
-+	newtComponent form, entry;
-+	const char *result;
-+	int err = -1;
++	newtPopHelpLine();
++}
 +
-+	newtCenteredWindow(width, 1, title);
-+	form = newtForm(NULL, NULL, 0);
-+	if (form == NULL)
-+		return -1;
++void ui_helpline__push(const char *msg)
++{
++	newtPushHelpLine(msg);
++}
 +
-+	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
-+	if (entry == NULL)
-+		goto out_free_form;
++static void ui_helpline__vpush(const char *fmt, va_list ap)
++{
++	char *s;
 +
-+	newtFormAddComponent(form, entry);
-+	newtFormAddHotKey(form, NEWT_KEY_ENTER);
-+	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
-+	newtFormAddHotKey(form, NEWT_KEY_LEFT);
-+	newtFormAddHotKey(form, CTRL('c'));
-+	newtFormRun(form, &es);
-+
-+	if (result != NULL) {
-+		strncpy(bf, result, size);
-+		err = 0;
++	if (vasprintf(&s, fmt, ap) < 0)
++		vfprintf(stderr, fmt, ap);
++	else {
++		ui_helpline__push(s);
++		free(s);
 +	}
-+out_free_form:
-+	newtPopWindow();
-+	newtFormDestroy(form);
-+	return 0;
 +}
 +
-+struct map_browser {
-+	struct ui_browser b;
-+	struct map	  *map;
-+	u16		  namelen;
-+	u8		  addrlen;
-+};
-+
-+static void map_browser__write(struct ui_browser *self, void *nd, int row)
++void ui_helpline__fpush(const char *fmt, ...)
 +{
-+	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
-+	struct map_browser *mb = container_of(self, struct map_browser, b);
-+	bool current_entry = ui_browser__is_current_entry(self, row);
-+	int color = ui_browser__percent_color(0, current_entry);
++	va_list ap;
 +
-+	SLsmg_set_color(color);
-+	slsmg_printf("%*llx %*llx %c ",
-+		     mb->addrlen, sym->start, mb->addrlen, sym->end,
-+		     sym->binding == STB_GLOBAL ? 'g' :
-+		     sym->binding == STB_LOCAL  ? 'l' : 'w');
-+	slsmg_write_nstring(sym->name, mb->namelen);
++	va_start(ap, fmt);
++	ui_helpline__vpush(fmt, ap);
++	va_end(ap);
 +}
 +
-+/* FIXME uber-kludgy, see comment on cmd_report... */
-+static u32 *symbol__browser_index(struct symbol *self)
++void ui_helpline__puts(const char *msg)
 +{
-+	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
-+}
-+
-+static int map_browser__search(struct map_browser *self)
-+{
-+	char target[512];
-+	struct symbol *sym;
-+	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
-+
-+	if (err)
-+		return err;
-+
-+	if (target[0] == '0' && tolower(target[1]) == 'x') {
-+		u64 addr = strtoull(target, NULL, 16);
-+		sym = map__find_symbol(self->map, addr, NULL);
-+	} else
-+		sym = map__find_symbol_by_name(self->map, target, NULL);
-+
-+	if (sym != NULL) {
-+		u32 *idx = symbol__browser_index(sym);
-+
-+		self->b.top = &sym->rb_node;
-+		self->b.index = self->b.top_idx = *idx;
-+	} else
-+		ui_helpline__fpush("%s not found!", target);
-+
-+	return 0;
-+}
-+
-+static int map_browser__run(struct map_browser *self, struct newtExitStruct *es)
-+{
-+	if (ui_browser__show(&self->b, self->map->dso->long_name) < 0)
-+		return -1;
-+
-+	ui_helpline__fpush("Press <- or ESC to exit, %s / to search",
-+			   verbose ? "" : "restart with -v to use");
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
-+	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
-+	if (verbose)
-+		newtFormAddHotKey(self->b.form, '/');
-+
-+	while (1) {
-+		ui_browser__run(&self->b, es);
-+
-+		if (es->reason != NEWT_EXIT_HOTKEY)
-+			break;
-+		if (verbose && es->u.key == '/')
-+			map_browser__search(self);
-+		else
-+			break;
-+	}
-+
-+	newtFormDestroy(self->b.form);
-+	newtPopWindow();
 +	ui_helpline__pop();
-+	return 0;
++	ui_helpline__push(msg);
 +}
-+
-+int map__browse(struct map *self)
-+{
-+	struct map_browser mb = {
-+		.b = {
-+			.entries = &self->dso->symbols[self->type],
-+			.refresh = ui_browser__rb_tree_refresh,
-+			.seek	 = ui_browser__rb_tree_seek,
-+			.write	 = map_browser__write,
-+		},
-+		.map = self,
-+	};
-+	struct newtExitStruct es;
-+	struct rb_node *nd;
-+	char tmp[BITS_PER_LONG / 4];
-+	u64 maxaddr = 0;
-+
-+	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
-+		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
-+
-+		if (mb.namelen < pos->namelen)
-+			mb.namelen = pos->namelen;
-+		if (maxaddr < pos->end)
-+			maxaddr = pos->end;
-+		if (verbose) {
-+			u32 *idx = symbol__browser_index(pos);
-+			*idx = mb.b.nr_entries;
-+		}
-+		++mb.b.nr_entries;
-+	}
-+
-+	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
-+	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
-+	return map_browser__run(&mb, &es);
-+}
-diff --git a/tools/perf/util/ui/browsers/map.h b/tools/perf/util/ui/browsers/map.h
+diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
 new file mode 100644
-index 0000000..df8581a
+index 0000000..56d8c1d
 --- /dev/null
-+++ b/tools/perf/util/ui/browsers/map.h
-@@ -0,0 +1,6 @@
-+#ifndef _PERF_UI_MAP_BROWSER_H_
-+#define _PERF_UI_MAP_BROWSER_H_ 1
-+struct map;
++++ b/tools/perf/util/ui/helpline.h
+@@ -0,0 +1,9 @@
++#ifndef _PERF_UI_HELPLINE_H_
++#define _PERF_UI_HELPLINE_H_ 1
 +
-+int map__browse(struct map *self);
-+#endif /* _PERF_UI_MAP_BROWSER_H_ */
++void ui_helpline__pop(void);
++void ui_helpline__push(const char *msg);
++void ui_helpline__fpush(const char *fmt, ...);
++void ui_helpline__puts(const char *msg);
++
++#endif /* _PERF_UI_HELPLINE_H_ */
 -- 
 1.6.2.5
 
