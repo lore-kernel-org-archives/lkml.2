@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab0HJMFE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:05:04 -0400
-Received: from torres.zugschlus.de ([85.214.131.164]:48933 "EHLO
-	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab0HJME7 (ORCPT
+	id S1757525Ab0HJMKB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:10:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49866 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754484Ab0HJMJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:04:59 -0400
-Date: Tue, 10 Aug 2010 14:04:58 +0200
-From: Marc Haber <mh+linux-kernel@zugschlus.de>
-To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-Cc: Marc Haber <mh+linux-kernel@zugschlus.de>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>
-Subject: Re: e1000e crashes with 2.6.34.x and ThinkPad T60
-Message-ID: <20100810120458.GB21511@torres.zugschlus.de>
-References: <20100724092644.GA13353@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A1366000F42E28@rrsmsx501.amr.corp.intel.com> <20100730125452.GA21444@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660024083FE@rrsmsx501.amr.corp.intel.com>
+	Tue, 10 Aug 2010 08:09:55 -0400
+Message-ID: <4C61419B.9040409@infradead.org>
+Date: Tue, 10 Aug 2010 09:10:03 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100803 Red Hat/3.1.2-1.el6 Lightning/1.0b2 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <EA929A9653AAE14F841771FB1DE5A13660024083FE@rrsmsx501.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] docbook: fixup media support files for htmldocs also
+References: <20100809163040.137c6571.randy.dunlap@oracle.com>
+In-Reply-To: <20100809163040.137c6571.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 04, 2010 at 12:23:45PM -0600, Tantilov, Emil S wrote:
-> Looking at your lspci output - your system has a slightly different HW, but I don't know if this is significant.
+Em 09-08-2010 20:30, Randy Dunlap escreveu:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> Are you loading the kernel with any parameters (cat /proc/cmdline)?
+> 'make htmldocs' produces errors due to missing a supporting media
+> file, so add 'xmldoclinks' to the htmldocs dependencies so that the
+> needed supporting file will be present.
+> 
+> linux-2.6.35-git8/DOC1/Documentation/DocBook/media.xml:4: warning: failed to load external entity "linux-2.6.35-git8/DOC1/Documentation/DocBook/media-entities.tmpl"
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc:	Mauro Carvalho Chehab <mchehab@infradead.org>
 
-BOOT_IMAGE=/vmlinuz-2.6.35-zgws1 root=/dev/mapper/root ro
-resume=/dev/mapper/swap0 quiet splash radeon.modeset=1
+Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> ---
+>  Documentation/DocBook/Makefile |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-2.6.35-git8.orig/Documentation/DocBook/Makefile
+> +++ linux-2.6.35-git8/Documentation/DocBook/Makefile
+> @@ -45,7 +45,7 @@ PDF := $(patsubst %.xml, %.pdf, $(BOOKS)
+>  pdfdocs: $(PDF)
+>  
+>  HTML := $(sort $(patsubst %.xml, %.html, $(BOOKS)))
+> -htmldocs: $(HTML)
+> +htmldocs: $(HTML) xmldoclinks
+>  	$(call build_main_index)
+>  	$(call build_images)
+>  
+> ---
 
-> Do you have firewall configured (iptables -L)?
-
-I am working pretty intensively with virtual machines which are natted
-here and there. I have a handful of MASQUERADE rules in the
-nat/POSTROUTING chain, but that's it.
-
-> Also now that 2.6.35 is out - could you give it a try and see if the situation had improved?
-
-Tried, no improvement.
-
-Greetings
-Marc
-
--- 
------------------------------------------------------------------------------
-Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
-Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
-Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
