@@ -1,101 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0HJAzb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 20:55:31 -0400
-Received: from ns1.cypress.com ([157.95.67.4]:37678 "EHLO ns1.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845Ab0HJAz1 convert rfc822-to-8bit (ORCPT
+	id S1752873Ab0HJBO5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 21:14:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51591 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab0HJBOv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 20:55:27 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 9 Aug 2010 21:14:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=o3G3fQAvpQcTuBsDv0xcDRse6OhJaem/e08wDhdOmGatBSjpQ/oX4jjUCvp/40RzYm
+         Z3LI+r4vDZG2Vsl3Re7h2VgRFCfYoGj8+iTlMZIqBQMWX9wmUEEHtPYQPcrCnGi9FXgn
+         iXxBgdp5vkuVTWNFPrwoH22t+SXmdvAzp7078=
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+From: Pistis Valentino <vale.pistis@gmail.com>
+Date: Tue, 10 Aug 2010 03:14:30 +0200
+Message-ID: <AANLkTi=PB3+RcuaW_fHGcFmta=CN_-WU=WND3LxejY3i@mail.gmail.com>
+Subject: find_task_by_pid() problem
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
-Date: Mon, 9 Aug 2010 17:51:18 -0700
-Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC09C4882D@labamba.mis.cypress.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
-Thread-Index: Acs1ynUjesDZg1YmTvinI9HKX0JSpgCW4/8Q
-References: <Kevin McNeely <kev@cypress.com> <1281031924-3032-1-git-send-email-kev@cypress.com> <4C5B4404.6010602@euromail.se> <FB9C2CB29A07AB45B575A4E8D2AABC09C4860A@labamba.mis.cypress.com> <4C5CAD84.2040804@euromail.se>
-From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
-To: "Henrik Rydberg" <rydberg@euromail.se>
-Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
-        "David Brown" <davidb@codeaurora.org>,
-        "Trilok Soni" <tsoni@codeaurora.org>,
-        "Fred" <fwk@ubuntu.linuxcertified.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        "Eric Miao" <eric.y.miao@gmail.com>, "Ben Dooks" <ben-linux@fluff.org>,
-        "Simtec Linux Team" <linux@simtec.co.uk>,
-        "Todd Fischer" <todd.fischer@ridgerun.com>,
-        "Arnaud Patard" <arnaud.patard@rtp-net.org>,
-        "Sascha Hauer" <s.hauer@pengutronix.de>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 10 Aug 2010 00:51:19.0255 (UTC) FILETIME=[2519C670:01CB3826]
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
+Hello everyone,
 
-> -----Original Message-----
-> From: Henrik Rydberg [mailto:rydberg@euromail.se]
-> Sent: Friday, August 06, 2010 5:49 PM
-> To: Kevin McNeely
-> Cc: Dmitry Torokhov; David Brown; Trilok Soni; Fred; Samuel Ortiz;
-Eric
-> Miao; Ben Dooks; Simtec Linux Team; Todd Fischer; Arnaud Patard;
-Sascha
-> Hauer; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init
-> submit
-> 
-> On 08/07/2010 02:32 AM, Kevin McNeely wrote:
-> 
-> [...]
-> 
-> > However, I would like to keep the MT Protocol A.  Our solution
-allows
-> 
-> > The platform builder to select to use MT protocol B or not as part
-of
-> > platform_data in the board configuration. If it makes more sense,
-> > I can reverse the code to default to protocol B and allow the
-> platform
-> > builder developer to select protocol A.
-> 
-> 
-> There is nothing preventing you from keeping say a dkms package
-> somewhere with
-> all options intact. However, for the kernel, it is a question of
-> maintainability. If the driver can produce prefectly valid data using
-> protocol
-> B, and by doing so several hundred lines of code can be removed, that
-> is very
-> much preferred. Since both protocols can be translated to protocol B
-> via mtdev,
-> which is already very much in use, there is little reason to support
-> protocol A
-> when the device can do tracking.
+first of all, thank you all for your work on the Linux kernel.
 
-I will remove the Protocol A.
+I am not very practical programming kernel, I admit, but studying how
+to build a kernel module I found a possible problem.
 
-Thank you again for your review.
--kevin
+I'm using the routine find_task_by_vpid () linux / sched.h (the oldest
+find_task_by_pid() don't exist), but when I try to compile the file I
+hello_world.c returns an error:
 
-> 
-> Thanks,
-> Henrik
+foo@siduxbox: ~ / LPSO / modules / hello_world $ make
+make-C / usr/src/linux-2.6.34.2 subdirs = / home / foo / LPSO /
+modules / modules hello_world
+make [1]: Entering directory `/ usr/src/linux-2.6.34.2 '
+  Building modules, stage 2.
+  MODPOST 1 modules
+WARNING: "find_task_by_vpid [/
+home/foo/LPSO/modules/hello_world/hello_world_6.ko] undefined!
+make [1]: Leaving directory `/ usr/src/linux-2.6.34.2 '
+foo@siduxbox: ~ / LPSO / modules / $ hello_world
 
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
+My surprise is why the function is undefined if it is present in sched.h?
 
+In any case, the function is not defined in sched.c, but directly to
+the file pid.c.
+Given that pid.h not present the prototype of the function in question.
+
+I'm using Debian Sidux with Linux 2.6.34.2 compiled.
+
+I just can not understand why give me this problem .
+
+I tried to use kernel 2.6.20 for using the old "DEFINE
+find_task_by_pid" , but I have problems compiling the kernel and can
+not use them.
+
+You could at least tell me if this is a bug or am I not use good routines.
+
+
+Thank you all
+
+
+================
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/pid.h>
+MODULE_LICENSE ("Dual BSD/GPL");
+
+//static int num=1;
+//static char *string="Ciao";
+
+static int p=0;
+
+/*struct task_struct *find_task(pid_t pid)
+{
+    struct task_struct *task = current;
+
+    do
+    { if(task->pid == pid)
+        return(task);
+        task = task->next_task;
+    }
+    while(task != current);
+
+    return(NULL);
+}
+*/
+static int hello_init (void)
+{
+    printk(KERN_ALERT "*********** INIT **********\n");
+    printk(KERN_ALERT "Hello, world\n");
+
+    pid_t pid = p;
+    struct task_struct *task, *parent;
+    task=current;
+    parent=find_task_by_vpid(pid);
+
+
+    printk(KERN_ALERT "Some info from some Process\n");
+
+    //Always initialize the task_struct
+
+    printk("\nThe current task is: %s [%d]\n",task->comm , task->pid);
+    printk("\nThe parent task is: %s [%d]\n",parent->comm , parent->pid);
+
+    printk("\nThe credential of current task is:\n Priority = %d\n
+euid = %d\n egid = %d\n",task->prio , task->real_cred->euid,
+task->real_cred->egid);
+    printk("\nThe credential of parent task is:\n Priority = %d\n euid
+= %d\n egid = %d\n",parent->prio , parent->real_cred->euid,
+parent->real_cred->egid);
+
+    return 0;
+}
+
+static void hello_exit (void)
+{
+    printk(KERN_ALERT "Goodbye, cruel world\n");
+    printk(KERN_ALERT "*********** EXIT **********\n");
+}
+
+module_init(hello_init);
+module_exit(hello_exit);
+//module_param(num, int, S_IRUGO);
+//module_param(string, charp, S_IRUGO);
+module_param(p, int, S_IRUGO);
