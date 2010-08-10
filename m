@@ -1,182 +1,544 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0HJAvC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 20:51:02 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42313 "EHLO gir.skynet.ie"
+	id S1754293Ab0HJAvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 20:51:23 -0400
+Received: from ns1.cypress.com ([157.95.67.4]:37519 "EHLO ns1.cypress.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751243Ab0HJAu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 20:50:57 -0400
-Date: Tue, 10 Aug 2010 01:50:41 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm tree some more bits
-In-Reply-To: <alpine.DEB.2.00.1008092349350.20864@skynet.skynet.ie>
-Message-ID: <alpine.DEB.2.00.1008100149430.20864@skynet.skynet.ie>
-References: <alpine.DEB.2.00.1008092349350.20864@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752808Ab0HJAvB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 9 Aug 2010 20:51:01 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1884463084-1281401441=:20864"
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
+Date: Mon, 9 Aug 2010 17:49:58 -0700
+Message-ID: <FB9C2CB29A07AB45B575A4E8D2AABC09C4882C@labamba.mis.cypress.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init submit
+Thread-Index: Acs1RrJpcRKuqWA6Qh6Xfx8FhWDltgC3kH7w
+References: <Kevin McNeely <kev@cypress.com> <1281031924-3032-1-git-send-email-kev@cypress.com> <4C5BD096.4010001@codeaurora.org>
+From: "Kevin McNeely" <Kevin.McNeely@cypress.com>
+To: "Trilok Soni" <tsoni@codeaurora.org>
+Cc: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>,
+        "David Brown" <davidb@codeaurora.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>,
+        "Eric Miao" <eric.y.miao@gmail.com>, "Ben Dooks" <ben-linux@fluff.org>,
+        "Simtec Linux Team" <linux@simtec.co.uk>,
+        "Todd Fischer" <todd.fischer@ridgerun.com>,
+        "Arnaud Patard" <arnaud.patard@rtp-net.org>,
+        "Sascha Hauer" <s.hauer@pengutronix.de>,
+        "Henrik Rydberg" <rydberg@euromail.se>, <linux-input@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 10 Aug 2010 00:49:59.0629 (UTC) FILETIME=[F5A3CFD0:01CB3825]
+X-Brightmail-Tracker: AAAAAA==
+X-MailScanner: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Trilok,
 
---29444707-1884463084-1281401441=:20864
-Content-Type: TEXT/PLAIN; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+> -----Original Message-----
+> From: Trilok Soni [mailto:tsoni@codeaurora.org]
+> Sent: Friday, August 06, 2010 2:07 AM
+> To: Kevin McNeely
+> Cc: Dmitry Torokhov; David Brown; Samuel Ortiz; Eric Miao; Ben Dooks;
+> Simtec Linux Team; Todd Fischer; Arnaud Patard; Sascha Hauer; Henrik
+> Rydberg; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: Re: [PATCH] i2c: cyttsp i2c and spi touchscreen driver init
+> submit
+> 
+> Hi Kevin,
+> 
+> Review for SPI code.
+> 
+> > diff --git a/drivers/input/touchscreen/cyttsp_spi.c
+> b/drivers/input/touchscreen/cyttsp_spi.c
+> > new file mode 100755
+> 
+> 
+> > +#include <linux/init.h>
+> > +#include <linux/module.h>
+> > +#include <linux/spi/spi.h>
+> > +#include <linux/delay.h>
+> > +#include <linux/cyttsp.h>
+> > +#include "cyttsp_core.h"
+> > +
+> > +#define DBG(x)
+> > +
+> > +#define CY_SPI_WR_OP      0x00 /* r/~w */
+> > +#define CY_SPI_RD_OP      0x01
+> > +#define CY_SPI_CMD_BYTES  4
+> > +#define CY_SPI_SYNC_BYTES 2
+> > +#define CY_SPI_SYNC_ACK1  0x62 /* from protocol v.2 */
+> > +#define CY_SPI_SYNC_ACK2  0x9D /* from protocol v.2 */
+> > +#define CY_SPI_SYNC_NACK  0x69
+> > +#define CY_SPI_DATA_SIZE  64
+> > +#define CY_SPI_DATA_BUF_SIZE (CY_SPI_CMD_BYTES + CY_SPI_DATA_SIZE)
+> > +#define CY_SPI_BITS_PER_WORD 8
+> > +
+> > +struct cyttsp_spi {
+> > +	struct cyttsp_bus_ops ops;
+> > +	struct spi_device *spi_client;
+> > +	void *ttsp_client;
+> > +	u8 wr_buf[CY_SPI_DATA_BUF_SIZE];
+> > +	u8 rd_buf[CY_SPI_DATA_BUF_SIZE];
+> > +};
+> > +
+> > +static void spi_complete(void *arg)
+> > +{
+> > +	complete(arg);
+> 
+> We don't need anything here on completion?
+
+No, nothing needed.
+
+> 
+> > +}
+> > +
+> > +static int spi_sync_tmo(struct spi_device *spi, struct spi_message
+> *message)
+> > +{
+> > +	DECLARE_COMPLETION_ONSTACK(done);
+> > +	int status;
+> > +	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
+> 
+> No need.
+
+Will remove.
+
+> 
+> > +
+> > +	message->complete = spi_complete;
+> > +	message->context = &done;
+> > +	status = spi_async(spi, message);
+> > +	if (status == 0) {
+> > +		int ret =
+wait_for_completion_interruptible_timeout(&done,
+> HZ);
+> > +		if (!ret) {
+> > +			printk(KERN_ERR "%s: timeout\n", __func__);
+> > +			status = -EIO;
+> > +		} else
+> > +			status = message->status;
+> > +	}
+> > +	message->context = NULL;
+> > +	return status;
+> > +}
+> > +
+> > +static int cyttsp_spi_xfer_(u8 op, struct cyttsp_spi *ts_spi,
+> > +			    u8 reg, u8 *buf, int length)
+> > +{
+> > +	struct spi_message msg;
+> > +	struct spi_transfer xfer = { 0 };
+> > +	u8 *wr_buf = ts_spi->wr_buf;
+> > +	u8 *rd_buf = ts_spi->rd_buf;
+> > +	int retval;
+> > +	int i;
+> > +	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
+> 
+> No need.
+
+Will remove.
+
+> 
+> > +
+> > +	if (length > CY_SPI_DATA_SIZE) {
+> > +		printk(KERN_ERR "%s: length %d is too big.\n",
+> > +			__func__, length);
+> > +		return -EINVAL;
+> > +	}
+> > +	DBG(printk(KERN_INFO "%s: OP=%s length=%d\n", __func__,
+> > +		   op == CY_SPI_RD_OP ? "Read" : "Write", length);)
+> 
+> dev_dbg if really needed.
+
+Will use dev_dbg where needed.
+
+> 
+> > +
+> > +	wr_buf[0] = 0x00; /* header byte 0 */
+> > +	wr_buf[1] = 0xFF; /* header byte 1 */
+> > +	wr_buf[2] = reg;  /* reg index */
+> > +	wr_buf[3] = op;   /* r/~w */
+> > +	if (op == CY_SPI_WR_OP)
+> > +		memcpy(wr_buf + CY_SPI_CMD_BYTES, buf, length);
+> > +	DBG(
+> > +	if (op == CY_SPI_RD_OP)
+> > +		memset(rd_buf, CY_SPI_SYNC_NACK, CY_SPI_DATA_BUF_SIZE);)
+> > +	DBG(
+> > +	for (i = 0; i < (length + CY_SPI_CMD_BYTES); i++) {
+> > +		if ((op == CY_SPI_RD_OP) && (i < CY_SPI_CMD_BYTES))
+> > +			printk(KERN_INFO "%s: wr[%d]:0x%02x\n",
+> > +				__func__, i, wr_buf[i]);
+> > +		if (op == CY_SPI_WR_OP)
+> > +			printk(KERN_INFO "%s: wr[%d]:0x%02x\n",
+> > +				__func__, i, wr_buf[i]);
+> > +	})
+> 
+> Let remove such things.
+
+Will do.
+
+> 
+> > +
+> > +	xfer.tx_buf = wr_buf;
+> > +	xfer.rx_buf = rd_buf;
+> > +	xfer.len = length + CY_SPI_CMD_BYTES;
+> > +
+> > +	if ((op == CY_SPI_RD_OP) && (xfer.len < 32))
+> > +		xfer.len += 1;
+> > +
+> > +	spi_message_init(&msg);
+> > +	spi_message_add_tail(&xfer, &msg);
+> > +	retval = spi_sync_tmo(ts_spi->spi_client, &msg);
+> > +	if (retval < 0) {
+> > +		printk(KERN_ERR "%s: spi_sync_tmo() error %d\n",
+> > +			__func__, retval);
+> > +		retval = 0;
+> > +	}
+> > +	if (op == CY_SPI_RD_OP) {
+> > +		DBG(
+> > +		for (i = 0; i < (length + CY_SPI_CMD_BYTES); i++)
+> > +			printk(KERN_INFO "%s: rd[%d]:0x%02x\n",
+> > +				__func__, i, rd_buf[i]);)
+> > +
+> > +		for (i = 0; i < (length + CY_SPI_CMD_BYTES - 1); i++) {
+> > +			if ((rd_buf[i] != CY_SPI_SYNC_ACK1) ||
+> > +				(rd_buf[i + 1] != CY_SPI_SYNC_ACK2)) {
+> > +				continue;
+> > +			}
+> > +			if (i <= (CY_SPI_CMD_BYTES - 1)) {
+> > +				memcpy(buf, (rd_buf + i +
+CY_SPI_SYNC_BYTES),
+> > +					length);
+> > +				return 0;
+> > +			}
+> > +		}
+> > +		DBG(printk(KERN_INFO "%s: byte sync error\n",
+__func__);)
+> 
+> dev_err if you really need to print for debugging purpose or
+> pr_err(...)
+> 
+> > +		retval = 1;
+> > +	}
+> > +	return retval;
+> > +}
+> > +
+> > +static int cyttsp_spi_xfer(u8 op, struct cyttsp_spi *ts,
+> > +			    u8 reg, u8 *buf, int length)
+> > +{
+> > +	int tries;
+> > +	int retval;
+> > +	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
+> 
+> No need.
+
+Will remove.
+
+> 
+> > +
+> > +	if (op == CY_SPI_RD_OP) {
+> > +		for (tries = CY_NUM_RETRY; tries; tries--) {
+> > +			retval = cyttsp_spi_xfer_(op, ts, reg, buf,
+length);
+> > +			if (retval == 0)
+> > +				break;
+> > +			else
+> > +				msleep(10);
+> > +		}
+> > +	} else {
+> > +		retval = cyttsp_spi_xfer_(op, ts, reg, buf, length);
+> > +	}
+> > +	return retval;
+> > +}
+> > +
+> > +static s32 ttsp_spi_read_block_data(void *handle, u8 addr,
+> > +				    u8 length, void *data)
+> > +{
+> > +	int retval;
+> > +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi,
+> ops);
+> > +
+> > +	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
+> 
+> No need.
+
+Will remove.
+
+> 
+> > +
+> > +	retval = cyttsp_spi_xfer(CY_SPI_RD_OP, ts, addr, data, length);
+> > +	if (retval < 0)
+> > +		printk(KERN_ERR "%s: ttsp_spi_read_block_data failed\n",
+> > +			__func__);
+> 
+> dev_err(...)
+> 
+> > +
+> > +	/* Do not print the above error if the data sync bytes were not
+> found.
+> > +	   This is a normal condition for the bootloader loader startup
+> and need
+> > +	   to retry until data sync bytes are found. */
+> 
+> Use kernel style for multi-line comments.
+> 
+> 
+> /*
+>  * You should use this format
+>  * for multi-line commenting
+>  */
+>
+
+Will do for all.
+ 
+> 
+> 
+> > +	if (retval > 0)
+> > +		retval = -1;	/* now signal fail; so retry can be done
+> */
+> > +
+> > +	return retval;
+> > +}
+> > +
+> > +static s32 ttsp_spi_write_block_data(void *handle, u8 addr,
+> > +				     u8 length, const void *data)
+> > +{
+> > +	int retval;
+> > +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi,
+> ops);
+> > +
+> > +	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
+> 
+> No need.
+
+Will remove.
+
+> 
+> > +
+> > +	retval = cyttsp_spi_xfer(CY_SPI_WR_OP, ts, addr, (void *)data,
+> length);
+> > +	if (retval < 0)
+> > +		printk(KERN_ERR "%s: ttsp_spi_write_block_data
+failed\n",
+> > +			__func__);
+> > +
+> > +	if (retval == -EIO)
+> > +		return 0;
+> > +	else
+> > +		return retval;
+> > +}
+> > +
+> > +static s32 ttsp_spi_tch_ext(void *handle, void *values)
+> > +{
+> > +	int retval = 0;
+> > +	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi,
+> ops);
+> > +
+> > +	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
+> 
+> No need.
+
+Will remove.
+
+> 
+> > +
+> > +	/* Add custom touch extension handling code here */
+> 
+> You may want to add this as "TODO".
+> 
+> > +	/* set: retval < 0 for any returned system errors,
+> > +		retval = 0 if normal touch handling is required,
+> > +		retval > 0 if normal touch handling is *not* required */
+> > +	if (!ts || !values)
+> > +		retval = -EIO;
+> > +
+> > +	return retval;
+> > +}
+> > +
+> > +static int __devinit cyttsp_spi_probe(struct spi_device *spi)
+> > +{
+> > +	struct cyttsp_spi *ts_spi;
+> > +	int retval;
+> > +	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
+> 
+> Un-necessary printk.
+
+Will remove.
+
+> 
+> > +
+> > +	/* Set up SPI*/
+> > +	spi->bits_per_word = CY_SPI_BITS_PER_WORD;
+> > +	spi->mode = SPI_MODE_0;
+> > +	retval = spi_setup(spi);
+> > +	if (retval < 0) {
+> > +		printk(KERN_ERR "%s: SPI setup error %d\n", __func__,
+> retval);
+> 
+> dev_err(...)
+
+Will replace all printk with appropriate dev_xxx(...).
+
+> 
+> > +		return retval;
+> > +	}
+> > +	ts_spi = kzalloc(sizeof(*ts_spi), GFP_KERNEL);
+> > +	if (ts_spi == NULL) {
+> > +		printk(KERN_ERR "%s: Error, kzalloc\n", __func__);
+> 
+> dev_err(...)
+
+Will replace.
+
+> 
+> > +		retval = -ENOMEM;
+> > +		goto error_alloc_data_failed;
+> > +	}
+> > +	ts_spi->spi_client = spi;
+> > +	dev_set_drvdata(&spi->dev, ts_spi);
+> > +	ts_spi->ops.write = ttsp_spi_write_block_data;
+> > +	ts_spi->ops.read = ttsp_spi_read_block_data;
+> > +	ts_spi->ops.ext = ttsp_spi_tch_ext;
+> > +
+> > +	ts_spi->ttsp_client = cyttsp_core_init(&ts_spi->ops, &spi->dev);
+> > +	if (!ts_spi->ttsp_client)
+> > +		goto ttsp_core_err;
+> > +	printk(KERN_INFO "%s: Successful registration %s\n",
+> > +	       __func__, CY_SPI_NAME);
+> 
+> 
+> > +
+> > +	return 0;
+> > +
+> > +ttsp_core_err:
+> > +	kfree(ts_spi);
+> > +error_alloc_data_failed:
+> > +	return retval;
+> > +}
+> > +
+> > +/* registered in driver struct */
+> 
+> No need.
+
+Sorry, this is unclear.
+
+> 
+> > +static int __devexit cyttsp_spi_remove(struct spi_device *spi)
+> > +{
+> > +	struct cyttsp_spi *ts_spi = dev_get_drvdata(&spi->dev);
+> > +	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
+> 
+> Remove this printk.
+
+Will do.
+
+> 
+> > +	cyttsp_core_release(ts_spi->ttsp_client);
+> > +	kfree(ts_spi);
+> > +	return 0;
+> > +}
+> > +
+> > +#ifdef CONFIG_PM
+> > +static int cyttsp_spi_suspend(struct spi_device *spi, pm_message_t
+> message)
+> > +{
+> > +	return cyttsp_suspend(dev_get_drvdata(&spi->dev));
+> > +}
+> > +
+> > +static int cyttsp_spi_resume(struct spi_device *spi)
+> > +{
+> > +	return cyttsp_resume(dev_get_drvdata(&spi->dev));
+> > +}
+> > +#endif
+> > +
+> > +static struct spi_driver cyttsp_spi_driver = {
+> > +	.driver = {
+> > +		.name = CY_SPI_NAME,
+> > +		.bus = &spi_bus_type,
+> > +		.owner = THIS_MODULE,
+> > +	},
+> > +	.probe = cyttsp_spi_probe,
+> > +	.remove = __devexit_p(cyttsp_spi_remove),
+> > +#ifdef CONFIG_PM
+> > +	.suspend = cyttsp_spi_suspend,
+> > +	.resume = cyttsp_spi_resume,
+> > +#endif
+> > +};
+> > +
+> > +static int __init cyttsp_spi_init(void)
+> > +{
+> > +	int err;
+> > +
+> > +	err = spi_register_driver(&cyttsp_spi_driver);
+> > +	printk(KERN_INFO "%s: Cypress TrueTouch(R) Standard Product SPI
+"
+> > +		"Touchscreen Driver (Built %s @ %s) returned %d\n",
+> > +		 __func__, __DATE__, __TIME__, err);
+> 
+> As Dmitry mentioned on another e-mail, remove such printks. They
+create
+> un-necessary noise.
+
+Will remove.
+
+> 
+> > +
+> > +	return err;
+> > +}
+> > +module_init(cyttsp_spi_init);
+> > +
+> > +static void __exit cyttsp_spi_exit(void)
+> > +{
+> > +	spi_unregister_driver(&cyttsp_spi_driver);
+> > +	printk(KERN_INFO "%s: module exit\n", __func__);
+> 
+> Ditto.
+
+Will remove.
+
+> 
+> > +}
+> > +module_exit(cyttsp_spi_exit);
+> > +
+> > +MODULE_ALIAS("spi:cyttsp");
+> > +MODULE_LICENSE("GPL");
+> > +MODULE_DESCRIPTION("Cypress TrueTouch(R) Standard Product (TTSP)
+SPI
+> driver");
+> > +MODULE_AUTHOR("Cypress");
+> > +
+> > diff --git a/include/linux/cyttsp.h b/include/linux/cyttsp.h
+> > new file mode 100755
+> > index 0000000..b2a289b
+> > --- /dev/null
+> > +++ b/include/linux/cyttsp.h
+> 
+> You may want to move this to include/linux/input/cyttsp.h
+
+Will do.
 
 
-I just updated the tree, I had to drop one of the cleanups for now, same 
-tree has the initial mail.
+Thank you for your review Trilok.
 
-The following changes since commit 96576a9e1a0cdb8a43d3af5846be0948f52b4460:
+> 
+> ---Trilok Soni
+> 
+> --
+> Sent by a consultant of the Qualcomm Innovation Center, Inc.
+> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+> Forum.
 
-  agp: intel-agp: do not use PCI resources before pci_enable_device() (2010-08-05 12:28:25 +1000)
+---------------------------------------------------------------
+This message and any attachments may contain Cypress (or its
+subsidiaries) confidential information. If it has been received
+in error, please advise the sender and immediately delete this
+message.
+---------------------------------------------------------------
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-core-next
-
-Adam Jackson (5):
-      drm: Remove unused fields from drm_display_info
-      drm/edid: Add detailed block walk for CEA extensions
-      drm/edid: Add detailed block walk for VTB extensions
-      drm/edid: Rewrite mode parse to use the generic detailed block walk
-      drm/edid: Split mode lists out to their own header for readability
-
-Alex Deucher (6):
-      drm/radeon/kms: r600 CS parser fixes
-      drm/radeon/kms: unify i2c handling
-      drm/radeon/kms: rework combios i2c handling
-      drm/radeon/kms: add support for router objects
-      drm/radeon/kms: add additional quirk for Acer rv620 laptop
-      drm/radeon/kms: mark 3D power states as performance
-
-Ben Skeggs (11):
-      drm/nv50: use custom i2c algo for dp auxch
-      drm/nouveau: remove unused ttm bo list
-      drm/nvc0: starting point for GF100 support, everything stubbed
-      drm/nvc0: allow INIT_GPIO
-      drm/nvc0: implement memory detection
-      drm/nvc0: rudimentary instmem support
-      drm/nvc0: fix evo dma object so we display something
-      drm/nvc0: implement crtc pll setting
-      drm/nvc0: backup bar3 channel on suspend
-      drm/nouveau: reduce severity of some "error" messages
-      drm/nvc0: fix typo in PRAMIN flush
-
-Benjamin Herrenschmidt (1):
-      drm: Fix support for PCI domains
-
-Chris Wilson (3):
-      drm: Propagate error code from fb_create()
-      drm: Only set DPMS once on the CRTC not after every encoder.
-      drm: Use ENOENT consistently for the error return for an unmatched handle.
-
-Dan Carpenter (2):
-      drm/nouveau: unwind on load errors
-      radeon: handle errors in radeon_hwmon_init()
-
-Dave Airlie (1):
-      Merge remote branch 'nouveau/for-airlied' of /ssd/git/drm-nouveau-next into drm-core-next
-
-Dr. David Alan Gilbert (1):
-      drm/radeon/kms: add missing copy from user
-
-Francisco Jerez (13):
-      drm/nouveau: Fix AGP reset when AGP FW is already enabled on init.
-      drm/nouveau: Don't pass misaligned offsets to io_mapping_map_atomic_wc().
-      drm/nouveau: Fix the INIT_CONFIGURE_PREINIT BIOS opcode.
-      drm/nouveau: Ack the context switch interrupt before switching contexts.
-      drm/nv10: Fix up switching of NV10TCL_DMA_VTXBUF.
-      drm/nv17-nv4x: Attempt to init some external TMDS transmitters.
-      drm/nouveau: No need to set slave TV encoder configs explicitly.
-      drm/nv30: Workaround dual TMDS brain damage.
-      drm/nouveau: Init dcb->or on cards that have no usable DCB table.
-      drm/i2c/ch7006: Don't use POWER_LEVEL_FULL_POWER_OFF on early chip versions.
-      drm/nv04: Fix up SGRAM density detection.
-      drm/nv30: Fix PFB init for nv31.
-      drm/nouveau: Fix DCB TMDS config parsing.
-
-James Simmons (1):
-      drm: expand gamma_set
-
-Marcin Ko¶cielnicki (2):
-      drm/nouveau: implement init table op 0x57, INIT_LTIME
-      drm/nouveau: implement init table opcodex 0x5e and 0x9a
-
-Marek Ol¹ák (1):
-      drm/radeon: add a way to revoke hyper-z access
-
- drivers/gpu/drm/drm_crtc.c                  |    6 +-
- drivers/gpu/drm/drm_crtc_helper.c           |   10 +-
- drivers/gpu/drm/drm_edid.c                  |  841 +++++++++------------------
- drivers/gpu/drm/drm_edid_modes.h            |  380 ++++++++++++
- drivers/gpu/drm/drm_gem.c                   |    2 +-
- drivers/gpu/drm/drm_ioctl.c                 |    1 +
- drivers/gpu/drm/i2c/ch7006_drv.c            |    1 +
- drivers/gpu/drm/i2c/ch7006_mode.c           |    5 +-
- drivers/gpu/drm/i2c/ch7006_priv.h           |    1 +
- drivers/gpu/drm/i915/i915_gem.c             |   26 +-
- drivers/gpu/drm/i915/i915_gem_tiling.c      |    4 +-
- drivers/gpu/drm/i915/intel_display.c        |   15 +-
- drivers/gpu/drm/i915/intel_fb.c             |    4 +-
- drivers/gpu/drm/nouveau/Makefile            |    8 +-
- drivers/gpu/drm/nouveau/nouveau_bios.c      |  194 ++++++-
- drivers/gpu/drm/nouveau/nouveau_bios.h      |    1 +
- drivers/gpu/drm/nouveau/nouveau_bo.c        |    6 -
- drivers/gpu/drm/nouveau/nouveau_connector.c |   19 +-
- drivers/gpu/drm/nouveau/nouveau_display.c   |    6 +-
- drivers/gpu/drm/nouveau/nouveau_dp.c        |   87 ++--
- drivers/gpu/drm/nouveau/nouveau_drv.h       |   45 ++-
- drivers/gpu/drm/nouveau/nouveau_encoder.h   |    6 +
- drivers/gpu/drm/nouveau/nouveau_fbcon.c     |    2 +
- drivers/gpu/drm/nouveau/nouveau_gem.c       |    8 +-
- drivers/gpu/drm/nouveau/nouveau_hw.c        |   11 +-
- drivers/gpu/drm/nouveau/nouveau_i2c.c       |   41 +-
- drivers/gpu/drm/nouveau/nouveau_i2c.h       |    8 +-
- drivers/gpu/drm/nouveau/nouveau_irq.c       |    6 +-
- drivers/gpu/drm/nouveau/nouveau_mem.c       |   15 +-
- drivers/gpu/drm/nouveau/nouveau_reg.h       |   18 +-
- drivers/gpu/drm/nouveau/nouveau_state.c     |   91 +++-
- drivers/gpu/drm/nouveau/nv04_crtc.c         |   15 +-
- drivers/gpu/drm/nouveau/nv04_dfp.c          |   73 +++
- drivers/gpu/drm/nouveau/nv04_tv.c           |   10 +-
- drivers/gpu/drm/nouveau/nv10_graph.c        |  175 ++++--
- drivers/gpu/drm/nouveau/nv30_fb.c           |   24 +-
- drivers/gpu/drm/nouveau/nv50_crtc.c         |   34 +-
- drivers/gpu/drm/nouveau/nv50_display.c      |    5 +-
- drivers/gpu/drm/nouveau/nvc0_fb.c           |   38 ++
- drivers/gpu/drm/nouveau/nvc0_fifo.c         |   96 +++
- drivers/gpu/drm/nouveau/nvc0_graph.c        |   75 +++
- drivers/gpu/drm/nouveau/nvc0_instmem.c      |  232 ++++++++
- drivers/gpu/drm/radeon/r600_cs.c            |   27 +-
- drivers/gpu/drm/radeon/radeon.h             |    2 +
- drivers/gpu/drm/radeon/radeon_atombios.c    |  180 +++++-
- drivers/gpu/drm/radeon/radeon_combios.c     |  388 ++++++-------
- drivers/gpu/drm/radeon/radeon_connectors.c  |   45 +-
- drivers/gpu/drm/radeon/radeon_cs.c          |    2 +-
- drivers/gpu/drm/radeon/radeon_cursor.c      |    2 +-
- drivers/gpu/drm/radeon/radeon_display.c     |   34 +-
- drivers/gpu/drm/radeon/radeon_gem.c         |   12 +-
- drivers/gpu/drm/radeon/radeon_i2c.c         |   82 +++
- drivers/gpu/drm/radeon/radeon_kms.c         |   28 +-
- drivers/gpu/drm/radeon/radeon_mode.h        |   24 +
- drivers/gpu/drm/radeon/radeon_pm.c          |   24 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_kms.c         |    8 +-
- drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c         |    2 +-
- include/drm/drmP.h                          |   22 +-
- include/drm/drm_core.h                      |    2 +-
- include/drm/drm_crtc.h                      |   37 +--
- include/drm/drm_edid.h                      |    6 +
- 61 files changed, 2415 insertions(+), 1157 deletions(-)
- create mode 100644 drivers/gpu/drm/drm_edid_modes.h
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_fb.c
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_fifo.c
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_graph.c
- create mode 100644 drivers/gpu/drm/nouveau/nvc0_instmem.c
---29444707-1884463084-1281401441=:20864--
