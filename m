@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932393Ab0HJQfe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 12:35:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23668 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932202Ab0HJQfa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 12:35:30 -0400
-Date: Tue, 10 Aug 2010 12:35:25 -0400
-From: Jeff Layton <jlayton@redhat.com>
+	id S932409Ab0HJQfo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 12:35:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29763 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab0HJQfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 12:35:37 -0400
+Message-ID: <4C617F87.6090300@oracle.com>
+Date: Tue, 10 Aug 2010 09:34:15 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
 To: Jens Axboe <axboe@kernel.dk>
-Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: cfq: oops in __call_for_each_cic
-Message-ID: <20100810123525.3112a382@tlielax.poochiereds.net>
-In-Reply-To: <4C6179DD.7010000@kernel.dk>
-References: <20100810064045.6996f3b7@tlielax.poochiereds.net>
-	<x49zkwu8s3y.fsf@segfault.boston.devel.redhat.com>
-	<20100810102718.45bddc9d@tlielax.poochiereds.net>
-	<4C6179DD.7010000@kernel.dk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 6 (block git tree)
+References: <20100806132758.6001d416.sfr@canb.auug.org.au>	<20100806120456.5eca82b7.randy.dunlap@oracle.com>	<4C5C5D18.6050905@oracle.com>	<20100810083737.c761fc8f.randy.dunlap@oracle.com>	<4C617596.505@kernel.dk>	<4C617644.6040105@oracle.com>	<4C6176B2.1050604@kernel.dk> <20100810085946.a8b545e9.randy.dunlap@oracle.com> <4C617956.70003@kernel.dk> <4C617A1C.9000602@oracle.com> <4C617AD1.10805@kernel.dk>
+In-Reply-To: <4C617AD1.10805@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Aug 2010 12:10:05 -0400
-Jens Axboe <axboe@kernel.dk> wrote:
-
-> On 08/10/2010 10:27 AM, Jeff Layton wrote:
-> > On Tue, 10 Aug 2010 10:22:41 -0400
-> > Jeff Moyer <jmoyer@redhat.com> wrote:
-> > 
-> >> Jeff Layton <jlayton@redhat.com> writes:
-> >>
-> >>> Saw this oops on my test machine this morning. I rebooted the machine
-> >>> last night and hadn't done anything on it other than log in this
-> >>> morning. The kernel here is based on Steve French's git tree, which is
-> >>> based on Linus' as of Sunday Aug 8th. Last non-cifs commit is:
-> >>
-> >> This looks a lot like this bug:
-> >>   https://bugzilla.redhat.com/show_bug.cgi?id=577968
-> >>
-> >> See also:
-> >>   http://kerneloops.org/guilty.php?guilty=cfq_free_io_context&version=2.6.34-rc&start=2228224&end=2260991&class=oops
-> >>
-> >> It's been around since 2.6.30.8 according to kerneloops.org.  If you
-> >> find that you have a reliable way of reproducing the issue, that would
-> >> be great.
-> >>
-> > 
-> > Ok, thanks -- no clear reproducer so far. This morning was the
-> > first time I've seen it and it was on the console of my rawhide
-> > machine. The last thing I did with it was reboot it last night. I
-> > suspect that the gzip process came from a cron job or something.
+On 08/10/10 09:14, Jens Axboe wrote:
+> On 08/10/2010 12:11 PM, Randy Dunlap wrote:
+>> On 08/10/10 09:07, Jens Axboe wrote:
+>>> On 08/10/2010 11:59 AM, Randy Dunlap wrote:
+>>>> On Tue, 10 Aug 2010 11:56:34 -0400 Jens Axboe wrote:
+>>>>
+>>>>> On 08/10/2010 11:54 AM, Randy Dunlap wrote:
+>>>>>> On 08/10/10 08:51, Jens Axboe wrote:
+>>>>>>> On 08/10/2010 11:37 AM, Randy Dunlap wrote:
+>>>>>>>> On Fri, 06 Aug 2010 12:06:00 -0700 Randy Dunlap wrote:
+>>>>>>>>
+>>>>>>>>> On 08/06/10 12:04, Randy Dunlap wrote:
+>>>>>>>>>> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
+>>>>>>>>>>
+>>>>>>>>>>> Hi all,
+>>>>>>>>>>>
+>>>>>>>>>>> As the merge window is open, please do not add 2.6.37 material to your
+>>>>>>>>>>> linux-next included trees until after 2.6.36-rc1.
+>>>>>>>>>>>
+>>>>>>>>>>> Changes since 20100805:
+>>>>>>>>>>>
+>>>>>>>>>>> The block tree lost its build failure and a conflict.
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> Lots of source files now need <linux/blk_types.h>:
+>>>>>>>>>>
+>>>>>>>>>> mm/filemap.c:2164: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> fs/read_write.c:362: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> fs/splice.c:1108: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> fs/aio.c:1496: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> drivers/memstick/core/memstick.c:272: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> drivers/memstick/host/tifm_ms.c:218: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> drivers/memstick/host/jmb38x_ms.c:333: error: 'REQ_WRITE' undeclared
+>>>>>>>>>> drivers/staging/spectra/ffsport.c:277: error: 'REQ_TYPE_LINUX_BLOCK' undeclared
+>>>>>>>>>> fs/compat.c:1274: error: 'REQ_WRITE' undeclared
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Sorry, I see that this has already been fixed.
+>>>>>>>>
+>>>>>>>> s/fixed/addressed/  but not yet merged into linux-next.
+>>>>>>>> Can we get that fixed, please?
+>>>>>>>
+>>>>>>> Which patch are you referencing?
+>>>>>>
+>>>>>> Hi Jens,
+>>>>>>
+>>>>>> Maybe I misread last week's email about linux/blk_types.h.
+>>>>>> (It was about being exported, not about being #included.)
+>>>>>>
+>>>>>> There are still lots of these files that have the errors listed above.
+>>>>>> Has there been a patch for those?
+>>>>>
+>>>>> What's the .config?
+>>>>
+>>>> I have a bunch of them that fail.  Here are 2 of them,
+>>>> one with CONFIG_BLOCK=y and one with CONFIG_BLOCK=n.
+>>>>
+>>>> I can give you more if you want them.
+>>>
+>>> Looks like the types are badly hidden behind CONFIG_BLOCK.
+>>> So this should fix the CONFIG_BLOCK=n part at least. What
+>>> was the compile error with CONFIG_BLOCK=y?
+>>
+>> Ugh, it is a staging driver with lots of other problems.
+>> (spectra)  I wouldn't worry about it for now.
+>>
+>> I'll test this patch.  Thanks.
 > 
-> What version did you hit it on?
-> 
+> OK great, I'll push this one out.
 
-It was a kernel built out of git, based on Steve French's git tree. The
-last commit from Linus in it was
-45d7f32c7a43cbb9592886d38190e379e2eb2226. Everything else on top of
-that was patches that only touched cifs code. cifs.ko hadn't been
-plugged in since it was rebooted.
+
+Ack.  Looks good here.  Thanks.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
