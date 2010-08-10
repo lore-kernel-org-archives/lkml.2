@@ -1,74 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab0HJIPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 04:15:21 -0400
-Received: from mga03.intel.com ([143.182.124.21]:46340 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751323Ab0HJIPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 04:15:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,347,1278313200"; 
-   d="scan'208";a="310141292"
-From: ling.ma@intel.com
-To: mingo@elte.hu
-Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Ma Ling <ling.ma@intel.com>
-Subject: [PATCH RFC] [X86] Fix potential issue on memmove
-Date: Tue, 10 Aug 2010 09:17:07 +0800
-Message-Id: <1281403027-12324-1-git-send-email-ling.ma@intel.com>
-X-Mailer: git-send-email 1.6.5.2
+	id S1753712Ab0HJIS2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 04:18:28 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:38047 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751819Ab0HJISY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 04:18:24 -0400
+Date: Tue, 10 Aug 2010 10:18:18 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 2.6.35+
+Message-ID: <20100810101818.4e39541a@mschwide.boeblingen.de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ma Ling <ling.ma@intel.com>
+Hi Linus,
 
-memmove allow source and destination address to be overlap, 
-but no limitation for memcpy. So memmove use forward or
-backward copy mode to handle src > dest and dest > src cases respectively.
-However memcpy has not address overlap, it may use any copy mode
-theoretically. Our original memmove will call memcpy and assume
-it must use forward copy mode, otherwise the system will crash,
-it is potential issue. The patch avoid assumption, meanwhile
-re-active patch id a1e5278e40f16a4611264f8da9e557c16cb6f6ed,
-which will use forward/backward copy mode according to offset address.
+please pull from 'for-linus' branch of
 
-Signed-off-by: Ma Ling <ling.ma@intel.com>
----
- arch/x86/lib/memcpy_32.c  |    4 +++-
- arch/x86/lib/memmove_64.c |    4 +++-
- 2 files changed, 6 insertions(+), 2 deletions(-)
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
 
-diff --git a/arch/x86/lib/memcpy_32.c b/arch/x86/lib/memcpy_32.c
-index 5415a9d..4f56139 100644
---- a/arch/x86/lib/memcpy_32.c
-+++ b/arch/x86/lib/memcpy_32.c
-@@ -25,7 +25,9 @@ void *memmove(void *dest, const void *src, size_t n)
- 	int d0, d1, d2;
- 
- 	if (dest < src) {
--		memcpy(dest, src, n);
-+		int i;
-+		for(i = 0; i < n; i++)
-+			*((char *)dest + i) = *((char *)src + i);
- 	} else {
- 		__asm__ __volatile__(
- 			"std\n\t"
-diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
-index 0a33909..0dded09 100644
---- a/arch/x86/lib/memmove_64.c
-+++ b/arch/x86/lib/memmove_64.c
-@@ -9,7 +9,9 @@
- void *memmove(void *dest, const void *src, size_t count)
- {
- 	if (dest < src) {
--		return memcpy(dest, src, count);
-+		int i;
-+		for(i = 0; i < count; i++)
-+			*((char *)dest + i) = *((char *)src + i);
- 	} else {
- 		char *p = dest + count;
- 		const char *s = src + count;
--- 
-1.6.5.2
+to receive the following updates:
+
+Heiko Carstens (3):
+      [S390] cmm: add missing __init/__exit annotations
+      [S390] initrd: change default load address
+      [S390] topology: use default MC domain initializer
+
+Hendrik Brueckner (1):
+      [S390] cmm, smsgiucv_app: convert sender to uppercase
+
+Michael Ernst (2):
+      [S390] cio: CHSC SIOSL Support
+      [S390] cio: Log the response from the unit check handler
+
+Sebastian Ott (3):
+      [S390] cio: ccw_device_online_store return -EINVAL in case of missing driver
+      [S390] ccwreq: add ability to use all paths
+      [S390] cio: use all available paths for some internal I/O
+
+Stefan Haberland (1):
+      [S390] dasd: tunable missing interrupt handler
+
+Stefan Weinhuber (1):
+      [S390] dasd: allocate fallback cqr for reserve/release
+
+ arch/s390/include/asm/ccwdev.h   |    2 +
+ arch/s390/include/asm/topology.h |    2 -
+ arch/s390/kernel/head.S          |    2 +-
+ arch/s390/mm/cmm.c               |   11 ++++-
+ drivers/s390/block/dasd_devmap.c |   44 ++++++++++++++++++
+ drivers/s390/block/dasd_diag.c   |    6 ++-
+ drivers/s390/block/dasd_eckd.c   |   94 +++++++++++++++++++++++++++++++-------
+ drivers/s390/block/dasd_eckd.h   |    7 ++-
+ drivers/s390/block/dasd_fba.c    |    4 +-
+ drivers/s390/block/dasd_int.h    |    8 +++-
+ drivers/s390/cio/ccwreq.c        |   16 +++++-
+ drivers/s390/cio/chsc.c          |   48 +++++++++++++++++++
+ drivers/s390/cio/chsc.h          |    2 +
+ drivers/s390/cio/device.c        |   47 +++++++++++++++++--
+ drivers/s390/cio/device_pgid.c   |    3 +
+ drivers/s390/cio/io_sch.h        |   10 ++--
+ drivers/s390/net/smsgiucv_app.c  |    7 +++
+ 17 files changed, 275 insertions(+), 38 deletions(-)
 
