@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab0HJMQm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:16:42 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:49015 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757508Ab0HJMQh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:16:37 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [patch -NEXT] usb/gadget/webcam: fix Kconfig depends again
-Date: Tue, 10 Aug 2010 14:16:29 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        lud <linux-usb@vger.kernel.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>
-References: <20100809132314.789e13f3.sfr@canb.auug.org.au> <20100809105520.d17e4795.randy.dunlap@oracle.com>
-In-Reply-To: <20100809105520.d17e4795.randy.dunlap@oracle.com>
+	id S932097Ab0HJMRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:17:41 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:34209 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757571Ab0HJMRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 08:17:35 -0400
+Message-ID: <4C61434F.7060808@austin.ibm.com>
+Date: Tue, 10 Aug 2010 07:17:19 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+CC: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@ozlabs.org, Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/8] v5  Update memory-hotplug documentation
+References: <4C60407C.2080608@austin.ibm.com> <4C604C62.7060509@austin.ibm.com> <201008091344.37878.nacc@us.ibm.com>
+In-Reply-To: <201008091344.37878.nacc@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008101416.31188.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-Thanks for the patch.
-
-On Monday 09 August 2010 19:55:20 Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On 08/09/2010 03:44 PM, Nishanth Aravamudan wrote:
+> On Monday, August 09, 2010 11:43:46 am Nathan Fontenot wrote:
+>> Update the memory hotplug documentation to reflect the new behaviors of
+>> memory blocks reflected in sysfs.
 > 
-> The USB gadget webcam driver uses V4L2 interfaces, so it should depend
-> on VIDEO_V4L2 instead of VIDEO_DEV.  This fixes a lot of build errors
-> when V4L2 is not enabled:
+> <snip>
 > 
-> ERROR: "v4l2_event_unsubscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_event_queue" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "video_device_release" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "video_usercopy" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_event_dequeue" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "video_register_device" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "video_device_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_event_subscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "video_unregister_device" [drivers/usb/gadget/g_webcam.ko]
-> undefined!
-> ERROR: "v4l2_fh_init" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_event_pending" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_event_init" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "video_devdata" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_event_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_fh_add" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_fh_del" [drivers/usb/gadget/g_webcam.ko] undefined!
-> ERROR: "v4l2_fh_exit" [drivers/usb/gadget/g_webcam.ko] undefined!
+>> Index: linux-2.6/Documentation/memory-hotplug.txt
+>> ===================================================================
+>> --- linux-2.6.orig/Documentation/memory-hotplug.txt	2010-08-09 07:36:48.000000000 -0500
+>> +++ linux-2.6/Documentation/memory-hotplug.txt	2010-08-09 07:59:54.000000000 -0500
+> 
+> <snip>
+> 
+>> -/sys/devices/system/memory/memoryXXX/phys_index
+>> +/sys/devices/system/memory/memoryXXX/start_phys_index
+>> +/sys/devices/system/memory/memoryXXX/end_phys_index
+>>  /sys/devices/system/memory/memoryXXX/phys_device
+>>  /sys/devices/system/memory/memoryXXX/state
+>>  /sys/devices/system/memory/memoryXXX/removable
+>>
+>> -'phys_index' : read-only and contains section id, same as XXX.
+> 
+> <snip>
+> 
+>> +'phys_index'      : read-only and contains section id of the first section
+> 
+> Shouldn't this be "start_phys_index"?
 
-All those symbols should be defined when VIDEO_DEV is selected.
+Hmmm... looks like  I missed something in the documentation.
 
-> ERROR: "v4l2_ctrl_fill" [drivers/media/video/v4l2-common.ko] undefined!
-> ERROR: "v4l2_ctrl_get_menu" [drivers/media/video/v4l2-common.ko] undefined!
+The property should be 'phys_index'.  I thought about changing it to
+'start_phys_index' but that was rejected.  The listing of the files
+above is wrong in this patch, it should be 
 
-Those 2 symbols require VIDEO_V4L2 but are not used by the webcam gadget 
-driver.
+ +/sys/devices/system/memory/memoryXXX/phys_index
+ +/sys/devices/system/memory/memoryXXX/end_phys_index
 
-> ERROR: "v4l2_device_unregister_subdev" [drivers/media/video/v4l2-common.ko]
-> undefined!
-> ERROR: "v4l2_device_register_subdev" [drivers/media/video/v4l2-common.ko]
-> undefined!
+Thanks, 
 
-Those two symbols should be defined when VIDEO_DEV is selected. They are not 
-used by the webcam gadget driver.
-
--- 
-Regards,
-
-Laurent Pinchart
+Nathan
