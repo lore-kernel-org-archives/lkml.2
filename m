@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630Ab0HJMgx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:36:53 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:17805 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757403Ab0HJMgs (ORCPT
+	id S1757613Ab0HJMjr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:39:47 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:37686 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067Ab0HJMjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:36:48 -0400
-Message-ID: <4C6147DE.9050608@tilera.com>
-Date: Tue, 10 Aug 2010 08:36:46 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <willy@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: perf build broke by list_head changes...
-References: <20100809.235746.115919762.davem@davemloft.net>
-In-Reply-To: <20100809.235746.115919762.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 10 Aug 2010 08:39:44 -0400
+Subject: Re: [PATCHv4] fixed resource leak in scripts/mod/modpost.c
+From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+To: ext Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        ext Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTinCzXCAfrQ46N-AQAUVS_N4kT=p58b6GZR1AL47@mail.gmail.com>
+References: <1281010151.2063.8.camel@alex-desktop>
+	 <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
+	 <1281437552.2063.431.camel@alex-desktop>
+	 <AANLkTi=UfzGay5XQKMpPCZTSO5SJ1jDknqwayhrEZJO0@mail.gmail.com>
+	 <1281441808.2063.498.camel@alex-desktop>
+	 <AANLkTinCzXCAfrQ46N-AQAUVS_N4kT=p58b6GZR1AL47@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Aug 2010 15:40:28 +0300
+Message-ID: <1281444028.2063.542.camel@alex-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/10/2010 2:57 AM, David Miller wrote:
-> Commit:
->
-> commit de5d9bf6541736dc7ad264d2b5cc99bc1b2ad958
-> Author: Chris Metcalf <cmetcalf@tilera.com>
-> Date:   Fri Jul 2 13:41:14 2010 -0400
->
->     Move list types from <linux/list.h> to <linux/types.h>.
->
-> broke the build of 'perf'.
->
-> If you move "struct list_head" into types.h, this means perf stops
-> building because it depends upon being able to include linux/list.h
-> from a userland application and at the same time be able to get the
-> basic data types without defining __KERNEL__ or similar.
->   
+On Tue, 2010-08-10 at 14:21 +0200, ext Andy Shevchenko wrote:
+> On Tue, Aug 10, 2010 at 3:03 PM, Alexey Fomenko
+> <ext-alexey.fomenko@nokia.com> wrote:
+> > From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+> >
+> > sec2annotation() returns malloc'ed buffer directly to printf as an
+> > argument. Patch lets free this buffer after printing. Preventing ops
+> > while freeing the buffer by changing return const str to return
+> > strdup empty line.
+> >
+> > Signed-off-by: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+> 
+> > @@ -1283,11 +1301,15 @@
+> >                "uses functionality in the exit path.\n"
+> >                "The fix is often to remove the %sannotation of\n"
+> >                "%s%s so it may be used outside an exit section.\n",
+> > -               from, sec2annotation(fromsec), fromsym, from_p,
+> > -               to, sec2annotation(tosec), tosym, to_p,
+> > -               sec2annotation(tosec), tosym, to_p);
+> > +               from, prl_from, fromsym, from_p,
+> > +               to, prl_to, tosym, to_p,
+> > +               ptl_to, tosym, to_p);
+> Did you ever compile this code?
+> It looks typo here.
+Ever - yes, last one - no, was in a hurry. Shouldn't have been.
+I'll fix it.
 
-If necessary, it certainly would be easy to move the list.h types to
-follow struct ustat, then bump the #endif up above them with a comment
-about the perf system's use of them.
+> 
+> > +               free(prl_from);
+> > +               free(prl_to);
+> >                break;
+> >        case ANY_EXIT_TO_ANY_INIT:
+> > +               prl_from = sec2annotation(fromsec);
+> > +               prl_to = sec2annotation(tosec);
+> >                fprintf(stderr,
+> >                "The %s %s%s%s references\n"
+> >                "a %s %s%s%s.\n"
+> 
 
-I'm confused, though, since <linux/list.h> isn't installed by
-headers_install, so how was perf finding that definition before anyway?
-
-I assume the requirement is something fairly stringent, like parsing
-binary data structures out of a memory-mapped region or some such;
-normally you wouldn't even want to expose the list_head declaration to
-user space.  I haven't looked at the perf subsystem myself yet so I
-don't really know.
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
 
