@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933324Ab0HJV7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:59:49 -0400
-Received: from kroah.org ([198.145.64.141]:44807 "EHLO coco.kroah.org"
+	id S933561Ab0HJWBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:01:18 -0400
+Received: from kroah.org ([198.145.64.141]:45072 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933297Ab0HJV7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:59:43 -0400
+	id S933508Ab0HJWA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:57 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jeff Dike <jdike@addtoit.com>,
-        Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 10/68] tty: remove remaining Hayes ESP ioctls
-Date: Tue, 10 Aug 2010 14:58:32 -0700
-Message-Id: <1281477570-18944-10-git-send-email-gregkh@suse.de>
+Cc: Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 63/68] hsu: some code cleanup
+Date: Tue, 10 Aug 2010 14:59:25 -0700
+Message-Id: <1281477570-18944-63-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -20,130 +20,282 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As Jeff Dike pointed out, the Hayes ESP driver was removed in commit
-f53a2ade0bb9f2a81f473e6469155172a96b7c38, so these ioctl definitions
-should also be removed.  This cleans up the remaining arch-specific
-locations of this ioctl value.
+From: Feng Tang <feng.tang@intel.com>
 
-Thanks to Arnd for pointing these out.
+Major changes are:
+* refine the comments in the driver
+* remove unused member from structure "hsu_port"
+* extended spin_lock protoction for dma mode in port_irq()
 
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- arch/alpha/include/asm/ioctls.h   |    2 --
- arch/avr32/include/asm/ioctls.h   |    2 --
- arch/cris/include/asm/ioctls.h    |    2 --
- arch/ia64/include/asm/ioctls.h    |    2 --
- arch/m32r/include/asm/ioctls.h    |    2 --
- arch/mips/include/asm/ioctls.h    |    2 --
- arch/mn10300/include/asm/ioctls.h |    2 --
- arch/parisc/include/asm/ioctls.h  |    2 --
- 8 files changed, 0 insertions(+), 16 deletions(-)
+ drivers/serial/mfd.c |   85 +++++++++++--------------------------------------
+ 1 files changed, 19 insertions(+), 66 deletions(-)
 
-diff --git a/arch/alpha/include/asm/ioctls.h b/arch/alpha/include/asm/ioctls.h
-index 67bb9f6..c7b0cc6 100644
---- a/arch/alpha/include/asm/ioctls.h
-+++ b/arch/alpha/include/asm/ioctls.h
-@@ -106,7 +106,5 @@
+diff --git a/drivers/serial/mfd.c b/drivers/serial/mfd.c
+index ed2bf6b..f5e7569 100644
+--- a/drivers/serial/mfd.c
++++ b/drivers/serial/mfd.c
+@@ -3,7 +3,7 @@
+  *
+  * Refer pxa.c, 8250.c and some other drivers in drivers/serial/
+  *
+- * (C) Copyright 2009 Intel Corporation
++ * (C) Copyright 2010 Intel Corporation
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+@@ -11,30 +11,16 @@
+  * of the License.
+  */
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP	0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP	0x545F  /* Set Hayes ESP configuration */
+-
+ /* Notes:
+- * 1. there should be 2 types of register access method, one for
+- *    UART ports, the other for the general purpose registers
+- *
+- * 2. It used to have a Irda port, but was defeatured recently
+- *
+- * 3. Based on the info from HSU MAS, 0/1 channel are assigned to
+- *    port0, 2/3 chan to port 1, 4/5 chan to port 3. Even number
+- *    chan will be read, odd chan for write
+- *
+- * 4. HUS supports both the 64B and 16B FIFO version, but this driver
+- *    will only use 64B version
++ * 1. DMA channel allocation: 0/1 channel are assigned to port 0,
++ *    2/3 chan to port 1, 4/5 chan to port 3. Even number chans
++ *    are used for RX, odd chans for TX
+  *
+- * 5. In A0 stepping, UART will not support TX half empty flag, thus
+- *    need add a #ifdef judgement
++ * 2. In A0 stepping, UART will not support TX half empty flag
+  *
+- * 6. One more bug for A0, the loopback mode won't support AFC
+- *    auto-flow control
+- *
+- * 7. HSU has some special FCR control bits, we add it to serial_reg.h
+- *
+- * 8. The RI/DSR/DCD/DTR are not pinned out, DCD & DSR are always asserted,
+- *    only when the HW is reset the DDCD and DDSR will be triggered
++ * 3. The RI/DSR/DCD/DTR are not pinned out, DCD & DSR are always
++ *    asserted, only when the HW is reset the DDCD and DDSR will
++ *    be triggered
+  */
  
- #endif /* _ASM_ALPHA_IOCTLS_H */
-diff --git a/arch/avr32/include/asm/ioctls.h b/arch/avr32/include/asm/ioctls.h
-index e6ac0b6..143dafb 100644
---- a/arch/avr32/include/asm/ioctls.h
-+++ b/arch/avr32/include/asm/ioctls.h
-@@ -72,8 +72,6 @@
+ #include <linux/module.h>
+@@ -75,7 +61,7 @@ struct hsu_dma_buffer {
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP   0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP   0x545F  /* Set Hayes ESP configuration */
- #define FIOQSIZE	0x5460
+ struct hsu_dma_chan {
+ 	u32	id;
+-	u32	dirt;	/* to or from device */
++	enum dma_data_direction	dirt;
+ 	struct uart_hsu_port	*uport;
+ 	void __iomem		*reg;
+ 	struct timer_list	rx_timer; /* only needed by RX channel */
+@@ -102,8 +88,6 @@ struct uart_hsu_port {
  
- /* Used for packet mode */
-diff --git a/arch/cris/include/asm/ioctls.h b/arch/cris/include/asm/ioctls.h
-index 076c078..bb49142 100644
---- a/arch/cris/include/asm/ioctls.h
-+++ b/arch/cris/include/asm/ioctls.h
-@@ -70,8 +70,6 @@
+ /* Top level data structure of HSU */
+ struct hsu_port {
+-	struct pci_device	*pdev;
+-
+ 	void __iomem	*reg;
+ 	unsigned long	paddr;
+ 	unsigned long	iolen;
+@@ -112,23 +96,9 @@ struct hsu_port {
+ 	struct uart_hsu_port	port[3];
+ 	struct hsu_dma_chan	chans[10];
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP   0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP   0x545F  /* Set Hayes ESP configuration */
- #define FIOQSIZE	0x5460
+-#ifdef CONFIG_DEBUG_FS
+ 	struct dentry *debugfs;
+-#endif
+ };
  
- #define TIOCSERSETRS485	0x5461  /* enable rs-485 (deprecated) */
-diff --git a/arch/ia64/include/asm/ioctls.h b/arch/ia64/include/asm/ioctls.h
-index f41b636..f0ee86c 100644
---- a/arch/ia64/include/asm/ioctls.h
-+++ b/arch/ia64/include/asm/ioctls.h
-@@ -75,8 +75,6 @@
+-static inline void hexdump(char *str, u8 *addr, int cnt)
+-{
+-	int i;
+-
+-	for (i = 0; i < cnt; i += 8) {
+-		printk("0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x 0x%02x",
+-			addr[i], addr[i+1], addr[i+2], addr[i+3],
+-			addr[i+4], addr[i+5], addr[i+6], addr[i+7]);
+-		printk("\n");
+-	}
+-}
+-
+ static inline unsigned int serial_in(struct uart_hsu_port *up, int offset)
+ {
+ 	unsigned int val;
+@@ -353,9 +323,6 @@ void hsu_dma_tx(struct uart_hsu_port *up)
+ 						 | (0x1 << 8)
+ 						 | (0x1 << 16)
+ 						 | (0x1 << 24));
+-
+-		WARN(chan_readl(up->txc, HSU_CH_CR) & 0x1,
+-			"TX channel has already be started!!\n");
+ 		up->dma_tx_on = 1;
+ 		chan_writel(up->txc, HSU_CH_CR, 0x1);
+ 	}
+@@ -367,7 +334,6 @@ void hsu_dma_tx(struct uart_hsu_port *up)
+ /* The buffer is already cache coherent */
+ void hsu_dma_start_rx_chan(struct hsu_dma_chan *rxc, struct hsu_dma_buffer *dbuf)
+ {
+-	/* Need start RX dma channel here */
+ 	dbuf->ofs = 0;
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP   0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP   0x545F  /* Set Hayes ESP configuration */
- #define FIOQSIZE	0x5460
+ 	chan_writel(rxc, HSU_CH_BSR, 32);
+@@ -426,35 +392,32 @@ void hsu_dma_rx(struct uart_hsu_port *up, u32 int_sts)
+ 		return;
  
- /* Used for packet mode */
-diff --git a/arch/m32r/include/asm/ioctls.h b/arch/m32r/include/asm/ioctls.h
-index b9f54bb..f4c13a5 100644
---- a/arch/m32r/include/asm/ioctls.h
-+++ b/arch/m32r/include/asm/ioctls.h
-@@ -69,8 +69,6 @@
+ 	/*
+-	 * first need to know how many is already transferred,
++	 * First need to know how many is already transferred,
+ 	 * then check if its a timeout DMA irq, and return
+ 	 * the trail bytes out, push them up and reenable the
+-	 * channel, better to use 2 descriptors at the same time
++	 * channel
+ 	 */
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP   0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP   0x545F  /* Set Hayes ESP configuration */
- #define FIOQSIZE	0x5460
+-	/* timeout IRQ, need wait some time, see Errata 2 */
++	/* Timeout IRQ, need wait some time, see Errata 2 */
+ 	if (int_sts & 0xf00)
+ 		udelay(2);
  
- /* Used for packet mode */
-diff --git a/arch/mips/include/asm/ioctls.h b/arch/mips/include/asm/ioctls.h
-index 3f04a99..2fb9e16 100644
---- a/arch/mips/include/asm/ioctls.h
-+++ b/arch/mips/include/asm/ioctls.h
-@@ -103,7 +103,5 @@
- #define TIOCSERSETMULTI 0x5490 /* Set multiport config */
- #define TIOCMIWAIT      0x5491 /* wait for a change on serial input line(s) */
- #define TIOCGICOUNT     0x5492 /* read serial port inline interrupt counts */
--#define TIOCGHAYESESP	0x5493 /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP	0x5494 /* Set Hayes ESP configuration */
+ 	/* Stop the channel */
+ 	chan_writel(chan, HSU_CH_CR, 0x0);
  
- #endif /* __ASM_IOCTLS_H */
-diff --git a/arch/mn10300/include/asm/ioctls.h b/arch/mn10300/include/asm/ioctls.h
-index dcbfb45..638219a 100644
---- a/arch/mn10300/include/asm/ioctls.h
-+++ b/arch/mn10300/include/asm/ioctls.h
-@@ -70,8 +70,6 @@
+-	/* We can use 2 ways to calc the actual transfer len */
+ 	count = chan_readl(chan, HSU_CH_D0SAR) - dbuf->dma_addr;
+-
+ 	if (!count) {
+-		/* restart the channel before we leave */
++		/* Restart the channel before we leave */
+ 		chan_writel(chan, HSU_CH_CR, 0x3);
+ 		return;
+ 	}
+-
+ 	del_timer(&chan->rx_timer);
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP   0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP   0x545F  /* Set Hayes ESP configuration */
- #define FIOQSIZE	0x5460
+ 	dma_sync_single_for_cpu(port->dev, dbuf->dma_addr,
+ 			dbuf->dma_size, DMA_FROM_DEVICE);
  
- /* Used for packet mode */
-diff --git a/arch/parisc/include/asm/ioctls.h b/arch/parisc/include/asm/ioctls.h
-index 6747fad..6cc497e 100644
---- a/arch/parisc/include/asm/ioctls.h
-+++ b/arch/parisc/include/asm/ioctls.h
-@@ -68,8 +68,6 @@
+ 	/*
+-	 * head will only wrap around when we recycle
++	 * Head will only wrap around when we recycle
+ 	 * the DMA buffer, and when that happens, we
+ 	 * explicitly set tail to 0. So head will
+ 	 * always be greater than tail.
+@@ -496,10 +459,6 @@ static void serial_hsu_stop_rx(struct uart_port *port)
+ 	}
+ }
  
- #define TIOCMIWAIT	0x545C	/* wait for a change on serial input line(s) */
- #define TIOCGICOUNT	0x545D	/* read serial port inline interrupt counts */
--#define TIOCGHAYESESP   0x545E  /* Get Hayes ESP configuration */
--#define TIOCSHAYESESP   0x545F  /* Set Hayes ESP configuration */
- #define FIOQSIZE	0x5460	/* Get exact space used by quota */
+-/*
+- * if there is error flag, should we just reset the FIFO or keeps
+- * working on it
+- */
+ static inline void receive_chars(struct uart_hsu_port *up, int *status)
+ {
+ 	struct tty_struct *tty = up->port.state->port.tty;
+@@ -571,7 +530,6 @@ static void transmit_chars(struct uart_hsu_port *up)
+ {
+ 	struct circ_buf *xmit = &up->port.state->xmit;
+ 	int count;
+-	int i = 0; /* for debug use */
  
- #define TIOCSTART	0x5461
+ 	if (up->port.x_char) {
+ 		serial_out(up, UART_TX, up->port.x_char);
+@@ -592,13 +550,11 @@ static void transmit_chars(struct uart_hsu_port *up)
+ 	 * into it won't clear the EMPT bit, so we may need be cautious
+ 	 * by useing a shorter buffer
+ 	 */
+-	/* count = up->port.fifosize; */
+ 	count = up->port.fifosize - 4;
+ #endif
+ 	do {
+ 		serial_out(up, UART_TX, xmit->buf[xmit->tail]);
+ 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
+-		i++;
+ 
+ 		up->port.icount.tx++;
+ 		if (uart_circ_empty(xmit))
+@@ -628,7 +584,7 @@ static inline void check_modem_status(struct uart_hsu_port *up)
+ 	/* We may only get DDCD when HW init and reset */
+ 	if (status & UART_MSR_DDCD)
+ 		uart_handle_dcd_change(&up->port, status & UART_MSR_DCD);
+-	/* will start/stop_tx accordingly */
++	/* Will start/stop_tx accordingly */
+ 	if (status & UART_MSR_DCTS)
+ 		uart_handle_cts_change(&up->port, status & UART_MSR_CTS);
+ 
+@@ -647,6 +603,7 @@ static irqreturn_t port_irq(int irq, void *dev_id)
+ 	if (unlikely(!up->running))
+ 		return IRQ_NONE;
+ 
++	spin_lock_irqsave(&up->port.lock, flags);
+ 	if (up->use_dma) {
+ 		lsr = serial_in(up, UART_LSR);
+ 		if (unlikely(lsr & (UART_LSR_BI | UART_LSR_PE |
+@@ -655,10 +612,10 @@ static irqreturn_t port_irq(int irq, void *dev_id)
+ 				"Got lsr irq while using DMA, lsr = 0x%2x\n",
+ 				lsr);
+ 		check_modem_status(up);
++		spin_unlock_irqrestore(&up->port.lock, flags);
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-	spin_lock_irqsave(&up->port.lock, flags);
+ 	iir = serial_in(up, UART_IIR);
+ 	if (iir & UART_IIR_NO_INT) {
+ 		spin_unlock_irqrestore(&up->port.lock, flags);
+@@ -666,9 +623,9 @@ static irqreturn_t port_irq(int irq, void *dev_id)
+ 	}
+ 
+ 	lsr = serial_in(up, UART_LSR);
+-
+ 	if (lsr & UART_LSR_DR)
+ 		receive_chars(up, &lsr);
++	check_modem_status(up);
+ 
+ 	/* lsr will be renewed during the receive_chars */
+ 	if (lsr & UART_LSR_THRE)
+@@ -701,7 +658,6 @@ static inline void dma_chan_irq(struct hsu_dma_chan *chan)
+ 
+ 	/* Tx channel */
+ 	if (chan->dirt == DMA_TO_DEVICE) {
+-		/* dma for irq should be done */
+ 		chan_writel(chan, HSU_CH_CR, 0x0);
+ 		up->dma_tx_on = 0;
+ 		hsu_dma_tx(up);
+@@ -851,7 +807,6 @@ static int serial_hsu_startup(struct uart_port *port)
+ 	spin_unlock_irqrestore(&up->port.lock, flags);
+ 
+ 	/* DMA init */
+-	/* When use DMA, TX/RX's FIFO and IRQ should be disabled */
+ 	if (up->use_dma) {
+ 		struct hsu_dma_buffer *dbuf;
+ 		struct circ_buf *xmit = &port->state->xmit;
+@@ -1090,11 +1045,9 @@ static int serial_hsu_request_port(struct uart_port *port)
+ 
+ static void serial_hsu_config_port(struct uart_port *port, int flags)
+ {
+-#if 0
+ 	struct uart_hsu_port *up =
+ 		container_of(port, struct uart_hsu_port, port);
+ 	up->port.type = PORT_MFD;
+-#endif
+ }
+ 
+ static int
+@@ -1426,7 +1379,7 @@ static void hsu_global_init(void)
+ 		uport->port.ops = &serial_hsu_pops;
+ 		uport->port.line = i;
+ 		uport->port.flags = UPF_IOREMAP;
+-		/* make the maxim support rate to 2746800 bps */
++		/* set the scalable maxim support rate to 2746800 bps */
+ 		uport->port.uartclk = 115200 * 24 * 16;
+ 
+ 		uport->running = 0;
 -- 
 1.7.2
 
