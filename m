@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043Ab0HJJLj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:11:39 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:57992 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754241Ab0HJJLP (ORCPT
+	id S1754868Ab0HJJOQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:14:16 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:40038 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab0HJJOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:11:15 -0400
-Date: Tue, 10 Aug 2010 11:11:13 +0200
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: David Howells <dhowells@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 2/4] arch/frv: Removing dead HEARTBEAT config option
-Message-ID: <fafef93430b45ac966abc77ed061647af2814873.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	Tue, 10 Aug 2010 05:14:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=S1c/NveSx7FikbFelnUEilB+2iwNunebbyNiU2VBV9hPzRYhLr4H5rRbeLD8wmF545
+         EgWo1Y6yT6TPqp5X6htKIorg5jnQIY1KMoLhQxs2MXSfS99Cg8qO1g7qaoX4Hm+dpdZk
+         kMIBw1EdtfSF0+aavrQuTp+ZioUjEst1A9UBY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1281010151.2063.8.camel@alex-desktop>
+References: <1281010151.2063.8.camel@alex-desktop>
+Date: Tue, 10 Aug 2010 12:14:10 +0300
+Message-ID: <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
+Subject: Re: [PATCHv2] fixed resource leak in scripts/mod/modpost.c
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        ext Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_HEARTBEAT doesn't exist in Kconfig, therefore removing
-all references to it from the source.
+On Thu, Aug 5, 2010 at 3:09 PM, Alexey Fomenko
+<ext-alexey.fomenko@nokia.com> wrote:
+> Patch modified for released 2.6.35 kernel.
+> sec2annotation returns malloc'ed buffer directly to printf as an
+> argument. Patch lets free this buffer after printing.
 
-Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
----
- arch/frv/kernel/time.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+Needs to be amended.
+I told Alexey in private to resend new version of the patch.
 
-diff --git a/arch/frv/kernel/time.c b/arch/frv/kernel/time.c
-index 0ddbbae..e86df6c 100644
---- a/arch/frv/kernel/time.c
-+++ b/arch/frv/kernel/time.c
-@@ -66,12 +66,6 @@ static irqreturn_t timer_interrupt(int irq, void *dummy)
- 
- 	do_timer(1);
- 
--#ifdef CONFIG_HEARTBEAT
--	static unsigned short n;
--	n++;
--	__set_LEDS(n);
--#endif /* CONFIG_HEARTBEAT */
--
- 	write_sequnlock(&xtime_lock);
- 
- 	update_process_times(user_mode(get_irq_regs()));
 -- 
-1.7.0.4
-
+With Best Regards,
+Andy Shevchenko
