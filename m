@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab0HJMBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:01:05 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35262 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757504Ab0HJMA5 (ORCPT
+	id S1757506Ab0HJMBl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:01:41 -0400
+Received: from mail.windriver.com ([147.11.1.11]:51977 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab0HJMBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:00:57 -0400
-Date: Tue, 10 Aug 2010 14:00:55 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: rtc-linux@googlegroups.com,
-        Durgesh Pattamatta <durgesh.pattamatta@nxp.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Kevin Wells <wellsk40@gmail.com>
-Subject: Re: [rtc-linux] [PATCH 1/2] rtc: rtc-lpc32xx: Introduce RTC driver
-	for the LPC32XX SoC
-Message-ID: <20100810120055.GD11268@pengutronix.de>
-References: <1281370650-29520-1-git-send-email-wellsk40@gmail.com> <1281370650-29520-2-git-send-email-wellsk40@gmail.com> <20100810102507.GB4268@pengutronix.de>
+	Tue, 10 Aug 2010 08:01:35 -0400
+Message-ID: <4C613F95.8020505@windriver.com>
+Date: Tue, 10 Aug 2010 07:01:25 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100810102507.GB4268@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Robert P. J. Day" <rpjday@crashcourse.ca>
+CC: Jon Masters <jonathan@jonmasters.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: why can't i use gdb to dump module variables anymore?
+References: <alpine.DEB.2.00.1007080744180.7016@lynx> <7C33277E-D90E-4459-8580-59C5EFB2D66D@jonmasters.org> <alpine.DEB.2.00.1008091200520.3863@lynx>
+In-Reply-To: <alpine.DEB.2.00.1008091200520.3863@lynx>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Aug 2010 12:01:23.0074 (UTC) FILETIME=[C071B620:01CB3883]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On 08/09/2010 11:06 AM, Robert P. J. Day wrote:
+> On Sun, 8 Aug 2010, Jon Masters wrote:
+>
+>   
+>> On Jul 8, 2010, at 7:51 AM, Robert P. J. Day wrote:
+>>     
+>>> (gdb) p rpjday_2
+>>> Cannot access memory at address 0xffffffffa007c0b4
+>>> (gdb) p rpjday_3
+>>> Cannot access memory at address 0xffffffffa007c0b8
+>>>       
+>> Did you ever get a reply to this one? Were you trying to do this
+>> locally, by loading a kernel core or using kgdb?
+>>     
+>
+>   never figured out what was happening here, used to work just fine
+> for simple gdb debugging of the kernel; nowadays (at least on ubuntu),
+> not so much.  anyway, i'm in bahstahn for linuxcon, staying at the
+> onyx hotel for first 3 days.  my girlfriend is doing a bofs session:
+>
+> http://events.linuxfoundation.org/linuxcon2010/mckinnon
+>
+>   anyway, regarding gdb, this was based on a column i wrote last
+> year:
+>
+> http://www.linux.com/learn/linux-training/33991-the-kernel-newbie-corner-kernel-and-module-debugging-with-gdb
+>
+> where it worked just fine -- it's the technique described in LDD3.
+> but now, on ubuntu 10.04, weirdness.  i haven't looked at it closely
+> again for a while, but if you have any ideas, i'm open to suggestions.
+> maybe some odd security/selinux/??? setting?
+>   
 
-> > +	retval = request_irq(rtc->irq, lpc32xx_rtc_alarm_interrupt,
-> > +		IRQF_DISABLED, "rtcalarm", rtc);
-> > +	if (retval < 0) {
-> > +		dev_err(&pdev->dev, "Can't request interrupt\n");
-> > +		goto err_free_irq;
-> > +	}
-> 
-> I saw that a number of rtc-drivers register their irq after they
-> register the device. I wonder if this is OK here? Couldn't it happen
-> that after rtc_device_register() there is a preemption and another
-> process could set the alarm? Then there is a race between interrupts
-> already enabled and no handler available, no?
-If you do it the other way around the irq might trigger and the handler
-reports an irq for a device that doesn't exist yet.
- 
-Best regards
-Uwe
+I took a brief look at the instructions you had a the URL.  It seemed
+like something that should probably work ok unless that memory address
+is really not accessible via /proc/kcore.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Depending on the age of the ubuntu system and if you have a serial port
+or not, kgdb is actually enabled in the kernel and you could certainly
+try the same test there.
+
+It should also be possible to try out a gdb with kernel module awareness
+on the /proc/kcore.  If you want to try and debug it at some point
+perhaps we'll cross paths at LinuxCON.
+
+Jason
