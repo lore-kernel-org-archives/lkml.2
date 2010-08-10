@@ -1,58 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab0HJMKB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:10:01 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49866 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754484Ab0HJMJz (ORCPT
+	id S1757511Ab0HJMMZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:12:25 -0400
+Received: from astoria.ccjclearline.com ([64.235.106.9]:51681 "EHLO
+	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab0HJMMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:09:55 -0400
-Message-ID: <4C61419B.9040409@infradead.org>
-Date: Tue, 10 Aug 2010 09:10:03 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100803 Red Hat/3.1.2-1.el6 Lightning/1.0b2 Thunderbird/3.1.2
+	Tue, 10 Aug 2010 08:12:21 -0400
+Date: Tue, 10 Aug 2010 08:12:15 -0400 (EDT)
+From: "Robert P. J. Day" <rpjday@crashcourse.ca>
+X-X-Sender: rpjday@lynx
+To: Jason Wessel <jason.wessel@windriver.com>
+cc: Jon Masters <jonathan@jonmasters.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: why can't i use gdb to dump module variables anymore?
+In-Reply-To: <4C613F95.8020505@windriver.com>
+Message-ID: <alpine.DEB.2.00.1008100807530.3885@lynx>
+References: <alpine.DEB.2.00.1007080744180.7016@lynx> <7C33277E-D90E-4459-8580-59C5EFB2D66D@jonmasters.org> <alpine.DEB.2.00.1008091200520.3863@lynx> <4C613F95.8020505@windriver.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] docbook: fixup media support files for htmldocs also
-References: <20100809163040.137c6571.randy.dunlap@oracle.com>
-In-Reply-To: <20100809163040.137c6571.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - crashcourse.ca
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 09-08-2010 20:30, Randy Dunlap escreveu:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> 'make htmldocs' produces errors due to missing a supporting media
-> file, so add 'xmldoclinks' to the htmldocs dependencies so that the
-> needed supporting file will be present.
-> 
-> linux-2.6.35-git8/DOC1/Documentation/DocBook/media.xml:4: warning: failed to load external entity "linux-2.6.35-git8/DOC1/Documentation/DocBook/media-entities.tmpl"
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc:	Mauro Carvalho Chehab <mchehab@infradead.org>
+On Tue, 10 Aug 2010, Jason Wessel wrote:
 
-Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> ---
->  Documentation/DocBook/Makefile |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-2.6.35-git8.orig/Documentation/DocBook/Makefile
-> +++ linux-2.6.35-git8/Documentation/DocBook/Makefile
-> @@ -45,7 +45,7 @@ PDF := $(patsubst %.xml, %.pdf, $(BOOKS)
->  pdfdocs: $(PDF)
->  
->  HTML := $(sort $(patsubst %.xml, %.html, $(BOOKS)))
-> -htmldocs: $(HTML)
-> +htmldocs: $(HTML) xmldoclinks
->  	$(call build_main_index)
->  	$(call build_images)
->  
-> ---
+> On 08/09/2010 11:06 AM, Robert P. J. Day wrote:
+> > On Sun, 8 Aug 2010, Jon Masters wrote:
+> >
+> >
+> >> On Jul 8, 2010, at 7:51 AM, Robert P. J. Day wrote:
+> >>
+> >>> (gdb) p rpjday_2
+> >>> Cannot access memory at address 0xffffffffa007c0b4
+> >>> (gdb) p rpjday_3
+> >>> Cannot access memory at address 0xffffffffa007c0b8
+> >>>
+> >> Did you ever get a reply to this one? Were you trying to do this
+> >> locally, by loading a kernel core or using kgdb?
+> >>
+> >
+> >   never figured out what was happening here, used to work just
+> > fine for simple gdb debugging of the kernel; nowadays (at least on
+> > ubuntu), not so much.  anyway, i'm in bahstahn for linuxcon,
+> > staying at the onyx hotel for first 3 days.  my girlfriend is
+> > doing a bofs session:
+> >
+> > http://events.linuxfoundation.org/linuxcon2010/mckinnon
+> >
+> >   anyway, regarding gdb, this was based on a column i wrote last
+> > year:
+> >
+> > http://www.linux.com/learn/linux-training/33991-the-kernel-newbie-corner-kernel-and-module-debugging-with-gdb
+> >
+> > where it worked just fine -- it's the technique described in LDD3.
+> > but now, on ubuntu 10.04, weirdness.  i haven't looked at it
+> > closely again for a while, but if you have any ideas, i'm open to
+> > suggestions. maybe some odd security/selinux/??? setting?
+> >
+>
+> I took a brief look at the instructions you had a the URL.  It
+> seemed like something that should probably work ok unless that
+> memory address is really not accessible via /proc/kcore.
 
+  i've used that technique before as a simple way to examine kernel
+data on a running system, and it always worked fine before.
+
+> Depending on the age of the ubuntu system and if you have a serial
+> port or not, kgdb is actually enabled in the kernel and you could
+> certainly try the same test there.
+
+  i can give that a shot later, certainly.
+
+> It should also be possible to try out a gdb with kernel module
+> awareness on the /proc/kcore.  If you want to try and debug it at
+> some point perhaps we'll cross paths at LinuxCON.
+
+  i haven't looked at this issue for a while, but i'd certainly like
+to figure out why what used to work before has stopped working.  this
+is something i like to show my beginner kernel programming students,
+and it's moderately frustrating that i can't get it to work anymore.
+
+  i'm sure it's something idiotic i'm doing.  and i'm around linuxcon
+all week, so yes, let's bump into each other.
+
+rday
+
+
+-- 
+
+========================================================================
+Robert P. J. Day                               Waterloo, Ontario, CANADA
+
+        Top-notch, inexpensive online Linux/OSS/kernel courses
+                        http://crashcourse.ca
+
+Twitter:                                       http://twitter.com/rpjday
+LinkedIn:                               http://ca.linkedin.com/in/rpjday
+========================================================================
