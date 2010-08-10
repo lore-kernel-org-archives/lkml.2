@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab0HJUg1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:36:27 -0400
-Received: from khc.piap.pl ([195.187.100.11]:52393 "EHLO khc.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757843Ab0HJUgY convert rfc822-to-8bit (ORCPT
+	id S1757974Ab0HJUgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:36:40 -0400
+Received: from vs244178.vserver.de ([62.75.244.178]:45550 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757925Ab0HJUgi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 16:36:24 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>
-Subject: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-Date: Tue, 10 Aug 2010 22:36:21 +0200
-Message-ID: <m3sk2m433u.fsf@intrepid.localdomain>
+	Tue, 10 Aug 2010 16:36:38 -0400
+Date: Tue, 10 Aug 2010 22:36:35 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <618241473.20100810223635@eikelenboom.it>
+To: Joerg Roedel <joro@8bytes.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [2.6.35] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40  BUG: unable to handle kernel NULL pointer dereference at 0000000000000198
+In-Reply-To: <20100810202839.GS23755@8bytes.org>
+References: <1154489525.20100810164850@eikelenboom.it> <20100810162606.GQ23755@8bytes.org> <419601760.20100810185745@eikelenboom.it> <20100810180122.GR23755@8bytes.org> <1609756756.20100810200514@eikelenboom.it> <20100810202839.GS23755@8bytes.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Joerg,
 
-Noticed this problem a bit late :-(
+Errr which seperate usb controller ? .. it has actually:
+- 1 pci-e usb 2.0 controller
+- 2 pci-e usb 3.0 controller (one of which includes a sata controller as well)
 
-6fee48cd330c68332f9712bc968d934a1a84a32a broke
-pci_set_consistent_dma_mask() on IXP4xx and most probably PXA. Affected
-devices are e.g. IDE controller (CS5536-based: disk inaccessible) and
-e1000 ethernet ("Detected Tx Unit Hang").
+(apart from the onboard stuff)
 
-The attached patch makes it work again, though I'm not sure it's the
-best solution.
+--
+Sander
 
-Ideas?
 
-Signed-off-by: Krzysztof Hałasa <khc@pm.waw.pl>
+Tuesday, August 10, 2010, 10:28:39 PM, you wrote:
 
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index ca32ed7..bd2a7d3 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -129,6 +129,14 @@ static inline u64 dma_get_mask(struct device *dev)
- 
- static inline int dma_set_coherent_mask(struct device *dev, u64 mask)
- {
-+#ifdef CONFIG_DMABOUNCE
-+	if (dev->archdata.dmabounce) {
-+		if (mask >= ISA_DMA_THRESHOLD)
-+			return 0;
-+		else
-+			return -EIO;
-+	}
-+#endif
- 	if (!dma_supported(dev, mask))
- 		return -EIO;
- 	dev->coherent_dma_mask = mask;
+> On Tue, Aug 10, 2010 at 08:05:14PM +0200, Sander Eikelenboom wrote:
+>> Could you also provide a perhaps more specific message what is wrong
+>> with the bios, that i could forward to MSI, in the hope it will reach
+>> the bios engineers someday ? :-)
+
+> Lets first prove that my theory is right before contacting MSI directly.
+> Can you try the attached patch? it should fix the boot-crash. When the
+> system booted successfully please try some USB device (make sure it uses
+> the seperate usb-controler, I guess the seperate device is responsible
+> for USB 3, so try to plug a device into one of your USB 3 ports).
+> If you finished that please send me whether it worked or not and the
+> full dmesg output of the system.
+
+>         Joerg
+
+
+
+
+-- 
+Best regards,
+ Sander                            mailto:linux@eikelenboom.it
+
