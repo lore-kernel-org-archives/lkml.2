@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933357Ab0HJWK1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:10:27 -0400
-Received: from kroah.org ([198.145.64.141]:44858 "EHLO coco.kroah.org"
+	id S933337Ab0HJV7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:59:54 -0400
+Received: from kroah.org ([198.145.64.141]:44821 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933355Ab0HJV77 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:59:59 -0400
+	id S933313Ab0HJV7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 17:59:47 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 23/68] synclink: reworking locking a bit
-Date: Tue, 10 Aug 2010 14:58:45 -0700
-Message-Id: <1281477570-18944-23-git-send-email-gregkh@suse.de>
+Subject: [PATCH 13/68] stallion: prune lock_kernel calls
+Date: Tue, 10 Aug 2010 14:58:35 -0700
+Message-Id: <1281477570-18944-13-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -22,131 +22,242 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Use the port mutex and port lock to fix the various races. The locking
-still isn't totally consistent but its better than before. Wants switching
-to the port helpers.
+Remove unneeded tty layer lock kernel bits. Relock the needed bits using the
+port mutex. The istallion still has brd state races but those are not new
+or introduced by the removal of the lock_kernel logic.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/synclink_gt.c |   12 +++++++++++-
- drivers/char/synclinkmp.c  |    9 ++++++++-
- 2 files changed, 19 insertions(+), 2 deletions(-)
+ drivers/char/istallion.c |   22 +++++++++++++---------
+ drivers/char/stallion.c  |   20 ++++++++++++--------
+ 2 files changed, 25 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-index 3c7ac6a..5a602eb 100644
---- a/drivers/char/synclink_gt.c
-+++ b/drivers/char/synclink_gt.c
-@@ -675,12 +675,14 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		goto cleanup;
+diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
+index 4e395c9..750650c 100644
+--- a/drivers/char/istallion.c
++++ b/drivers/char/istallion.c
+@@ -14,6 +14,7 @@
+  *	the Free Software Foundation; either version 2 of the License, or
+  *	(at your option) any later version.
+  *
++ *	FIXME: brdp->state needs proper locking.
+  */
+ 
+ /*****************************************************************************/
+@@ -4011,6 +4012,7 @@ static int stli_getbrdstats(combrd_t __user *bp)
+ 		return -ENODEV;
+ 
+ 	memset(&stli_brdstats, 0, sizeof(combrd_t));
++
+ 	stli_brdstats.brd = brdp->brdnr;
+ 	stli_brdstats.type = brdp->brdtype;
+ 	stli_brdstats.hwid = 0;
+@@ -4076,10 +4078,13 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
+ 	if (brdp == NULL)
+ 		return -ENODEV;
+ 
++	mutex_lock(&portp->port.mutex);
+ 	if (brdp->state & BST_STARTED) {
+ 		if ((rc = stli_cmdwait(brdp, portp, A_GETSTATS,
+-		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0)
++		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0) {
++			mutex_unlock(&portp->port.mutex);
+ 			return rc;
++		}
+ 	} else {
+ 		memset(&stli_cdkstats, 0, sizeof(asystats_t));
+ 	}
+@@ -4124,6 +4129,7 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
+ 	stli_comstats.modem = stli_cdkstats.dcdcnt;
+ 	stli_comstats.hwid = stli_cdkstats.hwid;
+ 	stli_comstats.signals = stli_mktiocm(stli_cdkstats.signals);
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	return 0;
+ }
+@@ -4186,15 +4192,20 @@ static int stli_clrportstats(struct stliport *portp, comstats_t __user *cp)
+ 	if (!brdp)
+ 		return -ENODEV;
+ 
++	mutex_lock(&portp->port.mutex);
++
+ 	if (brdp->state & BST_STARTED) {
+-		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0)
++		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0) {
++			mutex_unlock(&portp->port.mutex);
+ 			return rc;
++		}
  	}
  
-+	mutex_lock(&info->port.mutex);
- 	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
+ 	memset(&stli_comstats, 0, sizeof(comstats_t));
+ 	stli_comstats.brd = portp->brdnr;
+ 	stli_comstats.panel = portp->panelnr;
+ 	stli_comstats.port = portp->portnr;
++	mutex_unlock(&portp->port.mutex);
  
- 	spin_lock_irqsave(&info->netlock, flags);
- 	if (info->netcount) {
- 		retval = -EBUSY;
- 		spin_unlock_irqrestore(&info->netlock, flags);
-+		mutex_unlock(&info->port.mutex);
- 		goto cleanup;
- 	}
- 	info->port.count++;
-@@ -692,7 +694,7 @@ static int open(struct tty_struct *tty, struct file *filp)
- 		if (retval < 0)
- 			goto cleanup;
- 	}
+ 	if (copy_to_user(cp, &stli_comstats, sizeof(comstats_t)))
+ 		return -EFAULT;
+@@ -4266,8 +4277,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 	done = 0;
+ 	rc = 0;
+ 
+-	lock_kernel();
 -
-+	mutex_unlock(&info->port.mutex);
- 	retval = block_til_ready(tty, filp, info);
- 	if (retval) {
- 		DBGINFO(("%s block_til_ready rc=%d\n", info->device_name, retval));
-@@ -724,12 +726,14 @@ static void close(struct tty_struct *tty, struct file *filp)
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
+ 	switch (cmd) {
+ 	case COM_GETPORTSTATS:
+ 		rc = stli_getportstats(NULL, NULL, argp);
+@@ -4290,8 +4299,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		done++;
+ 		break;
+ 	}
+-	unlock_kernel();
+-
+ 	if (done)
+ 		return rc;
  
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
+@@ -4308,8 +4315,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 	if (brdp->state == 0)
+ 		return -ENODEV;
  
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -740,17 +744,23 @@ cleanup:
- static void hangup(struct tty_struct *tty)
- {
- 	struct slgt_info *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 	DBGINFO(("%s hangup\n", info->device_name));
- 
- 	flush_buffer(tty);
-+
-+	mutex_lock(&info->port.mutex);
- 	shutdown(info);
- 
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);
- 
- 	wake_up_interruptible(&info->port.open_wait);
+-	lock_kernel();
+-
+ 	switch (cmd) {
+ 	case STL_BINTR:
+ 		EBRDINTR(brdp);
+@@ -4332,7 +4337,6 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		rc = -ENOIOCTLCMD;
+ 		break;
+ 	}
+-	unlock_kernel();
+ 	return rc;
  }
-diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
-index 8da976b..ac447c7 100644
---- a/drivers/char/synclinkmp.c
-+++ b/drivers/char/synclinkmp.c
-@@ -812,13 +812,15 @@ static void close(struct tty_struct *tty, struct file *filp)
  
- 	if (tty_port_close_start(&info->port, tty, filp) == 0)
- 		goto cleanup;
--		
-+
-+	mutex_lock(&info->port.mutex);
-  	if (info->port.flags & ASYNC_INITIALIZED)
-  		wait_until_sent(tty, info->timeout);
+diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
+index 6049fd7..f2167f8 100644
+--- a/drivers/char/stallion.c
++++ b/drivers/char/stallion.c
+@@ -807,7 +807,6 @@ static void stl_waituntilsent(struct tty_struct *tty, int timeout)
+ 		timeout = HZ;
+ 	tend = jiffies + timeout;
  
- 	flush_buffer(tty);
- 	tty_ldisc_flush(tty);
- 	shutdown(info);
-+	mutex_unlock(&info->port.mutex);
- 
- 	tty_port_close_end(&info->port, tty);
- 	info->port.tty = NULL;
-@@ -834,6 +836,7 @@ cleanup:
- static void hangup(struct tty_struct *tty)
- {
- 	SLMP_INFO *info = tty->driver_data;
-+	unsigned long flags;
- 
- 	if (debug_level >= DEBUG_LEVEL_INFO)
- 		printk("%s(%d):%s hangup()\n",
-@@ -842,12 +845,16 @@ static void hangup(struct tty_struct *tty)
- 	if (sanity_check(info, tty->name, "hangup"))
- 		return;
- 
-+	mutex_lock(&info->port.mutex);
- 	flush_buffer(tty);
- 	shutdown(info);
- 
-+	spin_lock_irqsave(&info->port.lock, flags);
- 	info->port.count = 0;
- 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
- 	info->port.tty = NULL;
-+	spin_unlock_irqrestore(&info->port.lock, flags);
-+	mutex_unlock(&info->port.mutex);
- 
- 	wake_up_interruptible(&info->port.open_wait);
+-	lock_kernel();
+ 	while (stl_datastate(portp)) {
+ 		if (signal_pending(current))
+ 			break;
+@@ -815,7 +814,6 @@ static void stl_waituntilsent(struct tty_struct *tty, int timeout)
+ 		if (time_after_eq(jiffies, tend))
+ 			break;
+ 	}
+-	unlock_kernel();
  }
+ 
+ /*****************************************************************************/
+@@ -1029,6 +1027,8 @@ static int stl_getserial(struct stlport *portp, struct serial_struct __user *sp)
+ 	pr_debug("stl_getserial(portp=%p,sp=%p)\n", portp, sp);
+ 
+ 	memset(&sio, 0, sizeof(struct serial_struct));
++
++	mutex_lock(&portp->port.mutex);
+ 	sio.line = portp->portnr;
+ 	sio.port = portp->ioaddr;
+ 	sio.flags = portp->port.flags;
+@@ -1048,6 +1048,7 @@ static int stl_getserial(struct stlport *portp, struct serial_struct __user *sp)
+ 	brdp = stl_brds[portp->brdnr];
+ 	if (brdp != NULL)
+ 		sio.irq = brdp->irq;
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	return copy_to_user(sp, &sio, sizeof(struct serial_struct)) ? -EFAULT : 0;
+ }
+@@ -1069,12 +1070,15 @@ static int stl_setserial(struct tty_struct *tty, struct serial_struct __user *sp
+ 
+ 	if (copy_from_user(&sio, sp, sizeof(struct serial_struct)))
+ 		return -EFAULT;
++	mutex_lock(&portp->port.mutex);
+ 	if (!capable(CAP_SYS_ADMIN)) {
+ 		if ((sio.baud_base != portp->baud_base) ||
+ 		    (sio.close_delay != portp->close_delay) ||
+ 		    ((sio.flags & ~ASYNC_USR_MASK) !=
+-		    (portp->port.flags & ~ASYNC_USR_MASK)))
++		    (portp->port.flags & ~ASYNC_USR_MASK))) {
++			mutex_unlock(&portp->port.mutex);
+ 			return -EPERM;
++		}
+ 	} 
+ 
+ 	portp->port.flags = (portp->port.flags & ~ASYNC_USR_MASK) |
+@@ -1083,6 +1087,7 @@ static int stl_setserial(struct tty_struct *tty, struct serial_struct __user *sp
+ 	portp->close_delay = sio.close_delay;
+ 	portp->closing_wait = sio.closing_wait;
+ 	portp->custom_divisor = sio.custom_divisor;
++	mutex_unlock(&portp->port.mutex);
+ 	stl_setport(portp, tty->termios);
+ 	return 0;
+ }
+@@ -1147,8 +1152,6 @@ static int stl_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd
+ 
+ 	rc = 0;
+ 
+-	lock_kernel();
+-
+ 	switch (cmd) {
+ 	case TIOCGSERIAL:
+ 		rc = stl_getserial(portp, argp);
+@@ -1173,7 +1176,6 @@ static int stl_ioctl(struct tty_struct *tty, struct file *file, unsigned int cmd
+ 		rc = -ENOIOCTLCMD;
+ 		break;
+ 	}
+-	unlock_kernel();
+ 	return rc;
+ }
+ 
+@@ -2327,6 +2329,7 @@ static int stl_getportstats(struct tty_struct *tty, struct stlport *portp, comst
+ 			return -ENODEV;
+ 	}
+ 
++	mutex_lock(&portp->port.mutex);
+ 	portp->stats.state = portp->istate;
+ 	portp->stats.flags = portp->port.flags;
+ 	portp->stats.hwid = portp->hwid;
+@@ -2358,6 +2361,7 @@ static int stl_getportstats(struct tty_struct *tty, struct stlport *portp, comst
+ 		(STL_TXBUFSIZE - (tail - head));
+ 
+ 	portp->stats.signals = (unsigned long) stl_getsignals(portp);
++	mutex_unlock(&portp->port.mutex);
+ 
+ 	return copy_to_user(cp, &portp->stats,
+ 			    sizeof(comstats_t)) ? -EFAULT : 0;
+@@ -2382,10 +2386,12 @@ static int stl_clrportstats(struct stlport *portp, comstats_t __user *cp)
+ 			return -ENODEV;
+ 	}
+ 
++	mutex_lock(&portp->port.mutex);
+ 	memset(&portp->stats, 0, sizeof(comstats_t));
+ 	portp->stats.brd = portp->brdnr;
+ 	portp->stats.panel = portp->panelnr;
+ 	portp->stats.port = portp->portnr;
++	mutex_unlock(&portp->port.mutex);
+ 	return copy_to_user(cp, &portp->stats,
+ 			    sizeof(comstats_t)) ? -EFAULT : 0;
+ }
+@@ -2451,7 +2457,6 @@ static long stl_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		return -ENODEV;
+ 	rc = 0;
+ 
+-	lock_kernel();
+ 	switch (cmd) {
+ 	case COM_GETPORTSTATS:
+ 		rc = stl_getportstats(NULL, NULL, argp);
+@@ -2472,7 +2477,6 @@ static long stl_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		rc = -ENOIOCTLCMD;
+ 		break;
+ 	}
+-	unlock_kernel();
+ 	return rc;
+ }
+ 
 -- 
 1.7.2
 
