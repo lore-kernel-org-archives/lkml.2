@@ -1,198 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab0HJKvs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 06:51:48 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:25261 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757395Ab0HJKvm (ORCPT
+	id S1757454Ab0HJKyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 06:54:31 -0400
+Received: from peer.zerties.org ([188.40.33.175]:45843 "EHLO peer.zerties.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757395Ab0HJKy1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 06:51:42 -0400
-Subject: [PATCHv3] fixed resource leak in scripts/mod/modpost.c
-From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: ext Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        ext Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
-References: <1281010151.2063.8.camel@alex-desktop>
-	 <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 13:52:32 +0300
-Message-ID: <1281437552.2063.431.camel@alex-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Aug 2010 10:50:45.0631 (UTC) FILETIME=[E2BB38F0:01CB3879]
-X-Nokia-AV: Clean
+	Tue, 10 Aug 2010 06:54:27 -0400
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: felipe.balbi@nokia.com
+Cc: David Howells <dhowells@redhat.com>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vamos-dev\@i4.informatik.uni-erlangen.de" 
+	<vamos-dev@i4.informatik.uni-erlangen.de>
+Subject: Re: [PATCH 1/4] arch/frv: Removing dead RAMKERNEL config option
+References: <cover.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<c80d5af9b2921e9d8cc6d8d7b9a54a882f1c919e.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<20100810093717.GD22436@nokia.com>
+Date: Tue, 10 Aug 2010 12:54:16 +0200
+In-Reply-To: <20100810093717.GD22436@nokia.com> (Felipe Balbi's message of
+	"Tue, 10 Aug 2010 12:37:17 +0300")
+Message-ID: <864of2ybzb.fsf@peer.zerties.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+Felipe Balbi <felipe.balbi@nokia.com> writes:
 
-sec2annotation() returns malloc'ed buffer directly to printf as an
-argument. Patch lets free this buffer after printing. Preventing ops
-while freeing the buffer by changing return const str to return 
-strdup empty line.
+> Hi,
+>
+> On Tue, Aug 10, 2010 at 11:11:08AM +0200, ext Christian Dietrich wrote:
+>>diff --git a/arch/frv/mm/init.c b/arch/frv/mm/init.c
+>>index ed64588..73586ad 100644
+>>--- a/arch/frv/mm/init.c
+>>+++ b/arch/frv/mm/init.c
+>>@@ -170,23 +170,6 @@ void __init mem_init(void)
+>>  */
+>> void free_initmem(void)
+>> {
+>>-#if defined(CONFIG_RAMKERNEL) && !defined(CONFIG_PROTECT_KERNEL)
+>>-	unsigned long start, end, addr;
+>>-
+>>-	start = PAGE_ALIGN((unsigned long) &__init_begin);	/* round up */
+>>-	end   = ((unsigned long) &__init_end) & PAGE_MASK;	/* round down */
+>>-
+>>-	/* next to check that the page we free is not a partial page */
+>>-	for (addr = start; addr < end; addr += PAGE_SIZE) {
+>>-		ClearPageReserved(virt_to_page(addr));
+>>-		init_page_count(virt_to_page(addr));
+>>-		free_page(addr);
+>>-		totalram_pages++;
+>>-	}
+>>-
+>>-	printk("Freeing unused kernel memory: %ldKiB freed (0x%lx - 0x%lx)\n",
+>>-	       (end - start) >> 10, start, end);
+>>-#endif
+>> } /* end free_initmem() */
+>
+> and now you have an empty function... how about removing the function
+> completely and it's uses ?
 
-Signed-off-by: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
----
- scripts/mod/modpost.c |   58 ++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 42 insertions(+), 16 deletions(-)
+If you take a look at init/main.c:826 free_initmem() is called. perhaps
+this can be resolved with a macro, but if anybody in the future wants to
+add some functionality there, he won't be happy after grepping.
 
-diff -ur linux-2.6.35/scripts/mod/modpost.c linux-2.6.35_b/scripts/mod/modpost.c
---- linux-2.6.35/scripts/mod/modpost.c	2010-08-10 12:11:03.854528620 +0300
-+++ linux-2.6.35_b/scripts/mod/modpost.c	2010-08-10 12:11:25.174529109 +0300
-@@ -1165,9 +1165,9 @@
- 			strcat(p, "data ");
- 		else
- 			strcat(p, " ");
--		return r; /* we leak her but we do not care */
-+		return r; 
- 	} else {
--		return "";
-+		return strdup("");
- 	}
- }
- 
-@@ -1195,6 +1195,8 @@
- {
- 	const char *from, *from_p;
- 	const char *to, *to_p;
-+	char *prl_from;
-+	char *prl_to;
- 
- 
- 	switch (from_is_func) {
-@@ -1219,16 +1221,21 @@
- 
- 	switch (mismatch->mismatch) {
- 	case TEXT_TO_ANY_INIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The function %s%s() references\n"
- 		"the %s %s%s%s.\n"
- 		"This is often because %s lacks a %s\n"
- 		"annotation or the annotation of %s is wrong.\n",
--		sec2annotation(fromsec), fromsym,
--		to, sec2annotation(tosec), tosym, to_p,
--		fromsym, sec2annotation(tosec), tosym);
-+		prl_from, fromsym,
-+		to, prl_to, tosym, to_p,
-+		fromsym, prl_to, tosym);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case DATA_TO_ANY_INIT: {
-+		prl_to = sec2annotation(tosec);
- 		const char *const *s = mismatch->symbol_white_list;
- 		fprintf(stderr,
- 		"The variable %s references\n"
-@@ -1236,20 +1243,24 @@
- 		"If the reference is valid then annotate the\n"
- 		"variable with __init* or __refdata (see linux/init.h) "
- 		"or name the variable:\n",
--		fromsym, to, sec2annotation(tosec), tosym, to_p);
-+		fromsym, to, prl_to, tosym, to_p);
- 		while (*s)
- 			fprintf(stderr, "%s, ", *s++);
- 		fprintf(stderr, "\n");
-+		free(prl_to);
- 		break;
- 	}
- 	case TEXT_TO_ANY_EXIT:
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The function %s() references a %s in an exit section.\n"
- 		"Often the %s %s%s has valid usage outside the exit section\n"
- 		"and the fix is to remove the %sannotation of %s.\n",
--		fromsym, to, to, tosym, to_p, sec2annotation(tosec), tosym);
-+		fromsym, to, to, tosym, to_p, prl_to, tosym);
-+		free(prl_to);
- 		break;
- 	case DATA_TO_ANY_EXIT: {
-+		prl_to = sec2annotation(tosec);
- 		const char *const *s = mismatch->symbol_white_list;
- 		fprintf(stderr,
- 		"The variable %s references\n"
-@@ -1257,24 +1268,31 @@
- 		"If the reference is valid then annotate the\n"
- 		"variable with __exit* (see linux/init.h) or "
- 		"name the variable:\n",
--		fromsym, to, sec2annotation(tosec), tosym, to_p);
-+		fromsym, to, prl_to, tosym, to_p);
- 		while (*s)
- 			fprintf(stderr, "%s, ", *s++);
- 		fprintf(stderr, "\n");
-+		free(prl_to);
- 		break;
- 	}
- 	case XXXINIT_TO_SOME_INIT:
- 	case XXXEXIT_TO_SOME_EXIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The %s %s%s%s references\n"
- 		"a %s %s%s%s.\n"
- 		"If %s is only used by %s then\n"
- 		"annotate %s with a matching annotation.\n",
--		from, sec2annotation(fromsec), fromsym, from_p,
--		to, sec2annotation(tosec), tosym, to_p,
-+		from, prl_from, fromsym, from_p,
-+		to, prl_to, tosym, to_p,
- 		tosym, fromsym, tosym);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case ANY_INIT_TO_ANY_EXIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The %s %s%s%s references\n"
- 		"a %s %s%s%s.\n"
-@@ -1283,11 +1301,15 @@
- 		"uses functionality in the exit path.\n"
- 		"The fix is often to remove the %sannotation of\n"
- 		"%s%s so it may be used outside an exit section.\n",
--		from, sec2annotation(fromsec), fromsym, from_p,
--		to, sec2annotation(tosec), tosym, to_p,
-+		from, prl_from, fromsym, from_p,
-+		to, prl_to, tosym, to_p,
- 		sec2annotation(tosec), tosym, to_p);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case ANY_EXIT_TO_ANY_INIT:
-+		prl_from = sec2annotation(fromsec);
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The %s %s%s%s references\n"
- 		"a %s %s%s%s.\n"
-@@ -1296,16 +1318,20 @@
- 		"uses functionality in the init path.\n"
- 		"The fix is often to remove the %sannotation of\n"
- 		"%s%s so it may be used outside an init section.\n",
--		from, sec2annotation(fromsec), fromsym, from_p,
--		to, sec2annotation(tosec), tosym, to_p,
--		sec2annotation(tosec), tosym, to_p);
-+		from, prl_from, fromsym, from_p,
-+		to, prl_to, tosym, to_p,
-+		prl_to, tosym, to_p);
-+		free(prl_from);
-+		free(prl_to);
- 		break;
- 	case EXPORT_TO_INIT_EXIT:
-+		prl_to = sec2annotation(tosec);
- 		fprintf(stderr,
- 		"The symbol %s is exported and annotated %s\n"
- 		"Fix this by removing the %sannotation of %s "
- 		"or drop the export.\n",
--		tosym, sec2annotation(tosec), sec2annotation(tosec), tosym);
-+		tosym, prl_to, prl_to, tosym);
-+		free(prl_to);
- 		break;
- 	}
- 	fprintf(stderr, "\n");
-
-
+greetz didi
+-- 
+(λ x . x x) (λ x . x x) -- See how beatiful the lambda is
+No documentation is better than bad documentation
+-- Das Ausdrucken dieser Mail wird urheberrechtlich verfolgt.
