@@ -1,104 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581Ab0HJSkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 14:40:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65240 "EHLO mx1.redhat.com"
+	id S932578Ab0HJStQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 14:49:16 -0400
+Received: from kroah.org ([198.145.64.141]:55441 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932504Ab0HJSkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 14:40:25 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: PATCH 3/6 - direct-io: do not merge logically non-contiguous requests
-References: <4C5BE8DB.5030503@linux.vnet.ibm.com>
-	<20100806120358.GA31601@infradead.org>
-	<4C5D0BC2.1040706@linux.vnet.ibm.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 10 Aug 2010 14:40:06 -0400
-Message-ID: <x49ocdab9bt.fsf@segfault.boston.devel.redhat.com>
+	id S932558Ab0HJStM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 14:49:12 -0400
+Date: Tue, 10 Aug 2010 11:46:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.27.50
+Message-ID: <20100810184600.GA10346@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> writes:
+I'm announcing the release of the 2.6.27.50 kernel.  All users of the
+2.6.27 kernel series are very strongly encouraged to upgrade.
 
-> On 08/06/2010 02:03 PM, Christoph Hellwig wrote:
->> Something is deeply wrong here.  Raw block device access has a 1:1
->> mapping between logical and physical block numbers.  They really should
->> never be non-contiguous.
->
-> At least I did nothing I know about to break it :-)
+The updated 2.6.27.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.27.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.27.y.git;a=summary
 
-I think Christoph missed that you were using ext2, not the block device.
+thanks,
 
-> As I mentioned just iozone using direct I/O (-I flag of iozone then
-> using O_DIRECT for the file) on a ext2 file-system.
-> The file system was coming clean out of mkfs the file was written with
-> iozone one step before the traced read run.
->
-> The only uncommon thing here might be the block device, which is a
-> scsi disk on our SAN servers (I'm running on s390) - so the driver in
-> charge is zfcp (drivers/s390/scsi/).
-> I could use dasd (drivers/s390/block) disks as well, but I have no
-> blktrace of them yet - what I already know is that they show a similar
-> cost increase. On monday I should be able to get machine resources to
-> verify that both disk types are affected.
->
-> Let me know if I can do anything else on my system to shed some light
-> on the matter.
+greg k-h
 
-Well, the problem is pretty obvious.  Inside submit_page_section, you
-have this code:
+------------
 
-	/*
-	 * If there's a deferred page already there then send it.
-	 */
-	if (dio->cur_page) {
-		ret = dio_send_cur_page(dio);
-		page_cache_release(dio->cur_page);
-		dio->cur_page = NULL;
-		if (ret)
-			goto out;
-	}
+ Documentation/accounting/.gitignore   |    1 +
+ Documentation/auxdisplay/.gitignore   |    1 +
+ Documentation/connector/.gitignore    |    1 +
+ Documentation/ia64/.gitignore         |    1 +
+ Documentation/networking/.gitignore   |    1 +
+ Documentation/pcmcia/.gitignore       |    1 +
+ Documentation/spi/.gitignore          |    2 ++
+ Documentation/video4linux/.gitignore  |    1 +
+ Documentation/vm/.gitignore           |    1 +
+ Documentation/watchdog/src/.gitignore |    2 ++
+ Makefile                              |    2 +-
+ arch/x86/boot/compressed/.gitignore   |    2 ++
+ drivers/misc/enclosure.c              |    7 +++++--
+ drivers/parisc/led.c                  |    6 ++++--
+ fs/gfs2/dir.c                         |    2 +-
+ fs/xfs/xfs_dfrag.c                    |    5 ++++-
+ 16 files changed, 29 insertions(+), 7 deletions(-)
 
-	page_cache_get(page);/* It is in dio */
-	dio->cur_page = page;
-	dio->cur_page_offset = offset;
-	dio->cur_page_len = len;
-	dio->cur_page_block = blocknr;
-	dio->cur_page_fs_offset = dio->block_in_file << dio->blkbits;
+Alexey Dobriyan (1):
+      .gitignore updates
 
-Notice that we're processing a new page, so we submit the old page for
-I/O.
+Bob Peterson (1):
+      GFS2: rename causes kernel Oops
 
-And in dio_send_cur_page, we have this:
+Dan Rosenberg (1):
+      xfs: prevent swapext from operating on write-only files
 
-	if (dio->final_block_in_bio != dio->cur_page_block ||
-	    cur_offset != bio_next_offset)
-		dio_bio_submit(dio);
+Greg Kroah-Hartman (1):
+      Linux 2.6.27.50
 
-So, we are actually comparing values between two different pages, and of
-course, this doesn't work.  We're always one page behind in the I/O.
+Helge Deller (1):
+      PARISC: led.c - fix potential stack overflow in led_proc_write()
 
-Also, the block of code above is immediately followed by this:
+James Bottomley (1):
+      SCSI: enclosure: fix error path - actually return ERR_PTR() on error
 
-	/*
-	 * Submit now if the underlying fs is about to perform a
-	 * metadata read
-	 */
-	if (dio->boundary)
-		dio_bio_submit(dio);
-
-So, it looks to me like this could result in submitting the same bio
-twice if you are unlucky enough.  I'll see what I can do to fix this
-up.
-
-Cheers,
-Jeff
