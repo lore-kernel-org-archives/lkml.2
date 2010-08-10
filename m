@@ -1,103 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab0HJQfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 12:35:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29763 "EHLO
+	id S932405Ab0HJQlk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 12:41:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56864 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932202Ab0HJQfh (ORCPT
+	with ESMTP id S932370Ab0HJQlh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 12:35:37 -0400
-Message-ID: <4C617F87.6090300@oracle.com>
-Date: Tue, 10 Aug 2010 09:34:15 -0700
+	Tue, 10 Aug 2010 12:41:37 -0400
+Date: Tue, 10 Aug 2010 09:40:59 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 6 (block git tree)
-References: <20100806132758.6001d416.sfr@canb.auug.org.au>	<20100806120456.5eca82b7.randy.dunlap@oracle.com>	<4C5C5D18.6050905@oracle.com>	<20100810083737.c761fc8f.randy.dunlap@oracle.com>	<4C617596.505@kernel.dk>	<4C617644.6040105@oracle.com>	<4C6176B2.1050604@kernel.dk> <20100810085946.a8b545e9.randy.dunlap@oracle.com> <4C617956.70003@kernel.dk> <4C617A1C.9000602@oracle.com> <4C617AD1.10805@kernel.dk>
-In-Reply-To: <4C617AD1.10805@kernel.dk>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -next] mfd: tps6586x depends on GPIOLIB
+Message-Id: <20100810094059.c320b916.randy.dunlap@oracle.com>
+In-Reply-To: <20100810135601.4777e310.sfr@canb.auug.org.au>
+References: <20100810135601.4777e310.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/10 09:14, Jens Axboe wrote:
-> On 08/10/2010 12:11 PM, Randy Dunlap wrote:
->> On 08/10/10 09:07, Jens Axboe wrote:
->>> On 08/10/2010 11:59 AM, Randy Dunlap wrote:
->>>> On Tue, 10 Aug 2010 11:56:34 -0400 Jens Axboe wrote:
->>>>
->>>>> On 08/10/2010 11:54 AM, Randy Dunlap wrote:
->>>>>> On 08/10/10 08:51, Jens Axboe wrote:
->>>>>>> On 08/10/2010 11:37 AM, Randy Dunlap wrote:
->>>>>>>> On Fri, 06 Aug 2010 12:06:00 -0700 Randy Dunlap wrote:
->>>>>>>>
->>>>>>>>> On 08/06/10 12:04, Randy Dunlap wrote:
->>>>>>>>>> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
->>>>>>>>>>
->>>>>>>>>>> Hi all,
->>>>>>>>>>>
->>>>>>>>>>> As the merge window is open, please do not add 2.6.37 material to your
->>>>>>>>>>> linux-next included trees until after 2.6.36-rc1.
->>>>>>>>>>>
->>>>>>>>>>> Changes since 20100805:
->>>>>>>>>>>
->>>>>>>>>>> The block tree lost its build failure and a conflict.
->>>>>>>>>>
->>>>>>>>>>
->>>>>>>>>> Lots of source files now need <linux/blk_types.h>:
->>>>>>>>>>
->>>>>>>>>> mm/filemap.c:2164: error: 'REQ_WRITE' undeclared
->>>>>>>>>> fs/read_write.c:362: error: 'REQ_WRITE' undeclared
->>>>>>>>>> fs/splice.c:1108: error: 'REQ_WRITE' undeclared
->>>>>>>>>> fs/aio.c:1496: error: 'REQ_WRITE' undeclared
->>>>>>>>>> drivers/memstick/core/memstick.c:272: error: 'REQ_WRITE' undeclared
->>>>>>>>>> drivers/memstick/host/tifm_ms.c:218: error: 'REQ_WRITE' undeclared
->>>>>>>>>> drivers/memstick/host/jmb38x_ms.c:333: error: 'REQ_WRITE' undeclared
->>>>>>>>>> drivers/staging/spectra/ffsport.c:277: error: 'REQ_TYPE_LINUX_BLOCK' undeclared
->>>>>>>>>> fs/compat.c:1274: error: 'REQ_WRITE' undeclared
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> Sorry, I see that this has already been fixed.
->>>>>>>>
->>>>>>>> s/fixed/addressed/  but not yet merged into linux-next.
->>>>>>>> Can we get that fixed, please?
->>>>>>>
->>>>>>> Which patch are you referencing?
->>>>>>
->>>>>> Hi Jens,
->>>>>>
->>>>>> Maybe I misread last week's email about linux/blk_types.h.
->>>>>> (It was about being exported, not about being #included.)
->>>>>>
->>>>>> There are still lots of these files that have the errors listed above.
->>>>>> Has there been a patch for those?
->>>>>
->>>>> What's the .config?
->>>>
->>>> I have a bunch of them that fail.  Here are 2 of them,
->>>> one with CONFIG_BLOCK=y and one with CONFIG_BLOCK=n.
->>>>
->>>> I can give you more if you want them.
->>>
->>> Looks like the types are badly hidden behind CONFIG_BLOCK.
->>> So this should fix the CONFIG_BLOCK=n part at least. What
->>> was the compile error with CONFIG_BLOCK=y?
->>
->> Ugh, it is a staging driver with lots of other problems.
->> (spectra)  I wouldn't worry about it for now.
->>
->> I'll test this patch.  Thanks.
-> 
-> OK great, I'll push this one out.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
+tps6586x uses gpio interfaces, so it should depend on GPIOLIB.
 
-Ack.  Looks good here.  Thanks.
+Fixes these build errors:
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+drivers/mfd/tps6586x.c:41: error: field 'gpio' has incomplete type
+drivers/mfd/tps6586x.c:195: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/mfd/tps6586x.c:195: warning: initialization from incompatible pointer type
+drivers/mfd/tps6586x.c:210: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/mfd/tps6586x.c:210: warning: initialization from incompatible pointer type
+drivers/mfd/tps6586x.c:219: warning: type defaults to 'int' in declaration of '__mptr'
+drivers/mfd/tps6586x.c:219: warning: initialization from incompatible pointer type
+drivers/mfd/tps6586x.c:249: error: implicit declaration of function 'gpiochip_add'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+---
+ drivers/mfd/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20100810.orig/drivers/mfd/Kconfig
++++ linux-next-20100810/drivers/mfd/Kconfig
+@@ -543,7 +543,7 @@ config MFD_JZ4740_ADC
+ 
+ config MFD_TPS6586X
+ 	tristate "TPS6586x Power Management chips"
+-	depends on I2C
++	depends on I2C && GPIOLIB
+ 	select MFD_CORE
+ 	help
+ 	  If you say yes here you get support for the TPS6586X series of
