@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932997Ab0HJTIG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 15:08:06 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:34727 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab0HJTIA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 15:08:00 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Aug 2010 15:08:00 EDT
-Date: Tue, 10 Aug 2010 21:02:53 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux/m68k <linux-m68k@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [git pull] m68k updates for 2.6.36
-Message-ID: <alpine.DEB.2.00.1008102055280.17281@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S932982Ab0HJTL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 15:11:29 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:41610 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932358Ab0HJTLX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 15:11:23 -0400
+Date: Tue, 10 Aug 2010 21:11:17 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Laurens Leemans <laurens@signips.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] hwmon: f71882fg: Add support for the Fintek F71808E
+Message-ID: <20100810191117.GN14382@salidar.me.mortis.eu>
+References: <20100801132226.GE3711@salidar.me.mortis.eu>
+ <1280669402-31213-1-git-send-email-me@mortis.eu>
+ <4C5950B6.5010503@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qd/SZIFVu+MYwfCR"
+Content-Disposition: inline
+In-Reply-To: <4C5950B6.5010503@redhat.com>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Hi Linus,
 
-Please pull to receive the m68k updates for 2.6.36.
+--qd/SZIFVu+MYwfCR
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-BTW, according to your comments for Jens, this time I did not rebase my
-for-linus branch on top of your tree-of-the-moment, but on top of v2.6.35.
-But I'm still wondering if this really is better? I never merge anything on
-my for-linus branch, and I always verify that my (rebased on every stable
-and rc release) m68k-queue branch gives an identical tree to my (merged
-on every stable and rc release) private development branch.
+On Wed, Aug 04, 2010 at 01:36:22PM +0200, Hans de Goede wrote:
+> On 08/01/2010 03:30 PM, Giel van Schijndel wrote:
+>> Allow device probing to recognise the Fintek F71808E.
+>>=20
+>> Sysfs interface:
+>>   * Fan/pwm control is the same as for F71889FG
+>=20
+> My datasheet strongly disagrees with this ...
 
-The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
-  Linus Torvalds (1):
-        Linux 2.6.35
+I just noticed this patch was applied to mainline anyway.  Regardless, I
+will (try to) address these issues you raised.
 
-are available in the git repository at:
+Right now however, I am prioritising personal stuff above this
+driver---bachelor's thesis and graduation presentation.  When finished
+with that (september) I'll allocate time to these issues again.
 
-  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
-  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+PS Those datasheets are written very poorly, although I have seen worse.
+   And as a reader I tend to become more "lazy" when I discover the
+   writer was "lazy" (not exactly by choice, more out of habit).
+   Unfortunately that doesn't work very well as reading style with
+   technical documentation, so this probably explains some of the errors
+   in this current patch.
 
-Andrea Gelmini (1):
-      arch/m68k/sun3/leds.c: Checkpatch cleanup
+PPS I do have a patch ready that addresses some of the issues you
+    raised.  Those are only the cosmetic changes though (e.g. change
+    naming of chip, comment updates, etc.).  Would you suggest me to
+    send it right now already or wait until I have time to address the
+    other issues as well?
 
-Finn Thain (2):
-      m68k/mac: Add color classic ii support
-      m68k/mac: Fix RTC on PMU machines
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
 
-Geert Uytterhoeven (2):
-      zorro: BKL removal
-      zorro: Fix reading of proc/bus/zorro/* in small chunks
+--qd/SZIFVu+MYwfCR
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
- arch/m68k/mac/config.c |    9 +++++++++
- arch/m68k/mac/misc.c   |    6 +++---
- arch/m68k/sun3/leds.c  |    4 ++--
- drivers/zorro/proc.c   |   17 +++++++++--------
- 4 files changed, 23 insertions(+), 13 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Gr{oetje,eeting}s,
+iEYEARECAAYFAkxhpFUACgkQZBYm/87l50Il0wCfciJ9t8+Qd36XoMIFkXDV/dRv
+wvgAoL2agAIOAb/Meps3LG5jTkzKPiC+
+=iPKZ
+-----END PGP SIGNATURE-----
 
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+--qd/SZIFVu+MYwfCR--
