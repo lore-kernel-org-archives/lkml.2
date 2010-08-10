@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757691Ab0HJQQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 12:16:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62665 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754536Ab0HJQQc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 12:16:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZUzKr7XWBpz98QD3tm7HX8RiBB/a1OveKuJYsyrym+HuoUs3nTgeqGEldlXTwvvMF2
-         HZ50kE25GcBB4IYAZj+sJsAcb5c5NePj+3PfQdvJUjYCL4OAmgy26RSQI8I3Wi4EHgM5
-         XxSPa/fbYX3Zz0qk2YDFlJ1dGdzDpB236a/uA=
-Date: Tue, 10 Aug 2010 20:16:27 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100810161627.GB6893@lenovo>
-References: <20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo> <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo> <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com> <20100809200245.GF6056@lenovo> <20100810074200.GE26154@erda.amd.com>
+	id S932322Ab0HJQRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 12:17:31 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:55963 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757594Ab0HJQR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 12:17:26 -0400
+X-ASG-Debug-ID: 1281457045-189700880000-xx1T2L
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C617B9D.5060508@fusionio.com>
+Date: Tue, 10 Aug 2010 12:17:33 -0400
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100810074200.GE26154@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+X-ASG-Orig-Subj: Re: [GIT PULL #2] block bits for 2.6.36-rc1
+Subject: Re: [GIT PULL #2] block bits for 2.6.36-rc1
+References: <4C5FF80A.9040101@fusionio.com>
+In-Reply-To: <4C5FF80A.9040101@fusionio.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1281457045
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 09:42:00AM +0200, Robert Richter wrote:
-> On 09.08.10 16:02:45, Cyrill Gorcunov wrote:
+On 08/09/2010 08:43 AM, Jens Axboe wrote:
+> Hi Linus,
 > 
-> > > @@ -1222,14 +1245,12 @@ perf_event_nmi_handler(struct notifier_block *self,
-> > >  	regs = args->regs;
-> > >  
-> > >  	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> > 
-> > If only I'm not missing something this apic_write should go up to
-> > "case DIE_NMIUNKNOWN" site, no?
-> 
-> This seems to be code from the non-nmi implementation and can be
-> removed at all, which should be a separate patch. The vector is
-> already set up.
-> 
-> -Robert
->
+> So lets try this for real. It appears to work fine, on the laptop
+> and running tests on a box back home. At the very end is the fixup
+> patch for merging.
 
-No, this is just a short way to unmask LVTPC (which is required for
-cpus). Actually lookig into this snippet I found that in p4 pmu
-I've made one redundant unmaksing operation. will update as only
-this area settle down.
+Tests back home completed successfully. I added a patch for
+fixing a compile issue with !CONFIG_BLOCK, so the updated diffstat
+now looks like this:
 
-	-- Cyrill
+ 154 files changed, 4285 insertions(+), 3224 deletions(-)
+
+> Please pull!
+> 
+>   git://git.kernel.dk/linux-2.6-block.git for-2.6.36
+
+Thanks.
+
+-- 
+Jens Axboe
+
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
