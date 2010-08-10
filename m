@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab0HJWry (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:47:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45764 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750830Ab0HJWrw convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:47:52 -0400
+	id S932249Ab0HJWzk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:55:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37013 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755116Ab0HJWzi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:55:38 -0400
+Date: Tue, 10 Aug 2010 23:55:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ARM: uaccess: Implement strict user copy checks
+Message-ID: <20100810225519.GF7702@n2100.arm.linux.org.uk>
+References: <1280890950-19174-1-git-send-email-sboyd@codeaurora.org> <4C61D6E3.1030603@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <19552.39399.490494.51990@notabene.brown>
-References: <19552.39399.490494.51990@notabene.brown>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Aug 2010 15:47:21 -0700
-Message-ID: <AANLkTinbCHAB3tPos1sp078maWaHAQbRM8oWMOiF1U8D@mail.gmail.com>
-Subject: Re: [REVISED PULL REQUEST] md updates for 2.6.36
-To: Neil Brown <neilb@suse.de>
-Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, David Woodhouse <dwmw2@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C61D6E3.1030603@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 9, 2010 at 5:14 PM, Neil Brown <neilb@suse.de> wrote:
+On Tue, Aug 10, 2010 at 03:46:59PM -0700, Stephen Boyd wrote:
+> On 08/03/2010 08:02 PM, Stephen Boyd wrote:
+>> This is mostly a copy from the s390 implementation (which copied
+>> from x86 and sparc), except we print a warning if the Kconfig
+>> option is disabled.
+>>
+>> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+>>
 >
->  create mode 100644 lib/raid6/Makefile
->  rename {drivers/md => lib/raid6}/mktables.c (100%)
->  rename {drivers/md => lib/raid6}/raid6algos.c (100%)
->  rename {drivers/md => lib/raid6}/raid6altivec.uc (100%)
->  rename {drivers/md => lib/raid6}/raid6int.uc (100%)
->  rename {drivers/md => lib/raid6}/raid6mmx.c (100%)
->  rename {drivers/md => lib/raid6}/raid6recov.c (100%)
->  rename {drivers/md => lib/raid6}/raid6sse1.c (100%)
->  rename {drivers/md => lib/raid6}/raid6sse2.c (100%)
->  rename {drivers/md => lib/raid6}/raid6test/Makefile (100%)
->  rename {drivers/md => lib/raid6}/raid6test/test.c (100%)
->  rename {drivers/md => lib/raid6}/raid6x86.h (100%)
->  rename {drivers/md => lib/raid6}/unroll.awk (100%)
+> Ping?
+>
+> Should I submit this to the patch system?
 
-Hmm. Why "lib/raid6/raid6sse2.c" and friends? Why "raid6" twice? You
-don't mean "raid6+1" (mirrored raid6 ;), so why not just remove the
-second "raid6", and call it "lib/raid6/sse2.c"
+Unfortunately, there's quite a dearth of information on this patch,
+so I can't say.  I think it needs some testing before a decision can
+be made.
 
-But I pulled. Just in case there was some logic to the duplication.
+What compilers have been tested with this?
 
-                               Linus
+As the help comments intimate that it needs at least gcc 4.4, and
+you've changed it to produce a compile time warning if the option is
+disabled, what's the implications for older compilers?
