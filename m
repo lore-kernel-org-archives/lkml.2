@@ -1,67 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430Ab0HJKqq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 06:46:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49140 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902Ab0HJKql (ORCPT
+	id S1757438Ab0HJKvs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 06:51:48 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:25261 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757395Ab0HJKvm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 06:46:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Ze25s1fM+ZPh1F3VIXa2wu2nu+S0eMfkodvr4tuPGf5q7HeiF98pV3GBqS4XY3UDKb
-         TEut+tP6kAr2+6pcbT46bci8c1vQvFl3Q8D8juJzGTnepgCZUj6n/SWzOaB+cnwFV48I
-         2aBMuCglJwi1G/8YtgtPcv08WE/ZrnGub+vCg=
-Subject: Re: [PATCH] x86: remove __phys_reloc_hide
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100810070555.GA16638@elte.hu>
-References: <1281303490-390-1-git-send-email-namhyung@gmail.com>
-	 <87k4o08fv9.fsf@basil.nowhere.org> <1281336031.976.11.camel@leonhard>
-	 <20100809064441.GC29524@basil.fritz.box> <1281337485.976.24.camel@leonhard>
-	 <20100809072226.GD29524@basil.fritz.box> <4C604F54.2080506@zytor.com>
-	 <20100810070555.GA16638@elte.hu>
+	Tue, 10 Aug 2010 06:51:42 -0400
+Subject: [PATCHv3] fixed resource leak in scripts/mod/modpost.c
+From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: ext Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        ext Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
+References: <1281010151.2063.8.camel@alex-desktop>
+	 <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 19:46:31 +0900
-Message-ID: <1281437191.1670.33.camel@leonhard>
+Date: Tue, 10 Aug 2010 13:52:32 +0300
+Message-ID: <1281437552.2063.431.camel@alex-desktop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Aug 2010 10:50:45.0631 (UTC) FILETIME=[E2BB38F0:01CB3879]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-08-10 (화), 09:05 +0200, Ingo Molnar:
-> * H. Peter Anvin <hpa@zytor.com> wrote:
-> 
-> > We pass -fno-strict-overflow to the kernel now, which takes care of the
-> > underlying problem, at least for current versions of gcc.  Unfortunately
-> > we still have people who want to use very old gcc versions to compile
-> > the kernel, so it's probably better to leave it in at least until we
-> > formally kill off support for gcc 3.
-> 
-> Namhyung, mind sending a patch that adds a comment to __pa_symbol() to point 
-> out the connection to -fno-strict-overflow and that it can be removed once all 
-> supported versions of GCC understand -fno-strict-overflow?
-> 
-> That would make for one less piece of legacy voodoo code in the kernel ;-)
-> 
-> Thanks,
-> 
-> 	Ingo
+From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
 
-No problem. :-) But before that, let me clarify this: It seems
--fno-strict-overflow is all about the signed arithmetic and
-__pa_symbol() does unsigned one. Is it really matters here?
+sec2annotation() returns malloc'ed buffer directly to printf as an
+argument. Patch lets free this buffer after printing. Preventing ops
+while freeing the buffer by changing return const str to return 
+strdup empty line.
 
+Signed-off-by: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+---
+ scripts/mod/modpost.c |   58 ++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 42 insertions(+), 16 deletions(-)
 
--- 
-Regards,
-Namhyung Kim
+diff -ur linux-2.6.35/scripts/mod/modpost.c linux-2.6.35_b/scripts/mod/modpost.c
+--- linux-2.6.35/scripts/mod/modpost.c	2010-08-10 12:11:03.854528620 +0300
++++ linux-2.6.35_b/scripts/mod/modpost.c	2010-08-10 12:11:25.174529109 +0300
+@@ -1165,9 +1165,9 @@
+ 			strcat(p, "data ");
+ 		else
+ 			strcat(p, " ");
+-		return r; /* we leak her but we do not care */
++		return r; 
+ 	} else {
+-		return "";
++		return strdup("");
+ 	}
+ }
+ 
+@@ -1195,6 +1195,8 @@
+ {
+ 	const char *from, *from_p;
+ 	const char *to, *to_p;
++	char *prl_from;
++	char *prl_to;
+ 
+ 
+ 	switch (from_is_func) {
+@@ -1219,16 +1221,21 @@
+ 
+ 	switch (mismatch->mismatch) {
+ 	case TEXT_TO_ANY_INIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The function %s%s() references\n"
+ 		"the %s %s%s%s.\n"
+ 		"This is often because %s lacks a %s\n"
+ 		"annotation or the annotation of %s is wrong.\n",
+-		sec2annotation(fromsec), fromsym,
+-		to, sec2annotation(tosec), tosym, to_p,
+-		fromsym, sec2annotation(tosec), tosym);
++		prl_from, fromsym,
++		to, prl_to, tosym, to_p,
++		fromsym, prl_to, tosym);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case DATA_TO_ANY_INIT: {
++		prl_to = sec2annotation(tosec);
+ 		const char *const *s = mismatch->symbol_white_list;
+ 		fprintf(stderr,
+ 		"The variable %s references\n"
+@@ -1236,20 +1243,24 @@
+ 		"If the reference is valid then annotate the\n"
+ 		"variable with __init* or __refdata (see linux/init.h) "
+ 		"or name the variable:\n",
+-		fromsym, to, sec2annotation(tosec), tosym, to_p);
++		fromsym, to, prl_to, tosym, to_p);
+ 		while (*s)
+ 			fprintf(stderr, "%s, ", *s++);
+ 		fprintf(stderr, "\n");
++		free(prl_to);
+ 		break;
+ 	}
+ 	case TEXT_TO_ANY_EXIT:
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The function %s() references a %s in an exit section.\n"
+ 		"Often the %s %s%s has valid usage outside the exit section\n"
+ 		"and the fix is to remove the %sannotation of %s.\n",
+-		fromsym, to, to, tosym, to_p, sec2annotation(tosec), tosym);
++		fromsym, to, to, tosym, to_p, prl_to, tosym);
++		free(prl_to);
+ 		break;
+ 	case DATA_TO_ANY_EXIT: {
++		prl_to = sec2annotation(tosec);
+ 		const char *const *s = mismatch->symbol_white_list;
+ 		fprintf(stderr,
+ 		"The variable %s references\n"
+@@ -1257,24 +1268,31 @@
+ 		"If the reference is valid then annotate the\n"
+ 		"variable with __exit* (see linux/init.h) or "
+ 		"name the variable:\n",
+-		fromsym, to, sec2annotation(tosec), tosym, to_p);
++		fromsym, to, prl_to, tosym, to_p);
+ 		while (*s)
+ 			fprintf(stderr, "%s, ", *s++);
+ 		fprintf(stderr, "\n");
++		free(prl_to);
+ 		break;
+ 	}
+ 	case XXXINIT_TO_SOME_INIT:
+ 	case XXXEXIT_TO_SOME_EXIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The %s %s%s%s references\n"
+ 		"a %s %s%s%s.\n"
+ 		"If %s is only used by %s then\n"
+ 		"annotate %s with a matching annotation.\n",
+-		from, sec2annotation(fromsec), fromsym, from_p,
+-		to, sec2annotation(tosec), tosym, to_p,
++		from, prl_from, fromsym, from_p,
++		to, prl_to, tosym, to_p,
+ 		tosym, fromsym, tosym);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case ANY_INIT_TO_ANY_EXIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The %s %s%s%s references\n"
+ 		"a %s %s%s%s.\n"
+@@ -1283,11 +1301,15 @@
+ 		"uses functionality in the exit path.\n"
+ 		"The fix is often to remove the %sannotation of\n"
+ 		"%s%s so it may be used outside an exit section.\n",
+-		from, sec2annotation(fromsec), fromsym, from_p,
+-		to, sec2annotation(tosec), tosym, to_p,
++		from, prl_from, fromsym, from_p,
++		to, prl_to, tosym, to_p,
+ 		sec2annotation(tosec), tosym, to_p);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case ANY_EXIT_TO_ANY_INIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The %s %s%s%s references\n"
+ 		"a %s %s%s%s.\n"
+@@ -1296,16 +1318,20 @@
+ 		"uses functionality in the init path.\n"
+ 		"The fix is often to remove the %sannotation of\n"
+ 		"%s%s so it may be used outside an init section.\n",
+-		from, sec2annotation(fromsec), fromsym, from_p,
+-		to, sec2annotation(tosec), tosym, to_p,
+-		sec2annotation(tosec), tosym, to_p);
++		from, prl_from, fromsym, from_p,
++		to, prl_to, tosym, to_p,
++		prl_to, tosym, to_p);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case EXPORT_TO_INIT_EXIT:
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The symbol %s is exported and annotated %s\n"
+ 		"Fix this by removing the %sannotation of %s "
+ 		"or drop the export.\n",
+-		tosym, sec2annotation(tosec), sec2annotation(tosec), tosym);
++		tosym, prl_to, prl_to, tosym);
++		free(prl_to);
+ 		break;
+ 	}
+ 	fprintf(stderr, "\n");
 
 
