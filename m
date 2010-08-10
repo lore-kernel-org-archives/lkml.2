@@ -1,47 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984Ab0HJUrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:47:25 -0400
-Received: from 8bytes.org ([88.198.83.132]:58777 "EHLO 8bytes.org"
+	id S1757992Ab0HJUtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:49:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42901 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757970Ab0HJUrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 16:47:22 -0400
-Date: Tue, 10 Aug 2010 22:47:21 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [2.6.35] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40  BUG:
-	unable to handle kernel NULL pointer dereference at 0000000000000198
-Message-ID: <20100810204721.GT23755@8bytes.org>
-References: <1154489525.20100810164850@eikelenboom.it> <20100810162606.GQ23755@8bytes.org> <419601760.20100810185745@eikelenboom.it> <20100810180122.GR23755@8bytes.org> <1609756756.20100810200514@eikelenboom.it> <20100810202839.GS23755@8bytes.org> <618241473.20100810223635@eikelenboom.it>
+	id S1757970Ab0HJUtT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 16:49:19 -0400
+Date: Tue, 10 Aug 2010 16:48:56 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100810204856.GA16571@redhat.com>
+References: <20100804151858.GB5130@lenovo>
+ <20100804155002.GS3353@redhat.com>
+ <20100804161046.GC5130@lenovo>
+ <20100804162026.GU3353@redhat.com>
+ <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <618241473.20100810223635@eikelenboom.it>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100809194829.GB26154@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sander,
+On Mon, Aug 09, 2010 at 09:48:29PM +0200, Robert Richter wrote:
+> On 06.08.10 10:21:31, Don Zickus wrote:
+> > On Fri, Aug 06, 2010 at 08:52:03AM +0200, Robert Richter wrote:
+> 
+> > > I was playing around with it yesterday trying to fix this. My idea is
+> > > to skip an unkown nmi if the privious nmi was a *handled* perfctr
+> > 
+> > You might want to add a little more logic that says *handled* _and_ had
+> > more than one perfctr trigger.  Most of the time only one perfctr is
+> > probably triggering, so you might be eating unknown_nmi's needlessly.
+> > 
+> > Just a thought.
+> 
+> Yes, that's true. It could be implemented on top of the patch below.
 
-On Tue, Aug 10, 2010 at 10:36:35PM +0200, Sander Eikelenboom wrote:
-> Errr which seperate usb controller ? .. it has actually:
-> - 1 pci-e usb 2.0 controller
-> - 2 pci-e usb 3.0 controller (one of which includes a sata controller as well)
+I did, but the changes basically revert the bulk of your patch.
 
-The devices should be attached to this controler:
+> 
+> > 
+> > > nmi. I will probably post an rfc patch early next week.
+> 
+> Here it comes:
+> 
+> From d2739578199d881ae6a9537c1b96a0efd1cdea43 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Thu, 5 Aug 2010 16:19:59 +0200
+> Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
 
-0a:01.0 USB Controller [0c03]: NEC Corporation USB [1033:0035] (rev 43) (prog-if 10 [OHCI])
-0a:01.1 USB Controller [0c03]: NEC Corporation USB [1033:0035] (rev 43) (prog-if 10 [OHCI])
-0a:01.2 USB Controller [0c03]: NEC Corporation USB 2.0 [1033:00e0] (rev 04) (prog-if 20 [EHCI])
+On top of Robert's patch:
+(compiled tested only because I don't have a fancy button to trigger
+unknown nmis)
 
-The PCI devices associated with that controler alias to 0a:00.0 which
-does not exist in your system (hence the crash). And the fact that these
-devices have an alias makes me believe that the BIOS detects them as
-legacy PCI devices. PCI-e does typically not has aliases. Can you send
-lcpi -t output to see to which upstream bridge these devices are
-connected to?
+>From 548cf5148f47618854a0eff22b1d55db71b6f8fc Mon Sep 17 00:00:00 2001
+From: Don Zickus <dzickus@redhat.com>
+Date: Tue, 10 Aug 2010 16:40:03 -0400
+Subject: [PATCH] perf, x86: only skip NMIs when multiple perfctrs trigger
 
-	Joerg
+A small optimization on top of Robert's patch that limits the
+skipping of NMI's to cases where we detect multiple perfctr events
+have happened.
 
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+
+---
+ arch/x86/kernel/cpu/perf_event.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index c3cd159..066046d 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1154,7 +1154,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+ 		/*
+ 		 * event overflow
+ 		 */
+-		handled		= 1;
++		handled		+= 1;
+ 		data.period	= event->hw.last_period;
+ 
+ 		if (!x86_perf_event_set_period(event))
+@@ -1200,7 +1200,7 @@ void perf_events_lapic_init(void)
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ }
+ 
+-static DEFINE_PER_CPU(unsigned int, perfctr_handled);
++static DEFINE_PER_CPU(unsigned int, perfctr_skip);
+ 
+ static int __kprobes
+ perf_event_nmi_handler(struct notifier_block *self,
+@@ -1208,8 +1208,7 @@ perf_event_nmi_handler(struct notifier_block *self,
+ {
+ 	struct die_args *args = __args;
+ 	struct pt_regs *regs;
+-	unsigned int this_nmi;
+-	unsigned int prev_nmi;
++	int handled = 0;
+ 
+ 	if (!atomic_read(&active_events))
+ 		return NOTIFY_DONE;
+@@ -1229,14 +1228,11 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 		 * was handling a perfctr. Otherwise we pass it and
+ 		 * let the kernel handle the unknown nmi.
+ 		 *
+-		 * Note: this could be improved if we drop unknown
+-		 * NMIs only if we handled more than one perfctr in
+-		 * the previous NMI.
+ 		 */
+-		this_nmi = percpu_read(irq_stat.__nmi_count);
+-		prev_nmi = __get_cpu_var(perfctr_handled);
+-		if (this_nmi == prev_nmi + 1)
++		if (__get_cpu_var(perfctr_skip)){
++			__get_cpu_var(perfctr_skip) -=1;
+ 			return NOTIFY_STOP;
++		}
+ 		return NOTIFY_DONE;
+ 	default:
+ 		return NOTIFY_DONE;
+@@ -1246,11 +1242,21 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ 
+-	if (!x86_pmu.handle_irq(regs))
++	handled = x86_pmu.handle_irq(regs);
++	if (!handled)
++		/* not our NMI */
+ 		return NOTIFY_DONE;
+-
+-	/* handled */
+-	__get_cpu_var(perfctr_handled) = percpu_read(irq_stat.__nmi_count);
++	else if (handled > 1)
++		/*
++		 * More than one perfctr triggered.  This could have
++		 * caused a second NMI that we must now skip because
++		 * we have already handled it.  Remember it.
++		 *
++		 * NOTE: We have no way of knowing if a second NMI was
++		 * actually triggered, so we may accidentally skip a valid
++		 * unknown nmi later.
++		 */
++		__get_cpu_var(perfctr_skip) +=1;
+ 
+ 	return NOTIFY_STOP;
+ }
+-- 
+1.7.2
