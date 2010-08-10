@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758168Ab0HJXxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 19:53:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46147 "EHLO mx1.suse.de"
+	id S1758185Ab0HJX4C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 19:56:02 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:57933 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757854Ab0HJXxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 19:53:38 -0400
-Date: Tue, 10 Aug 2010 16:53:23 -0700
-From: Greg KH <gregkh@suse.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Patrick Pannuto <ppannuto@quicinc.com>,
-        Patrick Pannuto <ppannuto@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "damm@opensource.se" <damm@opensource.se>,
-        "lethal@linux-sh.org" <lethal@linux-sh.org>,
-        "rjw@sisk.pl" <rjw@sisk.pl>, "dtor@mail.ru" <dtor@mail.ru>,
-        "eric.y.miao@gmail.com" <eric.y.miao@gmail.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [RFC PATCH] platform: Faciliatate the creation of
- pseduo-platform busses
-Message-ID: <20100810235323.GA24612@suse.de>
-References: <20100803235631.GA17759@suse.de>
- <4C58AE15.6090900@codeaurora.org>
- <20100804000945.GA19729@suse.de>
- <4C58B1B6.9050005@quicinc.com>
- <AANLkTikVzh9=DvvUPbKmDeo6k2-pPVSnjH+GxAPdQFO4@mail.gmail.com>
- <20100806142727.GB4921@suse.de>
- <AANLkTi=VbVed09=u-Ea0L8c_CWZ_CLLjWH9ZjD2dyg6Y@mail.gmail.com>
- <20100806234635.GC16793@suse.de>
- <AANLkTimHbcF+fz=aBMLdhLo2s-rhfNvaPCtqE8nYJ8aT@mail.gmail.com>
- <AANLkTimjXd=SL61KvjDfvJ-JtXsSVW9pwOYBFUHX0mVp@mail.gmail.com>
+	id S1757854Ab0HJX4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 19:56:00 -0400
+X-ASG-Debug-ID: 1281484558-285a000b0000-xx1T2L
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C61E719.1050300@fusionio.com>
+Date: Tue, 10 Aug 2010 19:56:09 -0400
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimjXd=SL61KvjDfvJ-JtXsSVW9pwOYBFUHX0mVp@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Chris Wilson <chris@chris-wilson.co.uk>
+X-ASG-Orig-Subj: Re: [PATCH] lib/scatterlist: Hook sg_kmalloc into kmemleak (v2)
+Subject: Re: [PATCH] lib/scatterlist: Hook sg_kmalloc into kmemleak (v2)
+References: <1280220298-9641-1-git-send-email-chris@chris-wilson.co.uk> <1281477672.8973.20.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1281477672.8973.20.camel@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1281484558
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 11:28:13AM -0600, Grant Likely wrote:
-> On Sat, Aug 7, 2010 at 12:35 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> > On Fri, Aug 6, 2010 at 5:46 PM, Greg KH <gregkh@suse.de> wrote:
-> >> That would be nice, but take your "standard" PC today:
-> >>        > ls /sys/devices/platform/
-> >>        Fixed MDIO bus.0  i8042  pcspkr  power  serial8250  uevent vesafb.0
-> >>
-> >> There are tty devices below the serial port, which is nice to see, but
-> >> the others?  I don't know what type of bus they would be on, do you?
-> [...]
-> > I wouldn't have any problem modifying those specific drivers to
-> > register under something like /sys/devices/legacy, but I don't really
-> > think it is in any way necessary.
+On 08/10/2010 06:01 PM, Catalin Marinas wrote:
+> Jens,
 > 
-> Or for that matter, make those drivers explicitly use
-> /sys/devices/platform so that I don't cause churn on PCs.  :-)  I'd
-> like to be rid of it as default behaviour for embedded though.
+> On Tue, 2010-07-27 at 09:44 +0100, Chris Wilson wrote:
+>> kmemleak ignores page_alloc() and so believes the final sub-page
+>> allocation using the plain kmalloc is decoupled and lost. This leads to
+>> lots of false-positives with code that uses scatterlists.
+>>
+>> The options seem to be either to tell kmemleak that the kmalloc is not
+>> leaked or to notify kmemleak of the page allocations. The danger of the
+>> first approach is that we may hide a real leak, so choose the latter
+>> approach (of which I am not sure of the downsides).
+>>
+>> v2: Added comments on the suggestion of Catalin.
+>>
+>> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+>> Cc: Tejun Heo <tj@kernel.org>
+>> Cc: Jens Axboe <jaxboe@fusionio.com>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> 
+> Since you are the author of lib/scatterlist.c would you (or Tejun) mind
+> ack'ing this patch? Thanks.
 
-Yes, that would be the easier (and better) solution.
+Looks completely straight forward.
 
-thanks,
+Acked-by: Jens Axboe <jaxboe@fusionio.com>
 
-greg k-h
+-- 
+Jens Axboe
+
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
