@@ -1,85 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757740Ab0HJO3C (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 10:29:02 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60689 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754860Ab0HJO26 (ORCPT
+	id S1757764Ab0HJOaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 10:30:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:61159 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab0HJOaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 10:28:58 -0400
-Date: Tue, 10 Aug 2010 15:40:26 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: paulmck@linux.vnet.ibm.com, "Ted Ts'o" <tytso@mit.edu>,
-        Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, peterz@infradead.org, tglx@linutronix.de,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100810154026.75efa370@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100810141107.GA12873@srcf.ucam.org>
-References: <20100807061558.GA28087@thunk.org>
-	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
-	<20100808155719.GB3635@thunk.org>
-	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
-	<20100808213821.GD3635@thunk.org>
-	<20100809112453.77210acc@lxorguk.ukuu.org.uk>
-	<20100809181638.GI3026@linux.vnet.ibm.com>
-	<20100809201822.441905f7@lxorguk.ukuu.org.uk>
-	<20100810044541.GA2817@linux.vnet.ibm.com>
-	<20100810093849.138e2318@lxorguk.ukuu.org.uk>
-	<20100810141107.GA12873@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 10 Aug 2010 10:30:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: perf build broke by list_head changes...
+Date: Tue, 10 Aug 2010 16:29:53 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sam Ravnborg <sam@ravnborg.org>, Chris Metcalf <cmetcalf@tilera.com>,
+        David Miller <davem@davemloft.net>, willy@linux.intel.com,
+        linux-kernel@vger.kernel.org
+References: <20100809.235746.115919762.davem@davemloft.net> <20100810124445.GA14843@merkur.ravnborg.org> <20100810134600.GF18824@ghostprotocols.net>
+In-Reply-To: <20100810134600.GF18824@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008101629.53768.arnd@arndb.de>
+X-Provags-ID: V02:K0:azwL5Pfld5GCOqDuNWYGji7/ttn7BHLw3DIbb5sVd3G
+ +EUXsmlnUW5M2ENCCf6fUt3AMfC/8pMg3BX0KF5UH1haDYMD4k
+ FYDtIxTiP5wVd/Qygbeg5lulo8SiXiTbPCWt9kndZwURdNAhBG
+ f9dVvYuk5HQvVYSYl94H8X05nK5TkmitUKxaVb51tpELVV4ws6
+ 4oiqnUA4MFOgVAf+bcwTA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Losing data is a design choice ? The application set a timer, the OS
-> > shouldn't be ignoring it in that situation. It might want to delay it, it
-> > might want to warn the user its hogging things it shouldnt (powertop,
-> > battery usage monitors in Android etc)
+On Tuesday 10 August 2010, Arnaldo Carvalho de Melo wrote:
+> It started just keeping private copies, I guess it should get back to
+> that since the reaction to this kind of same source repo code sharing
+> was, well, not good :-)
 > 
-> So we should remove explicit system suspend from the kernel?
+> Alternatives?
 
-Explicit suspend is user triggered - in the laptop case its a bit
-different. I don't btw like the fact that a laptop explicit suspend
-doesn't end up as a dbus "save data" and openoffice save (or it didn't
-last time I looked which is a while ago).
+If perf wants to play tricks with the header files, we should probably
+make them explicit, as in this ugly bit of code.
 
-> There's a clear and absolute difference between system suspend and 
-> entering the same hardware state from the idle loop. That difference is 
-> that processes aren't scheduled until an explicit wakeup event occurs. 
-> Android is entirely capable of entering the same low power state at idle 
-> (it's done with a hardcoded idle loop on Qualcomm, cpuidle on omap), but 
-> if you have more than 0 scheduling wakeups a second then your power draw 
-> is going to be greater. 
+	Arnd
 
-And nothing stops you also implementing a 'forced' suspend, although you
-can do that nicely by simply stopping the process group that contains the
-stuff you don't want to stop suspend and dropping into suspend when you
-idle.
-
-> I agree that we should be targetting 0 wakeups per second. I don't agree 
-> that it's realistic to insist that a use model that assumes imperfect 
-> software is an invalid use model.
-
-No argument.
-
-The question is what applications should be expressing to the kernel
-which is not tied to assumptions like 'suspend mode' and which is generic.
-
-We don't have xfs stuff for example splattered all over userspace and in
-lots of drivers - we have generic interfaces. That way user community A
-doesn't have to care about user community B's choices, and JFFS flash fs
-people don't offend big data centre people and vice versa.
-
-
-Alan
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 01a082f..0e0998a 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -178,7 +178,7 @@ typedef __u64 __bitwise __be64;
+ typedef __u16 __bitwise __sum16;
+ typedef __u32 __bitwise __wsum;
+ 
+-#ifdef __KERNEL__
++#if defined(__KERNEL__) || defined(__PERF__)
+ typedef unsigned __bitwise__ gfp_t;
+ typedef unsigned __bitwise__ fmode_t;
+ 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 26f626d..9806dc9 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -225,7 +225,7 @@ ifndef PERF_DEBUG
+   CFLAGS_OPTIMIZE = -O6
+ endif
+ 
+-CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
++CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror $(CFLAGS_OPTIMIZE) -D__PERF__ -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS)
+ EXTLIBS = -lpthread -lrt -lelf -lm
+ ALL_CFLAGS = $(CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+ ALL_LDFLAGS = $(LDFLAGS)
