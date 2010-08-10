@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757357Ab0HJJsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:48:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59387 "EHLO
+	id S1757215Ab0HJJuM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:50:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35430 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753788Ab0HJJsC (ORCPT
+	with ESMTP id S1753788Ab0HJJuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:48:02 -0400
+	Tue, 10 Aug 2010 05:50:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hiZN/ys6+x6RJoKVt4+sB4J1UlxKCze0Qer+dFiQNaoTdPpZ1B1kDxVFf1y/cdmYFo
-         3aTbA27T2UA96YQSA1KX+3bmJHpiRWAkuWsBCaHeRFQBZKvPbt7av2Dh0yANJWluCmk0
-         xf/e2NP/vqjxjj8mNCs+hNVpQtujY4PY8QpNA=
+        b=KdQuv8fJs5ze0maQeJJOoP2a34g04co84G2lFJAyxXetF4HCU+6tlFjd0zBA7Xr/U6
+         p4Aomf4lQ4oLIyspnoYH+3pNUhhVJB8HVlVvsIOatYTTrd4TzV7ziR/p5tlsJuS/5xBk
+         z9j0qoF2AaWzUJYE5HcFyKtq5NRUfmCwMBdvU=
 Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
 From: Maxim Levitsky <maximlevitsky@gmail.com>
 To: Alex Dubov <oakad@yahoo.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <749211.91566.qm@web37603.mail.mud.yahoo.com>
-References: <749211.91566.qm@web37603.mail.mud.yahoo.com>
+In-Reply-To: <950622.87676.qm@web37605.mail.mud.yahoo.com>
+References: <950622.87676.qm@web37605.mail.mud.yahoo.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 12:47:58 +0300
-Message-ID: <1281433678.2016.34.camel@maxim-laptop>
+Date: Tue, 10 Aug 2010 12:50:05 +0300
+Message-ID: <1281433805.2016.36.camel@maxim-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -30,96 +30,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-10 at 01:12 -0700, Alex Dubov wrote: 
-> > Received: Monday, 9 August, 2010, 8:30 AM
-> > I have another question.
+On Tue, 2010-08-10 at 00:53 -0700, Alex Dubov wrote: 
+> > About INT bits, I still don't
+> > understand them exactly.
 > > 
-> > Looking at ms_block.c, I see that it sometimes changes
-> > register window.
-> > This doesn't look good.
-> > I see it does put the register window back, but still its a
-> > bit obscure.
-> 
-> It looks very good, in fact, it is the Sony specified way to operate
-> the media. MS Pro works quite the same, it just needs fewer operations
-> to actually access data.
-> 
+> > First of all we have 4 meaningful bits.
+> > In parallel mode these are exposed on data lines, in serial
+> > mode only 
+> > MEMSTICK_INT_CED is.
+> > And I can always send MS_TPC_GET_INT or just read the
+> > registers.
 > > 
-> > I added tracking of current register window, so every time
-> > I send
-> > MS_TPC_SET_RW_REG_ADRS I note the ranges.
-> > And read/write functions now always attempt to send
-> > MS_TPC_SET_RW_REG_ADRS. If the window is same as was 
-> > set last time, TPC
-> > is skipped.
+> > #define MEMSTICK_INT_CMDNAK 0x01
 > 
-> Sure it is. The media will remember the window set.
-> Media has all its registers in a sort of flat file. SET_RW_REG_ADDR
-> selects the subset of the registers that will receive the data delivered
-> within TPC. This subset is remembered until power off or until changed.
-
-I know everything you have just said.
-I just want to point out that code in many places assumes that register
-window is the same as set on device initialization.
-
-However some code changes the register window, and therefore has to
-change it back at the end of execution.
-If error happens, window can be left changed, while rest of code thinks
-it isn't changed.
-Thats is why a tracking of it would eliminate the problem safely.
-
+> This bit means command was not acknowledged by the media (media not ready).
 > 
+> > #define MEMSTICK_INT_BREQ   0x20
+> 
+> This bit means media is ready for long data transfer (either in or out).
+> 
+> > #define MEMSTICK_INT_ERR    0x40
+> 
+> This bit means that some error had occurred during command execution. 
+> 
+> > #define MEMSTICK_INT_CED    0x80
+> 
+> This bit marks a completion of the command, but it may switch value in
+> between, so it is not that reliable by itself.
 > 
 > > 
-> > However, I am thinking, that maybe I should always write
-> > both param and
-> > extra register? I just write 0xFF to extra register and
-> > thats all.
+> > 
+> > Now, I send a command to device, say MS_CMD_BLOCK_READ.
+> > What bits I need to poll until I can be sure that command
+> > is completed?
 > 
-> You should write into a param register when you want to alter the command
-> parameters. You cannot do so during auto incrementing block access, for
-> example.
+> All of them.
 > 
-> But, if you're using the auto incrementing write, you will have to write
-> extra register for every page transferred.
-But what if I fill extra register with 0xFF?
-And besides on reads, the fact that I *write* the extra register before
-I execute read command shouldn't matter at all regardless of what I
-write there.
-On writes however I *do* need to write extra register anyway with proper
-values.
-
-Therefore I see no reason why I can't set write window to cover both
-param and extra register, and leave it always like that.
-
-> 
-> That's where changing RW_REG_ADDR comes handy.
-> 
-> > Windows driver does that partially. It writes 0xFF to
-> > managmemt and
-> > 0xF8 to overwrite flag (why???)
-> 
-> It's a factory default.
-> Try to read it from some empty block. :-)
-> (My theory is that missing bits contain invisible ECC data).
-> 
-> 
-> > I don't
-> > think that matters.
-> > It also always sends the MS_TPC_SET_RW_REG_ADRS, which I
-> > don't like.
+> > 
+> > Also the MEMSTICK_INT_BREQ tells that input is available in
+> > firmware
+> > buffer (to read using TPC_READ_LONG_DATA)?
 > > 
 > 
-> This only reduces the performance slightly. SET_RW_REG_ADDR does not
-> influence the media's state machine as far as I can tell, unless you try
-> to push it during the data transfer cycle (whereupon you will end up
-> having a literal value of the tpc in the media data buffer).
-Indeed. Maybe I too should just send the MS_TPC_SET_RW_REG_ADRS at start
-of command, and know that nothing will go south....
+> Not exactly. BREQ signal indicated that media's state machine is in the
+> mode to pump data in or out. You wait for it, than you do the data
+> transfer (it works the same with READ and WRITE).
+> 
+> > 
+> > 
+> > Is that true that MEMSTICK_INT_BREQ is a summary of fifo
+> > full/empty bits
+> > in status0?
+> 
+> This can not be relied upon. Sony states, that only BREQ bit must be used
+> in block transfer operations. BE/BF bits are probably of more use in
+> memstick IO cards (there exists such a beast).
+Even better. 
+> 
+> > 
+> > And same about MEMSTICK_INT_ERR and status1.
+> 
+> status1 errors apply only to data errors (bit flips).
+> There are errors in command execution that do not result in bit flips,
+> rather data can not be delivered at all or command/parameters are invalid.
+Understood.
+However if I get MEMSTICK_INT_ERR, I should also look at status1,
+because there might be correctable error.
 
-Even if that reduces performance by 0.2%, it isn't big deal. Data
-corruptions is very big deal.
 
+Thank you very much.
 
 Best regards,
 Maxim Levitsky
