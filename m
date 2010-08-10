@@ -1,87 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135Ab0HJOzR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 10:55:17 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:53772 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757731Ab0HJOzO (ORCPT
+	id S932162Ab0HJO4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 10:56:48 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:58509 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab0HJO4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 10:55:14 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: Re: [patch -NEXT] usb/gadget/webcam: fix Kconfig depends again
-Date: Tue, 10 Aug 2010 16:53:04 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        lud <linux-usb@vger.kernel.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>
-References: <20100809132314.789e13f3.sfr@canb.auug.org.au> <201008101416.31188.laurent.pinchart@ideasonboard.com> <4C6166D9.60607@oracle.com>
-In-Reply-To: <4C6166D9.60607@oracle.com>
+	Tue, 10 Aug 2010 10:56:42 -0400
+Date: Tue, 10 Aug 2010 15:55:52 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: paulmck@linux.vnet.ibm.com, "Ted Ts'o" <tytso@mit.edu>,
+        Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
+        stern@rowland.harvard.edu, peterz@infradead.org, tglx@linutronix.de,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100810145552.GA13798@srcf.ucam.org>
+References: <20100808155719.GB3635@thunk.org> <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com> <20100808213821.GD3635@thunk.org> <20100809112453.77210acc@lxorguk.ukuu.org.uk> <20100809181638.GI3026@linux.vnet.ibm.com> <20100809201822.441905f7@lxorguk.ukuu.org.uk> <20100810044541.GA2817@linux.vnet.ibm.com> <20100810093849.138e2318@lxorguk.ukuu.org.uk> <20100810141107.GA12873@srcf.ucam.org> <20100810154026.75efa370@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008101653.08358.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100810154026.75efa370@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-On Tuesday 10 August 2010 16:48:57 Randy Dunlap wrote:
-> On 08/10/10 05:16, Laurent Pinchart wrote:
-> > On Monday 09 August 2010 19:55:20 Randy Dunlap wrote:
-> >> From: Randy Dunlap <randy.dunlap@oracle.com>
-> >> 
-> >> The USB gadget webcam driver uses V4L2 interfaces, so it should depend
-> >> on VIDEO_V4L2 instead of VIDEO_DEV.  This fixes a lot of build errors
-> >> when V4L2 is not enabled:
-> >> 
-> >> ERROR: "v4l2_event_unsubscribe" [drivers/usb/gadget/g_webcam.ko]
-> >> undefined! ERROR: "v4l2_event_queue" [drivers/usb/gadget/g_webcam.ko]
-> >> undefined! ERROR: "video_device_release"
-> >> [drivers/usb/gadget/g_webcam.ko] undefined! ERROR: "video_usercopy"
-> >> [drivers/usb/gadget/g_webcam.ko] undefined! ERROR: "v4l2_event_dequeue"
-> >> [drivers/usb/gadget/g_webcam.ko] undefined! ERROR:
-> >> "video_register_device" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "video_device_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_event_subscribe" [drivers/usb/gadget/g_webcam.ko]
-> >> undefined! ERROR: "video_unregister_device"
-> >> [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_fh_init" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_event_pending" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_event_init" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "video_devdata" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_event_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_fh_add" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_fh_del" [drivers/usb/gadget/g_webcam.ko] undefined!
-> >> ERROR: "v4l2_fh_exit" [drivers/usb/gadget/g_webcam.ko] undefined!
+On Tue, Aug 10, 2010 at 03:40:26PM +0100, Alan Cox wrote:
+> > > Losing data is a design choice ? The application set a timer, the OS
+> > > shouldn't be ignoring it in that situation. It might want to delay it, it
+> > > might want to warn the user its hogging things it shouldnt (powertop,
+> > > battery usage monitors in Android etc)
 > > 
-> > All those symbols should be defined when VIDEO_DEV is selected.
-> > 
-> >> ERROR: "v4l2_ctrl_fill" [drivers/media/video/v4l2-common.ko] undefined!
-> >> ERROR: "v4l2_ctrl_get_menu" [drivers/media/video/v4l2-common.ko]
-> >> undefined!
-> > 
-> > Those 2 symbols require VIDEO_V4L2 but are not used by the webcam gadget
-> > driver.
-> > 
-> >> ERROR: "v4l2_device_unregister_subdev"
-> >> [drivers/media/video/v4l2-common.ko] undefined!
-> >> ERROR: "v4l2_device_register_subdev"
-> >> [drivers/media/video/v4l2-common.ko] undefined!
-> > 
-> > Those two symbols should be defined when VIDEO_DEV is selected. They are
-> > not used by the webcam gadget driver.
+> > So we should remove explicit system suspend from the kernel?
 > 
-> Summary:  I should drop this patch and look elsewhere for the problem,
-> Right?
+> Explicit suspend is user triggered - in the laptop case its a bit
+> different. I don't btw like the fact that a laptop explicit suspend
+> doesn't end up as a dbus "save data" and openoffice save (or it didn't
+> last time I looked which is a while ago).
 
-I think the problem comes from somewhere else, yes. Your patch won't hurt, but 
-I don't see how it could fix the problem either.
+It's not inherently user triggered. Machines typically have an idle 
+timeout that triggers suspend. This differs from the Android 
+opportunistic suspend approach only in that the timeout is significantly 
+larger, primarily due to the greater latency involved.
+
+> > There's a clear and absolute difference between system suspend and 
+> > entering the same hardware state from the idle loop. That difference is 
+> > that processes aren't scheduled until an explicit wakeup event occurs. 
+> > Android is entirely capable of entering the same low power state at idle 
+> > (it's done with a hardcoded idle loop on Qualcomm, cpuidle on omap), but 
+> > if you have more than 0 scheduling wakeups a second then your power draw 
+> > is going to be greater. 
+> 
+> And nothing stops you also implementing a 'forced' suspend, although you
+> can do that nicely by simply stopping the process group that contains the
+> stuff you don't want to stop suspend and dropping into suspend when you
+> idle.
+
+We've already had the discussion about this resulting in potential 
+deadlocks if there's any intercommunication between the trusted and 
+untrusted apps, and if untrusted apps can be the consumers of wakeup 
+events then you still end up with the wake event race condition. If we 
+want to avoid the case where system suspend can cause wakeup events to 
+be lost, we're pretty much required to implement something like suspend 
+blocks (and, in fact, Rafael's implementation of this is already 
+mainline).
+
+> > I agree that we should be targetting 0 wakeups per second. I don't agree 
+> > that it's realistic to insist that a use model that assumes imperfect 
+> > software is an invalid use model.
+> 
+> No argument.
+> 
+> The question is what applications should be expressing to the kernel
+> which is not tied to assumptions like 'suspend mode' and which is generic.
+> 
+> We don't have xfs stuff for example splattered all over userspace and in
+> lots of drivers - we have generic interfaces. That way user community A
+> doesn't have to care about user community B's choices, and JFFS flash fs
+> people don't offend big data centre people and vice versa.
+
+I wholeheartedly agree. But nobody has yet provided a generic approach 
+to avoiding the loss of wakeup events, and that's an issue you can hit 
+whenever you use full-system suspend - it's not a problem that's unique 
+to Android.
 
 -- 
-Regards,
-
-Laurent Pinchart
+Matthew Garrett | mjg59@srcf.ucam.org
