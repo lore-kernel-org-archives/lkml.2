@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932430Ab0HJQxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 12:53:25 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58809 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932222Ab0HJQxW convert rfc822-to-8bit (ORCPT
+	id S932205Ab0HJRCy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 13:02:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48373 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754860Ab0HJRCt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 12:53:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=uFQwqKCvibS/3v2YuaEpYCSuQxSap6Xr9dBDFRBSjVu//3U1CJAbUBM/tLpjYQosZn
-         SSMGDyXa6iSjIm8yHVEgB6RBtz3wm1F1Uub+XxrT7JzqT+3fzonM47u9FDneHuJyxqTk
-         hp1dLrWRtTB0ZKCfSLjnLxlKRAHusV+ox4UOY=
-MIME-Version: 1.0
-In-Reply-To: <20100810101521.0dcd4393.sfr@canb.auug.org.au>
-References: <20100809164346.6e30cf8c.akpm@linux-foundation.org>
-	<20100810101521.0dcd4393.sfr@canb.auug.org.au>
-Date: Tue, 10 Aug 2010 18:53:20 +0200
-X-Google-Sender-Auth: SXtf3_fJsvcinGMKm9KqsWslyb4
-Message-ID: <AANLkTimtZ7H=rT68V6UGC2GBky8z9VJ5m6-pwFHfm7yw@mail.gmail.com>
-Subject: Re: i386 allmodconfig, current mainline
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kevin Curtis <kevin.curtis@farsite.co.uk>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Faisal Latif <faisal.latif@intel.com>,
-        Chien Tung <chien.tin.tung@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Samuel Ortiz <samuel.ortiz@intel.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org, x86@kernel.org,
-        linux-rdma@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Aug 2010 13:02:49 -0400
+Date: Tue, 10 Aug 2010 10:02:28 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-acpi@vger.kernel.org,
+        Huang Ying <ying.huang@intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 10 (acpi/apei)
+Message-Id: <20100810100228.525d952e.randy.dunlap@oracle.com>
+In-Reply-To: <20100810135601.4777e310.sfr@canb.auug.org.au>
+References: <20100810135601.4777e310.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 02:15, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Mon, 9 Aug 2010 16:43:46 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
->>
->> Guys.  What's goin' on out there?
->
-> I guess we are all so up to date that noone does 32 bit builds any
-> more ...  Also noone is bothering to look at the build logs:
->
-> linus tree: http://kisskb.ellerman.id.au/kisskb/branch/3/
-> linux-next: http://kisskb.ellerman.id.au/kisskb/branch/9/
+On Tue, 10 Aug 2010 13:56:01 +1000 Stephen Rothwell wrote:
 
-Yeah, we have build failures migrating from -next to -linus :-(
+> Hi all,
+> 
+> As the merge window is open, please do not add 2.6.37 material to your
+> linux-next included trees until after 2.6.36-rc1.
+> 
+> Changes since 20100809:
 
-BTW, still no one has commented on http://lkml.org/lkml/2010/7/13/378?
 
-Gr{oetje,eeting}s,
+on 32-bit i386:
 
-                        Geert
+drivers/acpi/apei/erst-dbg.c:106: warning: format '%lx' expects type 'long unsigned int', but argument 3 has type 'ssize_t'
+erst-dbg.c:(.text+0xede6d): undefined reference to `__get_user_X'
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+For the __get_user_X() call, in erst-dbg.c::erst_dbg_ioctl():
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+	case APEI_ERST_CLEAR_RECORD:
+		rc = get_user(record_id, (u64 __user *)arg);
+
+-> arch/x86/include/asm/uaccess.h:
+
+#ifdef CONFIG_X86_32
+#define __get_user_8(__ret_gu, __val_gu, ptr)				\
+		__get_user_x(X, __ret_gu, __val_gu, ptr)
+#else
+#define __get_user_8(__ret_gu, __val_gu, ptr)				\
+		__get_user_x(8, __ret_gu, __val_gu, ptr)
+#endif
+
+
+so is __get_user_8() not supported on X86_32?
+or is this something else?
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
