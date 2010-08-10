@@ -1,110 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284Ab0HJQCt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 12:02:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36635 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932105Ab0HJQCn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 12:02:43 -0400
+	id S932311Ab0HJQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 12:05:16 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54286 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932134Ab0HJQFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 12:05:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:x-url:user-agent;
+        b=PG8/4ZwGc3tZnABFCDJjGFOh7Rj1c/y2Ms9lPkWGaUzVHZq6AnSXC0WdzzM9meMdSR
+         HE8vj+Q3o6718uDCs2e0d/s5lnDMrSUz6DxQppJm/2LQOye52kXKL7thymXr7nbS6zOl
+         Qzvn8kGQ0NZEp2dqvsJ08bAQGdNqlLC2SjtPw=
+Date: Tue, 10 Aug 2010 13:05:07 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, David Miller <davem@davemloft.net>,
+        willy@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: perf build broke by list_head changes...
+Message-ID: <20100810160506.GA21829@ghostprotocols.net>
+References: <20100809.235746.115919762.davem@davemloft.net>
+ <4C6147DE.9050608@tilera.com>
+ <20100810124445.GA14843@merkur.ravnborg.org>
+ <20100810134600.GF18824@ghostprotocols.net>
+ <20100810143241.GB15073@merkur.ravnborg.org>
 MIME-Version: 1.0
-In-Reply-To: <4C5D4E50.5050105@suse.cz>
-References: <4C5D4E50.5050105@suse.cz>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 10 Aug 2010 09:01:46 -0700
-Message-ID: <AANLkTimPS_WFvEwyx+odwof5_AF5ZTOhu-3uK6m_VhYa@mail.gmail.com>
-Subject: Re: [GIT] writable_limits for 2.6.36
-To: Jiri Slaby <jslaby@suse.cz>, Chris Metcalf <cmetcalf@tilera.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100810143241.GB15073@merkur.ravnborg.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/7 Jiri Slaby <jslaby@suse.cz>:
->
-> please consider the following repository for 2.6.36. It introduces a new
-> syscall for arch independent resource limits handling. It also adds a
-> support for runtime limits changing. This feature is needed mostly by
-> daemons servicing databases and similar service where limits are needed
-> to be changed without services being restarted on production systems.
+Em Tue, Aug 10, 2010 at 04:32:41PM +0200, Sam Ravnborg escreveu:
+> On Tue, Aug 10, 2010 at 10:46:00AM -0300, Arnaldo Carvalho de Melo wrote:
+> > Idea is to try to have the perf tools, since they are hosted in the
+> > kernel and developed mostly by people with kernel background, to use
+> > code and practices used in the kernel proper.
 
-Ok, so the code looks fine, and I don't have any real objections any
-more. I don't know how much use this will get, but it doesn't appear
-to be "wrong" in any way. So I was going to pull it.
+> > It started just keeping private copies, I guess it should get back to
+> > that since the reaction to this kind of same source repo code sharing
+> > was, well, not good :-)
 
-However, in the meantime we have commit 5360bd776f73 ("Fix up the
-"generic" unistd.h ABI to be more useful") that clashes with it. Now,
-the conflict is trivial to resolve, and I could do that easily - it's
-not a technical problem. But that commit code comments say
+> > Alternatives?
+ 
+> I have not analyzed deeper in what parts perf uses so the following
+> may not fly at all.
 
-  + * Architectures may provide up to 16 syscalls of their own
-  + * starting with this value.
-  + */
-  +#define __NR_arch_specific_syscall 244
+> One solution could be to let perf rely on a set of exported userspace
+> headers from the kernel.
 
-and the new writable rlimits syscall is obviously 244.
+Yeah, finding things that could be shared was part of this exercise, as some
+people mentioned that lots of userspace programs out there already have
+list.h copies.
 
-Now, looking at it all, I think that commit was badly done - not
-leaving any room for new generic system calls is pretty iffy. And if I
-had happened to take the Tilera merge later, I'd have had no problems
-with just changing it. As is, though, I want to check with Arnd and
-Chris first.
+Petrifying list.h (and other headers) for the sake of out of the kernel use
+probably won't get many supporters, for things that ship and are developed in
+the same source repo tho, perhaps can be made possible.
 
-Arnd, Chris - how about making the "arch-specific" system calls start
-at 256 or something? Or even higher, like 512? Yes, it makes the
-system call array bigger, but is that really a problem? Especially as
-we start the "deprecated" system calls at 1024, it would seem to make
-sense to raise it to 512, and leave the low numbers for the "regular"
-system calls.
+> And on top of this copy a small set of kernel internal headers for use
+> by perf only.  The copying will be a good way to document what is
+> actually used of the kernel internal stuff.
 
-[ I'm leaving the quoted email for the edification of Chris/Arnd that
-I added to the discussion ]
+Yeah, that to me is the easier, non controversial path to take, like done with
+hweight.c et all, I'll do that.
+ 
+> But I also realize that just copying over list.h does not suffice. It
+> pulls in lots of other stuff.  So this is most likely hard to do.
+> 
+> I guess first step is to identify what is really used beside the
+> exported stuff and start to conclude from there.
 
-                                   Linus
+This is what I did for hweight.c in:
 
----
->
->  git://decibel.fi.muni.cz/~xslaby/linux writable_limits
->
-> Jiri Slaby (10):
->      rlimits: security, add task_struct to setrlimit
->      rlimits: add task_struct to update_rlimit_cpu
->      rlimits: split sys_setrlimit
->      rlimits: allow setrlimit to non-current tasks
->      rlimits: do security check under task_lock
->      rlimits: add rlimit64 structure
->      rlimits: redo do_setrlimit to more generic do_prlimit
->      rlimits: switch more rlimit syscalls to do_prlimit
->      rlimits: implement prlimit64 syscall
->      unistd: add __NR_prlimit64 syscall numbers
->
-> Oleg Nesterov (2):
->      rlimits: make sure ->rlim_max never grows in sys_setrlimit
->      rlimits: selinux, do rlimits changes under task_lock
->
->  arch/x86/ia32/ia32entry.S          |    1 +
->  arch/x86/include/asm/unistd_32.h   |    3 +-
->  arch/x86/include/asm/unistd_64.h   |    2 +
->  arch/x86/kernel/syscall_table_32.S |    1 +
->  include/asm-generic/unistd.h       |    4 +-
->  include/linux/posix-timers.h       |    2 +-
->  include/linux/resource.h           |    9 ++
->  include/linux/security.h           |    9 +-
->  include/linux/syscalls.h           |    4 +
->  kernel/compat.c                    |   17 +---
->  kernel/posix-cpu-timers.c          |    8 +-
->  kernel/sys.c                       |  202 ++++++++++++++++++++++++++++--------
->  security/capability.c              |    3 +-
->  security/security.c                |    5 +-
->  security/selinux/hooks.c           |   12 ++-
->  15 files changed, 207 insertions(+), 75 deletions(-)
->
-> thanks,
-> --
-> js
-> suse labs
->
+[acme@doppio linux-2.6-tip]$ git log tools/perf/util/hweight.c 
+commit fb72014d98afd51e85aab9c061344ef32d615606
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Fri Apr 30 19:31:12 2010 -0300
+
+    perf tools: Don't use code surrounded by __KERNEL__
+    
+    We need to refactor code to be explicitely shared by the kernel and at
+    least the tools/ userspace programs, so, till we do that, copy the bare
+    minimum bitmap/bitops code needed by tools/perf.
+    
+    Reported-by: "H. Peter Anvin" <hpa@zytor.com>
+    Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+    Cc: Mike Galbraith <efault@gmx.de>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    LKML-Reference: <new-submission>
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[acme@doppio linux-2.6-tip]$
+
+I will continue that exercise and leave explicitely sharing stuff with
+the kernel for later, if ever.
+
+Then we will just have to track changes to the initially shared stuff so
+that we don't miss fixes like described in the cset where some of this
+sharing was started:
+
+commit 43cbcd8acb4c992cbd22d1ec8a08c0591be5d719
+Author: Arnaldo Carvalho de Melo <acme@redhat.com>
+Date:   Wed Jul 1 12:28:37 2009 -0300
+
+    perf_counter tools: Share rbtree.with the kernel
+    
+    The tools/perf/util/rbtree.c copy already drifted by three
+    csets:
+    
+     4b324126e0c6c3a5080ca3ec0981e8766ed6f1ee
+     4c60117811171d867d4f27f17ea07d7419d45dae
+     16c047add3ceaf0ab882e3e094d1ec904d02312d
+
+    So remove the copy and use the lib/rbtree.c directly, sharing
+    the source code while still generating a separate object file,
+    since tools/perf uses a far more agressive -O6 switch.
+    
+    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+    Cc: Mike Galbraith <efault@gmx.de>
+    Cc: Peter Zijlstra <peterz@infradead.org>
+    Cc: Paul Mackerras <paulus@samba.org>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    LKML-Reference: <20090701152837.GG15682@ghostprotocols.net>
+    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+
+- Arnaldo
