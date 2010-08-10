@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab0HJDJy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 23:09:54 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48929 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab0HJDJt (ORCPT
+	id S1757043Ab0HJDN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 23:13:58 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40885 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab0HJDNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 23:09:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=d7G4biKWcRzyBO8vu/4DqJ5zXnSbaS0EIN2XwNmtOP6x8vkZVy7rvmyH6XXZO9TiT/
-         H02GspfhvnQ1nxhMU50ObNg9kAQtjgBJbdVgBJuzcblnbkQtW4/rQaPu814GPiJRP7Ln
-         goJNNdOt3jjlsRXejPa2CnmmFRKwUmbsvwbno=
-Subject: Re: [PATCH] sh: remove RELOC_HIDE on exception handlers and
- syscall routines
-From: Namhyung Kim <namhyung@gmail.com>
-To: Stuart Menefy <stuart.menefy@st.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C601ECD.2070503@st.com>
-References: <1281300825-3327-1-git-send-email-namhyung@gmail.com>
-	 <4C601ECD.2070503@st.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 12:09:43 +0900
-Message-ID: <1281409783.1670.14.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 9 Aug 2010 23:13:52 -0400
+Date: Tue, 10 Aug 2010 12:12:06 +0900 (JST)
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH 07/13] writeback: explicit low bound for vm.dirty_ratio
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+In-Reply-To: <20100806124452.GC4717@localhost>
+References: <20100805163401.e9754032.akpm@linux-foundation.org> <20100806124452.GC4717@localhost>
+Message-Id: <20100809235652.7113.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-08-09 (월), 16:29 +0100, Stuart Menefy:
-> Unfortunately these are necessary, although it is nothing to do with linker
-> relocation. These functions take a struct pt_regs as a parameter (not a
-> pointer), and modify some of the fields of that structure. We needed a way
-> to ensure that gcc didn't optimise away those assignments - to gcc
-> they appear to be assignments to a local variable, so quite legitimately
-> get optimised away. So we used RELOC_HIDE() as a way of doing that.
+> Subject: writeback: explicit low bound for vm.dirty_ratio
+> From: Wu Fengguang <fengguang.wu@intel.com>
+> Date: Thu Jul 15 10:28:57 CST 2010
 > 
-
-Oh, I didn't know that. Thank you for the comments.
-
-
-> A clearer way to do this would be to pass in a struct pt_regs pointer,
-> but that would require going via a stub function which loads up the
-> pointer.
+> Force a user visible low bound of 5% for the vm.dirty_ratio interface.
 > 
-> Stuart
+> This is an interface change. When doing
 > 
+> 	echo N > /proc/sys/vm/dirty_ratio
+> 
+> where N < 5, the old behavior is pretend to accept the value, while
+> the new behavior is to reject it explicitly with -EINVAL.  This will
+> possibly break user space if they checks the return value.
 
-So is it worth if I'm gonna work on it?
+Umm.. I dislike this change. Is there any good reason to refuse explicit 
+admin's will? Why 1-4% is so bad? Internal clipping can be changed later
+but explicit error behavior is hard to change later.
 
+personally I prefer to
+ - accept all value, or
+ - clipping value in dirty_ratio_handler 
 
--- 
-Regards,
-Namhyung Kim
+Both don't have explicit ABI change.
+
+Thanks.
+
 
 
