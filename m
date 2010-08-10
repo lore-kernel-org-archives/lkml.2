@@ -1,105 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab0HJHHj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 03:07:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37431
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753602Ab0HJHHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 03:07:32 -0400
-Date: Tue, 10 Aug 2010 00:07:51 -0700 (PDT)
-Message-Id: <20100810.000751.260105232.davem@davemloft.net>
-To: akpm@linux-foundation.org
-Cc: greg@kroah.com, dwmw2@infradead.org, vapier@gentoo.org,
-        jbarnes@virtuousgeek.org, kevin.curtis@farsite.co.uk,
-        phillip@lougher.demon.co.uk, faisal.latif@intel.com,
-        chien.tin.tung@intel.com, dan.j.williams@intel.com,
-        samuel.ortiz@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org, x86@kernel.org,
-        linux-rdma@vger.kernel.org
-Subject: Re: i386 allmodconfig, current mainline
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100809164346.6e30cf8c.akpm@linux-foundation.org>
-References: <20100809164346.6e30cf8c.akpm@linux-foundation.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1755860Ab0HJHK2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 03:10:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55307 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753602Ab0HJHKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 03:10:23 -0400
+Date: Tue, 10 Aug 2010 07:09:48 GMT
+From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, gorcunov@openvz.org, a.p.zijlstra@chello.nl,
+        fweisbec@gmail.com, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com, gorcunov@openvz.org,
+        a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20100805150917.GA6311@lenovo>
+References: <20100805150917.GA6311@lenovo>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf, x86: P4 PMU -- update nmi irq statistics and unmask lvt entry properly
+Message-ID: <tip-1c250d709fdc8aa5bf42d90be99428a01a256a55@git.kernel.org>
+Git-Commit-ID: 1c250d709fdc8aa5bf42d90be99428a01a256a55
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 10 Aug 2010 07:09:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andrew Morton <akpm@linux-foundation.org>
-Date: Mon, 9 Aug 2010 16:43:46 -0700
+Commit-ID:  1c250d709fdc8aa5bf42d90be99428a01a256a55
+Gitweb:     http://git.kernel.org/tip/1c250d709fdc8aa5bf42d90be99428a01a256a55
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Thu, 5 Aug 2010 19:09:17 +0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sun, 8 Aug 2010 22:53:50 +0200
 
-> drivers/net/wan/farsync.c: In function 'fst_intr_rx':
-> drivers/net/wan/farsync.c:1312: warning: cast to pointer from integer of different size
-> drivers/net/wan/farsync.c: In function 'do_bottom_half_tx':
-> drivers/net/wan/farsync.c:1407: warning: cast to pointer from integer of different size
+perf, x86: P4 PMU -- update nmi irq statistics and unmask lvt entry properly
 
-I'll toss the following into net-2.6:
+In case if last active performance counter is not overflowed at
+moment of NMI being triggered by another counter, the irq
+statistics may miss an update stage. As a more serious
+consequence -- apic quirk may not be triggered so apic lvt entry
+stay masked.
 
---------------------
-farsync: Fix compile warnings.
-
-drivers/net/wan/farsync.c: In function 'fst_intr_rx':
-drivers/net/wan/farsync.c:1312: warning: cast to pointer from integer of different size
-drivers/net/wan/farsync.c: In function 'do_bottom_half_tx':
-drivers/net/wan/farsync.c:1407: warning: cast to pointer from integer of different size
-
-The "skb" and "mem" arguments being passed here are DMA addresses
-being programmed into the hardware registers, so pass them as the type
-that they actually are.  And use the correct printf formatting in
-debug logging statements for these things to match the type change.
-
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Tested-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <20100805150917.GA6311@lenovo>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- drivers/net/wan/farsync.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ arch/x86/kernel/cpu/perf_event_p4.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/net/wan/farsync.c b/drivers/net/wan/farsync.c
-index ad7719f..e050bd6 100644
---- a/drivers/net/wan/farsync.c
-+++ b/drivers/net/wan/farsync.c
-@@ -885,20 +885,21 @@ fst_rx_dma_complete(struct fst_card_info *card, struct fst_port_info *port,
-  *      Receive a frame through the DMA
-  */
- static inline void
--fst_rx_dma(struct fst_card_info *card, unsigned char *skb,
--	   unsigned char *mem, int len)
-+fst_rx_dma(struct fst_card_info *card, dma_addr_t skb,
-+	   dma_addr_t mem, int len)
- {
- 	/*
- 	 * This routine will setup the DMA and start it
- 	 */
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index 107711b..febb12c 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -656,6 +656,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 	cpuc = &__get_cpu_var(cpu_hw_events);
  
--	dbg(DBG_RX, "In fst_rx_dma %p %p %d\n", skb, mem, len);
-+	dbg(DBG_RX, "In fst_rx_dma %lx %lx %d\n",
-+	    (unsigned long) skb, (unsigned long) mem, len);
- 	if (card->dmarx_in_progress) {
- 		dbg(DBG_ASS, "In fst_rx_dma while dma in progress\n");
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
++		int overflow;
+ 
+ 		if (!test_bit(idx, cpuc->active_mask))
+ 			continue;
+@@ -666,12 +667,14 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		WARN_ON_ONCE(hwc->idx != idx);
+ 
+ 		/* it might be unflagged overflow */
+-		handled = p4_pmu_clear_cccr_ovf(hwc);
++		overflow = p4_pmu_clear_cccr_ovf(hwc);
+ 
+ 		val = x86_perf_event_update(event);
+-		if (!handled && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
++		if (!overflow && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
+ 			continue;
+ 
++		handled += overflow;
++
+ 		/* event overflow for sure */
+ 		data.period = event->hw.last_period;
+ 
+@@ -687,7 +690,7 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 		inc_irq_stat(apic_perf_irqs);
  	}
  
--	outl((unsigned long) skb, card->pci_conf + DMAPADR0);	/* Copy to here */
--	outl((unsigned long) mem, card->pci_conf + DMALADR0);	/* from here */
-+	outl(skb, card->pci_conf + DMAPADR0);	/* Copy to here */
-+	outl(mem, card->pci_conf + DMALADR0);	/* from here */
- 	outl(len, card->pci_conf + DMASIZ0);	/* for this length */
- 	outl(0x00000000c, card->pci_conf + DMADPR0);	/* In this direction */
+-	return handled;
++	return handled > 0;
+ }
  
-@@ -1309,8 +1310,8 @@ fst_intr_rx(struct fst_card_info *card, struct fst_port_info *port)
- 		card->dma_port_rx = port;
- 		card->dma_len_rx = len;
- 		card->dma_rxpos = rxp;
--		fst_rx_dma(card, (char *) card->rx_dma_handle_card,
--			   (char *) BUF_OFFSET(rxBuffer[pi][rxp][0]), len);
-+		fst_rx_dma(card, card->rx_dma_handle_card,
-+			   BUF_OFFSET(rxBuffer[pi][rxp][0]), len);
- 	}
- 	if (rxp != port->rxpos) {
- 		dbg(DBG_ASS, "About to increment rxpos by more than 1\n");
--- 
-1.7.2.1
-
+ /*
