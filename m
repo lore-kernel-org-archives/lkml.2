@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab0HJPbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:31:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:62810 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757572Ab0HJPbI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:31:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=a48MzS2MIPIGHMciTaMC+1pln8b8ozPLHzsbeJegXrOosa77nrlhuhkS6B6rW+4wyR
-         VlBkNFg2SupkT+D01zbnFk4hRU1vNujoeoJkvJjh7Jy0fzjT6mUE4Tu4InbDUy0aUMPX
-         gyFwkvJIevJ74Nlf6x2hRzd1T974I93Gx9QiA=
-Date: Tue, 10 Aug 2010 18:35:38 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Piotr Hosowicz <piotr@hosowicz.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        linux-acpi@vger.kernel.org
-Subject: Re: BUG: scheduling while atomic: swapper/0/0x10000002
-Message-ID: <20100810153538.GB5466@swordfish.minsk.epam.com>
-References: <20100810142951.GA7156@arch.tripp.de>
- <4C616DF9.1070309@example.com>
+	id S932133Ab0HJPcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:32:06 -0400
+Received: from compulab.co.il ([67.18.134.219]:37004 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932070Ab0HJPb5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:31:57 -0400
+Message-ID: <4C6170D5.3010904@compulab.co.il>
+Date: Tue, 10 Aug 2010 18:31:33 +0300
+From: Mike Rapoport <mike@compulab.co.il>
+User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
-Content-Disposition: inline
-In-Reply-To: <4C616DF9.1070309@example.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: Remove default DEBUG define from TPS6586x
+References: <1281452533-9341-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <1281452533-9341-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark Brown wrote:
+> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
---DKU6Jbt7q3WqK7+M
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Acked-by: Mike Rapoport <mike@compulab.co.il>
 
-On (08/10/10 17:19), Piotr Hosowicz wrote:
-> None of them works for me. I do:
->=20
-> cat patch.txt | patch -p1
->=20
-> And get:
->=20
-> aapi205:/usr/src/linux# cat ../smp-bug.txt | patch -p1
-> patching file include/acpi/platform/aclinux.h
-> Hunk #1 FAILED at 152.
-> 1 out of 1 hunk FAILED -- saving rejects to file
-> include/acpi/platform/aclinux.h.rej
->=20
-> Help me please.
->=20
-
-Can we see your:
-include/acpi/platform/aclinux.h(.rej)
-
-?
-
-(did you `git pull`?)
+> ---
+>  drivers/regulator/tps6586x-regulator.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/regulator/tps6586x-regulator.c b/drivers/regulator/tps6586x-regulator.c
+> index 3c2eee8..fd14c59 100644
+> --- a/drivers/regulator/tps6586x-regulator.c
+> +++ b/drivers/regulator/tps6586x-regulator.c
+> @@ -13,7 +13,6 @@
+>   * published by the Free Software Foundation.
+>   */
+>  
+> -#define DEBUG
+>  #include <linux/kernel.h>
+>  #include <linux/init.h>
+>  #include <linux/err.h>
 
 
-	Sergey
-
---DKU6Jbt7q3WqK7+M
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkxhccoACgkQfKHnntdSXjQ3twP/Y1d+NREvt0x0zZA0JJsZ5B/V
-P37MRvxW7H5hBhGulPrS3VY6mvFc4h4XkIfyLNmVDT5DDhFLkixtcOssKuVhNF80
-NtTCfqJ358kUNmoBS6UsdPtgCcRWQXK0eb/7JHxK6LP3GNFoTKdtJhIUHDVV2Xbc
-Z4RzArahZR9zncFkysM=
-=bFdp
------END PGP SIGNATURE-----
-
---DKU6Jbt7q3WqK7+M--
+-- 
+Sincerely yours,
+Mike.
