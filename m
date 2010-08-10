@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab0HJHdg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 03:33:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61529 "EHLO mx1.redhat.com"
+	id S1755938Ab0HJHgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 03:36:44 -0400
+Received: from freeflow.nu ([178.79.134.28]:43858 "EHLO freeflow.nu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab0HJHdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 03:33:31 -0400
+	id S1752861Ab0HJHgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 03:36:39 -0400
+Message-ID: <4C610184.7070909@kernel.org>
+Date: Tue, 10 Aug 2010 10:36:36 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown
-Content-Transfer-Encoding: 8bit
-From: Roland McGrath <roland@redhat.com>
-To: Yegor Yefremov <yegorslists@googlemail.com>
-X-Fcc: ~/Mail/linus
-Cc: Roland Dreier <rdreier@cisco.com>, Tiago Maluta <tiago.maluta@gmail.com>,
-        Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
-In-Reply-To: Yegor Yefremov's message of  Tuesday, 10 August 2010 08:43:18 +0200 <AANLkTikvRqTR6TjP9H4-_RHhax24YRPv9PCxn165RTWs@mail.gmail.com>
-References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
-	<20100621120613.86cad1a4.akpm@linux-foundation.org>
-	<4C1FC35C.8090201@suse.cz>
-	<AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>
-	<AANLkTinC6Sqs7W--=14nmJFDcTS4HQn0=ysn7VhYDDX6@mail.gmail.com>
-	<adaocdg3fng.fsf@roland-alpha.cisco.com>
-	<20100805222623.39A3240208@magilla.sf.frob.com>
-	<AANLkTikvRqTR6TjP9H4-_RHhax24YRPv9PCxn165RTWs@mail.gmail.com>
-X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
-Message-Id: <20100810073317.F2A8C40542@magilla.sf.frob.com>
-Date: Tue, 10 Aug 2010 00:33:17 -0700 (PDT)
+To: ngupta@vflare.org, jaxboe@fusionio.com
+CC: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 04/10] Use percpu buffers
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	<1281374816-904-5-git-send-email-ngupta@vflare.org> <AANLkTin7_fKxTzE2rngh1Ew5Ss8F_Aw0s9Gz6ySug6SX@mail.gmail.com> <4C60D9E6.3050700@vflare.org> <4C60DE0E.2000707@kernel.org> <4C60E48A.5090608@vflare.org>
+In-Reply-To: <4C60E48A.5090608@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Aug 6, 2010 at 12:26 AM, Roland McGrath <roland@redhat.com> wrote:
-> >> Yes, this make sense to me.  It's not clear to me why we ever needed
-> >> the conditional assignment of an empty CROSS_COMPILE (that code predates
-> >> the start of git history) [...]
-> >
-> > Perhaps someone used make --warn-undefined-variables.
-> 
-> Are there any other comments or is the patch valid? Should I resend it
-> as a new thread?
+Hi Nitin,
 
-The patch is fine.  The comments were just about how it might have gotten
-to be how it was before now.
+On 8/10/10 8:32 AM, Nitin Gupta wrote:
+> Other block drivers are allocating relatively small structs using
+>>> mempool_alloc(). However, in case of zram, these buffers are quite
+>>> large (compress_workmem is 64K!). So, allocating them on every write
+>>> would probably be much slower than using a pre-allocated per-cpu buffer.
+>>>        
+>> The mempool API is precisely for that - using pre-allocated buffers instead of allocating every time. The preempt_disable() games make the code complex and have the downside of higher scheduling latencies so why not give mempools a try?
+>>      
+> mempool_alloc() first calls alloc_fn with ~(__GFP_WAIT | __GFP_IO)
+> and *then* falls down to pre-allocated buffers. So, it will always
+> be slower than directly using pre-allocated buffers as is done
+> currently.
+>
+> One trick we can use is to have alloc_fn such that it always returns
+> failure with ~__GFP_WAIT and do actual allocation otherwise. But still
+> it seems like unnecessary cost.
+>    
+We can always extend the mempool API with mempool_prealloc() function if 
+that turns out to be a problem. The per-CPU buffer with 
+preempt_disable() trickery isn't really the proper thing to do here. It 
+doesn't make much sense to disable preemption for compression that's 
+purely CPU bound.
 
-Thanks,
-Roland
+                     Pekka
