@@ -1,78 +1,424 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab0HJUQx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:16:53 -0400
-Received: from kroah.org ([198.145.64.141]:57752 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757944Ab0HJUQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 16:16:48 -0400
-Date: Tue, 10 Aug 2010 13:16:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Stefan Bader <stefan.bader@canonical.com>
-Cc: Eric Sandeen <sandeen@redhat.com>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [Stable-review] [116/165] ext4: dont return to
- userspace after freezing the fs with a mutex held
-Message-ID: <20100810201639.GC12680@kroah.com>
-References: <20100730171510.105264205@clark.site>
- <4C56B45E.9010601@canonical.com>
- <4C56FA35.7060607@redhat.com>
- <20100802184806.GA16878@kroah.com>
- <20100807040732.GB16342@khazad-dum.debian.net>
- <4C5D61E7.9090008@redhat.com>
- <4C5FC3BB.4030602@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C5FC3BB.4030602@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757905Ab0HJURZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:17:25 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35968 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757811Ab0HJUPr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 16:15:47 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 5/9] perf ui: Move map browser to util/ui/browsers/
+Date: Tue, 10 Aug 2010 17:15:35 -0300
+Message-Id: <1281471339-10878-6-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1281471339-10878-1-git-send-email-acme@infradead.org>
+References: <1281471339-10878-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 11:00:43AM +0200, Stefan Bader wrote:
-> On 08/07/2010 03:38 PM, Eric Sandeen wrote:
-> > Henrique de Moraes Holschuh wrote:
-> >> On Mon, 02 Aug 2010, Greg KH wrote:
-> >>> On Mon, Aug 02, 2010 at 12:02:45PM -0500, Eric Sandeen wrote:
-> >>>> On 08/02/2010 07:04 AM, Stefan Bader wrote:
-> >>>>> We have reports about this patch breaking lvm snapshhots. Eric, there is a patch
-> >>>>> mentioned which is supposed to fix things but its not upstream, yet.
-> >>>>> Do you know what happened to that?
-> >>>> right, patch below is needed to fix things.
-> >>>>
-> >>>> Ted just acked it on the list recently; Greg, I'd either drop 116/165
-> >>>> for now, or include the patch below which should be upstream soon...
-> >>> I can't take anything that isn't upstream yet.
-> >>>
-> >>> And I just released with this patch in the kernel, should I do a revert
-> >>> and do a new release?
-> >>
-> >> Any answers on this?
-> >>
-> > 
-> > Yes, I'd revert it for now, I'm afraid, if the other patch isn't upstream
-> > yet.
-> > 
-> > Sorry about that,
-> > 
-> > -Eric
-> 
-> Upstream as of now (same SHA1 as in linux-next):
-> 
-> >From 437f88cc031ffe7f37f3e705367f4fe1f4be8b0f Mon Sep 17 00:00:00 2001
-> From: Eric Sandeen <sandeen@sandeen.net>
-> Date: Sun, 1 Aug 2010 17:33:29 -0400
-> Subject: [PATCH] (pre-stable) ext4: fix freeze deadlock under IO
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-It looks like I can't drop the original one, as this patch builds on it.
-So I'll just queue this one up.
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/Makefile               |    5 +
+ tools/perf/util/newt.c            |  156 +-----------------------------------
+ tools/perf/util/ui/browsers/map.c |  163 +++++++++++++++++++++++++++++++++++++
+ tools/perf/util/ui/browsers/map.h |    6 ++
+ 4 files changed, 175 insertions(+), 155 deletions(-)
+ create mode 100644 tools/perf/util/ui/browsers/map.c
+ create mode 100644 tools/perf/util/ui/browsers/map.h
 
-Should it also go into other -stable releases (like .35 and/or .34 -stable?)
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index ae443b6..d118020 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -570,9 +570,11 @@ else
+ 		LIB_OBJS += $(OUTPUT)util/newt.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browser.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
++		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/progress.o
+ 		LIB_H += util/ui/browser.h
++		LIB_H += util/ui/browsers/map.h
+ 		LIB_H += util/ui/helpline.h
+ 		LIB_H += util/ui/libslang.h
+ 		LIB_H += util/ui/progress.h
+@@ -982,6 +984,9 @@ $(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
++$(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
++
+ $(OUTPUT)util/rbtree.o: ../../lib/rbtree.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
+ 
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index f188258..b596926 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -16,42 +16,10 @@
+ #include "symbol.h"
+ #include "ui/browser.h"
+ #include "ui/helpline.h"
++#include "ui/browsers/map.h"
+ 
+ newtComponent newt_form__new(void);
+ 
+-static int ui_entry__read(const char *title, char *bf, size_t size, int width)
+-{
+-	struct newtExitStruct es;
+-	newtComponent form, entry;
+-	const char *result;
+-	int err = -1;
+-
+-	newtCenteredWindow(width, 1, title);
+-	form = newtForm(NULL, NULL, 0);
+-	if (form == NULL)
+-		return -1;
+-
+-	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
+-	if (entry == NULL)
+-		goto out_free_form;
+-
+-	newtFormAddComponent(form, entry);
+-	newtFormAddHotKey(form, NEWT_KEY_ENTER);
+-	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
+-	newtFormAddHotKey(form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(form, CTRL('c'));
+-	newtFormRun(form, &es);
+-
+-	if (result != NULL) {
+-		strncpy(bf, result, size);
+-		err = 0;
+-	}
+-out_free_form:
+-	newtPopWindow();
+-	newtFormDestroy(form);
+-	return 0;
+-}
+-
+ char browser__last_msg[1024];
+ 
+ int browser__show_help(const char *format, va_list ap)
+@@ -182,128 +150,6 @@ static char *callchain_list__sym_name(struct callchain_list *self,
+ 	return bf;
+ }
+ 
+-/* -------------------------------------------------------------------- */
+-
+-struct map_browser {
+-	struct ui_browser b;
+-	struct map	  *map;
+-	u16		  namelen;
+-	u8		  addrlen;
+-};
+-
+-static void map_browser__write(struct ui_browser *self, void *nd, int row)
+-{
+-	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
+-	struct map_browser *mb = container_of(self, struct map_browser, b);
+-	bool current_entry = ui_browser__is_current_entry(self, row);
+-	int color = ui_browser__percent_color(0, current_entry);
+-
+-	SLsmg_set_color(color);
+-	slsmg_printf("%*llx %*llx %c ",
+-		     mb->addrlen, sym->start, mb->addrlen, sym->end,
+-		     sym->binding == STB_GLOBAL ? 'g' :
+-		     sym->binding == STB_LOCAL  ? 'l' : 'w');
+-	slsmg_write_nstring(sym->name, mb->namelen);
+-}
+-
+-/* FIXME uber-kludgy, see comment on cmd_report... */
+-static u32 *symbol__browser_index(struct symbol *self)
+-{
+-	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
+-}
+-
+-static int map_browser__search(struct map_browser *self)
+-{
+-	char target[512];
+-	struct symbol *sym;
+-	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
+-
+-	if (err)
+-		return err;
+-
+-	if (target[0] == '0' && tolower(target[1]) == 'x') {
+-		u64 addr = strtoull(target, NULL, 16);
+-		sym = map__find_symbol(self->map, addr, NULL);
+-	} else
+-		sym = map__find_symbol_by_name(self->map, target, NULL);
+-
+-	if (sym != NULL) {
+-		u32 *idx = symbol__browser_index(sym);
+-			
+-		self->b.top = &sym->rb_node;
+-		self->b.index = self->b.top_idx = *idx;
+-	} else
+-		ui_helpline__fpush("%s not found!", target);
+-
+-	return 0;
+-}
+-
+-static int map_browser__run(struct map_browser *self, struct newtExitStruct *es)
+-{
+-	if (ui_browser__show(&self->b, self->map->dso->long_name) < 0)
+-		return -1;
+-
+-	ui_helpline__fpush("Press <- or ESC to exit, %s / to search",
+-			   verbose ? "" : "restart with -v to use");
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
+-	if (verbose)
+-		newtFormAddHotKey(self->b.form, '/');
+-
+-	while (1) {
+-		ui_browser__run(&self->b, es);
+-
+-		if (es->reason != NEWT_EXIT_HOTKEY)
+-			break;
+-		if (verbose && es->u.key == '/')
+-			map_browser__search(self);
+-		else
+-			break;
+-	}
+-
+-	newtFormDestroy(self->b.form);
+-	newtPopWindow();
+-	ui_helpline__pop();
+-	return 0;
+-}
+-
+-static int map__browse(struct map *self)
+-{
+-	struct map_browser mb = {
+-		.b = {
+-			.entries = &self->dso->symbols[self->type],
+-			.refresh = ui_browser__rb_tree_refresh,
+-			.seek	 = ui_browser__rb_tree_seek,
+-			.write	 = map_browser__write,
+-		},
+-		.map = self,
+-	};
+-	struct newtExitStruct es;
+-	struct rb_node *nd;
+-	char tmp[BITS_PER_LONG / 4];
+-	u64 maxaddr = 0;
+-
+-	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
+-		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
+-
+-		if (mb.namelen < pos->namelen)
+-			mb.namelen = pos->namelen;
+-		if (maxaddr < pos->end)
+-			maxaddr = pos->end;
+-		if (verbose) {
+-			u32 *idx = symbol__browser_index(pos);
+-			*idx = mb.b.nr_entries;
+-		}
+-		++mb.b.nr_entries;
+-	}
+-
+-	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
+-	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
+-	return map_browser__run(&mb, &es);
+-}
+-
+-/* -------------------------------------------------------------------- */
+-
+ struct hist_browser {
+ 	struct ui_browser   b;
+ 	struct hists	    *hists;
+diff --git a/tools/perf/util/ui/browsers/map.c b/tools/perf/util/ui/browsers/map.c
+new file mode 100644
+index 0000000..b79f0c9
+--- /dev/null
++++ b/tools/perf/util/ui/browsers/map.c
+@@ -0,0 +1,163 @@
++#include "../libslang.h"
++#include <elf.h>
++#include <newt.h>
++#include <sys/ttydefaults.h>
++#include <ctype.h>
++#include <string.h>
++#include <linux/bitops.h>
++#include "../../debug.h"
++#include "../../symbol.h"
++#include "../browser.h"
++#include "../helpline.h"
++#include "map.h"
++
++static int ui_entry__read(const char *title, char *bf, size_t size, int width)
++{
++	struct newtExitStruct es;
++	newtComponent form, entry;
++	const char *result;
++	int err = -1;
++
++	newtCenteredWindow(width, 1, title);
++	form = newtForm(NULL, NULL, 0);
++	if (form == NULL)
++		return -1;
++
++	entry = newtEntry(0, 0, "0x", width, &result, NEWT_FLAG_SCROLL);
++	if (entry == NULL)
++		goto out_free_form;
++
++	newtFormAddComponent(form, entry);
++	newtFormAddHotKey(form, NEWT_KEY_ENTER);
++	newtFormAddHotKey(form, NEWT_KEY_ESCAPE);
++	newtFormAddHotKey(form, NEWT_KEY_LEFT);
++	newtFormAddHotKey(form, CTRL('c'));
++	newtFormRun(form, &es);
++
++	if (result != NULL) {
++		strncpy(bf, result, size);
++		err = 0;
++	}
++out_free_form:
++	newtPopWindow();
++	newtFormDestroy(form);
++	return 0;
++}
++
++struct map_browser {
++	struct ui_browser b;
++	struct map	  *map;
++	u16		  namelen;
++	u8		  addrlen;
++};
++
++static void map_browser__write(struct ui_browser *self, void *nd, int row)
++{
++	struct symbol *sym = rb_entry(nd, struct symbol, rb_node);
++	struct map_browser *mb = container_of(self, struct map_browser, b);
++	bool current_entry = ui_browser__is_current_entry(self, row);
++	int color = ui_browser__percent_color(0, current_entry);
++
++	SLsmg_set_color(color);
++	slsmg_printf("%*llx %*llx %c ",
++		     mb->addrlen, sym->start, mb->addrlen, sym->end,
++		     sym->binding == STB_GLOBAL ? 'g' :
++		     sym->binding == STB_LOCAL  ? 'l' : 'w');
++	slsmg_write_nstring(sym->name, mb->namelen);
++}
++
++/* FIXME uber-kludgy, see comment on cmd_report... */
++static u32 *symbol__browser_index(struct symbol *self)
++{
++	return ((void *)self) - sizeof(struct rb_node) - sizeof(u32);
++}
++
++static int map_browser__search(struct map_browser *self)
++{
++	char target[512];
++	struct symbol *sym;
++	int err = ui_entry__read("Search by name/addr", target, sizeof(target), 40);
++
++	if (err)
++		return err;
++
++	if (target[0] == '0' && tolower(target[1]) == 'x') {
++		u64 addr = strtoull(target, NULL, 16);
++		sym = map__find_symbol(self->map, addr, NULL);
++	} else
++		sym = map__find_symbol_by_name(self->map, target, NULL);
++
++	if (sym != NULL) {
++		u32 *idx = symbol__browser_index(sym);
++
++		self->b.top = &sym->rb_node;
++		self->b.index = self->b.top_idx = *idx;
++	} else
++		ui_helpline__fpush("%s not found!", target);
++
++	return 0;
++}
++
++static int map_browser__run(struct map_browser *self, struct newtExitStruct *es)
++{
++	if (ui_browser__show(&self->b, self->map->dso->long_name) < 0)
++		return -1;
++
++	ui_helpline__fpush("Press <- or ESC to exit, %s / to search",
++			   verbose ? "" : "restart with -v to use");
++	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
++	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
++	if (verbose)
++		newtFormAddHotKey(self->b.form, '/');
++
++	while (1) {
++		ui_browser__run(&self->b, es);
++
++		if (es->reason != NEWT_EXIT_HOTKEY)
++			break;
++		if (verbose && es->u.key == '/')
++			map_browser__search(self);
++		else
++			break;
++	}
++
++	newtFormDestroy(self->b.form);
++	newtPopWindow();
++	ui_helpline__pop();
++	return 0;
++}
++
++int map__browse(struct map *self)
++{
++	struct map_browser mb = {
++		.b = {
++			.entries = &self->dso->symbols[self->type],
++			.refresh = ui_browser__rb_tree_refresh,
++			.seek	 = ui_browser__rb_tree_seek,
++			.write	 = map_browser__write,
++		},
++		.map = self,
++	};
++	struct newtExitStruct es;
++	struct rb_node *nd;
++	char tmp[BITS_PER_LONG / 4];
++	u64 maxaddr = 0;
++
++	for (nd = rb_first(mb.b.entries); nd; nd = rb_next(nd)) {
++		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
++
++		if (mb.namelen < pos->namelen)
++			mb.namelen = pos->namelen;
++		if (maxaddr < pos->end)
++			maxaddr = pos->end;
++		if (verbose) {
++			u32 *idx = symbol__browser_index(pos);
++			*idx = mb.b.nr_entries;
++		}
++		++mb.b.nr_entries;
++	}
++
++	mb.addrlen = snprintf(tmp, sizeof(tmp), "%llx", maxaddr);
++	mb.b.width += mb.addrlen * 2 + 4 + mb.namelen;
++	return map_browser__run(&mb, &es);
++}
+diff --git a/tools/perf/util/ui/browsers/map.h b/tools/perf/util/ui/browsers/map.h
+new file mode 100644
+index 0000000..df8581a
+--- /dev/null
++++ b/tools/perf/util/ui/browsers/map.h
+@@ -0,0 +1,6 @@
++#ifndef _PERF_UI_MAP_BROWSER_H_
++#define _PERF_UI_MAP_BROWSER_H_ 1
++struct map;
++
++int map__browse(struct map *self);
++#endif /* _PERF_UI_MAP_BROWSER_H_ */
+-- 
+1.6.2.5
 
-thanks,
-
-greg k-h
