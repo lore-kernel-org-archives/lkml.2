@@ -1,38 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934014Ab0HJXE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 19:04:58 -0400
-Received: from kroah.org ([198.145.64.141]:33948 "EHLO coco.kroah.org"
+	id S933101Ab0HJXMM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 19:12:12 -0400
+Received: from skypost.ru ([88.151.105.133]:58545 "EHLO skypost.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933953Ab0HJXEx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 19:04:53 -0400
-Date: Tue, 10 Aug 2010 16:02:14 -0700
-From: Greg KH <greg@kroah.com>
-To: Prabhu Chawandi <prabhu.chavandi@gmail.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Support For Magiccard's ENDURA Card printer support.
-Message-ID: <20100810230214.GB6400@kroah.com>
-References: <AANLkTinrZmt82eegi1n+YCH5eifj_B-h2m-oCwzMHnjF@mail.gmail.com>
+	id S1751881Ab0HJXMI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 19:12:08 -0400
+X-Greylist: delayed 13996 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Aug 2010 19:12:07 EDT
+To: undisclosed-recipients:;
+Subject: FILE FOR CLAIM  
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinrZmt82eegi1n+YCH5eifj_B-h2m-oCwzMHnjF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: SkyPost Mail 1.0 ( http://www.v-webmail.org/ )
+Date: Wed, 11 Aug 2010 01:18:44 +0600
+From: Kelvin Moor <k_moore@yahoo.com>
+Reply-To: mrkelvin2010@live.com
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <l6yaz8.58jum5@skypost.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 02:38:40PM +0530, Prabhu Chawandi wrote:
-> Hi All,
->       I have got Magiccard's  ENDURA Card printer, which I am trying
-> to use on linux.   Can I get any clues, whether this device is
-> supported by Linux kernel.
+Contact DR.Kelvin Moore for the claims of £1,532,720GBP in the UK Award 2010.
 
-If it follows the USB printer specification, yes, the kernel supports
-it.
 
-Does your device follow that standard?
+Claims information: Fullname,Occupation,Nationality,Residential Address,
+Phone number. 
 
-thanks,
+Once Again Congratulations.
+_________________________________________________________
+This mail sent using V-webmail - http://www.v-webmail.org
 
-greg k-h
