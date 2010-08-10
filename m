@@ -1,88 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0HJPUM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:20:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47538 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932157Ab0HJPUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:20:08 -0400
-Date: Wed, 11 Aug 2010 01:20:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        James Smart <james.smart@emulex.com>,
-        Eric Biederman <ebiederm@aristanetworks.com>,
-        Benjamin Thery <benjamin.thery@bull.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Chris Wright <chrisw@sous-sol.org>, linuxppc-dev@ozlabs.org,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Nick Cheng <nick.cheng@areca.com.tw>, Dmitry Torokhov <dtor@mail.ru>,
-        Tejun Heo <tj@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-scsi@vger.kernel.org,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
-Message-Id: <20100811012001.6fb50655.sfr@canb.auug.org.au>
-In-Reply-To: <20100811011733.16243ddb.sfr@canb.auug.org.au>
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-	<AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
-	<20100802233128.GA21286@kroah.com>
-	<20100810154337.006a0df9@hyperion.delvare>
-	<20100811011733.16243ddb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_Aug_2010_01_20_01_+1000_p628nrvSadM=jkIG"
+	id S1757574Ab0HJPbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:31:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:62810 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757572Ab0HJPbI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:31:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=a48MzS2MIPIGHMciTaMC+1pln8b8ozPLHzsbeJegXrOosa77nrlhuhkS6B6rW+4wyR
+         VlBkNFg2SupkT+D01zbnFk4hRU1vNujoeoJkvJjh7Jy0fzjT6mUE4Tu4InbDUy0aUMPX
+         gyFwkvJIevJ74Nlf6x2hRzd1T974I93Gx9QiA=
+Date: Tue, 10 Aug 2010 18:35:38 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Piotr Hosowicz <piotr@hosowicz.com>
+Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        linux-acpi@vger.kernel.org
+Subject: Re: BUG: scheduling while atomic: swapper/0/0x10000002
+Message-ID: <20100810153538.GB5466@swordfish.minsk.epam.com>
+References: <20100810142951.GA7156@arch.tripp.de>
+ <4C616DF9.1070309@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DKU6Jbt7q3WqK7+M"
+Content-Disposition: inline
+In-Reply-To: <4C616DF9.1070309@example.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Aug_2010_01_20_01_+1000_p628nrvSadM=jkIG
-Content-Type: text/plain; charset=US-ASCII
+
+--DKU6Jbt7q3WqK7+M
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi Jean,
-
-On Wed, 11 Aug 2010 01:17:33 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Tue, 10 Aug 2010 15:43:37 +0200 Jean Delvare <khali@linux-fr.org> wrot=
-e:
-> >
-> > Related bug?
-> >=20
-> > https://bugzilla.kernel.org/show_bug.cgi?id=3D16544
+On (08/10/10 17:19), Piotr Hosowicz wrote:
+> None of them works for me. I do:
 >=20
-> Yep, fixed in linux-next today - hopefully the fix is on its way to Linus.
+> cat patch.txt | patch -p1
+>=20
+> And get:
+>=20
+> aapi205:/usr/src/linux# cat ../smp-bug.txt | patch -p1
+> patching file include/acpi/platform/aclinux.h
+> Hunk #1 FAILED at 152.
+> 1 out of 1 hunk FAILED -- saving rejects to file
+> include/acpi/platform/aclinux.h.rej
+>=20
+> Help me please.
+>=20
 
-Sorry, more info:
+Can we see your:
+include/acpi/platform/aclinux.h(.rej)
 
-Fixed by commit 690e85a3957291f4cfe0cac22d97994ec7e5ee45 ("olpc_battery:
-Fix build failure caused by sysfs changes") from the battery tree.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+?
 
---Signature=_Wed__11_Aug_2010_01_20_01_+1000_p628nrvSadM=jkIG
+(did you `git pull`?)
+
+
+	Sergey
+
+--DKU6Jbt7q3WqK7+M
 Content-Type: application/pgp-signature
+Content-Disposition: inline
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEcBAEBAgAGBQJMYW4hAAoJEDMEi1NhKgbsGMgIAIZxDAUh17iEyQwHYE64/aJV
-OEP/MbMbHFwhFIcmUqv0lPpMJnPN1FmJbPg0vVjtMJlmp+BQxtLCXD4bwd8IE8mz
-uIImBQ8eALRAIKoXAN2mr9ezYzJ4zxvHhPg1lkN9nRKnaHYoQoAOaaD9Xv83QH/Z
-badkXo0KNXHeP7aUv67+u5g7yaNO5eec4kLaaBL520s/IZWCNKSYK/ofN4HE5Hd/
-QSGgfYYHGtBjpMwaF+ssYpEN7AB0dni+mYoGB9eRvxlCLaQYKTJoop+3UQDe/sAy
-bHrI1fbbcMul3Fsd0sDjYV2TQ3Uin3WJbTT3u1DiCP4PV1OZMbyYSgctIcPnv0k=
-=IGCR
+iJwEAQECAAYFAkxhccoACgkQfKHnntdSXjQ3twP/Y1d+NREvt0x0zZA0JJsZ5B/V
+P37MRvxW7H5hBhGulPrS3VY6mvFc4h4XkIfyLNmVDT5DDhFLkixtcOssKuVhNF80
+NtTCfqJ358kUNmoBS6UsdPtgCcRWQXK0eb/7JHxK6LP3GNFoTKdtJhIUHDVV2Xbc
+Z4RzArahZR9zncFkysM=
+=bFdp
 -----END PGP SIGNATURE-----
 
---Signature=_Wed__11_Aug_2010_01_20_01_+1000_p628nrvSadM=jkIG--
+--DKU6Jbt7q3WqK7+M--
