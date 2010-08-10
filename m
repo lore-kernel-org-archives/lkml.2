@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757497Ab0HJFPy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 01:15:54 -0400
-Received: from li190-28.members.linode.com ([178.79.134.28]:53941 "EHLO
-	freeflow.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab0HJFPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 01:15:50 -0400
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Aug 2010 01:15:50 EDT
-Message-ID: <4C60DE0E.2000707@kernel.org>
-Date: Tue, 10 Aug 2010 08:05:18 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.4; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	id S1752177Ab0HJFWi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 01:22:38 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:56892 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543Ab0HJFWd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 01:22:33 -0400
+Date: Tue, 10 Aug 2010 08:21:46 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Grant Likely <grant.likely@secretlab.ca>
+Cc: "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        "Tereshonkov Roman (Nokia-MS/Helsinki)" <roman.tereshonkov@nokia.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH] spi: omap2_mcspi: make use of dev_vdbg()
+Message-ID: <20100810052146.GC3853@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <1275563341-31078-1-git-send-email-felipe.balbi@nokia.com>
+ <20100809103618.GE11340@nokia.com>
+ <AANLkTinA72_YkcyN=1q04CDG5uW8PiOz5+jg9nTN7PuE@mail.gmail.com>
 MIME-Version: 1.0
-To: ngupta@vflare.org
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/10] Use percpu buffers
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	<1281374816-904-5-git-send-email-ngupta@vflare.org> <AANLkTin7_fKxTzE2rngh1Ew5Ss8F_Aw0s9Gz6ySug6SX@mail.gmail.com> <4C60D9E6.3050700@vflare.org>
-In-Reply-To: <4C60D9E6.3050700@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <AANLkTinA72_YkcyN=1q04CDG5uW8PiOz5+jg9nTN7PuE@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 10 Aug 2010 05:21:45.0758 (UTC) FILETIME=[ECD9A3E0:01CB384B]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Nitin,
+Hi,
 
-On 10.8.2010 7.47, Nitin Gupta wrote:
-> On 08/10/2010 12:27 AM, Pekka Enberg wrote:
->> On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta<ngupta@vflare.org>  wrote:
->>> @@ -303,38 +307,41 @@ static int zram_write(struct zram *zram, struct bio *bio)
->>>                                 zram_test_flag(zram, index, ZRAM_ZERO))
->>>                         zram_free_page(zram, index);
->>>
->>> -               mutex_lock(&zram->lock);
->>> +               preempt_disable();
->>> +               zbuffer = __get_cpu_var(compress_buffer);
->>> +               zworkmem = __get_cpu_var(compress_workmem);
->>> +               if (unlikely(!zbuffer || !zworkmem)) {
->>> +                       preempt_enable();
->>> +                       goto out;
->>> +               }
->> The per-CPU buffer thing with this preempt_disable() trickery looks
->> overkill to me. Most block device drivers seem to use mempool_alloc()
->> for this sort of thing. Is there some reason you can't use that here?
->>
-> Other block drivers are allocating relatively small structs using
-> mempool_alloc(). However, in case of zram, these buffers are quite
-> large (compress_workmem is 64K!). So, allocating them on every write
-> would probably be much slower than using a pre-allocated per-cpu buffer.
-The mempool API is precisely for that - using pre-allocated buffers 
-instead of allocating every time. The preempt_disable() games make the 
-code complex and have the downside of higher scheduling latencies so why 
-not give mempools a try?
+On Mon, Aug 09, 2010 at 03:22:31PM +0200, ext Grant Likely wrote:
+>It didn't get sent to the spi-devel-general list, so it didn't get
+>picked up by patchwork and wasn't there for me to pick up when I was
+>collecting stuff for .36.
 
-             Pekka
+that's subscribers only ? I couldn't bother subscribing to a list just 
+to send a small cleanup patch. Even though it didn't go to the list, 
+both maintainers are in Cc list and nobody even commented.
+
+Anyways, could you, somehow, get an account on majordomo ?
+
+-- 
+balbi
+
+DefectiveByDesign.org
