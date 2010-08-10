@@ -1,236 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab0HJWAk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:00:40 -0400
-Received: from kroah.org ([198.145.64.141]:44931 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757894Ab0HJWAT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:00:19 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 39/68] tty: introduce wait_event_interruptible_tty
-Date: Tue, 10 Aug 2010 14:59:01 -0700
-Message-Id: <1281477570-18944-39-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100810214425.GB17385@kroah.com>
-References: <20100810214425.GB17385@kroah.com>
+	id S933513Ab0HJWEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:04:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40988 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933490Ab0HJWEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:04:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=cwVF1C8PhyVQ7WWMqFlwdJlwZDmeGi749tKKxPvQ/Pd7lIdUWoPee2rsHm4JbK8lz3
+         /JY0JpLiOkAj7lwv5pEAnw4Fxpx4Xs5BAHEaCLk4bU4YU+Bw4HkQ/6q9LlzlE63Zb5QE
+         ajoh4h2nbniEoQwgKu9nWpwEdfWVSYs8jxAuY=
+MIME-Version: 1.0
+In-Reply-To: <4C5F9B25.8080401@st.com>
+References: <4C5F9B25.8080401@st.com>
+Date: Wed, 11 Aug 2010 01:04:08 +0300
+Message-ID: <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: viresh kumar <viresh.kumar@st.com>, git@vger.kernel.org
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+On Mon, Aug 9, 2010 at 9:07 AM, viresh kumar <viresh.kumar@st.com> wrote:
+> Mail server in ST has recently changed and now we have Microsoft
+> exchange server. We are using thunderbird as mail client.
+> What we observed with this server is that patch are broken now while
+> sending as well as receiving. Tabs are replaced by spaces and may
+> be some other too which we haven't observed.
+>
+> Has anybody found a solution to this kind of issues? Are there any
+> workarounds possible?
 
-Calling wait_event_interruptible implicitly
-releases the BKL when it sleeps, but we need
-to do this explcitly when we have converted
-it to a mutex.
+Same in Nokia. I wrote a script to fix exchange's crap, but I also
+noticed some quoted-printable mails didn't get converted, so the
+easiest would be to tell git to always send quoted-printable.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/char/cyclades.c  |    2 +-
- drivers/char/istallion.c |   12 ++++++++----
- drivers/char/n_r3964.c   |    2 +-
- drivers/char/tty_port.c  |    2 +-
- drivers/char/vt_ioctl.c  |    5 ++++-
- drivers/serial/crisv10.c |    4 ++--
- include/linux/tty.h      |   42 ++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 59 insertions(+), 10 deletions(-)
+git folks: any chance of getting that feature to git send-email?
 
-diff --git a/drivers/char/cyclades.c b/drivers/char/cyclades.c
-index 51acfe3..27aad94 100644
---- a/drivers/char/cyclades.c
-+++ b/drivers/char/cyclades.c
-@@ -1607,7 +1607,7 @@ static int cy_open(struct tty_struct *tty, struct file *filp)
- 	 * If the port is the middle of closing, bail out now
- 	 */
- 	if (tty_hung_up_p(filp) || (info->port.flags & ASYNC_CLOSING)) {
--		wait_event_interruptible(info->port.close_wait,
-+		wait_event_interruptible_tty(info->port.close_wait,
- 				!(info->port.flags & ASYNC_CLOSING));
- 		return (info->port.flags & ASYNC_HUP_NOTIFY) ? -EAGAIN: -ERESTARTSYS;
- 	}
-diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
-index 5e9a81d..be28391 100644
---- a/drivers/char/istallion.c
-+++ b/drivers/char/istallion.c
-@@ -954,7 +954,7 @@ static int stli_rawopen(struct stlibrd *brdp, struct stliport *portp, unsigned l
-  *	order of opens and closes may not be preserved across shared
-  *	memory, so we must wait until it is complete.
-  */
--	wait_event_interruptible(portp->raw_wait,
-+	wait_event_interruptible_tty(portp->raw_wait,
- 			!test_bit(ST_CLOSING, &portp->state));
- 	if (signal_pending(current)) {
- 		return -ERESTARTSYS;
-@@ -989,7 +989,7 @@ static int stli_rawopen(struct stlibrd *brdp, struct stliport *portp, unsigned l
- 	set_bit(ST_OPENING, &portp->state);
- 	spin_unlock_irqrestore(&brd_lock, flags);
- 
--	wait_event_interruptible(portp->raw_wait,
-+	wait_event_interruptible_tty(portp->raw_wait,
- 			!test_bit(ST_OPENING, &portp->state));
- 	if (signal_pending(current))
- 		rc = -ERESTARTSYS;
-@@ -1020,7 +1020,7 @@ static int stli_rawclose(struct stlibrd *brdp, struct stliport *portp, unsigned
-  *	occurs on this port.
-  */
- 	if (wait) {
--		wait_event_interruptible(portp->raw_wait,
-+		wait_event_interruptible_tty(portp->raw_wait,
- 				!test_bit(ST_CLOSING, &portp->state));
- 		if (signal_pending(current)) {
- 			return -ERESTARTSYS;
-@@ -1052,7 +1052,7 @@ static int stli_rawclose(struct stlibrd *brdp, struct stliport *portp, unsigned
-  *	to come back.
-  */
- 	rc = 0;
--	wait_event_interruptible(portp->raw_wait,
-+	wait_event_interruptible_tty(portp->raw_wait,
- 			!test_bit(ST_CLOSING, &portp->state));
- 	if (signal_pending(current))
- 		rc = -ERESTARTSYS;
-@@ -1073,6 +1073,10 @@ static int stli_rawclose(struct stlibrd *brdp, struct stliport *portp, unsigned
- 
- static int stli_cmdwait(struct stlibrd *brdp, struct stliport *portp, unsigned long cmd, void *arg, int size, int copyback)
- {
-+	/*
-+	 * no need for wait_event_tty because clearing ST_CMDING cannot block
-+	 * on BTM
-+	 */
- 	wait_event_interruptible(portp->raw_wait,
- 			!test_bit(ST_CMDING, &portp->state));
- 	if (signal_pending(current))
-diff --git a/drivers/char/n_r3964.c b/drivers/char/n_r3964.c
-index f4bd259..a98290d 100644
---- a/drivers/char/n_r3964.c
-+++ b/drivers/char/n_r3964.c
-@@ -1079,7 +1079,7 @@ static ssize_t r3964_read(struct tty_struct *tty, struct file *file,
- 				goto unlock;
- 			}
- 			/* block until there is a message: */
--			wait_event_interruptible(pInfo->read_wait,
-+			wait_event_interruptible_tty(pInfo->read_wait,
- 					(pMsg = remove_msg(pInfo, pClient)));
- 		}
- 
-diff --git a/drivers/char/tty_port.c b/drivers/char/tty_port.c
-index a3bd1d0..35eb304 100644
---- a/drivers/char/tty_port.c
-+++ b/drivers/char/tty_port.c
-@@ -231,7 +231,7 @@ int tty_port_block_til_ready(struct tty_port *port,
- 
- 	/* block if port is in the process of being closed */
- 	if (tty_hung_up_p(filp) || port->flags & ASYNC_CLOSING) {
--		wait_event_interruptible(port->close_wait,
-+		wait_event_interruptible_tty(port->close_wait,
- 				!(port->flags & ASYNC_CLOSING));
- 		if (port->flags & ASYNC_HUP_NOTIFY)
- 			return -EAGAIN;
-diff --git a/drivers/char/vt_ioctl.c b/drivers/char/vt_ioctl.c
-index cf87c53..2bbeaae 100644
---- a/drivers/char/vt_ioctl.c
-+++ b/drivers/char/vt_ioctl.c
-@@ -133,7 +133,7 @@ static void vt_event_wait(struct vt_event_wait *vw)
- 	list_add(&vw->list, &vt_events);
- 	spin_unlock_irqrestore(&vt_event_lock, flags);
- 	/* Wait for it to pass */
--	wait_event_interruptible(vt_event_waitqueue, vw->done);
-+	wait_event_interruptible_tty(vt_event_waitqueue, vw->done);
- 	/* Dequeue it */
- 	spin_lock_irqsave(&vt_event_lock, flags);
- 	list_del(&vw->list);
-@@ -1761,10 +1761,13 @@ int vt_move_to_console(unsigned int vt, int alloc)
- 		return -EIO;
- 	}
- 	release_console_sem();
-+	tty_lock();
- 	if (vt_waitactive(vt + 1)) {
- 		pr_debug("Suspend: Can't switch VCs.");
-+		tty_unlock();
- 		return -EINTR;
- 	}
-+	tty_unlock();
- 	return prev;
- }
- 
-diff --git a/drivers/serial/crisv10.c b/drivers/serial/crisv10.c
-index f848e18..94bfb9f 100644
---- a/drivers/serial/crisv10.c
-+++ b/drivers/serial/crisv10.c
-@@ -3992,7 +3992,7 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 */
- 	if (tty_hung_up_p(filp) ||
- 	    (info->flags & ASYNC_CLOSING)) {
--		wait_event_interruptible(info->close_wait,
-+		wait_event_interruptible_tty(info->close_wait,
- 			!(info->flags & ASYNC_CLOSING));
- #ifdef SERIAL_DO_RESTART
- 		if (info->flags & ASYNC_HUP_NOTIFY)
-@@ -4150,7 +4150,7 @@ rs_open(struct tty_struct *tty, struct file * filp)
- 	 */
- 	if (tty_hung_up_p(filp) ||
- 	    (info->flags & ASYNC_CLOSING)) {
--		wait_event_interruptible(info->close_wait,
-+		wait_event_interruptible_tty(info->close_wait,
- 			!(info->flags & ASYNC_CLOSING));
- #ifdef SERIAL_DO_RESTART
- 		return ((info->flags & ASYNC_HUP_NOTIFY) ?
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 6ead6b6..955d72e 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -607,5 +607,47 @@ static inline void tty_unlock(void) __releases(kernel_lock)
- }
- #define tty_locked()		(kernel_locked())
- 
-+/*
-+ * wait_event_interruptible_tty -- wait for a condition with the tty lock held
-+ *
-+ * The condition we are waiting for might take a long time to
-+ * become true, or might depend on another thread taking the
-+ * BTM. In either case, we need to drop the BTM to guarantee
-+ * forward progress. This is a leftover from the conversion
-+ * from the BKL and should eventually get removed as the BTM
-+ * falls out of use.
-+ *
-+ * Do not use in new code.
-+ */
-+#define wait_event_interruptible_tty(wq, condition)			\
-+({									\
-+	int __ret = 0;							\
-+	if (!(condition)) {						\
-+		__wait_event_interruptible_tty(wq, condition, __ret);	\
-+	}								\
-+	__ret;								\
-+})
-+
-+#define __wait_event_interruptible_tty(wq, condition, ret)		\
-+do {									\
-+	DEFINE_WAIT(__wait);						\
-+									\
-+	for (;;) {							\
-+		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		if (!signal_pending(current)) {				\
-+			tty_unlock();					\
-+			schedule();					\
-+			tty_lock();					\
-+			continue;					\
-+		}							\
-+		ret = -ERESTARTSYS;					\
-+		break;							\
-+	}								\
-+	finish_wait(&wq, &__wait);					\
-+} while (0)
-+
-+
- #endif /* __KERNEL__ */
- #endif
 -- 
-1.7.2
-
+Felipe Contreras
