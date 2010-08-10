@@ -1,52 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757705Ab0HJNqK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 09:46:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:61307 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757586Ab0HJNqG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 09:46:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-url:user-agent;
-        b=LA34XTuPGeweTW1qCXieFKmFYCVzTKHXwpoFMpQN0R8ejx8lEWW9DEDJv5GwZr7Urs
-         e/AUm08SDqGI4W866yrnzdInxIwFYzgCMTna+Ppdv35UIK/PjrqWyHu6hhiyyj4Gl3kx
-         FWT7lbOhDhBNSnG42ZcnAQdpG8j7AaYOcH3so=
-Date: Tue, 10 Aug 2010 10:46:00 -0300
-From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, David Miller <davem@davemloft.net>,
-        willy@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: perf build broke by list_head changes...
-Message-ID: <20100810134600.GF18824@ghostprotocols.net>
-References: <20100809.235746.115919762.davem@davemloft.net>
- <4C6147DE.9050608@tilera.com>
- <20100810124445.GA14843@merkur.ravnborg.org>
+	id S1757708Ab0HJNs0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 09:48:26 -0400
+Received: from dtp.xs4all.nl ([80.101.171.8]:13379 "HELO abra2.bitwizard.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754860Ab0HJNsU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 09:48:20 -0400
+Date: Tue, 10 Aug 2010 15:48:18 +0200
+From: Rogier Wolff <R.E.Wolff@BitWizard.nl>
+To: Alan <alan@clueserver.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Rogier Wolff <R.E.Wolff@BitWizard.nl>,
+        Jeff Garzik <jeff@garzik.org>, linux-kernel@vger.kernel.org
+Subject: Re: Question on siig sata 3 controller
+Message-ID: <20100810134817.GA25874@bitwizard.nl>
+References: <34979.10.6.6.23.1276144792.squirrel@10.6.6.2> <4C10A81F.50801@garzik.org> <54318.10.6.6.23.1276222123.squirrel@10.6.6.2> <20100615065714.GA9034@bitwizard.nl> <20100615110748.4303a106@lxorguk.ukuu.org.uk> <20100615145342.GC26989@bitwizard.nl> <20100615160137.62c92494@lxorguk.ukuu.org.uk> <1276622732.6843.2.camel@zowie.clueserver.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100810124445.GA14843@merkur.ravnborg.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1276622732.6843.2.camel@zowie.clueserver.org>
+Organization: BitWizard.nl
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 10, 2010 at 02:44:45PM +0200, Sam Ravnborg escreveu:
-> IMO the patch that moves list_head to types.h is fine.
-> And perf needs to learn good manner with respect to
-> kernel headers.
+On Tue, Jun 15, 2010 at 10:25:32AM -0700, Alan wrote:
+> On Tue, 2010-06-15 at 16:01 +0100, Alan Cox wrote: 
+> > > Is one of these modules the driver for this controller? I think it's
+> > > AHCI: lshw says it uses ports cc00 ... and a bunch of others, and
+> > > those ports are claimed by ahci according to /proc/ioports. Ah! I need
+> > > better eyes. lshw already mentions that it's ahci...
+> > 
+> > AHCI will be driving it.
+> 
+> I have seen this problem with the 2.6.33 kernel in Fedora 13. The
+> problem goes away in 2.6.35-rc3. (Though networking is fubared for me on
+> that kernel, so I have not migrated to it.)
+> 
+> My understanding is the "fix" in the driver was to blacklist ncq for
+> that controller. I have not verified that yet.
+ 
+One of my disks died again a while ago. So I went to the machine to
+replace the drive. But I forgot to write down which one had died. So I
+started it up again. Now I had 7 disks again like before, but a
+different drive was now "gone". So my RAID had only 6 out of 8 drives
+and was "gone". Together with some 4.7T worth of data on it.... 
 
-Idea is to try to have the perf tools, since they are hosted in the
-kernel and developed mostly by people with kernel background, to use
-code and practices used in the kernel proper.
+Next I went to the machine with a spare sata card. I removed the
+drives from the ASUS U3S6 card, and put them on the old pci sata card. 
 
-It started just keeping private copies, I guess it should get back to
-that since the reaction to this kind of same source repo code sharing
-was, well, not good :-)
+By the time I logged in on the machine, the RAID had found 8/8 drives
+and I think it had already started rebuilding..... 
 
-Alternatives?
+I now haven't had any problems with the drives in more than a week.
 
-- Arnaldo
+Performance of the raid has dropped from 600Mb to around 400Mb/sec,
+obviously because the PCI card cannot handle 200Mb/sec of disk IO. 
+
+I'm open to suggestions for cheap highperformance WORKING PCIe sata
+cards.... 
+
+	Roger. 
+
+-- 
+** R.E.Wolff@BitWizard.nl ** http://www.BitWizard.nl/ ** +31-15-2600998 **
+**    Delftechpark 26 2628 XH  Delft, The Netherlands. KVK: 27239233    **
+*-- BitWizard writes Linux device drivers for any device you may have! --*
+Q: It doesn't work. A: Look buddy, doesn't work is an ambiguous statement. 
+Does it sit on the couch all day? Is it unemployed? Please be specific! 
+Define 'it' and what it isn't doing. --------- Adapted from lxrbot FAQ
