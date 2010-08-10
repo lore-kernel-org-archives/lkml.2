@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab0HJWC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:02:28 -0400
-Received: from kroah.org ([198.145.64.141]:45075 "EHLO coco.kroah.org"
+	id S933509Ab0HJWA5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:00:57 -0400
+Received: from kroah.org ([198.145.64.141]:44995 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933446Ab0HJWA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:00:58 -0400
+	id S933446Ab0HJWAf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:35 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Feng Tang <feng.tang@intel.com>, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 64/68] hsu: call PCI pm hooks in suspend/resume function
-Date: Tue, 10 Aug 2010 14:59:26 -0700
-Message-Id: <1281477570-18944-64-git-send-email-gregkh@suse.de>
+Cc: Kulikov Vasiliy <segooon@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 49/68] tty_io: remove casts from void*
+Date: Tue, 10 Aug 2010 14:59:11 -0700
+Message-Id: <1281477570-18944-49-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -20,69 +19,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Feng Tang <feng.tang@intel.com>
+From: Kulikov Vasiliy <segooon@gmail.com>
 
-Also add check for dma controller or the uart ports.
+Remove unnesessary casts from void*.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/mfd.c |   31 ++++++++++++++++++++++---------
- 1 files changed, 22 insertions(+), 9 deletions(-)
+ drivers/char/tty_io.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/serial/mfd.c b/drivers/serial/mfd.c
-index f5e7569..bc9af50 100644
---- a/drivers/serial/mfd.c
-+++ b/drivers/serial/mfd.c
-@@ -1217,25 +1217,38 @@ static struct uart_driver serial_hsu_reg = {
- #ifdef CONFIG_PM
- static int serial_hsu_suspend(struct pci_dev *pdev, pm_message_t state)
- {
-+	void *priv = pci_get_drvdata(pdev);
- 	struct uart_hsu_port *up;
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 4c4030c..0350c42 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -893,7 +893,7 @@ static ssize_t tty_read(struct file *file, char __user *buf, size_t count,
+ 	struct inode *inode;
+ 	struct tty_ldisc *ld;
  
--	up = pci_get_drvdata(pdev);
--	if (!up)
--		return 0;
--
--	uart_suspend_port(&serial_hsu_reg, &up->port);
-+	/* Make sure this is not the internal dma controller */
-+	if (priv && (pdev->device != 0x081E)) {
-+		up = priv;
-+		uart_suspend_port(&serial_hsu_reg, &up->port);
-+	}
+-	tty = (struct tty_struct *)file->private_data;
++	tty = file->private_data;
+ 	inode = file->f_path.dentry->d_inode;
+ 	if (tty_paranoia_check(tty, inode, "tty_read"))
+ 		return -EIO;
+@@ -1070,7 +1070,7 @@ static ssize_t tty_write(struct file *file, const char __user *buf,
+ 	ssize_t ret;
+ 	struct tty_ldisc *ld;
  
-+	pci_save_state(pdev);
-+	pci_set_power_state(pdev, pci_choose_state(pdev, state));
-         return 0;
- }
+-	tty = (struct tty_struct *)file->private_data;
++	tty = file->private_data;
+ 	if (tty_paranoia_check(tty, inode, "tty_write"))
+ 		return -EIO;
+ 	if (!tty || !tty->ops->write ||
+@@ -1513,7 +1513,7 @@ int tty_release(struct inode *inode, struct file *filp)
+ 	int	idx;
+ 	char	buf[64];
  
- static int serial_hsu_resume(struct pci_dev *pdev)
- {
-+	void *priv = pci_get_drvdata(pdev);
- 	struct uart_hsu_port *up;
-+	int ret;
+-	tty = (struct tty_struct *)filp->private_data;
++	tty = filp->private_data;
+ 	if (tty_paranoia_check(tty, inode, "tty_release_dev"))
+ 		return 0;
  
--	up = pci_get_drvdata(pdev);
--	if (!up)
--		return 0;
--	uart_resume_port(&serial_hsu_reg, &up->port);
-+	pci_set_power_state(pdev, PCI_D0);
-+	pci_restore_state(pdev);
-+
-+	ret = pci_enable_device(pdev);
-+	if (ret)
-+		dev_warn(&pdev->dev,
-+			"HSU: can't re-enable device, try to continue\n");
-+
-+	if (priv && (pdev->device != 0x081E)) {
-+		up = priv;
-+		uart_resume_port(&serial_hsu_reg, &up->port);
-+	}
- 	return 0;
- }
- #else
+@@ -1920,7 +1920,7 @@ static unsigned int tty_poll(struct file *filp, poll_table *wait)
+ 	struct tty_ldisc *ld;
+ 	int ret = 0;
+ 
+-	tty = (struct tty_struct *)filp->private_data;
++	tty = filp->private_data;
+ 	if (tty_paranoia_check(tty, filp->f_path.dentry->d_inode, "tty_poll"))
+ 		return 0;
+ 
+@@ -1937,7 +1937,7 @@ static int __tty_fasync(int fd, struct file *filp, int on)
+ 	unsigned long flags;
+ 	int retval = 0;
+ 
+-	tty = (struct tty_struct *)filp->private_data;
++	tty = filp->private_data;
+ 	if (tty_paranoia_check(tty, filp->f_path.dentry->d_inode, "tty_fasync"))
+ 		goto out;
+ 
+@@ -2497,7 +2497,7 @@ long tty_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	struct tty_ldisc *ld;
+ 	struct inode *inode = file->f_dentry->d_inode;
+ 
+-	tty = (struct tty_struct *)file->private_data;
++	tty = file->private_data;
+ 	if (tty_paranoia_check(tty, inode, "tty_ioctl"))
+ 		return -EINVAL;
+ 
 -- 
 1.7.2
 
