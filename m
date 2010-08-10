@@ -1,129 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933519Ab0HJWA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:00:59 -0400
-Received: from kroah.org ([198.145.64.141]:44999 "EHLO coco.kroah.org"
+	id S933533Ab0HJWBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:01:04 -0400
+Received: from kroah.org ([198.145.64.141]:45030 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932695Ab0HJWAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:00:36 -0400
+	id S933463Ab0HJWAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:44 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
+Cc: Yury Georgievskiy <ygeorgie@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 50/68] vt: Fix warning: statement with no effect due to vt_kern.h
-Date: Tue, 10 Aug 2010 14:59:12 -0700
-Message-Id: <1281477570-18944-50-git-send-email-gregkh@suse.de>
+Subject: [PATCH 55/68] serial: mcf: don't take spinlocks in already protected functions
+Date: Tue, 10 Aug 2010 14:59:17 -0700
+Message-Id: <1281477570-18944-55-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Winchester <kjwinchester@gmail.com>
+From: Yury Georgievskiy <ygeorgie@gmail.com>
 
-Using:
+Don't take the port spinlock in uart functions where the serial core
+already takes care of locking/unlocking them.
 
-	gcc (GCC) 4.5.0 20100610 (prerelease)
+The code would actually lock up on architectures where spinlocks are
+implemented.
 
-with CONFIG_CONSOLE_TRANSLATIONS=n, the following warnings are seen:
+Also protect calling mcf_rx_chars/mcf_tx_chars in the interrupt handler by
+the port spinlock and use IRQ_RETVAL to return from isr.
 
-	drivers/char/vt_ioctl.c: In function ‘vt_ioctl’:
-	drivers/char/vt_ioctl.c:1309:4: warning: statement with no effect
-	drivers/char/vt.c: In function ‘vc_allocate’:
-	drivers/char/vt.c:774:3: warning: statement with no effect
-	drivers/video/console/vgacon.c: In function ‘vgacon_init’:
-	drivers/video/console/vgacon.c:587:3: warning: statement with no effect
-	drivers/video/console/vgacon.c: In function ‘vgacon_deinit’:
-	drivers/video/console/vgacon.c:606:2: warning: statement with no effect
-	drivers/video/console/fbcon.c: In function ‘fbcon_init’:
-	drivers/video/console/fbcon.c:1087:3: warning: statement with no effect
-	drivers/video/console/fbcon.c:1089:3: warning: statement with no effect
-	drivers/video/console/fbcon.c: In function ‘fbcon_set_disp’:
-	drivers/video/console/fbcon.c:1369:3: warning: statement with no effect
-	drivers/video/console/fbcon.c:1371:3: warning: statement with no effect
-
-This is because several functions in include/linux/vt_kern.h are
-defined to (0).  Convert them to static inline functions to
-silence the warnings and gain a bit of type safety.
-
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+[akpm@linux-foundation.org: make irq-handler return value more explicit]
+Signed-off-by: Yury Georgievskiy <ygeorgie@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Acked-by: Greg Ungerer <gerg@uclinux.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/vt_kern.h |   57 +++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 46 insertions(+), 11 deletions(-)
+ drivers/serial/mcf.c |   31 +++++++++++++------------------
+ 1 files changed, 13 insertions(+), 18 deletions(-)
 
-diff --git a/include/linux/vt_kern.h b/include/linux/vt_kern.h
-index 56cce34..6625cc1 100644
---- a/include/linux/vt_kern.h
-+++ b/include/linux/vt_kern.h
-@@ -76,17 +76,52 @@ int con_copy_unimap(struct vc_data *dst_vc, struct vc_data *src_vc);
- #define vc_translate(vc, c) ((vc)->vc_translate[(c) |			\
- 					((vc)->vc_toggle_meta ? 0x80 : 0)])
- #else
--#define con_set_trans_old(arg) (0)
--#define con_get_trans_old(arg) (-EINVAL)
--#define con_set_trans_new(arg) (0)
--#define con_get_trans_new(arg) (-EINVAL)
--#define con_clear_unimap(vc, ui) (0)
--#define con_set_unimap(vc, ct, list) (0)
--#define con_set_default_unimap(vc) (0)
--#define con_copy_unimap(d, s) (0)
--#define con_get_unimap(vc, ct, uct, list) (-EINVAL)
--#define con_free_unimap(vc) do { ; } while (0)
--#define con_protect_unimap(vc, rdonly) do { ; } while (0)
-+static inline int con_set_trans_old(unsigned char __user *table)
-+{
-+	return 0;
-+}
-+static inline int con_get_trans_old(unsigned char __user *table)
-+{
-+	return -EINVAL;
-+}
-+static inline int con_set_trans_new(unsigned short __user *table)
-+{
-+	return 0;
-+}
-+static inline int con_get_trans_new(unsigned short __user *table)
-+{
-+	return -EINVAL;
-+}
-+static inline int con_clear_unimap(struct vc_data *vc, struct unimapinit *ui)
-+{
-+	return 0;
-+}
-+static inline
-+int con_set_unimap(struct vc_data *vc, ushort ct, struct unipair __user *list)
-+{
-+	return 0;
-+}
-+static inline
-+int con_get_unimap(struct vc_data *vc, ushort ct, ushort __user *uct,
-+		   struct unipair __user *list)
-+{
-+	return -EINVAL;
-+}
-+static inline int con_set_default_unimap(struct vc_data *vc)
-+{
-+	return 0;
-+}
-+static inline void con_free_unimap(struct vc_data *vc)
-+{
-+}
-+static inline void con_protect_unimap(struct vc_data *vc, int rdonly)
-+{
-+}
-+static inline
-+int con_copy_unimap(struct vc_data *dst_vc, struct vc_data *src_vc)
-+{
-+	return 0;
-+}
+diff --git a/drivers/serial/mcf.c b/drivers/serial/mcf.c
+index b5aaef9..3394b7c 100644
+--- a/drivers/serial/mcf.c
++++ b/drivers/serial/mcf.c
+@@ -70,16 +70,14 @@ static unsigned int mcf_tx_empty(struct uart_port *port)
+ static unsigned int mcf_get_mctrl(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 	unsigned int sigs;
  
- #define vc_translate(vc, c) (c)
- #endif
+-	spin_lock_irqsave(&port->lock, flags);
+ 	sigs = (readb(port->membase + MCFUART_UIPR) & MCFUART_UIPR_CTS) ?
+ 		0 : TIOCM_CTS;
+ 	sigs |= (pp->sigs & TIOCM_RTS);
+ 	sigs |= (mcf_getppdcd(port->line) ? TIOCM_CD : 0);
+ 	sigs |= (mcf_getppdtr(port->line) ? TIOCM_DTR : 0);
+-	spin_unlock_irqrestore(&port->lock, flags);
++
+ 	return sigs;
+ }
+ 
+@@ -88,16 +86,13 @@ static unsigned int mcf_get_mctrl(struct uart_port *port)
+ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->sigs = sigs;
+ 	mcf_setppdtr(port->line, (sigs & TIOCM_DTR));
+ 	if (sigs & TIOCM_RTS)
+ 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP1);
+ 	else
+ 		writeb(MCFUART_UOP_RTS, port->membase + MCFUART_UOP0);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -105,12 +100,9 @@ static void mcf_set_mctrl(struct uart_port *port, unsigned int sigs)
+ static void mcf_start_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr |= MCFUART_UIR_TXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -118,12 +110,9 @@ static void mcf_start_tx(struct uart_port *port)
+ static void mcf_stop_tx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr &= ~MCFUART_UIR_TXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -131,12 +120,9 @@ static void mcf_stop_tx(struct uart_port *port)
+ static void mcf_stop_rx(struct uart_port *port)
+ {
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&port->lock, flags);
+ 	pp->imr &= ~MCFUART_UIR_RXREADY;
+ 	writeb(pp->imr, port->membase + MCFUART_UIMR);
+-	spin_unlock_irqrestore(&port->lock, flags);
+ }
+ 
+ /****************************************************************************/
+@@ -366,13 +352,22 @@ static irqreturn_t mcf_interrupt(int irq, void *data)
+ 	struct uart_port *port = data;
+ 	struct mcf_uart *pp = container_of(port, struct mcf_uart, port);
+ 	unsigned int isr;
++	irqreturn_t ret = IRQ_NONE;
+ 
+ 	isr = readb(port->membase + MCFUART_UISR) & pp->imr;
+-	if (isr & MCFUART_UIR_RXREADY)
++
++	spin_lock(&port->lock);
++	if (isr & MCFUART_UIR_RXREADY) {
+ 		mcf_rx_chars(pp);
+-	if (isr & MCFUART_UIR_TXREADY)
++		ret = IRQ_HANDLED;
++	}
++	if (isr & MCFUART_UIR_TXREADY) {
+ 		mcf_tx_chars(pp);
+-	return IRQ_HANDLED;
++		ret = IRQ_HANDLED;
++	}
++	spin_unlock(&port->lock);
++
++	return ret;
+ }
+ 
+ /****************************************************************************/
 -- 
 1.7.2
 
