@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015Ab0HJWSu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:18:50 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:65016 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932759Ab0HJWSs (ORCPT
+	id S933387Ab0HJWTI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:19:08 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:19662 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932759Ab0HJWTF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:18:48 -0400
-X-IronPort-AV: E=Sophos;i="4.55,350,1278280800"; 
-   d="scan'208";a="56946005"
-Message-ID: <4C61D044.2060703@inria.fr>
-Date: Wed, 11 Aug 2010 00:18:44 +0200
-From: Tomasz Buchert <Tomasz.Buchert@inria.fr>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Tue, 10 Aug 2010 18:19:05 -0400
+Message-ID: <4C61D055.4090909@panasas.com>
+Date: Tue, 10 Aug 2010 18:19:01 -0400
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Matt Helsley <matthltc@us.ibm.com>
-CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
-References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr> <20100810215741.GC2927@count0.beaverton.ibm.com>
-In-Reply-To: <20100810215741.GC2927@count0.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Jiri Kosina <jkosina@suse.cz>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: linux-next: manual merge of the trivial tree with the vfs tree
+References: <20100810121900.cbceb878.sfr@canb.auug.org.au>
+In-Reply-To: <20100810121900.cbceb878.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 10 Aug 2010 22:19:03.0495 (UTC) FILETIME=[0A2D2D70:01CB38DA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Helsley a écrit :
-> On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
->> Writing 'FROZEN' to freezer.state file does not
->> forbid the task to be moved away from its cgroup
->> (for a very short time). Nevertheless the moved task
->> can become frozen OUTSIDE its cgroup which puts
->> discussed task in a permanent 'D' state.
->>
->> This patch forbids migration of either FROZEN
->> or FREEZING tasks.
->>
->> This behavior was observed and easily reproduced on
->> a single core laptop. Program and instructions how
->> to reproduce the bug can be fetched from:
->> http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
+On 08/09/2010 10:19 PM, Stephen Rothwell wrote:
+> Hi Jiri,
 > 
-> Thanks for the report and the test code.
+> Today's linux-next merge of the trivial tree got a conflict in
+> fs/exofs/inode.c between commit 21883a7d05d4c1e97943fa1a587aa2c2a3b09e8c
+> ("exofs: New truncate sequence") from the vfs tree and commit
+> 426d31071ac476ea62c62656b242930c17b58c00 ("fix printk typo 'faild'") from
+> the trivial tree.
 > 
-> I'm will try to reproduce this race in the next few hours and analyze
-> it since I'm not sure the patch really fixes the race -- it may only
-> make the race trigger less frequently.
-> 
-> At the very least the patch won't break the current code since it's
-> essentially a more-strict version of is_task_frozen_enough() -- it lets
-> fewer tasks attach/detach to/from frozen cgroups.
-> 
-> Cheers,
-> 	-Matt Helsley
+> Just context changes.  I fixed it up (see below) and can carry it for a
+> while.
 
-Hi Matt!
-I am a novice if it comes to the kernel and I find the cgroup_freezer
-code especially complicated, so definetely this may be not enough to fix that.
-Notice also that if you uncomment the line 55 in my testcase this will also
-trigger the race! This, however, makes sense since process may not be in the cgroup anymore
-and consequently won't be thawed.
-I think that this patch fixes these problems because it does the flag checking in a right order:
-first freezing() is used and then frozen() which assures (see frozen_process()) that
-the race will not happen. Right? :)
+The "exofs: New truncate sequence" is now in the Kernel. So perhaps
+fix printk typo 'faild'" could be rebased.
 
-Tomasz
+Or you can send the patch to me and I'll push it. Which ever you
+prefer
+
+Thanks
+Boaz
 
