@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423Ab0HJQor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 12:44:47 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:52444
-	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932202Ab0HJQon (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 12:44:43 -0400
-X-SpamScore: 4
-X-BigFish: VPS4(z3cfcs329eqz1432N98dN936eMzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L6Y3OZ-01-848-02
-X-M-MSG: 
-Date: Tue, 10 Aug 2010 18:41:24 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+	id S932425Ab0HJQrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 12:47:16 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:58499 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932202Ab0HJQrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 12:47:12 -0400
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jean Delvare <khali@linux-fr.org>, Greg KH <greg@kroah.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        James Smart <james.smart@emulex.com>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100810164124.GK26154@erda.amd.com>
-References: <20100804162026.GU3353@redhat.com>
- <20100804163930.GE5130@lenovo>
- <20100804184806.GL26154@erda.amd.com>
- <20100804192634.GG5130@lenovo>
- <20100806065203.GR26154@erda.amd.com>
- <20100806142131.GA1874@redhat.com>
- <20100809194829.GB26154@erda.amd.com>
- <20100809200245.GF6056@lenovo>
- <20100810074200.GE26154@erda.amd.com>
- <20100810161627.GB6893@lenovo>
+        Chris Wright <chrisw@sous-sol.org>,
+        "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Nick Cheng <nick.cheng@areca.com.tw>, Dmitry Torokhov <dtor@mail.ru>,
+        Tejun Heo <tj@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        David Woodhouse <David.Woodhouse@intel.com>
+In-Reply-To: <20100811012001.6fb50655.sfr@canb.auug.org.au>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+	 <AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
+	 <20100802233128.GA21286@kroah.com>
+	 <20100810154337.006a0df9@hyperion.delvare>
+	 <20100811011733.16243ddb.sfr@canb.auug.org.au>
+	 <20100811012001.6fb50655.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 10 Aug 2010 09:43:17 -0700
+Message-ID: <1281458597.5745.255.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100810161627.GB6893@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.08.10 12:16:27, Cyrill Gorcunov wrote:
-> On Tue, Aug 10, 2010 at 09:42:00AM +0200, Robert Richter wrote:
-> > On 09.08.10 16:02:45, Cyrill Gorcunov wrote:
-> > 
-> > > > @@ -1222,14 +1245,12 @@ perf_event_nmi_handler(struct notifier_block *self,
-> > > >  	regs = args->regs;
-> > > >  
-> > > >  	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> > > 
-> > > If only I'm not missing something this apic_write should go up to
-> > > "case DIE_NMIUNKNOWN" site, no?
-> > 
-> > This seems to be code from the non-nmi implementation and can be
-> > removed at all, which should be a separate patch. The vector is
-> > already set up.
-> > 
-> > -Robert
-> >
+On Tue, 2010-08-10 at 11:20 -0400, Stephen Rothwell wrote:
+> Hi Jean,
 > 
-> No, this is just a short way to unmask LVTPC (which is required for
-> cpus). Actually lookig into this snippet I found that in p4 pmu
-> I've made one redundant unmaksing operation. will update as only
-> this area settle down.
+> On Wed, 11 Aug 2010 01:17:33 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > On Tue, 10 Aug 2010 15:43:37 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+> > >
+> > > Related bug?
+> > > 
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=16544
+> > 
+> > Yep, fixed in linux-next today - hopefully the fix is on its way to Linus.
+> 
+> Sorry, more info:
+> 
+> Fixed by commit 690e85a3957291f4cfe0cac22d97994ec7e5ee45 ("olpc_battery:
+> Fix build failure caused by sysfs changes") from the battery tree.
 
-The vector is setup in hw_perf_enable() and then never masked. The
-perfctrs nmi is alwayes enabled since then. I still see no reason for
-unmasking it again with every nmi. Once you handle the nmi it is also
-enabled.
+Excellent. Guess the patch I sent out earlier today to fix the problem
+wasn't needed then.
 
--Robert
+Guenter
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
