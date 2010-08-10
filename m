@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287Ab0HJPvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:51:55 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51827 "EHLO kernel.dk"
+	id S932290Ab0HJPyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:54:37 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:54830 "EHLO mx2.fusionio.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932154Ab0HJPvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:51:51 -0400
-Message-ID: <4C617596.505@kernel.dk>
-Date: Tue, 10 Aug 2010 11:51:50 -0400
-From: Jens Axboe <axboe@kernel.dk>
+	id S932154Ab0HJPyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:54:32 -0400
+X-ASG-Debug-ID: 1281455669-732e00200000-xx1T2L
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-bin/mark.cgi
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4C61763B.5050500@fusionio.com>
+Date: Tue, 10 Aug 2010 11:54:35 -0400
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 6 (block git tree)
-References: <20100806132758.6001d416.sfr@canb.auug.org.au>	<20100806120456.5eca82b7.randy.dunlap@oracle.com>	<4C5C5D18.6050905@oracle.com> <20100810083737.c761fc8f.randy.dunlap@oracle.com>
-In-Reply-To: <20100810083737.c761fc8f.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: "ngupta@vflare.org" <ngupta@vflare.org>
+CC: Pekka Enberg <penberg@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@driverdev.osuosl.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+X-ASG-Orig-Subj: Re: [PATCH 06/10] Block discard support
+Subject: Re: [PATCH 06/10] Block discard support
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	<1281374816-904-7-git-send-email-ngupta@vflare.org> <AANLkTimtdLb4Mk81fmCwksPR0GbTEaGZbo888OFefjXK@mail.gmail.com> <4C60B82B.5020905@fusionio.com> <4C60DBA1.5070507@vflare.org>
+In-Reply-To: <4C60DBA1.5070507@vflare.org>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1281455670
+X-Barracuda-Virus-Scanned: by Barracuda Spam & Virus Firewall at fusionio.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2010 11:37 AM, Randy Dunlap wrote:
-> On Fri, 06 Aug 2010 12:06:00 -0700 Randy Dunlap wrote:
-> 
->> On 08/06/10 12:04, Randy Dunlap wrote:
->>> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
->>>
->>>> Hi all,
+On 08/10/2010 12:54 AM, Nitin Gupta wrote:
+> On 08/10/2010 07:53 AM, Jens Axboe wrote:
+>> On 08/09/2010 03:03 PM, Pekka Enberg wrote:
+>>> On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
+>>>> The 'discard' bio discard request provides information to
+>>>> zram disks regarding blocks which are no longer in use by
+>>>> filesystem. This allows freeing memory allocated for such
+>>>> blocks.
 >>>>
->>>> As the merge window is open, please do not add 2.6.37 material to your
->>>> linux-next included trees until after 2.6.36-rc1.
+>>>> When zram devices are used as swap disks, we already have
+>>>> a callback (block_device_operations->swap_slot_free_notify).
+>>>> So, the discard support is useful only when used as generic
+>>>> (non-swap) disk.
 >>>>
->>>> Changes since 20100805:
->>>>
->>>> The block tree lost its build failure and a conflict.
+>>>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 >>>
->>>
->>> Lots of source files now need <linux/blk_types.h>:
->>>
->>> mm/filemap.c:2164: error: 'REQ_WRITE' undeclared
->>> fs/read_write.c:362: error: 'REQ_WRITE' undeclared
->>> fs/splice.c:1108: error: 'REQ_WRITE' undeclared
->>> fs/aio.c:1496: error: 'REQ_WRITE' undeclared
->>> drivers/memstick/core/memstick.c:272: error: 'REQ_WRITE' undeclared
->>> drivers/memstick/host/tifm_ms.c:218: error: 'REQ_WRITE' undeclared
->>> drivers/memstick/host/jmb38x_ms.c:333: error: 'REQ_WRITE' undeclared
->>> drivers/staging/spectra/ffsport.c:277: error: 'REQ_TYPE_LINUX_BLOCK' undeclared
->>> fs/compat.c:1274: error: 'REQ_WRITE' undeclared
+>>> Lets CC fsdevel and Jens for this.
 >>
+>> Looks OK from a quick look. One comment, though:
 >>
->> Sorry, I see that this has already been fixed.
+>>>> +static void zram_discard(struct zram *zram, struct bio *bio)
+>>>> +{
+>>>> +       size_t bytes = bio->bi_size;
+>>>> +       sector_t sector = bio->bi_sector;
+>>>> +
+>>>> +       while (bytes >= PAGE_SIZE) {
+>>>> +               zram_free_page(zram, sector >> SECTORS_PER_PAGE_SHIFT);
+>>>> +               sector += PAGE_SIZE >> SECTOR_SHIFT;
+>>>> +               bytes -= PAGE_SIZE;
+>>>> +       }
+>>>> +
+>>>> +       bio_endio(bio, 0);
+>>>> +}
+>>>> +
+>>
+>> So freeing the page here will guarantee zeroed return on read?
 > 
-> s/fixed/addressed/  but not yet merged into linux-next.
-> Can we get that fixed, please?
+> For reads on freed/unwritten sectors, it simply returns success and
+> does not touch the bio page. Is it better to zero the page in such
+> cases?
 
-Which patch are you referencing?
+Well, you told the kernel that you return zeroes on discarded ranges:
+
+        zram->disk->queue->limits.discard_zeroes_data = 1;
+
+So yes, if you intend to keep that, then you need to zero the
+incoming pages that have been explicitly trimmed by a discard.
 
 -- 
 Jens Axboe
 
+
+Confidentiality Notice: This e-mail message, its contents and any attachments to it are confidential to the intended recipient, and may contain information that is privileged and/or exempt from disclosure under applicable law. If you are not the intended recipient, please immediately notify the sender and destroy the original e-mail message and any attachments (and any copies that may have been made) from your system or otherwise. Any unauthorized use, copying, disclosure or distribution of this information is strictly prohibited.
