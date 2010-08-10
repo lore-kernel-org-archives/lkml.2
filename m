@@ -1,119 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803Ab0HJT7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 15:59:13 -0400
-Received: from edu-smtp-02.edutel.nl ([88.159.1.176]:41509 "EHLO
-	edu-smtp-02.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756130Ab0HJT7K (ORCPT
+	id S1757797Ab0HJUPL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:15:11 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:50274 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753013Ab0HJUPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 15:59:10 -0400
-X-Greylist: delayed 492 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Aug 2010 15:59:10 EDT
-Message-ID: <4C61AD7A.7040400@neli.hopto.org>
-Date: Tue, 10 Aug 2010 21:50:18 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+	Tue, 10 Aug 2010 16:15:09 -0400
+Message-Id: <201008102014.o7AKEwte077880@www262.sakura.ne.jp>
+Subject: Re: tomoyo-init (tomoyo-tools) results in kernel panic on kernel 2.6.35-git2/3
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: jkosina@suse.cz
+Cc: kawime@gmx.de, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Why is get_user_pages so slow?
-Content-Type: multipart/mixed;
- boundary="------------080303060705060501070609"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 11 Aug 2010 05:14:58 +0900
+References: <op.vg0yh9gtgp7xae@127.0.0.1> <201008070504.o7754Daw083381@www262.sakura.ne.jp> <alpine.LRH.2.00.1008101443340.2372@twin.jikos.cz>
+In-Reply-To: <alpine.LRH.2.00.1008101443340.2372@twin.jikos.cz>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 10082010 #3872342, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080303060705060501070609
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Jiri Kosina wrote:
+> Still, if a legacy userspace application is able to cause kernel panic,
+> that sounds like something we'd rather fix immediately.
 
-Hi all,
+I assume the panic message which Karsten encountered is either
 
-Why is get_user_pages much slower than taking the faults? (I would 
-expect it to be faster).
+  Profile version %u is not supported.
 
-Attached example program first mallocs a piece of memory (64MB in this 
-case) then reads it "to take the faults". Afterwards, it uses mmap with 
-MAP_POPULATE to "speed up" and not to have to take the faults, but have 
-everything mapped in one go. I think mmap is using get_user_pages in 
-this case.
+or
 
-$ ./memspeed
-malloc took 0 msecs
-read took 14 msecs
-write took 0 msecs
-free took 1 msecs
-mmap took 45 msecs
-munmap took 5 msecs
+  Profile %u (used by '%s') not defined.
 
-Using MAP_POPULATE is 3 times as slow as the 'stupid' implementation! 
-I'm running a Core 2 duo e6300 system with linux 2.6.28.4.
+which happens only if access control rules (a.k.a. policy) was not
+loaded when /sbin/init starts.
 
-Am I doing something wrong? MAP_POPULATE seems a bit of a joke to me.
+If what Karsten encountered is not the cases above,
+I agree that we need to fix immediately.
 
-Thanks,
-
-Micha
-
---------------080303060705060501070609
-Content-Type: text/x-csrc;
- name="memspeed.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="memspeed.c"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/time.h>
-
-#define SIZE (64 << 20)
-
-unsigned tv_msecs(struct timeval *tvs, struct timeval *tve)
-{
-        return (tve->tv_sec - tvs->tv_sec) * 1000 +
-                (tve->tv_usec - tvs->tv_usec) / 1000;
-}
-
-int main(void)
-{
-        struct timeval tvs, tve;
-        void *buf;
-        int *p, *e, i;
-
-        gettimeofday(&tvs, NULL);
-        buf = malloc(SIZE);
-        gettimeofday(&tve, NULL);
-        printf("malloc took %d msecs\n", tv_msecs(&tvs, &tve));
-
-        gettimeofday(&tvs, NULL);
-        for (p = buf, e = buf + SIZE; p < e; p += 0x1000)
-                i = *(volatile int*)p;
-        gettimeofday(&tve, NULL);
-        printf("read took %d msecs\n", tv_msecs(&tvs, &tve));
-
-        gettimeofday(&tvs, NULL);
-        for (p = buf, e = buf + SIZE; p < e; p += 0x1000)
-                *(volatile int*)p = 0xaa55aa55;
-        gettimeofday(&tve, NULL);
-        printf("write took %d msecs\n", tv_msecs(&tvs, &tve));
-
-        gettimeofday(&tvs, NULL);
-        free(buf);
-        gettimeofday(&tve, NULL);
-        printf("free took %d msecs\n", tv_msecs(&tvs, &tve));
-
-        gettimeofday(&tvs, NULL);
-        buf = mmap(NULL, SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE |
-                MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
-        gettimeofday(&tve, NULL);
-        printf("mmap took %d msecs\n", tv_msecs(&tvs, &tve));
-
-        gettimeofday(&tvs, NULL);
-        munmap(buf, SIZE);
-        gettimeofday(&tve, NULL);
-        printf("munmap took %d msecs\n", tv_msecs(&tvs, &tve));
-
-        return 0;
-}
-
---------------080303060705060501070609--
+Regards.
