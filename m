@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414Ab0HJWAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:00:18 -0400
-Received: from kroah.org ([198.145.64.141]:44854 "EHLO coco.kroah.org"
+	id S932864Ab0HJWHt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:07:49 -0400
+Received: from kroah.org ([198.145.64.141]:44927 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933354Ab0HJV76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:59:58 -0400
+	id S933411Ab0HJWAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:17 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 22/68] tty: Fix the digi acceleport driver NULL checks
-Date: Tue, 10 Aug 2010 14:58:44 -0700
-Message-Id: <1281477570-18944-22-git-send-email-gregkh@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 38/68] cdc-acm: remove dead code
+Date: Tue, 10 Aug 2010 14:59:00 -0700
+Message-Id: <1281477570-18944-38-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -19,58 +19,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-This now refcounts but doesn't actually check the reference was obtained in
-all the places it should.
+The wait_event_interruptible_timeout in acm_port_down is
+never reached. Remove it to avoid possible deadlocks
+with the big tty mutex if someone were to start using
+the blocking version of acm_port_down.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/usb/serial/digi_acceleport.c |   14 +++++++++-----
- 1 files changed, 9 insertions(+), 5 deletions(-)
+ drivers/usb/class/cdc-acm.c |   12 +++---------
+ 1 files changed, 3 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
-index fd35f73..b92070c 100644
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -609,8 +609,10 @@ static void digi_wakeup_write_lock(struct work_struct *work)
- static void digi_wakeup_write(struct usb_serial_port *port)
+diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
+index 89d260d..1833b3a 100644
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -636,19 +636,13 @@ static void acm_tty_unregister(struct acm *acm)
+ 
+ static int acm_tty_chars_in_buffer(struct tty_struct *tty);
+ 
+-static void acm_port_down(struct acm *acm, int drain)
++static void acm_port_down(struct acm *acm)
  {
- 	struct tty_struct *tty = tty_port_tty_get(&port->port);
--	tty_wakeup(tty);
--	tty_kref_put(tty);
-+	if (tty) {
-+		tty_wakeup(tty);
-+		tty_kref_put(tty);
-+	}
+ 	int i, nr = acm->rx_buflimit;
+ 	mutex_lock(&open_mutex);
+ 	if (acm->dev) {
+ 		usb_autopm_get_interface(acm->control);
+ 		acm_set_control(acm, acm->ctrlout = 0);
+-		/* try letting the last writes drain naturally */
+-		if (drain) {
+-			wait_event_interruptible_timeout(acm->drain_wait,
+-				(ACM_NW == acm_wb_is_avail(acm)) || !acm->dev,
+-					ACM_CLOSE_TIMEOUT * HZ);
+-		}
+ 		usb_kill_urb(acm->ctrlurb);
+ 		for (i = 0; i < ACM_NW; i++)
+ 			usb_kill_urb(acm->wb[i].urb);
+@@ -664,7 +658,7 @@ static void acm_tty_hangup(struct tty_struct *tty)
+ {
+ 	struct acm *acm = tty->driver_data;
+ 	tty_port_hangup(&acm->port);
+-	acm_port_down(acm, 0);
++	acm_port_down(acm);
  }
  
- 
-@@ -1682,7 +1684,7 @@ static int digi_read_inb_callback(struct urb *urb)
- 		priv->dp_throttle_restart = 1;
- 
- 	/* receive data */
--	if (opcode == DIGI_CMD_RECEIVE_DATA) {
-+	if (tty && opcode == DIGI_CMD_RECEIVE_DATA) {
- 		/* get flag from port_status */
- 		flag = 0;
- 
-@@ -1763,10 +1765,12 @@ static int digi_read_oob_callback(struct urb *urb)
- 			return -1;
- 
- 		tty = tty_port_tty_get(&port->port);
-+
- 		rts = 0;
--		rts = tty->termios->c_cflag & CRTSCTS;
-+		if (tty)
-+			rts = tty->termios->c_cflag & CRTSCTS;
- 		
--		if (opcode == DIGI_CMD_READ_INPUT_SIGNALS) {
-+		if (tty && opcode == DIGI_CMD_READ_INPUT_SIGNALS) {
- 			spin_lock(&priv->dp_port_lock);
- 			/* convert from digi flags to termiox flags */
- 			if (val & DIGI_READ_INPUT_SIGNALS_CTS) {
+ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+@@ -685,7 +679,7 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
+ 		mutex_unlock(&open_mutex);
+ 		return;
+ 	}
+-	acm_port_down(acm, 0);
++	acm_port_down(acm);
+ 	tty_port_close_end(&acm->port, tty);
+ 	tty_port_tty_set(&acm->port, NULL);
+ }
 -- 
 1.7.2
 
