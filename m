@@ -1,220 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757684Ab0HJNnP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 09:43:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:34734 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757612Ab0HJNnK convert rfc822-to-8bit (ORCPT
+	id S1757699Ab0HJNo0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 09:44:26 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:25907 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754923Ab0HJNoV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 09:43:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LPiIEOouGQNNxJLhStPpdN3oieZ+Z3jEK0qDU7QRab0YuvH2vvfMASBNG0q+OHY5HV
-         mdq65QVOLaggFqVgWQWXTSDzhsPk8DdWO5NL/aMw8m94CSBN/hrLFTxbx+OmUIUZx0JB
-         qaepgksiQAY9p+FNfCS/8Z9LA2YGGTTCWsbRA=
-MIME-Version: 1.0
-In-Reply-To: <1281445771.2063.599.camel@alex-desktop>
-References: <1281010151.2063.8.camel@alex-desktop>
-	<AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
-	<1281437552.2063.431.camel@alex-desktop>
-	<AANLkTi=UfzGay5XQKMpPCZTSO5SJ1jDknqwayhrEZJO0@mail.gmail.com>
-	<1281441808.2063.498.camel@alex-desktop>
-	<AANLkTinCzXCAfrQ46N-AQAUVS_N4kT=p58b6GZR1AL47@mail.gmail.com>
-	<1281445771.2063.599.camel@alex-desktop>
-Date: Tue, 10 Aug 2010 16:43:08 +0300
-Message-ID: <AANLkTik=to72=ObiFjOL7zZBnxqbbV2=rsdyLRVYy+_4@mail.gmail.com>
-Subject: Re: [PATCHv4] modpost: fixed resource leak in report_sec_mismatch()
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        ext Andrew Morton <akpm@linux-foundation.org>
+	Tue, 10 Aug 2010 09:44:21 -0400
+Date: Tue, 10 Aug 2010 15:43:37 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Greg KH <greg@kroah.com>
+Cc: Eric Biederman <ebiederm@aristanetworks.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, Dmitry Torokhov <dtor@mail.ru>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Nick Cheng <nick.cheng@areca.com.tw>,
+        James Smart <james.smart@emulex.com>,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+Message-ID: <20100810154337.006a0df9@hyperion.delvare>
+In-Reply-To: <20100802233128.GA21286@kroah.com>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+	<AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
+	<20100802233128.GA21286@kroah.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 4:09 PM, Alexey Fomenko
-<ext-alexey.fomenko@nokia.com> wrote:
-> From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
->
-> sec2annotation() returns malloc'ed buffer directly to printf as an
-> argument. Patch lets free this buffer after printing. Preventing ops
-> while freeing the buffer by changing return const str to return
-> strdup empty line.
-> Signed-off-by: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-> ---
->  scripts/mod/modpost.c |   62
-> ++++++++++++++++++++++++++++++++----------------
->  1 files changed, 43 insertions(+), 19 deletions(-)
->
-> diff -ur linux-2.6.35/scripts/mod/modpost.c
-> linux-2.6.35_b/scripts/mod/modpost.c
-> --- linux-2.6.35/scripts/mod/modpost.c	2010-08-10 12:11:03.854528620 +0300
-> +++ linux-2.6.35_b/scripts/mod/modpost.c	2010-08-10 14:45:00.294529178 +0300
-> @@ -1165,9 +1165,9 @@
->  			strcat(p, "data ");
->  		else
->  			strcat(p, " ");
-> -		return r; /* we leak her but we do not care */
-> +		return r;
->  	} else {
-> -		return "";
-> +		return strdup("");
->  	}
->  }
->
-> @@ -1195,6 +1195,8 @@
->  {
->  	const char *from, *from_p;
->  	const char *to, *to_p;
-> +	char *prl_from;
-> +	char *prl_to;
->
->
->  	switch (from_is_func) {
-> @@ -1219,16 +1221,21 @@
->
->  	switch (mismatch->mismatch) {
->  	case TEXT_TO_ANY_INIT:
-> +		prl_from = sec2annotation(fromsec);
-> +		prl_to = sec2annotation(tosec);
->  		fprintf(stderr,
->  		"The function %s%s() references\n"
->  		"the %s %s%s%s.\n"
->  		"This is often because %s lacks a %s\n"
->  		"annotation or the annotation of %s is wrong.\n",
-> -		sec2annotation(fromsec), fromsym,
-> -		to, sec2annotation(tosec), tosym, to_p,
-> -		fromsym, sec2annotation(tosec), tosym);
-> +		prl_from, fromsym,
-> +		to, prl_to, tosym, to_p,
-> +		fromsym, prl_to, tosym);
-> +		free(prl_from);
-> +		free(prl_to);
->  		break;
->  	case DATA_TO_ANY_INIT: {
-> +		prl_to = sec2annotation(tosec);
->  		const char *const *s = mismatch->symbol_white_list;
->  		fprintf(stderr,
->  		"The variable %s references\n"
-> @@ -1236,20 +1243,24 @@
->  		"If the reference is valid then annotate the\n"
->  		"variable with __init* or __refdata (see linux/init.h) "
->  		"or name the variable:\n",
-> -		fromsym, to, sec2annotation(tosec), tosym, to_p);
-> +		fromsym, to, prl_to, tosym, to_p);
->  		while (*s)
->  			fprintf(stderr, "%s, ", *s++);
->  		fprintf(stderr, "\n");
-> +		free(prl_to);
->  		break;
->  	}
->  	case TEXT_TO_ANY_EXIT:
-> +		prl_to = sec2annotation(tosec);
->  		fprintf(stderr,
->  		"The function %s() references a %s in an exit section.\n"
->  		"Often the %s %s%s has valid usage outside the exit section\n"
->  		"and the fix is to remove the %sannotation of %s.\n",
-> -		fromsym, to, to, tosym, to_p, sec2annotation(tosec), tosym);
-> +		fromsym, to, to, tosym, to_p, prl_to, tosym);
-> +		free(prl_to);
->  		break;
->  	case DATA_TO_ANY_EXIT: {
-> +		prl_to = sec2annotation(tosec);
->  		const char *const *s = mismatch->symbol_white_list;
->  		fprintf(stderr,
->  		"The variable %s references\n"
-> @@ -1257,24 +1268,31 @@
->  		"If the reference is valid then annotate the\n"
->  		"variable with __exit* (see linux/init.h) or "
->  		"name the variable:\n",
-> -		fromsym, to, sec2annotation(tosec), tosym, to_p);
-> +		fromsym, to, prl_to, tosym, to_p);
->  		while (*s)
->  			fprintf(stderr, "%s, ", *s++);
->  		fprintf(stderr, "\n");
-> +		free(prl_to);
->  		break;
->  	}
->  	case XXXINIT_TO_SOME_INIT:
->  	case XXXEXIT_TO_SOME_EXIT:
-> +		prl_from = sec2annotation(fromsec);
-> +		prl_to = sec2annotation(tosec);
->  		fprintf(stderr,
->  		"The %s %s%s%s references\n"
->  		"a %s %s%s%s.\n"
->  		"If %s is only used by %s then\n"
->  		"annotate %s with a matching annotation.\n",
-> -		from, sec2annotation(fromsec), fromsym, from_p,
-> -		to, sec2annotation(tosec), tosym, to_p,
-> +		from, prl_from, fromsym, from_p,
-> +		to, prl_to, tosym, to_p,
->  		tosym, fromsym, tosym);
-> +		free(prl_from);
-> +		free(prl_to);
->  		break;
->  	case ANY_INIT_TO_ANY_EXIT:
-> +		prl_from = sec2annotation(fromsec);
-> +		prl_to = sec2annotation(tosec);
->  		fprintf(stderr,
->  		"The %s %s%s%s references\n"
->  		"a %s %s%s%s.\n"
-> @@ -1283,11 +1301,15 @@
->  		"uses functionality in the exit path.\n"
->  		"The fix is often to remove the %sannotation of\n"
->  		"%s%s so it may be used outside an exit section.\n",
-> -		from, sec2annotation(fromsec), fromsym, from_p,
-> -		to, sec2annotation(tosec), tosym, to_p,
-> -		sec2annotation(tosec), tosym, to_p);
-> +		from, prl_from, fromsym, from_p,
-> +		to, prl_to, tosym, to_p,
-> +		prl_to, tosym, to_p);
-> +		free(prl_from);
-> +		free(prl_to);
->  		break;
->  	case ANY_EXIT_TO_ANY_INIT:
-> +		prl_from = sec2annotation(fromsec);
-> +		prl_to = sec2annotation(tosec);
->  		fprintf(stderr,
->  		"The %s %s%s%s references\n"
->  		"a %s %s%s%s.\n"
-> @@ -1296,16 +1318,20 @@
->  		"uses functionality in the init path.\n"
->  		"The fix is often to remove the %sannotation of\n"
->  		"%s%s so it may be used outside an init section.\n",
-> -		from, sec2annotation(fromsec), fromsym, from_p,
-> -		to, sec2annotation(tosec), tosym, to_p,
-> -		sec2annotation(tosec), tosym, to_p);
-> +		from, prl_from, fromsym, from_p,
-> +		to, prl_to, tosym, to_p,
-> +		prl_to, tosym, to_p);
-> +		free(prl_from);
-> +		free(prl_to);
->  		break;
->  	case EXPORT_TO_INIT_EXIT:
-> +		prl_to = sec2annotation(tosec);
->  		fprintf(stderr,
->  		"The symbol %s is exported and annotated %s\n"
->  		"Fix this by removing the %sannotation of %s "
->  		"or drop the export.\n",
-> -		tosym, sec2annotation(tosec), sec2annotation(tosec), tosym);
-> +		tosym, prl_to, prl_to, tosym);
-> +		free(prl_to);
->  		break;
->  	}
->  	fprintf(stderr, "\n");
->
->
+On Mon, 2 Aug 2010 16:31:28 -0700, Greg KH wrote:
+> On Wed, Jul 28, 2010 at 11:16:35PM -0700, Eric Biederman wrote:
+> > On Wed, Jul 28, 2010 at 10:09 PM, Guenter Roeck
+> > <guenter.roeck@ericsson.com> wrote:
+> > > The following comment is found in include/linux/sysfs.h:
+> > >
+> > >   /* FIXME
+> > >    * The *owner field is no longer used.
+> > >    * x86 tree has been cleaned up. The owner
+> > >    * attribute is still left for other arches.
+> > >    */
+> > >
+> > > As it turns out, the *owner field is (again?) initialized in several modules,
+> > > suggesting that such initialization may be creeping back into the code.
+> > >
+> > > This patch set removes the above comment, the *owner field, and each instance
+> > > in the code where it was found to be initialized.
+> > >
+> > > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
+> > > and sparc defconfig builds.
+> > 
+> > This seems reasonable to me.  Can we get this in linux-next?
+> 
+> It will show up in linux-next tomorrow.
 
-Now seems fine to me.
+Related bug?
 
-Reviewed-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-
+https://bugzilla.kernel.org/show_bug.cgi?id=16544
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Jean Delvare
