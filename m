@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab0HJM01 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:26:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52552 "EHLO mx1.suse.de"
+	id S1757593Ab0HJM3B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:29:01 -0400
+Received: from peer.zerties.org ([188.40.33.175]:58172 "EHLO peer.zerties.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753589Ab0HJM0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:26:21 -0400
-Date: Tue, 10 Aug 2010 14:26:19 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Joe Perches <joe@perches.com>
-Cc: Greg KH <gregkh@suse.de>, linux-usb <linux-usb@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH trivial] drivers/usb: Remove unnecessary return;s from
- void functions
-In-Reply-To: <cf728d0aede04dbccdc924d240a053318e06b11a.1280943205.git.joe@perches.com>
-Message-ID: <alpine.LNX.2.00.1008101425500.2702@pobox.suse.cz>
-References: <cf728d0aede04dbccdc924d240a053318e06b11a.1280943205.git.joe@perches.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753589Ab0HJM25 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 08:28:57 -0400
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: "David S. Miller" <davem@davemloft.net>,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: "vamos-dev\@i4.informatik.uni-erlangen.de" 
+	<vamos-dev@i4.informatik.uni-erlangen.de>
+Subject: Dead Config Option STMMAC_ETH?
+Date: Tue, 10 Aug 2010 14:28:47 +0200
+Message-ID: <86r5i6vegw.fsf@peer.zerties.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 4 Aug 2010, Joe Perches wrote:
+Hi all!
+       
+        As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-> Greg prefers this to go through the trivial tree.
-> http://lkml.org/lkml/2010/6/24/1
->
-> 
-> There are about 2500 void functions in drivers/usb
-> Only a few used return; at end of function.
-> 
-> Standardize them a bit.
-> 
-> Moved a statement down a line in drivers/usb/host/u132-hcd.c
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+        I've been running a check on the drivers/net/stmmac sourcetree for
+config Items not defined in Kconfig and found such a case. Sourcecode
+blocks depending on these Items are not reachable from a vanilla
+kernel -- dead code. I've seen such dead blocks made on purpose
+e.g. while integrating new features into the kernel but generally
+they're just useless.
 
-As Greg didn't have any objections, and the patch makes sense, I have 
-applied it to my tree now, thanks.
+As far as i can see in drivers/net/stmmac/Kconfig STMMAC_ETH and several
+depending flags are dead in the linux vanilla kernel, because it depends
+on CPU_SUBTYPE_ST40, but there isn't a Kconfig option for that. But
+f96691872439ab2071171d4531c4a95b5d493ae5 suggests, that support for this
+ST40 plattform was removed in 2007.
 
+There seems to be, that there was much effort on the stmmac drivers in
+the last few months, so i just wanted to ask if this problem is known.
+
+Regards
+
+        Christian Dietrich
+
+[0] http://vamos1.informatik.uni-erlangen.de
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+(λ x . x x) (λ x . x x) -- See how beatiful the lambda is
+No documentation is better than bad documentation
+-- Das Ausdrucken dieser Mail wird urheberrechtlich verfolgt.
