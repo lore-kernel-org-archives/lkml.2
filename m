@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab0HJWLq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:11:46 -0400
-Received: from kroah.org ([198.145.64.141]:44825 "EHLO coco.kroah.org"
+	id S933310Ab0HJV7p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:59:45 -0400
+Received: from kroah.org ([198.145.64.141]:44796 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933318Ab0HJV7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:59:48 -0400
+	id S933232Ab0HJV7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 17:59:39 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+Cc: Arjan van de Ven <arjan@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 14/68] istallion: use bit ops for the board flags
-Date: Tue, 10 Aug 2010 14:58:36 -0700
-Message-Id: <1281477570-18944-14-git-send-email-gregkh@suse.de>
+Subject: [PATCH 07/68] serial: replace open coded mutex with a real mutex in mrst_max3110.c
+Date: Tue, 10 Aug 2010 14:58:29 -0700
+Message-Id: <1281477570-18944-7-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -20,178 +20,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Arjan van de Ven <arjan@linux.intel.com>
 
-This lets us avoid problems with races on the flag changes
+The mrst_max3110.c driver uses an open coded, non atomic variable
+to create exclusion between two of its worker threads. More than that,
+while the main thread does a proper set-work-clear sequence,
+the other thread only does a test, with the result that no actual
+exclusion is happening.
 
+this patch replaces this open coded variable with a proper mutex
+
+in addition, the 'lock' spinlock is removed from the per adapter structure,
+the lock was only ever initialized but never used
+
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
 Signed-off-by: Alan Cox <alan@linux.intel.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/istallion.c  |   36 ++++++++++++++++++------------------
- include/linux/istallion.h |    2 +-
- 2 files changed, 19 insertions(+), 19 deletions(-)
+ drivers/serial/mrst_max3110.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
-index 750650c..5e9a81d 100644
---- a/drivers/char/istallion.c
-+++ b/drivers/char/istallion.c
-@@ -14,7 +14,6 @@
-  *	the Free Software Foundation; either version 2 of the License, or
-  *	(at your option) any later version.
-  *
-- *	FIXME: brdp->state needs proper locking.
-  */
+diff --git a/drivers/serial/mrst_max3110.c b/drivers/serial/mrst_max3110.c
+index f9c01ae..0341853 100644
+--- a/drivers/serial/mrst_max3110.c
++++ b/drivers/serial/mrst_max3110.c
+@@ -56,8 +56,7 @@ struct uart_max3110 {
+ 	wait_queue_head_t wq;
+ 	struct task_struct *main_thread;
+ 	struct task_struct *read_thread;
+-	int mthread_up;
+-	spinlock_t lock;
++	struct mutex thread_mutex;;
  
- /*****************************************************************************/
-@@ -204,9 +203,9 @@ static int		stli_shared;
-  *	the board has been detected, and whether it is actually running a slave
-  *	or not.
-  */
--#define	BST_FOUND	0x1
--#define	BST_STARTED	0x2
--#define	BST_PROBED	0x4
-+#define	BST_FOUND	0
-+#define	BST_STARTED	1
-+#define	BST_PROBED	2
+ 	u32 baud;
+ 	u16 cur_conf;
+@@ -397,7 +396,8 @@ static int max3110_main_thread(void *_max)
+ 					       atomic_read(&max->con_tx_need) ||
+ 					     atomic_read(&max->uart_tx_need)) ||
+ 					     kthread_should_stop());
+-		max->mthread_up = 1;
++
++		mutex_lock(&max->thread_mutex);
  
- /*
-  *	Define the set of port state flags. These are marked for internal
-@@ -817,7 +816,7 @@ static int stli_open(struct tty_struct *tty, struct file *filp)
- 	brdp = stli_brds[brdnr];
- 	if (brdp == NULL)
- 		return -ENODEV;
--	if ((brdp->state & BST_STARTED) == 0)
-+	if (!test_bit(BST_STARTED, &brdp->state))
- 		return -ENODEV;
- 	portnr = MINOR2PORT(minordev);
- 	if (portnr > brdp->nrports)
-@@ -1847,7 +1846,7 @@ static void stli_portinfo(struct seq_file *m, struct stlibrd *brdp, struct stlip
- 	rc = stli_portcmdstats(NULL, portp);
+ #ifdef CONFIG_MRST_MAX3110_IRQ
+ 		if (atomic_read(&max->irq_pending)) {
+@@ -417,7 +417,7 @@ static int max3110_main_thread(void *_max)
+ 			transmit_char(max);
+ 			atomic_set(&max->uart_tx_need, 0);
+ 		}
+-		max->mthread_up = 0;
++		mutex_unlock(&max->thread_mutex);
+ 	} while (!kthread_should_stop());
  
- 	uart = "UNKNOWN";
--	if (brdp->state & BST_STARTED) {
-+	if (test_bit(BST_STARTED, &brdp->state)) {
- 		switch (stli_comstats.hwid) {
- 		case 0:	uart = "2681"; break;
- 		case 1:	uart = "SC26198"; break;
-@@ -1856,7 +1855,7 @@ static void stli_portinfo(struct seq_file *m, struct stlibrd *brdp, struct stlip
- 	}
- 	seq_printf(m, "%d: uart:%s ", portnr, uart);
+ 	return ret;
+@@ -444,8 +444,9 @@ static int max3110_read_thread(void *_max)
  
--	if ((brdp->state & BST_STARTED) && (rc >= 0)) {
-+	if (test_bit(BST_STARTED, &brdp->state) && rc >= 0) {
- 		char sep;
+ 	pr_info(PR_FMT "start read thread\n");
+ 	do {
+-		if (!max->mthread_up)
+-			max3110_console_receive(max);
++		mutex_lock(&max->thread_mutex);
++		max3110_console_receive(max);
++		mutex_unlock(&max->thread_mutex);
  
- 		seq_printf(m, "tx:%d rx:%d", (int) stli_comstats.txtotal,
-@@ -2356,7 +2355,7 @@ static void stli_poll(unsigned long arg)
- 		brdp = stli_brds[brdnr];
- 		if (brdp == NULL)
- 			continue;
--		if ((brdp->state & BST_STARTED) == 0)
-+		if (!test_bit(BST_STARTED, &brdp->state))
- 			continue;
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		schedule_timeout(HZ / 20);
+@@ -745,7 +746,7 @@ static int serial_m3110_probe(struct spi_device *spi)
+ 	max->name = spi->modalias;	/* use spi name as the name */
+ 	max->irq = (u16)spi->irq;
  
- 		spin_lock(&brd_lock);
-@@ -3141,7 +3140,7 @@ static int stli_initecp(struct stlibrd *brdp)
- 	}
+-	spin_lock_init(&max->lock);
++	mutex_init(&max->thread_mutex);
  
- 
--	brdp->state |= BST_FOUND;
-+	set_bit(BST_FOUND, &brdp->state);
- 	return 0;
- err_unmap:
- 	iounmap(brdp->membase);
-@@ -3298,7 +3297,7 @@ static int stli_initonb(struct stlibrd *brdp)
- 	brdp->panels[0] = brdp->nrports;
- 
- 
--	brdp->state |= BST_FOUND;
-+	set_bit(BST_FOUND, &brdp->state);
- 	return 0;
- err_unmap:
- 	iounmap(brdp->membase);
-@@ -3408,7 +3407,7 @@ stli_donestartup:
- 	spin_unlock_irqrestore(&brd_lock, flags);
- 
- 	if (rc == 0)
--		brdp->state |= BST_STARTED;
-+		set_bit(BST_STARTED, &brdp->state);
- 
- 	if (! stli_timeron) {
- 		stli_timeron++;
-@@ -3711,7 +3710,7 @@ static int __devinit stli_pciprobe(struct pci_dev *pdev,
- 	if (retval)
- 		goto err_null;
- 
--	brdp->state |= BST_PROBED;
-+	set_bit(BST_PROBED, &brdp->state);
- 	pci_set_drvdata(pdev, brdp);
- 
- 	EBRDENABLE(brdp);
-@@ -3842,7 +3841,7 @@ static int __init stli_initbrds(void)
- 			brdp = stli_brds[i];
- 			if (brdp == NULL)
- 				continue;
--			if (brdp->state & BST_FOUND) {
-+			if (test_bit(BST_FOUND, &brdp->state)) {
- 				EBRDENABLE(brdp);
- 				brdp->enable = NULL;
- 				brdp->disable = NULL;
-@@ -4079,7 +4078,7 @@ static int stli_portcmdstats(struct tty_struct *tty, struct stliport *portp)
- 		return -ENODEV;
- 
- 	mutex_lock(&portp->port.mutex);
--	if (brdp->state & BST_STARTED) {
-+	if (test_bit(BST_STARTED, &brdp->state)) {
- 		if ((rc = stli_cmdwait(brdp, portp, A_GETSTATS,
- 		    &stli_cdkstats, sizeof(asystats_t), 1)) < 0) {
- 			mutex_unlock(&portp->port.mutex);
-@@ -4194,7 +4193,7 @@ static int stli_clrportstats(struct stliport *portp, comstats_t __user *cp)
- 
- 	mutex_lock(&portp->port.mutex);
- 
--	if (brdp->state & BST_STARTED) {
-+	if (test_bit(BST_STARTED, &brdp->state)) {
- 		if ((rc = stli_cmdwait(brdp, portp, A_CLEARSTATS, NULL, 0, 0)) < 0) {
- 			mutex_unlock(&portp->port.mutex);
- 			return rc;
-@@ -4323,10 +4322,10 @@ static long stli_memioctl(struct file *fp, unsigned int cmd, unsigned long arg)
- 		rc = stli_startbrd(brdp);
- 		break;
- 	case STL_BSTOP:
--		brdp->state &= ~BST_STARTED;
-+		clear_bit(BST_STARTED, &brdp->state);
- 		break;
- 	case STL_BRESET:
--		brdp->state &= ~BST_STARTED;
-+		clear_bit(BST_STARTED, &brdp->state);
- 		EBRDRESET(brdp);
- 		if (stli_shared == 0) {
- 			if (brdp->reenable != NULL)
-@@ -4382,7 +4381,8 @@ static void istallion_cleanup_isa(void)
- 	unsigned int j;
- 
- 	for (j = 0; (j < stli_nrbrds); j++) {
--		if ((brdp = stli_brds[j]) == NULL || (brdp->state & BST_PROBED))
-+		if ((brdp = stli_brds[j]) == NULL ||
-+				test_bit(BST_PROBED, &brdp->state))
- 			continue;
- 
- 		stli_cleanup_ports(brdp);
-diff --git a/include/linux/istallion.h b/include/linux/istallion.h
-index 7faca98..ad700a6 100644
---- a/include/linux/istallion.h
-+++ b/include/linux/istallion.h
-@@ -86,7 +86,7 @@ struct stlibrd {
- 	unsigned long	magic;
- 	unsigned int	brdnr;
- 	unsigned int	brdtype;
--	unsigned int	state;
-+	unsigned long	state;
- 	unsigned int	nrpanels;
- 	unsigned int	nrports;
- 	unsigned int	nrdevs;
+ 	max->word_7bits = 0;
+ 	max->parity = 0;
 -- 
 1.7.2
 
