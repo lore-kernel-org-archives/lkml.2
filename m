@@ -1,150 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab0HJVGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:06:39 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:62725 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757811Ab0HJVGf convert rfc822-to-8bit (ORCPT
+	id S932377Ab0HJVJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:09:45 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56024 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932169Ab0HJVJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:06:35 -0400
+	Tue, 10 Aug 2010 17:09:42 -0400
+Date: Tue, 10 Aug 2010 23:09:41 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: linux-kernel@vger.kernel.org
+Subject: [BUG] USB no longer works for APCUPS
+Message-ID: <20100810210941.GA7938@fritha.org>
 MIME-Version: 1.0
-In-Reply-To: <4C4137D9.80003@xyzw.org>
-References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de>
-	<201007152030.18431.johannes.hirte@fem.tu-ilmenau.de>
-	<20100715190309.GI8623@think>
-	<201007152132.13701.johannes.hirte@fem.tu-ilmenau.de>
-	<20100715193551.GM8623@think>
-	<4C4137D9.80003@xyzw.org>
-Date: Tue, 10 Aug 2010 23:06:34 +0200
-Message-ID: <AANLkTinNXRGC8whX5zkbjii+qDdihON8CW4j-=jVEofs@mail.gmail.com>
-Subject: Re: csum errors
-From: "Sebastian 'gonX' Jensen" <gonx@overclocked.net>
-To: Brian Rogers <brian@xyzw.org>
-Cc: Chris Mason <chris.mason@oracle.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100810 (GNU/Linux)
+X-Provags-ID: V02:K0:Hk34cvZaiNijxV/DZa0d8uM4GcUZCrXDD5IIk0J4Tbr
+ +OXRl+mdiN2IWMkuOPrSmX3qCNThQ8YRO53bYz1az87bPA5+jD
+ 4+DVUARI71htHt7yLbBQ8i0Pv3dloTgT0sojIWnKFB84oEx/jz
+ 4XgIzkptv4+4SrDtDeqLVLlRdpLg7yhbMBuCJDtDM8PEpgKZ97
+ IaU5xQgpPLiBraCIrasTA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 July 2010 06:55, Brian Rogers <brian@xyzw.org> wrote:
-> On 07/15/2010 12:35 PM, Chris Mason wrote:
->>
->> On Thu, Jul 15, 2010 at 09:32:12PM +0200, Johannes Hirte wrote:
->>
->>>
->>> Am Donnerstag 15 Juli 2010, 21:03:09 schrieb Chris Mason:
->>>
->>>>
->>>> On Thu, Jul 15, 2010 at 08:30:17PM +0200, Johannes Hirte wrote:
->>>>
->>>>>
->>>>> Am Dienstag 13 Juli 2010, 14:23:58 schrieb Johannes Hirte:
->>>>>
->>>>>>
->>>>>> ino 1959333 off 898342912 csum 4271223884 private 4271223883
->>
->> Great.   The bad csums are all just one bit off, that can't be an
->> accident.  When were they written (which kernel?).  Did you boot a 32
->> bit kernel on there at any time?
->>
->
-> I've seen this as well, with three files. In all instances, csum == *private
-> + 1. Here are the unique lines from dmesg:
->
-> [32700.980806] btrfs csum failed ino 320113 off 55889920 csum 2415136266
-> private 2415136265
-> [32735.751112] btrfs csum failed ino 1731630 off 24776704 csum 1385284137
-> private 1385284136
-> [32738.777624] btrfs csum failed ino 2495707 off 171790336 csum 1385781806
-> private 1385781805
->
-> All three files are from when I first transitioned to btrfs (or more
-> accurately, they are clones of those files I made to hold onto a copy of the
-> corrupted version). Since the vast majority of my disk usage comes from the
-> transition anyway, I can't be sure this is due to a problem only present at
-> that time. I believe I was running 2.6.34 when I copied my files over to my
-> new btrfs partition, but I'm going from memory here.
->
-> My btrfs partition has never been touched by a 32-bit kernel.
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Hi,
 
-I am also getting this now:
+I'm getting this in my logs with the latest -git7/8/9 kernels. Thw apcups
+is not defective, it works flawlessly with 2.6.34.X.
 
-btrfs csum failed ino 288 off 799268864 csum 4054934499 private 4054934498
-btrfs csum failed ino 288 off 799268864 csum 4054934499 private 4054934498
-btrfs csum failed ino 288 off 799268864 csum 4054934499 private 4054934498
-btrfs csum failed ino 288 off 799268864 csum 4054934499 private 4054934498
+Aug 10 23:01:44 liesel apcupsd[7687]: apcupsd FATAL ERROR in linux-usb.c
+at line 609 Cannot find UPS device -- For a link to detailed USB trouble
+shooting information, please see <http://www.apcupsd.com/support.html>.
+Aug 10 23:01:44 liesel apcupsd[7687]: apcupsd error shutdown completed
+Aug 10 23:04:40 liesel kernel: ------------[ cut here ]------------
 
-A bit unrelated, but I was doing this while doing a rebalance across
-my drives. RAID-0. I think it's a different issue though, but I'll go
-ahead and post my dmesg output anyway:
+Aug 10 23:04:40 liesel kernel: WARNING: at lib/kobject.c:595 kobject_put+0x2f/0x50()
+Aug 10 23:04:40 liesel kernel: Hardware name: GA-MA770-UD3 Aug 10 23:04:40 liesel kernel: kobject: '(null)' (ffff88022c651898): is
+not initialized, yet kobject_put() is being called. Aug 10 23:04:40 liesel kernel: Modules linked in: xt_pkttype ipt_LOG
+xt_limit aes_x86_64 aes_generic af_packet it87 hwmon_vid binfmt_misc snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device cpufreq_conservative
+cpufreq_ondemand cpufreq_userspace cpufreq_powersave powernow_k8 freq_table mperf xt_NOTRACK xt_state iptable_raw nf_conntrack_netbios_ns
+nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip6_tables ipt_REJECT iptable_filter ip_tables tcp_vegas uhci_hcd rt73usb rt2x00usb rt2x00lib
+r8169 led_class mii mac80211 snd_hda_codec_realtek ppdev parport_pc cfg80211 parport snd_hda_intel snd_hda_codec snd_pcm snd_timer snd
+soundcore sr_mod k10temp hwmon i2c_piix4 pcspkr cdrom button rfkill joydev snd_page_alloc i2c_core sg xts usbhid sd_mod ohci_hcd ehci_hcd rtc_cmos
+rtc_core pata_atiixp rtc_lib usbcore ahci libahci hmac dm_snapshot dm_crypt dm_mod gf128mul sha512_generic sha256_generic twofish_x86_64
+twofish_common serpent cbc tgr192 loop ecb arc4 fuse edd ide_pci_generic amd74xx ide_core fan pata_amd sata_nv libata scsi
+Aug 10 23:04:40 liesel kernel: Pid: 1115, comm: khubd Not tainted 2.6.35-git9 #1
+Aug 10 23:04:40 liesel kernel: Call Trace:
+Aug 10 23:04:40 liesel kernel:  [<ffffffff812a620f>] ? kobject_put+0x2f/0x50
+Aug 10 23:04:40 liesel kernel:  [<ffffffff812a620f>] ? kobject_put+0x2f/0x50
+Aug 10 23:04:40 liesel kernel:  [<ffffffff810414f1>] ? warn_slowpath_common+0x81/0xe0
+Aug 10 23:04:40 liesel kernel:  [<ffffffff81041605>] ? warn_slowpath_fmt+0x45/0x50
+Aug 10 23:04:40 liesel kernel:  [<ffffffff812a620f>] ? kobject_put+0x2f/0x50
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa00bea3e>] ? usbhid_disconnect+0x1e/0x40 [usbhid]
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a7525>] ? usb_unbind_interface+0xc5/0x120 [usbcore]
+Aug 10 23:04:40 liesel kernel:  [<ffffffff8133ffc8>] ? __device_release_driver+0x78/0xf0
+Aug 10 23:04:40 liesel kernel:  [<ffffffff81340125>] ? device_release_driver+0x25/0x40
+Aug 10 23:04:40 liesel kernel:  [<ffffffff8133f4a2>] ? bus_remove_device+0xa2/0xf0
+Aug 10 23:04:40 liesel kernel:  [<ffffffff8133d7da>] ? device_del+0x12a/0x1d0
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a4b8d>] ? usb_disable_device+0x8d/0x110 [usbcore]
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa019f6bb>] ? usb_disconnect+0x7b/0x120 [usbcore]
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a03c2>] ? hub_thread+0x322/0x11d0 [usbcore]
+Aug 10 23:04:40 liesel kernel:  [<ffffffff81034a77>] ? set_next_entity+0x37/0x80
+Aug 10 23:04:40 liesel kernel:  [<ffffffff8105c330>] ? autoremove_wake_function+0x0/0x30
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a00a0>] ? hub_thread+0x0/0x11d0 [usbcore]
+Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a00a0>] ? hub_thread+0x0/0x11d0 [usbcore]
+Aug 10 23:04:40 liesel kernel:  [<ffffffff8105be56>] ? kthread+0x96/0xb0
+Aug 10 23:04:40 liesel kernel:  [<ffffffff81003b14>] ? kernel_thread_helper+0x4/0x10
+Aug 10 23:04:40 liesel kernel:  [<ffffffff8105bdc0>] ? kthread+0x0/0xb0
+Aug 10 23:04:40 liesel kernel:  [<ffffffff81003b10>] ? kernel_thread_helper+0x0/0x10
+Aug 10 23:04:40 liesel kernel: ---[ end trace 808e80ff1e6d651e ]---
 
-------------[ cut here ]------------
-kernel BUG at fs/btrfs/volumes.c:1980!
-invalid opcode: 0000 [#1] PREEMPT SMP
-last sysfs file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
-CPU 1
-Modules linked in: crc32c_intel ipv6 microcode cifs cpufreq_ondemand
-hwmon_vid coretemp fuse ext2 mbcache raid1 md_mod usbhid hid
-rndis_wlan cfg80211 rfkill rndis_host cdc_ether usbnet
-snd_hda_codec_realtek snd_usb_audio snd_usbmidi_lib snd_hda_intel
-snd_rawmidi snd_seq_dummy snd_seq_oss snd_hda_codec snd_seq_midi_event
-snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss nvidia(P) snd_hwdep
-snd_pcm snd_timer snd uhci_hcd i2c_i801 acpi_cpufreq soundcore
-freq_table ehci_hcd tpm_tis i2c_core tpm i7core_edac r8169
-snd_page_alloc mperf iTCO_wdt mii iTCO_vendor_support wmi tpm_bios
-usbcore edac_core processor fan thermal pcspkr button evdev rtc_cmos
-rtc_core rtc_lib btrfs zlib_deflate crc32c libcrc32c sr_mod sg cdrom
-sd_mod ata_piix pata_acpi ata_generic libata scsi_mod
-
-Pid: 3480, comm: btrfs Tainted: P            2.6.35-ARCH #1 121-BL-E756/OEM
-RIP: 0010:[<ffffffffa018158a>]  [<ffffffffa018158a>]
-btrfs_balance+0x24a/0x260 [btrfs]
-RSP: 0018:ffff8801d5675d48  EFLAGS: 00010282
-RAX: 00000000fffffffb RBX: ffff8801d8b60ab0 RCX: ffffea00054814a8
-RDX: 0000000000000004 RSI: ffffffff81530df0 RDI: 0000000000000282
-RBP: ffff8801d5675dc8 R08: 0000000000000002 R09: 0000000000000002
-R10: ffff88000001d240 R11: 0000000000000000 R12: ffff8801d9eec800
-R13: 0000000000000000 R14: ffff8801d5675d78 R15: 00000659f9210000
-FS:  00007f7c3aef8740(0000) GS:ffff880001820000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00007ff55a388000 CR3: 00000001d8d26000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process btrfs (pid: 3480, threadinfo ffff8801d5674000, task ffff8801d77ce120)
-Stack:
- ffff8801d9eed000 0000000000000100 0000000000000100 000659f9210000e4
-<0> 00007f7c3a84a200 0000000000000000 0000000000000100 00065a7920ffffe4
-<0> ffff8801d5675e00 ffffffff810f8ea3 0000000000000000 ffff8801bebd6e40
-Call Trace:
- [<ffffffff810f8ea3>] ? handle_mm_fault+0x1c3/0xab0
- [<ffffffffa0188520>] btrfs_ioctl+0x2c0/0x940 [btrfs]
- [<ffffffff811334ac>] vfs_ioctl+0x3c/0xd0
- [<ffffffff81133aac>] do_vfs_ioctl+0x7c/0x520
- [<ffffffff81133fd1>] sys_ioctl+0x81/0xa0
- [<ffffffff81009e82>] system_call_fastpath+0x16/0x1b
-Code: 6d 62 fb ff 48 8b 45 80 48 8b b8 28 01 00 00 48 81 c7 80 1c 00
-00 e8 a6 fd 1e e1 e9 fe fd ff ff 45 31 ed eb d7 0f 0b 85 c0 74 a7 <0f>
-0b 0f 0b 0f 0b 0f 0b 66 66 66 66 66 2e 0f 1f 84 00 00 00 00
-RIP  [<ffffffffa018158a>] btrfs_balance+0x24a/0x260 [btrfs]
- RSP <ffff8801d5675d48>
----[ end trace 7501e28b9295d333 ]---
-
-# btrfs-show
-Label: none  uuid: 405f0d0b-ee4d-4426-9826-d2580d0c8d6c
-	Total devices 2 FS bytes used 178.06GB
-	devid    5 size 232.55GB used 91.63GB path /dev/sde3
-	devid    7 size 189.82GB used 91.63GB path /dev/sda2
-
-Btrfs Btrfs v0.19
-
-Regards,
-Sebastian J.
