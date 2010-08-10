@@ -1,76 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932565Ab0HJSjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 14:39:52 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59712 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab0HJSjt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 14:39:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=IFdwvW5lnqe0CIo4NpAaw7CFXR/h7iADnio+puagJiz3E3F0q7tgUbKSOVDf9XQXJw
-         gfMmyHklSeQo5w0hTMIlbvbo+EHl89SZ8eGX40rJsjHcYBd/odW86dM2/PsOMegu5PMg
-         apYMkou6Hlv9qoWq9+Lm72UVUlDp4CecOZ9WE=
-Message-ID: <4C619CF0.30609@gmail.com>
-Date: Tue, 10 Aug 2010 20:39:44 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+	id S932581Ab0HJSkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 14:40:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65240 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932504Ab0HJSkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 14:40:25 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: PATCH 3/6 - direct-io: do not merge logically non-contiguous requests
+References: <4C5BE8DB.5030503@linux.vnet.ibm.com>
+	<20100806120358.GA31601@infradead.org>
+	<4C5D0BC2.1040706@linux.vnet.ibm.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 10 Aug 2010 14:40:06 -0400
+Message-ID: <x49ocdab9bt.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-To: linux-acpi@vger.kernel.org
-CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Fan runs full speed after S3 sometimes (regression)
-References: <4C613619.30309@gmail.com>
-In-Reply-To: <4C613619.30309@gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2010 01:20 PM, Jiri Slaby wrote:
-> Hi,
-> 
-> till I was running on 2.6.34-rc5-mm1 (mmotm) and earlier everything was
-> fine. Now, I'm running 2.6.35-rc6-mm1 (.35-rc5-mm1 was the same) and
-> sometimes when the computer (desktop) returns from S3, the CPU fan is
-> running at full speed making a big noise.
+Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com> writes:
 
-Just to add, full power cycle is needed to get rid of that. Warm reboot
-is not enough.
+> On 08/06/2010 02:03 PM, Christoph Hellwig wrote:
+>> Something is deeply wrong here.  Raw block device access has a 1:1
+>> mapping between logical and physical block numbers.  They really should
+>> never be non-contiguous.
+>
+> At least I did nothing I know about to break it :-)
 
-> I don't know how to debug that. Bisection is out of question -- it
-> happens once in 10 or 20 cases. There are no fan entries in /sys.
-> 
-> The load is as follows:
-> $ while :; do cat /proc/loadavg; sleep 3; done
-> 0.37 0.33 0.32 1/325 21358
-> 0.42 0.34 0.32 1/325 21362
-> 0.42 0.34 0.32 1/326 21366
-> 0.38 0.33 0.32 1/330 21386
-> 0.38 0.33 0.32 1/331 21391
-> 0.35 0.33 0.32 1/331 21394
-> 0.32 0.32 0.32 1/331 21397
-> 0.32 0.32 0.32 1/331 21400
-> 0.30 0.32 0.32 1/331 21403
-> ...
-> 
-> I can boot into 34-rc5 to compare that if this is of relevance.
-> 
-> 290 kB kernel log since boot over several S3 sleep till now where the
-> fan is noisy:
-> http://www.fi.muni.cz/~xslaby/sklad/panics/boot.msg-fan_fullspeed
-> 
-> Should you need DSDT, it's there too:
-> http://www.fi.muni.cz/~xslaby/sklad/panics/DSDT
-> 
-> Any ideas what could have caused this?
-> 
-> thanks,
--- 
-js
+I think Christoph missed that you were using ext2, not the block device.
+
+> As I mentioned just iozone using direct I/O (-I flag of iozone then
+> using O_DIRECT for the file) on a ext2 file-system.
+> The file system was coming clean out of mkfs the file was written with
+> iozone one step before the traced read run.
+>
+> The only uncommon thing here might be the block device, which is a
+> scsi disk on our SAN servers (I'm running on s390) - so the driver in
+> charge is zfcp (drivers/s390/scsi/).
+> I could use dasd (drivers/s390/block) disks as well, but I have no
+> blktrace of them yet - what I already know is that they show a similar
+> cost increase. On monday I should be able to get machine resources to
+> verify that both disk types are affected.
+>
+> Let me know if I can do anything else on my system to shed some light
+> on the matter.
+
+Well, the problem is pretty obvious.  Inside submit_page_section, you
+have this code:
+
+	/*
+	 * If there's a deferred page already there then send it.
+	 */
+	if (dio->cur_page) {
+		ret = dio_send_cur_page(dio);
+		page_cache_release(dio->cur_page);
+		dio->cur_page = NULL;
+		if (ret)
+			goto out;
+	}
+
+	page_cache_get(page);/* It is in dio */
+	dio->cur_page = page;
+	dio->cur_page_offset = offset;
+	dio->cur_page_len = len;
+	dio->cur_page_block = blocknr;
+	dio->cur_page_fs_offset = dio->block_in_file << dio->blkbits;
+
+Notice that we're processing a new page, so we submit the old page for
+I/O.
+
+And in dio_send_cur_page, we have this:
+
+	if (dio->final_block_in_bio != dio->cur_page_block ||
+	    cur_offset != bio_next_offset)
+		dio_bio_submit(dio);
+
+So, we are actually comparing values between two different pages, and of
+course, this doesn't work.  We're always one page behind in the I/O.
+
+Also, the block of code above is immediately followed by this:
+
+	/*
+	 * Submit now if the underlying fs is about to perform a
+	 * metadata read
+	 */
+	if (dio->boundary)
+		dio_bio_submit(dio);
+
+So, it looks to me like this could result in submitting the same bio
+twice if you are unlucky enough.  I'll see what I can do to fix this
+up.
+
+Cheers,
+Jeff
