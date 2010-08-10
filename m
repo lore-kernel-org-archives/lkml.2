@@ -1,73 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab0HJMBl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:01:41 -0400
-Received: from mail.windriver.com ([147.11.1.11]:51977 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab0HJMBf (ORCPT
+	id S1757543Ab0HJMCg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:02:36 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:33961 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752252Ab0HJMCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:01:35 -0400
-Message-ID: <4C613F95.8020505@windriver.com>
-Date: Tue, 10 Aug 2010 07:01:25 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: "Robert P. J. Day" <rpjday@crashcourse.ca>
-CC: Jon Masters <jonathan@jonmasters.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: why can't i use gdb to dump module variables anymore?
-References: <alpine.DEB.2.00.1007080744180.7016@lynx> <7C33277E-D90E-4459-8580-59C5EFB2D66D@jonmasters.org> <alpine.DEB.2.00.1008091200520.3863@lynx>
-In-Reply-To: <alpine.DEB.2.00.1008091200520.3863@lynx>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 10 Aug 2010 08:02:32 -0400
+Subject: [PATCHv4] fixed resource leak in scripts/mod/modpost.c
+From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: ext Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
+        ext Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=UfzGay5XQKMpPCZTSO5SJ1jDknqwayhrEZJO0@mail.gmail.com>
+References: <1281010151.2063.8.camel@alex-desktop>
+	 <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
+	 <1281437552.2063.431.camel@alex-desktop>
+	 <AANLkTi=UfzGay5XQKMpPCZTSO5SJ1jDknqwayhrEZJO0@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Aug 2010 15:03:28 +0300
+Message-ID: <1281441808.2063.498.camel@alex-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Aug 2010 12:01:23.0074 (UTC) FILETIME=[C071B620:01CB3883]
+X-OriginalArrivalTime: 10 Aug 2010 12:01:39.0958 (UTC) FILETIME=[CA820160:01CB3883]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/09/2010 11:06 AM, Robert P. J. Day wrote:
-> On Sun, 8 Aug 2010, Jon Masters wrote:
->
->   
->> On Jul 8, 2010, at 7:51 AM, Robert P. J. Day wrote:
->>     
->>> (gdb) p rpjday_2
->>> Cannot access memory at address 0xffffffffa007c0b4
->>> (gdb) p rpjday_3
->>> Cannot access memory at address 0xffffffffa007c0b8
->>>       
->> Did you ever get a reply to this one? Were you trying to do this
->> locally, by loading a kernel core or using kgdb?
->>     
->
->   never figured out what was happening here, used to work just fine
-> for simple gdb debugging of the kernel; nowadays (at least on ubuntu),
-> not so much.  anyway, i'm in bahstahn for linuxcon, staying at the
-> onyx hotel for first 3 days.  my girlfriend is doing a bofs session:
->
-> http://events.linuxfoundation.org/linuxcon2010/mckinnon
->
->   anyway, regarding gdb, this was based on a column i wrote last
-> year:
->
-> http://www.linux.com/learn/linux-training/33991-the-kernel-newbie-corner-kernel-and-module-debugging-with-gdb
->
-> where it worked just fine -- it's the technique described in LDD3.
-> but now, on ubuntu 10.04, weirdness.  i haven't looked at it closely
-> again for a while, but if you have any ideas, i'm open to suggestions.
-> maybe some odd security/selinux/??? setting?
->   
+From: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
 
-I took a brief look at the instructions you had a the URL.  It seemed
-like something that should probably work ok unless that memory address
-is really not accessible via /proc/kcore.
+sec2annotation() returns malloc'ed buffer directly to printf as an
+argument. Patch lets free this buffer after printing. Preventing ops
+while freeing the buffer by changing return const str to return 
+strdup empty line.
 
-Depending on the age of the ubuntu system and if you have a serial port
-or not, kgdb is actually enabled in the kernel and you could certainly
-try the same test there.
+Signed-off-by: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
+---
+ scripts/mod/modpost.c |   62 ++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 43 insertions(+), 19 deletions(-)
 
-It should also be possible to try out a gdb with kernel module awareness
-on the /proc/kcore.  If you want to try and debug it at some point
-perhaps we'll cross paths at LinuxCON.
+diff -ur linux-2.6.35/scripts/mod/modpost.c linux-2.6.35_b/scripts/mod/modpost.c
+--- linux-2.6.35/scripts/mod/modpost.c	2010-08-10 12:11:03.854528620 +0300
++++ linux-2.6.35_b/scripts/mod/modpost.c	2010-08-10 14:45:00.294529178 +0300
+@@ -1165,9 +1165,9 @@
+ 			strcat(p, "data ");
+ 		else
+ 			strcat(p, " ");
+-		return r; /* we leak her but we do not care */
++		return r;
+ 	} else {
+-		return "";
++		return strdup("");
+ 	}
+ }
+ 
+@@ -1195,6 +1195,8 @@
+ {
+ 	const char *from, *from_p;
+ 	const char *to, *to_p;
++	char *prl_from;
++	char *prl_to;
+ 
+ 
+ 	switch (from_is_func) {
+@@ -1219,16 +1221,21 @@
+ 
+ 	switch (mismatch->mismatch) {
+ 	case TEXT_TO_ANY_INIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The function %s%s() references\n"
+ 		"the %s %s%s%s.\n"
+ 		"This is often because %s lacks a %s\n"
+ 		"annotation or the annotation of %s is wrong.\n",
+-		sec2annotation(fromsec), fromsym,
+-		to, sec2annotation(tosec), tosym, to_p,
+-		fromsym, sec2annotation(tosec), tosym);
++		prl_from, fromsym,
++		to, prl_to, tosym, to_p,
++		fromsym, prl_to, tosym);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case DATA_TO_ANY_INIT: {
++		prl_to = sec2annotation(tosec);
+ 		const char *const *s = mismatch->symbol_white_list;
+ 		fprintf(stderr,
+ 		"The variable %s references\n"
+@@ -1236,20 +1243,24 @@
+ 		"If the reference is valid then annotate the\n"
+ 		"variable with __init* or __refdata (see linux/init.h) "
+ 		"or name the variable:\n",
+-		fromsym, to, sec2annotation(tosec), tosym, to_p);
++		fromsym, to, prl_to, tosym, to_p);
+ 		while (*s)
+ 			fprintf(stderr, "%s, ", *s++);
+ 		fprintf(stderr, "\n");
++		free(prl_to);
+ 		break;
+ 	}
+ 	case TEXT_TO_ANY_EXIT:
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The function %s() references a %s in an exit section.\n"
+ 		"Often the %s %s%s has valid usage outside the exit section\n"
+ 		"and the fix is to remove the %sannotation of %s.\n",
+-		fromsym, to, to, tosym, to_p, sec2annotation(tosec), tosym);
++		fromsym, to, to, tosym, to_p, prl_to, tosym);
++		free(prl_to);
+ 		break;
+ 	case DATA_TO_ANY_EXIT: {
++		prl_to = sec2annotation(tosec);
+ 		const char *const *s = mismatch->symbol_white_list;
+ 		fprintf(stderr,
+ 		"The variable %s references\n"
+@@ -1257,24 +1268,31 @@
+ 		"If the reference is valid then annotate the\n"
+ 		"variable with __exit* (see linux/init.h) or "
+ 		"name the variable:\n",
+-		fromsym, to, sec2annotation(tosec), tosym, to_p);
++		fromsym, to, prl_to, tosym, to_p);
+ 		while (*s)
+ 			fprintf(stderr, "%s, ", *s++);
+ 		fprintf(stderr, "\n");
++		free(prl_to);
+ 		break;
+ 	}
+ 	case XXXINIT_TO_SOME_INIT:
+ 	case XXXEXIT_TO_SOME_EXIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The %s %s%s%s references\n"
+ 		"a %s %s%s%s.\n"
+ 		"If %s is only used by %s then\n"
+ 		"annotate %s with a matching annotation.\n",
+-		from, sec2annotation(fromsec), fromsym, from_p,
+-		to, sec2annotation(tosec), tosym, to_p,
++		from, prl_from, fromsym, from_p,
++		to, prl_to, tosym, to_p,
+ 		tosym, fromsym, tosym);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case ANY_INIT_TO_ANY_EXIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The %s %s%s%s references\n"
+ 		"a %s %s%s%s.\n"
+@@ -1283,11 +1301,15 @@
+ 		"uses functionality in the exit path.\n"
+ 		"The fix is often to remove the %sannotation of\n"
+ 		"%s%s so it may be used outside an exit section.\n",
+-		from, sec2annotation(fromsec), fromsym, from_p,
+-		to, sec2annotation(tosec), tosym, to_p,
+-		sec2annotation(tosec), tosym, to_p);
++		from, prl_from, fromsym, from_p,
++		to, prl_to, tosym, to_p,
++		ptl_to, tosym, to_p);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case ANY_EXIT_TO_ANY_INIT:
++		prl_from = sec2annotation(fromsec);
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The %s %s%s%s references\n"
+ 		"a %s %s%s%s.\n"
+@@ -1296,16 +1318,20 @@
+ 		"uses functionality in the init path.\n"
+ 		"The fix is often to remove the %sannotation of\n"
+ 		"%s%s so it may be used outside an init section.\n",
+-		from, sec2annotation(fromsec), fromsym, from_p,
+-		to, sec2annotation(tosec), tosym, to_p,
+-		sec2annotation(tosec), tosym, to_p);
++		from, prl_from, fromsym, from_p,
++		to, prl_to, tosym, to_p,
++		prl_to, tosym, to_p);
++		free(prl_from);
++		free(prl_to);
+ 		break;
+ 	case EXPORT_TO_INIT_EXIT:
++		prl_to = sec2annotation(tosec);
+ 		fprintf(stderr,
+ 		"The symbol %s is exported and annotated %s\n"
+ 		"Fix this by removing the %sannotation of %s "
+ 		"or drop the export.\n",
+-		tosym, sec2annotation(tosec), sec2annotation(tosec), tosym);
++		tosym, prl_to, prl_to, tosym);
++		free(prl_to);
+ 		break;
+ 	}
+ 	fprintf(stderr, "\n");
 
-Jason
+
