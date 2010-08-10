@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab0HJVRv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:17:51 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54205 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932210Ab0HJVRs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:17:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=f7rhaIX2MLvkxk/zzHSnf/AzaDuHuzW6PBOrIL6jLLg4BXVtj5WbPaBOPcbFS0mpxE
-         tXd1JucRcinbdE1c1OW5Elhanf/taN8m6gErMq51yz04u86lwsW0qYC1beYWa+f3Hih9
-         WOAJITcLH72DLlp+GLjqs5ITmtzzH4s2Vk5mw=
+	id S932449Ab0HJVZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:25:55 -0400
+Received: from 8bytes.org ([88.198.83.132]:42656 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932249Ab0HJVZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 17:25:52 -0400
+Date: Tue, 10 Aug 2010 23:25:51 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [2.6.35] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40  BUG:
+	unable to handle kernel NULL pointer dereference at 0000000000000198
+Message-ID: <20100810212551.GU23755@8bytes.org>
+References: <1154489525.20100810164850@eikelenboom.it> <20100810162606.GQ23755@8bytes.org> <419601760.20100810185745@eikelenboom.it> <20100810180122.GR23755@8bytes.org> <1609756756.20100810200514@eikelenboom.it> <20100810202839.GS23755@8bytes.org> <618241473.20100810223635@eikelenboom.it> <20100810204721.GT23755@8bytes.org> <1893257730.20100810225726@eikelenboom.it>
 MIME-Version: 1.0
-In-Reply-To: <20100810131032.GI27749@pengutronix.de>
-References: <20100810131032.GI27749@pengutronix.de>
-Date: Tue, 10 Aug 2010 23:17:40 +0200
-Message-ID: <AANLkTini2BJr9x5-03MV1wFTUH4M+REzOwxUS_Cc_sHc@mail.gmail.com>
-Subject: Re: dmaengine cyclic transfers
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1893257730.20100810225726@eikelenboom.it>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/10 Sascha Hauer <s.hauer@pengutronix.de>:
+On Tue, Aug 10, 2010 at 10:57:26PM +0200, Sander Eikelenboom wrote:
+> Hmmm the fun part seems to be .. that the usb devices on that usb2
+> controller seemed to work fine on Xen.
 
-> Author: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-> Date:   Wed Apr 1 15:47:02 2009 +0200
->
->    dw_dmac: add cyclic API to DW DMA driver
->
-> This could be very useful for the SDMA engine aswell. What are the
-> reasons this is not implemented in the generic dmaengine API but as
-> an extension to a specific driver?
+Hmm, thats weird. In this case these devices probably do not alias at
+all. But lets wait for the results when you test my patch.
 
-No reasons what I know. There was a similar code snippet in Peter
-Pearse's PL08x driver as well, I just didn't know what to do with it.
 
-> Should I also implement it like
-> this or isn't it better to extend the dmaengine itself?
+>            +-0a.0-[0000:09-0a]----00.0-[0000:0a]--+-01.0
+>            |                                      +-01.1
+>            |                                      \-01.2
 
-This is going to be generally useful, so please extend the DMAengine
-if I have my say. I actually miss two functions from the engine:
+Yeah, device 09:00.0 is a PCIe-to-PCI bridge and the addtional USB
+controlers are behind that bridge as legacy PCI devices. Thats why the
+BIOS sets up the alias-entry. It should set up 09:00.0 instead of
+0a:00.0 to make things work correctly.
 
-1) Single buffer slave transfers (without sglist)
-2) Cyclic buffers (esp good for audio)
+	Joerg
 
-The first I have a patch for, will repost.
-
-Yours,
-Linus Walleij
