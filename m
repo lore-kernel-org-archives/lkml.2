@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932242Ab0HJPQg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:16:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41565 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab0HJPQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:16:30 -0400
-Date: Tue, 10 Aug 2010 08:15:19 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Ocfs2-devel] [PATCH 1/3] ext3/ext4: Factor out disk
- addressability check
-Message-ID: <20100810151518.GC3025@mail.oracle.com>
-Mail-Followup-To: "Patrick J. LoPresti" <lopresti@gmail.com>,
-	ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <874ofr2myq.fsf@patl.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874ofr2myq.fsf@patl.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932251Ab0HJPRx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:17:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47479 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932129Ab0HJPRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:17:49 -0400
+Date: Wed, 11 Aug 2010 01:17:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Greg KH <greg@kroah.com>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        James Smart <james.smart@emulex.com>,
+        Eric Biederman <ebiederm@aristanetworks.com>,
+        Benjamin Thery <benjamin.thery@bull.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Chris Wright <chrisw@sous-sol.org>, linuxppc-dev@ozlabs.org,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Nick Cheng <nick.cheng@areca.com.tw>, Dmitry Torokhov <dtor@mail.ru>,
+        Tejun Heo <tj@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-scsi@vger.kernel.org,
+        Alex Iannicelli <alex.iannicelli@emulex.com>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
+Message-Id: <20100811011733.16243ddb.sfr@canb.auug.org.au>
+In-Reply-To: <20100810154337.006a0df9@hyperion.delvare>
+References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
+	<AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
+	<20100802233128.GA21286@kroah.com>
+	<20100810154337.006a0df9@hyperion.delvare>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 03:03:41PM -0700, Patrick J. LoPresti wrote:
-> As part of adding support for OCFS2 to mount huge volumes, we need to
-> check that the sector_t and page cache of the system are capable of
-> addressing the entire volume.
-> 
-> An identical check already appears in ext3 and ext4.  This patch moves
-> the addressability check into its own function in fs/libfs.c and
-> modifies ext3 and ext4 to invoke it.
-> 
-> Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+--Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-ext4/jbd2 folks,
-	I would like to push these upstream.  Should they go through
-ocfs2.git or would you rather take them via your trees?
+Hi Jean,
 
-Joel
+On Tue, 10 Aug 2010 15:43:37 +0200 Jean Delvare <khali@linux-fr.org> wrote:
+>
+> Related bug?
+>=20
+> https://bugzilla.kernel.org/show_bug.cgi?id=3D16544
 
--- 
+Yep, fixed in linux-next today - hopefully the fix is on its way to Linus.
 
-"In the arms of the angel, fly away from here,
- From this dark, cold hotel room and the endlessness that you fear.
- You are pulled from the wreckage of your silent reverie.
- In the arms of the angel, may you find some comfort here."
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+--Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMYW2NAAoJEDMEi1NhKgbsDHoIAKI+LxF3i365ZTQjPgodUhMi
+fyVQUKttBZBHDK59URtJ6NlLEUspb7iLiOCqbmu6HSq+7wZsax0/7Kq8FKjD87/s
+uko9t9WELvZCtNhQ2PnehUYUOWhO5SCnYgJyzZOCrFZWDpmA3Hl3MSpxNs5drOin
+QiKtx2x5ldf03I205RHYDbBy/w1XZegG4fG/M/nTrdzO1B2EfLStYpjY5G49C+Lw
+qP120VrFb7BsCs7uHIl9750MV0GHiVfGNpQDcaIGJv5TNPAyvoZhUyC9C0eTQfj6
+xHZnf32ihT9Ugrx5qRSpjEaR34atvkQwaZGC+BejZzrfvhl8/3WnAYegvli/zOk=
+=Qznw
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__11_Aug_2010_01_17_33_+1000_Zx2XhMZSWJniZd5n--
