@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932682Ab0HJWGx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:06:53 -0400
-Received: from kroah.org ([198.145.64.141]:44953 "EHLO coco.kroah.org"
+	id S1758021Ab0HJWAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:00:22 -0400
+Received: from kroah.org ([198.145.64.141]:44872 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933354Ab0HJWAY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:00:24 -0400
+	id S933368Ab0HJWAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:02 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 43/68] tty: implement BTM as mutex instead of BKL
-Date: Tue, 10 Aug 2010 14:59:05 -0700
-Message-Id: <1281477570-18944-43-git-send-email-gregkh@suse.de>
+Subject: [PATCH 26/68] tty: serial - fix tty referencing in set_ldisc
+Date: Tue, 10 Aug 2010 14:58:48 -0700
+Message-Id: <1281477570-18944-26-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -20,124 +20,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Alan Cox <alan@linux.intel.com>
 
-The tty locking now follows the rules for mutexes, so
-we can replace the BKL usage with a new subsystem
-wide mutex.
+Pass down the ldisc number so that the drivers don't have to peek into the
+tty object themselves. This lets us get rid of another case of back referencing
+port to tty which we don't want (because of races versus hangup/close).
 
-Using a regular mutex here will change the behaviour
-when blocked on the BTM from spinning to sleeping,
-but that should not be visible to the user.
-
-Using the mutex also means that all the BTM is now
-covered by lockdep.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/char/Makefile    |    1 +
- drivers/char/tty_mutex.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/tty.h      |   18 ++++------------
- 3 files changed, 53 insertions(+), 13 deletions(-)
- create mode 100644 drivers/char/tty_mutex.c
+ drivers/serial/bfin_5xx.c    |    7 ++-----
+ drivers/serial/serial_core.c |    2 +-
+ include/linux/serial_core.h  |    2 +-
+ 3 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/Makefile b/drivers/char/Makefile
-index 273cee1..dc96416 100644
---- a/drivers/char/Makefile
-+++ b/drivers/char/Makefile
-@@ -9,6 +9,7 @@ FONTMAPFILE = cp437.uni
+diff --git a/drivers/serial/bfin_5xx.c b/drivers/serial/bfin_5xx.c
+index 511cbf6..a9eff2b 100644
+--- a/drivers/serial/bfin_5xx.c
++++ b/drivers/serial/bfin_5xx.c
+@@ -957,15 +957,12 @@ bfin_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
+  * Enable the IrDA function if tty->ldisc.num is N_IRDA.
+  * In other cases, disable IrDA function.
+  */
+-static void bfin_serial_set_ldisc(struct uart_port *port)
++static void bfin_serial_set_ldisc(struct uart_port *port, int ld)
+ {
+ 	int line = port->line;
+ 	unsigned short val;
  
- obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o tty_port.o
+-	if (line >= port->state->port.tty->driver->num)
+-		return;
+-
+-	switch (port->state->port.tty->termios->c_line) {
++	switch (ld) {
+ 	case N_IRDA:
+ 		val = UART_GET_GCTL(&bfin_serial_ports[line]);
+ 		val |= (IREN | RPOLC);
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 12ee7e0..570dca2 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1194,7 +1194,7 @@ static void uart_set_ldisc(struct tty_struct *tty)
+ 	struct uart_port *uport = state->uart_port;
  
-+obj-y				+= tty_mutex.o
- obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
- obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
- obj-y				+= misc.o
-diff --git a/drivers/char/tty_mutex.c b/drivers/char/tty_mutex.c
-new file mode 100644
-index 0000000..1336975
---- /dev/null
-+++ b/drivers/char/tty_mutex.c
-@@ -0,0 +1,47 @@
-+/*
-+ * drivers/char/tty_lock.c
-+ */
-+#include <linux/tty.h>
-+#include <linux/module.h>
-+#include <linux/kallsyms.h>
-+#include <linux/semaphore.h>
-+#include <linux/sched.h>
-+
-+/*
-+ * The 'big tty mutex'
-+ *
-+ * This mutex is taken and released by tty_lock() and tty_unlock(),
-+ * replacing the older big kernel lock.
-+ * It can no longer be taken recursively, and does not get
-+ * released implicitly while sleeping.
-+ *
-+ * Don't use in new code.
-+ */
-+static DEFINE_MUTEX(big_tty_mutex);
-+struct task_struct *__big_tty_mutex_owner;
-+EXPORT_SYMBOL_GPL(__big_tty_mutex_owner);
-+
-+/*
-+ * Getting the big tty mutex.
-+ */
-+void __lockfunc tty_lock(void)
-+{
-+	struct task_struct *task = current;
-+
-+	WARN_ON(__big_tty_mutex_owner == task);
-+
-+	mutex_lock(&big_tty_mutex);
-+	__big_tty_mutex_owner = task;
-+}
-+EXPORT_SYMBOL(tty_lock);
-+
-+void __lockfunc tty_unlock(void)
-+{
-+	struct task_struct *task = current;
-+
-+	WARN_ON(__big_tty_mutex_owner != task);
-+	__big_tty_mutex_owner = NULL;
-+
-+	mutex_unlock(&big_tty_mutex);
-+}
-+EXPORT_SYMBOL(tty_unlock);
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 0fbafb0..1437da3 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -578,20 +578,12 @@ extern int vt_ioctl(struct tty_struct *tty, struct file *file,
- extern long vt_compat_ioctl(struct tty_struct *tty, struct file * file,
- 		     unsigned int cmd, unsigned long arg);
+ 	if (uport->ops->set_ldisc)
+-		uport->ops->set_ldisc(uport);
++		uport->ops->set_ldisc(uport, tty->termios->c_line);
+ }
  
-+/* tty_mutex.c */
- /* functions for preparation of BKL removal */
--static inline void tty_lock(void) __acquires(kernel_lock)
--{
--#ifdef CONFIG_LOCK_KERNEL
--	/* kernel_locked is 1 for !CONFIG_LOCK_KERNEL */
--	WARN_ON(kernel_locked());
--#endif
--	lock_kernel();
--}
--static inline void tty_unlock(void) __releases(kernel_lock)
--{
--	unlock_kernel();
--}
--#define tty_locked()		(kernel_locked())
-+extern void __lockfunc tty_lock(void) __acquires(tty_lock);
-+extern void __lockfunc tty_unlock(void) __releases(tty_lock);
-+extern struct task_struct *__big_tty_mutex_owner;
-+#define tty_locked()		(current == __big_tty_mutex_owner)
- 
- /*
-  * wait_event_interruptible_tty -- wait for a condition with the tty lock held
+ static void uart_set_termios(struct tty_struct *tty,
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index f10db6e..3292816 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -220,7 +220,7 @@ struct uart_ops {
+ 	void		(*flush_buffer)(struct uart_port *);
+ 	void		(*set_termios)(struct uart_port *, struct ktermios *new,
+ 				       struct ktermios *old);
+-	void		(*set_ldisc)(struct uart_port *);
++	void		(*set_ldisc)(struct uart_port *, int new);
+ 	void		(*pm)(struct uart_port *, unsigned int state,
+ 			      unsigned int oldstate);
+ 	int		(*set_wake)(struct uart_port *, unsigned int state);
 -- 
 1.7.2
 
