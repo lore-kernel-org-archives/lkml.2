@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754330Ab0HJTsY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 15:48:24 -0400
-Received: from be1ssnxpe2.nxp.com ([57.67.164.70]:50811 "EHLO
-	be1ssnxpe2.nxp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760Ab0HJTsV convert rfc822-to-8bit (ORCPT
+	id S1756271Ab0HJTxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 15:53:31 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:51768 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755116Ab0HJTxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 15:48:21 -0400
-From: Kevin Wells <kevin.wells@nxp.com>
-To: Alessandro Zummo <a.zummo@towertech.it>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
-CC: Durgesh Pattamatta <durgesh.pattamatta@nxp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "wellsk40@gmail.com" <wellsk40@gmail.com>
-Date: Tue, 10 Aug 2010 21:08:18 +0200
-Subject: RE: [rtc-linux] [PATCH 1/2] rtc: rtc-lpc32xx: Introduce RTC driver
-	for  the LPC32XX SoC
-Thread-Topic: [rtc-linux] [PATCH 1/2] rtc: rtc-lpc32xx: Introduce RTC driver
-	for  the LPC32XX SoC
-Thread-Index: Acs4kkuA4ysKyragS6Ou4fBMqN3KEAAI9CJQ
-Message-ID: <083DF309106F364B939360100EC290F80AC6E5F76E@eu1rdcrdc1wx030.exi.nxp.com>
-References: <1281370650-29520-1-git-send-email-wellsk40@gmail.com>
-	<1281370650-29520-2-git-send-email-wellsk40@gmail.com>
- <20100810153448.17443314@linux.lan.towertech.it>
-In-Reply-To: <20100810153448.17443314@linux.lan.towertech.it>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000 definitions=2010-08-10_07:2010-08-10,2010-08-10,1970-01-01 signatures=0
+	Tue, 10 Aug 2010 15:53:30 -0400
+X-IronPort-AV: E=Sophos;i="4.55,349,1278280800"; 
+   d="scan'208";a="56942663"
+From: Tomasz Buchert <tomasz.buchert@inria.fr>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
+Subject: [PATCH] cgroup_freezer: Freezing and task move race fix
+Date: Tue, 10 Aug 2010 21:53:21 +0200
+Message-Id: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alessandro,
+Writing 'FROZEN' to freezer.state file does not
+forbid the task to be moved away from its cgroup
+(for a very short time). Nevertheless the moved task
+can become frozen OUTSIDE its cgroup which puts
+discussed task in a permanent 'D' state.
 
-Thanks for helping to review this.
+This patch forbids migration of either FROZEN
+or FREEZING tasks.
 
-> 
-> > +
-> > +	retval = request_irq(rtc->irq, lpc32xx_rtc_alarm_interrupt,
-> > +		IRQF_DISABLED, "rtcalarm", rtc);
-> > +	if (retval < 0) {
-> > +		dev_err(&pdev->dev, "Can't request interrupt\n");
-> > +		goto err_free_irq;
-> > +	}
-> 
->  if the driver can work without the alarm irq you
->  can convert this to a non fatal warning.
-> 
->  having an rtc without alarms is much better than having none.
-> 
+This behavior was observed and easily reproduced on
+a single core laptop. Program and instructions how
+to reproduce the bug can be fetched from:
+http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
 
-Good suggestion. I'll change this.
+Signed-off-by: Tomasz Buchert <tomasz.buchert@inria.fr>
+---
+ kernel/cgroup_freezer.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-> --
-> 
->  Best regards,
-> 
->  Alessandro Zummo,
->   Tower Technologies - Torino, Italy
-> 
->   http://www.towertech.it
-> 
+diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+index ce71ed5..e49aa8c 100644
+--- a/kernel/cgroup_freezer.c
++++ b/kernel/cgroup_freezer.c
+@@ -161,6 +161,12 @@ static bool is_task_frozen_enough(struct task_struct *task)
+ 		(task_is_stopped_or_traced(task) && freezing(task));
+ }
+ 
++/* Task is in a state that forbids any cgroup migration. */
++static bool is_task_pinned_down(struct task_struct *task)
++{
++	return freezing(task) || frozen(task);
++}
++
+ /*
+  * The call to cgroup_lock() in the freezer.state write method prevents
+  * a write to that file racing against an attach, and hence the
+@@ -179,7 +185,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+ 	 * frozen, so it's sufficient to check the latter condition.
+ 	 */
+ 
+-	if (is_task_frozen_enough(task))
++	if (is_task_pinned_down(task))
+ 		return -EBUSY;
+ 
+ 	freezer = cgroup_freezer(new_cgroup);
+@@ -191,7 +197,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+ 
+ 		rcu_read_lock();
+ 		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
+-			if (is_task_frozen_enough(c)) {
++			if (is_task_pinned_down(c)) {
+ 				rcu_read_unlock();
+ 				return -EBUSY;
+ 			}
+-- 
+1.6.3.3
 
