@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0HJPgh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:36:37 -0400
-Received: from 70.mail-out.ovh.net ([91.121.185.63]:44114 "HELO
-	70.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932070Ab0HJPgd (ORCPT
+	id S932186Ab0HJPiu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:38:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54710 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757572Ab0HJPio (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:36:33 -0400
-Message-ID: <4C6171FC.6060305@example.com>
-Date: Tue, 10 Aug 2010 17:36:28 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
-MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: BUG: scheduling while atomic: swapper/0/0x10000002
-References: <20100810142951.GA7156@arch.tripp.de> <4C616DF9.1070309@example.com> <20100810153538.GB5466@swordfish.minsk.epam.com>
-In-Reply-To: <20100810153538.GB5466@swordfish.minsk.epam.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 8213721297129664824
-X-Ovh-Remote: 95.49.243.143 (afjj143.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Tue, 10 Aug 2010 11:38:44 -0400
+Date: Tue, 10 Aug 2010 08:37:37 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, axboe@kernel.dk,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 6 (block git tree)
+Message-Id: <20100810083737.c761fc8f.randy.dunlap@oracle.com>
+In-Reply-To: <4C5C5D18.6050905@oracle.com>
+References: <20100806132758.6001d416.sfr@canb.auug.org.au>
+	<20100806120456.5eca82b7.randy.dunlap@oracle.com>
+	<4C5C5D18.6050905@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.08.2010 17:35, Sergey Senozhatsky wrote:
-> On (08/10/10 17:19), Piotr Hosowicz wrote:
->> None of them works for me. I do:
->>
->> cat patch.txt | patch -p1
->>
->> And get:
->>
->> aapi205:/usr/src/linux# cat ../smp-bug.txt | patch -p1
->> patching file include/acpi/platform/aclinux.h
->> Hunk #1 FAILED at 152.
->> 1 out of 1 hunk FAILED -- saving rejects to file
->> include/acpi/platform/aclinux.h.rej
->>
->> Help me please.
->>
->
-> Can we see your:
-> include/acpi/platform/aclinux.h(.rej)
->
-> ?
+On Fri, 06 Aug 2010 12:06:00 -0700 Randy Dunlap wrote:
 
-aapi205:/usr/src/linux# cat include/acpi/platform/aclinux.h.rej
---- include/acpi/platform/aclinux.h
-+++ include/acpi/platform/aclinux.h
-@@ -152,7 +152,7 @@
-  #include <linux/hardirq.h>
-  #define ACPI_PREEMPTION_POINT() \
-         do { \
--               if (!in_atomic_preempt_off() && !irqs_disabled()) \
-+               if (!in_atomic() && !irqs_disabled()) \
-                         cond_resched(); \
-         } while (0)
+> On 08/06/10 12:04, Randy Dunlap wrote:
+> > On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
+> > 
+> >> Hi all,
+> >>
+> >> As the merge window is open, please do not add 2.6.37 material to your
+> >> linux-next included trees until after 2.6.36-rc1.
+> >>
+> >> Changes since 20100805:
+> >>
+> >> The block tree lost its build failure and a conflict.
+> > 
+> > 
+> > Lots of source files now need <linux/blk_types.h>:
+> > 
+> > mm/filemap.c:2164: error: 'REQ_WRITE' undeclared
+> > fs/read_write.c:362: error: 'REQ_WRITE' undeclared
+> > fs/splice.c:1108: error: 'REQ_WRITE' undeclared
+> > fs/aio.c:1496: error: 'REQ_WRITE' undeclared
+> > drivers/memstick/core/memstick.c:272: error: 'REQ_WRITE' undeclared
+> > drivers/memstick/host/tifm_ms.c:218: error: 'REQ_WRITE' undeclared
+> > drivers/memstick/host/jmb38x_ms.c:333: error: 'REQ_WRITE' undeclared
+> > drivers/staging/spectra/ffsport.c:277: error: 'REQ_TYPE_LINUX_BLOCK' undeclared
+> > fs/compat.c:1274: error: 'REQ_WRITE' undeclared
+> 
+> 
+> Sorry, I see that this has already been fixed.
 
-> (did you `git pull`?)
+s/fixed/addressed/  but not yet merged into linux-next.
+Can we get that fixed, please?
 
-No, I just downloaded bz2 patch from kernel.org.
 
-Regards,
-
-Piotr Hosowicz
-
--- 
-Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-- W którym mie¶cie europejskim powsta³a pierwsza opera?
-- Sydney.
-NP: Peter Green Splinter Group - Heart Of Stone
-NB: 2.6.35-git9
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
