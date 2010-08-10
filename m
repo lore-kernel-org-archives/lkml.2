@@ -1,80 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab0HJRZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 13:25:06 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:61120 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932433Ab0HJRY7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 13:24:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gkHRyt+hOsM1tZtffreVWfMBs6qwMzKsPnMZKoXzt5xoaQKG1VMVe/En6N7HznT7Pd
-         irXS/Oi7JEi4L/Mo9aQ6dp7XCOn1ZWo2Isq2YrDs9fOUAvPKDw0oqaZ2ncztE+EZr7nd
-         q+oX0ZmpIHuHav9OIEnTbkUUEswyc1bppi9bo=
-Date: Tue, 10 Aug 2010 21:24:51 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100810172451.GD6893@lenovo>
-References: <20100804163930.GE5130@lenovo> <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo> <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com> <20100809200245.GF6056@lenovo> <20100810074200.GE26154@erda.amd.com> <20100810161627.GB6893@lenovo> <20100810164124.GK26154@erda.amd.com>
+	id S932470Ab0HJR24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 13:28:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55607 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932265Ab0HJR2w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 13:28:52 -0400
+Date: Tue, 10 Aug 2010 10:08:33 -0700
+From: Greg KH <gregkh@suse.de>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Cc: meego-dev@meego.com, LKML <linux-kernel@vger.kernel.org>,
+        Wang Qi <qi.wang@intel.com>, Andrew <andrew.chih.howe.khor@intel.com>,
+        arjan@linux.intel.com, Wang Yong Y <yong.y.wang@intel.com>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_GPIO driver to 2.6.35
+Message-ID: <20100810170833.GC21220@suse.de>
+References: <4C613101.20502@dsn.okisemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100810164124.GK26154@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C613101.20502@dsn.okisemi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 06:41:24PM +0200, Robert Richter wrote:
-> On 10.08.10 12:16:27, Cyrill Gorcunov wrote:
-> > On Tue, Aug 10, 2010 at 09:42:00AM +0200, Robert Richter wrote:
-> > > On 09.08.10 16:02:45, Cyrill Gorcunov wrote:
-> > > 
-> > > > > @@ -1222,14 +1245,12 @@ perf_event_nmi_handler(struct notifier_block *self,
-> > > > >  	regs = args->regs;
-> > > > >  
-> > > > >  	apic_write(APIC_LVTPC, APIC_DM_NMI);
-> > > > 
-> > > > If only I'm not missing something this apic_write should go up to
-> > > > "case DIE_NMIUNKNOWN" site, no?
-> > > 
-> > > This seems to be code from the non-nmi implementation and can be
-> > > removed at all, which should be a separate patch. The vector is
-> > > already set up.
-> > > 
-> > > -Robert
-> > >
-> > 
-> > No, this is just a short way to unmask LVTPC (which is required for
-> > cpus). Actually lookig into this snippet I found that in p4 pmu
-> > I've made one redundant unmaksing operation. will update as only
-> > this area settle down.
+On Tue, Aug 10, 2010 at 07:59:13PM +0900, Masayuki Ohtak wrote:
+> GPIO driver of Topcliff PCH
 > 
-> The vector is setup in hw_perf_enable() and then never masked. The
-> perfctrs nmi is alwayes enabled since then. I still see no reason for
-> unmasking it again with every nmi. Once you handle the nmi it is also
-> enabled.
+> Topcliff PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> Topcliff PCH are actually devices sitting on AMBA bus. 
+> Topcliff PCH has GPIO I/F. Using this I/F, it is able to access system
+> devices connected to GPIO.
 > 
+> Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> ---
+>  drivers/gpio/Kconfig    |    8 +
+>  drivers/gpio/Makefile   |    1 +
+>  drivers/gpio/pch_gpio.c |  901 +++++++++++++++++++++++++++++++++++++++++++++++
+>  drivers/gpio/pch_gpio.h |  245 +++++++++++++
+>  4 files changed, 1155 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/gpio/pch_gpio.c
+>  create mode 100644 drivers/gpio/pch_gpio.h
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 7face91..76701f6 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -113,6 +113,14 @@ config GPIO_SCH
+>  
+>  comment "I2C GPIO expanders:"
+>  
+> +config PCH_GPIO
+> +	tristate "PCH GPIO"
+> +	depends on PCI
+> +	help
+> +	  This driver is for PCH GPIO of Topcliff which is an IOH for x86
+> +	  embedded processor.
+> +	  This driver can access PCH GPIO device.
+> +
+>  config GPIO_MAX7300
+>  	tristate "Maxim MAX7300 GPIO expander"
+>  	depends on I2C
+> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+> index e53dcff..eda01b6 100644
+> --- a/drivers/gpio/Makefile
+> +++ b/drivers/gpio/Makefile
+> @@ -35,3 +35,4 @@ obj-$(CONFIG_GPIO_WM8994)	+= wm8994-gpio.o
+>  obj-$(CONFIG_GPIO_SCH)		+= sch_gpio.o
+>  obj-$(CONFIG_GPIO_RDC321X)	+= rdc321x-gpio.o
+>  obj-$(CONFIG_GPIO_JANZ_TTL)	+= janz-ttl.o
+> +obj-$(CONFIG_PCH_GPIO)	+= pch_gpio.o
+> diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
+> new file mode 100644
+> index 0000000..4cf8fc0
+> --- /dev/null
+> +++ b/drivers/gpio/pch_gpio.c
+> @@ -0,0 +1,901 @@
+> +/*
+> + * Copyright (C) 2010 OKI SEMICONDUCTOR Co., LTD.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; version 2 of the License.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307, USA.
+> + */
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/pci.h>
+> +#include <linux/fs.h>
+> +#include <linux/cdev.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/string.h>
+> +#include <linux/types.h>
+> +#include <linux/uaccess.h>
+> +#include <linux/sched.h>
+> +#include <linux/io.h>
+> +#include "pch_gpio.h"
+> +
+> +static void (*pch_gpio_cbr) (u32, struct pch_gpio_chip *);
+> +static DEFINE_MUTEX(pch_gpio_mutex);
+> +static s32 pch_gpio_major_no;
 
-It gets masked on NMI arrival, at least for some models (Core Duo, P4,
-P6 M and I suspect more theh that, that was the reason oprofile has
-it, also there is a note in SDM V3a page 643).
+A whole major number for a single driver and a single minor?
 
-> -Robert
-> 
-> -- 
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
-> 
-	-- Cyrill
+Please no, just dynamically allocate it if you really need it.
+
+And with the char node, you are creating new ioctls that duplicate the
+gpio layer in the kernel, please don't do that.  Just hook into the
+proper gpio subsystem and you will not need any character device at all.
+
+thanks,
+
+greg k-h
