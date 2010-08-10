@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab0HJUcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:32:00 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46603 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab0HJUb5 (ORCPT
+	id S1757922Ab0HJUfe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:35:34 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35485 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757843Ab0HJUfb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 16:31:57 -0400
+	Tue, 10 Aug 2010 16:35:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=buqU2QTN9V7aHbepoHgkCQU58kYt7TqGuEM4IpxYTysx6m9NTPrOIhQ8FG4xjiPrW+
-         XUicjNtLiN9XLF9pBO8ImKr5i0Zpx4PdS5vIuX6kqtvgQm6URsoGG6XQnD+6o5jbVhwW
-         GYSGBTfAB00fxiXQ93NmEdcS6BVUN438j3bLQ=
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type:content-transfer-encoding;
+        b=G+jx3Un/WM2KJY9FZ3fdHC3OqewYVLzKlE8bQ2mK4n+sOEbtolS+eTyaFymF7q8y+N
+         09wEzlsxvLkVRGGnJx08Z1wMOzK7fUsyThink/d+B/Hrk1o6MGRcEfH2C/8ipJ4FRXot
+         ghRe48mSmHF2thyznMz4/srLU/CsHa61hz1aE=
 MIME-Version: 1.0
-Date: Tue, 10 Aug 2010 22:31:55 +0200
-Message-ID: <AANLkTin_8qvSGfnKbLhz=RxSkWLhsRNVkM=F_CFxzvv1@mail.gmail.com>
-Subject: Low cache usage, lots of free mem :-(
-From: =?UTF-8?Q?Maciej_So=C5=82tysiak?= <pysiak@gmail.com>
-To: linux-kernel@vger.kernel.org
+Date: Tue, 10 Aug 2010 22:35:27 +0200
+X-Google-Sender-Auth: bGFK_J5vsx-zVXAyhkVGidx3LGg
+Message-ID: <AANLkTik44qbia+7w9=83cboTMLbvQDcH-60dHuAnd9ax@mail.gmail.com>
+Subject: asm/vga.h (was: Re: drm: Add support for platform devices to register 
+	as DRM devices)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: dri-devel@lists.freedesktop.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7AKW6Fp029815
 
-Hi,
+On Fri, Aug 6, 2010 at 01:59, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb: Â  Â  http://git.kernel.org/linus/dcdb167402cbdca1d021bdfa5f63995ee0a79317
+> Commit: Â  Â  dcdb167402cbdca1d021bdfa5f63995ee0a79317
+> Parent: Â  Â  01d73a6967f12fe6c4bbde1834a9fe662264a2eb
+> Author: Â  Â  Jordan Crouse <jcrouse@codeaurora.org>
+> AuthorDate: Thu May 27 13:40:25 2010 -0600
+> Committer: Â Dave Airlie <airlied@redhat.com>
+> CommitDate: Tue Jun 1 10:07:39 2010 +1000
+>
+> Â  Â drm: Add support for platform devices to register as DRM devices
 
-I have a weird problem. My free -m output is:
+> --- a/drivers/gpu/drm/Kconfig
+> +++ b/drivers/gpu/drm/Kconfig
+> @@ -6,7 +6,7 @@
+> Â #
+> Â menuconfig DRM
+> Â  Â  Â  Â tristate "Direct Rendering Manager (XFree86 4.1.0 and higher DRI support)"
+> - Â  Â  Â  depends on (AGP || AGP=n) && PCI && !EMULATED_CMPXCHG && MMU
+> + Â  Â  Â  depends on (AGP || AGP=n) && !EMULATED_CMPXCHG && MMU
 
-root@mkslnx002:/proc/sys/vm# free -m
-Â Â Â Â Â Â Â Â Â Â Â Â  totalÂ Â Â Â Â Â  usedÂ Â Â Â Â Â  freeÂ Â Â Â  sharedÂ Â Â  buffersÂ Â Â Â  cached
-Mem:Â Â Â Â Â Â Â Â Â Â  987Â Â Â Â Â Â Â  388Â Â Â Â Â Â Â  599Â Â Â Â Â Â Â Â Â  0Â Â Â Â Â Â Â Â  10Â Â Â Â Â Â Â  171
--/+ buffers/cache:Â Â Â Â Â Â Â  206Â Â Â Â Â Â Â  781
-Swap:Â Â Â Â Â Â Â Â  1913Â Â Â Â Â Â Â Â  32Â Â Â Â Â Â  1881
+Since this change, I can enable DRM on m68k, but it fails with:
 
-This shows as much as 599 MB of free memory while the cache using only 171MB.
-Usually people have it the way round ;-)
+| In file included from drivers/gpu/drm/drm_irq.c:42:
+| include/linux/vgaarb.h:34:21: error: asm/vga.h: No such file or directory
 
-Now, this is not normal for this server, it used use way more for
-cache, but now it doesn't.
-That forces the apps to fetch for iscsi storage more often than I'd like it to.
+Now, do we really need <asm/vga.h>? It seems I can make it build and boot using:
 
-What might've happened to the OS that it's refusing to use more memory as cache?
-The server got slower and I'd like to be able to revert the situation
-without a reboot.
+--- a/include/linux/vgaarb.h
++++ b/include/linux/vgaarb.h
+@@ -31,7 +31,9 @@
+ #ifndef LINUX_VGA_H
+ #define LINUX_VGA_H
 
-Please CC me, I'm not on the list.
++#ifdef CONFIG_VGA_ARB
+ #include <asm/vga.h>
++#endif
 
-Thanks!
-Maciej
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+ /* Legacy VGA regions */
+ #define VGA_RSRC_NONE         0x00
+
+Alternatively, I can provide an empty <asm/vga.h> (cfr. frv, mn10300,
+parisc, sh)
+or a simple (probably incorrect) one that includes <asm-generic/vga.h>
+(cfr. microblaze).
+But so far we never needed <asm/vga.h> on m68k.
+
+For the record, this "problem" has been visible in linux-next (see
+m68k/allmodconfig)
+since July 9...
+
+Gr{oetje,eeting}s,
+
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
