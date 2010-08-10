@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab0HJUP6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:15:58 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55327 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757886Ab0HJUPy (ORCPT
+	id S1757929Ab0HJUQJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:16:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35977 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757904Ab0HJUP6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 16:15:54 -0400
+	Tue, 10 Aug 2010 16:15:58 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 9/9] perf annotate: Sort by hottest lines in the TUI
-Date: Tue, 10 Aug 2010 17:15:39 -0300
-Message-Id: <1281471339-10878-10-git-send-email-acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/9] perf ui: Shorten ui_browser member names
+Date: Tue, 10 Aug 2010 17:15:31 -0300
+Message-Id: <1281471339-10878-2-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1281471339-10878-1-git-send-email-acme@infradead.org>
 References: <1281471339-10878-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,312 +24,352 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Right now it will just sort and position at the hottest line, i.e.
-the one where more samples were taken.
-
-It will be at the center of the screen and later TAB/shift-TAB will
-cycle thru the hottest lines.
-
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/builtin-annotate.c          |    2 +-
- tools/perf/util/hist.c                 |   13 ++--
- tools/perf/util/hist.h                 |    3 +-
- tools/perf/util/ui/browsers/annotate.c |  153 ++++++++++++++++++++++++--------
- 4 files changed, 125 insertions(+), 46 deletions(-)
+ tools/perf/util/newt.c       |   36 +++++++++++++-------------
+ tools/perf/util/ui/browser.c |   57 ++++++++++++++++++++---------------------
+ tools/perf/util/ui/browser.h |    6 ++--
+ 3 files changed, 49 insertions(+), 50 deletions(-)
 
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index fd20670..1478dc6 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -285,7 +285,7 @@ static int hist_entry__tty_annotate(struct hist_entry *he)
- 	LIST_HEAD(head);
- 	struct objdump_line *pos, *n;
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 266a9e0..9768be3 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -450,8 +450,8 @@ static int map_browser__search(struct map_browser *self)
+ 	if (sym != NULL) {
+ 		u32 *idx = symbol__browser_index(sym);
+ 			
+-		self->b.first_visible_entry = &sym->rb_node;
+-		self->b.index = self->b.first_visible_entry_idx = *idx;
++		self->b.top = &sym->rb_node;
++		self->b.index = self->b.top_idx = *idx;
+ 	} else
+ 		ui_helpline__fpush("%s not found!", target);
  
--	if (hist_entry__annotate(he, &head) < 0)
-+	if (hist_entry__annotate(he, &head, 0) < 0)
- 		return -1;
+@@ -967,7 +967,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
+ 			}
  
- 	if (full_paths)
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 62ec9b0..be22ae6 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -983,9 +983,9 @@ int hist_entry__inc_addr_samples(struct hist_entry *self, u64 ip)
- 	return 0;
- }
+ 			SLsmg_set_color(color);
+-			SLsmg_gotorc(self->b.top + row, self->b.left);
++			SLsmg_gotorc(self->b.y + row, self->b.x);
+ 			slsmg_write_nstring(" ", offset + extra_offset);
+ 			slsmg_printf("%c ", folded_sign);
+ 			slsmg_write_nstring(str, width);
+@@ -1030,7 +1030,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *self,
+ 		}
  
--static struct objdump_line *objdump_line__new(s64 offset, char *line)
-+static struct objdump_line *objdump_line__new(s64 offset, char *line, size_t privsize)
- {
--	struct objdump_line *self = malloc(sizeof(*self));
-+	struct objdump_line *self = malloc(sizeof(*self) + privsize);
+ 		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
+-		SLsmg_gotorc(self->b.top + row, self->b.left);
++		SLsmg_gotorc(self->b.y + row, self->b.x);
+ 		SLsmg_set_color(color);
+ 		slsmg_write_nstring(" ", offset);
+ 		slsmg_printf("%c ", folded_sign);
+@@ -1110,7 +1110,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
+ 		}
  
- 	if (self != NULL) {
- 		self->offset = offset;
-@@ -1017,7 +1017,7 @@ struct objdump_line *objdump__get_next_ip_line(struct list_head *head,
- }
+ 		SLsmg_set_color(color);
+-		SLsmg_gotorc(self->b.top + row, self->b.left);
++		SLsmg_gotorc(self->b.y + row, self->b.x);
+ 		if (symbol_conf.use_callchain) {
+ 			slsmg_printf("%c ", folded_sign);
+ 			width -= 2;
+@@ -1138,10 +1138,10 @@ static unsigned int hist_browser__refresh(struct ui_browser *self)
+ 	struct rb_node *nd;
+ 	struct hist_browser *hb = container_of(self, struct hist_browser, b);
  
- static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
--					  struct list_head *head)
-+					  struct list_head *head, size_t privsize)
- {
- 	struct symbol *sym = self->ms.sym;
- 	struct objdump_line *objdump_line;
-@@ -1068,7 +1068,7 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
- 			offset = -1;
+-	if (self->first_visible_entry == NULL)
+-		self->first_visible_entry = rb_first(&hb->hists->entries);
++	if (self->top == NULL)
++		self->top = rb_first(&hb->hists->entries);
+ 
+-	for (nd = self->first_visible_entry; nd; nd = rb_next(nd)) {
++	for (nd = self->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 
+ 		if (h->filtered)
+@@ -1244,7 +1244,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
+ 		nd = hists__filter_entries(rb_first(self->entries));
+ 		break;
+ 	case SEEK_CUR:
+-		nd = self->first_visible_entry;
++		nd = self->top;
+ 		goto do_offset;
+ 	case SEEK_END:
+ 		nd = hists__filter_prev_entries(rb_last(self->entries));
+@@ -1258,7 +1258,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
+ 	 * Moves not relative to the first visible entry invalidates its
+ 	 * row_offset:
+ 	 */
+-	h = rb_entry(self->first_visible_entry, struct hist_entry, rb_node);
++	h = rb_entry(self->top, struct hist_entry, rb_node);
+ 	h->row_offset = 0;
+ 
+ 	/*
+@@ -1286,7 +1286,7 @@ do_offset:
+ 				} else {
+ 					h->row_offset += offset;
+ 					offset = 0;
+-					self->first_visible_entry = nd;
++					self->top = nd;
+ 					break;
+ 				}
+ 			}
+@@ -1294,7 +1294,7 @@ do_offset:
+ 			if (nd == NULL)
+ 				break;
+ 			--offset;
+-			self->first_visible_entry = nd;
++			self->top = nd;
+ 		} while (offset != 0);
+ 	} else if (offset < 0) {
+ 		while (1) {
+@@ -1307,7 +1307,7 @@ do_offset:
+ 					} else {
+ 						h->row_offset += offset;
+ 						offset = 0;
+-						self->first_visible_entry = nd;
++						self->top = nd;
+ 						break;
+ 					}
+ 				} else {
+@@ -1317,7 +1317,7 @@ do_offset:
+ 					} else {
+ 						h->row_offset = h->nr_rows + offset;
+ 						offset = 0;
+-						self->first_visible_entry = nd;
++						self->top = nd;
+ 						break;
+ 					}
+ 				}
+@@ -1327,7 +1327,7 @@ do_offset:
+ 			if (nd == NULL)
+ 				break;
+ 			++offset;
+-			self->first_visible_entry = nd;
++			self->top = nd;
+ 			if (offset == 0) {
+ 				/*
+ 				 * Last unfiltered hist_entry, check if it is
+@@ -1342,7 +1342,7 @@ do_offset:
+ 			first = false;
+ 		}
+ 	} else {
+-		self->first_visible_entry = nd;
++		self->top = nd;
+ 		h = rb_entry(nd, struct hist_entry, rb_node);
+ 		h->row_offset = 0;
+ 	}
+@@ -1463,7 +1463,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
+ 		switch (es->u.key) {
+ 		case 'd': { /* Debug */
+ 			static int seq;
+-			struct hist_entry *h = rb_entry(self->b.first_visible_entry,
++			struct hist_entry *h = rb_entry(self->b.top,
+ 							struct hist_entry, rb_node);
+ 			ui_helpline__pop();
+ 			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
+@@ -1471,7 +1471,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
+ 					   self->hists->nr_entries,
+ 					   self->b.height,
+ 					   self->b.index,
+-					   self->b.first_visible_entry_idx,
++					   self->b.top_idx,
+ 					   h->row_offset, h->nr_rows);
+ 		}
+ 			continue;
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 0b2b930..edbb7dd 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -49,7 +49,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
+ 		pos = head->next;
+ 		break;
+ 	case SEEK_CUR:
+-		pos = self->first_visible_entry;
++		pos = self->top;
+ 		break;
+ 	case SEEK_END:
+ 		pos = head->prev;
+@@ -66,7 +66,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
+ 			pos = pos->prev;
  	}
  
--	objdump_line = objdump_line__new(offset, line);
-+	objdump_line = objdump_line__new(offset, line, privsize);
- 	if (objdump_line == NULL) {
- 		free(line);
- 		return -1;
-@@ -1078,7 +1078,8 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
- 	return 0;
+-	self->first_visible_entry = pos;
++	self->top = pos;
  }
  
--int hist_entry__annotate(struct hist_entry *self, struct list_head *head)
-+int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
-+			 size_t privsize)
- {
- 	struct symbol *sym = self->ms.sym;
- 	struct map *map = self->ms.map;
-@@ -1143,7 +1144,7 @@ fallback:
- 		goto out_free_filename;
+ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+@@ -79,7 +79,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+ 		nd = rb_first(root);
+ 		break;
+ 	case SEEK_CUR:
+-		nd = self->first_visible_entry;
++		nd = self->top;
+ 		break;
+ 	case SEEK_END:
+ 		nd = rb_last(root);
+@@ -96,7 +96,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+ 			nd = rb_prev(nd);
+ 	}
  
- 	while (!feof(file))
--		if (hist_entry__parse_objdump_line(self, file, head) < 0)
-+		if (hist_entry__parse_objdump_line(self, file, head, privsize) < 0)
+-	self->first_visible_entry = nd;
++	self->top = nd;
+ }
+ 
+ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
+@@ -104,13 +104,13 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
+ 	struct rb_node *nd;
+ 	int row = 0;
+ 
+-	if (self->first_visible_entry == NULL)
+-                self->first_visible_entry = rb_first(self->entries);
++	if (self->top == NULL)
++                self->top = rb_first(self->entries);
+ 
+-	nd = self->first_visible_entry;
++	nd = self->top;
+ 
+ 	while (nd != NULL) {
+-		SLsmg_gotorc(self->top + row, self->left);
++		SLsmg_gotorc(self->y + row, self->x);
+ 		self->write(self, nd, row);
+ 		if (++row == self->height)
  			break;
+@@ -122,7 +122,7 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
  
- 	pclose(file);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 65a48db..587d375 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -101,7 +101,8 @@ size_t hists__fprintf(struct hists *self, struct hists *pair,
- 		      bool show_displacement, FILE *fp);
- 
- int hist_entry__inc_addr_samples(struct hist_entry *self, u64 ip);
--int hist_entry__annotate(struct hist_entry *self, struct list_head *head);
-+int hist_entry__annotate(struct hist_entry *self, struct list_head *head,
-+			 size_t privsize);
- 
- void hists__filter_by_dso(struct hists *self, const struct dso *dso);
- void hists__filter_by_thread(struct hists *self, const struct thread *thread);
-diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
-index 5b01df6..763592b 100644
---- a/tools/perf/util/ui/browsers/annotate.c
-+++ b/tools/perf/util/ui/browsers/annotate.c
-@@ -14,6 +14,23 @@ static void ui__error_window(const char *fmt, ...)
- 	va_end(ap);
+ bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row)
+ {
+-	return (self->first_visible_entry_idx + row) == self->index;
++	return self->top_idx + row == self->index;
  }
  
-+struct annotate_browser {
-+	struct ui_browser b;
-+	struct rb_root	  entries;
-+};
-+
-+struct objdump_line_rb_node {
-+	struct rb_node	rb_node;
-+	double		percent;
-+	u32		idx;
-+};
-+
-+static inline
-+struct objdump_line_rb_node *objdump_line__rb(struct objdump_line *self)
-+{
-+	return (struct objdump_line_rb_node *)(self + 1);
-+}
-+
- static void annotate_browser__write(struct ui_browser *self, void *entry, int row)
- {
- 	struct objdump_line *ol = rb_entry(entry, struct objdump_line, node);
-@@ -21,17 +38,41 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 	int width = self->width;
- 
- 	if (ol->offset != -1) {
--		struct hist_entry *he = self->priv;
--		struct symbol *sym = he->ms.sym;
--		int len = he->ms.sym->end - he->ms.sym->start;
-+		struct objdump_line_rb_node *olrb = objdump_line__rb(ol);
-+		int color = ui_browser__percent_color(olrb->percent, current_entry);
-+		SLsmg_set_color(color);
-+		slsmg_printf(" %7.2f ", olrb->percent);
-+		if (!current_entry)
-+			SLsmg_set_color(HE_COLORSET_CODE);
-+	} else {
-+		int color = ui_browser__percent_color(0, current_entry);
-+		SLsmg_set_color(color);
-+		slsmg_write_nstring(" ", 9);
-+	}
-+
-+	SLsmg_write_char(':');
-+	slsmg_write_nstring(" ", 8);
-+	if (!*ol->line)
-+		slsmg_write_nstring(" ", width - 18);
-+	else
-+		slsmg_write_nstring(ol->line, width - 18);
-+}
-+
-+static double objdump_line__calc_percent(struct objdump_line *self,
-+					 struct list_head *head,
-+					 struct symbol *sym)
-+{
-+	double percent = 0.0;
-+
-+	if (self->offset != -1) {
-+		int len = sym->end - sym->start;
- 		unsigned int hits = 0;
--		double percent = 0.0;
--		int color;
- 		struct sym_priv *priv = symbol__priv(sym);
- 		struct sym_ext *sym_ext = priv->ext;
- 		struct sym_hist *h = priv->hist;
--		s64 offset = ol->offset;
--		struct objdump_line *next = objdump__get_next_ip_line(self->entries, ol);
-+		s64 offset = self->offset;
-+		struct objdump_line *next = objdump__get_next_ip_line(head, self);
-+
- 
- 		while (offset < (s64)len &&
- 		       (next == NULL || offset < next->offset)) {
-@@ -45,37 +86,45 @@ static void annotate_browser__write(struct ui_browser *self, void *entry, int ro
- 
- 		if (sym_ext == NULL && h->sum)
- 			percent = 100.0 * hits / h->sum;
--
--		color = ui_browser__percent_color(percent, current_entry);
--		SLsmg_set_color(color);
--		slsmg_printf(" %7.2f ", percent);
--		if (!current_entry)
--			SLsmg_set_color(HE_COLORSET_CODE);
--	} else {
--		int color = ui_browser__percent_color(0, current_entry);
--		SLsmg_set_color(color);
--		slsmg_write_nstring(" ", 9);
- 	}
- 
--	SLsmg_write_char(':');
--	slsmg_write_nstring(" ", 8);
--	if (!*ol->line)
--		slsmg_write_nstring(" ", width - 18);
--	else
--		slsmg_write_nstring(ol->line, width - 18);
-+	return percent;
-+}
-+
-+static void objdump__insert_line(struct rb_root *self,
-+				 struct objdump_line_rb_node *line)
-+{
-+	struct rb_node **p = &self->rb_node;
-+	struct rb_node *parent = NULL;
-+	struct objdump_line_rb_node *l;
-+
-+	while (*p != NULL) {
-+		parent = *p;
-+		l = rb_entry(parent, struct objdump_line_rb_node, rb_node);
-+		if (line->percent < l->percent)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+	rb_link_node(&line->rb_node, parent, p);
-+	rb_insert_color(&line->rb_node, self);
+ void ui_browser__refresh_dimensions(struct ui_browser *self)
+@@ -135,13 +135,13 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
+ 	self->height = rows - 5;
+ 	if (self->height > self->nr_entries)
+ 		self->height = self->nr_entries;
+-	self->top  = (rows - self->height) / 2;
+-	self->left = (cols - self->width) / 2;
++	self->y  = (rows - self->height) / 2;
++	self->x = (cols - self->width) / 2;
  }
  
- int hist_entry__tui_annotate(struct hist_entry *self)
+ void ui_browser__reset_index(struct ui_browser *self)
  {
- 	struct newtExitStruct es;
- 	struct objdump_line *pos, *n;
-+	struct objdump_line_rb_node *rbpos;
-+	struct rb_node *nd;
- 	LIST_HEAD(head);
--	struct ui_browser browser = {
--		.entries = &head,
--		.refresh = ui_browser__list_head_refresh,
--		.seek	 = ui_browser__list_head_seek,
--		.write	 = annotate_browser__write,
--		.priv	 = self,
-+	struct annotate_browser browser = {
-+		.b = {
-+			.entries = &head,
-+			.refresh = ui_browser__list_head_refresh,
-+			.seek	 = ui_browser__list_head_seek,
-+			.write	 = annotate_browser__write,
-+			.priv	 = self,
-+		},
- 	};
- 	int ret;
+-	self->index = self->first_visible_entry_idx = 0;
++	self->index = self->top_idx = 0;
+ 	self->seek(self, 0, SEEK_SET);
+ }
  
-@@ -85,7 +134,7 @@ int hist_entry__tui_annotate(struct hist_entry *self)
- 	if (self->ms.map->dso->annotate_warned)
- 		return -1;
+@@ -180,7 +180,7 @@ int ui_browser__refresh(struct ui_browser *self)
+ 	newtScrollbarSet(self->sb, self->index, self->nr_entries - 1);
+ 	row = self->refresh(self);
+ 	SLsmg_set_color(HE_COLORSET_NORMAL);
+-	SLsmg_fill_region(self->top + row, self->left,
++	SLsmg_fill_region(self->y + row, self->x,
+ 			  self->height - row, self->width, ' ');
  
--	if (hist_entry__annotate(self, &head) < 0) {
-+	if (hist_entry__annotate(self, &head, sizeof(*rbpos)) < 0) {
- 		ui__error_window(ui_helpline__last_msg);
- 		return -1;
- 	}
-@@ -94,16 +143,44 @@ int hist_entry__tui_annotate(struct hist_entry *self)
+ 	return 0;
+@@ -205,8 +205,8 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 			if (self->index == self->nr_entries - 1)
+ 				break;
+ 			++self->index;
+-			if (self->index == self->first_visible_entry_idx + self->height) {
+-				++self->first_visible_entry_idx;
++			if (self->index == self->top_idx + self->height) {
++				++self->top_idx;
+ 				self->seek(self, +1, SEEK_CUR);
+ 			}
+ 			break;
+@@ -214,34 +214,34 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 			if (self->index == 0)
+ 				break;
+ 			--self->index;
+-			if (self->index < self->first_visible_entry_idx) {
+-				--self->first_visible_entry_idx;
++			if (self->index < self->top_idx) {
++				--self->top_idx;
+ 				self->seek(self, -1, SEEK_CUR);
+ 			}
+ 			break;
+ 		case NEWT_KEY_PGDN:
+ 		case ' ':
+-			if (self->first_visible_entry_idx + self->height > self->nr_entries - 1)
++			if (self->top_idx + self->height > self->nr_entries - 1)
+ 				break;
  
- 	list_for_each_entry(pos, &head, node) {
- 		size_t line_len = strlen(pos->line);
--		if (browser.width < line_len)
--			browser.width = line_len;
--		++browser.nr_entries;
-+		if (browser.b.width < line_len)
-+			browser.b.width = line_len;
-+		rbpos = objdump_line__rb(pos);
-+		rbpos->idx = browser.b.nr_entries++;
-+		rbpos->percent = objdump_line__calc_percent(pos, &head, self->ms.sym);
-+		if (rbpos->percent < 0.01)
-+			continue;
-+		objdump__insert_line(&browser.entries, rbpos);
-+	}
-+
-+	/*
-+	 * Position the browser at the hottest line.
-+	 */
-+	nd = rb_last(&browser.entries);
-+	if (nd != NULL) {
-+		unsigned back;
-+
-+		ui_browser__refresh_dimensions(&browser.b);
-+		back = browser.b.height / 2;
-+		rbpos = rb_entry(nd, struct objdump_line_rb_node, rb_node);
-+		pos = ((struct objdump_line *)rbpos) - 1;
-+		browser.b.top_idx = browser.b.index = rbpos->idx;
-+
-+		while (browser.b.top_idx != 0 && back != 0) {
-+			pos = list_entry(pos->node.prev, struct objdump_line, node);
-+
-+			--browser.b.top_idx;
-+			--back;
-+		}
-+
-+		browser.b.top = pos;
- 	}
+ 			offset = self->height;
+ 			if (self->index + offset > self->nr_entries - 1)
+ 				offset = self->nr_entries - 1 - self->index;
+ 			self->index += offset;
+-			self->first_visible_entry_idx += offset;
++			self->top_idx += offset;
+ 			self->seek(self, +offset, SEEK_CUR);
+ 			break;
+ 		case NEWT_KEY_PGUP:
+-			if (self->first_visible_entry_idx == 0)
++			if (self->top_idx == 0)
+ 				break;
  
--	browser.width += 18; /* Percentage */
--	ui_browser__show(&browser, self->ms.sym->name);
--	newtFormAddHotKey(browser.form, ' ');
--	ret = ui_browser__run(&browser, &es);
--	newtFormDestroy(browser.form);
-+	browser.b.width += 18; /* Percentage */
-+	ui_browser__show(&browser.b, self->ms.sym->name);
-+	newtFormAddHotKey(browser.b.form, ' ');
-+	ret = ui_browser__run(&browser.b, &es);
-+	newtFormDestroy(browser.b.form);
- 	newtPopWindow();
- 	list_for_each_entry_safe(pos, n, &head, node) {
- 		list_del(&pos->node);
+-			if (self->first_visible_entry_idx < self->height)
+-				offset = self->first_visible_entry_idx;
++			if (self->top_idx < self->height)
++				offset = self->top_idx;
+ 			else
+ 				offset = self->height;
+ 
+ 			self->index -= offset;
+-			self->first_visible_entry_idx -= offset;
++			self->top_idx -= offset;
+ 			self->seek(self, -offset, SEEK_CUR);
+ 			break;
+ 		case NEWT_KEY_HOME:
+@@ -253,7 +253,7 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 				offset = self->nr_entries - 1;
+ 
+ 			self->index = self->nr_entries - 1;
+-			self->first_visible_entry_idx = self->index - offset;
++			self->top_idx = self->index - offset;
+ 			self->seek(self, -offset, SEEK_END);
+ 			break;
+ 		default:
+@@ -271,14 +271,13 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
+ 	struct list_head *head = self->entries;
+ 	int row = 0;
+ 
+-	if (self->first_visible_entry == NULL ||
+-	    self->first_visible_entry == self->entries)
+-                self->first_visible_entry = head->next;
++	if (self->top == NULL || self->top == self->entries)
++                self->top = head->next;
+ 
+-	pos = self->first_visible_entry;
++	pos = self->top;
+ 
+ 	list_for_each_from(pos, head) {
+-		SLsmg_gotorc(self->top + row, self->left);
++		SLsmg_gotorc(self->y + row, self->x);
+ 		self->write(self, pos, row);
+ 		if (++row == self->height)
+ 			break;
+diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
+index bcc4391..8eed24c 100644
+--- a/tools/perf/util/ui/browser.h
++++ b/tools/perf/util/ui/browser.h
+@@ -13,9 +13,9 @@
+ 
+ struct ui_browser {
+ 	newtComponent form, sb;
+-	u64	      index, first_visible_entry_idx;
+-	void	      *first_visible_entry, *entries;
+-	u16	      top, left, width, height;
++	u64	      index, top_idx;
++	void	      *top, *entries;
++	u16	      y, x, width, height;
+ 	void	      *priv;
+ 	unsigned int  (*refresh)(struct ui_browser *self);
+ 	void	      (*write)(struct ui_browser *self, void *entry, int row);
 -- 
 1.6.2.5
 
