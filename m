@@ -1,111 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0HJPuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:50:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:64229 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932179Ab0HJPup (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:50:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=XJa3yc3prSKC9qsHTMTwvh984TGa/Xx/uaMoDlmcK2e/NEOgjIbt7QZCXnZMw6DDkV
-         Qyjl7sDq9f8aKzcQbiXH+hPHudpXPokWdskuNdcomeyjzXLZQyVudbpON6WZM418dH9o
-         KnBlxQSTKcsxMilHxth9JAFV97A7abKun5hGM=
-Date: Tue, 10 Aug 2010 08:50:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.36-rc0
-Message-ID: <20100810155037.GA17552@core.coreip.homeip.net>
+	id S932287Ab0HJPvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:51:55 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51827 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932154Ab0HJPvv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:51:51 -0400
+Message-ID: <4C617596.505@kernel.dk>
+Date: Tue, 10 Aug 2010 11:51:50 -0400
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 6 (block git tree)
+References: <20100806132758.6001d416.sfr@canb.auug.org.au>	<20100806120456.5eca82b7.randy.dunlap@oracle.com>	<4C5C5D18.6050905@oracle.com> <20100810083737.c761fc8f.randy.dunlap@oracle.com>
+In-Reply-To: <20100810083737.c761fc8f.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 08/10/2010 11:37 AM, Randy Dunlap wrote:
+> On Fri, 06 Aug 2010 12:06:00 -0700 Randy Dunlap wrote:
+> 
+>> On 08/06/10 12:04, Randy Dunlap wrote:
+>>> On Fri, 6 Aug 2010 13:27:58 +1000 Stephen Rothwell wrote:
+>>>
+>>>> Hi all,
+>>>>
+>>>> As the merge window is open, please do not add 2.6.37 material to your
+>>>> linux-next included trees until after 2.6.36-rc1.
+>>>>
+>>>> Changes since 20100805:
+>>>>
+>>>> The block tree lost its build failure and a conflict.
+>>>
+>>>
+>>> Lots of source files now need <linux/blk_types.h>:
+>>>
+>>> mm/filemap.c:2164: error: 'REQ_WRITE' undeclared
+>>> fs/read_write.c:362: error: 'REQ_WRITE' undeclared
+>>> fs/splice.c:1108: error: 'REQ_WRITE' undeclared
+>>> fs/aio.c:1496: error: 'REQ_WRITE' undeclared
+>>> drivers/memstick/core/memstick.c:272: error: 'REQ_WRITE' undeclared
+>>> drivers/memstick/host/tifm_ms.c:218: error: 'REQ_WRITE' undeclared
+>>> drivers/memstick/host/jmb38x_ms.c:333: error: 'REQ_WRITE' undeclared
+>>> drivers/staging/spectra/ffsport.c:277: error: 'REQ_TYPE_LINUX_BLOCK' undeclared
+>>> fs/compat.c:1274: error: 'REQ_WRITE' undeclared
+>>
+>>
+>> Sorry, I see that this has already been fixed.
+> 
+> s/fixed/addressed/  but not yet merged into linux-next.
+> Can we get that fixed, please?
 
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive 2nd round of updates for the input subsystem. The main change
-is from Daniel Mack to allocate memory to hold ABS data in input devices
-only when devices actually produce ABS events as it slims down struct
-input_dev significantly.
-
-I also have a couple of patches pending that remove 'tty' argument from
-handle_sysrq() and friends as noone uses it, but since the change
-comflicts with kgdb a bit I want to wait till after -rc1 to merge it
-properly and send it off to you.
-
-Changelog:
----------
-
-Christoph Fritz (1):
-      Input: xpad - add USB-ID for PL-3601 Xbox 360 pad
-
-Dan Carpenter (1):
-      Input: cy8ctmg100_ts - signedness bug
-
-Daniel Mack (3):
-      Input: add static inline accessors for ABS properties
-      Input: switch to input_abs_*() access functions
-      Input: dynamically allocate ABS information
-
-Dmitry Torokhov (1):
-      Input: evdev - rearrange ioctl handling
-
-Michael Hennerich (1):
-      Input: adxl34x - do not mark device as disabled on startup
-
-Shubhrajyoti D (1):
-      Input: gpio_keys - add hooks to enable/disable device
-
-Éric Piel (2):
-      Input: elantech - discard the first 2 positions on some firmwares
-      Input: elantech - report position also with 3 fingers
-
-
-Diffstat:
---------
-
- drivers/hid/hid-wacom.c                   |   49 +++++-----
- drivers/input/evdev.c                     |  152 ++++++++++++++---------------
- drivers/input/input.c                     |   46 ++++++++-
- drivers/input/joydev.c                    |   31 +++---
- drivers/input/joystick/a3d.c              |    3 +-
- drivers/input/joystick/adi.c              |    2 +-
- drivers/input/joystick/amijoy.c           |    4 +-
- drivers/input/joystick/gf2k.c             |   20 ++--
- drivers/input/joystick/interact.c         |   14 +--
- drivers/input/joystick/sidewinder.c       |   18 ++--
- drivers/input/joystick/xpad.c             |    1 +
- drivers/input/keyboard/gpio_keys.c        |   22 ++++
- drivers/input/keyboard/hil_kbd.c          |   21 +++--
- drivers/input/misc/adxl34x.c              |    1 -
- drivers/input/misc/uinput.c               |   29 +++---
- drivers/input/mouse/elantech.c            |   31 ++++--
- drivers/input/mouse/elantech.h            |    7 +-
- drivers/input/mouse/pc110pad.c            |    4 +-
- drivers/input/mouse/synaptics.c           |    4 +-
- drivers/input/mousedev.c                  |   44 +++++----
- drivers/input/tablet/aiptek.c             |   15 +--
- drivers/input/tablet/wacom_wac.c          |    4 +-
- drivers/input/touchscreen/cy8ctmg110_ts.c |    6 +-
- include/linux/gpio_keys.h                 |    2 +
- include/linux/input.h                     |   53 ++++++----
- 25 files changed, 336 insertions(+), 247 deletions(-)
+Which patch are you referencing?
 
 -- 
-Dmitry
+Jens Axboe
 
