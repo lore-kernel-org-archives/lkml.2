@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932603Ab0HJVor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:44:47 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:58761 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab0HJVoo (ORCPT
+	id S932630Ab0HJVpE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:45:04 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62135 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932516Ab0HJVo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:44:44 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6070"; a="50561413"
-Subject: Re: [GIT PULL] Initial Tegra ARM support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: torvalds@linux-foundation.org
-Cc: Erik Gilling <konkers@google.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-tegra@vger.kernel.org, davidb@codeaurora.org
-In-Reply-To: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-References: <AANLkTi=dcQrik=+5xfwbNo_w7WkTOKZiKAFYFhwzbS=_@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 14:44:24 -0700
-Message-ID: <1281476664.9400.36.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 10 Aug 2010 17:44:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=kmobLTBzlAbOCaiRLfU4CCpSLtmFkIPkyaIryV9DzCLdsECSUbu4x6sztVXf80cp3O
+         5Om8P1jU6A+QOpUea2a1bEGFHtlwq7yR8pkSx71CRwAJov2ZC7zMDN3hnW/X5BSK4cDt
+         3bxOOU2Xa11s8GgJ0RjKGxcO6Pv2GgwuYRqPo=
+Message-ID: <4C61C857.50308@suse.cz>
+Date: Tue, 10 Aug 2010 23:44:55 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Chris Metcalf <cmetcalf@tilera.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT] writable_limits for 2.6.36
+References: <4C5D4E50.5050105@suse.cz> <AANLkTimPS_WFvEwyx+odwof5_AF5ZTOhu-3uK6m_VhYa@mail.gmail.com> 	<4C617C94.5010808@tilera.com> <201008102050.12558.arnd@arndb.de> <AANLkTi=0nx-HO7Pyun6OCygpjcwP-1aZ+U6XjxEiz_eR@mail.gmail.com> <4C61ABEA.9090104@tilera.com>
+In-Reply-To: <4C61ABEA.9090104@tilera.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 14:10 -0700, Erik Gilling wrote:
-> Hi Linus,
+On 08/10/2010 09:43 PM, Chris Metcalf wrote:
+> On 8/10/2010 3:12 PM, Linus Torvalds wrote:
+>> So I just moved the prlimit64() system call, both on x86[-64] and in
+>> asm-generic/unistd.h
+>>
+>> Pushed out. Guys, please verify that it looks ok.
+>>   
 > 
-> The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
->   Linus Torvalds (1):
->         Linux 2.6.35
-> 
-> are available in the git repository at:
-> 
->   git://android.kernel.org/kernel/tegra.git for-linus
-> 
-> This code has received review on linux-arm-kernel and has been in
-> for-next since June 18th.  No subsystems were harmed out side of
-> mach-tegra.
-> 
-> Colin Cross (4):
->       [ARM] tegra: Add clock support
->       [ARM] tegra: SMP support
+> It looks good in asm-generic/unistd.h; thanks.
 
+To me too, except the nits below.
 
-This fixes some typos in the Tegra tree which caused build failures in
-all ARM compiles.
-
-Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
 ---
- arch/arm/Kconfig |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/ia32/ia32entry.S          |    2 +-
+ arch/x86/kernel/syscall_table_32.S |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index 0ca4a94..a5d4dae 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1188,8 +1188,8 @@ config LOCAL_TIMERS
- 		REALVIEW_EB_A9MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
- 		ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_TEGRA)
- 	default y
--	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_VEXPRESS || ARCH_OMAP4 || \\
--		ARCH_U8500 || ARCH_TEGRA
-+	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_VEXPRESS || ARCH_OMAP4 || \
-+		ARCH_U8500 || ARCH_TEGRA)
- 	help
- 	  Enable support for local timers on SMP platforms, rather then the
- 	  legacy IPI broadcast method.  Local timers allows the system
--- 
-1.7.0.4
-
-
-
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
+index 91dc4bb..b9472ec 100644
+--- a/arch/x86/ia32/ia32entry.S
++++ b/arch/x86/ia32/ia32entry.S
+@@ -844,5 +844,5 @@ ia32_sys_call_table:
+        .quad compat_sys_recvmmsg
+        .quad sys_fanotify_init
+        .quad sys32_fanotify_mark
+-       .quad sys_prlimit64
++       .quad sys_prlimit64                     /* 340 */
+ ia32_syscall_end:
+diff --git a/arch/x86/kernel/syscall_table_32.S
+b/arch/x86/kernel/syscall_table_32.S
+index 4802acc..b35786d 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -339,4 +339,4 @@ ENTRY(sys_call_table)
+        .long sys_recvmmsg
+        .long sys_fanotify_init
+        .long sys_fanotify_mark
+-       .long sys_prlimit64
++       .long sys_prlimit64             /* 340 */
 
