@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0HJJdP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:33:15 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:46902 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754535Ab0HJJdG (ORCPT
+	id S1756775Ab0HJJdc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:33:32 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:41926 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755480Ab0HJJdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:33:06 -0400
+	Tue, 10 Aug 2010 05:33:08 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,65 +14,92 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
         "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
         linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/9] Hugepage migration (v2)
-Date: Tue, 10 Aug 2010 18:27:35 +0900
-Message-Id: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 1/9] HWPOISON, hugetlb: move PG_HWPoison bit check
+Date: Tue, 10 Aug 2010 18:27:36 +0900
+Message-Id: <1281432464-14833-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.2.1
+In-Reply-To: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In order to handle metadatum correctly, we should check whether the hugepage
+we are going to access is HWPOISONed *before* incrementing mapcount,
+adding the hugepage into pagecache or constructing anon_vma.
+This patch also adds retry code when there is a race between
+alloc_huge_page() and memory failure.
 
-This is the 2nd version of "hugepage migration" patchset.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+---
+ mm/hugetlb.c |   34 +++++++++++++++++++++-------------
+ 1 files changed, 21 insertions(+), 13 deletions(-)
 
-There were two points of issue.
+diff --git linux-mce-hwpoison/mm/hugetlb.c linux-mce-hwpoison/mm/hugetlb.c
+index a26c24a..5c77a73 100644
+--- linux-mce-hwpoison/mm/hugetlb.c
++++ linux-mce-hwpoison/mm/hugetlb.c
+@@ -2490,8 +2490,15 @@ retry:
+ 			int err;
+ 			struct inode *inode = mapping->host;
+ 
+-			err = add_to_page_cache(page, mapping, idx, GFP_KERNEL);
++			lock_page(page);
++			if (unlikely(PageHWPoison(page))) {
++				unlock_page(page);
++				goto retry;
++			}
++			err = add_to_page_cache_locked(page, mapping,
++						       idx, GFP_KERNEL);
+ 			if (err) {
++				unlock_page(page);
+ 				put_page(page);
+ 				if (err == -EEXIST)
+ 					goto retry;
+@@ -2504,6 +2511,10 @@ retry:
+ 			page_dup_rmap(page);
+ 		} else {
+ 			lock_page(page);
++			if (unlikely(PageHWPoison(page))) {
++				unlock_page(page);
++				goto retry;
++			}
+ 			if (unlikely(anon_vma_prepare(vma))) {
+ 				ret = VM_FAULT_OOM;
+ 				goto backout_unlocked;
+@@ -2511,22 +2522,19 @@ retry:
+ 			hugepage_add_new_anon_rmap(page, vma, address);
+ 		}
+ 	} else {
++		/*
++		 * If memory error occurs between mmap() and fault, some process
++		 * don't have hwpoisoned swap entry for errored virtual address.
++		 * So we need to block hugepage fault by PG_hwpoison bit check.
++		 */
++		if (unlikely(PageHWPoison(page))) {
++			ret = VM_FAULT_HWPOISON;
++			goto backout_unlocked;
++		}
+ 		page_dup_rmap(page);
+ 	}
+ 
+ 	/*
+-	 * Since memory error handler replaces pte into hwpoison swap entry
+-	 * at the time of error handling, a process which reserved but not have
+-	 * the mapping to the error hugepage does not have hwpoison swap entry.
+-	 * So we need to block accesses from such a process by checking
+-	 * PG_hwpoison bit here.
+-	 */
+-	if (unlikely(PageHWPoison(page))) {
+-		ret = VM_FAULT_HWPOISON;
+-		goto backout_unlocked;
+-	}
+-
+-	/*
+ 	 * If we are going to COW a private mapping later, we examine the
+ 	 * pending reservations for this page now. This will ensure that
+ 	 * any allocations necessary to record that reservation occur outside
+-- 
+1.7.2.1
 
-* Dividing hugepage migration functions from original migration code.
-  This is to avoid complexity.
-  In present version, some high level migration routines are defined to handle
-  hugepage, but some low level routines (such as migrate_copy_page() etc.)
-  are shared with original migration code in order not to increase duplication.
-
-* Locking problem between direct I/O and hugepage migration
-  As a result of digging the race between hugepage I/O and hugepage migration,
-  (where hugepage I/O can be seen only in direct I/O,)
-  I noticed that without additional locking we can avoid this race condition
-  because in direct I/O we can get whether some subpages are under I/O or not
-  from reference count of the head page and hugepage migration safely fails
-  if some references remain.  So no data lost should occurs on the migration
-  concurrent with direct I/O.
-
-This patchset is based on the following commit:
-
-  commit 1c9bc0d7945bbbcdae99f197535588e5ad24bc1c
-  "hugetlb: add missing unlock in avoidcopy path in hugetlb_cow()"
-
-on "hwpoison" branch in Andi's tree.
-
-  http://git.kernel.org/?p=linux/kernel/git/ak/linux-mce-2.6.git;a=summary
-
-
-Summary:
-
- [PATCH 1/9] HWPOISON, hugetlb: move PG_HWPoison bit check
- [PATCH 2/9] hugetlb: add allocate function for hugepage migration
- [PATCH 3/9] hugetlb: rename hugepage allocation functions
- [PATCH 4/9] hugetlb: redefine hugepage copy functions
- [PATCH 5/9] hugetlb: hugepage migration core
- [PATCH 6/9] HWPOISON, hugetlb: soft offlining for hugepage
- [PATCH 7/9] HWPOISON, hugetlb: fix unpoison for hugepage
- [PATCH 8/9] page-types.c: fix name of unpoison interface
- [PATCH 9/9] hugetlb: add corrupted hugepage counter
-
- Documentation/vm/page-types.c |    2 +-
- fs/hugetlbfs/inode.c          |   15 +++
- include/linux/hugetlb.h       |   12 ++
- include/linux/migrate.h       |   12 ++
- mm/hugetlb.c                  |  248 +++++++++++++++++++++++++++++++++--------
- mm/memory-failure.c           |   88 ++++++++++++---
- mm/migrate.c                  |  196 +++++++++++++++++++++++++++++----
- 7 files changed, 487 insertions(+), 86 deletions(-)
-
-Thanks,
-Naoya Horiguchi
