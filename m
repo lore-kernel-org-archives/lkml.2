@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755028Ab0HJJZU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:25:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51948 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab0HJJZR (ORCPT
+	id S1755344Ab0HJJ1R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:27:17 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:41587 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752252Ab0HJJ1M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:25:17 -0400
-Date: Tue, 10 Aug 2010 11:25:09 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: rtc-linux@googlegroups.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Kevin Wells <wellsk40@gmail.com>,
-        Durgesh Pattamatta <durgesh.pattamatta@nxp.com>
-Subject: Re: [rtc-linux] [PATCH 2/2] rtc: Add support in Makefile/Kconfig
- for the LPC32XX RTC
-Message-ID: <20100810092509.GA4268@pengutronix.de>
-References: <1281370650-29520-1-git-send-email-wellsk40@gmail.com>
- <1281370650-29520-3-git-send-email-wellsk40@gmail.com>
- <AANLkTim5HDRi7+ONM4kxKeKda3gZziUiuuK_ohnrwrAP@mail.gmail.com>
+	Tue, 10 Aug 2010 05:27:12 -0400
+Message-ID: <4C611B47.4090709@st.com>
+Date: Tue, 10 Aug 2010 14:56:31 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="a8Wt8u1KmwUX3Y2C"
-Content-Disposition: inline
-In-Reply-To: <AANLkTim5HDRi7+ONM4kxKeKda3gZziUiuuK_ohnrwrAP@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: "Gadiyar, Anand" <gadiyar@ti.com>
+Cc: Matti Aarnio <matti.aarnio@zmailer.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+References: <4C5F9B25.8080401@st.com> <20100809064957.GB16661@pengutronix.de>	<4C5FA698.90904@st.com>	<20100809090137.GP13165@mea-ext.zmailer.org> <4C5FCBE1.2080303@st.com> <5A47E75E594F054BAF48C5E4FC4B92AB032401D8F0@dbde02.ent.ti.com>
+In-Reply-To: <5A47E75E594F054BAF48C5E4FC4B92AB032401D8F0@dbde02.ent.ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 8/10/2010 2:52 PM, Gadiyar, Anand wrote:
+> viresh kumar wrote:
+>> > On 8/9/2010 2:31 PM, Matti Aarnio wrote:
+>>> > > On Mon, Aug 09, 2010 at 12:26:24PM +0530, viresh kumar wrote:
+>>>>> > >> > 
+>>>>> > >> > I missed this information in my last mail. We are using git send-email for
+>>>>> > >> > sending patches. As patches will go through Microsoft exchange server only,
+>>>>> > >> > so they are broken.
+>>>>> > >> > 
+>>> > > Let your boss complain to your IT keepers.
+>>> > > "These are Machine-to-Machine messages, they must not be modified!"
+>>> > > 
+>>> > > 
+>>> > > It would probably be "against corporate policy" to use gmail for these emails...
+>>> > > 
+>> > 
+>> > We got one solution: Upgrade Exchange server to SP2.
+>> > Lets see if our IT department does this upgradation.
+>> > 
+> Upgrading the Exchange server worked for us a couple of years ago. At least
+> git-send-email works okay now, but Outlook is horribly broken.
+> 
+> You could use gmail/others and send externally. Adding an explicit
+> "From :" line in the patch can still give you credits to your official
+> email address.
+> 
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks Anand.
 
-On Tue, Aug 10, 2010 at 09:45:49AM +0800, Wan ZongShun wrote:
-> Hi Kevin ,
->=20
-> 2010/8/10  <wellsk40@gmail.com>:
-> > From: Kevin Wells <wellsk40@gmail.com>
-> >
-> > Enable build RTC support for the LPC32XX in makefile/Kconfig
-> >
->=20
-> I think you can intergrate two patches [PATCH 1/2 2/2] into one rtc
-> driver patch.
+Lets see if our IT support team manages to upgrade to SP2 or not.
 
-+1. Also, please make proper use of tabs like the surrounding entries.
-
-Regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---a8Wt8u1KmwUX3Y2C
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkxhGvUACgkQD27XaX1/VRugGwCgtMCeneAJyJMzAofLsb51fjLV
-rM0AmQHerHc0FJ0NvpDr5S0gAtbcRlS7
-=NyDG
------END PGP SIGNATURE-----
-
---a8Wt8u1KmwUX3Y2C--
+viresh.
