@@ -1,61 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932985Ab0HJTFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 15:05:55 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:57938 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab0HJTFv (ORCPT
+	id S932997Ab0HJTIG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 15:08:06 -0400
+Received: from gerard.telenet-ops.be ([195.130.132.48]:34727 "EHLO
+	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932358Ab0HJTIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 15:05:51 -0400
-X-SpamScore: 10
-X-BigFish: VPS10(z3cfcs329eqz98dN936eMzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L6YADI-01-44A-02
-X-M-MSG: 
-Date: Tue, 10 Aug 2010 21:05:41 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100810190541.GN26154@erda.amd.com>
-References: <20100804184806.GL26154@erda.amd.com>
- <20100804192634.GG5130@lenovo>
- <20100806065203.GR26154@erda.amd.com>
- <20100806142131.GA1874@redhat.com>
- <20100809194829.GB26154@erda.amd.com>
- <20100809200245.GF6056@lenovo>
- <20100810074200.GE26154@erda.amd.com>
- <20100810161627.GB6893@lenovo>
- <20100810164124.GK26154@erda.amd.com>
- <20100810172451.GD6893@lenovo>
+	Tue, 10 Aug 2010 15:08:00 -0400
+X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Aug 2010 15:08:00 EDT
+Date: Tue, 10 Aug 2010 21:02:53 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linux/m68k <linux-m68k@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 2.6.36
+Message-ID: <alpine.DEB.2.00.1008102055280.17281@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100810172451.GD6893@lenovo>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.08.10 13:24:51, Cyrill Gorcunov wrote:
+	Hi Linus,
 
-> It gets masked on NMI arrival, at least for some models (Core Duo, P4,
-> P6 M and I suspect more theh that, that was the reason oprofile has
-> it, also there is a note in SDM V3a page 643).
+Please pull to receive the m68k updates for 2.6.36.
 
-Yes, that's right, I never noticed that. Maybe it is better to
-implement the apic write it in model specific code then.
+BTW, according to your comments for Jens, this time I did not rebase my
+for-linus branch on top of your tree-of-the-moment, but on top of v2.6.35.
+But I'm still wondering if this really is better? I never merge anything on
+my for-linus branch, and I always verify that my (rebased on every stable
+and rc release) m68k-queue branch gives an identical tree to my (merged
+on every stable and rc release) private development branch.
 
--Robert
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+  Linus Torvalds (1):
+        Linux 2.6.35
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+are available in the git repository at:
 
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+  git://git.kernel.org/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+Andrea Gelmini (1):
+      arch/m68k/sun3/leds.c: Checkpatch cleanup
+
+Finn Thain (2):
+      m68k/mac: Add color classic ii support
+      m68k/mac: Fix RTC on PMU machines
+
+Geert Uytterhoeven (2):
+      zorro: BKL removal
+      zorro: Fix reading of proc/bus/zorro/* in small chunks
+
+ arch/m68k/mac/config.c |    9 +++++++++
+ arch/m68k/mac/misc.c   |    6 +++---
+ arch/m68k/sun3/leds.c  |    4 ++--
+ drivers/zorro/proc.c   |   17 +++++++++--------
+ 4 files changed, 23 insertions(+), 13 deletions(-)
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
