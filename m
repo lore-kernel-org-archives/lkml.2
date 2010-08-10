@@ -1,59 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933006Ab0HJTMJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 15:12:09 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48036 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932358Ab0HJTMA convert rfc822-to-8bit (ORCPT
+	id S932999Ab0HJTNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 15:13:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39579 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932358Ab0HJTNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 15:12:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=VL5RdoIvelJYQGbJE3bTcq4fNKEZ3zFbj6JMgC5/qFWC+G8q4KYra34+2smDAi8GmL
-         DgByTJ/YWjtZE9dwv109DJw0aoJXZ3nvcUJKHz6d9rce01nvSm+p3YkiQkyRtHFLrvPT
-         f/DG60eYtPvNybSGHSiIZB/pAm9IEb/CYSUjE=
+	Tue, 10 Aug 2010 15:13:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <1281460072.16880.47.camel@e102109-lin.cambridge.arm.com>
-References: <20100421192319.GA16719@debian>
-	<1281460072.16880.47.camel@e102109-lin.cambridge.arm.com>
-Date: Wed, 11 Aug 2010 00:41:59 +0530
-X-Google-Sender-Auth: Ue8Kj7-En6lm_pXE4_aL_MmXMlY
-Message-ID: <AANLkTi=Vf6NPxDqpL8ycpjXDNajTzdYVXFYdLq0CxJZ8@mail.gmail.com>
-Subject: Re: [PATCH 05/10] ARM: ftrace: add ENDPROC annotations
-From: Rabin Vincent <rabin@rab.in>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Abhishek Sagar <sagar.abhishek@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <201008102050.12558.arnd@arndb.de>
+References: <4C5D4E50.5050105@suse.cz> <AANLkTimPS_WFvEwyx+odwof5_AF5ZTOhu-3uK6m_VhYa@mail.gmail.com> 
+	<4C617C94.5010808@tilera.com> <201008102050.12558.arnd@arndb.de>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 10 Aug 2010 12:12:41 -0700
+Message-ID: <AANLkTi=0nx-HO7Pyun6OCygpjcwP-1aZ+U6XjxEiz_eR@mail.gmail.com>
+Subject: Re: [GIT] writable_limits for 2.6.36
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, Jiri Slaby <jslaby@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Catalin,
-
-On Tue, Aug 10, 2010 at 10:37 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Wed, 2010-04-21 at 20:23 +0100, Rabin Vincent wrote:
->> When building as Thumb-2, the ".type foo, %function" annotation in
->> ENDPROC seems to be required in order for the assembly routines to be
->> recognized as Thumb-2 code.  If the ENDPROC annotations are not present,
->> calls to these routines are generated as BLX instead of BL.
->>
->> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
->> Signed-off-by: Rabin Vincent <rabin@rab.in>
+On Tue, Aug 10, 2010 at 11:50 AM, Arnd Bergmann <arnd@arndb.de> wrote:
 >
-> What's the status of these patches? I haven't seen them in mainline.
+> Right. The writable_rlimits syscall should just go after wait4 at 262.
 
-They're in the patch tracker now.  I'd forgotten about them for a while,
-and there was one patch missing an ack, but that's sorted out now.
+.. and in the meantime I added the notify tree too, so now the
+x86(-64) numbers also clashed.
 
-Rabin
+So I just moved the prlimit64() system call, both on x86[-64] and in
+asm-generic/unistd.h
+
+Pushed out. Guys, please verify that it looks ok.
+
+                    Linus
