@@ -1,95 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933589Ab0HJWBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:01:36 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61934 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932959Ab0HJWB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:01:28 -0400
-Subject: Re: [PATCH] lib/scatterlist: Hook sg_kmalloc into kmemleak (v2)
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <1280220298-9641-1-git-send-email-chris@chris-wilson.co.uk>
-References: <1280220298-9641-1-git-send-email-chris@chris-wilson.co.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Tue, 10 Aug 2010 23:01:12 +0100
-Message-ID: <1281477672.8973.20.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 10 Aug 2010 22:01:14.0056 (UTC) FILETIME=[8CBDBC80:01CB38D7]
+	id S933549Ab0HJWBO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:01:14 -0400
+Received: from kroah.org ([198.145.64.141]:45050 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933338Ab0HJWAu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:50 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Lytochkin Boris <lytboris@gmail.com>,
+        Alexander Beregalov <a.beregalov@gmail.com>,
+        stable <stable@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 59/68] serial: add support for OX16PCI958 card
+Date: Tue, 10 Aug 2010 14:59:21 -0700
+Message-Id: <1281477570-18944-59-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100810214425.GB17385@kroah.com>
+References: <20100810214425.GB17385@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens,
+From: Lytochkin Boris <lytboris@gmail.com>
 
-On Tue, 2010-07-27 at 09:44 +0100, Chris Wilson wrote:
-> kmemleak ignores page_alloc() and so believes the final sub-page
-> allocation using the plain kmalloc is decoupled and lost. This leads to
-> lots of false-positives with code that uses scatterlists.
-> 
-> The options seem to be either to tell kmemleak that the kmalloc is not
-> leaked or to notify kmemleak of the page allocations. The danger of the
-> first approach is that we may hide a real leak, so choose the latter
-> approach (of which I am not sure of the downsides).
-> 
-> v2: Added comments on the suggestion of Catalin.
-> 
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Jens Axboe <jaxboe@fusionio.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Lytochkin Boris <lytboris@gmail.com>
+Tested-by: Lytochkin Boris <lytboris@gmail.com>
+Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
+Cc: stable <stable@kernel.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/8250_pci.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-Since you are the author of lib/scatterlist.c would you (or Tejun) mind
-ack'ing this patch? Thanks.
-
-> ---
->  lib/scatterlist.c |   21 ++++++++++++++++-----
->  1 files changed, 16 insertions(+), 5 deletions(-)
-> 
-> diff --git a/lib/scatterlist.c b/lib/scatterlist.c
-> index 9afa25b..fc85552 100644
-> --- a/lib/scatterlist.c
-> +++ b/lib/scatterlist.c
-> @@ -115,17 +115,28 @@ EXPORT_SYMBOL(sg_init_one);
->   */
->  static struct scatterlist *sg_kmalloc(unsigned int nents, gfp_t gfp_mask)
->  {
-> -       if (nents == SG_MAX_SINGLE_ALLOC)
-> -               return (struct scatterlist *) __get_free_page(gfp_mask);
-> -       else
-> +       if (nents == SG_MAX_SINGLE_ALLOC) {
-> +               /* kmemleak doesn't track page allocations as they are not
-> +                * commonly used (in a raw form) for kernel data structures.
-> +                * As we chain together a list of pages and then a normal
-> +                * kmalloc (tracked by kmemleak), in order to for that last
-> +                * allocation not to become decoupled (and thus a
-> +                * false-positive) we need to inform kmemleak of all the
-> +                * intermediate allocations.
-> +                */
-> +               void *ptr = (void *) __get_free_page(gfp_mask);
-> +               kmemleak_alloc(ptr, PAGE_SIZE, 1, gfp_mask);
-> +               return ptr;
-> +       } else
->                 return kmalloc(nents * sizeof(struct scatterlist), gfp_mask);
->  }
-> 
->  static void sg_kfree(struct scatterlist *sg, unsigned int nents)
->  {
-> -       if (nents == SG_MAX_SINGLE_ALLOC)
-> +       if (nents == SG_MAX_SINGLE_ALLOC) {
-> +               kmemleak_free(sg);
->                 free_page((unsigned long) sg);
-> -       else
-> +       } else
->                 kfree(sg);
->  }
-
+diff --git a/drivers/serial/8250_pci.c b/drivers/serial/8250_pci.c
+index 746a446..53be4d3 100644
+--- a/drivers/serial/8250_pci.c
++++ b/drivers/serial/8250_pci.c
+@@ -994,6 +994,7 @@ static int skip_tx_en_setup(struct serial_private *priv,
+ #define PCI_DEVICE_ID_TITAN_800E	0xA014
+ #define PCI_DEVICE_ID_TITAN_200EI	0xA016
+ #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
++#define PCI_DEVICE_ID_OXSEMI_16PCI958	0x9538
+ 
+ /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
+ #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
+@@ -1542,6 +1543,8 @@ enum pci_board_num_t {
+ 	pbn_b2_4_921600,
+ 	pbn_b2_8_921600,
+ 
++	pbn_b2_8_1152000,
++
+ 	pbn_b2_bt_1_115200,
+ 	pbn_b2_bt_2_115200,
+ 	pbn_b2_bt_4_115200,
+@@ -1960,6 +1963,13 @@ static struct pciserial_board pci_boards[] __devinitdata = {
+ 		.uart_offset	= 8,
+ 	},
+ 
++	[pbn_b2_8_1152000] = {
++		.flags		= FL_BASE2,
++		.num_ports	= 8,
++		.base_baud	= 1152000,
++		.uart_offset	= 8,
++	},
++
+ 	[pbn_b2_bt_1_115200] = {
+ 		.flags		= FL_BASE2|FL_BASE_BARS,
+ 		.num_ports	= 1,
+@@ -2875,6 +2885,9 @@ static struct pci_device_id serial_pci_tbl[] = {
+ 	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI952,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_b0_bt_2_921600 },
++	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI958,
++		PCI_ANY_ID , PCI_ANY_ID, 0, 0,
++		pbn_b2_8_1152000 },
+ 
+ 	/*
+ 	 * Oxford Semiconductor Inc. Tornado PCI express device range.
 -- 
-Catalin
+1.7.2
 
