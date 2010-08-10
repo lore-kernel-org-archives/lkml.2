@@ -1,74 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab0HJMox (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:44:53 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:35422 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757648Ab0HJMos (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:44:48 -0400
-Date: Tue, 10 Aug 2010 14:44:45 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: David Miller <davem@davemloft.net>, willy@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: perf build broke by list_head changes...
-Message-ID: <20100810124445.GA14843@merkur.ravnborg.org>
-References: <20100809.235746.115919762.davem@davemloft.net> <4C6147DE.9050608@tilera.com>
+	id S932112Ab0HJMwN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:52:13 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45981 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932070Ab0HJMwJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 08:52:09 -0400
+Date: Tue, 10 Aug 2010 14:52:06 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Peter Teoh <htmldeveloper@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org,
+        linville@tuxdriver.com
+Subject: Re: Compilation errors on latest git tree
+In-Reply-To: <AANLkTinU1jzHEwgQScFxt=a0MBSUsMXuYJwkwKocJP6D@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1008101450540.2372@twin.jikos.cz>
+References: <AANLkTinU1jzHEwgQScFxt=a0MBSUsMXuYJwkwKocJP6D@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6147DE.9050608@tilera.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1747641777-669367335-1281444727=:2372"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 08:36:46AM -0400, Chris Metcalf wrote:
-> On 8/10/2010 2:57 AM, David Miller wrote:
-> > Commit:
-> >
-> > commit de5d9bf6541736dc7ad264d2b5cc99bc1b2ad958
-> > Author: Chris Metcalf <cmetcalf@tilera.com>
-> > Date:   Fri Jul 2 13:41:14 2010 -0400
-> >
-> >     Move list types from <linux/list.h> to <linux/types.h>.
-> >
-> > broke the build of 'perf'.
-> >
-> > If you move "struct list_head" into types.h, this means perf stops
-> > building because it depends upon being able to include linux/list.h
-> > from a userland application and at the same time be able to get the
-> > basic data types without defining __KERNEL__ or similar.
-> >   
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---1747641777-669367335-1281444727=:2372
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
+
+On Tue, 10 Aug 2010, Peter Teoh wrote:
+
+> Got the following compilation errors on the latest linus git tree
+> (v.2.6.35-6113-gf6cec0a).
 > 
-> If necessary, it certainly would be easy to move the list.h types to
-> follow struct ustat, then bump the #endif up above them with a comment
-> about the perf system's use of them.
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/generated/compile.h
+>   VDSOSYM arch/x86/vdso/vdso32-int80-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-sysenter-syms.lds
+>   VDSOSYM arch/x86/vdso/vdso32-syms.lds
+>   LD      arch/x86/vdso/built-in.o
+>   LD      arch/x86/built-in.o
+>   CC [M]  drivers/net/wireless/libertas/cfg.o
+> drivers/net/wireless/libertas/cfg.c: In function ‘lbs_scan_worker’:
+> drivers/net/wireless/libertas/cfg.c:722: error: ‘TASK_NORMAL’
+> undeclared (first use in this function)
+> drivers/net/wireless/libertas/cfg.c:722: error: (Each undeclared
+> identifier is reported only once
+> drivers/net/wireless/libertas/cfg.c:722: error: for each function it
+> appears in.)
+> drivers/net/wireless/libertas/cfg.c: In function ‘lbs_cfg_connect’:
+> drivers/net/wireless/libertas/cfg.c:1267: error: ‘TASK_INTERRUPTIBLE’
+> undeclared (first use in this function)
+> drivers/net/wireless/libertas/cfg.c:1267: error: implicit declaration
+> of function ‘signal_pending’
+> drivers/net/wireless/libertas/cfg.c:1267: error: implicit declaration
+> of function ‘schedule_timeout’
+> make[4]: *** [drivers/net/wireless/libertas/cfg.o] Error 1
+> make[3]: *** [drivers/net/wireless/libertas] Error 2
+> make[2]: *** [drivers/net/wireless] Error 2
+> make[1]: *** [drivers/net] Error 2
+> make: *** [drivers] Error 2
 > 
-> I'm confused, though, since <linux/list.h> isn't installed by
-> headers_install, so how was perf finding that definition before anyway?
+> It as resolved via the attached patch.   You may want to change the
+> way I patch it.   Thanks.
 
-kernel devs usually tell people not to use kernel
-headers direct.
-But perf does so a lot.
+Adding some appropriate CCs.
 
-$ cd tools/perf/util; git grep '../../..'
-header.h:#include "../../../include/linux/perf_event.h"
-include/asm/byteorder.h:#include "../../../../include/linux/swab.h"
-include/linux/hash.h:#include "../../../../include/linux/hash.h"
-include/linux/list.h:#include "../../../../include/linux/list.h"
-include/linux/poison.h:#include "../../../../include/linux/poison.h"
-include/linux/rbtree.h:#include "../../../../include/linux/rbtree.h"
-parse-events.c:#include "../../../include/linux/hw_breakpoint.h"
-parse-events.c: snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
-parse-events.c: snprintf(evt_path, MAXPATHLEN, "%s/%s/%s/id", debugfs_path,
-session.h:#include "../../../include/linux/perf_event.h"
-util.h:#include "../../../include/linux/magic.h"
-util.h:#include "../../../include/linux/stringify.h"
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
 
-IMO the patch that moves list_head to types.h is fine.
-And perf needs to learn good manner with respect to
-kernel headers.
+---1747641777-669367335-1281444727=:2372
+Content-Type: TEXT/PLAIN; charset=US-ASCII; name=libertas.patch
+Content-Transfer-Encoding: BASE64
+Content-ID: <alpine.LRH.2.00.1008101452060.2372@twin.jikos.cz>
+Content-Description: 
+Content-Disposition: attachment; filename=libertas.patch
 
-	Sam
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvbmV0L3dpcmVsZXNzL2xpYmVydGFzL2Nm
+Zy5jIGIvZHJpdmVycy9uZXQvd2lyZWxlc3MvbGliZXJ0YXMvY2ZnLmMNCmlu
+ZGV4IDhlOWZiZmQuLjUxYTk2ZjUgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL25l
+dC93aXJlbGVzcy9saWJlcnRhcy9jZmcuYw0KKysrIGIvZHJpdmVycy9uZXQv
+d2lyZWxlc3MvbGliZXJ0YXMvY2ZnLmMNCkBAIC03LDYgKzcsNyBAQA0KICAq
+Lw0KIA0KICNpbmNsdWRlIDxsaW51eC9zbGFiLmg+DQorI2luY2x1ZGUgPGxp
+bnV4L3NjaGVkLmg+DQogI2luY2x1ZGUgPGxpbnV4L2llZWU4MDIxMS5oPg0K
+ICNpbmNsdWRlIDxuZXQvY2ZnODAyMTEuaD4NCiAjaW5jbHVkZSA8YXNtL3Vu
+YWxpZ25lZC5oPg0K
+
+---1747641777-669367335-1281444727=:2372--
