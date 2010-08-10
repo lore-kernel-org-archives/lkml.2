@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757929Ab0HJUQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 16:16:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35977 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757904Ab0HJUP6 (ORCPT
+	id S1757874Ab0HJUPx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 16:15:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55239 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757657Ab0HJUPs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 16:15:58 -0400
+	Tue, 10 Aug 2010 16:15:48 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/9] perf ui: Shorten ui_browser member names
-Date: Tue, 10 Aug 2010 17:15:31 -0300
-Message-Id: <1281471339-10878-2-git-send-email-acme@infradead.org>
+Subject: [PATCH 8/9] perf ui: Complete the breakdown of util/newt.c
+Date: Tue, 10 Aug 2010 17:15:38 -0300
+Message-Id: <1281471339-10878-9-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1281471339-10878-1-git-send-email-acme@infradead.org>
 References: <1281471339-10878-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,349 +27,555 @@ From: Arnaldo Carvalho de Melo <acme@redhat.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/newt.c       |   36 +++++++++++++-------------
- tools/perf/util/ui/browser.c |   57 ++++++++++++++++++++---------------------
- tools/perf/util/ui/browser.h |    6 ++--
- 3 files changed, 49 insertions(+), 50 deletions(-)
+ tools/perf/Makefile                    |    7 +-
+ tools/perf/util/debug.c                |    2 +-
+ tools/perf/util/debug.h                |    6 +-
+ tools/perf/util/newt.c                 |  170 --------------------------------
+ tools/perf/util/ui/browsers/annotate.c |    2 +-
+ tools/perf/util/ui/browsers/hists.c    |    8 +-
+ tools/perf/util/ui/helpline.c          |   26 +++++
+ tools/perf/util/ui/helpline.h          |    1 +
+ tools/perf/util/ui/setup.c             |   42 ++++++++
+ tools/perf/util/ui/util.c              |  114 +++++++++++++++++++++
+ tools/perf/util/ui/util.h              |   10 ++
+ 11 files changed, 203 insertions(+), 185 deletions(-)
+ delete mode 100644 tools/perf/util/newt.c
+ create mode 100644 tools/perf/util/ui/setup.c
+ create mode 100644 tools/perf/util/ui/util.c
+ create mode 100644 tools/perf/util/ui/util.h
 
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 266a9e0..9768be3 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -450,8 +450,8 @@ static int map_browser__search(struct map_browser *self)
- 	if (sym != NULL) {
- 		u32 *idx = symbol__browser_index(sym);
- 			
--		self->b.first_visible_entry = &sym->rb_node;
--		self->b.index = self->b.first_visible_entry_idx = *idx;
-+		self->b.top = &sym->rb_node;
-+		self->b.index = self->b.top_idx = *idx;
- 	} else
- 		ui_helpline__fpush("%s not found!", target);
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 62e4d6f..41abb90 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -567,18 +567,20 @@ else
+ 		# Fedora has /usr/include/slang/slang.h, but ubuntu /usr/include/slang.h
+ 		BASIC_CFLAGS += -I/usr/include/slang
+ 		EXTLIBS += -lnewt -lslang
+-		LIB_OBJS += $(OUTPUT)util/newt.o
++		LIB_OBJS += $(OUTPUT)util/ui/setup.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browser.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browsers/hists.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/progress.o
++		LIB_OBJS += $(OUTPUT)util/ui/util.o
+ 		LIB_H += util/ui/browser.h
+ 		LIB_H += util/ui/browsers/map.h
+ 		LIB_H += util/ui/helpline.h
+ 		LIB_H += util/ui/libslang.h
+ 		LIB_H += util/ui/progress.h
++		LIB_H += util/ui/util.h
+ 	endif
+ endif
  
-@@ -967,7 +967,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
- 			}
+@@ -976,9 +978,6 @@ $(OUTPUT)builtin-init-db.o: builtin-init-db.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/config.o: util/config.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DETC_PERFCONFIG='"$(ETC_PERFCONFIG_SQ)"' $<
  
- 			SLsmg_set_color(color);
--			SLsmg_gotorc(self->b.top + row, self->b.left);
-+			SLsmg_gotorc(self->b.y + row, self->b.x);
- 			slsmg_write_nstring(" ", offset + extra_offset);
- 			slsmg_printf("%c ", folded_sign);
- 			slsmg_write_nstring(str, width);
-@@ -1030,7 +1030,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *self,
- 		}
+-$(OUTPUT)util/newt.o: util/newt.c $(OUTPUT)PERF-CFLAGS
+-	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+-
+ $(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
- 		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
--		SLsmg_gotorc(self->b.top + row, self->b.left);
-+		SLsmg_gotorc(self->b.y + row, self->b.x);
- 		SLsmg_set_color(color);
- 		slsmg_write_nstring(" ", offset);
- 		slsmg_printf("%c ", folded_sign);
-@@ -1110,7 +1110,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 		}
+diff --git a/tools/perf/util/debug.c b/tools/perf/util/debug.c
+index 318dab1..f9c7e3a 100644
+--- a/tools/perf/util/debug.c
++++ b/tools/perf/util/debug.c
+@@ -23,7 +23,7 @@ int eprintf(int level, const char *fmt, ...)
+ 	if (verbose >= level) {
+ 		va_start(args, fmt);
+ 		if (use_browser > 0)
+-			ret = browser__show_help(fmt, args);
++			ret = ui_helpline__show_help(fmt, args);
+ 		else
+ 			ret = vfprintf(stderr, fmt, args);
+ 		va_end(args);
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index ba4892e..7a17ee0 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -14,7 +14,7 @@ void trace_event(event_t *event);
+ struct ui_progress;
  
- 		SLsmg_set_color(color);
--		SLsmg_gotorc(self->b.top + row, self->b.left);
-+		SLsmg_gotorc(self->b.y + row, self->b.x);
- 		if (symbol_conf.use_callchain) {
- 			slsmg_printf("%c ", folded_sign);
- 			width -= 2;
-@@ -1138,10 +1138,10 @@ static unsigned int hist_browser__refresh(struct ui_browser *self)
- 	struct rb_node *nd;
- 	struct hist_browser *hb = container_of(self, struct hist_browser, b);
- 
--	if (self->first_visible_entry == NULL)
--		self->first_visible_entry = rb_first(&hb->hists->entries);
-+	if (self->top == NULL)
-+		self->top = rb_first(&hb->hists->entries);
- 
--	for (nd = self->first_visible_entry; nd; nd = rb_next(nd)) {
-+	for (nd = self->top; nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 
- 		if (h->filtered)
-@@ -1244,7 +1244,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
- 		nd = hists__filter_entries(rb_first(self->entries));
- 		break;
- 	case SEEK_CUR:
--		nd = self->first_visible_entry;
-+		nd = self->top;
- 		goto do_offset;
- 	case SEEK_END:
- 		nd = hists__filter_prev_entries(rb_last(self->entries));
-@@ -1258,7 +1258,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
- 	 * Moves not relative to the first visible entry invalidates its
- 	 * row_offset:
- 	 */
--	h = rb_entry(self->first_visible_entry, struct hist_entry, rb_node);
-+	h = rb_entry(self->top, struct hist_entry, rb_node);
- 	h->row_offset = 0;
- 
- 	/*
-@@ -1286,7 +1286,7 @@ do_offset:
- 				} else {
- 					h->row_offset += offset;
- 					offset = 0;
--					self->first_visible_entry = nd;
-+					self->top = nd;
- 					break;
- 				}
- 			}
-@@ -1294,7 +1294,7 @@ do_offset:
- 			if (nd == NULL)
- 				break;
- 			--offset;
--			self->first_visible_entry = nd;
-+			self->top = nd;
- 		} while (offset != 0);
- 	} else if (offset < 0) {
- 		while (1) {
-@@ -1307,7 +1307,7 @@ do_offset:
- 					} else {
- 						h->row_offset += offset;
- 						offset = 0;
--						self->first_visible_entry = nd;
-+						self->top = nd;
- 						break;
- 					}
- 				} else {
-@@ -1317,7 +1317,7 @@ do_offset:
- 					} else {
- 						h->row_offset = h->nr_rows + offset;
- 						offset = 0;
--						self->first_visible_entry = nd;
-+						self->top = nd;
- 						break;
- 					}
- 				}
-@@ -1327,7 +1327,7 @@ do_offset:
- 			if (nd == NULL)
- 				break;
- 			++offset;
--			self->first_visible_entry = nd;
-+			self->top = nd;
- 			if (offset == 0) {
- 				/*
- 				 * Last unfiltered hist_entry, check if it is
-@@ -1342,7 +1342,7 @@ do_offset:
- 			first = false;
- 		}
- 	} else {
--		self->first_visible_entry = nd;
-+		self->top = nd;
- 		h = rb_entry(nd, struct hist_entry, rb_node);
- 		h->row_offset = 0;
- 	}
-@@ -1463,7 +1463,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
- 		switch (es->u.key) {
- 		case 'd': { /* Debug */
- 			static int seq;
--			struct hist_entry *h = rb_entry(self->b.first_visible_entry,
-+			struct hist_entry *h = rb_entry(self->b.top,
- 							struct hist_entry, rb_node);
- 			ui_helpline__pop();
- 			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
-@@ -1471,7 +1471,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
- 					   self->hists->nr_entries,
- 					   self->b.height,
- 					   self->b.index,
--					   self->b.first_visible_entry_idx,
-+					   self->b.top_idx,
- 					   h->row_offset, h->nr_rows);
- 		}
- 			continue;
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 0b2b930..edbb7dd 100644
---- a/tools/perf/util/ui/browser.c
-+++ b/tools/perf/util/ui/browser.c
-@@ -49,7 +49,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
- 		pos = head->next;
- 		break;
- 	case SEEK_CUR:
--		pos = self->first_visible_entry;
-+		pos = self->top;
- 		break;
- 	case SEEK_END:
- 		pos = head->prev;
-@@ -66,7 +66,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
- 			pos = pos->prev;
- 	}
- 
--	self->first_visible_entry = pos;
-+	self->top = pos;
- }
- 
- void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
-@@ -79,7 +79,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
- 		nd = rb_first(root);
- 		break;
- 	case SEEK_CUR:
--		nd = self->first_visible_entry;
-+		nd = self->top;
- 		break;
- 	case SEEK_END:
- 		nd = rb_last(root);
-@@ -96,7 +96,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
- 			nd = rb_prev(nd);
- 	}
- 
--	self->first_visible_entry = nd;
-+	self->top = nd;
- }
- 
- unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
-@@ -104,13 +104,13 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
- 	struct rb_node *nd;
- 	int row = 0;
- 
--	if (self->first_visible_entry == NULL)
--                self->first_visible_entry = rb_first(self->entries);
-+	if (self->top == NULL)
-+                self->top = rb_first(self->entries);
- 
--	nd = self->first_visible_entry;
-+	nd = self->top;
- 
- 	while (nd != NULL) {
--		SLsmg_gotorc(self->top + row, self->left);
-+		SLsmg_gotorc(self->y + row, self->x);
- 		self->write(self, nd, row);
- 		if (++row == self->height)
- 			break;
-@@ -122,7 +122,7 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
- 
- bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row)
+ #ifdef NO_NEWT_SUPPORT
+-static inline int browser__show_help(const char *format __used, va_list ap __used)
++static inline int ui_helpline__show_help(const char *format __used, va_list ap __used)
  {
--	return (self->first_visible_entry_idx + row) == self->index;
-+	return self->top_idx + row == self->index;
- }
- 
- void ui_browser__refresh_dimensions(struct ui_browser *self)
-@@ -135,13 +135,13 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
- 	self->height = rows - 5;
- 	if (self->height > self->nr_entries)
- 		self->height = self->nr_entries;
--	self->top  = (rows - self->height) / 2;
--	self->left = (cols - self->width) / 2;
-+	self->y  = (rows - self->height) / 2;
-+	self->x = (cols - self->width) / 2;
- }
- 
- void ui_browser__reset_index(struct ui_browser *self)
- {
--	self->index = self->first_visible_entry_idx = 0;
-+	self->index = self->top_idx = 0;
- 	self->seek(self, 0, SEEK_SET);
- }
- 
-@@ -180,7 +180,7 @@ int ui_browser__refresh(struct ui_browser *self)
- 	newtScrollbarSet(self->sb, self->index, self->nr_entries - 1);
- 	row = self->refresh(self);
- 	SLsmg_set_color(HE_COLORSET_NORMAL);
--	SLsmg_fill_region(self->top + row, self->left,
-+	SLsmg_fill_region(self->y + row, self->x,
- 			  self->height - row, self->width, ' ');
- 
  	return 0;
-@@ -205,8 +205,8 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 			if (self->index == self->nr_entries - 1)
- 				break;
- 			++self->index;
--			if (self->index == self->first_visible_entry_idx + self->height) {
--				++self->first_visible_entry_idx;
-+			if (self->index == self->top_idx + self->height) {
-+				++self->top_idx;
- 				self->seek(self, +1, SEEK_CUR);
+ }
+@@ -30,8 +30,8 @@ static inline void ui_progress__update(struct ui_progress *self __used,
+ 
+ static inline void ui_progress__delete(struct ui_progress *self __used) {}
+ #else
+-extern char browser__last_msg[];
+-int browser__show_help(const char *format, va_list ap);
++extern char ui_helpline__last_msg[];
++int ui_helpline__show_help(const char *format, va_list ap);
+ #include "ui/progress.h"
+ #endif
+ 
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+deleted file mode 100644
+index 6bccdaa..0000000
+--- a/tools/perf/util/newt.c
++++ /dev/null
+@@ -1,170 +0,0 @@
+-#include <newt.h>
+-#include <signal.h>
+-#include <stdio.h>
+-#include <stdbool.h>
+-#include <string.h>
+-#include <sys/ttydefaults.h>
+-
+-#include "cache.h"
+-#include "debug.h"
+-#include "ui/browser.h"
+-#include "ui/helpline.h"
+-
+-newtComponent newt_form__new(void);
+-int popup_menu(int argc, char * const argv[]);
+-int ui__help_window(const char *text);
+-bool dialog_yesno(const char *msg);
+-
+-char browser__last_msg[1024];
+-
+-int browser__show_help(const char *format, va_list ap)
+-{
+-	int ret;
+-	static int backlog;
+-
+-        ret = vsnprintf(browser__last_msg + backlog,
+-			sizeof(browser__last_msg) - backlog, format, ap);
+-	backlog += ret;
+-
+-	if (browser__last_msg[backlog - 1] == '\n') {
+-		ui_helpline__puts(browser__last_msg);
+-		newtRefresh();
+-		backlog = 0;
+-	}
+-
+-	return ret;
+-}
+-
+-static void newt_form__set_exit_keys(newtComponent self)
+-{
+-	newtFormAddHotKey(self, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self, NEWT_KEY_ESCAPE);
+-	newtFormAddHotKey(self, 'Q');
+-	newtFormAddHotKey(self, 'q');
+-	newtFormAddHotKey(self, CTRL('c'));
+-}
+-
+-newtComponent newt_form__new(void)
+-{
+-	newtComponent self = newtForm(NULL, NULL, 0);
+-	if (self)
+-		newt_form__set_exit_keys(self);
+-	return self;
+-}
+-
+-int popup_menu(int argc, char * const argv[])
+-{
+-	struct newtExitStruct es;
+-	int i, rc = -1, max_len = 5;
+-	newtComponent listbox, form = newt_form__new();
+-
+-	if (form == NULL)
+-		return -1;
+-
+-	listbox = newtListbox(0, 0, argc, NEWT_FLAG_RETURNEXIT);
+-	if (listbox == NULL)
+-		goto out_destroy_form;
+-
+-	newtFormAddComponent(form, listbox);
+-
+-	for (i = 0; i < argc; ++i) {
+-		int len = strlen(argv[i]);
+-		if (len > max_len)
+-			max_len = len;
+-		if (newtListboxAddEntry(listbox, argv[i], (void *)(long)i))
+-			goto out_destroy_form;
+-	}
+-
+-	newtCenteredWindow(max_len, argc, NULL);
+-	newtFormRun(form, &es);
+-	rc = newtListboxGetCurrent(listbox) - NULL;
+-	if (es.reason == NEWT_EXIT_HOTKEY)
+-		rc = -1;
+-	newtPopWindow();
+-out_destroy_form:
+-	newtFormDestroy(form);
+-	return rc;
+-}
+-
+-int ui__help_window(const char *text)
+-{
+-	struct newtExitStruct es;
+-	newtComponent tb, form = newt_form__new();
+-	int rc = -1;
+-	int max_len = 0, nr_lines = 0;
+-	const char *t;
+-
+-	if (form == NULL)
+-		return -1;
+-
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-		int len;
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
+-	}
+-
+-	tb = newtTextbox(0, 0, max_len, nr_lines, 0);
+-	if (tb == NULL)
+-		goto out_destroy_form;
+-
+-	newtTextboxSetText(tb, text);
+-	newtFormAddComponent(form, tb);
+-	newtCenteredWindow(max_len, nr_lines, NULL);
+-	newtFormRun(form, &es);
+-	newtPopWindow();
+-	rc = 0;
+-out_destroy_form:
+-	newtFormDestroy(form);
+-	return rc;
+-}
+-
+-bool dialog_yesno(const char *msg)
+-{
+-	/* newtWinChoice should really be accepting const char pointers... */
+-	char yes[] = "Yes", no[] = "No";
+-	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
+-}
+-
+-static void newt_suspend(void *d __used)
+-{
+-	newtSuspend();
+-	raise(SIGTSTP);
+-	newtResume();
+-}
+-
+-void setup_browser(void)
+-{
+-	if (!isatty(1) || !use_browser || dump_trace) {
+-		use_browser = 0;
+-		setup_pager();
+-		return;
+-	}
+-
+-	use_browser = 1;
+-	newtInit();
+-	newtCls();
+-	newtSetSuspendCallback(newt_suspend, NULL);
+-	ui_helpline__puts(" ");
+-	ui_browser__init();
+-}
+-
+-void exit_browser(bool wait_for_ok)
+-{
+-	if (use_browser > 0) {
+-		if (wait_for_ok) {
+-			char title[] = "Fatal Error", ok[] = "Ok";
+-			newtWinMessage(title, ok, browser__last_msg);
+-		}
+-		newtFinished();
+-	}
+-}
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 783d277..5b01df6 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -86,7 +86,7 @@ int hist_entry__tui_annotate(struct hist_entry *self)
+ 		return -1;
+ 
+ 	if (hist_entry__annotate(self, &head) < 0) {
+-		ui__error_window(browser__last_msg);
++		ui__error_window(ui_helpline__last_msg);
+ 		return -1;
+ 	}
+ 
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index 9d32a41..cee7998 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -17,10 +17,6 @@
+ #include "../util.h"
+ #include "map.h"
+ 
+-int ui__help_window(const char *text);
+-bool dialog_yesno(const char *msg);
+-int popup_menu(int argc, char * const argv[]);
+-
+ struct hist_browser {
+ 	struct ui_browser   b;
+ 	struct hists	    *hists;
+@@ -798,7 +794,7 @@ do_help:
  			}
- 			break;
-@@ -214,34 +214,34 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 			if (self->index == 0)
+ 			if (is_exit_key(key)) {
+ 				if (key == NEWT_KEY_ESCAPE &&
+-				    !dialog_yesno("Do you really want to exit?"))
++				    !ui__dialog_yesno("Do you really want to exit?"))
+ 					continue;
  				break;
- 			--self->index;
--			if (self->index < self->first_visible_entry_idx) {
--				--self->first_visible_entry_idx;
-+			if (self->index < self->top_idx) {
-+				--self->top_idx;
- 				self->seek(self, -1, SEEK_CUR);
  			}
- 			break;
- 		case NEWT_KEY_PGDN:
- 		case ' ':
--			if (self->first_visible_entry_idx + self->height > self->nr_entries - 1)
-+			if (self->top_idx + self->height > self->nr_entries - 1)
- 				break;
+@@ -842,7 +838,7 @@ do_help:
  
- 			offset = self->height;
- 			if (self->index + offset > self->nr_entries - 1)
- 				offset = self->nr_entries - 1 - self->index;
- 			self->index += offset;
--			self->first_visible_entry_idx += offset;
-+			self->top_idx += offset;
- 			self->seek(self, +offset, SEEK_CUR);
- 			break;
- 		case NEWT_KEY_PGUP:
--			if (self->first_visible_entry_idx == 0)
-+			if (self->top_idx == 0)
- 				break;
+ 		options[nr_options++] = (char *)"Exit";
  
--			if (self->first_visible_entry_idx < self->height)
--				offset = self->first_visible_entry_idx;
-+			if (self->top_idx < self->height)
-+				offset = self->top_idx;
- 			else
- 				offset = self->height;
+-		choice = popup_menu(nr_options, options);
++		choice = ui__popup_menu(nr_options, options);
  
- 			self->index -= offset;
--			self->first_visible_entry_idx -= offset;
-+			self->top_idx -= offset;
- 			self->seek(self, -offset, SEEK_CUR);
- 			break;
- 		case NEWT_KEY_HOME:
-@@ -253,7 +253,7 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 				offset = self->nr_entries - 1;
+ 		for (i = 0; i < nr_options - 1; ++i)
+ 			free(options[i]);
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+index 6a11e13..ff58460 100644
+--- a/tools/perf/util/ui/helpline.c
++++ b/tools/perf/util/ui/helpline.c
+@@ -3,6 +3,7 @@
+ #include <stdlib.h>
+ #include <newt.h>
  
- 			self->index = self->nr_entries - 1;
--			self->first_visible_entry_idx = self->index - offset;
-+			self->top_idx = self->index - offset;
- 			self->seek(self, -offset, SEEK_END);
- 			break;
- 		default:
-@@ -271,14 +271,13 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
- 	struct list_head *head = self->entries;
- 	int row = 0;
++#include "../debug.h"
+ #include "helpline.h"
  
--	if (self->first_visible_entry == NULL ||
--	    self->first_visible_entry == self->entries)
--                self->first_visible_entry = head->next;
-+	if (self->top == NULL || self->top == self->entries)
-+                self->top = head->next;
+ void ui_helpline__pop(void)
+@@ -41,3 +42,28 @@ void ui_helpline__puts(const char *msg)
+ 	ui_helpline__pop();
+ 	ui_helpline__push(msg);
+ }
++
++void ui_helpline__init(void)
++{
++	ui_helpline__puts(" ");
++}
++
++char ui_helpline__last_msg[1024];
++
++int ui_helpline__show_help(const char *format, va_list ap)
++{
++	int ret;
++	static int backlog;
++
++        ret = vsnprintf(ui_helpline__last_msg + backlog,
++			sizeof(ui_helpline__last_msg) - backlog, format, ap);
++	backlog += ret;
++
++	if (ui_helpline__last_msg[backlog - 1] == '\n') {
++		ui_helpline__puts(ui_helpline__last_msg);
++		newtRefresh();
++		backlog = 0;
++	}
++
++	return ret;
++}
+diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
+index 56d8c1d..5d1e5e7 100644
+--- a/tools/perf/util/ui/helpline.h
++++ b/tools/perf/util/ui/helpline.h
+@@ -1,6 +1,7 @@
+ #ifndef _PERF_UI_HELPLINE_H_
+ #define _PERF_UI_HELPLINE_H_ 1
  
--	pos = self->first_visible_entry;
-+	pos = self->top;
- 
- 	list_for_each_from(pos, head) {
--		SLsmg_gotorc(self->top + row, self->left);
-+		SLsmg_gotorc(self->y + row, self->x);
- 		self->write(self, pos, row);
- 		if (++row == self->height)
- 			break;
-diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
-index bcc4391..8eed24c 100644
---- a/tools/perf/util/ui/browser.h
-+++ b/tools/perf/util/ui/browser.h
-@@ -13,9 +13,9 @@
- 
- struct ui_browser {
- 	newtComponent form, sb;
--	u64	      index, first_visible_entry_idx;
--	void	      *first_visible_entry, *entries;
--	u16	      top, left, width, height;
-+	u64	      index, top_idx;
-+	void	      *top, *entries;
-+	u16	      y, x, width, height;
- 	void	      *priv;
- 	unsigned int  (*refresh)(struct ui_browser *self);
- 	void	      (*write)(struct ui_browser *self, void *entry, int row);
++void ui_helpline__init(void);
+ void ui_helpline__pop(void);
+ void ui_helpline__push(const char *msg);
+ void ui_helpline__fpush(const char *fmt, ...);
+diff --git a/tools/perf/util/ui/setup.c b/tools/perf/util/ui/setup.c
+new file mode 100644
+index 0000000..6620850
+--- /dev/null
++++ b/tools/perf/util/ui/setup.c
+@@ -0,0 +1,42 @@
++#include <newt.h>
++#include <signal.h>
++#include <stdbool.h>
++
++#include "../cache.h"
++#include "../debug.h"
++#include "browser.h"
++#include "helpline.h"
++
++static void newt_suspend(void *d __used)
++{
++	newtSuspend();
++	raise(SIGTSTP);
++	newtResume();
++}
++
++void setup_browser(void)
++{
++	if (!isatty(1) || !use_browser || dump_trace) {
++		use_browser = 0;
++		setup_pager();
++		return;
++	}
++
++	use_browser = 1;
++	newtInit();
++	newtCls();
++	newtSetSuspendCallback(newt_suspend, NULL);
++	ui_helpline__init();
++	ui_browser__init();
++}
++
++void exit_browser(bool wait_for_ok)
++{
++	if (use_browser > 0) {
++		if (wait_for_ok) {
++			char title[] = "Fatal Error", ok[] = "Ok";
++			newtWinMessage(title, ok, ui_helpline__last_msg);
++		}
++		newtFinished();
++	}
++}
+diff --git a/tools/perf/util/ui/util.c b/tools/perf/util/ui/util.c
+new file mode 100644
+index 0000000..04600e2
+--- /dev/null
++++ b/tools/perf/util/ui/util.c
+@@ -0,0 +1,114 @@
++#include <newt.h>
++#include <signal.h>
++#include <stdio.h>
++#include <stdbool.h>
++#include <string.h>
++#include <sys/ttydefaults.h>
++
++#include "../cache.h"
++#include "../debug.h"
++#include "browser.h"
++#include "helpline.h"
++#include "util.h"
++
++newtComponent newt_form__new(void);
++
++static void newt_form__set_exit_keys(newtComponent self)
++{
++	newtFormAddHotKey(self, NEWT_KEY_LEFT);
++	newtFormAddHotKey(self, NEWT_KEY_ESCAPE);
++	newtFormAddHotKey(self, 'Q');
++	newtFormAddHotKey(self, 'q');
++	newtFormAddHotKey(self, CTRL('c'));
++}
++
++newtComponent newt_form__new(void)
++{
++	newtComponent self = newtForm(NULL, NULL, 0);
++	if (self)
++		newt_form__set_exit_keys(self);
++	return self;
++}
++
++int ui__popup_menu(int argc, char * const argv[])
++{
++	struct newtExitStruct es;
++	int i, rc = -1, max_len = 5;
++	newtComponent listbox, form = newt_form__new();
++
++	if (form == NULL)
++		return -1;
++
++	listbox = newtListbox(0, 0, argc, NEWT_FLAG_RETURNEXIT);
++	if (listbox == NULL)
++		goto out_destroy_form;
++
++	newtFormAddComponent(form, listbox);
++
++	for (i = 0; i < argc; ++i) {
++		int len = strlen(argv[i]);
++		if (len > max_len)
++			max_len = len;
++		if (newtListboxAddEntry(listbox, argv[i], (void *)(long)i))
++			goto out_destroy_form;
++	}
++
++	newtCenteredWindow(max_len, argc, NULL);
++	newtFormRun(form, &es);
++	rc = newtListboxGetCurrent(listbox) - NULL;
++	if (es.reason == NEWT_EXIT_HOTKEY)
++		rc = -1;
++	newtPopWindow();
++out_destroy_form:
++	newtFormDestroy(form);
++	return rc;
++}
++
++int ui__help_window(const char *text)
++{
++	struct newtExitStruct es;
++	newtComponent tb, form = newt_form__new();
++	int rc = -1;
++	int max_len = 0, nr_lines = 0;
++	const char *t;
++
++	if (form == NULL)
++		return -1;
++
++	t = text;
++	while (1) {
++		const char *sep = strchr(t, '\n');
++		int len;
++
++		if (sep == NULL)
++			sep = strchr(t, '\0');
++		len = sep - t;
++		if (max_len < len)
++			max_len = len;
++		++nr_lines;
++		if (*sep == '\0')
++			break;
++		t = sep + 1;
++	}
++
++	tb = newtTextbox(0, 0, max_len, nr_lines, 0);
++	if (tb == NULL)
++		goto out_destroy_form;
++
++	newtTextboxSetText(tb, text);
++	newtFormAddComponent(form, tb);
++	newtCenteredWindow(max_len, nr_lines, NULL);
++	newtFormRun(form, &es);
++	newtPopWindow();
++	rc = 0;
++out_destroy_form:
++	newtFormDestroy(form);
++	return rc;
++}
++
++bool ui__dialog_yesno(const char *msg)
++{
++	/* newtWinChoice should really be accepting const char pointers... */
++	char yes[] = "Yes", no[] = "No";
++	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
++}
+diff --git a/tools/perf/util/ui/util.h b/tools/perf/util/ui/util.h
+new file mode 100644
+index 0000000..afcbc1d
+--- /dev/null
++++ b/tools/perf/util/ui/util.h
+@@ -0,0 +1,10 @@
++#ifndef _PERF_UI_UTIL_H_
++#define _PERF_UI_UTIL_H_ 1
++
++#include <stdbool.h>
++
++int ui__popup_menu(int argc, char * const argv[]);
++int ui__help_window(const char *text);
++bool ui__dialog_yesno(const char *msg);
++
++#endif /* _PERF_UI_UTIL_H_ */
 -- 
 1.6.2.5
 
