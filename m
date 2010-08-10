@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932093Ab0HJKkw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 06:40:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757302Ab0HJKks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 06:40:48 -0400
-Date: Tue, 10 Aug 2010 06:40:45 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-kernel@vger.kernel.org
-Subject: cfq: oops in __call_for_each_cic
-Message-ID: <20100810064045.6996f3b7@tlielax.poochiereds.net>
+	id S1757430Ab0HJKqq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 06:46:46 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49140 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756902Ab0HJKql (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 06:46:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Ze25s1fM+ZPh1F3VIXa2wu2nu+S0eMfkodvr4tuPGf5q7HeiF98pV3GBqS4XY3UDKb
+         TEut+tP6kAr2+6pcbT46bci8c1vQvFl3Q8D8juJzGTnepgCZUj6n/SWzOaB+cnwFV48I
+         2aBMuCglJwi1G/8YtgtPcv08WE/ZrnGub+vCg=
+Subject: Re: [PATCH] x86: remove __phys_reloc_hide
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100810070555.GA16638@elte.hu>
+References: <1281303490-390-1-git-send-email-namhyung@gmail.com>
+	 <87k4o08fv9.fsf@basil.nowhere.org> <1281336031.976.11.camel@leonhard>
+	 <20100809064441.GC29524@basil.fritz.box> <1281337485.976.24.camel@leonhard>
+	 <20100809072226.GD29524@basil.fritz.box> <4C604F54.2080506@zytor.com>
+	 <20100810070555.GA16638@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Aug 2010 19:46:31 +0900
+Message-ID: <1281437191.1670.33.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Saw this oops on my test machine this morning. I rebooted the machine
-last night and hadn't done anything on it other than log in this
-morning. The kernel here is based on Steve French's git tree, which is
-based on Linus' as of Sunday Aug 8th. Last non-cifs commit is:
+2010-08-10 (화), 09:05 +0200, Ingo Molnar:
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+> > We pass -fno-strict-overflow to the kernel now, which takes care of the
+> > underlying problem, at least for current versions of gcc.  Unfortunately
+> > we still have people who want to use very old gcc versions to compile
+> > the kernel, so it's probably better to leave it in at least until we
+> > formally kill off support for gcc 3.
+> 
+> Namhyung, mind sending a patch that adds a comment to __pa_symbol() to point 
+> out the connection to -fno-strict-overflow and that it can be removed once all 
+> supported versions of GCC understand -fno-strict-overflow?
+> 
+> That would make for one less piece of legacy voodoo code in the kernel ;-)
+> 
+> Thanks,
+> 
+> 	Ingo
 
-commit 45d7f32c7a43cbb9592886d38190e379e2eb2226
-Merge: 53bcef6 ab11b48
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sun Aug 8 10:10:11 2010 -0700
+No problem. :-) But before that, let me clarify this: It seems
+-fno-strict-overflow is all about the signed arithmetic and
+__pa_symbol() does unsigned one. Is it really matters here?
 
-    Merge git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile
-
-I also have some cifs patches in this kernel, but the cifs module
-wasn't even plugged in at the time, and the patches don't affect
-anything else. The host is a KVM guest. Let me know if you need other
-info:
-
-general protection fault: 0000 [#1] SMP 
-last sysfs file: /sys/devices/system/cpu/cpu1/cache/index2/shared_cpu_map
-CPU 0 
-Modules linked in: nfsd lockd nfs_acl exportfs rpcsec_gss_krb5 auth_rpcgss des_generic sunrpc ipv6 i2c_piix4 virtio_net i2c_core virtio_balloon floppy joydev pcspkr microcode virtio_blk virtio_pci virtio_ring virtio [last unloaded: mperf]
-
-Pid: 2708, comm: gzip Not tainted 2.6.35+ #1 /
-RIP: 0010:[<ffffffff81223830>]  [<ffffffff81223830>] __call_for_each_cic+0x21/0x3f
-RSP: 0018:ffff88003cea1e38  EFLAGS: 00010202
-RAX: 00000001012070a8 RBX: 6b6b6b6b6b6b6b6b RCX: ffff88003ab1ce80
-RDX: 00000001012070ab RSI: ffff8800047d1260 RDI: 0000000000000286
-RBP: ffff88003cea1e58 R08: 0000000000000286 R09: ffff88003cea1da8
-R10: ffff88003a75a9e8 R11: ffff88003cea1e08 R12: ffff88003a75a9c0
-R13: ffffffff8122387c R14: ffff88003e678000 R15: 0000000000000001
-FS:  00007f6f4dc8b720(0000) GS:ffff880004600000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 00000032c80a92c0 CR3: 0000000001a43000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process gzip (pid: 2708, threadinfo ffff88003cea0000, task ffff88003cf5a440)
-Stack:
- ffff88003e678000 ffff88003a75a9c0 ffff88003cf5a440 ffff88003cf5aac0
-<0> ffff88003cea1e68 ffffffff81223863 ffff88003cea1e88 ffffffff8121aa65
-<0> ffff88003cea1e88 ffff88003a75a9c0 ffff88003cea1eb8 ffffffff8121ab25
-Call Trace:
- [<ffffffff81223863>] cfq_free_io_context+0x15/0x17
- [<ffffffff8121aa65>] put_io_context+0x41/0x5e
- [<ffffffff8121ab25>] exit_io_context+0x6c/0x74
- [<ffffffff81054f11>] do_exit+0x75f/0x786
- [<ffffffff81487c61>] ? lockdep_sys_exit_thunk+0x35/0x67
- [<ffffffff810551ce>] do_group_exit+0x88/0xb6
- [<ffffffff81055213>] sys_exit_group+0x17/0x1b
- [<ffffffff81009c72>] system_call_fastpath+0x16/0x1b
-Code: f1 00 00 41 59 48 98 5b c9 c3 55 48 89 e5 41 55 41 54 53 48 83 ec 08 0f 1f 44 00 00 48 8b 5f 78 49 89 fc 49 89 f5 48 85 db 74 15 <48> 8b 03 48 8d 73 b0 4c 89 e7 0f 18 08 41 ff d5 48 8b 1b eb e6 
-RIP  [<ffffffff81223830>] __call_for_each_cic+0x21/0x3f
- RSP <ffff88003cea1e38>
----[ end trace 48227764f4e7dc77 ]---
-Fixing recursive fault but reboot is needed!
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Regards,
+Namhyung Kim
+
+
