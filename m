@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab0HJGli (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 02:41:38 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:52362 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221Ab0HJGlS (ORCPT
+	id S1754759Ab0HJGnZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 02:43:25 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:54332 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753166Ab0HJGnU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 02:41:18 -0400
-Date: Tue, 10 Aug 2010 09:39:55 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Grant Likely <grant.likely@secretlab.ca>
-Cc: "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>,
-        "Tereshonkov Roman (Nokia-MS/Helsinki)" <roman.tereshonkov@nokia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Brownell <david-b@pacbell.net>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH] spi: omap2_mcspi: make use of dev_vdbg()
-Message-ID: <20100810063955.GC21953@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <1275563341-31078-1-git-send-email-felipe.balbi@nokia.com>
- <20100809103618.GE11340@nokia.com>
- <20100810063341.GA28597@angua.secretlab.ca>
+	Tue, 10 Aug 2010 02:43:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TW73SPn/0w759uF9RTuDcseZkFoZ2N7GkyFnitK7TQyowuF5qfH79TthOcvlif6Vuu
+         eMBel+1SdrXIUKIJZ7BGg9DBo8vE2REzlIA8SqwvuREVpGVaF3z1+YB+TY2ooP2P1/aa
+         0kgt8WfeSnShh/IuKZ6yFZxCCrHaT5Rihp+V0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20100810063341.GA28597@angua.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 10 Aug 2010 06:39:54.0870 (UTC) FILETIME=[D7C75960:01CB3856]
-X-Nokia-AV: Clean
+In-Reply-To: <20100805222623.39A3240208@magilla.sf.frob.com>
+References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
+	<20100621120613.86cad1a4.akpm@linux-foundation.org>
+	<4C1FC35C.8090201@suse.cz>
+	<AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>
+	<AANLkTinC6Sqs7W--=14nmJFDcTS4HQn0=ysn7VhYDDX6@mail.gmail.com>
+	<adaocdg3fng.fsf@roland-alpha.cisco.com>
+	<20100805222623.39A3240208@magilla.sf.frob.com>
+Date: Tue, 10 Aug 2010 08:43:18 +0200
+Message-ID: <AANLkTikvRqTR6TjP9H4-_RHhax24YRPv9PCxn165RTWs@mail.gmail.com>
+Subject: Re: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
+From: Yegor Yefremov <yegorslists@googlemail.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: Roland Dreier <rdreier@cisco.com>, Tiago Maluta <tiago.maluta@gmail.com>,
+        Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 6, 2010 at 12:26 AM, Roland McGrath <roland@redhat.com> wrote:
+>> Yes, this make sense to me.  It's not clear to me why we ever needed
+>> the conditional assignment of an empty CROSS_COMPILE (that code predates
+>> the start of git history) [...]
+>
+> Perhaps someone used make --warn-undefined-variables.
 
-On Tue, Aug 10, 2010 at 08:33:41AM +0200, ext Grant Likely wrote:
->Now picked up into my test-spi branch.  I'll add it to linux-next after 
->the merge window closes.
+Are there any other comments or is the patch valid? Should I resend it
+as a new thread?
 
-ok, thanks Grant
-
--- 
-balbi
-
-DefectiveByDesign.org
+Regards,
+Yegor
