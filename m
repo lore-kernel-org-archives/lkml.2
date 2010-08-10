@@ -1,131 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757568Ab0HJMP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 08:15:27 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:57257 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752490Ab0HJMPZ (ORCPT
+	id S1757579Ab0HJMQm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 08:16:42 -0400
+Received: from perceval.irobotique.be ([92.243.18.41]:49015 "EHLO
+	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757508Ab0HJMQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 08:15:25 -0400
-Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw    
- HIDIOCGFEATURE  and HIDIOCSFEATURE
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alan Ott <alan@signal11.us>, David S Miller <davem@davemloft.net>,
-        Michael Poole <mdpoole@troilus.org>,
-        Bastien Nocera <hadess@hadess.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <alpine.LNX.2.00.1008101344480.29919@pobox.suse.cz>
-References: <1276467601-9066-1-git-send-email-alan@signal11.us>
-	 <1278623485.10421.73.camel@localhost.localdomain>
-	 <4C369CDC.9080104@signal11.us>
-	 <1278662497.10421.94.camel@localhost.localdomain>
-	 <4C371DE8.9020002@signal11.us>
-	 <1278680790.10421.106.camel@localhost.localdomain>
-	 <4C372CEE.3070109@signal11.us>
-	 <1278696815.10421.137.camel@localhost.localdomain>
-	 <alpine.LNX.2.00.1007221612450.4741@pobox.suse.cz>
-	 <1279812115.2621.6.camel@localhost.localdomain>
-	 <4C4878C2.9000903@signal11.us>
-	 <alpine.LNX.2.00.1008101344480.29919@pobox.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 08:12:47 -0400
-Message-ID: <1281442367.12579.206.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+	Tue, 10 Aug 2010 08:16:37 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: [patch -NEXT] usb/gadget/webcam: fix Kconfig depends again
+Date: Tue, 10 Aug 2010 14:16:29 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
+        lud <linux-usb@vger.kernel.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Brownell <dbrownell@users.sourceforge.net>
+References: <20100809132314.789e13f3.sfr@canb.auug.org.au> <20100809105520.d17e4795.randy.dunlap@oracle.com>
+In-Reply-To: <20100809105520.d17e4795.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008101416.31188.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi Randy,
 
-> > > that the ioctl() API is synchronous is fine to me, however pushing that
-> > > down to the transport drivers seems wrong to me. I think the HID core
-> > > should be able to handle a fully asynchronous transport driver. I know
-> > > that with the USB subsystem you are little bit spoiled here, but for
-> > > Bluetooth it is not the case. And in the end even using the asynchronous
-> > > USB URB calls would be nice as well.
-> > >    
-> > 
-> > How are the URB calls better than using the synchronous calls? (see below)
-> 
-> Hi,
-> 
-> I think this was the last mail in the thread so far, right?
-> 
-> > > So why not make the core actually wait for responses from the transport
-> > > driver.
-> > 
-> > Because this makes the USB side a lot more complicated, and it would 
-> > introduce transport specific code into the core. Further, it would 
-> > involve the transport driver calling hidraw with _every_ single packet 
-> > it receives. Further, it would have to call hidraw with HANDSHAKE 
-> > protocol error packets as well.
-> >
-> > >   I would make the transport drivers a lot simpler in the long
-> > > run.
-> > 
-> > It would make the USB transport driver and drivers/hid/hidraw much more
-> > complicated right now, at the expense of making the BT transport driver
-> > marginally simpler (and I'm not even convinced whether it would really be
-> > simpler). (see below for more)
-> 
-> Seconded.
-> 
-> > >   And I know that most likely besides Bluetooth and USB you won't see
-> > > another, but you never know.
-> > > 
-> > I just don't understand the objection. In each transport type, the waiting
-> > will have to be done in a different way. USB and BT are different enough that
-> > this is the case already, without having to imagine future buses which use
-> > HID. In BT, you have to check each packet which comes back from the BT network
-> > to see whether it is the response packet that hidraw is waiting for. Further,
-> > you have to check for HANDSHAKE packets indicating protocol error. Where
-> > better for this to be done than in hidp? Further, how can this possibly happen
-> > in drivers/hid/hidraw, as it doesn't know about the details of bluetooth to
-> > make this determination, and why should it? In my last email (
-> > http://lkml.org/lkml/2010/7/9/231 ) to which I got no response, I laid out how
-> > doing the blocking in drivers/hid/hidraw would only make all the parts except
-> > bluetooth more complicated (including the core, and the USB side), and would
-> > also introduce bluetooth-specific things into the core.
-> > 
-> > Further, you're saying that using the asynchronous USB URB calls would be a
-> > benefit. How is it a benefit to replace a single function call which does
-> > exactly what I want, with a set of asynchronous calls and then adding my own
-> > blocking to make it do the same thing? This sounds to me like it would be 1:
-> > more text, 2: duplication of code, 3: error prone. I can't understand how this
-> > is of benefit. Please explain to me what I'm missing.
-> > 
-> > In theory, what you're saying makes sense. Making common code and logic
-> > actually common is always good. In practice though, in this case, I submit
-> > that there really isn't any commonality, and the only way for there to be
-> > commonality is to do the USB side the hard way. Further, drivers/hid/hidraw
-> > can't wait for a bluetooth packet without having code that's
-> > bluetooth-specific. It seems just that simple to me.
-> > 
-> > I'll give it some more thought, and take another look at the code to see if
-> > there's something obvious that I'm missing. If you know what I'm missing in my
-> > understanding of the problem, please tell me :)
-> 
-> Marcel, did you have time to review Alan's explanation a little bit?
-> 
-> I must say I would really like to have this feature merged, but of course 
-> not if you completely disagree .. but then we'll have to find some 
-> consensus. Currently Alan's summary above quite aligns with my opinion.
+Thanks for the patch.
 
-my opinion is still that we should make the core do the async handling.
-I think that we let USB dictate how APIs for HID should look like.
+On Monday 09 August 2010 19:55:20 Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> The USB gadget webcam driver uses V4L2 interfaces, so it should depend
+> on VIDEO_V4L2 instead of VIDEO_DEV.  This fixes a lot of build errors
+> when V4L2 is not enabled:
+> 
+> ERROR: "v4l2_event_unsubscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_queue" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_device_release" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_usercopy" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_dequeue" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_register_device" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_device_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_subscribe" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_unregister_device" [drivers/usb/gadget/g_webcam.ko]
+> undefined!
+> ERROR: "v4l2_fh_init" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_pending" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_init" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "video_devdata" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_event_alloc" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_add" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_del" [drivers/usb/gadget/g_webcam.ko] undefined!
+> ERROR: "v4l2_fh_exit" [drivers/usb/gadget/g_webcam.ko] undefined!
 
-However that is maybe fine anyway since the Bluetooth HID guys where not
-really inventive since they copying USB HID for the better and mostly
-for the worst. Especially since Bluetooth doesn't have the endpoint
-direction limits like USB does. Anyhow, just get the patches re-based
-and re-submitted and I can have a second look.
+All those symbols should be defined when VIDEO_DEV is selected.
 
-Regards
+> ERROR: "v4l2_ctrl_fill" [drivers/media/video/v4l2-common.ko] undefined!
+> ERROR: "v4l2_ctrl_get_menu" [drivers/media/video/v4l2-common.ko] undefined!
 
-Marcel
+Those 2 symbols require VIDEO_V4L2 but are not used by the webcam gadget 
+driver.
 
+> ERROR: "v4l2_device_unregister_subdev" [drivers/media/video/v4l2-common.ko]
+> undefined!
+> ERROR: "v4l2_device_register_subdev" [drivers/media/video/v4l2-common.ko]
+> undefined!
 
+Those two symbols should be defined when VIDEO_DEV is selected. They are not 
+used by the webcam gadget driver.
+
+-- 
+Regards,
+
+Laurent Pinchart
