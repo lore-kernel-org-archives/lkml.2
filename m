@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab0HJVJp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:09:45 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:56024 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932169Ab0HJVJm (ORCPT
+	id S932411Ab0HJVRv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:17:51 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:54205 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932210Ab0HJVRs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:09:42 -0400
-Date: Tue, 10 Aug 2010 23:09:41 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: linux-kernel@vger.kernel.org
-Subject: [BUG] USB no longer works for APCUPS
-Message-ID: <20100810210941.GA7938@fritha.org>
+	Tue, 10 Aug 2010 17:17:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=f7rhaIX2MLvkxk/zzHSnf/AzaDuHuzW6PBOrIL6jLLg4BXVtj5WbPaBOPcbFS0mpxE
+         tXd1JucRcinbdE1c1OW5Elhanf/taN8m6gErMq51yz04u86lwsW0qYC1beYWa+f3Hih9
+         WOAJITcLH72DLlp+GLjqs5ITmtzzH4s2Vk5mw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100810 (GNU/Linux)
-X-Provags-ID: V02:K0:Hk34cvZaiNijxV/DZa0d8uM4GcUZCrXDD5IIk0J4Tbr
- +OXRl+mdiN2IWMkuOPrSmX3qCNThQ8YRO53bYz1az87bPA5+jD
- 4+DVUARI71htHt7yLbBQ8i0Pv3dloTgT0sojIWnKFB84oEx/jz
- 4XgIzkptv4+4SrDtDeqLVLlRdpLg7yhbMBuCJDtDM8PEpgKZ97
- IaU5xQgpPLiBraCIrasTA==
+In-Reply-To: <20100810131032.GI27749@pengutronix.de>
+References: <20100810131032.GI27749@pengutronix.de>
+Date: Tue, 10 Aug 2010 23:17:40 +0200
+Message-ID: <AANLkTini2BJr9x5-03MV1wFTUH4M+REzOwxUS_Cc_sHc@mail.gmail.com>
+Subject: Re: dmaengine cyclic transfers
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux kernel <linux-kernel@vger.kernel.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2010/8/10 Sascha Hauer <s.hauer@pengutronix.de>:
 
-I'm getting this in my logs with the latest -git7/8/9 kernels. Thw apcups
-is not defective, it works flawlessly with 2.6.34.X.
+> Author: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+> Date:   Wed Apr 1 15:47:02 2009 +0200
+>
+>    dw_dmac: add cyclic API to DW DMA driver
+>
+> This could be very useful for the SDMA engine aswell. What are the
+> reasons this is not implemented in the generic dmaengine API but as
+> an extension to a specific driver?
 
-Aug 10 23:01:44 liesel apcupsd[7687]: apcupsd FATAL ERROR in linux-usb.c
-at line 609 Cannot find UPS device -- For a link to detailed USB trouble
-shooting information, please see <http://www.apcupsd.com/support.html>.
-Aug 10 23:01:44 liesel apcupsd[7687]: apcupsd error shutdown completed
-Aug 10 23:04:40 liesel kernel: ------------[ cut here ]------------
+No reasons what I know. There was a similar code snippet in Peter
+Pearse's PL08x driver as well, I just didn't know what to do with it.
 
-Aug 10 23:04:40 liesel kernel: WARNING: at lib/kobject.c:595 kobject_put+0x2f/0x50()
-Aug 10 23:04:40 liesel kernel: Hardware name: GA-MA770-UD3 Aug 10 23:04:40 liesel kernel: kobject: '(null)' (ffff88022c651898): is
-not initialized, yet kobject_put() is being called. Aug 10 23:04:40 liesel kernel: Modules linked in: xt_pkttype ipt_LOG
-xt_limit aes_x86_64 aes_generic af_packet it87 hwmon_vid binfmt_misc snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device cpufreq_conservative
-cpufreq_ondemand cpufreq_userspace cpufreq_powersave powernow_k8 freq_table mperf xt_NOTRACK xt_state iptable_raw nf_conntrack_netbios_ns
-nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip6_tables ipt_REJECT iptable_filter ip_tables tcp_vegas uhci_hcd rt73usb rt2x00usb rt2x00lib
-r8169 led_class mii mac80211 snd_hda_codec_realtek ppdev parport_pc cfg80211 parport snd_hda_intel snd_hda_codec snd_pcm snd_timer snd
-soundcore sr_mod k10temp hwmon i2c_piix4 pcspkr cdrom button rfkill joydev snd_page_alloc i2c_core sg xts usbhid sd_mod ohci_hcd ehci_hcd rtc_cmos
-rtc_core pata_atiixp rtc_lib usbcore ahci libahci hmac dm_snapshot dm_crypt dm_mod gf128mul sha512_generic sha256_generic twofish_x86_64
-twofish_common serpent cbc tgr192 loop ecb arc4 fuse edd ide_pci_generic amd74xx ide_core fan pata_amd sata_nv libata scsi
-Aug 10 23:04:40 liesel kernel: Pid: 1115, comm: khubd Not tainted 2.6.35-git9 #1
-Aug 10 23:04:40 liesel kernel: Call Trace:
-Aug 10 23:04:40 liesel kernel:  [<ffffffff812a620f>] ? kobject_put+0x2f/0x50
-Aug 10 23:04:40 liesel kernel:  [<ffffffff812a620f>] ? kobject_put+0x2f/0x50
-Aug 10 23:04:40 liesel kernel:  [<ffffffff810414f1>] ? warn_slowpath_common+0x81/0xe0
-Aug 10 23:04:40 liesel kernel:  [<ffffffff81041605>] ? warn_slowpath_fmt+0x45/0x50
-Aug 10 23:04:40 liesel kernel:  [<ffffffff812a620f>] ? kobject_put+0x2f/0x50
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa00bea3e>] ? usbhid_disconnect+0x1e/0x40 [usbhid]
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a7525>] ? usb_unbind_interface+0xc5/0x120 [usbcore]
-Aug 10 23:04:40 liesel kernel:  [<ffffffff8133ffc8>] ? __device_release_driver+0x78/0xf0
-Aug 10 23:04:40 liesel kernel:  [<ffffffff81340125>] ? device_release_driver+0x25/0x40
-Aug 10 23:04:40 liesel kernel:  [<ffffffff8133f4a2>] ? bus_remove_device+0xa2/0xf0
-Aug 10 23:04:40 liesel kernel:  [<ffffffff8133d7da>] ? device_del+0x12a/0x1d0
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a4b8d>] ? usb_disable_device+0x8d/0x110 [usbcore]
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa019f6bb>] ? usb_disconnect+0x7b/0x120 [usbcore]
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a03c2>] ? hub_thread+0x322/0x11d0 [usbcore]
-Aug 10 23:04:40 liesel kernel:  [<ffffffff81034a77>] ? set_next_entity+0x37/0x80
-Aug 10 23:04:40 liesel kernel:  [<ffffffff8105c330>] ? autoremove_wake_function+0x0/0x30
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a00a0>] ? hub_thread+0x0/0x11d0 [usbcore]
-Aug 10 23:04:40 liesel kernel:  [<ffffffffa01a00a0>] ? hub_thread+0x0/0x11d0 [usbcore]
-Aug 10 23:04:40 liesel kernel:  [<ffffffff8105be56>] ? kthread+0x96/0xb0
-Aug 10 23:04:40 liesel kernel:  [<ffffffff81003b14>] ? kernel_thread_helper+0x4/0x10
-Aug 10 23:04:40 liesel kernel:  [<ffffffff8105bdc0>] ? kthread+0x0/0xb0
-Aug 10 23:04:40 liesel kernel:  [<ffffffff81003b10>] ? kernel_thread_helper+0x0/0x10
-Aug 10 23:04:40 liesel kernel: ---[ end trace 808e80ff1e6d651e ]---
+> Should I also implement it like
+> this or isn't it better to extend the dmaengine itself?
 
+This is going to be generally useful, so please extend the DMAengine
+if I have my say. I actually miss two functions from the engine:
+
+1) Single buffer slave transfers (without sglist)
+2) Cyclic buffers (esp good for audio)
+
+The first I have a patch for, will repost.
+
+Yours,
+Linus Walleij
