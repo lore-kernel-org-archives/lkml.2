@@ -1,167 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465Ab0HJJon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:44:43 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:47699 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757142Ab0HJJnl (ORCPT
+	id S1757357Ab0HJJsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:48:09 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59387 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab0HJJsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:43:41 -0400
-Message-Id: <20100810094334.659303424@szeredi.hu>
-References: <20100810094134.596235651@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Tue, 10 Aug 2010 11:41:41 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 7/7] vfs: show unreachable paths in getcwd and proc
-Content-Disposition: inline; filename=vfs-unreachable-paths.patch
+	Tue, 10 Aug 2010 05:48:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hiZN/ys6+x6RJoKVt4+sB4J1UlxKCze0Qer+dFiQNaoTdPpZ1B1kDxVFf1y/cdmYFo
+         3aTbA27T2UA96YQSA1KX+3bmJHpiRWAkuWsBCaHeRFQBZKvPbt7av2Dh0yANJWluCmk0
+         xf/e2NP/vqjxjj8mNCs+hNVpQtujY4PY8QpNA=
+Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <749211.91566.qm@web37603.mail.mud.yahoo.com>
+References: <749211.91566.qm@web37603.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Aug 2010 12:47:58 +0300
+Message-ID: <1281433678.2016.34.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Tue, 2010-08-10 at 01:12 -0700, Alex Dubov wrote: 
+> > Received: Monday, 9 August, 2010, 8:30 AM
+> > I have another question.
+> > 
+> > Looking at ms_block.c, I see that it sometimes changes
+> > register window.
+> > This doesn't look good.
+> > I see it does put the register window back, but still its a
+> > bit obscure.
+> 
+> It looks very good, in fact, it is the Sony specified way to operate
+> the media. MS Pro works quite the same, it just needs fewer operations
+> to actually access data.
+> 
+> > 
+> > I added tracking of current register window, so every time
+> > I send
+> > MS_TPC_SET_RW_REG_ADRS I note the ranges.
+> > And read/write functions now always attempt to send
+> > MS_TPC_SET_RW_REG_ADRS. If the window is same as was 
+> > set last time, TPC
+> > is skipped.
+> 
+> Sure it is. The media will remember the window set.
+> Media has all its registers in a sort of flat file. SET_RW_REG_ADDR
+> selects the subset of the registers that will receive the data delivered
+> within TPC. This subset is remembered until power off or until changed.
 
-Prepend "(unreachable)" to path strings if the path is not reachable
-from the current root.
+I know everything you have just said.
+I just want to point out that code in many places assumes that register
+window is the same as set on device initialization.
 
-Two places updated are
- - the return string from getcwd()
- - and symlinks under /proc/$PID.
+However some code changes the register window, and therefore has to
+change it back at the end of execution.
+If error happens, window can be left changed, while rest of code thinks
+it isn't changed.
+Thats is why a tracking of it would eliminate the problem safely.
 
-Other uses of d_path() are left unchanged (we know that some old
-software crashes if /proc/mounts is changed).
+> 
+> 
+> > 
+> > However, I am thinking, that maybe I should always write
+> > both param and
+> > extra register? I just write 0xFF to extra register and
+> > thats all.
+> 
+> You should write into a param register when you want to alter the command
+> parameters. You cannot do so during auto incrementing block access, for
+> example.
+> 
+> But, if you're using the auto incrementing write, you will have to write
+> extra register for every page transferred.
+But what if I fill extra register with 0xFF?
+And besides on reads, the fact that I *write* the extra register before
+I execute read command shouldn't matter at all regardless of what I
+write there.
+On writes however I *do* need to write extra register anyway with proper
+values.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/dcache.c            |   54 +++++++++++++++++++++++++++++++++++++++++++++----
- fs/proc/base.c         |    2 -
- include/linux/dcache.h |    1 
- include/linux/path.h   |    5 ++++
- 4 files changed, 57 insertions(+), 5 deletions(-)
+Therefore I see no reason why I can't set write window to cover both
+param and extra register, and leave it always like that.
 
-Index: linux-2.6/fs/dcache.c
-===================================================================
---- linux-2.6.orig/fs/dcache.c	2010-07-06 18:08:19.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2010-07-06 18:08:22.000000000 +0200
-@@ -2017,6 +2017,11 @@ static int path_with_deleted(const struc
- 	return prepend_path(path, root, buf, buflen);
- }
- 
-+static int prepend_unreachable(char **buffer, int *buflen)
-+{
-+	return prepend(buffer, buflen, "(unreachable)", 13);
-+}
-+
- /**
-  * d_path - return the path of a dentry
-  * @path: path to report
-@@ -2062,6 +2067,39 @@ char *d_path(const struct path *path, ch
- }
- EXPORT_SYMBOL(d_path);
- 
-+/**
-+ * d_path_with_unreachable - return the path of a dentry
-+ * @path: path to report
-+ * @buf: buffer to return value in
-+ * @buflen: buffer length
-+ *
-+ * The difference from d_path() is that this prepends "(unreachable)"
-+ * to paths which are unreachable from the current process' root.
-+ */
-+char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
-+{
-+	char *res = buf + buflen;
-+	struct path root;
-+	struct path tmp;
-+	int error;
-+
-+	if (path->dentry->d_op && path->dentry->d_op->d_dname)
-+		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
-+
-+	get_fs_root(current->fs, &root);
-+	spin_lock(&dcache_lock);
-+	tmp = root;
-+	error = path_with_deleted(path, &tmp, &res, &buflen);
-+	if (!error && !path_equal(&tmp, &root))
-+		error = prepend_unreachable(&res, &buflen);
-+	spin_unlock(&dcache_lock);
-+	path_put(&root);
-+	if (error)
-+		res =  ERR_PTR(error);
-+
-+	return res;
-+}
-+
- /*
-  * Helper function for dentry_operations.d_dname() members
-  */
-@@ -2154,15 +2192,23 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 	if (!d_unlinked(pwd.dentry)) {
- 		unsigned long len;
- 		struct path tmp = root;
--		char * cwd;
-+		char *cwd = page + PAGE_SIZE;
-+		int buflen = PAGE_SIZE;
- 
--		cwd = __d_path(&pwd, &tmp, page, PAGE_SIZE);
-+		prepend(&cwd, &buflen, "\0", 1);
-+		error = prepend_path(&pwd, &tmp, &cwd, &buflen);
- 		spin_unlock(&dcache_lock);
- 
--		error = PTR_ERR(cwd);
--		if (IS_ERR(cwd))
-+		if (error)
- 			goto out;
- 
-+		/* Unreachable from current root */
-+		if (!path_equal(&tmp, &root)) {
-+			error = prepend_unreachable(&cwd, &buflen);
-+			if (error)
-+				goto out;
-+		}
-+
- 		error = -ERANGE;
- 		len = PAGE_SIZE + page - cwd;
- 		if (len <= size) {
-Index: linux-2.6/include/linux/dcache.h
-===================================================================
---- linux-2.6.orig/include/linux/dcache.h	2010-07-06 17:59:04.000000000 +0200
-+++ linux-2.6/include/linux/dcache.h	2010-07-06 18:08:22.000000000 +0200
-@@ -315,6 +315,7 @@ extern char *dynamic_dname(struct dentry
- 
- extern char *__d_path(const struct path *path, struct path *root, char *, int);
- extern char *d_path(const struct path *, char *, int);
-+extern char *d_path_with_unreachable(const struct path *, char *, int);
- extern char *dentry_path(struct dentry *, char *, int);
- 
- /* Allocation counts.. */
-Index: linux-2.6/fs/proc/base.c
-===================================================================
---- linux-2.6.orig/fs/proc/base.c	2010-07-06 18:08:06.000000000 +0200
-+++ linux-2.6/fs/proc/base.c	2010-07-06 18:08:22.000000000 +0200
-@@ -1426,7 +1426,7 @@ static int do_proc_readlink(struct path
- 	if (!tmp)
- 		return -ENOMEM;
- 
--	pathname = d_path(path, tmp, PAGE_SIZE);
-+	pathname = d_path_with_unreachable(path, tmp, PAGE_SIZE);
- 	len = PTR_ERR(pathname);
- 	if (IS_ERR(pathname))
- 		goto out;
-Index: linux-2.6/include/linux/path.h
-===================================================================
---- linux-2.6.orig/include/linux/path.h	2010-07-06 17:59:04.000000000 +0200
-+++ linux-2.6/include/linux/path.h	2010-07-06 18:08:22.000000000 +0200
-@@ -12,4 +12,9 @@ struct path {
- extern void path_get(struct path *);
- extern void path_put(struct path *);
- 
-+static inline int path_equal(const struct path *path1, const struct path *path2)
-+{
-+	return path1->mnt == path2->mnt && path1->dentry == path2->dentry;
-+}
-+
- #endif  /* _LINUX_PATH_H */
+> 
+> That's where changing RW_REG_ADDR comes handy.
+> 
+> > Windows driver does that partially. It writes 0xFF to
+> > managmemt and
+> > 0xF8 to overwrite flag (why???)
+> 
+> It's a factory default.
+> Try to read it from some empty block. :-)
+> (My theory is that missing bits contain invisible ECC data).
+> 
+> 
+> > I don't
+> > think that matters.
+> > It also always sends the MS_TPC_SET_RW_REG_ADRS, which I
+> > don't like.
+> > 
+> 
+> This only reduces the performance slightly. SET_RW_REG_ADDR does not
+> influence the media's state machine as far as I can tell, unless you try
+> to push it during the data transfer cycle (whereupon you will end up
+> having a literal value of the tpc in the media data buffer).
+Indeed. Maybe I too should just send the MS_TPC_SET_RW_REG_ADRS at start
+of command, and know that nothing will go south....
 
--- 
+Even if that reduces performance by 0.2%, it isn't big deal. Data
+corruptions is very big deal.
+
+
+Best regards,
+Maxim Levitsky
+
