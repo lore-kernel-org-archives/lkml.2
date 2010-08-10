@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757699Ab0HJNo0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 09:44:26 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:25907 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754923Ab0HJNoV convert rfc822-to-8bit (ORCPT
+	id S1757705Ab0HJNqK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 09:46:10 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61307 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757586Ab0HJNqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 09:44:21 -0400
-Date: Tue, 10 Aug 2010 15:43:37 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Greg KH <greg@kroah.com>
-Cc: Eric Biederman <ebiederm@aristanetworks.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, Dmitry Torokhov <dtor@mail.ru>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Nick Cheng <nick.cheng@areca.com.tw>,
-        James Smart <james.smart@emulex.com>,
-        Alex Iannicelli <alex.iannicelli@emulex.com>,
-        Benjamin Thery <benjamin.thery@bull.net>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 0/6] Remove owner field from sysfs attribute structure
-Message-ID: <20100810154337.006a0df9@hyperion.delvare>
-In-Reply-To: <20100802233128.GA21286@kroah.com>
-References: <1280380166-29196-1-git-send-email-guenter.roeck@ericsson.com>
-	<AANLkTinM+m15QbAg+J3YyHWnObsxtHYYU6p6C89p8wjp@mail.gmail.com>
-	<20100802233128.GA21286@kroah.com>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 10 Aug 2010 09:46:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=LA34XTuPGeweTW1qCXieFKmFYCVzTKHXwpoFMpQN0R8ejx8lEWW9DEDJv5GwZr7Urs
+         e/AUm08SDqGI4W866yrnzdInxIwFYzgCMTna+Ppdv35UIK/PjrqWyHu6hhiyyj4Gl3kx
+         FWT7lbOhDhBNSnG42ZcnAQdpG8j7AaYOcH3so=
+Date: Tue, 10 Aug 2010 10:46:00 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>, David Miller <davem@davemloft.net>,
+        willy@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: perf build broke by list_head changes...
+Message-ID: <20100810134600.GF18824@ghostprotocols.net>
+References: <20100809.235746.115919762.davem@davemloft.net>
+ <4C6147DE.9050608@tilera.com>
+ <20100810124445.GA14843@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100810124445.GA14843@merkur.ravnborg.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2 Aug 2010 16:31:28 -0700, Greg KH wrote:
-> On Wed, Jul 28, 2010 at 11:16:35PM -0700, Eric Biederman wrote:
-> > On Wed, Jul 28, 2010 at 10:09 PM, Guenter Roeck
-> > <guenter.roeck@ericsson.com> wrote:
-> > > The following comment is found in include/linux/sysfs.h:
-> > >
-> > >   /* FIXME
-> > >    * The *owner field is no longer used.
-> > >    * x86 tree has been cleaned up. The owner
-> > >    * attribute is still left for other arches.
-> > >    */
-> > >
-> > > As it turns out, the *owner field is (again?) initialized in several modules,
-> > > suggesting that such initialization may be creeping back into the code.
-> > >
-> > > This patch set removes the above comment, the *owner field, and each instance
-> > > in the code where it was found to be initialized.
-> > >
-> > > Compiled with x86 allmodconfig as well as with all alpha, arm, mips, powerpc,
-> > > and sparc defconfig builds.
-> > 
-> > This seems reasonable to me.  Can we get this in linux-next?
-> 
-> It will show up in linux-next tomorrow.
+Em Tue, Aug 10, 2010 at 02:44:45PM +0200, Sam Ravnborg escreveu:
+> IMO the patch that moves list_head to types.h is fine.
+> And perf needs to learn good manner with respect to
+> kernel headers.
 
-Related bug?
+Idea is to try to have the perf tools, since they are hosted in the
+kernel and developed mostly by people with kernel background, to use
+code and practices used in the kernel proper.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16544
+It started just keeping private copies, I guess it should get back to
+that since the reaction to this kind of same source repo code sharing
+was, well, not good :-)
 
--- 
-Jean Delvare
+Alternatives?
+
+- Arnaldo
