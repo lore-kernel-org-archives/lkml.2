@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab0HJNaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 09:30:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47022 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923Ab0HJNaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 09:30:08 -0400
-Date: Tue, 10 Aug 2010 15:29:18 +0200
-From: Jan Kara <jack@suse.cz>
-To: Neil Brown <neilb@suse.de>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-        Chris Mason <chris.mason@oracle.com>, Jens Axboe <axboe@kernel.dk>,
-        Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 07/13] writeback: explicit low bound for vm.dirty_ratio
-Message-ID: <20100810132918.GA3351@quack.suse.cz>
-References: <20100805163401.e9754032.akpm@linux-foundation.org>
- <20100806124452.GC4717@localhost>
- <20100809235652.7113.A69D9226@jp.fujitsu.com>
- <20100810135712.0eb34759@notabene>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100810135712.0eb34759@notabene>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757635Ab0HJNgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 09:36:14 -0400
+Received: from elettra.colt-to.towertech.it ([213.215.222.70]:38021 "EHLO
+	smtp.towertech.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756524Ab0HJNgK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 09:36:10 -0400
+Date: Tue, 10 Aug 2010 15:34:48 +0200
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: rtc-linux@googlegroups.com
+Cc: wellsk40@gmail.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Durgesh Pattamatta <durgesh.pattamatta@nxp.com>
+Subject: Re: [rtc-linux] [PATCH 1/2] rtc: rtc-lpc32xx: Introduce RTC driver
+ for  the LPC32XX SoC
+Message-ID: <20100810153448.17443314@linux.lan.towertech.it>
+In-Reply-To: <1281370650-29520-2-git-send-email-wellsk40@gmail.com>
+References: <1281370650-29520-1-git-send-email-wellsk40@gmail.com>
+	<1281370650-29520-2-git-send-email-wellsk40@gmail.com>
+Organization: Tower Technologies
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 10-08-10 13:57:12, Neil Brown wrote:
-> On Tue, 10 Aug 2010 12:12:06 +0900 (JST)
-> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> 
-> > > Subject: writeback: explicit low bound for vm.dirty_ratio
-> > > From: Wu Fengguang <fengguang.wu@intel.com>
-> > > Date: Thu Jul 15 10:28:57 CST 2010
-> > > 
-> > > Force a user visible low bound of 5% for the vm.dirty_ratio interface.
-> > > 
-> > > This is an interface change. When doing
-> > > 
-> > > 	echo N > /proc/sys/vm/dirty_ratio
-> > > 
-> > > where N < 5, the old behavior is pretend to accept the value, while
-> > > the new behavior is to reject it explicitly with -EINVAL.  This will
-> > > possibly break user space if they checks the return value.
-> > 
-> > Umm.. I dislike this change. Is there any good reason to refuse explicit 
-> > admin's will? Why 1-4% is so bad? Internal clipping can be changed later
-> > but explicit error behavior is hard to change later.
-> 
-> As a data-point, I had a situation a while back where I needed a value below
-> 1 to get desired behaviour.  The system had lots of RAM and fairly slow
-> write-back (over NFS) so a 'sync' could take minutes.
-> 
-> So I would much prefer allowing not only 1-4, but also fraction values!!!
-> 
-> I can see no justification at all for setting a lower bound of 5.  Even zero
-> can be useful - for testing purposes mostly.
-  If you run on a recent kernel, /proc/sys/vm/dirty_background_bytes and
-dirty_bytes is what was introduced exactly for these purposes. Not that I
-would think that magic clipping at 5% is a good thing...
+On Mon,  9 Aug 2010 09:17:29 -0700
+wellsk40@gmail.com wrote:
 
-									Honza
+> +
+> +	retval = request_irq(rtc->irq, lpc32xx_rtc_alarm_interrupt,
+> +		IRQF_DISABLED, "rtcalarm", rtc);
+> +	if (retval < 0) {
+> +		dev_err(&pdev->dev, "Can't request interrupt\n");
+> +		goto err_free_irq;
+> +	}
+
+ if the driver can work without the alarm irq you
+ can convert this to a non fatal warning.
+
+ having an rtc without alarms is much better than having none.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+ Best regards,
+
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
