@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752357Ab0HJIcR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 04:32:17 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33127 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751522Ab0HJIcN (ORCPT
+	id S1753922Ab0HJIjt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 04:39:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53599 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620Ab0HJIjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 04:32:13 -0400
-Date: Tue, 10 Aug 2010 09:45:44 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        andi@firstfloor.org, gregkh@suse.de, tytso@mit.edu,
-        iws@ovro.caltech.edu
-Subject: Re: [PATCH 1/4] fix kfifo miss use of nozami.c
-Message-ID: <20100810094544.3d5e2cec@lxorguk.ukuu.org.uk>
-In-Reply-To: <1281422440-23455-2-git-send-email-stefani@seibold.net>
-References: <1281422440-23455-1-git-send-email-stefani@seibold.net>
-	<1281422440-23455-2-git-send-email-stefani@seibold.net>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Aug 2010 04:39:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=kd9j499PmZGdCiRsZ581w67oUjNboZgFuO/17fHALWkQvvCB7esUMuUsv8F+ErJMHj
+         T+wETXiAihakLm6YSewO1CQ0RnxXq2O9JGXmKAXdoCdT4O0WAhR9MPyH3H/QVzUAIm1f
+         z5YP+UhQW2SdtJt3p3M1K12kxyf6aKnEpying=
+MIME-Version: 1.0
+In-Reply-To: <1281411152.1670.24.camel@leonhard>
+References: <1281411152.1670.24.camel@leonhard>
+From: Pistis Valentino <vale.pistis@gmail.com>
+Date: Tue, 10 Aug 2010 10:39:21 +0200
+Message-ID: <AANLkTinKnLoJUBX5884QkRrDcYiKT=bYJ1zN=a8VSAWy@mail.gmail.com>
+Subject: Re: find_task_by_pid() problem
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Aug 2010 08:40:37 +0200
-stefani@seibold.net wrote:
+2010/8/10 Namhyung Kim <namhyung@gmail.com>:
+>> I'm using the routine find_task_by_vpid () linux / sched.h (the oldest
+>> find_task_by_pid() don't exist), but when I try to compile the file I
+>> hello_world.c returns an error:
+>
+> You can only use kernel's EXPORTed symbol, ie. EXPORT_SYMBOL*(), when you
+> write a module program because kernel links it on its own way.
+> Try this instead.
+>
+> pid_task(find_vpid(...), PIDTYPE_PID)
+>
+Great!
+It works!
 
-> From: Stefani Seibold <stefani@seibold.net>
-> 
-> User of the kernel fifo should never bypass the API and directly access
-> the fifo structure. Otherwise it will be very hard to maintain the API.
-> 
-> Signed-off-by: Stefani Seibold <stefani@seibold.net>
+pid_task(find_vpid(pid), PIDTYPE_PID);
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+> --
+> Regards,
+> Namhyung Kim
+>
+>
+>
+
+Thank you!
+Ciao
+Valentino from Sardegna!
