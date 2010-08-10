@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756173Ab0HJDGQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 23:06:16 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62654 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493Ab0HJDGJ (ORCPT
+	id S1756323Ab0HJDH0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 23:07:26 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61548 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755493Ab0HJDHT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 23:06:09 -0400
-Message-ID: <4C60C236.4000509@vflare.org>
-Date: Tue, 10 Aug 2010 08:36:30 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] Replace ioctls with sysfs interface
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	<1281374816-904-2-git-send-email-ngupta@vflare.org> <AANLkTimuPK=1+xNMKfV=G1sSG60+=fa7eA3142JJZZ6p@mail.gmail.com>
-In-Reply-To: <AANLkTimuPK=1+xNMKfV=G1sSG60+=fa7eA3142JJZZ6p@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 9 Aug 2010 23:07:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=u0mUZfVKMfjQMCMlTQUtYrZnrXYF7+g6iTLdj7fENDi8QUvJIZIHD9qS/VJKVrI3OI
+         4sbW3B9PahnkpHw2Y+/0DyD2tLfDc+3JMQUT9c8x8rbOHy1uXM5dNb+un0WVqAmAeNT+
+         dUMwzEhqY78u7y8p0BsBtRUJGA+HqBEIwiP1Y=
+Subject: Re: [PATCH] MIPS: remove RELOC_HIDE on __pa_symbol
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <david.s.daney@gmail.com>, linux-kernel@vger.kernel.org,
+        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org
+In-Reply-To: <20100809122147.GA23053@linux-mips.org>
+References: <1281297456-2711-1-git-send-email-namhyung@gmail.com>
+	 <4C5F8ED8.90301@gmail.com>  <20100809122147.GA23053@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Aug 2010 12:07:08 +0900
+Message-ID: <1281409628.1670.11.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2010 12:04 AM, Pekka Enberg wrote:
-> On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
->> Creates per-device sysfs nodes in /sys/block/zram<id>/
->> Currently following stats are exported:
->>  - disksize
->>  - num_reads
->>  - num_writes
->>  - invalid_io
->>  - zero_pages
->>  - orig_data_size
->>  - compr_data_size
->>  - mem_used_total
->>
-<snip>
->>
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+2010-08-09 (월), 13:21 +0100, Ralf Baechle:
+> On Sun, Aug 08, 2010 at 10:15:04PM -0700, David Daney wrote:
+> > Maybe you could explain in more detail the problems you are having
+> > with the current definition of __pa_symbol().  I would be hesitant
+> > to change this bit of black magic unless there is a concrete problem
+> > you are trying to solve.
 > 
-> Looks good to me (but I'm not a sysfs guy).
+> RELOC_HIDE was originally added by 6007b903dfe5f1d13e0c711ac2894bdd4a61b1ad
+> (lmo) rsp. 8431fd094d625b94d364fe393076ccef88e6ce18 (kernel.org).  A
+> discussion can be found in lkml posting
+> a2ebde260608230500o3407b108hc03debb9da6e62c@mail.gmail.com> which is
+> archived at
 > 
-> Acked-by: Pekka Enberg <penberg@kernel.org>
+>     http://lists.linuxcoding.com/kernel/2006-q3/msg17360.html
 > 
+> I felt this was dubious by the time it was added and probably should go?
+> 
+>   Ralf
 
-Thanks!
+Hi,
 
->>  /* Module params (documentation at end) */
->> -static unsigned int num_devices;
->> +unsigned int num_devices;
->> +
->> +static void zram_stat_inc(u32 *v)
->> +{
->> +       *v = *v + 1;
->> +}
->> +
->> +static void zram_stat_dec(u32 *v)
->> +{
->> +       *v = *v - 1;
->> +}
->> +
->> +static void zram_stat64_add(struct zram *zram, u64 *v, u64 inc)
->> +{
->> +       spin_lock(&zram->stat64_lock);
->> +       *v = *v + inc;
->> +       spin_unlock(&zram->stat64_lock);
->> +}
->> +
->> +static void zram_stat64_sub(struct zram *zram, u64 *v, u64 dec)
->> +{
->> +       spin_lock(&zram->stat64_lock);
->> +       *v = *v - dec;
->> +       spin_unlock(&zram->stat64_lock);
->> +}
->> +
->> +static void zram_stat64_inc(struct zram *zram, u64 *v)
->> +{
->> +       zram_stat64_add(zram, v, 1);
->> +}
-> 
-> These could probably use atomic_inc(), atomic64_inc(), and friends, no?
-> 
+I've sent basically same patch to x86 folks [1] and they said there is a
+possiblility of miscompilation on gcc 3. I am not sure the same goes
+here on mips but it might be safer to keep it. Sorry for the noise ;-(
 
-Yes, I think we could use them. Anyways, they are replaced by percpu stats in
-patch 3, so probably this can be left as-is.
+[1] http://lkml.org/lkml/2010/8/8/138
 
-Thanks,
-Nitin
+
+-- 
+Regards,
+Namhyung Kim
+
+
