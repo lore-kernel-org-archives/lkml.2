@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0HJJOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:14:16 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40038 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab0HJJOK (ORCPT
+	id S1754656Ab0HJJWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:22:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36638 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751048Ab0HJJWd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:14:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=S1c/NveSx7FikbFelnUEilB+2iwNunebbyNiU2VBV9hPzRYhLr4H5rRbeLD8wmF545
-         EgWo1Y6yT6TPqp5X6htKIorg5jnQIY1KMoLhQxs2MXSfS99Cg8qO1g7qaoX4Hm+dpdZk
-         kMIBw1EdtfSF0+aavrQuTp+ZioUjEst1A9UBY=
+	Tue, 10 Aug 2010 05:22:33 -0400
+From: "Gadiyar, Anand" <gadiyar@ti.com>
+To: viresh kumar <viresh.kumar@st.com>,
+        Matti Aarnio <matti.aarnio@zmailer.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Date: Tue, 10 Aug 2010 14:52:20 +0530
+Subject: RE: Query: Patches break with Microsoft exchange server.
+Thread-Topic: Query: Patches break with Microsoft exchange server.
+Thread-Index: Acs3pwht39qSKx7IR1+6L3WzS4KYGwAxigfQ
+Message-ID: <5A47E75E594F054BAF48C5E4FC4B92AB032401D8F0@dbde02.ent.ti.com>
+References: <4C5F9B25.8080401@st.com>
+ <20100809064957.GB16661@pengutronix.de>	<4C5FA698.90904@st.com>
+	<20100809090137.GP13165@mea-ext.zmailer.org> <4C5FCBE1.2080303@st.com>
+In-Reply-To: <4C5FCBE1.2080303@st.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <1281010151.2063.8.camel@alex-desktop>
-References: <1281010151.2063.8.camel@alex-desktop>
-Date: Tue, 10 Aug 2010 12:14:10 +0300
-Message-ID: <AANLkTi=YessPd6cHhLdveyrSq_TcY1Vx1LxpCNLthEJG@mail.gmail.com>
-Subject: Re: [PATCHv2] fixed resource leak in scripts/mod/modpost.c
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Trevor Keith <tsrk@tsrk.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        ext Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 5, 2010 at 3:09 PM, Alexey Fomenko
-<ext-alexey.fomenko@nokia.com> wrote:
-> Patch modified for released 2.6.35 kernel.
-> sec2annotation returns malloc'ed buffer directly to printf as an
-> argument. Patch lets free this buffer after printing.
+viresh kumar wrote:
+> On 8/9/2010 2:31 PM, Matti Aarnio wrote:
+> > On Mon, Aug 09, 2010 at 12:26:24PM +0530, viresh kumar wrote:
+> >> > 
+> >> > I missed this information in my last mail. We are using git send-email for
+> >> > sending patches. As patches will go through Microsoft exchange server only,
+> >> > so they are broken.
+> >> > 
+> > Let your boss complain to your IT keepers.
+> > "These are Machine-to-Machine messages, they must not be modified!"
+> > 
+> > 
+> > It would probably be "against corporate policy" to use gmail for these emails...
+> > 
+> 
+> We got one solution: Upgrade Exchange server to SP2.
+> Lets see if our IT department does this upgradation.
+> 
 
-Needs to be amended.
-I told Alexey in private to resend new version of the patch.
+Upgrading the Exchange server worked for us a couple of years ago. At least
+git-send-email works okay now, but Outlook is horribly broken.
 
--- 
-With Best Regards,
-Andy Shevchenko
+You could use gmail/others and send externally. Adding an explicit
+"From :" line in the patch can still give you credits to your official
+email address.
+
+- Anand
