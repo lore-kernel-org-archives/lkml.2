@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab0HJWrB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:47:01 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:64752 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754750Ab0HJWq7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:46:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6070"; a="50567361"
-Message-ID: <4C61D6E3.1030603@codeaurora.org>
-Date: Tue, 10 Aug 2010 15:46:59 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1758117Ab0HJWry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:47:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45764 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750830Ab0HJWrw convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:47:52 -0400
 MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: uaccess: Implement strict user copy checks
-References: <1280890950-19174-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1280890950-19174-1-git-send-email-sboyd@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <19552.39399.490494.51990@notabene.brown>
+References: <19552.39399.490494.51990@notabene.brown>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 10 Aug 2010 15:47:21 -0700
+Message-ID: <AANLkTinbCHAB3tPos1sp078maWaHAQbRM8oWMOiF1U8D@mail.gmail.com>
+Subject: Re: [REVISED PULL REQUEST] md updates for 2.6.36
+To: Neil Brown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com, David Woodhouse <dwmw2@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/03/2010 08:02 PM, Stephen Boyd wrote:
-> This is mostly a copy from the s390 implementation (which copied
-> from x86 and sparc), except we print a warning if the Kconfig
-> option is disabled.
+On Mon, Aug 9, 2010 at 5:14 PM, Neil Brown <neilb@suse.de> wrote:
 >
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
->
+>  create mode 100644 lib/raid6/Makefile
+>  rename {drivers/md => lib/raid6}/mktables.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6algos.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6altivec.uc (100%)
+>  rename {drivers/md => lib/raid6}/raid6int.uc (100%)
+>  rename {drivers/md => lib/raid6}/raid6mmx.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6recov.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6sse1.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6sse2.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6test/Makefile (100%)
+>  rename {drivers/md => lib/raid6}/raid6test/test.c (100%)
+>  rename {drivers/md => lib/raid6}/raid6x86.h (100%)
+>  rename {drivers/md => lib/raid6}/unroll.awk (100%)
 
-Ping?
+Hmm. Why "lib/raid6/raid6sse2.c" and friends? Why "raid6" twice? You
+don't mean "raid6+1" (mirrored raid6 ;), so why not just remove the
+second "raid6", and call it "lib/raid6/sse2.c"
 
-Should I submit this to the patch system?
+But I pulled. Just in case there was some logic to the duplication.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+                               Linus
