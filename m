@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932864Ab0HJWHt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:07:49 -0400
-Received: from kroah.org ([198.145.64.141]:44927 "EHLO coco.kroah.org"
+	id S933398Ab0HJWAN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:00:13 -0400
+Received: from kroah.org ([198.145.64.141]:44850 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933411Ab0HJWAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:00:17 -0400
+	id S933348Ab0HJV74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 17:59:56 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 38/68] cdc-acm: remove dead code
-Date: Tue, 10 Aug 2010 14:59:00 -0700
-Message-Id: <1281477570-18944-38-git-send-email-gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 21/68] specialix: Kill the BKL
+Date: Tue, 10 Aug 2010 14:58:43 -0700
+Message-Id: <1281477570-18944-21-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -19,62 +20,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Alan Cox <alan@linux.intel.com>
 
-The wait_event_interruptible_timeout in acm_port_down is
-never reached. Remove it to avoid possible deadlocks
-with the big tty mutex if someone were to start using
-the blocking version of acm_port_down.
+Use the port mutex instead
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/usb/class/cdc-acm.c |   12 +++---------
- 1 files changed, 3 insertions(+), 9 deletions(-)
+ drivers/char/specialix.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 89d260d..1833b3a 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -636,19 +636,13 @@ static void acm_tty_unregister(struct acm *acm)
- 
- static int acm_tty_chars_in_buffer(struct tty_struct *tty);
- 
--static void acm_port_down(struct acm *acm, int drain)
-+static void acm_port_down(struct acm *acm)
- {
- 	int i, nr = acm->rx_buflimit;
- 	mutex_lock(&open_mutex);
- 	if (acm->dev) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
--		/* try letting the last writes drain naturally */
--		if (drain) {
--			wait_event_interruptible_timeout(acm->drain_wait,
--				(ACM_NW == acm_wb_is_avail(acm)) || !acm->dev,
--					ACM_CLOSE_TIMEOUT * HZ);
--		}
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-@@ -664,7 +658,7 @@ static void acm_tty_hangup(struct tty_struct *tty)
- {
- 	struct acm *acm = tty->driver_data;
- 	tty_port_hangup(&acm->port);
--	acm_port_down(acm, 0);
-+	acm_port_down(acm);
- }
- 
- static void acm_tty_close(struct tty_struct *tty, struct file *filp)
-@@ -685,7 +679,7 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
- 		mutex_unlock(&open_mutex);
- 		return;
+diff --git a/drivers/char/specialix.c b/drivers/char/specialix.c
+index 2c24fcd..7be456f 100644
+--- a/drivers/char/specialix.c
++++ b/drivers/char/specialix.c
+@@ -1863,8 +1863,7 @@ static int sx_set_serial_info(struct specialix_port *port,
+ 		return -EFAULT;
  	}
--	acm_port_down(acm, 0);
-+	acm_port_down(acm);
- 	tty_port_close_end(&acm->port, tty);
- 	tty_port_tty_set(&acm->port, NULL);
+ 
+-	lock_kernel();
+-
++	mutex_lock(&port->port.mutex);
+ 	change_speed = ((port->port.flags & ASYNC_SPD_MASK) !=
+ 			(tmp.flags & ASYNC_SPD_MASK));
+ 	change_speed |= (tmp.custom_divisor != port->custom_divisor);
+@@ -1875,7 +1874,7 @@ static int sx_set_serial_info(struct specialix_port *port,
+ 		    ((tmp.flags & ~ASYNC_USR_MASK) !=
+ 		     (port->port.flags & ~ASYNC_USR_MASK))) {
+ 			func_exit();
+-			unlock_kernel();
++			mutex_unlock(&port->port.mutex);
+ 			return -EPERM;
+ 		}
+ 		port->port.flags = ((port->port.flags & ~ASYNC_USR_MASK) |
+@@ -1892,7 +1891,7 @@ static int sx_set_serial_info(struct specialix_port *port,
+ 		sx_change_speed(bp, port);
+ 
+ 	func_exit();
+-	unlock_kernel();
++	mutex_unlock(&port->port.mutex);
+ 	return 0;
  }
+ 
+@@ -1906,7 +1905,7 @@ static int sx_get_serial_info(struct specialix_port *port,
+ 	func_enter();
+ 
+ 	memset(&tmp, 0, sizeof(tmp));
+-	lock_kernel();
++	mutex_lock(&port->port.mutex);
+ 	tmp.type = PORT_CIRRUS;
+ 	tmp.line = port - sx_port;
+ 	tmp.port = bp->base;
+@@ -1917,7 +1916,7 @@ static int sx_get_serial_info(struct specialix_port *port,
+ 	tmp.closing_wait = port->port.closing_wait * HZ/100;
+ 	tmp.custom_divisor =  port->custom_divisor;
+ 	tmp.xmit_fifo_size = CD186x_NFIFO;
+-	unlock_kernel();
++	mutex_unlock(&port->port.mutex);
+ 	if (copy_to_user(retinfo, &tmp, sizeof(tmp))) {
+ 		func_exit();
+ 		return -EFAULT;
 -- 
 1.7.2
 
