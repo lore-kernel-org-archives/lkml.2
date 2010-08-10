@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab0HJJjr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 05:39:47 -0400
-Received: from mgw-sa02.nokia.com ([147.243.1.48]:19567 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219Ab0HJJjo (ORCPT
+	id S1756728Ab0HJJmY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 05:42:24 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39062 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752252Ab0HJJmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 05:39:44 -0400
-Date: Tue, 10 Aug 2010 12:37:17 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: David Howells <dhowells@redhat.com>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vamos-dev@i4.informatik.uni-erlangen.de" 
-	<vamos-dev@i4.informatik.uni-erlangen.de>
-Subject: Re: [PATCH 1/4] arch/frv: Removing dead RAMKERNEL config option
-Message-ID: <20100810093717.GD22436@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <cover.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
- <c80d5af9b2921e9d8cc6d8d7b9a54a882f1c919e.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <c80d5af9b2921e9d8cc6d8d7b9a54a882f1c919e.1281431005.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+	Tue, 10 Aug 2010 05:42:17 -0400
+Date: Tue, 10 Aug 2010 10:56:51 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 10
+Message-ID: <20100810105651.5b49850d@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100810135601.4777e310.sfr@canb.auug.org.au>
+References: <20100810135601.4777e310.sfr@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 10 Aug 2010 13:56:01 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-On Tue, Aug 10, 2010 at 11:11:08AM +0200, ext Christian Dietrich wrote:
->diff --git a/arch/frv/mm/init.c b/arch/frv/mm/init.c
->index ed64588..73586ad 100644
->--- a/arch/frv/mm/init.c
->+++ b/arch/frv/mm/init.c
->@@ -170,23 +170,6 @@ void __init mem_init(void)
->  */
-> void free_initmem(void)
-> {
->-#if defined(CONFIG_RAMKERNEL) && !defined(CONFIG_PROTECT_KERNEL)
->-	unsigned long start, end, addr;
->-
->-	start = PAGE_ALIGN((unsigned long) &__init_begin);	/* round up */
->-	end   = ((unsigned long) &__init_end) & PAGE_MASK;	/* round down */
->-
->-	/* next to check that the page we free is not a partial page */
->-	for (addr = start; addr < end; addr += PAGE_SIZE) {
->-		ClearPageReserved(virt_to_page(addr));
->-		init_page_count(virt_to_page(addr));
->-		free_page(addr);
->-		totalram_pages++;
->-	}
->-
->-	printk("Freeing unused kernel memory: %ldKiB freed (0x%lx - 0x%lx)\n",
->-	       (end - start) >> 10, start, end);
->-#endif
-> } /* end free_initmem() */
+> Hi all,
+> 
+> As the merge window is open, please do not add 2.6.37 material to your
+> linux-next included trees until after 2.6.36-rc1.
 
-and now you have an empty function... how about removing the function 
-completely and it's uses ?
+Breaks on x86-32 with
 
--- 
-balbi
+ERROR: "st_get_plat_device" [drivers/staging/ti-st/st_drv.ko] undefined!
+ERROR: "__get_user_X" [drivers/acpi/apei/erst-dbg.ko] undefined!
+WARNING: modpost: Found 17 section mismatch(es).
+To see full details build your kernel with:
+'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+make[1]: *** [__modpost] Error 1
+make: *** [modules] Error 2
 
-DefectiveByDesign.org
+
+
+Alan
