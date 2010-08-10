@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab0HJVyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:54:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33555 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933205Ab0HJVx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:53:57 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 4/4] perf ui hist browser: Fixup key bindings
-Date: Tue, 10 Aug 2010 18:53:46 -0300
-Message-Id: <1281477226-11504-5-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1281477226-11504-1-git-send-email-acme@infradead.org>
-References: <1281477226-11504-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S933250Ab0HJV6D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:58:03 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:50566 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933224Ab0HJV6A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 17:58:00 -0400
+Date: Tue, 10 Aug 2010 14:57:41 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tomasz Buchert <tomasz.buchert@inria.fr>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
+Message-ID: <20100810215741.GC2927@count0.beaverton.ibm.com>
+References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
+> Writing 'FROZEN' to freezer.state file does not
+> forbid the task to be moved away from its cgroup
+> (for a very short time). Nevertheless the moved task
+> can become frozen OUTSIDE its cgroup which puts
+> discussed task in a permanent 'D' state.
+> 
+> This patch forbids migration of either FROZEN
+> or FREEZING tasks.
+> 
+> This behavior was observed and easily reproduced on
+> a single core laptop. Program and instructions how
+> to reproduce the bug can be fetched from:
+> http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
 
-To match what is shown when '?' or 'H' is pressed, i.e. the keybind help
-window.
+Thanks for the report and the test code.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/ui/browsers/hists.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+I'm will try to reproduce this race in the next few hours and analyze
+it since I'm not sure the patch really fixes the race -- it may only
+make the race trigger less frequently.
 
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index dd512b7..dafdf67 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -215,12 +215,12 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
- 			     "Press '?' for help on key bindings") < 0)
- 		return -1;
- 
--	newtFormAddHotKey(self->b.form, 'A');
- 	newtFormAddHotKey(self->b.form, 'a');
- 	newtFormAddHotKey(self->b.form, '?');
- 	newtFormAddHotKey(self->b.form, 'h');
--	newtFormAddHotKey(self->b.form, 'H');
- 	newtFormAddHotKey(self->b.form, 'd');
-+	newtFormAddHotKey(self->b.form, 'D');
-+	newtFormAddHotKey(self->b.form, 't');
- 
- 	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
- 	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
-@@ -232,7 +232,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
- 		if (es->reason != NEWT_EXIT_HOTKEY)
- 			break;
- 		switch (es->u.key) {
--		case 'd': { /* Debug */
-+		case 'D': { /* Debug */
- 			static int seq;
- 			struct hist_entry *h = rb_entry(self->b.top,
- 							struct hist_entry, rb_node);
-@@ -771,18 +771,17 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
- 			default:;
- 			}
- 
--			key = toupper(key);
- 			switch (key) {
--			case 'A':
-+			case 'a':
- 				if (browser->selection->map == NULL &&
- 				    browser->selection->map->dso->annotate_warned)
- 					continue;
- 				goto do_annotate;
--			case 'D':
-+			case 'd':
- 				goto zoom_dso;
--			case 'T':
-+			case 't':
- 				goto zoom_thread;
--			case 'H':
-+			case 'h':
- 			case '?':
- do_help:
- 				ui__help_window("->        Zoom into DSO/Threads & Annotate current symbol\n"
--- 
-1.6.2.5
+At the very least the patch won't break the current code since it's
+essentially a more-strict version of is_task_frozen_enough() -- it lets
+fewer tasks attach/detach to/from frozen cgroups.
 
+Cheers,
+	-Matt Helsley
