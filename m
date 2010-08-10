@@ -1,44 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab0HJVZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 17:25:55 -0400
-Received: from 8bytes.org ([88.198.83.132]:42656 "EHLO 8bytes.org"
+	id S1757801Ab0HJV2G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 17:28:06 -0400
+Received: from khc.piap.pl ([195.187.100.11]:52647 "EHLO khc.piap.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932249Ab0HJVZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 17:25:52 -0400
-Date: Tue, 10 Aug 2010 23:25:51 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [2.6.35] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40  BUG:
-	unable to handle kernel NULL pointer dereference at 0000000000000198
-Message-ID: <20100810212551.GU23755@8bytes.org>
-References: <1154489525.20100810164850@eikelenboom.it> <20100810162606.GQ23755@8bytes.org> <419601760.20100810185745@eikelenboom.it> <20100810180122.GR23755@8bytes.org> <1609756756.20100810200514@eikelenboom.it> <20100810202839.GS23755@8bytes.org> <618241473.20100810223635@eikelenboom.it> <20100810204721.GT23755@8bytes.org> <1893257730.20100810225726@eikelenboom.it>
+	id S1753444Ab0HJV2F convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 17:28:05 -0400
+From: Krzysztof Halasa <khc@pm.waw.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>
+Subject: [PULL REQ] IXP4xx (ARM) for 2.6.36
+Date: Tue, 10 Aug 2010 23:28:02 +0200
+Message-ID: <m3bp9a40pp.fsf@intrepid.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1893257730.20100810225726@eikelenboom.it>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 10:57:26PM +0200, Sander Eikelenboom wrote:
-> Hmmm the fun part seems to be .. that the usb devices on that usb2
-> controller seemed to work fine on Xen.
+Linus,
 
-Hmm, thats weird. In this case these devices probably do not alias at
-all. But lets wait for the results when you test my patch.
+This is the stuff which didn't make it to 2.6.35 for some reason.
+IXP4xx fixes and additional platform support. It's based on 2.6.34-final
+but merges cleanly and works correctly. Please pull, thanks.
 
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
 
->            +-0a.0-[0000:09-0a]----00.0-[0000:0a]--+-01.0
->            |                                      +-01.1
->            |                                      \-01.2
+  Linux 2.6.35 (2010-08-01 15:11:14 -0700)
 
-Yeah, device 09:00.0 is a PCIe-to-PCI bridge and the addtional USB
-controlers are behind that bridge as legacy PCI devices. Thats why the
-BIOS sets up the alias-entry. It should set up 09:00.0 instead of
-0a:00.0 to make things work correctly.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/chris/linux-2.6.git ixp4xx
 
-	Joerg
+Krzysztof Hałasa (5):
+      IXP4xx: Prevent HSS transmitter lockup by disabling FRaMe signals.
+      IXP4xx: Fix ixp4xx_crypto little-endian operation.
+      IXP4xx: Make mdio_bus struct static in the Ethernet driver.
+      IXP4xx: Fix sparse warnings in I/O primitives.
+      IXP4xx: Fix LL debugging on little-endian CPU.
 
+Marc Zyngier (2):
+      ixp4xx: base support for Arcom Vulcan
+      ixp4xx/vulcan: add PCI support
+
+ arch/arm/mach-ixp4xx/Kconfig                    |    8 +
+ arch/arm/mach-ixp4xx/Makefile                   |    2 +
+ arch/arm/mach-ixp4xx/include/mach/debug-macro.S |    2 +
+ arch/arm/mach-ixp4xx/include/mach/io.h          |    6 +-
+ arch/arm/mach-ixp4xx/vulcan-pci.c               |   73 +++++++
+ arch/arm/mach-ixp4xx/vulcan-setup.c             |  246 +++++++++++++++++++++++
+ drivers/crypto/ixp4xx_crypto.c                  |   21 ++
+ drivers/net/arm/ixp4xx_eth.c                    |    2 +-
+ drivers/net/wan/ixp4xx_hss.c                    |    2 +-
+ 9 files changed, 357 insertions(+), 5 deletions(-)
+ create mode 100644 arch/arm/mach-ixp4xx/vulcan-pci.c
+ create mode 100644 arch/arm/mach-ixp4xx/vulcan-setup.c
+
+-- 
+Krzysztof Halasa
