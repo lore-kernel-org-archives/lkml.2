@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0HJPNS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 11:13:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5404 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932129Ab0HJPNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 11:13:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,348,1278313200"; 
-   d="scan'208";a="543702597"
-Date: Tue, 10 Aug 2010 11:13:06 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: David Miller <davem@davemloft.net>
-Cc: cmetcalf@tilera.com, willy@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: perf build broke by list_head changes...
-Message-ID: <20100810151306.GC6981@wil.cx>
-References: <20100809.235746.115919762.davem@davemloft.net>
+	id S932242Ab0HJPQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 11:16:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41565 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129Ab0HJPQa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 11:16:30 -0400
+Date: Tue, 10 Aug 2010 08:15:19 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Ocfs2-devel] [PATCH 1/3] ext3/ext4: Factor out disk
+ addressability check
+Message-ID: <20100810151518.GC3025@mail.oracle.com>
+Mail-Followup-To: "Patrick J. LoPresti" <lopresti@gmail.com>,
+	ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <874ofr2myq.fsf@patl.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100809.235746.115919762.davem@davemloft.net>
+In-Reply-To: <874ofr2myq.fsf@patl.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 11:57:46PM -0700, David Miller wrote:
-> Commit:
+On Thu, Jul 22, 2010 at 03:03:41PM -0700, Patrick J. LoPresti wrote:
+> As part of adding support for OCFS2 to mount huge volumes, we need to
+> check that the sector_t and page cache of the system are capable of
+> addressing the entire volume.
 > 
-> commit de5d9bf6541736dc7ad264d2b5cc99bc1b2ad958
-> Author: Chris Metcalf <cmetcalf@tilera.com>
-> Date:   Fri Jul 2 13:41:14 2010 -0400
+> An identical check already appears in ext3 and ext4.  This patch moves
+> the addressability check into its own function in fs/libfs.c and
+> modifies ext3 and ext4 to invoke it.
 > 
->     Move list types from <linux/list.h> to <linux/types.h>.
-> 
-> broke the build of 'perf'.
-> 
-> If you move "struct list_head" into types.h, this means perf stops
-> building because it depends upon being able to include linux/list.h
-> from a userland application and at the same time be able to get the
-> basic data types without defining __KERNEL__ or similar.
+> Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
 
-Sorry about that.  Obviously, I didn't test-build this patch.
+ext4/jbd2 folks,
+	I would like to push these upstream.  Should they go through
+ocfs2.git or would you rather take them via your trees?
 
-> Now that no longer occurs because the bulk of types.h is __KERNEL__
-> protected and thus the build breaks since "struct list_head" is
-> never defined.
+Joel
 
-list.h isn't a header-y file, so it's not an interface we expect userspace
-to use.  So one reasonable way to fix this is for perf to take its own copy.
+-- 
 
-Reverting the patch gets us back to the former problem (of not being
-able to use list.h in certain cases).
+"In the arms of the angel, fly away from here,
+ From this dark, cold hotel room and the endlessness that you fear.
+ You are pulled from the wreckage of your silent reverie.
+ In the arms of the angel, may you find some comfort here."
 
-We could do a glibc-like _WANT_LIST_HEAD macro.  I don't think the
-resulting uglification is reasonable.
-
-perf could pretend that it's real userspace instead of being part of
-the kernel and use a list implementation designed for userspace.  I
-don't know of a good one though.
-
-Any preferences which solution we take?
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
