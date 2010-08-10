@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384Ab0HJWJD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 18:09:03 -0400
-Received: from kroah.org ([198.145.64.141]:44898 "EHLO coco.kroah.org"
+	id S932721Ab0HJWJn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 18:09:43 -0400
+Received: from kroah.org ([198.145.64.141]:44880 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933383Ab0HJWAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 18:00:08 -0400
+	id S933372Ab0HJWAF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 18:00:05 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
         Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 31/68] serial: add port helpers
-Date: Tue, 10 Aug 2010 14:58:53 -0700
-Message-Id: <1281477570-18944-31-git-send-email-gregkh@suse.de>
+Subject: [PATCH 28/68] tty: Make vt's have a tty_port
+Date: Tue, 10 Aug 2010 14:58:50 -0700
+Message-Id: <1281477570-18944-28-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100810214425.GB17385@kroah.com>
 References: <20100810214425.GB17385@kroah.com>
@@ -22,113 +22,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-We can make this the same as the ones that will be needed by the tty_port
-helper logic that we want to move to but still call them from the existing
-code base.
+The vt layer isn't safely handling reference counts to tty object on the input
+side. Add a tty port structure to the vt layer in order to implement this using
+the standard helpers.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/serial_core.c |   51 ++++++++++++++++++++++++++++++-----------
- 1 files changed, 37 insertions(+), 14 deletions(-)
+ drivers/char/vt.c              |    2 ++
+ include/linux/console_struct.h |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 424b1c7..2379045 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1501,6 +1501,34 @@ static void uart_update_termios(struct tty_struct *tty,
- 	}
- }
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 9f67ad9..295af82 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -783,6 +783,7 @@ int vc_allocate(unsigned int currcons)	/* return 0 on success */
+ 	    if (!vc)
+ 		return -ENOMEM;
+ 	    vc_cons[currcons].d = vc;
++	    tty_port_init(&vc->port);
+ 	    INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
+ 	    visual_init(vc, currcons, 1);
+ 	    if (!*vc->vc_uni_pagedir_loc)
+@@ -2921,6 +2922,7 @@ static int __init con_init(void)
+ 	for (currcons = 0; currcons < MIN_NR_CONSOLES; currcons++) {
+ 		vc_cons[currcons].d = vc = kzalloc(sizeof(struct vc_data), GFP_NOWAIT);
+ 		INIT_WORK(&vc_cons[currcons].SAK_work, vc_SAK);
++		tty_port_init(&vc->port);
+ 		visual_init(vc, currcons, 1);
+ 		vc->vc_screenbuf = kzalloc(vc->vc_screenbuf_size, GFP_NOWAIT);
+ 		vc_init(vc, vc->vc_rows, vc->vc_cols,
+diff --git a/include/linux/console_struct.h b/include/linux/console_struct.h
+index d7d9acd..25bf67f 100644
+--- a/include/linux/console_struct.h
++++ b/include/linux/console_struct.h
+@@ -21,6 +21,8 @@ struct vt_struct;
+ #define NPAR 16
  
-+static int uart_carrier_raised(struct tty_port *port)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	int mctrl;
-+	mutex_lock(&port->mutex);
-+	spin_lock_irq(&uport->lock);
-+	uport->ops->enable_ms(uport);
-+	mctrl = uport->ops->get_mctrl(uport);
-+	spin_unlock_irq(&uport->lock);
-+	mutex_unlock(&port->mutex);
-+	if (mctrl & TIOCM_CAR)
-+		return 1;
-+	return 0;
-+}
+ struct vc_data {
++	struct tty_port port;			/* Upper level data */
 +
-+static void uart_dtr_rts(struct tty_port *port, int onoff)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	mutex_lock(&port->mutex);
-+	if (onoff)
-+		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+	mutex_unlock(&port->mutex);
-+}
-+
- /*
-  * Block the open until the port is ready.  We must be called with
-  * the per-port semaphore held.
-@@ -1509,9 +1537,7 @@ static int
- uart_block_til_ready(struct file *filp, struct uart_state *state)
- {
- 	DECLARE_WAITQUEUE(wait, current);
--	struct uart_port *uport = state->uart_port;
- 	struct tty_port *port = &state->port;
--	unsigned int mctrl;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&port->lock, flags);
-@@ -1555,23 +1581,14 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
- 		 * not set RTS here - we want to make sure we catch
- 		 * the data from the modem.
- 		 */
--		if (port->tty->termios->c_cflag & CBAUD) {
--			mutex_lock(&port->mutex);
--			uart_set_mctrl(uport, TIOCM_DTR);
--			mutex_unlock(&port->mutex);
--		}
-+		if (port->tty->termios->c_cflag & CBAUD)
-+			tty_port_raise_dtr_rts(port);
- 
- 		/*
- 		 * and wait for the carrier to indicate that the
- 		 * modem is ready for us.
- 		 */
--		mutex_lock(&port->mutex);
--		spin_lock_irq(&uport->lock);
--		uport->ops->enable_ms(uport);
--		mctrl = uport->ops->get_mctrl(uport);
--		spin_unlock_irq(&uport->lock);
--		mutex_unlock(&port->mutex);
--		if (mctrl & TIOCM_CAR)
-+		if (tty_port_carrier_raised(port))
- 			break;
- 
- 		schedule();
-@@ -2349,6 +2366,11 @@ static const struct tty_operations uart_ops = {
- #endif
- };
- 
-+static const struct tty_port_operations uart_port_ops = {
-+	.carrier_raised = uart_carrier_raised,
-+	.dtr_rts	= uart_dtr_rts,
-+};
-+
- /**
-  *	uart_register_driver - register a driver with the uart core layer
-  *	@drv: low level driver structure
-@@ -2405,6 +2427,7 @@ int uart_register_driver(struct uart_driver *drv)
- 		struct tty_port *port = &state->port;
- 
- 		tty_port_init(port);
-+		port->ops = &uart_port_ops;
- 		port->close_delay     = 500;	/* .5 seconds */
- 		port->closing_wait    = 30000;	/* 30 seconds */
- 		tasklet_init(&state->tlet, uart_tasklet_action,
+ 	unsigned short	vc_num;			/* Console number */
+ 	unsigned int	vc_cols;		/* [#] Console size */
+ 	unsigned int	vc_rows;
 -- 
 1.7.2
 
