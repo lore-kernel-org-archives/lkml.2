@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab0HJDiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 9 Aug 2010 23:38:23 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43907 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756410Ab0HJDiT (ORCPT
+	id S1757361Ab0HJDlj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 9 Aug 2010 23:41:39 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53695 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756817Ab0HJDle (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 9 Aug 2010 23:38:19 -0400
-Message-ID: <4C60C9C4.4000902@vflare.org>
-Date: Tue, 10 Aug 2010 09:08:44 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
+	Mon, 9 Aug 2010 23:41:34 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6069"; a="50462356"
+Message-ID: <bf2b5539fdb03a1a9c55ee1122c40b99.squirrel@www.codeaurora.org>
+In-Reply-To: <1281409689.1954.96.camel@Joe-Laptop.home>
+References: <1281407259-28626-1-git-send-email-stepanm@codeaurora.org>
+    <1281409689.1954.96.camel@Joe-Laptop.home>
+Date: Mon, 9 Aug 2010 20:42:13 -0700 (PDT)
+Subject: Re: [PATCH v3] arm: msm: Add MSM IOMMU support.
+From: stepanm@codeaurora.org
+To: "Joe Perches" <joe@perches.com>
+Cc: "Stepan Moskovchenko" <stepanm@codeaurora.org>, dwalker@codeaurora.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@kernel.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 02/10] Remove need for explicit device initialization
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	<1281374816-904-3-git-send-email-ngupta@vflare.org> <AANLkTinsoHUb307N+v6pGfRraHK-epBU70fD0FxPCNup@mail.gmail.com>
-In-Reply-To: <AANLkTinsoHUb307N+v6pGfRraHK-epBU70fD0FxPCNup@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2010 12:06 AM, Pekka Enberg wrote:
-> On Mon, Aug 9, 2010 at 8:26 PM, Nitin Gupta <ngupta@vflare.org> wrote:
->> Currently, the user has to explicitly write a positive value to
->> initstate sysfs node before the device can be used. This event
->> triggers allocation of per-device metadata like memory pool,
->> table array and so on.
->>
->> We do not pre-initialize all zram devices since the 'table' array,
->> mapping disk blocks to compressed chunks, takes considerable amount
->> of memory (8 bytes per page). So, pre-initializing all devices will
->> be quite wasteful if only few or none of the devices are actually
->> used.
->>
->> This explicit device initialization from user is an odd requirement and
->> can be easily avoided. We now initialize the device when first write is
->> done to the device.
->>
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> 
-> AFAICT, most hardware block device drivers do things like this in the
-> probe function. Why can't we do that for zram as well and drop the
-> ->init_done and ->init_lock parts?
-> 
+> Why use both pr_err and printk(KERN_ERR ?
 
-I think probe is only for PCI devices? Maybe should hook into open function
-in struct block_device_operations. That way, we can also drop init_done and
-init_lock parts.
+I had been using pr_err for printing badness messages internal to the
+driver, but I guess their functionality is largely paralleled by return
+error codes. I had been using printk(KERN_ERR for messages that have been
+caused by an event that is more external to the driver and its callers
+(like the data for the page fault, which is most likely to be caused by a
+misprogrammed client). pr_err gives other information like function name,
+line number, etc, which would be noise when looking at an iommu page
+fault. And, I guess if the pr_err stuff got turned off, you would want the
+page fault data to still be printed... but that's kind of a minor point.
 
-Thanks,
-Nitin
+I am actually considering doing away with all the pr_err lines entirely
+because they typically also result in returning -Ewhatever and other IOMMU
+drivers don't give this level of error reporting. But, they may be helpful
+to the users of the API. What are people's thoughts on this?
+
+Thanks
+Steve
+
+>> +#define pr_fmt(fmt) "%s %i " fmt, __func__, __LINE__
+>> +		pr_err("bad size: %d\n", len);
+>> +		pr_err("null page table\n");
+>> +			pr_err("could not allocate second level table\n");
+>> +		pr_err("null page table\n");
+>> +		pr_err("first level PTE is 0\n");
+>> +	printk(KERN_ERR "FAR    = %08x    PAR    = %08x\n",
+>> +	printk(KERN_ERR "FSR    = %08x [%s%s%s%s%s%s%s%s%s%s]\n", fsr,
+>> +	printk(KERN_ERR "FSYNR0 = %08x    FSYNR1 = %08x\n",
+>> +	printk(KERN_ERR "TTBR0  = %08x    TTBR1  = %08x\n",
+>> +	printk(KERN_ERR "SCTLR  = %08x    ACTLR  = %08x\n",
+>> +	printk(KERN_ERR "PRRR   = %08x    NMRR   = %08x\n",
+>> +		pr_err("Invalid device ID in context interrupt handler\n");
+>> +	printk(KERN_ERR "===== WOAH! =====\n");
+>> +	printk(KERN_ERR "Unexpected IOMMU page fault!\n");
+>> +	printk(KERN_ERR "base = %08x\n", (unsigned int) base);
+>> +			printk(KERN_ERR "Fault occurred in context %d.\n", i);
+>> +			printk(KERN_ERR "Interesting registers:\n");
+>> +			printk(KERN_ERR "\n");
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm"
+> in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
+
