@@ -1,122 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755382Ab0HJHlB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 03:41:01 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:47797 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab0HJHkz convert rfc822-to-8bit (ORCPT
+	id S1756057Ab0HJHt2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 03:49:28 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:8709 "EHLO
+	VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753416Ab0HJHtX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 03:40:55 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Tue, 10 Aug 2010 09:42:31 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2 2/3] lib: vsprintf: optimised put_dec() for 32-bit
- machines
-In-reply-to: <201008100615.52510.vda.linux@googlemail.com>
-To: Michal Nazarewicz <mina86@mina86.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-id: <op.vg7o05wa7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <6f90103dea29739de0f4f0ede3f3da68afe84343.1281295424.git.mina86@mina86.com>
- <419733287a42072a658f0f74d0b1901132178b75.1281295424.git.mina86@mina86.com>
- <201008100615.52510.vda.linux@googlemail.com>
+	Tue, 10 Aug 2010 03:49:23 -0400
+X-SpamScore: 4
+X-BigFish: VPS4(z3cfcs329eqz1432N98dN936eMzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L6XEPZ-02-IZC-02
+X-M-MSG: 
+Date: Tue, 10 Aug 2010 09:42:00 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100810074200.GE26154@erda.amd.com>
+References: <20100804155002.GS3353@redhat.com>
+ <20100804161046.GC5130@lenovo>
+ <20100804162026.GU3353@redhat.com>
+ <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100809200245.GF6056@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100809200245.GF6056@lenovo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Sunday 08 August 2010 21:29, Michal Nazarewicz wrote:
->> Compared to previous version: the code is used only if:
->> 1. if long long is 64-bit (ie. ULLONG_MAX == 2**64-1), and
->> 2. user did not select optimisation for size with Kconfig.
+On 09.08.10 16:02:45, Cyrill Gorcunov wrote:
 
-On Tue, 10 Aug 2010 06:15:52 +0200, Denys Vlasenko <vda.linux@googlemail.com> wrote:
-> I measured the size and it does not seem to make sense
-> to exclude it on -Os. On x86:
->
-> put_dec_full change: 0x93 -> 0x47 bytes
-> put_dec      change: 0x12c -> 0x137 bytes
->
-> IOW, there is net code size reduction (compared to current kernel,
-> it may be a slight growth compared to patch 1).
->
-> So, please use the optimized code even for CONFIG_CC_OPTIMIZE_FOR_SIZE.
+> > @@ -1222,14 +1245,12 @@ perf_event_nmi_handler(struct notifier_block *self,
+> >  	regs = args->regs;
+> >  
+> >  	apic_write(APIC_LVTPC, APIC_DM_NMI);
+> 
+> If only I'm not missing something this apic_write should go up to
+> "case DIE_NMIUNKNOWN" site, no?
 
-Will do.
+This seems to be code from the non-nmi implementation and can be
+removed at all, which should be a separate patch. The vector is
+already set up.
 
->> Here are the results (normalised to the fastest/smallest):
->>                     :        ARM       Atom
->> -- Speed ----------------------------------
->> orig_put_dec        :   9.333822   2.083110  Original
->> mod1_put_dec        :   9.282045   1.904564
->> mod2_put_dec        :   9.260409   1.910302
->> mod3_put_dec        :   9.320053   1.905689  Proposed by previous patch
->> mod4_put_dec        :   9.297146   1.933971
->> mod5_put_dec        :  13.034318   2.434942
->> mod6_put_dec        :   1.000000   1.000000  Proposed by this patch
->> mod7_put_dec        :   1.009574   1.014147
->> mod8_put_dec        :   7.226004   1.953460
->> -- Size -----------------------------------
->> orig_put_dec        :   1.000000   1.000000  Original
->> mod1_put_dec        :   1.000000   1.000000
->> mod2_put_dec        :   1.361111   1.403226
->> mod3_put_dec        :   1.000000   1.000000  Proposed by previous patch
->> mod4_put_dec        :   1.361111   1.403226
->> mod5_put_dec        :   1.000000   1.000000
->> mod6_put_dec        :   2.555556   3.508065  Proposed by this patch
->> mod7_put_dec        :   2.833333   3.911290
->> mod8_put_dec        :   2.027778   2.258065
->
-> I believe these are old results? Size growth is just too big.
-
-Hmm...  I think those are new results, but I might have messed something
-up.  I'll redo them.
-
->> +#if BITS_PER_LONG != 32 || defined CONFIG_CC_OPTIMIZE_FOR_SIZE || \
->> +	ULLONG_MAX != 18446744073709551615ULL
->
-> I think it's better to say "if BITS_PER_LONG > 32 and ULLONG_MAX > 2^64-1",
-> since it expresses your intent better. Also, add comments explaining
-> what case you optimize for:
-
-Will do.
-
->> +static noinline_for_stack
->> +char *put_dec(char *buf, unsigned long long n)
->> +{
->> +	uint32_t d3, d2, d1, q;
->> +
->> +	if (!n) {
->> +		*buf++ = '0';
->> +		return buf;
->> +	}
-
-> You may as well use the above shortcut for n <= 9, not only for 0.
-
-Will do.
-
->> +	buf = put_dec_full4(buf, q % 10000);
->> +	q   = q / 10000;
->> +
->> +	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
->> +	buf = put_dec_full4(buf, d1 % 10000);
->> +	q   = d1 / 10000;
->
-> I experimented with moving division up, before put_dec_full4:
-> q   = d1 / 10000;
-> buf = put_dec_full4(buf, d1 % 10000);
-> but gcc appears to be smart emough to do this transformation
-> itself. But you may still do it for older (dumber) gcc's.
-
-I wasn't sure where would be a better place to put this line.  I'll
-follow your advice on this one then.
+-Robert
 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
