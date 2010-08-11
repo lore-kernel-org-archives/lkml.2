@@ -1,107 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758537Ab0HKUAp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 16:00:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53646 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755932Ab0HKUAo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 16:00:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jVQF/mr/Hibi5yHagfBtXb1xG3avYvDsZUdLsF/SsagcU2Z3sW0bPdX0q4xb/4e+xQ
-         dve7yJlz4nrKWYZ3+QViNjaCTDhreu0/c0ezQZt4g2BBsYbyJnOC6gmPeEuTcHlCfPk1
-         nesy0ZOGJItR+G8uH1PJJ2PN31K4oK7RMWtkw=
+	id S1758642Ab0HKUNz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 16:13:55 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:40851 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1756685Ab0HKUNw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 16:13:52 -0400
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX19fAIQ61qZfEIy9Z83YcrxxRqSs4pjPMcI/5gNCfK
+	5vnTgjDs3Vk5Gx
+Date: Wed, 11 Aug 2010 22:13:45 +0200
+From: Helge Deller <deller@gmx.de>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ipc/shm.c: add RSS and swap size information to
+ /proc/sysvipc/shm
+Message-ID: <20100811201345.GA11304@p100.box>
 MIME-Version: 1.0
-In-Reply-To: <20100811004223.GH2379@linux.vnet.ibm.com>
-References: <20100807061558.GA28087@thunk.org>
-	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
-	<20100808155719.GB3635@thunk.org>
-	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
-	<20100808213821.GD3635@thunk.org>
-	<20100809112453.77210acc@lxorguk.ukuu.org.uk>
-	<20100809181638.GI3026@linux.vnet.ibm.com>
-	<20100809201822.441905f7@lxorguk.ukuu.org.uk>
-	<20100810044541.GA2817@linux.vnet.ibm.com>
-	<20100810093849.138e2318@lxorguk.ukuu.org.uk>
-	<20100811004223.GH2379@linux.vnet.ibm.com>
-Date: Wed, 11 Aug 2010 23:00:42 +0300
-Message-ID: <AANLkTik7Po9OuKC-QBZ=E83J70sU_ewNi+nNWgcjjLXd@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 3:42 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Tue, Aug 10, 2010 at 09:38:49AM +0100, Alan Cox wrote:
->> You may also wish to review the earlier parts of the discussion where it
->> was explicitly stated by several developers that they were using
->> "suspend" type modes as power states already and not using suspend
->> blockers. So it's being done, today on ARM and your statement is directly
->> contradicting the code. Modern ARM processors and x86 MID devices can
->> suspend and resume extremely fast (fast enough that the fact Linux x86
->> rewriting all the SMP alternatives on suspend/resume is a measurable
->> problem). If this same property doesn't end up on big PC boxes in time
->> then I'd be very surprised. At that point the openoffice with suspend
->> blockers or oracle with suspend blockers question becomes rather relevant.
->
-> Here is the list of properties distinguishing idle from suspend:
->
-> 1.      Idle states are entered by a given CPU only there are no runnable
->        tasks for that CPU.  In contrast, opportunistic suspend can
->        halt the entire system even when there are tasks that are ready,
->        willing, and able to run.  (But please note that this might not
->        apply to real-time tasks.)
+The kernel currently provides no functionality to analyze the RSS
+and swap space usage of each individual sysvipc shared memory segment.
 
-But if there are no runnable tasks (which is the target), they behave the same.
+This patch add this info for each existing shm segment by extending
+the output of /proc/sysvipc/shm by two columns for RSS and swap.
 
-> 2.      There can be a set of input events that do not bring the system
->        out of suspend, but which would bring the system out of idle.
->        Exactly which events are in this set depends both on hardware
->        capabilities and on the platform/application policy.  For example,
->        on one of the Android-based smartphones, touchscreen input is
->        ignored when the system is suspended, but is handled when idle.
+Since shmctl(SHM_INFO) already provides a similiar calculation (it
+currently sums up all RSS/swap info for all segments), I did split
+out a static function which is now used by the /proc/sysvipc/shm 
+output and shmctl(SHM_INFO).
 
-And in N900 touching the screen doesn't bring the device out of idle,
-I guess because it's off.
+Tested on x86-64 and parisc (32- and 64bit). 
 
-What devices do what on which circumstances on what platform is
-completely irrelevant.
+Signed-off-by: Helge Deller <deller@gmx.de>
 
-> 3.      The system comes out of idle when a timer expires.  In contrast,
->        timers might or might not bring the system out of suspend,
->        depending on both hardware capabilities and platform/application
->        policy.
+---
 
-Isn't this solved by range timers?
+ shm.c |   63 ++++++++++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 42 insertions(+), 21 deletions(-)
 
-> 4.      Suspend generally forces devices to go into their low-power
->        states immediately.  In contrast, idle generally leaves unused
->        devices at full power, relying on timers to shut down these
->        devices.  Idle thus has shorter average wakeup latencies, but
->        worse energy efficiency.
 
-Only if you make these assumptions
- 1) All the applications use suspend-blockers only when they absolutely must
- 2) The user has given the right applications the right access
-
-If not, you'll see much worst energy efficiency. So in theory maybe,
-but in practice you can't say that.
-
--- 
-Felipe Contreras
+diff --git a/ipc/shm.c b/ipc/shm.c
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -108,7 +108,11 @@ void __init shm_init (void)
+ {
+ 	shm_init_ns(&init_ipc_ns);
+ 	ipc_init_proc_interface("sysvipc/shm",
+-				"       key      shmid perms       size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime\n",
++#if BITS_PER_LONG <= 32
++				"       key      shmid perms       size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime        RSS       swap\n",
++#else
++				"       key      shmid perms                  size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime                   RSS                  swap\n",
++#endif
+ 				IPC_SHM_IDS, sysvipc_shm_proc_show);
+ }
+ 
+@@ -542,6 +546,34 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
+ }
+ 
+ /*
++ * Calculate and add used RSS and swap pages of a shm.
++ * Called with shm_ids.rw_mutex held as a reader
++ */
++static void shm_add_rss_swap(struct shmid_kernel *shp,
++	unsigned long *rss_add, unsigned long *swp_add)
++{
++	struct inode *inode;
++
++	inode = shp->shm_file->f_path.dentry->d_inode;
++
++	if (is_file_hugepages(shp->shm_file)) {
++		struct address_space *mapping = inode->i_mapping;
++		struct hstate *h = hstate_file(shp->shm_file);
++		*rss_add += pages_per_huge_page(h) * mapping->nrpages;
++	} else {
++#ifdef CONFIG_SHMEM
++		struct shmem_inode_info *info = SHMEM_I(inode);
++		spin_lock(&info->lock);
++		*rss_add += inode->i_mapping->nrpages;
++		*swp_add += info->swapped;
++		spin_unlock(&info->lock);
++#else
++		*rss_add += inode->i_mapping->nrpages;
++#endif
++	}
++}
++
++/*
+  * Called with shm_ids.rw_mutex held as a reader
+  */
+ static void shm_get_stat(struct ipc_namespace *ns, unsigned long *rss,
+@@ -558,30 +590,13 @@ static void shm_get_stat(struct ipc_namespace *ns, unsigned long *rss,
+ 	for (total = 0, next_id = 0; total < in_use; next_id++) {
+ 		struct kern_ipc_perm *ipc;
+ 		struct shmid_kernel *shp;
+-		struct inode *inode;
+ 
+ 		ipc = idr_find(&shm_ids(ns).ipcs_idr, next_id);
+ 		if (ipc == NULL)
+ 			continue;
+ 		shp = container_of(ipc, struct shmid_kernel, shm_perm);
+ 
+-		inode = shp->shm_file->f_path.dentry->d_inode;
+-
+-		if (is_file_hugepages(shp->shm_file)) {
+-			struct address_space *mapping = inode->i_mapping;
+-			struct hstate *h = hstate_file(shp->shm_file);
+-			*rss += pages_per_huge_page(h) * mapping->nrpages;
+-		} else {
+-#ifdef CONFIG_SHMEM
+-			struct shmem_inode_info *info = SHMEM_I(inode);
+-			spin_lock(&info->lock);
+-			*rss += inode->i_mapping->nrpages;
+-			*swp += info->swapped;
+-			spin_unlock(&info->lock);
+-#else
+-			*rss += inode->i_mapping->nrpages;
+-#endif
+-		}
++		shm_add_rss_swap(shp, rss, swp);
+ 
+ 		total++;
+ 	}
+@@ -1070,6 +1085,9 @@ SYSCALL_DEFINE1(shmdt, char __user *, shmaddr)
+ static int sysvipc_shm_proc_show(struct seq_file *s, void *it)
+ {
+ 	struct shmid_kernel *shp = it;
++	unsigned long rss = 0, swp = 0;
++
++	shm_add_rss_swap(shp, &rss, &swp);
+ 
+ #if BITS_PER_LONG <= 32
+ #define SIZE_SPEC "%10lu"
+@@ -1079,7 +1097,8 @@ static int sysvipc_shm_proc_show(struct seq_file *s, void *it)
+ 
+ 	return seq_printf(s,
+ 			  "%10d %10d  %4o " SIZE_SPEC " %5u %5u  "
+-			  "%5lu %5u %5u %5u %5u %10lu %10lu %10lu\n",
++			  "%5lu %5u %5u %5u %5u %10lu %10lu %10lu "
++			  SIZE_SPEC " " SIZE_SPEC "\n",
+ 			  shp->shm_perm.key,
+ 			  shp->shm_perm.id,
+ 			  shp->shm_perm.mode,
+@@ -1093,6 +1112,8 @@ static int sysvipc_shm_proc_show(struct seq_file *s, void *it)
+ 			  shp->shm_perm.cgid,
+ 			  shp->shm_atim,
+ 			  shp->shm_dtim,
+-			  shp->shm_ctim);
++			  shp->shm_ctim,
++			  rss * PAGE_SIZE,
++			  swp * PAGE_SIZE);
+ }
+ #endif
