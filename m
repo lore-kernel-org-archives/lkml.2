@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932908Ab0HKKL2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:11:28 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41245 "EHLO mgw2.diku.dk"
+	id S932923Ab0HKKLp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:11:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41260 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932856Ab0HKKL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:11:26 -0400
-Date: Wed, 11 Aug 2010 12:11:24 +0200 (CEST)
+	id S932850Ab0HKKLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 06:11:44 -0400
+Date: Wed, 11 Aug 2010 12:11:41 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Eric Moore <Eric.Moore@lsi.com>, support@lsi.com,
-        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/5] drivers/message/fusion: Return -ENOMEM on memory allocation
- failure
-Message-ID: <Pine.LNX.4.64.1008111211080.8669@ask.diku.dk>
+To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        Dustin Kirkland <kirkland@canonical.com>,
+        ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/5] fs/ecryptfs: Return -ENOMEM on memory allocation failure
+Message-ID: <Pine.LNX.4.64.1008111211240.8669@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -46,22 +46,26 @@ if (x == NULL) { ... when != ret = e3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/message/fusion/mptbase.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ fs/ecryptfs/keystore.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
-index d8c668d..49f8ec1 100644
---- a/drivers/message/fusion/mptbase.c
-+++ b/drivers/message/fusion/mptbase.c
-@@ -5954,8 +5954,10 @@ mpt_findImVolumes(MPT_ADAPTER *ioc)
- 		goto out;
- 
- 	mem = kmalloc(iocpage2sz, GFP_KERNEL);
--	if (!mem)
-+	if (!mem) {
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 89c5476..73811cf 100644
+--- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -515,6 +515,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
+ 	if (!s) {
+ 		printk(KERN_ERR "%s: Out of memory whilst trying to kmalloc "
+ 		       "[%zd] bytes of kernel memory\n", __func__, sizeof(*s));
 +		rc = -ENOMEM;
  		goto out;
-+	}
- 
- 	memcpy(mem, (u8 *)pIoc2, iocpage2sz);
- 	ioc->raid_data.pIocPg2 = (IOCPage2_t *) mem;
+ 	}
+ 	s->desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
+@@ -806,6 +807,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
+ 	if (!s) {
+ 		printk(KERN_ERR "%s: Out of memory whilst trying to kmalloc "
+ 		       "[%zd] bytes of kernel memory\n", __func__, sizeof(*s));
++		rc = -ENOMEM;
+ 		goto out;
+ 	}
+ 	s->desc.flags = CRYPTO_TFM_REQ_MAY_SLEEP;
