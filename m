@@ -1,52 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab0HKSPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:15:33 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:8246 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752617Ab0HKSPb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:15:31 -0400
-Date: Wed, 11 Aug 2010 20:15:11 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: guenter.roeck@ericsson.com
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        akpm <akpm@linux-foundation.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH -next] hwmon: jc42 depends on I2C
-Message-ID: <20100811201511.04216a64@hyperion.delvare>
-In-Reply-To: <1281548611.5745.287.camel@groeck-laptop>
-References: <20100811140009.6ff33109.sfr@canb.auug.org.au>
-	<20100811103511.41428e62.randy.dunlap@oracle.com>
-	<1281548611.5745.287.camel@groeck-laptop>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755261Ab0HKSYP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:24:15 -0400
+Received: from sabe.cs.wisc.edu ([128.105.6.20]:35456 "EHLO sabe.cs.wisc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755179Ab0HKSYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 14:24:14 -0400
+Message-ID: <4C62EBCD.7000301@cs.wisc.edu>
+Date: Wed, 11 Aug 2010 13:28:29 -0500
+From: Mike Christie <michaelc@cs.wisc.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: open-iscsi@googlegroups.com
+CC: kxie@chelsio.com, linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        rranjan@chelsio.com, James.Bottomley@HansenPartnership.com
+Subject: Re: [PATCH 1/3] libcxgbi: common library for cxgb3i and cxgb4i
+References: <201008091753.o79HrTqQ020147@localhost.localdomain>
+In-Reply-To: <201008091753.o79HrTqQ020147@localhost.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Aug 2010 10:43:31 -0700, Guenter Roeck wrote:
-> On Wed, 2010-08-11 at 13:35 -0400, Randy Dunlap wrote:
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > jc42 uses i2c interfaces, so it should depend on I2C.
-> > 
-> > drivers/hwmon/jc42.c:426: error: implicit declaration of function 'i2c_check_functionality'
-> > drivers/hwmon/jc42.c:521: error: implicit declaration of function 'i2c_smbus_read_word_data'
-> > drivers/hwmon/jc42.c:529: error: implicit declaration of function 'i2c_smbus_write_word_data'
-> > drivers/hwmon/jc42.c:580: error: implicit declaration of function 'i2c_add_driver'
-> > drivers/hwmon/jc42.c:585: error: implicit declaration of function 'i2c_del_driver'
-> > 
-> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > Cc:	lm-sensors@lm-sensors.org
-> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+On 08/09/2010 12:53 PM, kxie@chelsio.com wrote:
+> +void cxgbi_fill_iscsi_transport(struct iscsi_transport *itp)
+> +{
+> +	/* owner and name should be set already */
+> +	itp->caps		= CAP_RECOVERY_L0 | CAP_MULTI_R2T | CAP_HDRDGST
+> +				| CAP_DATADGST | CAP_DIGEST_OFFLOAD |
+> +				CAP_PADDING_OFFLOAD;
+> +	itp->param_mask		= ISCSI_MAX_RECV_DLENGTH |
+> +				ISCSI_MAX_XMIT_DLENGTH |
+> +				ISCSI_HDRDGST_EN |
+> +				ISCSI_DATADGST_EN |
+> +				ISCSI_INITIAL_R2T_EN |
+> +				ISCSI_MAX_R2T |
+> +				ISCSI_IMM_DATA_EN |
+> +				ISCSI_FIRST_BURST |
+> +				ISCSI_MAX_BURST |
+> +				ISCSI_PDU_INORDER_EN |
+> +				ISCSI_DATASEQ_INORDER_EN |
+> +				ISCSI_ERL |
+> +				ISCSI_CONN_PORT |
+> +				ISCSI_CONN_ADDRESS |
+> +				ISCSI_EXP_STATSN |
+> +				ISCSI_PERSISTENT_PORT |
+> +				ISCSI_PERSISTENT_ADDRESS |
+> +				ISCSI_TARGET_NAME | ISCSI_TPGT |
+> +				ISCSI_USERNAME | ISCSI_PASSWORD |
+> +				ISCSI_USERNAME_IN | ISCSI_PASSWORD_IN |
+> +				ISCSI_FAST_ABORT | ISCSI_ABORT_TMO |
+> +				ISCSI_LU_RESET_TMO | ISCSI_TGT_RESET_TMO |
+> +				ISCSI_PING_TMO | ISCSI_RECV_TMO |
+> +				ISCSI_IFACE_NAME | ISCSI_INITIATOR_NAME;
+> +	itp->host_param_mask	= ISCSI_HOST_HWADDRESS | ISCSI_HOST_IPADDRESS |
+> +				ISCSI_HOST_INITIATOR_NAME |
+> +				ISCSI_HOST_NETDEV_NAME;
+> +	itp->get_host_param	= cxgbi_get_host_param;
+> +	itp->set_host_param	= cxgbi_set_host_param;
+> +	/* session management */
+> +	itp->create_session	= cxgbi_create_session;
+> +	itp->destroy_session	= cxgbi_destroy_session;
+> +	itp->get_session_param	= iscsi_session_get_param;
+> +	/* connection management */
+> +	itp->create_conn	= cxgbi_create_conn;
+> +	itp->bind_conn		= cxgbi_bind_conn;
+> +	itp->destroy_conn	= iscsi_tcp_conn_teardown;
+> +	itp->start_conn		= iscsi_conn_start;
+> +	itp->stop_conn		= iscsi_conn_stop;
+> +	itp->get_conn_param	= cxgbi_get_conn_param;
+> +	itp->set_param		= cxgbi_set_conn_param;
+> +	itp->get_stats		= cxgbi_get_conn_stats;
+> +	/* pdu xmit reqitp->  from user space */
+> +	itp->send_pdu		= iscsi_conn_send_pdu;
+> +	/* task */
+> +	itp->init_task		= iscsi_tcp_task_init;
+> +	itp->xmit_task		= iscsi_tcp_task_xmit;
+> +	itp->cleanup_task	= cxgbi_cleanup_task;
+> +
+> +	/* pdu */
+> +	itp->alloc_pdu		= cxgbi_conn_alloc_pdu;
+> +	itp->init_pdu		= cxgbi_conn_init_pdu;
+> +	itp->xmit_pdu		= cxgbi_conn_xmit_pdu;
+> +	itp->parse_pdu_itt	= cxgbi_parse_pdu_itt;
+> +
+> +	/* TCP connect/disconnect */
+> +	itp->ep_connect		= cxgbi_ep_connect;
+> +	itp->ep_poll		= cxgbi_ep_poll;
+> +	itp->ep_disconnect	= cxgbi_ep_disconnect;
+> +	/* Error recovery timeout call */
+> +	itp->session_recovery_timedout = iscsi_session_recovery_timedout;
+> +}
+> +EXPORT_SYMBOL_GPL(cxgbi_fill_iscsi_transport);
+> +
+> +void cxgbi_fill_scsi_host_template(struct scsi_host_template *sht)
+> +{
+> +	/*
+> +	 * the following fields should be set already:
+> +	 * module; name, proc_name, can_queue
+> +	 */
+> +	sht->queuecommand	= iscsi_queuecommand;
+> +	sht->change_queue_depth	= iscsi_change_queue_depth;
+> +	sht->sg_tablesize	= SG_ALL;
+> +	sht->max_sectors	= 0xFFFF;
+> +	sht->cmd_per_lun	= ISCSI_DEF_CMD_PER_LUN;
+> +	sht->eh_abort_handler	= iscsi_eh_abort;
+> +	sht->eh_device_reset_handler = iscsi_eh_device_reset;
+> +	sht->eh_target_reset_handler = iscsi_eh_recover_target;
+> +	sht->target_alloc	= iscsi_target_alloc;
+> +	sht->use_clustering	= DISABLE_CLUSTERING;
+> +	sht->this_id		= -1;
+> +}
+> +EXPORT_SYMBOL_GPL(cxgbi_fill_scsi_host_template);
+> +
 
-Applied, thanks.
+Can each module just set these callouts in the low level module?
+static struct scsi_host_template cxgb3i_host_template = {
+         .module         = THIS_MODULE,
+         .name           = DRV_MODULE_NAME,
+         .proc_name      = DRV_MODULE_NAME,
+         .can_queue      = CXGB3I_SCSI_HOST_QDEPTH,
+	.queuecommand	= iscsi_queuecommand;
+	.change_queue_depth	= iscsi_change_queue_depth;
 
--- 
-Jean Delvare
+etc...
+
+Can you just do that for the iscsi_transport callouts too? I think it is 
+more standard way of doing it in scsi drivers when there is no need to 
+dynamically do it.
+
+
+If you build both drivers in the kernel instead of modules you get this 
+error message:
+
+drivers/scsi/cxgbi/cxgb3i/built-in.o:(.bss+0x0): multiple definition of 
+`dbg_level'
+drivers/scsi/cxgbi/libcxgbi.o:(.bss+0x0): first defined here
+drivers/scsi/cxgbi/cxgb4i/built-in.o:(.bss+0x0): multiple definition of 
+`dbg_level'
+drivers/scsi/cxgbi/libcxgbi.o:(.bss+0x0): first defined here
+make[3]: *** [drivers/scsi/cxgbi/built-in.o] Error 1
+make[2]: *** [drivers/scsi/cxgbi] Error 2
