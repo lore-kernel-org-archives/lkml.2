@@ -1,71 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab0HKQBP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:01:15 -0400
-Received: from Mail.MNSU.EDU ([134.29.1.12]:40095 "EHLO mail.mnsu.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753722Ab0HKQBN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:01:13 -0400
-X-Greylist: delayed 875 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Aug 2010 12:01:13 EDT
-Message-ID: <4C62C5BD.3020808@mnsu.edu>
-Date: Wed, 11 Aug 2010 10:46:05 -0500
-From: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	id S1754624Ab0HKQBY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:01:24 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43489 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab0HKQBV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 12:01:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=G6t5l+ei5a8hDeIc4UXVZNyOC8mRk2s513RDgCFgM4bp0fp0WkKikEom8T+qb6DfhK
+         Jl6XqI3n8wllxFtkNBfTfr3TFY47kKm8tgILJCubXLrSk98qclRu8kZK6RlM7lonyYXw
+         5mv4HSdwaGXZwG3a1hH+QQdPKiTwa3tlYb074=
 MIME-Version: 1.0
-To: viresh kumar <viresh.kumar@st.com>
-CC: Felipe Contreras <felipe.contreras@gmail.com>,
-        "git@vger.kernel.org" <git@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Valeo de Vries <valeo@valeo.co.cc>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Matti Aarnio <matti.aarnio@zmailer.org>, mihai.dontu@gmail.com,
-        dwmw2@infradead.org, richardcochran@gmail.com,
-        "Gadiyar, Anand" <gadiyar@ti.com>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-References: <4C5F9B25.8080401@st.com> <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com> <4C624AE1.30504@st.com>
-In-Reply-To: <4C624AE1.30504@st.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100811083753.19001.28878.stgit@warthog.procyon.org.uk>
+References: <20100811083753.19001.28878.stgit@warthog.procyon.org.uk>
+Date: Wed, 11 Aug 2010 11:01:19 -0500
+Message-ID: <AANLkTinFOhtSe8nXu1pHbD+vbyFzgsgOqqz7SJ_70bT9@mail.gmail.com>
+Subject: Re: [PATCH 1/3] NFS: Use kernel DNS resolver [ver #2]
+From: Steve French <smfrench@gmail.com>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@osdl.org, akpm@linux-foundation.org,
+        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2010 02:01 AM, viresh kumar wrote:
- > When i send a mail using git send-email then it receives fine on
- > outlook but on thunderbird, tabs are converted to spaces.
- >
- > This doesn't happen with every patch on thunderbird, but only a few.
- > And observation is that it happens only with big patches.
- > (more than 500 lines)
- >
- > Any idea, how to solve issue now on thunderbird??
+Patches 1 - 3 of this series now in cifs-2.6.git
 
-Hello,
+On Wed, Aug 11, 2010 at 3:37 AM, David Howells <dhowells@redhat.com> wrote:
+> From: Bryan Schumaker <bjschuma@netapp.com>
+>
+> Use the kernel DNS resolver to translate hostnames to IP addresses.  Create a
+> new config option to choose between the legacy DNS resolver and the new
+> resolver.
+>
+> Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
+> Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> ---
+>
+>  fs/nfs/Kconfig       |   16 ++++++++++++++++
+>  fs/nfs/dns_resolve.c |   24 ++++++++++++++++++++++++
+>  fs/nfs/dns_resolve.h |   12 ++++++++++++
+>  3 files changed, 52 insertions(+), 0 deletions(-)
+>
+> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> index cc1bb33..c5bbdca 100644
+> --- a/fs/nfs/Kconfig
+> +++ b/fs/nfs/Kconfig
+> @@ -100,3 +100,19 @@ config NFS_FSCACHE
+>        help
+>          Say Y here if you want NFS data to be cached locally on disc through
+>          the general filesystem cache manager
+> +
+> +config NFS_USE_LEGACY_DNS
+> +       bool "Use the legacy NFS DNS resolver"
+> +       depends on NFS_V4
+> +       help
+> +         The kernel now provides a method for translating a host name into an
+> +         IP address.  Select Y here if you would rather use your own DNS
+> +         resolver script.
+> +
+> +         If unsure, say N
+> +
+> +config NFS_USE_KERNEL_DNS
+> +       bool
+> +       depends on NFS_V4 && !NFS_USE_LEGACY_DNS
+> +       select DNS_RESOLVER
+> +       default y
+> diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
+> index 76fd235..dba50a5 100644
+> --- a/fs/nfs/dns_resolve.c
+> +++ b/fs/nfs/dns_resolve.c
+> @@ -6,6 +6,29 @@
+>  * Resolves DNS hostnames into valid ip addresses
+>  */
+>
+> +#ifdef CONFIG_NFS_USE_KERNEL_DNS
+> +
+> +#include <linux/sunrpc/clnt.h>
+> +#include <linux/dns_resolver.h>
+> +
+> +ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
+> +               struct sockaddr *sa, size_t salen)
+> +{
+> +       ssize_t ret;
+> +       char *ip_addr = NULL;
+> +       int ip_len;
+> +
+> +       ip_len = dns_query(NULL, name, namelen, NULL, &ip_addr, NULL);
+> +       if (ip_len > 0)
+> +               ret = rpc_pton(ip_addr, ip_len, sa, salen);
+> +       else
+> +               ret = -ESRCH;
+> +       kfree(ip_addr);
+> +       return ret;
+> +}
+> +
+> +#else
+> +
+>  #include <linux/hash.h>
+>  #include <linux/string.h>
+>  #include <linux/kmod.h>
+> @@ -346,3 +369,4 @@ void nfs_dns_resolver_destroy(void)
+>        nfs_cache_unregister(&nfs_dns_resolve);
+>  }
+>
+> +#endif
+> diff --git a/fs/nfs/dns_resolve.h b/fs/nfs/dns_resolve.h
+> index a3f0938..199bb55 100644
+> --- a/fs/nfs/dns_resolve.h
+> +++ b/fs/nfs/dns_resolve.h
+> @@ -6,8 +6,20 @@
+>
+>  #define NFS_DNS_HOSTNAME_MAXLEN        (128)
+>
+> +
+> +#ifdef CONFIG_NFS_USE_KERNEL_DNS
+> +static inline int nfs_dns_resolver_init(void)
+> +{
+> +       return 0;
+> +}
+> +
+> +static inline void nfs_dns_resolver_destroy(void)
+> +{}
+> +#else
+>  extern int nfs_dns_resolver_init(void);
+>  extern void nfs_dns_resolver_destroy(void);
+> +#endif
+> +
+>  extern ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
+>                struct sockaddr *sa, size_t salen);
+>
+>
+>
 
-Exchange 2010 does not handle IMAP "chunking" (partial message transfer) 
-correctly.  Any request after about 1 megabyte of total message size 
-will fail.
-
-Thunderbird uses this "chunking" feature to give you a status update 
-while downloading large messages.  The IMAP statements are of this type:
-11 UID fetch 244477 (UID RFC822.SIZE BODY[]<20480.12288>)
-
-When the 20480 is larger than 1MB Exchange "claims" there is no more.  
-Sigh....
-
-Fortunately you can disable this feature.  To disable this in 
-Thunderbird you can go to the Advanced configuration and disable the 
-following feature, by setting it to false:
-mail.server.default.fetch_by_chunks
 
 
 -- 
-Jeffrey Hundstad
+Thanks,
 
-
-
+Steve
