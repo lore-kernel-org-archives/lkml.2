@@ -1,42 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751243Ab0HKKtL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:49:11 -0400
-Received: from ozlabs.org ([203.10.76.45]:57567 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab0HKKtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:49:09 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Dmitry Torokhov <dtor@vmware.com>
-Subject: Re: [PATCH 1/2] param: allow omitting set() methods for truly read-only params
-Date: Wed, 11 Aug 2010 20:19:01 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
-References: <1281466725-22549-1-git-send-email-dtor@vmware.com> <201008111109.30433.rusty@rustcorp.com.au> <6889404B-C389-4421-BDD7-A042DAAB064A@vmware.com>
-In-Reply-To: <6889404B-C389-4421-BDD7-A042DAAB064A@vmware.com>
+	id S1751393Ab0HKKxs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:53:48 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:44886 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751029Ab0HKKxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 06:53:47 -0400
+Message-ID: <4C62812D.50300@st.com>
+Date: Wed, 11 Aug 2010 16:23:33 +0530
+From: viresh kumar <viresh.kumar@st.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008112019.03089.rusty@rustcorp.com.au>
+To: Valeo de Vries <valeo@valeo.co.cc>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+References: <4C5F9B25.8080401@st.com>	<AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>	<4C624AE1.30504@st.com> <AANLkTi=SnPm7H75C7ycUH-GzENEDKWtncvLqeEVoEMQm@mail.gmail.com>
+In-Reply-To: <AANLkTi=SnPm7H75C7ycUH-GzENEDKWtncvLqeEVoEMQm@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Aug 2010 05:05:51 pm Dmitry Torokhov wrote:
-> On Aug 10, 2010, at 6:39 PM, "Rusty Russell" <rusty@rustcorp.com.au> wrote:
-> > On Wed, 11 Aug 2010 04:28:44 am Dmitry Torokhov wrote:
-> >> Certain "parameters", such as acpica version and upcoming VMware  
-> >> Balloon version, are need to be purely read-only. 
-> >
-> > Your followup patch uses this for version, but the version is already
-> > in /sys/module/vmware_balloon/version as is standard with modules, no?
+On 8/11/2010 3:41 PM, Valeo de Vries wrote:
+> On 11 August 2010 08:01, viresh kumar <viresh.kumar@st.com> wrote:
+>> > On 8/11/2010 3:34 AM, Felipe Contreras wrote:
+>>> >> On Mon, Aug 9, 2010 at 9:07 AM, viresh kumar <viresh.kumar@st.com> wrote:
+>>>>> >>> > Mail server in ST has recently changed and now we have Microsoft
+>>>>> >>> > exchange server. We are using thunderbird as mail client.
+>>>>> >>> > What we observed with this server is that patch are broken now while
+>>>>> >>> > sending as well as receiving. Tabs are replaced by spaces and may
+>>>>> >>> > be some other too which we haven't observed.
+>>>>> >>> >
+>>>>> >>> > Has anybody found a solution to this kind of issues? Are there any
+>>>>> >>> > workarounds possible?
+>>> >> Same in Nokia. I wrote a script to fix exchange's crap, but I also
+>>> >> noticed some quoted-printable mails didn't get converted, so the
+>>> >> easiest would be to tell git to always send quoted-printable.
+>>> >>
+>> >
+>> > Hi Guys
+>> >
+>> > The situation has changed now.
+>> > We are informed that SP2 is already in place in ST and mail client is not
+>> > doing any tampering.
+>> >
+>> > When i send a mail using git send-email then it receives fine on
+>> > outlook but on thunderbird, tabs are converted to spaces.
+>> >
+>> > This doesn't happen with every patch on thunderbird, but only a few.
+>> > And observation is that it happens only with big patches.
+>> > (more than 500 lines)
+>> >
+>> > Any idea, how to solve issue now on thunderbird??
+> You might be in luck:
 > 
-> That version attribute is not present if the driver is built-in, only  
-> parameters are visible in both cases.
+>   * Choose View – Toolbars to ensure that the formatting toolbar is visible,
+>   then at the left of the formatting toolbar change Body Text to Preformat.
+>   (lifted straight from Google)
 
-You know what I'm going to say now then, don't you? :)
+I couldn't find preformat. Is this same as plain text? If so i have tried it.
+I am not facing problem while writing mails from thunderbird but while receiving
+patches on thunderbird.
 
-Thanks,
-Rusty.
+PS: The problem stated in google is while writing mails.
+
+viresh.
