@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932526Ab0HKGa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 02:30:29 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13593 "EHLO
+	id S932627Ab0HKGbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 02:31:31 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13645 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751623Ab0HKGa2 (ORCPT
+	by vger.kernel.org with ESMTP id S932550Ab0HKGba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 02:30:28 -0400
-Message-ID: <000601cb391e$afec6b60$66f8800a@maildom.okisemi.com>
+	Wed, 11 Aug 2010 02:31:30 -0400
+Message-ID: <000b01cb391e$d510a0f0$66f8800a@maildom.okisemi.com>
 From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Greg KH" <gregkh@suse.de>
-Cc: "Wang, Qi" <qi.wang@intel.com>, <meego-dev@meego.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
+To: <felipe.balbi@nokia.com>
+Cc: "Greg KH" <gregkh@suse.de>, "Wang, Qi" <qi.wang@intel.com>,
+        <arjan@linux.intel.com>,
         "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-        <arjan@linux.intel.com>
-References: <002c01cb390e$80a58e50$66f8800a@maildom.okisemi.com> <20100811043952.GA4669@suse.de>
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "LKML" <linux-kernel@vger.kernel.org>, <meego-dev@meego.com>
+References: <4C612AA4.5040100@dsn.okisemi.com> <20100810171343.GE21220@suse.de> <D5AB6E638E5A3E4B8F4406B113A5A19A28EA2273@shsmsx501.ccr.corp.intel.com> <003001cb38fa$fcd15db0$66f8800a@maildom.okisemi.com> <20100811054905.GA25199@nokia.com>
 Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
-Date: Wed, 11 Aug 2010 15:30:20 +0900
+Date: Wed, 11 Aug 2010 15:31:26 +0900
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2800.1983
@@ -28,36 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi Balbi
 
-> Use the 'bool' type, and 'true' and/or 'false' keywords instead.  That
-> is the proper C idiom.
 I can do well.
 
-Thanks, Ohtake.
+Thanks! Ohtake.
 
 ----- Original Message ----- 
-From: "Greg KH" <gregkh@suse.de>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Wang, Qi" <qi.wang@intel.com>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "Wang, Yong Y"
-<yong.y.wang@intel.com>; "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>
-Sent: Wednesday, August 11, 2010 1:39 PM
+From: "Felipe Balbi" <felipe.balbi@nokia.com>
+To: "ext Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Greg KH" <gregkh@suse.de>; "Wang, Qi" <qi.wang@intel.com>; <arjan@linux.intel.com>; "Khor, Andrew Chih Howe"
+<andrew.chih.howe.khor@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>; "LKML" <linux-kernel@vger.kernel.org>;
+<meego-dev@meego.com>
+Sent: Wednesday, August 11, 2010 2:49 PM
 Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
 
 
-> On Wed, Aug 11, 2010 at 01:34:33PM +0900, Masayuki Ohtake wrote:
-> > Hi Qi-san
+> On Wed, Aug 11, 2010 at 04:14:51AM +0200, ext Masayuki Ohtake wrote:
+> >> > > +#define TRUE 1
+> >> > > +#define FALSE 0
+> >> >
+> >> > These lines should not be needed at all.
+> >> OKI-san, please remove them, Those definition is useless.
 > >
-> > I have found Macro 'TRUE' and 'FALSE' are used as setting value in the driver; still,
-> > can't I use TRUE/FALSE macro ?
-> > If not, How should we implement ?
+> >Is the above definition is necessary?
+> >I can't find appropriate header file defines 'TRUE' and 'FALSE'.
 >
-> Use the 'bool' type, and 'true' and/or 'false' keywords instead.  That
-> is the proper C idiom.
+> it's true and false. Lowercase. UNUSED is __unused.
 >
-> thanks,
+> -- 
+> balbi
 >
-> greg k-h
+> DefectiveByDesign.org
 >
 
 
