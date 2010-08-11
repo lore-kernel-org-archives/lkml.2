@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756170Ab0HKJIU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 05:08:20 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37925 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753044Ab0HKJIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 05:08:19 -0400
-Date: Wed, 11 Aug 2010 11:08:09 +0200
-From: Robert Schwebel <r.schwebel@pengutronix.de>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, LKML <linux-kernel@vger.kernel.org>,
-        qi.wang@intel.com, yong.y.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, arjan@linux.intel.com, gregkh@suse.de,
-        Richard Cochran <richard.cochran@omicron.at>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to
-	2.6.35
-Message-ID: <20100811090809.GH30096@pengutronix.de>
-References: <4C612AA4.5040100@dsn.okisemi.com>
+	id S1756237Ab0HKJSM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 05:18:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58941 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752902Ab0HKJSL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 05:18:11 -0400
+Date: Wed, 11 Aug 2010 11:18:09 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Karsten Mehrhoff <kawime@gmx.de>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+        linux-kernel@vger.kernel.org
+Subject: Re: tomoyo-init (tomoyo-tools) results in kernel panic on kernel
+ 2.6.35-git2/3
+In-Reply-To: <op.vg8otu2fgp7xae@127.0.0.1>
+Message-ID: <alpine.LNX.2.00.1008111116200.2702@pobox.suse.cz>
+References: <op.vg0yh9gtgp7xae@127.0.0.1> <201008070504.o7754Daw083381@www262.sakura.ne.jp> <alpine.LRH.2.00.1008101443340.2372@twin.jikos.cz> <201008102014.o7AKEwte077880@www262.sakura.ne.jp> <op.vg8otu2fgp7xae@127.0.0.1>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4C612AA4.5040100@dsn.okisemi.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 10:53:42 up 39 days, 4 min, 43 users,  load average: 0.00, 0.16,
-	0.37
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: rsc@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 07:32:04PM +0900, Masayuki Ohtak wrote:
-> IEEE1588 driver of Topcliff PCH
+On Tue, 10 Aug 2010, Karsten Mehrhoff wrote:
 
-Are you aware of Richard Cochran's 1588 support patches? I'm not sure
-about the integration status, but Richard (set on Cc:) can surely say
-more.
+> > > Still, if a legacy userspace application is able to cause kernel panic,
+> > > that sounds like something we'd rather fix immediately.
+> > 
+> > I assume the panic message which Karsten encountered is either
+> > 
+> >  Profile version %u is not supported.
+> > 
+> > or
+> > 
+> >  Profile %u (used by '%s') not defined.
+> > 
+> > which happens only if access control rules (a.k.a. policy) was not
+> > loaded when /sbin/init starts.
+> > 
+> > If what Karsten encountered is not the cases above,
+> > I agree that we need to fix immediately.
+> > 
+> > Regards.
+> 
+> The panic message was:
+> >  Profile %u (used by '%s') not defined.
+> 
+> Profile 0 (used by '0') not defined.
 
-rsc
+Looking at the code ...
+
+	void tomoyo_check_profile(void)
+	{
+	        struct tomoyo_domain_info *domain;
+	        const int idx = tomoyo_read_lock();
+	        tomoyo_policy_loaded = true;
+	        /* Check all profiles currently assigned to domains are defined. */
+	        list_for_each_entry_rcu(domain, &tomoyo_domain_list, list) {
+	                const u8 profile = domain->profile;
+	                if (tomoyo_profile_ptr[profile])
+	                        continue;
+	                panic("Profile %u (used by '%s') not defined.\n",
+	                      profile, domain->domainname->name);
+	        }
+	        tomoyo_read_unlock(idx);
+	        if (tomoyo_profile_version != 20090903)
+	                panic("Profile version %u is not supported.\n",
+	                      tomoyo_profile_version);
+	        printk(KERN_INFO "TOMOYO: 2.3.0\n");
+	        printk(KERN_INFO "Mandatory Access Control activated.\n");
+	}
+
+makes one wonder whether not having up-to-date userspace really does 
+qualify for unconditional kernel panic.
+
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Jiri Kosina
+SUSE Labs, Novell Inc.
