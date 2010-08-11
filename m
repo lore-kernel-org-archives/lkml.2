@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932374Ab0HKGft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 02:35:49 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48112 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751304Ab0HKGfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 02:35:48 -0400
-Date: Wed, 11 Aug 2010 08:35:38 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/4] perf/core improvements
-Message-ID: <20100811063538.GA30593@elte.hu>
-References: <1281477226-11504-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281477226-11504-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752363Ab0HKGhp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 02:37:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59553 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751958Ab0HKGho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 02:37:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=fpa1/OUqMP6umaIPDETvSibG3X/MSuMzGAwd0VWn3R/ESVJT76DFxNlc190Jsn3G+x
+         KxpFb0Mfz0RZ/toPAlQAGgEzWS/caN3MgOGBWqYVRDfmIOhgcrZ2ilUYPXafIEOQbslC
+         AuUnInj4mV2B4/UpSssv2lOS0Lq+Zg39U09l0=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
+        x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: add a comment to __pa_symbol
+Date: Wed, 11 Aug 2010 15:37:41 +0900
+Message-Id: <1281508661-29507-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100810070555.GA16638@elte.hu>
+References: <20100810070555.GA16638@elte.hu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Until all supported versions of gcc recognize -fno-strict-overflow, we should
+keep the RELOC_HIDE magic on __pa_symbol(). Comment it.
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Suggested-by: Ingo Molnar <mingo@elte.hu>
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (4):
->   perf ui: Make SPACE work as PGDN in all browsers
->   perf annotate: Cycle thru sorted lines with samples
->   perf ui browser: Add ui_browser__show counterpart: __hide
->   perf ui hist browser: Fixup key bindings
-> 
->  tools/perf/util/ui/browser.c           |   19 ++++++-
->  tools/perf/util/ui/browser.h           |    4 +-
->  tools/perf/util/ui/browsers/annotate.c |  101 +++++++++++++++++++++++--------
->  tools/perf/util/ui/browsers/hists.c    |   20 ++++---
->  tools/perf/util/ui/browsers/map.c      |   10 +--
->  tools/perf/util/ui/helpline.c          |    2 +-
->  tools/perf/util/ui/helpline.h          |    1 +
->  7 files changed, 113 insertions(+), 44 deletions(-)
+---
 
-Pulled, thanks a lot Arnaldo!
+ I hope I'm doing right. :-)
 
-	Ingo
+ arch/x86/include/asm/page.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
+index 625c3f0..06cb6f3 100644
+--- a/arch/x86/include/asm/page.h
++++ b/arch/x86/include/asm/page.h
+@@ -37,6 +37,13 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
+ #define __pa_nodebug(x)	__phys_addr_nodebug((unsigned long)(x))
+ /* __pa_symbol should be used for C visible symbols.
+    This seems to be the official gcc blessed way to do such arithmetic. */
++/*
++ * we need __phys_reloc_hide() here because gcc may assume that there is no
++ * overflow during __pa() calculation and can optimize it unexpectedly.
++ * Newer versions of gcc provide -fno-strict-overflow switch to handle this
++ * case properly. Once all supported versions of gcc understand it, we can
++ * remove this Voodoo magic stuff.
++ */
+ #define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
+ 
+ #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
+-- 
+1.7.0.4
+
