@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393Ab0HKKxs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:53:48 -0400
-Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:44886 "EHLO
-	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751029Ab0HKKxr (ORCPT
+	id S1751275Ab0HKLC3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 07:02:29 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55053 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab0HKLC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:53:47 -0400
-Message-ID: <4C62812D.50300@st.com>
-Date: Wed, 11 Aug 2010 16:23:33 +0530
-From: viresh kumar <viresh.kumar@st.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	Wed, 11 Aug 2010 07:02:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=noFMyjZUZK1X202XpiqCq7743MdvlBd1g6d4jEh4AY+e7zrpSFfdE6A2BZcTc4SCrI
+         P8XYaNsuTanpS3Hl8z/P1F1brlNU5GJerzezoOFBhJZ9TZvPiSDPLqjVnOKA15t2ztib
+         8ciQOHJJaRdKTJy7HxdHatT0yS0M0YKk2ez10=
+Date: Wed, 11 Aug 2010 14:07:01 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, reiserfs-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fix reiserfs_evict_inode end_writeback second call
+Message-ID: <20100811110701.GA5362@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Valeo de Vries <valeo@valeo.co.cc>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-References: <4C5F9B25.8080401@st.com>	<AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>	<4C624AE1.30504@st.com> <AANLkTi=SnPm7H75C7ycUH-GzENEDKWtncvLqeEVoEMQm@mail.gmail.com>
-In-Reply-To: <AANLkTi=SnPm7H75C7ycUH-GzENEDKWtncvLqeEVoEMQm@mail.gmail.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/11/2010 3:41 PM, Valeo de Vries wrote:
-> On 11 August 2010 08:01, viresh kumar <viresh.kumar@st.com> wrote:
->> > On 8/11/2010 3:34 AM, Felipe Contreras wrote:
->>> >> On Mon, Aug 9, 2010 at 9:07 AM, viresh kumar <viresh.kumar@st.com> wrote:
->>>>> >>> > Mail server in ST has recently changed and now we have Microsoft
->>>>> >>> > exchange server. We are using thunderbird as mail client.
->>>>> >>> > What we observed with this server is that patch are broken now while
->>>>> >>> > sending as well as receiving. Tabs are replaced by spaces and may
->>>>> >>> > be some other too which we haven't observed.
->>>>> >>> >
->>>>> >>> > Has anybody found a solution to this kind of issues? Are there any
->>>>> >>> > workarounds possible?
->>> >> Same in Nokia. I wrote a script to fix exchange's crap, but I also
->>> >> noticed some quoted-printable mails didn't get converted, so the
->>> >> easiest would be to tell git to always send quoted-printable.
->>> >>
->> >
->> > Hi Guys
->> >
->> > The situation has changed now.
->> > We are informed that SP2 is already in place in ST and mail client is not
->> > doing any tampering.
->> >
->> > When i send a mail using git send-email then it receives fine on
->> > outlook but on thunderbird, tabs are converted to spaces.
->> >
->> > This doesn't happen with every patch on thunderbird, but only a few.
->> > And observation is that it happens only with big patches.
->> > (more than 500 lines)
->> >
->> > Any idea, how to solve issue now on thunderbird??
-> You might be in luck:
-> 
->   * Choose View – Toolbars to ensure that the formatting toolbar is visible,
->   then at the left of the formatting toolbar change Body Text to Preformat.
->   (lifted straight from Google)
+reiserfs_evict_inode calls end_writeback two times hitting
+kernel BUG at fs/inode.c:298 becase inode->i_state is I_CLEAR already.
 
-I couldn't find preformat. Is this same as plain text? If so i have tried it.
-I am not facing problem while writing mails from thunderbird but while receiving
-patches on thunderbird.
+Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-PS: The problem stated in google is while writing mails.
+---
 
-viresh.
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index ae35413..87e11d2 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -83,7 +83,8 @@ void reiserfs_evict_inode(struct inode *inode)
+ 	dquot_drop(inode);
+ 	inode->i_blocks = 0;
+ 	reiserfs_write_unlock_once(inode->i_sb, depth);
+-
++	return;
++	
+ no_delete:
+ 	end_writeback(inode);
+ 	dquot_drop(inode);
+
+
