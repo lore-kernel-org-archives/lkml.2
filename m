@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0HKX5r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:47 -0400
-Received: from kroah.org ([198.145.64.141]:40078 "EHLO coco.kroah.org"
+	id S1758793Ab0HKX5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:57:44 -0400
+Received: from kroah.org ([198.145.64.141]:40070 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758771Ab0HKX5k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:57 2010
-Message-Id: <20100811235457.064125469@clark.site>
+	id S1758724Ab0HKX5i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:38 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:56 2010
+Message-Id: <20100811235456.884862286@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:57 -0700
+Date: Wed, 11 Aug 2010 16:53:55 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [016/111] eCryptfs: Handle ioctl calls with unlocked and compat functions
+        NeilBrown <neilb@suse.de>
+Subject: [014/111] md/raid10: fix deadlock with unaligned read during resync
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: NeilBrown <neilb@suse.de>
 
-commit c43f7b8fb03be8bcc579bfc4e6ab70eac887ab55 upstream.
+commit 51e9ac77035a3dfcb6fc0a88a0d80b6f99b5edb1 upstream.
 
-Lower filesystems that only implemented unlocked_ioctl weren't being
-passed ioctl calls because eCryptfs only checked for
-lower_file->f_op->ioctl and returned -ENOTTY if it was NULL.
+If the 'bio_split' path in raid10-read is used while
+resync/recovery is happening it is possible to deadlock.
+Fix this be elevating ->nr_waiting for the duration of both
+parts of the split request.
 
-eCryptfs shouldn't implement ioctl(), since it doesn't require the BKL.
-This patch introduces ecryptfs_unlocked_ioctl() and
-ecryptfs_compat_ioctl(), which passes the calls on to the lower file
-system.
+This fixes a bug that has been present since 2.6.22
+but has only started manifesting recently for unknown reasons.
+It is suitable for and -stable since then.
 
-https://bugs.launchpad.net/ecryptfs/+bug/469664
-
-Reported-by: James Dupin <james.dupin@gmail.com>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Reported-by:  Justin Bronder <jsbronder@gentoo.org>
+Tested-by:  Justin Bronder <jsbronder@gentoo.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/file.c |   56 +++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 35 insertions(+), 21 deletions(-)
+ drivers/md/raid10.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -293,12 +293,40 @@ static int ecryptfs_fasync(int fd, struc
- 	return rc;
- }
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -824,11 +824,29 @@ static int make_request(struct request_q
+ 		 */
+ 		bp = bio_split(bio,
+ 			       chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
++
++		/* Each of these 'make_request' calls will call 'wait_barrier'.
++		 * If the first succeeds but the second blocks due to the resync
++		 * thread raising the barrier, we will deadlock because the
++		 * IO to the underlying device will be queued in generic_make_request
++		 * and will never complete, so will never reduce nr_pending.
++		 * So increment nr_waiting here so no new raise_barriers will
++		 * succeed, and so the second wait_barrier cannot block.
++		 */
++		spin_lock_irq(&conf->resync_lock);
++		conf->nr_waiting++;
++		spin_unlock_irq(&conf->resync_lock);
++
+ 		if (make_request(q, &bp->bio1))
+ 			generic_make_request(&bp->bio1);
+ 		if (make_request(q, &bp->bio2))
+ 			generic_make_request(&bp->bio2);
  
--static int ecryptfs_ioctl(struct inode *inode, struct file *file,
--			  unsigned int cmd, unsigned long arg);
-+static long
-+ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOTTY;
++		spin_lock_irq(&conf->resync_lock);
++		conf->nr_waiting--;
++		wake_up(&conf->wait_barrier);
++		spin_unlock_irq(&conf->resync_lock);
 +
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->unlocked_ioctl)
-+		rc = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long
-+ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOIOCTLCMD;
-+
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->compat_ioctl)
-+		rc = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+#endif
- 
- const struct file_operations ecryptfs_dir_fops = {
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -315,7 +343,10 @@ const struct file_operations ecryptfs_ma
- 	.write = do_sync_write,
- 	.aio_write = generic_file_aio_write,
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -324,20 +355,3 @@ const struct file_operations ecryptfs_ma
- 	.fasync = ecryptfs_fasync,
- 	.splice_read = generic_file_splice_read,
- };
--
--static int
--ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
--	       unsigned long arg)
--{
--	int rc = 0;
--	struct file *lower_file = NULL;
--
--	if (ecryptfs_file_to_private(file))
--		lower_file = ecryptfs_file_to_lower(file);
--	if (lower_file && lower_file->f_op && lower_file->f_op->ioctl)
--		rc = lower_file->f_op->ioctl(ecryptfs_inode_to_lower(inode),
--					     lower_file, cmd, arg);
--	else
--		rc = -ENOTTY;
--	return rc;
--}
+ 		bio_pair_release(bp);
+ 		return 0;
+ 	bad_map:
 
 
