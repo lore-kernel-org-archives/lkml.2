@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab0HKX5h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:37 -0400
-Received: from kroah.org ([198.145.64.141]:40051 "EHLO coco.kroah.org"
+	id S1759050Ab0HLAo0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:44:26 -0400
+Received: from kroah.org ([198.145.64.141]:40068 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758724Ab0HKX5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:34 -0400
+	id S1758673Ab0HKX5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:56 2010
-Message-Id: <20100811235456.531997818@clark.site>
+Message-Id: <20100811235456.803025585@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:51 -0700
+Date: Wed, 11 Aug 2010 16:53:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Woodhouse <David.Woodhouse@intel.com>,
+        Borislav Petkov <bp@alien8.de>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [010/111] solos-pci: Fix race condition in tasklet RX handling
+Subject: [013/111] ide-cd: Do not access completed requests in the irq handler
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <David.Woodhouse@intel.com>
+From: Borislav Petkov <bp@alien8.de>
 
-commit 1f6ea6e511e5ec730d8e88651da1b7b6e8fd1333 upstream.
+commit 110712828365ccafcc61a7f4db44c31ed4cf8793 upstream.
 
-We were seeing faults in the solos-pci receive tasklet when packets
-arrived for a VCC which was currently being closed:
+ide_cd_error_cmd() can complete an erroneous request with leftover
+buffers. Signal this with its return value so that the request is not
+accessed after its completion in the irq handler and we oops.
 
-[18842.727906] EIP: [<e082f490>] br2684_push+0x19/0x234 [br2684] SS:ESP 0068:dfb89d14
-
-[18845.090712] [<c13ecff3>] ? do_page_fault+0x0/0x2e1
-[18845.120042] [<e082f490>] ? br2684_push+0x19/0x234 [br2684]
-[18845.153530] [<e084fa13>] solos_bh+0x28b/0x7c8 [solos_pci]
-[18845.186488] [<e084f711>] ? solos_irq+0x2d/0x51 [solos_pci]
-[18845.219960] [<c100387b>] ? handle_irq+0x3b/0x48
-[18845.247732] [<c10265cb>] ? irq_exit+0x34/0x57
-[18845.274437] [<c1025720>] tasklet_action+0x42/0x69
-[18845.303247] [<c102643f>] __do_softirq+0x8e/0x129
-[18845.331540] [<c10264ff>] do_softirq+0x25/0x2a
-[18845.358274] [<c102664c>] _local_bh_enable_ip+0x5e/0x6a
-[18845.389677] [<c102666d>] local_bh_enable+0xb/0xe
-[18845.417944] [<e08490a8>] ppp_unregister_channel+0x32/0xbb [ppp_generic]
-[18845.458193] [<e08731ad>] pppox_unbind_sock+0x18/0x1f [pppox]
-
-This patch uses an RCU-inspired approach to fix it. In the RX tasklet's
-find_vcc() function we first refuse to use a VCC which already has the
-ATM_VF_READY bit cleared. And in the VCC close function, we synchronise
-with the tasklet to ensure that it can't still be using the VCC before
-we continue and allow the VCC to be destroyed.
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Tested-by: Nathan Williams <nathan@traverse.com.au>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/atm/solos-pci.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/ide/ide-cd.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -774,7 +774,8 @@ static struct atm_vcc *find_vcc(struct a
- 	sk_for_each(s, node, head) {
- 		vcc = atm_sk(s);
- 		if (vcc->dev == dev && vcc->vci == vci &&
--		    vcc->vpi == vpi && vcc->qos.rxtp.traffic_class != ATM_NONE)
-+		    vcc->vpi == vpi && vcc->qos.rxtp.traffic_class != ATM_NONE &&
-+		    test_bit(ATM_VF_READY, &vcc->flags))
- 			goto out;
- 	}
- 	vcc = NULL;
-@@ -900,6 +901,10 @@ static void pclose(struct atm_vcc *vcc)
- 	clear_bit(ATM_VF_ADDR, &vcc->flags);
- 	clear_bit(ATM_VF_READY, &vcc->flags);
- 
-+	/* Hold up vcc_destroy_socket() (our caller) until solos_bh() in the
-+	   tasklet has finished processing any incoming packets (and, more to
-+	   the point, using the vcc pointer). */
-+	tasklet_unlock_wait(&card->tlet);
- 	return;
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -506,15 +506,22 @@ int ide_cd_queue_pc(ide_drive_t *drive,
+ 	return (flags & REQ_FAILED) ? -EIO : 0;
  }
  
+-static void ide_cd_error_cmd(ide_drive_t *drive, struct ide_cmd *cmd)
++/*
++ * returns true if rq has been completed
++ */
++static bool ide_cd_error_cmd(ide_drive_t *drive, struct ide_cmd *cmd)
+ {
+ 	unsigned int nr_bytes = cmd->nbytes - cmd->nleft;
+ 
+ 	if (cmd->tf_flags & IDE_TFLAG_WRITE)
+ 		nr_bytes -= cmd->last_xfer_len;
+ 
+-	if (nr_bytes > 0)
++	if (nr_bytes > 0) {
+ 		ide_complete_rq(drive, 0, nr_bytes);
++		return true;
++	}
++
++	return false;
+ }
+ 
+ static ide_startstop_t cdrom_newpc_intr(ide_drive_t *drive)
+@@ -679,7 +686,8 @@ out_end:
+ 		}
+ 
+ 		if (uptodate == 0 && rq->bio)
+-			ide_cd_error_cmd(drive, cmd);
++			if (ide_cd_error_cmd(drive, cmd))
++				return ide_stopped;
+ 
+ 		/* make sure it's fully ended */
+ 		if (blk_fs_request(rq) == 0) {
 
 
