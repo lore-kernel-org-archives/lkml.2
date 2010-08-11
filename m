@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751576Ab0HKEsH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 00:48:07 -0400
-Received: from demumfd002.nsn-inter.net ([93.183.12.31]:13699 "EHLO
-	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab0HKEsE convert rfc822-to-8bit (ORCPT
+	id S1752052Ab0HKEzQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 00:55:16 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:51768 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898Ab0HKEzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 00:48:04 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 11 Aug 2010 00:55:14 -0400
+Date: Wed, 11 Aug 2010 05:55:12 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] more vfs stuff
+Message-ID: <20100811045512.GF31363@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: Compile one file in kernel
-Date: Wed, 11 Aug 2010 12:47:20 +0800
-Message-ID: <14414B36FFA0F1418CB707361EAA199A01988038@CNBEEXC006.nsn-intra.net>
-In-Reply-To: <201008110444.o7B4iGXs022127@demumfd001.nsn-inter.net>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: Compile one file in kernel
-Thread-Index: Acs49sbh+rlQArrYTbS+IPGJPnVblAAE6CvwAAAS9VAAAWYYYAAACXBA
-References: <14414B36FFA0F1418CB707361EAA199A01988001@CNBEEXC006.nsn-intra.net> <201008110444.o7B4iGXs022127@demumfd001.nsn-inter.net>
-From: "Zhang, Wei-Jovi (NSN - CN/Hangzhou)" <wei-jovi.zhang@nsn.com>
-To: "ext zhanglx" <zhanglx@semico.com.cn>, "Xiaotian Feng" <xtfeng@gmail.com>
-Cc: <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 11 Aug 2010 04:47:50.0488 (UTC) FILETIME=[5A25D580:01CB3910]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I forgot it,  make will compare the timestamp of .c and .o file
+	Misc stuff missed in the previous pile (including fixup for 9p
+breakage).  The last part in sysvfs series replaced with akpm's version
+(with its whitespace fixes) with bogus include _not_ added.  Freeze
+stuff still pending; unfortunately, I've found a hole in my variant ;-/
+I know how to fix that, but I'd rather not send an untested locking change.
+It *is* needed in this cycle, since the current variant is simply broken -
+for example, try Alt-Sysrq-Emergency Thaw and it'll reliably deadlock ;-/
 
+Please, pull from usual place -
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
------Original Message-----
-From: ext zhanglx [mailto:zhanglx@semico.com.cn] 
-Sent: Wednesday, August 11, 2010 12:48 PM
-To: Zhang, Wei-Jovi (NSN - CN/Hangzhou); 'Xiaotian Feng'
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: Compile one file in kernel
+More to follow...
 
-You mean make will not compare the timestamp of .c and .o file?
+Shortlog:
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org
-[mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Zhang, Wei-Jovi
-(NSN - CN/Hangzhou)
-Sent: Wednesday, August 11, 2010 12:10 PM
-To: ext zhanglx; Xiaotian Feng
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: Compile one file in kernel
+Jan Andres (1):
+      isofs: Fix lseek() to position beyond 4 GB
 
-Apparently not, you should run "rm -f <filename>.o" firstly, then "make
-<filename>.o"
-Maybe you can write a script to do this if you want to.
+Lubomir Rintel (3):
+      Add v7 alias
+      V7: Adjust sanity checks for some volumes
+      fs/sysv/super.c: add support for non-PDP11 v7 filesystems
 
------Original Message-----
-From: ext zhanglx [mailto:zhanglx@semico.com.cn] 
-Sent: Wednesday, August 11, 2010 12:07 PM
-To: 'Xiaotian Feng'; Zhang, Wei-Jovi (NSN - CN/Hangzhou)
-Cc: linux-kernel@vger.kernel.org
-Subject: RE: Compile one file in kernel
+Miklos Szeredi (8):
+      cachefiles: use path_get instead of lone dget
+      vfs: add helpers to get root and pwd
+      ia64: perfmon: add d_dname method
+      vfs: __d_path: dont prepend the name of the root dentry
+      vfs: add prepend_path() helper
+      vfs: only add " (deleted)" where necessary
+      vfs: show unreachable paths in getcwd and proc
+      vfs: remove unused MNT_STRICTATIME
 
-If .o file is not cleaned, make will automatically select the changed files
-to compile and link?
+Stephen Rothwell (1):
+      v9fs: fixup for inode_setattr being removed
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org
-[mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Xiaotian Feng
-Sent: Wednesday, August 11, 2010 9:50 AM
-To: Zhang, Wei-Jovi (NSN - CN/Hangzhou)
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Compile one file in kernel
-
-On Wed, Aug 11, 2010 at 8:59 AM, Zhang, Wei-Jovi (NSN - CN/Hangzhou)
-<wei-jovi.zhang@nsn.com> wrote:
-> Hi,
->        I always using command make, then it will compile all files. How
-> about just compile one c file(just make sure some modify can compile
-> successful), how should I do? Is there any command to allow me to doing
-> this?
-
-make <filename>.o
-
->        Thanks.
-> .jovi
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
+Diffstat:
+ arch/ia64/kernel/perfmon.c |   15 ++--
+ fs/9p/vfs_inode.c          |   15 +++-
+ fs/cachefiles/daemon.c     |   32 +++-----
+ fs/dcache.c                |  188 +++++++++++++++++++++++++++++++-------------
+ fs/fs_struct.c             |    7 +--
+ fs/isofs/inode.c           |    7 ++-
+ fs/namei.c                 |   15 +---
+ fs/namespace.c             |    6 +-
+ fs/proc/base.c             |   24 +++---
+ fs/sysv/super.c            |   73 ++++++++++++-----
+ include/linux/dcache.h     |    1 +
+ include/linux/fs_struct.h  |   27 ++++++
+ include/linux/mount.h      |    1 -
+ include/linux/path.h       |    5 +
+ include/linux/sysv_fs.h    |   11 +++
+ kernel/auditsc.c           |    9 +--
+ 16 files changed, 285 insertions(+), 151 deletions(-)
