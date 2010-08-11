@@ -1,96 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754307Ab0HKH2N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:28:13 -0400
-Received: from vs244178.vserver.de ([62.75.244.178]:37387 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753018Ab0HKH2M convert rfc822-to-8bit (ORCPT
+	id S1754855Ab0HKH33 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:29:29 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:27824 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752961Ab0HKH32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:28:12 -0400
-Date: Wed, 11 Aug 2010 09:25:47 +0200
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <1843123111.20100811092547@eikelenboom.it>
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-CC: mchehab@infradead.org, mrechberger@gmail.com, gregkh@suse.de,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: [2.6.35] usb 2.0 em28xx kernel panic general protection fault:  0000 [#1] SMP RIP: 0010:[<ffffffffa004fbc5>] [<ffffffffa004fbc5>]  em28xx_isoc_copy_vbi+0x62e/0x812 [em28xx]
-In-Reply-To: <AANLkTikPffMQLXcPF4-xPeZfkaAtnu7xEP0TMzYVrkgE@mail.gmail.com>
-References: <61936849.20100811001257@eikelenboom.it> <AANLkTinVNms-vdfG-VZzkOadogaCRV+HyDAY5yhYOJSK@mail.gmail.com> <1117369508.20100811005719@eikelenboom.it> <AANLkTikPffMQLXcPF4-xPeZfkaAtnu7xEP0TMzYVrkgE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Aug 2010 03:29:28 -0400
+Message-ID: <002601cb3926$edaf24d0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
+        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
+        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>
+References: <4C612AA4.5040100@dsn.okisemi.com> <20100810171343.GE21220@suse.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
+Date: Wed, 11 Aug 2010 16:29:25 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Devin,
+Hi Greg,
 
-Yes it's completely reproducible for a change:
+> Do they all have to be ioctls?  What exactly are they doing?
+I think using ioctl is common for this patch.
+Do you think that using ioctl is NOT appropriate for this patch?
+Let me know your intension in more detail.
 
-ffmpeg -f video4linux -r 25 -s 720x576 -i /dev/video0 out.flv
-gave an error:
+>
+> And are they 32/64bit safe?
+Only 32bit support.
 
-
-
-serveerstertje:/mnt/software/software# ffmpeg -f video4linux -r 25 -s 720x576 -i  /dev/video0 out.flv
-FFmpeg version r11872+debian_0.svn20080206-18+lenny1, Copyright (c) 2000-2008 Fa brice Bellard, et al.
-  configuration: --enable-gpl --enable-libfaad --enable-pp --enable-swscaler --e nable-x11grab --prefix=/usr --enable-libgsm --enable-libtheora --enable-libvorbi s --enable-pthreads --disable-strip --enable-libdc1394 --enable-shared --disable -static
-  libavutil version: 49.6.0
-  libavcodec version: 51.50.0
-  libavformat version: 52.7.0
-  libavdevice version: 52.0.0
-  built on Jan 25 2010 18:27:39, gcc: 4.3.2
-Input #0, video4linux, from '/dev/video0':
-  Duration: N/A, start: 1281511364.644674, bitrate: 165888 kb/s
-    Stream #0.0: Video: rawvideo, yuyv422, 720x576 [PAR 0:1 DAR 0:1], 165888 kb/ s, 25.00 tb(r)
-File 'out.flv' already exists. Overwrite ? [y/N] y
-Output #0, flv, to 'out.flv':
-    Stream #0.0: Video: flv, yuv420p, 720x576 [PAR 0:1 DAR 0:1], q=2-31, 200 kb/ s, 25.00 tb(c)
-Stream mapping:
-  Stream #0.0 -> #0.0
-Press [q] to stop encoding
-VIDIOCMCAPTURE: Invalid argument
-frame=    1 fps=  0 q=3.0 Lsize=      38kB time=0.0 bitrate=7687.6kbits/s
-video:37kB audio:0kB global headers:0kB muxing overhead 0.530927%
+Thanks, Ohtake
+----- Original Message ----- 
+From: "Greg KH" <gregkh@suse.de>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
+<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>
+Sent: Wednesday, August 11, 2010 2:13 AM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
 
 
+> On Tue, Aug 10, 2010 at 07:32:04PM +0900, Masayuki Ohtak wrote:
+> > IEEE1588 driver of Topcliff PCH
+> >
+> > Topcliff PCH is the platform controller hub that is going to be used in
+> > Intel's upcoming general embedded platform. All IO peripherals in
+> > Topcliff PCH are actually devices sitting on AMBA bus.
+> > Topcliff PCH has IEEE1588 I/F. This driver enables IEEE1588 function on CAN or
+> > Ethernet communications.
+>
+> So it's a CAN or Ethernet driver?  If so, why isn't this a network
+> driver like the CAN and Ethernet drivers?
+>
+> > +#ifdef __GNUC__
+> > +#define UNUSED __attribute__ ((unused))
+> > +#define UNUSED_ARG(x)
+> > +#else
+> > +#define UNUSED
+> > +#define UNUSED_ARG(x) (void) x
+> > +#endif
+> > +
+> > +
+> > +#define TRUE 1
+> > +#define FALSE 0
+>
+> These lines should not be needed at all.
+>
+> > +#define IOC_1588_BASE 0xf8
+>
+> Do you have documentation for these new ioctls you are creating?  It's a
+> lot of them:
+>
+> > +#define IOCTL_1588_PORT_CONFIG_SET \
+> > + _IOW(IOC_1588_BASE, 0, struct pch_portcfg_ioctl)
+> > +
+> > +#define IOCTL_1588_PORT_CONFIG_GET \
+> > + _IOWR(IOC_1588_BASE, 1, struct pch_portcfg_ioctl)
+> > +
+> > +#define IOCTL_1588_RX_POLL _IOWR(IOC_1588_BASE, 2, struct pch_rxtxpoll_ioctl)
+> > +
+> > +#define IOCTL_1588_TX_POLL _IOWR(IOC_1588_BASE, 3, struct pch_rxtxpoll_ioctl)
+> > +
+> > +#define IOCTL_1588_CAN_POLL _IOWR(IOC_1588_BASE, 4, struct pch_canpoll_ioctl)
+> > +
+> > +#define IOCTL_1588_SYS_TIME_GET _IOR(IOC_1588_BASE, 5, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_SYS_TIME_SET _IOW(IOC_1588_BASE, 6, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_TICK_RATE_SET _IOW(IOC_1588_BASE, 7, __u32)
+> > +
+> > +#define IOCTL_1588_TICK_RATE_GET _IOR(IOC_1588_BASE, 8, __u32)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_INTRPT_ENABLE _IO(IOC_1588_BASE, 9)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_INTRPT_DISABLE _IO(IOC_1588_BASE, 10)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_POLL \
+> > + _IOR(IOC_1588_BASE, 11, struct pch_timepoll_ioctl)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_SET \
+> > + _IOW(IOC_1588_BASE, 12, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_GET \
+> > + _IOR(IOC_1588_BASE, 13, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_AUX_TIME_INTRPT_ENABLE _IOW(IOC_1588_BASE, 14,\
+> > + enum pch_auxmode)
+> > +
+> > +#define IOCTL_1588_AUX_TIME_INTRPT_DISABLE _IOW(IOC_1588_BASE, 15,\
+> > + enum pch_auxmode)
+> > +
+> > +#define IOCTL_1588_AUX_TIME_POLL \
+> > + _IOWR(IOC_1588_BASE, 16, struct pch_timepoll_ioctl)
+> > +
+> > +#define IOCTL_1588_RESET _IO(IOC_1588_BASE, 17)
+> > +
+> > +#define IOCTL_1588_CHNL_RESET _IOW(IOC_1588_BASE, 18, enum pch_ptpport)
+> > +
+> > +#define IOCTL_1588_STATS_GET _IOR(IOC_1588_BASE, 19, struct pch_stats)
+> > +
+> > +#define IOCTL_1588_STATS_RESET _IO(IOC_1588_BASE, 20)
+> > +
+> > +#define IOCTL_1588_SHOW_ALL _IO(IOC_1588_BASE, 21)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_INTRPT_ENABLE _IO(IOC_1588_BASE, 22)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_INTRPT_DISABLE _IO(IOC_1588_BASE, 23)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_POLL \
+> > + _IOR(IOC_1588_BASE, 24, struct pch_timepoll_ioctl)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_SET \
+> > + _IOW(IOC_1588_BASE, 25, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_GET \
+> > + _IOR(IOC_1588_BASE, 26, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_PULSE_PER_SEC_INTRPT_ENABLE _IO(IOC_1588_BASE, 27)
+> > +
+> > +#define IOCTL_1588_PULSE_PER_SEC_INTRPT_DISABLE _IO(IOC_1588_BASE, 28)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_NOTIFY \
+> > + _IOR(IOC_1588_BASE, 29, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_AUX_TIME_NOTIFY \
+> > + _IOR(IOC_1588_BASE, 30, struct pch_auxtimeioctl)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_NOTIFY \
+> > + _IOR(IOC_1588_BASE, 31, struct pch_tim_val)
+> > +
+> > +#define IOCTL_1588_PULSE_PER_SEC_NOTIFY _IOR(IOC_1588_BASE, 32, __u32)
+> > +
+> > +#define IOCTL_1588_TARG_TIME_CLR_NOTIFY _IO(IOC_1588_BASE, 33)
+> > +
+> > +#define IOCTL_1588_AUX_TIME_CLR_NOTIFY _IO(IOC_1588_BASE, 34)
+> > +
+> > +#define IOCTL_1588_AUX_TARG_TIME_CLR_NOTIFY _IO(IOC_1588_BASE, 35)
+> > +
+> > +#define IOCTL_1588_PULSE_PER_SEC_CLR_NOTIFY _IO(IOC_1588_BASE, 36)
+> > +
+> > +#define IOCTL_1588_PULSE_PER_SEC_TIME_GET _IOR(IOC_1588_BASE, 37, __u32)
+> > +
+> > +#define IOCTL_1588_PULSE_PER_SEC_TIME_SET _IOW(IOC_1588_BASE, 38, __u32)
+> > +
+> > +#define IOCTL_1588_PORT_VERSION_SET \
+> > + _IOW(IOC_1588_BASE, 39, struct pch_versionioctl)
+> > +
+> > +#define IOCTL_1588_PORT_VERSION_GET \
+> > + _IOWR(IOC_1588_BASE, 40, struct pch_versionioctl)
+> > +
+> > +#define IOCTL_1588_PORT_OPERATION_MODE_SET \
+> > + _IOW(IOC_1588_BASE, 41, struct pch_opemode_ioctl)
+> > +
+> > +#define IOCTL_1588_PORT_OPERATION_MODE_GET \
+> > + _IOWR(IOC_1588_BASE, 42, struct pch_opemode_ioctl)
+>
+> Do they all have to be ioctls?  What exactly are they doing?
+>
+> And are they 32/64bit safe?
+>
+> thanks,
+>
+> greg k-h
+>
 
-So I tried just:
-
-ffmpeg -i /dev/video0 out.flv
-
-That makes it oops allways and instantly.
-
---
-
-Sander
-
-
-
-
-Wednesday, August 11, 2010, 4:33:28 AM, you wrote:
-
-> On Tue, Aug 10, 2010 at 6:57 PM, Sander Eikelenboom
-> <linux@eikelenboom.it> wrote:
->> Hello Devin,
->>
->> It's a k-world, which used to work fine (altough with another program, but I can't use that since it seems at least 2 other bugs prevent me from using my VM's :-)
->> It's this model  http://global.kworld-global.com/main/prod_in.aspx?mnuid=1248&modid=6&pcid=47&ifid=17&prodid=104
->>
->> Tried to grab with ffmpeg.
-
-> Is it reproducible?  Or did it just happen once?  If you have a
-> sequence to reproduce, can you provide the command line you used, etc?
-
-> Devin
-
-
-
-
--- 
-Best regards,
- Sander                            mailto:linux@eikelenboom.it
 
