@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab0HKHf4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:35:56 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:50004 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752951Ab0HKHfz convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:35:55 -0400
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
-Date: Wed, 11 Aug 2010 00:35:51 -0700
-Subject: Re: [PATCH 1/2] param: allow omitting set() methods for truly
- read-only params
-Thread-Topic: [PATCH 1/2] param: allow omitting set() methods for truly
- read-only params
-Thread-Index: Acs5J9QzM7R/aGKiQwuiQNRBczJuZw==
-Message-ID: <6889404B-C389-4421-BDD7-A042DAAB064A@vmware.com>
-References: <1281466725-22549-1-git-send-email-dtor@vmware.com>
- <201008111109.30433.rusty@rustcorp.com.au>
-In-Reply-To: <201008111109.30433.rusty@rustcorp.com.au>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753490Ab0HKHig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:38:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55674 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752360Ab0HKHif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 03:38:35 -0400
+Date: Wed, 11 Aug 2010 09:38:33 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Paul Bolle <pebolle@tiscali.nl>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: linux-next: manual merge of the trivial tree with the vfs tree
+In-Reply-To: <4C61D055.4090909@panasas.com>
+Message-ID: <alpine.LNX.2.00.1008110938100.2702@pobox.suse.cz>
+References: <20100810121900.cbceb878.sfr@canb.auug.org.au> <4C61D055.4090909@panasas.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 10, 2010, at 6:39 PM, "Rusty Russell" <rusty@rustcorp.com.au>  
-wrote:
+On Tue, 10 Aug 2010, Boaz Harrosh wrote:
 
-> On Wed, 11 Aug 2010 04:28:44 am Dmitry Torokhov wrote:
->> Certain "parameters", such as acpica version and upcoming VMware  
->> Balloon
->> version, are need to be purely read-only. They are exported as
->> parameters so that they are visible in sysfs even in cases when the
->> module is built directly into the kernel, but their values should be
->> immutable. Specifying S_IRUGO takes care of sysfs interface, but it
->> has no effect on kernel command line or modprobe configuration  
->> files and
->> so these "parameters" attempt to omit set() method. Unfortunately
->> kernel expects set() to be always present and crashes if it is not
->> there, so let's add appropriate check.
->>
->> Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
->
-> That almost makes sense, but not quite.
->
-> Your followup patch uses this for version, but the version is already
-> in /sys/module/vmware_balloon/version as is standard with modules, no?
->
+> > Today's linux-next merge of the trivial tree got a conflict in
+> > fs/exofs/inode.c between commit 21883a7d05d4c1e97943fa1a587aa2c2a3b09e8c
+> > ("exofs: New truncate sequence") from the vfs tree and commit
+> > 426d31071ac476ea62c62656b242930c17b58c00 ("fix printk typo 'faild'") from
+> > the trivial tree.
+> > 
+> > Just context changes.  I fixed it up (see below) and can carry it for a
+> > while.
+> 
+> The "exofs: New truncate sequence" is now in the Kernel. So perhaps
+> fix printk typo 'faild'" could be rebased.
+> 
+> Or you can send the patch to me and I'll push it. Which ever you
+> prefer
 
-That version attribute is not present if the driver is built-in, only  
-parameters are visible in both cases.
+Thanks for notification, I have pulled Linus' branch now into 'for-next', 
+so the conflict for linux-next should be gone.
 
 -- 
-Dmitry
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
