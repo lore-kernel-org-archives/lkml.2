@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab0HKSHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:07:10 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:34788 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758471Ab0HKSHJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:07:09 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-Cc: linux@arm.linux.org.uk, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rmk@arm.linux.org.uk, tony@atomide.com
-Subject: Re: [PATCH 2/4]  Low-level initialization for hsmmc controller on LogicPD's OMAP3 SOM and TORPEDO dev kits
-Organization: Deep Root Systems, LLC
-References: <1281544297-18015-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
-	<1281544297-18015-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
-Date: Wed, 11 Aug 2010 11:07:05 -0700
-In-Reply-To: <1281544297-18015-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
-	(Jacob Tanenbaum's message of "Wed, 11 Aug 2010 12:31:35 -0400")
-Message-ID: <87lj8d2fcm.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1758505Ab0HKSIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:08:36 -0400
+Received: from a.mx.secunet.com ([195.81.216.161]:40135 "EHLO a.mx.secunet.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754167Ab0HKSIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 14:08:34 -0400
+Date: Wed, 11 Aug 2010 20:13:15 +0200
+From: Steffen Klassert <steffen.klassert@secunet.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-crypto@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Add maintainer entries for padata/pcrypt
+Message-ID: <20100811181315.GA4097@secunet.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 11 Aug 2010 18:08:27.0941 (UTC) FILETIME=[32B37550:01CB3980]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com> writes:
 
->     	ARM: OMAP3LOGIC: Adding SDMMC support
->              Add low-level initialization for hsmmc controller for
->              LogicPD's OMAP 3530 LV SOM and OMAP 35x Torpedo board.
+Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
+---
+ MAINTAINERS |   16 ++++++++++++++++
+ 1 files changed, 16 insertions(+), 0 deletions(-)
 
-Also removes mux setup of SDRC pins which is not described here.
-
-Kevin
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 8939947..3e9502e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4327,6 +4327,15 @@ L:	linux-i2c@vger.kernel.org
+ S:	Maintained
+ F:	drivers/i2c/busses/i2c-pasemi.c
+ 
++PADATA PARALLEL EXECUTION MECHANISM
++M:	Steffen Klassert <steffen.klassert@secunet.com>
++L:	linux-kernel@vger.kernel.org
++L:	linux-crypto@vger.kernel.org
++S:	Maintained
++F:	kernel/padata.c
++F:	include/linux/padata.h
++F:	Documentation/padata.txt
++
+ PANASONIC LAPTOP ACPI EXTRAS DRIVER
+ M:	Harald Welte <laforge@gnumonks.org>
+ L:	platform-driver-x86@vger.kernel.org
+@@ -4447,6 +4456,13 @@ L:	netdev@vger.kernel.org
+ S:	Maintained
+ F:	drivers/net/pcnet32.c
+ 
++PCRYPT PARALLEL CRYPTO ENGINE
++M:	Steffen Klassert <steffen.klassert@secunet.com>
++L:	linux-crypto@vger.kernel.org
++S:	Maintained
++F:	crypto/pcrypt.c
++F:	include/crypto/pcrypt.h
++
+ PER-TASK DELAY ACCOUNTING
+ M:	Balbir Singh <balbir@linux.vnet.ibm.com>
+ S:	Maintained
+-- 
+1.5.6.5
 
