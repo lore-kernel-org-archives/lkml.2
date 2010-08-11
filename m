@@ -1,1003 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab0HKV70 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 17:59:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52016 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab0HKV7D (ORCPT
+	id S1756096Ab0HKWBP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 18:01:15 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:50540 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029Ab0HKWBL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 17:59:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
-         :references;
-        b=gLHTcIJ5TNG1ba9MOAC2GMKlNOssVC22PlZURWJblviSBib3jtvHwvRqJqwLsQlROz
-         yS5H8vSWNhwGvJcDYeppYrXJav8KEypNJlFaR1C6Yb15ykqYiP9VODa/TUx57WY0Vivi
-         f/gEmbaTvqfU2KycrmjRaI7NJB20OdYrls3uA=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: linux-kernel@vger.kernel.org
-Cc: m.nazarewicz@samsung.com, Michal Nazarewicz <mina86@mina86.com>,
-        "Douglas W. Jones" <jones@cs.uiowa.edu>,
-        Denis Vlasenko <vda.linux@googlemail.com>
-Subject: [PATCHv3 2/2] lib: vsprintf: added a put_dec() test and benchmark tool
-Date: Wed, 11 Aug 2010 23:58:40 +0200
-Message-Id: <367af705f1f9c1a9d8a36707a4d6a9550e19c68f.1281532502.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1bec965de7de10bf9cddda988a2eaaf755852919.1281532502.git.mina86@mina86.com>
-References: <1bec965de7de10bf9cddda988a2eaaf755852919.1281532502.git.mina86@mina86.com>
-To: linux-kernel@vger.kernel.org
+	Wed, 11 Aug 2010 18:01:11 -0400
+X-SpamScore: 21
+X-BigFish: VPS21(z3cfcs329eqzzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L70D5P-01-9XJ-02
+X-M-MSG: 
+Date: Thu, 12 Aug 2010 00:00:58 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Don Zickus <dzickus@redhat.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH -v2] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100811220058.GT26154@erda.amd.com>
+References: <20100804151858.GB5130@lenovo>
+ <20100804155002.GS3353@redhat.com>
+ <20100804161046.GC5130@lenovo>
+ <20100804162026.GU3353@redhat.com>
+ <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100809194829.GB26154@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds a test application for the put_dec() and
-family of functions that are used by the previous two commits.
+I was debuging this a little more, see version 2 below.
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+-Robert
+
+--
+
+>From 8bb831af56d118b85fc38e0ddc2e516f7504b9fb Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Thu, 5 Aug 2010 16:19:59 +0200
+Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
+
+When perfctrs are running it is valid to have unhandled nmis, two
+events could trigger 'simultaneously' raising two back-to-back
+NMIs. If the first NMI handles both, the latter will be empty and daze
+the CPU.
+
+The solution to avoid an 'unknown nmi' massage in this case was simply
+to stop the nmi handler chain when perfctrs are runnning by stating
+the nmi was handled. This has the drawback that a) we can not detect
+unknown nmis anymore, and b) subsequent nmi handlers are not called.
+
+This patch addresses this. Now, we check this unknown NMI if it could
+be a perfctr back-to-back NMI. Otherwise we pass it and let the kernel
+handle the unknown nmi.
+
+This is a debug log:
+
+cpu #6, nmi #32333, skip_nmi #32330, handled = 1, time = 1934364430
+cpu #6, nmi #32334, skip_nmi #32330, handled = 1, time = 1934704616
+cpu #6, nmi #32335, skip_nmi #32336, handled = 2, time = 1936032320
+cpu #6, nmi #32336, skip_nmi #32336, handled = 0, time = 1936034139
+cpu #6, nmi #32337, skip_nmi #32336, handled = 1, time = 1936120100
+cpu #6, nmi #32338, skip_nmi #32336, handled = 1, time = 1936404607
+cpu #6, nmi #32339, skip_nmi #32336, handled = 1, time = 1937983416
+cpu #6, nmi #32340, skip_nmi #32341, handled = 2, time = 1938201032
+cpu #6, nmi #32341, skip_nmi #32341, handled = 0, time = 1938202830
+cpu #6, nmi #32342, skip_nmi #32341, handled = 1, time = 1938443743
+cpu #6, nmi #32343, skip_nmi #32341, handled = 1, time = 1939956552
+cpu #6, nmi #32344, skip_nmi #32341, handled = 1, time = 1940073224
+cpu #6, nmi #32345, skip_nmi #32341, handled = 1, time = 1940485677
+cpu #6, nmi #32346, skip_nmi #32347, handled = 2, time = 1941947772
+cpu #6, nmi #32347, skip_nmi #32347, handled = 1, time = 1941949818
+cpu #6, nmi #32348, skip_nmi #32347, handled = 0, time = 1941951591
+Uhhuh. NMI received for unknown reason 00 on CPU 6.
+Do you have a strange power saving mode enabled?
+Dazed and confused, but trying to continue
+
+Deltas:
+
+nmi #32334 340186
+nmi #32335 1327704
+nmi #32336 1819      <<<< back-to-back nmi [1]
+nmi #32337 85961
+nmi #32338 284507
+nmi #32339 1578809
+nmi #32340 217616
+nmi #32341 1798      <<<< back-to-back nmi [2]
+nmi #32342 240913
+nmi #32343 1512809
+nmi #32344 116672
+nmi #32345 412453
+nmi #32346 1462095   <<<< 1st nmi (standard) handling 2 counters
+nmi #32347 2046      <<<< 2nd nmi (back-to-back) handling one counter
+nmi #32348 1773      <<<< 3rd nmi (back-to-back) handling no counter! [3]
+
+For  back-to-back nmi detection there are the following rules:
+
+The perfctr nmi handler was handling more than one counter and no
+counter was handled in the subsequent nmi (see [1] and [2] above).
+
+There is another case if there are two subsequent back-to-back nmis
+[3]. In this case we measure the time between the first and the
+2nd. The 2nd is detected as back-to-back because the first handled
+more than one counter. The time between the 1st and the 2nd is used to
+calculate a range for which we assume a back-to-back nmi. Now, the 3rd
+nmi triggers, we measure again the time delta and compare it with the
+first delta from which we know it was a back-to-back nmi. If the 3rd
+nmi is within the range, it is also a back-to-back nmi and we drop it.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- tools/put-dec/Makefile       |   16 +
- tools/put-dec/put-dec-test.c |  927 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 943 insertions(+), 0 deletions(-)
- create mode 100644 tools/put-dec/Makefile
- create mode 100644 tools/put-dec/put-dec-test.c
+ arch/x86/kernel/cpu/perf_event.c |   96 +++++++++++++++++++++++++++++++++----
+ 1 files changed, 85 insertions(+), 11 deletions(-)
 
-Just a testin application, not intended to be included in Linux.
-
-diff --git a/tools/put-dec/Makefile b/tools/put-dec/Makefile
-new file mode 100644
-index 0000000..7e5751f
---- /dev/null
-+++ b/tools/put-dec/Makefile
-@@ -0,0 +1,16 @@
-+all: put-dec-test put-dec-test-s
-+
-+put-dec-test: put-dec-test.c
-+	exec $(CC) -Wall -Wextra -O2 -o $@ $<
-+
-+put-dec-test.s: put-dec-test.c
-+	exec $(CC) -Wall -Wextra -O2 -S -o $@ $<
-+
-+put-dec-test-s: put-dec-test.c
-+	exec $(CC) -Wall -Wextra -Os -o $@ $<
-+
-+put-dec-test-s.s: put-dec-test.c
-+	exec $(CC) -Wall -Wextra -Os -S -o $@ $<
-+
-+clean:
-+	rm -f -- put-dec-test
-diff --git a/tools/put-dec/put-dec-test.c b/tools/put-dec/put-dec-test.c
-new file mode 100644
-index 0000000..d0a879b
---- /dev/null
-+++ b/tools/put-dec/put-dec-test.c
-@@ -0,0 +1,927 @@
-+/*
-+ * put-dec-test.c -- Variaus put_dec*() functions implementation
-+ *                   testing and benchmarking tool
-+ * Written by                  Michal Nazarewicz <mina86@mina86.com>
-+ * with helpful suggestions by Denys Vlasenko <vda.linux@googlemail.com>
-+ */
-+#define _BSD_SOURCE
-+
-+#include <errno.h>
-+#include <fcntl.h>
-+#include <limits.h>
-+#include <stdarg.h>
-+#include <stdbool.h>
-+#include <stdint.h>
-+#include <stdio.h>
-+#include <stdlib.h>
-+#include <string.h>
-+#include <sys/stat.h>
-+#include <sys/time.h>
-+#include <sys/types.h>
-+#include <time.h>
-+#include <unistd.h>
-+
-+#if CHAR_BIT != 8
-+#  error This code assumes CHAR_BIT == 8
-+#endif
-+
-+
-+#if 0
-+#  define __helper  __attribute__((always_inline))
-+#  define __8bit    __attribute__((always_inline))
-+#else
-+#  define __helper  __attribute__((noinline))
-+#  define __8bit    __attribute__((noinline))
-+#endif
-+#define __put_dec __attribute__((noinline))
-+
-+
-+#define do_div(n, base) ({			\
-+		uint32_t __base = (base);	\
-+		uint32_t __rem = (n) % __base;	\
-+		(n) /= __base;			\
-+		__rem;				\
-+	})
-+
-+
-+/****************************** Original versian ******************************/
-+
-+static __helper char *orig_put_dec_trunc(char *buf, unsigned q)
-+{
-+	unsigned d3, d2, d1, d0;
-+	d1 = (q>>4) & 0xf;
-+	d2 = (q>>8) & 0xf;
-+	d3 = (q>>12);
-+
-+	d0 = 6*(d3 + d2 + d1) + (q & 0xf);
-+	q = (d0 * 0xcd) >> 11;
-+	d0 = d0 - 10*q;
-+	*buf++ = d0 + '0'; /* least significant digit */
-+	d1 = q + 9*d3 + 5*d2 + d1;
-+	if (d1 != 0) {
-+		q = (d1 * 0xcd) >> 11;
-+		d1 = d1 - 10*q;
-+		*buf++ = d1 + '0'; /* next digit */
-+
-+		d2 = q + 2*d2;
-+		if ((d2 != 0) || (d3 != 0)) {
-+			q = (d2 * 0xd) >> 7;
-+			d2 = d2 - 10*q;
-+			*buf++ = d2 + '0'; /* next digit */
-+
-+			d3 = q + 4*d3;
-+			if (d3 != 0) {
-+				q = (d3 * 0xcd) >> 11;
-+				d3 = d3 - 10*q;
-+				*buf++ = d3 + '0';  /* next digit */
-+				if (q != 0)
-+					*buf++ = q + '0'; /* most sign. digit */
-+			}
-+		}
-+	}
-+
-+	return buf;
-+}
-+/* Same with if's removed. Always emits five digits */
-+static __helper char *orig_put_dec_full(char *buf, unsigned q)
-+{
-+	/* BTW, if q is in [0,9999], 8-bit ints will be enough, */
-+	/* but anyway, gcc produces better code with full-sized ints */
-+	unsigned d3, d2, d1, d0;
-+	d1 = (q>>4) & 0xf;
-+	d2 = (q>>8) & 0xf;
-+	d3 = (q>>12);
-+
-+	/*
-+	 * Possible ways to approx. divide by 10
-+	 * gcc -O2 replaces multiply with shifts and adds
-+	 * (x * 0xcd) >> 11: 11001101 - shorter code than * 0x67 (on i386)
-+	 * (x * 0x67) >> 10:  1100111
-+	 * (x * 0x34) >> 9:    110100 - same
-+	 * (x * 0x1a) >> 8:     11010 - same
-+	 * (x * 0x0d) >> 7:      1101 - same, shortest code (on i386)
-+	 */
-+	d0 = 6*(d3 + d2 + d1) + (q & 0xf);
-+	q = (d0 * 0xcd) >> 11;
-+	d0 = d0 - 10*q;
-+	*buf++ = d0 + '0';
-+	d1 = q + 9*d3 + 5*d2 + d1;
-+		q = (d1 * 0xcd) >> 11;
-+		d1 = d1 - 10*q;
-+		*buf++ = d1 + '0';
-+
-+		d2 = q + 2*d2;
-+			q = (d2 * 0xd) >> 7;
-+			d2 = d2 - 10*q;
-+			*buf++ = d2 + '0';
-+
-+			d3 = q + 4*d3;
-+				q = (d3 * 0xcd) >> 11; /* - shorter code */
-+				/* q = (d3 * 0x67) >> 10; - would also work */
-+				d3 = d3 - 10*q;
-+				*buf++ = d3 + '0';
-+					*buf++ = q + '0';
-+
-+	return buf;
-+}
-+
-+static __put_dec char *orig_put_dec(char *buf, unsigned long long num)
-+{
-+	while (1) {
-+		unsigned rem;
-+		if (num < 100000)
-+			return orig_put_dec_trunc(buf, num);
-+		rem = do_div(num, 100000);
-+		buf = orig_put_dec_full(buf, rem);
-+	}
-+}
-+
-+
-+
-+/****************************** Modified versions ******************************/
-+
-+/*
-+ * Decimal conversion is by far the most typical, and is used for
-+ * /proc and /sys data. This directly impacts e.g. top performance
-+ * with many processes running.
-+ *
-+ * We optimize it for speed using code based on idea described at:
-+ * http://www.cs.uiowa.edu/~jones/bcd/decimal.html (with permission
-+ * from the author, Douglas W. Jones).
-+ *
-+ * The original code was designed for 8-bit ALus but since we can
-+ * assume more capable hardware the code has been rewritten to use the
-+ * following properties:
-+ *
-+ * n  =    1 * n0 +                   ( 0 <= n0 <= 1023 )
-+ *      1024 * n1                     ( 0 <= n1 <=   97 )
-+ * a0 = 0         + 4 * n1 + 1 * n0   ( 0 <= a0 <= 1412 )
-+ * a1 = (a0 / 10) + 2 * n1            ( 0 <= a1 <=  335 )
-+ * a2 = (a1 / 10) + 0 * n1            ( 0 <= a2 <=   33 )
-+ * a3 = (a2 / 10) + 1 * n1            ( 0 <= a3 <=  100 )
-+ * d0 = a0 % 10
-+ * d1 = a1 % 10
-+ * d2 = a2 % 10
-+ * d3 = a3 % 10
-+ * d4 = a3 / 10
-+ *
-+ * So instead of dividing the number into four nibles we divide it
-+ * into two numbers: first one 10-bit and the other one 7-bit
-+ * (argument is 17-bit number from 0 to 99999).
-+ *
-+ * Moreover, 1024, which is the value second part of the number needs
-+ * to be multiplied by, has nice property that each digit is a power
-+ * of two or zero -- this helps with multiplications.
-+ *
-+ * Possible ways to approx. divide by 10
-+ * (x * 0xcd) >> 11: 11001101 - shorter code than * 0x67 (on i386)
-+ * (x * 0x67) >> 10:  1100111
-+ * (x * 0x34) >> 9:    110100 - same
-+ * (x * 0x1a) >> 8:     11010 - same
-+ * (x * 0x0d) >> 7:      1101 - same, shortest code (on i386)
-+ */
-+static __helper char *mod1_put_dec_full(char *buf, unsigned q)
-+{
-+	unsigned p, r;
-+	p   = q >> 10;
-+
-+	q  &= 0x3ff;
-+	q  += 4 * p;
-+	r   = (q * 0x199A) >> 16;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	r  += 2 * p;
-+	q   = (r * 0xcd) >> 11;
-+	*buf++ = (r - 10 * q)  + '0';
-+
-+	/* q += 0; */
-+	r   = (q * 0xcd) >> 11;
-+	*buf++ = (q - 10 * r)  + '0';
-+
-+	r  += p;
-+	q   = (r * 0xcd) >> 11;
-+	*buf++ = (r - 10 * q) + '0';
-+
-+	*buf++ = q + '0';
-+
-+	return buf;
-+}
-+
-+static __helper char *mod1_put_dec_trunc(char *buf, unsigned q)
-+{
-+	unsigned p, r;
-+	p   = q >> 10;
-+
-+	q  &= 0x3ff;
-+	q  += 4 * p;
-+	r   = (q * 0x199a) >> 16;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	r  += 2 * p;
-+	if (r) {
-+		q   = (r * 0xcd) >> 11;
-+		*buf++ = (r - 10 * q)  + '0';
-+
-+		/* q += 0; */
-+		if (q || p) {
-+			r   = (q * 0xcd) >> 11;
-+			*buf++ = (q - 10 * r)  + '0';
-+
-+			r  += p;
-+			if (r) {
-+				q   = (r * 0xcd) >> 11;
-+				*buf++ = (r - 10 * q) + '0';
-+
-+				if (q)
-+					*buf++ = q + '0';
-+			}
-+		}
-+	}
-+
-+	return buf;
-+}
-+
-+
-+static __put_dec char *mod1_put_dec(char *buf, unsigned long long num)
-+{
-+	while (1) {
-+		unsigned rem;
-+		if (num < 100000)
-+			return mod1_put_dec_trunc(buf, num);
-+		rem = do_div(num, 100000);
-+		buf = mod1_put_dec_full(buf, rem);
-+	}
-+}
-+
-+
-+static __put_dec char *mod2_put_dec(char *buf, unsigned long long num)
-+{
-+	if (!num) {
-+		*buf++ = '0';
-+		return buf;
-+	}
-+
-+	while (num >= 100000) {
-+		unsigned rem;
-+		rem = do_div(num, 100000);
-+		buf = mod1_put_dec_full(buf, rem);
-+	}
-+
-+	buf = mod1_put_dec_full(buf, num);
-+	while (buf[-1] == '0')
-+		--buf;
-+	return buf;
-+}
-+
-+
-+
-+/*
-+ * Decimal conversion is by far the most typical, and is used for
-+ * /proc and /sys data. This directly impacts e.g. top performance
-+ * with many processes running.
-+ *
-+ * We optimize it for speed using ideas described at
-+ * <http://www.cs.uiowa.edu/~jones/bcd/divide.html>.
-+ *
-+ * '(num * 0xcccd) >> 19' is an approximation of 'num / 10' that gives
-+ * correct results for num < 81920.  Because of this, we check at the
-+ * beginning if we are dealing with a number that may cause trouble
-+ * and if so, we make it smaller.
-+ *
-+ * (As a minor note, all operands are always 16 bit so this function
-+ * should work well on hardware that cannot multiply 32 bit numbers).
-+ *
-+ * (Previous a code based on
-+ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html> was used here,
-+ * with permission from the author, Douglas W. Jones.)
-+ *
-+ * Other, possible ways to approx. divide by 10
-+ * (x * 0xcd) >> 11: 11001101 - shorter code than * 0x67 (on i386)
-+ * (x * 0x67) >> 10:  1100111
-+ * (x * 0x34) >> 9:    110100 - same
-+ * (x * 0x1a) >> 8:     11010 - same
-+ * (x * 0x0d) >> 7:      1101 - same, shortest code (on i386)
-+ */
-+static __helper char *mod3_put_dec_full(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	r      = (q * (uint64_t)0xcccd) >> 19;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	q      = (r * 0x199a) >> 16;
-+	*buf++ = (r - 10 * q)  + '0';
-+
-+	r      = (q * 0xcd) >> 11;
-+	*buf++ = (q - 10 * r)  + '0';
-+
-+	q      = (r * 0xcd) >> 11;
-+	*buf++ = (r - 10 * q) + '0';
-+
-+	*buf++ = q + '0';
-+
-+	return buf;
-+}
-+
-+static __helper char *mod3_put_dec_trunc(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	if (q > 9999)
-+		return mod3_put_dec_full(buf, q);
-+
-+	r      = (q * 0x199a) >> 16;
-+	*buf++ = (q - 10 * r)  + '0';
-+
-+	if (r) {
-+		q   = (r * 0xcd) >> 11;
-+		*buf++ = (r - 10 * q)  + '0';
-+
-+		if (q) {
-+			r      = (q * 0xcd) >> 11;
-+			*buf++ = (q - 10 * r)  + '0';
-+
-+			if (r)
-+				*buf++ = r + '0';
-+		}
-+	}
-+
-+	return buf;
-+}
-+
-+
-+static __8bit char *mod3_put_dec_8bit(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	r      = (q * 0xcd) >> 11;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	if (r) {
-+		q   = (r * 0xd) >> 7;
-+		*buf++ = (r - 10 * q)  + '0';
-+
-+		if (q)
-+			*buf++ = q + '0';
-+	}
-+
-+	return buf;
-+}
-+
-+
-+static __put_dec char *mod3_put_dec(char *buf, unsigned long long num)
-+{
-+	while (num >= 100000)
-+		buf = mod3_put_dec_full(buf, do_div(num, 100000));
-+	return mod3_put_dec_trunc(buf, num);
-+}
-+
-+
-+static __put_dec char *mod4_put_dec(char *buf, unsigned long long num)
-+{
-+	if (!num) {
-+		*buf++ = '0';
-+		return buf;
-+	}
-+
-+	while (num >= 100000) {
-+		unsigned rem;
-+		rem = do_div(num, 100000);
-+		buf = mod3_put_dec_full(buf, rem);
-+	}
-+
-+	buf = mod3_put_dec_full(buf, num);
-+	while (buf[-1] == '0')
-+		--buf;
-+	return buf;
-+}
-+
-+
-+
-+/*
-+ * Decimal conversion is by far the most typical, and is used for
-+ * /proc and /sys data. This directly impacts e.g. top performance
-+ * with many processes running.
-+ *
-+ * We optimize it for speed using ideas described at
-+ * <http://www.cs.uiowa.edu/~jones/bcd/divide.html>.
-+ *
-+ * (Previous a code based on
-+ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html> was used here,
-+ * with permission from the author, Douglas W. Jones.)
-+ *
-+ * Other, possible ways to approx. divide by 10
-+ * (x * 0xcd) >> 11: 11001101 - shorter code than * 0x67 (on i386)
-+ * (x * 0x67) >> 10:  1100111
-+ * (x * 0x34) >> 9:    110100 - same
-+ * (x * 0x1a) >> 8:     11010 - same
-+ * (x * 0x0d) >> 7:      1101 - same, shortest code (on i386)
-+ */
-+static __helper char *mod5_put_dec_full(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	r      = (q * 0x199a) >> 16;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	q      = (r * 0xcd) >> 11;
-+	*buf++ = (r - 10 * q)  + '0';
-+
-+	r      = (q * 0xcd) >> 11;
-+	*buf++ = (q - 10 * r)  + '0';
-+
-+	*buf++ = r + '0';
-+
-+	return buf;
-+}
-+
-+static __helper char *mod5_put_dec_trunc(char *buf, unsigned q)
-+{
-+	unsigned r;
-+
-+	r      = (q * 0x199a) >> 16;
-+	*buf++ = (q - 10 * r) + '0';
-+
-+	if (r) {
-+		q      = (r * 0xcd) >> 11;
-+		*buf++ = (r - 10 * q)  + '0';
-+
-+		if (q) {
-+			r      = (q * 0xcd) >> 11;
-+			*buf++ = (q - 10 * r)  + '0';
-+
-+			if (r)
-+				*buf++ = r + '0';
-+		}
-+	}
-+
-+	return buf;
-+}
-+
-+
-+static __put_dec char *mod5_put_dec(char *buf, unsigned long long num)
-+{
-+	while (num >= 10000) {
-+		unsigned rem;
-+		rem = do_div(num, 10000);
-+		buf = mod5_put_dec_full(buf, rem);
-+	}
-+	return mod5_put_dec_trunc(buf, num);
-+}
-+
-+/*
-+ * Based on code by Douglas W. Jones found at
-+ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html>.
-+ */
-+static __put_dec char *mod6_put_dec(char *buf, unsigned long long n)
-+{
-+	uint32_t d3, d2, d1, q;
-+
-+	if (!n) {
-+		*buf++ = '0';
-+		return buf;
-+	}
-+
-+	d1  = (n >> 16) & 0xFFFF;
-+	d2  = (n >> 32) & 0xFFFF;
-+	d3  = (n >> 48) & 0xFFFF;
-+
-+	q   = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
-+
-+	buf = mod5_put_dec_full(buf, q % 10000);
-+	q   = q / 10000;
-+
-+	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
-+		buf = mod5_put_dec_full(buf, d1 % 10000);
-+		q   = d1 / 10000;
-+
-+		d2  = q + 4749 * d3 + 42 * d2;
-+			buf = mod5_put_dec_full(buf, d2 % 10000);
-+			q   = d2 / 10000;
-+
-+			d3  = q + 281 * d3;
-+				buf = mod5_put_dec_full(buf, d3 % 10000);
-+				q   = d3 / 10000;
-+
-+					buf = mod5_put_dec_trunc(buf, q);
-+
-+	while (buf[-1] == '0')
-+		--buf;
-+
-+	return buf;
-+}
-+
-+
-+/*
-+ * Based on code by Douglas W. Jones found at
-+ * <http://www.cs.uiowa.edu/~jones/bcd/decimal.html>.
-+ */
-+static __put_dec char *mod7_put_dec(char *buf, unsigned long long n)
-+{
-+	uint32_t d3, d2, d1, q;
-+
-+	if (!n) {
-+		*buf++ = '0';
-+		return buf;
-+	}
-+
-+	d1  = (n >> 16) & 0xFFFF;
-+	d2  = (n >> 32) & 0xFFFF;
-+	d3  = (n >> 48) & 0xFFFF;
-+
-+	q   = 656 * d3 + 7296 * d2 + 5536 * d1 + (n & 0xFFFF);
-+
-+	buf = mod5_put_dec_full(buf, q % 10000);
-+	q   = q / 10000;
-+
-+	d1  = q + 7671 * d3 + 9496 * d2 + 6 * d1;
-+	if (d1) {
-+		buf = mod5_put_dec_full(buf, d1 % 10000);
-+		q   = d1 / 10000;
-+
-+		d2  = q + 4749 * d3 + 42 * d2;
-+		if (d2) {
-+			buf = mod5_put_dec_full(buf, d2 % 10000);
-+			q   = d2 / 10000;
-+
-+			d3  = q + 281 * d3;
-+			if (d3) {
-+				buf = mod5_put_dec_full(buf, d3 % 10000);
-+				q   = d3 / 10000;
-+
-+				if (q)
-+					buf = mod5_put_dec_trunc(buf, q);
-+			}
-+		}
-+	}
-+
-+	while (buf[-1] == '0')
-+		--buf;
-+
-+	return buf;
-+}
-+
-+
-+static __put_dec char *mod8_put_dec(char *buf, unsigned long long num)
-+{
-+	while (1) {
-+		unsigned rem = do_div(num, 100000000);
-+
-+		if (!num && rem < 10000)
-+			return mod5_put_dec_trunc(buf, rem);
-+		buf = mod5_put_dec_full(buf, rem % 10000);
-+
-+		if (!num)
-+			return mod5_put_dec_trunc(buf, rem / 10000);
-+		buf = mod5_put_dec_full(buf, rem / 10000);
-+	}
-+}
-+
-+
-+
-+/****************************** Main ******************************/
-+
-+static const struct put_dec_helper {
-+	const char *name;
-+	char *(*func)(char *buf, unsigned v);
-+	unsigned inner;
-+	unsigned outer;
-+	int width;
-+} put_dec_helpers[] = {
-+	{ "orig_put_dec_full" , orig_put_dec_full , 100000,   1, 5 },
-+	{ "mod1_put_dec_full" , mod1_put_dec_full , 100000,   1, 5 },
-+	{ "mod3_put_dec_full" , mod3_put_dec_full , 100000,   1, 5 },
-+	{ "mod5_put_dec_full" , mod5_put_dec_full ,  10000,  10, 4 },
-+	{ "orig_put_dec_trunc", orig_put_dec_trunc, 100000,   1, 0 },
-+	{ "mod1_put_dec_trunc", mod1_put_dec_trunc, 100000,   1, 0 },
-+	{ "mod3_put_dec_trunc", mod3_put_dec_trunc, 100000,   1, 0 },
-+	{ "mod5_put_dec_trunc", mod5_put_dec_trunc,  10000,  10, 0 },
-+	{ "mod3_put_dec_8bit",  mod3_put_dec_8bit,     256, 500, 0 },
-+	{ NULL, NULL, 0, 0, 0 }
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index f2da20f..b79a235 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1154,7 +1154,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
+ 		/*
+ 		 * event overflow
+ 		 */
+-		handled		= 1;
++		handled++;
+ 		data.period	= event->hw.last_period;
+ 
+ 		if (!x86_perf_event_set_period(event))
+@@ -1200,12 +1200,24 @@ void perf_events_lapic_init(void)
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+ }
+ 
++struct perfctr_nmi {
++	u64		timestamp;
++	u64		range;
++	unsigned int	marked;
++	int		handled;
 +};
 +
-+static const struct put_dec {
-+	const char *name;
-+	char *(*func)(char *buf, unsigned long long v);
-+} put_decs[] = {
-+	{ "orig_put_dec" , orig_put_dec },
-+	{ "mod1_put_dec" , mod1_put_dec },
-+	{ "mod2_put_dec" , mod2_put_dec },
-+	{ "mod3_put_dec" , mod3_put_dec },
-+	{ "mod4_put_dec" , mod4_put_dec },
-+	{ "mod5_put_dec" , mod5_put_dec },
-+	{ "mod6_put_dec" , mod6_put_dec },
-+	{ "mod7_put_dec" , mod7_put_dec },
-+	{ "mod8_put_dec" , mod8_put_dec },
-+	{ NULL, NULL }
-+};
++static DEFINE_PER_CPU(struct perfctr_nmi, nmi);
 +
+ static int __kprobes
+ perf_event_nmi_handler(struct notifier_block *self,
+ 			 unsigned long cmd, void *__args)
+ {
+ 	struct die_args *args = __args;
+-	struct pt_regs *regs;
++	unsigned int this_nmi;
++	int handled;
++	u64 timestamp;
++	u64 delta;
+ 
+ 	if (!atomic_read(&active_events))
+ 		return NOTIFY_DONE;
+@@ -1214,22 +1226,84 @@ perf_event_nmi_handler(struct notifier_block *self,
+ 	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+ 		break;
++	case DIE_NMIUNKNOWN:
++		this_nmi = percpu_read(irq_stat.__nmi_count);
++		if (this_nmi != __get_cpu_var(nmi).marked)
++			return NOTIFY_DONE;
 +
-+/* 41 / 17 is around (a bit more then) log_10(256) */
-+#define WIDTH (int)(sizeof(long long) * 41 / 17 + 1)
-+static char buf_output[WIDTH + 1], buf_expected[WIDTH + 1];
++		/*
++		 * This one could be our NMI, two events could trigger
++		 * 'simultaneously' raising two back-to-back NMIs. If
++		 * the first NMI handles both, the latter will be
++		 * empty and daze the CPU.
++		 *
++		 * So, we check this unknown NMI and drop it if it is
++		 * a perfctr back-to-back nmi. Otherwise we pass it
++		 * and let the kernel handle the unknown nmi.
++		 */
 +
++		if (!cpu_has_tsc)
++			/*
++			 * no timestamps available the cannot detect
++			 * back-to-back nmis, drop it
++			 */
++			return NOTIFY_STOP;
 +
-+static bool load_random(const char *file);
-+static void benchmark_helpers(unsigned long iterations);
-+static void benchmark_put_dec(unsigned long iterations);
-+static void show_sizes(char *app);
-+static bool test_helpers(void);
-+static bool test_put_dec_rand(void);
-+static bool test_put_dec_range(unsigned long long range);
++		if (__get_cpu_var(nmi).handled > 1)
++			/*
++			 *  we have handled more than one counter,
++			 *  this must be a back-to-back nmi
++			 */
++			return NOTIFY_STOP;
 +
++		rdtscll(delta);
++		delta -= __get_cpu_var(nmi).timestamp;
++		if (delta < __get_cpu_var(nmi).range)
++			/* the delta is small, it is a back-to-back nmi */
++			return NOTIFY_STOP;
 +
-+int main(int argc, char **argv) {
-+	unsigned long iterations;
-+	unsigned long long range;
-+	bool ret;
++		/* not a perfctr back-to-back nmi, let it pass */
++		return NOTIFY_DONE;
+ 
+ 	default:
+ 		return NOTIFY_DONE;
+ 	}
+ 
+-	regs = args->regs;
++	this_nmi = percpu_read(irq_stat.__nmi_count);
+ 
+ 	apic_write(APIC_LVTPC, APIC_DM_NMI);
+-	/*
+-	 * Can't rely on the handled return value to say it was our NMI, two
+-	 * events could trigger 'simultaneously' raising two back-to-back NMIs.
+-	 *
+-	 * If the first NMI handles both, the latter will be empty and daze
+-	 * the CPU.
+-	 */
+-	x86_pmu.handle_irq(regs);
 +
-+	puts(">> Reading etropy...");
-+	fflush(NULL);
++	handled = x86_pmu.handle_irq(args->regs);
 +
-+	if (!load_random("/dev/urandom"))
-+		return 2;
++	if (!handled)
++		return NOTIFY_DONE;
 +
-+	iterations = 1000;
-+	if (argc > 1)
-+		iterations = atoi(argv[1]);
++	if ((handled == 1) && (__get_cpu_var(nmi).marked != this_nmi))
++		/* this may not trigger back-to-back nmis */
++		return NOTIFY_STOP;
 +
-+	if (iterations) {
-+		puts(">> Benchmarking...");
-+		fflush(NULL);
++	if (!cpu_has_tsc)
++		goto mark_next_nmi;
 +
-+		benchmark_helpers(iterations);
-+		benchmark_put_dec(iterations * 25000);
++	rdtscll(timestamp);
++	if (__get_cpu_var(nmi).marked == this_nmi) {
++		/*
++		 * this was a back-to-back nmi, calculate back-to-back
++		 * time delta and define the back-to-back range that
++		 * is twice the delta
++		 */
++		delta = timestamp;
++		delta -= __get_cpu_var(nmi).timestamp;
++
++		__get_cpu_var(nmi).range = delta << 1;
 +	}
 +
-+	puts(">> Sizes");
-+	show_sizes(*argv);
++	__get_cpu_var(nmi).timestamp	= timestamp;
++	__get_cpu_var(nmi).handled	= handled;
 +
-+	puts(">> Testing...");
-+	fflush(NULL);
-+
-+	memset(buf_output, 77, sizeof buf_output);
-+
-+	range = 10*1000*1000;
-+	if (argc > 2)
-+		range = atoi(argv[2]);
-+
-+	ret = test_helpers();
-+	ret = test_put_dec_rand() && ret;
-+	if (range)
-+		ret = test_put_dec_range(range) && ret;
-+
-+	printf(">> %s%*s\n",
-+	       ret
-+	     ? "Everything went fine"
-+	     : "Some test failed, consult stderr",
-+	       WIDTH, "");
-+
-+	return ret;
-+}
-+
-+
-+static bool test(const char *name, char *b, char *fmt, ...);
-+static void stop(const char *name, struct timeval *start);
-+
-+static unsigned long long __random[1 << 20];
-+static inline unsigned long long randll(unsigned n) {
-+	return __random[n & ((sizeof __random / sizeof *__random) - 1)];
-+}
-+
-+
-+static bool load_random(const char *file)
-+{
-+	size_t left, pos;
-+	bool ret = true;
-+	int fd;
-+
-+	fd = open(file, O_RDONLY);
-+	if (fd < 0) {
-+		perror(file);
-+		return false;
-+	}
-+
-+	left = sizeof __random;
-+	pos = 0;
-+	do {
-+		ssize_t r = read(fd, ((char *)__random) + pos, left);
-+		if (r > 0) {
-+			pos  += r;
-+			left -= r;
-+		} else if (r == 0) {
-+			printf("%s: file too small\n", file);
-+			ret = false;
-+			break;
-+		} else if (errno == EAGAIN || errno == EINTR) {
-+			/* nothing */
-+		} else {
-+			perror(file);
-+			ret = false;
-+			break;
-+		}
-+	} while (left);
-+
-+	close(fd);
-+	return ret;
-+}
-+
-+
-+static void benchmark_helpers(unsigned long iterations)
-+{
-+	const struct put_dec_helper *helper = put_dec_helpers;
-+
-+	printf("\thelpers (%lu iterations)\n", iterations * 100000);
-+	fflush(NULL);
-+
-+	do {
-+		char *(*func)(char *buf, unsigned v);
-+		struct timeval start;
-+		unsigned long o;
-+		unsigned inner;
-+
-+		func = helper->func;
-+		o = helper->outer * iterations;
-+		inner = helper->inner;
-+		gettimeofday(&start, NULL);
-+
-+		do {
-+			unsigned i = inner;
-+			do {
-+				func(buf_output, i);
-+			} while (--i);
-+		} while (--o);
-+
-+		stop(helper->name, &start);
-+		++helper;
-+	} while (helper->name);
-+
-+	fflush(NULL);
-+}
-+
-+static void benchmark_put_dec(unsigned long iterations)
-+{
-+	const struct put_dec *pd = put_decs;
-+
-+	printf("\tput_dec (%lu iterations)\n", iterations);
-+	fflush(NULL);
-+
-+	do {
-+		char *(*func)(char *buf, unsigned long long v);
-+		struct timeval start;
-+		unsigned long i;
-+
-+		func = pd->func;
-+		i = iterations;
-+		gettimeofday(&start, NULL);
-+
-+		do {
-+			func(buf_output, randll(--i));
-+		} while (i);
-+
-+		stop(pd->name, &start);
-+		++pd;
-+	} while (pd->name);
-+
-+	fflush(NULL);
-+}
-+
-+static void show_sizes(char *app)
-+{
-+	setenv("APP", app, 1);
-+	printf("\tobjdump -t '%s' | grep -F _put_dec | cut -f 2-\n", app);
-+	fflush(NULL);
-+	system("objdump -t \"$APP\" | grep -F _put_dec | cut -f 2-");
-+}
-+
-+static bool test_helpers(void)
-+{
-+	const struct put_dec_helper *helper = put_dec_helpers;
-+	bool ret = true;
-+
-+	puts("\thelpers");
-+	fflush(NULL);
-+
-+	do {
-+		unsigned i = helper->inner;
-+
-+		do {
-+			--i;
-+
-+			ret = test(helper->name, helper->func(buf_output, i),
-+				   "%0*u", helper->width, i) && ret;
-+		} while (i);
-+
-+		++helper;
-+	} while (helper->name);
-+
-+	fflush(NULL);
-+
-+	return ret;
-+}
-+
-+static bool __test_put_dec(unsigned long long v, bool print)
-+{
-+	const struct put_dec *pd = put_decs;
-+	bool ret = true;
-+
-+	sprintf(buf_expected, "%llu", v);
-+
-+	if (print) {
-+		printf("\ttesting: %*s\r", WIDTH, buf_expected);
-+		fflush(NULL);
-+	}
-+
-+	do {
-+		ret = test(pd->name, pd->func(buf_output, v), NULL) && ret;
-+		++pd;
-+	} while (pd->name);
-+
-+	return ret;
-+}
-+
-+static bool test_put_dec_rand(void)
-+{
-+	size_t i = sizeof __random / sizeof *__random;
-+	bool ret = true;
-+
-+	printf("\tput_dec, %zu random numbers\n", i);
-+	fflush(NULL);
-+
-+	do {
-+		--i;
-+		ret = __test_put_dec(randll(i), !(i & 0xffff)) && ret;
-+	} while (i);
-+
-+	return ret;
-+}
-+
-+static bool test_put_dec_range(unsigned long long range)
-+{
-+	unsigned long long edge = 1;
-+	bool ret = true;
-+
-+	printf("\tput_dec, %llu numbers around the \"edges\"%10s\n", range, "");
-+	fflush(NULL);
-+
-+	do {
-+		unsigned long long i = 2 * range, v = edge - range;
-+		do {
-+			ret = __test_put_dec(v, !(i & 0xffff)) && ret;
-+			++v;
-+		} while (--i);
-+
-+		edge <<= 16;
-+	} while (edge);
-+
-+	return ret;
-+}
-+
-+
-+static bool test(const char *name, char *b, char *fmt, ...)
-+{
-+	char *a = buf_output;
-+	va_list ap;
-+	bool ret;
-+
-+	*b-- = '\0';
-+	while (a < b) {
-+		char tmp = *a;
-+		*a = *b;
-+		*b = tmp;
-+		++a;
-+		--b;
-+	}
-+
-+	if (fmt) {
-+		va_start(ap, fmt);
-+		vsprintf(buf_expected, fmt, ap);
-+		va_end(ap);
-+	}
-+
-+	ret = !strcmp(buf_output, buf_expected);
-+	if (!ret)
-+		fprintf(stderr, "%-20s: expecting %*s got %*s\n",
-+			name, WIDTH, buf_expected, WIDTH, buf_output);
-+
-+	memset(buf_output, 77, sizeof buf_output);
-+
-+	return ret;
-+}
-+
-+static void stop(const char *name, struct timeval *start)
-+{
-+	struct timeval stop;
-+	gettimeofday(&stop, NULL);
-+
-+	stop.tv_sec -= start->tv_sec;
-+	if (stop.tv_usec < start->tv_usec) {
-+		--stop.tv_sec;
-+		stop.tv_usec += 1000000;
-+	}
-+	stop.tv_usec -= start->tv_usec;
-+
-+	fflush(NULL);
-+	printf("%-20s: %3lu.%06lus\n", name,
-+	       (unsigned long)stop.tv_sec, (unsigned long)stop.tv_usec);
-+}
++ mark_next_nmi:
++	/* the next nmi could be a back-to-back nmi */
++	__get_cpu_var(nmi).marked	= this_nmi + 1;
+ 
+ 	return NOTIFY_STOP;
+ }
 -- 
-1.7.1
+1.7.1.1
+
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
