@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab0HKX6B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:58:01 -0400
-Received: from kroah.org ([198.145.64.141]:40140 "EHLO coco.kroah.org"
+	id S1758999Ab0HKX60 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:58:26 -0400
+Received: from kroah.org ([198.145.64.141]:40258 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758853Ab0HKX5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
-Message-Id: <20100811235458.099953770@clark.site>
+	id S1758938Ab0HKX6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:13 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:59 2010
+Message-Id: <20100811235459.455263365@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:09 -0700
+Date: Wed, 11 Aug 2010 16:54:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Andrew Bird <ajb@spheresystems.co.uk>
-Subject: [028/111] USB: option: add huawei k3765 k4505 devices to work properly
+        Yan Zheng <zheng.yan@oracle.com>, Chris Mason <chris.mason@oracle.com>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [043/111] Btrfs: Avoid superfluous tree-log writeout
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,57 +26,251 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andrew Bird <ajb@spheresystems.co.uk>
+From: Yan, Zheng <zheng.yan@oracle.com>
 
-commit 0372a754be9aa43e19fd86c9bc04796d43b55e38 upstream.
+commit 8cef4e160d74920ad1725f58c89fd75ec4c4ac38 upstream.
 
-This patch adds the product IDs of Huawei's K3765 and K4505 mobile
-broadband usb modems to option.c. It also adds a quirk to the option
-probe function so that binding to the device's network interface(class
-0xff) is avoided. This is necessary to allow another driver to bind to
-that, and to avoid programs like wvdial opening a nonfunctioning tty
-during modem discovery.
+We allow two log transactions at a time, but use same flag
+to mark dirty tree-log btree blocks. So we may flush dirty
+blocks belonging to newer log transaction when committing a
+log transaction. This patch fixes the issue by using two
+flags to mark dirty tree-log btree blocks.
 
-Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
+Signed-off-by: Yan Zheng <zheng.yan@oracle.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |   11 +++++++++++
- 1 file changed, 11 insertions(+)
+ fs/btrfs/disk-io.c     |    6 +++---
+ fs/btrfs/extent-tree.c |   12 ++++++++++--
+ fs/btrfs/transaction.c |   21 +++++++++++----------
+ fs/btrfs/transaction.h |    6 +++---
+ fs/btrfs/tree-log.c    |   33 ++++++++++++++++++++-------------
+ 5 files changed, 47 insertions(+), 31 deletions(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -165,6 +165,8 @@ static int  option_resume(struct usb_ser
- #define HUAWEI_PRODUCT_E143D			0x143D
- #define HUAWEI_PRODUCT_E143E			0x143E
- #define HUAWEI_PRODUCT_E143F			0x143F
-+#define HUAWEI_PRODUCT_K4505			0x1464
-+#define HUAWEI_PRODUCT_K3765			0x1465
- #define HUAWEI_PRODUCT_E14AC			0x14AC
- #define HUAWEI_PRODUCT_ETS1220			0x1803
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -980,12 +980,12 @@ int btrfs_free_log_root_tree(struct btrf
  
-@@ -470,6 +472,8 @@ static struct usb_device_id option_ids[]
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
-@@ -1009,6 +1013,13 @@ static int option_probe(struct usb_seria
- 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
- 		return -ENODEV;
+ 	while (1) {
+ 		ret = find_first_extent_bit(&log_root_tree->dirty_log_pages,
+-				    0, &start, &end, EXTENT_DIRTY);
++				0, &start, &end, EXTENT_DIRTY | EXTENT_NEW);
+ 		if (ret)
+ 			break;
  
-+	/* Don't bind network interfaces on Huawei K3765 & K4505 */
-+	if (serial->dev->descriptor.idVendor == HUAWEI_VENDOR_ID &&
-+		(serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K3765 ||
-+			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505) &&
-+		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
-+		return -ENODEV;
+-		clear_extent_dirty(&log_root_tree->dirty_log_pages,
+-				   start, end, GFP_NOFS);
++		clear_extent_bits(&log_root_tree->dirty_log_pages, start, end,
++				  EXTENT_DIRTY | EXTENT_NEW, GFP_NOFS);
+ 	}
+ 	eb = fs_info->log_root_tree->node;
+ 
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4919,8 +4919,16 @@ struct extent_buffer *btrfs_init_new_buf
+ 	btrfs_set_buffer_uptodate(buf);
+ 
+ 	if (root->root_key.objectid == BTRFS_TREE_LOG_OBJECTID) {
+-		set_extent_dirty(&root->dirty_log_pages, buf->start,
+-			 buf->start + buf->len - 1, GFP_NOFS);
++		/*
++		 * we allow two log transactions at a time, use different
++		 * EXENT bit to differentiate dirty pages.
++		 */
++		if (root->log_transid % 2 == 0)
++			set_extent_dirty(&root->dirty_log_pages, buf->start,
++					buf->start + buf->len - 1, GFP_NOFS);
++		else
++			set_extent_new(&root->dirty_log_pages, buf->start,
++					buf->start + buf->len - 1, GFP_NOFS);
+ 	} else {
+ 		set_extent_dirty(&trans->transaction->dirty_pages, buf->start,
+ 			 buf->start + buf->len - 1, GFP_NOFS);
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -354,7 +354,7 @@ int btrfs_end_transaction_throttle(struc
+  * those extents are sent to disk but does not wait on them
+  */
+ int btrfs_write_marked_extents(struct btrfs_root *root,
+-			       struct extent_io_tree *dirty_pages)
++			       struct extent_io_tree *dirty_pages, int mark)
+ {
+ 	int ret;
+ 	int err = 0;
+@@ -367,7 +367,7 @@ int btrfs_write_marked_extents(struct bt
+ 
+ 	while (1) {
+ 		ret = find_first_extent_bit(dirty_pages, start, &start, &end,
+-					    EXTENT_DIRTY);
++					    mark);
+ 		if (ret)
+ 			break;
+ 		while (start <= end) {
+@@ -413,7 +413,7 @@ int btrfs_write_marked_extents(struct bt
+  * on all the pages and clear them from the dirty pages state tree
+  */
+ int btrfs_wait_marked_extents(struct btrfs_root *root,
+-			      struct extent_io_tree *dirty_pages)
++			      struct extent_io_tree *dirty_pages, int mark)
+ {
+ 	int ret;
+ 	int err = 0;
+@@ -425,12 +425,12 @@ int btrfs_wait_marked_extents(struct btr
+ 	unsigned long index;
+ 
+ 	while (1) {
+-		ret = find_first_extent_bit(dirty_pages, 0, &start, &end,
+-					    EXTENT_DIRTY);
++		ret = find_first_extent_bit(dirty_pages, start, &start, &end,
++					    mark);
+ 		if (ret)
+ 			break;
+ 
+-		clear_extent_dirty(dirty_pages, start, end, GFP_NOFS);
++		clear_extent_bits(dirty_pages, start, end, mark, GFP_NOFS);
+ 		while (start <= end) {
+ 			index = start >> PAGE_CACHE_SHIFT;
+ 			start = (u64)(index + 1) << PAGE_CACHE_SHIFT;
+@@ -460,13 +460,13 @@ int btrfs_wait_marked_extents(struct btr
+  * those extents are on disk for transaction or log commit
+  */
+ int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
+-					struct extent_io_tree *dirty_pages)
++				struct extent_io_tree *dirty_pages, int mark)
+ {
+ 	int ret;
+ 	int ret2;
+ 
+-	ret = btrfs_write_marked_extents(root, dirty_pages);
+-	ret2 = btrfs_wait_marked_extents(root, dirty_pages);
++	ret = btrfs_write_marked_extents(root, dirty_pages, mark);
++	ret2 = btrfs_wait_marked_extents(root, dirty_pages, mark);
+ 	return ret || ret2;
+ }
+ 
+@@ -479,7 +479,8 @@ int btrfs_write_and_wait_transaction(str
+ 		return filemap_write_and_wait(btree_inode->i_mapping);
+ 	}
+ 	return btrfs_write_and_wait_marked_extents(root,
+-					   &trans->transaction->dirty_pages);
++					   &trans->transaction->dirty_pages,
++					   EXTENT_DIRTY);
+ }
+ 
+ /*
+--- a/fs/btrfs/transaction.h
++++ b/fs/btrfs/transaction.h
+@@ -107,10 +107,10 @@ void btrfs_throttle(struct btrfs_root *r
+ int btrfs_record_root_in_trans(struct btrfs_trans_handle *trans,
+ 				struct btrfs_root *root);
+ int btrfs_write_and_wait_marked_extents(struct btrfs_root *root,
+-					struct extent_io_tree *dirty_pages);
++				struct extent_io_tree *dirty_pages, int mark);
+ int btrfs_write_marked_extents(struct btrfs_root *root,
+-					struct extent_io_tree *dirty_pages);
++				struct extent_io_tree *dirty_pages, int mark);
+ int btrfs_wait_marked_extents(struct btrfs_root *root,
+-					struct extent_io_tree *dirty_pages);
++				struct extent_io_tree *dirty_pages, int mark);
+ int btrfs_transaction_in_commit(struct btrfs_fs_info *info);
+ #endif
+--- a/fs/btrfs/tree-log.c
++++ b/fs/btrfs/tree-log.c
+@@ -1977,10 +1977,11 @@ int btrfs_sync_log(struct btrfs_trans_ha
+ {
+ 	int index1;
+ 	int index2;
++	int mark;
+ 	int ret;
+ 	struct btrfs_root *log = root->log_root;
+ 	struct btrfs_root *log_root_tree = root->fs_info->log_root_tree;
+-	u64 log_transid = 0;
++	unsigned long log_transid = 0;
+ 
+ 	mutex_lock(&root->log_mutex);
+ 	index1 = root->log_transid % 2;
+@@ -2014,24 +2015,29 @@ int btrfs_sync_log(struct btrfs_trans_ha
+ 		goto out;
+ 	}
+ 
++	log_transid = root->log_transid;
++	if (log_transid % 2 == 0)
++		mark = EXTENT_DIRTY;
++	else
++		mark = EXTENT_NEW;
 +
- 	data = serial->private = kzalloc(sizeof(struct option_intf_private), GFP_KERNEL);
- 	if (!data)
- 		return -ENOMEM;
+ 	/* we start IO on  all the marked extents here, but we don't actually
+ 	 * wait for them until later.
+ 	 */
+-	ret = btrfs_write_marked_extents(log, &log->dirty_log_pages);
++	ret = btrfs_write_marked_extents(log, &log->dirty_log_pages, mark);
+ 	BUG_ON(ret);
+ 
+ 	btrfs_set_root_node(&log->root_item, log->node);
+ 
+ 	root->log_batch = 0;
+-	log_transid = root->log_transid;
+ 	root->log_transid++;
+ 	log->log_transid = root->log_transid;
+ 	root->log_start_pid = 0;
+ 	smp_mb();
+ 	/*
+-	 * log tree has been flushed to disk, new modifications of
+-	 * the log will be written to new positions. so it's safe to
+-	 * allow log writers to go in.
++	 * IO has been started, blocks of the log tree have WRITTEN flag set
++	 * in their headers. new modifications of the log will be written to
++	 * new positions. so it's safe to allow log writers to go in.
+ 	 */
+ 	mutex_unlock(&root->log_mutex);
+ 
+@@ -2052,7 +2058,7 @@ int btrfs_sync_log(struct btrfs_trans_ha
+ 
+ 	index2 = log_root_tree->log_transid % 2;
+ 	if (atomic_read(&log_root_tree->log_commit[index2])) {
+-		btrfs_wait_marked_extents(log, &log->dirty_log_pages);
++		btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
+ 		wait_log_commit(trans, log_root_tree,
+ 				log_root_tree->log_transid);
+ 		mutex_unlock(&log_root_tree->log_mutex);
+@@ -2072,16 +2078,17 @@ int btrfs_sync_log(struct btrfs_trans_ha
+ 	 * check the full commit flag again
+ 	 */
+ 	if (root->fs_info->last_trans_log_full_commit == trans->transid) {
+-		btrfs_wait_marked_extents(log, &log->dirty_log_pages);
++		btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
+ 		mutex_unlock(&log_root_tree->log_mutex);
+ 		ret = -EAGAIN;
+ 		goto out_wake_log_root;
+ 	}
+ 
+ 	ret = btrfs_write_and_wait_marked_extents(log_root_tree,
+-				&log_root_tree->dirty_log_pages);
++				&log_root_tree->dirty_log_pages,
++				EXTENT_DIRTY | EXTENT_NEW);
+ 	BUG_ON(ret);
+-	btrfs_wait_marked_extents(log, &log->dirty_log_pages);
++	btrfs_wait_marked_extents(log, &log->dirty_log_pages, mark);
+ 
+ 	btrfs_set_super_log_root(&root->fs_info->super_for_commit,
+ 				log_root_tree->node->start);
+@@ -2147,12 +2154,12 @@ int btrfs_free_log(struct btrfs_trans_ha
+ 
+ 	while (1) {
+ 		ret = find_first_extent_bit(&log->dirty_log_pages,
+-				    0, &start, &end, EXTENT_DIRTY);
++				0, &start, &end, EXTENT_DIRTY | EXTENT_NEW);
+ 		if (ret)
+ 			break;
+ 
+-		clear_extent_dirty(&log->dirty_log_pages,
+-				   start, end, GFP_NOFS);
++		clear_extent_bits(&log->dirty_log_pages, start, end,
++				  EXTENT_DIRTY | EXTENT_NEW, GFP_NOFS);
+ 	}
+ 
+ 	if (log->log_transid > 0) {
 
 
