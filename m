@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab0HKT7G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 15:59:06 -0400
-Received: from borg.asidev.net ([95.141.32.69]:49297 "EHLO borg.asidev.net"
+	id S1758533Ab0HKT7h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 15:59:37 -0400
+Received: from kroah.org ([198.145.64.141]:49334 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756655Ab0HKT7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 15:59:04 -0400
-Message-ID: <4C630101.50205@evidence.eu.com>
-Date: Wed, 11 Aug 2010 21:58:57 +0200
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1758502Ab0HKT7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 15:59:36 -0400
+Date: Wed, 11 Aug 2010 12:43:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+Cc: Greg KH <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "stable-review@kernel.org" <stable-review@kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>
+Subject: Re: [09/38] xen: netfront: explicitly generate arp_notify event
+ after migration.
+Message-ID: <20100811194318.GC23566@kroah.com>
+References: <20100806183200.858950407@clark.site>
+ <1281445647.24292.3897.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Wolfram Sang <w.sang@pengutronix.de>, Philippe De Muyter <phdm@macqel.be>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, hskinnemoen@atmel.com,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Rick Bronson <rick@efn.org>, John Nicholls <john@thinlinx.com>,
-        Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
-        Ryan Mallon <ryan@bluewatersys.com>, rmk@arm.linux.org.uk,
-        Bernhard Roth <br@pwrnet.de>, Konrad Mattheis <mattheis@ukma.de>,
-        Elektrolot <elektrolot@wp.pl>,
-        =?UTF-8?B?UHJjaGFsIEppxZnDrQ==?= <jiri.prchal@aksignal.cz>,
-        gregkh@suse.de, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-References: <4BB053C4.7050700@evidence.eu.com>	<4BB10304.6090006@bluewatersys.com>	<4BB1BF49.2000609@evidence.eu.com>	<4BB252E3.3030703@bluewatersys.com>	<4BBD8C9D.3070401@evidence.eu.com>	<20100408111310.524f7354@lxorguk.ukuu.org.uk>	<4BBDD71D.1010700@evidence.eu.com>	<4BFD1FB6.8050405@atmel.com>	<4BFE2F38.8050200@evidence.eu.com>	<4BFE41FD.2080804@atmel.com>	<20100527102917.GB31253@pengutronix.de>	<4C626CBF.9020609@evidence.eu.com> <20100811083214.21d2919e.randy.dunlap@oracle.com>
-In-Reply-To: <20100811083214.21d2919e.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281445647.24292.3897.camel@zakaz.uk.xensource.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
-
-	thank you for the feedback.
-
-[...]
-
+On Tue, Aug 10, 2010 at 02:07:27PM +0100, Ian Campbell wrote:
+> Hi Greg,
 > 
-> TIOC[SG]RS485 are #defined in <asm-generic/ioctls.h>, so
-> #include <asm-generic/ioctls.h>
-> here and/or below (in userspace program).
+> Looks like I forgot to request this for 2.6.32 too, could you queue it
+> up there as well?
 > 
+> It depends on the previous patch in this series (arp_notify: allow
+> drivers to explicitly request a notification event.).
 
-I noticed that for some architectures (e.g., cris) these ioctls are defined also in arch/cris/include/asm/ioctls.h, and with different values with respect to the values defined on asm-generic/ioctls.h.
+Now queued up for .32 and .34-stable kernels.
 
-Therefore, I wasn't completely sure that the values defined in asm-generic are being used in every driver...
+thanks,
 
-Best regards,
-
-	Claudio
+greg k-h
