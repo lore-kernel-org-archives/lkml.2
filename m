@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab0HKX5e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:34 -0400
-Received: from kroah.org ([198.145.64.141]:40038 "EHLO coco.kroah.org"
+	id S1758861Ab0HLApG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:45:06 -0400
+Received: from kroah.org ([198.145.64.141]:40043 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758705Ab0HKX5a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:30 -0400
+	id S1758710Ab0HKX5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:31 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:56 2010
-Message-Id: <20100811235456.255321715@clark.site>
+Message-Id: <20100811235456.340938703@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:48 -0700
+Date: Wed, 11 Aug 2010 16:53:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peterhuewe@gmx.de>, Willy Tarreau <w@1wt.eu>
-Subject: [007/111] Staging: panel: Prevent double-calling of parport_release - fix oops.
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [008/111] PCI: Do not run NVidia quirks related to MSI with MSI disabled
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,43 +26,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peterhuewe@gmx.de>
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-commit 060132ae42cce3f9d2fd34d9a17b98362b44b9f9 upstream.
+commit 3d2a531804d16cd8df6dbbb0429c6f143e756049 upstream.
 
-This patch prevents the code from calling parport_release and
-parport_unregister_device twice with the same arguments - and thus fixes an oops.
+There is no reason to run NVidia-specific quirks related to HT MSI
+mappings with MSI disabled via pci=nomsi, so make
+__nv_msi_ht_cap_quirk() return immediately in that case.
 
-Rationale:
-After the first call the parport is already released and the
-handle isn't valid anymore and calling parport_release and
-parport_unregister_device twice isn't a good idea.
+This allows at least one machine to boot 100% of the time with
+pci=nomsi (it still doesn't boot reliably without that).
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Acked-by: Willy Tarreau <w@1wt.eu>
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16443 .
+
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/panel/panel.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pci/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -2181,6 +2181,7 @@ int panel_init(void)
- 		if (pprt) {
- 			parport_release(pprt);
- 			parport_unregister_device(pprt);
-+			pprt = NULL;
- 		}
- 		parport_unregister_driver(&panel_driver);
- 		printk(KERN_ERR "Panel driver version " PANEL_VERSION
-@@ -2230,6 +2231,7 @@ static void __exit panel_cleanup_module(
- 		/* TODO: free all input signals */
- 		parport_release(pprt);
- 		parport_unregister_device(pprt);
-+		pprt = NULL;
- 	}
- 	parport_unregister_driver(&panel_driver);
- }
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2356,6 +2356,9 @@ static void __devinit __nv_msi_ht_cap_qu
+ 	int pos;
+ 	int found;
+ 
++	if (!pci_msi_enabled())
++		return;
++
+ 	/* check if there is HT MSI cap or enabled on this device */
+ 	found = ht_check_msi_mapping(dev);
+ 
 
 
