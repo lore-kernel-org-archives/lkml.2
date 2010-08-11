@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933649Ab0HLAjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:39:06 -0400
-Received: from kroah.org ([198.145.64.141]:40226 "EHLO coco.kroah.org"
+	id S1758914Ab0HKX6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:58:06 -0400
+Received: from kroah.org ([198.145.64.141]:40182 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758925Ab0HKX6I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:59 2010
-Message-Id: <20100811235459.104341564@clark.site>
+	id S1758851Ab0HKX57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:59 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
+Message-Id: <20100811235458.469185852@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:20 -0700
+Date: Wed, 11 Aug 2010 16:54:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        xen-devel@lists.xensource.com, linux-input@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [039/111] irq: Add new IRQ flag IRQF_NO_SUSPEND
+        Oliver Neukum <oneukum@suse.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Christian Lamparter <chunkeey@googlemail.com>
+Subject: [032/111] USB: fix thread-unsafe anchor utiliy routines
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,70 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Campbell <ian.campbell@citrix.com>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit 685fd0b4ea3f0f1d5385610b0d5b57775a8d5842 upstream.
+commit b3e670443b7fb8a2d29831b62b44a039c283e351 upstream.
 
-A small number of users of IRQF_TIMER are using it for the implied no
-suspend behaviour on interrupts which are not timer interrupts.
+This patch fixes a race condition in two utility routines
+related to the removal/unlinking of urbs from an anchor.
 
-Therefore add a new IRQF_NO_SUSPEND flag, rename IRQF_TIMER to
-__IRQF_TIMER and redefine IRQF_TIMER in terms of these new flags.
+If two threads are concurrently accessing the same anchor,
+both could end up with the same urb - thinking they are
+the exclusive owner.
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>
-Cc: xen-devel@lists.xensource.com
-Cc: linux-input@vger.kernel.org
-Cc: linuxppc-dev@ozlabs.org
-Cc: devicetree-discuss@lists.ozlabs.org
-LKML-Reference: <1280398595-29708-1-git-send-email-ian.campbell@citrix.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Alan Stern pointed out a related issue in
+usb_unlink_anchored_urbs:
+
+"The URB isn't removed from the anchor until it completes
+ (as a by-product of completion, in fact), which might not
+ be for quite some time after the unlink call returns.
+ In the meantime, the subroutine will keep trying to unlink
+ it, over and over again."
+
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/interrupt.h |    7 ++++++-
- kernel/irq/manage.c       |    2 +-
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/usb/core/urb.c |   50 ++++++++++++++++++++-----------------------------
+ 1 file changed, 21 insertions(+), 29 deletions(-)
 
---- a/include/linux/interrupt.h
-+++ b/include/linux/interrupt.h
-@@ -52,16 +52,21 @@
-  * IRQF_ONESHOT - Interrupt is not reenabled after the hardirq handler finished.
-  *                Used by threaded interrupts which need to keep the
-  *                irq line disabled until the threaded handler has been run.
-+ * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
-+ *
-  */
- #define IRQF_DISABLED		0x00000020
- #define IRQF_SAMPLE_RANDOM	0x00000040
- #define IRQF_SHARED		0x00000080
- #define IRQF_PROBE_SHARED	0x00000100
--#define IRQF_TIMER		0x00000200
-+#define __IRQF_TIMER		0x00000200
- #define IRQF_PERCPU		0x00000400
- #define IRQF_NOBALANCING	0x00000800
- #define IRQF_IRQPOLL		0x00001000
- #define IRQF_ONESHOT		0x00002000
-+#define IRQF_NO_SUSPEND		0x00004000
-+
-+#define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -137,6 +137,16 @@ void usb_anchor_urb(struct urb *urb, str
+ }
+ EXPORT_SYMBOL_GPL(usb_anchor_urb);
  
- /*
-  * Bits used by threaded handlers:
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -200,7 +200,7 @@ static inline int setup_affinity(unsigne
- void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
++/* Callers must hold anchor->lock */
++static void __usb_unanchor_urb(struct urb *urb, struct usb_anchor *anchor)
++{
++	urb->anchor = NULL;
++	list_del(&urb->anchor_list);
++	usb_put_urb(urb);
++	if (list_empty(&anchor->urb_list))
++		wake_up(&anchor->wait);
++}
++
+ /**
+  * usb_unanchor_urb - unanchors an URB
+  * @urb: pointer to the urb to anchor
+@@ -156,17 +166,14 @@ void usb_unanchor_urb(struct urb *urb)
+ 		return;
+ 
+ 	spin_lock_irqsave(&anchor->lock, flags);
+-	if (unlikely(anchor != urb->anchor)) {
+-		/* we've lost the race to another thread */
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		return;
+-	}
+-	urb->anchor = NULL;
+-	list_del(&urb->anchor_list);
++	/*
++	 * At this point, we could be competing with another thread which
++	 * has the same intention. To protect the urb from being unanchored
++	 * twice, only the winner of the race gets the job.
++	 */
++	if (likely(anchor == urb->anchor))
++		__usb_unanchor_urb(urb, anchor);
+ 	spin_unlock_irqrestore(&anchor->lock, flags);
+-	usb_put_urb(urb);
+-	if (list_empty(&anchor->urb_list))
+-		wake_up(&anchor->wait);
+ }
+ EXPORT_SYMBOL_GPL(usb_unanchor_urb);
+ 
+@@ -725,20 +732,11 @@ EXPORT_SYMBOL_GPL(usb_unpoison_anchored_
+ void usb_unlink_anchored_urbs(struct usb_anchor *anchor)
  {
- 	if (suspend) {
--		if (!desc->action || (desc->action->flags & IRQF_TIMER))
-+		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
- 			return;
- 		desc->status |= IRQ_SUSPENDED;
+ 	struct urb *victim;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&anchor->lock, flags);
+-	while (!list_empty(&anchor->urb_list)) {
+-		victim = list_entry(anchor->urb_list.prev, struct urb,
+-				    anchor_list);
+-		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		/* this will unanchor the URB */
++	while ((victim = usb_get_from_anchor(anchor)) != NULL) {
+ 		usb_unlink_urb(victim);
+ 		usb_put_urb(victim);
+-		spin_lock_irqsave(&anchor->lock, flags);
  	}
+-	spin_unlock_irqrestore(&anchor->lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(usb_unlink_anchored_urbs);
+ 
+@@ -775,12 +773,11 @@ struct urb *usb_get_from_anchor(struct u
+ 		victim = list_entry(anchor->urb_list.next, struct urb,
+ 				    anchor_list);
+ 		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		usb_unanchor_urb(victim);
++		__usb_unanchor_urb(victim, anchor);
+ 	} else {
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+ 		victim = NULL;
+ 	}
++	spin_unlock_irqrestore(&anchor->lock, flags);
+ 
+ 	return victim;
+ }
+@@ -802,12 +799,7 @@ void usb_scuttle_anchored_urbs(struct us
+ 	while (!list_empty(&anchor->urb_list)) {
+ 		victim = list_entry(anchor->urb_list.prev, struct urb,
+ 				    anchor_list);
+-		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		/* this may free the URB */
+-		usb_unanchor_urb(victim);
+-		usb_put_urb(victim);
+-		spin_lock_irqsave(&anchor->lock, flags);
++		__usb_unanchor_urb(victim, anchor);
+ 	}
+ 	spin_unlock_irqrestore(&anchor->lock, flags);
+ }
 
 
