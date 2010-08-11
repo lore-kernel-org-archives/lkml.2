@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933699Ab0HLAk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:40:29 -0400
-Received: from kroah.org ([198.145.64.141]:40191 "EHLO coco.kroah.org"
+	id S933600Ab0HLAk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:40:26 -0400
+Received: from kroah.org ([198.145.64.141]:40197 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758898Ab0HKX6C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:02 -0400
+	id S1758899Ab0HKX6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:03 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
-Message-Id: <20100811235458.653659464@clark.site>
+Message-Id: <20100811235458.738598370@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:15 -0700
+Date: Wed, 11 Aug 2010 16:54:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Cyril Lacoux <clacoux@ifeelgood.org>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [034/111] Bluetooth: Added support for controller shipped with iMac i5
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Subject: [035/111] jfs: dont allow os2 xattr namespace overlap with others
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +25,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cyril Lacoux <clacoux@ifeelgood.org>
+From: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
 
-commit 0a79f67445de50ca0a8dc1d34f3cc406d89c28b2 upstream.
+commit aca0fa34bdaba39bfddddba8ca70dba4782e8fe6 upstream.
 
-Device class is ff(vend.) instead of e0(wlcon).
+It's currently possible to bypass xattr namespace access rules by
+prefixing valid xattr names with "os2.", since the os2 namespace stores
+extended attributes in a legacy format with no prefix.
 
-Output from command `usb-devices`:
-T:  Bus=01 Lev=03 Prnt=03 Port=00 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=8215 Rev=01.82
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=7C6D62936607
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=00 Driver=(none)
+This patch adds checking to deny access to any valid namespace prefix
+following "os2.".
 
-Signed-off-by: Cyril Lacoux <clacoux@ifeelgood.org>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Reported-by: Sergey Vlasov <vsu@altlinux.ru>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/jfs/xattr.c |   87 ++++++++++++++++++++++++---------------------------------
+ 1 file changed, 38 insertions(+), 49 deletions(-)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -59,6 +59,9 @@ static struct usb_device_id btusb_table[
- 	/* Generic Bluetooth USB device */
- 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
+--- a/fs/jfs/xattr.c
++++ b/fs/jfs/xattr.c
+@@ -85,46 +85,25 @@ struct ea_buffer {
+ #define EA_MALLOC	0x0008
  
-+	/* Apple iMac11,1 */
-+	{ USB_DEVICE(0x05ac, 0x8215) },
+ 
++static int is_known_namespace(const char *name)
++{
++	if (strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN) &&
++	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
++	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
++	    strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
++		return false;
 +
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
++	return true;
++}
++
+ /*
+  * These three routines are used to recognize on-disk extended attributes
+  * that are in a recognized namespace.  If the attribute is not recognized,
+  * "os2." is prepended to the name
+  */
+-static inline int is_os2_xattr(struct jfs_ea *ea)
++static int is_os2_xattr(struct jfs_ea *ea)
+ {
+-	/*
+-	 * Check for "system."
+-	 */
+-	if ((ea->namelen >= XATTR_SYSTEM_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Check for "user."
+-	 */
+-	if ((ea->namelen >= XATTR_USER_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Check for "security."
+-	 */
+-	if ((ea->namelen >= XATTR_SECURITY_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_SECURITY_PREFIX,
+-		     XATTR_SECURITY_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Check for "trusted."
+-	 */
+-	if ((ea->namelen >= XATTR_TRUSTED_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Add any other valid namespace prefixes here
+-	 */
+-
+-	/*
+-	 * We assume it's OS/2's flat namespace
+-	 */
+-	return true;
++	return !is_known_namespace(ea->name);
+ }
  
+ static inline int name_size(struct jfs_ea *ea)
+@@ -762,13 +741,23 @@ static int can_set_xattr(struct inode *i
+ 	if (!strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
+ 		return can_set_system_xattr(inode, name, value, value_len);
+ 
++	if (!strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)) {
++		/*
++		 * This makes sure that we aren't trying to set an
++		 * attribute in a different namespace by prefixing it
++		 * with "os2."
++		 */
++		if (is_known_namespace(name + XATTR_OS2_PREFIX_LEN))
++				return -EOPNOTSUPP;
++		return 0;
++	}
++
+ 	/*
+ 	 * Don't allow setting an attribute in an unknown namespace.
+ 	 */
+ 	if (strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) &&
+ 	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
+-	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
+-	    strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))
++	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
+ 		return -EOPNOTSUPP;
+ 
+ 	return 0;
+@@ -950,19 +939,8 @@ ssize_t __jfs_getxattr(struct inode *ino
+ 	int xattr_size;
+ 	ssize_t size;
+ 	int namelen = strlen(name);
+-	char *os2name = NULL;
+ 	char *value;
+ 
+-	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
+-		os2name = kmalloc(namelen - XATTR_OS2_PREFIX_LEN + 1,
+-				  GFP_KERNEL);
+-		if (!os2name)
+-			return -ENOMEM;
+-		strcpy(os2name, name + XATTR_OS2_PREFIX_LEN);
+-		name = os2name;
+-		namelen -= XATTR_OS2_PREFIX_LEN;
+-	}
+-
+ 	down_read(&JFS_IP(inode)->xattr_sem);
+ 
+ 	xattr_size = ea_get(inode, &ea_buf, 0);
+@@ -1000,8 +978,6 @@ ssize_t __jfs_getxattr(struct inode *ino
+       out:
+ 	up_read(&JFS_IP(inode)->xattr_sem);
+ 
+-	kfree(os2name);
+-
+ 	return size;
+ }
+ 
+@@ -1010,6 +986,19 @@ ssize_t jfs_getxattr(struct dentry *dent
+ {
+ 	int err;
+ 
++	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
++		/*
++		 * skip past "os2." prefix
++		 */
++		name += XATTR_OS2_PREFIX_LEN;
++		/*
++		 * Don't allow retrieving properly prefixed attributes
++		 * by prepending them with "os2."
++		 */
++		if (is_known_namespace(name))
++			return -EOPNOTSUPP;
++	}
++
+ 	err = __jfs_getxattr(dentry->d_inode, name, data, buf_size);
+ 
+ 	return err;
 
 
