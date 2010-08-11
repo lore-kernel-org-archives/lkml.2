@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab0HKX5m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:42 -0400
-Received: from kroah.org ([198.145.64.141]:40061 "EHLO coco.kroah.org"
+	id S1759044Ab0HLAoF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:44:05 -0400
+Received: from kroah.org ([198.145.64.141]:40074 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758742Ab0HKX5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:56 2010
-Message-Id: <20100811235456.720360032@clark.site>
+	id S1758764Ab0HKX5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:57 2010
+Message-Id: <20100811235456.974518113@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:53 -0700
+Date: Wed, 11 Aug 2010 16:53:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [012/111] drivers/video/w100fb.c: ignore void return value / fix build failure
+        Chris Wright <chrisw@sous-sol.org>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Subject: [015/111] blkdev: cgroup whitelist permission fix
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +29,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peterhuewe@gmx.de>
+From: Chris Wright <chrisw@sous-sol.org>
 
-commit fa260c00c1aa5c657793a7221e40d2400df5afd8 upstream.
+commit b7300b78d1a87625975a799a109a2f98d77757c8 upstream.
 
-Fix a build failure "error: void value not ignored as it ought to be"
-by removing an assignment of a void return value.  The functionality of
-the code is not changed.
+The cgroup device whitelist code gets confused when trying to grant
+permission to a disk partition that is not currently open.  Part of
+blkdev_open() includes __blkdev_get() on the whole disk.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Acked-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+Basically, the only ways to reliably allow a cgroup access to a partition
+on a block device when using the whitelist are to 1) also give it access
+to the whole block device or 2) make sure the partition is already open in
+a different context.
+
+The patch avoids the cgroup check for the whole disk case when opening a
+partition.
+
+Addresses https://bugzilla.redhat.com/show_bug.cgi?id=589662
+
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/w100fb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/block_dev.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/video/w100fb.c
-+++ b/drivers/video/w100fb.c
-@@ -857,9 +857,9 @@ unsigned long w100fb_gpio_read(int port)
- void w100fb_gpio_write(int port, unsigned long value)
- {
- 	if (port==W100_GPIO_PORT_A)
--		value = writel(value, remapped_regs + mmGPIO_DATA);
-+		writel(value, remapped_regs + mmGPIO_DATA);
- 	else
--		value = writel(value, remapped_regs + mmGPIO_DATA2);
-+		writel(value, remapped_regs + mmGPIO_DATA2);
- }
- EXPORT_SYMBOL(w100fb_gpio_read);
- EXPORT_SYMBOL(w100fb_gpio_write);
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1175,10 +1175,12 @@ static int __blkdev_get(struct block_dev
+ 	/*
+ 	 * hooks: /n/, see "layering violations".
+ 	 */
+-	ret = devcgroup_inode_permission(bdev->bd_inode, perm);
+-	if (ret != 0) {
+-		bdput(bdev);
+-		return ret;
++	if (!for_part) {
++		ret = devcgroup_inode_permission(bdev->bd_inode, perm);
++		if (ret != 0) {
++			bdput(bdev);
++			return ret;
++		}
+ 	}
+ 
+ 	lock_kernel();
 
 
