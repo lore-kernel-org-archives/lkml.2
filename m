@@ -1,42 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab0HKEkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 00:40:08 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51843 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751019Ab0HKEkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 00:40:05 -0400
-Date: Tue, 10 Aug 2010 21:39:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: "Wang, Qi" <qi.wang@intel.com>, meego-dev@meego.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-        arjan@linux.intel.com
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to
- 2.6.35
-Message-ID: <20100811043952.GA4669@suse.de>
-References: <002c01cb390e$80a58e50$66f8800a@maildom.okisemi.com>
+	id S1751576Ab0HKEsH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 00:48:07 -0400
+Received: from demumfd002.nsn-inter.net ([93.183.12.31]:13699 "EHLO
+	demumfd002.nsn-inter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab0HKEsE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 00:48:04 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <002c01cb390e$80a58e50$66f8800a@maildom.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: Compile one file in kernel
+Date: Wed, 11 Aug 2010 12:47:20 +0800
+Message-ID: <14414B36FFA0F1418CB707361EAA199A01988038@CNBEEXC006.nsn-intra.net>
+In-Reply-To: <201008110444.o7B4iGXs022127@demumfd001.nsn-inter.net>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Compile one file in kernel
+Thread-Index: Acs49sbh+rlQArrYTbS+IPGJPnVblAAE6CvwAAAS9VAAAWYYYAAACXBA
+References: <14414B36FFA0F1418CB707361EAA199A01988001@CNBEEXC006.nsn-intra.net> <201008110444.o7B4iGXs022127@demumfd001.nsn-inter.net>
+From: "Zhang, Wei-Jovi (NSN - CN/Hangzhou)" <wei-jovi.zhang@nsn.com>
+To: "ext zhanglx" <zhanglx@semico.com.cn>, "Xiaotian Feng" <xtfeng@gmail.com>
+Cc: <linux-kernel@vger.kernel.org>
+X-OriginalArrivalTime: 11 Aug 2010 04:47:50.0488 (UTC) FILETIME=[5A25D580:01CB3910]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 01:34:33PM +0900, Masayuki Ohtake wrote:
-> Hi Qi-san
-> 
-> I have found Macro 'TRUE' and 'FALSE' are used as setting value in the driver; still,
-> can't I use TRUE/FALSE macro ?
-> If not, How should we implement ?
+Sorry, I forgot it,  make will compare the timestamp of .c and .o file
 
-Use the 'bool' type, and 'true' and/or 'false' keywords instead.  That
-is the proper C idiom.
 
-thanks,
+-----Original Message-----
+From: ext zhanglx [mailto:zhanglx@semico.com.cn] 
+Sent: Wednesday, August 11, 2010 12:48 PM
+To: Zhang, Wei-Jovi (NSN - CN/Hangzhou); 'Xiaotian Feng'
+Cc: linux-kernel@vger.kernel.org
+Subject: RE: Compile one file in kernel
 
-greg k-h
+You mean make will not compare the timestamp of .c and .o file?
+
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org
+[mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Zhang, Wei-Jovi
+(NSN - CN/Hangzhou)
+Sent: Wednesday, August 11, 2010 12:10 PM
+To: ext zhanglx; Xiaotian Feng
+Cc: linux-kernel@vger.kernel.org
+Subject: RE: Compile one file in kernel
+
+Apparently not, you should run "rm -f <filename>.o" firstly, then "make
+<filename>.o"
+Maybe you can write a script to do this if you want to.
+
+-----Original Message-----
+From: ext zhanglx [mailto:zhanglx@semico.com.cn] 
+Sent: Wednesday, August 11, 2010 12:07 PM
+To: 'Xiaotian Feng'; Zhang, Wei-Jovi (NSN - CN/Hangzhou)
+Cc: linux-kernel@vger.kernel.org
+Subject: RE: Compile one file in kernel
+
+If .o file is not cleaned, make will automatically select the changed files
+to compile and link?
+
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org
+[mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Xiaotian Feng
+Sent: Wednesday, August 11, 2010 9:50 AM
+To: Zhang, Wei-Jovi (NSN - CN/Hangzhou)
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Compile one file in kernel
+
+On Wed, Aug 11, 2010 at 8:59 AM, Zhang, Wei-Jovi (NSN - CN/Hangzhou)
+<wei-jovi.zhang@nsn.com> wrote:
+> Hi,
+>        I always using command make, then it will compile all files. How
+> about just compile one c file(just make sure some modify can compile
+> successful), how should I do? Is there any command to allow me to doing
+> this?
+
+make <filename>.o
+
+>        Thanks.
+> .jovi
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
