@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752848Ab0HKOUP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:20:15 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:35254 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab0HKOUO (ORCPT
+	id S1753130Ab0HKOVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:21:17 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:43819 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752580Ab0HKOVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:20:14 -0400
+	Wed, 11 Aug 2010 10:21:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iN6Ev/jSl8HeGVH+WrivYKR8s3chvGDzACuP4HHdpV8GOts7JAcfQLwW2VujbtuCsf
-         x1yy82fUseO6RHuam1DjGr/w1PtdmDVyilfGNczeftqVYexbKiHV/E3JmW2KVKtYIK4Y
-         7Cgzt503N1UN5x3g+E0ILdc0BBVFAa28dfRi4=
-Date: Wed, 11 Aug 2010 19:49:53 +0530
-From: Rabin Vincent <rabin@rab.in>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Russell King <rmk@arm.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
-        arnd.bergmann@de.ibm.com
-Subject: Re: [PATCH] arm: fix versatile boot hang (seen with qemu)
-Message-ID: <20100811141953.GB5846@debian>
-References: <1281493191.2955.42.camel@localhost.localdomain>
- <20100811072014.GA14306@flint.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100811072014.GA14306@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=tZi4+kWucJksuayz4aYGUCXQa0z60Zc8u5kNHaozH4d+DpoVCiMT5cwHUxo1SLcTyj
+         RTrKcER5cIBjR7nWE8ItJbJ0H6tR2jqk+YNG1fLOqDoh92e87YzJPROkE1IUC7Vyi2YE
+         mqav3tkBEZ+JvL2N9e0q1bavxlSOZkNkY9i5A=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org
+Subject: [PATCH] fs: use kernel's hex_to_bin() method
+Date: Wed, 11 Aug 2010 17:21:03 +0300
+Message-Id: <1281536463-10680-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 08:20:14AM +0100, Russell King wrote:
-> On Tue, Aug 10, 2010 at 07:19:51PM -0700, john stultz wrote:
-> > Hey Russell,
-> > 
-> > 	I have been having troubles getting the 2.6.35 kernel to boot in my
-> > qemu-system-arm environment.
-> 
-> It's a qemu bug.
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org
+---
+ fs/binfmt_misc.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-The fix there, long since applied, is:
+diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
+index 9e60fd2..6c3855e 100644
+--- a/fs/binfmt_misc.c
++++ b/fs/binfmt_misc.c
+@@ -28,6 +28,7 @@
+ #include <linux/mount.h>
+ #include <linux/syscalls.h>
+ #include <linux/fs.h>
++#include <linux/kernel.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -244,10 +245,8 @@ static int unquote(char *from)
+ 	while ((c = *s++) != '\0') {
+ 		if (c == '\\' && *s == 'x') {
+ 			s++;
+-			c = toupper(*s++);
+-			*p = (c - (isdigit(c) ? '0' : 'A' - 10)) << 4;
+-			c = toupper(*s++);
+-			*p++ |= c - (isdigit(c) ? '0' : 'A' - 10);
++			*p = hex_to_bin(*s++) << 4;
++			*p++ |= hex_to_bin(*s++);
+ 			continue;
+ 		}
+ 		*p++ = c;
+-- 
+1.7.1.1
 
-http://www.mail-archive.com/qemu-devel@nongnu.org/msg30785.html
