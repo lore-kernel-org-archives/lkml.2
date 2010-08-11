@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759423Ab0HLACA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:02:00 -0400
-Received: from kroah.org ([198.145.64.141]:43784 "EHLO coco.kroah.org"
+	id S1759360Ab0HKX7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:38 -0400
+Received: from kroah.org ([198.145.64.141]:43649 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759368Ab0HKX7j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:05 2010
-Message-Id: <20100811235505.802157969@clark.site>
+	id S1759278Ab0HKX7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:14 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:04 2010
+Message-Id: <20100811235503.961236282@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:32 -0700
+Date: Wed, 11 Aug 2010 16:55:12 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Hugh Dickins <hughd@google.com>
-Subject: [111/111] mm: fix corruption of hibernation caused by reusing swap during image saving
+        Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Thomas Renninger <trenn@suse.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [091/111] x86: Fix out of order of gsi
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +29,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Eric W. Biederman <ebiederm@xmission.com>
 
-commit 966cca029f739716fbcc8068b8c6dfe381f86fc3 upstream.
+commit fad539956c9e69749a03f7817d22d1bab87657bf upstream.
 
-Since 2.6.31, swap_map[]'s refcounting was changed to show that a used
-swap entry is just for swap-cache, can be reused.  Then, while scanning
-free entry in swap_map[], a swap entry may be able to be reclaimed and
-reused.  It was caused by commit c9e444103b5e7a5 ("mm: reuse unused swap
-entry if necessary").
+Iranna D Ankad reported that IBM x3950 systems have boot
+problems after this commit:
 
-But this caused deta corruption at resume. The scenario is
+ |
+ | commit b9c61b70075c87a8612624736faf4a2de5b1ed30
+ |
+ |    x86/pci: update pirq_enable_irq() to setup io apic routing
+ |
 
-- Assume a clean-swap cache, but mapped.
+The problem is that with the patch, the machine freezes when
+console=ttyS0,... kernel serial parameter is passed.
 
-- at hibernation_snapshot[], clean-swap-cache is saved as
-  clean-swap-cache and swap_map[] is marked as SWAP_HAS_CACHE.
+It seem to freeze at DVD initialization and the whole problem
+seem to be DVD/pata related, but somehow exposed through the
+serial parameter.
 
-- then, save_image() is called.  And reuse SWAP_HAS_CACHE entry to save
-  image, and break the contents.
+Such apic problems can expose really weird behavior:
 
-After resume:
+  ACPI: IOAPIC (id[0x10] address[0xfecff000] gsi_base[0])
+  IOAPIC[0]: apic_id 16, version 0, address 0xfecff000, GSI 0-2
+  ACPI: IOAPIC (id[0x0f] address[0xfec00000] gsi_base[3])
+  IOAPIC[1]: apic_id 15, version 0, address 0xfec00000, GSI 3-38
+  ACPI: IOAPIC (id[0x0e] address[0xfec01000] gsi_base[39])
+  IOAPIC[2]: apic_id 14, version 0, address 0xfec01000, GSI 39-74
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 1 global_irq 4 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 5 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 3 global_irq 6 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 4 global_irq 7 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 6 global_irq 9 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 7 global_irq 10 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 8 global_irq 11 low edge)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 12 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 12 global_irq 15 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 13 global_irq 16 dfl dfl)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 14 global_irq 17 low edge)
+  ACPI: INT_SRC_OVR (bus 0 bus_irq 15 global_irq 18 dfl dfl)
 
-- the memory reclaim runs and finds clean-not-referenced-swap-cache and
-  discards it because it's marked as clean.  But here, the contents on
-  disk and swap-cache is inconsistent.
+It turns out that the system has three io apic controllers, but
+boot ioapic routing is in the second one, and that gsi_base is
+not 0 - it is using a bunch of INT_SRC_OVR...
 
-Hance memory is corrupted.
+So these recent changes:
 
-This patch avoids the bug by not reclaiming swap-entry during hibernation.
-This is a quick fix for backporting.
+ 1. one set routing for first io apic controller
+ 2. assume irq = gsi
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-by: Ondreg Zary <linux@rainbow-software.org>
-Tested-by: Ondreg Zary <linux@rainbow-software.org>
-Tested-by: Andrea Gelmini <andrea.gelmini@gmail.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+... will break that system.
+
+So try to remap those gsis, need to seperate boot_ioapic_idx
+detection out of enable_IO_APIC() and call them early.
+
+So introduce boot_ioapic_idx, and remap_ioapic_gsi()...
+
+ -v2: shift gsi with delta instead of gsi_base of boot_ioapic_idx
+
+ -v3: double check with find_isa_irq_apic(0, mp_INT) to get right
+      boot_ioapic_idx
+
+ -v4: nr_legacy_irqs
+
+ -v5: add print out for boot_ioapic_idx, and also make it could be
+      applied for current kernel and previous kernel
+
+ -v6: add bus_irq, in acpi_sci_ioapic_setup, so can get overwride
+      for sci right mapping...
+
+ -v7: looks like pnpacpi get irq instead of gsi, so need to revert
+      them back...
+
+ -v8: split into two patches
+
+ -v9: according to Eric, use fixed 16 for shifting instead of remap
+
+ -v10: still need to touch rsparser.c
+
+ -v11: just revert back to way Eric suggest...
+      anyway the ioapic in first ioapic is blocked by second...
+
+ -v12: two patches, this one will add more loop but check apic_id and irq > 16
+
+Reported-by: Iranna D Ankad <iranna.ankad@in.ibm.com>
+Bisected-by: Iranna D Ankad <iranna.ankad@in.ibm.com>
+Tested-by: Gary Hade <garyhade@us.ibm.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: len.brown@intel.com
+LKML-Reference: <4B8A321A.1000008@kernel.org>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- mm/swapfile.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/kernel/apic/io_apic.c |   28 ++++++++++------------------
+ 1 file changed, 10 insertions(+), 18 deletions(-)
 
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -330,8 +330,10 @@ checks:
- 	if (offset > si->highest_bit)
- 		scan_base = offset = si->lowest_bit;
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1484,7 +1484,7 @@ static struct {
  
--	/* reuse swap entry of cache-only swap if not busy. */
--	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-+	/* reuse swap entry of cache-only swap if not hibernation. */
-+	if (vm_swap_full()
-+		&& cache == SWAP_CACHE
-+		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
- 		int swap_was_freed;
- 		spin_unlock(&swap_lock);
- 		swap_was_freed = __try_to_reclaim_swap(si, offset);
+ static void __init setup_IO_APIC_irqs(void)
+ {
+-	int apic_id = 0, pin, idx, irq;
++	int apic_id, pin, idx, irq;
+ 	int notcon = 0;
+ 	struct irq_desc *desc;
+ 	struct irq_cfg *cfg;
+@@ -1492,14 +1492,7 @@ static void __init setup_IO_APIC_irqs(vo
+ 
+ 	apic_printk(APIC_VERBOSE, KERN_DEBUG "init IO_APIC IRQs\n");
+ 
+-#ifdef CONFIG_ACPI
+-	if (!acpi_disabled && acpi_ioapic) {
+-		apic_id = mp_find_ioapic(0);
+-		if (apic_id < 0)
+-			apic_id = 0;
+-	}
+-#endif
+-
++	for (apic_id = 0; apic_id < nr_ioapics; apic_id++)
+ 	for (pin = 0; pin < nr_ioapic_registers[apic_id]; pin++) {
+ 		idx = find_irq_entry(apic_id, pin, mp_INT);
+ 		if (idx == -1) {
+@@ -1521,6 +1514,9 @@ static void __init setup_IO_APIC_irqs(vo
+ 
+ 		irq = pin_2_irq(idx, apic_id, pin);
+ 
++		if ((apic_id > 0) && (irq > 16))
++			continue;
++
+ 		/*
+ 		 * Skip the timer IRQ if there's a quirk handler
+ 		 * installed and if it returns 1:
+@@ -4083,27 +4079,23 @@ int acpi_get_override_irq(int bus_irq, i
+ #ifdef CONFIG_SMP
+ void __init setup_ioapic_dest(void)
+ {
+-	int pin, ioapic = 0, irq, irq_entry;
++	int pin, ioapic, irq, irq_entry;
+ 	struct irq_desc *desc;
+ 	const struct cpumask *mask;
+ 
+ 	if (skip_ioapic_setup == 1)
+ 		return;
+ 
+-#ifdef CONFIG_ACPI
+-	if (!acpi_disabled && acpi_ioapic) {
+-		ioapic = mp_find_ioapic(0);
+-		if (ioapic < 0)
+-			ioapic = 0;
+-	}
+-#endif
+-
++	for (ioapic = 0; ioapic < nr_ioapics; ioapic++)
+ 	for (pin = 0; pin < nr_ioapic_registers[ioapic]; pin++) {
+ 		irq_entry = find_irq_entry(ioapic, pin, mp_INT);
+ 		if (irq_entry == -1)
+ 			continue;
+ 		irq = pin_2_irq(irq_entry, ioapic, pin);
+ 
++		if ((ioapic > 0) && (irq > 16))
++			continue;
++
+ 		desc = irq_to_desc(irq);
+ 
+ 		/*
 
 
