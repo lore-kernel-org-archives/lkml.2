@@ -1,57 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab0HKICz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 04:02:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33296 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757830Ab0HKICo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 04:02:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=CEs9lHRN6+Fr69dOVGevzsGecQBc5AmDCGJPrMaLFdjnMjMtc0qDpMjQHbmSqw17vu
-         FodbisFX4qlXE1W2LhFpnFJ/y6nMmgp/uQUo5A/dcmHjSF7i1D2wHx6gpFLoedz9hqTm
-         zaWTBFbzDi567Xf1UabQ+JAStDrj0Tm36InG8=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kulikov Vasiliy <segooon@gmail.com>,
-        Endre Kollar <taxy443@gmail.com>, Tejun Heo <tj@kernel.org>,
-        "Brian G. Merrell" <bgmerrell@novell.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: usbip: fix memory leak
-Date: Wed, 11 Aug 2010 12:02:10 +0400
-Message-Id: <1281513732-5441-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1758092Ab0HKIDe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 04:03:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36156 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753244Ab0HKIDc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 04:03:32 -0400
+Message-ID: <4C6258FC.4060706@kernel.org>
+Date: Wed, 11 Aug 2010 10:02:04 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] percpu: fix a mismatch between code and comment
+References: <1281493159-2574-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1281493159-2574-1-git-send-email-namhyung@gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 08:03:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If stub_probe() failed then do not increase interf_count. In original
-code sdev was leaked as its interf_count never reaches 0.
+On 08/11/2010 04:19 AM, Namhyung Kim wrote:
+> When pcpu_build_alloc_info() searches best_upa value, it ignores current value
+> if the number of waste units exceeds 1/3 of the number of total cpus. But the
+> comment on the code says that it will ignore if wastage is over 25%.
+> Modify the comment.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/staging/usbip/stub_dev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Applied to percpu#for-linus.  Thanks.
 
-diff --git a/drivers/staging/usbip/stub_dev.c b/drivers/staging/usbip/stub_dev.c
-index b6b753a..b186b5f 100644
---- a/drivers/staging/usbip/stub_dev.c
-+++ b/drivers/staging/usbip/stub_dev.c
-@@ -427,11 +427,11 @@ static int stub_probe(struct usb_interface *interface,
- 
- 
- 	if (busid_priv->status == STUB_BUSID_ALLOC) {
--		busid_priv->interf_count++;
- 		sdev = busid_priv->sdev;
- 		if (!sdev)
- 			return -ENODEV;
- 
-+		busid_priv->interf_count++;
- 		dev_info(&interface->dev,
- 		 "USB/IP Stub: register a new interface "
- 		 "(bus %u dev %u ifn %u)\n", udev->bus->busnum, udev->devnum,
 -- 
-1.7.0.4
-
+tejun
