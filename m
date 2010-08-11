@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758695Ab0HKXvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:51:31 -0400
-Received: from kroah.org ([198.145.64.141]:57525 "EHLO coco.kroah.org"
+	id S1758640Ab0HKXvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:51:47 -0400
+Received: from kroah.org ([198.145.64.141]:57509 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758331Ab0HKXt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:49:56 -0400
+	id S1751477Ab0HKXtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:49:53 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:25 2010
-Message-Id: <20100811234625.355806331@clark.site>
+Message-Id: <20100811234625.083800839@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:45:44 -0700
+Date: Wed, 11 Aug 2010 16:45:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [05/11] eCryptfs: Handle ioctl calls with unlocked and compat functions
+        Miklos Szeredi <mszeredi@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [02/11] splice: fix misuse of SPLICE_F_NONBLOCK
 In-Reply-To: <20100811234809.GA676@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +25,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: Miklos Szeredi <miklos@szeredi.hu>
 
-commit c43f7b8fb03be8bcc579bfc4e6ab70eac887ab55 upstream.
+commit 6965031d331a642e31278fa1b5bd47f372ffdd5d upstream.
 
-Lower filesystems that only implemented unlocked_ioctl weren't being
-passed ioctl calls because eCryptfs only checked for
-lower_file->f_op->ioctl and returned -ENOTTY if it was NULL.
+SPLICE_F_NONBLOCK is clearly documented to only affect blocking on the
+pipe.  In __generic_file_splice_read(), however, it causes an EAGAIN
+if the page is currently being read.
 
-eCryptfs shouldn't implement ioctl(), since it doesn't require the BKL.
-This patch introduces ecryptfs_unlocked_ioctl() and
-ecryptfs_compat_ioctl(), which passes the calls on to the lower file
-system.
+This makes it impossible to write an application that only wants
+failure if the pipe is full.  For example if the same process is
+handling both ends of a pipe and isn't otherwise able to determine
+whether a splice to the pipe will fill it or not.
 
-https://bugs.launchpad.net/ecryptfs/+bug/469664
+We could make the read non-blocking on O_NONBLOCK or some other splice
+flag, but for now this is the simplest fix.
 
-Reported-by: James Dupin <james.dupin@gmail.com>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- fs/ecryptfs/file.c |   56 +++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 35 insertions(+), 21 deletions(-)
-
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -303,12 +303,40 @@ static int ecryptfs_fasync(int fd, struc
- 	return rc;
- }
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -399,17 +399,7 @@ __generic_file_splice_read(struct file *in, loff_t *ppos,
+ 		 * If the page isn't uptodate, we may need to start io on it
+ 		 */
+ 		if (!PageUptodate(page)) {
+-			/*
+-			 * If in nonblock mode then dont block on waiting
+-			 * for an in-flight io page
+-			 */
+-			if (flags & SPLICE_F_NONBLOCK) {
+-				if (!trylock_page(page)) {
+-					error = -EAGAIN;
+-					break;
+-				}
+-			} else
+-				lock_page(page);
++			lock_page(page);
  
--static int ecryptfs_ioctl(struct inode *inode, struct file *file,
--			  unsigned int cmd, unsigned long arg);
-+static long
-+ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOTTY;
-+
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->unlocked_ioctl)
-+		rc = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long
-+ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOIOCTLCMD;
-+
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->compat_ioctl)
-+		rc = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+#endif
- 
- const struct file_operations ecryptfs_dir_fops = {
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -325,7 +353,10 @@ const struct file_operations ecryptfs_ma
- 	.write = do_sync_write,
- 	.aio_write = generic_file_aio_write,
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -334,20 +365,3 @@ const struct file_operations ecryptfs_ma
- 	.fasync = ecryptfs_fasync,
- 	.splice_read = generic_file_splice_read,
- };
--
--static int
--ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
--	       unsigned long arg)
--{
--	int rc = 0;
--	struct file *lower_file = NULL;
--
--	if (ecryptfs_file_to_private(file))
--		lower_file = ecryptfs_file_to_lower(file);
--	if (lower_file && lower_file->f_op && lower_file->f_op->ioctl)
--		rc = lower_file->f_op->ioctl(ecryptfs_inode_to_lower(inode),
--					     lower_file, cmd, arg);
--	else
--		rc = -ENOTTY;
--	return rc;
--}
+ 			/*
+ 			 * Page was truncated, or invalidated by the
 
 
