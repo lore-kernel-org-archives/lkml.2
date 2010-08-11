@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342Ab0HKRvd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 13:51:33 -0400
-Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:40509 "EHLO
-	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753980Ab0HKRvc (ORCPT
+	id S1758375Ab0HKRyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 13:54:47 -0400
+Received: from vs244178.vserver.de ([62.75.244.178]:53234 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab0HKRyq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 13:51:32 -0400
-Subject: [PATCH] staging/wlan-ng: Explicitly set some fields in cfg80211
- interface
-From: Karl Relton <karllinuxtest.relton@ntlworld.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Aug 2010 18:16:08 +0100
-Message-ID: <1281546968.2010.5.camel@dellpc>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=3ENABmdyEd/Fm7fR7+mZIuMDn6+IErAeEhlfWBImZFk= c=1 sm=0 a=CajpU43aiusA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=WTt5kjEsJSIZ9A_Y8bgA:9 a=JzZ8TulfSlWQzrKGyY86Sh8ETewA:4 a=QEXdDO2ut3YA:10 a=_dQi-Dcv4p4A:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 11 Aug 2010 13:54:46 -0400
+Date: Wed, 11 Aug 2010 19:54:44 +0200
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <876929344.20100811195444@eikelenboom.it>
+To: Joerg Roedel <joro@8bytes.org>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [2.6.35] AMD-Vi: Enabling IOMMU at 0000:00:00.2 cap 0x40  BUG: unable to handle kernel NULL pointer dereference at 0000000000000198
+In-Reply-To: <20100810222419.GW23755@8bytes.org>
+References: <1154489525.20100810164850@eikelenboom.it> <20100810162606.GQ23755@8bytes.org> <419601760.20100810185745@eikelenboom.it> <20100810180122.GR23755@8bytes.org> <1609756756.20100810200514@eikelenboom.it> <20100810202839.GS23755@8bytes.org> <618241473.20100810223635@eikelenboom.it> <20100810204721.GT23755@8bytes.org> <1498209076.20100810233659@eikelenboom.it> <20100810222419.GW23755@8bytes.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg
+Hello Joerg,
 
-Now that the wlan-ng driver has been switched to cfg80211 in mainline,
-can this small patch be forwarded also, to catch up with some new fields
-that have gone into the cfg80211 api also in this cycle.
+Had to apply the patch by hand, and found 2 typo's:
 
-Thanks
-Karl
-
-
-
+arch/x86/kernel/amd_iommu.c: In function âdo_attachâ:
+arch/x86/kernel/amd_iommu.c:1456: error: implicit declaration of function âset_dte_enryâ
+arch/x86/kernel/amd_iommu.c: In function âdo_detachâ:
+arch/x86/kernel/amd_iommu.c:1486: error: implicit declaration of function âclear_dte_enryâ
+make[2]: *** [arch/x86/kernel/amd_iommu.o] Error 1
 
 
-Explicitly set some fields in cfg80211 interface
 
-Signed-off-by: Karl Relton <karllinuxtest.relton@ntlworld.com>
+Should be "entry" of course.
 
----
+--
 
-The cfg80211 api has introduced a few new fields. Rather than assume
-what cfg80211 api does by default, set these explicitly.
+Sander
+Wednesday, August 11, 2010, 12:24:19 AM, you wrote:
+
+> On Tue, Aug 10, 2010 at 11:36:59PM +0200, Sander Eikelenboom wrote:
+>> It boots now, dmesg attached.
+
+> Ok, here is a quick and dirty patch wich should make your system boot
+> again. It introduces other issues which will show up when you try to
+> assign the devices to a virtual machine. But at least the devices should
+> work again on bare-metal.
+
+>         Joerg
 
 
---- a/drivers/staging/wlan-ng/cfg80211.c	2010-08-11 18:04:27.000000000
-+0100
-+++ b/drivers/staging/wlan-ng/cfg80211.c	2010-07-07 10:17:27.000000000
-+0100
-@@ -214,6 +214,7 @@ int prism2_get_key(struct wiphy *wiphy, 
- 	} else return -ENOENT;
- 	params.key_len = len;
- 	params.key = wlandev->wep_keys[key_index];
-+	params.seq_len = 0;
- 
- 	callback(cookie, &params);
- 	return 0;
-@@ -709,6 +710,8 @@ struct wiphy *wlan_create_wiphy(struct d
- 	priv->band.n_channels = ARRAY_SIZE(prism2_channels);
- 	priv->band.bitrates = priv->rates;
- 	priv->band.n_bitrates = ARRAY_SIZE(prism2_rates);
-+	priv->band.band = IEEE80211_BAND_2GHZ;
-+	priv->band.ht_cap.ht_supported = false;
- 	wiphy->bands[IEEE80211_BAND_2GHZ] = &priv->band;
- 
- 	set_wiphy_dev(wiphy, dev);
 
+
+-- 
+Best regards,
+ Sander                            mailto:linux@eikelenboom.it
 
