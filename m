@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759017Ab0HLAal (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:30:41 -0400
-Received: from kroah.org ([198.145.64.141]:43660 "EHLO coco.kroah.org"
+	id S1759261Ab0HKX7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:12 -0400
+Received: from kroah.org ([198.145.64.141]:43518 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759281Ab0HKX7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:15 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:04 2010
-Message-Id: <20100811235504.038490176@clark.site>
+	id S1759164Ab0HKX6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:52 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:02 2010
+Message-Id: <20100811235502.438275750@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:13 -0700
+Date: Wed, 11 Aug 2010 16:54:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Wu Fengguang <fengguang.wu@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Thomas Renninger <trenn@suse.de>
-Subject: [092/111] HWPOISON: remove the anonymous entry
+        Roel Kluin <roel.kluin@gmail.com>,
+        Chris Mason <chris.mason@oracle.com>, Jeff Mahoney <jeffm@suse.com>
+Subject: [075/111] Btrfs: make error return negative in btrfs_sync_file()
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wu Fengguang <fengguang.wu@intel.com>
+From: Roel Kluin <roel.kluin@gmail.com>
 
-commit 9b9a29ecd75e310f75a9243e1c3538ad34598fcb upstream.
+commit 014e4ac4f7d9c981750491fa40ea35efadc9ed49 upstream.
 
-(PG_swapbacked && !PG_lru) pages should not happen.
-Better to treat them as unknown pages.
+It appears the error return should be negative
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory-failure.c |    1 -
- 1 file changed, 1 deletion(-)
+ fs/btrfs/file.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -589,7 +589,6 @@ static struct page_state {
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -1133,7 +1133,7 @@ int btrfs_sync_file(struct file *file, s
+ 	}
+ 	mutex_lock(&dentry->d_inode->i_mutex);
+ out:
+-	return ret > 0 ? EIO : ret;
++	return ret > 0 ? -EIO : ret;
+ }
  
- 	{ lru|dirty,	lru|dirty,	"LRU",		me_pagecache_dirty },
- 	{ lru|dirty,	lru,		"clean LRU",	me_pagecache_clean },
--	{ swapbacked,	swapbacked,	"anonymous",	me_pagecache_clean },
- 
- 	/*
- 	 * Catchall entry: must be at end.
+ static const struct vm_operations_struct btrfs_file_vm_ops = {
 
 
