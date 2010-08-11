@@ -1,158 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab0HKVIn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 17:08:43 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44642 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167Ab0HKVIl (ORCPT
+	id S1754877Ab0HKVK6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 17:10:58 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:54862 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752167Ab0HKVK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 17:08:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=IMh/XrgkWHZ2CMwtJqHcA0/SZiDTUrcDn3S6YcDz+W9G6dd5nj/BpW/PBOZKxaBGQT
-         tzGPgpYpxwL2Aq2OHgNNuRX1E56dOUfVxspl5dGYQc6xldpGA6lyA45Naq4ttHRGkqZF
-         1qBdRGax403Xgn6jzYEIE8QrYQVjyalPSUkhU=
+	Wed, 11 Aug 2010 17:10:57 -0400
+Message-ID: <4C6311E0.5070909@vmware.com>
+Date: Wed, 11 Aug 2010 14:10:56 -0700
+From: Michael Snyder <msnyder@vmware.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-Date: Wed, 11 Aug 2010 17:08:37 -0400
-Message-ID: <AANLkTin_jX=KcOLbsCxC3Hwqcvi-heWg+Rdk8JGZgquL@mail.gmail.com>
-Subject: [PATCH 4/5] scsi: megaraid_sas - Add three times Online controller 
-	reset in driver's reset routine
-From: bo yang <boyang1288@gmail.com>
-To: Bo.yang@lsi.com, James.Bottomley@HansenPartnership.com,
-        James.Bottomley@suse.de
-Cc: linux-scsi@vger.kernel.org, akpm@osdl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hui Zhu <teawater@gmail.com>
+CC: "gdb@sourceware.org" <gdb@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Kernel GDB tracepoint module demo release
+References: <AANLkTi=4_QnAyY+zcuXwVpPkESjpF7yfMb1RunMQaK7f@mail.gmail.com>
+In-Reply-To: <AANLkTi=4_QnAyY+zcuXwVpPkESjpF7yfMb1RunMQaK7f@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If fw didn't raise the interrupt with the fw state change to driver
-and fw goes to failure state, driver
-Will check the FW state in driver's timeout routine and issue the
-reset if need.  Driver will do the OCR upto three
-Times until kill adapter.  Also driver will issue OCR before driver
-kill adapter even if fw in operational state.
+Actually, this is kind of interesting.
+Can your system set a tracepoint at any arbitrary location in the
+kernel?  If so, I think that makes it more powerful than existing
+systems such as LTTng, which can only trace statically pre-determined
+locations.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+Hui Zhu wrote:
+> Hi,
+> 
+> GDB Tracepoint (http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html)
+> is new feature that make GDB can debug real-time program.
+> I think this feature is very fit for debug Linux Kernel.  So I make a
+> lkm to make kernel support it. You can get it in
+> https://code.google.com/p/kgtp/
+> 
+> I just release the demo for it.  It just support collect $reg in
+> x86_32.  I will add the other tracepoint support in the future.
+> 
+> For example:
+> tar vxjf gtp_20100811.tar.bz2
+> cd gtp
+> make
+> insmod gtp.ko
+> gdb ./vmlinux
+> GNU gdb (GDB) 7.2.50.20100720-cvs
+> Copyright (C) 2010 Free Software Foundation, Inc.
+> License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+> This is free software: you are free to change and redistribute it.
+> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+> and "show warranty" for details.
+> This GDB was configured as "i686-pc-linux-gnu".
+> For bug reporting instructions, please see:
+> <http://www.gnu.org/software/gdb/bugs/>...
+> Reading symbols from /vmlinux...done.
+> (gdb) target remote /proc/gtp
+> Remote debugging using /proc/gtp
+> 0x00000000 in ?? ()
+> (gdb) trace vfs_readdir
+> Tracepoint 1 at 0xc01a1ac0: file
+> /home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
+> (gdb) actions
+> Enter actions for tracepoint 1, one per line.
+> End with a line saying just "end".
+>> collect $reg
+>> end
+> (gdb) tstart
+> (gdb) shell ls
+> (gdb) tstop
+> (gdb) tfind
+> Found trace frame 0, tracepoint 1
+> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900 <filldir64>,
+>     buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+> 23	/home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or directory.
+> 	in /home/teawater/kernel/linux-2.6/fs/readdir.c
+> (gdb) info reg
+> eax            0xc5528d00	-984445696
+> ecx            0xc0d09f90	-1060069488
+> edx            0xc01a1900	-1072031488
+> ebx            0xfffffff7	-9
+> esp            0xc0d09f8c	0xc0d09f8c
+> ebp            0x0	0x0
+> esi            0x8061480	134616192
+> edi            0xc5528d00	-984445696
+> eip            0xc01a1ac1	0xc01a1ac1 <vfs_readdir+1>
+> eflags         0x286	[ PF SF IF ]
+> cs             0x60	96
+> ss             0x8061480	134616192
+> ds             0x7b	123
+> es             0x7b	123
+> fs             0x0	0
+> gs             0x0	0
+> (gdb) tfind
+> Found trace frame 1, tracepoint 1
+> 0xc01a1ac1	23	in /home/teawater/kernel/linux-2.6/fs/readdir.c
+> (gdb) info reg
+> eax            0xc5528d00	-984445696
+> ecx            0xc0d09f90	-1060069488
+> edx            0xc01a1900	-1072031488
+> ebx            0xfffffff7	-9
+> esp            0xc0d09f8c	0xc0d09f8c
+> ebp            0x0	0x0
+> esi            0x8061480	134616192
+> edi            0xc5528d00	-984445696
+> eip            0xc01a1ac1	0xc01a1ac1 <vfs_readdir+1>
+> eflags         0x286	[ PF SF IF ]
+> cs             0x60	96
+> ss             0x8061480	134616192
+> ds             0x7b	123
+> es             0x7b	123
+> fs             0x0	0
+> gs             0x0	0
+> (gdb) tfind
+> Found trace frame 2, tracepoint 1
+> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528300, filler=0xc01a19e0 <filldir>,
+>     buf=0xc6c2df90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+> 23	in /home/teawater/kernel/linux-2.6/fs/readdir.c
+> (gdb)
+> Found trace frame 3, tracepoint 1
+> 0xc01a1ac1	23	in /home/teawater/kernel/linux-2.6/fs/readdir.c
+> (gdb)
+> Target failed to find requested trace frame.
+> (gdb) quit
+> A debugging session is active.
+> 
+> 	Inferior 1 [Remote target] will be killed.
+> 
+> Quit anyway? (y or n) y
+> 
+> Thanks,
+> Hui
 
----
- drivers/scsi/megaraid/megaraid_sas.c |   70 ++++++++++++++++++++++++++++++++++-
- 1 file changed, 69 insertions(+), 1 deletion(-)
-
-diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
-new/drivers/scsi/megaraid/megaraid_sas.c
---- old/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:37:53.000000000 -0400
-+++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-08-10 04:49:38.000000000 -0400
-@@ -730,6 +730,10 @@ static int
- megasas_check_reset_gen2(struct megasas_instance *instance,
- 		struct megasas_register_set __iomem *regs)
- {
-+	if (instance->adprecovery != MEGASAS_HBA_OPERATIONAL) {
-+		return 1;
-+	}
-+
- 	return 0;
- }
-
-@@ -942,6 +946,7 @@ megasas_make_sgl_skinny(struct megasas_i
- 			mfi_sgl->sge_skinny[i].length = sg_dma_len(os_sgl);
- 			mfi_sgl->sge_skinny[i].phys_addr =
- 						sg_dma_address(os_sgl);
-+			mfi_sgl->sge_skinny[i].flag = 0;
- 		}
- 	}
- 	return sge_count;
-@@ -1569,6 +1574,28 @@ static void megasas_complete_cmd_dpc(uns
- 	}
- }
-
-+static void
-+megasas_internal_reset_defer_cmds(struct megasas_instance *instance);
-+
-+static void
-+process_fw_state_change_wq(struct work_struct *work);
-+
-+void megasas_do_ocr(struct megasas_instance *instance)
-+{
-+	if ((instance->pdev->device == PCI_DEVICE_ID_LSI_SAS1064R) ||
-+	(instance->pdev->device == PCI_DEVICE_ID_DELL_PERC5) ||
-+	(instance->pdev->device == PCI_DEVICE_ID_LSI_VERDE_ZCR)) {
-+		*instance->consumer     = MEGASAS_ADPRESET_INPROG_SIGN;
-+	}
-+	instance->instancet->disable_intr(instance->reg_set);
-+	instance->adprecovery   = MEGASAS_ADPRESET_SM_INFAULT;
-+	instance->issuepend_done = 0;
-+
-+	atomic_set(&instance->fw_outstanding, 0);
-+	megasas_internal_reset_defer_cmds(instance);
-+	process_fw_state_change_wq(&instance->work_init);
-+}
-+
- /**
-  * megasas_wait_for_outstanding -	Wait for all outstanding cmds
-  * @instance:				Adapter soft state
-@@ -1586,6 +1613,8 @@ static int megasas_wait_for_outstanding(
- 	unsigned long flags;
- 	struct list_head clist_local;
- 	struct megasas_cmd *reset_cmd;
-+	u32 fw_state;
-+	u8 kill_adapter_flag;
-
- 	spin_lock_irqsave(&instance->hba_lock, flags);
- 	adprecovery = instance->adprecovery;
-@@ -1671,7 +1700,45 @@ static int megasas_wait_for_outstanding(
- 		msleep(1000);
- 	}
-
--	if (atomic_read(&instance->fw_outstanding)) {
-+	i = 0;
-+	kill_adapter_flag = 0;
-+	do {
-+		fw_state = instance->instancet->read_fw_status_reg(
-+					instance->reg_set) & MFI_STATE_MASK;
-+		if ((fw_state == MFI_STATE_FAULT) &&
-+			(instance->disableOnlineCtrlReset == 0)) {
-+			if (i == 3) {
-+				kill_adapter_flag = 2;
-+				break;
-+			}
-+			megasas_do_ocr(instance);
-+			kill_adapter_flag = 1;
-+
-+			/* wait for 1 secs to let FW finish the pending cmds */
-+			msleep(1000);
-+		}
-+		i++;
-+	} while (i <= 3);
-+
-+	if (atomic_read(&instance->fw_outstanding) &&
-+					!kill_adapter_flag) {
-+		if (instance->disableOnlineCtrlReset == 0) {
-+
-+			megasas_do_ocr(instance);
-+
-+			/* wait for 5 secs to let FW finish the pending cmds */
-+			for (i = 0; i < wait_time; i++) {
-+				int outstanding =
-+					atomic_read(&instance->fw_outstanding);
-+				if (!outstanding)
-+					return SUCCESS;
-+				msleep(1000);
-+			}
-+		}
-+	}
-+
-+	if (atomic_read(&instance->fw_outstanding) ||
-+					(kill_adapter_flag == 2)) {
- 		printk(KERN_NOTICE "megaraid_sas: pending cmds after reset\n");
- 		/*
- 		* Send signal to FW to stop processing any pending cmds.
-@@ -2681,6 +2748,7 @@ static int megasas_create_frame_pool(str
- 			return -ENOMEM;
- 		}
-
-+		memset(cmd->frame, 0, total_sz);
- 		cmd->frame->io.context = cmd->index;
- 		cmd->frame->io.pad_0 = 0;
- 	}
