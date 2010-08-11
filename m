@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932935Ab0HKKMG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:12:06 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41298 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756149Ab0HKKMD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932947Ab0HKKMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:12:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42378 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932935Ab0HKKMD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 11 Aug 2010 06:12:03 -0400
-Date: Wed, 11 Aug 2010 12:11:59 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Pat Gefre <pfg@sgi.com>, linux-ia64@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/5] drivers/serial: Return -ENOMEM on memory allocation
- failure
-Message-ID: <Pine.LNX.4.64.1008111211440.8669@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4C624AE1.30504@st.com>
+References: <4C5F9B25.8080401@st.com>
+	<AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>
+	<4C624AE1.30504@st.com>
+Date: Wed, 11 Aug 2010 11:11:57 +0100
+Message-ID: <AANLkTi=SnPm7H75C7ycUH-GzENEDKWtncvLqeEVoEMQm@mail.gmail.com>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+From: Valeo de Vries <valeo@valeo.co.cc>
+To: viresh kumar <viresh.kumar@st.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On 11 August 2010 08:01, viresh kumar <viresh.kumar@st.com> wrote:
+> On 8/11/2010 3:34 AM, Felipe Contreras wrote:
+>> On Mon, Aug 9, 2010 at 9:07 AM, viresh kumar <viresh.kumar@st.com> wrote:
+>>> > Mail server in ST has recently changed and now we have Microsoft
+>>> > exchange server. We are using thunderbird as mail client.
+>>> > What we observed with this server is that patch are broken now while
+>>> > sending as well as receiving. Tabs are replaced by spaces and may
+>>> > be some other too which we haven't observed.
+>>> >
+>>> > Has anybody found a solution to this kind of issues? Are there any
+>>> > workarounds possible?
+>> Same in Nokia. I wrote a script to fix exchange's crap, but I also
+>> noticed some quoted-printable mails didn't get converted, so the
+>> easiest would be to tell git to always send quoted-printable.
+>>
+>
+> Hi Guys
+>
+> The situation has changed now.
+> We are informed that SP2 is already in place in ST and mail client is not
+> doing any tampering.
+>
+> When i send a mail using git send-email then it receives fine on
+> outlook but on thunderbird, tabs are converted to spaces.
+>
+> This doesn't happen with every patch on thunderbird, but only a few.
+> And observation is that it happens only with big patches.
+> (more than 500 lines)
+>
+> Any idea, how to solve issue now on thunderbird??
 
-In this code, 0 is returned on memory allocation failure, even though other
-failures return -ENOMEM or other similar values.
+You might be in luck:
 
-A simplified version of the semantic match that finds this problem is as
-follows: (http://coccinelle.lip6.fr/)
+  * Choose View – Toolbars to ensure that the formatting toolbar is visible,
+  then at the left of the formatting toolbar change Body Text to Preformat.
+  (lifted straight from Google)
 
-// <smpl>
-@@
-expression ret;
-expression x,e1,e2,e3;
-@@
-
-ret = 0
-... when != ret = e1
-*x = \(kmalloc\|kcalloc\|kzalloc\)(...)
-... when != ret = e2
-if (x == NULL) { ... when != ret = e3
-  return ret;
-}
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-I believe this code also leaks earlier instances of port, which are only
-referenced by card_ptr, which is freed in the error handling code at the
-end of the function.  A lot of operations are done on port on each
-iteration, however, so I'm not sure whether it is good enough to just free
-them.  Perhaps there is some way to call ioc3uart_remove?
-
- drivers/serial/ioc3_serial.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/serial/ioc3_serial.c b/drivers/serial/ioc3_serial.c
-index 93de907..800c546 100644
---- a/drivers/serial/ioc3_serial.c
-+++ b/drivers/serial/ioc3_serial.c
-@@ -2044,6 +2044,7 @@ ioc3uart_probe(struct ioc3_submodule *is, struct ioc3_driver_data *idd)
- 		if (!port) {
- 			printk(KERN_WARNING
- 			       "IOC3 serial memory not available for port\n");
-+			ret = -ENOMEM;
- 			goto out4;
- 		}
- 		spin_lock_init(&port->ip_lock);
+HTH,
+Valeo
