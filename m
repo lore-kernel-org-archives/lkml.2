@@ -1,90 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab0HKOcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:32:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43520 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab0HKOcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:32:51 -0400
-Date: Wed, 11 Aug 2010 10:32:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
- perfctrs
-Message-ID: <20100811143219.GF4879@redhat.com>
-References: <20100804184806.GL26154@erda.amd.com>
- <20100804192634.GG5130@lenovo>
- <20100806065203.GR26154@erda.amd.com>
- <20100806142131.GA1874@redhat.com>
- <20100809194829.GB26154@erda.amd.com>
- <20100810204856.GA16571@redhat.com>
- <20100811024451.GA26835@nowhere>
- <20100811111046.GQ26154@erda.amd.com>
- <20100811124443.GC4879@redhat.com>
- <20100811140307.GS26154@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100811140307.GS26154@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1753212Ab0HKOek (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:34:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:47845 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752900Ab0HKOej (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 10:34:39 -0400
+X-Authority-Analysis: v=1.1 cv=puNM1lMKksHKE6hmMqMstpyRmqXf+M/teYaxpNq+S3U= c=1 sm=0 a=ZI5MULQygNwA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=JfrnYn6hAAAA:8 a=Vy4FboG_WeEbehAfOJQA:9 a=PjkqfWS4DmHlp_U8SkatsCugp4sA:4 a=PUjeQqilurYA:10 a=3Rfx1nUSh_UA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <1280903273.1923.682.camel@laptop>
+References: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	 <20100714184642.GA9728@elte.hu>
+	 <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
+	 <20100714193652.GA13630@nowhere>
+	 <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>
+	 <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal>
+	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>
+	 <1280855904.1923.675.camel@laptop>
+	 <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+	 <1280903273.1923.682.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 11 Aug 2010 10:34:33 -0400
+Message-ID: <1281537273.3058.14.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 04:03:07PM +0200, Robert Richter wrote:
-> On 11.08.10 08:44:43, Don Zickus wrote:
-> > On Wed, Aug 11, 2010 at 01:10:46PM +0200, Robert Richter wrote:
-> > > > > +		 *
-> > > > > +		 * NOTE: We have no way of knowing if a second NMI was
-> > > > > +		 * actually triggered, so we may accidentally skip a valid
-> > > > > +		 * unknown nmi later.
-> > > > > +		 */
-> > > > > +		__get_cpu_var(perfctr_skip) +=1;
-> > > 
-> > > ... but this will not work. You have to mark the *absolute* nmi number
-> > > here. If you only raise a flag, the next unknown nmi will be dropped,
-> > > every. Because, in between there could have been other nmis that
-> > > stopped the chain and thus the 'unknown' path is not executed. The
-> > > trick in my patch is that you *know*, which nmi you want to skip.
+Egad! Go on vacation and the world falls apart.
+
+On Wed, 2010-08-04 at 08:27 +0200, Peter Zijlstra wrote:
+> On Tue, 2010-08-03 at 11:56 -0700, Linus Torvalds wrote:
+> > On Tue, Aug 3, 2010 at 10:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > >
+> > > FWIW I really utterly detest the whole concept of sub-buffers.
 > > 
-> > I guess I am confused.  The way I read your patch was that you assumed the
-> > next NMI would be the one you skip and if there was another NMI in between
-> > the handled one and the one to skip, you would not skip it (nmi count !=
-> > prev + 1) and it would produce an accidental unknown nmi.
+> > I'm not quite sure why. Is it something fundamental, or just an
+> > implementation issue?
 > 
-> That's how it works.
+> The sub-buffer thing that both ftrace and lttng have is creating a large
+> buffer from a lot of small buffers, I simply don't see the point of
+> doing that. It adds complexity and limitations for very little gain.
+
+So, I want to allocate a 10Meg buffer. I need to make sure the kernel
+has 10megs of memory available. If the memory is quite fragmented, then
+too bad, I lose out.
+
+Oh wait, I could also use vmalloc. But then again, now I'm blasting
+valuable TLB entries for a tracing utility, thus making the tracer have
+a even bigger impact on the entire system.
+
+BAH!
+
+I originally wanted to go with the continuous buffer, but I was
+convinced after trying to implement it, that it was a bad choice.
+Specifically, because of needing to 1) get large amounts of memory that
+is continuous, or 2) eating up TLB entries and causing the system to
+perform poorer.
+
+I chose page size "sub-buffers" to solve the above. It also made
+implementing splice trivial. OK, I admit, I never thought about mmapping
+the buffers, just because I figured splice was faster. But I do have
+patches that allow a user to mmap the entire ring buffer, but only in a
+"producer/consumer" mode.
+
+Note, I use page size sub-buffers, but the design could work with any
+size sub-buffers. I just never implemented that (even though, when I
+wrote the code it was secretly on my todo list).
+
+
 > 
-> > I tried to change that with my patch by setting the skip flag which would
-> > be drained on the next unknown nmi, independent of where it is in the NMI
-> > backlog of NMIs.
+> Their benefit is known synchronization points into the stream, you can
+> parse each sub-buffer independently, but you can always break up a
+> continuous stream into smaller parts or use a transport that includes
+> index points or whatever.
 > 
-> "setting the skip flag which would be drained on the next unknown nmi"
-> 
-> That's what is wrong, it drops every unknown nmi, no matter when it is
+> Their down side is that you can never have individual events larger than
+> the sub-buffer, you need to be aware of the sub-buffer when reserving
+> space etc..
 
-Well as Frederic pointed out the skip variable will never go past one, so
-it will only drop at most one unknown nmi.
+The answer to that is to make a macro to do the assignment of the event,
+and add a new API.
 
-> detected. In between there could be 1000's of valid other nmis
-> handled. You even could have been returned from nmi mode. But still,
-> the next unknown nmi will be dropped. Your patch could accumulate also
+	event = ring_buffer_reserve_unlimited();
 
-That was the intent.  Can we guarantee that in the rare cases where the
-perfctr is generating two nmis, that they will be back-to-back?
+	ring_buffer_assign(event, data1);
+	ring_buffer_assign(event, data2);
 
-I think Huang tried to cap my approach even further my creating a time
-window in which the two nmis had to happen.  That gives us the flexibility
-to handle nmis that are not back to back, but yet deal with the case where
-two perfctrs fired but we are unsure if it generated a second nmi and we
-falsely set the skip flag.
+	ring_buffer_commit(event);
 
-Cheers,
-Don
+The ring_buffer_reserve_unlimited() could reserve a bunch of space
+beyond one ring buffer. It could reserve data in fragments. Then the
+ring_buffer_assgin() could either copy directly to the event (if the
+event exists on one sub buffer) or do a copy the space was fragmented.
+
+Of course, userspace would need to know how to read it. And it can get
+complex due to interrupts coming in and also reserving between
+fragments, or what happens if a partial fragment is overwritten. But all
+these are not impossible to solve.
+
+-- Steve
+
+
 
