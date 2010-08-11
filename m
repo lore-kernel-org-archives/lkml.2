@@ -1,194 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab0HKH33 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:29:29 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:27824 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752961Ab0HKH32 (ORCPT
+	id S1755391Ab0HKHaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:30:15 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:3186 "EHLO
+	mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755054Ab0HKHaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:29:28 -0400
-Message-ID: <002601cb3926$edaf24d0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Greg KH" <gregkh@suse.de>
-Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>
-References: <4C612AA4.5040100@dsn.okisemi.com> <20100810171343.GE21220@suse.de>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
-Date: Wed, 11 Aug 2010 16:29:25 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Wed, 11 Aug 2010 03:30:14 -0400
+X-IronPort-AV: E=Sophos;i="4.55,352,1278280800"; 
+   d="scan'208";a="55295677"
+Message-ID: <4C625181.4060606@inria.fr>
+Date: Wed, 11 Aug 2010 09:30:09 +0200
+From: Tomasz Buchert <Tomasz.Buchert@inria.fr>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
+References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr> <20100811011033.GF2927@count0.beaverton.ibm.com>
+In-Reply-To: <20100811011033.GF2927@count0.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Matt Helsley a écrit :
+> On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
+>> Writing 'FROZEN' to freezer.state file does not
+>> forbid the task to be moved away from its cgroup
+>> (for a very short time). Nevertheless the moved task
+>> can become frozen OUTSIDE its cgroup which puts
+>> discussed task in a permanent 'D' state.
+> 
+> SUMMARY (for supporting info see the "DETAILS" heading below)
+> 
+> I can't reproduce this.
+> 
+> My preliminary conclusion is that your testcase doesn't really reproduce
+> what you described. Instead, your testcase prints an incorrect message which
+> could easily lead the person running it to the wrong conclusion.
+> 
+> DETAILS
+> 
+> I tried it with and without the cpuset portions of the testcase on a dual
+> core bare metal system with a 2.6.31-derived distro kernel. Since it
+> *should* be obeying the cpuset portions of the testcase I don't think the
+> fact that it's dual-core should make a difference.
+> 
+> I also tried with a 2.6.34-rc5 kernel in a single-cpu kvm on a different
+> distro (but on the same physical hardware). I also tried it with and without
+> the sleep(1) in the child's for(;;) loop in case the cpu load somehow enabled
+> me to trigger the race.
+> 
+> I used the following bash snippet to run the testcase variations and did not
+> observe any tasks in the D state:
+> 
+> mount -t cgroup -o freezer,cpuset none /cg
+> while /bin/true ; do
+> 	./bug /cg
+> 	ps -C bug -o state= | grep D && break
+> done
+> 
+> If there is a race then I should be able to run that ps line anytime afterwards
+> to see the stuck task.
+> 
+> Note that the test message:
+> 
+> 	printf("Succesfully moved frozen task!\n");
+> 
+> is bogus. In fact there is no guarantee the task or cgroup is frozen at that
+> point in the testcase. This should be apparent from a careful reading of
+> Documentation/cgroups/freezer-subsystem.txt, especially:
+> 
+> 	This is the basic mechanism which should do the right thing for user space task
+> 	in a simple scenario.
+> 
+> 	It's important to note that freezing can be incomplete. In that case we return
+> 	EBUSY. This means that some tasks in the cgroup are busy doing something that
+> 	prevents us from completely freezing the cgroup at this time. After EBUSY,
+> 	the cgroup will remain partially frozen -- reflected by freezer.state reporting
+> 	"FREEZING" when read. The state will remain "FREEZING" until one of these
+> 	things happens:
+> 
+> 		1) Userspace cancels the freezing operation by writing "THAWED" to
+> 			the freezer.state file
+> 		2) Userspace retries the freezing operation by writing "FROZEN" to
+> 			the freezer.state file (writing "FREEZING" is not legal
+> 			and returns EINVAL)
+> 		3) The tasks that blocked the cgroup from entering the "FROZEN"
+> 			state disappear from the cgroup's set of tasks.
+> 
+> So simply writing FROZEN to freezer.state is necessary to initiate freezing
+> but insufficient to assert that the task and/or cgroup is frozen.
+> That's why the FREEZING state exists. It's intentionally not specified when/why
+> we can't immediately enter FROZEN. Thus userspace must read the freezer.state
+> to determine if the current state matches the requested/expected state.
+> 
+> This is why I have the extra ps step in the script above -- to determine
+> if the task is actually in D. I should also check that the cgroup it belongs
+> to is THAWED. However while attempting to reproduce your report that hasn't
+> been necessary -- none of the tasks have even entered the D state.
+> 
+> Which brings us to the final portion of this analysis: Why isn't anything
+> entering the D state?
+> 
+> The behavior I have been able to reproduce and which is not a bug is
+> moving the task immediately after writing FROZEN to freezer.state. We don't
+> know the state of the task or cgroup at that time (in this testcase) so
+> this is acceptable. I've even made a sequence of modifications to your
+> testcase and run it after each modification to bring it successively more
+> in line with correct use of the cgroup freezer. I still was unable to
+> reproduce your report.
+> 
+> So I'm fairly confident there is no bug. I say "fairly" because there may
+> be some aspect of your system that I am not reproducing. At this point it
+> would be great if you could provide more details so I can more thoroughly
+> attempt to recreate your conditions.
+> 
+> Cheers,
+> 	-Matt Helsley
+> 
 
-> Do they all have to be ioctls?  What exactly are they doing?
-I think using ioctl is common for this patch.
-Do you think that using ioctl is NOT appropriate for this patch?
-Let me know your intension in more detail.
+Maybe this is a problem with different timings. I have a qemu minimal image
+with two different kernels 2.6.35 - vanilla and patached. I don't use kvm
+with qemu though. You can get it from here:
+	http://pentium.hopto.org/~thinred/files/qemu.tar.bz2
+in the package there is also minimal '.config' for current Linus's tree.
+You run it with ./run-linux <bzImageOfTheKernel>. In /root you will have
+'minimal' program which is my testcase. The small problem with this image is that
+ps segfaults but it's not a big problem. :)
 
->
-> And are they 32/64bit safe?
-Only 32bit support.
+I am also aware that:
+	printf("Succesfully moved frozen task!\n");
+does not show that task was moved. Only the message is just wrong. What I wanted to observe
+is that the kernel actually ALLOWED to start the process of freezing.
+When you run the testcase with 'strace' you'll see that 'write' returns a positive number
+instead of -EBUSY. And that's the bug.
 
-Thanks, Ohtake
------ Original Message ----- 
-From: "Greg KH" <gregkh@suse.de>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>
-Sent: Wednesday, August 11, 2010 2:13 AM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
+Anyway, I deduce from your later mail that you actually reproduced the problem.
 
-
-> On Tue, Aug 10, 2010 at 07:32:04PM +0900, Masayuki Ohtak wrote:
-> > IEEE1588 driver of Topcliff PCH
-> >
-> > Topcliff PCH is the platform controller hub that is going to be used in
-> > Intel's upcoming general embedded platform. All IO peripherals in
-> > Topcliff PCH are actually devices sitting on AMBA bus.
-> > Topcliff PCH has IEEE1588 I/F. This driver enables IEEE1588 function on CAN or
-> > Ethernet communications.
->
-> So it's a CAN or Ethernet driver?  If so, why isn't this a network
-> driver like the CAN and Ethernet drivers?
->
-> > +#ifdef __GNUC__
-> > +#define UNUSED __attribute__ ((unused))
-> > +#define UNUSED_ARG(x)
-> > +#else
-> > +#define UNUSED
-> > +#define UNUSED_ARG(x) (void) x
-> > +#endif
-> > +
-> > +
-> > +#define TRUE 1
-> > +#define FALSE 0
->
-> These lines should not be needed at all.
->
-> > +#define IOC_1588_BASE 0xf8
->
-> Do you have documentation for these new ioctls you are creating?  It's a
-> lot of them:
->
-> > +#define IOCTL_1588_PORT_CONFIG_SET \
-> > + _IOW(IOC_1588_BASE, 0, struct pch_portcfg_ioctl)
-> > +
-> > +#define IOCTL_1588_PORT_CONFIG_GET \
-> > + _IOWR(IOC_1588_BASE, 1, struct pch_portcfg_ioctl)
-> > +
-> > +#define IOCTL_1588_RX_POLL _IOWR(IOC_1588_BASE, 2, struct pch_rxtxpoll_ioctl)
-> > +
-> > +#define IOCTL_1588_TX_POLL _IOWR(IOC_1588_BASE, 3, struct pch_rxtxpoll_ioctl)
-> > +
-> > +#define IOCTL_1588_CAN_POLL _IOWR(IOC_1588_BASE, 4, struct pch_canpoll_ioctl)
-> > +
-> > +#define IOCTL_1588_SYS_TIME_GET _IOR(IOC_1588_BASE, 5, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_SYS_TIME_SET _IOW(IOC_1588_BASE, 6, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_TICK_RATE_SET _IOW(IOC_1588_BASE, 7, __u32)
-> > +
-> > +#define IOCTL_1588_TICK_RATE_GET _IOR(IOC_1588_BASE, 8, __u32)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_INTRPT_ENABLE _IO(IOC_1588_BASE, 9)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_INTRPT_DISABLE _IO(IOC_1588_BASE, 10)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_POLL \
-> > + _IOR(IOC_1588_BASE, 11, struct pch_timepoll_ioctl)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_SET \
-> > + _IOW(IOC_1588_BASE, 12, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_GET \
-> > + _IOR(IOC_1588_BASE, 13, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_AUX_TIME_INTRPT_ENABLE _IOW(IOC_1588_BASE, 14,\
-> > + enum pch_auxmode)
-> > +
-> > +#define IOCTL_1588_AUX_TIME_INTRPT_DISABLE _IOW(IOC_1588_BASE, 15,\
-> > + enum pch_auxmode)
-> > +
-> > +#define IOCTL_1588_AUX_TIME_POLL \
-> > + _IOWR(IOC_1588_BASE, 16, struct pch_timepoll_ioctl)
-> > +
-> > +#define IOCTL_1588_RESET _IO(IOC_1588_BASE, 17)
-> > +
-> > +#define IOCTL_1588_CHNL_RESET _IOW(IOC_1588_BASE, 18, enum pch_ptpport)
-> > +
-> > +#define IOCTL_1588_STATS_GET _IOR(IOC_1588_BASE, 19, struct pch_stats)
-> > +
-> > +#define IOCTL_1588_STATS_RESET _IO(IOC_1588_BASE, 20)
-> > +
-> > +#define IOCTL_1588_SHOW_ALL _IO(IOC_1588_BASE, 21)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_INTRPT_ENABLE _IO(IOC_1588_BASE, 22)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_INTRPT_DISABLE _IO(IOC_1588_BASE, 23)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_POLL \
-> > + _IOR(IOC_1588_BASE, 24, struct pch_timepoll_ioctl)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_SET \
-> > + _IOW(IOC_1588_BASE, 25, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_GET \
-> > + _IOR(IOC_1588_BASE, 26, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_PULSE_PER_SEC_INTRPT_ENABLE _IO(IOC_1588_BASE, 27)
-> > +
-> > +#define IOCTL_1588_PULSE_PER_SEC_INTRPT_DISABLE _IO(IOC_1588_BASE, 28)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_NOTIFY \
-> > + _IOR(IOC_1588_BASE, 29, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_AUX_TIME_NOTIFY \
-> > + _IOR(IOC_1588_BASE, 30, struct pch_auxtimeioctl)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_NOTIFY \
-> > + _IOR(IOC_1588_BASE, 31, struct pch_tim_val)
-> > +
-> > +#define IOCTL_1588_PULSE_PER_SEC_NOTIFY _IOR(IOC_1588_BASE, 32, __u32)
-> > +
-> > +#define IOCTL_1588_TARG_TIME_CLR_NOTIFY _IO(IOC_1588_BASE, 33)
-> > +
-> > +#define IOCTL_1588_AUX_TIME_CLR_NOTIFY _IO(IOC_1588_BASE, 34)
-> > +
-> > +#define IOCTL_1588_AUX_TARG_TIME_CLR_NOTIFY _IO(IOC_1588_BASE, 35)
-> > +
-> > +#define IOCTL_1588_PULSE_PER_SEC_CLR_NOTIFY _IO(IOC_1588_BASE, 36)
-> > +
-> > +#define IOCTL_1588_PULSE_PER_SEC_TIME_GET _IOR(IOC_1588_BASE, 37, __u32)
-> > +
-> > +#define IOCTL_1588_PULSE_PER_SEC_TIME_SET _IOW(IOC_1588_BASE, 38, __u32)
-> > +
-> > +#define IOCTL_1588_PORT_VERSION_SET \
-> > + _IOW(IOC_1588_BASE, 39, struct pch_versionioctl)
-> > +
-> > +#define IOCTL_1588_PORT_VERSION_GET \
-> > + _IOWR(IOC_1588_BASE, 40, struct pch_versionioctl)
-> > +
-> > +#define IOCTL_1588_PORT_OPERATION_MODE_SET \
-> > + _IOW(IOC_1588_BASE, 41, struct pch_opemode_ioctl)
-> > +
-> > +#define IOCTL_1588_PORT_OPERATION_MODE_GET \
-> > + _IOWR(IOC_1588_BASE, 42, struct pch_opemode_ioctl)
->
-> Do they all have to be ioctls?  What exactly are they doing?
->
-> And are they 32/64bit safe?
->
-> thanks,
->
-> greg k-h
->
-
+Cheers,
+Tomasz
 
