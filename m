@@ -1,51 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366Ab0HKOoN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:44:13 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:55256 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753179Ab0HKOoM (ORCPT
+	id S1753434Ab0HKOoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:44:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36918 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753179Ab0HKOoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:44:12 -0400
-Date: Wed, 11 Aug 2010 16:44:11 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: linux-kernel@vger.kernel.org
-Cc: linux-ide@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        Tejun Heo <tj@kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: zaurus pata_pcmcia corrupted filesystem
-Message-ID: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 11 Aug 2010 10:44:15 -0400
+X-Authority-Analysis: v=1.1 cv=6Y8H/nL8L93N+XbmwlK57FdrlxW9D5uKLQCRlCnhMcQ= c=1 sm=0 a=ZI5MULQygNwA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=JfrnYn6hAAAA:8 a=ww77_pfMzP2emOSOIQcA:9 a=q6RZo5ydMQE3huxcNMgHYUCWVqEA:4 a=PUjeQqilurYA:10 a=3Rfx1nUSh_UA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <20100806141348.GB30349@Krystal>
+References: <20100714231117.GA22341@Krystal>
+	 <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal>
+	 <1280855904.1923.675.camel@laptop>
+	 <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com>
+	 <1280903273.1923.682.camel@laptop> <20100804140605.GA29371@Krystal>
+	 <1280933410.1923.1267.camel@laptop> <20100806014231.GA496@Krystal>
+	 <1281089471.1947.399.camel@laptop>  <20100806141348.GB30349@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 11 Aug 2010 10:44:09 -0400
+Message-ID: <1281537849.3058.23.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
-interface, sources are here:
+On Fri, 2010-08-06 at 10:13 -0400, Mathieu Desnoyers wrote:
+> * Peter Zijlstra (peterz@infradead.org) wrote:
 
-http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlog;h=refs/heads/zaurus-haxing
+> Less code = less instruction cache overhead. I've also shown that the LTTng code
+> is at least twice faster. In terms of complexity, it is not much more complex; I
+> also took the extra care of doing the formal proofs to make sure the
+> corner-cases were dealt with, which I don't reckon neither Steven nor yourself
+> have done.
 
-Everythig seems to be fine at the first look but sometimes the filesystem gets
-unconsistent. Typical example is extracting tar archive with big number of
-files and directories (I used ltp-full archive from
-http://www.sf.net/projects/ltp/). After doing that, some files or directories
-are present in the filesystem, eg. you can see them in directory listing but
-open or fstat returns ENOENT.
+Yes Mathieu, you did a formal proof. Good for you. But honestly, it is
+starting to get very annoying to hear you constantly stating that,
+because, to most kernel developers, it is meaningless. Any slight
+modification of your algorithm, renders the proof invalid.
 
-Extracting to SD card seems to work without any problems.
+You are not the only one that has done a proof to an algorithm in the
+kernel, but you are definitely the only one that constantly reminds
+people that you have done so. Congrats on your PhD, and in academia,
+proofs are important.
 
-Anybody has idea what went wrong?
+But this is a ring buffer, not a critical part of the workings of the
+kernel. There are much more critical and fragile parts of the kernel
+that work fine without a formal proof.
 
--- 
-Cyril Hrubis
-metan@ucw.cz
+Paul McKenney did a proof for RCU not for us, but just to help give him
+a warm fuzzy about it. RCU is much more complex than the ftrace ring
+buffer, and it also is much more critical. If Paul gets it wrong, a
+machine will crash. He's right to worry. And even Paul told me that no
+formal proof makes up for large scale testing. Which BTW, the ftrace
+ring buffer has gone through.
+
+Someday I may go ahead and do that proof, but I did do a very intensive
+state diagram, and I'm quite confident that it works. It's been deployed
+for quite a bit, and the design has yet to be a factor in any bug report
+of the ring buffer.
+
+-- Steve
+
+
