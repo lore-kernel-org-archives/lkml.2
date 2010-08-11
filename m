@@ -1,73 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755982Ab0HKHdP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:33:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55572 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753827Ab0HKHdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:33:14 -0400
-Date: Wed, 11 Aug 2010 09:33:13 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Xing Wei <weixing@hanwang.com.cn>
-Cc: linux-input <linux-input@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drivers/hid: the support for Hanwang tablet
-In-Reply-To: <201008111148203123394@hanwang.com.cn>
-Message-ID: <alpine.LNX.2.00.1008110931240.2702@pobox.suse.cz>
-References: <201008111148203123394@hanwang.com.cn>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752733Ab0HKHfr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:35:47 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:14518 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752354Ab0HKHfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 03:35:46 -0400
+X-IronPort-AV: E=Sophos;i="4.55,352,1278280800"; 
+   d="scan'208";a="65264593"
+Message-ID: <4C6252CF.1090100@inria.fr>
+Date: Wed, 11 Aug 2010 09:35:43 +0200
+From: Tomasz Buchert <Tomasz.Buchert@inria.fr>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Matt Helsley <matthltc@us.ibm.com>
+CC: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
+References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr> <20100810215741.GC2927@count0.beaverton.ibm.com> <4C61D044.2060703@inria.fr> <20100811042738.GH2927@count0.beaverton.ibm.com>
+In-Reply-To: <20100811042738.GH2927@count0.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Aug 2010, Xing Wei wrote:
-
-> From: Xing Wei  <weixing@hanwang.com.cn>
+Matt Helsley a écrit :
+> On Wed, Aug 11, 2010 at 12:18:44AM +0200, Tomasz Buchert wrote:
+>> Matt Helsley a écrit :
+>>> On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
+>>>> Writing 'FROZEN' to freezer.state file does not
+>>>> forbid the task to be moved away from its cgroup
+>>>> (for a very short time). Nevertheless the moved task
+>>>> can become frozen OUTSIDE its cgroup which puts
+>>>> discussed task in a permanent 'D' state.
+>>>>
+>>>> This patch forbids migration of either FROZEN
+>>>> or FREEZING tasks.
+>>>>
+>>>> This behavior was observed and easily reproduced on
+>>>> a single core laptop. Program and instructions how
+>>>> to reproduce the bug can be fetched from:
+>>>> http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
+>>> Thanks for the report and the test code.
+>>>
+>>> I'm will try to reproduce this race in the next few hours and analyze
+>>> it since I'm not sure the patch really fixes the race -- it may only
+>>> make the race trigger less frequently.
+>>>
+>>> At the very least the patch won't break the current code since it's
+>>> essentially a more-strict version of is_task_frozen_enough() -- it lets
+>>> fewer tasks attach/detach to/from frozen cgroups.
+>>>
+>>> Cheers,
+>>> 	-Matt Helsley
+>> Hi Matt!
+>> I am a novice if it comes to the kernel and I find the cgroup_freezer
+>> code especially complicated, so definetely this may be not enough to fix that.
+>> Notice also that if you uncomment the line 55 in my testcase this will also
+>> trigger the race! This, however, makes sense since process may not be in the cgroup anymore
+>> and consequently won't be thawed.
 > 
-> This patch is the support for tablet of BeiJing HanwangTechnology Co, Ltd.
-> The main purpose is to make the device taken over by our driver.
-> The driver code will be submitted later.
+> OK, I triggered it with that. Interesting.
 > 
-> Signed-off-by: Xing Wei <weixing@hanwang.com.cn>
+
+Good!
+
+>> I think that this patch fixes these problems because it does the flag checking in a right order:
+>> first freezing() is used and then frozen() which assures (see frozen_process()) that
+>> the race will not happen. Right? :)
 > 
-> ---
-> This is our first time to submit the patch for linux.We'll really appreciate the comment and advice.
+> I see what you mean. It still seems like it wouldn't actually fix the race -- just make it
+> harder to trigger. I think you're saying this is what happens without the patch:
 > 
-> diff -uprN -X linux-2.6.35-vanilla/Documentation/dontdiff linux-2.6.35-vanilla/drivers/hid/hid-core.c devel/linux-2.6.35/drivers/hid/hid-core.c
-> --- linux-2.6.35-vanilla/drivers/hid/hid-core.c	2010-08-02 06:11:14.000000000 +0800
-> +++ devel/linux-2.6.35/drivers/hid/hid-core.c	2010-08-11 18:20:13.832088816 +0800
-> @@ -1759,6 +1759,11 @@ static bool hid_ignore(struct hid_device
->  		    hdev->product <= USB_DEVICE_ID_SOUNDGRAPH_IMON_LAST)
->  			return true;
->  		break;
-> +	case USB_VENDOR_ID_HANWANG:
-> +		if (hdev->product >= USB_DEVICE_ID_HANWANG_TABLET_FIRST &&
-> +		    hdev->product <= USB_DEVICE_ID_HANWANG_TABLET_LAST)
-> +			return true;
-> +		break;
->  	}
->  
->  	if (hdev->type == HID_TYPE_USBMOUSE &&
-> diff -uprN -X linux-2.6.35-vanilla/Documentation/dontdiff linux-2.6.35-vanilla/drivers/hid/hid-ids.h devel/linux-2.6.35/drivers/hid/hid-ids.h
-> --- linux-2.6.35-vanilla/drivers/hid/hid-ids.h	2010-08-02 06:11:14.000000000 +0800
-> +++ devel/linux-2.6.35/drivers/hid/hid-ids.h	2010-08-11 18:17:32.967089161 +0800
-> @@ -526,5 +526,8 @@
->  #define USB_DEVICE_ID_KYE_ERGO_525V	0x0087
->  #define USB_DEVICE_ID_KYE_GPEN_560	0x5003
->  
-> +#define USB_VENDOR_ID_HANWANG		0x0b57
-> +#define USB_DEVICE_ID_HANWANG_TABLET_LAST	0x8fff
-> +#define USB_DEVICE_ID_HANWANG_TABLET_FIRST	0x5000
+> Time	"bug" goes through these states		cgroup code checks for these states
+> -----------------------------------------------------------------------------------
+> |	freezing
+> |						is_frozen? Nope.
+> |	frozen
+> |						is_freezing? Nope.
+> |						<move>
+> V
+> 
+My first scenario was a bit different:
+Time	"bug" goes through these states		cgroup code checks for these states
+-----------------------------------------------------------------------------------
+|	freezing
+|						is_task_frozen_enough? Nope.
+|						<move>
+|	frozen
+V
+but the problem is the same.
 
-The patch is fine (I'd only suggest swapping 'LAST' and 'FIRST' lines here 
-to keep proper ordering), but I will be applying it only together with the 
-driver once you submit it, as it doesn't make sense stand-alone.
+> But, without having carefully investigated the details, this could just as easily happen
+> with your patch:
+> 
+> Time	"bug" goes through these states		cgroup code checks for these states
+> -----------------------------------------------------------------------------------
+> |						is_freezing? Nope.
+> |						is_frozen? Nope.
+> |	freezing
+> |						<move>
+> |	frozen
+> V
+> 
 
-The driver is not HID-based (i.e. not using hid bus), but completely 
-standalone, right?
+This can't happen as far as I know because there is cgroup_lock around the code in freezer_write()
+and freezer_can_attach().
+The task can't enter 'freezing' state when can_attach is executed.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+> or:
+> 
+> Time	"bug" goes through these states		cgroup code checks for these states
+> -----------------------------------------------------------------------------------
+> |						is_freezing? Nope.
+> |						is_frozen? Nope.
+> |	freezing
+> |	frozen
+> |						<move>
+> V
+> 
+
+Same thing here.
+
+> Time	"bug" goes through these states		cgroup code checks for these states
+> -----------------------------------------------------------------------------------
+> |						is_freezing? Nope.
+> |	freezing
+> |						is_frozen? Nope.
+> |						<move>
+> |	frozen
+> V
+> 
+
+Again.
+
+> or:
+> 
+> Time	"bug" goes through these states		cgroup code checks for these states
+> -----------------------------------------------------------------------------------
+> |						is_freezing? Nope.
+> |	freezing
+> |						is_frozen? Nope.
+> |	frozen
+> |						<move>
+> V
+> 
+> (even with 1 cpu/core)
+
+Well, once more.
+
+> 
+> Your patch only improves things in the sense that it works for the first
+> example. We need to prevent the latter cases as well.
+> 
+> Cheers,
+> 	-Matt
+
+What do you think?
+
+Tomasz
