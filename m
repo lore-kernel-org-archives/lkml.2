@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab0HKBwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 21:52:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44320 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758324Ab0HKBwh (ORCPT
+	id S1757959Ab0HKCDG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 22:03:06 -0400
+Received: from mfbichi12.ns.itscom.net ([219.110.2.190]:41702 "EHLO
+	mfbichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754203Ab0HKCDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 21:52:37 -0400
-Message-ID: <4C6201F5.3080600@kernel.org>
-Date: Tue, 10 Aug 2010 18:50:45 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Corey Minyard <minyard@acm.org>, Andrew Morton <akpm@linux-foundation.org>
-CC: Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Myron Stowe <myron.stowe@hp.com>,
-        openipmi-developer@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] ipmi: fix acpi probe print
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Aug 2010 22:03:04 -0400
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Tue, 10 Aug 2010 22:03:04 EDT
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+To: Neil Brown <neilb@suse.de>
+Cc: Valerie Aurora <vaurora@redhat.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100810085641.2b9a714c@notabene>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-15-git-send-email-vaurora@redhat.com> <20100810085641.2b9a714c@notabene>
+Date: Wed, 11 Aug 2010 10:51:52 +0900
+Message-ID: <13447.1281491512@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-After
-|commit d9e1b6c45059ccfff647a120769ae86da78dfdc4
-|
-|    ipmi: fix ACPI detection with regspacing
+Neil Brown:
+> I wonder if the restriction is not more serious than this.
+> Given the prevalence of "copy-up", particularly of directories, I would think
+> that even off-line upgrade would not be supported.
+> If the upgrade adds a file in a directory that has already been read (and
+> hence copied-up), or changes a file that has been chmodded, then the upgrade
+> will not be completely visible, which sounds dangerous.
+	:::
+> I see two block-layer solutions.  The obvious is a COW block device as you
+> have mentioned.  I am not convinced that it is as bad as you think.
+	:::
 
-got
-[   11.026326] ipmi_si: probing via ACPI
-[   11.030019] ipmi_si 00:09: (null) regsize 1 spacing 1 irq 0
-[   11.035594] ipmi_si: Adding ACPI-specified kcs state machine
+DM snapshot provides the COW block feature and it will match your idea
+since the size of COW device is much smaller genearally. But it doesn't
+support off-line upgrade either. If you do, it is equivalent to corrupt
+filesystem for DM snapshot device.
 
-on old system with only one range for ipmi kcs range.
+Here is pros/cons of DM snapshot comparing a union.
+- the number of bytes to be copied between devices is much smaller.
 
-Try to fix it by adding another res pointer.
+- the type of filesystem must be one and only.
+- the fs must be writable, no readonly fs, even for the lower original
+  device. so the compression fs will not be usable. but if we use
+  loopback mount, we may address this issue.
+  for instance,
+	mount /cdrom/squashfs.img /sq
+	losetup /sq/ext2.img
+	losetup /somewhere/cow
+	dmsetup "snapshot /dev/loop0 /dev/loop1 ..."
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+- it will be difficult (or needs more operations) to extract the
+  difference between the original device and COW.
 
----
- drivers/char/ipmi/ipmi_si_intf.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+- DM snapshot-merge may help a lot when users try merging. in the
+  fs-layer union, users will use rsync(1).
 
-Index: linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
-===================================================================
---- linux-2.6.orig/drivers/char/ipmi/ipmi_si_intf.c
-+++ linux-2.6/drivers/char/ipmi/ipmi_si_intf.c
-@@ -2132,7 +2132,7 @@ static int __devinit ipmi_pnp_probe(stru
- {
- 	struct acpi_device *acpi_dev;
- 	struct smi_info *info;
--	struct resource *res;
-+	struct resource *res, *res_second;
- 	acpi_handle handle;
- 	acpi_status status;
- 	unsigned long long tmp;
-@@ -2188,13 +2188,13 @@ static int __devinit ipmi_pnp_probe(stru
- 	info->io.addr_data = res->start;
- 
- 	info->io.regspacing = DEFAULT_REGSPACING;
--	res = pnp_get_resource(dev,
-+	res_second = pnp_get_resource(dev,
- 			       (info->io.addr_type == IPMI_IO_ADDR_SPACE) ?
- 					IORESOURCE_IO : IORESOURCE_MEM,
- 			       1);
--	if (res) {
--		if (res->start > info->io.addr_data)
--			info->io.regspacing = res->start - info->io.addr_data;
-+	if (res_second) {
-+		if (res_second->start > info->io.addr_data)
-+			info->io.regspacing = res_second->start - info->io.addr_data;
- 	}
- 	info->io.regsize = DEFAULT_REGSPACING;
- 	info->io.regshift = 0;
+- in fs-based union, users can add/remove members(layer) dynamicall
+  without unmounting. of course, all files on the removing layer should
+  not be busy.
+
+
+Also here is my concern about UnionMount. All these issues have been
+reported before.
+- for users, the inode number may change silently. eg. copy-up.
+- link(2) may break by copy-up.
+- read(2) may get an obsoleted filedata (fstat(2) too).
+- fcntl(F_SETLK) may be broken by copy-up.
+- unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
+  open(O_RDWR).
+
+
+J. R. Okajima
