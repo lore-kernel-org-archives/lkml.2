@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab0HKP5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 11:57:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56532 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752660Ab0HKP46 (ORCPT
+	id S1754404Ab0HKP6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 11:58:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57392 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752660Ab0HKP6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 11:56:58 -0400
-Date: Wed, 11 Aug 2010 08:54:35 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Konrad Rzeszutek Wilk <konrad@darnok.org>
-Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, pjones@redhat.com,
-        open-iscsi@googlegroups.com
-Subject: Re: [PATCH 1/2] RFC: iscsi ibft: separate ibft parsing from sysfs
- interface
-Message-Id: <20100811085435.7da9dcff.randy.dunlap@oracle.com>
-In-Reply-To: <201004122220.30193.konrad@darnok.org>
-References: <1271095578-4212-1-git-send-email-michaelc@cs.wisc.edu>
-	<201004122220.30193.konrad@darnok.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Wed, 11 Aug 2010 11:58:36 -0400
+Subject: Re: Query: Patches break with Microsoft exchange server.
+From: David Woodhouse <dwmw2@infradead.org>
+To: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
+Cc: viresh kumar <viresh.kumar@st.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "git@vger.kernel.org" <git@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Valeo de Vries <valeo@valeo.co.cc>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Matti Aarnio <matti.aarnio@zmailer.org>, mihai.dontu@gmail.com,
+        richardcochran@gmail.com, "Gadiyar, Anand" <gadiyar@ti.com>
+In-Reply-To: <4C62C5BD.3020808@mnsu.edu>
+References: <4C5F9B25.8080401@st.com>
+	 <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>
+	 <4C624AE1.30504@st.com>  <4C62C5BD.3020808@mnsu.edu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Aug 2010 16:58:25 +0100
+Message-ID: <1281542305.5107.11.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.31.6 
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Apr 2010 22:20:29 -0400 Konrad Rzeszutek Wilk wrote:
-
-> On Monday 12 April 2010 14:06:17 michaelc@cs.wisc.edu wrote:
-> > From: Mike Christie <michaelc@cs.wisc.edu>
-> >
-> > Not all iscsi drivers support ibft. For drivers like be2iscsi
-> > that do not but are bootable through a vendor firmware specific
-> > format/process this patch moves the sysfs interface from the ibft code
-> > to a lib module. This then allows userspace tools to search for iscsi boot
-> > info in a common place and in a common format.
-> >
-> > ibft iscsi boot info is exported in the same place as it was
-> > before: /sys/firmware/ibft.
-> >
-> > vendor/fw boot info gets export in /sys/firmware/iscsi_bootX, where X is
-> > the scsi host number of the HBA. Underneath these parent dirs, the
-> > target, ethernet, and initiator dirs are the same as they were before.
-> >
-> > This patch was made over the ibft-2.6 tree's ibft-1.03 branch:
-> > http://git.kernel.org/?p=linux/kernel/git/konrad/ibft-2.6.git;a=shortlog;h=
-> >refs/heads/ibft-1.03
-> >
-> >
-> > Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
-> > ---
-> Looks good to my eyes.
+On Wed, 2010-08-11 at 10:46 -0500, Jeffrey Hundstad wrote:
+> Exchange 2010 does not handle IMAP "chunking" (partial message transfer) 
+> correctly.  Any request after about 1 megabyte of total message size 
+> will fail.
 > 
-> Let me run it tomorrow through my regression bucket before I stick on the git 
-> tree.
+> Thunderbird uses this "chunking" feature to give you a status update 
+> while downloading large messages.  The IMAP statements are of this type:
+> 11 UID fetch 244477 (UID RFC822.SIZE BODY[]<20480.12288>)
+> 
+> When the 20480 is larger than 1MB Exchange "claims" there is no more.  
+> Sigh.... 
 
-Can we get this patch into linux-next, please?
+I think the problem is not with the fetching -- the problem is that
+Exchange lies about RFC822.SIZE before the IMAP client even starts to
+fetch the message. It reports a size which is smaller than the actual
+size of the message, thus leading to truncated fetches.
 
-or if it's there, there are still errors like this that need to be checked.
+In Evolution we have a workaround -- we don't just stop when we get to
+the reported RFC822.SIZE; we continue fetching more chunks until the
+server actually stops giving us any more. It's not as efficient (because
+we fall back to having only one more chunk outstanding at a time rather
+than the normal three in parallel), but at least it works around this
+brokenness of Exchange.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+http://git.gnome.org/browse/evolution-data-server/commit/?id=9714c064
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
