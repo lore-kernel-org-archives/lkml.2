@@ -1,177 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758282Ab0HKBKs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 21:10:48 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41073 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757871Ab0HKBKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 21:10:45 -0400
-Date: Tue, 10 Aug 2010 18:10:33 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tomasz Buchert <tomasz.buchert@inria.fr>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
-Message-ID: <20100811011033.GF2927@count0.beaverton.ibm.com>
-References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932401Ab0HKBU0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 21:20:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932208Ab0HKBUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 21:20:23 -0400
+Date: Tue, 10 Aug 2010 21:23:31 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: cfq: oops in __call_for_each_cic
+Message-ID: <20100810212331.197026dc@corrin.poochiereds.net>
+In-Reply-To: <4C61E7B1.1090607@kernel.dk>
+References: <20100810064045.6996f3b7@tlielax.poochiereds.net>
+	<x49zkwu8s3y.fsf@segfault.boston.devel.redhat.com>
+	<20100810102718.45bddc9d@tlielax.poochiereds.net>
+	<4C6179DD.7010000@kernel.dk>
+	<20100810123525.3112a382@tlielax.poochiereds.net>
+	<4C61E7B1.1090607@kernel.dk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
-> Writing 'FROZEN' to freezer.state file does not
-> forbid the task to be moved away from its cgroup
-> (for a very short time). Nevertheless the moved task
-> can become frozen OUTSIDE its cgroup which puts
-> discussed task in a permanent 'D' state.
+On Tue, 10 Aug 2010 19:58:41 -0400
+Jens Axboe <axboe@kernel.dk> wrote:
 
-SUMMARY (for supporting info see the "DETAILS" heading below)
-
-I can't reproduce this.
-
-My preliminary conclusion is that your testcase doesn't really reproduce
-what you described. Instead, your testcase prints an incorrect message which
-could easily lead the person running it to the wrong conclusion.
-
-DETAILS
-
-I tried it with and without the cpuset portions of the testcase on a dual
-core bare metal system with a 2.6.31-derived distro kernel. Since it
-*should* be obeying the cpuset portions of the testcase I don't think the
-fact that it's dual-core should make a difference.
-
-I also tried with a 2.6.34-rc5 kernel in a single-cpu kvm on a different
-distro (but on the same physical hardware). I also tried it with and without
-the sleep(1) in the child's for(;;) loop in case the cpu load somehow enabled
-me to trigger the race.
-
-I used the following bash snippet to run the testcase variations and did not
-observe any tasks in the D state:
-
-mount -t cgroup -o freezer,cpuset none /cg
-while /bin/true ; do
-	./bug /cg
-	ps -C bug -o state= | grep D && break
-done
-
-If there is a race then I should be able to run that ps line anytime afterwards
-to see the stuck task.
-
-Note that the test message:
-
-	printf("Succesfully moved frozen task!\n");
-
-is bogus. In fact there is no guarantee the task or cgroup is frozen at that
-point in the testcase. This should be apparent from a careful reading of
-Documentation/cgroups/freezer-subsystem.txt, especially:
-
-	This is the basic mechanism which should do the right thing for user space task
-	in a simple scenario.
-
-	It's important to note that freezing can be incomplete. In that case we return
-	EBUSY. This means that some tasks in the cgroup are busy doing something that
-	prevents us from completely freezing the cgroup at this time. After EBUSY,
-	the cgroup will remain partially frozen -- reflected by freezer.state reporting
-	"FREEZING" when read. The state will remain "FREEZING" until one of these
-	things happens:
-
-		1) Userspace cancels the freezing operation by writing "THAWED" to
-			the freezer.state file
-		2) Userspace retries the freezing operation by writing "FROZEN" to
-			the freezer.state file (writing "FREEZING" is not legal
-			and returns EINVAL)
-		3) The tasks that blocked the cgroup from entering the "FROZEN"
-			state disappear from the cgroup's set of tasks.
-
-So simply writing FROZEN to freezer.state is necessary to initiate freezing
-but insufficient to assert that the task and/or cgroup is frozen.
-That's why the FREEZING state exists. It's intentionally not specified when/why
-we can't immediately enter FROZEN. Thus userspace must read the freezer.state
-to determine if the current state matches the requested/expected state.
-
-This is why I have the extra ps step in the script above -- to determine
-if the task is actually in D. I should also check that the cgroup it belongs
-to is THAWED. However while attempting to reproduce your report that hasn't
-been necessary -- none of the tasks have even entered the D state.
-
-Which brings us to the final portion of this analysis: Why isn't anything
-entering the D state?
-
-The behavior I have been able to reproduce and which is not a bug is
-moving the task immediately after writing FROZEN to freezer.state. We don't
-know the state of the task or cgroup at that time (in this testcase) so
-this is acceptable. I've even made a sequence of modifications to your
-testcase and run it after each modification to bring it successively more
-in line with correct use of the cgroup freezer. I still was unable to
-reproduce your report.
-
-So I'm fairly confident there is no bug. I say "fairly" because there may
-be some aspect of your system that I am not reproducing. At this point it
-would be great if you could provide more details so I can more thoroughly
-attempt to recreate your conditions.
-
-Cheers,
-	-Matt Helsley
-
+> On 08/10/2010 12:35 PM, Jeff Layton wrote:
+> > On Tue, 10 Aug 2010 12:10:05 -0400
+> > Jens Axboe <axboe@kernel.dk> wrote:
+> > 
+> >> On 08/10/2010 10:27 AM, Jeff Layton wrote:
+> >>> On Tue, 10 Aug 2010 10:22:41 -0400
+> >>> Jeff Moyer <jmoyer@redhat.com> wrote:
+> >>>
+> >>>> Jeff Layton <jlayton@redhat.com> writes:
+> >>>>
+> >>>>> Saw this oops on my test machine this morning. I rebooted the machine
+> >>>>> last night and hadn't done anything on it other than log in this
+> >>>>> morning. The kernel here is based on Steve French's git tree, which is
+> >>>>> based on Linus' as of Sunday Aug 8th. Last non-cifs commit is:
+> >>>>
+> >>>> This looks a lot like this bug:
+> >>>>   https://bugzilla.redhat.com/show_bug.cgi?id=577968
+> >>>>
+> >>>> See also:
+> >>>>   http://kerneloops.org/guilty.php?guilty=cfq_free_io_context&version=2.6.34-rc&start=2228224&end=2260991&class=oops
+> >>>>
+> >>>> It's been around since 2.6.30.8 according to kerneloops.org.  If you
+> >>>> find that you have a reliable way of reproducing the issue, that would
+> >>>> be great.
+> >>>>
+> >>>
+> >>> Ok, thanks -- no clear reproducer so far. This morning was the
+> >>> first time I've seen it and it was on the console of my rawhide
+> >>> machine. The last thing I did with it was reboot it last night. I
+> >>> suspect that the gzip process came from a cron job or something.
+> >>
+> >> What version did you hit it on?
+> >>
+> > 
+> > It was a kernel built out of git, based on Steve French's git tree. The
+> > last commit from Linus in it was
+> > 45d7f32c7a43cbb9592886d38190e379e2eb2226. Everything else on top of
+> > that was patches that only touched cifs code. cifs.ko hadn't been
+> > plugged in since it was rebooted.
 > 
-> This patch forbids migration of either FROZEN
-> or FREEZING tasks.
+> OK. That bug is pretty elusive, so far I haven't been able to figure
+> out what the heck is going on here and my attempts at reproducing
+> have all failed. The reports so far seem to have the cron component
+> in common. Does fedora ionice some cron jobs or anything like that?
+> Or use CLONE_IO?
 > 
-> This behavior was observed and easily reproduced on
-> a single core laptop. Program and instructions how
-> to reproduce the bug can be fetched from:
-> http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
-> 
-> Signed-off-by: Tomasz Buchert <tomasz.buchert@inria.fr>
-> ---
->  kernel/cgroup_freezer.c |   10 ++++++++--
->  1 files changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
-> index ce71ed5..e49aa8c 100644
-> --- a/kernel/cgroup_freezer.c
-> +++ b/kernel/cgroup_freezer.c
-> @@ -161,6 +161,12 @@ static bool is_task_frozen_enough(struct task_struct *task)
->  		(task_is_stopped_or_traced(task) && freezing(task));
->  }
-> 
-> +/* Task is in a state that forbids any cgroup migration. */
-> +static bool is_task_pinned_down(struct task_struct *task)
-> +{
-> +	return freezing(task) || frozen(task);
-> +}
-> +
->  /*
->   * The call to cgroup_lock() in the freezer.state write method prevents
->   * a write to that file racing against an attach, and hence the
-> @@ -179,7 +185,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
->  	 * frozen, so it's sufficient to check the latter condition.
->  	 */
-> 
-> -	if (is_task_frozen_enough(task))
-> +	if (is_task_pinned_down(task))
->  		return -EBUSY;
-> 
->  	freezer = cgroup_freezer(new_cgroup);
-> @@ -191,7 +197,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
-> 
->  		rcu_read_lock();
->  		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
-> -			if (is_task_frozen_enough(c)) {
-> +			if (is_task_pinned_down(c)) {
->  				rcu_read_unlock();
->  				return -EBUSY;
->  			}
-> -- 
-> 1.6.3.3
-> 
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
+
+Yes. I sort of doubt anything there would use CLONE_IO, but ionice is
+definitely used. Fedora uses anacron. I don't see any explicit calls to
+gzip in there, but it's possible something else is calling it:
+
+# grep ionice /etc/cron.*/*
+/etc/cron.daily/mlocate.cron:ionice -c2 -n7 -p $$ >/dev/null 2>&1
+/etc/cron.daily/readahead.cron:ionice -c3 -p $$ >/dev/null 2>&1
+
+# cat /etc/anacrontab 
+# /etc/anacrontab: configuration file for anacron
+
+# See anacron(8) and anacrontab(5) for details.
+
+SHELL=/bin/sh
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+# the maximal random delay added to the base delay of the jobs
+RANDOM_DELAY=45
+# the jobs will be started during the following hours only
+START_HOURS_RANGE=3-22
+
+#period in days   delay in minutes   job-identifier   command
+1	5	cron.daily		nice run-parts /etc/cron.daily
+7	25	cron.weekly		nice run-parts /etc/cron.weekly
+@monthly 45	cron.monthly		nice run-parts /etc/cron.monthly
+
+-- 
+Jeff Layton <jlayton@redhat.com>
