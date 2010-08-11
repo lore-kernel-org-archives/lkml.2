@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758444Ab0HKTMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 15:12:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27864 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab0HKTML (ORCPT
+	id S1755682Ab0HKTQj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 15:16:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61265 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753414Ab0HKTQi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 15:12:11 -0400
-Date: Wed, 11 Aug 2010 12:10:47 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH] mm: fix fatal kernel-doc error
-Message-Id: <20100811121047.06c27c1f.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Aug 2010 15:16:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=e0e7Cpu4pbuveBnvn6muLrT7RRZYgTdIK5qIpQU+LpPITXSAaesgsgSrbjX/t2socG
+         jUsYZJpSnNHHQYwV20ugl/2AL03dslPYbzm8J+HSjlaws++SUUKP6MRk8S6Q37MTkUq+
+         pT/m/zzp3BbzRUMgC05vbwKwTxbx3Cy0QSLMQ=
+MIME-Version: 1.0
+In-Reply-To: <4C62DB6E.5010001@lockie.ca>
+References: <4C62DB6E.5010001@lockie.ca>
+Date: Wed, 11 Aug 2010 15:16:37 -0400
+Message-ID: <AANLkTim9nBbKOD5io0JSS7VTC+UydKYyn8Uts0fYTY-5@mail.gmail.com>
+Subject: Re: kernel config
+From: Brian Waters <brianmwaters@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: James <bjlockie@lockie.ca>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+If you think this is a good idea, then you should try submitting a
+patch for it. The file you want to modify is drivers/ata/Kconfig. It
+should be pretty obvious what to change. There is lots of info online
+about creating patches.
 
-Fix a fatal kernel-doc error due to a #define coming between a
-function's kernel-doc notation and the function signature.
-(kernel-doc cannot handle this)
+- Brian Waters
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- mm/page-writeback.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- linux-2.6.35-git10.orig/mm/page-writeback.c
-+++ linux-2.6.35-git10/mm/page-writeback.c
-@@ -825,10 +825,10 @@ void __init page_writeback_init(void)
- /*
-  * We tag pages in batches of WRITEBACK_TAG_BATCH to reduce tree_lock latency.
-  */
--#define WRITEBACK_TAG_BATCH 4096
- void tag_pages_for_writeback(struct address_space *mapping,
- 			     pgoff_t start, pgoff_t end)
- {
-+#define WRITEBACK_TAG_BATCH 4096
- 	unsigned long tagged;
- 
- 	do {
 
+
+On Wed, Aug 11, 2010 at 1:18 PM, James <bjlockie@lockie.ca> wrote:
+>  CONFIG_SATA_AHCI
+> │ This option enables support for AHCI Serial ATA. │
+> │ │
+> │ If unsure, say N.
+>
+> CONFIG_ATA_SFF: │
+> │ │
+> │ This option adds support for ATA controllers with SFF │
+> │ compliant or similar programming interface. │
+> │ │
+> │ SFF is the legacy IDE interface that has been around since │
+> │ the dawn of time. Almost all PATA controllers have an │
+> │ SFF interface. Many SATA controllers have an SFF interface │
+> │ when configured into a legacy compatibility mode. │
+> │ │
+> │ For users with exclusively modern controllers like AHCI, │
+> │ Silicon Image 3124, or Marvell 6440, you may choose to │
+> │ disable this unneeded SFF support.
+>
+>
+> I recently configured and compiled the 2.6.35.1 kernel.
+> I suggest moving
+> │
+> │ For users with exclusively modern controllers like AHCI, │
+> │ Silicon Image 3124, or Marvell 6440, you may choose to │
+> │ disable this unneeded SFF support.
+> to the CONFIG_SATA_AHCI option.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
