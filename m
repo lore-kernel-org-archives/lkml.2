@@ -1,86 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799Ab0HKHii (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:38:38 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51612 "EHLO smtps.tip.net.au"
+	id S932588Ab0HKHkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:40:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48360 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab0HKHig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:38:36 -0400
-Date: Wed, 11 Aug 2010 17:38:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Alexey Fomenko <ext-alexey.fomenko@nokia.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Michal Marek <mmarek@suse.cz>,
-        Trevor Keith <tsrk@tsrk.net>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20100811173829.40638b5d.sfr@canb.auug.org.au>
-In-Reply-To: <20100810222310.e04f7031.akpm@linux-foundation.org>
-References: <20100811133812.2b594551.sfr@canb.auug.org.au>
-	<20100810222310.e04f7031.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_Aug_2010_17_38_29_+1000_puo49JNFnvBPZFVK"
+	id S1752497Ab0HKHkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 03:40:14 -0400
+Date: Wed, 11 Aug 2010 07:39:53 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf ui: Shorten ui_browser member names
+Message-ID: <tip-d247eb6b924bbc2f13748c89b6c72c7a3d46645c@git.kernel.org>
+Git-Commit-ID: d247eb6b924bbc2f13748c89b6c72c7a3d46645c
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:39:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Aug_2010_17_38_29_+1000_puo49JNFnvBPZFVK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Commit-ID:  d247eb6b924bbc2f13748c89b6c72c7a3d46645c
+Gitweb:     http://git.kernel.org/tip/d247eb6b924bbc2f13748c89b6c72c7a3d46645c
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Sat, 7 Aug 2010 13:56:04 -0300
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Tue, 10 Aug 2010 16:08:33 -0300
 
-Hi Andrew,
+perf ui: Shorten ui_browser member names
 
-On Tue, 10 Aug 2010 22:23:10 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> doh.  This?
->=20
->=20
-> From: Andrew Morton <akpm@linux-foundation.org>
->=20
-> - don't kfree("")
->=20
-> - fix one missed conversion
->=20
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: Alexey Fomenko <ext-alexey.fomenko@nokia.com>
-> Cc: Trevor Keith <tsrk@tsrk.net>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/newt.c       |   36 +++++++++++++-------------
+ tools/perf/util/ui/browser.c |   57 ++++++++++++++++++++---------------------
+ tools/perf/util/ui/browser.h |    6 ++--
+ 3 files changed, 49 insertions(+), 50 deletions(-)
 
-works for me, thanks.
-
-Tested-by: Stephen Rothwell <sfr@canb.auug.org.au>
-
-Now, don't you wish that had been in linux-next?  ;-)
-
-Please send to Linus (if you haven't already) and I will add it to my
-fixes tree for linux-next tomorrow unless Linus has taken it by then.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__11_Aug_2010_17_38_29_+1000_puo49JNFnvBPZFVK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMYlN1AAoJEDMEi1NhKgbs83QH/jjr1uo7qzvsTodT1aW0VCBJ
-lLB9lkQhB4RWgSCoaUuN4CZxX9A3fucR3UYk2V1EEf04opMX+m8C0wmHBtJdCUgx
-sENQxH6bjU4T4BJeueSsne2yKSHuompuAB6cIBL7J4HJpRa3G2rEUIodTrHI/5O0
-Pr5YaaEDPhFEIlu5OuDTK2zuf9gWizfbP6+lm0mvWyE0pcdSkyGeHoY6kXZdLscT
-6xv21r/clBl0597CcewwGS5SaMygwh+fgGQ+R6erPaSvWW0ORtHumhlz956WHWYl
-NAS/ObQXgkENiZtR3r2kcuStHt3CJuxcBxFaP8fqoroIzZBZ8W9GmDvOGiqmZfc=
-=1z88
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_Aug_2010_17_38_29_+1000_puo49JNFnvBPZFVK--
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 266a9e0..9768be3 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -450,8 +450,8 @@ static int map_browser__search(struct map_browser *self)
+ 	if (sym != NULL) {
+ 		u32 *idx = symbol__browser_index(sym);
+ 			
+-		self->b.first_visible_entry = &sym->rb_node;
+-		self->b.index = self->b.first_visible_entry_idx = *idx;
++		self->b.top = &sym->rb_node;
++		self->b.index = self->b.top_idx = *idx;
+ 	} else
+ 		ui_helpline__fpush("%s not found!", target);
+ 
+@@ -967,7 +967,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
+ 			}
+ 
+ 			SLsmg_set_color(color);
+-			SLsmg_gotorc(self->b.top + row, self->b.left);
++			SLsmg_gotorc(self->b.y + row, self->b.x);
+ 			slsmg_write_nstring(" ", offset + extra_offset);
+ 			slsmg_printf("%c ", folded_sign);
+ 			slsmg_write_nstring(str, width);
+@@ -1030,7 +1030,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *self,
+ 		}
+ 
+ 		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
+-		SLsmg_gotorc(self->b.top + row, self->b.left);
++		SLsmg_gotorc(self->b.y + row, self->b.x);
+ 		SLsmg_set_color(color);
+ 		slsmg_write_nstring(" ", offset);
+ 		slsmg_printf("%c ", folded_sign);
+@@ -1110,7 +1110,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
+ 		}
+ 
+ 		SLsmg_set_color(color);
+-		SLsmg_gotorc(self->b.top + row, self->b.left);
++		SLsmg_gotorc(self->b.y + row, self->b.x);
+ 		if (symbol_conf.use_callchain) {
+ 			slsmg_printf("%c ", folded_sign);
+ 			width -= 2;
+@@ -1138,10 +1138,10 @@ static unsigned int hist_browser__refresh(struct ui_browser *self)
+ 	struct rb_node *nd;
+ 	struct hist_browser *hb = container_of(self, struct hist_browser, b);
+ 
+-	if (self->first_visible_entry == NULL)
+-		self->first_visible_entry = rb_first(&hb->hists->entries);
++	if (self->top == NULL)
++		self->top = rb_first(&hb->hists->entries);
+ 
+-	for (nd = self->first_visible_entry; nd; nd = rb_next(nd)) {
++	for (nd = self->top; nd; nd = rb_next(nd)) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+ 
+ 		if (h->filtered)
+@@ -1244,7 +1244,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
+ 		nd = hists__filter_entries(rb_first(self->entries));
+ 		break;
+ 	case SEEK_CUR:
+-		nd = self->first_visible_entry;
++		nd = self->top;
+ 		goto do_offset;
+ 	case SEEK_END:
+ 		nd = hists__filter_prev_entries(rb_last(self->entries));
+@@ -1258,7 +1258,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
+ 	 * Moves not relative to the first visible entry invalidates its
+ 	 * row_offset:
+ 	 */
+-	h = rb_entry(self->first_visible_entry, struct hist_entry, rb_node);
++	h = rb_entry(self->top, struct hist_entry, rb_node);
+ 	h->row_offset = 0;
+ 
+ 	/*
+@@ -1286,7 +1286,7 @@ do_offset:
+ 				} else {
+ 					h->row_offset += offset;
+ 					offset = 0;
+-					self->first_visible_entry = nd;
++					self->top = nd;
+ 					break;
+ 				}
+ 			}
+@@ -1294,7 +1294,7 @@ do_offset:
+ 			if (nd == NULL)
+ 				break;
+ 			--offset;
+-			self->first_visible_entry = nd;
++			self->top = nd;
+ 		} while (offset != 0);
+ 	} else if (offset < 0) {
+ 		while (1) {
+@@ -1307,7 +1307,7 @@ do_offset:
+ 					} else {
+ 						h->row_offset += offset;
+ 						offset = 0;
+-						self->first_visible_entry = nd;
++						self->top = nd;
+ 						break;
+ 					}
+ 				} else {
+@@ -1317,7 +1317,7 @@ do_offset:
+ 					} else {
+ 						h->row_offset = h->nr_rows + offset;
+ 						offset = 0;
+-						self->first_visible_entry = nd;
++						self->top = nd;
+ 						break;
+ 					}
+ 				}
+@@ -1327,7 +1327,7 @@ do_offset:
+ 			if (nd == NULL)
+ 				break;
+ 			++offset;
+-			self->first_visible_entry = nd;
++			self->top = nd;
+ 			if (offset == 0) {
+ 				/*
+ 				 * Last unfiltered hist_entry, check if it is
+@@ -1342,7 +1342,7 @@ do_offset:
+ 			first = false;
+ 		}
+ 	} else {
+-		self->first_visible_entry = nd;
++		self->top = nd;
+ 		h = rb_entry(nd, struct hist_entry, rb_node);
+ 		h->row_offset = 0;
+ 	}
+@@ -1463,7 +1463,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
+ 		switch (es->u.key) {
+ 		case 'd': { /* Debug */
+ 			static int seq;
+-			struct hist_entry *h = rb_entry(self->b.first_visible_entry,
++			struct hist_entry *h = rb_entry(self->b.top,
+ 							struct hist_entry, rb_node);
+ 			ui_helpline__pop();
+ 			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
+@@ -1471,7 +1471,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
+ 					   self->hists->nr_entries,
+ 					   self->b.height,
+ 					   self->b.index,
+-					   self->b.first_visible_entry_idx,
++					   self->b.top_idx,
+ 					   h->row_offset, h->nr_rows);
+ 		}
+ 			continue;
+diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
+index 0b2b930..edbb7dd 100644
+--- a/tools/perf/util/ui/browser.c
++++ b/tools/perf/util/ui/browser.c
+@@ -49,7 +49,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
+ 		pos = head->next;
+ 		break;
+ 	case SEEK_CUR:
+-		pos = self->first_visible_entry;
++		pos = self->top;
+ 		break;
+ 	case SEEK_END:
+ 		pos = head->prev;
+@@ -66,7 +66,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
+ 			pos = pos->prev;
+ 	}
+ 
+-	self->first_visible_entry = pos;
++	self->top = pos;
+ }
+ 
+ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+@@ -79,7 +79,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+ 		nd = rb_first(root);
+ 		break;
+ 	case SEEK_CUR:
+-		nd = self->first_visible_entry;
++		nd = self->top;
+ 		break;
+ 	case SEEK_END:
+ 		nd = rb_last(root);
+@@ -96,7 +96,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
+ 			nd = rb_prev(nd);
+ 	}
+ 
+-	self->first_visible_entry = nd;
++	self->top = nd;
+ }
+ 
+ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
+@@ -104,13 +104,13 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
+ 	struct rb_node *nd;
+ 	int row = 0;
+ 
+-	if (self->first_visible_entry == NULL)
+-                self->first_visible_entry = rb_first(self->entries);
++	if (self->top == NULL)
++                self->top = rb_first(self->entries);
+ 
+-	nd = self->first_visible_entry;
++	nd = self->top;
+ 
+ 	while (nd != NULL) {
+-		SLsmg_gotorc(self->top + row, self->left);
++		SLsmg_gotorc(self->y + row, self->x);
+ 		self->write(self, nd, row);
+ 		if (++row == self->height)
+ 			break;
+@@ -122,7 +122,7 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
+ 
+ bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row)
+ {
+-	return (self->first_visible_entry_idx + row) == self->index;
++	return self->top_idx + row == self->index;
+ }
+ 
+ void ui_browser__refresh_dimensions(struct ui_browser *self)
+@@ -135,13 +135,13 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
+ 	self->height = rows - 5;
+ 	if (self->height > self->nr_entries)
+ 		self->height = self->nr_entries;
+-	self->top  = (rows - self->height) / 2;
+-	self->left = (cols - self->width) / 2;
++	self->y  = (rows - self->height) / 2;
++	self->x = (cols - self->width) / 2;
+ }
+ 
+ void ui_browser__reset_index(struct ui_browser *self)
+ {
+-	self->index = self->first_visible_entry_idx = 0;
++	self->index = self->top_idx = 0;
+ 	self->seek(self, 0, SEEK_SET);
+ }
+ 
+@@ -180,7 +180,7 @@ int ui_browser__refresh(struct ui_browser *self)
+ 	newtScrollbarSet(self->sb, self->index, self->nr_entries - 1);
+ 	row = self->refresh(self);
+ 	SLsmg_set_color(HE_COLORSET_NORMAL);
+-	SLsmg_fill_region(self->top + row, self->left,
++	SLsmg_fill_region(self->y + row, self->x,
+ 			  self->height - row, self->width, ' ');
+ 
+ 	return 0;
+@@ -205,8 +205,8 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 			if (self->index == self->nr_entries - 1)
+ 				break;
+ 			++self->index;
+-			if (self->index == self->first_visible_entry_idx + self->height) {
+-				++self->first_visible_entry_idx;
++			if (self->index == self->top_idx + self->height) {
++				++self->top_idx;
+ 				self->seek(self, +1, SEEK_CUR);
+ 			}
+ 			break;
+@@ -214,34 +214,34 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 			if (self->index == 0)
+ 				break;
+ 			--self->index;
+-			if (self->index < self->first_visible_entry_idx) {
+-				--self->first_visible_entry_idx;
++			if (self->index < self->top_idx) {
++				--self->top_idx;
+ 				self->seek(self, -1, SEEK_CUR);
+ 			}
+ 			break;
+ 		case NEWT_KEY_PGDN:
+ 		case ' ':
+-			if (self->first_visible_entry_idx + self->height > self->nr_entries - 1)
++			if (self->top_idx + self->height > self->nr_entries - 1)
+ 				break;
+ 
+ 			offset = self->height;
+ 			if (self->index + offset > self->nr_entries - 1)
+ 				offset = self->nr_entries - 1 - self->index;
+ 			self->index += offset;
+-			self->first_visible_entry_idx += offset;
++			self->top_idx += offset;
+ 			self->seek(self, +offset, SEEK_CUR);
+ 			break;
+ 		case NEWT_KEY_PGUP:
+-			if (self->first_visible_entry_idx == 0)
++			if (self->top_idx == 0)
+ 				break;
+ 
+-			if (self->first_visible_entry_idx < self->height)
+-				offset = self->first_visible_entry_idx;
++			if (self->top_idx < self->height)
++				offset = self->top_idx;
+ 			else
+ 				offset = self->height;
+ 
+ 			self->index -= offset;
+-			self->first_visible_entry_idx -= offset;
++			self->top_idx -= offset;
+ 			self->seek(self, -offset, SEEK_CUR);
+ 			break;
+ 		case NEWT_KEY_HOME:
+@@ -253,7 +253,7 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
+ 				offset = self->nr_entries - 1;
+ 
+ 			self->index = self->nr_entries - 1;
+-			self->first_visible_entry_idx = self->index - offset;
++			self->top_idx = self->index - offset;
+ 			self->seek(self, -offset, SEEK_END);
+ 			break;
+ 		default:
+@@ -271,14 +271,13 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
+ 	struct list_head *head = self->entries;
+ 	int row = 0;
+ 
+-	if (self->first_visible_entry == NULL ||
+-	    self->first_visible_entry == self->entries)
+-                self->first_visible_entry = head->next;
++	if (self->top == NULL || self->top == self->entries)
++                self->top = head->next;
+ 
+-	pos = self->first_visible_entry;
++	pos = self->top;
+ 
+ 	list_for_each_from(pos, head) {
+-		SLsmg_gotorc(self->top + row, self->left);
++		SLsmg_gotorc(self->y + row, self->x);
+ 		self->write(self, pos, row);
+ 		if (++row == self->height)
+ 			break;
+diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
+index bcc4391..8eed24c 100644
+--- a/tools/perf/util/ui/browser.h
++++ b/tools/perf/util/ui/browser.h
+@@ -13,9 +13,9 @@
+ 
+ struct ui_browser {
+ 	newtComponent form, sb;
+-	u64	      index, first_visible_entry_idx;
+-	void	      *first_visible_entry, *entries;
+-	u16	      top, left, width, height;
++	u64	      index, top_idx;
++	void	      *top, *entries;
++	u16	      y, x, width, height;
+ 	void	      *priv;
+ 	unsigned int  (*refresh)(struct ui_browser *self);
+ 	void	      (*write)(struct ui_browser *self, void *entry, int row);
