@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752052Ab0HKEzQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 00:55:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:51768 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898Ab0HKEzO (ORCPT
+	id S932428Ab0HKFRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 01:17:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60394 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751040Ab0HKFRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 00:55:14 -0400
-Date: Wed, 11 Aug 2010 05:55:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	Wed, 11 Aug 2010 01:17:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=Mk1eTM9njETOd/BFmcaC3nGKDw2seKQz5ClZLQz1ee2wMnDq06DCXsOnFV9jgD4EQ+
+         1AvRaovYN2dCoHZ2fsXWnnf14Z+ZLPeaXhfuRdyDNETD1//SzvXTLI/QBLBc5FpXaAp2
+         gmQ2626WZc2WZAn2IL+G+3wBgrElSEdWkmldA=
+Date: Wed, 11 Aug 2010 09:17:10 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [git pull] more vfs stuff
-Message-ID: <20100811045512.GF31363@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] battery-2.6.git
+Message-ID: <20100811051710.GA29157@oksana.dev.rtsoft.ru>
+Reply-To: cbouatmailru@gmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Misc stuff missed in the previous pile (including fixup for 9p
-breakage).  The last part in sysvfs series replaced with akpm's version
-(with its whitespace fixes) with bogus include _not_ added.  Freeze
-stuff still pending; unfortunately, I've found a hole in my variant ;-/
-I know how to fix that, but I'd rather not send an untested locking change.
-It *is* needed in this cycle, since the current variant is simply broken -
-for example, try Alt-Sysrq-Emergency Thaw and it'll reliably deadlock ;-/
+Hello Linus,
 
-Please, pull from usual place -
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+Please pull battery-2.6.git tree to receive changes prepared
+for 2.6.36.
 
-More to follow...
+Thanks!
 
-Shortlog:
+The following changes since commit eb9650d6d989f24f21232a055d8fd45f1a9dcf99:
+  Peter Huewe (1):
+        ds2782_battery: Rename get_current to fix build failure / name conflict
 
-Jan Andres (1):
-      isofs: Fix lseek() to position beyond 4 GB
+are available in the git repository at:
 
-Lubomir Rintel (3):
-      Add v7 alias
-      V7: Adjust sanity checks for some volumes
-      fs/sysv/super.c: add support for non-PDP11 v7 filesystems
+  git://git.infradead.org/battery-2.6.git master
 
-Miklos Szeredi (8):
-      cachefiles: use path_get instead of lone dget
-      vfs: add helpers to get root and pwd
-      ia64: perfmon: add d_dname method
-      vfs: __d_path: dont prepend the name of the root dentry
-      vfs: add prepend_path() helper
-      vfs: only add " (deleted)" where necessary
-      vfs: show unreachable paths in getcwd and proc
-      vfs: remove unused MNT_STRICTATIME
+Alan Cox (1):
+      intel_mid_battery: Fix battery scaling
 
-Stephen Rothwell (1):
-      v9fs: fixup for inode_setattr being removed
+Arjan van de Ven (1):
+      intel_mid_battery: Fix the argument order to intel_scu_ipc_command
 
-Diffstat:
- arch/ia64/kernel/perfmon.c |   15 ++--
- fs/9p/vfs_inode.c          |   15 +++-
- fs/cachefiles/daemon.c     |   32 +++-----
- fs/dcache.c                |  188 +++++++++++++++++++++++++++++++-------------
- fs/fs_struct.c             |    7 +--
- fs/isofs/inode.c           |    7 ++-
- fs/namei.c                 |   15 +---
- fs/namespace.c             |    6 +-
- fs/proc/base.c             |   24 +++---
- fs/sysv/super.c            |   73 ++++++++++++-----
- include/linux/dcache.h     |    1 +
- include/linux/fs_struct.h  |   27 ++++++
- include/linux/mount.h      |    1 -
- include/linux/path.h       |    5 +
- include/linux/sysv_fs.h    |   11 +++
- kernel/auditsc.c           |    9 +--
- 16 files changed, 285 insertions(+), 151 deletions(-)
+David Woodhouse (1):
+      olpc_battery: Fix build failure caused by sysfs changes
+
+Nithish Mahalingam (1):
+      Intel MID platform battery driver
+
+Vasily Khoruzhick (1):
+      Add s3c-adc-battery driver
+
+ drivers/power/Kconfig             |   13 +
+ drivers/power/Makefile            |    2 +
+ drivers/power/intel_mid_battery.c |  799 +++++++++++++++++++++++++++++++++++++
+ drivers/power/olpc_battery.c      |    3 +-
+ drivers/power/s3c_adc_battery.c   |  431 ++++++++++++++++++++
+ include/linux/s3c_adc_battery.h   |   36 ++
+ 6 files changed, 1282 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/power/intel_mid_battery.c
+ create mode 100644 drivers/power/s3c_adc_battery.c
+ create mode 100644 include/linux/s3c_adc_battery.h
