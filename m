@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759360Ab0HKX7i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:59:38 -0400
-Received: from kroah.org ([198.145.64.141]:43649 "EHLO coco.kroah.org"
+	id S1759346Ab0HKX7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:35 -0400
+Received: from kroah.org ([198.145.64.141]:43635 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759278Ab0HKX7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:04 2010
-Message-Id: <20100811235503.961236282@clark.site>
+	id S1759265Ab0HKX7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:12 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:03 2010
+Message-Id: <20100811235503.744306589@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:12 -0700
+Date: Wed, 11 Aug 2010 16:55:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Renninger <trenn@suse.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>, len.brown@intel.com,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [091/111] x86: Fix out of order of gsi
+        Song Youquan <youquan.song@intel.com>,
+        Hang Ying <ying.huang@intel.com>,
+        Herbert Xu <herbert@gondor.hengli.com.au>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [089/111] crypto: testmgr - Fix complain about lack test for internal used algorithm
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,176 +28,142 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+From: Song Youquan <youquan.song@intel.com>
 
-commit fad539956c9e69749a03f7817d22d1bab87657bf upstream.
+commit 863b557a88f8c033f7419fabafef4712a5055f85 upstream.
 
-Iranna D Ankad reported that IBM x3950 systems have boot
-problems after this commit:
+When load aesni-intel and ghash_clmulni-intel driver,kernel will complain no
+ test for some internal used algorithm.
+The strange information as following:
 
- |
- | commit b9c61b70075c87a8612624736faf4a2de5b1ed30
- |
- |    x86/pci: update pirq_enable_irq() to setup io apic routing
- |
+alg: No test for __aes-aesni (__driver-aes-aesni)
+alg: No test for __ecb-aes-aesni (__driver-ecb-aes-aesni)
+alg: No test for __cbc-aes-aesni (__driver-cbc-aes-aesni)
+alg: No test for __ecb-aes-aesni (cryptd(__driver-ecb-aes-aesni)
+alg: No test for __ghash (__ghash-pclmulqdqni)
+alg: No test for __ghash (cryptd(__ghash-pclmulqdqni))
 
-The problem is that with the patch, the machine freezes when
-console=ttyS0,... kernel serial parameter is passed.
+This patch add NULL test entries for these algorithm and driver.
 
-It seem to freeze at DVD initialization and the whole problem
-seem to be DVD/pata related, but somehow exposed through the
-serial parameter.
-
-Such apic problems can expose really weird behavior:
-
-  ACPI: IOAPIC (id[0x10] address[0xfecff000] gsi_base[0])
-  IOAPIC[0]: apic_id 16, version 0, address 0xfecff000, GSI 0-2
-  ACPI: IOAPIC (id[0x0f] address[0xfec00000] gsi_base[3])
-  IOAPIC[1]: apic_id 15, version 0, address 0xfec00000, GSI 3-38
-  ACPI: IOAPIC (id[0x0e] address[0xfec01000] gsi_base[39])
-  IOAPIC[2]: apic_id 14, version 0, address 0xfec01000, GSI 39-74
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 1 global_irq 4 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 5 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 3 global_irq 6 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 4 global_irq 7 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 6 global_irq 9 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 7 global_irq 10 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 8 global_irq 11 low edge)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 12 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 12 global_irq 15 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 13 global_irq 16 dfl dfl)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 14 global_irq 17 low edge)
-  ACPI: INT_SRC_OVR (bus 0 bus_irq 15 global_irq 18 dfl dfl)
-
-It turns out that the system has three io apic controllers, but
-boot ioapic routing is in the second one, and that gsi_base is
-not 0 - it is using a bunch of INT_SRC_OVR...
-
-So these recent changes:
-
- 1. one set routing for first io apic controller
- 2. assume irq = gsi
-
-... will break that system.
-
-So try to remap those gsis, need to seperate boot_ioapic_idx
-detection out of enable_IO_APIC() and call them early.
-
-So introduce boot_ioapic_idx, and remap_ioapic_gsi()...
-
- -v2: shift gsi with delta instead of gsi_base of boot_ioapic_idx
-
- -v3: double check with find_isa_irq_apic(0, mp_INT) to get right
-      boot_ioapic_idx
-
- -v4: nr_legacy_irqs
-
- -v5: add print out for boot_ioapic_idx, and also make it could be
-      applied for current kernel and previous kernel
-
- -v6: add bus_irq, in acpi_sci_ioapic_setup, so can get overwride
-      for sci right mapping...
-
- -v7: looks like pnpacpi get irq instead of gsi, so need to revert
-      them back...
-
- -v8: split into two patches
-
- -v9: according to Eric, use fixed 16 for shifting instead of remap
-
- -v10: still need to touch rsparser.c
-
- -v11: just revert back to way Eric suggest...
-      anyway the ioapic in first ioapic is blocked by second...
-
- -v12: two patches, this one will add more loop but check apic_id and irq > 16
-
-Reported-by: Iranna D Ankad <iranna.ankad@in.ibm.com>
-Bisected-by: Iranna D Ankad <iranna.ankad@in.ibm.com>
-Tested-by: Gary Hade <garyhade@us.ibm.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Thomas Renninger <trenn@suse.de>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: len.brown@intel.com
-LKML-Reference: <4B8A321A.1000008@kernel.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Song Youquan <youquan.song@intel.com>
+Signed-off-by: Hang Ying <ying.huang@intel.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Acked-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/apic/io_apic.c |   28 ++++++++++------------------
- 1 file changed, 10 insertions(+), 18 deletions(-)
+ crypto/testmgr.c |   84 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 84 insertions(+)
 
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1484,7 +1484,7 @@ static struct {
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -1477,9 +1477,54 @@ static int alg_test_cprng(const struct a
+ 	return err;
+ }
  
- static void __init setup_IO_APIC_irqs(void)
- {
--	int apic_id = 0, pin, idx, irq;
-+	int apic_id, pin, idx, irq;
- 	int notcon = 0;
- 	struct irq_desc *desc;
- 	struct irq_cfg *cfg;
-@@ -1492,14 +1492,7 @@ static void __init setup_IO_APIC_irqs(vo
- 
- 	apic_printk(APIC_VERBOSE, KERN_DEBUG "init IO_APIC IRQs\n");
- 
--#ifdef CONFIG_ACPI
--	if (!acpi_disabled && acpi_ioapic) {
--		apic_id = mp_find_ioapic(0);
--		if (apic_id < 0)
--			apic_id = 0;
--	}
--#endif
--
-+	for (apic_id = 0; apic_id < nr_ioapics; apic_id++)
- 	for (pin = 0; pin < nr_ioapic_registers[apic_id]; pin++) {
- 		idx = find_irq_entry(apic_id, pin, mp_INT);
- 		if (idx == -1) {
-@@ -1521,6 +1514,9 @@ static void __init setup_IO_APIC_irqs(vo
- 
- 		irq = pin_2_irq(idx, apic_id, pin);
- 
-+		if ((apic_id > 0) && (irq > 16))
-+			continue;
++static int alg_test_null(const struct alg_test_desc *desc,
++			     const char *driver, u32 type, u32 mask)
++{
++	return 0;
++}
 +
- 		/*
- 		 * Skip the timer IRQ if there's a quirk handler
- 		 * installed and if it returns 1:
-@@ -4083,27 +4079,23 @@ int acpi_get_override_irq(int bus_irq, i
- #ifdef CONFIG_SMP
- void __init setup_ioapic_dest(void)
- {
--	int pin, ioapic = 0, irq, irq_entry;
-+	int pin, ioapic, irq, irq_entry;
- 	struct irq_desc *desc;
- 	const struct cpumask *mask;
- 
- 	if (skip_ioapic_setup == 1)
- 		return;
- 
--#ifdef CONFIG_ACPI
--	if (!acpi_disabled && acpi_ioapic) {
--		ioapic = mp_find_ioapic(0);
--		if (ioapic < 0)
--			ioapic = 0;
--	}
--#endif
--
-+	for (ioapic = 0; ioapic < nr_ioapics; ioapic++)
- 	for (pin = 0; pin < nr_ioapic_registers[ioapic]; pin++) {
- 		irq_entry = find_irq_entry(ioapic, pin, mp_INT);
- 		if (irq_entry == -1)
- 			continue;
- 		irq = pin_2_irq(irq_entry, ioapic, pin);
- 
-+		if ((ioapic > 0) && (irq > 16))
-+			continue;
-+
- 		desc = irq_to_desc(irq);
- 
- 		/*
+ /* Please keep this list sorted by algorithm name. */
+ static const struct alg_test_desc alg_test_descs[] = {
+ 	{
++		.alg = "__driver-cbc-aes-aesni",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
++		.alg = "__driver-ecb-aes-aesni",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
++		.alg = "__ghash-pclmulqdqni",
++		.test = alg_test_null,
++		.suite = {
++			.hash = {
++				.vecs = NULL,
++				.count = 0
++			}
++		}
++	}, {
+ 		.alg = "ansi_cprng",
+ 		.test = alg_test_cprng,
+ 		.fips_allowed = 1,
+@@ -1623,6 +1668,30 @@ static const struct alg_test_desc alg_te
+ 			}
+ 		}
+ 	}, {
++		.alg = "cryptd(__driver-ecb-aes-aesni)",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
++	}, {
++		.alg = "cryptd(__ghash-pclmulqdqni)",
++		.test = alg_test_null,
++		.suite = {
++			.hash = {
++				.vecs = NULL,
++				.count = 0
++			}
++		}
++	}, {
+ 		.alg = "ctr(aes)",
+ 		.test = alg_test_skcipher,
+ 		.fips_allowed = 1,
+@@ -1668,6 +1737,21 @@ static const struct alg_test_desc alg_te
+ 				}
+ 			}
+ 		}
++	}, {
++		.alg = "ecb(__aes-aesni)",
++		.test = alg_test_null,
++		.suite = {
++			.cipher = {
++				.enc = {
++					.vecs = NULL,
++					.count = 0
++				},
++				.dec = {
++					.vecs = NULL,
++					.count = 0
++				}
++			}
++		}
+ 	}, {
+ 		.alg = "ecb(aes)",
+ 		.test = alg_test_skcipher,
 
 
