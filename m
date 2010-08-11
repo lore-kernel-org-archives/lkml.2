@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758264Ab0HKXty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:49:54 -0400
-Received: from kroah.org ([198.145.64.141]:57503 "EHLO coco.kroah.org"
+	id S1758646Ab0HKXuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:50:08 -0400
+Received: from kroah.org ([198.145.64.141]:57545 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758130Ab0HKXtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:49:52 -0400
+	id S1758479Ab0HKXuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:50:02 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:25 2010
-Message-Id: <20100811234624.996057874@clark.site>
+Message-Id: <20100811234625.718070734@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:45:40 -0700
+Date: Wed, 11 Aug 2010 16:45:48 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: [01/11] nvram: Fix write beyond end condition; prove to gcc copy is safe
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [09/11] xen: drop xen_sched_clock in favour of using plain wallclock time
 In-Reply-To: <20100811234809.GA676@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,64 +25,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-commit a01c7800420d2c294ca403988488a635d4087a6d upstream.
+commit 8a22b9996b001c88f2bfb54c6de6a05fc39e177a upstream.
 
-In nvram_write, first of all, correctly handle the case where the file
-pointer is already beyond the end; we should return EOF in that case.
+xen_sched_clock only counts unstolen time.  In principle this should
+be useful to the Linux scheduler so that it knows how much time a process
+actually consumed.  But in practice this doesn't work very well as the
+scheduler expects the sched_clock time to be synchronized between
+cpus.  It also uses sched_clock to measure the time a task spends
+sleeping, in which case "unstolen time" isn't meaningful.
 
-Second, make the logic a bit more explicit so that gcc can statically
-prove that the copy_from_user() is safe.  Once the condition of the
-beyond-end filepointer is eliminated, the copy is safe but gcc can't
-prove it, causing build failures for i386 allyesconfig.
+So just use plain xen_clocksource_read to return wallclock nanoseconds
+for sched_clock.
 
-Third, eliminate the entirely superfluous variable "len", and just use
-the passed-in variable "count" instead.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <tip-*@git.kernel.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/nvram.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ arch/x86/xen/enlighten.c |    2 +-
+ arch/x86/xen/time.c      |   43 +------------------------------------------
+ arch/x86/xen/xen-ops.h   |    3 ++-
+ 3 files changed, 4 insertions(+), 44 deletions(-)
 
---- a/drivers/char/nvram.c
-+++ b/drivers/char/nvram.c
-@@ -265,10 +265,16 @@ nvram_write(struct file *file, const cha
- 	unsigned char contents[NVRAM_BYTES];
- 	unsigned i = *ppos;
- 	unsigned char *tmp;
--	int len;
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -1179,7 +1179,7 @@ static const struct pv_time_ops xen_time
+ 	.set_wallclock = xen_set_wallclock,
+ 	.get_wallclock = xen_get_wallclock,
+ 	.get_tsc_khz = xen_tsc_khz,
+-	.sched_clock = xen_sched_clock,
++	.sched_clock = xen_clocksource_read,
+ };
  
--	len = (NVRAM_BYTES - i) < count ? (NVRAM_BYTES - i) : count;
--	if (copy_from_user(contents, buf, len))
-+	if (i >= NVRAM_BYTES)
-+		return 0;	/* Past EOF */
-+
-+	if (count > NVRAM_BYTES - i)
-+		count = NVRAM_BYTES - i;
-+	if (count > NVRAM_BYTES)
-+		return -EFAULT;	/* Can't happen, but prove it to gcc */
-+
-+	if (copy_from_user(contents, buf, count))
- 		return -EFAULT;
+ static const struct pv_cpu_ops xen_cpu_ops __initdata = {
+--- a/arch/x86/xen/time.c
++++ b/arch/x86/xen/time.c
+@@ -30,8 +30,6 @@
+ #define TIMER_SLOP	100000
+ #define NS_PER_TICK	(1000000000LL / HZ)
  
- 	spin_lock_irq(&rtc_lock);
-@@ -276,7 +282,7 @@ nvram_write(struct file *file, const cha
- 	if (!__nvram_check_checksum())
- 		goto checksum_err;
+-static cycle_t xen_clocksource_read(void);
+-
+ /* runstate info updated by Xen */
+ static DEFINE_PER_CPU(struct vcpu_runstate_info, runstate);
  
--	for (tmp = contents; count-- > 0 && i < NVRAM_BYTES; ++i, ++tmp)
-+	for (tmp = contents; count--; ++i, ++tmp)
- 		__nvram_write_byte(*tmp, i);
+@@ -158,45 +156,6 @@ static void do_stolen_accounting(void)
+ 	account_steal_time(idle_task(smp_processor_id()), ticks);
+ }
  
- 	__nvram_set_checksum();
+-/*
+- * Xen sched_clock implementation.  Returns the number of unstolen
+- * nanoseconds, which is nanoseconds the VCPU spent in RUNNING+BLOCKED
+- * states.
+- */
+-unsigned long long xen_sched_clock(void)
+-{
+-	struct vcpu_runstate_info state;
+-	cycle_t now;
+-	u64 ret;
+-	s64 offset;
+-
+-	/*
+-	 * Ideally sched_clock should be called on a per-cpu basis
+-	 * anyway, so preempt should already be disabled, but that's
+-	 * not current practice at the moment.
+-	 */
+-	preempt_disable();
+-
+-	now = xen_clocksource_read();
+-
+-	get_runstate_snapshot(&state);
+-
+-	WARN_ON(state.state != RUNSTATE_running);
+-
+-	offset = now - state.state_entry_time;
+-	if (offset < 0)
+-		offset = 0;
+-
+-	ret = state.time[RUNSTATE_blocked] +
+-		state.time[RUNSTATE_running] +
+-		offset;
+-
+-	preempt_enable();
+-
+-	return ret;
+-}
+-
+-
+ /* Get the TSC speed from Xen */
+ unsigned long xen_tsc_khz(void)
+ {
+@@ -213,7 +172,7 @@ unsigned long xen_tsc_khz(void)
+ 	return xen_khz;
+ }
+ 
+-static cycle_t xen_clocksource_read(void)
++cycle_t xen_clocksource_read(void)
+ {
+         struct pvclock_vcpu_time_info *src;
+ 	cycle_t ret;
+--- a/arch/x86/xen/xen-ops.h
++++ b/arch/x86/xen/xen-ops.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/init.h>
+ #include <linux/irqreturn.h>
++#include <linux/clocksource.h>
+ #include <xen/xen-ops.h>
+ 
+ /* These are code, but not functions.  Defined in entry.S */
+@@ -37,7 +38,7 @@ unsigned long xen_tsc_khz(void);
+ void __init xen_time_init(void);
+ unsigned long xen_get_wallclock(void);
+ int xen_set_wallclock(unsigned long time);
+-unsigned long long xen_sched_clock(void);
++cycle_t xen_clocksource_read(void);
+ 
+ irqreturn_t xen_debug_interrupt(int irq, void *dev_id);
+ 
 
 
