@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932650Ab0HKIFt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 04:05:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42275 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753128Ab0HKIFq (ORCPT
+	id S1756354Ab0HKIIG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 04:08:06 -0400
+Received: from mtagate5.de.ibm.com ([195.212.17.165]:49009 "EHLO
+	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153Ab0HKIIB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 04:05:46 -0400
-Message-ID: <4C6259CE.70109@monstr.eu>
-Date: Wed, 11 Aug 2010 10:05:34 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Wed, 11 Aug 2010 04:08:01 -0400
+Date: Wed, 11 Aug 2010 10:07:50 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity
+ data
+Message-ID: <20100811080750.GA4722@schmichrtp.mainz.de.ibm.com>
+References: <20100715153410.774329000@de.ibm.com>
+ <yq1mxtspwab.fsf@sermon.lab.mkp.net>
+ <20100716083034.GA7474@schmichrtp.ibm.com>
+ <yq1bpa292wy.fsf@sermon.lab.mkp.net>
+ <20100720092850.GA4547@schmichrtp.mainz.de.ibm.com>
+ <yq1y6d579fy.fsf@sermon.lab.mkp.net>
+ <20100802110517.GA4556@schmichrtp.mainz.de.ibm.com>
+ <yq1vd7s8ful.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-CC: "Steven J. Magnani" <steve@digidescorp.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        John Williams <john.williams@petalogix.com>,
-        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH] arch/microblaze: Removing dead CONTIGUOUS_PAGE_ALLOC
- config option
-References: <20100810120052.GA26802@faui49.informatik.uni-erlangen.de>
-In-Reply-To: <20100810120052.GA26802@faui49.informatik.uni-erlangen.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1vd7s8ful.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christian Dietrich wrote:
-> CONFIG_CONTIGUOUS_PAGE_ALLOC doesn't exist in Kconfig, therefore removing
-> all references to it from the source.
+On Tue, Aug 03, 2010 at 12:44:50AM -0400, Martin K. Petersen wrote:
+> >>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> 
+> Christof> To summarize the limits i see in the zfcp hardware:
+> Christof> - Maximum size of 4k per segment
+> Christof> - The segments must not cross page boundaries
+> Christof> - The number of segments per request is limited
+> 
+> The interesting thing here is that your hw has a limit for the total
+> number of segments whereas other DIX HBAs have separate limits for data
+> and integrity scatterlists.
 
-Applied.
+Yes, the hw interface only has a limit for the total number. The best
+solution would be an interface that allows reporting this limit to the
+block layer. If this is not possible, or deemed too exotic, reporting
+seperate limits for integrity segments and data segments would also be
+fine with me.
+
+> Christof> What would be the preferred approach for handling the
+> Christof> integrity data limits in the block layer? Introduce new queue
+> Christof> limits for integrity data, or assume that the limits for
+> Christof> integrity data are the same as for user data? I can update my
+> Christof> patch accordingly and include a check for the maximum number
+> Christof> of segments.
+> 
+> I've been messing with this tonight.  It's not entirely trivial because
+> of the housekeeping involved, having to accomodate different types of
+> hardware, having to avoid breaking existing setups, and having to work
+> with integrity compiled and without.
+> 
+> My first attempt at this got quite messy.  I think I have found a way
+> but it's bedtime here.  Give me a day or two to get back to you with
+> something that'll hopefully work for everyone.
+
+Ok, when you have something, i can have a look at it and see if it
+matches the requirements here.
 
 Thanks,
-Michal
 
-> 
-> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-> ---
->  arch/microblaze/include/asm/page.h |    3 ---
->  1 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/microblaze/include/asm/page.h b/arch/microblaze/include/asm/page.h
-> index 4f268fa..1f033c6 100644
-> --- a/arch/microblaze/include/asm/page.h
-> +++ b/arch/microblaze/include/asm/page.h
-> @@ -205,9 +205,6 @@ extern int page_is_ram(unsigned long pfn);
->  #define TOPHYS(addr)  __virt_to_phys(addr)
->  
->  #ifdef CONFIG_MMU
-> -#ifdef CONFIG_CONTIGUOUS_PAGE_ALLOC
-> -#define WANT_PAGE_VIRTUAL 1 /* page alloc 2 relies on this */
-> -#endif
->  
->  #define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
->  				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Christof
