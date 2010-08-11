@@ -1,180 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab0HKCpE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 22:45:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40398 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755796Ab0HKCpB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 22:45:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QCNrs4o+6owwxsaswA5W0g0lIzycflqyGki4qB29pbk+sfd7rnQikKvUgPcmT9HGtV
-         /12bej1XwhDq9b8Y6g5AuYjuGQled8fJqrWPq/sVinH4n6d8ROhSuXNa6FjJlbKhz58B
-         d1+0YHEVDaQHhInqp3y1eaQWCcUemPgHdRyoU=
-Date: Wed, 11 Aug 2010 04:44:55 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100811024451.GA26835@nowhere>
-References: <20100804155002.GS3353@redhat.com> <20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo> <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo> <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com> <20100810204856.GA16571@redhat.com>
+	id S932299Ab0HKDDU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 23:03:20 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54806 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757937Ab0HKDDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 23:03:18 -0400
+Date: Tue, 10 Aug 2010 20:00:53 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+In-Reply-To: <20100811022131.GA2587@linux.vnet.ibm.com>
+Message-ID: <alpine.DEB.2.00.1008101947550.23481@asgard.lang.hm>
+References: <20100808155719.GB3635@thunk.org> <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com> <20100808213821.GD3635@thunk.org> <20100809112453.77210acc@lxorguk.ukuu.org.uk> <20100809181638.GI3026@linux.vnet.ibm.com> <20100809201822.441905f7@lxorguk.ukuu.org.uk>
+ <20100810044541.GA2817@linux.vnet.ibm.com> <20100810093849.138e2318@lxorguk.ukuu.org.uk> <20100811004223.GH2379@linux.vnet.ibm.com> <alpine.DEB.2.00.1008101821280.23481@asgard.lang.hm> <20100811022131.GA2587@linux.vnet.ibm.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100810204856.GA16571@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 04:48:56PM -0400, Don Zickus wrote:
-> On Mon, Aug 09, 2010 at 09:48:29PM +0200, Robert Richter wrote:
-> > On 06.08.10 10:21:31, Don Zickus wrote:
-> > > On Fri, Aug 06, 2010 at 08:52:03AM +0200, Robert Richter wrote:
-> > 
-> > > > I was playing around with it yesterday trying to fix this. My idea is
-> > > > to skip an unkown nmi if the privious nmi was a *handled* perfctr
-> > > 
-> > > You might want to add a little more logic that says *handled* _and_ had
-> > > more than one perfctr trigger.  Most of the time only one perfctr is
-> > > probably triggering, so you might be eating unknown_nmi's needlessly.
-> > > 
-> > > Just a thought.
-> > 
-> > Yes, that's true. It could be implemented on top of the patch below.
+On Tue, 10 Aug 2010, Paul E. McKenney wrote:
+
+> Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
 > 
-> I did, but the changes basically revert the bulk of your patch.
-> 
-> > 
-> > > 
-> > > > nmi. I will probably post an rfc patch early next week.
-> > 
-> > Here it comes:
-> > 
-> > From d2739578199d881ae6a9537c1b96a0efd1cdea43 Mon Sep 17 00:00:00 2001
-> > From: Robert Richter <robert.richter@amd.com>
-> > Date: Thu, 5 Aug 2010 16:19:59 +0200
-> > Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
-> 
-> On top of Robert's patch:
-> (compiled tested only because I don't have a fancy button to trigger
-> unknown nmis)
-> 
-> From 548cf5148f47618854a0eff22b1d55db71b6f8fc Mon Sep 17 00:00:00 2001
-> From: Don Zickus <dzickus@redhat.com>
-> Date: Tue, 10 Aug 2010 16:40:03 -0400
-> Subject: [PATCH] perf, x86: only skip NMIs when multiple perfctrs trigger
-> 
-> A small optimization on top of Robert's patch that limits the
-> skipping of NMI's to cases where we detect multiple perfctr events
-> have happened.
+> On Tue, Aug 10, 2010 at 06:28:39PM -0700, david@lang.hm wrote:
+>> On Tue, 10 Aug 2010, Paul E. McKenney wrote:
+>>
+>>> On Tue, Aug 10, 2010 at 09:38:49AM +0100, Alan Cox wrote:
+>>>>> situation you call out can occur with manual suspend-to-RAM already:
+>>>>> the fact is that this is a design choice.  You could indeed make a
+>>>>
+>>>> Losing data is a design choice ? The application set a timer, the OS
+>>>> shouldn't be ignoring it in that situation. It might want to delay it, it
+>>>> might want to warn the user its hogging things it shouldnt (powertop,
+>>>> battery usage monitors in Android etc)
+>>>
+>>> Hmmm...  Let's put the two approaches side by side so that we can compare
+>>> them more easily:
+>>>
+>>> 	Opportunistic Suspend		Idle + Timer Jitter
+>>>
+>>> 	Set timer			Set timer
+>>> 	Suspend				OS delays timer
+>>> 	Resume				OS continues delaying timer
+>>> 	Timer fires			Timer fires
+>>>
+>>> These two cases look quite similar to me.
+>>>
+>>> But as you say, the battery can run out.  So let's add that to the
+>>> comparison:
+>>>
+>>> 	Opportunistic Suspend		Idle + Timer Jitter
+>>>
+>>> 	Set timer			Set timer
+>>> 	Suspend				OS delays timer
+>>> 	Battery runs out		Battery runs out
+>>> 	Data loss			Data loss
+>>>
+>>> The two cases still look quite similar.  You might note, quite correctly,
+>>> that the time between suspend and resume might be quite a bit longer than
+>>> the typical time that the OS delays a timer.  But the power consumption
+>>> on some platforms is quite a bit lower in the suspend case than it is
+>>> in the delayed-timer case.
+>>
+>> it has been stated that the android can hit the exact same power
+>> state either with sleep or suspend, and that the same clock can wake
+>> it up (it appears as a timer expiring for sleep, or an alarm for
+>> suspend, but it's the same clock firing the signal)
+>>
+>> so in at least some cases the hardware supports doing both with
+>> equal efficiency.
+>
+> It indeed has been so stated.  But in this section we were discussing
+> data loss, not hardware power-state capabilities.
 
+you specifically stated that suspend would use less power. I am pointing 
+out that ther is info posed in this thread to say that's not always the 
+case.
 
+in either case it is possible for the system to wake up again later to let 
+the timer fire and the application save it's work. It's arguably easier 
+in the idle case as it doesn't require application modification
 
-Yeah, I think that's more reasonable. This lowers even more the chances of
-losing important hardware errors.
+for example
 
-One comment though:
+Idle + Timer Jitter
+set timer
+OS sets timer jitter to 1 hour
+system sleeps for 1 hour with no wakeups
+timer fires, applications wake and process data
+system sleeps (for 1 hour or more with no wakeups)
+  (repeat as needed until battery runs out)
 
+much less chance for data loss as there is _far_ more of a chance that the 
+timer
 
-> 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> 
-> ---
->  arch/x86/kernel/cpu/perf_event.c |   34 ++++++++++++++++++++--------------
->  1 files changed, 20 insertions(+), 14 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index c3cd159..066046d 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -1154,7 +1154,7 @@ static int x86_pmu_handle_irq(struct pt_regs *regs)
->  		/*
->  		 * event overflow
->  		 */
-> -		handled		= 1;
-> +		handled		+= 1;
->  		data.period	= event->hw.last_period;
->  
->  		if (!x86_perf_event_set_period(event))
-> @@ -1200,7 +1200,7 @@ void perf_events_lapic_init(void)
->  	apic_write(APIC_LVTPC, APIC_DM_NMI);
->  }
->  
-> -static DEFINE_PER_CPU(unsigned int, perfctr_handled);
-> +static DEFINE_PER_CPU(unsigned int, perfctr_skip);
->  
->  static int __kprobes
->  perf_event_nmi_handler(struct notifier_block *self,
-> @@ -1208,8 +1208,7 @@ perf_event_nmi_handler(struct notifier_block *self,
->  {
->  	struct die_args *args = __args;
->  	struct pt_regs *regs;
-> -	unsigned int this_nmi;
-> -	unsigned int prev_nmi;
-> +	int handled = 0;
->  
->  	if (!atomic_read(&active_events))
->  		return NOTIFY_DONE;
-> @@ -1229,14 +1228,11 @@ perf_event_nmi_handler(struct notifier_block *self,
->  		 * was handling a perfctr. Otherwise we pass it and
->  		 * let the kernel handle the unknown nmi.
->  		 *
-> -		 * Note: this could be improved if we drop unknown
-> -		 * NMIs only if we handled more than one perfctr in
-> -		 * the previous NMI.
->  		 */
-> -		this_nmi = percpu_read(irq_stat.__nmi_count);
-> -		prev_nmi = __get_cpu_var(perfctr_handled);
-> -		if (this_nmi == prev_nmi + 1)
-> +		if (__get_cpu_var(perfctr_skip)){
-> +			__get_cpu_var(perfctr_skip) -=1;
->  			return NOTIFY_STOP;
-> +		}
->  		return NOTIFY_DONE;
->  	default:
->  		return NOTIFY_DONE;
-> @@ -1246,11 +1242,21 @@ perf_event_nmi_handler(struct notifier_block *self,
->  
->  	apic_write(APIC_LVTPC, APIC_DM_NMI);
->  
-> -	if (!x86_pmu.handle_irq(regs))
-> +	handled = x86_pmu.handle_irq(regs);
-> +	if (!handled)
-> +		/* not our NMI */
->  		return NOTIFY_DONE;
-> -
-> -	/* handled */
-> -	__get_cpu_var(perfctr_handled) = percpu_read(irq_stat.__nmi_count);
-> +	else if (handled > 1)
-> +		/*
-> +		 * More than one perfctr triggered.  This could have
-> +		 * caused a second NMI that we must now skip because
-> +		 * we have already handled it.  Remember it.
-> +		 *
-> +		 * NOTE: We have no way of knowing if a second NMI was
-> +		 * actually triggered, so we may accidentally skip a valid
-> +		 * unknown nmi later.
-> +		 */
-> +		__get_cpu_var(perfctr_skip) +=1;
+waking up once per hour for a short time is not going to make a noticable 
+difference in your total battery life of a cell phone due to the 
+significant idle power draw needed for the cell circuitry. On something 
+like a e-reader with no radio link and a month-long idle time it could 
+make a difference.
 
+note that this is with a badly written app running that is trying to 
+wakeup repeatedly. If the app is well behaved and only schedule a timer 
+when they will have work to do, they may not schedule a timer at all after 
+the data is saved, and so would have the data safe and just as long a 
+standby time.
 
+>>>>> But that doesn't guarantee that solutions developed for PCs and laptops
+>>>>> will be optimal (or even usable) on cellphones.  Sufficient difference
+>>>>
+>>>> Your cellphone is to all intents a laptop from ten years ago, it even has
+>>>> a similar display resolution and internet availability. The underlying
+>>>> difference between the two is solely form factor - the laptop had a
+>>>> better keyboard.
+>>>
+>>> There are similarities and differences.  You have called out some of
+>>> the similarities.  Differences include the more-aggressive hardware
+>>> power management on cellphones, the greater number and variety of
+>>> hardware accelerators on cellphones, battery capacity, and, as you say,
+>>> physical size.  People currently use cellphones differently than they
+>>> do laptops or desktops.  The usage might converge, but we will see.
+>>> There is as much reason to expect increasing specialization as there
+>>> is to expect increasing convergence.
+>>
+>> You are talking about Android as if it was a cell phone only thing,
+>> it's not. there are shipping tablets (and I believe netbooks, i.e.
+>> laptops) running andoid.
+>
+> I was talking about cellphones.  But yes, Android (and thus suspend
+> blockers) are used for tablets as well as cellphones, thank you for
+> reminding me!
 
-May be make it just a pending bit. I mean not something that can
-go further 1, because you can't have more than 1 pending anyway. I don't
-know how that could happen you get accidental perctr_skip > 1, may be
-expected pending NMIs that don't happen somehow, but better be paranoid with
-that, as it's about trying not to miss hardware errors.
+the fact that it's used there means that you can't argue that it's 
+difference because cell phones are so different (unless you are saying 
+that Android is really not appropriate for those uses)
 
-Thanks.
+On the other hand, lots of things are used in places where it is 
+inappropriate, Windows CE is used on phones, tablets, etc but I think most 
+people would say that the use of windows there isn't appropriate.
 
+David Lang
