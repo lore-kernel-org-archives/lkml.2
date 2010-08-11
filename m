@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823Ab0HKORe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:17:34 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39717 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389Ab0HKORd convert rfc822-to-8bit (ORCPT
+	id S1752848Ab0HKOUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:20:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:35254 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab0HKOUO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:17:33 -0400
+	Wed, 11 Aug 2010 10:20:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PextLPlfkIKRJJjxSkfdvX2JVpOJb1uXTzoPfMJfGKbGd7+HjNXUFdIh5eC6A21hQE
-         VL/F/RioIAfyWLs0ymlaG24OMLtrROZAn7li+GcXpf0Oig64fYkalHXPnoISjCOAYWZ3
-         LvatXTt/Rqzxlz0w/qk/V+L8scEQx0uZmcZHg=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iN6Ev/jSl8HeGVH+WrivYKR8s3chvGDzACuP4HHdpV8GOts7JAcfQLwW2VujbtuCsf
+         x1yy82fUseO6RHuam1DjGr/w1PtdmDVyilfGNczeftqVYexbKiHV/E3JmW2KVKtYIK4Y
+         7Cgzt503N1UN5x3g+E0ILdc0BBVFAa28dfRi4=
+Date: Wed, 11 Aug 2010 19:49:53 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Russell King <rmk@arm.linux.org.uk>, lkml <linux-kernel@vger.kernel.org>,
+        arnd.bergmann@de.ibm.com
+Subject: Re: [PATCH] arm: fix versatile boot hang (seen with qemu)
+Message-ID: <20100811141953.GB5846@debian>
+References: <1281493191.2955.42.camel@localhost.localdomain>
+ <20100811072014.GA14306@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimx0No2RgS8EdZCz=X8urJ8u4hVEVH5c1mcz_CW@mail.gmail.com>
-References: <20100811084828.GA5709@nb-core2.darkstar.lan>
-	<AANLkTimx0No2RgS8EdZCz=X8urJ8u4hVEVH5c1mcz_CW@mail.gmail.com>
-Date: Wed, 11 Aug 2010 16:17:33 +0200
-Message-ID: <AANLkTinDBjzOLXE8V3aaiYC=khKM5a8hzXMbNJpowkRt@mail.gmail.com>
-Subject: Re: [DRM] BUG: sleeping function called from invalid context, 
-	drm_lastclose
-From: Luca Tettamanti <kronos.it@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100811072014.GA14306@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 10:50 AM, Dave Airlie <airlied@gmail.com> wrote:
-> On Wed, Aug 11, 2010 at 6:48 PM, Luca Tettamanti <kronos.it@gmail.com> wrote:
->> Hi Arnd,
->> this commit:
->>
->> commit 58374713c9dfb4d231f8c56cac089f6fbdedc2ec
->> Author: Arnd Bergmann <arnd@arndb.de>
->> Date:   Sat Jul 10 23:51:39 2010 +0200
->>
->>    drm: kill BKL from common code
->>
->>
->> moved the call to (inside drm_release) drm_lastclose inside dev->count_lock
->> spinlock.
->> drm_lastclose however takes dev->struct_mutex (now inside an atomic
->> context):
->
-> I have a patch from Chris Wilson that I need to push to fix this,
-> basically reducing the spin lock coverage,
-> and relying on the global mutex to handle the open race.
+On Wed, Aug 11, 2010 at 08:20:14AM +0100, Russell King wrote:
+> On Tue, Aug 10, 2010 at 07:19:51PM -0700, john stultz wrote:
+> > Hey Russell,
+> > 
+> > 	I have been having troubles getting the 2.6.35 kernel to boot in my
+> > qemu-system-arm environment.
+> 
+> It's a qemu bug.
 
-Ok, thank you :)
+The fix there, long since applied, is:
 
-Luca
+http://www.mail-archive.com/qemu-devel@nongnu.org/msg30785.html
