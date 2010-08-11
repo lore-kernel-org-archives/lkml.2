@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933679Ab0HLAjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:39:48 -0400
-Received: from kroah.org ([198.145.64.141]:40210 "EHLO coco.kroah.org"
+	id S933689Ab0HLAkH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:40:07 -0400
+Received: from kroah.org ([198.145.64.141]:40203 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758911Ab0HKX6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:05 -0400
+	id S1758902Ab0HKX6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
-Message-Id: <20100811235458.910562877@clark.site>
+Message-Id: <20100811235458.819699877@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:18 -0700
+Date: Wed, 11 Aug 2010 16:54:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,9 +17,8 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Ian Campbell <ian.campbell@citrix.com>,
         Stephen Hemminger <shemminger@linux-foundation.org>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        xen-devel@lists.xensource.com
-Subject: [037/111] xen: netfront: explicitly generate arp_notify event after migration.
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [036/111] arp_notify: allow drivers to explicitly request a notification event.
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,33 +30,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit 592970675c9522bde588b945388c7995c8b51328 upstream.
+commit 06c4648d46d1b757d6b9591a86810be79818b60c upstream.
 
-Use newly introduced netif_notify_peers() method to ensure a gratuitous ARP is
-generated after a migration.
+Currently such notifications are only generated when the device comes up or the
+address changes. However one use case for these notifications is to enable
+faster network recovery after a virtual machine migration (by causing switches
+to relearn their MAC tables). A migration appears to the network stack as a
+temporary loss of carrier and therefore does not trigger either of the current
+conditions. Rather than adding carrier up as a trigger (which can cause issues
+when interfaces a flapping) simply add an interface which the driver can use
+to explicitly trigger the notification.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Cc: Stephen Hemminger <shemminger@linux-foundation.org>
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>
 Cc: David S. Miller <davem@davemloft.net>
 Cc: netdev@vger.kernel.org
-Cc: xen-devel@lists.xensource.com
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/xen-netfront.c |    1 +
- 1 file changed, 1 insertion(+)
+ include/linux/netdevice.h |    2 ++
+ include/linux/notifier.h  |    1 +
+ net/ipv4/devinet.c        |    1 +
+ net/sched/sch_generic.c   |   18 ++++++++++++++++++
+ 4 files changed, 22 insertions(+)
 
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -1619,6 +1619,7 @@ static void backend_changed(struct xenbu
- 		if (xennet_connect(netdev) != 0)
- 			break;
- 		xenbus_switch_state(dev, XenbusStateConnected);
-+		netif_notify_peers(netdev);
- 		break;
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1560,6 +1560,8 @@ extern void netif_carrier_on(struct net_
  
- 	case XenbusStateClosing:
+ extern void netif_carrier_off(struct net_device *dev);
+ 
++extern void netif_notify_peers(struct net_device *dev);
++
+ /**
+  *	netif_dormant_on - mark device as dormant.
+  *	@dev: network device
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -201,6 +201,7 @@ static inline int notifier_to_errno(int
+ #define NETDEV_PRE_UP		0x000D
+ #define NETDEV_BONDING_OLDTYPE  0x000E
+ #define NETDEV_BONDING_NEWTYPE  0x000F
++#define NETDEV_NOTIFY_PEERS	0x0012
+ 
+ #define SYS_DOWN	0x0001	/* Notify of system down */
+ #define SYS_RESTART	SYS_DOWN
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1076,6 +1076,7 @@ static int inetdev_event(struct notifier
+ 		}
+ 		ip_mc_up(in_dev);
+ 		/* fall through */
++	case NETDEV_NOTIFY_PEERS:
+ 	case NETDEV_CHANGEADDR:
+ 		/* Send gratuitous ARP to notify of link change */
+ 		if (IN_DEV_ARP_NOTIFY(in_dev)) {
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -330,6 +330,24 @@ void netif_carrier_off(struct net_device
+ }
+ EXPORT_SYMBOL(netif_carrier_off);
+ 
++/**
++ * 	netif_notify_peers - notify network peers about existence of @dev
++ * 	@dev: network device
++ *
++ * Generate traffic such that interested network peers are aware of
++ * @dev, such as by generating a gratuitous ARP. This may be used when
++ * a device wants to inform the rest of the network about some sort of
++ * reconfiguration such as a failover event or virtual machine
++ * migration.
++ */
++void netif_notify_peers(struct net_device *dev)
++{
++	rtnl_lock();
++	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, dev);
++	rtnl_unlock();
++}
++EXPORT_SYMBOL(netif_notify_peers);
++
+ /* "NOOP" scheduler: the best scheduler, recommended for all interfaces
+    under all circumstances. It is difficult to invent anything faster or
+    cheaper.
 
 
