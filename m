@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758749Ab0HLAqI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:46:08 -0400
-Received: from kroah.org ([198.145.64.141]:40025 "EHLO coco.kroah.org"
+	id S1758762Ab0HLAqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:46:24 -0400
+Received: from kroah.org ([198.145.64.141]:40001 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758680Ab0HKX51 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:56 2010
-Message-Id: <20100811235456.065172812@clark.site>
+	id S1758547Ab0HKX5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:55 2010
+Message-Id: <20100811235455.793636323@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:46 -0700
+Date: Wed, 11 Aug 2010 16:53:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alok N Kataria <akataria@vmware.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [005/111] x86, vmware: Preset lpj values when on VMware.
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [002/111] powerpc: fix build with make 3.82
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,59 +26,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alok Kataria <akataria@vmware.com>
+From: Sam Ravnborg <sam@ravnborg.org>
 
-commit 9f242dc10e0c3c1eb32d8c83c18650a35fd7f80d upstream.
+commit e32e78c5ee8aadef020fbaecbe6fb741ed9029fd upstream.
 
-When running on VMware's platform, we have seen situations where
-the AP's try to calibrate the lpj values and fail to get good calibration
-runs becasue of timing issues. As a result delays don't work correctly
-on all cpus.
+Thomas Backlund reported that the powerpc build broke with make 3.82.
+It failed with the following message:
 
-The solutions is to set preset_lpj value based on the current tsc frequency
-value. This is similar to what KVM does as well.
+    arch/powerpc/Makefile:183: *** mixed implicit and normal rules.  Stop.
 
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-LKML-Reference: <1280790637.14933.29.camel@ank32.eng.vmware.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+The fix is to avoid mixing non-wildcard and wildcard targets.
+
+Reported-by: Thomas Backlund <tmb@mandriva.org>
+Tested-by: Thomas Backlund <tmb@mandriva.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/vmware.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/powerpc/Makefile |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
 
---- a/arch/x86/kernel/cpu/vmware.c
-+++ b/arch/x86/kernel/cpu/vmware.c
-@@ -22,6 +22,7 @@
-  */
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -158,9 +158,11 @@ drivers-$(CONFIG_OPROFILE)	+= arch/power
+ # Default to zImage, override when needed
+ all: zImage
  
- #include <linux/dmi.h>
-+#include <linux/jiffies.h>
- #include <asm/div64.h>
- #include <asm/vmware.h>
- #include <asm/x86_init.h>
-@@ -50,7 +51,7 @@ static inline int __vmware_platform(void
+-BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
++# With make 3.82 we cannot mix normal and wildcard targets
++BOOT_TARGETS1 := zImage zImage.initrd uImaged
++BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
  
- static unsigned long vmware_get_tsc_khz(void)
- {
--	uint64_t tsc_hz;
-+	uint64_t tsc_hz, lpj;
- 	uint32_t eax, ebx, ecx, edx;
+-PHONY += $(BOOT_TARGETS)
++PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
  
- 	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
-@@ -61,6 +62,13 @@ static unsigned long vmware_get_tsc_khz(
- 	printk(KERN_INFO "TSC freq read from hypervisor : %lu.%03lu MHz\n",
- 			 (unsigned long) tsc_hz / 1000,
- 			 (unsigned long) tsc_hz % 1000);
+ boot := arch/$(ARCH)/boot
+ 
+@@ -175,10 +177,16 @@ relocs_check: arch/powerpc/relocs_check.
+ zImage: relocs_check
+ endif
+ 
+-$(BOOT_TARGETS): vmlinux
++$(BOOT_TARGETS1): vmlinux
++	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
++$(BOOT_TARGETS2): vmlinux
++	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
 +
-+	if (!preset_lpj) {
-+		lpj = ((u64)tsc_hz * 1000);
-+		do_div(lpj, HZ);
-+		preset_lpj = lpj;
-+	}
 +
- 	return tsc_hz;
- }
++bootwrapper_install:
+ 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
  
+-bootwrapper_install %.dtb:
++%.dtb:
+ 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+ 
+ define archhelp
 
 
