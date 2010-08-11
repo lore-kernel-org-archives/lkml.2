@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757255Ab0HKUti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 16:49:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51047 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753270Ab0HKUth convert rfc822-to-8bit (ORCPT
+	id S1757449Ab0HKUyc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 16:54:32 -0400
+Received: from mail-pw0-f66.google.com ([209.85.160.66]:43819 "EHLO
+	mail-pw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757191Ab0HKUyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 16:49:37 -0400
-Date: Thu, 12 Aug 2010 06:49:26 +1000
-From: Neil Brown <neilb@suse.de>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com
-Subject: Re: [REVISED PULL REQUEST] md updates for 2.6.36
-Message-ID: <20100812064926.15dafbf7@notabene>
-In-Reply-To: <1281482611.5887.38.camel@localhost>
-References: <19552.39399.490494.51990@notabene.brown>
-	<AANLkTinbCHAB3tPos1sp078maWaHAQbRM8oWMOiF1U8D@mail.gmail.com>
-	<1281482611.5887.38.camel@localhost>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Aug 2010 16:54:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=lS7nZuDc79ceTlGbrN59UHZOXGDEZ9czUGWLeCnFBLIqAdI7TkxpWqLLJUnc/hUiqX
+         OK6sFWwVxFzaGzn1duRlCRzS2kmXpHTCoy94QnCJw7v3Y1JRnlOEvdr0UVpwSKKPdUCw
+         ZAO3xjZBbyzE/wHZcDmPKmGpCbh/dGlnrHGVY=
+MIME-Version: 1.0
+Date: Wed, 11 Aug 2010 16:54:30 -0400
+Message-ID: <AANLkTinQAWYt-Pc0z-eG5dQpqvXkOGsK48rs=YFtyjWp@mail.gmail.com>
+Subject: [PATCH 2/5] scsi: megaraid_sas - support devices update flag
+From: bo yang <boyang1288@gmail.com>
+To: bo.yang@lsi.com, James.Bottomley@HansenPartnership.com,
+        James.Bottomley@suse.de
+Cc: linux-scsi@vger.kernel.org, akpm@osdl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Aug 2010 00:23:31 +0100
-David Woodhouse <dwmw2@infradead.org> wrote:
+Driver added the Device update flag to tell LSI application driver
+will do the device
+Update.  LSI MegaRAID SAS application will check this flag to decide
+if it is need to
+update the Device or not.
 
-> On Tue, 2010-08-10 at 15:47 -0700, Linus Torvalds wrote:
-> > 
-> > Hmm. Why "lib/raid6/raid6sse2.c" and friends? Why "raid6" twice? You
-> > don't mean "raid6+1" (mirrored raid6 ;), so why not just remove the
-> > second "raid6", and call it "lib/raid6/sse2.c"
-> > 
-> > But I pulled. Just in case there was some logic to the duplication. 
-> 
-> No particular reason -- I just wanted the initial move to be as simple
-> as possible. Since it all gets built into raid6_pq.ko and we never see
-> these filenames even in module names, it does make sense to rename them.
-> 
-> If Neil approves, git://git.infradead.org/~dwmw2/libraid-2.6.git
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-Looks good,thanks.  There are a few comments still say "raid6xxx.c" and there
-is a .h file (raid6x86.h) which you didn't rename but probably should be.
+---
+drivers/scsi/megaraid/megaraid_sas.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
 
-I've added a patch to clean these up.
+diff -rupN old/drivers/scsi/megaraid/megaraid_sas.c
+new/drivers/scsi/megaraid/megaraid_sas.c
+--- old/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 03:50:44.000000000 -0400
++++ new/drivers/scsi/megaraid/megaraid_sas.c	2010-05-03 05:46:37.000000000 -0400
+@@ -99,6 +99,7 @@ static int megasas_poll_wait_aen;
+ static DECLARE_WAIT_QUEUE_HEAD(megasas_poll_wait);
+ static u32 support_poll_for_event;
+ static u32 megasas_dbg_lvl;
++static u32 support_device_change;
 
-> 
-> The userspace test/ (neé raid6test/) directory doesn't build, but it
-> didn't before. At least I fixed the awk incantations.
-> 
-Yep, there is some bit rot in there.  Fixed that too.
+ /* define lock for aen poll */
+ spinlock_t poll_aen_lock;
+@@ -4660,6 +4661,15 @@ megasas_sysfs_show_support_poll_for_even
+ static DRIVER_ATTR(support_poll_for_event, S_IRUGO,
+ 			megasas_sysfs_show_support_poll_for_event, NULL);
 
-Linus, you can get all this from
-    git://neil.brown.name/md for-linus
++ static ssize_t
++megasas_sysfs_show_support_device_change(struct device_driver *dd, char *buf)
++{
++	return sprintf(buf, "%u\n", support_device_change);
++}
++
++static DRIVER_ATTR(support_device_change, S_IRUGO,
++			megasas_sysfs_show_support_device_change, NULL);
++
+ static ssize_t
+ megasas_sysfs_show_dbg_lvl(struct device_driver *dd, char *buf)
+ {
+@@ -4980,6 +4990,7 @@ static int __init megasas_init(void)
+ 	       MEGASAS_EXT_VERSION);
 
-Thanks.
+ 	support_poll_for_event = 2;
++	support_device_change = 1;
 
-The following changes since commit 3d30701b58970425e1d45994d6cb82f828924fdd:
+ 	memset(&megasas_mgmt_info, 0, sizeof(megasas_mgmt_info));
 
-  Merge branch 'for-linus' of git://neil.brown.name/md (2010-08-10 15:38:19 -0700)
+@@ -5028,8 +5039,17 @@ static int __init megasas_init(void)
+ 	if (rval)
+ 		goto err_dcf_poll_mode_io;
 
-are available in the git repository at:
++	rval = driver_create_file(&megasas_pci_driver.driver,
++				&driver_attr_support_device_change);
++	if (rval)
++		goto err_dcf_support_device_change;
++
+ 	return rval;
 
-  git://neil.brown.name/md for-linus
-
-David Woodhouse (1):
-      Rename raid6 files now they're in a 'raid6' directory.
-
-NeilBrown (2):
-      Make lib/raid6/test build correctly.
-      Further tidyup of raid6 naming in lib/raid6
-
- include/linux/raid/pq.h                   |    2 +
- lib/raid6/Makefile                        |   81 ++++++++++++++---------------
- lib/raid6/{raid6algos.c => algos.c}       |    4 +-
- lib/raid6/{raid6altivec.uc => altivec.uc} |    0
- lib/raid6/{raid6int.uc => int.uc}         |    0
- lib/raid6/{raid6mmx.c => mmx.c}           |    6 +-
- lib/raid6/raid6test/Makefile              |   75 --------------------------
- lib/raid6/{raid6recov.c => recov.c}       |    2 +-
- lib/raid6/{raid6sse1.c => sse1.c}         |    6 +-
- lib/raid6/{raid6sse2.c => sse2.c}         |    4 +-
- lib/raid6/test/Makefile                   |   72 +++++++++++++++++++++++++
- lib/raid6/{raid6test => test}/test.c      |    0
- lib/raid6/{raid6x86.h => x86.h}           |    2 +-
- 13 files changed, 125 insertions(+), 129 deletions(-)
- rename lib/raid6/{raid6algos.c => algos.c} (99%)
- rename lib/raid6/{raid6altivec.uc => altivec.uc} (100%)
- rename lib/raid6/{raid6int.uc => int.uc} (100%)
- rename lib/raid6/{raid6mmx.c => mmx.c} (98%)
- delete mode 100644 lib/raid6/raid6test/Makefile
- rename lib/raid6/{raid6recov.c => recov.c} (99%)
- rename lib/raid6/{raid6sse1.c => sse1.c} (98%)
- rename lib/raid6/{raid6sse2.c => sse2.c} (99%)
- create mode 100644 lib/raid6/test/Makefile
- rename lib/raid6/{raid6test => test}/test.c (100%)
- rename lib/raid6/{raid6x86.h => x86.h} (99%)
++err_dcf_support_device_change:
++	driver_remove_file(&megasas_pci_driver.driver,
++		  &driver_attr_poll_mode_io);
++
+ err_dcf_poll_mode_io:
+ 	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_dbg_lvl);
+@@ -5060,6 +5080,10 @@ static void __exit megasas_exit(void)
+ 	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_dbg_lvl);
+ 	driver_remove_file(&megasas_pci_driver.driver,
++			&driver_attr_support_poll_for_event);
++	driver_remove_file(&megasas_pci_driver.driver,
++			&driver_attr_support_device_change);
++	driver_remove_file(&megasas_pci_driver.driver,
+ 			   &driver_attr_release_date);
+ 	driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
