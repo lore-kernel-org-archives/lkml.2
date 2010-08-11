@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932588Ab0HKHkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:40:16 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48360 "EHLO hera.kernel.org"
+	id S932664Ab0HKHke (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:40:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48372 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab0HKHkO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:40:14 -0400
-Date: Wed, 11 Aug 2010 07:39:53 GMT
+	id S932635Ab0HKHkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 03:40:32 -0400
+Date: Wed, 11 Aug 2010 07:40:15 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@redhat.com, tglx@linutronix.de
@@ -15,370 +15,167 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui: Shorten ui_browser member names
-Message-ID: <tip-d247eb6b924bbc2f13748c89b6c72c7a3d46645c@git.kernel.org>
-Git-Commit-ID: d247eb6b924bbc2f13748c89b6c72c7a3d46645c
+Subject: [tip:perf/core] perf ui: Move ui_helpline routines to separate file in util/ui/
+Message-ID: <tip-5575536fc7ad7577a4e687a13e2f49acebc519f3@git.kernel.org>
+Git-Commit-ID: 5575536fc7ad7577a4e687a13e2f49acebc519f3
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:39:55 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:40:15 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d247eb6b924bbc2f13748c89b6c72c7a3d46645c
-Gitweb:     http://git.kernel.org/tip/d247eb6b924bbc2f13748c89b6c72c7a3d46645c
+Commit-ID:  5575536fc7ad7577a4e687a13e2f49acebc519f3
+Gitweb:     http://git.kernel.org/tip/5575536fc7ad7577a4e687a13e2f49acebc519f3
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sat, 7 Aug 2010 13:56:04 -0300
+AuthorDate: Sun, 8 Aug 2010 19:48:31 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Aug 2010 16:08:33 -0300
+CommitDate: Tue, 10 Aug 2010 16:08:51 -0300
 
-perf ui: Shorten ui_browser member names
+perf ui: Move ui_helpline routines to separate file in util/ui/
 
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/newt.c       |   36 +++++++++++++-------------
- tools/perf/util/ui/browser.c |   57 ++++++++++++++++++++---------------------
- tools/perf/util/ui/browser.h |    6 ++--
- 3 files changed, 49 insertions(+), 50 deletions(-)
+ tools/perf/Makefile           |    2 +
+ tools/perf/util/newt.c        |   38 +-----------------------------------
+ tools/perf/util/ui/helpline.c |   43 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/ui/helpline.h |    9 ++++++++
+ 4 files changed, 55 insertions(+), 37 deletions(-)
 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d5bce76..d77a101 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -569,7 +569,9 @@ else
+ 		EXTLIBS += -lnewt -lslang
+ 		LIB_OBJS += $(OUTPUT)util/newt.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browser.o
++		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
+ 		LIB_H += util/ui/browser.h
++		LIB_H += util/ui/helpline.h
+ 	endif
+ endif
+ 
 diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 266a9e0..9768be3 100644
+index 9768be3..23f3b7d 100644
 --- a/tools/perf/util/newt.c
 +++ b/tools/perf/util/newt.c
-@@ -450,8 +450,8 @@ static int map_browser__search(struct map_browser *self)
- 	if (sym != NULL) {
- 		u32 *idx = symbol__browser_index(sym);
- 			
--		self->b.first_visible_entry = &sym->rb_node;
--		self->b.index = self->b.first_visible_entry_idx = *idx;
-+		self->b.top = &sym->rb_node;
-+		self->b.index = self->b.top_idx = *idx;
- 	} else
- 		ui_helpline__fpush("%s not found!", target);
+@@ -24,6 +24,7 @@
+ #include "sort.h"
+ #include "symbol.h"
+ #include "ui/browser.h"
++#include "ui/helpline.h"
  
-@@ -967,7 +967,7 @@ static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
- 			}
- 
- 			SLsmg_set_color(color);
--			SLsmg_gotorc(self->b.top + row, self->b.left);
-+			SLsmg_gotorc(self->b.y + row, self->b.x);
- 			slsmg_write_nstring(" ", offset + extra_offset);
- 			slsmg_printf("%c ", folded_sign);
- 			slsmg_write_nstring(str, width);
-@@ -1030,7 +1030,7 @@ static int hist_browser__show_callchain_node(struct hist_browser *self,
- 		}
- 
- 		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
--		SLsmg_gotorc(self->b.top + row, self->b.left);
-+		SLsmg_gotorc(self->b.y + row, self->b.x);
- 		SLsmg_set_color(color);
- 		slsmg_write_nstring(" ", offset);
- 		slsmg_printf("%c ", folded_sign);
-@@ -1110,7 +1110,7 @@ static int hist_browser__show_entry(struct hist_browser *self,
- 		}
- 
- 		SLsmg_set_color(color);
--		SLsmg_gotorc(self->b.top + row, self->b.left);
-+		SLsmg_gotorc(self->b.y + row, self->b.x);
- 		if (symbol_conf.use_callchain) {
- 			slsmg_printf("%c ", folded_sign);
- 			width -= 2;
-@@ -1138,10 +1138,10 @@ static unsigned int hist_browser__refresh(struct ui_browser *self)
- 	struct rb_node *nd;
- 	struct hist_browser *hb = container_of(self, struct hist_browser, b);
- 
--	if (self->first_visible_entry == NULL)
--		self->first_visible_entry = rb_first(&hb->hists->entries);
-+	if (self->top == NULL)
-+		self->top = rb_first(&hb->hists->entries);
- 
--	for (nd = self->first_visible_entry; nd; nd = rb_next(nd)) {
-+	for (nd = self->top; nd; nd = rb_next(nd)) {
- 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
- 
- 		if (h->filtered)
-@@ -1244,7 +1244,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
- 		nd = hists__filter_entries(rb_first(self->entries));
- 		break;
- 	case SEEK_CUR:
--		nd = self->first_visible_entry;
-+		nd = self->top;
- 		goto do_offset;
- 	case SEEK_END:
- 		nd = hists__filter_prev_entries(rb_last(self->entries));
-@@ -1258,7 +1258,7 @@ static void ui_browser__hists_seek(struct ui_browser *self,
- 	 * Moves not relative to the first visible entry invalidates its
- 	 * row_offset:
- 	 */
--	h = rb_entry(self->first_visible_entry, struct hist_entry, rb_node);
-+	h = rb_entry(self->top, struct hist_entry, rb_node);
- 	h->row_offset = 0;
- 
- 	/*
-@@ -1286,7 +1286,7 @@ do_offset:
- 				} else {
- 					h->row_offset += offset;
- 					offset = 0;
--					self->first_visible_entry = nd;
-+					self->top = nd;
- 					break;
- 				}
- 			}
-@@ -1294,7 +1294,7 @@ do_offset:
- 			if (nd == NULL)
- 				break;
- 			--offset;
--			self->first_visible_entry = nd;
-+			self->top = nd;
- 		} while (offset != 0);
- 	} else if (offset < 0) {
- 		while (1) {
-@@ -1307,7 +1307,7 @@ do_offset:
- 					} else {
- 						h->row_offset += offset;
- 						offset = 0;
--						self->first_visible_entry = nd;
-+						self->top = nd;
- 						break;
- 					}
- 				} else {
-@@ -1317,7 +1317,7 @@ do_offset:
- 					} else {
- 						h->row_offset = h->nr_rows + offset;
- 						offset = 0;
--						self->first_visible_entry = nd;
-+						self->top = nd;
- 						break;
- 					}
- 				}
-@@ -1327,7 +1327,7 @@ do_offset:
- 			if (nd == NULL)
- 				break;
- 			++offset;
--			self->first_visible_entry = nd;
-+			self->top = nd;
- 			if (offset == 0) {
- 				/*
- 				 * Last unfiltered hist_entry, check if it is
-@@ -1342,7 +1342,7 @@ do_offset:
- 			first = false;
- 		}
- 	} else {
--		self->first_visible_entry = nd;
-+		self->top = nd;
- 		h = rb_entry(nd, struct hist_entry, rb_node);
- 		h->row_offset = 0;
- 	}
-@@ -1463,7 +1463,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
- 		switch (es->u.key) {
- 		case 'd': { /* Debug */
- 			static int seq;
--			struct hist_entry *h = rb_entry(self->b.first_visible_entry,
-+			struct hist_entry *h = rb_entry(self->b.top,
- 							struct hist_entry, rb_node);
- 			ui_helpline__pop();
- 			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
-@@ -1471,7 +1471,7 @@ static int hist_browser__run(struct hist_browser *self, const char *title,
- 					   self->hists->nr_entries,
- 					   self->b.height,
- 					   self->b.index,
--					   self->b.first_visible_entry_idx,
-+					   self->b.top_idx,
- 					   h->row_offset, h->nr_rows);
- 		}
- 			continue;
-diff --git a/tools/perf/util/ui/browser.c b/tools/perf/util/ui/browser.c
-index 0b2b930..edbb7dd 100644
---- a/tools/perf/util/ui/browser.c
-+++ b/tools/perf/util/ui/browser.c
-@@ -49,7 +49,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
- 		pos = head->next;
- 		break;
- 	case SEEK_CUR:
--		pos = self->first_visible_entry;
-+		pos = self->top;
- 		break;
- 	case SEEK_END:
- 		pos = head->prev;
-@@ -66,7 +66,7 @@ void ui_browser__list_head_seek(struct ui_browser *self, off_t offset, int whenc
- 			pos = pos->prev;
- 	}
- 
--	self->first_visible_entry = pos;
-+	self->top = pos;
+ #if SLANG_VERSION < 20104
+ #define slsmg_printf(msg, args...) SLsmg_printf((char *)msg, ##args)
+@@ -94,43 +95,6 @@ void ui_progress__delete(struct ui_progress *self)
+ 	free(self);
  }
  
- void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
-@@ -79,7 +79,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
- 		nd = rb_first(root);
- 		break;
- 	case SEEK_CUR:
--		nd = self->first_visible_entry;
-+		nd = self->top;
- 		break;
- 	case SEEK_END:
- 		nd = rb_last(root);
-@@ -96,7 +96,7 @@ void ui_browser__rb_tree_seek(struct ui_browser *self, off_t offset, int whence)
- 			nd = rb_prev(nd);
- 	}
- 
--	self->first_visible_entry = nd;
-+	self->top = nd;
- }
- 
- unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
-@@ -104,13 +104,13 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
- 	struct rb_node *nd;
- 	int row = 0;
- 
--	if (self->first_visible_entry == NULL)
--                self->first_visible_entry = rb_first(self->entries);
-+	if (self->top == NULL)
-+                self->top = rb_first(self->entries);
- 
--	nd = self->first_visible_entry;
-+	nd = self->top;
- 
- 	while (nd != NULL) {
--		SLsmg_gotorc(self->top + row, self->left);
-+		SLsmg_gotorc(self->y + row, self->x);
- 		self->write(self, nd, row);
- 		if (++row == self->height)
- 			break;
-@@ -122,7 +122,7 @@ unsigned int ui_browser__rb_tree_refresh(struct ui_browser *self)
- 
- bool ui_browser__is_current_entry(struct ui_browser *self, unsigned row)
+-static void ui_helpline__pop(void)
+-{
+-	newtPopHelpLine();
+-}
+-
+-static void ui_helpline__push(const char *msg)
+-{
+-	newtPushHelpLine(msg);
+-}
+-
+-static void ui_helpline__vpush(const char *fmt, va_list ap)
+-{
+-	char *s;
+-
+-	if (vasprintf(&s, fmt, ap) < 0)
+-		vfprintf(stderr, fmt, ap);
+-	else {
+-		ui_helpline__push(s);
+-		free(s);
+-	}
+-}
+-
+-static void ui_helpline__fpush(const char *fmt, ...)
+-{
+-	va_list ap;
+-
+-	va_start(ap, fmt);
+-	ui_helpline__vpush(fmt, ap);
+-	va_end(ap);
+-}
+-
+-static void ui_helpline__puts(const char *msg)
+-{
+-	ui_helpline__pop();
+-	ui_helpline__push(msg);
+-}
+-
+ static int ui_entry__read(const char *title, char *bf, size_t size, int width)
  {
--	return (self->first_visible_entry_idx + row) == self->index;
-+	return self->top_idx + row == self->index;
- }
- 
- void ui_browser__refresh_dimensions(struct ui_browser *self)
-@@ -135,13 +135,13 @@ void ui_browser__refresh_dimensions(struct ui_browser *self)
- 	self->height = rows - 5;
- 	if (self->height > self->nr_entries)
- 		self->height = self->nr_entries;
--	self->top  = (rows - self->height) / 2;
--	self->left = (cols - self->width) / 2;
-+	self->y  = (rows - self->height) / 2;
-+	self->x = (cols - self->width) / 2;
- }
- 
- void ui_browser__reset_index(struct ui_browser *self)
- {
--	self->index = self->first_visible_entry_idx = 0;
-+	self->index = self->top_idx = 0;
- 	self->seek(self, 0, SEEK_SET);
- }
- 
-@@ -180,7 +180,7 @@ int ui_browser__refresh(struct ui_browser *self)
- 	newtScrollbarSet(self->sb, self->index, self->nr_entries - 1);
- 	row = self->refresh(self);
- 	SLsmg_set_color(HE_COLORSET_NORMAL);
--	SLsmg_fill_region(self->top + row, self->left,
-+	SLsmg_fill_region(self->y + row, self->x,
- 			  self->height - row, self->width, ' ');
- 
- 	return 0;
-@@ -205,8 +205,8 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 			if (self->index == self->nr_entries - 1)
- 				break;
- 			++self->index;
--			if (self->index == self->first_visible_entry_idx + self->height) {
--				++self->first_visible_entry_idx;
-+			if (self->index == self->top_idx + self->height) {
-+				++self->top_idx;
- 				self->seek(self, +1, SEEK_CUR);
- 			}
- 			break;
-@@ -214,34 +214,34 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 			if (self->index == 0)
- 				break;
- 			--self->index;
--			if (self->index < self->first_visible_entry_idx) {
--				--self->first_visible_entry_idx;
-+			if (self->index < self->top_idx) {
-+				--self->top_idx;
- 				self->seek(self, -1, SEEK_CUR);
- 			}
- 			break;
- 		case NEWT_KEY_PGDN:
- 		case ' ':
--			if (self->first_visible_entry_idx + self->height > self->nr_entries - 1)
-+			if (self->top_idx + self->height > self->nr_entries - 1)
- 				break;
- 
- 			offset = self->height;
- 			if (self->index + offset > self->nr_entries - 1)
- 				offset = self->nr_entries - 1 - self->index;
- 			self->index += offset;
--			self->first_visible_entry_idx += offset;
-+			self->top_idx += offset;
- 			self->seek(self, +offset, SEEK_CUR);
- 			break;
- 		case NEWT_KEY_PGUP:
--			if (self->first_visible_entry_idx == 0)
-+			if (self->top_idx == 0)
- 				break;
- 
--			if (self->first_visible_entry_idx < self->height)
--				offset = self->first_visible_entry_idx;
-+			if (self->top_idx < self->height)
-+				offset = self->top_idx;
- 			else
- 				offset = self->height;
- 
- 			self->index -= offset;
--			self->first_visible_entry_idx -= offset;
-+			self->top_idx -= offset;
- 			self->seek(self, -offset, SEEK_CUR);
- 			break;
- 		case NEWT_KEY_HOME:
-@@ -253,7 +253,7 @@ int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 				offset = self->nr_entries - 1;
- 
- 			self->index = self->nr_entries - 1;
--			self->first_visible_entry_idx = self->index - offset;
-+			self->top_idx = self->index - offset;
- 			self->seek(self, -offset, SEEK_END);
- 			break;
- 		default:
-@@ -271,14 +271,13 @@ unsigned int ui_browser__list_head_refresh(struct ui_browser *self)
- 	struct list_head *head = self->entries;
- 	int row = 0;
- 
--	if (self->first_visible_entry == NULL ||
--	    self->first_visible_entry == self->entries)
--                self->first_visible_entry = head->next;
-+	if (self->top == NULL || self->top == self->entries)
-+                self->top = head->next;
- 
--	pos = self->first_visible_entry;
-+	pos = self->top;
- 
- 	list_for_each_from(pos, head) {
--		SLsmg_gotorc(self->top + row, self->left);
-+		SLsmg_gotorc(self->y + row, self->x);
- 		self->write(self, pos, row);
- 		if (++row == self->height)
- 			break;
-diff --git a/tools/perf/util/ui/browser.h b/tools/perf/util/ui/browser.h
-index bcc4391..8eed24c 100644
---- a/tools/perf/util/ui/browser.h
-+++ b/tools/perf/util/ui/browser.h
-@@ -13,9 +13,9 @@
- 
- struct ui_browser {
- 	newtComponent form, sb;
--	u64	      index, first_visible_entry_idx;
--	void	      *first_visible_entry, *entries;
--	u16	      top, left, width, height;
-+	u64	      index, top_idx;
-+	void	      *top, *entries;
-+	u16	      y, x, width, height;
- 	void	      *priv;
- 	unsigned int  (*refresh)(struct ui_browser *self);
- 	void	      (*write)(struct ui_browser *self, void *entry, int row);
+ 	struct newtExitStruct es;
+diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+new file mode 100644
+index 0000000..6a11e13
+--- /dev/null
++++ b/tools/perf/util/ui/helpline.c
+@@ -0,0 +1,43 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <stdlib.h>
++#include <newt.h>
++
++#include "helpline.h"
++
++void ui_helpline__pop(void)
++{
++	newtPopHelpLine();
++}
++
++void ui_helpline__push(const char *msg)
++{
++	newtPushHelpLine(msg);
++}
++
++static void ui_helpline__vpush(const char *fmt, va_list ap)
++{
++	char *s;
++
++	if (vasprintf(&s, fmt, ap) < 0)
++		vfprintf(stderr, fmt, ap);
++	else {
++		ui_helpline__push(s);
++		free(s);
++	}
++}
++
++void ui_helpline__fpush(const char *fmt, ...)
++{
++	va_list ap;
++
++	va_start(ap, fmt);
++	ui_helpline__vpush(fmt, ap);
++	va_end(ap);
++}
++
++void ui_helpline__puts(const char *msg)
++{
++	ui_helpline__pop();
++	ui_helpline__push(msg);
++}
+diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
+new file mode 100644
+index 0000000..56d8c1d
+--- /dev/null
++++ b/tools/perf/util/ui/helpline.h
+@@ -0,0 +1,9 @@
++#ifndef _PERF_UI_HELPLINE_H_
++#define _PERF_UI_HELPLINE_H_ 1
++
++void ui_helpline__pop(void);
++void ui_helpline__push(const char *msg);
++void ui_helpline__fpush(const char *fmt, ...);
++void ui_helpline__puts(const char *msg);
++
++#endif /* _PERF_UI_HELPLINE_H_ */
