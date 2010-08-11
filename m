@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758859Ab0HKX6a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:58:30 -0400
-Received: from kroah.org ([198.145.64.141]:40265 "EHLO coco.kroah.org"
+	id S933595Ab0HLAgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:36:46 -0400
+Received: from kroah.org ([198.145.64.141]:43403 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758939Ab0HKX6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:59 2010
-Message-Id: <20100811235459.556392723@clark.site>
+	id S1759035Ab0HKX6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:33 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:01 2010
+Message-Id: <20100811235500.974610115@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:25 -0700
+Date: Wed, 11 Aug 2010 16:54:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yan Zheng <zheng.yan@oracle.com>, Chris Mason <chris.mason@oracle.com>,
+        Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [044/111] Btrfs: Add btrfs_duplicate_item
+Subject: [059/111] Btrfs: make metadata chunks smaller
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,299 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yan, Zheng <zheng.yan@oracle.com>
+From: Josef Bacik <josef@redhat.com>
 
-commit ad48fd754676bfae4139be1a897b1ea58f9aaf21 upstream.
+commit 83d3c9696fed237a3d96fce18299e2fcf112109f upstream.
 
-btrfs_duplicate_item duplicates item with new key, guaranteeing
-the source item and the new items are in the same tree leaf and
-contiguous. It allows us to split file extent in place, without
-using lock_extent to prevent bookend extent race.
+This patch makes us a bit less zealous about making sure we have enough free
+metadata space by pearing down the size of new metadata chunks to 256mb instead
+of 1gb.  Also, we used to try an allocate metadata chunks when allocating data,
+but that sort of thing is done elsewhere now so we can just remove it.  With my
+-ENOSPC test I used to have 3gb reserved for metadata out of 75gb, now I have
+1.7gb.  Thanks,
 
-Signed-off-by: Yan Zheng <zheng.yan@oracle.com>
+Signed-off-by: Josef Bacik <josef@redhat.com>
 Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 
 ---
- fs/btrfs/ctree.c |  198 ++++++++++++++++++++++++++++++++++++++-----------------
- fs/btrfs/ctree.h |    4 +
- 2 files changed, 143 insertions(+), 59 deletions(-)
+ fs/btrfs/extent-tree.c |   11 +----------
+ fs/btrfs/volumes.c     |    2 +-
+ 2 files changed, 2 insertions(+), 11 deletions(-)
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -37,6 +37,11 @@ static int balance_node_right(struct btr
- 			      struct extent_buffer *src_buf);
- static int del_ptr(struct btrfs_trans_handle *trans, struct btrfs_root *root,
- 		   struct btrfs_path *path, int level, int slot);
-+static int setup_items_for_insert(struct btrfs_trans_handle *trans,
-+			struct btrfs_root *root, struct btrfs_path *path,
-+			struct btrfs_key *cpu_key, u32 *data_size,
-+			u32 total_data, u32 total_size, int nr);
-+
- 
- struct btrfs_path *btrfs_alloc_path(void)
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -4593,7 +4593,6 @@ int btrfs_reserve_extent(struct btrfs_tr
  {
-@@ -2997,75 +3002,85 @@ again:
- 	return ret;
- }
+ 	int ret;
+ 	u64 search_start = 0;
+-	struct btrfs_fs_info *info = root->fs_info;
  
--/*
-- * This function splits a single item into two items,
-- * giving 'new_key' to the new item and splitting the
-- * old one at split_offset (from the start of the item).
-- *
-- * The path may be released by this operation.  After
-- * the split, the path is pointing to the old item.  The
-- * new item is going to be in the same node as the old one.
-- *
-- * Note, the item being split must be smaller enough to live alone on
-- * a tree block with room for one extra struct btrfs_item
-- *
-- * This allows us to split the item in place, keeping a lock on the
-- * leaf the entire time.
-- */
--int btrfs_split_item(struct btrfs_trans_handle *trans,
--		     struct btrfs_root *root,
--		     struct btrfs_path *path,
--		     struct btrfs_key *new_key,
--		     unsigned long split_offset)
-+static noinline int setup_leaf_for_split(struct btrfs_trans_handle *trans,
-+					 struct btrfs_root *root,
-+					 struct btrfs_path *path, int ins_len)
- {
--	u32 item_size;
-+	struct btrfs_key key;
- 	struct extent_buffer *leaf;
--	struct btrfs_key orig_key;
--	struct btrfs_item *item;
--	struct btrfs_item *new_item;
--	int ret = 0;
--	int slot;
--	u32 nritems;
--	u32 orig_offset;
--	struct btrfs_disk_key disk_key;
--	char *buf;
-+	struct btrfs_file_extent_item *fi;
-+	u64 extent_len = 0;
-+	u32 item_size;
-+	int ret;
- 
- 	leaf = path->nodes[0];
--	btrfs_item_key_to_cpu(leaf, &orig_key, path->slots[0]);
--	if (btrfs_leaf_free_space(root, leaf) >= sizeof(struct btrfs_item))
--		goto split;
-+	btrfs_item_key_to_cpu(leaf, &key, path->slots[0]);
-+
-+	BUG_ON(key.type != BTRFS_EXTENT_DATA_KEY &&
-+	       key.type != BTRFS_EXTENT_CSUM_KEY);
-+
-+	if (btrfs_leaf_free_space(root, leaf) >= ins_len)
-+		return 0;
- 
- 	item_size = btrfs_item_size_nr(leaf, path->slots[0]);
-+	if (key.type == BTRFS_EXTENT_DATA_KEY) {
-+		fi = btrfs_item_ptr(leaf, path->slots[0],
-+				    struct btrfs_file_extent_item);
-+		extent_len = btrfs_file_extent_num_bytes(leaf, fi);
-+	}
- 	btrfs_release_path(root, path);
- 
--	path->search_for_split = 1;
- 	path->keep_locks = 1;
--
--	ret = btrfs_search_slot(trans, root, &orig_key, path, 0, 1);
-+	path->search_for_split = 1;
-+	ret = btrfs_search_slot(trans, root, &key, path, 0, 1);
- 	path->search_for_split = 0;
-+	if (ret < 0)
-+		goto err;
- 
-+	ret = -EAGAIN;
-+	leaf = path->nodes[0];
- 	/* if our item isn't there or got smaller, return now */
--	if (ret != 0 || item_size != btrfs_item_size_nr(path->nodes[0],
--							path->slots[0])) {
--		path->keep_locks = 0;
--		return -EAGAIN;
-+	if (ret > 0 || item_size != btrfs_item_size_nr(leaf, path->slots[0]))
-+		goto err;
-+
-+	if (key.type == BTRFS_EXTENT_DATA_KEY) {
-+		fi = btrfs_item_ptr(leaf, path->slots[0],
-+				    struct btrfs_file_extent_item);
-+		if (extent_len != btrfs_file_extent_num_bytes(leaf, fi))
-+			goto err;
- 	}
- 
- 	btrfs_set_path_blocking(path);
--	ret = split_leaf(trans, root, &orig_key, path,
--			 sizeof(struct btrfs_item), 1);
--	path->keep_locks = 0;
-+	ret = split_leaf(trans, root, &key, path, ins_len, 1);
- 	BUG_ON(ret);
- 
-+	path->keep_locks = 0;
- 	btrfs_unlock_up_safe(path, 1);
-+	return 0;
-+err:
-+	path->keep_locks = 0;
-+	return ret;
-+}
-+
-+static noinline int split_item(struct btrfs_trans_handle *trans,
-+			       struct btrfs_root *root,
-+			       struct btrfs_path *path,
-+			       struct btrfs_key *new_key,
-+			       unsigned long split_offset)
-+{
-+	struct extent_buffer *leaf;
-+	struct btrfs_item *item;
-+	struct btrfs_item *new_item;
-+	int slot;
-+	char *buf;
-+	u32 nritems;
-+	u32 item_size;
-+	u32 orig_offset;
-+	struct btrfs_disk_key disk_key;
-+
- 	leaf = path->nodes[0];
- 	BUG_ON(btrfs_leaf_free_space(root, leaf) < sizeof(struct btrfs_item));
- 
--split:
--	/*
--	 * make sure any changes to the path from split_leaf leave it
--	 * in a blocking state
--	 */
- 	btrfs_set_path_blocking(path);
- 
- 	item = btrfs_item_nr(leaf, path->slots[0]);
-@@ -3073,19 +3088,19 @@ split:
- 	item_size = btrfs_item_size(leaf, item);
- 
- 	buf = kmalloc(item_size, GFP_NOFS);
-+	if (!buf)
-+		return -ENOMEM;
-+
- 	read_extent_buffer(leaf, buf, btrfs_item_ptr_offset(leaf,
- 			    path->slots[0]), item_size);
--	slot = path->slots[0] + 1;
--	leaf = path->nodes[0];
- 
-+	slot = path->slots[0] + 1;
- 	nritems = btrfs_header_nritems(leaf);
--
- 	if (slot != nritems) {
- 		/* shift the items */
- 		memmove_extent_buffer(leaf, btrfs_item_nr_offset(slot + 1),
--			      btrfs_item_nr_offset(slot),
--			      (nritems - slot) * sizeof(struct btrfs_item));
--
-+				btrfs_item_nr_offset(slot),
-+				(nritems - slot) * sizeof(struct btrfs_item));
- 	}
- 
- 	btrfs_cpu_key_to_disk(&disk_key, new_key);
-@@ -3113,16 +3128,81 @@ split:
- 			    item_size - split_offset);
- 	btrfs_mark_buffer_dirty(leaf);
- 
--	ret = 0;
--	if (btrfs_leaf_free_space(root, leaf) < 0) {
--		btrfs_print_leaf(root, leaf);
--		BUG();
+ 	data = btrfs_get_alloc_profile(root, data);
+ again:
+@@ -4601,17 +4600,9 @@ again:
+ 	 * the only place that sets empty_size is btrfs_realloc_node, which
+ 	 * is not called recursively on allocations
+ 	 */
+-	if (empty_size || root->ref_cows) {
+-		if (!(data & BTRFS_BLOCK_GROUP_METADATA)) {
+-			ret = do_chunk_alloc(trans, root->fs_info->extent_root,
+-				     2 * 1024 * 1024,
+-				     BTRFS_BLOCK_GROUP_METADATA |
+-				     (info->metadata_alloc_profile &
+-				      info->avail_metadata_alloc_bits), 0);
+-		}
++	if (empty_size || root->ref_cows)
+ 		ret = do_chunk_alloc(trans, root->fs_info->extent_root,
+ 				     num_bytes + 2 * 1024 * 1024, data, 0);
 -	}
-+	BUG_ON(btrfs_leaf_free_space(root, leaf) < 0);
- 	kfree(buf);
-+	return 0;
-+}
-+
-+/*
-+ * This function splits a single item into two items,
-+ * giving 'new_key' to the new item and splitting the
-+ * old one at split_offset (from the start of the item).
-+ *
-+ * The path may be released by this operation.  After
-+ * the split, the path is pointing to the old item.  The
-+ * new item is going to be in the same node as the old one.
-+ *
-+ * Note, the item being split must be smaller enough to live alone on
-+ * a tree block with room for one extra struct btrfs_item
-+ *
-+ * This allows us to split the item in place, keeping a lock on the
-+ * leaf the entire time.
-+ */
-+int btrfs_split_item(struct btrfs_trans_handle *trans,
-+		     struct btrfs_root *root,
-+		     struct btrfs_path *path,
-+		     struct btrfs_key *new_key,
-+		     unsigned long split_offset)
-+{
-+	int ret;
-+	ret = setup_leaf_for_split(trans, root, path,
-+				   sizeof(struct btrfs_item));
-+	if (ret)
-+		return ret;
-+
-+	ret = split_item(trans, root, path, new_key, split_offset);
- 	return ret;
- }
  
- /*
-+ * This function duplicate a item, giving 'new_key' to the new item.
-+ * It guarantees both items live in the same tree leaf and the new item
-+ * is contiguous with the original item.
-+ *
-+ * This allows us to split file extent in place, keeping a lock on the
-+ * leaf the entire time.
-+ */
-+int btrfs_duplicate_item(struct btrfs_trans_handle *trans,
-+			 struct btrfs_root *root,
-+			 struct btrfs_path *path,
-+			 struct btrfs_key *new_key)
-+{
-+	struct extent_buffer *leaf;
-+	int ret;
-+	u32 item_size;
-+
-+	leaf = path->nodes[0];
-+	item_size = btrfs_item_size_nr(leaf, path->slots[0]);
-+	ret = setup_leaf_for_split(trans, root, path,
-+				   item_size + sizeof(struct btrfs_item));
-+	if (ret)
-+		return ret;
-+
-+	path->slots[0]++;
-+	ret = setup_items_for_insert(trans, root, path, new_key, &item_size,
-+				     item_size, item_size +
-+				     sizeof(struct btrfs_item), 1);
-+	BUG_ON(ret);
-+
-+	leaf = path->nodes[0];
-+	memcpy_extent_buffer(leaf,
-+			     btrfs_item_ptr_offset(leaf, path->slots[0]),
-+			     btrfs_item_ptr_offset(leaf, path->slots[0] - 1),
-+			     item_size);
-+	return 0;
-+}
-+
-+/*
-  * make the item pointed to by the path smaller.  new_size indicates
-  * how small to make it, and from_end tells us if we just chop bytes
-  * off the end of the item or if we shift the item to chop bytes off
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -2089,6 +2089,10 @@ int btrfs_split_item(struct btrfs_trans_
- 		     struct btrfs_path *path,
- 		     struct btrfs_key *new_key,
- 		     unsigned long split_offset);
-+int btrfs_duplicate_item(struct btrfs_trans_handle *trans,
-+			 struct btrfs_root *root,
-+			 struct btrfs_path *path,
-+			 struct btrfs_key *new_key);
- int btrfs_search_slot(struct btrfs_trans_handle *trans, struct btrfs_root
- 		      *root, struct btrfs_key *key, struct btrfs_path *p, int
- 		      ins_len, int cow);
+ 	WARN_ON(num_bytes < root->sectorsize);
+ 	ret = find_free_extent(trans, root, num_bytes, empty_size,
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -2209,7 +2209,7 @@ static int __btrfs_alloc_chunk(struct bt
+ 		max_chunk_size = 10 * calc_size;
+ 		min_stripe_size = 64 * 1024 * 1024;
+ 	} else if (type & BTRFS_BLOCK_GROUP_METADATA) {
+-		max_chunk_size = 4 * calc_size;
++		max_chunk_size = 256 * 1024 * 1024;
+ 		min_stripe_size = 32 * 1024 * 1024;
+ 	} else if (type & BTRFS_BLOCK_GROUP_SYSTEM) {
+ 		calc_size = 8 * 1024 * 1024;
 
 
