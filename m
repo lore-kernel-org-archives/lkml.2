@@ -1,75 +1,2262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab0HKHlz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:41:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48424 "EHLO hera.kernel.org"
+	id S1755349Ab0HKHmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:42:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48452 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932509Ab0HKHlx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:41:53 -0400
-Date: Wed, 11 Aug 2010 07:41:36 GMT
-From: tip-bot for Dave Martin <dave.martin@linaro.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, dave.martin@linaro.org,
-        hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, dave.martin@linaro.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com, tglx@linutronix.de
-In-Reply-To: <1281352878-8735-2-git-send-email-dave.martin@linaro.org>
-References: <1281352878-8735-2-git-send-email-dave.martin@linaro.org>
+	id S1753139Ab0HKHmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 03:42:20 -0400
+Date: Wed, 11 Aug 2010 07:41:58 GMT
+From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de
+In-Reply-To: <new-submission>
+References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf symbols: Ignore mapping symbols on ARM
-Message-ID: <tip-696b97a5d2de9e2b22699300835e675dfffe8592@git.kernel.org>
-Git-Commit-ID: 696b97a5d2de9e2b22699300835e675dfffe8592
+Subject: [tip:perf/core] perf ui: Move hists browser to util/ui/browsers/
+Message-ID: <tip-d1b4f2491c3341c61c752049f73ba12553f978d8@git.kernel.org>
+Git-Commit-ID: d1b4f2491c3341c61c752049f73ba12553f978d8
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:41:37 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:42:00 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  696b97a5d2de9e2b22699300835e675dfffe8592
-Gitweb:     http://git.kernel.org/tip/696b97a5d2de9e2b22699300835e675dfffe8592
-Author:     Dave Martin <dave.martin@linaro.org>
-AuthorDate: Mon, 9 Aug 2010 12:21:18 +0100
+Commit-ID:  d1b4f2491c3341c61c752049f73ba12553f978d8
+Gitweb:     http://git.kernel.org/tip/d1b4f2491c3341c61c752049f73ba12553f978d8
+Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
+AuthorDate: Tue, 10 Aug 2010 15:49:07 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Aug 2010 16:10:36 -0300
+CommitDate: Tue, 10 Aug 2010 16:11:08 -0300
 
-perf symbols: Ignore mapping symbols on ARM
+perf ui: Move hists browser to util/ui/browsers/
 
-ARM ELF files use symbols with special names $a, $t, $d to identify regions of
-ARM code, Thumb code and data within code sections.  This can cause confusing
-output from the perf tools, especially for partially stripped binaries, or
-binaries containing user-added zero-sized symbols (which may occur in
-hand-written assembler which hasn't been fully annotated with .size
-directives).
-
-This patch filters out these symbols at load time.
-
-LKML-Reference: <1281352878-8735-2-git-send-email-dave.martin@linaro.org>
-Signed-off-by: Dave Martin <dave.martin@linaro.org>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/symbol.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ tools/perf/Makefile                             |    4 +
+ tools/perf/util/newt.c                          |  965 +---------------------
+ tools/perf/util/pstack.h                        |    2 +
+ tools/perf/util/{newt.c => ui/browsers/hists.c} | 1037 ++++++++++-------------
+ 4 files changed, 454 insertions(+), 1554 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b6f5970..1a36773 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1079,6 +1079,16 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
- 		if (!is_label && !elf_sym__is_a(&sym, map->type))
- 			continue;
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d118020..62e4d6f 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -570,6 +570,7 @@ else
+ 		LIB_OBJS += $(OUTPUT)util/newt.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browser.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browsers/annotate.o
++		LIB_OBJS += $(OUTPUT)util/ui/browsers/hists.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/browsers/map.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/progress.o
+@@ -984,6 +985,9 @@ $(OUTPUT)util/ui/browser.o: util/ui/browser.c $(OUTPUT)PERF-CFLAGS
+ $(OUTPUT)util/ui/browsers/annotate.o: util/ui/browsers/annotate.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
  
-+		/* Reject ARM ELF "mapping symbols": these aren't unique and
-+		 * don't identify functions, so will confuse the profile
-+		 * output: */
-+		if (ehdr.e_machine == EM_ARM) {
-+			if (!strcmp(elf_name, "$a") ||
-+			    !strcmp(elf_name, "$d") ||
-+			    !strcmp(elf_name, "$t"))
-+				continue;
-+		}
++$(OUTPUT)util/ui/browsers/hists.o: util/ui/browsers/hists.c $(OUTPUT)PERF-CFLAGS
++	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
 +
- 		if (opdsec && sym.st_shndx == opdidx) {
- 			u32 offset = sym.st_value - opdshdr.sh_addr;
- 			u64 *opd = opddata->d_buf + offset;
+ $(OUTPUT)util/ui/browsers/map.o: util/ui/browsers/map.c $(OUTPUT)PERF-CFLAGS
+ 	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) -DENABLE_SLFUTURE_CONST $<
+ 
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index b596926..6bccdaa 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -1,24 +1,19 @@
+-#define _GNU_SOURCE
+-#include <stdio.h>
+-#undef _GNU_SOURCE
+-#include "ui/libslang.h"
+-#include <signal.h>
+-#include <stdlib.h>
+-#include <elf.h>
+ #include <newt.h>
++#include <signal.h>
++#include <stdio.h>
++#include <stdbool.h>
++#include <string.h>
+ #include <sys/ttydefaults.h>
+ 
+ #include "cache.h"
+-#include "hist.h"
+-#include "pstack.h"
+-#include "session.h"
+-#include "sort.h"
+-#include "symbol.h"
++#include "debug.h"
+ #include "ui/browser.h"
+ #include "ui/helpline.h"
+-#include "ui/browsers/map.h"
+ 
+ newtComponent newt_form__new(void);
++int popup_menu(int argc, char * const argv[]);
++int ui__help_window(const char *text);
++bool dialog_yesno(const char *msg);
+ 
+ char browser__last_msg[1024];
+ 
+@@ -57,7 +52,7 @@ newtComponent newt_form__new(void)
+ 	return self;
+ }
+ 
+-static int popup_menu(int argc, char * const argv[])
++int popup_menu(int argc, char * const argv[])
+ {
+ 	struct newtExitStruct es;
+ 	int i, rc = -1, max_len = 5;
+@@ -91,7 +86,7 @@ out_destroy_form:
+ 	return rc;
+ }
+ 
+-static int ui__help_window(const char *text)
++int ui__help_window(const char *text)
+ {
+ 	struct newtExitStruct es;
+ 	newtComponent tb, form = newt_form__new();
+@@ -133,316 +128,13 @@ out_destroy_form:
+ 	return rc;
+ }
+ 
+-static bool dialog_yesno(const char *msg)
++bool dialog_yesno(const char *msg)
+ {
+ 	/* newtWinChoice should really be accepting const char pointers... */
+ 	char yes[] = "Yes", no[] = "No";
+ 	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
+ }
+ 
+-static char *callchain_list__sym_name(struct callchain_list *self,
+-				      char *bf, size_t bfsize)
+-{
+-	if (self->ms.sym)
+-		return self->ms.sym->name;
+-
+-	snprintf(bf, bfsize, "%#Lx", self->ip);
+-	return bf;
+-}
+-
+-struct hist_browser {
+-	struct ui_browser   b;
+-	struct hists	    *hists;
+-	struct hist_entry   *he_selection;
+-	struct map_symbol   *selection;
+-};
+-
+-static void hist_browser__reset(struct hist_browser *self);
+-static int hist_browser__run(struct hist_browser *self, const char *title,
+-			     struct newtExitStruct *es);
+-static unsigned int hist_browser__refresh(struct ui_browser *self);
+-static void ui_browser__hists_seek(struct ui_browser *self,
+-				   off_t offset, int whence);
+-
+-static struct hist_browser *hist_browser__new(struct hists *hists)
+-{
+-	struct hist_browser *self = zalloc(sizeof(*self));
+-
+-	if (self) {
+-		self->hists = hists;
+-		self->b.refresh = hist_browser__refresh;
+-		self->b.seek = ui_browser__hists_seek;
+-	}
+-
+-	return self;
+-}
+-
+-static void hist_browser__delete(struct hist_browser *self)
+-{
+-	newtFormDestroy(self->b.form);
+-	newtPopWindow();
+-	free(self);
+-}
+-
+-static struct hist_entry *hist_browser__selected_entry(struct hist_browser *self)
+-{
+-	return self->he_selection;
+-}
+-
+-static struct thread *hist_browser__selected_thread(struct hist_browser *self)
+-{
+-	return self->he_selection->thread;
+-}
+-
+-static int hist_browser__title(char *bf, size_t size, const char *ev_name,
+-			       const struct dso *dso, const struct thread *thread)
+-{
+-	int printed = 0;
+-
+-	if (thread)
+-		printed += snprintf(bf + printed, size - printed,
+-				    "Thread: %s(%d)",
+-				    (thread->comm_set ?  thread->comm : ""),
+-				    thread->pid);
+-	if (dso)
+-		printed += snprintf(bf + printed, size - printed,
+-				    "%sDSO: %s", thread ? " " : "",
+-				    dso->short_name);
+-	return printed ?: snprintf(bf, size, "Event: %s", ev_name);
+-}
+-
+-int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
+-{
+-	struct hist_browser *browser = hist_browser__new(self);
+-	struct pstack *fstack;
+-	const struct thread *thread_filter = NULL;
+-	const struct dso *dso_filter = NULL;
+-	struct newtExitStruct es;
+-	char msg[160];
+-	int key = -1;
+-
+-	if (browser == NULL)
+-		return -1;
+-
+-	fstack = pstack__new(2);
+-	if (fstack == NULL)
+-		goto out;
+-
+-	ui_helpline__push(helpline);
+-
+-	hist_browser__title(msg, sizeof(msg), ev_name,
+-			    dso_filter, thread_filter);
+-
+-	while (1) {
+-		const struct thread *thread;
+-		const struct dso *dso;
+-		char *options[16];
+-		int nr_options = 0, choice = 0, i,
+-		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+-		    browse_map = -2;
+-
+-		if (hist_browser__run(browser, msg, &es))
+-			break;
+-
+-		thread = hist_browser__selected_thread(browser);
+-		dso = browser->selection->map ? browser->selection->map->dso : NULL;
+-
+-		if (es.reason == NEWT_EXIT_HOTKEY) {
+-			key = es.u.key;
+-
+-			switch (key) {
+-			case NEWT_KEY_F1:
+-				goto do_help;
+-			case NEWT_KEY_TAB:
+-			case NEWT_KEY_UNTAB:
+-				/*
+-				 * Exit the browser, let hists__browser_tree
+-				 * go to the next or previous
+-				 */
+-				goto out_free_stack;
+-			default:;
+-			}
+-
+-			key = toupper(key);
+-			switch (key) {
+-			case 'A':
+-				if (browser->selection->map == NULL &&
+-				    browser->selection->map->dso->annotate_warned)
+-					continue;
+-				goto do_annotate;
+-			case 'D':
+-				goto zoom_dso;
+-			case 'T':
+-				goto zoom_thread;
+-			case 'H':
+-			case '?':
+-do_help:
+-				ui__help_window("->        Zoom into DSO/Threads & Annotate current symbol\n"
+-						"<-        Zoom out\n"
+-						"a         Annotate current symbol\n"
+-						"h/?/F1    Show this window\n"
+-						"d         Zoom into current DSO\n"
+-						"t         Zoom into current Thread\n"
+-						"q/CTRL+C  Exit browser");
+-				continue;
+-			default:;
+-			}
+-			if (is_exit_key(key)) {
+-				if (key == NEWT_KEY_ESCAPE) {
+-					if (dialog_yesno("Do you really want to exit?"))
+-						break;
+-					else
+-						continue;
+-				} else
+-					break;
+-			}
+-
+-			if (es.u.key == NEWT_KEY_LEFT) {
+-				const void *top;
+-
+-				if (pstack__empty(fstack))
+-					continue;
+-				top = pstack__pop(fstack);
+-				if (top == &dso_filter)
+-					goto zoom_out_dso;
+-				if (top == &thread_filter)
+-					goto zoom_out_thread;
+-				continue;
+-			}
+-		}
+-
+-		if (browser->selection->sym != NULL &&
+-		    !browser->selection->map->dso->annotate_warned &&
+-		    asprintf(&options[nr_options], "Annotate %s",
+-			     browser->selection->sym->name) > 0)
+-			annotate = nr_options++;
+-
+-		if (thread != NULL &&
+-		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
+-			     (thread_filter ? "out of" : "into"),
+-			     (thread->comm_set ? thread->comm : ""),
+-			     thread->pid) > 0)
+-			zoom_thread = nr_options++;
+-
+-		if (dso != NULL &&
+-		    asprintf(&options[nr_options], "Zoom %s %s DSO",
+-			     (dso_filter ? "out of" : "into"),
+-			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
+-			zoom_dso = nr_options++;
+-
+-		if (browser->selection->map != NULL &&
+-		    asprintf(&options[nr_options], "Browse map details") > 0)
+-			browse_map = nr_options++;
+-
+-		options[nr_options++] = (char *)"Exit";
+-
+-		choice = popup_menu(nr_options, options);
+-
+-		for (i = 0; i < nr_options - 1; ++i)
+-			free(options[i]);
+-
+-		if (choice == nr_options - 1)
+-			break;
+-
+-		if (choice == -1)
+-			continue;
+-
+-		if (choice == annotate) {
+-			struct hist_entry *he;
+-do_annotate:
+-			if (browser->selection->map->dso->origin == DSO__ORIG_KERNEL) {
+-				browser->selection->map->dso->annotate_warned = 1;
+-				ui_helpline__puts("No vmlinux file found, can't "
+-						 "annotate with just a "
+-						 "kallsyms file");
+-				continue;
+-			}
+-
+-			he = hist_browser__selected_entry(browser);
+-			if (he == NULL)
+-				continue;
+-
+-			hist_entry__tui_annotate(he);
+-		} else if (choice == browse_map)
+-			map__browse(browser->selection->map);
+-		else if (choice == zoom_dso) {
+-zoom_dso:
+-			if (dso_filter) {
+-				pstack__remove(fstack, &dso_filter);
+-zoom_out_dso:
+-				ui_helpline__pop();
+-				dso_filter = NULL;
+-			} else {
+-				if (dso == NULL)
+-					continue;
+-				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
+-						   dso->kernel ? "the Kernel" : dso->short_name);
+-				dso_filter = dso;
+-				pstack__push(fstack, &dso_filter);
+-			}
+-			hists__filter_by_dso(self, dso_filter);
+-			hist_browser__title(msg, sizeof(msg), ev_name,
+-					    dso_filter, thread_filter);
+-			hist_browser__reset(browser);
+-		} else if (choice == zoom_thread) {
+-zoom_thread:
+-			if (thread_filter) {
+-				pstack__remove(fstack, &thread_filter);
+-zoom_out_thread:
+-				ui_helpline__pop();
+-				thread_filter = NULL;
+-			} else {
+-				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
+-						   thread->comm_set ? thread->comm : "",
+-						   thread->pid);
+-				thread_filter = thread;
+-				pstack__push(fstack, &thread_filter);
+-			}
+-			hists__filter_by_thread(self, thread_filter);
+-			hist_browser__title(msg, sizeof(msg), ev_name,
+-					    dso_filter, thread_filter);
+-			hist_browser__reset(browser);
+-		}
+-	}
+-out_free_stack:
+-	pstack__delete(fstack);
+-out:
+-	hist_browser__delete(browser);
+-	return key;
+-}
+-
+-int hists__tui_browse_tree(struct rb_root *self, const char *help)
+-{
+-	struct rb_node *first = rb_first(self), *nd = first, *next;
+-	int key = 0;
+-
+-	while (nd) {
+-		struct hists *hists = rb_entry(nd, struct hists, rb_node);
+-		const char *ev_name = __event_name(hists->type, hists->config);
+-
+-		key = hists__browse(hists, help, ev_name);
+-
+-		if (is_exit_key(key))
+-			break;
+-
+-		switch (key) {
+-		case NEWT_KEY_TAB:
+-			next = rb_next(nd);
+-			if (next)
+-				nd = next;
+-			break;
+-		case NEWT_KEY_UNTAB:
+-			if (nd == first)
+-				continue;
+-			nd = rb_prev(nd);
+-		default:
+-			break;
+-		}
+-	}
+-
+-	return key;
+-}
+-
+ static void newt_suspend(void *d __used)
+ {
+ 	newtSuspend();
+@@ -476,638 +168,3 @@ void exit_browser(bool wait_for_ok)
+ 		newtFinished();
+ 	}
+ }
+-
+-static void hist_browser__refresh_dimensions(struct hist_browser *self)
+-{
+-	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+-	self->b.width = 3 + (hists__sort_list_width(self->hists) +
+-			     sizeof("[k]"));
+-}
+-
+-static void hist_browser__reset(struct hist_browser *self)
+-{
+-	self->b.nr_entries = self->hists->nr_entries;
+-	hist_browser__refresh_dimensions(self);
+-	ui_browser__reset_index(&self->b);
+-}
+-
+-static char tree__folded_sign(bool unfolded)
+-{
+-	return unfolded ? '-' : '+';
+-}
+-
+-static char map_symbol__folded(const struct map_symbol *self)
+-{
+-	return self->has_children ? tree__folded_sign(self->unfolded) : ' ';
+-}
+-
+-static char hist_entry__folded(const struct hist_entry *self)
+-{
+-	return map_symbol__folded(&self->ms);
+-}
+-
+-static char callchain_list__folded(const struct callchain_list *self)
+-{
+-	return map_symbol__folded(&self->ms);
+-}
+-
+-static bool map_symbol__toggle_fold(struct map_symbol *self)
+-{
+-	if (!self->has_children)
+-		return false;
+-
+-	self->unfolded = !self->unfolded;
+-	return true;
+-}
+-
+-#define LEVEL_OFFSET_STEP 3
+-
+-static int hist_browser__show_callchain_node_rb_tree(struct hist_browser *self,
+-						     struct callchain_node *chain_node,
+-						     u64 total, int level,
+-						     unsigned short row,
+-						     off_t *row_offset,
+-						     bool *is_current_entry)
+-{
+-	struct rb_node *node;
+-	int first_row = row, width, offset = level * LEVEL_OFFSET_STEP;
+-	u64 new_total, remaining;
+-
+-	if (callchain_param.mode == CHAIN_GRAPH_REL)
+-		new_total = chain_node->children_hit;
+-	else
+-		new_total = total;
+-
+-	remaining = new_total;
+-	node = rb_first(&chain_node->rb_root);
+-	while (node) {
+-		struct callchain_node *child = rb_entry(node, struct callchain_node, rb_node);
+-		struct rb_node *next = rb_next(node);
+-		u64 cumul = cumul_hits(child);
+-		struct callchain_list *chain;
+-		char folded_sign = ' ';
+-		int first = true;
+-		int extra_offset = 0;
+-
+-		remaining -= cumul;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			char ipstr[BITS_PER_LONG / 4 + 1], *alloc_str;
+-			const char *str;
+-			int color;
+-			bool was_first = first;
+-
+-			if (first) {
+-				first = false;
+-				chain->ms.has_children = chain->list.next != &child->val ||
+-							 rb_first(&child->rb_root) != NULL;
+-			} else {
+-				extra_offset = LEVEL_OFFSET_STEP;
+-				chain->ms.has_children = chain->list.next == &child->val &&
+-							 rb_first(&child->rb_root) != NULL;
+-			}
+-
+-			folded_sign = callchain_list__folded(chain);
+-			if (*row_offset != 0) {
+-				--*row_offset;
+-				goto do_next;
+-			}
+-
+-			alloc_str = NULL;
+-			str = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
+-			if (was_first) {
+-				double percent = cumul * 100.0 / new_total;
+-
+-				if (asprintf(&alloc_str, "%2.2f%% %s", percent, str) < 0)
+-					str = "Not enough memory!";
+-				else
+-					str = alloc_str;
+-			}
+-
+-			color = HE_COLORSET_NORMAL;
+-			width = self->b.width - (offset + extra_offset + 2);
+-			if (ui_browser__is_current_entry(&self->b, row)) {
+-				self->selection = &chain->ms;
+-				color = HE_COLORSET_SELECTED;
+-				*is_current_entry = true;
+-			}
+-
+-			SLsmg_set_color(color);
+-			SLsmg_gotorc(self->b.y + row, self->b.x);
+-			slsmg_write_nstring(" ", offset + extra_offset);
+-			slsmg_printf("%c ", folded_sign);
+-			slsmg_write_nstring(str, width);
+-			free(alloc_str);
+-
+-			if (++row == self->b.height)
+-				goto out;
+-do_next:
+-			if (folded_sign == '+')
+-				break;
+-		}
+-
+-		if (folded_sign == '-') {
+-			const int new_level = level + (extra_offset ? 2 : 1);
+-			row += hist_browser__show_callchain_node_rb_tree(self, child, new_total,
+-									 new_level, row, row_offset,
+-									 is_current_entry);
+-		}
+-		if (row == self->b.height)
+-			goto out;
+-		node = next;
+-	}
+-out:
+-	return row - first_row;
+-}
+-
+-static int hist_browser__show_callchain_node(struct hist_browser *self,
+-					     struct callchain_node *node,
+-					     int level, unsigned short row,
+-					     off_t *row_offset,
+-					     bool *is_current_entry)
+-{
+-	struct callchain_list *chain;
+-	int first_row = row,
+-	     offset = level * LEVEL_OFFSET_STEP,
+-	     width = self->b.width - offset;
+-	char folded_sign = ' ';
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		char ipstr[BITS_PER_LONG / 4 + 1], *s;
+-		int color;
+-		/*
+-		 * FIXME: This should be moved to somewhere else,
+-		 * probably when the callchain is created, so as not to
+-		 * traverse it all over again
+-		 */
+-		chain->ms.has_children = rb_first(&node->rb_root) != NULL;
+-		folded_sign = callchain_list__folded(chain);
+-
+-		if (*row_offset != 0) {
+-			--*row_offset;
+-			continue;
+-		}
+-
+-		color = HE_COLORSET_NORMAL;
+-		if (ui_browser__is_current_entry(&self->b, row)) {
+-			self->selection = &chain->ms;
+-			color = HE_COLORSET_SELECTED;
+-			*is_current_entry = true;
+-		}
+-
+-		s = callchain_list__sym_name(chain, ipstr, sizeof(ipstr));
+-		SLsmg_gotorc(self->b.y + row, self->b.x);
+-		SLsmg_set_color(color);
+-		slsmg_write_nstring(" ", offset);
+-		slsmg_printf("%c ", folded_sign);
+-		slsmg_write_nstring(s, width - 2);
+-
+-		if (++row == self->b.height)
+-			goto out;
+-	}
+-
+-	if (folded_sign == '-')
+-		row += hist_browser__show_callchain_node_rb_tree(self, node,
+-								 self->hists->stats.total_period,
+-								 level + 1, row,
+-								 row_offset,
+-								 is_current_entry);
+-out:
+-	return row - first_row;
+-}
+-
+-static int hist_browser__show_callchain(struct hist_browser *self,
+-					struct rb_root *chain,
+-					int level, unsigned short row,
+-					off_t *row_offset,
+-					bool *is_current_entry)
+-{
+-	struct rb_node *nd;
+-	int first_row = row;
+-
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-
+-		row += hist_browser__show_callchain_node(self, node, level,
+-							 row, row_offset,
+-							 is_current_entry);
+-		if (row == self->b.height)
+-			break;
+-	}
+-
+-	return row - first_row;
+-}
+-
+-static int hist_browser__show_entry(struct hist_browser *self,
+-				    struct hist_entry *entry,
+-				    unsigned short row)
+-{
+-	char s[256];
+-	double percent;
+-	int printed = 0;
+-	int color, width = self->b.width;
+-	char folded_sign = ' ';
+-	bool current_entry = ui_browser__is_current_entry(&self->b, row);
+-	off_t row_offset = entry->row_offset;
+-
+-	if (current_entry) {
+-		self->he_selection = entry;
+-		self->selection = &entry->ms;
+-	}
+-
+-	if (symbol_conf.use_callchain) {
+-		entry->ms.has_children = !RB_EMPTY_ROOT(&entry->sorted_chain);
+-		folded_sign = hist_entry__folded(entry);
+-	}
+-
+-	if (row_offset == 0) {
+-		hist_entry__snprintf(entry, s, sizeof(s), self->hists, NULL, false,
+-				     0, false, self->hists->stats.total_period);
+-		percent = (entry->period * 100.0) / self->hists->stats.total_period;
+-
+-		color = HE_COLORSET_SELECTED;
+-		if (!current_entry) {
+-			if (percent >= MIN_RED)
+-				color = HE_COLORSET_TOP;
+-			else if (percent >= MIN_GREEN)
+-				color = HE_COLORSET_MEDIUM;
+-			else
+-				color = HE_COLORSET_NORMAL;
+-		}
+-
+-		SLsmg_set_color(color);
+-		SLsmg_gotorc(self->b.y + row, self->b.x);
+-		if (symbol_conf.use_callchain) {
+-			slsmg_printf("%c ", folded_sign);
+-			width -= 2;
+-		}
+-		slsmg_write_nstring(s, width);
+-		++row;
+-		++printed;
+-	} else
+-		--row_offset;
+-
+-	if (folded_sign == '-' && row != self->b.height) {
+-		printed += hist_browser__show_callchain(self, &entry->sorted_chain,
+-							1, row, &row_offset,
+-							&current_entry);
+-		if (current_entry)
+-			self->he_selection = entry;
+-	}
+-
+-	return printed;
+-}
+-
+-static unsigned int hist_browser__refresh(struct ui_browser *self)
+-{
+-	unsigned row = 0;
+-	struct rb_node *nd;
+-	struct hist_browser *hb = container_of(self, struct hist_browser, b);
+-
+-	if (self->top == NULL)
+-		self->top = rb_first(&hb->hists->entries);
+-
+-	for (nd = self->top; nd; nd = rb_next(nd)) {
+-		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-
+-		if (h->filtered)
+-			continue;
+-
+-		row += hist_browser__show_entry(hb, h, row);
+-		if (row == self->height)
+-			break;
+-	}
+-
+-	return row;
+-}
+-
+-static void callchain_node__init_have_children_rb_tree(struct callchain_node *self)
+-{
+-	struct rb_node *nd = rb_first(&self->rb_root);
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		int first = true;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			if (first) {
+-				first = false;
+-				chain->ms.has_children = chain->list.next != &child->val ||
+-							 rb_first(&child->rb_root) != NULL;
+-			} else
+-				chain->ms.has_children = chain->list.next == &child->val &&
+-							 rb_first(&child->rb_root) != NULL;
+-		}
+-
+-		callchain_node__init_have_children_rb_tree(child);
+-	}
+-}
+-
+-static void callchain_node__init_have_children(struct callchain_node *self)
+-{
+-	struct callchain_list *chain;
+-
+-	list_for_each_entry(chain, &self->val, list)
+-		chain->ms.has_children = rb_first(&self->rb_root) != NULL;
+-
+-	callchain_node__init_have_children_rb_tree(self);
+-}
+-
+-static void callchain__init_have_children(struct rb_root *self)
+-{
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		callchain_node__init_have_children(node);
+-	}
+-}
+-
+-static void hist_entry__init_have_children(struct hist_entry *self)
+-{
+-	if (!self->init_have_children) {
+-		callchain__init_have_children(&self->sorted_chain);
+-		self->init_have_children = true;
+-	}
+-}
+-
+-static struct rb_node *hists__filter_entries(struct rb_node *nd)
+-{
+-	while (nd != NULL) {
+-		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		if (!h->filtered)
+-			return nd;
+-
+-		nd = rb_next(nd);
+-	}
+-
+-	return NULL;
+-}
+-
+-static struct rb_node *hists__filter_prev_entries(struct rb_node *nd)
+-{
+-	while (nd != NULL) {
+-		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+-		if (!h->filtered)
+-			return nd;
+-
+-		nd = rb_prev(nd);
+-	}
+-
+-	return NULL;
+-}
+-
+-static void ui_browser__hists_seek(struct ui_browser *self,
+-				   off_t offset, int whence)
+-{
+-	struct hist_entry *h;
+-	struct rb_node *nd;
+-	bool first = true;
+-
+-	switch (whence) {
+-	case SEEK_SET:
+-		nd = hists__filter_entries(rb_first(self->entries));
+-		break;
+-	case SEEK_CUR:
+-		nd = self->top;
+-		goto do_offset;
+-	case SEEK_END:
+-		nd = hists__filter_prev_entries(rb_last(self->entries));
+-		first = false;
+-		break;
+-	default:
+-		return;
+-	}
+-
+-	/*
+-	 * Moves not relative to the first visible entry invalidates its
+-	 * row_offset:
+-	 */
+-	h = rb_entry(self->top, struct hist_entry, rb_node);
+-	h->row_offset = 0;
+-
+-	/*
+-	 * Here we have to check if nd is expanded (+), if it is we can't go
+-	 * the next top level hist_entry, instead we must compute an offset of
+-	 * what _not_ to show and not change the first visible entry.
+-	 *
+-	 * This offset increments when we are going from top to bottom and
+-	 * decreases when we're going from bottom to top.
+-	 *
+-	 * As we don't have backpointers to the top level in the callchains
+-	 * structure, we need to always print the whole hist_entry callchain,
+-	 * skipping the first ones that are before the first visible entry
+-	 * and stop when we printed enough lines to fill the screen.
+-	 */
+-do_offset:
+-	if (offset > 0) {
+-		do {
+-			h = rb_entry(nd, struct hist_entry, rb_node);
+-			if (h->ms.unfolded) {
+-				u16 remaining = h->nr_rows - h->row_offset;
+-				if (offset > remaining) {
+-					offset -= remaining;
+-					h->row_offset = 0;
+-				} else {
+-					h->row_offset += offset;
+-					offset = 0;
+-					self->top = nd;
+-					break;
+-				}
+-			}
+-			nd = hists__filter_entries(rb_next(nd));
+-			if (nd == NULL)
+-				break;
+-			--offset;
+-			self->top = nd;
+-		} while (offset != 0);
+-	} else if (offset < 0) {
+-		while (1) {
+-			h = rb_entry(nd, struct hist_entry, rb_node);
+-			if (h->ms.unfolded) {
+-				if (first) {
+-					if (-offset > h->row_offset) {
+-						offset += h->row_offset;
+-						h->row_offset = 0;
+-					} else {
+-						h->row_offset += offset;
+-						offset = 0;
+-						self->top = nd;
+-						break;
+-					}
+-				} else {
+-					if (-offset > h->nr_rows) {
+-						offset += h->nr_rows;
+-						h->row_offset = 0;
+-					} else {
+-						h->row_offset = h->nr_rows + offset;
+-						offset = 0;
+-						self->top = nd;
+-						break;
+-					}
+-				}
+-			}
+-
+-			nd = hists__filter_prev_entries(rb_prev(nd));
+-			if (nd == NULL)
+-				break;
+-			++offset;
+-			self->top = nd;
+-			if (offset == 0) {
+-				/*
+-				 * Last unfiltered hist_entry, check if it is
+-				 * unfolded, if it is then we should have
+-				 * row_offset at its last entry.
+-				 */
+-				h = rb_entry(nd, struct hist_entry, rb_node);
+-				if (h->ms.unfolded)
+-					h->row_offset = h->nr_rows;
+-				break;
+-			}
+-			first = false;
+-		}
+-	} else {
+-		self->top = nd;
+-		h = rb_entry(nd, struct hist_entry, rb_node);
+-		h->row_offset = 0;
+-	}
+-}
+-
+-static int callchain_node__count_rows_rb_tree(struct callchain_node *self)
+-{
+-	int n = 0;
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		char folded_sign = ' '; /* No children */
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			++n;
+-			/* We need this because we may not have children */
+-			folded_sign = callchain_list__folded(chain);
+-			if (folded_sign == '+')
+-				break;
+-		}
+-
+-		if (folded_sign == '-') /* Have children and they're unfolded */
+-			n += callchain_node__count_rows_rb_tree(child);
+-	}
+-
+-	return n;
+-}
+-
+-static int callchain_node__count_rows(struct callchain_node *node)
+-{
+-	struct callchain_list *chain;
+-	bool unfolded = false;
+-	int n = 0;
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		++n;
+-		unfolded = chain->ms.unfolded;
+-	}
+-
+-	if (unfolded)
+-		n += callchain_node__count_rows_rb_tree(node);
+-
+-	return n;
+-}
+-
+-static int callchain__count_rows(struct rb_root *chain)
+-{
+-	struct rb_node *nd;
+-	int n = 0;
+-
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		n += callchain_node__count_rows(node);
+-	}
+-
+-	return n;
+-}
+-
+-static bool hist_browser__toggle_fold(struct hist_browser *self)
+-{
+-	if (map_symbol__toggle_fold(self->selection)) {
+-		struct hist_entry *he = self->he_selection;
+-
+-		hist_entry__init_have_children(he);
+-		self->hists->nr_entries -= he->nr_rows;
+-
+-		if (he->ms.unfolded)
+-			he->nr_rows = callchain__count_rows(&he->sorted_chain);
+-		else
+-			he->nr_rows = 0;
+-		self->hists->nr_entries += he->nr_rows;
+-		self->b.nr_entries = self->hists->nr_entries;
+-
+-		return true;
+-	}
+-
+-	/* If it doesn't have children, no toggling performed */
+-	return false;
+-}
+-
+-static int hist_browser__run(struct hist_browser *self, const char *title,
+-			     struct newtExitStruct *es)
+-{
+-	char str[256], unit;
+-	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
+-
+-	self->b.entries = &self->hists->entries;
+-	self->b.nr_entries = self->hists->nr_entries;
+-
+-	hist_browser__refresh_dimensions(self);
+-
+-	nr_events = convert_unit(nr_events, &unit);
+-	snprintf(str, sizeof(str), "Events: %lu%c                            ",
+-		 nr_events, unit);
+-	newtDrawRootText(0, 0, str);
+-
+-	if (ui_browser__show(&self->b, title) < 0)
+-		return -1;
+-
+-	newtFormAddHotKey(self->b.form, 'A');
+-	newtFormAddHotKey(self->b.form, 'a');
+-	newtFormAddHotKey(self->b.form, '?');
+-	newtFormAddHotKey(self->b.form, 'h');
+-	newtFormAddHotKey(self->b.form, 'H');
+-	newtFormAddHotKey(self->b.form, 'd');
+-
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
+-
+-	while (1) {
+-		ui_browser__run(&self->b, es);
+-
+-		if (es->reason != NEWT_EXIT_HOTKEY)
+-			break;
+-		switch (es->u.key) {
+-		case 'd': { /* Debug */
+-			static int seq;
+-			struct hist_entry *h = rb_entry(self->b.top,
+-							struct hist_entry, rb_node);
+-			ui_helpline__pop();
+-			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
+-					   seq++, self->b.nr_entries,
+-					   self->hists->nr_entries,
+-					   self->b.height,
+-					   self->b.index,
+-					   self->b.top_idx,
+-					   h->row_offset, h->nr_rows);
+-		}
+-			continue;
+-		case NEWT_KEY_ENTER:
+-			if (hist_browser__toggle_fold(self))
+-				break;
+-			/* fall thru */
+-		default:
+-			return 0;
+-		}
+-	}
+-	return 0;
+-}
+diff --git a/tools/perf/util/pstack.h b/tools/perf/util/pstack.h
+index 5ad0702..4cedea5 100644
+--- a/tools/perf/util/pstack.h
++++ b/tools/perf/util/pstack.h
+@@ -1,6 +1,8 @@
+ #ifndef _PERF_PSTACK_
+ #define _PERF_PSTACK_
+ 
++#include <stdbool.h>
++
+ struct pstack;
+ struct pstack *pstack__new(unsigned short max_nr_entries);
+ void pstack__delete(struct pstack *self);
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/ui/browsers/hists.c
+similarity index 85%
+copy from tools/perf/util/newt.c
+copy to tools/perf/util/ui/browsers/hists.c
+index b596926..9d32a41 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -1,523 +1,273 @@
+ #define _GNU_SOURCE
+ #include <stdio.h>
+ #undef _GNU_SOURCE
+-#include "ui/libslang.h"
+-#include <signal.h>
++#include "../libslang.h"
+ #include <stdlib.h>
+-#include <elf.h>
++#include <string.h>
+ #include <newt.h>
+-#include <sys/ttydefaults.h>
++#include <linux/rbtree.h>
+ 
+-#include "cache.h"
+-#include "hist.h"
+-#include "pstack.h"
+-#include "session.h"
+-#include "sort.h"
+-#include "symbol.h"
+-#include "ui/browser.h"
+-#include "ui/helpline.h"
+-#include "ui/browsers/map.h"
++#include "../../hist.h"
++#include "../../pstack.h"
++#include "../../sort.h"
++#include "../../util.h"
+ 
+-newtComponent newt_form__new(void);
++#include "../browser.h"
++#include "../helpline.h"
++#include "../util.h"
++#include "map.h"
+ 
+-char browser__last_msg[1024];
++int ui__help_window(const char *text);
++bool dialog_yesno(const char *msg);
++int popup_menu(int argc, char * const argv[]);
+ 
+-int browser__show_help(const char *format, va_list ap)
+-{
+-	int ret;
+-	static int backlog;
++struct hist_browser {
++	struct ui_browser   b;
++	struct hists	    *hists;
++	struct hist_entry   *he_selection;
++	struct map_symbol   *selection;
++};
+ 
+-        ret = vsnprintf(browser__last_msg + backlog,
+-			sizeof(browser__last_msg) - backlog, format, ap);
+-	backlog += ret;
++static void hist_browser__refresh_dimensions(struct hist_browser *self)
++{
++	/* 3 == +/- toggle symbol before actual hist_entry rendering */
++	self->b.width = 3 + (hists__sort_list_width(self->hists) +
++			     sizeof("[k]"));
++}
+ 
+-	if (browser__last_msg[backlog - 1] == '\n') {
+-		ui_helpline__puts(browser__last_msg);
+-		newtRefresh();
+-		backlog = 0;
+-	}
++static void hist_browser__reset(struct hist_browser *self)
++{
++	self->b.nr_entries = self->hists->nr_entries;
++	hist_browser__refresh_dimensions(self);
++	ui_browser__reset_index(&self->b);
++}
+ 
+-	return ret;
++static char tree__folded_sign(bool unfolded)
++{
++	return unfolded ? '-' : '+';
+ }
+ 
+-static void newt_form__set_exit_keys(newtComponent self)
++static char map_symbol__folded(const struct map_symbol *self)
+ {
+-	newtFormAddHotKey(self, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self, NEWT_KEY_ESCAPE);
+-	newtFormAddHotKey(self, 'Q');
+-	newtFormAddHotKey(self, 'q');
+-	newtFormAddHotKey(self, CTRL('c'));
++	return self->has_children ? tree__folded_sign(self->unfolded) : ' ';
+ }
+ 
+-newtComponent newt_form__new(void)
++static char hist_entry__folded(const struct hist_entry *self)
+ {
+-	newtComponent self = newtForm(NULL, NULL, 0);
+-	if (self)
+-		newt_form__set_exit_keys(self);
+-	return self;
++	return map_symbol__folded(&self->ms);
+ }
+ 
+-static int popup_menu(int argc, char * const argv[])
++static char callchain_list__folded(const struct callchain_list *self)
+ {
+-	struct newtExitStruct es;
+-	int i, rc = -1, max_len = 5;
+-	newtComponent listbox, form = newt_form__new();
++	return map_symbol__folded(&self->ms);
++}
+ 
+-	if (form == NULL)
+-		return -1;
++static int callchain_node__count_rows_rb_tree(struct callchain_node *self)
++{
++	int n = 0;
++	struct rb_node *nd;
+ 
+-	listbox = newtListbox(0, 0, argc, NEWT_FLAG_RETURNEXIT);
+-	if (listbox == NULL)
+-		goto out_destroy_form;
++	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
++		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
++		struct callchain_list *chain;
++		char folded_sign = ' '; /* No children */
+ 
+-	newtFormAddComponent(form, listbox);
++		list_for_each_entry(chain, &child->val, list) {
++			++n;
++			/* We need this because we may not have children */
++			folded_sign = callchain_list__folded(chain);
++			if (folded_sign == '+')
++				break;
++		}
+ 
+-	for (i = 0; i < argc; ++i) {
+-		int len = strlen(argv[i]);
+-		if (len > max_len)
+-			max_len = len;
+-		if (newtListboxAddEntry(listbox, argv[i], (void *)(long)i))
+-			goto out_destroy_form;
++		if (folded_sign == '-') /* Have children and they're unfolded */
++			n += callchain_node__count_rows_rb_tree(child);
+ 	}
+ 
+-	newtCenteredWindow(max_len, argc, NULL);
+-	newtFormRun(form, &es);
+-	rc = newtListboxGetCurrent(listbox) - NULL;
+-	if (es.reason == NEWT_EXIT_HOTKEY)
+-		rc = -1;
+-	newtPopWindow();
+-out_destroy_form:
+-	newtFormDestroy(form);
+-	return rc;
++	return n;
+ }
+ 
+-static int ui__help_window(const char *text)
++static int callchain_node__count_rows(struct callchain_node *node)
+ {
+-	struct newtExitStruct es;
+-	newtComponent tb, form = newt_form__new();
+-	int rc = -1;
+-	int max_len = 0, nr_lines = 0;
+-	const char *t;
+-
+-	if (form == NULL)
+-		return -1;
++	struct callchain_list *chain;
++	bool unfolded = false;
++	int n = 0;
+ 
+-	t = text;
+-	while (1) {
+-		const char *sep = strchr(t, '\n');
+-		int len;
+-
+-		if (sep == NULL)
+-			sep = strchr(t, '\0');
+-		len = sep - t;
+-		if (max_len < len)
+-			max_len = len;
+-		++nr_lines;
+-		if (*sep == '\0')
+-			break;
+-		t = sep + 1;
++	list_for_each_entry(chain, &node->val, list) {
++		++n;
++		unfolded = chain->ms.unfolded;
+ 	}
+ 
+-	tb = newtTextbox(0, 0, max_len, nr_lines, 0);
+-	if (tb == NULL)
+-		goto out_destroy_form;
++	if (unfolded)
++		n += callchain_node__count_rows_rb_tree(node);
+ 
+-	newtTextboxSetText(tb, text);
+-	newtFormAddComponent(form, tb);
+-	newtCenteredWindow(max_len, nr_lines, NULL);
+-	newtFormRun(form, &es);
+-	newtPopWindow();
+-	rc = 0;
+-out_destroy_form:
+-	newtFormDestroy(form);
+-	return rc;
++	return n;
+ }
+ 
+-static bool dialog_yesno(const char *msg)
++static int callchain__count_rows(struct rb_root *chain)
+ {
+-	/* newtWinChoice should really be accepting const char pointers... */
+-	char yes[] = "Yes", no[] = "No";
+-	return newtWinChoice(NULL, yes, no, (char *)msg) == 1;
++	struct rb_node *nd;
++	int n = 0;
++
++	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
++		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++		n += callchain_node__count_rows(node);
++	}
++
++	return n;
+ }
+ 
+-static char *callchain_list__sym_name(struct callchain_list *self,
+-				      char *bf, size_t bfsize)
++static bool map_symbol__toggle_fold(struct map_symbol *self)
+ {
+-	if (self->ms.sym)
+-		return self->ms.sym->name;
++	if (!self->has_children)
++		return false;
+ 
+-	snprintf(bf, bfsize, "%#Lx", self->ip);
+-	return bf;
++	self->unfolded = !self->unfolded;
++	return true;
+ }
+ 
+-struct hist_browser {
+-	struct ui_browser   b;
+-	struct hists	    *hists;
+-	struct hist_entry   *he_selection;
+-	struct map_symbol   *selection;
+-};
++static void callchain_node__init_have_children_rb_tree(struct callchain_node *self)
++{
++	struct rb_node *nd = rb_first(&self->rb_root);
+ 
+-static void hist_browser__reset(struct hist_browser *self);
+-static int hist_browser__run(struct hist_browser *self, const char *title,
+-			     struct newtExitStruct *es);
+-static unsigned int hist_browser__refresh(struct ui_browser *self);
+-static void ui_browser__hists_seek(struct ui_browser *self,
+-				   off_t offset, int whence);
++	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
++		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
++		struct callchain_list *chain;
++		int first = true;
+ 
+-static struct hist_browser *hist_browser__new(struct hists *hists)
+-{
+-	struct hist_browser *self = zalloc(sizeof(*self));
++		list_for_each_entry(chain, &child->val, list) {
++			if (first) {
++				first = false;
++				chain->ms.has_children = chain->list.next != &child->val ||
++							 rb_first(&child->rb_root) != NULL;
++			} else
++				chain->ms.has_children = chain->list.next == &child->val &&
++							 rb_first(&child->rb_root) != NULL;
++		}
+ 
+-	if (self) {
+-		self->hists = hists;
+-		self->b.refresh = hist_browser__refresh;
+-		self->b.seek = ui_browser__hists_seek;
++		callchain_node__init_have_children_rb_tree(child);
+ 	}
+-
+-	return self;
+ }
+ 
+-static void hist_browser__delete(struct hist_browser *self)
++static void callchain_node__init_have_children(struct callchain_node *self)
+ {
+-	newtFormDestroy(self->b.form);
+-	newtPopWindow();
+-	free(self);
++	struct callchain_list *chain;
++
++	list_for_each_entry(chain, &self->val, list)
++		chain->ms.has_children = rb_first(&self->rb_root) != NULL;
++
++	callchain_node__init_have_children_rb_tree(self);
+ }
+ 
+-static struct hist_entry *hist_browser__selected_entry(struct hist_browser *self)
++static void callchain__init_have_children(struct rb_root *self)
+ {
+-	return self->he_selection;
++	struct rb_node *nd;
++
++	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
++		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
++		callchain_node__init_have_children(node);
++	}
+ }
+ 
+-static struct thread *hist_browser__selected_thread(struct hist_browser *self)
++static void hist_entry__init_have_children(struct hist_entry *self)
+ {
+-	return self->he_selection->thread;
++	if (!self->init_have_children) {
++		callchain__init_have_children(&self->sorted_chain);
++		self->init_have_children = true;
++	}
+ }
+ 
+-static int hist_browser__title(char *bf, size_t size, const char *ev_name,
+-			       const struct dso *dso, const struct thread *thread)
++static bool hist_browser__toggle_fold(struct hist_browser *self)
+ {
+-	int printed = 0;
++	if (map_symbol__toggle_fold(self->selection)) {
++		struct hist_entry *he = self->he_selection;
+ 
+-	if (thread)
+-		printed += snprintf(bf + printed, size - printed,
+-				    "Thread: %s(%d)",
+-				    (thread->comm_set ?  thread->comm : ""),
+-				    thread->pid);
+-	if (dso)
+-		printed += snprintf(bf + printed, size - printed,
+-				    "%sDSO: %s", thread ? " " : "",
+-				    dso->short_name);
+-	return printed ?: snprintf(bf, size, "Event: %s", ev_name);
++		hist_entry__init_have_children(he);
++		self->hists->nr_entries -= he->nr_rows;
++
++		if (he->ms.unfolded)
++			he->nr_rows = callchain__count_rows(&he->sorted_chain);
++		else
++			he->nr_rows = 0;
++		self->hists->nr_entries += he->nr_rows;
++		self->b.nr_entries = self->hists->nr_entries;
++
++		return true;
++	}
++
++	/* If it doesn't have children, no toggling performed */
++	return false;
+ }
+ 
+-int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
++static int hist_browser__run(struct hist_browser *self, const char *title,
++			     struct newtExitStruct *es)
+ {
+-	struct hist_browser *browser = hist_browser__new(self);
+-	struct pstack *fstack;
+-	const struct thread *thread_filter = NULL;
+-	const struct dso *dso_filter = NULL;
+-	struct newtExitStruct es;
+-	char msg[160];
+-	int key = -1;
++	char str[256], unit;
++	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+-	if (browser == NULL)
+-		return -1;
++	self->b.entries = &self->hists->entries;
++	self->b.nr_entries = self->hists->nr_entries;
+ 
+-	fstack = pstack__new(2);
+-	if (fstack == NULL)
+-		goto out;
++	hist_browser__refresh_dimensions(self);
+ 
+-	ui_helpline__push(helpline);
++	nr_events = convert_unit(nr_events, &unit);
++	snprintf(str, sizeof(str), "Events: %lu%c                            ",
++		 nr_events, unit);
++	newtDrawRootText(0, 0, str);
+ 
+-	hist_browser__title(msg, sizeof(msg), ev_name,
+-			    dso_filter, thread_filter);
++	if (ui_browser__show(&self->b, title) < 0)
++		return -1;
++
++	newtFormAddHotKey(self->b.form, 'A');
++	newtFormAddHotKey(self->b.form, 'a');
++	newtFormAddHotKey(self->b.form, '?');
++	newtFormAddHotKey(self->b.form, 'h');
++	newtFormAddHotKey(self->b.form, 'H');
++	newtFormAddHotKey(self->b.form, 'd');
++
++	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
++	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
++	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
+ 
+ 	while (1) {
+-		const struct thread *thread;
+-		const struct dso *dso;
+-		char *options[16];
+-		int nr_options = 0, choice = 0, i,
+-		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
+-		    browse_map = -2;
++		ui_browser__run(&self->b, es);
+ 
+-		if (hist_browser__run(browser, msg, &es))
++		if (es->reason != NEWT_EXIT_HOTKEY)
+ 			break;
++		switch (es->u.key) {
++		case 'd': { /* Debug */
++			static int seq;
++			struct hist_entry *h = rb_entry(self->b.top,
++							struct hist_entry, rb_node);
++			ui_helpline__pop();
++			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
++					   seq++, self->b.nr_entries,
++					   self->hists->nr_entries,
++					   self->b.height,
++					   self->b.index,
++					   self->b.top_idx,
++					   h->row_offset, h->nr_rows);
++		}
++			continue;
++		case NEWT_KEY_ENTER:
++			if (hist_browser__toggle_fold(self))
++				break;
++			/* fall thru */
++		default:
++			return 0;
++		}
++	}
++	return 0;
++}
+ 
+-		thread = hist_browser__selected_thread(browser);
+-		dso = browser->selection->map ? browser->selection->map->dso : NULL;
+-
+-		if (es.reason == NEWT_EXIT_HOTKEY) {
+-			key = es.u.key;
+-
+-			switch (key) {
+-			case NEWT_KEY_F1:
+-				goto do_help;
+-			case NEWT_KEY_TAB:
+-			case NEWT_KEY_UNTAB:
+-				/*
+-				 * Exit the browser, let hists__browser_tree
+-				 * go to the next or previous
+-				 */
+-				goto out_free_stack;
+-			default:;
+-			}
+-
+-			key = toupper(key);
+-			switch (key) {
+-			case 'A':
+-				if (browser->selection->map == NULL &&
+-				    browser->selection->map->dso->annotate_warned)
+-					continue;
+-				goto do_annotate;
+-			case 'D':
+-				goto zoom_dso;
+-			case 'T':
+-				goto zoom_thread;
+-			case 'H':
+-			case '?':
+-do_help:
+-				ui__help_window("->        Zoom into DSO/Threads & Annotate current symbol\n"
+-						"<-        Zoom out\n"
+-						"a         Annotate current symbol\n"
+-						"h/?/F1    Show this window\n"
+-						"d         Zoom into current DSO\n"
+-						"t         Zoom into current Thread\n"
+-						"q/CTRL+C  Exit browser");
+-				continue;
+-			default:;
+-			}
+-			if (is_exit_key(key)) {
+-				if (key == NEWT_KEY_ESCAPE) {
+-					if (dialog_yesno("Do you really want to exit?"))
+-						break;
+-					else
+-						continue;
+-				} else
+-					break;
+-			}
+-
+-			if (es.u.key == NEWT_KEY_LEFT) {
+-				const void *top;
+-
+-				if (pstack__empty(fstack))
+-					continue;
+-				top = pstack__pop(fstack);
+-				if (top == &dso_filter)
+-					goto zoom_out_dso;
+-				if (top == &thread_filter)
+-					goto zoom_out_thread;
+-				continue;
+-			}
+-		}
+-
+-		if (browser->selection->sym != NULL &&
+-		    !browser->selection->map->dso->annotate_warned &&
+-		    asprintf(&options[nr_options], "Annotate %s",
+-			     browser->selection->sym->name) > 0)
+-			annotate = nr_options++;
+-
+-		if (thread != NULL &&
+-		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
+-			     (thread_filter ? "out of" : "into"),
+-			     (thread->comm_set ? thread->comm : ""),
+-			     thread->pid) > 0)
+-			zoom_thread = nr_options++;
+-
+-		if (dso != NULL &&
+-		    asprintf(&options[nr_options], "Zoom %s %s DSO",
+-			     (dso_filter ? "out of" : "into"),
+-			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
+-			zoom_dso = nr_options++;
+-
+-		if (browser->selection->map != NULL &&
+-		    asprintf(&options[nr_options], "Browse map details") > 0)
+-			browse_map = nr_options++;
+-
+-		options[nr_options++] = (char *)"Exit";
+-
+-		choice = popup_menu(nr_options, options);
+-
+-		for (i = 0; i < nr_options - 1; ++i)
+-			free(options[i]);
+-
+-		if (choice == nr_options - 1)
+-			break;
+-
+-		if (choice == -1)
+-			continue;
+-
+-		if (choice == annotate) {
+-			struct hist_entry *he;
+-do_annotate:
+-			if (browser->selection->map->dso->origin == DSO__ORIG_KERNEL) {
+-				browser->selection->map->dso->annotate_warned = 1;
+-				ui_helpline__puts("No vmlinux file found, can't "
+-						 "annotate with just a "
+-						 "kallsyms file");
+-				continue;
+-			}
+-
+-			he = hist_browser__selected_entry(browser);
+-			if (he == NULL)
+-				continue;
+-
+-			hist_entry__tui_annotate(he);
+-		} else if (choice == browse_map)
+-			map__browse(browser->selection->map);
+-		else if (choice == zoom_dso) {
+-zoom_dso:
+-			if (dso_filter) {
+-				pstack__remove(fstack, &dso_filter);
+-zoom_out_dso:
+-				ui_helpline__pop();
+-				dso_filter = NULL;
+-			} else {
+-				if (dso == NULL)
+-					continue;
+-				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
+-						   dso->kernel ? "the Kernel" : dso->short_name);
+-				dso_filter = dso;
+-				pstack__push(fstack, &dso_filter);
+-			}
+-			hists__filter_by_dso(self, dso_filter);
+-			hist_browser__title(msg, sizeof(msg), ev_name,
+-					    dso_filter, thread_filter);
+-			hist_browser__reset(browser);
+-		} else if (choice == zoom_thread) {
+-zoom_thread:
+-			if (thread_filter) {
+-				pstack__remove(fstack, &thread_filter);
+-zoom_out_thread:
+-				ui_helpline__pop();
+-				thread_filter = NULL;
+-			} else {
+-				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
+-						   thread->comm_set ? thread->comm : "",
+-						   thread->pid);
+-				thread_filter = thread;
+-				pstack__push(fstack, &thread_filter);
+-			}
+-			hists__filter_by_thread(self, thread_filter);
+-			hist_browser__title(msg, sizeof(msg), ev_name,
+-					    dso_filter, thread_filter);
+-			hist_browser__reset(browser);
+-		}
+-	}
+-out_free_stack:
+-	pstack__delete(fstack);
+-out:
+-	hist_browser__delete(browser);
+-	return key;
+-}
+-
+-int hists__tui_browse_tree(struct rb_root *self, const char *help)
+-{
+-	struct rb_node *first = rb_first(self), *nd = first, *next;
+-	int key = 0;
+-
+-	while (nd) {
+-		struct hists *hists = rb_entry(nd, struct hists, rb_node);
+-		const char *ev_name = __event_name(hists->type, hists->config);
+-
+-		key = hists__browse(hists, help, ev_name);
+-
+-		if (is_exit_key(key))
+-			break;
+-
+-		switch (key) {
+-		case NEWT_KEY_TAB:
+-			next = rb_next(nd);
+-			if (next)
+-				nd = next;
+-			break;
+-		case NEWT_KEY_UNTAB:
+-			if (nd == first)
+-				continue;
+-			nd = rb_prev(nd);
+-		default:
+-			break;
+-		}
+-	}
+-
+-	return key;
+-}
+-
+-static void newt_suspend(void *d __used)
+-{
+-	newtSuspend();
+-	raise(SIGTSTP);
+-	newtResume();
+-}
+-
+-void setup_browser(void)
+-{
+-	if (!isatty(1) || !use_browser || dump_trace) {
+-		use_browser = 0;
+-		setup_pager();
+-		return;
+-	}
+-
+-	use_browser = 1;
+-	newtInit();
+-	newtCls();
+-	newtSetSuspendCallback(newt_suspend, NULL);
+-	ui_helpline__puts(" ");
+-	ui_browser__init();
+-}
+-
+-void exit_browser(bool wait_for_ok)
+-{
+-	if (use_browser > 0) {
+-		if (wait_for_ok) {
+-			char title[] = "Fatal Error", ok[] = "Ok";
+-			newtWinMessage(title, ok, browser__last_msg);
+-		}
+-		newtFinished();
+-	}
+-}
+-
+-static void hist_browser__refresh_dimensions(struct hist_browser *self)
+-{
+-	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+-	self->b.width = 3 + (hists__sort_list_width(self->hists) +
+-			     sizeof("[k]"));
+-}
+-
+-static void hist_browser__reset(struct hist_browser *self)
+-{
+-	self->b.nr_entries = self->hists->nr_entries;
+-	hist_browser__refresh_dimensions(self);
+-	ui_browser__reset_index(&self->b);
+-}
+-
+-static char tree__folded_sign(bool unfolded)
+-{
+-	return unfolded ? '-' : '+';
+-}
+-
+-static char map_symbol__folded(const struct map_symbol *self)
+-{
+-	return self->has_children ? tree__folded_sign(self->unfolded) : ' ';
+-}
+-
+-static char hist_entry__folded(const struct hist_entry *self)
+-{
+-	return map_symbol__folded(&self->ms);
+-}
+-
+-static char callchain_list__folded(const struct callchain_list *self)
+-{
+-	return map_symbol__folded(&self->ms);
+-}
+-
+-static bool map_symbol__toggle_fold(struct map_symbol *self)
++static char *callchain_list__sym_name(struct callchain_list *self,
++				      char *bf, size_t bfsize)
+ {
+-	if (!self->has_children)
+-		return false;
++	if (self->ms.sym)
++		return self->ms.sym->name;
+ 
+-	self->unfolded = !self->unfolded;
+-	return true;
++	snprintf(bf, bfsize, "%#Lx", self->ip);
++	return bf;
+ }
+ 
+ #define LEVEL_OFFSET_STEP 3
+@@ -781,58 +531,7 @@ static unsigned int hist_browser__refresh(struct ui_browser *self)
+ 	return row;
+ }
+ 
+-static void callchain_node__init_have_children_rb_tree(struct callchain_node *self)
+-{
+-	struct rb_node *nd = rb_first(&self->rb_root);
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		int first = true;
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			if (first) {
+-				first = false;
+-				chain->ms.has_children = chain->list.next != &child->val ||
+-							 rb_first(&child->rb_root) != NULL;
+-			} else
+-				chain->ms.has_children = chain->list.next == &child->val &&
+-							 rb_first(&child->rb_root) != NULL;
+-		}
+-
+-		callchain_node__init_have_children_rb_tree(child);
+-	}
+-}
+-
+-static void callchain_node__init_have_children(struct callchain_node *self)
+-{
+-	struct callchain_list *chain;
+-
+-	list_for_each_entry(chain, &self->val, list)
+-		chain->ms.has_children = rb_first(&self->rb_root) != NULL;
+-
+-	callchain_node__init_have_children_rb_tree(self);
+-}
+-
+-static void callchain__init_have_children(struct rb_root *self)
+-{
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		callchain_node__init_have_children(node);
+-	}
+-}
+-
+-static void hist_entry__init_have_children(struct hist_entry *self)
+-{
+-	if (!self->init_have_children) {
+-		callchain__init_have_children(&self->sorted_chain);
+-		self->init_have_children = true;
+-	}
+-}
+-
+-static struct rb_node *hists__filter_entries(struct rb_node *nd)
++static struct rb_node *hists__filter_entries(struct rb_node *nd)
+ {
+ 	while (nd != NULL) {
+ 		struct hist_entry *h = rb_entry(nd, struct hist_entry, rb_node);
+@@ -974,140 +673,278 @@ do_offset:
+ 	}
+ }
+ 
+-static int callchain_node__count_rows_rb_tree(struct callchain_node *self)
++static struct hist_browser *hist_browser__new(struct hists *hists)
+ {
+-	int n = 0;
+-	struct rb_node *nd;
+-
+-	for (nd = rb_first(&self->rb_root); nd; nd = rb_next(nd)) {
+-		struct callchain_node *child = rb_entry(nd, struct callchain_node, rb_node);
+-		struct callchain_list *chain;
+-		char folded_sign = ' '; /* No children */
+-
+-		list_for_each_entry(chain, &child->val, list) {
+-			++n;
+-			/* We need this because we may not have children */
+-			folded_sign = callchain_list__folded(chain);
+-			if (folded_sign == '+')
+-				break;
+-		}
++	struct hist_browser *self = zalloc(sizeof(*self));
+ 
+-		if (folded_sign == '-') /* Have children and they're unfolded */
+-			n += callchain_node__count_rows_rb_tree(child);
++	if (self) {
++		self->hists = hists;
++		self->b.refresh = hist_browser__refresh;
++		self->b.seek = ui_browser__hists_seek;
+ 	}
+ 
+-	return n;
++	return self;
+ }
+ 
+-static int callchain_node__count_rows(struct callchain_node *node)
++static void hist_browser__delete(struct hist_browser *self)
+ {
+-	struct callchain_list *chain;
+-	bool unfolded = false;
+-	int n = 0;
+-
+-	list_for_each_entry(chain, &node->val, list) {
+-		++n;
+-		unfolded = chain->ms.unfolded;
+-	}
+-
+-	if (unfolded)
+-		n += callchain_node__count_rows_rb_tree(node);
++	newtFormDestroy(self->b.form);
++	newtPopWindow();
++	free(self);
++}
+ 
+-	return n;
++static struct hist_entry *hist_browser__selected_entry(struct hist_browser *self)
++{
++	return self->he_selection;
+ }
+ 
+-static int callchain__count_rows(struct rb_root *chain)
++static struct thread *hist_browser__selected_thread(struct hist_browser *self)
+ {
+-	struct rb_node *nd;
+-	int n = 0;
++	return self->he_selection->thread;
++}
+ 
+-	for (nd = rb_first(chain); nd; nd = rb_next(nd)) {
+-		struct callchain_node *node = rb_entry(nd, struct callchain_node, rb_node);
+-		n += callchain_node__count_rows(node);
+-	}
++static int hist_browser__title(char *bf, size_t size, const char *ev_name,
++			       const struct dso *dso, const struct thread *thread)
++{
++	int printed = 0;
+ 
+-	return n;
++	if (thread)
++		printed += snprintf(bf + printed, size - printed,
++				    "Thread: %s(%d)",
++				    (thread->comm_set ?  thread->comm : ""),
++				    thread->pid);
++	if (dso)
++		printed += snprintf(bf + printed, size - printed,
++				    "%sDSO: %s", thread ? " " : "",
++				    dso->short_name);
++	return printed ?: snprintf(bf, size, "Event: %s", ev_name);
+ }
+ 
+-static bool hist_browser__toggle_fold(struct hist_browser *self)
++int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
+ {
+-	if (map_symbol__toggle_fold(self->selection)) {
+-		struct hist_entry *he = self->he_selection;
++	struct hist_browser *browser = hist_browser__new(self);
++	struct pstack *fstack;
++	const struct thread *thread_filter = NULL;
++	const struct dso *dso_filter = NULL;
++	struct newtExitStruct es;
++	char msg[160];
++	int key = -1;
+ 
+-		hist_entry__init_have_children(he);
+-		self->hists->nr_entries -= he->nr_rows;
++	if (browser == NULL)
++		return -1;
+ 
+-		if (he->ms.unfolded)
+-			he->nr_rows = callchain__count_rows(&he->sorted_chain);
+-		else
+-			he->nr_rows = 0;
+-		self->hists->nr_entries += he->nr_rows;
+-		self->b.nr_entries = self->hists->nr_entries;
++	fstack = pstack__new(2);
++	if (fstack == NULL)
++		goto out;
+ 
+-		return true;
+-	}
++	ui_helpline__push(helpline);
+ 
+-	/* If it doesn't have children, no toggling performed */
+-	return false;
+-}
++	hist_browser__title(msg, sizeof(msg), ev_name,
++			    dso_filter, thread_filter);
+ 
+-static int hist_browser__run(struct hist_browser *self, const char *title,
+-			     struct newtExitStruct *es)
+-{
+-	char str[256], unit;
+-	unsigned long nr_events = self->hists->stats.nr_events[PERF_RECORD_SAMPLE];
++	while (1) {
++		const struct thread *thread;
++		const struct dso *dso;
++		char *options[16];
++		int nr_options = 0, choice = 0, i,
++		    annotate = -2, zoom_dso = -2, zoom_thread = -2,
++		    browse_map = -2;
+ 
+-	self->b.entries = &self->hists->entries;
+-	self->b.nr_entries = self->hists->nr_entries;
++		if (hist_browser__run(browser, msg, &es))
++			break;
+ 
+-	hist_browser__refresh_dimensions(self);
++		thread = hist_browser__selected_thread(browser);
++		dso = browser->selection->map ? browser->selection->map->dso : NULL;
+ 
+-	nr_events = convert_unit(nr_events, &unit);
+-	snprintf(str, sizeof(str), "Events: %lu%c                            ",
+-		 nr_events, unit);
+-	newtDrawRootText(0, 0, str);
++		if (es.reason == NEWT_EXIT_HOTKEY) {
++			key = es.u.key;
+ 
+-	if (ui_browser__show(&self->b, title) < 0)
+-		return -1;
++			switch (key) {
++			case NEWT_KEY_F1:
++				goto do_help;
++			case NEWT_KEY_TAB:
++			case NEWT_KEY_UNTAB:
++				/*
++				 * Exit the browser, let hists__browser_tree
++				 * go to the next or previous
++				 */
++				goto out_free_stack;
++			default:;
++			}
+ 
+-	newtFormAddHotKey(self->b.form, 'A');
+-	newtFormAddHotKey(self->b.form, 'a');
+-	newtFormAddHotKey(self->b.form, '?');
+-	newtFormAddHotKey(self->b.form, 'h');
+-	newtFormAddHotKey(self->b.form, 'H');
+-	newtFormAddHotKey(self->b.form, 'd');
++			key = toupper(key);
++			switch (key) {
++			case 'A':
++				if (browser->selection->map == NULL &&
++				    browser->selection->map->dso->annotate_warned)
++					continue;
++				goto do_annotate;
++			case 'D':
++				goto zoom_dso;
++			case 'T':
++				goto zoom_thread;
++			case 'H':
++			case '?':
++do_help:
++				ui__help_window("->        Zoom into DSO/Threads & Annotate current symbol\n"
++						"<-        Zoom out\n"
++						"a         Annotate current symbol\n"
++						"h/?/F1    Show this window\n"
++						"d         Zoom into current DSO\n"
++						"t         Zoom into current Thread\n"
++						"q/CTRL+C  Exit browser");
++				continue;
++			default:;
++			}
++			if (is_exit_key(key)) {
++				if (key == NEWT_KEY_ESCAPE &&
++				    !dialog_yesno("Do you really want to exit?"))
++					continue;
++				break;
++			}
+ 
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
+-	newtFormAddHotKey(self->b.form, NEWT_KEY_ENTER);
++			if (es.u.key == NEWT_KEY_LEFT) {
++				const void *top;
+ 
+-	while (1) {
+-		ui_browser__run(&self->b, es);
++				if (pstack__empty(fstack))
++					continue;
++				top = pstack__pop(fstack);
++				if (top == &dso_filter)
++					goto zoom_out_dso;
++				if (top == &thread_filter)
++					goto zoom_out_thread;
++				continue;
++			}
++		}
+ 
+-		if (es->reason != NEWT_EXIT_HOTKEY)
++		if (browser->selection->sym != NULL &&
++		    !browser->selection->map->dso->annotate_warned &&
++		    asprintf(&options[nr_options], "Annotate %s",
++			     browser->selection->sym->name) > 0)
++			annotate = nr_options++;
++
++		if (thread != NULL &&
++		    asprintf(&options[nr_options], "Zoom %s %s(%d) thread",
++			     (thread_filter ? "out of" : "into"),
++			     (thread->comm_set ? thread->comm : ""),
++			     thread->pid) > 0)
++			zoom_thread = nr_options++;
++
++		if (dso != NULL &&
++		    asprintf(&options[nr_options], "Zoom %s %s DSO",
++			     (dso_filter ? "out of" : "into"),
++			     (dso->kernel ? "the Kernel" : dso->short_name)) > 0)
++			zoom_dso = nr_options++;
++
++		if (browser->selection->map != NULL &&
++		    asprintf(&options[nr_options], "Browse map details") > 0)
++			browse_map = nr_options++;
++
++		options[nr_options++] = (char *)"Exit";
++
++		choice = popup_menu(nr_options, options);
++
++		for (i = 0; i < nr_options - 1; ++i)
++			free(options[i]);
++
++		if (choice == nr_options - 1)
+ 			break;
+-		switch (es->u.key) {
+-		case 'd': { /* Debug */
+-			static int seq;
+-			struct hist_entry *h = rb_entry(self->b.top,
+-							struct hist_entry, rb_node);
+-			ui_helpline__pop();
+-			ui_helpline__fpush("%d: nr_ent=(%d,%d), height=%d, idx=%d, fve: idx=%d, row_off=%d, nrows=%d",
+-					   seq++, self->b.nr_entries,
+-					   self->hists->nr_entries,
+-					   self->b.height,
+-					   self->b.index,
+-					   self->b.top_idx,
+-					   h->row_offset, h->nr_rows);
+-		}
++
++		if (choice == -1)
+ 			continue;
+-		case NEWT_KEY_ENTER:
+-			if (hist_browser__toggle_fold(self))
+-				break;
+-			/* fall thru */
++
++		if (choice == annotate) {
++			struct hist_entry *he;
++do_annotate:
++			if (browser->selection->map->dso->origin == DSO__ORIG_KERNEL) {
++				browser->selection->map->dso->annotate_warned = 1;
++				ui_helpline__puts("No vmlinux file found, can't "
++						 "annotate with just a "
++						 "kallsyms file");
++				continue;
++			}
++
++			he = hist_browser__selected_entry(browser);
++			if (he == NULL)
++				continue;
++
++			hist_entry__tui_annotate(he);
++		} else if (choice == browse_map)
++			map__browse(browser->selection->map);
++		else if (choice == zoom_dso) {
++zoom_dso:
++			if (dso_filter) {
++				pstack__remove(fstack, &dso_filter);
++zoom_out_dso:
++				ui_helpline__pop();
++				dso_filter = NULL;
++			} else {
++				if (dso == NULL)
++					continue;
++				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s DSO\"",
++						   dso->kernel ? "the Kernel" : dso->short_name);
++				dso_filter = dso;
++				pstack__push(fstack, &dso_filter);
++			}
++			hists__filter_by_dso(self, dso_filter);
++			hist_browser__title(msg, sizeof(msg), ev_name,
++					    dso_filter, thread_filter);
++			hist_browser__reset(browser);
++		} else if (choice == zoom_thread) {
++zoom_thread:
++			if (thread_filter) {
++				pstack__remove(fstack, &thread_filter);
++zoom_out_thread:
++				ui_helpline__pop();
++				thread_filter = NULL;
++			} else {
++				ui_helpline__fpush("To zoom out press <- or -> + \"Zoom out of %s(%d) thread\"",
++						   thread->comm_set ? thread->comm : "",
++						   thread->pid);
++				thread_filter = thread;
++				pstack__push(fstack, &thread_filter);
++			}
++			hists__filter_by_thread(self, thread_filter);
++			hist_browser__title(msg, sizeof(msg), ev_name,
++					    dso_filter, thread_filter);
++			hist_browser__reset(browser);
++		}
++	}
++out_free_stack:
++	pstack__delete(fstack);
++out:
++	hist_browser__delete(browser);
++	return key;
++}
++
++int hists__tui_browse_tree(struct rb_root *self, const char *help)
++{
++	struct rb_node *first = rb_first(self), *nd = first, *next;
++	int key = 0;
++
++	while (nd) {
++		struct hists *hists = rb_entry(nd, struct hists, rb_node);
++		const char *ev_name = __event_name(hists->type, hists->config);
++
++		key = hists__browse(hists, help, ev_name);
++
++		if (is_exit_key(key))
++			break;
++
++		switch (key) {
++		case NEWT_KEY_TAB:
++			next = rb_next(nd);
++			if (next)
++				nd = next;
++			break;
++		case NEWT_KEY_UNTAB:
++			if (nd == first)
++				continue;
++			nd = rb_prev(nd);
+ 		default:
+-			return 0;
++			break;
+ 		}
+ 	}
+-	return 0;
++
++	return key;
+ }
