@@ -1,63 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab0HKOVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:21:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:43819 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580Ab0HKOVQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:21:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=tZi4+kWucJksuayz4aYGUCXQa0z60Zc8u5kNHaozH4d+DpoVCiMT5cwHUxo1SLcTyj
-         RTrKcER5cIBjR7nWE8ItJbJ0H6tR2jqk+YNG1fLOqDoh92e87YzJPROkE1IUC7Vyi2YE
-         mqav3tkBEZ+JvL2N9e0q1bavxlSOZkNkY9i5A=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH] fs: use kernel's hex_to_bin() method
-Date: Wed, 11 Aug 2010 17:21:03 +0300
-Message-Id: <1281536463-10680-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1753174Ab0HKOcw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:32:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43520 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753050Ab0HKOcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 10:32:51 -0400
+Date: Wed, 11 Aug 2010 10:32:19 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100811143219.GF4879@redhat.com>
+References: <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100810204856.GA16571@redhat.com>
+ <20100811024451.GA26835@nowhere>
+ <20100811111046.GQ26154@erda.amd.com>
+ <20100811124443.GC4879@redhat.com>
+ <20100811140307.GS26154@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100811140307.GS26154@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org
----
- fs/binfmt_misc.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+On Wed, Aug 11, 2010 at 04:03:07PM +0200, Robert Richter wrote:
+> On 11.08.10 08:44:43, Don Zickus wrote:
+> > On Wed, Aug 11, 2010 at 01:10:46PM +0200, Robert Richter wrote:
+> > > > > +		 *
+> > > > > +		 * NOTE: We have no way of knowing if a second NMI was
+> > > > > +		 * actually triggered, so we may accidentally skip a valid
+> > > > > +		 * unknown nmi later.
+> > > > > +		 */
+> > > > > +		__get_cpu_var(perfctr_skip) +=1;
+> > > 
+> > > ... but this will not work. You have to mark the *absolute* nmi number
+> > > here. If you only raise a flag, the next unknown nmi will be dropped,
+> > > every. Because, in between there could have been other nmis that
+> > > stopped the chain and thus the 'unknown' path is not executed. The
+> > > trick in my patch is that you *know*, which nmi you want to skip.
+> > 
+> > I guess I am confused.  The way I read your patch was that you assumed the
+> > next NMI would be the one you skip and if there was another NMI in between
+> > the handled one and the one to skip, you would not skip it (nmi count !=
+> > prev + 1) and it would produce an accidental unknown nmi.
+> 
+> That's how it works.
+> 
+> > I tried to change that with my patch by setting the skip flag which would
+> > be drained on the next unknown nmi, independent of where it is in the NMI
+> > backlog of NMIs.
+> 
+> "setting the skip flag which would be drained on the next unknown nmi"
+> 
+> That's what is wrong, it drops every unknown nmi, no matter when it is
 
-diff --git a/fs/binfmt_misc.c b/fs/binfmt_misc.c
-index 9e60fd2..6c3855e 100644
---- a/fs/binfmt_misc.c
-+++ b/fs/binfmt_misc.c
-@@ -28,6 +28,7 @@
- #include <linux/mount.h>
- #include <linux/syscalls.h>
- #include <linux/fs.h>
-+#include <linux/kernel.h>
- 
- #include <asm/uaccess.h>
- 
-@@ -244,10 +245,8 @@ static int unquote(char *from)
- 	while ((c = *s++) != '\0') {
- 		if (c == '\\' && *s == 'x') {
- 			s++;
--			c = toupper(*s++);
--			*p = (c - (isdigit(c) ? '0' : 'A' - 10)) << 4;
--			c = toupper(*s++);
--			*p++ |= c - (isdigit(c) ? '0' : 'A' - 10);
-+			*p = hex_to_bin(*s++) << 4;
-+			*p++ |= hex_to_bin(*s++);
- 			continue;
- 		}
- 		*p++ = c;
--- 
-1.7.1.1
+Well as Frederic pointed out the skip variable will never go past one, so
+it will only drop at most one unknown nmi.
+
+> detected. In between there could be 1000's of valid other nmis
+> handled. You even could have been returned from nmi mode. But still,
+> the next unknown nmi will be dropped. Your patch could accumulate also
+
+That was the intent.  Can we guarantee that in the rare cases where the
+perfctr is generating two nmis, that they will be back-to-back?
+
+I think Huang tried to cap my approach even further my creating a time
+window in which the two nmis had to happen.  That gives us the flexibility
+to handle nmis that are not back to back, but yet deal with the case where
+two perfctrs fired but we are unsure if it generated a second nmi and we
+falsely set the skip flag.
+
+Cheers,
+Don
 
