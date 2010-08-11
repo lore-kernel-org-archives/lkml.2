@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab0HKXjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:39:10 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:45428 "HELO mail.gmx.net"
+	id S1758132Ab0HKXjX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:39:23 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45530 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751761Ab0HKXjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:39:07 -0400
+	id S1758111Ab0HKXjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:39:22 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX199CqR5DLR9skGMhlJ1W2y4g0LZflOQF2ixqgmDLw
-	/xyYOnmyFeSnVA
+X-Provags-ID: V01U2FsdGVkX1/bJYIjp8LbOaJURmfCrX73CGmECEuhiNlRTS7auR
+	P72UvjakDjQ2qC
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: viafb output device rework - part 1
-Date: Wed, 11 Aug 2010 23:49:29 +0000
-Message-Id: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Joseph Chan <JosephChan@via.com.tw>
+Subject: [PATCH 01/11] viafb: reset correct PLL
+Date: Wed, 11 Aug 2010 23:49:30 +0000
+Message-Id: <1281570580-8253-2-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
+References: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+viafb: reset correct PLL
 
-the objection of this patch series is to clean the output device 
-handling up. The end result should be saner code (not setting devices 
-that do not exist) as well as more powerfull control over existing 
-devices and easier addition of new devices.
-This is the first part doing some structural changes and using those to 
-switch which of the 2 display data sources (IGA1 or IGA2) is used.
-Things that are still missing and (hopefully) will come in follow up 
-series are device enable/disable following the same design and exporting 
-this flexability in an easy to use way to userspace.
+Looks like we did reset the PLL of the (whatever) engine instead of
+the PLL of the secondary display (IGA2, LCDCK). This patch fixes it.
 
-These patches can also be found at
-	git://github.com/schandinat/linux-2.6.git viafb-s2v1
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Joseph Chan <JosephChan@via.com.tw>
+---
+ drivers/video/via/hw.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Some tests were performed on CLE266, VX800 and VX855.
-
-Any opinions/suggestions?
-
-
-Regards,
-
-Florian Tobias Schandinat
-
-
-Florian Tobias Schandinat (11):
-      viafb: reset correct PLL
-      viafb: remove lcdtbl.h
-      viafb: remove stub
-      viafb: unify output path configuration
-      viafb: enable second display channel at central place
-      viafb: rework output device routing
-      viafb: propagate __init and __devinit
-      viafb: reduce viafb_set_iga_path usage
-      viafb: add new output device management
-      viafb: use new device routing
-      viafb: merge the remaining output path with enable functions
+diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
+index 7dcb4d5..53b0651 100644
+--- a/drivers/video/via/hw.c
++++ b/drivers/video/via/hw.c
+@@ -1688,8 +1688,8 @@ void viafb_set_vclock(u32 clk, int set_iga)
+ 	}
+ 
+ 	if (set_iga == IGA2) {
+-		viafb_write_reg_mask(SR40, VIASR, 0x01, BIT0);
+-		viafb_write_reg_mask(SR40, VIASR, 0x00, BIT0);
++		viafb_write_reg_mask(SR40, VIASR, 0x04, BIT2);
++		viafb_write_reg_mask(SR40, VIASR, 0x00, BIT2);
+ 	}
+ 
+ 	/* Fire! */
+-- 
+1.6.3.2
 
