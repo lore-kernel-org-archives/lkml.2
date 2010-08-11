@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab0HKR3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 13:29:12 -0400
-Received: from mail.perches.com ([173.55.12.10]:2390 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754491Ab0HKR3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 13:29:11 -0400
-Subject: [PATCH] scripts/checkpatch.pl: Add additional attribute #defines
-From: Joe Perches <joe@perches.com>
-To: Dave Jones <davej@redhat.com>
-Cc: apw@canonical.com, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100811163505.GB26497@redhat.com>
-References: <20100811163505.GB26497@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Aug 2010 10:29:08 -0700
-Message-ID: <1281547748.3976.41.camel@Joe-Laptop.home>
+	id S1758261Ab0HKRgo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 13:36:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42081 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753424Ab0HKRgn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 13:36:43 -0400
+Date: Wed, 11 Aug 2010 10:35:11 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, lm-sensors@lm-sensors.org,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH -next] hwmon: jc42 depends on I2C
+Message-Id: <20100811103511.41428e62.randy.dunlap@oracle.com>
+In-Reply-To: <20100811140009.6ff33109.sfr@canb.auug.org.au>
+References: <20100811140009.6ff33109.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-11 at 12:35 -0400, Dave Jones wrote:
-> I just got this from a patch I merged..
-> 
-> ERROR: need consistent spacing around '*' (ctx:WxV)
-> #121: FILE: arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c:113:
-> +static struct pcc_cpu __percpu *pcc_cpu_info;
->                                 ^
-> which doesn't seem right.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Perhaps these need to be added to checkpatch.
+jc42 uses i2c interfaces, so it should depend on I2C.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+drivers/hwmon/jc42.c:426: error: implicit declaration of function 'i2c_check_functionality'
+drivers/hwmon/jc42.c:521: error: implicit declaration of function 'i2c_smbus_read_word_data'
+drivers/hwmon/jc42.c:529: error: implicit declaration of function 'i2c_smbus_write_word_data'
+drivers/hwmon/jc42.c:580: error: implicit declaration of function 'i2c_add_driver'
+drivers/hwmon/jc42.c:585: error: implicit declaration of function 'i2c_del_driver'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	lm-sensors@lm-sensors.org
 ---
- scripts/checkpatch.pl |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ drivers/hwmon/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 2039acd..51ba019 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -150,6 +150,20 @@ our $Sparse	= qr{
- # We need \b after 'init' otherwise 'initconst' will cause a false positive in a check
- our $Attribute	= qr{
- 			const|
-+			__percpu|
-+			__nocast|
-+			__safe|
-+			__bitwise__|
-+			__packed__|
-+			__packed2__|
-+			__naked|
-+			__maybe_unused|
-+			__always_unused|
-+			__noreturn|
-+			__used|
-+			__cold|
-+			__noclone|
-+			__deprecated|
- 			__read_mostly|
- 			__kprobes|
- 			__(?:mem|cpu|dev|)(?:initdata|initconst|init\b)|
-
-
-
-
+--- linux-next-20100811.orig/drivers/hwmon/Kconfig
++++ linux-next-20100811/drivers/hwmon/Kconfig
+@@ -465,6 +465,7 @@ config SENSORS_JZ4740
+ 
+ config SENSORS_JC42
+ 	tristate "JEDEC JC42.4 compliant temperature sensors"
++	depends on I2C
+ 	help
+ 	  If you say yes here you get support for Jedec JC42.4 compliant
+ 	  temperature sensors. Support will include, but not be limited to,
