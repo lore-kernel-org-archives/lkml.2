@@ -1,245 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756892Ab0HKTsQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 15:48:16 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:48419 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756234Ab0HKTsP (ORCPT
+	id S1756484Ab0HKTvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 15:51:36 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:45847 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753420Ab0HKTve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 15:48:15 -0400
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: [PATCH 3/3 v3] [resend] cyber2000fb: add I2C support
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Content-Disposition: inline
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Wed, 11 Aug 2010 21:48:03 +0200
+	Wed, 11 Aug 2010 15:51:34 -0400
+Date: Wed, 11 Aug 2010 21:51:32 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, JBeulich@novell.com,
+        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
+        justinmattock@gmail.com, lizf@cn.fujitsu.com, ulfalizer.lkml@gmail.com,
+        zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] kbuild: kconfig changes
+Message-ID: <20100811195131.GA24193@merkur.ravnborg.org>
+References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTinN4npO7qfSa-42B-Cq5mKZX+--H0=1SuSrWTEP@mail.gmail.com> <20100807040101.GA30520@merkur.ravnborg.org> <AANLkTinOWBfsncSZw3bvHa6Mp+eb5dzibKSV15OKgW2M@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008112148.06092.linux@rainbow-software.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinOWBfsncSZw3bvHa6Mp+eb5dzibKSV15OKgW2M@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add I2C support for the DDC bus to cyber2000fb driver. This is only bus
-support, driver does not use EDID.
-Tested on two different CyberPro 2000 cards with i2cdetect and decode-edid.
+On Fri, Aug 06, 2010 at 09:43:24PM -0700, Arve Hj?nnev?g wrote:
+> On Fri, Aug 6, 2010 at 9:01 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> >>
+> >> This change prevents some the minimal defconfig options from working.
+> >> Specifically our usb gadget drivers do not get set.
+> >
+> > Can you help me reproduce this?
+> >
+> > I have found an issue with choice values in combination with
+> > tristate logic that fails. I hope this is something similar.
+> >
+> 
+> It is probably the same problem. The gadget driver that was not set is
+> not buildable as a module (it is not in the mainline kernel). If I
+> select another gadget driver instead it just gets changed to build as
+> a module instead.
+> 
+> If you create a file, arch/arm/configs/test_defconfig with the following:
+> CONFIG_MODULES=y
+> CONFIG_USB_GADGET=y
+> CONFIG_USB_MASS_STORAGE=y
+> 
+> then "make test_defconfig" results in .config having:
+> CONFIG_USB_MASS_STORAGE=m
+> 
+>  (at least if you are set up to compile for arm)
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Arve, can you please try the attached patch and check if this
+fixes the issue you see.
+At least I confirmed that it fixed the minimal test-case I used.
+
+Note: the patch chenges how we interpret a minimal config,
+it does not change the content of a minimal config.
+
+Unfortunately the bug I had discovered is another bug.
+If I do:
+	make ARCH=avr32 atngw100_defconfig
+	make ARCH=avr32 savedefconfig
+	cp defconfig arch/avr32/configs/atngw100_defconfig
+	make ARCH=avr32 atngw100_defconfig
+	diff -u .config .config.old
+
+then the diff shows an unexpected difference.
+
+I will continue of that issue.
+This is mainly to inform you that we have at least one
+additional issue with "savedefconfig".
+
+	Sam
+
+>From 6f36cdab76c4ee26bc39c38a2895cac5166e253b Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Wed, 11 Aug 2010 21:40:23 +0200
+Subject: [PATCH] kconfig: fix tristate choice with minimal config
+
+If a minimal config did not specify the value
+of all choice values, the resulting configuration
+could have wrong values.
+
+Consider following example:
+config M
+        def_bool y
+        option modules
+choice
+        prompt "choice list"
+config A
+        tristate "a"
+config B
+	tristate "b"
+endchoice
+
+With a defconfig like this:
+CONFIG_M=y
+CONFIG_A=y
+
+The resulting configuration would have
+
+    CONFIG_A=m
+
+which was unexpected.
+
+The problem was not not all choice values were set and thus
+kconfig calculated a wrong value.
+
+The fix is to set all choice values when we
+read a defconfig files.
+
+conf_set_all_new_symbols() is refactored such that
+random choice values are now handled by a dedicated function.
+And new choice values are set by set_all_choice_values().
+
+This was not the minimal fix, but the fix that resulted
+in the most readable code.
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Arve Hj?nnev?g <arve@android.com>
 ---
-This is v3 with spinlock instead of mutex (I don't know what's better here -
-but both mode switch and DDC are not performance critical so it probably does
-not matter) and all new things properly named ddc.
+ scripts/kconfig/confdata.c |  102 +++++++++++++++++++++++++++++---------------
+ 1 files changed, 67 insertions(+), 35 deletions(-)
 
-diff -urp linux-2.6.35-rc3-/drivers/video/cyber2000fb.c linux-2.6.35-rc3/drivers/video/cyber2000fb.c
---- linux-2.6.35-rc3-/drivers/video/cyber2000fb.c	2010-07-31 21:58:35.000000000 +0200
-+++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-08-01 11:53:32.000000000 +0200
-@@ -48,6 +48,10 @@
- #include <linux/init.h>
- #include <linux/io.h>
- 
-+#include <linux/i2c.h>
-+#include <linux/i2c-id.h>
-+#include <linux/i2c-algo-bit.h>
-+
- #include <asm/pgtable.h>
- #include <asm/system.h>
- 
-@@ -88,6 +92,12 @@ struct cfb_info {
- 	u_char			ramdac_powerdown;
- 
- 	u32			pseudo_palette[16];
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+	bool			ddc_registered;
-+	struct i2c_adapter	ddc_adapter;
-+	struct i2c_algo_bit_data	ddc_algo;
-+	spinlock_t		reg_b0_lock;
-+#endif
- };
- 
- static char *default_font = "Acorn8x8";
-@@ -498,6 +508,9 @@ static void cyber2000fb_set_timing(struc
- 	cyber2000_attrw(0x14, 0x00, cfb);
- 
- 	/* PLL registers */
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+	spin_lock(&cfb->reg_b0_lock);
-+#endif
- 	cyber2000_grphw(EXT_DCLK_MULT, hw->clock_mult, cfb);
- 	cyber2000_grphw(EXT_DCLK_DIV, hw->clock_div, cfb);
- 	cyber2000_grphw(EXT_MCLK_MULT, cfb->mclk_mult, cfb);
-@@ -505,6 +518,9 @@ static void cyber2000fb_set_timing(struc
- 	cyber2000_grphw(0x90, 0x01, cfb);
- 	cyber2000_grphw(0xb9, 0x80, cfb);
- 	cyber2000_grphw(0xb9, 0x00, cfb);
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+	spin_unlock(&cfb->reg_b0_lock);
-+#endif
- 
- 	cfb->ramdac_ctrl = hw->ramdac;
- 	cyber2000fb_write_ramdac_ctrl(cfb);
-@@ -1145,6 +1161,105 @@ void cyber2000fb_detach(int idx)
- }
- EXPORT_SYMBOL(cyber2000fb_detach);
- 
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+
-+#define DDC_REG		0xb0
-+#define DDC_SCL_OUT	(1 << 0)
-+#define DDC_SDA_OUT	(1 << 4)
-+#define DDC_SCL_IN	(1 << 2)
-+#define DDC_SDA_IN	(1 << 6)
-+
-+static void cyber2000fb_enable_ddc(struct cfb_info *cfb)
-+{
-+	spin_lock(&cfb->reg_b0_lock);
-+	cyber2000fb_writew(0x1bf, 0x3ce, cfb);
-+}
-+
-+static void cyber2000fb_disable_ddc(struct cfb_info *cfb)
-+{
-+	cyber2000fb_writew(0x0bf, 0x3ce, cfb);
-+	spin_unlock(&cfb->reg_b0_lock);
-+}
-+
-+
-+static void cyber2000fb_ddc_setscl(void *data, int val)
-+{
-+	struct cfb_info *cfb = data;
-+	unsigned char reg;
-+
-+	cyber2000fb_enable_ddc(cfb);
-+	reg = cyber2000_grphr(DDC_REG, cfb);
-+	if (!val)	/* bit is inverted */
-+		reg |= DDC_SCL_OUT;
-+	else
-+		reg &= ~DDC_SCL_OUT;
-+	cyber2000_grphw(DDC_REG, reg, cfb);
-+	cyber2000fb_disable_ddc(cfb);
-+}
-+
-+static void cyber2000fb_ddc_setsda(void *data, int val)
-+{
-+	struct cfb_info *cfb = data;
-+	unsigned char reg;
-+
-+	cyber2000fb_enable_ddc(cfb);
-+	reg = cyber2000_grphr(DDC_REG, cfb);
-+	if (!val)	/* bit is inverted */
-+		reg |= DDC_SDA_OUT;
-+	else
-+		reg &= ~DDC_SDA_OUT;
-+	cyber2000_grphw(DDC_REG, reg, cfb);
-+	cyber2000fb_disable_ddc(cfb);
-+}
-+
-+static int cyber2000fb_ddc_getscl(void *data)
-+{
-+	struct cfb_info *cfb = data;
-+	int retval;
-+
-+	cyber2000fb_enable_ddc(cfb);
-+	retval = !!(cyber2000_grphr(DDC_REG, cfb) & DDC_SCL_IN);
-+	cyber2000fb_disable_ddc(cfb);
-+
-+	return retval;
-+}
-+
-+static int cyber2000fb_ddc_getsda(void *data)
-+{
-+	struct cfb_info *cfb = data;
-+	int retval;
-+
-+	cyber2000fb_enable_ddc(cfb);
-+	retval = !!(cyber2000_grphr(DDC_REG, cfb) & DDC_SDA_IN);
-+	cyber2000fb_disable_ddc(cfb);
-+
-+	return retval;
-+}
-+
-+static int __devinit cyber2000fb_setup_ddc_bus(struct cfb_info *cfb)
-+{
-+	spin_lock_init(&cfb->reg_b0_lock);
-+
-+	strlcpy(cfb->ddc_adapter.name, cfb->fb.fix.id,
-+		sizeof(cfb->ddc_adapter.name));
-+	cfb->ddc_adapter.owner		= THIS_MODULE;
-+	cfb->ddc_adapter.class		= I2C_CLASS_DDC;
-+	cfb->ddc_adapter.algo_data	= &cfb->ddc_algo;
-+	cfb->ddc_adapter.dev.parent	= &cfb->dev->dev;
-+	cfb->ddc_algo.setsda		= cyber2000fb_ddc_setsda;
-+	cfb->ddc_algo.setscl		= cyber2000fb_ddc_setscl;
-+	cfb->ddc_algo.getsda		= cyber2000fb_ddc_getsda;
-+	cfb->ddc_algo.getscl		= cyber2000fb_ddc_getscl;
-+	cfb->ddc_algo.udelay		= 10;
-+	cfb->ddc_algo.timeout		= 20;
-+	cfb->ddc_algo.data		= cfb;
-+
-+	i2c_set_adapdata(&cfb->ddc_adapter, cfb);
-+
-+	return i2c_bit_add_bus(&cfb->ddc_adapter);
-+}
-+#endif /* CONFIG_FB_CYBER2000_DDC */
-+
- /*
-  * These parameters give
-  * 640x480, hsync 31.5kHz, vsync 60Hz
-@@ -1373,6 +1488,11 @@ static int __devinit cyberpro_common_pro
- 	cfb->fb.fix.mmio_len   = MMIO_SIZE;
- 	cfb->fb.screen_base    = cfb->region;
- 
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+	if (cyber2000fb_setup_ddc_bus(cfb) == 0)
-+		cfb->ddc_registered = true;
-+#endif
-+
- 	err = -EINVAL;
- 	if (!fb_find_mode(&cfb->fb.var, &cfb->fb, mode_option, NULL, 0,
- 			  &cyber2000fb_default_mode, 8)) {
-@@ -1410,6 +1530,10 @@ static int __devinit cyberpro_common_pro
- 	err = register_framebuffer(&cfb->fb);
- 
- failed:
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+	if (err && cfb->ddc_registered)
-+		i2c_del_adapter(&cfb->ddc_adapter);
-+#endif
- 	return err;
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index f81f263..23d4fa6 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -919,13 +919,73 @@ void conf_set_changed_callback(void (*fn)(void))
+ 	conf_changed_callback = fn;
  }
  
-@@ -1661,6 +1785,10 @@ static void __devexit cyberpro_pci_remov
- 			printk(KERN_WARNING "%s: danger Will Robinson, "
- 				"danger danger!  Oopsen imminent!\n",
- 				cfb->fb.fix.id);
-+#ifdef CONFIG_FB_CYBER2000_DDC
-+		if (cfb->ddc_registered)
-+			i2c_del_adapter(&cfb->ddc_adapter);
-+#endif
- 		iounmap(cfb->region);
- 		cyberpro_free_fb_info(cfb);
++static void randomize_choice_values(struct symbol *csym)
++{
++	struct property *prop;
++	struct symbol *sym;
++	struct expr *e;
++	int cnt, def;
  
-diff -urp linux-2.6.35-rc3-/drivers/video/Kconfig linux-2.6.35-rc3/drivers/video/Kconfig
---- linux-2.6.35-rc3-/drivers/video/Kconfig	2010-07-31 22:00:23.000000000 +0200
-+++ linux-2.6.35-rc3/drivers/video/Kconfig	2010-08-01 11:48:32.000000000 +0200
-@@ -422,6 +422,15 @@ config FB_CYBER2000
- 	  Say Y if you have a NetWinder or a graphics card containing this
- 	  device, otherwise say N.
- 
-+config FB_CYBER2000_DDC
-+	bool "DDC for CyberPro support"
-+	depends on FB_CYBER2000
-+	select FB_DDC
-+	default y
-+	help
-+	  Say Y here if you want DDC support for your CyberPro graphics
-+	  card. This is only I2C bus support, driver does not use EDID.
+-void conf_set_all_new_symbols(enum conf_def_mode mode)
++	/*
++	 * If choice is mod then we may have more items slected
++	 * and if no then no-one.
++	 * In both cases stop.
++	 */
++	if (csym->curr.tri != yes)
++		return;
 +
- config FB_APOLLO
- 	bool
- 	depends on (FB = y) && APOLLO
-
-
++	prop = sym_get_choice_prop(csym);
++
++	/* count entries in choice block */
++	cnt = 0;
++	expr_list_for_each_sym(prop->expr, e, sym)
++		cnt++;
++
++	/*
++	 * find a random value and set it to yes,
++	 * set the rest to no so we have only one set
++	 */
++	def = (rand() % cnt);
++
++	cnt = 0;
++	expr_list_for_each_sym(prop->expr, e, sym) {
++		if (def == cnt++) {
++			sym->def[S_DEF_USER].tri = yes;
++			csym->def[S_DEF_USER].val = sym;
++		}
++		else {
++			sym->def[S_DEF_USER].tri = no;
++		}
++	}
++	csym->flags |= SYMBOL_DEF_USER;
++	/* clear VALID to get value calculated */
++	csym->flags &= ~(SYMBOL_VALID);
++}
++
++static void set_all_choice_values(struct symbol *csym)
+ {
+-	struct symbol *sym, *csym;
+ 	struct property *prop;
++	struct symbol *sym;
+ 	struct expr *e;
+-	int i, cnt, def;
++
++	prop = sym_get_choice_prop(csym);
++
++	/*
++	 * Set all non-assinged choice values to no
++	 */
++	expr_list_for_each_sym(prop->expr, e, sym) {
++		if (!sym_has_value(sym))
++			sym->def[S_DEF_USER].tri = no;
++	}
++	csym->flags |= SYMBOL_DEF_USER;
++	/* clear VALID to get value calculated */
++	csym->flags &= ~(SYMBOL_VALID);
++}
++
++void conf_set_all_new_symbols(enum conf_def_mode mode)
++{
++	struct symbol *sym, *csym;
++	int i, cnt;
+ 
+ 	for_all_symbols(i, sym) {
+ 		if (sym_has_value(sym))
+@@ -961,8 +1021,6 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 
+ 	sym_clear_all_valid();
+ 
+-	if (mode != def_random)
+-		return;
+ 	/*
+ 	 * We have different type of choice blocks.
+ 	 * If curr.tri equal to mod then we can select several
+@@ -977,35 +1035,9 @@ void conf_set_all_new_symbols(enum conf_def_mode mode)
+ 			continue;
+ 
+ 		sym_calc_value(csym);
+-
+-		if (csym->curr.tri != yes)
+-			continue;
+-
+-		prop = sym_get_choice_prop(csym);
+-
+-		/* count entries in choice block */
+-		cnt = 0;
+-		expr_list_for_each_sym(prop->expr, e, sym)
+-			cnt++;
+-
+-		/*
+-		 * find a random value and set it to yes,
+-		 * set the rest to no so we have only one set
+-		 */
+-		def = (rand() % cnt);
+-
+-		cnt = 0;
+-		expr_list_for_each_sym(prop->expr, e, sym) {
+-			if (def == cnt++) {
+-				sym->def[S_DEF_USER].tri = yes;
+-				csym->def[S_DEF_USER].val = sym;
+-			}
+-			else {
+-				sym->def[S_DEF_USER].tri = no;
+-			}
+-		}
+-		csym->flags |= SYMBOL_DEF_USER;
+-		/* clear VALID to get value calculated */
+-		csym->flags &= ~(SYMBOL_VALID);
++		if (mode == def_random)
++			randomize_choice_values(csym);
++		else
++			set_all_choice_values(csym);
+ 	}
+ }
 -- 
-Ondrej Zary
+1.6.0.6
+
