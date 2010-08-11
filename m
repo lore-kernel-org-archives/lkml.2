@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235Ab0HKPv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 11:51:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43859 "EHLO
+	id S1754244Ab0HKP5A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 11:57:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56532 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753209Ab0HKPvz (ORCPT
+	with ESMTP id S1752660Ab0HKP46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 11:51:55 -0400
-Date: Wed, 11 Aug 2010 08:51:38 -0700
+	Wed, 11 Aug 2010 11:56:58 -0400
+Date: Wed, 11 Aug 2010 08:54:35 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, John Stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 11 (hpet)
-Message-Id: <20100811085138.67782931.randy.dunlap@oracle.com>
-In-Reply-To: <20100811140009.6ff33109.sfr@canb.auug.org.au>
-References: <20100811140009.6ff33109.sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Cc: michaelc@cs.wisc.edu, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, pjones@redhat.com,
+        open-iscsi@googlegroups.com
+Subject: Re: [PATCH 1/2] RFC: iscsi ibft: separate ibft parsing from sysfs
+ interface
+Message-Id: <20100811085435.7da9dcff.randy.dunlap@oracle.com>
+In-Reply-To: <201004122220.30193.konrad@darnok.org>
+References: <1271095578-4212-1-git-send-email-michaelc@cs.wisc.edu>
+	<201004122220.30193.konrad@darnok.org>
 Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
@@ -25,23 +28,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Aug 2010 14:00:09 +1000 Stephen Rothwell wrote:
+On Mon, 12 Apr 2010 22:20:29 -0400 Konrad Rzeszutek Wilk wrote:
 
-> Hi all,
+> On Monday 12 April 2010 14:06:17 michaelc@cs.wisc.edu wrote:
+> > From: Mike Christie <michaelc@cs.wisc.edu>
+> >
+> > Not all iscsi drivers support ibft. For drivers like be2iscsi
+> > that do not but are bootable through a vendor firmware specific
+> > format/process this patch moves the sysfs interface from the ibft code
+> > to a lib module. This then allows userspace tools to search for iscsi boot
+> > info in a common place and in a common format.
+> >
+> > ibft iscsi boot info is exported in the same place as it was
+> > before: /sys/firmware/ibft.
+> >
+> > vendor/fw boot info gets export in /sys/firmware/iscsi_bootX, where X is
+> > the scsi host number of the HBA. Underneath these parent dirs, the
+> > target, ethernet, and initiator dirs are the same as they were before.
+> >
+> > This patch was made over the ibft-2.6 tree's ibft-1.03 branch:
+> > http://git.kernel.org/?p=linux/kernel/git/konrad/ibft-2.6.git;a=shortlog;h=
+> >refs/heads/ibft-1.03
+> >
+> >
+> > Signed-off-by: Mike Christie <michaelc@cs.wisc.edu>
+> > ---
+> Looks good to my eyes.
 > 
-> As the merge window is open, please do not add 2.6.37 material to your
-> linux-next included trees until after 2.6.36-rc1.
-> 
-> Changes since 20100810:
+> Let me run it tomorrow through my regression bucket before I stick on the git 
+> tree.
 
+Can we get this patch into linux-next, please?
 
-on i386 (X86_32):
-
-arch/x86/kernel/hpet.c:840: warning: integer overflow in expression
-
-	hpet_freq = FSEC_PER_NSEC * NSEC_PER_SEC;
-
-
+or if it's there, there are still errors like this that need to be checked.
 
 ---
 ~Randy
