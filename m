@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab0HKSte (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:49:34 -0400
-Received: from mgw-sa02.nokia.com ([147.243.1.48]:37936 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755139Ab0HKStd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:49:33 -0400
-Date: Wed, 11 Aug 2010 21:49:22 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-Cc: "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "rmk@arm.linux.org.uk" <rmk@arm.linux.org.uk>,
-        "tony@atomide.com" <tony@atomide.com>
-Subject: Re: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and
- TORPEDO development kits
-Message-ID: <20100811184922.GB21778@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <20100811172232.GA21391@nokia.com>
- <77A0A4DB5BF2A44283E5522C27234AC6021C82B4@EDPRSRV011.logicpd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <77A0A4DB5BF2A44283E5522C27234AC6021C82B4@EDPRSRV011.logicpd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+	id S1755658Ab0HKSvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:51:10 -0400
+Received: from gold.linx.net ([195.66.232.40]:34708 "EHLO gold.linx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755139Ab0HKSvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 14:51:08 -0400
+X-Greylist: delayed 326 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Aug 2010 14:51:08 EDT
+Subject: Re: [PATCH -next] v4l2-ctrls.c: needs to include slab.h
+From: Tony Vroon <tony@linx.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Hans Verkuil <hverkuil@xs4all.nl>
+In-Reply-To: <20100809105635.4208c7ac.randy.dunlap@oracle.com>
+References: <20100809132314.789e13f3.sfr@canb.auug.org.au>
+	 <20100809105635.4208c7ac.randy.dunlap@oracle.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ndn/uexTQsPRW6cROLJg"
+Organization: London Internet Exchange (LINX; AS5459)
+Date: Wed, 11 Aug 2010 19:45:42 +0100
+Message-ID: <1281552342.5092.9.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Wed, Aug 11, 2010 at 08:45:22PM +0200, ext Jacob Tanenbaum wrote:
->No one else uses the ifdef but we were told from an earlier submission
->we should because if both boards are disabled in the .config it would
->inform the user on bootup
+--=-ndn/uexTQsPRW6cROLJg
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-What do you mean ? If these boards are't enabled on .config then this 
-board-file won't even get added to the binary so those machine ids won't 
-be available, right ?
+On Mon, 2010-08-09 at 10:56 -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> v4l2-ctrls.c needs to include slab.h to prevent build errors:
 
--- 
-balbi
+This appears to have been missed. Running mainline git:
+Linux amalthea 2.6.35-06998-g3d30701 #1 SMP Wed Aug 11 15:33:16 BST 2010
+x86_64 Intel(R) Core(TM)2 Duo CPU T9400 @ 2.53GHz GenuineIntel GNU/Linux
 
-DefectiveByDesign.org
+Enabling Video 4 Linux results in the breakage promised by Randy:
+> drivers/media/video/v4l2-ctrls.c:766: error: implicit declaration of func=
+tion 'kzalloc'
+> drivers/media/video/v4l2-ctrls.c:786: error: implicit declaration of func=
+tion 'kfree'
+> drivers/media/video/v4l2-ctrls.c:1528: error: implicit declaration of fun=
+ction 'kmalloc'
+
+Please apply.
+
+Regards,
+--=20
+Tony Vroon
+UNIX systems administrator
+London Internet Exchange Ltd, Trinity Court, Trinity Street,
+Peterborough, PE1 1DA
+Registered in England number 3137929
+E-Mail: tony@linx.net
+
+--=-ndn/uexTQsPRW6cROLJg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEABECAAYFAkxi79YACgkQp5vW4rUFj5rqzACfTKpzexak+mpOUTP6P8Lqp97s
+b4wAnRK+uucSDuRX8Gj2l5oiH2pp5DL2
+=R0eM
+-----END PGP SIGNATURE-----
+
+--=-ndn/uexTQsPRW6cROLJg--
+
