@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933604Ab0HLAhB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:37:01 -0400
-Received: from kroah.org ([198.145.64.141]:43383 "EHLO coco.kroah.org"
+	id S933612Ab0HLAhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:37:19 -0400
+Received: from kroah.org ([198.145.64.141]:43368 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759019Ab0HKX6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:30 -0400
+	id S1759006Ab0HKX61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:27 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:00 2010
-Message-Id: <20100811235500.690452892@clark.site>
+Message-Id: <20100811235500.496375787@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:37 -0700
+Date: Wed, 11 Aug 2010 16:54:35 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Sage Weil <sage@newdream.net>, Chris Mason <chris.mason@oracle.com>,
+        Yan Zheng <zheng.yan@oracle.com>, Chris Mason <chris.mason@oracle.com>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [056/111] Btrfs: fail mount on bad mount options
+Subject: [054/111] Btrfs: Fix per root used space accounting
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,50 +26,208 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sage Weil <sage@newdream.net>
+From: Yan, Zheng <zheng.yan@oracle.com>
 
-commit a7a3f7cadd9bdee569243f7ead9550aa16b60e07 upstream.
+commit 86b9f2eca5e0984145e3c7698a7cd6dd65c2a93f upstream.
 
-We shouldn't silently ignore unrecognized options.
+The bytes_used field in root item was originally planned to
+trace the amount of used data and tree blocks. But it never
+worked right since we can't trace freeing of data accurately.
+This patch changes it to only trace the amount of tree blocks.
 
-Signed-off-by: Sage Weil <sage@newdream.net>
+Signed-off-by: Yan Zheng <zheng.yan@oracle.com>
 Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/btrfs/super.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ fs/btrfs/ctree.c       |   31 ++++++++++++++-----------------
+ fs/btrfs/ctree.h       |    4 ++++
+ fs/btrfs/extent-tree.c |   31 +++++++++++++++++++++++--------
+ fs/btrfs/ioctl.c       |    2 +-
+ fs/btrfs/transaction.c |    6 +++++-
+ 5 files changed, 47 insertions(+), 27 deletions(-)
 
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -128,6 +128,7 @@ int btrfs_parse_options(struct btrfs_roo
- 	substring_t args[MAX_OPT_ARGS];
- 	char *p, *num;
- 	int intarg;
-+	int ret = 0;
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -456,9 +456,8 @@ static noinline int __btrfs_cow_block(st
+ 		extent_buffer_get(cow);
+ 		spin_unlock(&root->node_lock);
  
- 	if (!options)
- 		return 0;
-@@ -262,12 +263,18 @@ int btrfs_parse_options(struct btrfs_roo
- 		case Opt_discard:
- 			btrfs_set_opt(info->mount_opt, DISCARD);
- 			break;
-+		case Opt_err:
-+			printk(KERN_INFO "btrfs: unrecognized mount option "
-+			       "'%s'\n", p);
-+			ret = -EINVAL;
-+			goto out;
- 		default:
- 			break;
- 		}
+-		btrfs_free_extent(trans, root, buf->start, buf->len,
+-				  parent_start, root->root_key.objectid,
+-				  level, 0);
++		btrfs_free_tree_block(trans, root, buf->start, buf->len,
++				parent_start, root->root_key.objectid, level);
+ 		free_extent_buffer(buf);
+ 		add_root_to_dirty_list(root);
+ 	} else {
+@@ -473,9 +472,8 @@ static noinline int __btrfs_cow_block(st
+ 		btrfs_set_node_ptr_generation(parent, parent_slot,
+ 					      trans->transid);
+ 		btrfs_mark_buffer_dirty(parent);
+-		btrfs_free_extent(trans, root, buf->start, buf->len,
+-				  parent_start, root->root_key.objectid,
+-				  level, 0);
++		btrfs_free_tree_block(trans, root, buf->start, buf->len,
++				parent_start, root->root_key.objectid, level);
  	}
-+out:
- 	kfree(options);
--	return 0;
-+	return ret;
+ 	if (unlock_orig)
+ 		btrfs_tree_unlock(buf);
+@@ -1035,8 +1033,8 @@ static noinline int balance_level(struct
+ 		btrfs_tree_unlock(mid);
+ 		/* once for the path */
+ 		free_extent_buffer(mid);
+-		ret = btrfs_free_extent(trans, root, mid->start, mid->len,
+-					0, root->root_key.objectid, level, 1);
++		ret = btrfs_free_tree_block(trans, root, mid->start, mid->len,
++					    0, root->root_key.objectid, level);
+ 		/* once for the root ptr */
+ 		free_extent_buffer(mid);
+ 		return ret;
+@@ -1100,10 +1098,10 @@ static noinline int balance_level(struct
+ 				       1);
+ 			if (wret)
+ 				ret = wret;
+-			wret = btrfs_free_extent(trans, root, bytenr,
+-						 blocksize, 0,
+-						 root->root_key.objectid,
+-						 level, 0);
++			wret = btrfs_free_tree_block(trans, root,
++						     bytenr, blocksize, 0,
++						     root->root_key.objectid,
++						     level);
+ 			if (wret)
+ 				ret = wret;
+ 		} else {
+@@ -1148,9 +1146,8 @@ static noinline int balance_level(struct
+ 		wret = del_ptr(trans, root, path, level + 1, pslot);
+ 		if (wret)
+ 			ret = wret;
+-		wret = btrfs_free_extent(trans, root, bytenr, blocksize,
+-					 0, root->root_key.objectid,
+-					 level, 0);
++		wret = btrfs_free_tree_block(trans, root, bytenr, blocksize,
++					 0, root->root_key.objectid, level);
+ 		if (wret)
+ 			ret = wret;
+ 	} else {
+@@ -3794,8 +3791,8 @@ static noinline int btrfs_del_leaf(struc
+ 	 */
+ 	btrfs_unlock_up_safe(path, 0);
+ 
+-	ret = btrfs_free_extent(trans, root, leaf->start, leaf->len,
+-				0, root->root_key.objectid, 0, 0);
++	ret = btrfs_free_tree_block(trans, root, leaf->start, leaf->len,
++				    0, root->root_key.objectid, 0);
+ 	return ret;
+ }
+ /*
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -1982,6 +1982,10 @@ struct extent_buffer *btrfs_alloc_free_b
+ 					u64 parent, u64 root_objectid,
+ 					struct btrfs_disk_key *key, int level,
+ 					u64 hint, u64 empty_size);
++int btrfs_free_tree_block(struct btrfs_trans_handle *trans,
++			  struct btrfs_root *root,
++			  u64 bytenr, u32 blocksize,
++			  u64 parent, u64 root_objectid, int level);
+ struct extent_buffer *btrfs_init_new_buffer(struct btrfs_trans_handle *trans,
+ 					    struct btrfs_root *root,
+ 					    u64 bytenr, u32 blocksize,
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -3454,14 +3454,6 @@ static int update_block_group(struct btr
+ 	else
+ 		old_val -= num_bytes;
+ 	btrfs_set_super_bytes_used(&info->super_copy, old_val);
+-
+-	/* block accounting for root item */
+-	old_val = btrfs_root_used(&root->root_item);
+-	if (alloc)
+-		old_val += num_bytes;
+-	else
+-		old_val -= num_bytes;
+-	btrfs_set_root_used(&root->root_item, old_val);
+ 	spin_unlock(&info->delalloc_lock);
+ 
+ 	while (total) {
+@@ -4049,6 +4041,21 @@ int btrfs_free_extent(struct btrfs_trans
+ 	return ret;
  }
  
- /*
++int btrfs_free_tree_block(struct btrfs_trans_handle *trans,
++			  struct btrfs_root *root,
++			  u64 bytenr, u32 blocksize,
++			  u64 parent, u64 root_objectid, int level)
++{
++	u64 used;
++	spin_lock(&root->node_lock);
++	used = btrfs_root_used(&root->root_item) - blocksize;
++	btrfs_set_root_used(&root->root_item, used);
++	spin_unlock(&root->node_lock);
++
++	return btrfs_free_extent(trans, root, bytenr, blocksize,
++				 parent, root_objectid, level, 0);
++}
++
+ static u64 stripe_align(struct btrfs_root *root, u64 val)
+ {
+ 	u64 mask = ((u64)root->stripesize - 1);
+@@ -4897,6 +4904,14 @@ static int alloc_tree_block(struct btrfs
+ 					extent_op);
+ 		BUG_ON(ret);
+ 	}
++
++	if (root_objectid == root->root_key.objectid) {
++		u64 used;
++		spin_lock(&root->node_lock);
++		used = btrfs_root_used(&root->root_item) + num_bytes;
++		btrfs_set_root_used(&root->root_item, used);
++		spin_unlock(&root->node_lock);
++	}
+ 	return ret;
+ }
+ 
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -289,7 +289,7 @@ static noinline int create_subvol(struct
+ 	btrfs_set_root_generation(&root_item, trans->transid);
+ 	btrfs_set_root_level(&root_item, 0);
+ 	btrfs_set_root_refs(&root_item, 1);
+-	btrfs_set_root_used(&root_item, 0);
++	btrfs_set_root_used(&root_item, leaf->len);
+ 	btrfs_set_root_last_snapshot(&root_item, 0);
+ 
+ 	memset(&root_item.drop_progress, 0, sizeof(root_item.drop_progress));
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -501,13 +501,16 @@ static int update_cowonly_root(struct bt
+ {
+ 	int ret;
+ 	u64 old_root_bytenr;
++	u64 old_root_used;
+ 	struct btrfs_root *tree_root = root->fs_info->tree_root;
+ 
++	old_root_used = btrfs_root_used(&root->root_item);
+ 	btrfs_write_dirty_block_groups(trans, root);
+ 
+ 	while (1) {
+ 		old_root_bytenr = btrfs_root_bytenr(&root->root_item);
+-		if (old_root_bytenr == root->node->start)
++		if (old_root_bytenr == root->node->start &&
++		    old_root_used == btrfs_root_used(&root->root_item))
+ 			break;
+ 
+ 		btrfs_set_root_node(&root->root_item, root->node);
+@@ -516,6 +519,7 @@ static int update_cowonly_root(struct bt
+ 					&root->root_item);
+ 		BUG_ON(ret);
+ 
++		old_root_used = btrfs_root_used(&root->root_item);
+ 		ret = btrfs_write_dirty_block_groups(trans, root);
+ 		BUG_ON(ret);
+ 	}
 
 
