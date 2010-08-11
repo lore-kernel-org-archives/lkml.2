@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759292Ab0HKX7R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:59:17 -0400
-Received: from kroah.org ([198.145.64.141]:43538 "EHLO coco.kroah.org"
+	id S1759588Ab0HLAaP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:30:15 -0400
+Received: from kroah.org ([198.145.64.141]:43683 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759074Ab0HKX64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:56 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:02 2010
-Message-Id: <20100811235502.695886900@clark.site>
+	id S1759299Ab0HKX7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:04 2010
+Message-Id: <20100811235504.335398783@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:59 -0700
+Date: Wed, 11 Aug 2010 16:55:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        "Darrick J. Wong" <djwong@us.ibm.com>, Len Brown <len.brown@intel.com>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [078/111] Btrfs: do not try and lookup the file extent when finishing ordered io
+Subject: [095/111] ACPI: Fix regression where _PPC is not read at boot even when ignore_ppc=0
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <josef@redhat.com>
+From: Darrick J. Wong <djwong@us.ibm.com>
 
-commit efd049fb26a162c3830fd3cb1001fdc09b147f3b upstream.
+commit 455c0d71d46e86b0b7ff2c9dcfc19bc162302ee9 upstream.
 
-When running the following fio job
+Earlier, Ingo Molnar posted a patch to make it so that the kernel would avoid
+reading _PPC on his broken T60.  Unfortunately, it seems that with Thomas
+Renninger's patch last July to eliminate _PPC evaluations when the processor
+driver loads, the kernel never actually reads _PPC at all!  This is problematic
+if you happen to boot your non-T60 computer in a state where the BIOS _wants_
+_PPC to be something other than zero.
 
-[torrent]
-filename=torrent-test
-rw=randwrite
-size=4g
-filesize=4g
-bs=4k
-ioengine=sync
+So, put the _PPC evaluation back into acpi_processor_get_performance_info if
+ignore_ppc isn't 1.
 
-you would see long stalls where no work was being done.  That is because we were
-doing all this extra work to read in the file extent outside of the transaction,
-however in the random io case this ends up hurting us because the file extents
-are not there to begin with.  So axe this logic, since we end up reading in the
-file extent when we go to update it anyway.  This took the fio job from 11 mb/s
-with several ~10 second stalls to 24 mb/s to a couple of 1-2 second stalls.
-
-Signed-off-by: Josef Bacik <josef@redhat.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/btrfs/inode.c |   46 ++--------------------------------------------
- 1 file changed, 2 insertions(+), 44 deletions(-)
+ drivers/acpi/processor_perflib.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -1680,24 +1680,6 @@ static int insert_reserved_file_extent(s
-  * before we start the transaction.  It limits the amount of btree
-  * reads required while inside the transaction.
-  */
--static noinline void reada_csum(struct btrfs_root *root,
--				struct btrfs_path *path,
--				struct btrfs_ordered_extent *ordered_extent)
--{
--	struct btrfs_ordered_sum *sum;
--	u64 bytenr;
--
--	sum = list_entry(ordered_extent->list.next, struct btrfs_ordered_sum,
--			 list);
--	bytenr = sum->sums[0].bytenr;
--
--	/*
--	 * we don't care about the results, the point of this search is
--	 * just to get the btree leaves into ram
--	 */
--	btrfs_lookup_csum(NULL, root->fs_info->csum_root, path, bytenr, 0);
--}
--
- /* as ordered data IO finishes, this gets called so we can finish
-  * an ordered extent if the range of bytes in the file it covers are
-  * fully written.
-@@ -1708,7 +1690,6 @@ static int btrfs_finish_ordered_io(struc
- 	struct btrfs_trans_handle *trans;
- 	struct btrfs_ordered_extent *ordered_extent = NULL;
- 	struct extent_io_tree *io_tree = &BTRFS_I(inode)->io_tree;
--	struct btrfs_path *path;
- 	int compressed = 0;
- 	int ret;
+--- a/drivers/acpi/processor_perflib.c
++++ b/drivers/acpi/processor_perflib.c
+@@ -356,7 +356,11 @@ static int acpi_processor_get_performanc
+ 	if (result)
+ 		goto update_bios;
  
-@@ -1716,32 +1697,9 @@ static int btrfs_finish_ordered_io(struc
- 	if (!ret)
- 		return 0;
- 
--	/*
--	 * before we join the transaction, try to do some of our IO.
--	 * This will limit the amount of IO that we have to do with
--	 * the transaction running.  We're unlikely to need to do any
--	 * IO if the file extents are new, the disk_i_size checks
--	 * covers the most common case.
--	 */
--	if (start < BTRFS_I(inode)->disk_i_size) {
--		path = btrfs_alloc_path();
--		if (path) {
--			ret = btrfs_lookup_file_extent(NULL, root, path,
--						       inode->i_ino,
--						       start, 0);
--			ordered_extent = btrfs_lookup_ordered_extent(inode,
--								     start);
--			if (!list_empty(&ordered_extent->list)) {
--				btrfs_release_path(root, path);
--				reada_csum(root, path, ordered_extent);
--			}
--			btrfs_free_path(path);
--		}
--	}
--
--	if (!ordered_extent)
--		ordered_extent = btrfs_lookup_ordered_extent(inode, start);
-+	ordered_extent = btrfs_lookup_ordered_extent(inode, start);
- 	BUG_ON(!ordered_extent);
+-	return 0;
++	/* We need to call _PPC once when cpufreq starts */
++	if (ignore_ppc != 1)
++		result = acpi_processor_get_platform_limit(pr);
 +
- 	if (test_bit(BTRFS_ORDERED_NOCOW, &ordered_extent->flags)) {
- 		BUG_ON(!list_empty(&ordered_extent->list));
- 		ret = btrfs_ordered_update_i_size(inode, 0, ordered_extent);
++	return result;
+ 
+ 	/*
+ 	 * Having _PPC but missing frequencies (_PSS, _PCT) is a very good hint that
 
 
