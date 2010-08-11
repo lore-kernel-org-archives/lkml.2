@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759588Ab0HLAaP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:30:15 -0400
-Received: from kroah.org ([198.145.64.141]:43683 "EHLO coco.kroah.org"
+	id S1759274Ab0HKX7O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:14 -0400
+Received: from kroah.org ([198.145.64.141]:43526 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759299Ab0HKX7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:04 2010
-Message-Id: <20100811235504.335398783@clark.site>
+	id S1759170Ab0HKX6x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:53 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:02 2010
+Message-Id: <20100811235502.526268262@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:16 -0700
+Date: Wed, 11 Aug 2010 16:54:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Darrick J. Wong" <djwong@us.ibm.com>, Len Brown <len.brown@intel.com>,
+        Miao Xie <miaox@cn.fujitsu.com>, Chris Mason <chris.mason@oracle.com>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [095/111] ACPI: Fix regression where _PPC is not read at boot even when ignore_ppc=0
+Subject: [076/111] Btrfs: remove BUG_ON() due to mounting bad filesystem
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +26,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Darrick J. Wong <djwong@us.ibm.com>
+From: Miao Xie <miaox@cn.fujitsu.com>
 
-commit 455c0d71d46e86b0b7ff2c9dcfc19bc162302ee9 upstream.
+commit d7ce5843bb28ada6845ab2ae8510ba3f12d33154 upstream.
 
-Earlier, Ingo Molnar posted a patch to make it so that the kernel would avoid
-reading _PPC on his broken T60.  Unfortunately, it seems that with Thomas
-Renninger's patch last July to eliminate _PPC evaluations when the processor
-driver loads, the kernel never actually reads _PPC at all!  This is problematic
-if you happen to boot your non-T60 computer in a state where the BIOS _wants_
-_PPC to be something other than zero.
+Mounting a bad filesystem caused a BUG_ON(). The following is steps to
+reproduce it.
+ # mkfs.btrfs /dev/sda2
+ # mount /dev/sda2 /mnt
+ # mkfs.btrfs /dev/sda1 /dev/sda2
+ (the program says that /dev/sda2 was mounted, and then exits. )
+ # umount /mnt
+ # mount /dev/sda1 /mnt
 
-So, put the _PPC evaluation back into acpi_processor_get_performance_info if
-ignore_ppc isn't 1.
+At the third step, mkfs.btrfs exited in the way of make filesystem. So the
+initialization of the filesystem didn't finish. So the filesystem was bad, and
+it caused BUG_ON() when mounting it. But BUG_ON() should be called by the wrong
+code, not user's operation, so I think it is a bug of btrfs.
 
-Signed-off-by: Darrick J. Wong <djwong@us.ibm.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
+This patch fixes it.
+
+Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/acpi/processor_perflib.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ fs/btrfs/disk-io.c    |    7 ++++++-
+ fs/btrfs/relocation.c |    3 ++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
 
---- a/drivers/acpi/processor_perflib.c
-+++ b/drivers/acpi/processor_perflib.c
-@@ -356,7 +356,11 @@ static int acpi_processor_get_performanc
- 	if (result)
- 		goto update_bios;
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1982,7 +1982,12 @@ struct btrfs_root *open_ctree(struct sup
  
--	return 0;
-+	/* We need to call _PPC once when cpufreq starts */
-+	if (ignore_ppc != 1)
-+		result = acpi_processor_get_platform_limit(pr);
-+
-+	return result;
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		ret = btrfs_recover_relocation(tree_root);
+-		BUG_ON(ret);
++		if (ret < 0) {
++			printk(KERN_WARNING
++			       "btrfs: failed to recover relocation\n");
++			err = -EINVAL;
++			goto fail_trans_kthread;
++		}
+ 	}
  
- 	/*
- 	 * Having _PPC but missing frequencies (_PSS, _PCT) is a very good hint that
+ 	location.objectid = BTRFS_FS_TREE_OBJECTID;
+--- a/fs/btrfs/relocation.c
++++ b/fs/btrfs/relocation.c
+@@ -3764,7 +3764,8 @@ out:
+ 				       BTRFS_DATA_RELOC_TREE_OBJECTID);
+ 		if (IS_ERR(fs_root))
+ 			err = PTR_ERR(fs_root);
+-		btrfs_orphan_cleanup(fs_root);
++		else
++			btrfs_orphan_cleanup(fs_root);
+ 	}
+ 	return err;
+ }
 
 
