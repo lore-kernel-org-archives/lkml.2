@@ -1,49 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313Ab0HKQOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:14:39 -0400
-Received: from king.tilera.com ([72.1.168.226]:51368 "EHLO king.tilera.com"
+	id S1754634Ab0HKQRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:17:21 -0400
+Received: from Mail.MNSU.EDU ([134.29.1.12]:40277 "EHLO mail.mnsu.edu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752534Ab0HKQOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:14:38 -0400
-Message-Id: <201008111614.o7BGEVNn016483@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Wed, 11 Aug 2010 11:07:24 -0400
-Subject: [PATCH] Add fanotify syscalls to <asm-generic/unistd.h>.
-To: linux-kernel@vger.kernel.org
-Cc: Eric Paris <eparis@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
-X-OriginalArrivalTime: 11 Aug 2010 16:14:36.0818 (UTC) FILETIME=[4B08CF20:01CB3970]
+	id S1753221Ab0HKQRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 12:17:20 -0400
+Message-ID: <4C62CCF2.5040206@mnsu.edu>
+Date: Wed, 11 Aug 2010 11:16:50 -0500
+From: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>
+CC: viresh kumar <viresh.kumar@st.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "git@vger.kernel.org" <git@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Valeo de Vries <valeo@valeo.co.cc>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Matti Aarnio <matti.aarnio@zmailer.org>, mihai.dontu@gmail.com,
+        richardcochran@gmail.com, "Gadiyar, Anand" <gadiyar@ti.com>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+References: <4C5F9B25.8080401@st.com>	 <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>	 <4C624AE1.30504@st.com>  <4C62C5BD.3020808@mnsu.edu> <1281542305.5107.11.camel@localhost>
+In-Reply-To: <1281542305.5107.11.camel@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
-(Oops, resending with appropriate Cc's.)
+On 08/11/2010 10:58 AM, David Woodhouse wrote:
+ > On Wed, 2010-08-11 at 10:46 -0500, Jeffrey Hundstad wrote:
+ >> Exchange 2010 does not handle IMAP "chunking" (partial message transfer)
+ >> correctly.  Any request after about 1 megabyte of total message size
+ >> will fail.
+ >>
+ >> Thunderbird uses this "chunking" feature to give you a status update
+ >> while downloading large messages.  The IMAP statements are of this type:
+ >> 11 UID fetch 244477 (UID RFC822.SIZE BODY[]<20480.12288>)
+ >>
+ >> When the 20480 is larger than 1MB Exchange "claims" there is no more.
+ >> Sigh....
+ >
+ > I think the problem is not with the fetching -- the problem is that
+ > Exchange lies about RFC822.SIZE before the IMAP client even starts to
+ > fetch the message. It reports a size which is smaller than the actual
+ > size of the message, thus leading to truncated fetches.
+ >
+ > In Evolution we have a workaround -- we don't just stop when we get to
+ > the reported RFC822.SIZE; we continue fetching more chunks until the
+ > server actually stops giving us any more. It's not as efficient (because
+ > we fall back to having only one more chunk outstanding at a time rather
+ > than the normal three in parallel), but at least it works around this
+ > brokenness of Exchange.
+ >
+ > http://git.gnome.org/browse/evolution-data-server/commit/?id=9714c064
+ >
 
- include/asm-generic/unistd.h |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+In either case it can be used successfully by disabling 
+mail.server.default.fetch_by_chunks in Thunderbird.
 
-diff --git a/include/asm-generic/unistd.h b/include/asm-generic/unistd.h
-index e189809..b969770 100644
---- a/include/asm-generic/unistd.h
-+++ b/include/asm-generic/unistd.h
-@@ -642,9 +642,13 @@ __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
- __SYSCALL(__NR_wait4, sys_wait4)
- #define __NR_prlimit64 261
- __SYSCALL(__NR_prlimit64, sys_prlimit64)
-+#define __NR_fanotify_init 262
-+__SYSCALL(__NR_fanotify_init, sys_fanotify_init)
-+#define __NR_fanotify_mark 263
-+__SYSCALL(__NR_fanotify_mark, sys_fanotify_mark)
- 
- #undef __NR_syscalls
--#define __NR_syscalls 262
-+#define __NR_syscalls 264
- 
- /*
-  * All syscalls below here should go away really,
 -- 
-1.6.5.2
+Jeffrey Hundstad
+
+
 
