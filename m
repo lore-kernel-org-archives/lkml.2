@@ -1,80 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0HLAcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:32:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48440 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758431Ab0HLAcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:32:18 -0400
-Date: Wed, 11 Aug 2010 17:33:27 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org, gcosta@redhat.com, hpa@zytor.com,
-        lenb@kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        ying.huang@intel.com
-Subject: Re: +
- drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch added to
- -mm tree
-Message-Id: <20100811173327.3ae325ff.akpm@linux-foundation.org>
-In-Reply-To: <20100811164310.a4790773.randy.dunlap@oracle.com>
-References: <201008112336.o7BNaNEj020805@imap1.linux-foundation.org>
-	<20100811164310.a4790773.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759296Ab0HLAci (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:32:38 -0400
+Received: from kroah.org ([198.145.64.141]:43574 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759220Ab0HKX7F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:05 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:03 2010
+Message-Id: <20100811235503.190041092@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 16:55:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        john stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, John Jolly <jjolly@suse.de>
+Subject: [083/111] nohz: Reuse ktime in sub-functions of tick_check_idle.
+In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 11 Aug 2010 16:43:10 -0700 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-> On Wed, 11 Aug 2010 16:06:24 -0700 akpm@linux-foundation.org wrote:
-> 
-> > 
-> > The patch titled
-> >      drivers/acpi/apei/erst-dbg.c: get_user(u64) doesn't work on i386
-> > has been added to the -mm tree.  Its filename is
-> >      drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch
-> > 
-> > Before you just go and hit "reply", please:
-> >    a) Consider who else should be cc'ed
-> >    b) Prefer to cc a suitable mailing list as well
-> >    c) Ideally: find the original patch on the mailing list and do a
-> >       reply-to-all to that, adding suitable additional cc's
-> > 
-> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
-> > 
-> > See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
-> > out what to do about this
-> > 
-> > The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
-> > 
-> > ------------------------------------------------------
-> > Subject: drivers/acpi/apei/erst-dbg.c: get_user(u64) doesn't work on i386
-> > From: Andrew Morton <akpm@linux-foundation.org>
-> > 
-> > Might be an x86 bug?  A get_user() on a u64 on i386 expands to
-> > 
-> > #define __get_user_8(__ret_gu, __val_gu, ptr)				\
-> > 		__get_user_x(X, __ret_gu, __val_gu, ptr)
-> > 
-> > which emits a call to __get_user_X(), which doesn't exist.
-> > 
-> > Kludge around it with copy_from_user().
-> > 
-> 
-> Reported and fixed yesterday.
+------------------
 
-Not very well.
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
-+		rc = copy_from_user(&record_id, (void __user *)arg,
-+				    sizeof(u64));
+commit eed3b9cf3fe3fcc7a50238dfcab63a63914e8f42 upstream.
 
-better to use sizeof(record_id).
+On a system with NOHZ=y tick_check_idle calls tick_nohz_stop_idle and
+tick_nohz_update_jiffies. Given the right conditions (ts->idle_active
+and/or ts->tick_stopped) both function get a time stamp with ktime_get.
+The same time stamp can be reused if both function require one.
 
-Where's Len??
+On s390 this change has the additional benefit that gcc inlines the
+tick_nohz_stop_idle function into tick_check_idle. The number of
+instructions to execute tick_check_idle drops from 225 to 144
+(without the ktime_get optimization it is 367 vs 215 instructions).
+
+before:
+
+ 0)               |  tick_check_idle() {
+ 0)               |    tick_nohz_stop_idle() {
+ 0)               |      ktime_get() {
+ 0)               |        read_tod_clock() {
+ 0)   0.601 us    |        }
+ 0)   1.765 us    |      }
+ 0)   3.047 us    |    }
+ 0)               |    ktime_get() {
+ 0)               |      read_tod_clock() {
+ 0)   0.570 us    |      }
+ 0)   1.727 us    |    }
+ 0)               |    tick_do_update_jiffies64() {
+ 0)   0.609 us    |    }
+ 0)   8.055 us    |  }
+
+after:
+
+ 0)               |  tick_check_idle() {
+ 0)               |    ktime_get() {
+ 0)               |      read_tod_clock() {
+ 0)   0.617 us    |      }
+ 0)   1.773 us    |    }
+ 0)               |    tick_do_update_jiffies64() {
+ 0)   0.593 us    |    }
+ 0)   4.477 us    |  }
+
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: john stultz <johnstul@us.ibm.com>
+LKML-Reference: <20090929122533.206589318@de.ibm.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Acked-by: John Jolly <jjolly@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ kernel/time/tick-sched.c |   62 +++++++++++++++++++++++++----------------------
+ 1 file changed, 33 insertions(+), 29 deletions(-)
+
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -134,18 +134,13 @@ __setup("nohz=", setup_tick_nohz);
+  * value. We do this unconditionally on any cpu, as we don't know whether the
+  * cpu, which has the update task assigned is in a long sleep.
+  */
+-static void tick_nohz_update_jiffies(void)
++static void tick_nohz_update_jiffies(ktime_t now)
+ {
+ 	int cpu = smp_processor_id();
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+ 	unsigned long flags;
+-	ktime_t now;
+-
+-	if (!ts->tick_stopped)
+-		return;
+ 
+ 	cpumask_clear_cpu(cpu, nohz_cpu_mask);
+-	now = ktime_get();
+ 	ts->idle_waketime = now;
+ 
+ 	local_irq_save(flags);
+@@ -155,20 +150,17 @@ static void tick_nohz_update_jiffies(voi
+ 	touch_softlockup_watchdog();
+ }
+ 
+-static void tick_nohz_stop_idle(int cpu)
++static void tick_nohz_stop_idle(int cpu, ktime_t now)
+ {
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
++	ktime_t delta;
+ 
+-	if (ts->idle_active) {
+-		ktime_t now, delta;
+-		now = ktime_get();
+-		delta = ktime_sub(now, ts->idle_entrytime);
+-		ts->idle_lastupdate = now;
+-		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+-		ts->idle_active = 0;
++	delta = ktime_sub(now, ts->idle_entrytime);
++	ts->idle_lastupdate = now;
++	ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++	ts->idle_active = 0;
+ 
+-		sched_clock_idle_wakeup_event(0);
+-	}
++	sched_clock_idle_wakeup_event(0);
+ }
+ 
+ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+@@ -463,7 +455,11 @@ void tick_nohz_restart_sched_tick(void)
+ 	ktime_t now;
+ 
+ 	local_irq_disable();
+-	tick_nohz_stop_idle(cpu);
++	if (ts->idle_active || (ts->inidle && ts->tick_stopped))
++		now = ktime_get();
++
++	if (ts->idle_active)
++		tick_nohz_stop_idle(cpu, now);
+ 
+ 	if (!ts->inidle || !ts->tick_stopped) {
+ 		ts->inidle = 0;
+@@ -477,7 +473,6 @@ void tick_nohz_restart_sched_tick(void)
+ 
+ 	/* Update jiffies first */
+ 	select_nohz_load_balancer(0);
+-	now = ktime_get();
+ 	tick_do_update_jiffies64(now);
+ 	cpumask_clear_cpu(cpu, nohz_cpu_mask);
+ 
+@@ -611,22 +606,18 @@ static void tick_nohz_switch_to_nohz(voi
+  * timer and do not touch the other magic bits which need to be done
+  * when idle is left.
+  */
+-static void tick_nohz_kick_tick(int cpu)
++static void tick_nohz_kick_tick(int cpu, ktime_t now)
+ {
+ #if 0
+ 	/* Switch back to 2.6.27 behaviour */
+ 
+ 	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-	ktime_t delta, now;
+-
+-	if (!ts->tick_stopped)
+-		return;
++	ktime_t delta;
+ 
+ 	/*
+ 	 * Do not touch the tick device, when the next expiry is either
+ 	 * already reached or less/equal than the tick period.
+ 	 */
+-	now = ktime_get();
+ 	delta =	ktime_sub(hrtimer_get_expires(&ts->sched_timer), now);
+ 	if (delta.tv64 <= tick_period.tv64)
+ 		return;
+@@ -635,9 +626,26 @@ static void tick_nohz_kick_tick(int cpu)
+ #endif
+ }
+ 
++static inline void tick_check_nohz(int cpu)
++{
++	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
++	ktime_t now;
++
++	if (!ts->idle_active && !ts->tick_stopped)
++		return;
++	now = ktime_get();
++	if (ts->idle_active)
++		tick_nohz_stop_idle(cpu, now);
++	if (ts->tick_stopped) {
++		tick_nohz_update_jiffies(now);
++		tick_nohz_kick_tick(cpu, now);
++	}
++}
++
+ #else
+ 
+ static inline void tick_nohz_switch_to_nohz(void) { }
++static inline void tick_check_nohz(int cpu) { }
+ 
+ #endif /* NO_HZ */
+ 
+@@ -647,11 +655,7 @@ static inline void tick_nohz_switch_to_n
+ void tick_check_idle(int cpu)
+ {
+ 	tick_check_oneshot_broadcast(cpu);
+-#ifdef CONFIG_NO_HZ
+-	tick_nohz_stop_idle(cpu);
+-	tick_nohz_update_jiffies();
+-	tick_nohz_kick_tick(cpu);
+-#endif
++	tick_check_nohz(cpu);
+ }
+ 
+ /*
 
 
-Anyway, this should be fixed in x86 core, I suspect.
