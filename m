@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759380Ab0HLAC4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:02:56 -0400
-Received: from kroah.org ([198.145.64.141]:43739 "EHLO coco.kroah.org"
+	id S1759098Ab0HLADK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:03:10 -0400
+Received: from kroah.org ([198.145.64.141]:43734 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759327Ab0HKX7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:31 -0400
+	id S1759321Ab0HKX7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:30 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:05 2010
-Message-Id: <20100811235505.182701792@clark.site>
+Message-Id: <20100811235505.105064964@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:25 -0700
+Date: Wed, 11 Aug 2010 16:55:24 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jan Kara <jack@suse.cz>, Joel Becker <joel.becker@oracle.com>,
-        Mark Fasheh <mfasheh@suse.com>
-Subject: [104/111] ocfs2: Set MS_POSIXACL on remount
+        Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>
+Subject: [103/111] ocfs2: Find proper end cpos for a leaf refcount block.
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +25,254 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Tao Ma <tao.ma@oracle.com>
 
-commit 57b09bb5e492c37c1e4273fe4e435ffd1d2ddbe0 upstream.
+commit 38a04e432768ec0b016f3c687b4de31ac111ae59 upstream.
 
-We have to set MS_POSIXACL on remount as well. Otherwise VFS
-would not know we started supporting ACLs after remount and
-thus ACLs would not work.
+ocfs2 refcount tree is stored as an extent tree while
+the leaf ocfs2_refcount_rec points to a refcount block.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+The following step can trip a kernel panic.
+mkfs.ocfs2 -b 512 -C 1M --fs-features=refcount $DEVICE
+mount -t ocfs2 $DEVICE $MNT_DIR
+FILE_NAME=$RANDOM
+FILE_NAME_1=$RANDOM
+FILE_REF="${FILE_NAME}_ref"
+FILE_REF_1="${FILE_NAME}_ref_1"
+for((i=0;i<305;i++))
+do
+# /mnt/1048576 is a file with 1048576 sizes.
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME_1
+done
+for((i=0;i<3;i++))
+do
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
+done
+
+for((i=0;i<2;i++))
+do
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME_1
+done
+
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
+
+for((i=0;i<11;i++))
+do
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
+cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME_1
+done
+reflink $MNT_DIR/$FILE_NAME $MNT_DIR/$FILE_REF
+# write_f is a program which will write some bytes to a file at offset.
+# write_f -f file_name -l offset -w write_bytes.
+./write_f -f $MNT_DIR/$FILE_REF -l $[310*1048576] -w 4096
+./write_f -f $MNT_DIR/$FILE_REF -l $[306*1048576] -w 4096
+./write_f -f $MNT_DIR/$FILE_REF -l $[311*1048576] -w 4096
+./write_f -f $MNT_DIR/$FILE_NAME -l $[310*1048576] -w 4096
+./write_f -f $MNT_DIR/$FILE_NAME -l $[311*1048576] -w 4096
+reflink $MNT_DIR/$FILE_NAME $MNT_DIR/$FILE_REF_1
+./write_f -f $MNT_DIR/$FILE_NAME -l $[311*1048576] -w 4096
+#kernel panic here.
+
+The reason is that if the ocfs2_extent_rec is the last record
+in a leaf extent block, the old solution fails to find the
+suitable end cpos. So this patch try to walk through the b-tree,
+find the next sub root and get the c_pos the next sub-tree starts
+from.
+
+btw, I have runned tristan's test case against the patched kernel
+for several days and this type of kernel panic never happens again.
+
+Signed-off-by: Tao Ma <tao.ma@oracle.com>
 Signed-off-by: Joel Becker <joel.becker@oracle.com>
-Signed-off-by: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ocfs2/super.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/ocfs2/alloc.c        |   10 ++--
+ fs/ocfs2/alloc.h        |    5 ++
+ fs/ocfs2/refcounttree.c |  117 ++++++++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 119 insertions(+), 13 deletions(-)
 
---- a/fs/ocfs2/super.c
-+++ b/fs/ocfs2/super.c
-@@ -701,6 +701,10 @@ unlock_osb:
+--- a/fs/ocfs2/alloc.c
++++ b/fs/ocfs2/alloc.c
+@@ -1765,9 +1765,9 @@ set_and_inc:
+  *
+  * The array index of the subtree root is passed back.
+  */
+-static int ocfs2_find_subtree_root(struct ocfs2_extent_tree *et,
+-				   struct ocfs2_path *left,
+-				   struct ocfs2_path *right)
++int ocfs2_find_subtree_root(struct ocfs2_extent_tree *et,
++			    struct ocfs2_path *left,
++			    struct ocfs2_path *right)
+ {
+ 	int i = 0;
  
- 		if (!ocfs2_is_hard_readonly(osb))
- 			ocfs2_set_journal_params(osb);
+@@ -2872,8 +2872,8 @@ out:
+  * This looks similar, but is subtly different to
+  * ocfs2_find_cpos_for_left_leaf().
+  */
+-static int ocfs2_find_cpos_for_right_leaf(struct super_block *sb,
+-					  struct ocfs2_path *path, u32 *cpos)
++int ocfs2_find_cpos_for_right_leaf(struct super_block *sb,
++				   struct ocfs2_path *path, u32 *cpos)
+ {
+ 	int i, j, ret = 0;
+ 	u64 blkno;
+--- a/fs/ocfs2/alloc.h
++++ b/fs/ocfs2/alloc.h
+@@ -317,4 +317,9 @@ int ocfs2_path_bh_journal_access(handle_
+ int ocfs2_journal_access_path(struct ocfs2_caching_info *ci,
+ 			      handle_t *handle,
+ 			      struct ocfs2_path *path);
++int ocfs2_find_cpos_for_right_leaf(struct super_block *sb,
++				   struct ocfs2_path *path, u32 *cpos);
++int ocfs2_find_subtree_root(struct ocfs2_extent_tree *et,
++			    struct ocfs2_path *left,
++			    struct ocfs2_path *right);
+ #endif /* OCFS2_ALLOC_H */
+--- a/fs/ocfs2/refcounttree.c
++++ b/fs/ocfs2/refcounttree.c
+@@ -969,6 +969,103 @@ out:
+ }
+ 
+ /*
++ * Find the end range for a leaf refcount block indicated by
++ * el->l_recs[index].e_blkno.
++ */
++static int ocfs2_get_refcount_cpos_end(struct ocfs2_caching_info *ci,
++				       struct buffer_head *ref_root_bh,
++				       struct ocfs2_extent_block *eb,
++				       struct ocfs2_extent_list *el,
++				       int index,  u32 *cpos_end)
++{
++	int ret, i, subtree_root;
++	u32 cpos;
++	u64 blkno;
++	struct super_block *sb = ocfs2_metadata_cache_get_super(ci);
++	struct ocfs2_path *left_path = NULL, *right_path = NULL;
++	struct ocfs2_extent_tree et;
++	struct ocfs2_extent_list *tmp_el;
 +
-+		sb->s_flags = (sb->s_flags & ~MS_POSIXACL) |
-+			((osb->s_mount_opt & OCFS2_MOUNT_POSIX_ACL) ?
-+							MS_POSIXACL : 0);
++	if (index < le16_to_cpu(el->l_next_free_rec) - 1) {
++		/*
++		 * We have a extent rec after index, so just use the e_cpos
++		 * of the next extent rec.
++		 */
++		*cpos_end = le32_to_cpu(el->l_recs[index+1].e_cpos);
++		return 0;
++	}
++
++	if (!eb || (eb && !eb->h_next_leaf_blk)) {
++		/*
++		 * We are the last extent rec, so any high cpos should
++		 * be stored in this leaf refcount block.
++		 */
++		*cpos_end = UINT_MAX;
++		return 0;
++	}
++
++	/*
++	 * If the extent block isn't the last one, we have to find
++	 * the subtree root between this extent block and the next
++	 * leaf extent block and get the corresponding e_cpos from
++	 * the subroot. Otherwise we may corrupt the b-tree.
++	 */
++	ocfs2_init_refcount_extent_tree(&et, ci, ref_root_bh);
++
++	left_path = ocfs2_new_path_from_et(&et);
++	if (!left_path) {
++		ret = -ENOMEM;
++		mlog_errno(ret);
++		goto out;
++	}
++
++	cpos = le32_to_cpu(eb->h_list.l_recs[index].e_cpos);
++	ret = ocfs2_find_path(ci, left_path, cpos);
++	if (ret) {
++		mlog_errno(ret);
++		goto out;
++	}
++
++	right_path = ocfs2_new_path_from_path(left_path);
++	if (!right_path) {
++		ret = -ENOMEM;
++		mlog_errno(ret);
++		goto out;
++	}
++
++	ret = ocfs2_find_cpos_for_right_leaf(sb, left_path, &cpos);
++	if (ret) {
++		mlog_errno(ret);
++		goto out;
++	}
++
++	ret = ocfs2_find_path(ci, right_path, cpos);
++	if (ret) {
++		mlog_errno(ret);
++		goto out;
++	}
++
++	subtree_root = ocfs2_find_subtree_root(&et, left_path,
++					       right_path);
++
++	tmp_el = left_path->p_node[subtree_root].el;
++	blkno = left_path->p_node[subtree_root+1].bh->b_blocknr;
++	for (i = 0; i < le32_to_cpu(tmp_el->l_next_free_rec); i++) {
++		if (le64_to_cpu(tmp_el->l_recs[i].e_blkno) == blkno) {
++			*cpos_end = le32_to_cpu(tmp_el->l_recs[i+1].e_cpos);
++			break;
++		}
++	}
++
++	BUG_ON(i == le32_to_cpu(tmp_el->l_next_free_rec));
++
++out:
++	ocfs2_free_path(left_path);
++	ocfs2_free_path(right_path);
++	return ret;
++}
++
++/*
+  * Given a cpos and len, try to find the refcount record which contains cpos.
+  * 1. If cpos can be found in one refcount record, return the record.
+  * 2. If cpos can't be found, return a fake record which start from cpos
+@@ -983,10 +1080,10 @@ static int ocfs2_get_refcount_rec(struct
+ 				  struct buffer_head **ret_bh)
+ {
+ 	int ret = 0, i, found;
+-	u32 low_cpos;
++	u32 low_cpos, uninitialized_var(cpos_end);
+ 	struct ocfs2_extent_list *el;
+-	struct ocfs2_extent_rec *tmp, *rec = NULL;
+-	struct ocfs2_extent_block *eb;
++	struct ocfs2_extent_rec *rec = NULL;
++	struct ocfs2_extent_block *eb = NULL;
+ 	struct buffer_head *eb_bh = NULL, *ref_leaf_bh = NULL;
+ 	struct super_block *sb = ocfs2_metadata_cache_get_super(ci);
+ 	struct ocfs2_refcount_block *rb =
+@@ -1034,12 +1131,16 @@ static int ocfs2_get_refcount_rec(struct
+ 		}
  	}
- out:
- 	unlock_kernel();
+ 
+-	/* adjust len when we have ocfs2_extent_rec after it. */
+-	if (found && i < le16_to_cpu(el->l_next_free_rec) - 1) {
+-		tmp = &el->l_recs[i+1];
++	if (found) {
++		ret = ocfs2_get_refcount_cpos_end(ci, ref_root_bh,
++						  eb, el, i, &cpos_end);
++		if (ret) {
++			mlog_errno(ret);
++			goto out;
++		}
+ 
+-		if (le32_to_cpu(tmp->e_cpos) < cpos + len)
+-			len = le32_to_cpu(tmp->e_cpos) - cpos;
++		if (cpos_end < low_cpos + len)
++			len = cpos_end - low_cpos;
+ 	}
+ 
+ 	ret = ocfs2_read_refcount_block(ci, le64_to_cpu(rec->e_blkno),
 
 
