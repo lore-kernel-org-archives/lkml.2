@@ -1,65 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479Ab0HKQkQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:40:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48627 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064Ab0HKQkO convert rfc822-to-8bit (ORCPT
+	id S1754673Ab0HKQlS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:41:18 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:47237 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab0HKQlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:40:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=UPb9SpWT6Eb3j+4jx6xEW4U9qfo5LtzBVNvJzKlRb3caACaYXDzQtVWVLiXOVdJNq4
-         mlsPHbSN96sxpdKHDLuObV7PL5GrBALX8EksiKkNRF+MY8omY0rM2s0rx5azKHYZWt9C
-         L6CfyFFTFSNN+sKHaAesOFJ4563U5lE/T8pKY=
-MIME-Version: 1.0
-In-Reply-To: <1281544234.5107.25.camel@localhost>
-References: <4C5F9B25.8080401@st.com> <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com> 
-	<4C624AE1.30504@st.com> <4C62C5BD.3020808@mnsu.edu> <1281542305.5107.11.camel@localhost> 
-	<AANLkTi=9xVdfXJXpkNPUMahc7AsbxjVbZFSxeBrzvbmS@mail.gmail.com> 
-	<1281544234.5107.25.camel@localhost>
-From: Avery Pennarun <apenwarr@gmail.com>
-Date: Wed, 11 Aug 2010 12:39:53 -0400
-Message-ID: <AANLkTi=6hXj_a1X-HwYWvWt4_pBto_OQgkWE3VsDmEsJ@mail.gmail.com>
-Subject: Re: Query: Patches break with Microsoft exchange server.
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>,
-        viresh kumar <viresh.kumar@st.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        "git@vger.kernel.org" <git@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Justin P. Mattock" <justinmattock@gmail.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Valeo de Vries <valeo@valeo.co.cc>,
-        Linus Walleij <linus.ml.walleij@gmail.com>,
-        Matti Aarnio <matti.aarnio@zmailer.org>, mihai.dontu@gmail.com,
-        richardcochran@gmail.com, "Gadiyar, Anand" <gadiyar@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Aug 2010 12:41:17 -0400
+Date: Wed, 11 Aug 2010 18:41:08 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] i2c updates for 2.6.36
+Message-ID: <20100811184108.639dd3d6@hyperion.delvare>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 12:30 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Wed, 2010-08-11 at 12:18 -0400, Avery Pennarun wrote:
->> Out of curiosity, why fall back to one chunk at a time?  It seems to
->> me that IMAP should be able to still support multiple outstanding
->> requests in that case, but you'd just get errors on the latter chunks.
->>
->> It is just that there was no point optimizing the workaround case?
->
-> There wasn't a lot of point in optimising it.
+Hi Linus,
 
-Say no more :)
+Please pull a first round of i2c subsystem updates for Linux 2.6.36
+from:
 
-I code on some IMAP clients occasionally and I just wanted to make
-sure I wasn't missing something important.
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
 
-Thanks!
+The big thing here is the multiplexing support, with core support as
+well as support for the popular NXP PCA954x family of multiplexers and
+switches. It may have a few rough edges left, but overall should work.
+The rest are small cleanups.
 
-Avery
+ Documentation/i2c/instantiating-devices   |    2 +-
+ drivers/i2c/Kconfig                       |   13 ++
+ drivers/i2c/Makefile                      |    3 +-
+ drivers/i2c/i2c-core.c                    |  158 +++++++++++----
+ drivers/i2c/i2c-dev.c                     |   66 +++++--
+ drivers/i2c/i2c-mux.c                     |  165 ++++++++++++++++
+ drivers/i2c/muxes/Kconfig                 |   18 ++
+ drivers/i2c/muxes/Makefile                |    8 +
+ drivers/i2c/muxes/pca954x.c               |  301 +++++++++++++++++++++++++++++
+ drivers/macintosh/therm_windtunnel.c      |    4 +-
+ drivers/media/video/bt8xx/bttv-i2c.c      |    2 +-
+ drivers/media/video/cx18/cx18-i2c.c       |    3 +-
+ drivers/media/video/cx23885/cx23885-i2c.c |   15 +-
+ drivers/media/video/cx88/cx88-i2c.c       |   19 +--
+ drivers/media/video/em28xx/em28xx-cards.c |    2 +-
+ drivers/media/video/ivtv/ivtv-i2c.c       |    9 +-
+ drivers/media/video/v4l2-common.c         |    3 +-
+ drivers/usb/host/ohci-pnx4008.c           |    2 +-
+ drivers/video/matrox/i2c-matroxfb.c       |    2 +-
+ include/linux/i2c-mux.h                   |   46 +++++
+ include/linux/i2c.h                       |   33 ++--
+ include/linux/i2c/pca954x.h               |   47 +++++
+ 22 files changed, 805 insertions(+), 116 deletions(-)
+ create mode 100644 drivers/i2c/i2c-mux.c
+ create mode 100644 drivers/i2c/muxes/Kconfig
+ create mode 100644 drivers/i2c/muxes/Makefile
+ create mode 100644 drivers/i2c/muxes/pca954x.c
+ create mode 100644 include/linux/i2c-mux.h
+ create mode 100644 include/linux/i2c/pca954x.h
+
+---------------
+
+Jean Delvare (6):
+      i2c: Add support for custom probe function
+      V4L/DVB: Use custom I2C probing function mechanism
+      i2c: Move adapter locking helpers to i2c-core
+      i2c: Drop dummy variable
+      i2c: Make i2c_default_probe self-sufficient
+      i2c: Use a separate mutex for userspace client lists
+
+Joe Perches (1):
+      i2c-dev: Remove unnecessary kmalloc casts
+
+Julia Lawall (1):
+      i2c-dev: Use memdup_user
+
+Michael Lawnick (2):
+      i2c: Multiplexed I2C bus core support
+      i2c: I2C bus multiplexer driver pca954x
+
+Thanks,
+-- 
+Jean Delvare
