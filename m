@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0HKWv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 18:51:26 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45348
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753630Ab0HKWvY (ORCPT
+	id S1757408Ab0HKXDG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:03:06 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:55230 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757165Ab0HKXDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 18:51:24 -0400
-Date: Wed, 11 Aug 2010 15:51:41 -0700 (PDT)
-Message-Id: <20100811.155141.71103284.davem@davemloft.net>
-To: dhowells@redhat.com
-Cc: torvalds@osdl.org, akpm@linux-foundation.org, viro@ZenIV.linux.org.uk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Mark arguments to certain syscalls as being const
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100811102622.30362.70210.stgit@warthog.procyon.org.uk>
-References: <20100811102622.30362.70210.stgit@warthog.procyon.org.uk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Aug 2010 19:03:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:cc:date:message-id:mime-version:content-type;
+        b=DGhNF/f0pVG3t4KmGt1sopDLNndnRsjZ3gtXDgWsEGg/K5cb6c4d+99bRQnh8x4CM3
+         omKiGRgLd/eHxPMIDHgYTKzqlbbtOnG+GKFeNf/Kweslh/bLYeY9u3HJtTnj+Qdpi2E2
+         3U/fCF3I2WxHusBX7NjjoapXPNBdZH44mX+Qk=
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: linux-nfs@vger.kernel.org
+Subject: [PATCH] nfs: lookupcache coherence bugs in WCC update path
+CC: linux-kernel@vger.kernel.org
+Date: Wed, 11 Aug 2010 16:02:53 -0700
+Message-ID: <87lj8ckb1e.fsf@patl.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Howells <dhowells@redhat.com>
-Date: Wed, 11 Aug 2010 11:26:22 +0100
+This patch fixes some coherence bugs in the NFS "dentry lookup cache".
 
-> Mark arguments to certain system calls as being const where they should be but
-> aren't.  The list includes:
-> 
->  (*) The filename arguments of various stat syscalls, execve(), various utimes
->      syscalls and some mount syscalls.
-> 
->  (*) The filename arguments of some syscall helpers relating to the above.
-> 
->  (*) The buffer argument of various write syscalls.
-> 
-> Signed-off-by: David Howells <dhowells@redhat.com>
+The NFS dentry lookup cache provides the nfs_force_lookup_revalidate()
+call to invalidate all cached dentries associated with an inode.  In
+general, the NFS client uses the ctime and mtime in the inode to detect
+when changes are made on the server.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Therefore, to maintain cache coherence, nfs_force_lookup_revalidate()
+must be called whenever the ctime or mtime of a directory inode is
+updated with fresh data from the server.  There are a few spots in
+nfs_wcc_update_inode() where this rule is violated, making it possible
+for the lookup cache to return arbitrarily stale data.
+
+This actually bit me in practice.  I have an application where a
+negative dentry results in -ENOENT for a file that was created 30+
+minutes earlier (despite the "noac" mount option).  Unfortunately I
+cannot share my test case, but I believe the following simple patch is
+"obviously correct", and I can confirm that it fixes my issue.
+
+CC: stable <stable@kernel.org>
+Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+
+---
+
+--- linux-2.6.35/fs/nfs/inode.c.orig	2010-08-01 15:11:14.000000000 -0700
++++ linux-2.6.35/fs/nfs/inode.c	2010-08-11 14:19:56.000000000 -0700
+@@ -819,21 +819,28 @@ static void nfs_wcc_update_inode(struct
+ 			&& (fattr->valid & NFS_ATTR_FATTR_CHANGE)
+ 			&& nfsi->change_attr == fattr->pre_change_attr) {
+ 		nfsi->change_attr = fattr->change_attr;
+-		if (S_ISDIR(inode->i_mode))
++		if (S_ISDIR(inode->i_mode)) {
+ 			nfsi->cache_validity |= NFS_INO_INVALID_DATA;
++			nfs_force_lookup_revalidate(inode);
++		}
+ 	}
+ 	/* If we have atomic WCC data, we may update some attributes */
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PRECTIME)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_CTIME)
+-			&& timespec_equal(&inode->i_ctime, &fattr->pre_ctime))
+-			memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
++			&& timespec_equal(&inode->i_ctime,
++					  &fattr->pre_ctime)) {
++		if (S_ISDIR(inode->i_mode))
++			nfs_force_lookup_revalidate(inode);
++		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
++	}
+ 
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PREMTIME)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_MTIME)
+ 			&& timespec_equal(&inode->i_mtime, &fattr->pre_mtime)) {
+ 			memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
+-			if (S_ISDIR(inode->i_mode))
++			if (S_ISDIR(inode->i_mode)) {
+ 				nfsi->cache_validity |= NFS_INO_INVALID_DATA;
++				nfs_force_lookup_revalidate(inode);
+ 	}
+ 	if ((fattr->valid & NFS_ATTR_FATTR_PRESIZE)
+ 			&& (fattr->valid & NFS_ATTR_FATTR_SIZE)
