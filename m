@@ -1,31 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab0HKNhy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 09:37:54 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55176 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136Ab0HKNhx (ORCPT
+	id S1752736Ab0HKNoR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 09:44:17 -0400
+Received: from mx1.spunky.mail.dreamhost.com ([208.97.132.47]:51415 "EHLO
+	homiemail-a62.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752389Ab0HKNoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 09:37:53 -0400
-Date: Wed, 11 Aug 2010 14:37:51 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, reiserfs-devel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix reiserfs_evict_inode end_writeback second call
-Message-ID: <20100811133751.GG31363@ZenIV.linux.org.uk>
-References: <20100811110701.GA5362@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100811110701.GA5362@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Wed, 11 Aug 2010 09:44:16 -0400
+Subject: [PATCH] kernel/ksysfs: use snprintf for sysfs show
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: LKML <linux-kernel@vger.kernel.org>, kay.sievers@vrfy.org, gregkh@suse.de
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Aug 2010 09:44:10 -0400
+Message-ID: <1281534250.2067.14.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 02:07:01PM +0300, Sergey Senozhatsky wrote:
-> reiserfs_evict_inode calls end_writeback two times hitting
-> kernel BUG at fs/inode.c:298 becase inode->i_state is I_CLEAR already.
+Use snprintf(buf, PAGE_SIZE, ...) instead of sprintf for sysfs show
+methods.  This is suggested in Documentation/filesystems/sysfs.txt
 
-Applied, thanks.
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ kernel/ksysfs.c |   20 +++++++++++---------
+ 1 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/kernel/ksysfs.c b/kernel/ksysfs.c
+index 0b624e7..d7cef25 100644
+--- a/kernel/ksysfs.c
++++ b/kernel/ksysfs.c
+@@ -29,7 +29,9 @@ static struct kobj_attribute _name##_attr = \
+ static ssize_t uevent_seqnum_show(struct kobject *kobj,
+ 				  struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%llu\n", (unsigned long long)uevent_seqnum);
++	return snprintf(buf, PAGE_SIZE, "%llu\n", 
++			(unsigned long long)uevent_seqnum); 
++
+ }
+ KERNEL_ATTR_RO(uevent_seqnum);
+ 
+@@ -37,7 +39,7 @@ KERNEL_ATTR_RO(uevent_seqnum);
+ static ssize_t uevent_helper_show(struct kobject *kobj,
+ 				  struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%s\n", uevent_helper);
++	return snprintf(buf, PAGE_SIZE, "%s\n", uevent_helper);
+ }
+ static ssize_t uevent_helper_store(struct kobject *kobj,
+ 				   struct kobj_attribute *attr,
+@@ -58,7 +60,7 @@ KERNEL_ATTR_RW(uevent_helper);
+ static ssize_t profiling_show(struct kobject *kobj,
+ 				  struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%d\n", prof_on);
++	return snprintf(buf, PAGE_SIZE, "%d\n", prof_on);
+ }
+ static ssize_t profiling_store(struct kobject *kobj,
+ 				   struct kobj_attribute *attr,
+@@ -89,21 +91,21 @@ KERNEL_ATTR_RW(profiling);
+ static ssize_t kexec_loaded_show(struct kobject *kobj,
+ 				 struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%d\n", !!kexec_image);
++	return snprintf(buf, PAGE_SIZE, "%d\n", !!kexec_image);
+ }
+ KERNEL_ATTR_RO(kexec_loaded);
+ 
+ static ssize_t kexec_crash_loaded_show(struct kobject *kobj,
+ 				       struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%d\n", !!kexec_crash_image);
++	return snprintf(buf, PAGE_SIZE, "%d\n", !!kexec_crash_image);
+ }
+ KERNEL_ATTR_RO(kexec_crash_loaded);
+ 
+ static ssize_t kexec_crash_size_show(struct kobject *kobj,
+ 				       struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%zu\n", crash_get_memory_size());
++	return snprintf(buf, PAGE_SIZE, "%zu\n", crash_get_memory_size());
+ }
+ static ssize_t kexec_crash_size_store(struct kobject *kobj,
+ 				   struct kobj_attribute *attr,
+@@ -123,9 +125,9 @@ KERNEL_ATTR_RW(kexec_crash_size);
+ static ssize_t vmcoreinfo_show(struct kobject *kobj,
+ 			       struct kobj_attribute *attr, char *buf)
+ {
+-	return sprintf(buf, "%lx %x\n",
+-		       paddr_vmcoreinfo_note(),
+-		       (unsigned int)vmcoreinfo_max_size);
++	return snprintf(buf, PAGE_SIZE, "%lx %x\n",
++			paddr_vmcoreinfo_note(),
++			(unsigned int)vmcoreinfo_max_size);
+ }
+ KERNEL_ATTR_RO(vmcoreinfo);
+ 
+-- 
+1.7.0.4
+
