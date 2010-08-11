@@ -1,334 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750847Ab0HKEAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 00:00:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48304 "EHLO smtps.tip.net.au"
+	id S1750898Ab0HKECQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 00:02:16 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:56927 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750720Ab0HKEAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 00:00:16 -0400
-Date: Wed, 11 Aug 2010 14:00:09 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for August 11
-Message-Id: <20100811140009.6ff33109.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__11_Aug_2010_14_00_09_+1000_6Amkh1qR2h5iAHZv"
+	id S1750742Ab0HKECO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 00:02:14 -0400
+Date: Tue, 10 Aug 2010 21:01:57 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [RFC PATCH 2/2] rcu,debug_core: allow the kernel debugger to
+ reset the rcu stall timer
+Message-ID: <20100811040157.GA7722@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1281330732-17164-1-git-send-email-jason.wessel@windriver.com>
+ <1281330732-17164-2-git-send-email-jason.wessel@windriver.com>
+ <1281330732-17164-3-git-send-email-jason.wessel@windriver.com>
+ <20100809174353.GH3026@linux.vnet.ibm.com>
+ <4C60484B.8030002@windriver.com>
+ <20100809190142.GM3026@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100809190142.GM3026@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__11_Aug_2010_14_00_09_+1000_6Amkh1qR2h5iAHZv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Aug 09, 2010 at 12:01:42PM -0700, Paul E. McKenney wrote:
+> On Mon, Aug 09, 2010 at 01:26:19PM -0500, Jason Wessel wrote:
+> > On 08/09/2010 12:43 PM, Paul E. McKenney wrote:
+> > > On Mon, Aug 09, 2010 at 12:12:12AM -0500, Jason Wessel wrote:
+> > >
+> > >> +void rcu_cpu_stall_reset(void)
+> > >> +{
+> > >> +    rcu_sched_state.jiffies_stall = 0;
+> > >> +    rcu_bh_state.jiffies_stall = 0;
+> > >> +}
+> > >> +
+> > >
+> > > OK, so you are suppressing RCU CPU stall warnings for rcu_sched and
+> > > rcu_bh, but not for preemptible RCU.  I believe that you want all of
+> > > them covered.
+> > 
+> > What is the state variable for the preemptible RCU I had not hit a
+> > warning in my testing so I must needs some more test cases. :-)
+> 
+> Well, you won't hit preemptible RCU unless you set TREE_PREEMPT_RCU.  ;-)
+> 
+> > > I have a number of recent patches that allow RCU CPU stall warnings to
+> > > be suppressed, one of which allows them to be suppressed using sysfs.
+> > > Would that work for you, or do you need an in-kernel interface?
+> > 
+> > We need an in-kernel interface for sure.
+> 
+> OK, good to know.
+> 
+> > > If you do need an in-kernel interface, I could export (and probably
+> > > rename) rcu_panic(), which is a static in 2.6.35.  This assumes that you
+> > > never want to re-enable RCU CPU stall warnings once you suppress them,
+> > > which is what your patch appears to do.
+> > >
+> > > So, if I export a suppress_rcu_cpu_stall() function that permanently
+> > > disabled RCU CPU stall warnings, would that work for you?  (They could
+> > > be manually re-enabled via sysfs.)
+> > 
+> > This is an RFC patch for a reason.  The intent behind the interface is
+> > to allow for one stall check cycle to go by after resuming kernel
+> > execution and after that the normal rules are in play.  Code flow
+> > wise, it looked like the easiest thing to do was set the jiffies_stall
+> > value to zero and then exit when the.  The patch I created was
+> > supposed to only ignore one stall cycle.
+> > 
+> > Here is the pseudo code.
+> > 
+> > /* before restarting kernel execution zero out the jiffies_stall  value.
+> > 
+> > __rcu_pending() {
+> > 
+> >     check_cpu_stall();  <- Here we check if the stall val is set to zero
+> > and just return
+> >     /* do all normal work */
+> > 
+> > }
+> > 
+> > In the normal flow of things rc_start_gp() will ultimately call
+> > record_gp_stall_check_time which updates the jiffies_stall back to non
+> > zero and the stall accounting is back in play.
+> 
+> Ah, I get it now.  Just out of curiosity, why not set the various
+> ->jiffies_stall fields to jiffies + RCU_SECONDS_TILL_STALL_CHECK?
+> Is the value of jiffies likely to advance a lot after you call
+> rcu_cpu_stall_reset(), perhaps due to the system trying to catch up with
+> the passage of time?
 
-Hi all,
+Here is an initial patch.  Untested, probably doesn't even compile.
+It is against my -rcu tree:
 
-As the merge window is open, please do not add 2.6.37 material to your
-linux-next included trees until after 2.6.36-rc1.
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
 
-Changes since 20100810:
+Thoughts?
 
-Linus' tree needed a patch to fix a merge and a revert for a modpost
-patch.
+							Thanx, Paul
 
-The samsung tree gained conflicts against Linus' and the arm tree.
+commit 1a745a8467f285e17ded055699ecc557d1b1893e
+Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Date:   Tue Aug 10 14:28:53 2010 -0700
 
-The ceph tree lost its merge fix.
+    rcu: permit suppressing current grace period's CPU stall warnings
+    
+    When using a kernel debugger, a long sojourn in the debugger can get
+    you lots of RCU CPU stall warnings once you resume.  This might not be
+    helpful, especially if you are using the system console.  This patch
+    therefore allows RCU CPU stall warnings to be suppressed, but only for
+    the duration of the current set of grace periods.
+    
+    Requested-by: Jason Wessel <jason.wessel@windriver.com>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-The vfs tree lost its conflicts and merge fixes.
-
-The bjdooks-i2c lost its conflicts.
-
-The async_tx tree lost its conflict.
-
-The mtd tree lost its conflicts.
-
-The block tree lost its conflicts.
-
-The trivial tree lost a conflict.
-
-The fsnotify tree lost its conflict.
-
-The limits tree lost its conflicts.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 169 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Applying: v9fs: fixup for inode_setattr being removed
-Merging arm/devel
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
-CONFLICT (content): Merge conflict in include/linux/serial_core.h
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
-CONFLICT (content): Merge conflict in arch/arm/plat-samsung/Kconfig
-CONFLICT (content): Merge conflict in drivers/input/touchscreen/s3c2410_ts.c
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/master
-CONFLICT (content): Merge conflict in drivers/Makefile
-Merging genesis/master
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging quilt/kernel-doc
-CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
-Merging v4l-dvb/master
-CONFLICT (content): Merge conflict in drivers/media/video/cx23885/Kconfig
-CONFLICT (add/add): Merge conflict in drivers/media/video/v4l2-ctrls.c
-Applying: v4l-dvb: fix up bad automatic merge
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging swiotlb-xen/master
-CONFLICT (content): Merge conflict in drivers/xen/Kconfig
-CONFLICT (content): Merge conflict in drivers/xen/Makefile
-CONFLICT (content): Merge conflict in include/xen/xen-ops.h
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in arch/um/drivers/hostaudio_kern.c
-CONFLICT (content): Merge conflict in drivers/block/virtio_blk.c
-CONFLICT (content): Merge conflict in kernel/module.c
-Applying: nfs: update for module_param_named API change
-Applying: AppArmor: update for module_param_named API change
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-CONFLICT (content): Merge conflict in drivers/md/dm.c
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-CONFLICT (content): Merge conflict in drivers/power/Kconfig
-CONFLICT (content): Merge conflict in drivers/power/Makefile
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (content): Merge conflict in fs/exofs/inode.c
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-CONFLICT (content): Merge conflict in drivers/spi/mpc512x_psc_spi.c
-Applying: spi: update for of_device to platform_device replacement
-Merging limits/writable_limits
-Merging omap_dss2/for-next
-Merging xen/upstream/xen
-Merging tip/auto-latest
-Merging lost-spurious-irq/lost-spurious-irq
-CONFLICT (content): Merge conflict in drivers/ata/sata_fsl.c
-CONFLICT (content): Merge conflict in drivers/ata/sata_mv.c
-CONFLICT (content): Merge conflict in drivers/ata/sata_nv.c
-CONFLICT (content): Merge conflict in include/linux/libata.h
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-CONFLICT (content): Merge conflict in drivers/char/Makefile
-CONFLICT (content): Merge conflict in drivers/char/vt.c
-CONFLICT (content): Merge conflict in include/linux/serial_core.h
-CONFLICT (content): Merge conflict in include/linux/tty.h
-Merging quilt/usb
-Merging staging-next/staging-next
-Merging slabh/slabh
-Merging scsi-post-merge/merge-base:master
-$ git checkout scsi-post-merge/master
-[master 9b3e523] Revert "scripts/mod/modpost.c: fix memory leak"
-
---Signature=_Wed__11_Aug_2010_14_00_09_+1000_6Amkh1qR2h5iAHZv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMYiBJAAoJEDMEi1NhKgbsITMH/0kbt3l0gIxSyI6SWK836zuk
-kktatWH/ROHe9lc47bnZo6FrwacUelxBWdO1AwnT+gTohnq48omGUKN9d3fY8FbB
-TonUe7WNLzIsX3xotmlmBnkacYODjggI3qhLaJoNiKh+42niQ+smeQeTZ/NW6mVF
-cDCCLbCaGH3otktBnA6UtehiHN62WrsiPGLUUcwApnB+bfbBOQNnirTWQmXmWfmB
-18vr1miYlaMiLP5dGYhKgccfFFLQ3/UUOGY13W9Jwh6QoyIPAEb49l1QidTm0mYZ
-GZuLSzVQWRryVm22UQ3sdaX50qqBb8A7zk0DflO4d5BnBpMXMlPWndQdCw6FsBM=
-=XfTE
------END PGP SIGNATURE-----
-
---Signature=_Wed__11_Aug_2010_14_00_09_+1000_6Amkh1qR2h5iAHZv--
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index 4cc5eba..3fa1797 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -178,6 +178,10 @@ static inline void rcu_sched_force_quiescent_state(void)
+ {
+ }
+ 
++static inline void rcu_cpu_stall_reset(void)
++{
++}
++
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 
+ extern int rcu_scheduler_active __read_mostly;
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index c13b85d..0726809 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -36,6 +36,7 @@ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
+ extern void rcu_note_context_switch(int cpu);
+ extern int rcu_needs_cpu(int cpu);
++extern void rcu_cpu_stall_reset(void);
+ 
+ #ifdef CONFIG_TREE_PREEMPT_RCU
+ 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index ff21411..42140a8 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -565,6 +565,22 @@ static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+ 	return NOTIFY_DONE;
+ }
+ 
++/**
++ * rcu_cpu_stall_reset - prevent further stall warnings in current grace period
++ *
++ * Set the stall-warning timeout way off into the future, thus preventing
++ * any RCU CPU stall-warning messages from appearing in the current set of
++ * RCU grace periods.
++ *
++ * The caller must disable hard irqs.
++ */
++void rcu_cpu_stall_reset(void)
++{
++	rcu_sched_state.jiffies_stall = jiffies + ULONG_MAX / 2;
++	rcu_bh_state.jiffies_stall = jiffies + ULONG_MAX / 2;
++	rcu_preempt_stall_reset();
++}
++
+ static struct notifier_block rcu_panic_block = {
+ 	.notifier_call = rcu_panic,
+ };
+@@ -584,6 +600,10 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+ {
+ }
+ 
++void rcu_cpu_stall_reset(void)
++{
++}
++
+ static void __init check_cpu_stall_init(void)
+ {
+ }
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index bb4d086..7abd439 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -372,6 +372,7 @@ static void rcu_report_unblock_qs_rnp(struct rcu_node *rnp,
+ #ifdef CONFIG_RCU_CPU_STALL_DETECTOR
+ static void rcu_print_detail_task_stall(struct rcu_state *rsp);
+ static void rcu_print_task_stall(struct rcu_node *rnp);
++static void rcu_preempt_stall_reset(void);
+ #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+ static void rcu_preempt_check_blocked_tasks(struct rcu_node *rnp);
+ #ifdef CONFIG_HOTPLUG_CPU
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 63bb771..561410f 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -417,6 +417,16 @@ static void rcu_print_task_stall(struct rcu_node *rnp)
+ 	}
+ }
+ 
++/*
++ * Suppress preemptible RCU's CPU stall warnings by pushing the
++ * time of the next stall-warning message comfortably far into the
++ * future.
++ */
++static void rcu_preempt_stall_reset(void)
++{
++	rcu_preempt_state.jiffies_stall = jiffies + ULONG_MAX / 2;
++}
++
+ #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+ 
+ /*
+@@ -867,6 +877,14 @@ static void rcu_print_task_stall(struct rcu_node *rnp)
+ {
+ }
+ 
++/*
++ * Because preemptible RCU does not exist, there is no need to suppress
++ * its CPU stall warnings.
++ */
++static void rcu_preempt_stall_reset(void)
++{
++}
++
+ #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+ 
+ /*
