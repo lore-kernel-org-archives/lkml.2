@@ -1,67 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab0HLFQM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 01:16:12 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:47999 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750919Ab0HLFQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 01:16:08 -0400
-From: Rabin Vincent <rabin.vincent@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: Rabin Vincent <rabin.vincent@stericsson.com>,
-        Andy Whitcroft <apw@canonical.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH] checkpatch: check for incorrect permissions
-Date: Thu, 12 Aug 2010 10:45:45 +0530
-Message-ID: <1281590145-30708-1-git-send-email-rabin.vincent@stericsson.com>
-X-Mailer: git-send-email 1.7.2.dirty
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752277Ab0HLFTM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 01:19:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26043 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751971Ab0HLFTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 01:19:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,356,1278313200"; 
+   d="scan'208";a="646714558"
+From: ling.ma@intel.com
+To: mingo@elte.hu
+Cc: hpa@zytor.com, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        root <root@glibc-nhm.localdomain>, Ma Ling <ling.ma@intel.com>
+Subject: [PATCH V2] [X86] Fix potential issue on memmove
+Date: Thu, 12 Aug 2010 06:20:34 +0800
+Message-Id: <1281565234-3096-1-git-send-email-ling.ma@intel.com>
+X-Mailer: git-send-email 1.6.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Throw an error when a source file has been given execute permissions
-using the mode change line present in git diffs.  Also alow the filename
-matching to use the "diff" line in addition to the "+++" line, since the
-mode change lines appear before any "+++" lines.
+From: root <root@glibc-nhm.localdomain>
 
-Cc: Andy Whitcroft <apw@canonical.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+memmove allow source and destination address to be overlap, 
+but no limitation for memcpy. So memmove use forward or
+backward copy mode to handle src > dest and dest > src cases respectively.
+However memcpy has not address overlap, it may use any copy mode
+theoretically. Our original memmove will call memcpy and assume
+it must use forward copy mode, otherwise the system will crash,
+it is potential issue. The patch avoid assumption, meanwhile
+re-active patch id a1e5278e40f16a4611264f8da9e557c16cb6f6ed,
+which will use forward/backward copy mode according to offset address.
+
+Signed-off-by: Ma Ling <ling.ma@intel.com>
 ---
- scripts/checkpatch.pl |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+In this version we try to keep and optimize original memmove.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 2039acd..4c35cb9 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -1308,7 +1308,7 @@ sub process {
- 		$here = "#$realline: " if ($file);
+ arch/x86/lib/memcpy_32.c  |   38 ++++++++++++++++++++++++++----------
+ arch/x86/lib/memmove_64.c |   46 ++++++++++++++++++++++++++++++++++++++++----
+ 2 files changed, 68 insertions(+), 16 deletions(-)
+
+diff --git a/arch/x86/lib/memcpy_32.c b/arch/x86/lib/memcpy_32.c
+index 5415a9d..be424df 100644
+--- a/arch/x86/lib/memcpy_32.c
++++ b/arch/x86/lib/memcpy_32.c
+@@ -25,19 +25,35 @@ void *memmove(void *dest, const void *src, size_t n)
+ 	int d0, d1, d2;
  
- 		# extract the filename as it passes
--		if ($line=~/^\+\+\+\s+(\S+)/) {
-+		if ($line=~/^\+\+\+\s+(\S+)/ || $line=~/^diff\s.*?(\S+)$/) {
- 			$realfile = $1;
- 			$realfile =~ s@^([^/]*)/@@;
- 
-@@ -1332,6 +1332,14 @@ sub process {
- 
- 		$cnt_lines++ if ($realcnt != 0);
- 
-+# Check for incorrect file permissions
-+		if ($line=~/^new (file )?mode.*[7531]\d{0,2}$/) {
-+			my $permhere = $here . "FILE: $realfile\n";
-+			if ($realfile=~/(Makefile|Kconfig|\.c|\.h|\.S|\.tmpl)$/) {
-+				ERROR("do not set execute permissions for source files\n" . $permhere);
-+			}
-+		}
+ 	if (dest < src) {
+-		memcpy(dest, src, n);
++		if ((dest + n) < src)
++			 return memcpy(dest, src, n);
++		else
++			__asm__ __volatile__(
++				"rep\n\t"
++				"movsb\n\t"
++				: "=&c" (d0), "=&S" (d1), "=&D" (d2)
++				:"0" (n),
++				 "1" (src),
++				 "2" (dest)
++				:"memory");
 +
- #check the patch for a signoff:
- 		if ($line =~ /^\s*signed-off-by:/i) {
- 			# This is a signoff, if ugly, so do not double report.
+ 	} else {
+-		__asm__ __volatile__(
+-			"std\n\t"
+-			"rep\n\t"
+-			"movsb\n\t"
+-			"cld"
+-			: "=&c" (d0), "=&S" (d1), "=&D" (d2)
+-			:"0" (n),
+-			 "1" (n-1+src),
+-			 "2" (n-1+dest)
+-			:"memory");
++
++		if((src + count) < dest)
++			return memcpy(dest, src, count);
++		else
++			__asm__ __volatile__(
++				"std\n\t"
++				"rep\n\t"
++				"movsb\n\t"
++				"cld"
++				: "=&c" (d0), "=&S" (d1), "=&D" (d2)
++				:"0" (n),
++				 "1" (n-1+src),
++				 "2" (n-1+dest)
++				:"memory");
+ 	}
++
+ 	return dest;
+ }
+ EXPORT_SYMBOL(memmove);
+diff --git a/arch/x86/lib/memmove_64.c b/arch/x86/lib/memmove_64.c
+index 0a33909..ecacc4b 100644
+--- a/arch/x86/lib/memmove_64.c
++++ b/arch/x86/lib/memmove_64.c
+@@ -8,13 +8,49 @@
+ #undef memmove
+ void *memmove(void *dest, const void *src, size_t count)
+ {
++	unsigned long d0, d1, d2, d3;
+ 	if (dest < src) {
+-		return memcpy(dest, src, count);
++		if ((dest + count) < src)
++			 return memcpy(dest, src, count);
++		else
++			__asm__ __volatile__(
++				"movq %0, %3\n\t"
++				"shr $3, %0\n\t"
++				"andq $7, %3\n\t"
++				"rep\n\t"
++				"movsq\n\t"
++				"movq %3, %0\n\t"
++				"rep\n\t"
++				"movsb"
++				: "=&c" (d0), "=&S" (d1), "=&D" (d2), "=r" (d3)
++				:"0" (count),
++				 "1" (src),
++				 "2" (dest)
++				:"memory");
+ 	} else {
+-		char *p = dest + count;
+-		const char *s = src + count;
+-		while (count--)
+-			*--p = *--s;
++		if((src + count) < dest)
++			return memcpy(dest, src, count);
++		else
++			__asm__ __volatile__(
++				"movq %0, %3\n\t"
++				"lea -8(%1, %0), %1\n\t"
++				"lea -8(%2, %0), %2\n\t"
++				"shr $3, %0\n\t"
++				"andq $7, %3\n\t"
++				"std\n\t"
++				"rep\n\t"
++				"movsq\n\t"
++				"lea 7(%1), %1\n\t"
++				"lea 7(%2), %2\n\t"
++				"movq %3, %0\n\t"
++				"rep\n\t"
++				"movsb\n\t"
++				"cld"
++				: "=&c" (d0), "=&S" (d1), "=&D" (d2), "=r" (d3)
++				:"0" (count),
++				 "1" (src),
++				 "2" (dest)
++				:"memory");
+ 	}
+ 	return dest;
+ }
 -- 
-1.7.2.dirty
+1.6.5.2
 
