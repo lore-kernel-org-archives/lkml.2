@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab0HKKLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:11:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41231 "EHLO mgw2.diku.dk"
+	id S932908Ab0HKKL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:11:28 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41245 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932870Ab0HKKLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:11:10 -0400
-Date: Wed, 11 Aug 2010 12:11:07 +0200 (CEST)
+	id S932856Ab0HKKL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 06:11:26 -0400
+Date: Wed, 11 Aug 2010 12:11:24 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Linus Walleij <linus.walleij@stericsson.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/5] drivers/dma: Return -ENOMEM on memory allocation failure
-Message-ID: <Pine.LNX.4.64.1008111210490.8669@ask.diku.dk>
+To: Eric Moore <Eric.Moore@lsi.com>, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 3/5] drivers/message/fusion: Return -ENOMEM on memory allocation
+ failure
+Message-ID: <Pine.LNX.4.64.1008111211080.8669@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -46,22 +46,22 @@ if (x == NULL) { ... when != ret = e3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/dma/coh901318.c |    4 +++-
+ drivers/message/fusion/mptbase.c |    4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
-index 557e227..6dd9488 100644
---- a/drivers/dma/coh901318.c
-+++ b/drivers/dma/coh901318.c
-@@ -1475,8 +1475,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
- 		       pdata->max_channels *
- 		       sizeof(struct coh901318_chan),
- 		       GFP_KERNEL);
--	if (!base)
-+	if (!base) {
-+		err = -ENOMEM;
- 		goto err_alloc_coh_dma_channels;
+diff --git a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+index d8c668d..49f8ec1 100644
+--- a/drivers/message/fusion/mptbase.c
++++ b/drivers/message/fusion/mptbase.c
+@@ -5954,8 +5954,10 @@ mpt_findImVolumes(MPT_ADAPTER *ioc)
+ 		goto out;
+ 
+ 	mem = kmalloc(iocpage2sz, GFP_KERNEL);
+-	if (!mem)
++	if (!mem) {
++		rc = -ENOMEM;
+ 		goto out;
 +	}
  
- 	base->chans = ((void *)base) + ALIGN(sizeof(struct coh901318_base), 4);
- 
+ 	memcpy(mem, (u8 *)pIoc2, iocpage2sz);
+ 	ioc->raid_data.pIocPg2 = (IOCPage2_t *) mem;
