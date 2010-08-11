@@ -1,158 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0HKQqY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:46:24 -0400
-Received: from mail.logicpd.com ([66.162.60.3]:43783 "EHLO smtp.logicpd.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754612Ab0HKQqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:46:23 -0400
-X-Greylist: delayed 850 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Aug 2010 12:46:22 EDT
-From: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-To: linux@arm.linux.org.uk
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        rmk@arm.linux.org.uk, tony@atomide.com,
-        Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-Subject: [PATCH 2/4]  Low-level initialization for hsmmc controller on LogicPD's OMAP3 SOM and TORPEDO dev kits
-Date: Wed, 11 Aug 2010 12:31:35 -0400
-Message-Id: <1281544297-18015-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1281544297-18015-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
-References: <1281544297-18015-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
-X-OriginalArrivalTime: 11 Aug 2010 16:32:11.0699 (UTC) FILETIME=[BFCAE030:01CB3972]
+	id S1754896Ab0HKQqa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:46:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46919 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754824Ab0HKQq2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 12:46:28 -0400
+Message-ID: <4C62D3EE.5000907@infradead.org>
+Date: Wed, 11 Aug 2010 13:46:38 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100803 Red Hat/3.1.2-1.el6 Lightning/1.0b2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Pete Eberlein <pete@sensoray.com>
+CC: Sander Eikelenboom <linux@eikelenboom.it>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>, mrechberger@gmail.com,
+        gregkh@suse.de, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [2.6.35] usb 2.0 em28xx kernel panic general protection fault:
+ 0000 [#1] SMP RIP: 0010:[<ffffffffa004fbc5>] [<ffffffffa004fbc5>]  em28xx_isoc_copy_vbi+0x62e/0x812
+ [em28xx]
+References: <61936849.20100811001257@eikelenboom.it>	 <AANLkTinVNms-vdfG-VZzkOadogaCRV+HyDAY5yhYOJSK@mail.gmail.com>	 <1117369508.20100811005719@eikelenboom.it>	 <AANLkTikPffMQLXcPF4-xPeZfkaAtnu7xEP0TMzYVrkgE@mail.gmail.com>	 <1843123111.20100811092547@eikelenboom.it> <1281542325.2360.86.camel@pete-desktop>
+In-Reply-To: <1281542325.2360.86.camel@pete-desktop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-    	ARM: OMAP3LOGIC: Adding SDMMC support
-             Add low-level initialization for hsmmc controller for
-             LogicPD's OMAP 3530 LV SOM and OMAP 35x Torpedo board.
+Em 11-08-2010 12:58, Pete Eberlein escreveu:
+> On Wed, 2010-08-11 at 09:25 +0200, Sander Eikelenboom wrote:
+>> Hello Devin,
+>>
+>> Yes it's completely reproducible for a change:
+>>
+>> ffmpeg -f video4linux -r 25 -s 720x576 -i /dev/video0 out.flv
+>> gave an error:
+> 
+> Use -f video4linux2.
+> 
+> The -f video4linux option uses the old video4linux1 API.  I have seen
+> similar strange behavior when I used that ffmpeg option with a v4l2
+> driver I am developing.  Also, ffmpeg does not use libv4l.
 
-        Tested against: linux-next 81e09f50c93edff607259cbe374a3006c9c5fa74
-	Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
----
- arch/arm/mach-omap2/board-omap3logic.c |   73 +++++++++++++++++++++++++++++--
- 1 files changed, 68 insertions(+), 5 deletions(-)
+Still, we have a bug to fix. The driver shouldn't generating a PANIC if accessed
+via V4L1 API.
 
-diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
-index b449f9e..3358418 100644
---- a/arch/arm/mach-omap2/board-omap3logic.c
-+++ b/arch/arm/mach-omap2/board-omap3logic.c
-@@ -33,6 +33,7 @@
- #include <asm/mach/map.h>
- 
- #include "mux.h"
-+#include "hsmmc.h"
- 
- #include <plat/mux.h>
- #include <plat/board.h>
-@@ -41,6 +42,11 @@
- #include <plat/timer-gp.h>
- #include <plat/sdrc.h>
- 
-+#define OMAP3530_LV_SOM_MMC_GPIO_CD             110
-+#define OMAP3530_LV_SOM_MMC_GPIO_WP             126
-+#define OMAP3_TORPEDO_MMC_GPIO_CD               127
-+#define OMAP3_TORPEDO_MMC_GPIO_WP               (-EINVAL)
-+
- /* Micron MT46H32M32LF-6 */
- /* FIXME: borrowed from sdram-micron-mt46h32m32lf-6.h because on LogicPD
-  * boards we can't use the default values -- why? I suspect the reason
-@@ -81,6 +87,28 @@ static struct omap_sdrc_params mt46h32m32lf6_sdrc_params[] = {
- 	},
- };
- 
-+static struct regulator_consumer_supply omap3logic_vmmc1_supply = {
-+		.supply			= "vmmc",
-+};
-+
-+/* VMMC1 for MMC1 pins CMD, CLK, DAT0..DAT3 (20 mA, plus card == max 220 mA) */
-+static struct regulator_init_data omap3logic_vmmc1 = {
-+	.constraints = {
-+		.name			= "VMMC1",
-+		.min_uV			= 1850000,
-+		.max_uV			= 3150000,
-+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
-+					| REGULATOR_MODE_STANDBY,
-+		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE
-+					| REGULATOR_CHANGE_MODE
-+					| REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies  = 1,
-+	.consumer_supplies      = &omap3logic_vmmc1_supply,
-+};
-+
-+
-+
- static int omap3logic_twl_gpio_setup(struct device *dev,
- 				unsigned gpio, unsigned ngpio)
- {
-@@ -104,6 +132,7 @@ static struct twl4030_platform_data omap3logic_twldata = {
- 
- 	/* platform_data for children goes here */
- 	.gpio		= &omap3logic_gpio_data,
-+	.vmmc1		= &omap3logic_vmmc1,
- };
- 
- static struct i2c_board_info __initdata omap3logic_i2c_boardinfo[] = {
-@@ -125,6 +154,44 @@ static int __init omap3logic_i2c_init(void)
- static struct omap_board_config_kernel omap3logic_config[] __initdata = {
- };
- 
-+static struct omap2_hsmmc_info __initdata board_mmc_info[] = {
-+	{
-+		.name		= "external",
-+		.mmc		= 1,
-+		.wires		= 4,
-+		.gpio_cd	= -EINVAL,
-+		.gpio_wp	= -EINVAL,
-+	},
-+	{}      /* Terminator */
-+};
-+
-+static void __init board_mmc_init(void)
-+{
-+	/* OMAP3530 LV SOM board */
-+	if (machine_is_omap3530_lv_som()) {
-+		board_mmc_info[0].gpio_cd = OMAP3530_LV_SOM_MMC_GPIO_CD;
-+		board_mmc_info[0].gpio_wp = OMAP3530_LV_SOM_MMC_GPIO_WP;
-+		omap_mux_init_signal("gpio_110", OMAP_PIN_OUTPUT);
-+		omap_mux_init_signal("gpio_126", OMAP_PIN_OUTPUT);
-+
-+
-+	/* OMAP3 Torpedo board */
-+	} else if (machine_is_omap3_torpedo()) {
-+		board_mmc_info[0].gpio_cd = OMAP3_TORPEDO_MMC_GPIO_CD;
-+		omap_mux_init_signal("gpio_127", OMAP_PIN_OUTPUT);
-+	/* unsupported board */
-+	} else {
-+		printk(KERN_ERR "%s(): unknown machine type\n", __func__);
-+	return;
-+	}
-+
-+	omap2_hsmmc_init(board_mmc_info);
-+	/* link regulators to MMC adapters */
-+	omap3logic_vmmc1_supply.dev = board_mmc_info[0].dev;
-+}
-+
-+
-+
- static void __init omap3logic_init_irq(void)
- {
- 	omap_board_config = omap3logic_config;
-@@ -144,12 +211,8 @@ static void __init omap3logic_init(void)
- {
- 	omap3logic_i2c_init();
- 	omap_serial_init();
--
-+	board_mmc_init();
- 	/* Ensure SDRC pins are mux'd for self-refresh */
--/*	omap_cfg_reg(H16_34XX_SDRC_CKE0);
--	omap_cfg_reg(H17_34XX_SDRC_CKE1);
--	omap_cfg_reg(SDRC_CKE0);
--	omap_cfg_reg(SDRC_CKE1); */
- 	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
- 	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
- }
--- 
-1.6.0.4
-
+Cheers,
+Mauro.
