@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab0HKXuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:50:10 -0400
-Received: from kroah.org ([198.145.64.141]:57540 "EHLO coco.kroah.org"
+	id S1758264Ab0HKXty (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:49:54 -0400
+Received: from kroah.org ([198.145.64.141]:57503 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758471Ab0HKXuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:50:00 -0400
+	id S1758130Ab0HKXtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:49:52 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:25 2010
-Message-Id: <20100811234625.632304508@clark.site>
+Message-Id: <20100811234624.996057874@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:45:47 -0700
+Date: Wed, 11 Aug 2010 16:45:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-Subject: [08/11] jfs: dont allow os2 xattr namespace overlap with others
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: [01/11] nvram: Fix write beyond end condition; prove to gcc copy is safe
 In-Reply-To: <20100811234809.GA676@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,162 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit aca0fa34bdaba39bfddddba8ca70dba4782e8fe6 upstream.
+commit a01c7800420d2c294ca403988488a635d4087a6d upstream.
 
-It's currently possible to bypass xattr namespace access rules by
-prefixing valid xattr names with "os2.", since the os2 namespace stores
-extended attributes in a legacy format with no prefix.
+In nvram_write, first of all, correctly handle the case where the file
+pointer is already beyond the end; we should return EOF in that case.
 
-This patch adds checking to deny access to any valid namespace prefix
-following "os2.".
+Second, make the logic a bit more explicit so that gcc can statically
+prove that the copy_from_user() is safe.  Once the condition of the
+beyond-end filepointer is eliminated, the copy is safe but gcc can't
+prove it, causing build failures for i386 allyesconfig.
 
-Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-Reported-by: Sergey Vlasov <vsu@altlinux.ru>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Third, eliminate the entirely superfluous variable "len", and just use
+the passed-in variable "count" instead.
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <tip-*@git.kernel.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/jfs/xattr.c |   87 ++++++++++++++++++++++++---------------------------------
- 1 file changed, 38 insertions(+), 49 deletions(-)
+ drivers/char/nvram.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/fs/jfs/xattr.c
-+++ b/fs/jfs/xattr.c
-@@ -85,46 +85,25 @@ struct ea_buffer {
- #define EA_MALLOC	0x0008
+--- a/drivers/char/nvram.c
++++ b/drivers/char/nvram.c
+@@ -265,10 +265,16 @@ nvram_write(struct file *file, const cha
+ 	unsigned char contents[NVRAM_BYTES];
+ 	unsigned i = *ppos;
+ 	unsigned char *tmp;
+-	int len;
  
- 
-+static int is_known_namespace(const char *name)
-+{
-+	if (strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
-+		return false;
+-	len = (NVRAM_BYTES - i) < count ? (NVRAM_BYTES - i) : count;
+-	if (copy_from_user(contents, buf, len))
++	if (i >= NVRAM_BYTES)
++		return 0;	/* Past EOF */
 +
-+	return true;
-+}
++	if (count > NVRAM_BYTES - i)
++		count = NVRAM_BYTES - i;
++	if (count > NVRAM_BYTES)
++		return -EFAULT;	/* Can't happen, but prove it to gcc */
 +
- /*
-  * These three routines are used to recognize on-disk extended attributes
-  * that are in a recognized namespace.  If the attribute is not recognized,
-  * "os2." is prepended to the name
-  */
--static inline int is_os2_xattr(struct jfs_ea *ea)
-+static int is_os2_xattr(struct jfs_ea *ea)
- {
--	/*
--	 * Check for "system."
--	 */
--	if ((ea->namelen >= XATTR_SYSTEM_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "user."
--	 */
--	if ((ea->namelen >= XATTR_USER_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "security."
--	 */
--	if ((ea->namelen >= XATTR_SECURITY_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_SECURITY_PREFIX,
--		     XATTR_SECURITY_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "trusted."
--	 */
--	if ((ea->namelen >= XATTR_TRUSTED_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
--		return false;
--	/*
--	 * Add any other valid namespace prefixes here
--	 */
--
--	/*
--	 * We assume it's OS/2's flat namespace
--	 */
--	return true;
-+	return !is_known_namespace(ea->name);
- }
++	if (copy_from_user(contents, buf, count))
+ 		return -EFAULT;
  
- static inline int name_size(struct jfs_ea *ea)
-@@ -768,13 +747,23 @@ static int can_set_xattr(struct inode *i
- 	if (!strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
- 		return can_set_system_xattr(inode, name, value, value_len);
+ 	spin_lock_irq(&rtc_lock);
+@@ -276,7 +282,7 @@ nvram_write(struct file *file, const cha
+ 	if (!__nvram_check_checksum())
+ 		goto checksum_err;
  
-+	if (!strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)) {
-+		/*
-+		 * This makes sure that we aren't trying to set an
-+		 * attribute in a different namespace by prefixing it
-+		 * with "os2."
-+		 */
-+		if (is_known_namespace(name + XATTR_OS2_PREFIX_LEN))
-+				return -EOPNOTSUPP;
-+		return 0;
-+	}
-+
- 	/*
- 	 * Don't allow setting an attribute in an unknown namespace.
- 	 */
- 	if (strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) &&
- 	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
--	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
--	    strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))
-+	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
- 		return -EOPNOTSUPP;
+-	for (tmp = contents; count-- > 0 && i < NVRAM_BYTES; ++i, ++tmp)
++	for (tmp = contents; count--; ++i, ++tmp)
+ 		__nvram_write_byte(*tmp, i);
  
- 	return 0;
-@@ -956,19 +945,8 @@ ssize_t __jfs_getxattr(struct inode *ino
- 	int xattr_size;
- 	ssize_t size;
- 	int namelen = strlen(name);
--	char *os2name = NULL;
- 	char *value;
- 
--	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
--		os2name = kmalloc(namelen - XATTR_OS2_PREFIX_LEN + 1,
--				  GFP_KERNEL);
--		if (!os2name)
--			return -ENOMEM;
--		strcpy(os2name, name + XATTR_OS2_PREFIX_LEN);
--		name = os2name;
--		namelen -= XATTR_OS2_PREFIX_LEN;
--	}
--
- 	down_read(&JFS_IP(inode)->xattr_sem);
- 
- 	xattr_size = ea_get(inode, &ea_buf, 0);
-@@ -1006,8 +984,6 @@ ssize_t __jfs_getxattr(struct inode *ino
-       out:
- 	up_read(&JFS_IP(inode)->xattr_sem);
- 
--	kfree(os2name);
--
- 	return size;
- }
- 
-@@ -1016,6 +992,19 @@ ssize_t jfs_getxattr(struct dentry *dent
- {
- 	int err;
- 
-+	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
-+		/*
-+		 * skip past "os2." prefix
-+		 */
-+		name += XATTR_OS2_PREFIX_LEN;
-+		/*
-+		 * Don't allow retrieving properly prefixed attributes
-+		 * by prepending them with "os2."
-+		 */
-+		if (is_known_namespace(name))
-+			return -EOPNOTSUPP;
-+	}
-+
- 	err = __jfs_getxattr(dentry->d_inode, name, data, buf_size);
- 
- 	return err;
+ 	__nvram_set_checksum();
 
 
