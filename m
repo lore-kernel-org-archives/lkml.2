@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966Ab0HKX6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:58:19 -0400
-Received: from kroah.org ([198.145.64.141]:40254 "EHLO coco.kroah.org"
+	id S1758979Ab0HKX6X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:58:23 -0400
+Received: from kroah.org ([198.145.64.141]:40240 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758814Ab0HKX6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:12 -0400
+	id S1758930Ab0HKX6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:10 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:59 2010
-Message-Id: <20100811235459.364979969@clark.site>
+Message-Id: <20100811235459.189944864@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:23 -0700
+Date: Wed, 11 Aug 2010 16:54:21 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [042/111] drm/i915: Use RSEN instead of HTPLG for tfp410 monitor detection.
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [040/111] xen: Do not suspend IPI IRQs.
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Müller <dave.mueller@gmx.ch>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit f458823b864c6def488f951a79986fa205aba4f1 upstream.
+commit 4877c737283813bdb4bebfa3168c1585f6e3a8ca upstream.
 
-Presence detection of a digital monitor seems not to be reliable using
-the HTPLG bit.
+In general the semantics of IPIs are that they are are expected to
+continue functioning after dpm_suspend_noirq().
 
-Dave Müller <dave.mueller@gmx.ch>
+Specifically I have seen a deadlock between the callfunc IPI and the
+stop machine used by xen's do_suspend() routine. If one CPU has already
+called dpm_suspend_noirq() then there is a window where it can be sent
+a callfunc IPI before all the other CPUs have entered stop_cpu().
+
+If this happens then the first CPU ends up spinning in stop_cpu()
+waiting for the other to rendezvous in state STOPMACHINE_PREPARE while
+the other is spinning in csd_lock_wait().
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+LKML-Reference: <1280398595-29708-4-git-send-email-ian.campbell@citrix.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/gpu/drm/i915/dvo_tfp410.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/xen/events.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/dvo_tfp410.c
-+++ b/drivers/gpu/drm/i915/dvo_tfp410.c
-@@ -214,7 +214,7 @@ static enum drm_connector_status tfp410_
- 	uint8_t ctl2;
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -535,6 +535,7 @@ int bind_ipi_to_irqhandler(enum ipi_vect
+ 	if (irq < 0)
+ 		return irq;
  
- 	if (tfp410_readb(dvo, TFP410_CTL_2, &ctl2)) {
--		if (ctl2 & TFP410_CTL_2_HTPLG)
-+		if (ctl2 & TFP410_CTL_2_RSEN)
- 			ret = connector_status_connected;
- 		else
- 			ret = connector_status_disconnected;
++	irqflags |= IRQF_NO_SUSPEND;
+ 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
+ 	if (retval != 0) {
+ 		unbind_from_irq(irq);
 
 
