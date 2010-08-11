@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab0HKAoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 20:44:24 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:53038 "EHLO e2.ny.us.ibm.com"
+	id S1758272Ab0HKApH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 20:45:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45600 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720Ab0HKAoW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 20:44:22 -0400
-Date: Tue, 10 Aug 2010 17:44:15 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Ted Ts'o" <tytso@mit.edu>,
-        Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, pavel@ucw.cz, florian@mickler.org, rjw@sisk.pl,
-        stern@rowland.harvard.edu, peterz@infradead.org, tglx@linutronix.de,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100811004415.GI2379@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100808155719.GB3635@thunk.org>
- <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
- <20100808213821.GD3635@thunk.org>
- <20100809112453.77210acc@lxorguk.ukuu.org.uk>
- <20100809181638.GI3026@linux.vnet.ibm.com>
- <20100809201822.441905f7@lxorguk.ukuu.org.uk>
- <20100810044541.GA2817@linux.vnet.ibm.com>
- <20100810093849.138e2318@lxorguk.ukuu.org.uk>
- <20100810141107.GA12873@srcf.ucam.org>
- <20100810154405.475c2669@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100810154405.475c2669@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751720Ab0HKApF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 20:45:05 -0400
+Date: Wed, 11 Aug 2010 10:45:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Christoph Hellwig <hch@lst.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Van Hensbergen <ericvh@gmail.com>,
+        Sripathi Kodi <sripathik@in.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-next@vger.kernel.org
+Subject: Re: remove inode_setattr
+Message-Id: <20100811104503.4082f68f.sfr@canb.auug.org.au>
+In-Reply-To: <20100811101751.1afdded8.sfr@canb.auug.org.au>
+References: <201008101859.o7AIx9BM026915@hera.kernel.org>
+	<20100810155011.b9657102.akpm@linux-foundation.org>
+	<20100811101751.1afdded8.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 03:44:05PM +0100, Alan Cox wrote:
-> Which reminds me. I forgot a very important way that user space signals
-> the kernel as to its intents.
-> 
-> The kernel can see whether code is sleeping by choice or sleeping because
-> someone blocked it (eg a page fault). The kernel also knows a lot about
-> the event being waited for (much more so in -rt than base).
-> 
-> We don't capture all of that info but it seems it would advance progress
-> in the right direction to do so better.
+Hi All,
 
-As one approach of many, this makes a great deal of sense.
+On Wed, 11 Aug 2010 10:17:51 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> Reported by me June 22 with a fixup, reminded Aug 4 and yesterday ... it
+> needed to be fixed up by Linus when he merged Al's tree ...
 
-							Thanx, Paul
+I will apply this fix patch to linux-next today ... Al, Christoph, this
+is the fix I sent out earlier.  Is it correct enough for Linus to apply
+it?
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 22 Jun 2010 11:15:01 +1000
+Subject: [PATCH] v9fs: fixup for inode_setattr being removed
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/9p/vfs_inode.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index f027a42..2ec7bfa 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1052,10 +1052,19 @@ static int v9fs_vfs_setattr_dotl(struct dentry *dentry, struct iattr *iattr)
+ 		return PTR_ERR(fid);
+ 
+ 	retval = p9_client_setattr(fid, &p9attr);
+-	if (retval >= 0)
+-		retval = inode_setattr(dentry->d_inode, iattr);
++	if (retval < 0)
++		return retval;
+ 
+-	return retval;
++	if ((iattr->ia_valid & ATTR_SIZE) &&
++	    iattr->ia_size != i_size_read(dentry->d_inode)) {
++		retval = vmtruncate(dentry->d_inode, iattr->ia_size);
++		if (retval)
++			return retval;
++	}
++
++	setattr_copy(dentry->d_inode, iattr);
++	mark_inode_dirty(dentry->d_inode);
++	return 0;
+ }
+ 
+ /**
+-- 
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
