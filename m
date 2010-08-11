@@ -1,81 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab0HKBJj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 21:09:39 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49510 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756236Ab0HKBJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 21:09:38 -0400
-Date: Wed, 11 Aug 2010 11:09:33 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Abhilash Kesavan <a.kesavan@samsung.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Naveen Krishna Ch <ch.naveen@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the samsung tree with Linus' and the
- arm tree
-Message-Id: <20100811110933.de205605.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758282Ab0HKBKs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 21:10:48 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41073 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757871Ab0HKBKp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 21:10:45 -0400
+Date: Tue, 10 Aug 2010 18:10:33 -0700
+From: Matt Helsley <matthltc@us.ibm.com>
+To: Tomasz Buchert <tomasz.buchert@inria.fr>
+Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
+Message-ID: <20100811011033.GF2927@count0.beaverton.ibm.com>
+References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
+> Writing 'FROZEN' to freezer.state file does not
+> forbid the task to be moved away from its cgroup
+> (for a very short time). Nevertheless the moved task
+> can become frozen OUTSIDE its cgroup which puts
+> discussed task in a permanent 'D' state.
 
-Today's linux-next merge of the samsung tree got a conflict in
-arch/arm/mach-s3c64xx/mach-smdk6410.c between commits
-85b14a3fc4036473ec6776d8e5d92c022155d581 ("ARM: S3C64XX: Add Touchscreen
-support for S3C64XX") from Linus' tree,
-290d0983b86f6243beffaa3ddb02c14adc30f02a ("ARM: S3C64XX: Add keypad device to the SMDK6410 board"), 0ab0b6d226caa4a0268ecbce76a7376c3f40ee6b ("ARM: S3C64XX: Add support for Compact Flash driver on SMDK6410") from the arm tree and
-commit 96e9d908a7b5b5be774ba26aca0d6633e7c97f63 ("ARM: SMDK6410: Register
-AC97 controller") from the samsung tree.
+SUMMARY (for supporting info see the "DETAILS" heading below)
 
-I fixed it up (see below) and can carry the fix for a while.
--- 
+I can't reproduce this.
+
+My preliminary conclusion is that your testcase doesn't really reproduce
+what you described. Instead, your testcase prints an incorrect message which
+could easily lead the person running it to the wrong conclusion.
+
+DETAILS
+
+I tried it with and without the cpuset portions of the testcase on a dual
+core bare metal system with a 2.6.31-derived distro kernel. Since it
+*should* be obeying the cpuset portions of the testcase I don't think the
+fact that it's dual-core should make a difference.
+
+I also tried with a 2.6.34-rc5 kernel in a single-cpu kvm on a different
+distro (but on the same physical hardware). I also tried it with and without
+the sleep(1) in the child's for(;;) loop in case the cpu load somehow enabled
+me to trigger the race.
+
+I used the following bash snippet to run the testcase variations and did not
+observe any tasks in the D state:
+
+mount -t cgroup -o freezer,cpuset none /cg
+while /bin/true ; do
+	./bug /cg
+	ps -C bug -o state= | grep D && break
+done
+
+If there is a race then I should be able to run that ps line anytime afterwards
+to see the stuck task.
+
+Note that the test message:
+
+	printf("Succesfully moved frozen task!\n");
+
+is bogus. In fact there is no guarantee the task or cgroup is frozen at that
+point in the testcase. This should be apparent from a careful reading of
+Documentation/cgroups/freezer-subsystem.txt, especially:
+
+	This is the basic mechanism which should do the right thing for user space task
+	in a simple scenario.
+
+	It's important to note that freezing can be incomplete. In that case we return
+	EBUSY. This means that some tasks in the cgroup are busy doing something that
+	prevents us from completely freezing the cgroup at this time. After EBUSY,
+	the cgroup will remain partially frozen -- reflected by freezer.state reporting
+	"FREEZING" when read. The state will remain "FREEZING" until one of these
+	things happens:
+
+		1) Userspace cancels the freezing operation by writing "THAWED" to
+			the freezer.state file
+		2) Userspace retries the freezing operation by writing "FROZEN" to
+			the freezer.state file (writing "FREEZING" is not legal
+			and returns EINVAL)
+		3) The tasks that blocked the cgroup from entering the "FROZEN"
+			state disappear from the cgroup's set of tasks.
+
+So simply writing FROZEN to freezer.state is necessary to initiate freezing
+but insufficient to assert that the task and/or cgroup is frozen.
+That's why the FREEZING state exists. It's intentionally not specified when/why
+we can't immediately enter FROZEN. Thus userspace must read the freezer.state
+to determine if the current state matches the requested/expected state.
+
+This is why I have the extra ps step in the script above -- to determine
+if the task is actually in D. I should also check that the cgroup it belongs
+to is THAWED. However while attempting to reproduce your report that hasn't
+been necessary -- none of the tasks have even entered the D state.
+
+Which brings us to the final portion of this analysis: Why isn't anything
+entering the D state?
+
+The behavior I have been able to reproduce and which is not a bug is
+moving the task immediately after writing FROZEN to freezer.state. We don't
+know the state of the task or cgroup at that time (in this testcase) so
+this is acceptable. I've even made a sequence of modifications to your
+testcase and run it after each modification to bring it successively more
+in line with correct use of the cgroup freezer. I still was unable to
+reproduce your report.
+
+So I'm fairly confident there is no bug. I say "fairly" because there may
+be some aspect of your system that I am not reproducing. At this point it
+would be great if you could provide more details so I can more thoroughly
+attempt to recreate your conditions.
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+	-Matt Helsley
 
-diff --cc arch/arm/mach-s3c64xx/mach-smdk6410.c
-index b5d7861,6878fbd..0000000
---- a/arch/arm/mach-s3c64xx/mach-smdk6410.c
-+++ b/arch/arm/mach-s3c64xx/mach-smdk6410.c
-@@@ -66,9 -64,7 +66,10 @@@
-  #include <plat/clock.h>
-  #include <plat/devs.h>
-  #include <plat/cpu.h>
- +#include <plat/adc.h>
- +#include <plat/ts.h>
- +#include <plat/keypad.h>
-+ #include <plat/audio.h>
-  
-  #define UCON S3C2410_UCON_DEFAULT | S3C2410_UCON_UCLK
-  #define ULCON S3C2410_LCON_CS8 | S3C2410_LCON_PNONE | S3C2410_LCON_STOPB
-@@@ -282,8 -255,8 +283,9 @@@ static struct platform_device *smdk6410
-  	&s3c_device_fb,
-  	&s3c_device_ohci,
-  	&s3c_device_usb_hsotg,
-+ 	&s3c64xx_device_ac97,
-  	&s3c64xx_device_iisv4,
- +	&samsung_device_keypad,
-  
-  #ifdef CONFIG_REGULATOR
-  	&smdk6410_b_pwr_5v,
-@@@ -696,8 -654,9 +698,11 @@@ static void __init smdk6410_machine_ini
-  	i2c_register_board_info(0, i2c_devs0, ARRAY_SIZE(i2c_devs0));
-  	i2c_register_board_info(1, i2c_devs1, ARRAY_SIZE(i2c_devs1));
-  
- +	s3c_ide_set_platdata(&smdk6410_ide_pdata);
- +
-+ 	/* Board defualt with CFG2.1 off */
-+ 	s3c64xx_ac97_setup_gpio(S3C64XX_AC97_GPD);
-+ 
-  	platform_add_devices(smdk6410_devices, ARRAY_SIZE(smdk6410_devices));
-  }
-  
+> 
+> This patch forbids migration of either FROZEN
+> or FREEZING tasks.
+> 
+> This behavior was observed and easily reproduced on
+> a single core laptop. Program and instructions how
+> to reproduce the bug can be fetched from:
+> http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
+> 
+> Signed-off-by: Tomasz Buchert <tomasz.buchert@inria.fr>
+> ---
+>  kernel/cgroup_freezer.c |   10 ++++++++--
+>  1 files changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/cgroup_freezer.c b/kernel/cgroup_freezer.c
+> index ce71ed5..e49aa8c 100644
+> --- a/kernel/cgroup_freezer.c
+> +++ b/kernel/cgroup_freezer.c
+> @@ -161,6 +161,12 @@ static bool is_task_frozen_enough(struct task_struct *task)
+>  		(task_is_stopped_or_traced(task) && freezing(task));
+>  }
+> 
+> +/* Task is in a state that forbids any cgroup migration. */
+> +static bool is_task_pinned_down(struct task_struct *task)
+> +{
+> +	return freezing(task) || frozen(task);
+> +}
+> +
+>  /*
+>   * The call to cgroup_lock() in the freezer.state write method prevents
+>   * a write to that file racing against an attach, and hence the
+> @@ -179,7 +185,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+>  	 * frozen, so it's sufficient to check the latter condition.
+>  	 */
+> 
+> -	if (is_task_frozen_enough(task))
+> +	if (is_task_pinned_down(task))
+>  		return -EBUSY;
+> 
+>  	freezer = cgroup_freezer(new_cgroup);
+> @@ -191,7 +197,7 @@ static int freezer_can_attach(struct cgroup_subsys *ss,
+> 
+>  		rcu_read_lock();
+>  		list_for_each_entry_rcu(c, &task->thread_group, thread_group) {
+> -			if (is_task_frozen_enough(c)) {
+> +			if (is_task_pinned_down(c)) {
+>  				rcu_read_unlock();
+>  				return -EBUSY;
+>  			}
+> -- 
+> 1.6.3.3
+> 
+> _______________________________________________
+> Containers mailing list
+> Containers@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/containers
