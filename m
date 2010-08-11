@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab0HKOfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:35:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:2384 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752648Ab0HKOfq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:35:46 -0400
-Subject: Re: [PATCH] DRM: Replace kmalloc/memset combos with kzalloc
-From: Joe Perches <joe@perches.com>
-To: dave@gnu.org
-Cc: Dave Airlie <airlied@redhat.com>, Dave Airlie <airlied@linux.ie>,
-        eric@anholt.net, dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281532732.2067.11.camel@cowboy>
-References: <1281532732.2067.11.camel@cowboy>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Aug 2010 07:35:44 -0700
-Message-ID: <1281537344.3976.32.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1753275Ab0HKOlu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:41:50 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:10584 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab0HKOlt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 10:41:49 -0400
+Message-ID: <4C62B6A9.8090709@tilera.com>
+Date: Wed, 11 Aug 2010 10:41:45 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.11) Gecko/20100711 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tile: remove unused ISA_DMA_THRESHOLD define
+References: <20100811111000J.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100811111000J.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-11 at 09:18 -0400, Davidlohr Bueso wrote:
-> memory allocation in drm_bufs.c is followed by initializing the memory with 0.
-> 
-> Replace the use of kmalloc+memset with kzalloc.
+On 8/10/2010 10:11 PM, FUJITA Tomonori wrote:
+> No need to define ISA_DMA_THRESHOLD
+>
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> ---
+>  arch/tile/include/asm/scatterlist.h |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/tile/include/asm/scatterlist.h b/arch/tile/include/asm/scatterlist.h
+> index c560424..ad8deec 100644
+> --- a/arch/tile/include/asm/scatterlist.h
+> +++ b/arch/tile/include/asm/scatterlist.h
+> @@ -15,8 +15,6 @@
+>  #ifndef _ASM_TILE_SCATTERLIST_H
+>  #define _ASM_TILE_SCATTERLIST_H
+>  
+> -#define ISA_DMA_THRESHOLD	(~0UL)
+> -
+>  #include <asm-generic/scatterlist.h>
+>  
+>  #endif /* _ASM_TILE_SCATTERLIST_H */
+>   
 
-Perhaps kzalloc's with a multiply could/should also be converted
-to kcalloc.
+Thanks, accepted (though I modified it to remove the comments and header
+guard too, so it's just a one-line forwarding #include file, to match
+other similar files in that directory).
 
-> +	entry->buflist = kzalloc(count * sizeof(*entry->buflist), GFP_KERNEL);
-
-	entry->buflist = kcalloc(count, sizeof(*entry->buflist), GFP_KERNEL);
-
-etc.
-
-> +	entry->buflist = kzalloc(count * sizeof(*entry->buflist), GFP_KERNEL);
-> +	entry->seglist = kzalloc(count * sizeof(*entry->seglist), GFP_KERNEL);
-> +	entry->buflist = kzalloc(count * sizeof(*entry->buflist),
-> +	entry->buflist = kzalloc(count * sizeof(*entry->buflist),
-
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
