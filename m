@@ -1,135 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab0HKIjP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 04:39:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48685 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932761Ab0HKIjI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 04:39:08 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 1/3] NFS: Use kernel DNS resolver [ver #2]
-To: smfrench@gmail.com, torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Bryan Schumaker <bjschuma@netapp.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 11 Aug 2010 09:37:53 +0100
-Message-ID: <20100811083753.19001.28878.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S932755Ab0HKImU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 04:42:20 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:47709 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932680Ab0HKImT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 04:42:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
+        b=lLTEkUgNZnjObsgA4a0cLlie1KqzBViAuhR0z9gtNKupOLQ08Z81TTKPZAryCct8LE
+         QlspsbAP3cQBdQLrI5JURoRnLbj2LTkEMeDFqAkFsOuXY/q9iPLk9ORlQiCqrYG/Gs5D
+         9saQca3LyalHoTa4okkDqoUm2kPMG6CR8h4A8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Reply-To: sedat.dilek@gmail.com
+Date: Wed, 11 Aug 2010 10:42:17 +0200
+Message-ID: <AANLkTi=XGjp3D4D_rP7QYM7YEMn_oHYxG9HQtaQc2i+X@mail.gmail.com>
+Subject: No patches on patchwork.kernel.org?
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan Schumaker <bjschuma@netapp.com>
+Hi,
 
-Use the kernel DNS resolver to translate hostnames to IP addresses.  Create a
-new config option to choose between the legacy DNS resolver and the new
-resolver.
+I love to follow LKML by looking at the patches on [1].
+It looks like only LKML list is only concerned.
+Is the service down?
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Kind Regards,
+- Sedat -
 
- fs/nfs/Kconfig       |   16 ++++++++++++++++
- fs/nfs/dns_resolve.c |   24 ++++++++++++++++++++++++
- fs/nfs/dns_resolve.h |   12 ++++++++++++
- 3 files changed, 52 insertions(+), 0 deletions(-)
-
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index cc1bb33..c5bbdca 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -100,3 +100,19 @@ config NFS_FSCACHE
- 	help
- 	  Say Y here if you want NFS data to be cached locally on disc through
- 	  the general filesystem cache manager
-+
-+config NFS_USE_LEGACY_DNS
-+	bool "Use the legacy NFS DNS resolver"
-+	depends on NFS_V4
-+	help
-+	  The kernel now provides a method for translating a host name into an
-+	  IP address.  Select Y here if you would rather use your own DNS
-+	  resolver script.
-+
-+	  If unsure, say N
-+
-+config NFS_USE_KERNEL_DNS
-+	bool
-+	depends on NFS_V4 && !NFS_USE_LEGACY_DNS
-+	select DNS_RESOLVER
-+	default y
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 76fd235..dba50a5 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -6,6 +6,29 @@
-  * Resolves DNS hostnames into valid ip addresses
-  */
- 
-+#ifdef CONFIG_NFS_USE_KERNEL_DNS
-+
-+#include <linux/sunrpc/clnt.h>
-+#include <linux/dns_resolver.h>
-+
-+ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
-+		struct sockaddr *sa, size_t salen)
-+{
-+	ssize_t ret;
-+	char *ip_addr = NULL;
-+	int ip_len;
-+
-+	ip_len = dns_query(NULL, name, namelen, NULL, &ip_addr, NULL);
-+	if (ip_len > 0)
-+		ret = rpc_pton(ip_addr, ip_len, sa, salen);
-+	else
-+		ret = -ESRCH;
-+	kfree(ip_addr);
-+	return ret;
-+}
-+
-+#else
-+
- #include <linux/hash.h>
- #include <linux/string.h>
- #include <linux/kmod.h>
-@@ -346,3 +369,4 @@ void nfs_dns_resolver_destroy(void)
- 	nfs_cache_unregister(&nfs_dns_resolve);
- }
- 
-+#endif
-diff --git a/fs/nfs/dns_resolve.h b/fs/nfs/dns_resolve.h
-index a3f0938..199bb55 100644
---- a/fs/nfs/dns_resolve.h
-+++ b/fs/nfs/dns_resolve.h
-@@ -6,8 +6,20 @@
- 
- #define NFS_DNS_HOSTNAME_MAXLEN	(128)
- 
-+
-+#ifdef CONFIG_NFS_USE_KERNEL_DNS
-+static inline int nfs_dns_resolver_init(void)
-+{
-+	return 0;
-+}
-+
-+static inline void nfs_dns_resolver_destroy(void)
-+{}
-+#else
- extern int nfs_dns_resolver_init(void);
- extern void nfs_dns_resolver_destroy(void);
-+#endif
-+
- extern ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
- 		struct sockaddr *sa, size_t salen);
- 
-
+[1] https://patchwork.kernel.org/project/LKML/list/
