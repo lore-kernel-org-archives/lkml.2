@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752363Ab0HKGhp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 02:37:45 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59553 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958Ab0HKGho (ORCPT
+	id S932648Ab0HKGzb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 02:55:31 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:55840 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932159Ab0HKGz3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 02:37:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=fpa1/OUqMP6umaIPDETvSibG3X/MSuMzGAwd0VWn3R/ESVJT76DFxNlc190Jsn3G+x
-         KxpFb0Mfz0RZ/toPAlQAGgEzWS/caN3MgOGBWqYVRDfmIOhgcrZ2ilUYPXafIEOQbslC
-         AuUnInj4mV2B4/UpSssv2lOS0Lq+Zg39U09l0=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: add a comment to __pa_symbol
-Date: Wed, 11 Aug 2010 15:37:41 +0900
-Message-Id: <1281508661-29507-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20100810070555.GA16638@elte.hu>
-References: <20100810070555.GA16638@elte.hu>
+	Wed, 11 Aug 2010 02:55:29 -0400
+Subject: Re: [RFC PATCH v9 00/16] Provide a zero-copy method on KVM
+ virtio-net.
+From: Shirley Ma <mashirle@us.ibm.com>
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+In-Reply-To: <1281506460.3391.42.camel@localhost.localdomain>
+References: <1281086624-5765-1-git-send-email-xiaohui.xin@intel.com>
+	 <1281489804.3391.23.camel@localhost.localdomain>
+	 <1281490993.3391.25.camel@localhost.localdomain>
+	 <1281506460.3391.42.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 10 Aug 2010 23:55:04 -0700
+Message-ID: <1281509704.3391.45.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until all supported versions of gcc recognize -fno-strict-overflow, we should
-keep the RELOC_HIDE magic on __pa_symbol(). Comment it.
+On Tue, 2010-08-10 at 23:01 -0700, Shirley Ma wrote:
+> On Tue, 2010-08-10 at 18:43 -0700, Shirley Ma wrote:
+> > > Also I found some vhost performance regression on the new
+> > > kernel with tuning. I used to get 9.4Gb/s, now I couldn't get it. 
+> > 
+> > I forgot to mention the kernel I used 2.6.36 one. And I found the
+> > native
+> > host BW is limited to 8.0Gb/s, so the regression might come from the
+> > device driver not vhost.
+> 
+> Something is very interesting, when binding ixgbe interrupts to cpu1,
+> and running netperf/netserver on cpu0, the native host to host
+> performance is still around 8.0Gb/s, however, the macvtap zero copy
+> result is 9.0Gb/s.
+> 
+> root@localhost ~]# netperf -H 192.168.10.74 -c -C -l60 -T0,0 -- -m 64K
+> TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.10.74 (192.168..
+> 10.74) port 0 AF_INET : cpu bind
+> Recv   Send    Send                          Utilization       Service Demand
+> Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+> Size   Size    Size     Time     Throughput  local    remote   local   remote
+> bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB   us/KB
+> 
+>  87380  16384  65536    60.00      9013.59   53.01    8.21     0.963   0.597
+> 
+> Below is perf top output:
+> 
+>               578.00  6.5% copy_user_generic_string   
+>               381.00  4.3% vmx_vcpu_run                
+>               250.00  2.8% schedule                    
+>               207.00  2.3% vhost_get_vq_desc           
+>               204.00  2.3% _raw_spin_lock_irqsave      
+>               197.00  2.2% translate_desc              
+>               193.00  2.2% memcpy_fromiovec            
+>               162.00  1.8% gup_pte_range   
+> 
+> We can compare your results with mine to see any difference.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Suggested-by: Ingo Molnar <mingo@elte.hu>
+When binding vhost thread to cpu3, qemu I/O thread to cpu2, macvtap zero
+copy patch can get 9.4Gb/s. 
 
----
+TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.10.74 (192.168.10.74) port 0 AF_INET : cpu bind
+Recv   Send    Send                          Utilization       Service Demand
+Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
+Size   Size    Size     Time     Throughput  local    remote   local   remote
+bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB   us/KB
 
- I hope I'm doing right. :-)
+ 87380  16384  65536    60.00      9408.19   55.69    8.45     0.970   0.589
 
- arch/x86/include/asm/page.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/page.h b/arch/x86/include/asm/page.h
-index 625c3f0..06cb6f3 100644
---- a/arch/x86/include/asm/page.h
-+++ b/arch/x86/include/asm/page.h
-@@ -37,6 +37,13 @@ static inline void copy_user_page(void *to, void *from, unsigned long vaddr,
- #define __pa_nodebug(x)	__phys_addr_nodebug((unsigned long)(x))
- /* __pa_symbol should be used for C visible symbols.
-    This seems to be the official gcc blessed way to do such arithmetic. */
-+/*
-+ * we need __phys_reloc_hide() here because gcc may assume that there is no
-+ * overflow during __pa() calculation and can optimize it unexpectedly.
-+ * Newer versions of gcc provide -fno-strict-overflow switch to handle this
-+ * case properly. Once all supported versions of gcc understand it, we can
-+ * remove this Voodoo magic stuff.
-+ */
- #define __pa_symbol(x)	__pa(__phys_reloc_hide((unsigned long)(x)))
- 
- #define __va(x)			((void *)((unsigned long)(x)+PAGE_OFFSET))
--- 
-1.7.0.4
+Shirley
 
