@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646Ab0HKXuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:50:08 -0400
-Received: from kroah.org ([198.145.64.141]:57545 "EHLO coco.kroah.org"
+	id S1758682Ab0HKXuO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:50:14 -0400
+Received: from kroah.org ([198.145.64.141]:57561 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758479Ab0HKXuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:50:02 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:25 2010
-Message-Id: <20100811234625.718070734@clark.site>
+	id S1758498Ab0HKXuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:50:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:26 2010
+Message-Id: <20100811234625.918153689@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:45:48 -0700
+Date: Wed, 11 Aug 2010 16:45:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [09/11] xen: drop xen_sched_clock in favour of using plain wallclock time
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Ben Hutchings <bhutchings@solarflare.com>
+Subject: [11/11] mm/backing-dev.c: remove recently-added WARN_ON()
 In-Reply-To: <20100811234809.GA676@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,124 +29,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-commit 8a22b9996b001c88f2bfb54c6de6a05fc39e177a upstream.
+commit 69fc208be5b7eb18d22d1eca185b201400fd5ffc upstream.
 
-xen_sched_clock only counts unstolen time.  In principle this should
-be useful to the Linux scheduler so that it knows how much time a process
-actually consumed.  But in practice this doesn't work very well as the
-scheduler expects the sched_clock time to be synchronized between
-cpus.  It also uses sched_clock to measure the time a task spends
-sleeping, in which case "unstolen time" isn't meaningful.
+On second thoughts, this is just going to disturb people while telling us
+things which we already knew.
 
-So just use plain xen_clocksource_read to return wallclock nanoseconds
-for sched_clock.
-
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ben Hutchings <bhutchings@solarflare.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/xen/enlighten.c |    2 +-
- arch/x86/xen/time.c      |   43 +------------------------------------------
- arch/x86/xen/xen-ops.h   |    3 ++-
- 3 files changed, 4 insertions(+), 44 deletions(-)
+ mm/backing-dev.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1179,7 +1179,7 @@ static const struct pv_time_ops xen_time
- 	.set_wallclock = xen_set_wallclock,
- 	.get_wallclock = xen_get_wallclock,
- 	.get_tsc_khz = xen_tsc_khz,
--	.sched_clock = xen_sched_clock,
-+	.sched_clock = xen_clocksource_read,
- };
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -176,7 +176,7 @@ int bdi_register(struct backing_dev_info
+ 	int ret = 0;
+ 	struct device *dev;
  
- static const struct pv_cpu_ops xen_cpu_ops __initdata = {
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -30,8 +30,6 @@
- #define TIMER_SLOP	100000
- #define NS_PER_TICK	(1000000000LL / HZ)
+-	if (WARN_ON(bdi->dev))
++	if (bdi->dev)	/* The driver needs to use separate queues per device */
+ 		goto exit;
  
--static cycle_t xen_clocksource_read(void);
--
- /* runstate info updated by Xen */
- static DEFINE_PER_CPU(struct vcpu_runstate_info, runstate);
- 
-@@ -158,45 +156,6 @@ static void do_stolen_accounting(void)
- 	account_steal_time(idle_task(smp_processor_id()), ticks);
- }
- 
--/*
-- * Xen sched_clock implementation.  Returns the number of unstolen
-- * nanoseconds, which is nanoseconds the VCPU spent in RUNNING+BLOCKED
-- * states.
-- */
--unsigned long long xen_sched_clock(void)
--{
--	struct vcpu_runstate_info state;
--	cycle_t now;
--	u64 ret;
--	s64 offset;
--
--	/*
--	 * Ideally sched_clock should be called on a per-cpu basis
--	 * anyway, so preempt should already be disabled, but that's
--	 * not current practice at the moment.
--	 */
--	preempt_disable();
--
--	now = xen_clocksource_read();
--
--	get_runstate_snapshot(&state);
--
--	WARN_ON(state.state != RUNSTATE_running);
--
--	offset = now - state.state_entry_time;
--	if (offset < 0)
--		offset = 0;
--
--	ret = state.time[RUNSTATE_blocked] +
--		state.time[RUNSTATE_running] +
--		offset;
--
--	preempt_enable();
--
--	return ret;
--}
--
--
- /* Get the TSC speed from Xen */
- unsigned long xen_tsc_khz(void)
- {
-@@ -213,7 +172,7 @@ unsigned long xen_tsc_khz(void)
- 	return xen_khz;
- }
- 
--static cycle_t xen_clocksource_read(void)
-+cycle_t xen_clocksource_read(void)
- {
-         struct pvclock_vcpu_time_info *src;
- 	cycle_t ret;
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/init.h>
- #include <linux/irqreturn.h>
-+#include <linux/clocksource.h>
- #include <xen/xen-ops.h>
- 
- /* These are code, but not functions.  Defined in entry.S */
-@@ -37,7 +38,7 @@ unsigned long xen_tsc_khz(void);
- void __init xen_time_init(void);
- unsigned long xen_get_wallclock(void);
- int xen_set_wallclock(unsigned long time);
--unsigned long long xen_sched_clock(void);
-+cycle_t xen_clocksource_read(void);
- 
- irqreturn_t xen_debug_interrupt(int irq, void *dev_id);
- 
+ 	va_start(args, fmt);
 
 
