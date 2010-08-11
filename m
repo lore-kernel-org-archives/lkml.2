@@ -1,52 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab0HKPTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 11:19:21 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:34970 "EHLO e9.ny.us.ibm.com"
+	id S1753685Ab0HKPbm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 11:31:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44434 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab0HKPTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 11:19:20 -0400
-Subject: Re: [PATCH 0/8] v5 De-couple sysfs memory directories from memory
- sections
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg KH <greg@kroah.com>
-In-Reply-To: <4C60407C.2080608@austin.ibm.com>
-References: <4C60407C.2080608@austin.ibm.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Wed, 11 Aug 2010 08:18:52 -0700
-Message-ID: <1281539932.6988.39.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1753007Ab0HKPbl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 11:31:41 -0400
+Date: Wed, 11 Aug 2010 08:21:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: Davidlohr Bueso <dave@gnu.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, kay.sievers@vrfy.org
+Subject: Re: [PATCH] kernel/ksysfs: use snprintf for sysfs show
+Message-ID: <20100811152155.GC9180@suse.de>
+References: <1281534250.2067.14.camel@cowboy>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281534250.2067.14.camel@cowboy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-09 at 12:53 -0500, Nathan Fontenot wrote:
-> This set of patches de-couples the idea that there is a single
-> directory in sysfs for each memory section.  The intent of the
-> patches is to reduce the number of sysfs directories created to
-> resolve a boot-time performance issue.  On very large systems
-> boot time are getting very long (as seen on powerpc hardware)
-> due to the enormous number of sysfs directories being created.
-> On a system with 1 TB of memory we create ~63,000 directories.
-> For even larger systems boot times are being measured in hours. 
+On Wed, Aug 11, 2010 at 09:44:10AM -0400, Davidlohr Bueso wrote:
+> Use snprintf(buf, PAGE_SIZE, ...) instead of sprintf for sysfs show
+> methods.  This is suggested in Documentation/filesystems/sysfs.txt
 
-Hi Nathan,
+As Al pointed out, none of these will ever overflow so it makes no sense
+to change them.
 
-The set is looking pretty good to me.  We _might_ want to up the ante in
-the future and allow it to be even more dynamic than this, but this
-looks like a good start to me.
+thanks,
 
-BTW, have you taken a look at what the hotplug events look like if only
-a single section (not filling up a whole block) is added?  
-
-Feel free to add my:
-
-Acked-by: Dave Hansen <dave@linux.vnet.ibm.com>
-
--- Dave
-
+greg k-h
