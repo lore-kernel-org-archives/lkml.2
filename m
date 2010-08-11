@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217Ab0HKKpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:45:08 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:4696 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750714Ab0HKKpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:45:06 -0400
-Message-ID: <000801cb3942$41d0f870$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Robert Schwebel" <r.schwebel@pengutronix.de>
-Cc: <meego-dev@meego.com>, "LKML" <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, <yong.y.wang@intel.com>,
-        <andrew.chih.howe.khor@intel.com>, <arjan@linux.intel.com>,
-        <gregkh@suse.de>, "Richard Cochran" <richard.cochran@omicron.at>
-References: <4C612AA4.5040100@dsn.okisemi.com> <20100811090809.GH30096@pengutronix.de>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to2.6.35
-Date: Wed, 11 Aug 2010 19:45:00 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1.5
+	id S1751243Ab0HKKtL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:49:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:57567 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750838Ab0HKKtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 06:49:09 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Dmitry Torokhov <dtor@vmware.com>
+Subject: Re: [PATCH 1/2] param: allow omitting set() methods for truly read-only params
+Date: Wed, 11 Aug 2010 20:19:01 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Len Brown <lenb@kernel.org>
+References: <1281466725-22549-1-git-send-email-dtor@vmware.com> <201008111109.30433.rusty@rustcorp.com.au> <6889404B-C389-4421-BDD7-A042DAAB064A@vmware.com>
+In-Reply-To: <6889404B-C389-4421-BDD7-A042DAAB064A@vmware.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008112019.03089.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert
+On Wed, 11 Aug 2010 05:05:51 pm Dmitry Torokhov wrote:
+> On Aug 10, 2010, at 6:39 PM, "Rusty Russell" <rusty@rustcorp.com.au> wrote:
+> > On Wed, 11 Aug 2010 04:28:44 am Dmitry Torokhov wrote:
+> >> Certain "parameters", such as acpica version and upcoming VMware  
+> >> Balloon version, are need to be purely read-only. 
+> >
+> > Your followup patch uses this for version, but the version is already
+> > in /sys/module/vmware_balloon/version as is standard with modules, no?
+> 
+> That version attribute is not present if the driver is built-in, only  
+> parameters are visible in both cases.
 
-My specified CC of IEEE1588 patch e-mail is not enough.
-I will re-submit the patch again.
+You know what I'm going to say now then, don't you? :)
 
-Thanks, Ohtake.
------ Original Message ----- 
-From: "Robert Schwebel" <r.schwebel@pengutronix.de>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; <qi.wang@intel.com>; <yong.y.wang@intel.com>;
-<andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>; <gregkh@suse.de>; "Richard Cochran"
-<richard.cochran@omicron.at>
-Sent: Wednesday, August 11, 2010 6:08 PM
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to2.6.35
-
-
-> On Tue, Aug 10, 2010 at 07:32:04PM +0900, Masayuki Ohtak wrote:
-> > IEEE1588 driver of Topcliff PCH
->
-> Are you aware of Richard Cochran's 1588 support patches? I'm not sure
-> about the integration status, but Richard (set on Cc:) can surely say
-> more.
->
-> rsc
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
->
-
-
+Thanks,
+Rusty.
