@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758838Ab0HKX5w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:52 -0400
-Received: from kroah.org ([198.145.64.141]:40092 "EHLO coco.kroah.org"
+	id S1758899Ab0HLAmB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:42:01 -0400
+Received: from kroah.org ([198.145.64.141]:40125 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758790Ab0HKX5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:57 2010
-Message-Id: <20100811235457.320244899@clark.site>
+	id S1758840Ab0HKX5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:53 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
+Message-Id: <20100811235457.932051889@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:00 -0700
+Date: Wed, 11 Aug 2010 16:54:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Subject: [019/111] bio, fs: update RWA_MASK, READA and SWRITE to match the corresponding BIO_RW_* bits
+        John Rogers <jgrogers@gmail.com>
+Subject: [026/111] USB: serial: enabling support for Segway RMP in ftdi_sio
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,54 +25,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: John G. Rogers <jgrogers@gmail.com>
 
-commit aca27ba9618276dd2f777bcd5a1419589ccf1ca8 upstream.
+commit afad19648f70c6493193e0a774bd754b7790b4a0 upstream.
 
-Commit a82afdf (block: use the same failfast bits for bio and request)
-moved BIO_RW_* bits around such that they match up with REQ_* bits.
-Unfortunately, fs.h hard coded RW_MASK, RWA_MASK, READ, WRITE, READA
-and SWRITE as 0, 1, 2 and 3, and expected them to match with BIO_RW_*
-bits.  READ/WRITE didn't change but BIO_RW_AHEAD was moved to bit 4
-instead of bit 1, breaking RWA_MASK, READA and SWRITE.
+I have added the ProductID=0xe729 VendorID=FTDI_VID=0x0403 which will
+enable support for the Segway Robotic Mobility Platform (RMP200) in the
+ftdi_sio kernel module.  Currently, users of the Segway RMP200 must use
+a RUN+="/sbin/modprobe -q ftdi-sio product=0xe729 vendor=0x0403 in a
+udev rule to get the ftdi_sio module to handle the usb interface and
+mount it on /dev/ttyXXX.  This is not a good solution because some users
+will have multiple USB to Serial converters which will use the ftdi_sio
+module.
 
-This patch updates RWA_MASK, READA and SWRITE such that they match the
-BIO_RW_* bits again.  A follow up patch will update the definitions to
-directly use BIO_RW_* bits so that this kind of breakage won't happen
-again.
-
-Neil also spotted missing RWA_MASK conversion.
-
-Stable: The offending commit a82afdf was released with v2.6.32, so
-this patch should be applied to all kernels since then but it must
-_NOT_ be applied to kernels earlier than that.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-and-bisected-by: Vladislav Bolkhovitin <vst@vlnb.net>
-Root-caused-by: Neil Brown <neilb@suse.de>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+Signed-off-by: John Rogers <jgrogers@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/fs.h |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 6 insertions(+)
 
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -145,11 +145,11 @@ struct inodes_stat_t {
-  *
-  */
- #define RW_MASK		1
--#define RWA_MASK	2
-+#define RWA_MASK		16
- #define READ 0
- #define WRITE 1
--#define READA 2		/* read-ahead  - don't block if no resources */
--#define SWRITE 3	/* for ll_rw_block() - wait for buffer lock */
-+#define READA			16 /* readahead - don't block if no resources */
-+#define SWRITE			17 /* for ll_rw_block(), wait for buffer lock */
- #define READ_SYNC	(READ | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG))
- #define READ_META	(READ | (1 << BIO_RW_META))
- #define WRITE_SYNC_PLUG	(WRITE | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_NOIDLE))
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -752,6 +752,7 @@ static struct usb_device_id id_table_com
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
+ 	{ USB_DEVICE(FTDI_VID, XVERVE_SIGNALYZER_SH4_PID),
+ 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
++	{ USB_DEVICE(FTDI_VID, SEGWAY_RMP200_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1039,3 +1039,8 @@
+ #define XVERVE_SIGNALYZER_SH2_PID	0xBCA2
+ #define XVERVE_SIGNALYZER_SH4_PID	0xBCA4
+ 
++/*
++ * Segway Robotic Mobility Platform USB interface (using VID 0x0403)
++ * Submitted by John G. Rogers
++ */
++#define SEGWAY_RMP200_PID	0xe729
 
 
