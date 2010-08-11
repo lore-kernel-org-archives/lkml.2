@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab0HKX5Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:25 -0400
-Received: from kroah.org ([198.145.64.141]:39995 "EHLO coco.kroah.org"
+	id S1758718Ab0HKX5c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:57:32 -0400
+Received: from kroah.org ([198.145.64.141]:40009 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758521Ab0HKX5X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:23 -0400
+	id S1758673Ab0HKX5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:25 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:55 2010
-Message-Id: <20100811235455.701557457@clark.site>
+Message-Id: <20100811235455.886413665@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:42 -0700
+Date: Wed, 11 Aug 2010 16:53:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [001/111] ata_piix: fix locking around SIDPR access
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Wim Van Sebroeck <wim@iguana.be>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: [003/111] nvram: Fix write beyond end condition; prove to gcc copy is safe
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,77 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: H. Peter Anvin <hpa@zytor.com>
 
-commit 213373cf974fe69e78ec894b07f45ae2f5a3a078 upstream.
+commit a01c7800420d2c294ca403988488a635d4087a6d upstream.
 
-SIDPR window registers are shared across ports and as each access is
-done in two steps, accesses to different ports under EH may race.
-This primarily is caused by incorrect host locking in EH context and
-should be fixed by defining locking requirements for each EH operation
-which can be used during EH and enforcing them but for now work around
-the problem by adding a dedicated SIDPR lock and grabbing it for each
-SIDPR access.
+In nvram_write, first of all, correctly handle the case where the file
+pointer is already beyond the end; we should return EOF in that case.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Mark Knecht <markknecht@gmail.com>
-Reported-by: Paul Check <paul@thechecks.ca>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Second, make the logic a bit more explicit so that gcc can statically
+prove that the copy_from_user() is safe.  Once the condition of the
+beyond-end filepointer is eliminated, the copy is safe but gcc can't
+prove it, causing build failures for i386 allyesconfig.
+
+Third, eliminate the entirely superfluous variable "len", and just use
+the passed-in variable "count" instead.
+
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wim Van Sebroeck <wim@iguana.be>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <tip-*@git.kernel.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/char/nvram.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -157,6 +157,7 @@ struct piix_map_db {
- struct piix_host_priv {
- 	const int *map;
- 	u32 saved_iocfg;
-+	spinlock_t sidpr_lock;	/* FIXME: remove once locking in EH is fixed */
- 	void __iomem *sidpr;
- };
+--- a/drivers/char/nvram.c
++++ b/drivers/char/nvram.c
+@@ -265,10 +265,16 @@ static ssize_t nvram_write(struct file *
+ 	unsigned char contents[NVRAM_BYTES];
+ 	unsigned i = *ppos;
+ 	unsigned char *tmp;
+-	int len;
  
-@@ -948,12 +949,15 @@ static int piix_sidpr_scr_read(struct at
- 			       unsigned int reg, u32 *val)
- {
- 	struct piix_host_priv *hpriv = link->ap->host->private_data;
-+	unsigned long flags;
+-	len = (NVRAM_BYTES - i) < count ? (NVRAM_BYTES - i) : count;
+-	if (copy_from_user(contents, buf, len))
++	if (i >= NVRAM_BYTES)
++		return 0;	/* Past EOF */
++
++	if (count > NVRAM_BYTES - i)
++		count = NVRAM_BYTES - i;
++	if (count > NVRAM_BYTES)
++		return -EFAULT;	/* Can't happen, but prove it to gcc */
++
++	if (copy_from_user(contents, buf, count))
+ 		return -EFAULT;
  
- 	if (reg >= ARRAY_SIZE(piix_sidx_map))
- 		return -EINVAL;
+ 	spin_lock_irq(&rtc_lock);
+@@ -276,7 +282,7 @@ static ssize_t nvram_write(struct file *
+ 	if (!__nvram_check_checksum())
+ 		goto checksum_err;
  
-+	spin_lock_irqsave(&hpriv->sidpr_lock, flags);
- 	piix_sidpr_sel(link, reg);
- 	*val = ioread32(hpriv->sidpr + PIIX_SIDPR_DATA);
-+	spin_unlock_irqrestore(&hpriv->sidpr_lock, flags);
- 	return 0;
- }
+-	for (tmp = contents; count-- > 0 && i < NVRAM_BYTES; ++i, ++tmp)
++	for (tmp = contents; count--; ++i, ++tmp)
+ 		__nvram_write_byte(*tmp, i);
  
-@@ -961,12 +965,15 @@ static int piix_sidpr_scr_write(struct a
- 				unsigned int reg, u32 val)
- {
- 	struct piix_host_priv *hpriv = link->ap->host->private_data;
-+	unsigned long flags;
- 
- 	if (reg >= ARRAY_SIZE(piix_sidx_map))
- 		return -EINVAL;
- 
-+	spin_lock_irqsave(&hpriv->sidpr_lock, flags);
- 	piix_sidpr_sel(link, reg);
- 	iowrite32(val, hpriv->sidpr + PIIX_SIDPR_DATA);
-+	spin_unlock_irqrestore(&hpriv->sidpr_lock, flags);
- 	return 0;
- }
- 
-@@ -1555,6 +1562,7 @@ static int __devinit piix_init_one(struc
- 	hpriv = devm_kzalloc(dev, sizeof(*hpriv), GFP_KERNEL);
- 	if (!hpriv)
- 		return -ENOMEM;
-+	spin_lock_init(&hpriv->sidpr_lock);
- 
- 	/* Save IOCFG, this will be used for cable detection, quirk
- 	 * detection and restoration on detach.  This is necessary
+ 	__nvram_set_checksum();
 
 
