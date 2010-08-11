@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab0HKUXz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 16:23:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57028 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756455Ab0HKUXy convert rfc822-to-8bit (ORCPT
+	id S1757197Ab0HKU1y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 16:27:54 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:48327 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755823Ab0HKU1w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 16:23:54 -0400
-MIME-Version: 1.0
-Message-ID: <77d8ceaa-53b7-4bd2-b3ca-cd825fb61ce8@default>
-Date: Wed, 11 Aug 2010 13:20:37 -0700 (PDT)
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: <claudio@evidence.eu.com>
-Cc: <alan@lxorguk.ukuu.org.uk>, <jiri.prchal@aksignal.cz>, <rick@efn.org>,
-        <akpm@linux-foundation.org>, <ryan@bluewatersys.com>,
-        <w.sang@pengutronix.de>, <rmk@arm.linux.org.uk>,
-        <nicolas.ferre@atmel.com>, <br@pwrnet.de>, <gregkh@suse.de>,
-        <Sebastian.Heutling@who-ing.de>, <hskinnemoen@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <elektrolot@wp.pl>,
-        <mattheis@ukma.de>, <linux-kernel@vger.kernel.org>,
-        <john@thinlinx.com>, <phdm@macqel.be>
-Subject: Re: [PATCH] Documentation about RS485 serial communications
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Aug 2010 16:27:52 -0400
+To: Petr Vandrovec <vandrove@vc.cvut.cz>
+Subject: [PATCH] matroxfb: fix incorrect use of memcpy_toio()
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <khali@linux-fr.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Wed, 11 Aug 2010 22:27:42 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008112227.44990.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-From: claudio@evidence.eu.com
-To: randy.dunlap@oracle.com
-Sent: Wednesday, August 11, 2010 12:59:08 PM GMT -08:00 US/Canada Pacific
-Subject: Re: [PATCH] Documentation about RS485 serial communications
+Fix incorrect use of memcpy_toio() in matroxfb that broke in 2.6.34 on x86.
 
-Hi Randy,
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-	thank you for the feedback.
+--- linux-2.6.35-rc2/drivers/video/matrox/matroxfb_base.h	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/matrox/matroxfb_base.h	2010-08-03 18:13:46.000000000 +0200
+@@ -151,13 +151,13 @@ static inline void mga_writel(vaddr_t va
+ static inline void mga_memcpy_toio(vaddr_t va, const void* src, int len) {
+ #if defined(__alpha__) || defined(__i386__) || defined(__x86_64__)
+ 	/*
+-	 * memcpy_toio works for us if:
++	 * iowrite32_rep works for us if:
+ 	 *  (1) Copies data as 32bit quantities, not byte after byte,
+ 	 *  (2) Performs LE ordered stores, and
+ 	 *  (3) It copes with unaligned source (destination is guaranteed to be page
+ 	 *      aligned and length is guaranteed to be multiple of 4).
+ 	 */
+-	memcpy_toio(va.vaddr, src, len);
++	iowrite32_rep(va.vaddr, src, len >> 2);
+ #else
+         u_int32_t __iomem* addr = va.vaddr;
+ 
 
-[...]
 
-> 
-> TIOC[SG]RS485 are #defined in <asm-generic/ioctls.h>, so
-> #include <asm-generic/ioctls.h>
-> here and/or below (in userspace program).
-> 
-
-I noticed that for some architectures (e.g., cris) these ioctls are defined also in arch/cris/include/asm/ioctls.h, and with different values with respect to the values defined on asm-generic/ioctls.h.
-
-Therefore, I wasn't completely sure that the values defined in asm-generic are being used in every driver...
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Oh, OK, I see.  Thanks for the info.
-
-~Randy
+-- 
+Ondrej Zary
