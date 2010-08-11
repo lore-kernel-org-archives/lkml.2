@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933600Ab0HLAk0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:40:26 -0400
-Received: from kroah.org ([198.145.64.141]:40197 "EHLO coco.kroah.org"
+	id S1758911Ab0HLAlD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:41:03 -0400
+Received: from kroah.org ([198.145.64.141]:40160 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758899Ab0HKX6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:03 -0400
+	id S1758881Ab0HKX56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:58 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
-Message-Id: <20100811235458.738598370@clark.site>
+Message-Id: <20100811235458.382839513@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:16 -0700
+Date: Wed, 11 Aug 2010 16:54:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-Subject: [035/111] jfs: dont allow os2 xattr namespace overlap with others
+        Ming Lei <tom.leiming@gmail.com>
+Subject: [031/111] USB: usbtest: avoid to free coherent buffer in atomic context
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,162 +25,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+From: Ming Lei <tom.leiming@gmail.com>
 
-commit aca0fa34bdaba39bfddddba8ca70dba4782e8fe6 upstream.
+commit e10e1bec8e6654de4591ef45ddd6a6d1e5b2591c upstream.
 
-It's currently possible to bypass xattr namespace access rules by
-prefixing valid xattr names with "os2.", since the os2 namespace stores
-extended attributes in a legacy format with no prefix.
+This patch fixes the warning below:
+[30753.755998] ------------[ cut here ]------------
+[30753.755998] WARNING: at /home/tom/git/linux-2.6/linux-2.6-next/arch/x86/include/asm/dma-mapping.h:155 hcd_buffer_free+0xb1/0xd4 [usbcore]()
+[30753.755998] Hardware name: 6475EK2
+[30753.755998] Modules linked in: uvcvideo ehci_hcd usbtest cdc_ether usbnet vfat fat usb_storage nfsd lockd nfs_acl auth_rpcgss exportfs mii tun videodev v4l1_compat v4l2_compat_ioctl32 fuse bridge stp llc sunrpc ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf kvm_intel kvm arc4 ecb ath5k usbhid mac80211 snd_hda_codec_conexant ch341 usbserial ath cfg80211 thinkpad_acpi snd_hda_intel pcspkr wmi hwmon yenta_socket iTCO_wdt iTCO_vendor_support i2c_i801 e1000e snd_hda_codec snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc pata_acpi uhci_hcd ohci_hcd usbcore i915 drm_kms_helper drm i2c_algo_bit i2c_core video output [last unloaded: uvcvideo]
+[30753.755998] Pid: 0, comm: swapper Tainted: G        W   2.6.35-rc6-gkh-wl+ #49
+[30753.755998] Call Trace:
+[30753.755998]  <IRQ>  [<ffffffff8104478a>] warn_slowpath_common+0x80/0x98
+[30753.755998]  [<ffffffff810447b7>] warn_slowpath_null+0x15/0x17
+[30753.755998]  [<ffffffffa00ce02d>] hcd_buffer_free+0xb1/0xd4 [usbcore]
+[30753.755998]  [<ffffffffa00c1345>] usb_free_coherent+0x1c/0x1e [usbcore]
+[30753.755998]  [<ffffffffa00b13e4>] simple_free_urb+0x23/0x2f [usbtest]
+[30753.755998]  [<ffffffffa00b210b>] iso_callback+0xbb/0x10f [usbtest]
+[30753.755998]  [<ffffffffa00c7390>] usb_hcd_giveback_urb+0x8c/0xc0 [usbcore]
+[30753.755998]  [<ffffffffa0449b35>] ehci_urb_done+0x84/0x95 [ehci_hcd]
+[30753.755998]  [<ffffffffa044b5a5>] ehci_work+0x41a/0x7dd [ehci_hcd]
+[30753.755998]  [<ffffffffa044e298>] ehci_irq+0x33b/0x370 [ehci_hcd]
+[30753.755998]  [<ffffffff8100fb05>] ? sched_clock+0x9/0xd
+[30753.755998]  [<ffffffff8105e641>] ? sched_clock_local+0x1c/0x82
+[30753.755998]  [<ffffffff8105e76a>] ? sched_clock_cpu+0xc3/0xce
+[30753.755998]  [<ffffffff81067c7e>] ? trace_hardirqs_off+0xd/0xf
+[30753.755998]  [<ffffffff8105e7b8>] ? cpu_clock+0x43/0x5e
+[30753.755998]  [<ffffffffa00c6999>] usb_hcd_irq+0x45/0xa1 [usbcore]
+[30753.755998]  [<ffffffff81092e02>] handle_IRQ_event+0x20/0xa5
+[30753.755998]  [<ffffffff81094cea>] handle_fasteoi_irq+0x92/0xd2
+[30753.755998]  [<ffffffff8100c0ed>] handle_irq+0x1f/0x2a
+[30753.755998]  [<ffffffff8100b75d>] do_IRQ+0x57/0xbe
+[30753.755998]  [<ffffffff8136a693>] ret_from_intr+0x0/0x16
+[30753.755998]  <EOI>  [<ffffffff81223baa>] ? acpi_idle_enter_bm+0x231/0x269
+[30753.755998]  [<ffffffff81223ba3>] ? acpi_idle_enter_bm+0x22a/0x269
+[30753.755998]  [<ffffffff812c4b6b>] cpuidle_idle_call+0x99/0xce
+[30753.755998]  [<ffffffff81008dd5>] cpu_idle+0x61/0xaa
+[30753.755998]  [<ffffffff8136374b>] start_secondary+0x1c2/0x1c6
+[30753.755998] ---[ end trace 904cfaf7ab4cb1a2 ]---
 
-This patch adds checking to deny access to any valid namespace prefix
-following "os2.".
-
-Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
-Reported-by: Sergey Vlasov <vsu@altlinux.ru>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/jfs/xattr.c |   87 ++++++++++++++++++++++++---------------------------------
- 1 file changed, 38 insertions(+), 49 deletions(-)
+ drivers/usb/misc/usbtest.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/fs/jfs/xattr.c
-+++ b/fs/jfs/xattr.c
-@@ -85,46 +85,25 @@ struct ea_buffer {
- #define EA_MALLOC	0x0008
+--- a/drivers/usb/misc/usbtest.c
++++ b/drivers/usb/misc/usbtest.c
+@@ -1382,7 +1382,6 @@ static void iso_callback (struct urb *ur
+ 			break;
+ 		}
+ 	}
+-	simple_free_urb (urb);
  
+ 	ctx->pending--;
+ 	if (ctx->pending == 0) {
+@@ -1499,6 +1498,7 @@ test_iso_queue (struct usbtest_dev *dev,
+ 			}
  
-+static int is_known_namespace(const char *name)
-+{
-+	if (strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * These three routines are used to recognize on-disk extended attributes
-  * that are in a recognized namespace.  If the attribute is not recognized,
-  * "os2." is prepended to the name
-  */
--static inline int is_os2_xattr(struct jfs_ea *ea)
-+static int is_os2_xattr(struct jfs_ea *ea)
- {
--	/*
--	 * Check for "system."
--	 */
--	if ((ea->namelen >= XATTR_SYSTEM_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "user."
--	 */
--	if ((ea->namelen >= XATTR_USER_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "security."
--	 */
--	if ((ea->namelen >= XATTR_SECURITY_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_SECURITY_PREFIX,
--		     XATTR_SECURITY_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "trusted."
--	 */
--	if ((ea->namelen >= XATTR_TRUSTED_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
--		return false;
--	/*
--	 * Add any other valid namespace prefixes here
--	 */
--
--	/*
--	 * We assume it's OS/2's flat namespace
--	 */
--	return true;
-+	return !is_known_namespace(ea->name);
- }
+ 			simple_free_urb (urbs [i]);
++			urbs[i] = NULL;
+ 			context.pending--;
+ 			context.submit_error = 1;
+ 			break;
+@@ -1508,6 +1508,10 @@ test_iso_queue (struct usbtest_dev *dev,
  
- static inline int name_size(struct jfs_ea *ea)
-@@ -762,13 +741,23 @@ static int can_set_xattr(struct inode *i
- 	if (!strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
- 		return can_set_system_xattr(inode, name, value, value_len);
+ 	wait_for_completion (&context.done);
  
-+	if (!strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)) {
-+		/*
-+		 * This makes sure that we aren't trying to set an
-+		 * attribute in a different namespace by prefixing it
-+		 * with "os2."
-+		 */
-+		if (is_known_namespace(name + XATTR_OS2_PREFIX_LEN))
-+				return -EOPNOTSUPP;
-+		return 0;
++	for (i = 0; i < param->sglen; i++) {
++		if (urbs[i])
++			simple_free_urb(urbs[i]);
 +	}
-+
  	/*
- 	 * Don't allow setting an attribute in an unknown namespace.
- 	 */
- 	if (strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) &&
- 	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
--	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
--	    strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))
-+	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
- 		return -EOPNOTSUPP;
- 
- 	return 0;
-@@ -950,19 +939,8 @@ ssize_t __jfs_getxattr(struct inode *ino
- 	int xattr_size;
- 	ssize_t size;
- 	int namelen = strlen(name);
--	char *os2name = NULL;
- 	char *value;
- 
--	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
--		os2name = kmalloc(namelen - XATTR_OS2_PREFIX_LEN + 1,
--				  GFP_KERNEL);
--		if (!os2name)
--			return -ENOMEM;
--		strcpy(os2name, name + XATTR_OS2_PREFIX_LEN);
--		name = os2name;
--		namelen -= XATTR_OS2_PREFIX_LEN;
--	}
--
- 	down_read(&JFS_IP(inode)->xattr_sem);
- 
- 	xattr_size = ea_get(inode, &ea_buf, 0);
-@@ -1000,8 +978,6 @@ ssize_t __jfs_getxattr(struct inode *ino
-       out:
- 	up_read(&JFS_IP(inode)->xattr_sem);
- 
--	kfree(os2name);
--
- 	return size;
- }
- 
-@@ -1010,6 +986,19 @@ ssize_t jfs_getxattr(struct dentry *dent
- {
- 	int err;
- 
-+	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
-+		/*
-+		 * skip past "os2." prefix
-+		 */
-+		name += XATTR_OS2_PREFIX_LEN;
-+		/*
-+		 * Don't allow retrieving properly prefixed attributes
-+		 * by prepending them with "os2."
-+		 */
-+		if (is_known_namespace(name))
-+			return -EOPNOTSUPP;
-+	}
-+
- 	err = __jfs_getxattr(dentry->d_inode, name, data, buf_size);
- 
- 	return err;
+ 	 * Isochronous transfers are expected to fail sometimes.  As an
+ 	 * arbitrary limit, we will report an error if any submissions
 
 
