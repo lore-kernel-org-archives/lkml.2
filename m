@@ -1,45 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857Ab0HKOFT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:05:19 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:54113 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab0HKOFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:05:17 -0400
-Date: Wed, 11 Aug 2010 15:05:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Davidlohr Bueso <dave@gnu.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, kay.sievers@vrfy.org, gregkh@suse.de
-Subject: Re: [PATCH] kernel/ksysfs: use snprintf for sysfs show
-Message-ID: <20100811140515.GH31363@ZenIV.linux.org.uk>
-References: <1281534250.2067.14.camel@cowboy>
+	id S1752986Ab0HKOFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:05:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34878 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752877Ab0HKOFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 10:05:20 -0400
+Date: Wed, 11 Aug 2010 10:08:41 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Josef Bacik <josef@redhat.com>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: PATCH 3/6 - direct-io: do not merge logically non-contiguous
+	requests
+Message-ID: <20100811140841.GD9349@dhcp231-156.rdu.redhat.com>
+References: <4C5BE8DB.5030503@linux.vnet.ibm.com> <20100806120358.GA31601@infradead.org> <4C5D0BC2.1040706@linux.vnet.ibm.com> <x49ocdab9bt.fsf@segfault.boston.devel.redhat.com> <20100811015552.GC9349@dhcp231-156.rdu.redhat.com> <x49zkwtb7ou.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281534250.2067.14.camel@cowboy>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <x49zkwtb7ou.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 09:44:10AM -0400, Davidlohr Bueso wrote:
-> Use snprintf(buf, PAGE_SIZE, ...) instead of sprintf for sysfs show
-> methods.  This is suggested in Documentation/filesystems/sysfs.txt
+On Wed, Aug 11, 2010 at 09:27:45AM -0400, Jeff Moyer wrote:
+> Josef Bacik <josef@redhat.com> writes:
+> 
+> > So say blocksize of 4k, we do dio to 12k, the first time around
+> > dio->block_in_file is 0, we set dio->cur_page, and move on to the next page, and
+> > bio->block_in_file is set to 1.  We find that dio->cur_page is set, so we do
+> > dio_send_cur_page().  Since !dio->bio we create a new bio, and set
+> > dio->logical_offset_in_bio to 0, since thats the offset of dio->cur_page.  Then
+> > we setup the next cur_page as the page for logical block 1, and
+> > dio->block_in_file gets bumped to 2.  We map the next block and come into
+> > dio_send_cur_page() again.  At this point cur_offset would be 8192...and shit I
+> > just realized what was wrong.  If you change
+> >
+> > loff_t cur_offset = dio->block_in_file << dio->blkbits;
+> >
+> > to
+> >
+> > loff_t cur_offset = dio->cur_page_fs_offset << dio->blkbits;
+> 
+> Sorry, I wasn't very clear in my description, but you figured it out.
+> ;-)  Of course, cur_page_fs_offset is already in bytes, so that left
+> shift is not necessary.
+>
 
-... therefore it must be done, the common sense be damned.
+Ah right, sorry.
+ 
+> > That should fix the problem.  Sorry guys, I screwed that up.  I'll look at this
+> > again tomorrow after I've had my 2 hours of sleep and see if this all still
+> > makes sense, but I think the above should fixe the performance thing.  As for
+> > the dio->boundary thing, dio_bio_submit() sets dio->boundary to 0, so the same
+> > bio won't be submitted twice.
+> 
+> While I don't doubt that you are right, I will sleep better at night if
+> we do an else if.  (To be fair, this ambiguity was not introduced by
+> you).
+> 
+> I've tested this patch, added printk's and watched blktrace to verify
+> that we don't split up I/Os.  So long as no one objects, I'll post this
+> for inclusion in a new thread.
+> 
+> Thanks for looking into it, Josef.
+>
 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
+No problem, thanks for making me look at it again.  You can add
 
->  static ssize_t uevent_seqnum_show(struct kobject *kobj,
->  				  struct kobj_attribute *attr, char *buf)
->  {
-> -	return sprintf(buf, "%llu\n", (unsigned long long)uevent_seqnum);
-> +	return snprintf(buf, PAGE_SIZE, "%llu\n", 
-> +			(unsigned long long)uevent_seqnum); 
+Acked-by: Josef Bacik <josef@redhat.com>
 
-A-yup - that's an improvement, all right, on them evil boxen that got
-long long so huge that its decimal representation won't fit into a page.
+Thanks,
 
-NAK.  Cargo-cult programming is bad.
+Josef 
