@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab0HKD2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 23:28:32 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39839 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282Ab0HKD23 (ORCPT
+	id S932622Ab0HKD3j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 23:29:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60084 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932428Ab0HKD3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 23:28:29 -0400
-Subject: Re: [RFC PATCH v8 00/16] Provide a zero-copy method on KVM
- virtio-net.
-From: Shirley Ma <mashirle@us.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-        davem@davemloft.net, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-In-Reply-To: <4C56F318.7030409@redhat.com>
-References: <1280402088-5849-1-git-send-email-xiaohui.xin@intel.com>
-	 <1280442682.9058.15.camel@localhost.localdomain>
-	 <4C525CD2.5080604@redhat.com>
-	 <1280504771.9058.25.camel@localhost.localdomain>
-	 <4C552DC4.5000600@redhat.com>
-	 <1280764918.22830.7.camel@localhost.localdomain>
-	 <4C56EE3D.1050203@redhat.com>
-	 <1280766319.22830.24.camel@localhost.localdomain>
-	 <4C56F318.7030409@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 20:28:02 -0700
-Message-ID: <1281497282.3391.31.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Tue, 10 Aug 2010 23:29:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BrBd5HoTMJ2mbkbR8n53ZvWKDP3IuC9v7podxvpH5uUfXP5AM6BMZ+poztpEUehAsu
+         6Whv8bRqAMk1PQ/JLwXussW+lED8RlKCJufXFy9puecyE04yUrmOcf0poKCqYxW33z1H
+         WHaEm0n1G0tCRfnzd32XI7ru+HjQqJY1X44sc=
+Date: Tue, 10 Aug 2010 20:29:30 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 4/4] input: dynamically allocate ABS information
+Message-ID: <20100811032929.GA10104@core.coreip.homeip.net>
+References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
+ <1274289757-2723-5-git-send-email-daniel@caiaq.de>
+ <20100524160805.GO30801@buzzloop.caiaq.de>
+ <20100524161527.GC3182@core.coreip.homeip.net>
+ <20100616083903.GU17833@buzzloop.caiaq.de>
+ <20100721083048.GA21558@core.coreip.homeip.net>
+ <20100807152309.GF17833@buzzloop.caiaq.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100807152309.GF17833@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Avi,
+On Sat, Aug 07, 2010 at 05:23:09PM +0200, Daniel Mack wrote:
+> Hi Dmitry,
+> 
+> sorry for the late reply on this, I guess I haven't been much help
+> around here lately.
+> 
+> On Wed, Jul 21, 2010 at 01:30:48AM -0700, Dmitry Torokhov wrote:
+> > The approach is pretty solid, with the exception that I do not think
+> > we'd save much if we allocate every axis data separately (as I mentioned
+> > in one of my earlier mails).
+> 
+> Agreed. We at least save the memory for all input devices that don't
+> have absolute axis at all.
+> 
+> > Coudl you please take a look at the following patches and let me know if
+> > you see something wrong.
+> 
+> I checked the patches and tried them locally on my desktop, and I can't
+> see any breakage, but we might need more coverage for testing.
+> 
+> Will you push them to the .36 merge window or is it too late for this?
+> 
 
-On Mon, 2010-08-02 at 19:32 +0300, Avi Kivity wrote:
-> When are you seeing gup_fast() fall back to gup()?  It should be at
-> most 
-> once per page (when a guest starts up none of its pages are mapped,
-> it 
-> faults them in on demand). 
+Yep, it in mainline now. Thank you for working on this.
 
-netperf/netserver latency results are pretty good for message size
-between 1 bytes and 512 bytes when I have 64 bytes small copy.
-
-However if I don't have any small copy , the ping RTT time is
-unreasonable huge. Since we think it's better to have small message with
-copy, so there will be no issue.
-
-Thanks
-Shirley
-
+- 
+Dmitry
