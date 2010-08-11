@@ -1,24 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933114Ab0HLAb3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:31:29 -0400
-Received: from kroah.org ([198.145.64.141]:43629 "EHLO coco.kroah.org"
+	id S1759268Ab0HLAbu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:31:50 -0400
+Received: from kroah.org ([198.145.64.141]:43607 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759254Ab0HKX7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:11 -0400
+	id S1759142Ab0HKX7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:08 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:03 2010
-Message-Id: <20100811235503.660503940@clark.site>
+Message-Id: <20100811235503.480515602@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:09 -0700
+Date: Wed, 11 Aug 2010 16:55:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Leonardo Chiquitto <lchiquitto@novell.com>,
-        Jeff Mahoney <jeffm@suse.com>
-Subject: [088/111] [IA64] fix SBA IOMMU to handle allocation failure properly
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Spencer Candland <spencer@bluehost.com>,
+        Americo Wang <xiyou.wangcong@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Balbir Singh <balbir@in.ibm.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [086/111] sched, cputime: Introduce thread_group_times()
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,110 +31,320 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-commit e2a465675dc089e9a56ba2fa2a5fbd9bd8844d18 upstream.
+commit 0cf55e1ec08bb5a22e068309e2d8ba1180ab4239 upstream.
 
-It's possible that SBA IOMMU might fail to find I/O space under heavy
-I/Os.  SBA IOMMU panics on allocation failure but it shouldn't; drivers
-can handle the failure.  The majority of other IOMMU drivers don't panic
-on allocation failure.
+This is a real fix for problem of utime/stime values decreasing
+described in the thread:
 
-This patch fixes SBA IOMMU path to handle allocation failure properly.
+   http://lkml.org/lkml/2009/11/3/522
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Leonardo Chiquitto <lchiquitto@novell.com>
-Acked-by: Jeff Mahoney <jeffm@suse.com>
+Now cputime is accounted in the following way:
+
+ - {u,s}time in task_struct are increased every time when the thread
+   is interrupted by a tick (timer interrupt).
+
+ - When a thread exits, its {u,s}time are added to signal->{u,s}time,
+   after adjusted by task_times().
+
+ - When all threads in a thread_group exits, accumulated {u,s}time
+   (and also c{u,s}time) in signal struct are added to c{u,s}time
+   in signal struct of the group's parent.
+
+So {u,s}time in task struct are "raw" tick count, while
+{u,s}time and c{u,s}time in signal struct are "adjusted" values.
+
+And accounted values are used by:
+
+ - task_times(), to get cputime of a thread:
+   This function returns adjusted values that originates from raw
+   {u,s}time and scaled by sum_exec_runtime that accounted by CFS.
+
+ - thread_group_cputime(), to get cputime of a thread group:
+   This function returns sum of all {u,s}time of living threads in
+   the group, plus {u,s}time in the signal struct that is sum of
+   adjusted cputimes of all exited threads belonged to the group.
+
+The problem is the return value of thread_group_cputime(),
+because it is mixed sum of "raw" value and "adjusted" value:
+
+  group's {u,s}time = foreach(thread){{u,s}time} + exited({u,s}time)
+
+This misbehavior can break {u,s}time monotonicity.
+Assume that if there is a thread that have raw values greater
+than adjusted values (e.g. interrupted by 1000Hz ticks 50 times
+but only runs 45ms) and if it exits, cputime will decrease (e.g.
+-5ms).
+
+To fix this, we could do:
+
+  group's {u,s}time = foreach(t){task_times(t)} + exited({u,s}time)
+
+But task_times() contains hard divisions, so applying it for
+every thread should be avoided.
+
+This patch fixes the above problem in the following way:
+
+ - Modify thread's exit (= __exit_signal()) not to use task_times().
+   It means {u,s}time in signal struct accumulates raw values instead
+   of adjusted values.  As the result it makes thread_group_cputime()
+   to return pure sum of "raw" values.
+
+ - Introduce a new function thread_group_times(*task, *utime, *stime)
+   that converts "raw" values of thread_group_cputime() to "adjusted"
+   values, in same calculation procedure as task_times().
+
+ - Modify group's exit (= wait_task_zombie()) to use this introduced
+   thread_group_times().  It make c{u,s}time in signal struct to
+   have adjusted values like before this patch.
+
+ - Replace some thread_group_cputime() by thread_group_times().
+   This replacements are only applied where conveys the "adjusted"
+   cputime to users, and where already uses task_times() near by it.
+   (i.e. sys_times(), getrusage(), and /proc/<PID>/stat.)
+
+This patch have a positive side effect:
+
+ - Before this patch, if a group contains many short-life threads
+   (e.g. runs 0.9ms and not interrupted by ticks), the group's
+   cputime could be invisible since thread's cputime was accumulated
+   after adjusted: imagine adjustment function as adj(ticks, runtime),
+     {adj(0, 0.9) + adj(0, 0.9) + ....} = {0 + 0 + ....} = 0.
+   After this patch it will not happen because the adjustment is
+   applied after accumulated.
+
+v2:
+ - remove if()s, put new variables into signal_struct.
+
+Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Spencer Candland <spencer@bluehost.com>
+Cc: Americo Wang <xiyou.wangcong@gmail.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Balbir Singh <balbir@in.ibm.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+LKML-Reference: <4B162517.8040909@jp.fujitsu.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- arch/ia64/hp/common/sba_iommu.c |   38 +++++++++++++++++++++++++++++---------
- 1 file changed, 29 insertions(+), 9 deletions(-)
 
---- a/arch/ia64/hp/common/sba_iommu.c
-+++ b/arch/ia64/hp/common/sba_iommu.c
-@@ -677,12 +677,19 @@ sba_alloc_range(struct ioc *ioc, struct
- 			spin_unlock_irqrestore(&ioc->saved_lock, flags);
+---
+ fs/proc/array.c       |    5 +----
+ include/linux/sched.h |    4 ++++
+ kernel/exit.c         |   20 ++++++++++++--------
+ kernel/fork.c         |    3 +++
+ kernel/sched.c        |   41 +++++++++++++++++++++++++++++++++++++++++
+ kernel/sys.c          |   18 ++++++++----------
+ 6 files changed, 69 insertions(+), 22 deletions(-)
+
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -405,7 +405,6 @@ static int do_task_stat(struct seq_file
  
- 			pide = sba_search_bitmap(ioc, dev, pages_needed, 0);
--			if (unlikely(pide >= (ioc->res_size << 3)))
--				panic(__FILE__ ": I/O MMU @ %p is out of mapping resources\n",
--				      ioc->ioc_hpa);
-+			if (unlikely(pide >= (ioc->res_size << 3))) {
-+				printk(KERN_WARNING "%s: I/O MMU @ %p is"
-+				       "out of mapping resources, %u %u %lx\n",
-+				       __func__, ioc->ioc_hpa, ioc->res_size,
-+				       pages_needed, dma_get_seg_boundary(dev));
-+				return -1;
-+			}
- #else
--			panic(__FILE__ ": I/O MMU @ %p is out of mapping resources\n",
--			      ioc->ioc_hpa);
-+			printk(KERN_WARNING "%s: I/O MMU @ %p is"
-+			       "out of mapping resources, %u %u %lx\n",
-+			       __func__, ioc->ioc_hpa, ioc->res_size,
-+			       pages_needed, dma_get_seg_boundary(dev));
-+			return -1;
- #endif
+ 		/* add up live thread stats at the group level */
+ 		if (whole) {
+-			struct task_cputime cputime;
+ 			struct task_struct *t = task;
+ 			do {
+ 				min_flt += t->min_flt;
+@@ -416,9 +415,7 @@ static int do_task_stat(struct seq_file
+ 
+ 			min_flt += sig->min_flt;
+ 			maj_flt += sig->maj_flt;
+-			thread_group_cputime(task, &cputime);
+-			utime = cputime.utime;
+-			stime = cputime.stime;
++			thread_group_times(task, &utime, &stime);
+ 			gtime = cputime_add(gtime, sig->gtime);
  		}
- 	}
-@@ -965,6 +972,8 @@ static dma_addr_t sba_map_page(struct de
+ 
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -628,6 +628,9 @@ struct signal_struct {
+ 	cputime_t utime, stime, cutime, cstime;
+ 	cputime_t gtime;
+ 	cputime_t cgtime;
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++	cputime_t prev_utime, prev_stime;
++#endif
+ 	unsigned long nvcsw, nivcsw, cnvcsw, cnivcsw;
+ 	unsigned long min_flt, maj_flt, cmin_flt, cmaj_flt;
+ 	unsigned long inblock, oublock, cinblock, coublock;
+@@ -1725,6 +1728,7 @@ static inline void put_task_struct(struc
+ extern cputime_t task_utime(struct task_struct *p);
+ extern cputime_t task_stime(struct task_struct *p);
+ extern cputime_t task_gtime(struct task_struct *p);
++extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
+ 
+ /*
+  * Per process flags
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -110,8 +110,8 @@ static void __exit_signal(struct task_st
+ 		 * We won't ever get here for the group leader, since it
+ 		 * will have been the last reference on the signal_struct.
+ 		 */
+-		sig->utime = cputime_add(sig->utime, task_utime(tsk));
+-		sig->stime = cputime_add(sig->stime, task_stime(tsk));
++		sig->utime = cputime_add(sig->utime, tsk->utime);
++		sig->stime = cputime_add(sig->stime, tsk->stime);
+ 		sig->gtime = cputime_add(sig->gtime, task_gtime(tsk));
+ 		sig->min_flt += tsk->min_flt;
+ 		sig->maj_flt += tsk->maj_flt;
+@@ -1205,6 +1205,7 @@ static int wait_task_zombie(struct wait_
+ 		struct signal_struct *psig;
+ 		struct signal_struct *sig;
+ 		unsigned long maxrss;
++		cputime_t tgutime, tgstime;
+ 
+ 		/*
+ 		 * The resource counters for the group leader are in its
+@@ -1220,20 +1221,23 @@ static int wait_task_zombie(struct wait_
+ 		 * need to protect the access to parent->signal fields,
+ 		 * as other threads in the parent group can be right
+ 		 * here reaping other children at the same time.
++		 *
++		 * We use thread_group_times() to get times for the thread
++		 * group, which consolidates times for all threads in the
++		 * group including the group leader.
+ 		 */
++		thread_group_times(p, &tgutime, &tgstime);
+ 		spin_lock_irq(&p->real_parent->sighand->siglock);
+ 		psig = p->real_parent->signal;
+ 		sig = p->signal;
+ 		psig->cutime =
+ 			cputime_add(psig->cutime,
+-			cputime_add(p->utime,
+-			cputime_add(sig->utime,
+-				    sig->cutime)));
++			cputime_add(tgutime,
++				    sig->cutime));
+ 		psig->cstime =
+ 			cputime_add(psig->cstime,
+-			cputime_add(p->stime,
+-			cputime_add(sig->stime,
+-				    sig->cstime)));
++			cputime_add(tgstime,
++				    sig->cstime));
+ 		psig->cgtime =
+ 			cputime_add(psig->cgtime,
+ 			cputime_add(p->gtime,
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -884,6 +884,9 @@ static int copy_signal(unsigned long clo
+ 	sig->utime = sig->stime = sig->cutime = sig->cstime = cputime_zero;
+ 	sig->gtime = cputime_zero;
+ 	sig->cgtime = cputime_zero;
++#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++	sig->prev_utime = sig->prev_stime = cputime_zero;
++#endif
+ 	sig->nvcsw = sig->nivcsw = sig->cnvcsw = sig->cnivcsw = 0;
+ 	sig->min_flt = sig->maj_flt = sig->cmin_flt = sig->cmaj_flt = 0;
+ 	sig->inblock = sig->oublock = sig->cinblock = sig->coublock = 0;
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5215,6 +5215,16 @@ cputime_t task_stime(struct task_struct
+ {
+ 	return p->stime;
+ }
++
++void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	struct task_cputime cputime;
++
++	thread_group_cputime(p, &cputime);
++
++	*ut = cputime.utime;
++	*st = cputime.stime;
++}
+ #else
+ 
+ #ifndef nsecs_to_cputime
+@@ -5258,6 +5268,37 @@ cputime_t task_stime(struct task_struct
+ 
+ 	return p->prev_stime;
+ }
++
++/*
++ * Must be called with siglock held.
++ */
++void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
++{
++	struct signal_struct *sig = p->signal;
++	struct task_cputime cputime;
++	cputime_t rtime, utime, total;
++
++	thread_group_cputime(p, &cputime);
++
++	total = cputime_add(cputime.utime, cputime.stime);
++	rtime = nsecs_to_cputime(cputime.sum_exec_runtime);
++
++	if (total) {
++		u64 temp;
++
++		temp = (u64)(rtime * cputime.utime);
++		do_div(temp, total);
++		utime = (cputime_t)temp;
++	} else
++		utime = rtime;
++
++	sig->prev_utime = max(sig->prev_utime, utime);
++	sig->prev_stime = max(sig->prev_stime,
++			      cputime_sub(rtime, sig->prev_utime));
++
++	*ut = sig->prev_utime;
++	*st = sig->prev_stime;
++}
  #endif
  
- 	pide = sba_alloc_range(ioc, dev, size);
-+	if (pide < 0)
-+		return 0;
+ inline cputime_t task_gtime(struct task_struct *p)
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -911,16 +911,15 @@ change_okay:
  
- 	iovp = (dma_addr_t) pide << iovp_shift;
+ void do_sys_times(struct tms *tms)
+ {
+-	struct task_cputime cputime;
+-	cputime_t cutime, cstime;
++	cputime_t tgutime, tgstime, cutime, cstime;
  
-@@ -1320,6 +1329,7 @@ sba_coalesce_chunks(struct ioc *ioc, str
- 	unsigned long dma_offset, dma_len; /* start/len of DMA stream */
- 	int n_mappings = 0;
- 	unsigned int max_seg_size = dma_get_max_seg_size(dev);
-+	int idx;
- 
- 	while (nents > 0) {
- 		unsigned long vaddr = (unsigned long) sba_sg_address(startsg);
-@@ -1418,16 +1428,22 @@ sba_coalesce_chunks(struct ioc *ioc, str
- 		vcontig_sg->dma_length = vcontig_len;
- 		dma_len = (dma_len + dma_offset + ~iovp_mask) & iovp_mask;
- 		ASSERT(dma_len <= DMA_CHUNK_SIZE);
--		dma_sg->dma_address = (dma_addr_t) (PIDE_FLAG
--			| (sba_alloc_range(ioc, dev, dma_len) << iovp_shift)
--			| dma_offset);
-+		idx = sba_alloc_range(ioc, dev, dma_len);
-+		if (idx < 0) {
-+			dma_sg->dma_length = 0;
-+			return -1;
-+		}
-+		dma_sg->dma_address = (dma_addr_t)(PIDE_FLAG | (idx << iovp_shift)
-+						   | dma_offset);
- 		n_mappings++;
- 	}
- 
- 	return n_mappings;
+-	thread_group_cputime(current, &cputime);
+ 	spin_lock_irq(&current->sighand->siglock);
++	thread_group_times(current, &tgutime, &tgstime);
+ 	cutime = current->signal->cutime;
+ 	cstime = current->signal->cstime;
+ 	spin_unlock_irq(&current->sighand->siglock);
+-	tms->tms_utime = cputime_to_clock_t(cputime.utime);
+-	tms->tms_stime = cputime_to_clock_t(cputime.stime);
++	tms->tms_utime = cputime_to_clock_t(tgutime);
++	tms->tms_stime = cputime_to_clock_t(tgstime);
+ 	tms->tms_cutime = cputime_to_clock_t(cutime);
+ 	tms->tms_cstime = cputime_to_clock_t(cstime);
  }
+@@ -1338,8 +1337,7 @@ static void k_getrusage(struct task_stru
+ {
+ 	struct task_struct *t;
+ 	unsigned long flags;
+-	cputime_t utime, stime;
+-	struct task_cputime cputime;
++	cputime_t tgutime, tgstime, utime, stime;
+ 	unsigned long maxrss = 0;
  
--
-+static void sba_unmap_sg_attrs(struct device *dev, struct scatterlist *sglist,
-+			       int nents, enum dma_data_direction dir,
-+			       struct dma_attrs *attrs);
- /**
-  * sba_map_sg - map Scatter/Gather list
-  * @dev: instance of PCI owned by the driver that's asking.
-@@ -1493,6 +1509,10 @@ static int sba_map_sg_attrs(struct devic
- 	** Access to the virtual address is what forces a two pass algorithm.
- 	*/
- 	coalesced = sba_coalesce_chunks(ioc, dev, sglist, nents);
-+	if (coalesced < 0) {
-+		sba_unmap_sg_attrs(dev, sglist, nents, dir, attrs);
-+		return 0;
-+	}
+ 	memset((char *) r, 0, sizeof *r);
+@@ -1373,9 +1371,9 @@ static void k_getrusage(struct task_stru
+ 				break;
  
- 	/*
- 	** Program the I/O Pdir
+ 		case RUSAGE_SELF:
+-			thread_group_cputime(p, &cputime);
+-			utime = cputime_add(utime, cputime.utime);
+-			stime = cputime_add(stime, cputime.stime);
++			thread_group_times(p, &tgutime, &tgstime);
++			utime = cputime_add(utime, tgutime);
++			stime = cputime_add(stime, tgstime);
+ 			r->ru_nvcsw += p->signal->nvcsw;
+ 			r->ru_nivcsw += p->signal->nivcsw;
+ 			r->ru_minflt += p->signal->min_flt;
 
 
