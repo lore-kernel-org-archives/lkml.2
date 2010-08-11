@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab0HKXuG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:50:06 -0400
-Received: from kroah.org ([198.145.64.141]:57552 "EHLO coco.kroah.org"
+	id S1758418Ab0HKXt6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:49:58 -0400
+Received: from kroah.org ([198.145.64.141]:57521 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758481Ab0HKXuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:50:03 -0400
+	id S1758130Ab0HKXtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:49:55 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:25 2010
-Message-Id: <20100811234625.809935586@clark.site>
+Message-Id: <20100811234625.266596539@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:45:49 -0700
+Date: Wed, 11 Aug 2010 16:45:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: [10/11] bdi: register sysfs bdi device only once per queue
+        NeilBrown <neilb@suse.de>
+Subject: [04/11] md/raid10: fix deadlock with unaligned read during resync
 In-Reply-To: <20100811234809.GA676@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,46 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kay Sievers <kay.sievers@vrfy.org>
+From: NeilBrown <neilb@suse.de>
 
-commit f1d0b063d993527754f062c589b73f125024d216 upstream.
+commit 51e9ac77035a3dfcb6fc0a88a0d80b6f99b5edb1 upstream.
 
-Devices which share the same queue, like floppies and mtd devices, get
-registered multiple times in the bdi interface, but bdi accounts only the
-last registered device of the devices sharing one queue.
+If the 'bio_split' path in raid10-read is used while
+resync/recovery is happening it is possible to deadlock.
+Fix this be elevating ->nr_waiting for the duration of both
+parts of the split request.
 
-On remove, all earlier registered devices leak, stay around in sysfs, and
-cause "duplicate filename" errors if the devices are re-created.
+This fixes a bug that has been present since 2.6.22
+but has only started manifesting recently for unknown reasons.
+It is suitable for and -stable since then.
 
-This prevents the creation of multiple bdi interfaces per queue, and the
-bdi device will carry the dev_t name of the block device which is the
-first one registered, of the pool of devices using the same queue.
-
-[akpm@linux-foundation.org: add a WARN_ON so we know which drivers are misbehaving]
-Tested-by: Peter Korsgaard <jacmet@sunsite.dk>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ben Hutchings <bhutchings@solarflare.com>
+Reported-by:  Justin Bronder <jsbronder@gentoo.org>
+Tested-by:  Justin Bronder <jsbronder@gentoo.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/backing-dev.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/raid10.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -176,6 +176,9 @@ int bdi_register(struct backing_dev_info
- 	int ret = 0;
- 	struct device *dev;
- 
-+	if (WARN_ON(bdi->dev))
-+		goto exit;
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -818,11 +818,29 @@ static int make_request(struct request_q
+ 		 */
+ 		bp = bio_split(bio, bio_split_pool,
+ 			       chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
 +
- 	va_start(args, fmt);
- 	dev = device_create_vargs(bdi_class, parent, MKDEV(0, 0), bdi, fmt, args);
- 	va_end(args);
++		/* Each of these 'make_request' calls will call 'wait_barrier'.
++		 * If the first succeeds but the second blocks due to the resync
++		 * thread raising the barrier, we will deadlock because the
++		 * IO to the underlying device will be queued in generic_make_request
++		 * and will never complete, so will never reduce nr_pending.
++		 * So increment nr_waiting here so no new raise_barriers will
++		 * succeed, and so the second wait_barrier cannot block.
++		 */
++		spin_lock_irq(&conf->resync_lock);
++		conf->nr_waiting++;
++		spin_unlock_irq(&conf->resync_lock);
++
+ 		if (make_request(q, &bp->bio1))
+ 			generic_make_request(&bp->bio1);
+ 		if (make_request(q, &bp->bio2))
+ 			generic_make_request(&bp->bio2);
+ 
++		spin_lock_irq(&conf->resync_lock);
++		conf->nr_waiting--;
++		wake_up(&conf->wait_barrier);
++		spin_unlock_irq(&conf->resync_lock);
++
+ 		bio_pair_release(bp);
+ 		return 0;
+ 	bad_map:
 
 
