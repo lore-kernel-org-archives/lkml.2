@@ -1,52 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab0HKQqa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:46:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46919 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754824Ab0HKQq2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:46:28 -0400
-Message-ID: <4C62D3EE.5000907@infradead.org>
-Date: Wed, 11 Aug 2010 13:46:38 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100803 Red Hat/3.1.2-1.el6 Lightning/1.0b2 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Pete Eberlein <pete@sensoray.com>
-CC: Sander Eikelenboom <linux@eikelenboom.it>,
-        Devin Heitmueller <dheitmueller@kernellabs.com>, mrechberger@gmail.com,
-        gregkh@suse.de, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: [2.6.35] usb 2.0 em28xx kernel panic general protection fault:
- 0000 [#1] SMP RIP: 0010:[<ffffffffa004fbc5>] [<ffffffffa004fbc5>]  em28xx_isoc_copy_vbi+0x62e/0x812
- [em28xx]
-References: <61936849.20100811001257@eikelenboom.it>	 <AANLkTinVNms-vdfG-VZzkOadogaCRV+HyDAY5yhYOJSK@mail.gmail.com>	 <1117369508.20100811005719@eikelenboom.it>	 <AANLkTikPffMQLXcPF4-xPeZfkaAtnu7xEP0TMzYVrkgE@mail.gmail.com>	 <1843123111.20100811092547@eikelenboom.it> <1281542325.2360.86.camel@pete-desktop>
-In-Reply-To: <1281542325.2360.86.camel@pete-desktop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754604Ab0HKQqX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:46:23 -0400
+Received: from mail.logicpd.com ([66.162.60.3]:43783 "EHLO smtp.logicpd.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752478Ab0HKQqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 12:46:22 -0400
+X-Greylist: delayed 850 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Aug 2010 12:46:22 EDT
+From: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
+To: linux@arm.linux.org.uk
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        rmk@arm.linux.org.uk, tony@atomide.com,
+        Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
+Subject: [PATCH 3/4] add generic smsc911x support for LogicPD's OMAP3 TORPEDO and SOM dev kits
+Date: Wed, 11 Aug 2010 12:31:36 -0400
+Message-Id: <1281544297-18015-3-git-send-email-Jacob.Tanenbaum@logicpd.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1281544297-18015-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
+References: <1281544297-18015-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
+ <1281544297-18015-2-git-send-email-Jacob.Tanenbaum@logicpd.com>
+X-OriginalArrivalTime: 11 Aug 2010 16:32:12.0324 (UTC) FILETIME=[C02A3E40:01CB3972]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 11-08-2010 12:58, Pete Eberlein escreveu:
-> On Wed, 2010-08-11 at 09:25 +0200, Sander Eikelenboom wrote:
->> Hello Devin,
->>
->> Yes it's completely reproducible for a change:
->>
->> ffmpeg -f video4linux -r 25 -s 720x576 -i /dev/video0 out.flv
->> gave an error:
-> 
-> Use -f video4linux2.
-> 
-> The -f video4linux option uses the old video4linux1 API.  I have seen
-> similar strange behavior when I used that ffmpeg option with a v4l2
-> driver I am developing.  Also, ffmpeg does not use libv4l.
+	ARM: OMAP3: Add generic smsc911x support when connected to GPMC
 
-Still, we have a bug to fix. The driver shouldn't generating a PANIC if accessed
-via V4L1 API.
+        Introduce of a generic way to setup smsc911x based Ethernet
+        controller connected to GPMC similar to gpmc-smc91x but without
+        timing setup.
+	FIXED: pbias voltage for the Torpedo board
 
-Cheers,
-Mauro.
+        Tested against: linux-next 81e09f50c93edff607259cbe374a3006c9c5fa74
+	Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
+---
+ arch/arm/mach-omap2/Makefile                    |    4 +
+ arch/arm/mach-omap2/gpmc-smsc911x.c             |  113 +++++++++++++++++++++++
+ arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |   35 +++++++
+ 3 files changed, 152 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/gpmc-smsc911x.c
+ create mode 100644 arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index bc77d32..668bfc7 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -177,3 +177,7 @@ obj-y					+= $(nand-m) $(nand-y)
+ 
+ smc91x-$(CONFIG_SMC91X)			:= gpmc-smc91x.o
+ obj-y					+= $(smc91x-m) $(smc91x-y)
++
++smsc911x-$(CONFIG_SMSC911X)		:= gpmc-smsc911x.o
++obj-y					+= $(smsc911x-m) $(smsc911x-y)
++
+diff --git a/arch/arm/mach-omap2/gpmc-smsc911x.c b/arch/arm/mach-omap2/gpmc-smsc911x.c
+new file mode 100644
+index 0000000..703f150
+--- /dev/null
++++ b/arch/arm/mach-omap2/gpmc-smsc911x.c
+@@ -0,0 +1,113 @@
++/*
++ * linux/arch/arm/mach-omap2/gpmc-smsc911x.c
++ *
++ * Copyright (C) 2009 Li-Pro.Net
++ * Stephan Linz <linz@li-pro.net>
++ *
++ * Modified from linux/arch/arm/mach-omap2/gpmc-smc91x.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/gpio.h>
++#include <linux/delay.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/smsc911x.h>
++
++#include <plat/board.h>
++#include <plat/gpmc.h>
++#include <plat/gpmc-smsc911x.h>
++
++static struct omap_smsc911x_platform_data *gpmc_cfg;
++
++static struct resource gpmc_smsc911x_resources[] = {
++	[0] = {
++		.flags		= IORESOURCE_MEM,
++	},
++	[1] = {
++		.flags		= IORESOURCE_IRQ,
++	},
++};
++
++static struct smsc911x_platform_config gpmc_smsc911x_config = {
++	.phy_interface	= PHY_INTERFACE_MODE_MII,
++	.irq_polarity	= SMSC911X_IRQ_POLARITY_ACTIVE_LOW,
++	.irq_type	= SMSC911X_IRQ_TYPE_OPEN_DRAIN,
++	.flags		= SMSC911X_USE_16BIT,
++};
++
++static struct platform_device gpmc_smsc911x_device = {
++	.name		= "smsc911x",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(gpmc_smsc911x_resources),
++	.resource	= gpmc_smsc911x_resources,
++	.dev		= {
++		.platform_data = &gpmc_smsc911x_config,
++	},
++};
++
++/*
++ * Initialize smsc911x device connected to the GPMC. Note that we
++ * assume that pin multiplexing is done in the board-*.c file,
++ * or in the bootloader.
++ */
++void __init gpmc_smsc911x_init(struct omap_smsc911x_platform_data *board_data)
++{
++	unsigned long cs_mem_base;
++	int ret;
++
++	gpmc_cfg = board_data;
++
++	if (gpmc_cs_request(gpmc_cfg->cs, SZ_16M, &cs_mem_base) < 0) {
++		printk(KERN_ERR "Failed to request GPMC mem for smsc911x\n");
++		return;
++	}
++
++	gpmc_smsc911x_resources[0].start = cs_mem_base + 0x0;
++	gpmc_smsc911x_resources[0].end = cs_mem_base + 0xff;
++
++	if (gpio_request(gpmc_cfg->gpio_irq, "smsc911x irq") < 0) {
++		printk(KERN_ERR "Failed to request GPIO%d for smsc911x IRQ\n",
++				gpmc_cfg->gpio_irq);
++		goto free1;
++	}
++
++	gpio_direction_input(gpmc_cfg->gpio_irq);
++	gpmc_smsc911x_resources[1].start = gpio_to_irq(gpmc_cfg->gpio_irq);
++	gpmc_smsc911x_resources[1].flags |=
++					(gpmc_cfg->flags & IRQF_TRIGGER_MASK);
++
++	if (gpio_is_valid(gpmc_cfg->gpio_reset)) {
++		ret = gpio_request(gpmc_cfg->gpio_reset, "smsc911x reset");
++		if (ret) {
++			printk(KERN_ERR "Failed to request GPIO%d for smsc911x reset\n",
++					gpmc_cfg->gpio_reset);
++			goto free2;
++		}
++
++		gpio_direction_output(gpmc_cfg->gpio_reset, 1);
++		gpio_set_value(gpmc_cfg->gpio_reset, 0);
++		msleep(100);
++		gpio_set_value(gpmc_cfg->gpio_reset, 1);
++	}
++
++	if (platform_device_register(&gpmc_smsc911x_device) < 0) {
++		printk(KERN_ERR "Unable to register smsc911x device\n");
++		gpio_free(gpmc_cfg->gpio_reset);
++		goto free2;
++	}
++
++	return;
++
++free2:
++	gpio_free(gpmc_cfg->gpio_irq);
++free1:
++	gpmc_cs_free(gpmc_cfg->cs);
++
++	printk(KERN_ERR "Could not initialize smsc911x\n");
++}
+diff --git a/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h b/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+new file mode 100644
+index 0000000..e5f3a48
+--- /dev/null
++++ b/arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+@@ -0,0 +1,35 @@
++/*
++ * arch/arm/plat-omap/include/mach/gpmc-smsc911x.h
++ *
++ * Copyright (C) 2009 Li-Pro.Net
++ * Stephan Linz <linz@li-pro.net>
++ *
++ * Modified from arch/arm/plat-omap/include/mach/gpmc-smc91x.h
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __ASM_ARCH_OMAP_GPMC_SMSC911X_H__
++
++struct omap_smsc911x_platform_data {
++	int	cs;
++	int	gpio_irq;
++	int	gpio_reset;
++	u32	flags;
++};
++
++#if defined(CONFIG_SMSC911X) || \
++	defined(CONFIG_SMSC911X_MODULE)
++
++extern void gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d);
++
++#else
++
++static inline void gpmc_smsc911x_init(struct omap_smsc911x_platform_data *d)
++{
++}
++
++#endif
++#endif
+-- 
+1.6.0.4
+
