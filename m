@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425Ab0HKW3M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 18:29:12 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:57349 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab0HKW3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 18:29:11 -0400
-Date: Wed, 11 Aug 2010 15:28:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100811222854.GJ2516@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
- <alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
- <20100807061558.GA28087@thunk.org>
- <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
- <20100808155719.GB3635@thunk.org>
- <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
- <20100808213821.GD3635@thunk.org>
- <20100809112453.77210acc@lxorguk.ukuu.org.uk>
- <20100809181638.GI3026@linux.vnet.ibm.com>
- <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
+	id S1756655Ab0HKWnk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 18:43:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39308 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754650Ab0HKWnj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 18:43:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=qHdLxWDLzPob8pPY+OlWLAirsNvuKs8TVfBGdNtrRhzdtQP2cb+iIk1KL2idDJhWSF
+         hKcfr/FzrOAOHlRAyCqDxejc7HGka/F/kafoMsZ/am48dtq4VISnMSxXvJ/8k+XptJBn
+         m3x4Jo1I5KsNYfanCEzxLFI2KF+EZJCGzLG+4=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Subject: Re: [PATCHv3 1/2] lib: vsprintf: optimised put_dec() function
+Date: Thu, 12 Aug 2010 00:43:34 +0200
+User-Agent: KMail/1.8.2
+Cc: linux-kernel@vger.kernel.org, m.nazarewicz@samsung.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Douglas W. Jones" <jones@cs.uiowa.edu>
+References: <1bec965de7de10bf9cddda988a2eaaf755852919.1281532502.git.mina86@mina86.com>
+In-Reply-To: <1bec965de7de10bf9cddda988a2eaaf755852919.1281532502.git.mina86@mina86.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201008120043.34081.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 10:18:51PM +0300, Felipe Contreras wrote:
-> On Mon, Aug 9, 2010 at 9:16 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > But wouldn't an office suite run as a power-oblivious application on an
-> > Android device?  After all, office applications do not need to run when
-> > the screen is turned off, so these the applications do not need to use
-> > suspend blockers.
-> 
-> Ideally the system would be suspended even when the screen is on. If
-> there are no "trusted" applications running at the same time, then
-> openoffice wouldn't load at all. Right?
+On Wednesday 11 August 2010 23:58, Michal Nazarewicz wrote:
+> +static noinline_for_stack
+> +char *put_dec(char *buf, unsigned long long n)
+> +{
+> +	uint32_t d3, d2, d1, q;
+> +
+> +	if (n < 10) {
+> +		*buf++ = '0' + (unsigned)n;
+> +		return buf;
+> +	}
 
-My understanding is that Android systems in fact do not suspend when
-the screen is on, and that most (perhaps all) other systems do not
-opportunistically suspend at all.  There has been some speculation about
-what a hypothetical Android having a non-volatile display might do,
-but as far as I know, this is just speculation.
+I looked at it and discovered that 0 is already special-cased
+at put_dec() callsite. You can drop the above if() block
+(or better comment it out, explaining that caller does it),
+and while at it, improve special-case code in number():
+replace
 
-							Thanx, Paul
+        /* generate full string in tmp[], in reverse order */
+        i = 0;
+        if (num == 0)
+                tmp[i++] = '0';
+
+with
+
+        if (num <= 7)
+                tmp[i++] = '0' + num;
+
+(7, not 9, because it can be an octal conversion).
+
+
+> +	q   = q / 10000;
+> +	buf = put_dec_full4(buf, q % 10000);
+
+Bug. You need to use temporary variable to store q / 10000 result.
+
+-- 
+vda
