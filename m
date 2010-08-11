@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759536Ab0HLAcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:32:07 -0400
-Received: from kroah.org ([198.145.64.141]:43583 "EHLO coco.kroah.org"
+	id S1759222Ab0HKX7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:05 -0400
+Received: from kroah.org ([198.145.64.141]:43473 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759016Ab0HKX7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:03 2010
-Message-Id: <20100811235503.285077837@clark.site>
+	id S1759012Ab0HKX6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:45 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:01 2010
+Message-Id: <20100811235501.870761315@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:05 -0700
+Date: Wed, 11 Aug 2010 16:54:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lin Ming <ming.m.lin@intel.com>,
-        "Zhang Yanmin" <yanmin_zhang@linux.intel.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Tony Luck <tony.luck@intel.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Kurt Garloff <garloff@suse.de>
-Subject: [084/111] timekeeping: Fix clock_gettime vsyscall time warp
+        Yang Hongyang <yanghy@cn.fujitsu.com>,
+        Chris Mason <chris.mason@oracle.com>, Jeff Mahoney <jeffm@suse.com>
+Subject: [069/111] Btrfs: fix a memory leak in btrfs_init_acl
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,159 +26,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lin Ming <ming.m.lin@intel.com>
+From: Yang Hongyang <yanghy@cn.fujitsu.com>
 
-commit 0696b711e4be45fa104c12329f617beb29c03f78 upstream.
+commit f858153c367a397235d3e81136741e40e44faf1d upstream.
 
-Since commit 0a544198 "timekeeping: Move NTP adjusted clock multiplier
-to struct timekeeper" the clock multiplier of vsyscall is updated with
-the unmodified clock multiplier of the clock source and not with the
-NTP adjusted multiplier of the timekeeper.
+In btrfs_init_acl() cloned acl is not released
 
-This causes user space observerable time warps:
-new CLOCK-warp maximum: 120 nsecs,  00000025c337c537 -> 00000025c337c4bf
-
-Add a new argument "mult" to update_vsyscall() and hand in the
-timekeeping internal NTP adjusted multiplier.
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
-Cc: "Zhang Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Tony Luck <tony.luck@intel.com>
-LKML-Reference: <1258436990.17765.83.camel@minggr.sh.intel.com>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Kurt Garloff <garloff@suse.de>
+Signed-off-by: Yang Hongyang <yanghy@cn.fujitsu.com>
+Signed-off-by: Chris Mason <chris.mason@oracle.com>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- arch/ia64/kernel/time.c       |    4 ++--
- arch/powerpc/kernel/time.c    |    5 +++--
- arch/s390/kernel/time.c       |    3 ++-
- arch/x86/kernel/vsyscall_64.c |    5 +++--
- include/linux/clocksource.h   |    6 ++++--
- kernel/time/timekeeping.c     |    6 +++---
- 6 files changed, 17 insertions(+), 12 deletions(-)
 
---- a/arch/ia64/kernel/time.c
-+++ b/arch/ia64/kernel/time.c
-@@ -473,7 +473,7 @@ void update_vsyscall_tz(void)
- {
- }
- 
--void update_vsyscall(struct timespec *wall, struct clocksource *c)
-+void update_vsyscall(struct timespec *wall, struct clocksource *c, u32 mult)
- {
-         unsigned long flags;
- 
-@@ -481,7 +481,7 @@ void update_vsyscall(struct timespec *wa
- 
-         /* copy fsyscall clock data */
-         fsyscall_gtod_data.clk_mask = c->mask;
--        fsyscall_gtod_data.clk_mult = c->mult;
-+        fsyscall_gtod_data.clk_mult = mult;
-         fsyscall_gtod_data.clk_shift = c->shift;
-         fsyscall_gtod_data.clk_fsys_mmio = c->fsys_mmio;
-         fsyscall_gtod_data.clk_cycle_last = c->cycle_last;
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -864,7 +864,8 @@ static cycle_t timebase_read(struct cloc
- 	return (cycle_t)get_tb();
- }
- 
--void update_vsyscall(struct timespec *wall_time, struct clocksource *clock)
-+void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
-+		     u32 mult)
- {
- 	u64 t2x, stamp_xsec;
- 
-@@ -877,7 +878,7 @@ void update_vsyscall(struct timespec *wa
- 
- 	/* XXX this assumes clock->shift == 22 */
- 	/* 4611686018 ~= 2^(20+64-22) / 1e9 */
--	t2x = (u64) clock->mult * 4611686018ULL;
-+	t2x = (u64) mult * 4611686018ULL;
- 	stamp_xsec = (u64) xtime.tv_nsec * XSEC_PER_SEC;
- 	do_div(stamp_xsec, 1000000000);
- 	stamp_xsec += (u64) xtime.tv_sec * XSEC_PER_SEC;
---- a/arch/s390/kernel/time.c
-+++ b/arch/s390/kernel/time.c
-@@ -214,7 +214,8 @@ struct clocksource * __init clocksource_
- 	return &clocksource_tod;
- }
- 
--void update_vsyscall(struct timespec *wall_time, struct clocksource *clock)
-+void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
-+		     u32 mult)
- {
- 	if (clock != &clocksource_tod)
- 		return;
---- a/arch/x86/kernel/vsyscall_64.c
-+++ b/arch/x86/kernel/vsyscall_64.c
-@@ -73,7 +73,8 @@ void update_vsyscall_tz(void)
- 	write_sequnlock_irqrestore(&vsyscall_gtod_data.lock, flags);
- }
- 
--void update_vsyscall(struct timespec *wall_time, struct clocksource *clock)
-+void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
-+		     u32 mult)
- {
- 	unsigned long flags;
- 
-@@ -82,7 +83,7 @@ void update_vsyscall(struct timespec *wa
- 	vsyscall_gtod_data.clock.vread = clock->vread;
- 	vsyscall_gtod_data.clock.cycle_last = clock->cycle_last;
- 	vsyscall_gtod_data.clock.mask = clock->mask;
--	vsyscall_gtod_data.clock.mult = clock->mult;
-+	vsyscall_gtod_data.clock.mult = mult;
- 	vsyscall_gtod_data.clock.shift = clock->shift;
- 	vsyscall_gtod_data.wall_time_sec = wall_time->tv_sec;
- 	vsyscall_gtod_data.wall_time_nsec = wall_time->tv_nsec;
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -282,10 +282,12 @@ extern struct clocksource * __init __wea
- extern void clocksource_mark_unstable(struct clocksource *cs);
- 
- #ifdef CONFIG_GENERIC_TIME_VSYSCALL
--extern void update_vsyscall(struct timespec *ts, struct clocksource *c);
-+extern void
-+update_vsyscall(struct timespec *ts, struct clocksource *c, u32 mult);
- extern void update_vsyscall_tz(void);
- #else
--static inline void update_vsyscall(struct timespec *ts, struct clocksource *c)
-+static inline void
-+update_vsyscall(struct timespec *ts, struct clocksource *c, u32 mult)
- {
- }
- 
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -177,7 +177,7 @@ void timekeeping_leap_insert(int leapsec
- {
- 	xtime.tv_sec += leapsecond;
- 	wall_to_monotonic.tv_sec -= leapsecond;
--	update_vsyscall(&xtime, timekeeper.clock);
-+	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
- }
- 
- #ifdef CONFIG_GENERIC_TIME
-@@ -337,7 +337,7 @@ int do_settimeofday(struct timespec *tv)
- 	timekeeper.ntp_error = 0;
- 	ntp_clear();
- 
--	update_vsyscall(&xtime, timekeeper.clock);
-+	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
- 
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
- 
-@@ -822,7 +822,7 @@ void update_wall_time(void)
- 	update_xtime_cache(nsecs);
- 
- 	/* check to see if there is a new clocksource to use */
--	update_vsyscall(&xtime, timekeeper.clock);
-+	update_vsyscall(&xtime, timekeeper.clock, timekeeper.mult);
- }
- 
- /**
+---
+ fs/btrfs/acl.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/fs/btrfs/acl.c
++++ b/fs/btrfs/acl.c
+@@ -272,6 +272,7 @@ int btrfs_init_acl(struct btrfs_trans_ha
+ 						    ACL_TYPE_ACCESS);
+ 			}
+ 		}
++		posix_acl_release(clone);
+ 	}
+ failed:
+ 	posix_acl_release(acl);
 
 
