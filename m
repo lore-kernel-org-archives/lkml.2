@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0HKOHd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 10:07:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59752 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280Ab0HKOHc (ORCPT
+	id S1752681Ab0HKOLy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 10:11:54 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:39914 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752265Ab0HKOLx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 10:07:32 -0400
-Message-ID: <4C62AE89.1090909@windriver.com>
-Date: Wed, 11 Aug 2010 09:07:05 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Wed, 11 Aug 2010 10:11:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XJTCefxnCKz4AH+wWNnoYEPNhg76bY5K52P3u9hp/0oB6tlHCUU7cSmKkvAS8ohNzs
+         qel/I+h0k30C519+iyUkvPcUdLl0Ct1njN19LmyS5vtkGKe4dRXaOQOZd7UmKnH2yiUa
+         30YtB2WggVgV4aFHwviPFnWGVCS6uJmuEIxi8=
+Date: Wed, 11 Aug 2010 16:11:49 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Namhyung Kim <namhyung@gmail.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf, tracing: add missing __percpu markups
+Message-ID: <20100811141146.GA5381@nowhere>
+References: <1281498479-28551-1-git-send-email-namhyung@gmail.com> <4C6256B4.1030304@kernel.org>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Dipankar Sarma <dipankar@in.ibm.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [RFC PATCH 2/2] rcu,debug_core: allow the kernel debugger to
- reset the rcu stall timer
-References: <1281330732-17164-1-git-send-email-jason.wessel@windriver.com> <1281330732-17164-2-git-send-email-jason.wessel@windriver.com> <1281330732-17164-3-git-send-email-jason.wessel@windriver.com> <20100809174353.GH3026@linux.vnet.ibm.com> <4C60484B.8030002@windriver.com> <20100809190142.GM3026@linux.vnet.ibm.com> <20100811040157.GA7722@linux.vnet.ibm.com>
-In-Reply-To: <20100811040157.GA7722@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Aug 2010 14:07:03.0898 (UTC) FILETIME=[7989E3A0:01CB395E]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6256B4.1030304@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2010 11:01 PM, Paul E. McKenney wrote:
-> On Mon, Aug 09, 2010 at 12:01:42PM -0700, Paul E. McKenney wrote:
+On Wed, Aug 11, 2010 at 09:52:20AM +0200, Tejun Heo wrote:
+> On 08/11/2010 05:47 AM, Namhyung Kim wrote:
+> > ftrace_event_call->perf_events, perf_trace_buf, fgraph_data->cpu_data and
+> > some local variables are percpu pointers but were missing __percpu markup.
+> > Add it.
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 > 
-> Here is an initial patch.  Untested, probably doesn't even compile.
-> It is against my -rcu tree:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/testing
-> 
-> Thoughts?
-> 
+> Acked-by: Tejun Heo <tj@kernel.org>
 
 
-Paul, I tried this out and code wise it looks fine to me. I performed
-a compile and regression test with the various kernel config options
-to cover this new code.
+Queued, thanks!
 
-Thanks for fixing the rcu_preempt case that my original patch missed.
-Because you used the same name for the function it was an easy drop in
-replacement.  :-)
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-
-Cheers,
-Jason.
