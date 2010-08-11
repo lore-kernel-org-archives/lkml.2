@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556Ab0HKGBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 02:01:25 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51425 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751623Ab0HKGBY (ORCPT
+	id S932526Ab0HKGa3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 02:30:29 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:13593 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751623Ab0HKGa2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 02:01:24 -0400
-Subject: Re: [RFC PATCH v9 00/16] Provide a zero-copy method on KVM
- virtio-net.
-From: Shirley Ma <mashirle@us.ibm.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-In-Reply-To: <1281490993.3391.25.camel@localhost.localdomain>
-References: <1281086624-5765-1-git-send-email-xiaohui.xin@intel.com>
-	 <1281489804.3391.23.camel@localhost.localdomain>
-	 <1281490993.3391.25.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 10 Aug 2010 23:01:00 -0700
-Message-ID: <1281506460.3391.42.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Wed, 11 Aug 2010 02:30:28 -0400
+Message-ID: <000601cb391e$afec6b60$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: "Wang, Qi" <qi.wang@intel.com>, <meego-dev@meego.com>,
+        "LKML" <linux-kernel@vger.kernel.org>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>,
+        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+        <arjan@linux.intel.com>
+References: <002c01cb390e$80a58e50$66f8800a@maildom.okisemi.com> <20100811043952.GA4669@suse.de>
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
+Date: Wed, 11 Aug 2010 15:30:20 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-10 at 18:43 -0700, Shirley Ma wrote:
-> > Also I found some vhost performance regression on the new
-> > kernel with tuning. I used to get 9.4Gb/s, now I couldn't get it. 
-> 
-> I forgot to mention the kernel I used 2.6.36 one. And I found the
-> native
-> host BW is limited to 8.0Gb/s, so the regression might come from the
-> device driver not vhost.
+Hi Greg,
 
-Something is very interesting, when binding ixgbe interrupts to cpu1,
-and running netperf/netserver on cpu0, the native host to host
-performance is still around 8.0Gb/s, however, the macvtap zero copy
-result is 9.0Gb/s.
+> Use the 'bool' type, and 'true' and/or 'false' keywords instead.  That
+> is the proper C idiom.
+I can do well.
 
-root@localhost ~]# netperf -H 192.168.10.74 -c -C -l60 -T0,0 -- -m 64K
-TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 192.168.10.74 (192.168..
-10.74) port 0 AF_INET : cpu bind
-Recv   Send    Send                          Utilization       Service Demand
-Socket Socket  Message  Elapsed              Send     Recv     Send    Recv
-Size   Size    Size     Time     Throughput  local    remote   local   remote
-bytes  bytes   bytes    secs.    10^6bits/s  % S      % S      us/KB   us/KB
+Thanks, Ohtake.
 
- 87380  16384  65536    60.00      9013.59   53.01    8.21     0.963   0.597
+----- Original Message ----- 
+From: "Greg KH" <gregkh@suse.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Wang, Qi" <qi.wang@intel.com>; <meego-dev@meego.com>; "LKML" <linux-kernel@vger.kernel.org>; "Wang, Yong Y"
+<yong.y.wang@intel.com>; "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>; <arjan@linux.intel.com>
+Sent: Wednesday, August 11, 2010 1:39 PM
+Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to 2.6.35
 
-Below is perf top output:
 
-              578.00  6.5% copy_user_generic_string   
-              381.00  4.3% vmx_vcpu_run                
-              250.00  2.8% schedule                    
-              207.00  2.3% vhost_get_vq_desc           
-              204.00  2.3% _raw_spin_lock_irqsave      
-              197.00  2.2% translate_desc              
-              193.00  2.2% memcpy_fromiovec            
-              162.00  1.8% gup_pte_range   
+> On Wed, Aug 11, 2010 at 01:34:33PM +0900, Masayuki Ohtake wrote:
+> > Hi Qi-san
+> >
+> > I have found Macro 'TRUE' and 'FALSE' are used as setting value in the driver; still,
+> > can't I use TRUE/FALSE macro ?
+> > If not, How should we implement ?
+>
+> Use the 'bool' type, and 'true' and/or 'false' keywords instead.  That
+> is the proper C idiom.
+>
+> thanks,
+>
+> greg k-h
+>
 
-We can compare your results with mine to see any difference.
-
-Thanks
-Shirley
 
