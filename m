@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758911Ab0HLAlD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:41:03 -0400
-Received: from kroah.org ([198.145.64.141]:40160 "EHLO coco.kroah.org"
+	id S1758920Ab0HLAlV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:41:21 -0400
+Received: from kroah.org ([198.145.64.141]:40153 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758881Ab0HKX56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:58 -0400
+	id S1758869Ab0HKX55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:57 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:58 2010
-Message-Id: <20100811235458.382839513@clark.site>
+Message-Id: <20100811235458.289138765@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:12 -0700
+Date: Wed, 11 Aug 2010 16:54:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Ming Lei <tom.leiming@gmail.com>
-Subject: [031/111] USB: usbtest: avoid to free coherent buffer in atomic context
+        Alessio Igor Bogani <abogani@texware.it>
+Subject: [030/111] USB: cp210x: Add four new device IDs
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,80 +25,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ming Lei <tom.leiming@gmail.com>
+From: Alessio Igor Bogani <abogani@texware.it>
 
-commit e10e1bec8e6654de4591ef45ddd6a6d1e5b2591c upstream.
+commit 356c5a4834a74c621715f7a7f16ded914eecbd3c upstream.
 
-This patch fixes the warning below:
-[30753.755998] ------------[ cut here ]------------
-[30753.755998] WARNING: at /home/tom/git/linux-2.6/linux-2.6-next/arch/x86/include/asm/dma-mapping.h:155 hcd_buffer_free+0xb1/0xd4 [usbcore]()
-[30753.755998] Hardware name: 6475EK2
-[30753.755998] Modules linked in: uvcvideo ehci_hcd usbtest cdc_ether usbnet vfat fat usb_storage nfsd lockd nfs_acl auth_rpcgss exportfs mii tun videodev v4l1_compat v4l2_compat_ioctl32 fuse bridge stp llc sunrpc ipv6 cpufreq_ondemand acpi_cpufreq freq_table mperf kvm_intel kvm arc4 ecb ath5k usbhid mac80211 snd_hda_codec_conexant ch341 usbserial ath cfg80211 thinkpad_acpi snd_hda_intel pcspkr wmi hwmon yenta_socket iTCO_wdt iTCO_vendor_support i2c_i801 e1000e snd_hda_codec snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc pata_acpi uhci_hcd ohci_hcd usbcore i915 drm_kms_helper drm i2c_algo_bit i2c_core video output [last unloaded: uvcvideo]
-[30753.755998] Pid: 0, comm: swapper Tainted: G        W   2.6.35-rc6-gkh-wl+ #49
-[30753.755998] Call Trace:
-[30753.755998]  <IRQ>  [<ffffffff8104478a>] warn_slowpath_common+0x80/0x98
-[30753.755998]  [<ffffffff810447b7>] warn_slowpath_null+0x15/0x17
-[30753.755998]  [<ffffffffa00ce02d>] hcd_buffer_free+0xb1/0xd4 [usbcore]
-[30753.755998]  [<ffffffffa00c1345>] usb_free_coherent+0x1c/0x1e [usbcore]
-[30753.755998]  [<ffffffffa00b13e4>] simple_free_urb+0x23/0x2f [usbtest]
-[30753.755998]  [<ffffffffa00b210b>] iso_callback+0xbb/0x10f [usbtest]
-[30753.755998]  [<ffffffffa00c7390>] usb_hcd_giveback_urb+0x8c/0xc0 [usbcore]
-[30753.755998]  [<ffffffffa0449b35>] ehci_urb_done+0x84/0x95 [ehci_hcd]
-[30753.755998]  [<ffffffffa044b5a5>] ehci_work+0x41a/0x7dd [ehci_hcd]
-[30753.755998]  [<ffffffffa044e298>] ehci_irq+0x33b/0x370 [ehci_hcd]
-[30753.755998]  [<ffffffff8100fb05>] ? sched_clock+0x9/0xd
-[30753.755998]  [<ffffffff8105e641>] ? sched_clock_local+0x1c/0x82
-[30753.755998]  [<ffffffff8105e76a>] ? sched_clock_cpu+0xc3/0xce
-[30753.755998]  [<ffffffff81067c7e>] ? trace_hardirqs_off+0xd/0xf
-[30753.755998]  [<ffffffff8105e7b8>] ? cpu_clock+0x43/0x5e
-[30753.755998]  [<ffffffffa00c6999>] usb_hcd_irq+0x45/0xa1 [usbcore]
-[30753.755998]  [<ffffffff81092e02>] handle_IRQ_event+0x20/0xa5
-[30753.755998]  [<ffffffff81094cea>] handle_fasteoi_irq+0x92/0xd2
-[30753.755998]  [<ffffffff8100c0ed>] handle_irq+0x1f/0x2a
-[30753.755998]  [<ffffffff8100b75d>] do_IRQ+0x57/0xbe
-[30753.755998]  [<ffffffff8136a693>] ret_from_intr+0x0/0x16
-[30753.755998]  <EOI>  [<ffffffff81223baa>] ? acpi_idle_enter_bm+0x231/0x269
-[30753.755998]  [<ffffffff81223ba3>] ? acpi_idle_enter_bm+0x22a/0x269
-[30753.755998]  [<ffffffff812c4b6b>] cpuidle_idle_call+0x99/0xce
-[30753.755998]  [<ffffffff81008dd5>] cpu_idle+0x61/0xaa
-[30753.755998]  [<ffffffff8136374b>] start_secondary+0x1c2/0x1c6
-[30753.755998] ---[ end trace 904cfaf7ab4cb1a2 ]---
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/misc/usbtest.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/usb/serial/cp210x.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/misc/usbtest.c
-+++ b/drivers/usb/misc/usbtest.c
-@@ -1382,7 +1382,6 @@ static void iso_callback (struct urb *ur
- 			break;
- 		}
- 	}
--	simple_free_urb (urb);
+--- a/drivers/usb/serial/cp210x.c
++++ b/drivers/usb/serial/cp210x.c
+@@ -128,6 +128,10 @@ static struct usb_device_id id_table []
+ 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
+ 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
+ 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
++	{ USB_DEVICE(0x16DC, 0x0010) }, /* W-IE-NE-R Plein & Baus GmbH PL512 Power Supply */
++	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
++	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
++	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
+ 	{ } /* Terminating Entry */
+ };
  
- 	ctx->pending--;
- 	if (ctx->pending == 0) {
-@@ -1499,6 +1498,7 @@ test_iso_queue (struct usbtest_dev *dev,
- 			}
- 
- 			simple_free_urb (urbs [i]);
-+			urbs[i] = NULL;
- 			context.pending--;
- 			context.submit_error = 1;
- 			break;
-@@ -1508,6 +1508,10 @@ test_iso_queue (struct usbtest_dev *dev,
- 
- 	wait_for_completion (&context.done);
- 
-+	for (i = 0; i < param->sglen; i++) {
-+		if (urbs[i])
-+			simple_free_urb(urbs[i]);
-+	}
- 	/*
- 	 * Isochronous transfers are expected to fail sometimes.  As an
- 	 * arbitrary limit, we will report an error if any submissions
 
 
