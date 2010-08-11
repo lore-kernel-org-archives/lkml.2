@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759338Ab0HLAC3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:02:29 -0400
-Received: from kroah.org ([198.145.64.141]:43761 "EHLO coco.kroah.org"
+	id S1759329Ab0HKX7b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:31 -0400
+Received: from kroah.org ([198.145.64.141]:43620 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758826Ab0HKX7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:05 2010
-Message-Id: <20100811235505.442127540@clark.site>
+	id S1759251Ab0HKX7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:03 2010
+Message-Id: <20100811235503.574374391@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:28 -0700
+Date: Wed, 11 Aug 2010 16:55:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [107/111] [SCSI] aic79xx: check for non-NULL scb in ahd_handle_nonpkt_busfree
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Subject: [087/111] mutex: Dont spin when the owner CPU is offline or other weird cases
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,105 +26,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 534ef056db8a8fb6b9d50188d88ed5d1fbc66673 upstream.
+commit 4b402210486c6414fe5fbfd85934a0a22da56b04 upstream.
 
-When removing several devices aic79xx will occasionally Oops
-in ahd_handle_nonpkt_busfree during rescan. Looking at the
-code I found that we're indeed not checking if the scb in
-question is NULL. So check for it before accessing it.
+Due to recent load-balancer changes that delay the task migration to
+the next wakeup, the adaptive mutex spinning ends up in a live lock
+when the owner's CPU gets offlined because the cpu_online() check
+lives before the owner running check.
 
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+This patch changes mutex_spin_on_owner() to return 0 (don't spin) in
+any case where we aren't sure about the owner struct validity or CPU
+number, and if the said CPU is offline. There is no point going back &
+re-evaluate spinning in corner cases like that, let's just go to
+sleep.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1271212509.13059.135.camel@pasglop>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/aic7xxx/aic79xx_core.c |   53 +++++++++++++++++++++---------------
- 1 file changed, 31 insertions(+), 22 deletions(-)
+ kernel/sched.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/scsi/aic7xxx/aic79xx_core.c
-+++ b/drivers/scsi/aic7xxx/aic79xx_core.c
-@@ -3171,13 +3171,16 @@ ahd_handle_nonpkt_busfree(struct ahd_sof
- 				tinfo->curr.transport_version = 2;
- 				tinfo->goal.transport_version = 2;
- 				tinfo->goal.ppr_options = 0;
--				/*
--				 * Remove any SCBs in the waiting for selection
--				 * queue that may also be for this target so
--				 * that command ordering is preserved.
--				 */
--				ahd_freeze_devq(ahd, scb);
--				ahd_qinfifo_requeue_tail(ahd, scb);
-+				if (scb != NULL) {
-+					/*
-+					 * Remove any SCBs in the waiting
-+					 * for selection queue that may
-+					 * also be for this target so that
-+					 * command ordering is preserved.
-+					 */
-+					ahd_freeze_devq(ahd, scb);
-+					ahd_qinfifo_requeue_tail(ahd, scb);
-+				}
- 				printerror = 0;
- 			}
- 		} else if (ahd_sent_msg(ahd, AHDMSG_EXT, MSG_EXT_WDTR, FALSE)
-@@ -3194,13 +3197,16 @@ ahd_handle_nonpkt_busfree(struct ahd_sof
- 				      MSG_EXT_WDTR_BUS_8_BIT,
- 				      AHD_TRANS_CUR|AHD_TRANS_GOAL,
- 				      /*paused*/TRUE);
--			/*
--			 * Remove any SCBs in the waiting for selection
--			 * queue that may also be for this target so that
--			 * command ordering is preserved.
--			 */
--			ahd_freeze_devq(ahd, scb);
--			ahd_qinfifo_requeue_tail(ahd, scb);
-+			if (scb != NULL) {
-+				/*
-+				 * Remove any SCBs in the waiting for
-+				 * selection queue that may also be for
-+				 * this target so that command ordering
-+				 * is preserved.
-+				 */
-+				ahd_freeze_devq(ahd, scb);
-+				ahd_qinfifo_requeue_tail(ahd, scb);
-+			}
- 			printerror = 0;
- 		} else if (ahd_sent_msg(ahd, AHDMSG_EXT, MSG_EXT_SDTR, FALSE)
- 			&& ppr_busfree == 0) {
-@@ -3217,13 +3223,16 @@ ahd_handle_nonpkt_busfree(struct ahd_sof
- 					/*ppr_options*/0,
- 					AHD_TRANS_CUR|AHD_TRANS_GOAL,
- 					/*paused*/TRUE);
--			/*
--			 * Remove any SCBs in the waiting for selection
--			 * queue that may also be for this target so that
--			 * command ordering is preserved.
--			 */
--			ahd_freeze_devq(ahd, scb);
--			ahd_qinfifo_requeue_tail(ahd, scb);
-+			if (scb != NULL) {
-+				/*
-+				 * Remove any SCBs in the waiting for
-+				 * selection queue that may also be for
-+				 * this target so that command ordering
-+				 * is preserved.
-+				 */
-+				ahd_freeze_devq(ahd, scb);
-+				ahd_qinfifo_requeue_tail(ahd, scb);
-+			}
- 			printerror = 0;
- 		} else if ((ahd->msg_flags & MSG_FLAG_EXPECT_IDE_BUSFREE) != 0
- 			&& ahd_sent_msg(ahd, AHDMSG_1B,
-@@ -3251,7 +3260,7 @@ ahd_handle_nonpkt_busfree(struct ahd_sof
- 	 * the message phases.  We check it last in case we
- 	 * had to send some other message that caused a busfree.
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -5590,7 +5590,7 @@ int mutex_spin_on_owner(struct mutex *lo
+ 	 * the mutex owner just released it and exited.
  	 */
--	if (printerror != 0
-+	if (scb != NULL && printerror != 0
- 	 && (lastphase == P_MESGIN || lastphase == P_MESGOUT)
- 	 && ((ahd->msg_flags & MSG_FLAG_EXPECT_PPR_BUSFREE) != 0)) {
+ 	if (probe_kernel_address(&owner->cpu, cpu))
+-		goto out;
++		return 0;
+ #else
+ 	cpu = owner->cpu;
+ #endif
+@@ -5600,14 +5600,14 @@ int mutex_spin_on_owner(struct mutex *lo
+ 	 * the cpu field may no longer be valid.
+ 	 */
+ 	if (cpu >= nr_cpumask_bits)
+-		goto out;
++		return 0;
  
+ 	/*
+ 	 * We need to validate that we can do a
+ 	 * get_cpu() and that we have the percpu area.
+ 	 */
+ 	if (!cpu_online(cpu))
+-		goto out;
++		return 0;
+ 
+ 	rq = cpu_rq(cpu);
+ 
+@@ -5626,7 +5626,7 @@ int mutex_spin_on_owner(struct mutex *lo
+ 
+ 		cpu_relax();
+ 	}
+-out:
++
+ 	return 1;
+ }
+ #endif
 
 
