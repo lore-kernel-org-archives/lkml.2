@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758428Ab0HKXt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:49:59 -0400
-Received: from kroah.org ([198.145.64.141]:57515 "EHLO coco.kroah.org"
+	id S1758665Ab0HKXuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:50:10 -0400
+Received: from kroah.org ([198.145.64.141]:57540 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758208Ab0HKXty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:49:54 -0400
+	id S1758471Ab0HKXuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:50:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:46:25 2010
-Message-Id: <20100811234625.173816865@clark.site>
+Message-Id: <20100811234625.632304508@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:45:42 -0700
+Date: Wed, 11 Aug 2010 16:45:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [03/11] PCI: disable MSI on VIA K8M800
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Subject: [08/11] jfs: dont allow os2 xattr namespace overlap with others
 In-Reply-To: <20100811234809.GA676@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +25,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
 
-commit 549e15611b4ac1de51ef0e0a79c2704f50a638a2 upstream.
+commit aca0fa34bdaba39bfddddba8ca70dba4782e8fe6 upstream.
 
-MSI delivery from on-board ahci controller doesn't work on K8M800.  At
-this point, it's unclear whether the culprit is with the ahci
-controller or the host bridge.  Given the track record and considering
-the rather minimal impact of MSI, disabling it seems reasonable.
+It's currently possible to bypass xattr namespace access rules by
+prefixing valid xattr names with "os2.", since the os2 namespace stores
+extended attributes in a legacy format with no prefix.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Rainer Hurtado Navarro <publio.escipion.el.africano@gmail.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+This patch adds checking to deny access to any valid namespace prefix
+following "os2.".
+
+Signed-off-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Reported-by: Sergey Vlasov <vsu@altlinux.ru>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2115,6 +2115,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_RS480, quirk_disabl
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3336, quirk_disable_all_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3351, quirk_disable_all_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3364, quirk_disable_all_msi);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8380_0, quirk_disable_all_msi);
+---
+ fs/jfs/xattr.c |   87 ++++++++++++++++++++++++---------------------------------
+ 1 file changed, 38 insertions(+), 49 deletions(-)
+
+--- a/fs/jfs/xattr.c
++++ b/fs/jfs/xattr.c
+@@ -85,46 +85,25 @@ struct ea_buffer {
+ #define EA_MALLOC	0x0008
  
- /* Disable MSI on chipsets that are known to not support it */
- static void __devinit quirk_disable_msi(struct pci_dev *dev)
+ 
++static int is_known_namespace(const char *name)
++{
++	if (strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN) &&
++	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
++	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
++	    strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
++		return false;
++
++	return true;
++}
++
+ /*
+  * These three routines are used to recognize on-disk extended attributes
+  * that are in a recognized namespace.  If the attribute is not recognized,
+  * "os2." is prepended to the name
+  */
+-static inline int is_os2_xattr(struct jfs_ea *ea)
++static int is_os2_xattr(struct jfs_ea *ea)
+ {
+-	/*
+-	 * Check for "system."
+-	 */
+-	if ((ea->namelen >= XATTR_SYSTEM_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Check for "user."
+-	 */
+-	if ((ea->namelen >= XATTR_USER_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Check for "security."
+-	 */
+-	if ((ea->namelen >= XATTR_SECURITY_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_SECURITY_PREFIX,
+-		     XATTR_SECURITY_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Check for "trusted."
+-	 */
+-	if ((ea->namelen >= XATTR_TRUSTED_PREFIX_LEN) &&
+-	    !strncmp(ea->name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
+-		return false;
+-	/*
+-	 * Add any other valid namespace prefixes here
+-	 */
+-
+-	/*
+-	 * We assume it's OS/2's flat namespace
+-	 */
+-	return true;
++	return !is_known_namespace(ea->name);
+ }
+ 
+ static inline int name_size(struct jfs_ea *ea)
+@@ -768,13 +747,23 @@ static int can_set_xattr(struct inode *i
+ 	if (!strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
+ 		return can_set_system_xattr(inode, name, value, value_len);
+ 
++	if (!strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)) {
++		/*
++		 * This makes sure that we aren't trying to set an
++		 * attribute in a different namespace by prefixing it
++		 * with "os2."
++		 */
++		if (is_known_namespace(name + XATTR_OS2_PREFIX_LEN))
++				return -EOPNOTSUPP;
++		return 0;
++	}
++
+ 	/*
+ 	 * Don't allow setting an attribute in an unknown namespace.
+ 	 */
+ 	if (strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) &&
+ 	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
+-	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
+-	    strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))
++	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
+ 		return -EOPNOTSUPP;
+ 
+ 	return 0;
+@@ -956,19 +945,8 @@ ssize_t __jfs_getxattr(struct inode *ino
+ 	int xattr_size;
+ 	ssize_t size;
+ 	int namelen = strlen(name);
+-	char *os2name = NULL;
+ 	char *value;
+ 
+-	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
+-		os2name = kmalloc(namelen - XATTR_OS2_PREFIX_LEN + 1,
+-				  GFP_KERNEL);
+-		if (!os2name)
+-			return -ENOMEM;
+-		strcpy(os2name, name + XATTR_OS2_PREFIX_LEN);
+-		name = os2name;
+-		namelen -= XATTR_OS2_PREFIX_LEN;
+-	}
+-
+ 	down_read(&JFS_IP(inode)->xattr_sem);
+ 
+ 	xattr_size = ea_get(inode, &ea_buf, 0);
+@@ -1006,8 +984,6 @@ ssize_t __jfs_getxattr(struct inode *ino
+       out:
+ 	up_read(&JFS_IP(inode)->xattr_sem);
+ 
+-	kfree(os2name);
+-
+ 	return size;
+ }
+ 
+@@ -1016,6 +992,19 @@ ssize_t jfs_getxattr(struct dentry *dent
+ {
+ 	int err;
+ 
++	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
++		/*
++		 * skip past "os2." prefix
++		 */
++		name += XATTR_OS2_PREFIX_LEN;
++		/*
++		 * Don't allow retrieving properly prefixed attributes
++		 * by prepending them with "os2."
++		 */
++		if (is_known_namespace(name))
++			return -EOPNOTSUPP;
++	}
++
+ 	err = __jfs_getxattr(dentry->d_inode, name, data, buf_size);
+ 
+ 	return err;
 
 
