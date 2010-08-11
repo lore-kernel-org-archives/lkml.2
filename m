@@ -1,109 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab0HKPJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 11:09:38 -0400
-Received: from borg.asidev.net ([95.141.32.69]:56108 "EHLO borg.asidev.net"
+	id S1754034Ab0HKPLQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 11:11:16 -0400
+Received: from king.tilera.com ([72.1.168.226]:50770 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753362Ab0HKPJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 11:09:37 -0400
-Message-ID: <4C62BD2B.2010508@evidence.eu.com>
-Date: Wed, 11 Aug 2010 17:09:31 +0200
-From: Claudio Scordino <claudio@evidence.eu.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-CC: starvik@axis.com, linux-cris-kernel <linux-cris-kernel@axis.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hinko Kocevar <hinko.kocevar@cetrtapot.si>,
-        Janez Cufer <janez.cufer@cetrtapot.si>,
-        Andy Whitcroft <apw@canonical.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        dev-etrax <dev-etrax@axis.com>, linux-serial@vger.kernel.org
-Subject: [PATCH] CRIS RS485: Check SER_RS485_RTS_BEFORE_SEND before delaying.
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1752803Ab0HKPLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 11:11:15 -0400
+Message-Id: <201008111511.o7BFBA9k005534@farm-0010.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Wed, 11 Aug 2010 10:54:13 -0400
+Subject: [PATCH] arch/tile: support new kunmap_atomic() naming convention.
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 11 Aug 2010 15:11:10.0829 (UTC) FILETIME=[6E7CF9D0:01CB3967]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jesper,
+See commit 597781f3e51f48ef8e67be772196d9e9673752c4.
 
-	the following patch fixes the usage of the delay in RS485 mode
-on the Cris architecture.
-
-Very recently, the RS485 interface has been fixed by adding two further
-fields (see commit 1b6331848b69d1ed165a6bdc75c4046d68767563).
-
-This patch checks the value of the flag SER_RS485_RTS_BEFORE_SEND before
-delaying.
-
-Best regards,
-
-	Claudio
-
-
-CRIS RS485: Check SER_RS485_RTS_BEFORE_SEND before delaying.
-
-Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- drivers/serial/crisv10.c |   21 ++++++++++++++-------
- 1 files changed, 14 insertions(+), 7 deletions(-)
+ arch/tile/include/asm/highmem.h |    2 +-
+ arch/tile/mm/highmem.c          |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/serial/crisv10.c b/drivers/serial/crisv10.c
-index c856905..a2237e7 100644
---- a/drivers/serial/crisv10.c
-+++ b/drivers/serial/crisv10.c
-@@ -1411,11 +1411,12 @@ e100_enable_rs485(struct tty_struct *tty, struct serial_rs485 *r)
- 		       CONFIG_ETRAX_RS485_LTC1387_RXEN_PORT_G_BIT, 1);
- #endif
+diff --git a/arch/tile/include/asm/highmem.h b/arch/tile/include/asm/highmem.h
+index efdd12e..d155db6 100644
+--- a/arch/tile/include/asm/highmem.h
++++ b/arch/tile/include/asm/highmem.h
+@@ -60,7 +60,7 @@ void *kmap_fix_kpte(struct page *page, int finished);
+ /* This macro is used only in map_new_virtual() to map "page". */
+ #define kmap_prot page_to_kpgprot(page)
  
--	info->rs485.flags = r->flags;
--	if (r->delay_rts_before_send >= 1000)
-+	info->rs485 = *r;
-+
-+	/* Maximum delay before RTS equal to 1000 */
-+	if (info->rs485.delay_rts_before_send >= 1000)
- 		info->rs485.delay_rts_before_send = 1000;
--	else
--		info->rs485.delay_rts_before_send = r->delay_rts_before_send;
-+
- /*	printk("rts: on send = %i, after = %i, enabled = %i",
- 		    info->rs485.rts_on_send,
- 		    info->rs485.rts_after_sent,
-@@ -3234,9 +3235,9 @@ rs_write(struct tty_struct *tty,
- 		e100_disable_rx(info);
- 		e100_enable_rx_irq(info);
- #endif
--
--		if (info->rs485.delay_rts_before_send > 0)
--			msleep(info->rs485.delay_rts_before_send);
-+		if ((info->rs485.flags & SER_RS485_RTS_BEFORE_SEND) &&
-+			(info->rs485.delay_rts_before_send > 0))
-+				msleep(info->rs485.delay_rts_before_send);
- 	}
- #endif /* CONFIG_ETRAX_RS485 */
+-void kunmap_atomic(void *kvaddr, enum km_type type);
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type);
+ void *kmap_atomic_pfn(unsigned long pfn, enum km_type type);
+ void *kmap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot);
+ struct page *kmap_atomic_to_page(void *ptr);
+diff --git a/arch/tile/mm/highmem.c b/arch/tile/mm/highmem.c
+index ff1cdff..12ab137 100644
+--- a/arch/tile/mm/highmem.c
++++ b/arch/tile/mm/highmem.c
+@@ -276,7 +276,7 @@ void *kmap_atomic(struct page *page, enum km_type type)
+ }
+ EXPORT_SYMBOL(kmap_atomic);
  
-@@ -3694,6 +3695,11 @@ rs_ioctl(struct tty_struct *tty, struct file * file,
+-void kunmap_atomic(void *kvaddr, enum km_type type)
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+ 	enum fixed_addresses idx = type + KM_TYPE_NR*smp_processor_id();
+@@ -300,7 +300,7 @@ void kunmap_atomic(void *kvaddr, enum km_type type)
+ 	arch_flush_lazy_mmu_mode();
+ 	pagefault_enable();
+ }
+-EXPORT_SYMBOL(kunmap_atomic);
++EXPORT_SYMBOL(kunmap_atomic_notypecheck);
  
- 		rs485data.delay_rts_before_send = rs485ctrl.delay_rts_before_send;
- 		rs485data.flags = 0;
-+		if (rs485data.delay_rts_before_send != 0)
-+			rs485data.flags |= SER_RS485_RTS_BEFORE_SEND;
-+		else
-+			rs485data.flags &= ~(SER_RS485_RTS_BEFORE_SEND);
-+
- 		if (rs485ctrl.enabled)
- 			rs485data.flags |= SER_RS485_ENABLED;
- 		else
-@@ -4527,6 +4533,7 @@ static int __init rs_init(void)
- 		/* Set sane defaults */
- 		info->rs485.flags &= ~(SER_RS485_RTS_ON_SEND);
- 		info->rs485.flags |= SER_RS485_RTS_AFTER_SEND;
-+		info->rs485.flags &= ~(SER_RS485_RTS_BEFORE_SEND);
- 		info->rs485.delay_rts_before_send = 0;
- 		info->rs485.flags &= ~(SER_RS485_ENABLED);
- #endif
+ /*
+  * This API is supposed to allow us to map memory without a "struct page".
 -- 
-1.6.0.4
+1.6.5.2
 
