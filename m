@@ -1,84 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab0HKSmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:42:37 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:36825 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753684Ab0HKSmg (ORCPT
+	id S1755465Ab0HKSp1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:45:27 -0400
+Received: from mail.logicpd.com ([66.162.60.3]:1388 "EHLO smtp.logicpd.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755027Ab0HKSpZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:42:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=feOBZlkzNU0PLcOE3a7BjnSr0zP5y34+9hdjq5403IIAqBZxOvPccP2Wo27ADtg2Jz
-         DqfXfL+qn+JRnkNWmJ6nx1oSodW/TTsc3CLVSBcOj9PiKtGPnM/+aadwG9I4v2Kxan0I
-         MzUWHWyPNQSg8llFpkQ7MqY+9D4VVHc0ZglMg=
+	Wed, 11 Aug 2010 14:45:25 -0400
+Content-class: urn:content-classes:message
+Subject: RE: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and TORPEDO development kits
 MIME-Version: 1.0
-In-Reply-To: <20100810001244.GD2569@local>
-References: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
-	<20100809111155.GB2569@local>
-	<20100810001244.GD2569@local>
-Date: Wed, 11 Aug 2010 20:42:35 +0200
-Message-ID: <AANLkTingmHe9z6KLp_euogxbXCTCZN+DMs2oEpC6VDKn@mail.gmail.com>
-Subject: Re: UIO DMA to userspace question
-From: Leon Woestenberg <leon.woestenberg@gmail.com>
-To: "Hans J. Koch" <hjk@linutronix.de>
-Cc: Tom Lyon <pugs@cisco.com>, mst@redhat.com, gregkh@suse.de,
-        chrisw@sous-sol.org, joro@8bytes.org, avi@redhat.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 11 Aug 2010 13:45:22 -0500
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Message-ID: <77A0A4DB5BF2A44283E5522C27234AC6021C82B4@EDPRSRV011.logicpd.com>
+In-Reply-To: <20100811172232.GA21391@nokia.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and TORPEDO development kits
+Thread-Index: Acs5edoj2WrzxwflRkKyducpGKxwEQACwiyA
+From: "Jacob Tanenbaum" <Jacob.Tanenbaum@logicpd.com>
+To: <felipe.balbi@nokia.com>
+Cc: <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <rmk@arm.linux.org.uk>,
+        <tony@atomide.com>
+X-OriginalArrivalTime: 11 Aug 2010 18:45:24.0554 (UTC) FILETIME=[5BE7C2A0:01CB3985]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Hans,
 
-On Tue, Aug 10, 2010 at 2:12 AM, Hans J. Koch <hjk@linutronix.de> wrote:
-> On Mon, Aug 09, 2010 at 01:11:56PM +0200, Hans J. Koch wrote:
->> On Sat, Aug 07, 2010 at 08:38:30PM +0200, Leon Woestenberg wrote:
->> > Hello all,
->> >
->> > can I use the UIO framework for the following?
->> >
->> > The userspace portion of the driver allocates memory in user-space
->> > using malloc() - usually resulting in a scatter pages in physical
->> > memory.
->> > The UIO kernel portion of the driver maps those using pci_map_sg().
->> >
->> > Is this possible, or does the UIO framework assume memory for DMA is
->> > allocated in kernel space?
->>
->> You would have to write your own mmap() function and and set the pointer
->> to it in struct uio_info->mmap. Have a look at uio_mmap() in
+
+-----Original Message-----
+From: Felipe Balbi [mailto:felipe.balbi@nokia.com] 
+Sent: Wednesday, August 11, 2010 1:23 PM
+To: Jacob Tanenbaum
+Cc: linux@arm.linux.org.uk; linux-omap@vger.kernel.org;
+linux-kernel@vger.kernel.org; rmk@arm.linux.org.uk; tony@atomide.com
+Subject: Re: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and
+TORPEDO development kits
+
+Hi Jacob,
+
+few style comments only
+
+On Wed, Aug 11, 2010 at 06:31:34PM +0200, ext Jacob Tanenbaum wrote:
 >
-Why would I need to mmap() the user space memory into kernel space?
-
-Looking from a traditional device driver perspective the kernel space
-only needs to know the virtual address and the length of the buffer,
-and can then make up a scatter list.
-
-After DMA finished, it needs to synchronize caches.
-
-In fact, from my simplistic view, the kernel provides a few internal
-house keeping tools, and we need to export this functionality into UIO
-API's.
-
-SGDMA to from user memory would be one of the uses.
-
-In fact, when UIO started, I also expected the kernel buffers to be
-user application managed, like the driver steering code.
-
-> uio_info->mmap pointer was made for unusual mappings. But it still causes
-> me some headaches. I'm not sure if this can be considered a clean solution.
-> An extension that makes UIO deal properly with dynamically allocated (DMA-)
-> memory would certainly be preferable.
+>	Adding LogicPD OMAP3 board support
 >
-Thanks for thinking along.
+>         Adding support for LogicPD's OMAP 3530 LV SOM and
+>         OMAP 35x Torpedo board.
+>	
+>	 Tested against: linux-next
+81e09f50c93edff607259cbe374a3006c9c5fa74
+>         Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
 
-I am currently refraining from using UIO, as I don't like the head
-ache feature :-)
+don't tab here. Please remove.
+Will fix
 
-Regards,
+>+static int omap3logic_twl_gpio_setup(struct device *dev,
+>+				unsigned gpio, unsigned ngpio)
+>+{
+>+	return 0;
+>+}
+
+no gpio setup ?? If you truly don't need, you don't have to add this 
+stub function.
+Will fix 
+
+>+static struct twl4030_gpio_platform_data omap3logic_gpio_data = {
+>+	.gpio_base	= OMAP_MAX_GPIO_LINES,
+>+	.irq_base	= TWL4030_GPIO_IRQ_BASE,
+>+	.irq_end	= TWL4030_GPIO_IRQ_END,
+>+	.use_leds	= true,
+>+	.pullups	= BIT(1),
+>+	.pulldowns	= BIT(2)  | BIT(6)  | BIT(7)  | BIT(8)
+>+			| BIT(13) | BIT(15) | BIT(16) | BIT(17),
+>+	.setup		= omap3logic_twl_gpio_setup,
+>+};
+>+
+>+static struct twl4030_platform_data omap3logic_twldata = {
+>+	.irq_base	= TWL4030_IRQ_BASE,
+>+	.irq_end	= TWL4030_IRQ_END,
+>+
+>+	/* platform_data for children goes here */
+>+	.gpio		= &omap3logic_gpio_data,
+
+no USB on this board ?
+
+
+there is USB support it will be added in later 
+
+>+static struct omap_board_config_kernel omap3logic_config[] __initdata
+= {
+>+};
+
+just don't assign anything ?
+
+
+will fix
+
+>+static void __init omap3logic_init_irq(void)
+>+{
+>+	omap_board_config = omap3logic_config;
+>+	omap_board_config_size = ARRAY_SIZE(omap3logic_config);
+>+	omap2_init_common_hw(mt46h32m32lf6_sdrc_params,
+>+				mt46h32m32lf6_sdrc_params);
+>+	omap_init_irq();
+>+#ifdef CONFIG_OMAP_32K_TIMER
+>+	omap2_gp_clockevent_set_gptimer(12);
+>+#endif
+>+	omap_gpio_init();
+>+}
+>+
+>+
+>+
+
+one blank line only
+
+will fix
+
+>+static void __init omap3logic_init(void)
+>+{
+>+	omap3logic_i2c_init();
+>+	omap_serial_init();
+>+
+>+	/* Ensure SDRC pins are mux'd for self-refresh */
+>+/*	omap_cfg_reg(H16_34XX_SDRC_CKE0);
+>+	omap_cfg_reg(H17_34XX_SDRC_CKE1);
+>+	omap_cfg_reg(SDRC_CKE0);
+>+	omap_cfg_reg(SDRC_CKE1); */
+
+remove this commented code if it's not used yet.
+
+I made a mistake rebasing this code gets removed in patch 4, will fix 
+
+>+#ifdef CONFIG_MACH_OMAP3_TORPEDO
+
+no need to wrap on this ifdef, please remove.
+
+>+#ifdef CONFIG_MACH_OMAP3530_LV_SOM
+
+neither this.
+
+No one else uses the ifdef but we were told from an earlier submission
+we should because if both boards are disabled in the .config it would
+inform the user on bootup 
+
 -- 
-Leon
+balbi
+
+DefectiveByDesign.org
