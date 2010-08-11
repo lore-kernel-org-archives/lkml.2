@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932867Ab0HKKKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:10:53 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41205 "EHLO mgw2.diku.dk"
+	id S932885Ab0HKKLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:11:12 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41231 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756149Ab0HKKKv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:10:51 -0400
-Date: Wed, 11 Aug 2010 12:10:48 +0200 (CEST)
+	id S932870Ab0HKKLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 06:11:10 -0400
+Date: Wed, 11 Aug 2010 12:11:07 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/5] drivers/usb/gadget: Return -ENOMEM on memory allocation
- failure
-Message-ID: <Pine.LNX.4.64.1008111210291.8669@ask.diku.dk>
+To: Linus Walleij <linus.walleij@stericsson.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/5] drivers/dma: Return -ENOMEM on memory allocation failure
+Message-ID: <Pine.LNX.4.64.1008111210490.8669@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -46,31 +46,22 @@ if (x == NULL) { ... when != ret = e3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/usb/gadget/m66592-udc.c   |    1 +
- drivers/usb/gadget/r8a66597-udc.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/dma/coh901318.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
-index 70a8178..2456ccd 100644
---- a/drivers/usb/gadget/r8a66597-udc.c
-+++ b/drivers/usb/gadget/r8a66597-udc.c
-@@ -1557,6 +1557,7 @@ static int __init r8a66597_probe(struct platform_device *pdev)
- 	/* initialize ucd */
- 	r8a66597 = kzalloc(sizeof(struct r8a66597), GFP_KERNEL);
- 	if (r8a66597 == NULL) {
-+		ret = -ENOMEM;
- 		printk(KERN_ERR "kzalloc error\n");
- 		goto clean_up;
- 	}
-diff --git a/drivers/usb/gadget/m66592-udc.c b/drivers/usb/gadget/m66592-udc.c
-index 166bf71..e03058f 100644
---- a/drivers/usb/gadget/m66592-udc.c
-+++ b/drivers/usb/gadget/m66592-udc.c
-@@ -1609,6 +1609,7 @@ static int __init m66592_probe(struct platform_device *pdev)
- 	/* initialize ucd */
- 	m66592 = kzalloc(sizeof(struct m66592), GFP_KERNEL);
- 	if (m66592 == NULL) {
-+		ret = -ENOMEM;
- 		pr_err("kzalloc error\n");
- 		goto clean_up;
- 	}
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index 557e227..6dd9488 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -1475,8 +1475,10 @@ static int __init coh901318_probe(struct platform_device *pdev)
+ 		       pdata->max_channels *
+ 		       sizeof(struct coh901318_chan),
+ 		       GFP_KERNEL);
+-	if (!base)
++	if (!base) {
++		err = -ENOMEM;
+ 		goto err_alloc_coh_dma_channels;
++	}
+ 
+ 	base->chans = ((void *)base) + ALIGN(sizeof(struct coh901318_base), 4);
+ 
