@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab0HLAoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:44:05 -0400
-Received: from kroah.org ([198.145.64.141]:40074 "EHLO coco.kroah.org"
+	id S1758802Ab0HLAnt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:43:49 -0400
+Received: from kroah.org ([198.145.64.141]:40082 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758764Ab0HKX5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:39 -0400
+	id S1758777Ab0HKX5m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:42 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:57 2010
-Message-Id: <20100811235456.974518113@clark.site>
+Message-Id: <20100811235457.156336316@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:56 -0700
+Date: Wed, 11 Aug 2010 16:53:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wright <chrisw@sous-sol.org>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: [015/111] blkdev: cgroup whitelist permission fix
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [017/111] ecryptfs: release reference to lower mount if interpose fails
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wright <chrisw@sous-sol.org>
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-commit b7300b78d1a87625975a799a109a2f98d77757c8 upstream.
+commit 31f73bee3e170b7cabb35db9e2f4bf7919b9d036 upstream.
 
-The cgroup device whitelist code gets confused when trying to grant
-permission to a disk partition that is not currently open.  Part of
-blkdev_open() includes __blkdev_get() on the whole disk.
+In ecryptfs_lookup_and_interpose_lower() the lower mount is not decremented
+if allocation of a dentry info struct failed. As a result the lower filesystem
+cant be unmounted any more (since it is considered busy). This patch corrects
+the reference counting.
 
-Basically, the only ways to reliably allow a cgroup access to a partition
-on a block device when using the whitelist are to 1) also give it access
-to the whole block device or 2) make sure the partition is already open in
-a different context.
-
-The patch avoids the cgroup check for the whole disk case when opening a
-partition.
-
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=589662
-
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/block_dev.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ fs/ecryptfs/inode.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1175,10 +1175,12 @@ static int __blkdev_get(struct block_dev
- 	/*
- 	 * hooks: /n/, see "layering violations".
- 	 */
--	ret = devcgroup_inode_permission(bdev->bd_inode, perm);
--	if (ret != 0) {
--		bdput(bdev);
--		return ret;
-+	if (!for_part) {
-+		ret = devcgroup_inode_permission(bdev->bd_inode, perm);
-+		if (ret != 0) {
-+			bdput(bdev);
-+			return ret;
-+		}
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -272,7 +272,7 @@ int ecryptfs_lookup_and_interpose_lower(
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to allocate ecryptfs_dentry_info struct\n",
+ 			__func__);
+-		goto out_dput;
++		goto out_put;
  	}
- 
- 	lock_kernel();
+ 	ecryptfs_set_dentry_lower(ecryptfs_dentry, lower_dentry);
+ 	ecryptfs_set_dentry_lower_mnt(ecryptfs_dentry, lower_mnt);
+@@ -345,8 +345,9 @@ int ecryptfs_lookup_and_interpose_lower(
+ out_free_kmem:
+ 	kmem_cache_free(ecryptfs_header_cache_2, page_virt);
+ 	goto out;
+-out_dput:
++out_put:
+ 	dput(lower_dentry);
++	mntput(lower_mnt);
+ 	d_drop(ecryptfs_dentry);
+ out:
+ 	return rc;
 
 
