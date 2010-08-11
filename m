@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab0HKTCI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 15:02:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56676 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab0HKTCG convert rfc822-to-8bit (ORCPT
+	id S1755925Ab0HKTCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 15:02:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52242 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755562Ab0HKTCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 15:02:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=u/ya4Er+QdjjXQgBGOWwFgihcgzbGr8Od5p+ITWv8jVBhPFZqUomzvNzHNpdnhReZ8
-         VOfCv3FNKHH1xGQo52wYatDMKVOydgjSD6OLiq4OGPBH0ELAeAeqaKP6axQNP4RS7BeO
-         5OMjHhxleXonfZ/fBzRDCwib0dIQNzxLLiJgs=
-MIME-Version: 1.0
-In-Reply-To: <20100811141219.GA5846@debian>
-References: <1281476766-7066-1-git-send-email-linus.walleij@stericsson.com>
-	<20100811141219.GA5846@debian>
-Date: Wed, 11 Aug 2010 21:02:04 +0200
-Message-ID: <AANLkTikD2LwYwsk6Q-7U-P3o+ujhY_0TqgeqOo=hhjA=@mail.gmail.com>
-Subject: Re: [PATCH] DMAENGINE: add a slave buffer prep call
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 11 Aug 2010 15:02:32 -0400
+X-Authority-Analysis: v=1.1 cv=FLDyhxrUEZZDQYGWQdnXfbzWjjll+fIPMqQTcKt1R7E= c=1 sm=0 a=-fSXZVlqRNsA:10 a=GzHTLUccyWwA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=QyXUC8HyAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=9S3UKyfeZDZYB59E7aAA:9 a=OXRP1B3BiH3-b4xzPtKWj54JYYEA:4 a=dGJ0OcVc7YAA:10 a=LI9Vle30uBYA:10 a=jeBq3FmKZ4MA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Message-Id: <20100811190231.056258855@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 11 Aug 2010 15:01:44 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, <stable@kernel.org>,
+        Shaohua Li <shaohua.li@intel.com>
+Subject: [PATCH 1/2] tracing: Fix an unallocated memory access in function_graph
+References: <20100811190143.688551293@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-Fix-an-unallocated-memory-access-in-function.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/11 Rabin Vincent <rabin@rab.in>:
+From: Shaohua Li <shaohua.li@intel.com>
 
-> On Tue, Aug 10, 2010 at 11:46:06PM +0200, Linus Walleij wrote:
->> This makes it possible for engines to implement slave transfers
->> to be done to/from a simple kmalloc():ed memory buffer and not
->> just from scatterlists.
->
-> Why is this needed?  Drivers can just pass in a single-entry scatterlist
-> to the existing API to achieve the same functionality, and a couple of
-> them already do so.
+With CONFIG_DEBUG_PAGEALLOC, I observed an unallocated memory access in
+function_graph trace. It appears we find a small size entry in ring buffer,
+but we access it as a big size entry. The access overflows the page size
+and touches an unallocated page.
 
-Because of the overhead, simply. Especially if you want to trigger
-many jobs after each other. (This is necessary in device/slave-DMA
-since every transaction may fail...) It's not just constructing the
-sg-headers and freeing them again and again, it's also list traversals
-here and there since the driver must assume it can be a linked sglist and
-then two other list traversals for each
-dma_map_sg()/dma_unmap_sg() pair and ... yeah that's basically
-it.
+Cc: <stable@kernel.org>
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+LKML-Reference: <1280217994.32400.76.camel@sli10-desk.sh.intel.com>
+[ Added a comment to explain the problem - SDR ]
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_functions_graph.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-And the number of extra code lines needed.
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 79f4bac..b4c179a 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -507,7 +507,15 @@ get_return_for_leaf(struct trace_iterator *iter,
+ 			 * if the output fails.
+ 			 */
+ 			data->ent = *curr;
+-			data->ret = *next;
++			/*
++			 * If the next event is not a return type, then
++			 * we only care about what type it is. Otherwise we can
++			 * safely copy the entire event.
++			 */
++			if (next->ent.type == TRACE_GRAPH_RET)
++				data->ret = *next;
++			else
++				data->ret.ent.type = next->ent.type;
+ 		}
+ 	}
+ 
+-- 
+1.7.1
 
-Then it's something conceptwise of creating a list that you know
-is just always one element that is just not elegant, like taking a queue
-numer and standing in queue when there is only one customer but
-hey, maybe it's just me.
 
-One way of achieving it for all present drivers is to wrap the passed
-buffer in a single sglist and pass to the sglist function if the single
-buffer call is not supported in the driver. Maybe it'd be better if I
-coded up the patch like that so all driver can rely on this function
-to be present?
-
-Yours,
-Linus Walleij
