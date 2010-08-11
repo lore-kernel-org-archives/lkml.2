@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753912Ab0HKQXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:23:32 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:47263 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537Ab0HKQXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:23:31 -0400
-Date: Wed, 11 Aug 2010 18:23:28 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Patrick Gefre <pfg@sgi.com>
-Cc: linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 5/5] drivers/serial: Return -ENOMEM on memory allocation
- failure
-In-Reply-To: <4C62C8F3.3090405@sgi.com>
-Message-ID: <Pine.LNX.4.64.1008111818380.8669@ask.diku.dk>
-References: <Pine.LNX.4.64.1008111211440.8669@ask.diku.dk> <4C62C8F3.3090405@sgi.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753520Ab0HKQan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:30:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50865 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752537Ab0HKQam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 12:30:42 -0400
+Subject: Re: Query: Patches break with Microsoft exchange server.
+From: David Woodhouse <dwmw2@infradead.org>
+To: Avery Pennarun <apenwarr@gmail.com>
+Cc: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>,
+        viresh kumar <viresh.kumar@st.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "git@vger.kernel.org" <git@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Valeo de Vries <valeo@valeo.co.cc>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Matti Aarnio <matti.aarnio@zmailer.org>, mihai.dontu@gmail.com,
+        richardcochran@gmail.com, "Gadiyar, Anand" <gadiyar@ti.com>
+In-Reply-To: <AANLkTi=9xVdfXJXpkNPUMahc7AsbxjVbZFSxeBrzvbmS@mail.gmail.com>
+References: <4C5F9B25.8080401@st.com>
+	 <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com>
+	 <4C624AE1.30504@st.com> <4C62C5BD.3020808@mnsu.edu>
+	 <1281542305.5107.11.camel@localhost>
+	 <AANLkTi=9xVdfXJXpkNPUMahc7AsbxjVbZFSxeBrzvbmS@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Aug 2010 17:30:34 +0100
+Message-ID: <1281544234.5107.25.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.6 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I believe this code also leaks earlier instances of port, which are only
-> > referenced by card_ptr, which is freed in the error handling code at the
-> > end of the function.  A lot of operations are done on port on each
-> > iteration, however, so I'm not sure whether it is good enough to just free
-> > them.  Perhaps there is some way to call ioc3uart_remove?
-> > 
+On Wed, 2010-08-11 at 12:18 -0400, Avery Pennarun wrote:
 > 
-> Yes you are right, there should be something like this for out4:
+> Out of curiosity, why fall back to one chunk at a time?  It seems to
+> me that IMAP should be able to still support multiple outstanding
+> requests in that case, but you'd just get errors on the latter chunks.
 > 
-> out4:
-> 	for (phys_port = 0; phys_port < PORTS_PER_CARD; phys_port++) {
-> 		port = card_ptr->ic_port[phys_port].icp_port;
-> 		if (port) {
-> 			pci_free_consistent(port->ip_idd->pdev,
->                                        TOTAL_RING_BUF_SIZE,
->                                        (void *)port->ip_cpu_ringbuf,
->                                        port->ip_dma_ringbuf);
-> 			kfree(port);
-> 		}
-> 	}
-> 	kfree(card_ptr);
-> 	return ret;
+> It is just that there was no point optimizing the workaround case?
 
-Actually, pci_alloc_consistent is only called when phys_port is 0.  In the 
-subsequent cases, the ip_dma_ringbuf field is just initialized to the 
-previous value.  So it could be:
+There wasn't a lot of point in optimising it.
 
-out4:
-        for (phys_port = 0; phys_port < PORTS_PER_CARD; phys_port++) {
-                port = card_ptr->ic_port[phys_port].icp_port;
-                if (port) {
-			if (phys_port == 0)
-	                        pci_free_consistent(port->ip_idd->pdev,
-                                       TOTAL_RING_BUF_SIZE,
-                                       (void *)port->ip_cpu_ringbuf,
-                                       port->ip_dma_ringbuf);
-                        kfree(port);
-                }
-        }
-        kfree(card_ptr);
-        return ret;
+The current logic, shown in the patch I referenced, is to keep fetching
+new chunks while the stream position matches the end of the previous
+chunk we attempted to fetch.
 
-julia
+To handle multiple outstanding requests, especially if they can be
+satisfied out-of-order, would have been more complex because the stream
+position (in the 'really_fetched' variable) wouldn't necessarily match
+anything interesting. We'd have to keep more state, and the whole thing
+would get a lot more intrusive.
+
+Also, for the common case where the server isn't broken and the mail
+size happens not to fall on a chunk boundary, the current implementation
+results in no extra fetch requests. Doing otherwise would either mean
+extra fetch requests even for this common case, or would mean even more
+complexity to 'catch up' by issuing additional fetch requests as soon as
+we realise the server lied about RFC822.SIZE (which is when we receive
+the last chunk, and it runs over the size we expected).
+
+It may be that there's a neat and simple way to handle all of the above,
+and if so then patches would be welcome -- but personally, I just
+couldn't be bothered to think too hard about it. There were more
+pressing matters to attend to, like implementing QRESYNC support.
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
