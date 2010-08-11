@@ -1,65 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932622Ab0HKD3j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 10 Aug 2010 23:29:39 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60084 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932428Ab0HKD3h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 10 Aug 2010 23:29:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BrBd5HoTMJ2mbkbR8n53ZvWKDP3IuC9v7podxvpH5uUfXP5AM6BMZ+poztpEUehAsu
-         6Whv8bRqAMk1PQ/JLwXussW+lED8RlKCJufXFy9puecyE04yUrmOcf0poKCqYxW33z1H
-         WHaEm0n1G0tCRfnzd32XI7ru+HjQqJY1X44sc=
-Date: Tue, 10 Aug 2010 20:29:30 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 4/4] input: dynamically allocate ABS information
-Message-ID: <20100811032929.GA10104@core.coreip.homeip.net>
-References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
- <1274289757-2723-5-git-send-email-daniel@caiaq.de>
- <20100524160805.GO30801@buzzloop.caiaq.de>
- <20100524161527.GC3182@core.coreip.homeip.net>
- <20100616083903.GU17833@buzzloop.caiaq.de>
- <20100721083048.GA21558@core.coreip.homeip.net>
- <20100807152309.GF17833@buzzloop.caiaq.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100807152309.GF17833@buzzloop.caiaq.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S932645Ab0HKDiW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 10 Aug 2010 23:38:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34845 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932427Ab0HKDiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 10 Aug 2010 23:38:20 -0400
+Date: Wed, 11 Aug 2010 13:38:12 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alexey Fomenko <ext-alexey.fomenko@nokia.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Michal Marek <mmarek@suse.cz>,
+        Trevor Keith <tsrk@tsrk.net>
+Subject: linux-next: build failure after merge of the final tree
+Message-Id: <20100811133812.2b594551.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__11_Aug_2010_13_38_12_+1000_qba66bv3HGSl.knC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 05:23:09PM +0200, Daniel Mack wrote:
-> Hi Dmitry,
-> 
-> sorry for the late reply on this, I guess I haven't been much help
-> around here lately.
-> 
-> On Wed, Jul 21, 2010 at 01:30:48AM -0700, Dmitry Torokhov wrote:
-> > The approach is pretty solid, with the exception that I do not think
-> > we'd save much if we allocate every axis data separately (as I mentioned
-> > in one of my earlier mails).
-> 
-> Agreed. We at least save the memory for all input devices that don't
-> have absolute axis at all.
-> 
-> > Coudl you please take a look at the following patches and let me know if
-> > you see something wrong.
-> 
-> I checked the patches and tried them locally on my desktop, and I can't
-> see any breakage, but we might need more coverage for testing.
-> 
-> Will you push them to the .36 merge window or is it too late for this?
-> 
+--Signature=_Wed__11_Aug_2010_13_38_12_+1000_qba66bv3HGSl.knC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yep, it in mainline now. Thank you for working on this.
+Hi ,
 
-- 
-Dmitry
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
+
+*** glibc detected *** scripts/mod/modpost: munmap_chunk(): invalid pointer=
+: 0x00000000004095fc ***
+=3D=3D=3D=3D=3D=3D=3D Backtrace: =3D=3D=3D=3D=3D=3D=3D=3D=3D
+/lib/libc.so.6(+0x71b16)[0x2b4f000b6b16]
+scripts/mod/modpost[0x40284e]
+scripts/mod/modpost[0x403aee]
+scripts/mod/modpost[0x40446e]
+/lib/libc.so.6(__libc_start_main+0xfd)[0x2b4f00063c4d]
+scripts/mod/modpost[0x401219]
+=3D=3D=3D=3D=3D=3D=3D Memory map: =3D=3D=3D=3D=3D=3D=3D=3D
+00400000-0040e000 r-xp 00000000 08:11 30327842                           /s=
+cratch/sfr/powerpc_allyesconfig/scripts/mod/modpost
+0060d000-0060e000 rw-p 0000d000 08:11 30327842                           /s=
+cratch/sfr/powerpc_allyesconfig/scripts/mod/modpost
+0060e000-00611000 rw-p 00000000 00:00 0=20
+006cf000-006f0000 rw-p 00000000 00:00 0                                  [h=
+eap]
+2b4effe25000-2b4effe43000 r-xp 00000000 08:01 483871                     /l=
+ib/ld-2.11.2.so
+2b4effe43000-2b4effe45000 rw-p 00000000 00:00 0=20
+2b4effe45000-2b4efff9e000 rw-p 00000000 08:11 30334167                   /s=
+cratch/sfr/powerpc_allyesconfig/arch/powerpc/kernel/built-in.o
+2b4f00042000-2b4f00043000 r--p 0001d000 08:01 483871                     /l=
+ib/ld-2.11.2.so
+2b4f00043000-2b4f00044000 rw-p 0001e000 08:01 483871                     /l=
+ib/ld-2.11.2.so
+2b4f00044000-2b4f00045000 rw-p 00000000 00:00 0=20
+2b4f00045000-2b4f0019d000 r-xp 00000000 08:01 483859                     /l=
+ib/libc-2.11.2.so
+2b4f0019d000-2b4f0039c000 ---p 00158000 08:01 483859                     /l=
+ib/libc-2.11.2.so
+2b4f0039c000-2b4f003a0000 r--p 00157000 08:01 483859                     /l=
+ib/libc-2.11.2.so
+2b4f003a0000-2b4f003a1000 rw-p 0015b000 08:01 483859                     /l=
+ib/libc-2.11.2.so
+2b4f003a1000-2b4f003a8000 rw-p 00000000 00:00 0=20
+2b4f003a8000-2b4f003be000 r-xp 00000000 08:01 482546                     /l=
+ib/libgcc_s.so.1
+2b4f003be000-2b4f005bd000 ---p 00016000 08:01 482546                     /l=
+ib/libgcc_s.so.1
+2b4f005bd000-2b4f005be000 rw-p 00015000 08:01 482546                     /l=
+ib/libgcc_s.so.1
+7fffe11d6000-7fffe11f8000 rw-p 00000000 00:00 0                          [s=
+tack]
+7fffe11ff000-7fffe1200000 r-xp 00000000 00:00 0                          [v=
+dso]
+ffffffffff600000-ffffffffff601000 r-xp 00000000 00:00 0                  [v=
+syscall]
+/bin/sh: line 1:  5229 Aborted                 scripts/mod/modpost arch/pow=
+erpc/kernel/built-in.o
+
+I got this error a few times during that build and during the sparc64
+defconfig build as well.
+
+This was an x86_64 hosted build using libc 2.11.2 from Debian (so eglibc
+based), gcc 4.4.4 and binutils 2.20.1-system.20100303.
+
+The only patch new to linux-next since yesterday that affects scripts/mod
+is commit 37ed19d5cce35a40d3913cf9aa208ce9f60db3d7
+("scripts/mod/modpost.c: fix memory leak") from Linus' tree.
+
+I have reverted that commit in linux-next for today as that makes the
+error go away.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__11_Aug_2010_13_38_12_+1000_qba66bv3HGSl.knC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMYhskAAoJEDMEi1NhKgbsCAEIAIfgeQeb6aKd3vNk+OUa6Diz
+MtT8YcJoPf1b86wHuqi6uTK2ducb0hz19le76VmuqVxiX7d9IhEkOMh6q+8Hdij0
+HALmBLV9SmaTqFWum56oOrzTYp7H8RizJse9cq6BwYy3adJzWIjipUJf0sCXNbJH
+AUg+pK+0w6EIPmqpMPDsyqzjlvNZDqALgLdVvkyGWq4+FDOZboIo+np3whxgivdZ
+SExttGoiMo1s4ZNLRKBi6miYCPU4tvBMcKH2ASReZQIotrOBlk2GqYjJ/WyCYlKp
+4YDZnB3sW1GZi54rU0m6narG1Dtltf3JWXuHCKnMHjipUd2m2jFiaWwO59CZwUk=
+=fkDy
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__11_Aug_2010_13_38_12_+1000_qba66bv3HGSl.knC--
