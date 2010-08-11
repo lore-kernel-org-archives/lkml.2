@@ -1,87 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757268Ab0HKU37 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 16:29:59 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:32974 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756438Ab0HKU35 (ORCPT
+	id S1757338Ab0HKUe5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 16:34:57 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:47970 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757129Ab0HKUez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 16:29:57 -0400
-Date: Wed, 11 Aug 2010 16:22:23 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: James Bottomley <James.Bottomley@suse.de>, Zhu Yi <yi.zhu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] ipw2100: register pm_qos request on hardware
- activation
-Message-ID: <20100811202223.GA30437@tuxdriver.com>
-References: <1281555063.4367.1.camel@lovely.krouter>
+	Wed, 11 Aug 2010 16:34:55 -0400
+Date: Wed, 11 Aug 2010 22:34:53 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: Michal Marek <mmarek@suse.cz>,
+        Linus Torvalds <torvalds@linux-foundation.org>, JBeulich@novell.com,
+        aris@redhat.com, catalin.marinas@arm.com, jacmet@sunsite.dk,
+        justinmattock@gmail.com, lizf@cn.fujitsu.com, ulfalizer.lkml@gmail.com,
+        zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT] kbuild: kconfig changes
+Message-ID: <20100811203453.GB28777@merkur.ravnborg.org>
+References: <20100804125156.GA23464@sepie.suse.cz> <AANLkTinN4npO7qfSa-42B-Cq5mKZX+--H0=1SuSrWTEP@mail.gmail.com> <20100807040101.GA30520@merkur.ravnborg.org> <AANLkTinOWBfsncSZw3bvHa6Mp+eb5dzibKSV15OKgW2M@mail.gmail.com> <20100811195131.GA24193@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281555063.4367.1.camel@lovely.krouter>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100811195131.GA24193@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 09:31:03PM +0200, Christoph Fritz wrote:
-> Function pm_qos_add_request() has to be called before first
-> pm_qos_update_request().  This was found out due to a change in pm_qos
-> (commit 82f682514a5df89ffb3890627eebf0897b7a84ec "pm_qos: Get rid of
-> the allocation in pm_qos_add_request()"). The warning call trace is below.
 > 
-> This patch is similar to c128ec29208d410568469bd8bb373b4cdc10912a "e1000e:
-> register pm_qos request on hardware activation".
+> Unfortunately the bug I had discovered is another bug.
+> If I do:
+> 	make ARCH=avr32 atngw100_defconfig
+> 	make ARCH=avr32 savedefconfig
+> 	cp defconfig arch/avr32/configs/atngw100_defconfig
+> 	make ARCH=avr32 atngw100_defconfig
+> 	diff -u .config .config.old
 > 
-> WARNING: at kernel/pm_qos_params.c:264 pm_qos_update_request+0x5e/0x70()
-> pm_qos_update_request() called for unknown object
-> Call Trace:
-> [<c1024088>] ? warn_slowpath_common+0x78/0xb0
-> [<c1041c9e>] ? pm_qos_update_request+0x5e/0x70
-> [<c1041c9e>] ? pm_qos_update_request+0x5e/0x70
-> [<c1024153>] ? warn_slowpath_fmt+0x33/0x40
-> [<c1041c9e>] ? pm_qos_update_request+0x5e/0x70
-> [<f89fe15f>] ? ipw2100_up+0x3f/0xf10 [ipw2100]
-> [<c11961c9>] ? vsnprintf+0xc9/0x530
-> [<f89ff36c>] ? ipw2100_net_init+0x2c/0x1c0 [ipw2100]
-> [<c12f542d>] ? register_netdevice+0x7d/0x3c0
-> [<f89f9b00>] ? ipw2100_irq_tasklet+0x910/0x9a0 [ipw2100]
-> [<c12f579f>] ? register_netdev+0x2f/0x40
-> [<f89fd471>] ? ipw2100_pci_init_one+0xd21/0x1060 [ipw2100]
-> [<c11a5ebb>] ? local_pci_probe+0xb/0x10
-> [<c11a6d49>] ? pci_device_probe+0x69/0x90
-> [<c1224704>] ? driver_probe_device+0x74/0x180
-> [<c10dd15a>] ? sysfs_create_dir+0x6a/0xb0
-> [<c1224889>] ? __driver_attach+0x79/0x80
-> [<c1224810>] ? __driver_attach+0x0/0x80
-> [<c1223fa2>] ? bus_for_each_dev+0x52/0x80
-> [<c1224586>] ? driver_attach+0x16/0x20
-> [<c1224810>] ? __driver_attach+0x0/0x80
-> [<c122395f>] ? bus_add_driver+0x17f/0x250
-> [<c11a5ec0>] ? pci_device_shutdown+0x0/0x20
-> [<c11a6c80>] ? pci_device_remove+0x0/0x40
-> [<c1224b13>] ? driver_register+0x63/0x120
-> [<c11a6f96>] ? __pci_register_driver+0x36/0xa0
-> [<f84f9048>] ? ipw2100_init+0x48/0x67 [ipw2100]
-> [<c1001122>] ? do_one_initcall+0x32/0x170
-> [<c1087078>] ? __vunmap+0xb8/0xf0
-> [<f84f9000>] ? ipw2100_init+0x0/0x67 [ipw2100]
-> [<c10510c1>] ? sys_init_module+0x161/0x1000
-> [<c108f847>] ? sys_close+0x67/0xe0
-> [<c13647c1>] ? syscall_call+0x7/0xb
+> then the diff shows an unexpected difference.
 > 
-> Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+> I will continue of that issue.
+Fixed it - see patch below.
 
-Thanks for identifying this problem!  However, I think there is a
-simpler fix.  I'll include it in a follow-up email.  Could you verify
-that it also addresses this issue?
+@Michal - I will do a proper patch submission if Arve
+can confirm that the problem he saw has been fixed
+with these patches.
 
-John
+	Sam
+
+>From d93f83bbd650499c146f29a8a4de2b1f98dfbefe Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Wed, 11 Aug 2010 22:29:05 +0200
+Subject: [PATCH] kconfig: fix savedefconfig for tristate choices
+
+savedefconfig failed to save choice symbols equal to 'y'
+for tristate choices.
+This resulted in this value being lost.
+
+In particular is fixes an issue where
+
+make ARCH=avr32 atngw100_defconfig
+make ARCH=avr32 savedefconfig
+cp defconfig arch/avr32/configs/atngw100_defconfig
+make ARCH=avr32 atngw100_defconfig
+diff -u .config .config.old
+
+failed to produce an identical .config.
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
+ scripts/kconfig/confdata.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index f81f263..e5d66e4 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -497,7 +497,7 @@ int conf_write_defconfig(const char *filename)
+ 			/*
+ 			 * If symbol is a choice value and equals to the
+ 			 * default for a choice - skip.
+-			 * But only if value equal to "y".
++			 * But only if value is bool and equal to "y" .
+ 			 */
+ 			if (sym_is_choice_value(sym)) {
+ 				struct symbol *cs;
+@@ -506,9 +506,8 @@ int conf_write_defconfig(const char *filename)
+ 				cs = prop_get_symbol(sym_get_choice_prop(sym));
+ 				ds = sym_choice_default(cs);
+ 				if (sym == ds) {
+-					if ((sym->type == S_BOOLEAN ||
+-					sym->type == S_TRISTATE) &&
+-					sym_get_tristate_value(sym) == yes)
++					if ((sym->type == S_BOOLEAN) &&
++					    sym_get_tristate_value(sym) == yes)
+ 						goto next_menu;
+ 				}
+ 			}
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.6.0.6
+
