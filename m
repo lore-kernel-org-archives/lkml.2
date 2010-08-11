@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758505Ab0HKSIg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:08:36 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:40135 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754167Ab0HKSIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:08:34 -0400
-Date: Wed, 11 Aug 2010 20:13:15 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Add maintainer entries for padata/pcrypt
-Message-ID: <20100811181315.GA4097@secunet.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 11 Aug 2010 18:08:27.0941 (UTC) FILETIME=[32B37550:01CB3980]
+	id S1753646Ab0HKSPd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:15:33 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:8246 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752617Ab0HKSPb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 14:15:31 -0400
+Date: Wed, 11 Aug 2010 20:15:11 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: guenter.roeck@ericsson.com
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        akpm <akpm@linux-foundation.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [lm-sensors] [PATCH -next] hwmon: jc42 depends on I2C
+Message-ID: <20100811201511.04216a64@hyperion.delvare>
+In-Reply-To: <1281548611.5745.287.camel@groeck-laptop>
+References: <20100811140009.6ff33109.sfr@canb.auug.org.au>
+	<20100811103511.41428e62.randy.dunlap@oracle.com>
+	<1281548611.5745.287.camel@groeck-laptop>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 11 Aug 2010 10:43:31 -0700, Guenter Roeck wrote:
+> On Wed, 2010-08-11 at 13:35 -0400, Randy Dunlap wrote:
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > jc42 uses i2c interfaces, so it should depend on I2C.
+> > 
+> > drivers/hwmon/jc42.c:426: error: implicit declaration of function 'i2c_check_functionality'
+> > drivers/hwmon/jc42.c:521: error: implicit declaration of function 'i2c_smbus_read_word_data'
+> > drivers/hwmon/jc42.c:529: error: implicit declaration of function 'i2c_smbus_write_word_data'
+> > drivers/hwmon/jc42.c:580: error: implicit declaration of function 'i2c_add_driver'
+> > drivers/hwmon/jc42.c:585: error: implicit declaration of function 'i2c_del_driver'
+> > 
+> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > Cc:	lm-sensors@lm-sensors.org
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
 
-Signed-off-by: Steffen Klassert <steffen.klassert@secunet.com>
----
- MAINTAINERS |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+Applied, thanks.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 8939947..3e9502e 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4327,6 +4327,15 @@ L:	linux-i2c@vger.kernel.org
- S:	Maintained
- F:	drivers/i2c/busses/i2c-pasemi.c
- 
-+PADATA PARALLEL EXECUTION MECHANISM
-+M:	Steffen Klassert <steffen.klassert@secunet.com>
-+L:	linux-kernel@vger.kernel.org
-+L:	linux-crypto@vger.kernel.org
-+S:	Maintained
-+F:	kernel/padata.c
-+F:	include/linux/padata.h
-+F:	Documentation/padata.txt
-+
- PANASONIC LAPTOP ACPI EXTRAS DRIVER
- M:	Harald Welte <laforge@gnumonks.org>
- L:	platform-driver-x86@vger.kernel.org
-@@ -4447,6 +4456,13 @@ L:	netdev@vger.kernel.org
- S:	Maintained
- F:	drivers/net/pcnet32.c
- 
-+PCRYPT PARALLEL CRYPTO ENGINE
-+M:	Steffen Klassert <steffen.klassert@secunet.com>
-+L:	linux-crypto@vger.kernel.org
-+S:	Maintained
-+F:	crypto/pcrypt.c
-+F:	include/crypto/pcrypt.h
-+
- PER-TASK DELAY ACCOUNTING
- M:	Balbir Singh <balbir@linux.vnet.ibm.com>
- S:	Maintained
 -- 
-1.5.6.5
-
+Jean Delvare
