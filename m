@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab0HKHyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:54:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36144 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753128Ab0HKHyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:54:06 -0400
-Message-ID: <4C6256B4.1030304@kernel.org>
-Date: Wed, 11 Aug 2010 09:52:20 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf, tracing: add missing __percpu markups
-References: <1281498479-28551-1-git-send-email-namhyung@gmail.com>
-In-Reply-To: <1281498479-28551-1-git-send-email-namhyung@gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:53:48 +0000 (UTC)
+	id S1753927Ab0HKIBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 04:01:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62007 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752567Ab0HKIBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 04:01:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=TyycXmFApIuUyVvJqJnjoZG7ik8yV2lZ7JHI72isv33t1J1U/8XexKNuW6JtKSCIgh
+         kLAhlI49GhceokhPgryR3xlQ8FqsgeOXF33sDKWj6r1ZsMQsEJbQVmOvbIqAVBmbo1ip
+         lKTNsVWIbJQUTIajMimNe0HdKmyksIWz+co8c=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Matthias Brugger <mensch0815@gmail.com>,
+        Mike Frysinger <vapier@gentoo.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: adis16255: fix sysfs leak
+Date: Wed, 11 Aug 2010 12:00:48 +0400
+Message-Id: <1281513650-5346-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2010 05:47 AM, Namhyung Kim wrote:
-> ftrace_event_call->perf_events, perf_trace_buf, fgraph_data->cpu_data and
-> some local variables are percpu pointers but were missing __percpu markup.
-> Add it.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Original code does not call sysfs_remove_group() on error. This can lead
+to NULL dereference.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/staging/adis16255/adis16255.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/staging/adis16255/adis16255.c b/drivers/staging/adis16255/adis16255.c
+index c3e6a4d..8d4d7cb 100644
+--- a/drivers/staging/adis16255/adis16255.c
++++ b/drivers/staging/adis16255/adis16255.c
+@@ -406,12 +406,14 @@ static int __devinit spi_adis16255_probe(struct spi_device *spi)
+ 
+ 	status = spi_adis16255_bringup(spiadis);
+ 	if (status != 0)
+-		goto irq_err;
++		goto sysfs_err;
+ 
+ 	dev_info(&spi->dev, "spi_adis16255 driver added!\n");
+ 
+ 	return status;
+ 
++sysfs_err:
++	sysfs_remove_group(&spiadis->spi->dev.kobj, &adis16255_attr_group);
+ irq_err:
+ 	free_irq(spiadis->irq, spiadis);
+ gpio_err:
 -- 
-tejun
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a mersage to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
+1.7.0.4
+
