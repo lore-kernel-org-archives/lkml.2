@@ -1,97 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab0HKPb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 11:31:57 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:60975 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753901Ab0HKPb4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 11:31:56 -0400
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v4
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Milton Miller <miltonm@bga.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Johannes Weiner <hannes@cmpxchg.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-In-Reply-To: <20100731103849.GH23886@n2100.arm.linux.org.uk>
-References: <alpine.DEB.2.00.1007281158150.21717@router.home>
-	 <20100728225756.GA6108@barrios-desktop>
-	 <alpine.DEB.2.00.1007291038100.16510@router.home>
-	 <20100729161856.GA16420@barrios-desktop>
-	 <alpine.DEB.2.00.1007291132210.17734@router.home>
-	 <20100729170313.GB16420@barrios-desktop>
-	 <alpine.DEB.2.00.1007291222410.17734@router.home>
-	 <20100729183320.GH18923@n2100.arm.linux.org.uk>
-	 <1280436919.16922.11246.camel@nimitz>
-	 <AANLkTi=DpH=vmUK84KhvOMgP=KL+YxXD0UhiJE+VRJyg@mail.gmail.com>
-	 <20100731103849.GH23886@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Wed, 11 Aug 2010 08:31:29 -0700
-Message-ID: <1281540689.6988.50.camel@nimitz>
+	id S1753841Ab0HKPeu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 11:34:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30423 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753585Ab0HKPet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 11:34:49 -0400
+Date: Wed, 11 Aug 2010 08:32:14 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Philippe De Muyter <phdm@macqel.be>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, hskinnemoen@atmel.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Rick Bronson <rick@efn.org>, John Nicholls <john@thinlinx.com>,
+        Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
+        Ryan Mallon <ryan@bluewatersys.com>, rmk@arm.linux.org.uk,
+        Bernhard Roth <br@pwrnet.de>, Konrad Mattheis <mattheis@ukma.de>,
+        Elektrolot <elektrolot@wp.pl>,
+        Prchal =?UTF-8?Q?Ji=C5=99=C3=AD?= <jiri.prchal@aksignal.cz>,
+        gregkh@suse.de, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+Message-Id: <20100811083214.21d2919e.randy.dunlap@oracle.com>
+In-Reply-To: <4C626CBF.9020609@evidence.eu.com>
+References: <4BB053C4.7050700@evidence.eu.com>
+	<4BB10304.6090006@bluewatersys.com>
+	<4BB1BF49.2000609@evidence.eu.com>
+	<4BB252E3.3030703@bluewatersys.com>
+	<4BBD8C9D.3070401@evidence.eu.com>
+	<20100408111310.524f7354@lxorguk.ukuu.org.uk>
+	<4BBDD71D.1010700@evidence.eu.com>
+	<4BFD1FB6.8050405@atmel.com>
+	<4BFE2F38.8050200@evidence.eu.com>
+	<4BFE41FD.2080804@atmel.com>
+	<20100527102917.GB31253@pengutronix.de>
+	<4C626CBF.9020609@evidence.eu.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-31 at 11:38 +0100, Russell King - ARM Linux wrote:
-> On Fri, Jul 30, 2010 at 06:32:04PM +0900, Minchan Kim wrote:
-> > On Fri, Jul 30, 2010 at 5:55 AM, Dave Hansen <dave@linux.vnet.ibm.com> wrote:
-> > > If you free up parts of the mem_map[] array, how does the buddy
-> > > allocator still work?  I thought we required at 'struct page's to be
-> > > contiguous and present for at least 2^MAX_ORDER-1 pages in one go.
-> 
-> (Dave, I don't seem to have your mail to reply to.)
-> 
-> What you say is correct, and memory banks as a rule of thumb tend to be
-> powers of two.
-> 
-> We do have the ability to change MAX_ORDER (which we need to do for some
-> platforms where there's only 1MB of DMA-able memory.)
-> 
-> However, in the case of two 512KB banks, the buddy allocator won't try
-> to satisfy a 1MB request as it'll only have two separate 2x512K free
-> 'pages' to deal with, and 0x1M free 'pages'.
+On Wed, 11 Aug 2010 11:26:23 +0200 Claudio Scordino wrote:
 
-Right, it won't try to _coalesce_ those pages, but it will go trying to
-look for the freed page's buddy in the empty area.  This is probably a
-pretty rare issue, but I think it's real.  Take a look at
-__free_one_page():
+> Hi all,
+> 
+> 	some time ago I've been asked (by both Wolfram and Philippe) to
+> provide some minimal documentation about the usage of the RS485
+> interface.
+> 
+> Here is the document (updated with the very last changes in the
+> interface).
+> 
+> Best regards,
+> 
+> 	Claudio
+> 
+> 
+> Documentation about RS485 serial communications.
+> 
+> Signed-off-by: Claudio Scordino <claudio@evidence.eu.com>
+> ---
+>  Documentation/serial/00-INDEX         |    2 +
+>  Documentation/serial/serial-rs485.txt |  123 +++++++++++++++++++++++++++++++++
+>  2 files changed, 125 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/serial/serial-rs485.txt
 
+
+> diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+> new file mode 100644
+> index 0000000..f594831
+> --- /dev/null
+> +++ b/Documentation/serial/serial-rs485.txt
+> @@ -0,0 +1,123 @@
+> +                        RS485 SERIAL COMMUNICATIONS
+> +
 ...
-        while (order < MAX_ORDER-1) {
-                buddy = __page_find_buddy(page, page_idx, order);
-                if (!page_is_buddy(page, buddy, order))
-                        break;
+> +
+> +2. HARDWARE-RELATED CONSIDERATIONS
+> +
+> +   Some CPUs (e.g., Atmel AT91) contain a transceiver capable of working both
+> +   as RS232 and RS485. For these microcontrollers, the Linux driver should be
+> +   able of working in both modes, and proper ioctls (see later) should be made
 
-We look at the page, and the order of the page that just got freed.  We
-go looking to see whether the page's buddy at this order is in the buddy
-system, and _that_ tells us whether a coalesce can be done.  However, we
-do this with some funky math on the original page's 'struct page *':
+      should be able to work in both modes
+or
+      should be made capable of working in both modes
 
-static inline struct page *
-__page_find_buddy(struct page *page, unsigned long page_idx, unsigned int order)
-{
-        unsigned long buddy_idx = page_idx ^ (1 << order);
+> +   available at user-level to allow switching from one mode to the other, and
+> +   viceversa.
 
-        return page + (buddy_idx - page_idx);
-}
+      vice versa.
 
-That relies on all 'struct pages' within the current 2^MAX_ORDER to be
-virtually contiguous.  If you free up section_mem_map[] 'struct page'
-blocks within the MAX_ORDER, the free'd page's buddy's 'struct page'
-might fall in the area that got freed.  In that case, you'll get an
-effectively random PageBuddy() value, and might mistakenly coalesce the
-page.
+> +
+> +   On some other CPUs (e.g., Freescale imx25) the RS485 transceiver is not
+> +   integrated inside the microcontroller itself. Therefore, manufacturers who
+> +   use these microcontrollers to produce embedded boards need to connect an
+> +   external transceiver to some pin of the CPU.
+> +   On these architectures, therefore, no assumptions can be done at the
+> +   CPU-level about the presence of a RS485 transceiver, because the connection
+> +   (if any) is done outside the microcontroller. Moreover, even in case of
+> +   RS485 transceiver, the manufacturer is free to choose the CPU pin used for
+> +   the connection.
+> +
+> +
+> +3. DATA STRUCTURES ALREADY AVAILABLE IN THE KERNEL
+> +
+> +   The Linux kernel provides the serial_rs485 structure (see [2]) to handle
+> +   RS485 communications. This data structure is used to set and configure RS485
+> +   parameters in the platform data and in ioctls.
+> +
+> +   Any driver for devices capable of working both as RS232 and RS485 should
+> +   provide at least the following ioctls:
+> +
+> +    - TIOCSRS485 (typically associated with number 0x542F). This ioctl is used
+> +      to enable/disable RS485 mode from user-space
+> +
+> +    - TIOCGRS485 (typically associated with number 0x542E). This ioctl is used
+> +      to get RS485 mode from kernel-space (i.e., driver) to user-space.
 
-In practice with a 1MB MAX_ORDER and 512KB banks, it'll only happen if
-you free the page representing the entire 512KB bank, and if the memory
-for the other half 'struct page' has already gotten reused.  That's
-probably why you've never seen it.
+TIOC[SG]RS485 are #defined in <asm-generic/ioctls.h>, so
+#include <asm-generic/ioctls.h>
+here and/or below (in userspace program).
 
--- Dave
+> +   In other words, the serial driver should contain a code similar to the next
 
+                                               contain code similar to this:
+
+> +   one:
+> +
+> +	static struct uart_ops atmel_pops = {
+> +		/* ... */
+> +		.ioctl		= handle_ioctl,
+> +	};
+> +
+> +	static int handle_ioctl(struct uart_port *port,
+> +		unsigned int cmd,
+> +		unsigned long arg)
+> +	{
+> +		struct serial_rs485 rs485conf;
+> +
+> +		switch (cmd) {
+> +			case TIOCSRS485:
+
+Coding style: we put switch and case at the same indent level.
+
+> +				if (copy_from_user(&rs485conf,
+> +					(struct serial_rs485 *) arg,
+> +					sizeof(rs485conf)))
+> +						return -EFAULT;
+> +
+> +				/* ... */
+> +				break;
+> +
+> +			case TIOCGRS485:
+> +				if (copy_to_user((struct serial_rs485 *) arg,
+> +					...,
+> +					sizeof(rs485conf)))
+> +						return -EFAULT;
+> +				/* ... */
+> +				break;
+> +
+> +			/* ... */
+> +		}
+> +	}
+> +
+> +
+> +4. USAGE FROM USER-LEVEL
+> +
+> +   From user-level, RS485 configuration can be get/set using the previous
+> +   ioctls. For instance, to set RS485 you can use the following code:
+> +
+> +	#include <linux/serial.h>
+> +
+> +	/* Driver-specific ioctls: */
+> +	#define TIOCGRS485      0x542E
+> +	#define TIOCSRS485      0x542F
+> +
+...
+> +
+> +5. REFERENCES
+> +
+> + [1]	http://en.wikipedia.org/wiki/Rs485
+> + [2]	include/linux/serial.h
+
+
+Thanks for the addition.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
