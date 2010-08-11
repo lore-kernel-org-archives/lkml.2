@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759160Ab0HKX6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:58:50 -0400
-Received: from kroah.org ([198.145.64.141]:43390 "EHLO coco.kroah.org"
+	id S932995Ab0HLAd5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:33:57 -0400
+Received: from kroah.org ([198.145.64.141]:43506 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759023Ab0HKX6b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:31 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:00 2010
-Message-Id: <20100811235500.773919237@clark.site>
+	id S1759150Ab0HKX6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:50 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:02 2010
+Message-Id: <20100811235502.218625489@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:38 -0700
+Date: Wed, 11 Aug 2010 16:54:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Jeff Mahoney <jeffm@suse.com>
-Subject: [057/111] Btrfs: deny sys_link across subvolumes.
+        Josef Bacik <josef@redhat.com>, Chris Mason <chris.mason@oracle.com>,
+        Jeff Mahoney <jeffm@suse.com>
+Subject: [073/111] Btrfs: check total number of devices when removing missing
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,42 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>
+From: Josef Bacik <josef@redhat.com>
 
-commit 4a8be425a8fb8fbb5d881eb55fa6634c3463b9c9 upstream.
+commit 035fe03a7ad56982b30ab3a522b7b08d58feccd0 upstream.
 
-I rebased Christian Parpart's patch to deny hard link across
-subvolumes. Original patch modifies also btrfs_rename, but
-I excluded it because we can move across subvolumes now and
-it make no problem.
------------------
+If you have a disk failure in RAID1 and then add a new disk to the
+array, and then try to remove the missing volume, it will fail.  The
+reason is the sanity check only looks at the total number of rw devices,
+which is just 2 because we have 2 good disks and 1 bad one.  Instead
+check the total number of devices in the array to make sure we can
+actually remove the device.  Tested this with a failed disk setup and
+with this test we can now run
 
-Hard link across subvolumes should not allowed in Btrfs.
-btrfs_link checks root of 'to' directory is same as root
-of 'from' file. If not same, btrfs_link returns -EPERM.
+btrfs-vol -r missing /mount/point
 
-Signed-off-by: TARUISI Hiroaki <taruishi.hiroak@jp.fujitsu.com>
+and it works fine.
+
+Signed-off-by: Josef Bacik <josef@redhat.com>
 Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 
 ---
- fs/btrfs/inode.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/btrfs/volumes.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -4462,6 +4462,10 @@ static int btrfs_link(struct dentry *old
- 	if (inode->i_nlink == 0)
- 		return -ENOENT;
+--- a/fs/btrfs/volumes.c
++++ b/fs/btrfs/volumes.c
+@@ -1135,7 +1135,7 @@ int btrfs_rm_device(struct btrfs_root *r
+ 		root->fs_info->avail_metadata_alloc_bits;
  
-+	/* do not allow sys_link's with other subvols of the same device */
-+	if (root->objectid != BTRFS_I(inode)->root->objectid)
-+		return -EPERM;
-+
- 	/*
- 	 * 1 item for inode ref
- 	 * 2 items for dir items
+ 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID10) &&
+-	    root->fs_info->fs_devices->rw_devices <= 4) {
++	    root->fs_info->fs_devices->num_devices <= 4) {
+ 		printk(KERN_ERR "btrfs: unable to go below four devices "
+ 		       "on raid10\n");
+ 		ret = -EINVAL;
+@@ -1143,7 +1143,7 @@ int btrfs_rm_device(struct btrfs_root *r
+ 	}
+ 
+ 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID1) &&
+-	    root->fs_info->fs_devices->rw_devices <= 2) {
++	    root->fs_info->fs_devices->num_devices <= 2) {
+ 		printk(KERN_ERR "btrfs: unable to go below two "
+ 		       "devices on raid1\n");
+ 		ret = -EINVAL;
 
 
