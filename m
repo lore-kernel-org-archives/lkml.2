@@ -1,105 +1,309 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759377Ab0HLADZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:03:25 -0400
-Received: from kroah.org ([198.145.64.141]:60052 "EHLO coco.kroah.org"
+	id S932462Ab0HLADk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:03:40 -0400
+Received: from kroah.org ([198.145.64.141]:43730 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759225Ab0HLADX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:03:23 -0400
-Date: Wed, 11 Aug 2010 17:02:49 -0700
+	id S1759319Ab0HKX72 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:28 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:05 2010
+Message-Id: <20100811235505.020257245@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 16:55:23 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/54] 2.6.34.4 -stable review
-Message-ID: <20100812000249.GA30948@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        David Teigland <teigland@redhat.com>
+Subject: [102/111] dlm: send reply before bast
+In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-This is the start of the stable review cycle for the 2.6.34.4 release.
-There are 54 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let us know.  If anyone is a maintainer of the proper subsystem, and
-wants to add a Signed-off-by: line to the patch, please respond with it.
+------------------
 
-Responses should be made by Friday, August 13, 2010, 20:00:00 UTC.
-Anything received after that time might be too late.
+From: David Teigland <teigland@redhat.com>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.34.4-rc1.gz
-and the diffstat can be found below.
+commit cf6620acc0f6fac57968aafef79ab372bdcf6157 upstream.
 
-thanks,
+When the lock master processes a successful operation (request,
+convert, cancel, or unlock), it will process the effects of the
+change before sending the reply for the operation.  The "effects"
+of the operation are:
 
-greg k-h
+- blocking callbacks (basts) for any newly granted locks
+- waiting or converting locks that can now be granted
 
- Makefile                                    |    2 +-
- arch/arm/Kconfig                            |   12 ++++
- arch/arm/include/asm/tlbflush.h             |    8 +++
- arch/arm/mach-pxa/cm-x300.c                 |    3 +-
- arch/arm/plat-mxc/include/mach/gpio.h       |    1 +
- arch/powerpc/Makefile                       |   16 ++++-
- arch/x86/include/asm/cmpxchg_32.h           |   68 ++++++++++----------
- arch/x86/include/asm/cmpxchg_64.h           |   40 ++++++------
- arch/x86/kernel/cpu/vmware.c                |    9 +++-
- arch/x86/mm/kmmio.c                         |   16 ++++-
- arch/x86/mm/testmmiotrace.c                 |   22 +++++++
- arch/x86/pci/acpi.c                         |    9 +++
- drivers/ata/ata_piix.c                      |    8 +++
- drivers/atm/solos-pci.c                     |    7 ++-
- drivers/bluetooth/btusb.c                   |    3 +
- drivers/char/nozomi.c                       |    4 +-
- drivers/gpu/drm/drm_edid.c                  |    4 +-
- drivers/gpu/drm/i915/dvo_tfp410.c           |    2 +-
- drivers/gpu/drm/i915/intel_dp.c             |   27 +++++++-
- drivers/ide/ide-cd.c                        |   14 +++-
- drivers/md/bitmap.c                         |    4 +-
- drivers/md/bitmap.h                         |    1 +
- drivers/md/raid1.c                          |   25 +++++--
- drivers/md/raid10.c                         |   18 +++++
- drivers/mtd/nand/plat_nand.c                |    2 +-
- drivers/net/smsc911x.c                      |   92 +++++++++++++++------------
- drivers/net/wireless/iwlwifi/iwl-devtrace.h |    2 +-
- drivers/net/xen-netfront.c                  |    1 +
- drivers/pci/quirks.c                        |    4 +
- drivers/scsi/ibmvscsi/ibmvfc.c              |    8 ++-
- drivers/scsi/ibmvscsi/ibmvfc.h              |    1 +
- drivers/staging/line6/Kconfig               |    1 +
- drivers/staging/panel/panel.c               |    2 +
- drivers/staging/rt2860/usb_main_dev.c       |    1 +
- drivers/usb/core/hub.c                      |    6 ++-
- drivers/usb/core/quirks.c                   |    3 +
- drivers/usb/core/urb.c                      |   50 ++++++---------
- drivers/usb/host/ehci-pci.c                 |    1 +
- drivers/usb/host/ehci-sched.c               |   10 +--
- drivers/usb/host/ehci.h                     |    1 +
- drivers/usb/misc/usbtest.c                  |    6 ++-
- drivers/usb/mon/mon_bin.c                   |    2 +-
- drivers/usb/serial/cp210x.c                 |    4 +
- drivers/usb/serial/ftdi_sio.c               |    4 +
- drivers/usb/serial/ftdi_sio_ids.h           |   10 +++
- drivers/usb/serial/option.c                 |   13 ++++
- drivers/video/w100fb.c                      |    4 +-
- drivers/xen/events.c                        |    1 +
- fs/block_dev.c                              |   10 ++-
- fs/ecryptfs/file.c                          |   60 +++++++++++-------
- fs/ecryptfs/inode.c                         |    5 +-
- fs/jfs/xattr.c                              |   87 +++++++++++--------------
- fs/signalfd.c                               |    2 +
- fs/splice.c                                 |   12 +---
- include/linux/fs.h                          |    6 +-
- include/linux/interrupt.h                   |    7 ++-
- include/linux/netdevice.h                   |    2 +
- include/linux/notifier.h                    |    1 +
- include/linux/usb/quirks.h                  |    4 +
- kernel/irq/manage.c                         |    2 +-
- mm/swapfile.c                               |    6 +-
- net/ipv4/devinet.c                          |    1 +
- net/sched/sch_generic.c                     |   18 +++++
- 63 files changed, 513 insertions(+), 262 deletions(-)
+The cast is queued on the local node when the reply from the lock
+master is received.  This means that a lock holder can receive a
+bast for a lock mode that is doesn't yet know has been granted.
+
+Signed-off-by: David Teigland <teigland@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/dlm/lock.c |  110 ++++++++++++++++++++++++++++++++++++++++++++--------------
+ 1 file changed, 84 insertions(+), 26 deletions(-)
+
+--- a/fs/dlm/lock.c
++++ b/fs/dlm/lock.c
+@@ -2280,20 +2280,30 @@ static int do_request(struct dlm_rsb *r,
+ 	if (can_be_queued(lkb)) {
+ 		error = -EINPROGRESS;
+ 		add_lkb(r, lkb, DLM_LKSTS_WAITING);
+-		send_blocking_asts(r, lkb);
+ 		add_timeout(lkb);
+ 		goto out;
+ 	}
+ 
+ 	error = -EAGAIN;
+-	if (force_blocking_asts(lkb))
+-		send_blocking_asts_all(r, lkb);
+ 	queue_cast(r, lkb, -EAGAIN);
+-
+  out:
+ 	return error;
+ }
+ 
++static void do_request_effects(struct dlm_rsb *r, struct dlm_lkb *lkb,
++			       int error)
++{
++	switch (error) {
++	case -EAGAIN:
++		if (force_blocking_asts(lkb))
++			send_blocking_asts_all(r, lkb);
++		break;
++	case -EINPROGRESS:
++		send_blocking_asts(r, lkb);
++		break;
++	}
++}
++
+ static int do_convert(struct dlm_rsb *r, struct dlm_lkb *lkb)
+ {
+ 	int error = 0;
+@@ -2304,7 +2314,6 @@ static int do_convert(struct dlm_rsb *r,
+ 	if (can_be_granted(r, lkb, 1, &deadlk)) {
+ 		grant_lock(r, lkb);
+ 		queue_cast(r, lkb, 0);
+-		grant_pending_locks(r);
+ 		goto out;
+ 	}
+ 
+@@ -2334,7 +2343,6 @@ static int do_convert(struct dlm_rsb *r,
+ 		if (_can_be_granted(r, lkb, 1)) {
+ 			grant_lock(r, lkb);
+ 			queue_cast(r, lkb, 0);
+-			grant_pending_locks(r);
+ 			goto out;
+ 		}
+ 		/* else fall through and move to convert queue */
+@@ -2344,28 +2352,47 @@ static int do_convert(struct dlm_rsb *r,
+ 		error = -EINPROGRESS;
+ 		del_lkb(r, lkb);
+ 		add_lkb(r, lkb, DLM_LKSTS_CONVERT);
+-		send_blocking_asts(r, lkb);
+ 		add_timeout(lkb);
+ 		goto out;
+ 	}
+ 
+ 	error = -EAGAIN;
+-	if (force_blocking_asts(lkb))
+-		send_blocking_asts_all(r, lkb);
+ 	queue_cast(r, lkb, -EAGAIN);
+-
+  out:
+ 	return error;
+ }
+ 
++static void do_convert_effects(struct dlm_rsb *r, struct dlm_lkb *lkb,
++			       int error)
++{
++	switch (error) {
++	case 0:
++		grant_pending_locks(r);
++		/* grant_pending_locks also sends basts */
++		break;
++	case -EAGAIN:
++		if (force_blocking_asts(lkb))
++			send_blocking_asts_all(r, lkb);
++		break;
++	case -EINPROGRESS:
++		send_blocking_asts(r, lkb);
++		break;
++	}
++}
++
+ static int do_unlock(struct dlm_rsb *r, struct dlm_lkb *lkb)
+ {
+ 	remove_lock(r, lkb);
+ 	queue_cast(r, lkb, -DLM_EUNLOCK);
+-	grant_pending_locks(r);
+ 	return -DLM_EUNLOCK;
+ }
+ 
++static void do_unlock_effects(struct dlm_rsb *r, struct dlm_lkb *lkb,
++			      int error)
++{
++	grant_pending_locks(r);
++}
++
+ /* returns: 0 did nothing, -DLM_ECANCEL canceled lock */
+  
+ static int do_cancel(struct dlm_rsb *r, struct dlm_lkb *lkb)
+@@ -2375,12 +2402,18 @@ static int do_cancel(struct dlm_rsb *r,
+ 	error = revert_lock(r, lkb);
+ 	if (error) {
+ 		queue_cast(r, lkb, -DLM_ECANCEL);
+-		grant_pending_locks(r);
+ 		return -DLM_ECANCEL;
+ 	}
+ 	return 0;
+ }
+ 
++static void do_cancel_effects(struct dlm_rsb *r, struct dlm_lkb *lkb,
++			      int error)
++{
++	if (error)
++		grant_pending_locks(r);
++}
++
+ /*
+  * Four stage 3 varieties:
+  * _request_lock(), _convert_lock(), _unlock_lock(), _cancel_lock()
+@@ -2402,11 +2435,15 @@ static int _request_lock(struct dlm_rsb
+ 		goto out;
+ 	}
+ 
+-	if (is_remote(r))
++	if (is_remote(r)) {
+ 		/* receive_request() calls do_request() on remote node */
+ 		error = send_request(r, lkb);
+-	else
++	} else {
+ 		error = do_request(r, lkb);
++		/* for remote locks the request_reply is sent
++		   between do_request and do_request_effects */
++		do_request_effects(r, lkb, error);
++	}
+  out:
+ 	return error;
+ }
+@@ -2417,11 +2454,15 @@ static int _convert_lock(struct dlm_rsb
+ {
+ 	int error;
+ 
+-	if (is_remote(r))
++	if (is_remote(r)) {
+ 		/* receive_convert() calls do_convert() on remote node */
+ 		error = send_convert(r, lkb);
+-	else
++	} else {
+ 		error = do_convert(r, lkb);
++		/* for remote locks the convert_reply is sent
++		   between do_convert and do_convert_effects */
++		do_convert_effects(r, lkb, error);
++	}
+ 
+ 	return error;
+ }
+@@ -2432,11 +2473,15 @@ static int _unlock_lock(struct dlm_rsb *
+ {
+ 	int error;
+ 
+-	if (is_remote(r))
++	if (is_remote(r)) {
+ 		/* receive_unlock() calls do_unlock() on remote node */
+ 		error = send_unlock(r, lkb);
+-	else
++	} else {
+ 		error = do_unlock(r, lkb);
++		/* for remote locks the unlock_reply is sent
++		   between do_unlock and do_unlock_effects */
++		do_unlock_effects(r, lkb, error);
++	}
+ 
+ 	return error;
+ }
+@@ -2447,11 +2492,15 @@ static int _cancel_lock(struct dlm_rsb *
+ {
+ 	int error;
+ 
+-	if (is_remote(r))
++	if (is_remote(r)) {
+ 		/* receive_cancel() calls do_cancel() on remote node */
+ 		error = send_cancel(r, lkb);
+-	else
++	} else {
+ 		error = do_cancel(r, lkb);
++		/* for remote locks the cancel_reply is sent
++		   between do_cancel and do_cancel_effects */
++		do_cancel_effects(r, lkb, error);
++	}
+ 
+ 	return error;
+ }
+@@ -3191,6 +3240,7 @@ static void receive_request(struct dlm_l
+ 	attach_lkb(r, lkb);
+ 	error = do_request(r, lkb);
+ 	send_request_reply(r, lkb, error);
++	do_request_effects(r, lkb, error);
+ 
+ 	unlock_rsb(r);
+ 	put_rsb(r);
+@@ -3226,15 +3276,19 @@ static void receive_convert(struct dlm_l
+ 		goto out;
+ 
+ 	receive_flags(lkb, ms);
++
+ 	error = receive_convert_args(ls, lkb, ms);
+-	if (error)
+-		goto out_reply;
++	if (error) {
++		send_convert_reply(r, lkb, error);
++		goto out;
++	}
++
+ 	reply = !down_conversion(lkb);
+ 
+ 	error = do_convert(r, lkb);
+- out_reply:
+ 	if (reply)
+ 		send_convert_reply(r, lkb, error);
++	do_convert_effects(r, lkb, error);
+  out:
+ 	unlock_rsb(r);
+ 	put_rsb(r);
+@@ -3266,13 +3320,16 @@ static void receive_unlock(struct dlm_ls
+ 		goto out;
+ 
+ 	receive_flags(lkb, ms);
++
+ 	error = receive_unlock_args(ls, lkb, ms);
+-	if (error)
+-		goto out_reply;
++	if (error) {
++		send_unlock_reply(r, lkb, error);
++		goto out;
++	}
+ 
+ 	error = do_unlock(r, lkb);
+- out_reply:
+ 	send_unlock_reply(r, lkb, error);
++	do_unlock_effects(r, lkb, error);
+  out:
+ 	unlock_rsb(r);
+ 	put_rsb(r);
+@@ -3307,6 +3364,7 @@ static void receive_cancel(struct dlm_ls
+ 
+ 	error = do_cancel(r, lkb);
+ 	send_cancel_reply(r, lkb, error);
++	do_cancel_effects(r, lkb, error);
+  out:
+ 	unlock_rsb(r);
+ 	put_rsb(r);
+
+
