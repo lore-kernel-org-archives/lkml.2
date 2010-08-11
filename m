@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab0HKQjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 12:39:08 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35688 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753134Ab0HKQjH (ORCPT
+	id S1754479Ab0HKQkQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 12:40:16 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48627 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752064Ab0HKQkO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 12:39:07 -0400
-Message-ID: <4C62D241.2040208@vflare.org>
-Date: Wed, 11 Aug 2010 22:09:29 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
+	Wed, 11 Aug 2010 12:40:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=UPb9SpWT6Eb3j+4jx6xEW4U9qfo5LtzBVNvJzKlRb3caACaYXDzQtVWVLiXOVdJNq4
+         mlsPHbSN96sxpdKHDLuObV7PL5GrBALX8EksiKkNRF+MY8omY0rM2s0rx5azKHYZWt9C
+         L6CfyFFTFSNN+sKHaAesOFJ4563U5lE/T8pKY=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@driverdev.osuosl.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 03/10] Use percpu stats
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	<1281374816-904-4-git-send-email-ngupta@vflare.org> <20100809213431.d7699d46.akpm@linux-foundation.org>
-In-Reply-To: <20100809213431.d7699d46.akpm@linux-foundation.org>
+In-Reply-To: <1281544234.5107.25.camel@localhost>
+References: <4C5F9B25.8080401@st.com> <AANLkTinxwRFLUibJECm0c3_oL5mYRkmscsw-xXgAHSTe@mail.gmail.com> 
+	<4C624AE1.30504@st.com> <4C62C5BD.3020808@mnsu.edu> <1281542305.5107.11.camel@localhost> 
+	<AANLkTi=9xVdfXJXpkNPUMahc7AsbxjVbZFSxeBrzvbmS@mail.gmail.com> 
+	<1281544234.5107.25.camel@localhost>
+From: Avery Pennarun <apenwarr@gmail.com>
+Date: Wed, 11 Aug 2010 12:39:53 -0400
+Message-ID: <AANLkTi=6hXj_a1X-HwYWvWt4_pBto_OQgkWE3VsDmEsJ@mail.gmail.com>
+Subject: Re: Query: Patches break with Microsoft exchange server.
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Jeffrey Hundstad <jeffrey.hundstad@mnsu.edu>,
+        viresh kumar <viresh.kumar@st.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "git@vger.kernel.org" <git@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Valeo de Vries <valeo@valeo.co.cc>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        Matti Aarnio <matti.aarnio@zmailer.org>, mihai.dontu@gmail.com,
+        richardcochran@gmail.com, "Gadiyar, Anand" <gadiyar@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/10/2010 10:04 AM, Andrew Morton wrote:
-> On Mon,  9 Aug 2010 22:56:49 +0530 Nitin Gupta <ngupta@vflare.org> wrote:
-> 
->> +/*
->> + * Individual percpu values can go negative but the sum across all CPUs
->> + * must always be positive (we store various counts). So, return sum as
->> + * unsigned value.
->> + */
->> +static u64 zram_get_stat(struct zram *zram, enum zram_stats_index idx)
->>  {
->> -	u64 val;
->> -
->> -	spin_lock(&zram->stat64_lock);
->> -	val = *v;
->> -	spin_unlock(&zram->stat64_lock);
->> +	int cpu;
->> +	s64 val = 0;
->> +
->> +	for_each_possible_cpu(cpu) {
->> +		s64 temp;
->> +		unsigned int start;
->> +		struct zram_stats_cpu *stats;
->> +
->> +		stats = per_cpu_ptr(zram->stats, cpu);
->> +		do {
->> +			start = u64_stats_fetch_begin(&stats->syncp);
->> +			temp = stats->count[idx];
->> +		} while (u64_stats_fetch_retry(&stats->syncp, start));
->> +		val += temp;
->> +	}
->>  
->> +	WARN_ON(val < 0);
->>  	return val;
->>  }
-> 
-> That reimplements include/linux/percpu_counter.h, poorly.
-> 
-> Please see the June discussion "[PATCH v2 1/2] tmpfs: Quick token
-> library to allow scalable retrieval of tokens from token jar" for some
-> discussion.
-> 
-> 
+On Wed, Aug 11, 2010 at 12:30 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Wed, 2010-08-11 at 12:18 -0400, Avery Pennarun wrote:
+>> Out of curiosity, why fall back to one chunk at a time?  It seems to
+>> me that IMAP should be able to still support multiple outstanding
+>> requests in that case, but you'd just get errors on the latter chunks.
+>>
+>> It is just that there was no point optimizing the workaround case?
+>
+> There wasn't a lot of point in optimising it.
 
-I read the discussion you pointed out but still fail to see how percpu_counters,
-with all their overhead, are better than simple pcpu variable used in current
-version. What is the advantage?
+Say no more :)
 
-Thanks,
-Nitin
+I code on some IMAP clients occasionally and I just wanted to make
+sure I wasn't missing something important.
 
+Thanks!
+
+Avery
