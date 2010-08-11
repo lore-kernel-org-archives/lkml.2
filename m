@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab0HKX5c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:32 -0400
-Received: from kroah.org ([198.145.64.141]:40009 "EHLO coco.kroah.org"
+	id S1758746Ab0HKX5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:57:36 -0400
+Received: from kroah.org ([198.145.64.141]:40047 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758673Ab0HKX5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:55 2010
-Message-Id: <20100811235455.886413665@clark.site>
+	id S1758673Ab0HKX5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:57:32 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:56 2010
+Message-Id: <20100811235456.430398176@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:44 -0700
+Date: Wed, 11 Aug 2010 16:53:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Wim Van Sebroeck <wim@iguana.be>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Stephen Hemminger <shemminger@vyatta.com>
-Subject: [003/111] nvram: Fix write beyond end condition; prove to gcc copy is safe
+        Tejun Heo <tj@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [009/111] PCI: disable MSI on VIA K8M800
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,64 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: H. Peter Anvin <hpa@zytor.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit a01c7800420d2c294ca403988488a635d4087a6d upstream.
+commit 549e15611b4ac1de51ef0e0a79c2704f50a638a2 upstream.
 
-In nvram_write, first of all, correctly handle the case where the file
-pointer is already beyond the end; we should return EOF in that case.
+MSI delivery from on-board ahci controller doesn't work on K8M800.  At
+this point, it's unclear whether the culprit is with the ahci
+controller or the host bridge.  Given the track record and considering
+the rather minimal impact of MSI, disabling it seems reasonable.
 
-Second, make the logic a bit more explicit so that gcc can statically
-prove that the copy_from_user() is safe.  Once the condition of the
-beyond-end filepointer is eliminated, the copy is safe but gcc can't
-prove it, causing build failures for i386 allyesconfig.
-
-Third, eliminate the entirely superfluous variable "len", and just use
-the passed-in variable "count" instead.
-
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Arjan van de Ven <arjan@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wim Van Sebroeck <wim@iguana.be>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <tip-*@git.kernel.org>
-Cc: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Rainer Hurtado Navarro <publio.escipion.el.africano@gmail.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/nvram.c |   14 ++++++++++----
- 1 file changed, 10 insertions(+), 4 deletions(-)
+ drivers/pci/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/char/nvram.c
-+++ b/drivers/char/nvram.c
-@@ -265,10 +265,16 @@ static ssize_t nvram_write(struct file *
- 	unsigned char contents[NVRAM_BYTES];
- 	unsigned i = *ppos;
- 	unsigned char *tmp;
--	int len;
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2084,6 +2084,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3336, quirk_disable_all_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3351, quirk_disable_all_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3364, quirk_disable_all_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8380_0, quirk_disable_all_msi);
  
--	len = (NVRAM_BYTES - i) < count ? (NVRAM_BYTES - i) : count;
--	if (copy_from_user(contents, buf, len))
-+	if (i >= NVRAM_BYTES)
-+		return 0;	/* Past EOF */
-+
-+	if (count > NVRAM_BYTES - i)
-+		count = NVRAM_BYTES - i;
-+	if (count > NVRAM_BYTES)
-+		return -EFAULT;	/* Can't happen, but prove it to gcc */
-+
-+	if (copy_from_user(contents, buf, count))
- 		return -EFAULT;
- 
- 	spin_lock_irq(&rtc_lock);
-@@ -276,7 +282,7 @@ static ssize_t nvram_write(struct file *
- 	if (!__nvram_check_checksum())
- 		goto checksum_err;
- 
--	for (tmp = contents; count-- > 0 && i < NVRAM_BYTES; ++i, ++tmp)
-+	for (tmp = contents; count--; ++i, ++tmp)
- 		__nvram_write_byte(*tmp, i);
- 
- 	__nvram_set_checksum();
+ /* Disable MSI on chipsets that are known to not support it */
+ static void __devinit quirk_disable_msi(struct pci_dev *dev)
 
 
