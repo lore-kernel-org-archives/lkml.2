@@ -1,201 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0HKNS7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 09:18:59 -0400
-Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:38819 "EHLO
-	homiemail-a6.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752317Ab0HKNS6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 09:18:58 -0400
-Subject: [PATCH] DRM: Replace kmalloc/memset combos with kzalloc
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Dave Airlie <airlied@redhat.com>, Dave Airlie <airlied@linux.ie>,
-        eric@anholt.net
-Cc: dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Aug 2010 09:18:52 -0400
-Message-ID: <1281532732.2067.11.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752662Ab0HKNXW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 09:23:22 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60982 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752417Ab0HKNXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 09:23:21 -0400
+Message-ID: <4C62A44D.3010102@kernel.dk>
+Date: Wed, 11 Aug 2010 09:23:25 -0400
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>
+CC: Jeff Moyer <jmoyer@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: cfq: oops in __call_for_each_cic
+References: <20100810064045.6996f3b7@tlielax.poochiereds.net>	<x49zkwu8s3y.fsf@segfault.boston.devel.redhat.com>	<20100810102718.45bddc9d@tlielax.poochiereds.net>	<4C6179DD.7010000@kernel.dk>	<20100810123525.3112a382@tlielax.poochiereds.net>	<4C61E7B1.1090607@kernel.dk> <20100810212331.197026dc@corrin.poochiereds.net>
+In-Reply-To: <20100810212331.197026dc@corrin.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently most, if not all, memory allocation in drm_bufs.c is followed by initializing the memory with 0.
+On 08/10/2010 09:23 PM, Jeff Layton wrote:
+> On Tue, 10 Aug 2010 19:58:41 -0400
+> Jens Axboe <axboe@kernel.dk> wrote:
+> 
+>> On 08/10/2010 12:35 PM, Jeff Layton wrote:
+>>> On Tue, 10 Aug 2010 12:10:05 -0400
+>>> Jens Axboe <axboe@kernel.dk> wrote:
+>>>
+>>>> On 08/10/2010 10:27 AM, Jeff Layton wrote:
+>>>>> On Tue, 10 Aug 2010 10:22:41 -0400
+>>>>> Jeff Moyer <jmoyer@redhat.com> wrote:
+>>>>>
+>>>>>> Jeff Layton <jlayton@redhat.com> writes:
+>>>>>>
+>>>>>>> Saw this oops on my test machine this morning. I rebooted the machine
+>>>>>>> last night and hadn't done anything on it other than log in this
+>>>>>>> morning. The kernel here is based on Steve French's git tree, which is
+>>>>>>> based on Linus' as of Sunday Aug 8th. Last non-cifs commit is:
+>>>>>>
+>>>>>> This looks a lot like this bug:
+>>>>>>   https://bugzilla.redhat.com/show_bug.cgi?id=577968
+>>>>>>
+>>>>>> See also:
+>>>>>>   http://kerneloops.org/guilty.php?guilty=cfq_free_io_context&version=2.6.34-rc&start=2228224&end=2260991&class=oops
+>>>>>>
+>>>>>> It's been around since 2.6.30.8 according to kerneloops.org.  If you
+>>>>>> find that you have a reliable way of reproducing the issue, that would
+>>>>>> be great.
+>>>>>>
+>>>>>
+>>>>> Ok, thanks -- no clear reproducer so far. This morning was the
+>>>>> first time I've seen it and it was on the console of my rawhide
+>>>>> machine. The last thing I did with it was reboot it last night. I
+>>>>> suspect that the gzip process came from a cron job or something.
+>>>>
+>>>> What version did you hit it on?
+>>>>
+>>>
+>>> It was a kernel built out of git, based on Steve French's git tree. The
+>>> last commit from Linus in it was
+>>> 45d7f32c7a43cbb9592886d38190e379e2eb2226. Everything else on top of
+>>> that was patches that only touched cifs code. cifs.ko hadn't been
+>>> plugged in since it was rebooted.
+>>
+>> OK. That bug is pretty elusive, so far I haven't been able to figure
+>> out what the heck is going on here and my attempts at reproducing
+>> have all failed. The reports so far seem to have the cron component
+>> in common. Does fedora ionice some cron jobs or anything like that?
+>> Or use CLONE_IO?
+>>
+> 
+> Yes. I sort of doubt anything there would use CLONE_IO, but ionice is
+> definitely used. Fedora uses anacron. I don't see any explicit calls to
+> gzip in there, but it's possible something else is calling it:
+> 
+> # grep ionice /etc/cron.*/*
+> /etc/cron.daily/mlocate.cron:ionice -c2 -n7 -p $$ >/dev/null 2>&1
+> /etc/cron.daily/readahead.cron:ionice -c3 -p $$ >/dev/null 2>&1
+> 
+> # cat /etc/anacrontab 
+> # /etc/anacrontab: configuration file for anacron
+> 
+> # See anacron(8) and anacrontab(5) for details.
+> 
+> SHELL=/bin/sh
+> PATH=/sbin:/bin:/usr/sbin:/usr/bin
+> MAILTO=root
+> # the maximal random delay added to the base delay of the jobs
+> RANDOM_DELAY=45
+> # the jobs will be started during the following hours only
+> START_HOURS_RANGE=3-22
+> 
+> #period in days   delay in minutes   job-identifier   command
+> 1	5	cron.daily		nice run-parts /etc/cron.daily
+> 7	25	cron.weekly		nice run-parts /etc/cron.weekly
+> @monthly 45	cron.monthly		nice run-parts /etc/cron.monthly
 
-Replace the use of kmalloc+memset with kzalloc.
+ionice must be a deciding factor in this, perhaps coupled with something
+else. Otherwise we would be seeing a lot more of these.
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- drivers/gpu/drm/drm_bufs.c |   33 +++++++++++----------------------
- 1 files changed, 11 insertions(+), 22 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_bufs.c b/drivers/gpu/drm/drm_bufs.c
-index a5c9ce9..3e257a5 100644
---- a/drivers/gpu/drm/drm_bufs.c
-+++ b/drivers/gpu/drm/drm_bufs.c
-@@ -328,14 +328,13 @@ static int drm_addmap_core(struct drm_device * dev, resource_size_t offset,
- 		return -EINVAL;
- 	}
- 
--	list = kmalloc(sizeof(*list), GFP_KERNEL);
-+	list = kzalloc(sizeof(*list), GFP_KERNEL);
- 	if (!list) {
- 		if (map->type == _DRM_REGISTERS)
- 			iounmap(map->handle);
- 		kfree(map);
- 		return -EINVAL;
- 	}
--	memset(list, 0, sizeof(*list));
- 	list->map = map;
- 
- 	mutex_lock(&dev->struct_mutex);
-@@ -678,13 +677,12 @@ int drm_addbufs_agp(struct drm_device * dev, struct drm_buf_desc * request)
- 		return -EINVAL;
- 	}
- 
--	entry->buflist = kmalloc(count * sizeof(*entry->buflist), GFP_KERNEL);
-+	entry->buflist = kzalloc(count * sizeof(*entry->buflist), GFP_KERNEL);
- 	if (!entry->buflist) {
- 		mutex_unlock(&dev->struct_mutex);
- 		atomic_dec(&dev->buf_alloc);
- 		return -ENOMEM;
- 	}
--	memset(entry->buflist, 0, count * sizeof(*entry->buflist));
- 
- 	entry->buf_size = size;
- 	entry->page_order = page_order;
-@@ -708,7 +706,7 @@ int drm_addbufs_agp(struct drm_device * dev, struct drm_buf_desc * request)
- 		buf->file_priv = NULL;
- 
- 		buf->dev_priv_size = dev->driver->dev_priv_size;
--		buf->dev_private = kmalloc(buf->dev_priv_size, GFP_KERNEL);
-+		buf->dev_private = kzalloc(buf->dev_priv_size, GFP_KERNEL);
- 		if (!buf->dev_private) {
- 			/* Set count correctly so we free the proper amount. */
- 			entry->buf_count = count;
-@@ -717,7 +715,6 @@ int drm_addbufs_agp(struct drm_device * dev, struct drm_buf_desc * request)
- 			atomic_dec(&dev->buf_alloc);
- 			return -ENOMEM;
- 		}
--		memset(buf->dev_private, 0, buf->dev_priv_size);
- 
- 		DRM_DEBUG("buffer %d @ %p\n", entry->buf_count, buf->address);
- 
-@@ -832,22 +829,20 @@ int drm_addbufs_pci(struct drm_device * dev, struct drm_buf_desc * request)
- 		return -EINVAL;
- 	}
- 
--	entry->buflist = kmalloc(count * sizeof(*entry->buflist), GFP_KERNEL);
-+	entry->buflist = kzalloc(count * sizeof(*entry->buflist), GFP_KERNEL);
- 	if (!entry->buflist) {
- 		mutex_unlock(&dev->struct_mutex);
- 		atomic_dec(&dev->buf_alloc);
- 		return -ENOMEM;
- 	}
--	memset(entry->buflist, 0, count * sizeof(*entry->buflist));
- 
--	entry->seglist = kmalloc(count * sizeof(*entry->seglist), GFP_KERNEL);
-+	entry->seglist = kzalloc(count * sizeof(*entry->seglist), GFP_KERNEL);
- 	if (!entry->seglist) {
- 		kfree(entry->buflist);
- 		mutex_unlock(&dev->struct_mutex);
- 		atomic_dec(&dev->buf_alloc);
- 		return -ENOMEM;
- 	}
--	memset(entry->seglist, 0, count * sizeof(*entry->seglist));
- 
- 	/* Keep the original pagelist until we know all the allocations
- 	 * have succeeded
-@@ -911,8 +906,8 @@ int drm_addbufs_pci(struct drm_device * dev, struct drm_buf_desc * request)
- 			buf->file_priv = NULL;
- 
- 			buf->dev_priv_size = dev->driver->dev_priv_size;
--			buf->dev_private = kmalloc(buf->dev_priv_size,
--						  GFP_KERNEL);
-+			buf->dev_private = kzalloc(buf->dev_priv_size,
-+						GFP_KERNEL);
- 			if (!buf->dev_private) {
- 				/* Set count correctly so we free the proper amount. */
- 				entry->buf_count = count;
-@@ -923,7 +918,6 @@ int drm_addbufs_pci(struct drm_device * dev, struct drm_buf_desc * request)
- 				atomic_dec(&dev->buf_alloc);
- 				return -ENOMEM;
- 			}
--			memset(buf->dev_private, 0, buf->dev_priv_size);
- 
- 			DRM_DEBUG("buffer %d @ %p\n",
- 				  entry->buf_count, buf->address);
-@@ -1048,14 +1042,13 @@ static int drm_addbufs_sg(struct drm_device * dev, struct drm_buf_desc * request
- 		return -EINVAL;
- 	}
- 
--	entry->buflist = kmalloc(count * sizeof(*entry->buflist),
-+	entry->buflist = kzalloc(count * sizeof(*entry->buflist),
- 				GFP_KERNEL);
- 	if (!entry->buflist) {
- 		mutex_unlock(&dev->struct_mutex);
- 		atomic_dec(&dev->buf_alloc);
- 		return -ENOMEM;
- 	}
--	memset(entry->buflist, 0, count * sizeof(*entry->buflist));
- 
- 	entry->buf_size = size;
- 	entry->page_order = page_order;
-@@ -1080,7 +1073,7 @@ static int drm_addbufs_sg(struct drm_device * dev, struct drm_buf_desc * request
- 		buf->file_priv = NULL;
- 
- 		buf->dev_priv_size = dev->driver->dev_priv_size;
--		buf->dev_private = kmalloc(buf->dev_priv_size, GFP_KERNEL);
-+		buf->dev_private = kzalloc(buf->dev_priv_size, GFP_KERNEL);
- 		if (!buf->dev_private) {
- 			/* Set count correctly so we free the proper amount. */
- 			entry->buf_count = count;
-@@ -1090,8 +1083,6 @@ static int drm_addbufs_sg(struct drm_device * dev, struct drm_buf_desc * request
- 			return -ENOMEM;
- 		}
- 
--		memset(buf->dev_private, 0, buf->dev_priv_size);
--
- 		DRM_DEBUG("buffer %d @ %p\n", entry->buf_count, buf->address);
- 
- 		offset += alignment;
-@@ -1209,14 +1200,13 @@ static int drm_addbufs_fb(struct drm_device * dev, struct drm_buf_desc * request
- 		return -EINVAL;
- 	}
- 
--	entry->buflist = kmalloc(count * sizeof(*entry->buflist),
-+	entry->buflist = kzalloc(count * sizeof(*entry->buflist),
- 				GFP_KERNEL);
- 	if (!entry->buflist) {
- 		mutex_unlock(&dev->struct_mutex);
- 		atomic_dec(&dev->buf_alloc);
- 		return -ENOMEM;
- 	}
--	memset(entry->buflist, 0, count * sizeof(*entry->buflist));
- 
- 	entry->buf_size = size;
- 	entry->page_order = page_order;
-@@ -1240,7 +1230,7 @@ static int drm_addbufs_fb(struct drm_device * dev, struct drm_buf_desc * request
- 		buf->file_priv = NULL;
- 
- 		buf->dev_priv_size = dev->driver->dev_priv_size;
--		buf->dev_private = kmalloc(buf->dev_priv_size, GFP_KERNEL);
-+		buf->dev_private = kzalloc(buf->dev_priv_size, GFP_KERNEL);
- 		if (!buf->dev_private) {
- 			/* Set count correctly so we free the proper amount. */
- 			entry->buf_count = count;
-@@ -1249,7 +1239,6 @@ static int drm_addbufs_fb(struct drm_device * dev, struct drm_buf_desc * request
- 			atomic_dec(&dev->buf_alloc);
- 			return -ENOMEM;
- 		}
--		memset(buf->dev_private, 0, buf->dev_priv_size);
- 
- 		DRM_DEBUG("buffer %d @ %p\n", entry->buf_count, buf->address);
- 
 -- 
-1.7.0.4
+Jens Axboe
 
