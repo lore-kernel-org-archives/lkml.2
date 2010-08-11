@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab0HKXbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:31:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab0HKXbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:31:40 -0400
-Subject: Re: [PATCH 2/2] ipw2100: add WEXT scan capabilities
-From: Dan Williams <dcbw@redhat.com>
-To: Christoph Fritz <chf.fritz@googlemail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>, Zhu Yi <yi.zhu@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        netdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281555195.4367.3.camel@lovely.krouter>
-References: <1281555063.4367.1.camel@lovely.krouter>
-	 <1281555195.4367.3.camel@lovely.krouter>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 11 Aug 2010 18:32:42 -0500
-Message-ID: <1281569562.21024.6.camel@dcbw.foobar.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758070Ab0HKXjK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:39:10 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:45428 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751761Ab0HKXjH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:39:07 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX199CqR5DLR9skGMhlJ1W2y4g0LZflOQF2ixqgmDLw
+	/xyYOnmyFeSnVA
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: viafb output device rework - part 1
+Date: Wed, 11 Aug 2010 23:49:29 +0000
+Message-Id: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-11 at 21:33 +0200, Christoph Fritz wrote:
-> NetworkManager claims: "driver does not support SSID scans (scan_capa
-> 0x00)". This patch adds scan capabilities.
+Hi,
 
-NAK
+the objection of this patch series is to clean the output device 
+handling up. The end result should be saner code (not setting devices 
+that do not exist) as well as more powerfull control over existing 
+devices and easier addition of new devices.
+This is the first part doing some structural changes and using those to 
+switch which of the 2 display data sources (IGA1 or IGA2) is used.
+Things that are still missing and (hopefully) will come in follow up 
+series are device enable/disable following the same design and exporting 
+this flexability in an easy to use way to userspace.
 
-It just doesn't.  Take a look at ipw2100_wx_set_scan(); there's no
-handling of any SSID stuff in there.  The driver does not support
-probe-scans; I'm not sure if the firmware does, but even if it does, the
-driver doesn't send the SSID down to the firmware.
+These patches can also be found at
+	git://github.com/schandinat/linux-2.6.git viafb-s2v1
 
-Compare this to the ipw2200.c set_scan() function.  It just does not
-appear that the ipw2100 supports arbitrary SSIDs for direct scans, which
-is why I didn't include this capability when I went around patching the
-drivers a few years ago.
+Some tests were performed on CLE266, VX800 and VX855.
 
-Dan
+Any opinions/suggestions?
 
 
-> Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
-> ---
->  drivers/net/wireless/ipw2x00/ipw2100.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
-> index df8e535..c330da4 100644
-> --- a/drivers/net/wireless/ipw2x00/ipw2100.c
-> +++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-> @@ -6982,12 +6982,15 @@ static int ipw2100_wx_get_range(struct net_device *dev,
->  
->  	/* Event capability (kernel + driver) */
->  	range->event_capa[0] = (IW_EVENT_CAPA_K_0 |
-> -				IW_EVENT_CAPA_MASK(SIOCGIWAP));
-> +				IW_EVENT_CAPA_MASK(SIOCGIWAP) |
-> +				IW_EVENT_CAPA_MASK(SIOCGIWSCAN));
->  	range->event_capa[1] = IW_EVENT_CAPA_K_1;
->  
->  	range->enc_capa = IW_ENC_CAPA_WPA | IW_ENC_CAPA_WPA2 |
->  		IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
->  
-> +	range->scan_capa = IW_SCAN_CAPA_ESSID | IW_SCAN_CAPA_TYPE;
-> +
->  	IPW_DEBUG_WX("GET Range\n");
->  
->  	return 0;
+Regards,
 
+Florian Tobias Schandinat
+
+
+Florian Tobias Schandinat (11):
+      viafb: reset correct PLL
+      viafb: remove lcdtbl.h
+      viafb: remove stub
+      viafb: unify output path configuration
+      viafb: enable second display channel at central place
+      viafb: rework output device routing
+      viafb: propagate __init and __devinit
+      viafb: reduce viafb_set_iga_path usage
+      viafb: add new output device management
+      viafb: use new device routing
+      viafb: merge the remaining output path with enable functions
 
