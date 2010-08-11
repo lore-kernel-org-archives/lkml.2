@@ -1,1146 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750921Ab0HKK0h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 06:26:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19950 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750714Ab0HKK0f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 06:26:35 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Mark arguments to certain syscalls as being const
-To: torvalds@osdl.org, akpm@linux-foundation.org, viro@ZenIV.linux.org.uk,
+	id S1751150Ab0HKKbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 06:31:20 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46165 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813Ab0HKKbR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 06:31:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=dhyglOMgdFizS1P0ou92JQoSwt96i05efPhkFIjVZBpWM9drsrhj6APXsGXuMe2Xyw
+         55EH1z8CXMZFNxVVlsNIySgh6WJivqCrV5nemFINqgZShCPDqHZgh6NYzWQc/FTIT9iL
+         NDdGrFydQG9SGnmQrB7t9aS5Lo/dKeTdMfq2E=
+Date: Wed, 11 Aug 2010 13:35:50 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Jan Kara <jack@suse.cz>, reiserfs-devel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: David Howells <dhowells@redhat.com>
-Date: Wed, 11 Aug 2010 11:26:22 +0100
-Message-ID: <20100811102622.30362.70210.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+Subject: convert reiserfs to ->evict_inode()
+Message-ID: <20100811103550.GA6372@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="M9NhX3UHpAaciwkO"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark arguments to certain system calls as being const where they should be but
-aren't.  The list includes:
 
- (*) The filename arguments of various stat syscalls, execve(), various utimes
-     syscalls and some mount syscalls.
+--M9NhX3UHpAaciwkO
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- (*) The filename arguments of some syscall helpers relating to the above.
+Hello,
 
- (*) The buffer argument of various write syscalls.
+commit 845a2cc0507055278e0fa722ed0f8c791b7401dd introduced:
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+@@ -77,9 +79,14 @@ void reiserfs_delete_inode(struct inode *inode)
+                ;
+        }
+       out:
+-       clear_inode(inode);     /* note this must go after the journal_end =
+to prevent deadlock */
++       end_writeback(inode);   /* note this must go after the journal_end =
+to prevent deadlock */
++       dquot_drop(inode);
+        inode->i_blocks =3D 0;
+        reiserfs_write_unlock_once(inode->i_sb, depth);
++
++no_delete:
++       end_writeback(inode);
++       dquot_drop(inode);
+ }
 
- arch/alpha/kernel/osf_sys.c             |    6 +++---
- arch/alpha/kernel/process.c             |    2 +-
- arch/arm/kernel/sys_arm.c               |    4 ++--
- arch/arm/kernel/sys_oabi-compat.c       |    6 +++---
- arch/avr32/include/asm/syscalls.h       |    2 +-
- arch/avr32/kernel/process.c             |    3 ++-
- arch/blackfin/kernel/process.c          |    2 +-
- arch/frv/kernel/process.c               |    3 ++-
- arch/h8300/kernel/process.c             |    2 +-
- arch/ia64/include/asm/unistd.h          |    2 +-
- arch/ia64/kernel/process.c              |    2 +-
- arch/m32r/kernel/process.c              |    3 ++-
- arch/m68k/kernel/process.c              |    2 +-
- arch/m68knommu/kernel/process.c         |    2 +-
- arch/microblaze/kernel/sys_microblaze.c |    2 +-
- arch/mips/kernel/syscall.c              |    2 +-
- arch/mn10300/kernel/process.c           |    2 +-
- arch/parisc/hpux/fs.c                   |    7 ++++---
- arch/powerpc/kernel/process.c           |    2 +-
- arch/powerpc/kernel/sys_ppc32.c         |    2 +-
- arch/s390/kernel/compat_linux.c         |   10 +++++-----
- arch/s390/kernel/compat_linux.h         |   10 +++++-----
- arch/s390/kernel/entry.h                |    2 +-
- arch/s390/kernel/process.c              |    2 +-
- arch/sh/include/asm/syscalls_32.h       |    2 +-
- arch/sh/include/asm/syscalls_64.h       |    2 +-
- arch/sh/kernel/process_64.c             |    2 +-
- arch/sparc/kernel/sys_sparc32.c         |    7 ++++---
- arch/um/kernel/exec.c                   |    6 +++---
- arch/um/kernel/internal.h               |    2 +-
- arch/um/kernel/syscall.c                |    2 +-
- arch/x86/ia32/sys_ia32.c                |   14 +++++++-------
- arch/x86/include/asm/sys_ia32.h         |   12 ++++++------
- arch/x86/include/asm/syscalls.h         |    2 +-
- arch/x86/kernel/entry_64.S              |    4 ++--
- arch/x86/kernel/process.c               |    2 +-
- arch/xtensa/kernel/process.c            |    2 +-
- fs/compat.c                             |   23 +++++++++++++----------
- fs/stat.c                               |   29 ++++++++++++++++++-----------
- fs/utimes.c                             |    7 ++++---
- include/linux/compat.h                  |    6 +++---
- include/linux/fs.h                      |    6 +++---
- include/linux/syscalls.h                |   20 ++++++++++----------
- include/linux/time.h                    |    2 +-
- 44 files changed, 125 insertions(+), 109 deletions(-)
 
-diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
-index 88131c6..fb58150 100644
---- a/arch/alpha/kernel/osf_sys.c
-+++ b/arch/alpha/kernel/osf_sys.c
-@@ -244,7 +244,7 @@ do_osf_statfs(struct path *path, struct osf_statfs __user *buffer,
- 	return error;	
- }
- 
--SYSCALL_DEFINE3(osf_statfs, char __user *, pathname,
-+SYSCALL_DEFINE3(osf_statfs, const char __user *, pathname,
- 		struct osf_statfs __user *, buffer, unsigned long, bufsiz)
- {
- 	struct path path;
-@@ -358,7 +358,7 @@ osf_procfs_mount(char *dirname, struct procfs_args __user *args, int flags)
- 	return do_mount("", dirname, "proc", flags, NULL);
- }
- 
--SYSCALL_DEFINE4(osf_mount, unsigned long, typenr, char __user *, path,
-+SYSCALL_DEFINE4(osf_mount, unsigned long, typenr, const char __user *, path,
- 		int, flag, void __user *, data)
- {
- 	int retval;
-@@ -932,7 +932,7 @@ SYSCALL_DEFINE3(osf_setitimer, int, which, struct itimerval32 __user *, in,
- 
- }
- 
--SYSCALL_DEFINE2(osf_utimes, char __user *, filename,
-+SYSCALL_DEFINE2(osf_utimes, const char __user *, filename,
- 		struct timeval32 __user *, tvs)
- {
- 	struct timespec tv[2];
-diff --git a/arch/alpha/kernel/process.c b/arch/alpha/kernel/process.c
-index 395a464..88e608a 100644
---- a/arch/alpha/kernel/process.c
-+++ b/arch/alpha/kernel/process.c
-@@ -387,7 +387,7 @@ EXPORT_SYMBOL(dump_elf_task_fp);
-  * sys_execve() executes a new program.
-  */
- asmlinkage int
--do_sys_execve(char __user *ufilename, char __user * __user *argv,
-+do_sys_execve(const char __user *ufilename, char __user * __user *argv,
- 	      char __user * __user *envp, struct pt_regs *regs)
- {
- 	int error;
-diff --git a/arch/arm/kernel/sys_arm.c b/arch/arm/kernel/sys_arm.c
-index c235018..5b7c541 100644
---- a/arch/arm/kernel/sys_arm.c
-+++ b/arch/arm/kernel/sys_arm.c
-@@ -62,7 +62,7 @@ asmlinkage int sys_vfork(struct pt_regs *regs)
- /* sys_execve() executes a new program.
-  * This is called indirectly via a small wrapper
-  */
--asmlinkage int sys_execve(char __user *filenamei, char __user * __user *argv,
-+asmlinkage int sys_execve(const char __user *filenamei, char __user * __user *argv,
- 			  char __user * __user *envp, struct pt_regs *regs)
- {
- 	int error;
-@@ -84,7 +84,7 @@ int kernel_execve(const char *filename, char *const argv[], char *const envp[])
- 	int ret;
- 
- 	memset(&regs, 0, sizeof(struct pt_regs));
--	ret = do_execve((char *)filename, (char __user * __user *)argv,
-+	ret = do_execve(filename, (char __user * __user *)argv,
- 			(char __user * __user *)envp, &regs);
- 	if (ret < 0)
- 		goto out;
-diff --git a/arch/arm/kernel/sys_oabi-compat.c b/arch/arm/kernel/sys_oabi-compat.c
-index 33ff678..4ad8da1 100644
---- a/arch/arm/kernel/sys_oabi-compat.c
-+++ b/arch/arm/kernel/sys_oabi-compat.c
-@@ -141,7 +141,7 @@ static long cp_oldabi_stat64(struct kstat *stat,
- 	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
- }
- 
--asmlinkage long sys_oabi_stat64(char __user * filename,
-+asmlinkage long sys_oabi_stat64(const char __user * filename,
- 				struct oldabi_stat64 __user * statbuf)
- {
- 	struct kstat stat;
-@@ -151,7 +151,7 @@ asmlinkage long sys_oabi_stat64(char __user * filename,
- 	return error;
- }
- 
--asmlinkage long sys_oabi_lstat64(char __user * filename,
-+asmlinkage long sys_oabi_lstat64(const char __user * filename,
- 				 struct oldabi_stat64 __user * statbuf)
- {
- 	struct kstat stat;
-@@ -172,7 +172,7 @@ asmlinkage long sys_oabi_fstat64(unsigned long fd,
- }
- 
- asmlinkage long sys_oabi_fstatat64(int dfd,
--				   char __user *filename,
-+				   const char __user *filename,
- 				   struct oldabi_stat64  __user *statbuf,
- 				   int flag)
- {
-diff --git a/arch/avr32/include/asm/syscalls.h b/arch/avr32/include/asm/syscalls.h
-index 66a1972..ab608b7 100644
---- a/arch/avr32/include/asm/syscalls.h
-+++ b/arch/avr32/include/asm/syscalls.h
-@@ -21,7 +21,7 @@ asmlinkage int sys_clone(unsigned long, unsigned long,
- 			 unsigned long, unsigned long,
- 			 struct pt_regs *);
- asmlinkage int sys_vfork(struct pt_regs *);
--asmlinkage int sys_execve(char __user *, char __user *__user *,
-+asmlinkage int sys_execve(const char __user *, char __user *__user *,
- 			  char __user *__user *, struct pt_regs *);
- 
- /* kernel/signal.c */
-diff --git a/arch/avr32/kernel/process.c b/arch/avr32/kernel/process.c
-index 2d76515..e5daddf 100644
---- a/arch/avr32/kernel/process.c
-+++ b/arch/avr32/kernel/process.c
-@@ -383,7 +383,8 @@ asmlinkage int sys_vfork(struct pt_regs *regs)
- 		       0, NULL, NULL);
- }
- 
--asmlinkage int sys_execve(char __user *ufilename, char __user *__user *uargv,
-+asmlinkage int sys_execve(const char __user *ufilename,
-+			  char __user *__user *uargv,
- 			  char __user *__user *uenvp, struct pt_regs *regs)
- {
- 	int error;
-diff --git a/arch/blackfin/kernel/process.c b/arch/blackfin/kernel/process.c
-index 93ec07d..a566f61 100644
---- a/arch/blackfin/kernel/process.c
-+++ b/arch/blackfin/kernel/process.c
-@@ -209,7 +209,7 @@ copy_thread(unsigned long clone_flags,
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char __user *name, char __user * __user *argv, char __user * __user *envp)
-+asmlinkage int sys_execve(const char __user *name, char __user * __user *argv, char __user * __user *envp)
- {
- 	int error;
- 	char *filename;
-diff --git a/arch/frv/kernel/process.c b/arch/frv/kernel/process.c
-index 21d0fd1..428931c 100644
---- a/arch/frv/kernel/process.c
-+++ b/arch/frv/kernel/process.c
-@@ -250,7 +250,8 @@ int copy_thread(unsigned long clone_flags,
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char __user *name, char __user * __user *argv, char __user * __user *envp)
-+asmlinkage int sys_execve(const char __user *name, char __user * __user *argv,
-+			  char __user * __user *envp)
- {
- 	int error;
- 	char * filename;
-diff --git a/arch/h8300/kernel/process.c b/arch/h8300/kernel/process.c
-index 8c8b0ff..8b7b78d 100644
---- a/arch/h8300/kernel/process.c
-+++ b/arch/h8300/kernel/process.c
-@@ -212,7 +212,7 @@ int copy_thread(unsigned long clone_flags,
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char *name, char **argv, char **envp,int dummy,...)
-+asmlinkage int sys_execve(const char *name, char **argv, char **envp,int dummy,...)
- {
- 	int error;
- 	char * filename;
-diff --git a/arch/ia64/include/asm/unistd.h b/arch/ia64/include/asm/unistd.h
-index bb8b0ff..46f36fc 100644
---- a/arch/ia64/include/asm/unistd.h
-+++ b/arch/ia64/include/asm/unistd.h
-@@ -353,7 +353,7 @@ asmlinkage unsigned long sys_mmap2(
- 				int fd, long pgoff);
- struct pt_regs;
- struct sigaction;
--long sys_execve(char __user *filename, char __user * __user *argv,
-+long sys_execve(const char __user *filename, char __user * __user *argv,
- 			   char __user * __user *envp, struct pt_regs *regs);
- asmlinkage long sys_ia64_pipe(void);
- asmlinkage long sys_rt_sigaction(int sig,
-diff --git a/arch/ia64/kernel/process.c b/arch/ia64/kernel/process.c
-index 53f1648..a879c03 100644
---- a/arch/ia64/kernel/process.c
-+++ b/arch/ia64/kernel/process.c
-@@ -633,7 +633,7 @@ dump_fpu (struct pt_regs *pt, elf_fpregset_t dst)
- }
- 
- long
--sys_execve (char __user *filename, char __user * __user *argv, char __user * __user *envp,
-+sys_execve (const char __user *filename, char __user * __user *argv, char __user * __user *envp,
- 	    struct pt_regs *regs)
- {
- 	char *fname;
-diff --git a/arch/m32r/kernel/process.c b/arch/m32r/kernel/process.c
-index bc8c8c1..8665a4d 100644
---- a/arch/m32r/kernel/process.c
-+++ b/arch/m32r/kernel/process.c
-@@ -288,7 +288,8 @@ asmlinkage int sys_vfork(unsigned long r0, unsigned long r1, unsigned long r2,
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char __user *ufilename, char __user * __user *uargv,
-+asmlinkage int sys_execve(const char __user *ufilename,
-+			  char __user * __user *uargv,
- 			  char __user * __user *uenvp,
- 			  unsigned long r3, unsigned long r4, unsigned long r5,
- 			  unsigned long r6, struct pt_regs regs)
-diff --git a/arch/m68k/kernel/process.c b/arch/m68k/kernel/process.c
-index 1a6be27..221d0b7 100644
---- a/arch/m68k/kernel/process.c
-+++ b/arch/m68k/kernel/process.c
-@@ -315,7 +315,7 @@ EXPORT_SYMBOL(dump_fpu);
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char __user *name, char __user * __user *argv, char __user * __user *envp)
-+asmlinkage int sys_execve(const char __user *name, char __user * __user *argv, char __user * __user *envp)
- {
- 	int error;
- 	char * filename;
-diff --git a/arch/m68knommu/kernel/process.c b/arch/m68knommu/kernel/process.c
-index 6aa6613..6350f68 100644
---- a/arch/m68knommu/kernel/process.c
-+++ b/arch/m68knommu/kernel/process.c
-@@ -350,7 +350,7 @@ void dump(struct pt_regs *fp)
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char *name, char **argv, char **envp)
-+asmlinkage int sys_execve(const char *name, char **argv, char **envp)
- {
- 	int error;
- 	char * filename;
-diff --git a/arch/microblaze/kernel/sys_microblaze.c b/arch/microblaze/kernel/sys_microblaze.c
-index f4e00b7..6abab6e 100644
---- a/arch/microblaze/kernel/sys_microblaze.c
-+++ b/arch/microblaze/kernel/sys_microblaze.c
-@@ -47,7 +47,7 @@ asmlinkage long microblaze_clone(int flags, unsigned long stack, struct pt_regs
- 	return do_fork(flags, stack, regs, 0, NULL, NULL);
- }
- 
--asmlinkage long microblaze_execve(char __user *filenamei, char __user *__user *argv,
-+asmlinkage long microblaze_execve(const char __user *filenamei, char __user *__user *argv,
- 			char __user *__user *envp, struct pt_regs *regs)
- {
- 	int error;
-diff --git a/arch/mips/kernel/syscall.c b/arch/mips/kernel/syscall.c
-index 58bab2e..bddce0b 100644
---- a/arch/mips/kernel/syscall.c
-+++ b/arch/mips/kernel/syscall.c
-@@ -254,7 +254,7 @@ asmlinkage int sys_execve(nabi_no_regargs struct pt_regs regs)
- 	int error;
- 	char * filename;
- 
--	filename = getname((char __user *) (long)regs.regs[4]);
-+	filename = getname((const char __user *) (long)regs.regs[4]);
- 	error = PTR_ERR(filename);
- 	if (IS_ERR(filename))
- 		goto out;
-diff --git a/arch/mn10300/kernel/process.c b/arch/mn10300/kernel/process.c
-index 82b817c..762eb32 100644
---- a/arch/mn10300/kernel/process.c
-+++ b/arch/mn10300/kernel/process.c
-@@ -268,7 +268,7 @@ asmlinkage long sys_vfork(void)
- 		       0, NULL, NULL);
- }
- 
--asmlinkage long sys_execve(char __user *name,
-+asmlinkage long sys_execve(const char __user *name,
- 			   char __user * __user *argv,
- 			   char __user * __user *envp)
- {
-diff --git a/arch/parisc/hpux/fs.c b/arch/parisc/hpux/fs.c
-index 6935123..1444875 100644
---- a/arch/parisc/hpux/fs.c
-+++ b/arch/parisc/hpux/fs.c
-@@ -36,7 +36,7 @@ int hpux_execve(struct pt_regs *regs)
- 	int error;
- 	char *filename;
- 
--	filename = getname((char __user *) regs->gr[26]);
-+	filename = getname((const char __user *) regs->gr[26]);
- 	error = PTR_ERR(filename);
- 	if (IS_ERR(filename))
- 		goto out;
-@@ -169,7 +169,7 @@ static int cp_hpux_stat(struct kstat *stat, struct hpux_stat64 __user *statbuf)
- 	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
- }
- 
--long hpux_stat64(char __user *filename, struct hpux_stat64 __user *statbuf)
-+long hpux_stat64(const char __user *filename, struct hpux_stat64 __user *statbuf)
- {
- 	struct kstat stat;
- 	int error = vfs_stat(filename, &stat);
-@@ -191,7 +191,8 @@ long hpux_fstat64(unsigned int fd, struct hpux_stat64 __user *statbuf)
- 	return error;
- }
- 
--long hpux_lstat64(char __user *filename, struct hpux_stat64 __user *statbuf)
-+long hpux_lstat64(const char __user *filename,
-+		  struct hpux_stat64 __user *statbuf)
- {
- 	struct kstat stat;
- 	int error = vfs_lstat(filename, &stat);
-diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
-index e78a5ad..feacfb7 100644
---- a/arch/powerpc/kernel/process.c
-+++ b/arch/powerpc/kernel/process.c
-@@ -1027,7 +1027,7 @@ int sys_execve(unsigned long a0, unsigned long a1, unsigned long a2,
- 	int error;
- 	char *filename;
- 
--	filename = getname((char __user *) a0);
-+	filename = getname((const char __user *) a0);
- 	error = PTR_ERR(filename);
- 	if (IS_ERR(filename))
- 		goto out;
-diff --git a/arch/powerpc/kernel/sys_ppc32.c b/arch/powerpc/kernel/sys_ppc32.c
-index 19471a1..20fd701 100644
---- a/arch/powerpc/kernel/sys_ppc32.c
-+++ b/arch/powerpc/kernel/sys_ppc32.c
-@@ -546,7 +546,7 @@ compat_ssize_t compat_sys_pread64(unsigned int fd, char __user *ubuf, compat_siz
- 	return sys_pread64(fd, ubuf, count, ((loff_t)poshi << 32) | poslo);
- }
- 
--compat_ssize_t compat_sys_pwrite64(unsigned int fd, char __user *ubuf, compat_size_t count,
-+compat_ssize_t compat_sys_pwrite64(unsigned int fd, const char __user *ubuf, compat_size_t count,
- 			      u32 reg6, u32 poshi, u32 poslo)
- {
- 	return sys_pwrite64(fd, ubuf, count, ((loff_t)poshi << 32) | poslo);
-diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
-index 73b624e..1e6449c 100644
---- a/arch/s390/kernel/compat_linux.c
-+++ b/arch/s390/kernel/compat_linux.c
-@@ -436,7 +436,7 @@ sys32_rt_sigqueueinfo(int pid, int sig, compat_siginfo_t __user *uinfo)
-  * sys32_execve() executes a new program after the asm stub has set
-  * things up for us.  This should basically do what I want it to.
-  */
--asmlinkage long sys32_execve(char __user *name, compat_uptr_t __user *argv,
-+asmlinkage long sys32_execve(const char __user *name, compat_uptr_t __user *argv,
- 			     compat_uptr_t __user *envp)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
-@@ -570,7 +570,7 @@ static int cp_stat64(struct stat64_emu31 __user *ubuf, struct kstat *stat)
- 	return copy_to_user(ubuf,&tmp,sizeof(tmp)) ? -EFAULT : 0; 
- }
- 
--asmlinkage long sys32_stat64(char __user * filename, struct stat64_emu31 __user * statbuf)
-+asmlinkage long sys32_stat64(const char __user * filename, struct stat64_emu31 __user * statbuf)
- {
- 	struct kstat stat;
- 	int ret = vfs_stat(filename, &stat);
-@@ -579,7 +579,7 @@ asmlinkage long sys32_stat64(char __user * filename, struct stat64_emu31 __user
- 	return ret;
- }
- 
--asmlinkage long sys32_lstat64(char __user * filename, struct stat64_emu31 __user * statbuf)
-+asmlinkage long sys32_lstat64(const char __user * filename, struct stat64_emu31 __user * statbuf)
- {
- 	struct kstat stat;
- 	int ret = vfs_lstat(filename, &stat);
-@@ -597,7 +597,7 @@ asmlinkage long sys32_fstat64(unsigned long fd, struct stat64_emu31 __user * sta
- 	return ret;
- }
- 
--asmlinkage long sys32_fstatat64(unsigned int dfd, char __user *filename,
-+asmlinkage long sys32_fstatat64(unsigned int dfd, const char __user *filename,
- 				struct stat64_emu31 __user* statbuf, int flag)
- {
- 	struct kstat stat;
-@@ -655,7 +655,7 @@ asmlinkage long sys32_read(unsigned int fd, char __user * buf, size_t count)
- 	return sys_read(fd, buf, count);
- }
- 
--asmlinkage long sys32_write(unsigned int fd, char __user * buf, size_t count)
-+asmlinkage long sys32_write(unsigned int fd, const char __user * buf, size_t count)
- {
- 	if ((compat_ssize_t) count < 0)
- 		return -EINVAL; 
-diff --git a/arch/s390/kernel/compat_linux.h b/arch/s390/kernel/compat_linux.h
-index cb97afc..9635d75 100644
---- a/arch/s390/kernel/compat_linux.h
-+++ b/arch/s390/kernel/compat_linux.h
-@@ -193,7 +193,7 @@ long sys32_rt_sigprocmask(int how, compat_sigset_t __user *set,
- 			  compat_sigset_t __user *oset, size_t sigsetsize);
- long sys32_rt_sigpending(compat_sigset_t __user *set, size_t sigsetsize);
- long sys32_rt_sigqueueinfo(int pid, int sig, compat_siginfo_t __user *uinfo);
--long sys32_execve(char __user *name, compat_uptr_t __user *argv,
-+long sys32_execve(const char __user *name, compat_uptr_t __user *argv,
- 		  compat_uptr_t __user *envp);
- long sys32_init_module(void __user *umod, unsigned long len,
- 		       const char __user *uargs);
-@@ -207,16 +207,16 @@ long sys32_sendfile(int out_fd, int in_fd, compat_off_t __user *offset,
- 		    size_t count);
- long sys32_sendfile64(int out_fd, int in_fd, compat_loff_t __user *offset,
- 		      s32 count);
--long sys32_stat64(char __user * filename, struct stat64_emu31 __user * statbuf);
--long sys32_lstat64(char __user * filename,
-+long sys32_stat64(const char __user * filename, struct stat64_emu31 __user * statbuf);
-+long sys32_lstat64(const char __user * filename,
- 		   struct stat64_emu31 __user * statbuf);
- long sys32_fstat64(unsigned long fd, struct stat64_emu31 __user * statbuf);
--long sys32_fstatat64(unsigned int dfd, char __user *filename,
-+long sys32_fstatat64(unsigned int dfd, const char __user *filename,
- 		     struct stat64_emu31 __user* statbuf, int flag);
- unsigned long old32_mmap(struct mmap_arg_struct_emu31 __user *arg);
- long sys32_mmap2(struct mmap_arg_struct_emu31 __user *arg);
- long sys32_read(unsigned int fd, char __user * buf, size_t count);
--long sys32_write(unsigned int fd, char __user * buf, size_t count);
-+long sys32_write(unsigned int fd, const char __user * buf, size_t count);
- long sys32_fadvise64(int fd, loff_t offset, size_t len, int advise);
- long sys32_fadvise64_64(struct fadvise64_64_args __user *args);
- long sys32_sigaction(int sig, const struct old_sigaction32 __user *act,
-diff --git a/arch/s390/kernel/entry.h b/arch/s390/kernel/entry.h
-index eb15c12..e2c048b 100644
---- a/arch/s390/kernel/entry.h
-+++ b/arch/s390/kernel/entry.h
-@@ -42,7 +42,7 @@ long sys_clone(unsigned long newsp, unsigned long clone_flags,
- 	       int __user *parent_tidptr, int __user *child_tidptr);
- long sys_vfork(void);
- void execve_tail(void);
--long sys_execve(char __user *name, char __user * __user *argv,
-+long sys_execve(const char __user *name, char __user * __user *argv,
- 		char __user * __user *envp);
- long sys_sigsuspend(int history0, int history1, old_sigset_t mask);
- long sys_sigaction(int sig, const struct old_sigaction __user *act,
-diff --git a/arch/s390/kernel/process.c b/arch/s390/kernel/process.c
-index 1039fde..7eafaf2 100644
---- a/arch/s390/kernel/process.c
-+++ b/arch/s390/kernel/process.c
-@@ -267,7 +267,7 @@ asmlinkage void execve_tail(void)
- /*
-  * sys_execve() executes a new program.
-  */
--SYSCALL_DEFINE3(execve, char __user *, name, char __user * __user *, argv,
-+SYSCALL_DEFINE3(execve, const char __user *, name, char __user * __user *, argv,
- 		char __user * __user *, envp)
- {
- 	struct pt_regs *regs = task_pt_regs(current);
-diff --git a/arch/sh/include/asm/syscalls_32.h b/arch/sh/include/asm/syscalls_32.h
-index 8b30200..be201fd 100644
---- a/arch/sh/include/asm/syscalls_32.h
-+++ b/arch/sh/include/asm/syscalls_32.h
-@@ -19,7 +19,7 @@ asmlinkage int sys_clone(unsigned long clone_flags, unsigned long newsp,
- asmlinkage int sys_vfork(unsigned long r4, unsigned long r5,
- 			 unsigned long r6, unsigned long r7,
- 			 struct pt_regs __regs);
--asmlinkage int sys_execve(char __user *ufilename, char __user * __user *uargv,
-+asmlinkage int sys_execve(const char __user *ufilename, char __user * __user *uargv,
- 			  char __user * __user *uenvp, unsigned long r7,
- 			  struct pt_regs __regs);
- asmlinkage int sys_sigsuspend(old_sigset_t mask, unsigned long r5,
-diff --git a/arch/sh/include/asm/syscalls_64.h b/arch/sh/include/asm/syscalls_64.h
-index 751fd88..ee519f4 100644
---- a/arch/sh/include/asm/syscalls_64.h
-+++ b/arch/sh/include/asm/syscalls_64.h
-@@ -21,7 +21,7 @@ asmlinkage int sys_vfork(unsigned long r2, unsigned long r3,
- 			 unsigned long r4, unsigned long r5,
- 			 unsigned long r6, unsigned long r7,
- 			 struct pt_regs *pregs);
--asmlinkage int sys_execve(char *ufilename, char **uargv,
-+asmlinkage int sys_execve(const char *ufilename, char **uargv,
- 			  char **uenvp, unsigned long r5,
- 			  unsigned long r6, unsigned long r7,
- 			  struct pt_regs *pregs);
-diff --git a/arch/sh/kernel/process_64.c b/arch/sh/kernel/process_64.c
-index d4ca648..68d128d 100644
---- a/arch/sh/kernel/process_64.c
-+++ b/arch/sh/kernel/process_64.c
-@@ -483,7 +483,7 @@ asmlinkage int sys_vfork(unsigned long r2, unsigned long r3,
- /*
-  * sys_execve() executes a new program.
-  */
--asmlinkage int sys_execve(char *ufilename, char **uargv,
-+asmlinkage int sys_execve(const char *ufilename, char **uargv,
- 			  char **uenvp, unsigned long r5,
- 			  unsigned long r6, unsigned long r7,
- 			  struct pt_regs *pregs)
-diff --git a/arch/sparc/kernel/sys_sparc32.c b/arch/sparc/kernel/sys_sparc32.c
-index c0ca875..e6375a7 100644
---- a/arch/sparc/kernel/sys_sparc32.c
-+++ b/arch/sparc/kernel/sys_sparc32.c
-@@ -162,7 +162,7 @@ static int cp_compat_stat64(struct kstat *stat,
- 	return err;
- }
- 
--asmlinkage long compat_sys_stat64(char __user * filename,
-+asmlinkage long compat_sys_stat64(const char __user * filename,
- 		struct compat_stat64 __user *statbuf)
- {
- 	struct kstat stat;
-@@ -173,7 +173,7 @@ asmlinkage long compat_sys_stat64(char __user * filename,
- 	return error;
- }
- 
--asmlinkage long compat_sys_lstat64(char __user * filename,
-+asmlinkage long compat_sys_lstat64(const char __user * filename,
- 		struct compat_stat64 __user *statbuf)
- {
- 	struct kstat stat;
-@@ -195,7 +195,8 @@ asmlinkage long compat_sys_fstat64(unsigned int fd,
- 	return error;
- }
- 
--asmlinkage long compat_sys_fstatat64(unsigned int dfd, char __user *filename,
-+asmlinkage long compat_sys_fstatat64(unsigned int dfd,
-+		const char __user *filename,
- 		struct compat_stat64 __user * statbuf, int flag)
- {
- 	struct kstat stat;
-diff --git a/arch/um/kernel/exec.c b/arch/um/kernel/exec.c
-index 97974c1..59b20d9 100644
---- a/arch/um/kernel/exec.c
-+++ b/arch/um/kernel/exec.c
-@@ -44,7 +44,7 @@ void start_thread(struct pt_regs *regs, unsigned long eip, unsigned long esp)
- 	PT_REGS_SP(regs) = esp;
- }
- 
--static long execve1(char *file, char __user * __user *argv,
-+static long execve1(const char *file, char __user * __user *argv,
- 		    char __user *__user *env)
- {
- 	long error;
-@@ -61,7 +61,7 @@ static long execve1(char *file, char __user * __user *argv,
- 	return error;
- }
- 
--long um_execve(char *file, char __user *__user *argv, char __user *__user *env)
-+long um_execve(const char *file, char __user *__user *argv, char __user *__user *env)
- {
- 	long err;
- 
-@@ -71,7 +71,7 @@ long um_execve(char *file, char __user *__user *argv, char __user *__user *env)
- 	return err;
- }
- 
--long sys_execve(char __user *file, char __user *__user *argv,
-+long sys_execve(const char __user *file, char __user *__user *argv,
- 		char __user *__user *env)
- {
- 	long error;
-diff --git a/arch/um/kernel/internal.h b/arch/um/kernel/internal.h
-index 3bda43c..1303a10 100644
---- a/arch/um/kernel/internal.h
-+++ b/arch/um/kernel/internal.h
-@@ -1 +1 @@
--extern long um_execve(char *file, char __user *__user *argv, char __user *__user *env);
-+extern long um_execve(const char *file, char __user *__user *argv, char __user *__user *env);
-diff --git a/arch/um/kernel/syscall.c b/arch/um/kernel/syscall.c
-index 4393173..7427c0b 100644
---- a/arch/um/kernel/syscall.c
-+++ b/arch/um/kernel/syscall.c
-@@ -58,7 +58,7 @@ int kernel_execve(const char *filename, char *const argv[], char *const envp[])
- 
- 	fs = get_fs();
- 	set_fs(KERNEL_DS);
--	ret = um_execve((char *)filename, (char __user *__user *)argv,
-+	ret = um_execve(filename, (char __user *__user *)argv,
- 			(char __user *__user *) envp);
- 	set_fs(fs);
- 
-diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
-index 3d09331..849813f 100644
---- a/arch/x86/ia32/sys_ia32.c
-+++ b/arch/x86/ia32/sys_ia32.c
-@@ -51,7 +51,7 @@
- #define AA(__x)		((unsigned long)(__x))
- 
- 
--asmlinkage long sys32_truncate64(char __user *filename,
-+asmlinkage long sys32_truncate64(const char __user *filename,
- 				 unsigned long offset_low,
- 				 unsigned long offset_high)
- {
-@@ -96,7 +96,7 @@ static int cp_stat64(struct stat64 __user *ubuf, struct kstat *stat)
- 	return 0;
- }
- 
--asmlinkage long sys32_stat64(char __user *filename,
-+asmlinkage long sys32_stat64(const char __user *filename,
- 			     struct stat64 __user *statbuf)
- {
- 	struct kstat stat;
-@@ -107,7 +107,7 @@ asmlinkage long sys32_stat64(char __user *filename,
- 	return ret;
- }
- 
--asmlinkage long sys32_lstat64(char __user *filename,
-+asmlinkage long sys32_lstat64(const char __user *filename,
- 			      struct stat64 __user *statbuf)
- {
- 	struct kstat stat;
-@@ -126,7 +126,7 @@ asmlinkage long sys32_fstat64(unsigned int fd, struct stat64 __user *statbuf)
- 	return ret;
- }
- 
--asmlinkage long sys32_fstatat(unsigned int dfd, char __user *filename,
-+asmlinkage long sys32_fstatat(unsigned int dfd, const char __user *filename,
- 			      struct stat64 __user *statbuf, int flag)
- {
- 	struct kstat stat;
-@@ -408,8 +408,8 @@ asmlinkage long sys32_pread(unsigned int fd, char __user *ubuf, u32 count,
- 			 ((loff_t)AA(poshi) << 32) | AA(poslo));
- }
- 
--asmlinkage long sys32_pwrite(unsigned int fd, char __user *ubuf, u32 count,
--			     u32 poslo, u32 poshi)
-+asmlinkage long sys32_pwrite(unsigned int fd, const char __user *ubuf,
-+			     u32 count, u32 poslo, u32 poshi)
- {
- 	return sys_pwrite64(fd, ubuf, count,
- 			  ((loff_t)AA(poshi) << 32) | AA(poslo));
-@@ -449,7 +449,7 @@ asmlinkage long sys32_sendfile(int out_fd, int in_fd,
- 	return ret;
- }
- 
--asmlinkage long sys32_execve(char __user *name, compat_uptr_t __user *argv,
-+asmlinkage long sys32_execve(const char __user *name, compat_uptr_t __user *argv,
- 			     compat_uptr_t __user *envp, struct pt_regs *regs)
- {
- 	long error;
-diff --git a/arch/x86/include/asm/sys_ia32.h b/arch/x86/include/asm/sys_ia32.h
-index cf4e2e3..cb23852 100644
---- a/arch/x86/include/asm/sys_ia32.h
-+++ b/arch/x86/include/asm/sys_ia32.h
-@@ -18,13 +18,13 @@
- #include <asm/ia32.h>
- 
- /* ia32/sys_ia32.c */
--asmlinkage long sys32_truncate64(char __user *, unsigned long, unsigned long);
-+asmlinkage long sys32_truncate64(const char __user *, unsigned long, unsigned long);
- asmlinkage long sys32_ftruncate64(unsigned int, unsigned long, unsigned long);
- 
--asmlinkage long sys32_stat64(char __user *, struct stat64 __user *);
--asmlinkage long sys32_lstat64(char __user *, struct stat64 __user *);
-+asmlinkage long sys32_stat64(const char __user *, struct stat64 __user *);
-+asmlinkage long sys32_lstat64(const char __user *, struct stat64 __user *);
- asmlinkage long sys32_fstat64(unsigned int, struct stat64 __user *);
--asmlinkage long sys32_fstatat(unsigned int, char __user *,
-+asmlinkage long sys32_fstatat(unsigned int, const char __user *,
- 			      struct stat64 __user *, int);
- struct mmap_arg_struct32;
- asmlinkage long sys32_mmap(struct mmap_arg_struct32 __user *);
-@@ -49,12 +49,12 @@ asmlinkage long sys32_rt_sigpending(compat_sigset_t __user *, compat_size_t);
- asmlinkage long sys32_rt_sigqueueinfo(int, int, compat_siginfo_t __user *);
- 
- asmlinkage long sys32_pread(unsigned int, char __user *, u32, u32, u32);
--asmlinkage long sys32_pwrite(unsigned int, char __user *, u32, u32, u32);
-+asmlinkage long sys32_pwrite(unsigned int, const char __user *, u32, u32, u32);
- 
- asmlinkage long sys32_personality(unsigned long);
- asmlinkage long sys32_sendfile(int, int, compat_off_t __user *, s32);
- 
--asmlinkage long sys32_execve(char __user *, compat_uptr_t __user *,
-+asmlinkage long sys32_execve(const char __user *, compat_uptr_t __user *,
- 			     compat_uptr_t __user *, struct pt_regs *);
- asmlinkage long sys32_clone(unsigned int, unsigned int, struct pt_regs *);
- 
-diff --git a/arch/x86/include/asm/syscalls.h b/arch/x86/include/asm/syscalls.h
-index 5c044b4..feb2ff9 100644
---- a/arch/x86/include/asm/syscalls.h
-+++ b/arch/x86/include/asm/syscalls.h
-@@ -23,7 +23,7 @@ long sys_iopl(unsigned int, struct pt_regs *);
- /* kernel/process.c */
- int sys_fork(struct pt_regs *);
- int sys_vfork(struct pt_regs *);
--long sys_execve(char __user *, char __user * __user *,
-+long sys_execve(const char __user *, char __user * __user *,
- 		char __user * __user *, struct pt_regs *);
- long sys_clone(unsigned long, unsigned long, void __user *,
- 	       void __user *, struct pt_regs *);
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index c5ea5cd..17be5ec 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -1185,13 +1185,13 @@ END(kernel_thread_helper)
-  * execve(). This function needs to use IRET, not SYSRET, to set up all state properly.
-  *
-  * C extern interface:
-- *	 extern long execve(char *name, char **argv, char **envp)
-+ *	 extern long execve(const char *name, char **argv, char **envp)
-  *
-  * asm input arguments:
-  *	rdi: name, rsi: argv, rdx: envp
-  *
-  * We want to fallback into:
-- *	extern long sys_execve(char *name, char **argv,char **envp, struct pt_regs *regs)
-+ *	extern long sys_execve(const char *name, char **argv,char **envp, struct pt_regs *regs)
-  *
-  * do_sys_execve asm fallback arguments:
-  *	rdi: name, rsi: argv, rdx: envp, rcx: fake frame on the stack
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index d401f1d..64ecaf0 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -301,7 +301,7 @@ EXPORT_SYMBOL(kernel_thread);
- /*
-  * sys_execve() executes a new program.
-  */
--long sys_execve(char __user *name, char __user * __user *argv,
-+long sys_execve(const char __user *name, char __user * __user *argv,
- 		char __user * __user *envp, struct pt_regs *regs)
- {
- 	long error;
-diff --git a/arch/xtensa/kernel/process.c b/arch/xtensa/kernel/process.c
-index f167e0f..7c2f38f 100644
---- a/arch/xtensa/kernel/process.c
-+++ b/arch/xtensa/kernel/process.c
-@@ -318,7 +318,7 @@ long xtensa_clone(unsigned long clone_flags, unsigned long newsp,
-  */
- 
- asmlinkage
--long xtensa_execve(char __user *name, char __user * __user *argv,
-+long xtensa_execve(const char __user *name, char __user * __user *argv,
-                    char __user * __user *envp,
-                    long a3, long a4, long a5,
-                    struct pt_regs *regs)
-diff --git a/fs/compat.c b/fs/compat.c
-index e6d5d70..718c706 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -77,7 +77,8 @@ int compat_printk(const char *fmt, ...)
-  * Not all architectures have sys_utime, so implement this in terms
-  * of sys_utimes.
-  */
--asmlinkage long compat_sys_utime(char __user *filename, struct compat_utimbuf __user *t)
-+asmlinkage long compat_sys_utime(const char __user *filename,
-+				 struct compat_utimbuf __user *t)
- {
- 	struct timespec tv[2];
- 
-@@ -91,7 +92,7 @@ asmlinkage long compat_sys_utime(char __user *filename, struct compat_utimbuf __
- 	return do_utimes(AT_FDCWD, filename, t ? tv : NULL, 0);
- }
- 
--asmlinkage long compat_sys_utimensat(unsigned int dfd, char __user *filename, struct compat_timespec __user *t, int flags)
-+asmlinkage long compat_sys_utimensat(unsigned int dfd, const char __user *filename, struct compat_timespec __user *t, int flags)
- {
- 	struct timespec tv[2];
- 
-@@ -106,7 +107,7 @@ asmlinkage long compat_sys_utimensat(unsigned int dfd, char __user *filename, st
- 	return do_utimes(dfd, filename, t ? tv : NULL, flags);
- }
- 
--asmlinkage long compat_sys_futimesat(unsigned int dfd, char __user *filename, struct compat_timeval __user *t)
-+asmlinkage long compat_sys_futimesat(unsigned int dfd, const char __user *filename, struct compat_timeval __user *t)
- {
- 	struct timespec tv[2];
- 
-@@ -125,7 +126,7 @@ asmlinkage long compat_sys_futimesat(unsigned int dfd, char __user *filename, st
- 	return do_utimes(dfd, filename, t ? tv : NULL, 0);
- }
- 
--asmlinkage long compat_sys_utimes(char __user *filename, struct compat_timeval __user *t)
-+asmlinkage long compat_sys_utimes(const char __user *filename, struct compat_timeval __user *t)
- {
- 	return compat_sys_futimesat(AT_FDCWD, filename, t);
- }
-@@ -169,7 +170,7 @@ static int cp_compat_stat(struct kstat *stat, struct compat_stat __user *ubuf)
- 	return err;
- }
- 
--asmlinkage long compat_sys_newstat(char __user * filename,
-+asmlinkage long compat_sys_newstat(const char __user * filename,
- 		struct compat_stat __user *statbuf)
- {
- 	struct kstat stat;
-@@ -181,7 +182,7 @@ asmlinkage long compat_sys_newstat(char __user * filename,
- 	return cp_compat_stat(&stat, statbuf);
- }
- 
--asmlinkage long compat_sys_newlstat(char __user * filename,
-+asmlinkage long compat_sys_newlstat(const char __user * filename,
- 		struct compat_stat __user *statbuf)
- {
- 	struct kstat stat;
-@@ -194,7 +195,8 @@ asmlinkage long compat_sys_newlstat(char __user * filename,
- }
- 
- #ifndef __ARCH_WANT_STAT64
--asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user *filename,
-+asmlinkage long compat_sys_newfstatat(unsigned int dfd,
-+		const char __user *filename,
- 		struct compat_stat __user *statbuf, int flag)
- {
- 	struct kstat stat;
-@@ -837,9 +839,10 @@ static int do_nfs4_super_data_conv(void *raw_data)
- #define NCPFS_NAME      "ncpfs"
- #define NFS4_NAME	"nfs4"
- 
--asmlinkage long compat_sys_mount(char __user * dev_name, char __user * dir_name,
--				 char __user * type, unsigned long flags,
--				 void __user * data)
-+asmlinkage long compat_sys_mount(const char __user * dev_name,
-+				 const char __user * dir_name,
-+				 const char __user * type, unsigned long flags,
-+				 const void __user * data)
- {
- 	char *kernel_type;
- 	unsigned long data_page;
-diff --git a/fs/stat.c b/fs/stat.c
-index bae6fa2..d5c61cf 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -68,7 +68,8 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
- }
- EXPORT_SYMBOL(vfs_fstat);
- 
--int vfs_fstatat(int dfd, char __user *filename, struct kstat *stat, int flag)
-+int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
-+		int flag)
- {
- 	struct path path;
- 	int error = -EINVAL;
-@@ -93,13 +94,13 @@ out:
- }
- EXPORT_SYMBOL(vfs_fstatat);
- 
--int vfs_stat(char __user *name, struct kstat *stat)
-+int vfs_stat(const char __user *name, struct kstat *stat)
- {
- 	return vfs_fstatat(AT_FDCWD, name, stat, 0);
- }
- EXPORT_SYMBOL(vfs_stat);
- 
--int vfs_lstat(char __user *name, struct kstat *stat)
-+int vfs_lstat(const char __user *name, struct kstat *stat)
- {
- 	return vfs_fstatat(AT_FDCWD, name, stat, AT_SYMLINK_NOFOLLOW);
- }
-@@ -149,7 +150,8 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- 	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
- }
- 
--SYSCALL_DEFINE2(stat, char __user *, filename, struct __old_kernel_stat __user *, statbuf)
-+SYSCALL_DEFINE2(stat, const char __user *, filename,
-+		struct __old_kernel_stat __user *, statbuf)
- {
- 	struct kstat stat;
- 	int error;
-@@ -161,7 +163,8 @@ SYSCALL_DEFINE2(stat, char __user *, filename, struct __old_kernel_stat __user *
- 	return cp_old_stat(&stat, statbuf);
- }
- 
--SYSCALL_DEFINE2(lstat, char __user *, filename, struct __old_kernel_stat __user *, statbuf)
-+SYSCALL_DEFINE2(lstat, const char __user *, filename,
-+		struct __old_kernel_stat __user *, statbuf)
- {
- 	struct kstat stat;
- 	int error;
-@@ -236,7 +239,8 @@ static int cp_new_stat(struct kstat *stat, struct stat __user *statbuf)
- 	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
- }
- 
--SYSCALL_DEFINE2(newstat, char __user *, filename, struct stat __user *, statbuf)
-+SYSCALL_DEFINE2(newstat, const char __user *, filename,
-+		struct stat __user *, statbuf)
- {
- 	struct kstat stat;
- 	int error = vfs_stat(filename, &stat);
-@@ -246,7 +250,8 @@ SYSCALL_DEFINE2(newstat, char __user *, filename, struct stat __user *, statbuf)
- 	return cp_new_stat(&stat, statbuf);
- }
- 
--SYSCALL_DEFINE2(newlstat, char __user *, filename, struct stat __user *, statbuf)
-+SYSCALL_DEFINE2(newlstat, const char __user *, filename,
-+		struct stat __user *, statbuf)
- {
- 	struct kstat stat;
- 	int error;
-@@ -259,7 +264,7 @@ SYSCALL_DEFINE2(newlstat, char __user *, filename, struct stat __user *, statbuf
- }
- 
- #if !defined(__ARCH_WANT_STAT64) || defined(__ARCH_WANT_SYS_NEWFSTATAT)
--SYSCALL_DEFINE4(newfstatat, int, dfd, char __user *, filename,
-+SYSCALL_DEFINE4(newfstatat, int, dfd, const char __user *, filename,
- 		struct stat __user *, statbuf, int, flag)
- {
- 	struct kstat stat;
-@@ -357,7 +362,8 @@ static long cp_new_stat64(struct kstat *stat, struct stat64 __user *statbuf)
- 	return copy_to_user(statbuf,&tmp,sizeof(tmp)) ? -EFAULT : 0;
- }
- 
--SYSCALL_DEFINE2(stat64, char __user *, filename, struct stat64 __user *, statbuf)
-+SYSCALL_DEFINE2(stat64, const char __user *, filename,
-+		struct stat64 __user *, statbuf)
- {
- 	struct kstat stat;
- 	int error = vfs_stat(filename, &stat);
-@@ -368,7 +374,8 @@ SYSCALL_DEFINE2(stat64, char __user *, filename, struct stat64 __user *, statbuf
- 	return error;
- }
- 
--SYSCALL_DEFINE2(lstat64, char __user *, filename, struct stat64 __user *, statbuf)
-+SYSCALL_DEFINE2(lstat64, const char __user *, filename,
-+		struct stat64 __user *, statbuf)
- {
- 	struct kstat stat;
- 	int error = vfs_lstat(filename, &stat);
-@@ -390,7 +397,7 @@ SYSCALL_DEFINE2(fstat64, unsigned long, fd, struct stat64 __user *, statbuf)
- 	return error;
- }
- 
--SYSCALL_DEFINE4(fstatat64, int, dfd, char __user *, filename,
-+SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
- 		struct stat64 __user *, statbuf, int, flag)
- {
- 	struct kstat stat;
-diff --git a/fs/utimes.c b/fs/utimes.c
-index e4c75db..179b586 100644
---- a/fs/utimes.c
-+++ b/fs/utimes.c
-@@ -126,7 +126,8 @@ out:
-  * must be owner or have write permission.
-  * Else, update from *times, must be owner or super user.
-  */
--long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags)
-+long do_utimes(int dfd, const char __user *filename, struct timespec *times,
-+	       int flags)
- {
- 	int error = -EINVAL;
- 
-@@ -170,7 +171,7 @@ out:
- 	return error;
- }
- 
--SYSCALL_DEFINE4(utimensat, int, dfd, char __user *, filename,
-+SYSCALL_DEFINE4(utimensat, int, dfd, const char __user *, filename,
- 		struct timespec __user *, utimes, int, flags)
- {
- 	struct timespec tstimes[2];
-@@ -188,7 +189,7 @@ SYSCALL_DEFINE4(utimensat, int, dfd, char __user *, filename,
- 	return do_utimes(dfd, filename, utimes ? tstimes : NULL, flags);
- }
- 
--SYSCALL_DEFINE3(futimesat, int, dfd, char __user *, filename,
-+SYSCALL_DEFINE3(futimesat, int, dfd, const char __user *, filename,
- 		struct timeval __user *, utimes)
- {
- 	struct timeval times[2];
-diff --git a/include/linux/compat.h b/include/linux/compat.h
-index 168f7da..9ddc878 100644
---- a/include/linux/compat.h
-+++ b/include/linux/compat.h
-@@ -331,7 +331,7 @@ asmlinkage long compat_sys_epoll_pwait(int epfd,
- 			const compat_sigset_t __user *sigmask,
- 			compat_size_t sigsetsize);
- 
--asmlinkage long compat_sys_utimensat(unsigned int dfd, char __user *filename,
-+asmlinkage long compat_sys_utimensat(unsigned int dfd, const char __user *filename,
- 				struct compat_timespec __user *t, int flags);
- 
- asmlinkage long compat_sys_signalfd(int ufd,
-@@ -348,9 +348,9 @@ asmlinkage long compat_sys_move_pages(pid_t pid, unsigned long nr_page,
- 				      const int __user *nodes,
- 				      int __user *status,
- 				      int flags);
--asmlinkage long compat_sys_futimesat(unsigned int dfd, char __user *filename,
-+asmlinkage long compat_sys_futimesat(unsigned int dfd, const char __user *filename,
- 				     struct compat_timeval __user *t);
--asmlinkage long compat_sys_newfstatat(unsigned int dfd, char __user * filename,
-+asmlinkage long compat_sys_newfstatat(unsigned int dfd, const char __user * filename,
- 				      struct compat_stat __user *statbuf,
- 				      int flag);
- asmlinkage long compat_sys_openat(unsigned int dfd, const char __user *filename,
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index b343b42..11f22fc 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2320,10 +2320,10 @@ void inode_set_bytes(struct inode *inode, loff_t bytes);
- 
- extern int vfs_readdir(struct file *, filldir_t, void *);
- 
--extern int vfs_stat(char __user *, struct kstat *);
--extern int vfs_lstat(char __user *, struct kstat *);
-+extern int vfs_stat(const char __user *, struct kstat *);
-+extern int vfs_lstat(const char __user *, struct kstat *);
- extern int vfs_fstat(unsigned int, struct kstat *);
--extern int vfs_fstatat(int , char __user *, struct kstat *, int);
-+extern int vfs_fstatat(int , const char __user *, struct kstat *, int);
- 
- extern int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
- 		    unsigned long arg);
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 1b67bd3..6e5d197 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -394,7 +394,7 @@ asmlinkage long sys_umount(char __user *name, int flags);
- asmlinkage long sys_oldumount(char __user *name);
- asmlinkage long sys_truncate(const char __user *path, long length);
- asmlinkage long sys_ftruncate(unsigned int fd, unsigned long length);
--asmlinkage long sys_stat(char __user *filename,
-+asmlinkage long sys_stat(const char __user *filename,
- 			struct __old_kernel_stat __user *statbuf);
- asmlinkage long sys_statfs(const char __user * path,
- 				struct statfs __user *buf);
-@@ -403,21 +403,21 @@ asmlinkage long sys_statfs64(const char __user *path, size_t sz,
- asmlinkage long sys_fstatfs(unsigned int fd, struct statfs __user *buf);
- asmlinkage long sys_fstatfs64(unsigned int fd, size_t sz,
- 				struct statfs64 __user *buf);
--asmlinkage long sys_lstat(char __user *filename,
-+asmlinkage long sys_lstat(const char __user *filename,
- 			struct __old_kernel_stat __user *statbuf);
- asmlinkage long sys_fstat(unsigned int fd,
- 			struct __old_kernel_stat __user *statbuf);
--asmlinkage long sys_newstat(char __user *filename,
-+asmlinkage long sys_newstat(const char __user *filename,
- 				struct stat __user *statbuf);
--asmlinkage long sys_newlstat(char __user *filename,
-+asmlinkage long sys_newlstat(const char __user *filename,
- 				struct stat __user *statbuf);
- asmlinkage long sys_newfstat(unsigned int fd, struct stat __user *statbuf);
- asmlinkage long sys_ustat(unsigned dev, struct ustat __user *ubuf);
- #if BITS_PER_LONG == 32
--asmlinkage long sys_stat64(char __user *filename,
-+asmlinkage long sys_stat64(const char __user *filename,
- 				struct stat64 __user *statbuf);
- asmlinkage long sys_fstat64(unsigned long fd, struct stat64 __user *statbuf);
--asmlinkage long sys_lstat64(char __user *filename,
-+asmlinkage long sys_lstat64(const char __user *filename,
- 				struct stat64 __user *statbuf);
- asmlinkage long sys_truncate64(const char __user *path, loff_t length);
- asmlinkage long sys_ftruncate64(unsigned int fd, loff_t length);
-@@ -760,7 +760,7 @@ asmlinkage long sys_linkat(int olddfd, const char __user *oldname,
- 			   int newdfd, const char __user *newname, int flags);
- asmlinkage long sys_renameat(int olddfd, const char __user * oldname,
- 			     int newdfd, const char __user * newname);
--asmlinkage long sys_futimesat(int dfd, char __user *filename,
-+asmlinkage long sys_futimesat(int dfd, const char __user *filename,
- 			      struct timeval __user *utimes);
- asmlinkage long sys_faccessat(int dfd, const char __user *filename, int mode);
- asmlinkage long sys_fchmodat(int dfd, const char __user * filename,
-@@ -769,13 +769,13 @@ asmlinkage long sys_fchownat(int dfd, const char __user *filename, uid_t user,
- 			     gid_t group, int flag);
- asmlinkage long sys_openat(int dfd, const char __user *filename, int flags,
- 			   int mode);
--asmlinkage long sys_newfstatat(int dfd, char __user *filename,
-+asmlinkage long sys_newfstatat(int dfd, const char __user *filename,
- 			       struct stat __user *statbuf, int flag);
--asmlinkage long sys_fstatat64(int dfd, char __user *filename,
-+asmlinkage long sys_fstatat64(int dfd, const char __user *filename,
- 			       struct stat64 __user *statbuf, int flag);
- asmlinkage long sys_readlinkat(int dfd, const char __user *path, char __user *buf,
- 			       int bufsiz);
--asmlinkage long sys_utimensat(int dfd, char __user *filename,
-+asmlinkage long sys_utimensat(int dfd, const char __user *filename,
- 				struct timespec __user *utimes, int flags);
- asmlinkage long sys_unshare(unsigned long unshare_flags);
- 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index cb34e35..680046e 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -150,7 +150,7 @@ extern void do_gettimeofday(struct timeval *tv);
- extern int do_settimeofday(struct timespec *tv);
- extern int do_sys_settimeofday(struct timespec *tv, struct timezone *tz);
- #define do_posix_clock_monotonic_gettime(ts) ktime_get_ts(ts)
--extern long do_utimes(int dfd, char __user *filename, struct timespec *times, int flags);
-+extern long do_utimes(int dfd, const char __user *filename, struct timespec *times, int flags);
- struct itimerval;
- extern int do_setitimer(int which, struct itimerval *value,
- 			struct itimerval *ovalue);
+We will have problems here when going to end_writeback second time.
 
+Probably should be:
+@@ -77,9 +79,14 @@ void reiserfs_delete_inode(struct inode *inode)
+                ;                                                =20
+        }       =20
+       out:  =20
+-       clear_inode(inode);     /* note this must go after the journal_end =
+to prevent deadlock */
++       end_writeback(inode);   /* note this must go after the journal_end =
+to prevent deadlock */
++       dquot_drop(inode);
+        inode->i_blocks =3D 0;
+        reiserfs_write_unlock_once(inode->i_sb, depth);
++	return;
+	^^^^^^
++
++no_delete:
++       end_writeback(inode);
++       dquot_drop(inode);
+ }
+
+
+
+[ 2347.942981] kernel BUG at fs/inode.c:298!
+[ 2347.945553] invalid opcode: 0000 [#8] PREEMPT SMP=20
+[ 2347.948133] last sysfs file: /sys/devices/LNXSYSTM:00/LNXSYBUS:00/PNP0A0=
+8:00/device:13/PNP0C0A:00/power_supply/BAT0/current_now
+[ 2347.950770] CPU 2=20
+[ 2347.950791] Modules linked in: ipv6 snd_hwdep snd_hda_codec_atihdmi snd_=
+seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss=
+ snd_hda_codec_realtek snd_mixer_oss ac battery snd_hda_intel snd_hda_codec=
+ snd_pcm
+snd_timer wmi snd soundcore snd_page_alloc button processor thermal broadco=
+m usbhid hid tg3 libphy psmouse intel_ips serio_raw evdev radeon ttm drm_km=
+s_helper ehci_hcd sr_mod usbcore cdrom sd_mod ahci libahci
+[ 2347.961651]=20
+[ 2347.964423] Pid: 6301, comm: mconf Tainted: G      D     2.6.36-rc0-git1=
+1-07128-g4104046-dirty #104 Aspire 5741G    /Aspire 5741G   =20
+[ 2347.967369] RIP: 0010:[<ffffffff810ebc58>]  [<ffffffff810ebc58>] end_wri=
+teback+0x3b/0x6d
+[ 2347.967388] RSP: 0018:ffff8801359d5ca8  EFLAGS: 00010202
+[ 2347.967394] RAX: 0000000000000060 RBX: ffff880123120a58 RCX: 00000000fff=
+fffff
+[ 2347.967400] RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff8801231=
+20a58
+[ 2347.967406] RBP: ffff8801359d5cb8 R08: 000000000002428a R09: 00000000000=
+2428a
+[ 2347.967411] R10: ffff8801359d5828 R11: ffff8801359d58b8 R12: 00000000000=
+00000
+[ 2347.967417] R13: 0000000000000024 R14: 00000000ffffffff R15: 00000000000=
+00000
+[ 2347.967425] FS:  00002b1e2b68fde0(0000) GS:ffff880002280000(0000) knlGS:=
+0000000000000000
+[ 2347.967431] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 2347.967436] CR2: 00002b1e2b3934d0 CR3: 000000013599a000 CR4: 00000000000=
+006e0
+[ 2347.967442] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000=
+00000
+[ 2347.967448] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000=
+00400
+[ 2347.967455] Process mconf (pid: 6301, threadinfo ffff8801359d4000, task =
+ffff880155700000)
+[ 2347.967460] Stack:
+[ 2347.967463]  ffff8801359d5cb8 ffff880123120a58 ffff8801359d5d28 ffffffff=
+8113a1f8
+[ 2347.967472] <0> ffff880155543800 0000000000000000 0000000000000000 00000=
+00000000000
+[ 2347.967481] <0> 0000000000000000 0000000000000000 0000000000000000 00000=
+00000000001
+[ 2347.967491] Call Trace:
+[ 2347.967502]  [<ffffffff8113a1f8>] reiserfs_evict_inode+0x13c/0x151
+[ 2347.967513]  [<ffffffff810ebcac>] evict+0x22/0x92
+[ 2347.967517]  [<ffffffff810ec884>] iput+0x1c8/0x228
+[ 2347.967521]  [<ffffffff810e8e64>] dentry_iput+0xb0/0xc8
+[ 2347.967525]  [<ffffffff810e8ec8>] d_kill+0x4c/0x6c
+[ 2347.967528]  [<ffffffff810e9719>] dput+0x14c/0x159
+[ 2347.967532]  [<ffffffff810e53f0>] sys_renameat+0x1ae/0x200
+[ 2347.967541]  [<ffffffff810557b9>] ? up_read+0x1e/0x35
+[ 2347.967546]  [<ffffffff81022150>] ? do_page_fault+0x32b/0x36b
+[ 2347.967552]  [<ffffffff810bff27>] ? do_munmap+0x2c3/0x2dc
+[ 2347.967558]  [<ffffffff8136d7d6>] ? lockdep_sys_exit_thunk+0x35/0x67
+[ 2347.967562]  [<ffffffff810e5458>] sys_rename+0x16/0x1a
+[ 2347.967568]  [<ffffffff81002002>] system_call_fastpath+0x16/0x1b
+
+
+	Sergey
+--M9NhX3UHpAaciwkO
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iJwEAQECAAYFAkxifQYACgkQfKHnntdSXjQ3ggQA3KjkqpycrzIWXgLfwOat3EdP
+sjtU/A00Sqel8LBEVerLb4W+c9bka16YtnJF90vYjnFaKNo2cke9aAS+IY4Id4TK
+tkn/xtwRWm/WM+Ily1JmG0uqzQ7TY+qQHHdWgekjTYkJ48JpezQX1tatgPiD9UWt
+wlRpmF/12jP44gymJfE=
+=ecfK
+-----END PGP SIGNATURE-----
+
+--M9NhX3UHpAaciwkO--
