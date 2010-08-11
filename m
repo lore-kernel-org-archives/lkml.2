@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab0HKX6e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:58:34 -0400
-Received: from kroah.org ([198.145.64.141]:43308 "EHLO coco.kroah.org"
+	id S1758859Ab0HKX6a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:58:30 -0400
+Received: from kroah.org ([198.145.64.141]:40265 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758945Ab0HKX6Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:16 -0400
+	id S1758939Ab0HKX6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:58:14 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:59 2010
-Message-Id: <20100811235459.641978973@clark.site>
+Message-Id: <20100811235459.556392723@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:26 -0700
+Date: Wed, 11 Aug 2010 16:54:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Yan Zheng <zheng.yan@oracle.com>, Chris Mason <chris.mason@oracle.com>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [045/111] Btrfs: Rewrite btrfs_drop_extents
+Subject: [044/111] Btrfs: Add btrfs_duplicate_item
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,941 +28,297 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Yan, Zheng <zheng.yan@oracle.com>
 
-commit 920bbbfb05c9fce22e088d20eb9dcb8f96342de9 upstream.
+commit ad48fd754676bfae4139be1a897b1ea58f9aaf21 upstream.
 
-Rewrite btrfs_drop_extents by using btrfs_duplicate_item, so we can
-avoid calling lock_extent within transaction.
+btrfs_duplicate_item duplicates item with new key, guaranteeing
+the source item and the new items are in the same tree leaf and
+contiguous. It allows us to split file extent in place, without
+using lock_extent to prevent bookend extent race.
 
 Signed-off-by: Yan Zheng <zheng.yan@oracle.com>
 Signed-off-by: Chris Mason <chris.mason@oracle.com>
 Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- fs/btrfs/ctree.h    |    7 
- fs/btrfs/file.c     |  661 ++++++++++++++++++++--------------------------------
- fs/btrfs/inode.c    |   27 --
- fs/btrfs/ioctl.c    |    3 
- fs/btrfs/tree-log.c |    4 
- 5 files changed, 278 insertions(+), 424 deletions(-)
 
---- a/fs/btrfs/ctree.h
-+++ b/fs/btrfs/ctree.h
-@@ -2349,12 +2349,9 @@ int btrfs_drop_extent_cache(struct inode
- 			    int skip_pinned);
- int btrfs_check_file(struct btrfs_root *root, struct inode *inode);
- extern const struct file_operations btrfs_file_operations;
--int btrfs_drop_extents(struct btrfs_trans_handle *trans,
--		       struct btrfs_root *root, struct inode *inode,
--		       u64 start, u64 end, u64 locked_end,
--		       u64 inline_limit, u64 *hint_block, int drop_cache);
-+int btrfs_drop_extents(struct btrfs_trans_handle *trans, struct inode *inode,
-+		       u64 start, u64 end, u64 *hint_byte, int drop_cache);
- int btrfs_mark_extent_written(struct btrfs_trans_handle *trans,
--			      struct btrfs_root *root,
- 			      struct inode *inode, u64 start, u64 end);
- int btrfs_release_file(struct inode *inode, struct file *file);
+---
+ fs/btrfs/ctree.c |  198 ++++++++++++++++++++++++++++++++++++++-----------------
+ fs/btrfs/ctree.h |    4 +
+ 2 files changed, 143 insertions(+), 59 deletions(-)
+
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -37,6 +37,11 @@ static int balance_node_right(struct btr
+ 			      struct extent_buffer *src_buf);
+ static int del_ptr(struct btrfs_trans_handle *trans, struct btrfs_root *root,
+ 		   struct btrfs_path *path, int level, int slot);
++static int setup_items_for_insert(struct btrfs_trans_handle *trans,
++			struct btrfs_root *root, struct btrfs_path *path,
++			struct btrfs_key *cpu_key, u32 *data_size,
++			u32 total_data, u32 total_size, int nr);
++
  
---- a/fs/btrfs/file.c
-+++ b/fs/btrfs/file.c
-@@ -265,319 +265,247 @@ int btrfs_drop_extent_cache(struct inode
-  * If an extent intersects the range but is not entirely inside the range
-  * it is either truncated or split.  Anything entirely inside the range
-  * is deleted from the tree.
-- *
-- * inline_limit is used to tell this code which offsets in the file to keep
-- * if they contain inline extents.
-  */
--noinline int btrfs_drop_extents(struct btrfs_trans_handle *trans,
--		       struct btrfs_root *root, struct inode *inode,
--		       u64 start, u64 end, u64 locked_end,
--		       u64 inline_limit, u64 *hint_byte, int drop_cache)
-+int btrfs_drop_extents(struct btrfs_trans_handle *trans, struct inode *inode,
-+		       u64 start, u64 end, u64 *hint_byte, int drop_cache)
+ struct btrfs_path *btrfs_alloc_path(void)
  {
--	u64 extent_end = 0;
--	u64 search_start = start;
--	u64 ram_bytes = 0;
--	u64 disk_bytenr = 0;
--	u64 orig_locked_end = locked_end;
--	u8 compression;
--	u8 encryption;
--	u16 other_encoding = 0;
-+	struct btrfs_root *root = BTRFS_I(inode)->root;
- 	struct extent_buffer *leaf;
--	struct btrfs_file_extent_item *extent;
-+	struct btrfs_file_extent_item *fi;
- 	struct btrfs_path *path;
- 	struct btrfs_key key;
--	struct btrfs_file_extent_item old;
--	int keep;
--	int slot;
--	int bookend;
--	int found_type = 0;
--	int found_extent;
--	int found_inline;
-+	struct btrfs_key new_key;
-+	u64 search_start = start;
-+	u64 disk_bytenr = 0;
-+	u64 num_bytes = 0;
-+	u64 extent_offset = 0;
-+	u64 extent_end = 0;
-+	int del_nr = 0;
-+	int del_slot = 0;
-+	int extent_type;
- 	int recow;
- 	int ret;
- 
--	inline_limit = 0;
- 	if (drop_cache)
- 		btrfs_drop_extent_cache(inode, start, end - 1, 0);
- 
- 	path = btrfs_alloc_path();
- 	if (!path)
- 		return -ENOMEM;
-+
- 	while (1) {
- 		recow = 0;
--		btrfs_release_path(root, path);
- 		ret = btrfs_lookup_file_extent(trans, root, path, inode->i_ino,
- 					       search_start, -1);
- 		if (ret < 0)
--			goto out;
--		if (ret > 0) {
--			if (path->slots[0] == 0) {
--				ret = 0;
--				goto out;
--			}
--			path->slots[0]--;
-+			break;
-+		if (ret > 0 && path->slots[0] > 0 && search_start == start) {
-+			leaf = path->nodes[0];
-+			btrfs_item_key_to_cpu(leaf, &key, path->slots[0] - 1);
-+			if (key.objectid == inode->i_ino &&
-+			    key.type == BTRFS_EXTENT_DATA_KEY)
-+				path->slots[0]--;
- 		}
-+		ret = 0;
- next_slot:
--		keep = 0;
--		bookend = 0;
--		found_extent = 0;
--		found_inline = 0;
--		compression = 0;
--		encryption = 0;
--		extent = NULL;
- 		leaf = path->nodes[0];
--		slot = path->slots[0];
--		ret = 0;
--		btrfs_item_key_to_cpu(leaf, &key, slot);
--		if (btrfs_key_type(&key) == BTRFS_EXTENT_DATA_KEY &&
--		    key.offset >= end) {
--			goto out;
--		}
--		if (btrfs_key_type(&key) > BTRFS_EXTENT_DATA_KEY ||
--		    key.objectid != inode->i_ino) {
--			goto out;
--		}
--		if (recow) {
--			search_start = max(key.offset, start);
--			continue;
--		}
--		if (btrfs_key_type(&key) == BTRFS_EXTENT_DATA_KEY) {
--			extent = btrfs_item_ptr(leaf, slot,
--						struct btrfs_file_extent_item);
--			found_type = btrfs_file_extent_type(leaf, extent);
--			compression = btrfs_file_extent_compression(leaf,
--								    extent);
--			encryption = btrfs_file_extent_encryption(leaf,
--								  extent);
--			other_encoding = btrfs_file_extent_other_encoding(leaf,
--								  extent);
--			if (found_type == BTRFS_FILE_EXTENT_REG ||
--			    found_type == BTRFS_FILE_EXTENT_PREALLOC) {
--				extent_end =
--				     btrfs_file_extent_disk_bytenr(leaf,
--								   extent);
--				if (extent_end)
--					*hint_byte = extent_end;
--
--				extent_end = key.offset +
--				     btrfs_file_extent_num_bytes(leaf, extent);
--				ram_bytes = btrfs_file_extent_ram_bytes(leaf,
--								extent);
--				found_extent = 1;
--			} else if (found_type == BTRFS_FILE_EXTENT_INLINE) {
--				found_inline = 1;
--				extent_end = key.offset +
--				     btrfs_file_extent_inline_len(leaf, extent);
-+		if (path->slots[0] >= btrfs_header_nritems(leaf)) {
-+			BUG_ON(del_nr > 0);
-+			ret = btrfs_next_leaf(root, path);
-+			if (ret < 0)
-+				break;
-+			if (ret > 0) {
-+				ret = 0;
-+				break;
- 			}
-+			leaf = path->nodes[0];
-+			recow = 1;
-+		}
-+
-+		btrfs_item_key_to_cpu(leaf, &key, path->slots[0]);
-+		if (key.objectid > inode->i_ino ||
-+		    key.type > BTRFS_EXTENT_DATA_KEY || key.offset >= end)
-+			break;
-+
-+		fi = btrfs_item_ptr(leaf, path->slots[0],
-+				    struct btrfs_file_extent_item);
-+		extent_type = btrfs_file_extent_type(leaf, fi);
-+
-+		if (extent_type == BTRFS_FILE_EXTENT_REG ||
-+		    extent_type == BTRFS_FILE_EXTENT_PREALLOC) {
-+			disk_bytenr = btrfs_file_extent_disk_bytenr(leaf, fi);
-+			num_bytes = btrfs_file_extent_disk_num_bytes(leaf, fi);
-+			extent_offset = btrfs_file_extent_offset(leaf, fi);
-+			extent_end = key.offset +
-+				btrfs_file_extent_num_bytes(leaf, fi);
-+		} else if (extent_type == BTRFS_FILE_EXTENT_INLINE) {
-+			extent_end = key.offset +
-+				btrfs_file_extent_inline_len(leaf, fi);
- 		} else {
-+			WARN_ON(1);
- 			extent_end = search_start;
- 		}
- 
--		/* we found nothing we can drop */
--		if ((!found_extent && !found_inline) ||
--		    search_start >= extent_end) {
--			int nextret;
--			u32 nritems;
--			nritems = btrfs_header_nritems(leaf);
--			if (slot >= nritems - 1) {
--				nextret = btrfs_next_leaf(root, path);
--				if (nextret)
--					goto out;
--				recow = 1;
--			} else {
--				path->slots[0]++;
--			}
-+		if (extent_end <= search_start) {
-+			path->slots[0]++;
- 			goto next_slot;
- 		}
- 
--		if (end <= extent_end && start >= key.offset && found_inline)
--			*hint_byte = EXTENT_MAP_INLINE;
-+		search_start = max(key.offset, start);
-+		if (recow) {
-+			btrfs_release_path(root, path);
-+			continue;
-+		}
- 
--		if (found_extent) {
--			read_extent_buffer(leaf, &old, (unsigned long)extent,
--					   sizeof(old));
--		}
--
--		if (end < extent_end && end >= key.offset) {
--			bookend = 1;
--			if (found_inline && start <= key.offset)
--				keep = 1;
--		}
--
--		if (bookend && found_extent) {
--			if (locked_end < extent_end) {
--				ret = try_lock_extent(&BTRFS_I(inode)->io_tree,
--						locked_end, extent_end - 1,
--						GFP_NOFS);
--				if (!ret) {
--					btrfs_release_path(root, path);
--					lock_extent(&BTRFS_I(inode)->io_tree,
--						locked_end, extent_end - 1,
--						GFP_NOFS);
--					locked_end = extent_end;
--					continue;
--				}
--				locked_end = extent_end;
-+		/*
-+		 *     | - range to drop - |
-+		 *  | -------- extent -------- |
-+		 */
-+		if (start > key.offset && end < extent_end) {
-+			BUG_ON(del_nr > 0);
-+			BUG_ON(extent_type == BTRFS_FILE_EXTENT_INLINE);
-+
-+			memcpy(&new_key, &key, sizeof(new_key));
-+			new_key.offset = start;
-+			ret = btrfs_duplicate_item(trans, root, path,
-+						   &new_key);
-+			if (ret == -EAGAIN) {
-+				btrfs_release_path(root, path);
-+				continue;
- 			}
--			disk_bytenr = le64_to_cpu(old.disk_bytenr);
--			if (disk_bytenr != 0) {
-+			if (ret < 0)
-+				break;
-+
-+			leaf = path->nodes[0];
-+			fi = btrfs_item_ptr(leaf, path->slots[0] - 1,
-+					    struct btrfs_file_extent_item);
-+			btrfs_set_file_extent_num_bytes(leaf, fi,
-+							start - key.offset);
-+
-+			fi = btrfs_item_ptr(leaf, path->slots[0],
-+					    struct btrfs_file_extent_item);
-+
-+			extent_offset += start - key.offset;
-+			btrfs_set_file_extent_offset(leaf, fi, extent_offset);
-+			btrfs_set_file_extent_num_bytes(leaf, fi,
-+							extent_end - start);
-+			btrfs_mark_buffer_dirty(leaf);
-+
-+			if (disk_bytenr > 0) {
- 				ret = btrfs_inc_extent_ref(trans, root,
--					   disk_bytenr,
--					   le64_to_cpu(old.disk_num_bytes), 0,
--					   root->root_key.objectid,
--					   key.objectid, key.offset -
--					   le64_to_cpu(old.offset));
-+						disk_bytenr, num_bytes, 0,
-+						root->root_key.objectid,
-+						new_key.objectid,
-+						start - extent_offset);
- 				BUG_ON(ret);
-+				*hint_byte = disk_bytenr;
- 			}
-+			key.offset = start;
- 		}
-+		/*
-+		 *  | ---- range to drop ----- |
-+		 *      | -------- extent -------- |
-+		 */
-+		if (start <= key.offset && end < extent_end) {
-+			BUG_ON(extent_type == BTRFS_FILE_EXTENT_INLINE);
-+
-+			memcpy(&new_key, &key, sizeof(new_key));
-+			new_key.offset = end;
-+			btrfs_set_item_key_safe(trans, root, path, &new_key);
- 
--		if (found_inline) {
--			u64 mask = root->sectorsize - 1;
--			search_start = (extent_end + mask) & ~mask;
--		} else
--			search_start = extent_end;
--
--		/* truncate existing extent */
--		if (start > key.offset) {
--			u64 new_num;
--			u64 old_num;
--			keep = 1;
--			WARN_ON(start & (root->sectorsize - 1));
--			if (found_extent) {
--				new_num = start - key.offset;
--				old_num = btrfs_file_extent_num_bytes(leaf,
--								      extent);
--				*hint_byte =
--					btrfs_file_extent_disk_bytenr(leaf,
--								      extent);
--				if (btrfs_file_extent_disk_bytenr(leaf,
--								  extent)) {
--					inode_sub_bytes(inode, old_num -
--							new_num);
--				}
--				btrfs_set_file_extent_num_bytes(leaf,
--							extent, new_num);
--				btrfs_mark_buffer_dirty(leaf);
--			} else if (key.offset < inline_limit &&
--				   (end > extent_end) &&
--				   (inline_limit < extent_end)) {
--				u32 new_size;
--				new_size = btrfs_file_extent_calc_inline_size(
--						   inline_limit - key.offset);
--				inode_sub_bytes(inode, extent_end -
--						inline_limit);
--				btrfs_set_file_extent_ram_bytes(leaf, extent,
--							new_size);
--				if (!compression && !encryption) {
--					btrfs_truncate_item(trans, root, path,
--							    new_size, 1);
--				}
-+			extent_offset += end - key.offset;
-+			btrfs_set_file_extent_offset(leaf, fi, extent_offset);
-+			btrfs_set_file_extent_num_bytes(leaf, fi,
-+							extent_end - end);
-+			btrfs_mark_buffer_dirty(leaf);
-+			if (disk_bytenr > 0) {
-+				inode_sub_bytes(inode, end - key.offset);
-+				*hint_byte = disk_bytenr;
- 			}
-+			break;
- 		}
--		/* delete the entire extent */
--		if (!keep) {
--			if (found_inline)
--				inode_sub_bytes(inode, extent_end -
--						key.offset);
--			ret = btrfs_del_item(trans, root, path);
--			/* TODO update progress marker and return */
--			BUG_ON(ret);
--			extent = NULL;
--			btrfs_release_path(root, path);
--			/* the extent will be freed later */
--		}
--		if (bookend && found_inline && start <= key.offset) {
--			u32 new_size;
--			new_size = btrfs_file_extent_calc_inline_size(
--						   extent_end - end);
--			inode_sub_bytes(inode, end - key.offset);
--			btrfs_set_file_extent_ram_bytes(leaf, extent,
--							new_size);
--			if (!compression && !encryption)
--				ret = btrfs_truncate_item(trans, root, path,
--							  new_size, 0);
--			BUG_ON(ret);
--		}
--		/* create bookend, splitting the extent in two */
--		if (bookend && found_extent) {
--			struct btrfs_key ins;
--			ins.objectid = inode->i_ino;
--			ins.offset = end;
--			btrfs_set_key_type(&ins, BTRFS_EXTENT_DATA_KEY);
--
--			btrfs_release_path(root, path);
--			path->leave_spinning = 1;
--			ret = btrfs_insert_empty_item(trans, root, path, &ins,
--						      sizeof(*extent));
--			BUG_ON(ret);
- 
--			leaf = path->nodes[0];
--			extent = btrfs_item_ptr(leaf, path->slots[0],
--						struct btrfs_file_extent_item);
--			write_extent_buffer(leaf, &old,
--					    (unsigned long)extent, sizeof(old));
--
--			btrfs_set_file_extent_compression(leaf, extent,
--							  compression);
--			btrfs_set_file_extent_encryption(leaf, extent,
--							 encryption);
--			btrfs_set_file_extent_other_encoding(leaf, extent,
--							     other_encoding);
--			btrfs_set_file_extent_offset(leaf, extent,
--				    le64_to_cpu(old.offset) + end - key.offset);
--			WARN_ON(le64_to_cpu(old.num_bytes) <
--				(extent_end - end));
--			btrfs_set_file_extent_num_bytes(leaf, extent,
--							extent_end - end);
-+		search_start = extent_end;
-+		/*
-+		 *       | ---- range to drop ----- |
-+		 *  | -------- extent -------- |
-+		 */
-+		if (start > key.offset && end >= extent_end) {
-+			BUG_ON(del_nr > 0);
-+			BUG_ON(extent_type == BTRFS_FILE_EXTENT_INLINE);
- 
--			/*
--			 * set the ram bytes to the size of the full extent
--			 * before splitting.  This is a worst case flag,
--			 * but its the best we can do because we don't know
--			 * how splitting affects compression
--			 */
--			btrfs_set_file_extent_ram_bytes(leaf, extent,
--							ram_bytes);
--			btrfs_set_file_extent_type(leaf, extent, found_type);
--
--			btrfs_unlock_up_safe(path, 1);
--			btrfs_mark_buffer_dirty(path->nodes[0]);
--			btrfs_set_lock_blocking(path->nodes[0]);
-+			btrfs_set_file_extent_num_bytes(leaf, fi,
-+							start - key.offset);
-+			btrfs_mark_buffer_dirty(leaf);
-+			if (disk_bytenr > 0) {
-+				inode_sub_bytes(inode, extent_end - start);
-+				*hint_byte = disk_bytenr;
-+			}
-+			if (end == extent_end)
-+				break;
- 
--			path->leave_spinning = 0;
--			btrfs_release_path(root, path);
--			if (disk_bytenr != 0)
--				inode_add_bytes(inode, extent_end - end);
-+			path->slots[0]++;
-+			goto next_slot;
- 		}
- 
--		if (found_extent && !keep) {
--			u64 old_disk_bytenr = le64_to_cpu(old.disk_bytenr);
-+		/*
-+		 *  | ---- range to drop ----- |
-+		 *    | ------ extent ------ |
-+		 */
-+		if (start <= key.offset && end >= extent_end) {
-+			if (del_nr == 0) {
-+				del_slot = path->slots[0];
-+				del_nr = 1;
-+			} else {
-+				BUG_ON(del_slot + del_nr != path->slots[0]);
-+				del_nr++;
-+			}
- 
--			if (old_disk_bytenr != 0) {
-+			if (extent_type == BTRFS_FILE_EXTENT_INLINE) {
- 				inode_sub_bytes(inode,
--						le64_to_cpu(old.num_bytes));
-+						extent_end - key.offset);
-+				extent_end = ALIGN(extent_end,
-+						   root->sectorsize);
-+			} else if (disk_bytenr > 0) {
- 				ret = btrfs_free_extent(trans, root,
--						old_disk_bytenr,
--						le64_to_cpu(old.disk_num_bytes),
--						0, root->root_key.objectid,
-+						disk_bytenr, num_bytes, 0,
-+						root->root_key.objectid,
- 						key.objectid, key.offset -
--						le64_to_cpu(old.offset));
-+						extent_offset);
- 				BUG_ON(ret);
--				*hint_byte = old_disk_bytenr;
-+				inode_sub_bytes(inode,
-+						extent_end - key.offset);
-+				*hint_byte = disk_bytenr;
- 			}
--		}
- 
--		if (search_start >= end) {
--			ret = 0;
--			goto out;
-+			if (end == extent_end)
-+				break;
-+
-+			if (path->slots[0] + 1 < btrfs_header_nritems(leaf)) {
-+				path->slots[0]++;
-+				goto next_slot;
-+			}
-+
-+			ret = btrfs_del_items(trans, root, path, del_slot,
-+					      del_nr);
-+			BUG_ON(ret);
-+
-+			del_nr = 0;
-+			del_slot = 0;
-+
-+			btrfs_release_path(root, path);
-+			continue;
- 		}
-+
-+		BUG_ON(1);
- 	}
--out:
--	btrfs_free_path(path);
--	if (locked_end > orig_locked_end) {
--		unlock_extent(&BTRFS_I(inode)->io_tree, orig_locked_end,
--			      locked_end - 1, GFP_NOFS);
-+
-+	if (del_nr > 0) {
-+		ret = btrfs_del_items(trans, root, path, del_slot, del_nr);
-+		BUG_ON(ret);
- 	}
-+
-+	btrfs_free_path(path);
+@@ -2997,75 +3002,85 @@ again:
  	return ret;
  }
  
-@@ -620,23 +548,23 @@ static int extent_mergeable(struct exten
-  * two or three.
-  */
- int btrfs_mark_extent_written(struct btrfs_trans_handle *trans,
--			      struct btrfs_root *root,
- 			      struct inode *inode, u64 start, u64 end)
+-/*
+- * This function splits a single item into two items,
+- * giving 'new_key' to the new item and splitting the
+- * old one at split_offset (from the start of the item).
+- *
+- * The path may be released by this operation.  After
+- * the split, the path is pointing to the old item.  The
+- * new item is going to be in the same node as the old one.
+- *
+- * Note, the item being split must be smaller enough to live alone on
+- * a tree block with room for one extra struct btrfs_item
+- *
+- * This allows us to split the item in place, keeping a lock on the
+- * leaf the entire time.
+- */
+-int btrfs_split_item(struct btrfs_trans_handle *trans,
+-		     struct btrfs_root *root,
+-		     struct btrfs_path *path,
+-		     struct btrfs_key *new_key,
+-		     unsigned long split_offset)
++static noinline int setup_leaf_for_split(struct btrfs_trans_handle *trans,
++					 struct btrfs_root *root,
++					 struct btrfs_path *path, int ins_len)
  {
-+	struct btrfs_root *root = BTRFS_I(inode)->root;
+-	u32 item_size;
++	struct btrfs_key key;
  	struct extent_buffer *leaf;
- 	struct btrfs_path *path;
- 	struct btrfs_file_extent_item *fi;
- 	struct btrfs_key key;
-+	struct btrfs_key new_key;
- 	u64 bytenr;
- 	u64 num_bytes;
- 	u64 extent_end;
- 	u64 orig_offset;
- 	u64 other_start;
- 	u64 other_end;
--	u64 split = start;
--	u64 locked_end = end;
--	int extent_type;
--	int split_end = 1;
-+	u64 split;
-+	int del_nr = 0;
-+	int del_slot = 0;
- 	int ret;
+-	struct btrfs_key orig_key;
+-	struct btrfs_item *item;
+-	struct btrfs_item *new_item;
+-	int ret = 0;
+-	int slot;
+-	u32 nritems;
+-	u32 orig_offset;
+-	struct btrfs_disk_key disk_key;
+-	char *buf;
++	struct btrfs_file_extent_item *fi;
++	u64 extent_len = 0;
++	u32 item_size;
++	int ret;
  
- 	btrfs_drop_extent_cache(inode, start, end - 1, 0);
-@@ -644,12 +572,10 @@ int btrfs_mark_extent_written(struct btr
- 	path = btrfs_alloc_path();
- 	BUG_ON(!path);
- again:
-+	split = start;
- 	key.objectid = inode->i_ino;
- 	key.type = BTRFS_EXTENT_DATA_KEY;
--	if (split == start)
--		key.offset = split;
--	else
--		key.offset = split - 1;
-+	key.offset = split;
- 
- 	ret = btrfs_search_slot(trans, root, &key, path, -1, 1);
- 	if (ret > 0 && path->slots[0] > 0)
-@@ -661,8 +587,8 @@ again:
- 	       key.type != BTRFS_EXTENT_DATA_KEY);
- 	fi = btrfs_item_ptr(leaf, path->slots[0],
- 			    struct btrfs_file_extent_item);
--	extent_type = btrfs_file_extent_type(leaf, fi);
--	BUG_ON(extent_type != BTRFS_FILE_EXTENT_PREALLOC);
-+	BUG_ON(btrfs_file_extent_type(leaf, fi) !=
-+	       BTRFS_FILE_EXTENT_PREALLOC);
- 	extent_end = key.offset + btrfs_file_extent_num_bytes(leaf, fi);
- 	BUG_ON(key.offset > start || extent_end < end);
- 
-@@ -670,150 +596,91 @@ again:
- 	num_bytes = btrfs_file_extent_disk_num_bytes(leaf, fi);
- 	orig_offset = key.offset - btrfs_file_extent_offset(leaf, fi);
- 
--	if (key.offset == start)
--		split = end;
--
--	if (key.offset == start && extent_end == end) {
--		int del_nr = 0;
--		int del_slot = 0;
--		other_start = end;
--		other_end = 0;
--		if (extent_mergeable(leaf, path->slots[0] + 1, inode->i_ino,
--				     bytenr, &other_start, &other_end)) {
--			extent_end = other_end;
--			del_slot = path->slots[0] + 1;
--			del_nr++;
--			ret = btrfs_free_extent(trans, root, bytenr, num_bytes,
--						0, root->root_key.objectid,
--						inode->i_ino, orig_offset);
--			BUG_ON(ret);
--		}
--		other_start = 0;
--		other_end = start;
--		if (extent_mergeable(leaf, path->slots[0] - 1, inode->i_ino,
--				     bytenr, &other_start, &other_end)) {
--			key.offset = other_start;
--			del_slot = path->slots[0];
--			del_nr++;
--			ret = btrfs_free_extent(trans, root, bytenr, num_bytes,
--						0, root->root_key.objectid,
--						inode->i_ino, orig_offset);
--			BUG_ON(ret);
--		}
--		split_end = 0;
--		if (del_nr == 0) {
--			btrfs_set_file_extent_type(leaf, fi,
--						   BTRFS_FILE_EXTENT_REG);
--			goto done;
-+	while (start > key.offset || end < extent_end) {
-+		if (key.offset == start)
-+			split = end;
+ 	leaf = path->nodes[0];
+-	btrfs_item_key_to_cpu(leaf, &orig_key, path->slots[0]);
+-	if (btrfs_leaf_free_space(root, leaf) >= sizeof(struct btrfs_item))
+-		goto split;
++	btrfs_item_key_to_cpu(leaf, &key, path->slots[0]);
 +
-+		memcpy(&new_key, &key, sizeof(new_key));
-+		new_key.offset = split;
-+		ret = btrfs_duplicate_item(trans, root, path, &new_key);
-+		if (ret == -EAGAIN) {
-+			btrfs_release_path(root, path);
-+			goto again;
- 		}
-+		BUG_ON(ret < 0);
- 
--		fi = btrfs_item_ptr(leaf, del_slot - 1,
-+		leaf = path->nodes[0];
-+		fi = btrfs_item_ptr(leaf, path->slots[0] - 1,
- 				    struct btrfs_file_extent_item);
--		btrfs_set_file_extent_type(leaf, fi, BTRFS_FILE_EXTENT_REG);
- 		btrfs_set_file_extent_num_bytes(leaf, fi,
--						extent_end - key.offset);
-+						split - key.offset);
++	BUG_ON(key.type != BTRFS_EXTENT_DATA_KEY &&
++	       key.type != BTRFS_EXTENT_CSUM_KEY);
 +
++	if (btrfs_leaf_free_space(root, leaf) >= ins_len)
++		return 0;
+ 
+ 	item_size = btrfs_item_size_nr(leaf, path->slots[0]);
++	if (key.type == BTRFS_EXTENT_DATA_KEY) {
 +		fi = btrfs_item_ptr(leaf, path->slots[0],
 +				    struct btrfs_file_extent_item);
-+
-+		btrfs_set_file_extent_offset(leaf, fi, split - orig_offset);
-+		btrfs_set_file_extent_num_bytes(leaf, fi,
-+						extent_end - split);
- 		btrfs_mark_buffer_dirty(leaf);
- 
--		ret = btrfs_del_items(trans, root, path, del_slot, del_nr);
-+		ret = btrfs_inc_extent_ref(trans, root, bytenr, num_bytes, 0,
-+					   root->root_key.objectid,
-+					   inode->i_ino, orig_offset);
- 		BUG_ON(ret);
--		goto release;
--	} else if (split == start) {
--		if (locked_end < extent_end) {
--			ret = try_lock_extent(&BTRFS_I(inode)->io_tree,
--					locked_end, extent_end - 1, GFP_NOFS);
--			if (!ret) {
--				btrfs_release_path(root, path);
--				lock_extent(&BTRFS_I(inode)->io_tree,
--					locked_end, extent_end - 1, GFP_NOFS);
--				locked_end = extent_end;
--				goto again;
--			}
--			locked_end = extent_end;
--		}
--		btrfs_set_file_extent_num_bytes(leaf, fi, split - key.offset);
--	} else  {
--		BUG_ON(key.offset != start);
--		key.offset = split;
--		btrfs_set_file_extent_offset(leaf, fi, key.offset -
--					     orig_offset);
--		btrfs_set_file_extent_num_bytes(leaf, fi, extent_end - split);
--		btrfs_set_item_key_safe(trans, root, path, &key);
--		extent_end = split;
--	}
- 
--	if (extent_end == end) {
--		split_end = 0;
--		extent_type = BTRFS_FILE_EXTENT_REG;
--	}
--	if (extent_end == end && split == start) {
--		other_start = end;
--		other_end = 0;
--		if (extent_mergeable(leaf, path->slots[0] + 1, inode->i_ino,
--				     bytenr, &other_start, &other_end)) {
--			path->slots[0]++;
--			fi = btrfs_item_ptr(leaf, path->slots[0],
--					    struct btrfs_file_extent_item);
--			key.offset = split;
--			btrfs_set_item_key_safe(trans, root, path, &key);
--			btrfs_set_file_extent_offset(leaf, fi, key.offset -
--						     orig_offset);
--			btrfs_set_file_extent_num_bytes(leaf, fi,
--							other_end - split);
--			goto done;
--		}
--	}
--	if (extent_end == end && split == end) {
--		other_start = 0;
--		other_end = start;
--		if (extent_mergeable(leaf, path->slots[0] - 1 , inode->i_ino,
--				     bytenr, &other_start, &other_end)) {
-+		if (split == start) {
-+			key.offset = start;
-+		} else {
-+			BUG_ON(start != key.offset);
- 			path->slots[0]--;
--			fi = btrfs_item_ptr(leaf, path->slots[0],
--					    struct btrfs_file_extent_item);
--			btrfs_set_file_extent_num_bytes(leaf, fi, extent_end -
--							other_start);
--			goto done;
-+			extent_end = end;
- 		}
- 	}
- 
--	btrfs_mark_buffer_dirty(leaf);
--
--	ret = btrfs_inc_extent_ref(trans, root, bytenr, num_bytes, 0,
--				   root->root_key.objectid,
--				   inode->i_ino, orig_offset);
--	BUG_ON(ret);
--	btrfs_release_path(root, path);
--
--	key.offset = start;
--	ret = btrfs_insert_empty_item(trans, root, path, &key, sizeof(*fi));
--	BUG_ON(ret);
--
--	leaf = path->nodes[0];
- 	fi = btrfs_item_ptr(leaf, path->slots[0],
- 			    struct btrfs_file_extent_item);
--	btrfs_set_file_extent_generation(leaf, fi, trans->transid);
--	btrfs_set_file_extent_type(leaf, fi, extent_type);
--	btrfs_set_file_extent_disk_bytenr(leaf, fi, bytenr);
--	btrfs_set_file_extent_disk_num_bytes(leaf, fi, num_bytes);
--	btrfs_set_file_extent_offset(leaf, fi, key.offset - orig_offset);
--	btrfs_set_file_extent_num_bytes(leaf, fi, extent_end - key.offset);
--	btrfs_set_file_extent_ram_bytes(leaf, fi, num_bytes);
--	btrfs_set_file_extent_compression(leaf, fi, 0);
--	btrfs_set_file_extent_encryption(leaf, fi, 0);
--	btrfs_set_file_extent_other_encoding(leaf, fi, 0);
--done:
--	btrfs_mark_buffer_dirty(leaf);
- 
--release:
--	btrfs_release_path(root, path);
--	if (split_end && split == start) {
--		split = end;
--		goto again;
-+	other_start = end;
-+	other_end = 0;
-+	if (extent_mergeable(leaf, path->slots[0] + 1, inode->i_ino,
-+			     bytenr, &other_start, &other_end)) {
-+		extent_end = other_end;
-+		del_slot = path->slots[0] + 1;
-+		del_nr++;
-+		ret = btrfs_free_extent(trans, root, bytenr, num_bytes,
-+					0, root->root_key.objectid,
-+					inode->i_ino, orig_offset);
-+		BUG_ON(ret);
++		extent_len = btrfs_file_extent_num_bytes(leaf, fi);
 +	}
-+	other_start = 0;
-+	other_end = start;
-+	if (extent_mergeable(leaf, path->slots[0] - 1, inode->i_ino,
-+			     bytenr, &other_start, &other_end)) {
-+		key.offset = other_start;
-+		del_slot = path->slots[0];
-+		del_nr++;
-+		ret = btrfs_free_extent(trans, root, bytenr, num_bytes,
-+					0, root->root_key.objectid,
-+					inode->i_ino, orig_offset);
-+		BUG_ON(ret);
- 	}
--	if (locked_end > end) {
--		unlock_extent(&BTRFS_I(inode)->io_tree, end, locked_end - 1,
--			      GFP_NOFS);
-+	if (del_nr == 0) {
-+		btrfs_set_file_extent_type(leaf, fi,
-+					   BTRFS_FILE_EXTENT_REG);
-+		btrfs_mark_buffer_dirty(leaf);
-+		goto out;
- 	}
+ 	btrfs_release_path(root, path);
+ 
+-	path->search_for_split = 1;
+ 	path->keep_locks = 1;
+-
+-	ret = btrfs_search_slot(trans, root, &orig_key, path, 0, 1);
++	path->search_for_split = 1;
++	ret = btrfs_search_slot(trans, root, &key, path, 0, 1);
+ 	path->search_for_split = 0;
++	if (ret < 0)
++		goto err;
+ 
++	ret = -EAGAIN;
++	leaf = path->nodes[0];
+ 	/* if our item isn't there or got smaller, return now */
+-	if (ret != 0 || item_size != btrfs_item_size_nr(path->nodes[0],
+-							path->slots[0])) {
+-		path->keep_locks = 0;
+-		return -EAGAIN;
++	if (ret > 0 || item_size != btrfs_item_size_nr(leaf, path->slots[0]))
++		goto err;
 +
-+	fi = btrfs_item_ptr(leaf, del_slot - 1,
-+			    struct btrfs_file_extent_item);
-+	btrfs_set_file_extent_type(leaf, fi, BTRFS_FILE_EXTENT_REG);
-+	btrfs_set_file_extent_num_bytes(leaf, fi,
-+					extent_end - key.offset);
-+	btrfs_mark_buffer_dirty(leaf);
++	if (key.type == BTRFS_EXTENT_DATA_KEY) {
++		fi = btrfs_item_ptr(leaf, path->slots[0],
++				    struct btrfs_file_extent_item);
++		if (extent_len != btrfs_file_extent_num_bytes(leaf, fi))
++			goto err;
+ 	}
+ 
+ 	btrfs_set_path_blocking(path);
+-	ret = split_leaf(trans, root, &orig_key, path,
+-			 sizeof(struct btrfs_item), 1);
+-	path->keep_locks = 0;
++	ret = split_leaf(trans, root, &key, path, ins_len, 1);
+ 	BUG_ON(ret);
+ 
++	path->keep_locks = 0;
+ 	btrfs_unlock_up_safe(path, 1);
++	return 0;
++err:
++	path->keep_locks = 0;
++	return ret;
++}
 +
-+	ret = btrfs_del_items(trans, root, path, del_slot, del_nr);
-+	BUG_ON(ret);
-+out:
- 	btrfs_free_path(path);
- 	return 0;
++static noinline int split_item(struct btrfs_trans_handle *trans,
++			       struct btrfs_root *root,
++			       struct btrfs_path *path,
++			       struct btrfs_key *new_key,
++			       unsigned long split_offset)
++{
++	struct extent_buffer *leaf;
++	struct btrfs_item *item;
++	struct btrfs_item *new_item;
++	int slot;
++	char *buf;
++	u32 nritems;
++	u32 item_size;
++	u32 orig_offset;
++	struct btrfs_disk_key disk_key;
++
+ 	leaf = path->nodes[0];
+ 	BUG_ON(btrfs_leaf_free_space(root, leaf) < sizeof(struct btrfs_item));
+ 
+-split:
+-	/*
+-	 * make sure any changes to the path from split_leaf leave it
+-	 * in a blocking state
+-	 */
+ 	btrfs_set_path_blocking(path);
+ 
+ 	item = btrfs_item_nr(leaf, path->slots[0]);
+@@ -3073,19 +3088,19 @@ split:
+ 	item_size = btrfs_item_size(leaf, item);
+ 
+ 	buf = kmalloc(item_size, GFP_NOFS);
++	if (!buf)
++		return -ENOMEM;
++
+ 	read_extent_buffer(leaf, buf, btrfs_item_ptr_offset(leaf,
+ 			    path->slots[0]), item_size);
+-	slot = path->slots[0] + 1;
+-	leaf = path->nodes[0];
+ 
++	slot = path->slots[0] + 1;
+ 	nritems = btrfs_header_nritems(leaf);
+-
+ 	if (slot != nritems) {
+ 		/* shift the items */
+ 		memmove_extent_buffer(leaf, btrfs_item_nr_offset(slot + 1),
+-			      btrfs_item_nr_offset(slot),
+-			      (nritems - slot) * sizeof(struct btrfs_item));
+-
++				btrfs_item_nr_offset(slot),
++				(nritems - slot) * sizeof(struct btrfs_item));
+ 	}
+ 
+ 	btrfs_cpu_key_to_disk(&disk_key, new_key);
+@@ -3113,16 +3128,81 @@ split:
+ 			    item_size - split_offset);
+ 	btrfs_mark_buffer_dirty(leaf);
+ 
+-	ret = 0;
+-	if (btrfs_leaf_free_space(root, leaf) < 0) {
+-		btrfs_print_leaf(root, leaf);
+-		BUG();
+-	}
++	BUG_ON(btrfs_leaf_free_space(root, leaf) < 0);
+ 	kfree(buf);
++	return 0;
++}
++
++/*
++ * This function splits a single item into two items,
++ * giving 'new_key' to the new item and splitting the
++ * old one at split_offset (from the start of the item).
++ *
++ * The path may be released by this operation.  After
++ * the split, the path is pointing to the old item.  The
++ * new item is going to be in the same node as the old one.
++ *
++ * Note, the item being split must be smaller enough to live alone on
++ * a tree block with room for one extra struct btrfs_item
++ *
++ * This allows us to split the item in place, keeping a lock on the
++ * leaf the entire time.
++ */
++int btrfs_split_item(struct btrfs_trans_handle *trans,
++		     struct btrfs_root *root,
++		     struct btrfs_path *path,
++		     struct btrfs_key *new_key,
++		     unsigned long split_offset)
++{
++	int ret;
++	ret = setup_leaf_for_split(trans, root, path,
++				   sizeof(struct btrfs_item));
++	if (ret)
++		return ret;
++
++	ret = split_item(trans, root, path, new_key, split_offset);
+ 	return ret;
  }
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -230,8 +230,7 @@ static noinline int cow_file_range_inlin
- 		return 1;
- 	}
  
--	ret = btrfs_drop_extents(trans, root, inode, start,
--				 aligned_end, aligned_end, start,
-+	ret = btrfs_drop_extents(trans, inode, start, aligned_end,
- 				 &hint_byte, 1);
- 	BUG_ON(ret);
- 
-@@ -1596,7 +1595,6 @@ static int insert_reserved_file_extent(s
- 				       struct inode *inode, u64 file_pos,
- 				       u64 disk_bytenr, u64 disk_num_bytes,
- 				       u64 num_bytes, u64 ram_bytes,
--				       u64 locked_end,
- 				       u8 compression, u8 encryption,
- 				       u16 other_encoding, int extent_type)
- {
-@@ -1622,9 +1620,8 @@ static int insert_reserved_file_extent(s
- 	 * the caller is expected to unpin it and allow it to be merged
- 	 * with the others.
- 	 */
--	ret = btrfs_drop_extents(trans, root, inode, file_pos,
--				 file_pos + num_bytes, locked_end,
--				 file_pos, &hint, 0);
-+	ret = btrfs_drop_extents(trans, inode, file_pos, file_pos + num_bytes,
-+				 &hint, 0);
- 	BUG_ON(ret);
- 
- 	ins.objectid = inode->i_ino;
-@@ -1746,7 +1743,7 @@ static int btrfs_finish_ordered_io(struc
- 		compressed = 1;
- 	if (test_bit(BTRFS_ORDERED_PREALLOC, &ordered_extent->flags)) {
- 		BUG_ON(compressed);
--		ret = btrfs_mark_extent_written(trans, root, inode,
-+		ret = btrfs_mark_extent_written(trans, inode,
- 						ordered_extent->file_offset,
- 						ordered_extent->file_offset +
- 						ordered_extent->len);
-@@ -1758,8 +1755,6 @@ static int btrfs_finish_ordered_io(struc
- 						ordered_extent->disk_len,
- 						ordered_extent->len,
- 						ordered_extent->len,
--						ordered_extent->file_offset +
--						ordered_extent->len,
- 						compressed, 0, 0,
- 						BTRFS_FILE_EXTENT_REG);
- 		unpin_extent_cache(&BTRFS_I(inode)->extent_tree,
-@@ -3209,11 +3204,9 @@ int btrfs_cont_expand(struct inode *inod
- 		if (test_bit(EXTENT_FLAG_VACANCY, &em->flags)) {
- 			u64 hint_byte = 0;
- 			hole_size = last_byte - cur_offset;
--			err = btrfs_drop_extents(trans, root, inode,
--						 cur_offset,
-+			err = btrfs_drop_extents(trans, inode, cur_offset,
- 						 cur_offset + hole_size,
--						 block_end,
--						 cur_offset, &hint_byte, 1);
-+						 &hint_byte, 1);
- 			if (err)
- 				break;
- 
-@@ -5643,7 +5636,7 @@ out_fail:
- 
- static int prealloc_file_range(struct btrfs_trans_handle *trans,
- 			       struct inode *inode, u64 start, u64 end,
--			       u64 locked_end, u64 alloc_hint, int mode)
-+			       u64 alloc_hint, int mode)
- {
- 	struct btrfs_root *root = BTRFS_I(inode)->root;
- 	struct btrfs_key ins;
-@@ -5669,8 +5662,7 @@ static int prealloc_file_range(struct bt
- 		ret = insert_reserved_file_extent(trans, inode,
- 						  cur_offset, ins.objectid,
- 						  ins.offset, ins.offset,
--						  ins.offset, locked_end,
--						  0, 0, 0,
-+						  ins.offset, 0, 0, 0,
- 						  BTRFS_FILE_EXTENT_PREALLOC);
- 		BUG_ON(ret);
- 		btrfs_drop_extent_cache(inode, cur_offset,
-@@ -5779,8 +5771,7 @@ static long btrfs_fallocate(struct inode
- 		last_byte = (last_byte + mask) & ~mask;
- 		if (em->block_start == EXTENT_MAP_HOLE) {
- 			ret = prealloc_file_range(trans, inode, cur_offset,
--					last_byte, locked_end + 1,
--					alloc_hint, mode);
-+						last_byte, alloc_hint, mode);
- 			if (ret < 0) {
- 				free_extent_map(em);
- 				break;
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1032,8 +1032,7 @@ static noinline long btrfs_ioctl_clone(s
- 	BUG_ON(!trans);
- 
- 	/* punch hole in destination first */
--	btrfs_drop_extents(trans, root, inode, off, off + len,
--			   off + len, 0, &hint_byte, 1);
-+	btrfs_drop_extents(trans, inode, off, off + len, &hint_byte, 1);
- 
- 	/* clone data */
- 	key.objectid = src->i_ino;
---- a/fs/btrfs/tree-log.c
-+++ b/fs/btrfs/tree-log.c
-@@ -542,8 +542,8 @@ static noinline int replay_one_extent(st
- 
- 	saved_nbytes = inode_get_bytes(inode);
- 	/* drop any overlapping extents */
--	ret = btrfs_drop_extents(trans, root, inode,
--			 start, extent_end, extent_end, start, &alloc_hint, 1);
-+	ret = btrfs_drop_extents(trans, inode, start, extent_end,
-+				 &alloc_hint, 1);
- 	BUG_ON(ret);
- 
- 	if (found_type == BTRFS_FILE_EXTENT_REG ||
+ /*
++ * This function duplicate a item, giving 'new_key' to the new item.
++ * It guarantees both items live in the same tree leaf and the new item
++ * is contiguous with the original item.
++ *
++ * This allows us to split file extent in place, keeping a lock on the
++ * leaf the entire time.
++ */
++int btrfs_duplicate_item(struct btrfs_trans_handle *trans,
++			 struct btrfs_root *root,
++			 struct btrfs_path *path,
++			 struct btrfs_key *new_key)
++{
++	struct extent_buffer *leaf;
++	int ret;
++	u32 item_size;
++
++	leaf = path->nodes[0];
++	item_size = btrfs_item_size_nr(leaf, path->slots[0]);
++	ret = setup_leaf_for_split(trans, root, path,
++				   item_size + sizeof(struct btrfs_item));
++	if (ret)
++		return ret;
++
++	path->slots[0]++;
++	ret = setup_items_for_insert(trans, root, path, new_key, &item_size,
++				     item_size, item_size +
++				     sizeof(struct btrfs_item), 1);
++	BUG_ON(ret);
++
++	leaf = path->nodes[0];
++	memcpy_extent_buffer(leaf,
++			     btrfs_item_ptr_offset(leaf, path->slots[0]),
++			     btrfs_item_ptr_offset(leaf, path->slots[0] - 1),
++			     item_size);
++	return 0;
++}
++
++/*
+  * make the item pointed to by the path smaller.  new_size indicates
+  * how small to make it, and from_end tells us if we just chop bytes
+  * off the end of the item or if we shift the item to chop bytes off
+--- a/fs/btrfs/ctree.h
++++ b/fs/btrfs/ctree.h
+@@ -2089,6 +2089,10 @@ int btrfs_split_item(struct btrfs_trans_
+ 		     struct btrfs_path *path,
+ 		     struct btrfs_key *new_key,
+ 		     unsigned long split_offset);
++int btrfs_duplicate_item(struct btrfs_trans_handle *trans,
++			 struct btrfs_root *root,
++			 struct btrfs_path *path,
++			 struct btrfs_key *new_key);
+ int btrfs_search_slot(struct btrfs_trans_handle *trans, struct btrfs_root
+ 		      *root, struct btrfs_key *key, struct btrfs_path *p, int
+ 		      ins_len, int cow);
 
 
