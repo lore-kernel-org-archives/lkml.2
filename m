@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab0HKSv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:51:28 -0400
-Received: from mail.logicpd.com ([66.162.60.3]:1966 "EHLO smtp.logicpd.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755482Ab0HKSv1 convert rfc822-to-8bit (ORCPT
+	id S1755910Ab0HKSwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:52:07 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:41261 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab0HKSwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:51:27 -0400
-Content-class: urn:content-classes:message
-Subject: RE: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and TORPEDO development kits
+	Wed, 11 Aug 2010 14:52:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=XO2nNdM94fzQx4iOEJbAHfjcntf28iVvaPtoaWKkKZ3z7SFHgG4Ox3EV2QhyRt4OJN
+         11WbRKjfpPNeBauD6qcb/NQVgWj7r7LOCLZbs9E3yxGIOKLbHkHDnSa/3GDmQEZw9Ogt
+         e6Ft97ZLVXKovfPBWSAN5WZl7G5YXb9+LKPzs=
+Date: Wed, 11 Aug 2010 20:51:28 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: eparis@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: re: fsnotify: pass both the vfsmount mark and inode mark
+Message-ID: <20100811185128.GC645@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>, eparis@redhat.com,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 11 Aug 2010 13:51:22 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Message-ID: <77A0A4DB5BF2A44283E5522C27234AC6021C82CB@EDPRSRV011.logicpd.com>
-In-Reply-To: <20100811184922.GB21778@nokia.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and TORPEDO development kits
-Thread-Index: Acs5hfDHSrI0Nkm/QnqTqZdr+AwzmwAADbWg
-From: "Jacob Tanenbaum" <Jacob.Tanenbaum@logicpd.com>
-To: <felipe.balbi@nokia.com>
-Cc: <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rmk@arm.linux.org.uk>,
-        <tony@atomide.com>
-X-OriginalArrivalTime: 11 Aug 2010 18:51:26.0147 (UTC) FILETIME=[336E7930:01CB3986]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valid point we will remove the ifdefs
+There is a NULL dereference introduced in ce8f76fb7320 "fsnotify: pass
+both the vfsmount mark and inode mark"
 
------Original Message-----
-From: Felipe Balbi [mailto:felipe.balbi@nokia.com] 
-Sent: Wednesday, August 11, 2010 2:49 PM
-To: Jacob Tanenbaum
-Cc: Balbi Felipe (Nokia-MS/Helsinki); linux@arm.linux.org.uk;
-linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org;
-rmk@arm.linux.org.uk; tony@atomide.com
-Subject: Re: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and
-TORPEDO development kits
+   143  static int send_to_group(struct inode *to_tell, struct vfsmount *mnt,
+   144                           struct fsnotify_mark *inode_mark,
+   145                           struct fsnotify_mark *vfsmount_mark,
+   146                           __u32 mask, void *data,
+   147                           int data_is, u32 cookie,
+   148                           const unsigned char *file_name,
+   149                           struct fsnotify_event **event)
+   150  {
+   151          struct fsnotify_group *group = inode_mark->group;
+                                               ^^^^^^^^^^^^^^^^^^
+	inode_mark can be NULL.
 
-Hi,
+   152          __u32 inode_test_mask = (mask & ~FS_EVENT_ON_CHILD);
+   153          __u32 vfsmount_test_mask = (mask & ~FS_EVENT_ON_CHILD);
 
-On Wed, Aug 11, 2010 at 08:45:22PM +0200, ext Jacob Tanenbaum wrote:
->No one else uses the ifdef but we were told from an earlier submission
->we should because if both boards are disabled in the .config it would
->inform the user on bootup
+I'm not sure how to handle this.
 
-What do you mean ? If these boards are't enabled on .config then this 
-board-file won't even get added to the binary so those machine ids won't
-
-be available, right ?
-
--- 
-balbi
-
-DefectiveByDesign.org
+regards,
+dan carpenter
