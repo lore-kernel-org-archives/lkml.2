@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759286Ab0HKX7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:59:46 -0400
-Received: from kroah.org ([198.145.64.141]:43711 "EHLO coco.kroah.org"
+	id S1759400Ab0HKX7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 19:59:44 -0400
+Received: from kroah.org ([198.145.64.141]:43699 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759310Ab0HKX7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:25 -0400
+	id S1759014Ab0HKX7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:23 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:04 2010
-Message-Id: <20100811235504.727607946@clark.site>
+Message-Id: <20100811235504.528889428@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:20 -0700
+Date: Wed, 11 Aug 2010 16:55:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>,
         Jeff Mahoney <jeffm@suse.com>
-Subject: [099/111] reiserfs: fix oops while creating privroot with selinux enabled
+Subject: [097/111] ext4: Fix optional-arg mount options
 In-Reply-To: <20100811235623.GA24440@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,56 +26,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Mahoney <jeffm@suse.com>
+From: Eric Sandeen <sandeen@redhat.com>
 
-commit 6cb4aff0a77cc0e6bae9475d62205319e3ebbf3f upstream.
+commit 15121c18a22ae483279f76dc9e554334b800d0f7 upstream.
 
-Commit 57fe60df ("reiserfs: add atomic addition of selinux attributes
-during inode creation") contains a bug that will cause it to oops when
-mounting a file system that didn't previously contain extended attributes
-on a system using security.* xattrs.
+We have 2 mount options, "barrier" and "auto_da_alloc" which may or
+may not take a 1/0 argument.  This causes the ext4 superblock mount
+code to subtract uninitialized pointers and pass the result to
+kmalloc, which results in very noisy failures.
 
-The issue is that while creating the privroot during mount
-reiserfs_security_init calls reiserfs_xattr_jcreate_nblocks which
-dereferences the xattr root.  The xattr root doesn't exist, so we get an
-oops.
+Per Ted's suggestion, initialize the args struct so that
+we know whether match_token() found an argument for the
+option, and skip match_int() if not.
 
-Addresses http://bugzilla.kernel.org/show_bug.cgi?id=15309
+Also, return error (0) from parse_options if we thought
+we found an argument, but match_int() Fails.
 
-Signed-off-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Acked-by: Jeff Mahoney <jeffm@suse.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/reiserfs/xattr_security.c   |    2 +-
- include/linux/reiserfs_xattr.h |    5 +++++
- 2 files changed, 6 insertions(+), 1 deletion(-)
+ fs/ext4/super.c |   23 +++++++++++++++--------
+ 1 file changed, 15 insertions(+), 8 deletions(-)
 
---- a/fs/reiserfs/xattr_security.c
-+++ b/fs/reiserfs/xattr_security.c
-@@ -75,7 +75,7 @@ int reiserfs_security_init(struct inode
- 		return error;
- 	}
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1218,6 +1218,11 @@ static int parse_options(char *options,
+ 		if (!*p)
+ 			continue;
  
--	if (sec->length) {
-+	if (sec->length && reiserfs_xattrs_initialized(inode->i_sb)) {
- 		blocks = reiserfs_xattr_jcreate_nblocks(inode) +
- 			 reiserfs_xattr_nblocks(inode, sec->length);
- 		/* We don't want to count the directories twice if we have
---- a/include/linux/reiserfs_xattr.h
-+++ b/include/linux/reiserfs_xattr.h
-@@ -70,6 +70,11 @@ int reiserfs_security_write(struct reise
- void reiserfs_security_free(struct reiserfs_security_handle *sec);
- #endif
- 
-+static inline int reiserfs_xattrs_initialized(struct super_block *sb)
-+{
-+	return REISERFS_SB(sb)->priv_root != NULL;
-+}
-+
- #define xattr_size(size) ((size) + sizeof(struct reiserfs_xattr_header))
- static inline loff_t reiserfs_xattr_nblocks(struct inode *inode, loff_t size)
- {
++		/*
++		 * Initialize args struct so we know whether arg was
++		 * found; some options take optional arguments.
++		 */
++		args[0].to = args[0].from = 0;
+ 		token = match_token(p, tokens, args);
+ 		switch (token) {
+ 		case Opt_bsd_df:
+@@ -1503,10 +1508,11 @@ set_qf_format:
+ 			clear_opt(sbi->s_mount_opt, BARRIER);
+ 			break;
+ 		case Opt_barrier:
+-			if (match_int(&args[0], &option)) {
+-				set_opt(sbi->s_mount_opt, BARRIER);
+-				break;
+-			}
++			if (args[0].from) {
++				if (match_int(&args[0], &option))
++					return 0;
++			} else
++				option = 1;	/* No argument, default to 1 */
+ 			if (option)
+ 				set_opt(sbi->s_mount_opt, BARRIER);
+ 			else
+@@ -1579,10 +1585,11 @@ set_qf_format:
+ 			set_opt(sbi->s_mount_opt,NO_AUTO_DA_ALLOC);
+ 			break;
+ 		case Opt_auto_da_alloc:
+-			if (match_int(&args[0], &option)) {
+-				clear_opt(sbi->s_mount_opt, NO_AUTO_DA_ALLOC);
+-				break;
+-			}
++			if (args[0].from) {
++				if (match_int(&args[0], &option))
++					return 0;
++			} else
++				option = 1;	/* No argument, default to 1 */
+ 			if (option)
+ 				clear_opt(sbi->s_mount_opt, NO_AUTO_DA_ALLOC);
+ 			else
 
 
