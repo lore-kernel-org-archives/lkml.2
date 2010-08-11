@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932664Ab0HKHke (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 03:40:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48372 "EHLO hera.kernel.org"
+	id S932685Ab0HKHk4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 03:40:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48384 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932635Ab0HKHkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 03:40:32 -0400
-Date: Wed, 11 Aug 2010 07:40:15 GMT
+	id S932612Ab0HKHky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 03:40:54 -0400
+Date: Wed, 11 Aug 2010 07:40:35 GMT
 From: tip-bot for Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
         mingo@redhat.com, tglx@linutronix.de
@@ -15,167 +15,214 @@ Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf ui: Move ui_helpline routines to separate file in util/ui/
-Message-ID: <tip-5575536fc7ad7577a4e687a13e2f49acebc519f3@git.kernel.org>
-Git-Commit-ID: 5575536fc7ad7577a4e687a13e2f49acebc519f3
+Subject: [tip:perf/core] perf ui: Move ui_progress routines to separate file in util/ui/
+Message-ID: <tip-34cea7f7c0620c964676eece258ef431a6608bce@git.kernel.org>
+Git-Commit-ID: 34cea7f7c0620c964676eece258ef431a6608bce
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:40:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 11 Aug 2010 07:40:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5575536fc7ad7577a4e687a13e2f49acebc519f3
-Gitweb:     http://git.kernel.org/tip/5575536fc7ad7577a4e687a13e2f49acebc519f3
+Commit-ID:  34cea7f7c0620c964676eece258ef431a6608bce
+Gitweb:     http://git.kernel.org/tip/34cea7f7c0620c964676eece258ef431a6608bce
 Author:     Arnaldo Carvalho de Melo <acme@redhat.com>
-AuthorDate: Sun, 8 Aug 2010 19:48:31 -0300
+AuthorDate: Sun, 8 Aug 2010 19:56:47 -0300
 Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Tue, 10 Aug 2010 16:08:51 -0300
+CommitDate: Tue, 10 Aug 2010 16:09:14 -0300
 
-perf ui: Move ui_helpline routines to separate file in util/ui/
+perf ui: Move ui_progress routines to separate file in util/ui/
 
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
  tools/perf/Makefile           |    2 +
- tools/perf/util/newt.c        |   38 +-----------------------------------
- tools/perf/util/ui/helpline.c |   43 +++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/ui/helpline.h |    9 ++++++++
- 4 files changed, 55 insertions(+), 37 deletions(-)
+ tools/perf/util/debug.h       |    4 +--
+ tools/perf/util/newt.c        |   56 --------------------------------------
+ tools/perf/util/ui/progress.c |   60 +++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/ui/progress.h |   11 +++++++
+ 5 files changed, 74 insertions(+), 59 deletions(-)
 
 diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index d5bce76..d77a101 100644
+index d77a101..528c914 100644
 --- a/tools/perf/Makefile
 +++ b/tools/perf/Makefile
-@@ -569,7 +569,9 @@ else
- 		EXTLIBS += -lnewt -lslang
+@@ -570,8 +570,10 @@ else
  		LIB_OBJS += $(OUTPUT)util/newt.o
  		LIB_OBJS += $(OUTPUT)util/ui/browser.o
-+		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
+ 		LIB_OBJS += $(OUTPUT)util/ui/helpline.o
++		LIB_OBJS += $(OUTPUT)util/ui/progress.o
  		LIB_H += util/ui/browser.h
-+		LIB_H += util/ui/helpline.h
+ 		LIB_H += util/ui/helpline.h
++		LIB_H += util/ui/progress.h
  	endif
  endif
  
+diff --git a/tools/perf/util/debug.h b/tools/perf/util/debug.h
+index 047ac33..a929b06 100644
+--- a/tools/perf/util/debug.h
++++ b/tools/perf/util/debug.h
+@@ -31,9 +31,7 @@ static inline void ui_progress__update(struct ui_progress *self __used,
+ static inline void ui_progress__delete(struct ui_progress *self __used) {}
+ #else
+ int browser__show_help(const char *format, va_list ap);
+-struct ui_progress *ui_progress__new(const char *title, u64 total);
+-void ui_progress__update(struct ui_progress *self, u64 curr);
+-void ui_progress__delete(struct ui_progress *self);
++#include "ui/progress.h"
+ #endif
+ 
+ #endif	/* __PERF_DEBUG_H */
 diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 9768be3..23f3b7d 100644
+index 23f3b7d..c0986d3 100644
 --- a/tools/perf/util/newt.c
 +++ b/tools/perf/util/newt.c
-@@ -24,6 +24,7 @@
- #include "sort.h"
- #include "symbol.h"
- #include "ui/browser.h"
-+#include "ui/helpline.h"
+@@ -39,62 +39,6 @@
  
- #if SLANG_VERSION < 20104
- #define slsmg_printf(msg, args...) SLsmg_printf((char *)msg, ##args)
-@@ -94,43 +95,6 @@ void ui_progress__delete(struct ui_progress *self)
- 	free(self);
- }
+ newtComponent newt_form__new(void);
  
--static void ui_helpline__pop(void)
--{
--	newtPopHelpLine();
--}
+-struct ui_progress {
+-	newtComponent form, scale;
+-};
 -
--static void ui_helpline__push(const char *msg)
+-struct ui_progress *ui_progress__new(const char *title, u64 total)
 -{
--	newtPushHelpLine(msg);
--}
+-	struct ui_progress *self = malloc(sizeof(*self));
 -
--static void ui_helpline__vpush(const char *fmt, va_list ap)
--{
--	char *s;
+-	if (self != NULL) {
+-		int cols;
 -
--	if (vasprintf(&s, fmt, ap) < 0)
--		vfprintf(stderr, fmt, ap);
--	else {
--		ui_helpline__push(s);
--		free(s);
+-		if (use_browser <= 0)	
+-			return self;
+-		newtGetScreenSize(&cols, NULL);
+-		cols -= 4;
+-		newtCenteredWindow(cols, 1, title);
+-		self->form  = newtForm(NULL, NULL, 0);
+-		if (self->form == NULL)
+-			goto out_free_self;
+-		self->scale = newtScale(0, 0, cols, total);
+-		if (self->scale == NULL)
+-			goto out_free_form;
+-		newtFormAddComponent(self->form, self->scale);
+-		newtRefresh();
 -	}
+-
+-	return self;
+-
+-out_free_form:
+-	newtFormDestroy(self->form);
+-out_free_self:
+-	free(self);
+-	return NULL;
 -}
 -
--static void ui_helpline__fpush(const char *fmt, ...)
+-void ui_progress__update(struct ui_progress *self, u64 curr)
 -{
--	va_list ap;
--
--	va_start(ap, fmt);
--	ui_helpline__vpush(fmt, ap);
--	va_end(ap);
+-	/*
+-	 * FIXME: We should have a per UI backend way of showing progress,
+-	 * stdio will just show a percentage as NN%, etc.
+-	 */
+-	if (use_browser <= 0)
+-		return;
+-	newtScaleSet(self->scale, curr);
+-	newtRefresh();
 -}
 -
--static void ui_helpline__puts(const char *msg)
+-void ui_progress__delete(struct ui_progress *self)
 -{
--	ui_helpline__pop();
--	ui_helpline__push(msg);
+-	if (use_browser > 0) {
+-		newtFormDestroy(self->form);
+-		newtPopWindow();
+-	}
+-	free(self);
 -}
 -
  static int ui_entry__read(const char *title, char *bf, size_t size, int width)
  {
  	struct newtExitStruct es;
-diff --git a/tools/perf/util/ui/helpline.c b/tools/perf/util/ui/helpline.c
+diff --git a/tools/perf/util/ui/progress.c b/tools/perf/util/ui/progress.c
 new file mode 100644
-index 0000000..6a11e13
+index 0000000..d7fc399
 --- /dev/null
-+++ b/tools/perf/util/ui/helpline.c
-@@ -0,0 +1,43 @@
-+#define _GNU_SOURCE
-+#include <stdio.h>
++++ b/tools/perf/util/ui/progress.c
+@@ -0,0 +1,60 @@
 +#include <stdlib.h>
 +#include <newt.h>
++#include "../cache.h"
++#include "progress.h"
 +
-+#include "helpline.h"
++struct ui_progress {
++	newtComponent form, scale;
++};
 +
-+void ui_helpline__pop(void)
++struct ui_progress *ui_progress__new(const char *title, u64 total)
 +{
-+	newtPopHelpLine();
-+}
++	struct ui_progress *self = malloc(sizeof(*self));
 +
-+void ui_helpline__push(const char *msg)
-+{
-+	newtPushHelpLine(msg);
-+}
++	if (self != NULL) {
++		int cols;
 +
-+static void ui_helpline__vpush(const char *fmt, va_list ap)
-+{
-+	char *s;
-+
-+	if (vasprintf(&s, fmt, ap) < 0)
-+		vfprintf(stderr, fmt, ap);
-+	else {
-+		ui_helpline__push(s);
-+		free(s);
++		if (use_browser <= 0)
++			return self;
++		newtGetScreenSize(&cols, NULL);
++		cols -= 4;
++		newtCenteredWindow(cols, 1, title);
++		self->form  = newtForm(NULL, NULL, 0);
++		if (self->form == NULL)
++			goto out_free_self;
++		self->scale = newtScale(0, 0, cols, total);
++		if (self->scale == NULL)
++			goto out_free_form;
++		newtFormAddComponent(self->form, self->scale);
++		newtRefresh();
 +	}
++
++	return self;
++
++out_free_form:
++	newtFormDestroy(self->form);
++out_free_self:
++	free(self);
++	return NULL;
 +}
 +
-+void ui_helpline__fpush(const char *fmt, ...)
++void ui_progress__update(struct ui_progress *self, u64 curr)
 +{
-+	va_list ap;
-+
-+	va_start(ap, fmt);
-+	ui_helpline__vpush(fmt, ap);
-+	va_end(ap);
++	/*
++	 * FIXME: We should have a per UI backend way of showing progress,
++	 * stdio will just show a percentage as NN%, etc.
++	 */
++	if (use_browser <= 0)
++		return;
++	newtScaleSet(self->scale, curr);
++	newtRefresh();
 +}
 +
-+void ui_helpline__puts(const char *msg)
++void ui_progress__delete(struct ui_progress *self)
 +{
-+	ui_helpline__pop();
-+	ui_helpline__push(msg);
++	if (use_browser > 0) {
++		newtFormDestroy(self->form);
++		newtPopWindow();
++	}
++	free(self);
 +}
-diff --git a/tools/perf/util/ui/helpline.h b/tools/perf/util/ui/helpline.h
+diff --git a/tools/perf/util/ui/progress.h b/tools/perf/util/ui/progress.h
 new file mode 100644
-index 0000000..56d8c1d
+index 0000000..a3820a0
 --- /dev/null
-+++ b/tools/perf/util/ui/helpline.h
-@@ -0,0 +1,9 @@
-+#ifndef _PERF_UI_HELPLINE_H_
-+#define _PERF_UI_HELPLINE_H_ 1
++++ b/tools/perf/util/ui/progress.h
+@@ -0,0 +1,11 @@
++#ifndef _PERF_UI_PROGRESS_H_
++#define _PERF_UI_PROGRESS_H_ 1
 +
-+void ui_helpline__pop(void);
-+void ui_helpline__push(const char *msg);
-+void ui_helpline__fpush(const char *fmt, ...);
-+void ui_helpline__puts(const char *msg);
++struct ui_progress;
 +
-+#endif /* _PERF_UI_HELPLINE_H_ */
++struct ui_progress *ui_progress__new(const char *title, u64 total);
++void ui_progress__delete(struct ui_progress *self);
++
++void ui_progress__update(struct ui_progress *self, u64 curr);
++
++#endif
