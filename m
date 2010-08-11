@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194Ab0HKMt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 08:49:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:57978 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797Ab0HKMt6 (ORCPT
+	id S1752182Ab0HKNBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 09:01:01 -0400
+Received: from caiajhbdccah.dreamhost.com ([208.97.132.207]:40173 "EHLO
+	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751257Ab0HKNA7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 08:49:58 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Dave Airlie <airlied@gmail.com>
-Subject: Re: [DRM] BUG: sleeping function called from invalid context, drm_lastclose
-Date: Wed, 11 Aug 2010 14:49:47 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Luca Tettamanti <kronos.it@gmail.com>, linux-kernel@vger.kernel.org,
-        dri-devel@lists.sourceforge.net
-References: <20100811084828.GA5709@nb-core2.darkstar.lan> <AANLkTimx0No2RgS8EdZCz=X8urJ8u4hVEVH5c1mcz_CW@mail.gmail.com>
-In-Reply-To: <AANLkTimx0No2RgS8EdZCz=X8urJ8u4hVEVH5c1mcz_CW@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 11 Aug 2010 09:00:59 -0400
+Subject: [PATCH] jbd: Remove redundant NULL check upon kfree()
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Aug 2010 09:00:54 -0400
+Message-ID: <1281531654.2067.2.camel@cowboy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008111449.48141.arnd@arndb.de>
-X-Provags-ID: V02:K0:giS+R6EBJ5xGyI0BRcRGJ1wmrfb2WaJuFWbOovG4GSe
- bu5IYJS6HfqZfJIr/R34NM2u8dwIDSs/n7QfZ2LVuddMpwnNX4
- glIhadY5rNbI63lHO0k/hWSN+gX0viIlraY1doG7j/2LBBYvFl
- Xbvb3tuFglJ6UYIUmmkGRXvbfgEZ+d7Kuaxe4/10C69bjXTaTb
- Ge/DotcjpND0d0F8xYJkA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 11 August 2010, Dave Airlie wrote:
-> On Wed, Aug 11, 2010 at 6:48 PM, Luca Tettamanti <kronos.it@gmail.com> wrote:
-> >
-> >
-> > moved the call to (inside drm_release) drm_lastclose inside dev->count_lock
-> > spinlock.
-> > drm_lastclose however takes dev->struct_mutex (now inside an atomic
-> > context):
+jbd: Remove redundant NULL check upon kfree().
 
-Yes, that's obviously been broken by me, sorry about the trouble.
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ fs/jbd/transaction.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-I must have been trying to simplify the error handling by adding a
-goto at the end of drm_release, which then happened to break
-the common path.
+diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
+index 5ae71e7..5e98130 100644
+--- a/fs/jbd/transaction.c
++++ b/fs/jbd/transaction.c
+@@ -232,8 +232,7 @@ repeat_locked:
+ 
+ 	lock_map_acquire(&handle->h_lockdep_map);
+ out:
+-	if (unlikely(new_transaction))		/* It's usually NULL */
+-		kfree(new_transaction);
++	kfree(new_transaction);
+ 	return ret;
+ }
+ 
+-- 
+1.7.0.4
 
-The easiest way to fix this would be to go back to the way drm_release()
-worked previously and /only/ replace {,un}lock_kernel() with
-mutex_{,un}lock(&drm_global_mutex);.
-
-> I have a patch from Chris Wilson that I need to push to fix this,
-> basically reducing the spin lock coverage,
-> and relying on the global mutex to handle the open race.
-
-Yes, that sounds good, it's what the code used to do before my broken
-change.
-
-You might also be able to find a way to remove drm_global_lock from the
-open/close path entirely.
-
-	Arnd
