@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab0HKSy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 14:54:29 -0400
-Received: from mail.logicpd.com ([66.162.60.3]:2278 "EHLO smtp.logicpd.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752617Ab0HKSy2 convert rfc822-to-8bit (ORCPT
+	id S1756044Ab0HKSzA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 14:55:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44626 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab0HKSy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 14:54:28 -0400
-Content-class: urn:content-classes:message
-Subject: RE: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and TORPEDO development kits
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 11 Aug 2010 13:53:52 -0500
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Message-ID: <77A0A4DB5BF2A44283E5522C27234AC6021C82D7@EDPRSRV011.logicpd.com>
-In-Reply-To: <87r5i52fgb.fsf@deeprootsystems.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and TORPEDO development kits
-Thread-Index: Acs5f83GtGYtkIWzTy+xczJ4pKMzXgABqxWQ
-From: "Jacob Tanenbaum" <Jacob.Tanenbaum@logicpd.com>
-To: "Kevin Hilman" <khilman@deeprootsystems.com>
-Cc: <linux@arm.linux.org.uk>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <rmk@arm.linux.org.uk>,
-        <tony@atomide.com>
-X-OriginalArrivalTime: 11 Aug 2010 18:54:27.0826 (UTC) FILETIME=[9FB87D20:01CB3986]
+	Wed, 11 Aug 2010 14:54:58 -0400
+X-Authority-Analysis: v=1.1 cv=mWMe3HXt1P3ELXxrmMgI9QKdSRnwjSxQbBh3ay0KAh4= c=1 sm=0 a=TzTR-pdnRKgA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=7mOBRU54AAAA:8 a=Lk9nDxBHVk0cXHw4TiMA:9 a=UlcZCNRE7ihlrh1rZntg_GahHH4A:4 a=PUjeQqilurYA:10 a=WeOa-AV5lc8A:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Subject: Re: [PATCH] tracing: extend recordmcount to better support
+ Blackfin mcount
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        uclinux-dist-devel@blackfin.uclinux.org
+In-Reply-To: <1281079584-21205-1-git-send-email-vapier@gentoo.org>
+References: <1281079584-21205-1-git-send-email-vapier@gentoo.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 11 Aug 2010 14:54:56 -0400
+Message-ID: <1281552896.3058.41.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2010-08-06 at 03:26 -0400, Mike Frysinger wrote:
+> The mcount call on Blackfin systems includes some stack manipulation
+> around the actual call site, so extend the build time perl script to
+> support this.  This way we can avoid doing the calculation at runtime.
+
+Hmm, this might be something we could do in other archs.
+
+You want me to pull it? or should this go via another tree?
+
+-- Steve
+
+> 
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  scripts/recordmcount.pl |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
+> index f3c9c0a..2c56539 100755
+> --- a/scripts/recordmcount.pl
+> +++ b/scripts/recordmcount.pl
+> @@ -159,6 +159,7 @@ my $section_regex;	# Find the start of a section
+>  my $function_regex;	# Find the name of a function
+>  			#    (return offset and func name)
+>  my $mcount_regex;	# Find the call site to mcount (return offset)
+> +my $mcount_adjust;	# Address adjustment to mcount offset
+>  my $alignment;		# The .align value to use for $mcount_section
+>  my $section_type;	# Section header plus possible alignment command
+>  my $can_use_local = 0; 	# If we can use local function references
+> @@ -213,6 +214,7 @@ $section_regex = "Disassembly of section\\s+(\\S+):";
+>  $function_regex = "^([0-9a-fA-F]+)\\s+<(.*?)>:";
+>  $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount\$";
+>  $section_type = '@progbits';
+> +$mcount_adjust = 0;
+>  $type = ".long";
+>  
+>  if ($arch eq "x86_64") {
+> @@ -351,6 +353,9 @@ if ($arch eq "x86_64") {
+>  } elsif ($arch eq "microblaze") {
+>      # Microblaze calls '_mcount' instead of plain 'mcount'.
+>      $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s_mcount\$";
+> +} elsif ($arch eq "blackfin") {
+> +    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
+> +    $mcount_adjust = -4;
+>  } else {
+>      die "Arch $arch is not supported with CONFIG_FTRACE_MCOUNT_RECORD";
+>  }
+> @@ -511,7 +516,7 @@ while (<IN>) {
+>      }
+>      # is this a call site to mcount? If so, record it to print later
+>      if ($text_found && /$mcount_regex/) {
+> -	push(@offsets, hex $1);
+> +	push(@offsets, (hex $1) + $mcount_adjust);
+>      }
+>  }
+>  
 
 
------Original Message-----
-From: Kevin Hilman [mailto:khilman@deeprootsystems.com] 
-Sent: Wednesday, August 11, 2010 2:05 PM
-To: Jacob Tanenbaum
-Cc: linux@arm.linux.org.uk; linux-omap@vger.kernel.org;
-linux-kernel@vger.kernel.org; rmk@arm.linux.org.uk; tony@atomide.com
-Subject: Re: [PATCH 1/4] initial support for LogicPD's OMAP3 SOM and
-TORPEDO development kits
-
-Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com> writes:
-
-> 	Adding LogicPD OMAP3 board support
->
->          Adding support for LogicPD's OMAP 3530 LV SOM and
->          OMAP 35x Torpedo board.
-> 	 
-> 	 Tested against: linux-next
-81e09f50c93edff607259cbe374a3006c9c5fa74
->          Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
-
-[...]
-
-> +/* Micron MT46H32M32LF-6 */
-> +/* FIXME: borrowed from sdram-micron-mt46h32m32lf-6.h because on
-LogicPD
-> + * boards we can't use the default values -- why? I suspect the
-reason
-> + * lies in the boot strap code. We correct this part if we have
-ported
-> + * U-Boot and X-Load. */
-
-Another option here instead of re-defining the struct is to includ the
-original header and just change the values you need to.  That way
-you can describe the reasons behind the values that are changing.
-
-Will fix
-
-[...]
-
-> +static struct omap_board_config_kernel omap3logic_config[] __initdata
-= {
-> +};
-> +
-> +static void __init omap3logic_init_irq(void)
-> +{
-> +	omap_board_config = omap3logic_config;
-> +	omap_board_config_size = ARRAY_SIZE(omap3logic_config);
-> +	omap2_init_common_hw(mt46h32m32lf6_sdrc_params,
-> +				mt46h32m32lf6_sdrc_params);
-> +	omap_init_irq();
-> +#ifdef CONFIG_OMAP_32K_TIMER
-> +	omap2_gp_clockevent_set_gptimer(12);
-> +#endif
-
-Why do you need GPT12?
-
-Was this a copy-paste from Beagle?  Certain revs of beagle had this
-limitation due to a board design problem, so unless you've inherited the
-same board-design problem, you should be find with the default.
-
-Will test and fix
-
-
-Kevin
