@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290Ab0HKIQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 04:16:51 -0400
-Received: from web37605.mail.mud.yahoo.com ([209.191.87.88]:23041 "HELO
-	web37605.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752588Ab0HKIQt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 04:16:49 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Ou4u4rq2Bvu1VCYS9mmvrVuZVa+9G1jPUPsFJF4zRxRp2kqtPvNS433XrmUeLY/u1tBnReDTVs/cOQQe1nJcWRekXD45zLxkzStROD1aibWPMnHGYUhy6LaFEowjc/6PFsj2Y/tiZkpvWI4k9ZLKoSklFPiaLf3fo+FyDPFOD9g=;
-Message-ID: <908231.78161.qm@web37605.mail.mud.yahoo.com>
-X-YMail-OSG: i4Htk54VM1mpWaem0Uj9ha_wEzddG4CSJiYhwlbp_POOd8p
- XvYwKIbrE6ORkqxxTNTIaGo1yCY0bzr5gMqwMXXVNMfn00IreqH3BuTaEg.0
- 7mxuxj4gpL_gufZR_P87jRqwbMw4o5qZ2YyS951OuUjxujcxJHjun2XrB5Hu
- kdoDipKYC6PKCKa8daTB30GzWUA1Ct5RlEVGXAmRV4y17HreStdPKRcAsBWO
- KgIC_YmpRBgfZbr60VvvAfUKttZKgtfQhXAIPqTZXaq_DxMqqluEX13PUjC6
- 2YT2U.o_.08JQEner8sQjMN5hXCLBlXmb0fkHA2U.gtQyvHKtbWTGsLo-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Wed, 11 Aug 2010 01:16:47 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
+	id S932663Ab0HKIcM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 04:32:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50921 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755156Ab0HKIcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 04:32:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=OCK+uK+HX2y5gP8e1phpdDLfkeg+S2apl/2LlOJTRFmCjlOXEH7aCnQv+Zqn+LKi5z
+         KSs9M2epC0ZO4OYMTa9VIm9/mw9ep/AbOWLmQmVo8FN6NIoXaxO+YzR3/dC+kF0krhKu
+         wE104rXX8AGld+3FvTbVjTWIYwmwIprCVL/BA=
 Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-To: Maxim Levitsky <maximlevitsky@gmail.com>
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281433805.2016.36.camel@maxim-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <199584.21009.qm@web37604.mail.mud.yahoo.com>
+References: <199584.21009.qm@web37604.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 11 Aug 2010 11:32:04 +0300
+Message-ID: <1281515524.21459.14.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> result in bit flips,
-> > rather data can not be delivered at all or
-> command/parameters are invalid.
-> Understood.
-> However if I get MEMSTICK_INT_ERR, I should also look at
-> status1,
-> because there might be correctable error.
+On Wed, 2010-08-11 at 01:08 -0700, Alex Dubov wrote: 
+> > I know everything you have just said.
+> > I just want to point out that code in many places assumes
+> > that register
+> > window is the same as set on device initialization.
 > 
+> It's not.
+> Can you please point at a particular place?
 > 
+> > > But, if you're using the auto incrementing write, you
+> > will have to write
+> > > extra register for every page transferred.
+> > But what if I fill extra register with 0xFF?
+> > And besides on reads, the fact that I *write* the extra
+> > register before
+> > I execute read command shouldn't matter at all regardless
+> > of what I
+> > write there.
+> > On writes however I *do* need to write extra register
+> > anyway with proper
+> > values.
+> > 
+> > Therefore I see no reason why I can't set write window to
+> > cover both
+> > param and extra register, and leave it always like that.
+> 
+> Because when you do autoincrementing write you _can not_ write into param register. You will break the command execution.
+Thanks, I finally understand you, so you are objection to write of
+_param_ register, not the _extra_.
+I agree with you.
 
-I don't remember the details, but it may be, that status1 errors do not
-raise INT_ERR (or do not always raise?). The idea is, first you check
-INT_ERR. If command completed successfully and you received the data, you
-may still need to check status1 for possible bit flips.
 
-Some experimentation may be required, especially for the case of
-correctable errors. After all, they should not prevent the command from
-successful completion, yet action should be taken on them (at the very
-least - log warning, just like with normal disks).
+> 
+> On the other thought, it may be unnecessary to write unique extra data to every page, so one full register write at the beginning of the command may do. Considering, that legacy memstick is not going to evolve, this may be reasonable assumption.
+Indeed that what I do now.
+Maximum I might need to clear page status bits, but I can do that later
+after I write the block.
+This won't be any performance impact because amount of bad pages
+shouldn't be normally greater that zero.
+(Otherwise there will be data loss...)
+
+One interesting thing that I just want your opinion on is what to do
+with correctable errors.
+Common sense suggests to relocate the sector + and mark it bad.
+But I don't know how common such sectors are, and thus I could do more
+harm that good by marking too many sectors as bad.
+
+Of course all such problems are reason why today flash devices contain
+the FTL inside, and can improve/define it in the way they want.
+
+No more questions for now, thank you very much for help.
+
+I hope I create ms_block.c soon, and put that old problem to the rest.
+
+As time permits I will also port your driver for xD portion of jMicron
+device (which I have).
+
+Best regards,
+Maxim Levitsky
 
 
 
-      
