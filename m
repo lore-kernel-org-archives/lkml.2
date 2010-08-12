@@ -1,69 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933688Ab0HLObl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 10:31:41 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:49914 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab0HLObj (ORCPT
+	id S933753Ab0HLOgP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 10:36:15 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:32507 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933641Ab0HLOgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 10:31:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YHcwKK7uJBIC9wHFy5DnWUqk+kzJ0FajmtNqOJgwSX3ZG8LMeQMCpju1VFKQ1WA+jX
-         g+tR89Cdp0bKAzfHb7BCXlJ0fi0wSwMTdY88BJPDTpAiEjj04ezM7o6ieNYh6UnbkZvl
-         tNm+vlpoFpDspakOoTNjiXAPybrfDfqCZNMyE=
-Date: Thu, 12 Aug 2010 18:31:33 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
-	perfctrs
-Message-ID: <20100812143133.GA5719@lenovo>
-References: <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com> <20100809200245.GF6056@lenovo> <20100810074200.GE26154@erda.amd.com> <20100810161627.GB6893@lenovo> <20100810164124.GK26154@erda.amd.com> <20100810172451.GD6893@lenovo> <20100810190541.GN26154@erda.amd.com> <20100810192428.GE6893@lenovo> <20100812132419.GX26154@erda.amd.com>
+	Thu, 12 Aug 2010 10:36:13 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6071"; a="50646853"
+Message-ID: <4C6406D8.2090401@codeaurora.org>
+Date: Thu, 12 Aug 2010 20:06:08 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100812132419.GX26154@erda.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: David Brown <davidb@codeaurora.org>
+CC: Neil Leeder <nleeder@codeaurora.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH 1/1] mouse: add qci touchpad driver
+References: <1281126776-20014-1-git-send-email-nleeder@codeaurora.org> <4C5D3926.6050307@codeaurora.org> <20100810232014.GB21240@huya.qualcomm.com>
+In-Reply-To: <20100810232014.GB21240@huya.qualcomm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 03:24:19PM +0200, Robert Richter wrote:
-> On 10.08.10 15:24:28, Cyrill Gorcunov wrote:
-> > On Tue, Aug 10, 2010 at 09:05:41PM +0200, Robert Richter wrote:
-> > > On 10.08.10 13:24:51, Cyrill Gorcunov wrote:
-> > > 
-> > > > It gets masked on NMI arrival, at least for some models (Core Duo, P4,
-> > > > P6 M and I suspect more theh that, that was the reason oprofile has
-> > > > it, also there is a note in SDM V3a page 643).
-> > > 
-> > > Yes, that's right, I never noticed that. Maybe it is better to
-> > > implement the apic write it in model specific code then.
-> > > 
-> > 
-> > Perhaps we can make it simplier I think, ie like it was before -- we just
-> > move it under your new DIE_NMIUNKNOWN, in separate patch of course. Though
-> > I'm fine with either way.
-> 
-> I do not understand why you want to put this in the 'unknown'
-> path. Isn't it necessary to unmask the vector with every call of the
-> nmi handler?
-> 
-> -Robert
-> 
+Hi David,
 
-Heh, it's simple - I'm screwed. Robert you're right, of course it should NOT
-be under every 'unknown' nmi. I thought about small optimization here, but
-I think all this should be done only _after_ your patch is merged.
+On 8/11/2010 4:50 AM, David Brown wrote:
+> On Sat, Aug 07, 2010 at 04:14:54PM +0530, Trilok Soni wrote:
+> 
+>>> +
+>>> +/*
+>>> + * Driver communicates over i2c to nuvoTon WPCE775x Embedded Controller,
+>>> + * which has touchpad attached through PS/2 interface.
+>>> + */
+>>
+>> Why this driver is not developed through MFD architecture then? nuvoTon chip
+>> looks like multi-function chip, isn't it?
+> 
+> It is, in the sense that it does multiple things.  But, for this
+> particular device, it makes the keyboard available as an i2c device.
+> I don't see any particular reason to tie that to other functionality
+> that the chip provides.
 
-Sorry for confuse ;)
- 
-	-- Cyrill
+Ok, agreed. Neil, please submit a new patch with addressing other comments. Thanks.
+
+---Trilok Soni
+-- 
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
