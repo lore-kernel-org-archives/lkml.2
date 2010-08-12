@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759664Ab0HLAZJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:25:09 -0400
-Received: from kroah.org ([198.145.64.141]:60220 "EHLO coco.kroah.org"
+	id S1759680Ab0HLAZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:25:25 -0400
+Received: from kroah.org ([198.145.64.141]:60211 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759528Ab0HLAET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:19 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
-Message-Id: <20100812000125.922784551@clark.site>
+	id S1759522Ab0HLAER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:17 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:25 2010
+Message-Id: <20100812000125.829562364@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:44 -0700
+Date: Wed, 11 Aug 2010 17:00:43 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
         Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [29/54] ARM: 6299/1: errata: TLBIASIDIS and TLBIMVAIS operations can broadcast a faulty ASID
+        "David S. Miller" <davem@davemloft.net>
+Subject: [28/54] smsc911x: Add spinlocks around registers access
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,75 +26,193 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit cdf357f1e13a08a11261edacb3083746f65c1ed9 upstream.
+commit 492c5d943d6a04b124ba3a719dc746dc36b14cfb upstream.
 
-On versions of the Cortex-A9 prior to r2p0, performing TLB invalidations by
-ASID match can result in the incorrect ASID being broadcast to other CPUs.
-As a consequence of this, the targetted TLB entries are not invalidated
-across the system.
+On SMP systems, the SMSC911x registers may be accessed by multiple CPUs
+and this seems to put the chip in an inconsistent state. The patch adds
+spinlocks to the smsc911x_reg_read, smsc911x_reg_write,
+smsc911x_rx_readfifo and smsc911x_tx_writefifo functions.
 
-This workaround changes the TLB flushing routines to invalidate entries
-regardless of the ASID.
-
-Tested-by: Rob Clark <rob@ti.com>
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/arm/Kconfig                |   12 ++++++++++++
- arch/arm/include/asm/tlbflush.h |    8 ++++++++
- 2 files changed, 20 insertions(+)
+ drivers/net/smsc911x.c |   92 +++++++++++++++++++++++++++----------------------
+ 1 file changed, 52 insertions(+), 40 deletions(-)
 
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1025,6 +1025,18 @@ config PL310_ERRATA_588369
- 	   is not correctly implemented in PL310 as clean lines are not
- 	   invalidated as a result of these operations. Note that this errata
- 	   uses Texas Instrument's secure monitor api.
+--- a/drivers/net/smsc911x.c
++++ b/drivers/net/smsc911x.c
+@@ -84,8 +84,7 @@ struct smsc911x_data {
+ 	 */
+ 	spinlock_t mac_lock;
+ 
+-	/* spinlock to ensure 16-bit accesses are serialised.
+-	 * unused with a 32-bit bus */
++	/* spinlock to ensure register accesses are serialised */
+ 	spinlock_t dev_lock;
+ 
+ 	struct phy_device *phy_dev;
+@@ -118,37 +117,33 @@ struct smsc911x_data {
+ 	unsigned int hashlo;
+ };
+ 
+-/* The 16-bit access functions are significantly slower, due to the locking
+- * necessary.  If your bus hardware can be configured to do this for you
+- * (in response to a single 32-bit operation from software), you should use
+- * the 32-bit access functions instead. */
+-
+-static inline u32 smsc911x_reg_read(struct smsc911x_data *pdata, u32 reg)
++static inline u32 __smsc911x_reg_read(struct smsc911x_data *pdata, u32 reg)
+ {
+ 	if (pdata->config.flags & SMSC911X_USE_32BIT)
+ 		return readl(pdata->ioaddr + reg);
+ 
+-	if (pdata->config.flags & SMSC911X_USE_16BIT) {
+-		u32 data;
+-		unsigned long flags;
+-
+-		/* these two 16-bit reads must be performed consecutively, so
+-		 * must not be interrupted by our own ISR (which would start
+-		 * another read operation) */
+-		spin_lock_irqsave(&pdata->dev_lock, flags);
+-		data = ((readw(pdata->ioaddr + reg) & 0xFFFF) |
++	if (pdata->config.flags & SMSC911X_USE_16BIT)
++		return ((readw(pdata->ioaddr + reg) & 0xFFFF) |
+ 			((readw(pdata->ioaddr + reg + 2) & 0xFFFF) << 16));
+-		spin_unlock_irqrestore(&pdata->dev_lock, flags);
+-
+-		return data;
+-	}
+ 
+ 	BUG();
+ 	return 0;
+ }
+ 
+-static inline void smsc911x_reg_write(struct smsc911x_data *pdata, u32 reg,
+-				      u32 val)
++static inline u32 smsc911x_reg_read(struct smsc911x_data *pdata, u32 reg)
++{
++	u32 data;
++	unsigned long flags;
 +
-+config ARM_ERRATA_720789
-+	bool "ARM errata: TLBIASIDIS and TLBIMVAIS operations can broadcast a faulty ASID"
-+	depends on CPU_V7 && SMP
-+	help
-+	  This option enables the workaround for the 720789 Cortex-A9 (prior to
-+	  r2p0) erratum. A faulty ASID can be sent to the other CPUs for the
-+	  broadcasted CP15 TLB maintenance operations TLBIASIDIS and TLBIMVAIS.
-+	  As a consequence of this erratum, some TLB entries which should be
-+	  invalidated are not, resulting in an incoherency in the system page
-+	  tables. The workaround changes the TLB flushing routines to invalidate
-+	  entries regardless of the ASID.
- endmenu
++	spin_lock_irqsave(&pdata->dev_lock, flags);
++	data = __smsc911x_reg_read(pdata, reg);
++	spin_unlock_irqrestore(&pdata->dev_lock, flags);
++
++	return data;
++}
++
++static inline void __smsc911x_reg_write(struct smsc911x_data *pdata, u32 reg,
++					u32 val)
+ {
+ 	if (pdata->config.flags & SMSC911X_USE_32BIT) {
+ 		writel(val, pdata->ioaddr + reg);
+@@ -156,44 +151,54 @@ static inline void smsc911x_reg_write(st
+ 	}
  
- source "arch/arm/common/Kconfig"
---- a/arch/arm/include/asm/tlbflush.h
-+++ b/arch/arm/include/asm/tlbflush.h
-@@ -378,7 +378,11 @@ static inline void local_flush_tlb_mm(st
- 	if (tlb_flag(TLB_V6_I_ASID))
- 		asm("mcr p15, 0, %0, c8, c5, 2" : : "r" (asid) : "cc");
- 	if (tlb_flag(TLB_V7_UIS_ASID))
-+#ifdef CONFIG_ARM_ERRATA_720789
-+		asm("mcr p15, 0, %0, c8, c3, 0" : : "r" (zero) : "cc");
-+#else
- 		asm("mcr p15, 0, %0, c8, c3, 2" : : "r" (asid) : "cc");
-+#endif
+ 	if (pdata->config.flags & SMSC911X_USE_16BIT) {
+-		unsigned long flags;
+-
+-		/* these two 16-bit writes must be performed consecutively, so
+-		 * must not be interrupted by our own ISR (which would start
+-		 * another read operation) */
+-		spin_lock_irqsave(&pdata->dev_lock, flags);
+ 		writew(val & 0xFFFF, pdata->ioaddr + reg);
+ 		writew((val >> 16) & 0xFFFF, pdata->ioaddr + reg + 2);
+-		spin_unlock_irqrestore(&pdata->dev_lock, flags);
+ 		return;
+ 	}
  
- 	if (tlb_flag(TLB_BTB)) {
- 		/* flush the branch target cache */
-@@ -424,7 +428,11 @@ local_flush_tlb_page(struct vm_area_stru
- 	if (tlb_flag(TLB_V6_I_PAGE))
- 		asm("mcr p15, 0, %0, c8, c5, 1" : : "r" (uaddr) : "cc");
- 	if (tlb_flag(TLB_V7_UIS_PAGE))
-+#ifdef CONFIG_ARM_ERRATA_720789
-+		asm("mcr p15, 0, %0, c8, c3, 3" : : "r" (uaddr & PAGE_MASK) : "cc");
-+#else
- 		asm("mcr p15, 0, %0, c8, c3, 1" : : "r" (uaddr) : "cc");
-+#endif
+ 	BUG();
+ }
  
- 	if (tlb_flag(TLB_BTB)) {
- 		/* flush the branch target cache */
++static inline void smsc911x_reg_write(struct smsc911x_data *pdata, u32 reg,
++				      u32 val)
++{
++	unsigned long flags;
++
++	spin_lock_irqsave(&pdata->dev_lock, flags);
++	__smsc911x_reg_write(pdata, reg, val);
++	spin_unlock_irqrestore(&pdata->dev_lock, flags);
++}
++
+ /* Writes a packet to the TX_DATA_FIFO */
+ static inline void
+ smsc911x_tx_writefifo(struct smsc911x_data *pdata, unsigned int *buf,
+ 		      unsigned int wordcount)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&pdata->dev_lock, flags);
++
+ 	if (pdata->config.flags & SMSC911X_SWAP_FIFO) {
+ 		while (wordcount--)
+-			smsc911x_reg_write(pdata, TX_DATA_FIFO, swab32(*buf++));
+-		return;
++			__smsc911x_reg_write(pdata, TX_DATA_FIFO,
++					     swab32(*buf++));
++		goto out;
+ 	}
+ 
+ 	if (pdata->config.flags & SMSC911X_USE_32BIT) {
+ 		writesl(pdata->ioaddr + TX_DATA_FIFO, buf, wordcount);
+-		return;
++		goto out;
+ 	}
+ 
+ 	if (pdata->config.flags & SMSC911X_USE_16BIT) {
+ 		while (wordcount--)
+-			smsc911x_reg_write(pdata, TX_DATA_FIFO, *buf++);
+-		return;
++			__smsc911x_reg_write(pdata, TX_DATA_FIFO, *buf++);
++		goto out;
+ 	}
+ 
+ 	BUG();
++out:
++	spin_unlock_irqrestore(&pdata->dev_lock, flags);
+ }
+ 
+ /* Reads a packet out of the RX_DATA_FIFO */
+@@ -201,24 +206,31 @@ static inline void
+ smsc911x_rx_readfifo(struct smsc911x_data *pdata, unsigned int *buf,
+ 		     unsigned int wordcount)
+ {
++	unsigned long flags;
++
++	spin_lock_irqsave(&pdata->dev_lock, flags);
++
+ 	if (pdata->config.flags & SMSC911X_SWAP_FIFO) {
+ 		while (wordcount--)
+-			*buf++ = swab32(smsc911x_reg_read(pdata, RX_DATA_FIFO));
+-		return;
++			*buf++ = swab32(__smsc911x_reg_read(pdata,
++							    RX_DATA_FIFO));
++		goto out;
+ 	}
+ 
+ 	if (pdata->config.flags & SMSC911X_USE_32BIT) {
+ 		readsl(pdata->ioaddr + RX_DATA_FIFO, buf, wordcount);
+-		return;
++		goto out;
+ 	}
+ 
+ 	if (pdata->config.flags & SMSC911X_USE_16BIT) {
+ 		while (wordcount--)
+-			*buf++ = smsc911x_reg_read(pdata, RX_DATA_FIFO);
+-		return;
++			*buf++ = __smsc911x_reg_read(pdata, RX_DATA_FIFO);
++		goto out;
+ 	}
+ 
+ 	BUG();
++out:
++	spin_unlock_irqrestore(&pdata->dev_lock, flags);
+ }
+ 
+ /* waits for MAC not busy, with timeout.  Only called by smsc911x_mac_read
 
 
