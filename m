@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760145Ab0HLNmz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 09:42:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44511 "EHLO mx1.redhat.com"
+	id S1760157Ab0HLNnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 09:43:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12492 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab0HLNmy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 09:42:54 -0400
-Date: Thu, 12 Aug 2010 09:42:53 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, akataria@vmware.com,
-        sassmann@redhat.com
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20100812134252.23717.50702.sendpatchset@prarit.bos.redhat.com>
-Subject: [PATCH]: local_irq_save/restore when issuing IPI in early bootup
+	id S1753579Ab0HLNnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 09:43:51 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<alpine.DEB.2.00.1008110806070.673@router.home>
+	<20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+	<20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Thu, 12 Aug 2010 09:42:21 -0400
+In-Reply-To: <20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp> (Naoya
+	Horiguchi's message of "Thu, 12 Aug 2010 16:59:41 +0900")
+Message-ID: <x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When sending out an IPI interrupts are masked off.  In the cpu wakeup code, this
-is not the case.  Make the code consistent.
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-Alok Kataria noticed the following hang:
+> Basically it is user's responsibility to take care of race condition
+> related to direct I/O, but some events which are out of user's control
+> (such as memory failure) can happen at any time. So we need to lock and
+> set/clear PG_writeback flags in dierct I/O code to protect from data loss.
 
-1.  vcpu1 is doing wakeup_secondary_cpu_via_init() is booting all the other
-processors.  It tries to bring each cpu up by sending an IPI which is done
-by writing the APIC ICR.
+Did you do any performance testing of this?  If not, please do and
+report back.  I'm betting users won't be pleased with the results.
 
-The call path is wakeup_secondary_cpu_via_init() which calls apic_icr_write->
-native_apic_icr_write().  native_apic_icr_write() writes APIC_ICR2 and APIC_ICR
-in order to modify the ICRHI and ICRLO values.
+Cheers,
+Jeff
 
-The ICRHI is set to the number of online cpus.
-
-The write to APIC_ICR does not happen because
-
-2.  vcpu1's physical cpu *may* take a timer interrupt which does
-lapic_timer_broadcast(), which calls send_IPI_mask().  send_IPI_mask()
-calls default_send_IPI_mask_sequence_phys() which changes the ICRHI value to
-the number of online vcpus -- which is one less than what it was set to in
-step 1.
-
-3.  return to thread in step 1 ... ICRHI is different and one less
-than the previous value.  This results in the IPI being sent TWICE to the
-same vcpu (CPU X-1) instead of once to CPU X-1 and once to CPU X.
-
-It may be that native_apic_icr_write() actually needs it's own irq save/restore,
-however, I cannot see a code path that requires it.  A larger irq save/restore
-seems more appropriate around the IPI code which seems adequate given that
-other code does the same thing (see calls to __default_send_IPI_dest_field() )
-and is not broken.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 5162095..39f871c 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -556,6 +556,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- {
- 	unsigned long send_status, accept_status = 0;
- 	int maxlvt, num_starts, j;
-+	unsigned long flags;
- 
- 	maxlvt = lapic_get_maxlvt();
- 
-@@ -576,6 +577,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 	/*
- 	 * Send IPI
- 	 */
-+	local_irq_save(flags);
- 	apic_icr_write(APIC_INT_LEVELTRIG | APIC_INT_ASSERT | APIC_DM_INIT,
- 		       phys_apicid);
- 
-@@ -592,6 +594,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 
- 	pr_debug("Waiting for send to finish...\n");
- 	send_status = safe_apic_wait_icr_idle();
-+	local_irq_restore(flags);
- 
- 	mb();
- 	atomic_set(&init_deasserted, 1);
-@@ -633,6 +636,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 		/* Target chip */
- 		/* Boot on the stack */
- 		/* Kick the second */
-+		local_irq_save(flags);
- 		apic_icr_write(APIC_DM_STARTUP | (start_eip >> 12),
- 			       phys_apicid);
- 
-@@ -645,6 +649,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 
- 		pr_debug("Waiting for send to finish...\n");
- 		send_status = safe_apic_wait_icr_idle();
-+		local_irq_restore(flags);
- 
- 		/*
- 		 * Give the other CPU some time to accept the IPI.
+>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> ---
+>  fs/direct-io.c |    8 +++++++-
+>  1 files changed, 7 insertions(+), 1 deletions(-)
+>
+> diff --git a/fs/direct-io.c b/fs/direct-io.c
+> index 7600aac..0d0810d 100644
+> --- a/fs/direct-io.c
+> +++ b/fs/direct-io.c
+> @@ -439,7 +439,10 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+>  			struct page *page = bvec[page_no].bv_page;
+>  
+>  			if (dio->rw == READ && !PageCompound(page))
+> -				set_page_dirty_lock(page);
+> +				set_page_dirty(page);
+> +			if (dio->rw & WRITE)
+> +				end_page_writeback(page);
+> +			unlock_page(page);
+>  			page_cache_release(page);
+>  		}
+>  		bio_put(bio);
+> @@ -702,11 +705,14 @@ submit_page_section(struct dio *dio, struct page *page,
+>  {
+>  	int ret = 0;
+>  
+> +	lock_page(page);
+> +
+>  	if (dio->rw & WRITE) {
+>  		/*
+>  		 * Read accounting is performed in submit_bio()
+>  		 */
+>  		task_io_account_write(len);
+> +		set_page_writeback(page);
+>  	}
+>  
+>  	/*
