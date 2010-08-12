@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933374Ab0HLAP0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:15:26 -0400
-Received: from kroah.org ([198.145.64.141]:47848 "EHLO coco.kroah.org"
+	id S933505Ab0HLAPl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:15:41 -0400
+Received: from kroah.org ([198.145.64.141]:47832 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933078Ab0HLAI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:29 -0400
+	id S933134Ab0HLAI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:26 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
-Message-Id: <20100812000615.816894818@clark.site>
+Message-Id: <20100812000615.543862298@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:49 -0700
+Date: Wed, 11 Aug 2010 17:05:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [34/67] eCryptfs: Handle ioctl calls with unlocked and compat functions
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: [31/67] ioat2: catch and recover from broken vtd configurations v6
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,107 +26,157 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+From: Dan Williams <dan.j.williams@intel.com>
 
-commit c43f7b8fb03be8bcc579bfc4e6ab70eac887ab55 upstream.
+commit 556ab45f9a775bfa4762bacc0a4afb5b44b067bc upstream.
 
-Lower filesystems that only implemented unlocked_ioctl weren't being
-passed ioctl calls because eCryptfs only checked for
-lower_file->f_op->ioctl and returned -ENOTTY if it was NULL.
+On some platforms (MacPro3,1) the BIOS assigns the ioatdma device to the
+incorrect iommu causing faults when the driver initializes.  Add a quirk
+to catch this misconfiguration and try falling back to untranslated
+operation (which works in the MacPro3,1 case).
 
-eCryptfs shouldn't implement ioctl(), since it doesn't require the BKL.
-This patch introduces ecryptfs_unlocked_ioctl() and
-ecryptfs_compat_ioctl(), which passes the calls on to the lower file
-system.
+Assuming there are other platforms with misconfigured iommus teach the
+ioatdma driver to treat initialization failures as non-fatal (just fail
+the driver load and emit a warning instead of triggering a BUG_ON).
 
-https://bugs.launchpad.net/ecryptfs/+bug/469664
+This can be classified as a boot regression since 2.6.32 on affected
+platforms since the ioatdma module did not autoload prior to that
+kernel.
 
-Reported-by: James Dupin <james.dupin@gmail.com>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Acked-by: David Woodhouse <David.Woodhouse@intel.com>
+Reported-by: Chris Li <lkml@chrisli.org>
+Tested-by: Chris Li <lkml@chrisli.org>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ecryptfs/file.c |   56 +++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 35 insertions(+), 21 deletions(-)
+ drivers/dma/ioat/dma.h    |    1 +
+ drivers/dma/ioat/dma_v2.c |   24 ++++++++++++++++++++++--
+ drivers/dma/ioat/dma_v3.c |    5 ++++-
+ drivers/pci/intel-iommu.c |   28 ++++++++++++++++++++++++++++
+ 4 files changed, 55 insertions(+), 3 deletions(-)
 
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -292,12 +292,40 @@ static int ecryptfs_fasync(int fd, struc
- 	return rc;
+--- a/drivers/dma/ioat/dma.h
++++ b/drivers/dma/ioat/dma.h
+@@ -97,6 +97,7 @@ struct ioat_chan_common {
+ 	#define IOAT_RESET_PENDING 2
+ 	#define IOAT_KOBJ_INIT_FAIL 3
+ 	#define IOAT_RESHAPE_PENDING 4
++	#define IOAT_RUN 5
+ 	struct timer_list timer;
+ 	#define COMPLETION_TIMEOUT msecs_to_jiffies(100)
+ 	#define IDLE_TIMEOUT msecs_to_jiffies(2000)
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -287,7 +287,10 @@ void ioat2_timer_event(unsigned long dat
+ 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+ 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
+ 				__func__, chanerr);
+-			BUG_ON(is_ioat_bug(chanerr));
++			if (test_bit(IOAT_RUN, &chan->state))
++				BUG_ON(is_ioat_bug(chanerr));
++			else /* we never got off the ground */
++				return;
+ 		}
+ 
+ 		/* if we haven't made progress and we have already
+@@ -492,6 +495,8 @@ static struct ioat_ring_ent **ioat2_allo
+ 	return ring;
  }
  
--static int ecryptfs_ioctl(struct inode *inode, struct file *file,
--			  unsigned int cmd, unsigned long arg);
-+static long
-+ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOTTY;
++void ioat2_free_chan_resources(struct dma_chan *c);
 +
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->unlocked_ioctl)
-+		rc = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long
-+ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOIOCTLCMD;
-+
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->compat_ioctl)
-+		rc = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+#endif
+ /* ioat2_alloc_chan_resources - allocate/initialize ioat2 descriptor ring
+  * @chan: channel to be initialized
+  */
+@@ -500,6 +505,7 @@ int ioat2_alloc_chan_resources(struct dm
+ 	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
+ 	struct ioat_chan_common *chan = &ioat->base;
+ 	struct ioat_ring_ent **ring;
++	u64 status;
+ 	int order;
  
- const struct file_operations ecryptfs_dir_fops = {
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
- 	.release = ecryptfs_release,
-@@ -313,7 +341,10 @@ const struct file_operations ecryptfs_ma
- 	.write = do_sync_write,
- 	.aio_write = generic_file_aio_write,
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -322,20 +353,3 @@ const struct file_operations ecryptfs_ma
- 	.fasync = ecryptfs_fasync,
- 	.splice_read = generic_file_splice_read,
- };
--
--static int
--ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
--	       unsigned long arg)
--{
--	int rc = 0;
--	struct file *lower_file = NULL;
--
--	if (ecryptfs_file_to_private(file))
--		lower_file = ecryptfs_file_to_lower(file);
--	if (lower_file && lower_file->f_op && lower_file->f_op->ioctl)
--		rc = lower_file->f_op->ioctl(ecryptfs_inode_to_lower(inode),
--					     lower_file, cmd, arg);
--	else
--		rc = -ENOTTY;
--	return rc;
--}
+ 	/* have we already been set up? */
+@@ -540,7 +546,20 @@ int ioat2_alloc_chan_resources(struct dm
+ 	tasklet_enable(&chan->cleanup_task);
+ 	ioat2_start_null_desc(ioat);
+ 
+-	return 1 << ioat->alloc_order;
++	/* check that we got off the ground */
++	udelay(5);
++	status = ioat_chansts(chan);
++	if (is_ioat_active(status) || is_ioat_idle(status)) {
++		set_bit(IOAT_RUN, &chan->state);
++		return 1 << ioat->alloc_order;
++	} else {
++		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
++
++		dev_WARN(to_dev(chan),
++			"failed to start channel chanerr: %#x\n", chanerr);
++		ioat2_free_chan_resources(c);
++		return -EFAULT;
++	}
+ }
+ 
+ bool reshape_ring(struct ioat2_dma_chan *ioat, int order)
+@@ -778,6 +797,7 @@ void ioat2_free_chan_resources(struct dm
+ 	del_timer_sync(&chan->timer);
+ 	device->cleanup_fn((unsigned long) c);
+ 	device->reset_hw(chan);
++	clear_bit(IOAT_RUN, &chan->state);
+ 
+ 	spin_lock_bh(&chan->cleanup_lock);
+ 	spin_lock_bh(&ioat->prep_lock);
+--- a/drivers/dma/ioat/dma_v3.c
++++ b/drivers/dma/ioat/dma_v3.c
+@@ -361,7 +361,10 @@ static void ioat3_timer_event(unsigned l
+ 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
+ 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
+ 				__func__, chanerr);
+-			BUG_ON(is_ioat_bug(chanerr));
++			if (test_bit(IOAT_RUN, &chan->state))
++				BUG_ON(is_ioat_bug(chanerr));
++			else /* we never got off the ground */
++				return;
+ 		}
+ 
+ 		/* if we haven't made progress and we have already
+--- a/drivers/pci/intel-iommu.c
++++ b/drivers/pci/intel-iommu.c
+@@ -3030,6 +3030,34 @@ static void __init iommu_exit_mempool(vo
+ 
+ }
+ 
++static void quirk_ioat_snb_local_iommu(struct pci_dev *pdev)
++{
++	struct dmar_drhd_unit *drhd;
++	u32 vtbar;
++	int rc;
++
++	/* We know that this device on this chipset has its own IOMMU.
++	 * If we find it under a different IOMMU, then the BIOS is lying
++	 * to us. Hope that the IOMMU for this device is actually
++	 * disabled, and it needs no translation...
++	 */
++	rc = pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0), 0xb0, &vtbar);
++	if (rc) {
++		/* "can't" happen */
++		dev_info(&pdev->dev, "failed to run vt-d quirk\n");
++		return;
++	}
++	vtbar &= 0xffff0000;
++
++	/* we know that the this iommu should be at offset 0xa000 from vtbar */
++	drhd = dmar_find_matched_drhd_unit(pdev);
++	if (WARN_TAINT_ONCE(!drhd || drhd->reg_base_addr - vtbar != 0xa000,
++			    TAINT_FIRMWARE_WORKAROUND,
++			    "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n"))
++		pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
++}
++DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quirk_ioat_snb_local_iommu);
++
+ static void __init init_no_remapping_devices(void)
+ {
+ 	struct dmar_drhd_unit *drhd;
 
 
