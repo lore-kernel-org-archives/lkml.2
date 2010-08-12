@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933407Ab0HLAKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:10:09 -0400
-Received: from kroah.org ([198.145.64.141]:48010 "EHLO coco.kroah.org"
+	id S933412Ab0HLAKX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:10:23 -0400
+Received: from kroah.org ([198.145.64.141]:47999 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933318Ab0HLAJJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:09:09 -0400
+	id S933307Ab0HLAJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:09:06 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:18 2010
-Message-Id: <20100812000618.864595126@clark.site>
+Message-Id: <20100812000618.675807545@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:06:22 -0700
+Date: Wed, 11 Aug 2010 17:06:20 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Eric Sandeen <sandeen@redhat.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [67/67] ext4: fix freeze deadlock under IO
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [65/67] xen: Do not suspend IPI IRQs.
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,53 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Sandeen <sandeen@sandeen.net>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit 437f88cc031ffe7f37f3e705367f4fe1f4be8b0f upstream.
+commit 4877c737283813bdb4bebfa3168c1585f6e3a8ca upstream.
 
-Commit 6b0310fbf087ad6 caused a regression resulting in deadlocks
-when freezing a filesystem which had active IO; the vfs_check_frozen
-level (SB_FREEZE_WRITE) did not let the freeze-related IO syncing
-through.  Duh.
+In general the semantics of IPIs are that they are are expected to
+continue functioning after dpm_suspend_noirq().
 
-Changing the test to FREEZE_TRANS should let the normal freeze
-syncing get through the fs, but still block any transactions from
-starting once the fs is completely frozen.
+Specifically I have seen a deadlock between the callfunc IPI and the
+stop machine used by xen's do_suspend() routine. If one CPU has already
+called dpm_suspend_noirq() then there is a window where it can be sent
+a callfunc IPI before all the other CPUs have entered stop_cpu().
 
-I tested this by running fsstress in the background while periodically
-snapshotting the fs and running fsck on the result.  I ran into
-occasional deadlocks, but different ones.  I think this is a
-fine fix for the problem at hand, and the other deadlocky things
-will need more investigation.
+If this happens then the first CPU ends up spinning in stop_cpu()
+waiting for the other to rendezvous in state STOPMACHINE_PREPARE while
+the other is spinning in csd_lock_wait().
 
-Reported-by: Phillip Susi <psusi@cfl.rr.com>
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: xen-devel@lists.xensource.com
+LKML-Reference: <1280398595-29708-4-git-send-email-ian.campbell@citrix.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/super.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/xen/events.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -241,7 +241,7 @@ handle_t *ext4_journal_start_sb(struct s
- 	if (sb->s_flags & MS_RDONLY)
- 		return ERR_PTR(-EROFS);
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -536,6 +536,7 @@ int bind_ipi_to_irqhandler(enum ipi_vect
+ 	if (irq < 0)
+ 		return irq;
  
--	vfs_check_frozen(sb, SB_FREEZE_WRITE);
-+	vfs_check_frozen(sb, SB_FREEZE_TRANS);
- 	/* Special case here: if the journal has aborted behind our
- 	 * backs (eg. EIO in the commit thread), then we still need to
- 	 * take the FS itself readonly cleanly. */
-@@ -3491,7 +3491,7 @@ int ext4_force_commit(struct super_block
- 
- 	journal = EXT4_SB(sb)->s_journal;
- 	if (journal) {
--		vfs_check_frozen(sb, SB_FREEZE_WRITE);
-+		vfs_check_frozen(sb, SB_FREEZE_TRANS);
- 		ret = ext4_journal_force_commit(journal);
- 	}
- 
++	irqflags |= IRQF_NO_SUSPEND;
+ 	retval = request_irq(irq, handler, irqflags, devname, dev_id);
+ 	if (retval != 0) {
+ 		unbind_from_irq(irq);
 
 
