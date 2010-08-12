@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760338Ab0HLPuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:50:12 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:33554 "EHLO mail-out1.uio.no"
+	id S1760347Ab0HLPzM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:55:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46114 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760259Ab0HLPuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:50:09 -0400
-Subject: Re: [PATCH] nfs: lookupcache coherence bugs in WCC update path
- (revised)
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <8762zgmmer.fsf@patl.com>
-References: <87lj8ckb1e.fsf@patl.com>  <8762zgmmer.fsf@patl.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Aug 2010 11:49:55 -0400
-Message-ID: <1281628195.2873.12.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+	id S1754430Ab0HLPzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 11:55:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 1/6] MN10300: Fix RTC routines
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>
+Date: Thu, 12 Aug 2010 16:54:36 +0100
+Message-ID: <20100812155436.17015.78424.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 5 sum msgs/h 1 total rcpts 827 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: DF4D03E5B1420C4C3C78B4C2E1BF4B6B8B22B503
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 318 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-11 at 22:26 -0700, Patrick J. LoPresti wrote:
-> (Well, crud.  I screwed up the previous diff and was missing a
-> close-curly.  This version actually compiles...)
-> 
-> This patch fixes some coherence bugs in the NFS "dentry lookup cache".
-> 
-> The NFS dentry lookup cache provides the nfs_force_lookup_revalidate()
-> call to invalidate all cached dentries associated with an inode.  In
-> general, the NFS client uses the ctime and mtime in the inode to detect
-> when changes are made on the server.
-> 
-> Therefore, to maintain cache coherence, nfs_force_lookup_revalidate()
-> must be called whenever the ctime or mtime of a directory inode is
-> updated with fresh data from the server.  There are a few spots in
-> nfs_wcc_update_inode() where this rule is violated, making it possible
-> for the lookup cache to return arbitrarily stale data.
-> 
-> This actually bit me in practice.  I have an application where a
-> negative dentry results in -ENOENT for a file that was created 30+
-> minutes earlier (despite the "noac" mount option).  Unfortunately I
-> cannot share my test case, but I believe the following simple patch is
-> "obviously correct", and I can confirm that it fixes my issue.
+A change to the RTC routines in the MN10300 arch used set_rtc_mms() when it
+meant set_rtc_mmss().  This results in an error due to a reference of an
+undefined symbol.
 
-This looks less than obviously correct to me. The wcc case is invoked
-when the ctime/mtime/.... change is known to have occurred due to a file
-creation/unlink/... from this client. It is a weak cache consistency
-case.
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-If your client is seeing ENOENT after it created the file itself, then
-the problem isn't cache coherency, but a bug in the file creation code.
+ arch/mn10300/kernel/rtc.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-Cheers
-  Trond
 
+diff --git a/arch/mn10300/kernel/rtc.c b/arch/mn10300/kernel/rtc.c
+index 815a933..4eef0e7 100644
+--- a/arch/mn10300/kernel/rtc.c
++++ b/arch/mn10300/kernel/rtc.c
+@@ -20,9 +20,6 @@
+ DEFINE_SPINLOCK(rtc_lock);
+ EXPORT_SYMBOL(rtc_lock);
+ 
+-/* last time the RTC got updated */
+-static long last_rtc_update;
+-
+ /* time for RTC to update itself in ioclks */
+ static unsigned long mn10300_rtc_update_period;
+ 
+@@ -110,7 +107,7 @@ static int set_rtc_mmss(unsigned long nowtime)
+ 
+ int update_persistent_clock(struct timespec now)
+ {
+-	return set_rtc_mms(now.tv_sec);
++	return set_rtc_mmss(now.tv_sec);
+ }
+ 
+ /*
 
