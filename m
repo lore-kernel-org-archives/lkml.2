@@ -1,41 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934109Ab0HLWeY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 18:34:24 -0400
-Received: from n4b.bullet.mail.ac4.yahoo.com ([76.13.13.74]:27813 "HELO
-	n4b.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754518Ab0HLWeW (ORCPT
+	id S1761032Ab0HLWkU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 18:40:20 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:18736 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754575Ab0HLWkS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 18:34:22 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 654415.6179.bm@omp126.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=yzQeJ6rgujjLiv1xhzpUolGADus+hhZ+f+NlUenspy0JDVjjJTWB5Yt3ukegpF0GOh0NMSvloV4/lzCcbyUs0ez6UozIRkDcNM1+F27eurl69f3+ZZr38SZ+N5Pgaf6b0gp2+sarwe35nr+YAplGmIfLCG6WNnjZKyMIm2013do=;
-Message-ID: <449572.54202.qm@web180316.mail.gq1.yahoo.com>
-X-YMail-OSG: j3zedzQVM1nfj.muo1WwzmgXWeiTBk_Kyve6lFnidbYdKPC
- aLi5O5mlwiea6H0T_SSV8LCRVFOKPBSzcJZNepBqi3AQ1nt2dMHiW5nNpjfk
- 9.8jZVQf3qbH0tF70.IWppXF_U_4zu8iFNy4xbW.obnQYBWVP9drI0VjPfbM
- olm.iiC6m7lN_oz8sl_0FLc3vd29zYmFwQ9x4RJAJU5Caa4X.ARjozd.jn6F
- 5j5wMHDU_nkq5v28KS3Bv5rSqr75HfSr4Bq_fKB3BOVw2NIt3G_bEFv_1u7I
- M1ebk0F2gDHLQJ8UR_9.bN7bv1M9yQJmTJrcR_SbF1oc-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Thu, 12 Aug 2010 15:34:21 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCHv8 04/13] USB: gadget: mass_storage: moved strings handling code to composite
-To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com>
+	Thu, 12 Aug 2010 18:40:18 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=E1Ap8lCkrxEK9a2XEhmNkV1ZZpQXAAh0LRKiDiHrzQq9wrv4R1QpVZzPZAKFeIK9t
+	J+MJx/xhLZ/klJ9iVqoCA==
+Date: Thu, 12 Aug 2010 15:40:02 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Helge Deller <deller@gmx.de>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH] ipc/shm.c: add RSS and swap size information to
+ /proc/sysvipc/shm
+In-Reply-To: <4C6468A9.7090503@gmx.de>
+Message-ID: <alpine.DEB.1.00.1008121522150.9966@tigran.mtv.corp.google.com>
+References: <20100811201345.GA11304@p100.box> <20100812131005.e466a9fd.akpm@linux-foundation.org> <4C6468A9.7090503@gmx.de>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks OK, but I can't test or give it
-a detailed review just now.  An ACK from
-Alan would be nice.
+On Thu, 12 Aug 2010, Helge Deller wrote:
+> On 08/12/2010 10:10 PM, Andrew Morton wrote:
+> > On Wed, 11 Aug 2010 22:13:45 +0200
+> > Helge Deller<deller@gmx.de>  wrote:
+> > 
+> > > The kernel currently provides no functionality to analyze the RSS
+> > > and swap space usage of each individual sysvipc shared memory segment.
+> > > 
+> > > This patch add this info for each existing shm segment by extending
+> > > the output of /proc/sysvipc/shm by two columns for RSS and swap.
+> > > 
+> > > Since shmctl(SHM_INFO) already provides a similiar calculation (it
+> > > currently sums up all RSS/swap info for all segments), I did split
+> > > out a static function which is now used by the /proc/sysvipc/shm
+> > > output and shmctl(SHM_INFO).
+> > > 
+> > 
+> > I suppose that could be useful, although it would be most interesting
+> > to hear why _you_ consider it useful?
+> 
+> A reasonable question, and I really should have explained when I did send this
+> patch.
+> 
+> In my job I do work for SAP in the SAP LinuxLab (http://www.sap.com/linux) and
+> take care of the SAP ERP enterprise software on Linux.
+> SAP products (esp. the SAP Netweaver ABAP Kernel) uses lots of big shared
+> memory segments (we often have Linux systems with >= 16GB shm usage).
+> Sometimes we get customer reports about "slow" system responses and while
+> looking into their configurations we often find massive swapping activity on
+> the system. With this patch it's now easy to see from the command line if and
+> which shm segments gets swapped out (and how much) and can more easily give
+> recommendations for system tuning.
+> Without the patch it's currently not possible to do such shm analysis at all.
+> 
+> So, my patch actually does fix a real-world problem.
 
+That's good justification, thanks.
 
+> 
+> By the way - I found another bug/issue in /proc/<pid>/smaps as well. The
+> kernel currently does not adds swapped-out shm pages to the swap size value
+> correctly. The swap size value always stays zero for shm pages. I'm currently
+> preparing a small patch to fix that, which I will send to linux-mm for review
+> soon.
+
+I certainly wouldn't call smaps's present behaviour on it a bug: but given
+your justification above, I can see that it would be more useful to you,
+and probably to others, for it to be changed in the way that you suggest,
+to reveal the underlying swap.
+
+Hmm, I wonder what that patch is going to look like...
+
+> 
+> > But is it useful enough to risk breaking existing code which parses
+> > that file?  The risk is not great, but it's there.
+> 
+> Sure. The only positive argument is maybe, that I added the new info to the
+> end of the lines. IMHO existing applications which parse /proc files should
+> always take into account, that more text could follow with newer Linux
+> kernels...?
+
+I hope so too.  And agree you're right to correct the 64-bit header
+alignment, and to show the new fields in bytes rather than pages.
+But one little thing in your patch upsets me greatly...
+
+> 
+> > > ---
+> > > 
+> > >   shm.c |   63
+> > > ++++++++++++++++++++++++++++++++++++++++++---------------------
+> > >   1 file changed, 42 insertions(+), 21 deletions(-)
+> > > 
+> > > 
+> > > diff --git a/ipc/shm.c b/ipc/shm.c
+> > > --- a/ipc/shm.c
+> > > +++ b/ipc/shm.c
+> > > @@ -108,7 +108,11 @@ void __init shm_init (void)
+> > >   {
+> > >   	shm_init_ns(&init_ipc_ns);
+> > >   	ipc_init_proc_interface("sysvipc/shm",
+> > > -				"       key      shmid perms       size  cpid
+> > > lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime\n",
+> > > +#if BITS_PER_LONG<= 32
+> > > +				"       key      shmid perms       size  cpid
+> > > lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime
+> > > RSS       swap\n",
+> > > +#else
+> > > +				"       key      shmid perms
+> > > size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime
+> > > ctime                   RSS                  swap\n",
+
+... why oh why do you write "RSS" in uppercase, when every other field
+is named in lowercase?  Please change that to "rss" and then
+
+Acked-by: Hugh Dickins <hughd@google.com>
