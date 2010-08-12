@@ -1,180 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933764Ab0HLPSo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:18:44 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:5639 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933766Ab0HLPSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:18:40 -0400
-X-IronPort-AV: E=Sophos;i="4.55,358,1278313200"; 
-   d="scan'208";a="427213023"
-Message-ID: <4C6410D4.6050100@netapp.com>
-Date: Thu, 12 Aug 2010 11:18:44 -0400
-From: Bryan Schumaker <bjschuma@netapp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Lightning/1.0b2 Lanikai/3.1.2 ThunderBrowse/3.3.1
+	id S933771Ab0HLPVB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:21:01 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:40559 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751600Ab0HLPU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 11:20:57 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Maharana, Parag" <Parag.Maharana@lsi.com>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Thu, 12 Aug 2010 09:20:39 -0600
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Index: Acsw2E0UU5zHj3F8SMOoBE3QdnJBMAJWWdvQ
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBE6239A@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	 <1277046060.5242.18.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
+	 <1277063250.5242.25.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+	 <1277066924.5242.41.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
+ <1280598371.2801.11.camel@mulgrave.site>
+In-Reply-To: <1280598371.2801.11.camel@mulgrave.site>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Steve French <smfrench@gmail.com>, linux-cifs@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wang Lei <wang840925@gmail.com>, David Howells <dhowells@redhat.com>
-Subject: Re: linux-next: build failure after merge of the cifs tree
-References: <20100812131741.f3a800d7.sfr@canb.auug.org.au>	<AANLkTi=iHi=kpk+nsB396B9GWdefj=WJywA2K1PawHxi@mail.gmail.com> <20100812174621.b1dbc20f.sfr@canb.auug.org.au>
-In-Reply-To: <20100812174621.b1dbc20f.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7CFL53u011916
 
-Hi
+James,
 
-I updated my NFS DNS patch.  The new version will set CONFIG_KEYS when CONFIG_NFS_USE_KERNEL_DNS is set.
+Just let you know the new patches already submitted yesterday.  Please let me know after you updated those patches to the main tree.
 
-Thanks for letting me know about this!
+Regards,
 
-Bryan Schumaker
+Bo Yang
 
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Saturday, July 31, 2010 1:46 PM
+To: Yang, Bo
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Maharana, Parag; Daftardar, Jayant
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
 
+On Fri, 2010-07-30 at 12:53 -0600, Yang, Bo wrote:
+> Do you know when those patches (12 patches) will be pushed to upstream?
 
-Use the kernel DNS resolver to translate hostnames to IP addresses.  Create a
-new config option to choose between the legacy DNS resolver and the new
-resolver.
+Well, it looks like I lost the branch I was fixing all this up in
+somewhere.  I don't really have time to redo that work, so could you
+send the series correctly (that's the 8 OCR patches that don't
+individually compile as a single patch with a correct changelog plus the
+four others).
 
-Signed-off-by: Bryan Schumaker <bjschuma@netapp.com>
-Acked-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
-Fix for KEYS dependency
+Thanks,
 
- fs/nfs/Kconfig       |   16 ++++++++++++++++
- fs/nfs/dns_resolve.c |   24 ++++++++++++++++++++++++
- fs/nfs/dns_resolve.h |   12 ++++++++++++
- 3 files changed, 52 insertions(+), 0 deletions(-)
-
-diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-index cc1bb33..c5bbdca 100644
---- a/fs/nfs/Kconfig
-+++ b/fs/nfs/Kconfig
-@@ -100,3 +100,19 @@ config NFS_FSCACHE
- 	help
- 	  Say Y here if you want NFS data to be cached locally on disc through
- 	  the general filesystem cache manager
-+
-+config NFS_USE_LEGACY_DNS
-+	bool "Use the legacy NFS DNS resolver"
-+	depends on NFS_V4
-+	help
-+	  The kernel now provides a method for translating a host name into an
-+	  IP address.  Select Y here if you would rather use your own DNS
-+	  resolver script.
-+
-+	  If unsure, say N
-+
-+config NFS_USE_KERNEL_DNS
-+	bool
-+	depends on NFS_V4 && !NFS_USE_LEGACY_DNS
-+	select DNS_RESOLVER
-+	select KEYS
-+	default y
-diff --git a/fs/nfs/dns_resolve.c b/fs/nfs/dns_resolve.c
-index 76fd235..dba50a5 100644
---- a/fs/nfs/dns_resolve.c
-+++ b/fs/nfs/dns_resolve.c
-@@ -6,6 +6,29 @@
-  * Resolves DNS hostnames into valid ip addresses
-  */
-
-+#ifdef CONFIG_NFS_USE_KERNEL_DNS
-+
-+#include <linux/sunrpc/clnt.h>
-+#include <linux/dns_resolver.h>
-+
-+ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
-+		struct sockaddr *sa, size_t salen)
-+{
-+	ssize_t ret;
-+	char *ip_addr = NULL;
-+	int ip_len;
-+
-+	ip_len = dns_query(NULL, name, namelen, NULL, &ip_addr, NULL);
-+	if (ip_len > 0)
-+		ret = rpc_pton(ip_addr, ip_len, sa, salen);
-+	else
-+		ret = -ESRCH;
-+	kfree(ip_addr);
-+	return ret;
-+}
-+
-+#else
-+
- #include <linux/hash.h>
- #include <linux/string.h>
- #include <linux/kmod.h>
-@@ -346,3 +369,4 @@ void nfs_dns_resolver_destroy(void)
- 	nfs_cache_unregister(&nfs_dns_resolve);
- }
-
-+#endif
-diff --git a/fs/nfs/dns_resolve.h b/fs/nfs/dns_resolve.h
-index a3f0938..199bb55 100644
---- a/fs/nfs/dns_resolve.h
-+++ b/fs/nfs/dns_resolve.h
-@@ -6,8 +6,20 @@
-
- #define NFS_DNS_HOSTNAME_MAXLEN	(128)
-
-+
-+#ifdef CONFIG_NFS_USE_KERNEL_DNS
-+static inline int nfs_dns_resolver_init(void)
-+{
-+	return 0;
-+}
-+
-+static inline void nfs_dns_resolver_destroy(void)
-+{}
-+#else
- extern int nfs_dns_resolver_init(void);
- extern void nfs_dns_resolver_destroy(void);
-+#endif
-+
- extern ssize_t nfs_dns_resolve_name(char *name, size_t namelen,
- 		struct sockaddr *sa, size_t salen);
+James
 
 
-
-
-On 08/12/2010 03:46 AM, Stephen Rothwell wrote:
-> Hi Steve,
-> 
-> On Wed, 11 Aug 2010 23:04:36 -0500 Steve French <smfrench@gmail.com> wrote:
->>
->> Are you sure that this is a valid config file?  CONFIG_KEYS should be
->> set if CONFIG_DNS_RESOLVER is set?
-> 
-> It is a ppc64_defconfig.  It has:
-> 
-> # CONFIG_KEYS is not set
-> CONFIG_DNS_RESOLVER=y
-> 
-> CONFIG_NFS_USE_KERNEL_DNS just selects CONFIG_DNS_RESOLVER but there is
-> no dependency on CONFIG_KEYS (select does not care about the
-> dependencies of the selected config option).
-> 
->> key.h looks like it is included in all arch in this path
->>
->> net/dns_resolver/dns_key.c includes
->> include/keys/dns_resolver-type.h which includes
->> include/linux/key-type.h which includes
->> include/linux/key.h
->>
->> the line 258 "key_instantiate_and_link" error could occur if
->> "CONFIG_KEYS" is not set in .config
-> 
-> Which t isn't.
-> 
->> net/dns_resolver/Kconfig config DNS_RESOLVER "depends on NET && KEYS"
->> so ... CONFIG_KEYS should be set ....
-> 
-> See above.  You need CONFIG_NFS_USE_KERNEL_DNS to also depend on
-> CONFIG_KEYS ...
-> 
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
