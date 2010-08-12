@@ -1,69 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759865Ab0HLL0t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 07:26:49 -0400
-Received: from core.signal11.us ([64.251.29.136]:51521 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933455Ab0HLL0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 07:26:47 -0400
-Message-ID: <4C63DA75.303@signal11.us>
-Date: Thu, 12 Aug 2010 07:26:45 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
+	id S933564Ab0HLLaa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 07:30:30 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:39594 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933524Ab0HLLa3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 07:30:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=G5NMrBJro+2ljJztMq/RiiOgXHaXjLh3RZDe9OXGLzLFQIBkY5bOMxJe3+KoDbY8Vy
+         vddUEhoDTpLma8U2WJ3ghCt52PBMBchmf99dp9De3PU9ZedXdoaFW/qD5KcJ5SAkCtgi
+         7fIei6Bkp7To5CcNJZZx29QazYU9v2ekcAUAU=
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>, Heinz Diehl <htd@fritha.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being   called
-References: <20100810210941.GA7938@fritha.org> <20100810223215.GA1609@arch.tripp.de> <alpine.LNX.2.00.1008121108540.2702@pobox.suse.cz> <20100812091659.GA1591@arch.tripp.de> <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Aug 12 07:26:47 2010
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4c63da77263541038685897
+In-Reply-To: <1281609945-2861-1-git-send-email-dfeng@redhat.com>
+References: <1281609945-2861-1-git-send-email-dfeng@redhat.com>
+Date: Thu, 12 Aug 2010 07:30:28 -0400
+Message-ID: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com>
+Subject: Re: [PATCH] x86: fpu xstate fix memory poison overwritten
+From: Brian Gerst <brgerst@gmail.com>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Avi Kivity <avi@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2010 07:18 AM, Jiri Kosina wrote:
-> On Thu, 12 Aug 2010, Markus Trippelsdorf wrote:
+On Thu, Aug 12, 2010 at 6:45 AM, Xiaotian Feng <dfeng@redhat.com> wrote:
+> fpu.state is allocated from task_xstate_cachep, the size of
+> task_xstate_cachep is xstate_size. But fpu.state is an union
+> struct, which size is bigger than xstate_size if cpu_has_xsave,
+> so if we want to visit fpu.state->xsave, the memory we allocated
+> for fpu.state is not enough.
 >
->    
->> On Thu, Aug 12, 2010 at 11:11:50AM +0200, Jiri Kosina wrote:
->>      
->>> Guys, could you please send me your .config with which you are
->>> experiencing the problem, so that I can try to reproduce it with it?
->>>        
->> Attached.
->>      
-> So I had to add support for HW of mine (SATA_VIA, PATA_VIA, disabled the
-> radeon firmware stuff, and, most importantly, enabled UHCI, which is what
-> is on machine I am using now for testing), and disconnect-connect cycle
-> works nicely:
+> This caused many poison/redzone overwritten alerts on task_xstate while using kvm.
 >
-> usb 3-2: USB disconnect, address 3
-> usb 3-2: new low speed USB device using uhci_hcd and address 4
-> input: mouse USB mouse with wheel as /devices/pci0000:00/0000:00:10.1/usb3/3-2/3-2:1.0/input/input6
-> generic-usb 0003:05B8:3091.0004: input,hidraw0: USB HID v1.10 Mouse [mouse USB mouse with wheel] on usb-0000:00:10.1-2/input0
-> input: mouse USB mouse with wheel as /devices/pci0000:00/0000:00:10.1/usb3/3-2/3-2:1.1/input/input7
-> generic-usb 0003:05B8:3091.0005: input,hidraw1: USB HID v1.10 Keyboard [mouse USB mouse with wheel] on usb-0000:00:10.1-2/input1
+> [ 1899.399373] =============================================================================
+> [ 1899.399377] BUG task_xstate: Poison overwritten
+> [ 1899.399378] -----------------------------------------------------------------------------
+> [ 1899.399379]
+> [ 1899.399382] INFO: 0xffff88020aca2100-0xffff88020aca217f. First byte 0x0 instead of 0x6b
+> [ 1899.399385] INFO: Slab 0xffffea000725c300 objects=23 used=12 fp=0xffff88020aca2100 flags=0x200000000040c1
+> [ 1899.399387] INFO: Object 0xffff88020aca2100 @offset=8448 fp=0xffff88020aca23c0
 >
-> so still no BUG from kobject refcounting, and the hidraw numbers are the
-> same. The major difference seems to be that I am using UHCI and you have
-> your HID devices connected through OHCI, is that correct?
+> With this patch applied, the poison overwritten alert disappeared.
 >
-> Alan, does the system you are seeing this bug on also have HID devices
-> connected through OHCI?
+> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Brian Gerst <brgerst@gmail.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  arch/x86/kernel/process.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 >
->    
-Hi Jiri,
+> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+> index d401f1d..609bee5 100644
+> --- a/arch/x86/kernel/process.c
+> +++ b/arch/x86/kernel/process.c
+> @@ -59,7 +59,7 @@ void free_thread_info(struct thread_info *ti)
+>  void arch_task_cache_init(void)
+>  {
+>         task_xstate_cachep =
+> -               kmem_cache_create("task_xstate", xstate_size,
+> +               kmem_cache_create("task_xstate", sizeof(union thread_xstate),
+>                                  __alignof__(union thread_xstate),
+>                                  SLAB_PANIC | SLAB_NOTRACK, NULL);
+>  }
 
-Yes, I'm OHCI as well.
+This isn't the right solution.  The point of having a variable
+xstate_size is to only allocate the memory that is needed for the
+capabilities of the cpu.  The real bug is that some code is trying to
+use xsave_struct when it either shouldn't be (because the cpu doesn't
+support xsave), or because xstate_size < sizeof(xsave_struct).
 
-Alan.
+Looking at xstate_enable_boot_cpu(), the xstate_size is set from
+cpuid.  It's possible that it is smaller than sizeof(xsave_strruct).
+Maybe a sanity check should be added there?
 
-
+--
+Brian Gerst
