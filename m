@@ -1,1219 +1,1448 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760560Ab0HLU3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 16:29:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62535 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754718Ab0HLU3N (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 16:29:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer;
-        b=w8HLLQQ3up8uoDDvPu9oA8Y1bra+cXJ8LaSD4JgiZjDbCin9jd3PbAkM1hbiMdI6pA
-         4KHollbGTQc5hjk6n0uYEuVUKM2N3JqQ3CQHUOARMI1BDg+TrzT6hZPBZIrbhBdlKp7I
-         0q5jZUkuxo7JBSzfbObz58vd/g4QpoqUo3wtw=
-Subject: [REGRESSION 2.6.35+] Pulseaudio fails to work with sound device
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: alsa-devel <alsa-devel@alsa-project.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary="=-ji7ueWH2ax/OwdZ8fgwt"
-Date: Thu, 12 Aug 2010 23:29:05 +0300
-Message-ID: <1281644945.3893.18.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S933987Ab0HLUdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:33:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36980 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754740Ab0HLUds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 16:33:48 -0400
+Date: Thu, 12 Aug 2010 20:32:48 GMT
+Message-Id: <201008122032.o7CKWmUV010754@hera.kernel.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/uv for 2.6.36
+Cc: Cliff Wickman <cpw@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, gregkh@suse.de
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 Aug 2010 20:32:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-ji7ueWH2ax/OwdZ8fgwt
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-Hi,
-
-Trying to migrate to git master of kernel tree I see that my sound
-stopped working.
-Initially I though a problem in device configuration/detection in kernel
-driver is the issue, but its not. In just that pulseaudio refuses to
-work with alsa device.
-Since today everything is routed through pulseaudio, even alsa it looks
-initially as if sound doesn't work at all.
-If I were pulseaudio hater, I would think of that as a feature, but I am
-not.
-
-
-I attach verbose pulseaudio log.
-I don't see anything very interesting there.
-Kernel seems to reject the access because device is busy, but I know
-that it isn't (for example I can unload snd_hda_intel freely, fuser
-shows nothing on /dev/snd/* ...)
-
-vanilla 2.6.35 works fine.
-
-100% reproducible.
-
-Since I know you will ask me for alsa-info.sh output I attach it.
-
-(for long time I use power_save=0 parameter on snd_hda_intel.
-I can just disable that in kernel config, but I keep it to maybe fix
-issues I had with this (mostly pa crashes, which otherwise doesn't crash
-at all) 
-
-I should probably do a bisection, but I am very short on time lately.
-
-Best regards,
-Maxim Levitsky
-
---=-ji7ueWH2ax/OwdZ8fgwt
-Content-Disposition: attachment; filename="alsa-info.txt"
-Content-Type: text/plain; name="alsa-info.txt"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-upload=true&script=true&cardinfo=
-!!################################
-!!ALSA Information Script v 0.4.59
-!!################################
-
-!!Script ran on: Thu Aug 12 20:23:56 UTC 2010
-
-
-!!Linux Distribution
-!!------------------
-
-Ubuntu 10.04 LTS \n \l DISTRIB_ID=Ubuntu DISTRIB_DESCRIPTION="Ubuntu 10.04 LTS"
-
-
-!!DMI Information
-!!---------------
-
-Manufacturer:      Acer      
-Product Name:      Aspire 5720     
-
-
-!!Kernel Information
-!!------------------
-
-Kernel release:    2.6.35-rc0+
-Operating System:  GNU/Linux
-Architecture:      x86_64
-Processor:         unknown
-SMP Enabled:       Yes
-
-
-!!ALSA Version
-!!------------
-
-Driver version:     1.0.23
-Library version:    1.0.22
-Utilities version:  1.0.22
-
-
-!!Loaded ALSA modules
-!!-------------------
-
-
-
-!!Sound Servers on this system
-!!----------------------------
-
-Pulseaudio:
-      Installed - Yes (/usr/bin/pulseaudio)
-      Running - No
-
-ESound Daemon:
-      Installed - Yes (/usr/bin/esd)
-      Running - No
-
-
-!!Soundcards recognised by ALSA
-!!-----------------------------
-
- 0 [Intel          ]: HDA-Intel - HDA Intel
-                      HDA Intel at 0x9b300000 irq 46
-
-
-!!PCI Soundcards installed in the system
-!!--------------------------------------
-
-00:1b.0 Audio device: Intel Corporation 82801H (ICH8 Family) HD Audio Controller (rev 03)
-
-
-!!Advanced information - PCI Vendor/Device/Susbsystem ID's
-!!--------------------------------------------------------
-
-00:1b.0 0403: 8086:284b (rev 03)
-	Subsystem: 1025:011e
-
-
-!!Modprobe options (Sound related)
-!!--------------------------------
-
-snd-atiixp-modem: index=-2
-snd-intel8x0m: index=-2
-snd-via82xx-modem: index=-2
-snd-usb-audio: index=-2
-snd-usb-us122l: index=-2
-snd-usb-usx2y: index=-2
-snd-usb-caiaq: index=-2
-snd-cmipci: mpu_port=0x330 fm_port=0x388
-snd-pcsp: index=-2
-snd_hda_intel: power_save=0
-
-
-!!Loaded sound module options
-!!--------------------------
-
-
-!!HDA-Intel Codec information
-!!---------------------------
---startcollapse--
-
-Codec: Realtek ALC268
-Address: 0
-AFG Function Id: 0x1 (unsol 1)
-Vendor Id: 0x10ec0268
-Subsystem Id: 0x1025011e
-Revision Id: 0x100003
-No Modem Function Group found
-Default PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Default Amp-In caps: N/A
-Default Amp-Out caps: N/A
-GPIO: io=4, o=0, i=0, unsolicited=1, wake=0
-  IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-  IO[1]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-  IO[2]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-  IO[3]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
-Node 0x02 [Audio Output] wcaps 0x1d: Stereo Amp-Out
-  Device: name="ALC268 Analog", type="Audio", device=0
-  Amp-Out caps: ofs=0x40, nsteps=0x40, stepsize=0x03, mute=0
-  Amp-Out vals:  [0x2b 0x2b]
-  Converter: stream=0, channel=0
-  PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Node 0x03 [Audio Output] wcaps 0x1d: Stereo Amp-Out
-  Amp-Out caps: ofs=0x40, nsteps=0x40, stepsize=0x03, mute=0
-  Amp-Out vals:  [0x2b 0x2b]
-  Converter: stream=0, channel=0
-  PCM:
-    rates [0x560]: 44100 48000 96000 192000
-    bits [0xe]: 16 20 24
-    formats [0x1]: PCM
-Node 0x04 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x05 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x06 [Audio Output] wcaps 0x211: Stereo Digital
-  Converter: stream=0, channel=0
-  Digital:
-  Digital category: 0x0
-  PCM:
-    rates [0x5e0]: 44100 48000 88200 96000 192000
-    bits [0x1e]: 16 20 24 32
-    formats [0x1]: PCM
-Node 0x07 [Audio Input] wcaps 0x100111: Stereo
-  Converter: stream=0, channel=0
-  SDI-Select: 0
-  PCM:
-    rates [0x160]: 44100 48000 96000
-    bits [0x6]: 16 20
-    formats [0x1]: PCM
-  Connection: 1
-     0x24
-Node 0x08 [Audio Input] wcaps 0x100111: Stereo
-  Device: name="ALC268 Analog", type="Audio", device=0
-  Converter: stream=0, channel=0
-  SDI-Select: 0
-  PCM:
-    rates [0x160]: 44100 48000 96000
-    bits [0x6]: 16 20
-    formats [0x1]: PCM
-  Connection: 1
-     0x23
-Node 0x09 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0a [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0b [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0c [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0d [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x0e [Audio Mixer] wcaps 0x20010a: Mono Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x00]
-  Connection: 1
-     0x02
-Node 0x0f [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x00 0x00] [0x80 0x80]
-  Connection: 2
-     0x02 0x1d
-Node 0x10 [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
-  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-In vals:  [0x00 0x00] [0x80 0x80] [0x80 0x80]
-  Connection: 3
-     0x03 0x1d 0x02
-Node 0x11 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x12 [Pin Complex] wcaps 0x400001: Stereo
-  Pincap 0x00000020: IN
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-Node 0x13 [Pin Complex] wcaps 0x400001: Stereo
-  Pincap 0x00000020: IN
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-Node 0x14 [Pin Complex] wcaps 0x40018d: Stereo Amp-Out
-  Control: name="Master Playback Switch", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x00 0x00]
-  Pincap 0x0001003c: IN OUT HP EAPD Detect
-  EAPD 0x2: EAPD
-  Pin Default 0x0221101f: [Jack] HP Out at Ext Front
-    Conn = 1/8, Color = Black
-    DefAssociation = 0x1, Sequence = 0xf
-  Pin-ctls: 0xc0: OUT HP
-  Unsolicited: tag=04, enabled=1
-  Connection: 1
-     0x0f
-Node 0x15 [Pin Complex] wcaps 0x40018d: Stereo Amp-Out
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x0001003c: IN OUT HP EAPD Detect
-  EAPD 0x2: EAPD
-  Pin Default 0x99130110: [Fixed] Speaker at Int ATAPI
-    Conn = ATAPI, Color = Unknown
-    DefAssociation = 0x1, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Connection: 1
-     0x10
-Node 0x16 [Pin Complex] wcaps 0x40010c: Mono Amp-Out
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80]
-  Pincap 0x00000010: OUT
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Connection: 1
-     0x0e
-Node 0x17 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x18 [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
-  Control: name="Mic Boost", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Amp-In caps: ofs=0x00, nsteps=0x02, stepsize=0x4f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x00003734: IN OUT Detect
-    Vref caps: HIZ 50 GRD 80 100
-  Pin Default 0x02a19840: [Jack] Mic at Ext Front
-    Conn = 1/8, Color = Pink
-    DefAssociation = 0x4, Sequence = 0x0
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=00, enabled=0
-  Connection: 1
-     0x02
-Node 0x19 [Pin Complex] wcaps 0x40008b: Stereo Amp-In
-  Control: name="Internal Mic Boost", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Amp-In caps: ofs=0x00, nsteps=0x02, stepsize=0x4f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Pincap 0x00003724: IN Detect
-    Vref caps: HIZ 50 GRD 80 100
-  Pin Default 0x99a30941: [Fixed] Mic at Int ATAPI
-    Conn = ATAPI, Color = Unknown
-    DefAssociation = 0x4, Sequence = 0x1
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=00, enabled=0
-Node 0x1a [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
-  Control: name="Line In Boost", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Amp-In caps: ofs=0x00, nsteps=0x02, stepsize=0x4f, mute=0
-  Amp-In vals:  [0x00 0x00]
-  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
-  Amp-Out vals:  [0x80 0x80]
-  Pincap 0x00003734: IN OUT Detect
-    Vref caps: HIZ 50 GRD 80 100
-  Pin Default 0x0281304e: [Jack] Line In at Ext Front
-    Conn = 1/8, Color = Blue
-    DefAssociation = 0x4, Sequence = 0xe
-  Pin-ctls: 0x24: IN VREF_80
-  Unsolicited: tag=00, enabled=0
-  Connection: 1
-     0x02
-Node 0x1b [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x1c [Pin Complex] wcaps 0x400001: Stereo
-  Pincap 0x00000020: IN
-  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
-    Conn = 1/8, Color = Black
-    DefAssociation = 0xf, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-Node 0x1d [Pin Complex] wcaps 0x400000: Mono
-  Control: name="Beep Playback Volume", index=0, device=0
-    ControlAmp: chs=3, dir=In, idx=0, ofs=0
-  Pincap 0x00000020: IN
-  Pin Default 0x4017952d: [N/A] Speaker at Ext N/A
-    Conn = Analog, Color = Pink
-    DefAssociation = 0x2, Sequence = 0xd
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x20: IN
-Node 0x1e [Pin Complex] wcaps 0x400380: Mono Digital
-  Pincap 0x00000010: OUT
-  Pin Default 0x02451130: [Jack] SPDIF Out at Ext Front
-    Conn = Optical, Color = Black
-    DefAssociation = 0x3, Sequence = 0x0
-    Misc = NO_PRESENCE
-  Pin-ctls: 0x40: OUT
-  Unsolicited: tag=00, enabled=0
-  Connection: 1
-     0x06
-Node 0x1f [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x20 [Vendor Defined Widget] wcaps 0xf00040: Mono
-  Processing caps: benign=0, ncoeff=10
-Node 0x21 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x22 [Vendor Defined Widget] wcaps 0xf00000: Mono
-Node 0x23 [Audio Selector] wcaps 0x30010d: Stereo Amp-Out
-  Control: name="Capture Volume", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Control: name="Capture Switch", index=0, device=0
-    ControlAmp: chs=3, dir=Out, idx=0, ofs=0
-  Control: name="Input Source", index=0, device=0
-  Amp-Out caps: ofs=0x0b, nsteps=0x1f, stepsize=0x05, mute=1
-  Amp-Out vals:  [0x19 0x19]
-  Connection: 7
-     0x18* 0x19 0x1a 0x1c 0x14 0x15 0x12
-Node 0x24 [Audio Selector] wcaps 0x30010d: Stereo Amp-Out
-  Amp-Out caps: ofs=0x0b, nsteps=0x1f, stepsize=0x05, mute=1
-  Amp-Out vals:  [0x00 0x00]
-  Connection: 7
-     0x18* 0x19 0x1a 0x1c 0x14 0x15 0x13
-Codec: Conexant ID 2c06
-Address: 1
-MFG Function Id: 0x2 (unsol 1)
-Vendor Id: 0x14f12c06
-Subsystem Id: 0x1025011e
-Revision Id: 0x100000
-Modem Function Group: 0x2
---endcollapse--
-
-
-!!ALSA Device nodes
-!!-----------------
-
-crw-rw----+ 1 root audio 116, 8 Aug 12 22:59 /dev/snd/controlC0
-crw-rw----+ 1 root audio 116, 7 Aug 12 22:59 /dev/snd/hwC0D0
-crw-rw----+ 1 root audio 116, 6 Aug 12 22:59 /dev/snd/hwC0D1
-crw-rw----+ 1 root audio 116, 5 Aug 12 22:59 /dev/snd/pcmC0D0c
-crw-rw----+ 1 root audio 116, 4 Aug 12 22:59 /dev/snd/pcmC0D0p
-crw-rw----+ 1 root audio 116, 3 Aug 12 22:28 /dev/snd/seq
-crw-rw----+ 1 root audio 116, 2 Aug 12 22:28 /dev/snd/timer
-
-/dev/snd/by-path:
-total 0
-drwxr-xr-x 2 root root  60 Aug 12 22:59 .
-drwxr-xr-x 3 root root 200 Aug 12 22:59 ..
-lrwxrwxrwx 1 root root  12 Aug 12 22:59 pci-0000:00:1b.0 -> ../controlC0
-
-
-!!Aplay/Arecord output
-!!------------
-
-APLAY
-
-**** List of PLAYBACK Hardware Devices ****
-card 0: Intel [HDA Intel], device 0: ALC268 Analog [ALC268 Analog]
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-
-ARECORD
-
-**** List of CAPTURE Hardware Devices ****
-card 0: Intel [HDA Intel], device 0: ALC268 Analog [ALC268 Analog]
-  Subdevices: 1/1
-  Subdevice #0: subdevice #0
-
-!!Amixer output
-!!-------------
-
-!!-------Mixer controls for card 0 [Intel]
-
-Card hw:0 'Intel'/'HDA Intel at 0x9b300000 irq 46'
-  Mixer name	: 'Realtek ALC268'
-  Components	: 'HDA:10ec0268,1025011e,00100003 HDA:14f12c06,1025011e,00100000'
-  Controls      : 12
-  Simple ctrls  : 9
-Simple mixer control 'Master',0
-  Capabilities: pvolume pswitch penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 64
-  Mono:
-  Front Left: Playback 43 [67%] [-21.00dB] [on]
-  Front Right: Playback 43 [67%] [-21.00dB] [on]
-Simple mixer control 'PCM',0
-  Capabilities: pvolume penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 255
-  Mono:
-  Front Left: Playback 251 [98%] [0.80dB]
-  Front Right: Playback 251 [98%] [0.80dB]
-Simple mixer control 'Line In Boost',0
-  Capabilities: volume penum
-  Playback channels: Front Left - Front Right
-  Capture channels: Front Left - Front Right
-  Limits: 0 - 2
-  Front Left: 0 [0%]
-  Front Right: 0 [0%]
-Simple mixer control 'Mic Boost',0
-  Capabilities: volume penum
-  Playback channels: Front Left - Front Right
-  Capture channels: Front Left - Front Right
-  Limits: 0 - 2
-  Front Left: 0 [0%]
-  Front Right: 0 [0%]
-Simple mixer control 'Beep',0
-  Capabilities: pvolume pswitch penum
-  Playback channels: Front Left - Front Right
-  Limits: Playback 0 - 12
-  Mono:
-  Front Left: Playback 0 [0%] [-24.00dB] [off]
-  Front Right: Playback 0 [0%] [-24.00dB] [off]
-Simple mixer control 'Capture',0
-  Capabilities: cvolume cswitch penum
-  Capture channels: Front Left - Front Right
-  Limits: Capture 0 - 31
-  Front Left: Capture 25 [81%] [21.00dB] [on]
-  Front Right: Capture 25 [81%] [21.00dB] [on]
-Simple mixer control 'Digital',0
-  Capabilities: cvolume penum
-  Capture channels: Front Left - Front Right
-  Limits: Capture 0 - 120
-  Front Left: Capture 60 [50%] [0.00dB]
-  Front Right: Capture 60 [50%] [0.00dB]
-Simple mixer control 'Input Source',0
-  Capabilities: cenum
-  Items: 'Mic' 'Internal Mic' 'Line'
-  Item0: 'Mic'
-Simple mixer control 'Internal Mic Boost',0
-  Capabilities: volume penum
-  Playback channels: Front Left - Front Right
-  Capture channels: Front Left - Front Right
-  Limits: 0 - 2
-  Front Left: 0 [0%]
-  Front Right: 0 [0%]
-
-
-!!Alsactl output
-!!-------------
-
---startcollapse--
-state.Intel {
-	control.1 {
-		comment.access 'read write'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 64'
-		comment.dbmin -6400
-		comment.dbmax 0
-		iface MIXER
-		name 'Master Playback Volume'
-		value.0 43
-		value.1 43
-	}
-	control.2 {
-		comment.access 'read write'
-		comment.type BOOLEAN
-		comment.count 2
-		iface MIXER
-		name 'Master Playback Switch'
-		value.0 true
-		value.1 true
-	}
-	control.3 {
-		comment.access 'read write'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 2'
-		comment.dbmin 0
-		comment.dbmax 4000
-		iface MIXER
-		name 'Mic Boost'
-		value.0 0
-		value.1 0
-	}
-	control.4 {
-		comment.access 'read write'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 2'
-		comment.dbmin 0
-		comment.dbmax 4000
-		iface MIXER
-		name 'Internal Mic Boost'
-		value.0 0
-		value.1 0
-	}
-	control.5 {
-		comment.access 'read write'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 2'
-		comment.dbmin 0
-		comment.dbmax 4000
-		iface MIXER
-		name 'Line In Boost'
-		value.0 0
-		value.1 0
-	}
-	control.6 {
-		comment.access 'read write'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 31'
-		comment.dbmin -1650
-		comment.dbmax 3000
-		iface MIXER
-		name 'Capture Volume'
-		value.0 25
-		value.1 25
-	}
-	control.7 {
-		comment.access 'read write'
-		comment.type BOOLEAN
-		comment.count 2
-		iface MIXER
-		name 'Capture Switch'
-		value.0 true
-		value.1 true
-	}
-	control.8 {
-		comment.access 'read write'
-		comment.type ENUMERATED
-		comment.count 1
-		comment.item.0 Mic
-		comment.item.1 'Internal Mic'
-		comment.item.2 Line
-		iface MIXER
-		name 'Input Source'
-		value Mic
-	}
-	control.9 {
-		comment.access 'read write'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 12'
-		comment.dbmin -2400
-		comment.dbmax 0
-		iface MIXER
-		name 'Beep Playback Volume'
-		value.0 0
-		value.1 0
-	}
-	control.10 {
-		comment.access 'read write'
-		comment.type BOOLEAN
-		comment.count 2
-		iface MIXER
-		name 'Beep Playback Switch'
-		value.0 false
-		value.1 false
-	}
-	control.11 {
-		comment.access 'read write user'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 255'
-		comment.tlv '0000000100000008ffffec1400000014'
-		comment.dbmin -5100
-		comment.dbmax 0
-		iface MIXER
-		name 'PCM Playback Volume'
-		value.0 251
-		value.1 251
-	}
-	control.12 {
-		comment.access 'read write user'
-		comment.type INTEGER
-		comment.count 2
-		comment.range '0 - 120'
-		comment.tlv '0000000100000008fffff44800000032'
-		comment.dbmin -3000
-		comment.dbmax 3000
-		iface MIXER
-		name 'Digital Capture Volume'
-		value.0 60
-		value.1 60
-	}
-}
---endcollapse--
-
-
-!!All Loaded Modules
-!!------------------
-
-Module
-snd_hda_intel
-mmc_block
-sm_ftl
-mtd_blkdevs
-mtdchar
-nls_iso8859_1
-nls_cp437
-vfat
-fat
-mspro_block
-nvidia
-af_packet
-nfsd
-exportfs
-nfs
-lockd
-nfs_acl
-auth_rpcgss
-sunrpc
-iwl3945
-snd_hda_codec_realtek
-iwlcore
-uvcvideo
-videodev
-mac80211
-v4l2_compat_ioctl32
-ir_lirc_codec
-lirc_dev
-ir_sony_decoder
-ir_jvc_decoder
-usb_storage
-snd_hda_codec
-usb_libusual
-uhci_hcd
-joydev
-ehci_hcd
-cpufreq_powersave
-tg3
-ir_rc6_decoder
-snd_hwdep
-sdhci_pci
-ir_rc5_decoder
-cpufreq_conservative
-r852
-snd_pcm
-cpufreq_userspace
-acpi_cpufreq
-ir_nec_decoder
-mperf
-sm_common
-sdhci
-iTCO_wdt
-nand
-nand_ids
-ac
-coretemp
-battery
-mmc_core
-usbcore
-cfg80211
-r592
-nand_ecc
-ene_ir
-ir_core
-memstick
-mtd
-psmouse
-snd_page_alloc
-libphy
-sg
-serio_raw
-evdev
-video
-
-
-!!Sysfs Files
-!!-----------
-
-/sys/class/sound/hwC0D0/init_pin_configs:
-0x12 0x411111f0
-0x13 0x411111f0
-0x14 0x0221101f
-0x15 0x99130110
-0x16 0x411111f0
-0x18 0x02a19840
-0x19 0x99a30941
-0x1a 0x0281304e
-0x1c 0x411111f0
-0x1d 0x4017952d
-0x1e 0x02451130
-
-/sys/class/sound/hwC0D0/driver_pin_configs:
-
-/sys/class/sound/hwC0D0/user_pin_configs:
-
-/sys/class/sound/hwC0D0/init_verbs:
-
-/sys/class/sound/hwC0D1/init_pin_configs:
-0x73 0x016a10f0
-
-/sys/class/sound/hwC0D1/driver_pin_configs:
-
-/sys/class/sound/hwC0D1/user_pin_configs:
-
-/sys/class/sound/hwC0D1/init_verbs:
-
-
-!!ALSA/HDA dmesg
-!!------------------
-
-[    3.017267] cpuidle: using governor menu
-[    3.020411] ALSA device list:
-[    3.020500]   No soundcards found.
-[    3.020619] Netfilter messages via NETLINK v0.30.
---
-[   13.588780] USB Mass Storage support registered.
-[   13.622855] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-[   13.623047]   alloc irq_desc for 46 on node -1
-[   13.623070]   alloc kstat_irqs on node -1
-[   13.623115] HDA Intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[   13.623384] HDA Intel 0000:00:1b.0: setting latency timer to 64
-[   13.650204] usb 2-4: new high speed USB device using ehci_hcd and address 2
---
-[   14.224462] USB Video Class driver (v0.1.0)
-[   14.491192] hda-codec: No codec parser is available
-[   15.093460] iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network Connection driver for Linux, in-tree:ds
---
-[ 1355.138270] sd 0:0:0:0: [sda] Stopping disk
-[ 1355.290220] HDA Intel 0000:00:1b.0: PCI INT A disabled
-[ 1355.330561] tg3 0000:05:00.0: PME# enabled
---
-[ 1356.268476] ehci_hcd 0000:00:1a.7: restoring config space at offset 0x1 (was 0x2900006, writing 0x2900002)
-[ 1356.268535] HDA Intel 0000:00:1b.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
-[ 1356.268582] HDA Intel 0000:00:1b.0: restoring config space at offset 0x1 (was 0x100006, writing 0x100002)
-[ 1356.268641] pcieport 0000:00:1c.0: restoring config space at offset 0xf (was 0x100, writing 0x10b)
---
-[ 1356.298487] ehci_hcd 0000:00:1a.7: setting latency timer to 64
-[ 1356.299308] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-[ 1356.299337] HDA Intel 0000:00:1b.0: setting latency timer to 64
-[ 1356.299451] HDA Intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[ 1356.299674] uhci_hcd 0000:00:1d.0: PCI INT A -> GSI 23 (level, low) -> IRQ 23
---
-[ 1657.891293] lost page write due to I/O error on mmcblk0p1
-[ 1879.761112] HDA Intel 0000:00:1b.0: PCI INT A disabled
-[ 1882.802860] HDA Intel 0000:00:1b.0: PCI INT A -> GSI 22 (level, low) -> IRQ 22
-[ 1882.803031] HDA Intel 0000:00:1b.0: irq 46 for MSI/MSI-X
-[ 1882.803151] HDA Intel 0000:00:1b.0: setting latency timer to 64
-[ 1882.927415] hda-codec: No codec parser is available
-
-
-
---=-ji7ueWH2ax/OwdZ8fgwt
-Content-Disposition: attachment; filename="pa_log.txt"
-Content-Type: text/plain; name="pa_log.txt"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
-I: main.c: setrlimit(RLIMIT_NICE, (31, 31)) failed: Operation not permitted
-I: main.c: setrlimit(RLIMIT_RTPRIO, (9, 9)) failed: Operation not permitted
-D: core-rtclock.c: Timer slack is set to 50 us.
-D: core-util.c: RealtimeKit worked.
-I: core-util.c: Successfully gained nice level -11.
-I: main.c: This is PulseAudio 0.9.21-63-gd3efa-dirty
-D: main.c: Compilation host: x86_64-pc-linux-gnu
-D: main.c: Compilation CFLAGS: -g -O2 -g -Wall -O3 -Wall -W -Wextra -pipe -Wno-long-long -Winline -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing=2 -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option
-D: main.c: Running on host: Linux x86_64 2.6.35-rc0+ #108 SMP PREEMPT Thu Aug 12 21:47:13 IDT 2010
-D: main.c: Found 2 CPUs.
-I: main.c: Page size is 4096 bytes
-D: main.c: Compiled with Valgrind support: no
-D: main.c: Running in valgrind mode: no
-D: main.c: Running in VM: no
-D: main.c: Optimized build: yes
-D: main.c: All asserts enabled.
-I: main.c: Machine ID is c912b339f8596738c1321588492f9d59.
-I: main.c: Session ID is c912b339f8596738c1321588492f9d59-1281641353.339146-270730670.
-I: main.c: Using runtime directory /home/maxim/.pulse/c912b339f8596738c1321588492f9d59-runtime.
-I: main.c: Using state directory /home/maxim/.pulse.
-I: main.c: Using modules directory /usr/lib/pulse-0.9.21/modules.
-I: main.c: Running in system mode: no
-I: main.c: Fresh high-resolution timers available! Bon appetit!
-I: cpu-x86.c: CPU flags: CMOV MMX SSE SSE2 SSE3 SSSE3 
-I: svolume_mmx.c: Initialising MMX optimized functions.
-I: remap_mmx.c: Initialising MMX optimized remappers.
-I: svolume_sse.c: Initialising SSE2 optimized functions.
-I: remap_sse.c: Initialising SSE2 optimized remappers.
-I: sconv_sse.c: Initialising SSE2 optimized conversions.
-D: memblock.c: Using shared memory pool with 1024 slots of size 64.0 KiB each, total size is 64.0 MiB, maximum usable slot size is 65472
-D: database-tdb.c: Opened TDB database '/home/maxim/.pulse/c912b339f8596738c1321588492f9d59-device-volumes.tdb'
-I: module-device-restore.c: Sucessfully opened database file '/home/maxim/.pulse/c912b339f8596738c1321588492f9d59-device-volumes'.
-I: module.c: Loaded "module-device-restore" (index: #0; argument: "").
-D: database-tdb.c: Opened TDB database '/home/maxim/.pulse/c912b339f8596738c1321588492f9d59-stream-volumes.tdb'
-I: module-stream-restore.c: Sucessfully opened database file '/home/maxim/.pulse/c912b339f8596738c1321588492f9d59-stream-volumes'.
-I: module.c: Loaded "module-stream-restore" (index: #1; argument: "").
-D: database-tdb.c: Opened TDB database '/home/maxim/.pulse/c912b339f8596738c1321588492f9d59-card-database.tdb'
-I: module-card-restore.c: Sucessfully opened database file '/home/maxim/.pulse/c912b339f8596738c1321588492f9d59-card-database'.
-I: module.c: Loaded "module-card-restore" (index: #2; argument: "").
-I: module.c: Loaded "module-augment-properties" (index: #3; argument: "").
-D: cli-command.c: Checking for existance of '/usr/lib/pulse-0.9.21/modules/module-udev-detect.so': success
-D: module-udev-detect.c: /dev/snd/controlC0 is accessible: yes
-D: module-udev-detect.c: /devices/pci0000:00/0000:00:1b.0/sound/card0 is busy: no
-D: module-udev-detect.c: Loading module-alsa-card with arguments 'device_id="0" name="pci-0000_00_1b.0" card_name="alsa_card.pci-0000_00_1b.0" tsched=yes ignore_dB=no card_properties="module-udev-detect.discovered=1"'
-D: dbus-util.c: Successfully connected to D-Bus session bus 1c9ee6e0483f8c34bc9e28e64c644b8c as :1.244
-D: reserve-wrap.c: Successfully acquired reservation lock on device 'Audio0'
-D: alsa-mixer.c: Looking at profile output:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Mono (analog-mono)
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-D: alsa-util.c: Managed to open hw:0
-D: alsa-util.c: snd_pcm_hw_params_set_channels(1) failed: Invalid argument
-D: alsa-util.c: Trying hw:0 without SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-mono+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Mono (analog-mono)
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-mono+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Mono (analog-mono)
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-mono+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Mono (analog-mono)
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-mono+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Mono (analog-mono)
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Stereo (analog-stereo)
-D: alsa-util.c: Trying front:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device front:0: Device or resource busy
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-stereo+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Stereo (analog-stereo)
-D: alsa-util.c: Trying front:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device front:0: Device or resource busy
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-stereo+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Stereo (analog-stereo)
-D: alsa-util.c: Trying front:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device front:0: Device or resource busy
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-stereo+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Stereo (analog-stereo)
-D: alsa-util.c: Trying front:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device front:0: Device or resource busy
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-stereo+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Stereo (analog-stereo)
-D: alsa-util.c: Trying front:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device front:0: Device or resource busy
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.0 (analog-surround-40)
-D: alsa-util.c: Trying surround40:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround40:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-40+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.0 (analog-surround-40)
-D: alsa-util.c: Trying surround40:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround40:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-40+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.0 (analog-surround-40)
-D: alsa-util.c: Trying surround40:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround40:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-40+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.0 (analog-surround-40)
-D: alsa-util.c: Trying surround40:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround40:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-40+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.0 (analog-surround-40)
-D: alsa-util.c: Trying surround40:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround40:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-41
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.1 (analog-surround-41)
-D: alsa-util.c: Trying surround41:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround41:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-41+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.1 (analog-surround-41)
-D: alsa-util.c: Trying surround41:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround41:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-41+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.1 (analog-surround-41)
-D: alsa-util.c: Trying surround41:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround41:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-41+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.1 (analog-surround-41)
-D: alsa-util.c: Trying surround41:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround41:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-41+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Surround 4.1 (analog-surround-41)
-D: alsa-util.c: Trying surround41:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround41:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-50
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.0 (analog-surround-50)
-D: alsa-util.c: Trying surround50:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround50:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-50+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.0 (analog-surround-50)
-D: alsa-util.c: Trying surround50:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround50:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-50+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.0 (analog-surround-50)
-D: alsa-util.c: Trying surround50:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround50:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-50+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.0 (analog-surround-50)
-D: alsa-util.c: Trying surround50:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround50:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-50+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.0 (analog-surround-50)
-D: alsa-util.c: Trying surround50:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround50:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-51
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.1 (analog-surround-51)
-D: alsa-util.c: Trying surround51:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround51:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-51+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.1 (analog-surround-51)
-D: alsa-util.c: Trying surround51:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround51:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-51+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.1 (analog-surround-51)
-D: alsa-util.c: Trying surround51:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround51:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-51+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.1 (analog-surround-51)
-D: alsa-util.c: Trying surround51:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround51:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-51+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Surround 5.1 (analog-surround-51)
-D: alsa-util.c: Trying surround51:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround51:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-71
-D: alsa-mixer.c: Checking for playback on Analog Surround 7.1 (analog-surround-71)
-D: alsa-util.c: Trying surround71:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround71:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-71+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Analog Surround 7.1 (analog-surround-71)
-D: alsa-util.c: Trying surround71:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround71:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-71+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 7.1 (analog-surround-71)
-D: alsa-util.c: Trying surround71:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround71:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-71+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Analog Surround 7.1 (analog-surround-71)
-D: alsa-util.c: Trying surround71:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround71:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:analog-surround-71+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Analog Surround 7.1 (analog-surround-71)
-D: alsa-util.c: Trying surround71:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0p failed
-I: alsa-util.c: Error opening PCM device surround71:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile output:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Digital Stereo (IEC958) (iec958-stereo)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-stereo+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Digital Stereo (IEC958) (iec958-stereo)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-stereo+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Digital Stereo (IEC958) (iec958-stereo)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-stereo+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Digital Stereo (IEC958) (iec958-stereo)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-stereo+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Stereo (IEC958) (iec958-stereo)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958) (iec958-surround-40)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-surround-40+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958) (iec958-surround-40)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-surround-40+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958) (iec958-surround-40)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-surround-40+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958) (iec958-surround-40)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-surround-40+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958) (iec958-surround-40)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1p failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958/AC3) (iec958-ac3-surround-40)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-40+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958/AC3) (iec958-ac3-surround-40)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-40+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958/AC3) (iec958-ac3-surround-40)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-40+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958/AC3) (iec958-ac3-surround-40)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-40+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Surround 4.0 (IEC958/AC3) (iec958-ac3-surround-40)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-51
-D: alsa-mixer.c: Checking for playback on Digital Surround 5.1 (IEC958/AC3) (iec958-ac3-surround-51)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-51+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Digital Surround 5.1 (IEC958/AC3) (iec958-ac3-surround-51)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-51+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Digital Surround 5.1 (IEC958/AC3) (iec958-ac3-surround-51)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-51+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Digital Surround 5.1 (IEC958/AC3) (iec958-ac3-surround-51)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:iec958-ac3-surround-51+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Surround 5.1 (IEC958/AC3) (iec958-ac3-surround-51)
-D: alsa-util.c: Trying a52:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm.c: Unknown PCM a52:0
-I: alsa-util.c: Error opening PCM device a52:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:hdmi-stereo
-D: alsa-mixer.c: Checking for playback on Digital Stereo (HDMI) (hdmi-stereo)
-D: alsa-util.c: Trying hdmi:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D3p failed
-I: alsa-util.c: Error opening PCM device hdmi:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:hdmi-stereo+input:analog-mono
-D: alsa-mixer.c: Checking for playback on Digital Stereo (HDMI) (hdmi-stereo)
-D: alsa-util.c: Trying hdmi:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D3p failed
-I: alsa-util.c: Error opening PCM device hdmi:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:hdmi-stereo+input:analog-stereo
-D: alsa-mixer.c: Checking for playback on Digital Stereo (HDMI) (hdmi-stereo)
-D: alsa-util.c: Trying hdmi:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D3p failed
-I: alsa-util.c: Error opening PCM device hdmi:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:hdmi-stereo+input:iec958-stereo
-D: alsa-mixer.c: Checking for playback on Digital Stereo (HDMI) (hdmi-stereo)
-D: alsa-util.c: Trying hdmi:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D3p failed
-I: alsa-util.c: Error opening PCM device hdmi:0: No such file or directory
-D: alsa-mixer.c: Looking at profile output:hdmi-stereo+input:iec958-surround-40
-D: alsa-mixer.c: Checking for playback on Digital Stereo (HDMI) (hdmi-stereo)
-D: alsa-util.c: Trying hdmi:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D3p failed
-I: alsa-util.c: Error opening PCM device hdmi:0: No such file or directory
-D: alsa-mixer.c: Looking at profile input:analog-mono
-D: alsa-mixer.c: Checking for recording on Analog Mono (analog-mono)
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-D: alsa-util.c: Managed to open hw:0
-D: alsa-util.c: snd_pcm_hw_params_set_channels(1) failed: Invalid argument
-D: alsa-util.c: Trying hw:0 without SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0c failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile input:analog-stereo
-D: alsa-mixer.c: Checking for recording on Analog Stereo (analog-stereo)
-D: alsa-util.c: Trying front:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0c failed
-I: alsa-util.c: Error opening PCM device front:0: Device or resource busy
-D: alsa-util.c: Trying hw:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D0c failed
-I: alsa-util.c: Error opening PCM device hw:0: Device or resource busy
-D: alsa-mixer.c: Looking at profile input:iec958-stereo
-D: alsa-mixer.c: Checking for recording on Digital Stereo (IEC958) (iec958-stereo)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1c failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-D: alsa-mixer.c: Looking at profile input:iec958-surround-40
-D: alsa-mixer.c: Checking for recording on Digital Surround 4.0 (IEC958) (iec958-surround-40)
-D: alsa-util.c: Trying iec958:0 with SND_PCM_NO_AUTO_FORMAT ...
-I: (alsa-lib)pcm_hw.c: open /dev/snd/pcmC0D1c failed
-I: alsa-util.c: Error opening PCM device iec958:0: No such file or directory
-E: module-alsa-card.c: Failed to find a working profile.
-E: module.c: Failed to load  module "module-alsa-card" (argument: "device_id="0" name="pci-0000_00_1b.0" card_name="alsa_card.pci-0000_00_1b.0" tsched=yes ignore_dB=no card_properties="module-udev-detect.discovered=1""): initialization failed.
-
-
---=-ji7ueWH2ax/OwdZ8fgwt--
-
+Hi Linus,
+
+Sorry for the late pull request.  Ingo and I had a miscommunication --
+he had seen failures in x86/uv and I thought he meants that he had
+excluded *all* of x86/uv.  These are the patches that were *not*
+excluded and thus have had plenty of testing.
+
+I will try to have another pull for you hopefully tomorrow: the two
+patches that were excluded from this pull plus one which fixes the
+problem.
+
+The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
+
+  Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-uv-for-linus
+
+Cliff Wickman (12):
+      x86, UV: Calculate BAU destination timeout
+      x86, UV: BAU tunables into a debugfs file
+      x86, UV: Disable BAU on network congestion
+      x86, UV: Shorten access to BAU statistics structure
+      x86, UV: BAU structure rearranging
+      x86, UV: Correct BAU software acknowledge
+      x86, UV: Correct BAU discovery of hubs and sockets
+      x86, UV: Remove BAU check for stay-busy
+      x86, UV: Correct BAU regular message type
+      x86, UV: BAU broadcast to the local hub
+      x86, UV: Modularize BAU send and wait
+      x86, UV: Initialize BAU MMRs only on hubs with cpus
+
+ arch/x86/include/asm/uv/uv_bau.h |  151 +++++---
+ arch/x86/kernel/tlb_uv.c         |  756 +++++++++++++++++++++++++-------------
+ 2 files changed, 608 insertions(+), 299 deletions(-)
+
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index aa558ac..42d412f 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -34,6 +34,7 @@
+  */
+ 
+ #define UV_ITEMS_PER_DESCRIPTOR		8
++/* the 'throttle' to prevent the hardware stay-busy bug */
+ #define MAX_BAU_CONCURRENT		3
+ #define UV_CPUS_PER_ACT_STATUS		32
+ #define UV_ACT_STATUS_MASK		0x3
+@@ -45,10 +46,26 @@
+ #define UV_DESC_BASE_PNODE_SHIFT	49
+ #define UV_PAYLOADQ_PNODE_SHIFT		49
+ #define UV_PTC_BASENAME			"sgi_uv/ptc_statistics"
++#define UV_BAU_BASENAME			"sgi_uv/bau_tunables"
++#define UV_BAU_TUNABLES_DIR		"sgi_uv"
++#define UV_BAU_TUNABLES_FILE		"bau_tunables"
++#define WHITESPACE			" \t\n"
+ #define uv_physnodeaddr(x)		((__pa((unsigned long)(x)) & uv_mmask))
+ #define UV_ENABLE_INTD_SOFT_ACK_MODE_SHIFT 15
+ #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD_SHIFT 16
+-#define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD 0x000000000bUL
++#define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD 0x0000000009UL
++/* [19:16] SOFT_ACK timeout period  19: 1 is urgency 7  17:16 1 is multiplier */
++#define BAU_MISC_CONTROL_MULT_MASK 3
++
++#define UVH_AGING_PRESCALE_SEL 0x000000b000UL
++/* [30:28] URGENCY_7  an index into a table of times */
++#define BAU_URGENCY_7_SHIFT 28
++#define BAU_URGENCY_7_MASK 7
++
++#define UVH_TRANSACTION_TIMEOUT 0x000000b200UL
++/* [45:40] BAU - BAU transaction timeout select - a multiplier */
++#define BAU_TRANS_SHIFT 40
++#define BAU_TRANS_MASK 0x3f
+ 
+ /*
+  * bits in UVH_LB_BAU_SB_ACTIVATION_STATUS_0/1
+@@ -59,24 +76,21 @@
+ #define DESC_STATUS_SOURCE_TIMEOUT	3
+ 
+ /*
+- * source side threshholds at which message retries print a warning
+- */
+-#define SOURCE_TIMEOUT_LIMIT		20
+-#define DESTINATION_TIMEOUT_LIMIT	20
+-
+-/*
+- * misc. delays, in microseconds
++ * delay for 'plugged' timeout retries, in microseconds
+  */
+-#define THROTTLE_DELAY			10
+-#define TIMEOUT_DELAY			10
+-#define BIOS_TO				1000
+-/* BIOS is assumed to set the destination timeout to 1003520 nanoseconds */
++#define PLUGGED_DELAY			10
+ 
+ /*
+  * threshholds at which to use IPI to free resources
+  */
++/* after this # consecutive 'plugged' timeouts, use IPI to release resources */
+ #define PLUGSB4RESET 100
+-#define TIMEOUTSB4RESET 100
++/* after this many consecutive timeouts, use IPI to release resources */
++#define TIMEOUTSB4RESET 1
++/* at this number uses of IPI to release resources, giveup the request */
++#define IPI_RESET_LIMIT 1
++/* after this # consecutive successes, bump up the throttle if it was lowered */
++#define COMPLETE_THRESHOLD 5
+ 
+ /*
+  * number of entries in the destination side payload queue
+@@ -96,6 +110,13 @@
+ #define FLUSH_COMPLETE			4
+ 
+ /*
++ * tuning the action when the numalink network is extremely delayed
++ */
++#define CONGESTED_RESPONSE_US 1000 /* 'long' response time, in microseconds */
++#define CONGESTED_REPS 10 /* long delays averaged over this many broadcasts */
++#define CONGESTED_PERIOD 30 /* time for the bau to be disabled, in seconds */
++
++/*
+  * Distribution: 32 bytes (256 bits) (bytes 0-0x1f of descriptor)
+  * If the 'multilevel' flag in the header portion of the descriptor
+  * has been set to 0, then endpoint multi-unicast mode is selected.
+@@ -300,37 +321,16 @@ struct bau_payload_queue_entry {
+ 	/* bytes 24-31 */
+ };
+ 
+-/*
+- * one per-cpu; to locate the software tables
+- */
+-struct bau_control {
+-	struct bau_desc *descriptor_base;
++struct msg_desc {
++	struct bau_payload_queue_entry *msg;
++	int msg_slot;
++	int sw_ack_slot;
+ 	struct bau_payload_queue_entry *va_queue_first;
+ 	struct bau_payload_queue_entry *va_queue_last;
+-	struct bau_payload_queue_entry *bau_msg_head;
+-	struct bau_control *uvhub_master;
+-	struct bau_control *socket_master;
+-	unsigned long timeout_interval;
+-	atomic_t active_descriptor_count;
+-	int max_concurrent;
+-	int max_concurrent_constant;
+-	int retry_message_scans;
+-	int plugged_tries;
+-	int timeout_tries;
+-	int ipi_attempts;
+-	int conseccompletes;
+-	short cpu;
+-	short uvhub_cpu;
+-	short uvhub;
+-	short cpus_in_socket;
+-	short cpus_in_uvhub;
+-	unsigned short message_number;
+-	unsigned short uvhub_quiesce;
+-	short socket_acknowledge_count[DEST_Q_SIZE];
+-	cycles_t send_message;
+-	spinlock_t masks_lock;
+-	spinlock_t uvhub_lock;
+-	spinlock_t queue_lock;
++};
++
++struct reset_args {
++	int sender;
+ };
+ 
+ /*
+@@ -344,18 +344,25 @@ struct ptc_stats {
+ 	unsigned long s_dtimeout; /* destination side timeouts */
+ 	unsigned long s_time; /* time spent in sending side */
+ 	unsigned long s_retriesok; /* successful retries */
+-	unsigned long s_ntargcpu; /* number of cpus targeted */
+-	unsigned long s_ntarguvhub; /* number of uvhubs targeted */
+-	unsigned long s_ntarguvhub16; /* number of times >= 16 target hubs */
+-	unsigned long s_ntarguvhub8; /* number of times >= 8 target hubs */
+-	unsigned long s_ntarguvhub4; /* number of times >= 4 target hubs */
+-	unsigned long s_ntarguvhub2; /* number of times >= 2 target hubs */
+-	unsigned long s_ntarguvhub1; /* number of times == 1 target hub */
++	unsigned long s_ntargcpu; /* total number of cpu's targeted */
++	unsigned long s_ntargself; /* times the sending cpu was targeted */
++	unsigned long s_ntarglocals; /* targets of cpus on the local blade */
++	unsigned long s_ntargremotes; /* targets of cpus on remote blades */
++	unsigned long s_ntarglocaluvhub; /* targets of the local hub */
++	unsigned long s_ntargremoteuvhub; /* remotes hubs targeted */
++	unsigned long s_ntarguvhub; /* total number of uvhubs targeted */
++	unsigned long s_ntarguvhub16; /* number of times target hubs >= 16*/
++	unsigned long s_ntarguvhub8; /* number of times target hubs >= 8 */
++	unsigned long s_ntarguvhub4; /* number of times target hubs >= 4 */
++	unsigned long s_ntarguvhub2; /* number of times target hubs >= 2 */
++	unsigned long s_ntarguvhub1; /* number of times target hubs == 1 */
+ 	unsigned long s_resets_plug; /* ipi-style resets from plug state */
+ 	unsigned long s_resets_timeout; /* ipi-style resets from timeouts */
+ 	unsigned long s_busy; /* status stayed busy past s/w timer */
+ 	unsigned long s_throttles; /* waits in throttle */
+ 	unsigned long s_retry_messages; /* retry broadcasts */
++	unsigned long s_bau_reenabled; /* for bau enable/disable */
++	unsigned long s_bau_disabled; /* for bau enable/disable */
+ 	/* destination statistics */
+ 	unsigned long d_alltlb; /* times all tlb's on this cpu were flushed */
+ 	unsigned long d_onetlb; /* times just one tlb on this cpu was flushed */
+@@ -370,6 +377,52 @@ struct ptc_stats {
+ 	unsigned long d_rcanceled; /* number of messages canceled by resets */
+ };
+ 
++/*
++ * one per-cpu; to locate the software tables
++ */
++struct bau_control {
++	struct bau_desc *descriptor_base;
++	struct bau_payload_queue_entry *va_queue_first;
++	struct bau_payload_queue_entry *va_queue_last;
++	struct bau_payload_queue_entry *bau_msg_head;
++	struct bau_control *uvhub_master;
++	struct bau_control *socket_master;
++	struct ptc_stats *statp;
++	unsigned long timeout_interval;
++	unsigned long set_bau_on_time;
++	atomic_t active_descriptor_count;
++	int plugged_tries;
++	int timeout_tries;
++	int ipi_attempts;
++	int conseccompletes;
++	int baudisabled;
++	int set_bau_off;
++	short cpu;
++	short uvhub_cpu;
++	short uvhub;
++	short cpus_in_socket;
++	short cpus_in_uvhub;
++	unsigned short message_number;
++	unsigned short uvhub_quiesce;
++	short socket_acknowledge_count[DEST_Q_SIZE];
++	cycles_t send_message;
++	spinlock_t uvhub_lock;
++	spinlock_t queue_lock;
++	/* tunables */
++	int max_bau_concurrent;
++	int max_bau_concurrent_constant;
++	int plugged_delay;
++	int plugsb4reset;
++	int timeoutsb4reset;
++	int ipi_reset_limit;
++	int complete_threshold;
++	int congested_response_us;
++	int congested_reps;
++	int congested_period;
++	cycles_t period_time;
++	long period_requests;
++};
++
+ static inline int bau_uvhub_isset(int uvhub, struct bau_target_uvhubmask *dstp)
+ {
+ 	return constant_test_bit(uvhub, &dstp->bits[0]);
+diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+index 7fea555..59efb53 100644
+--- a/arch/x86/kernel/tlb_uv.c
++++ b/arch/x86/kernel/tlb_uv.c
+@@ -8,6 +8,7 @@
+  */
+ #include <linux/seq_file.h>
+ #include <linux/proc_fs.h>
++#include <linux/debugfs.h>
+ #include <linux/kernel.h>
+ #include <linux/slab.h>
+ 
+@@ -22,19 +23,37 @@
+ #include <asm/irq_vectors.h>
+ #include <asm/timer.h>
+ 
+-struct msg_desc {
+-	struct bau_payload_queue_entry *msg;
+-	int msg_slot;
+-	int sw_ack_slot;
+-	struct bau_payload_queue_entry *va_queue_first;
+-	struct bau_payload_queue_entry *va_queue_last;
++/* timeouts in nanoseconds (indexed by UVH_AGING_PRESCALE_SEL urgency7 30:28) */
++static int timeout_base_ns[] = {
++		20,
++		160,
++		1280,
++		10240,
++		81920,
++		655360,
++		5242880,
++		167772160
+ };
+-
+-#define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	0x000000000bUL
+-
+-static int uv_bau_max_concurrent __read_mostly;
+-
++static int timeout_us;
+ static int nobau;
++static int baudisabled;
++static spinlock_t disable_lock;
++static cycles_t congested_cycles;
++
++/* tunables: */
++static int max_bau_concurrent = MAX_BAU_CONCURRENT;
++static int max_bau_concurrent_constant = MAX_BAU_CONCURRENT;
++static int plugged_delay = PLUGGED_DELAY;
++static int plugsb4reset = PLUGSB4RESET;
++static int timeoutsb4reset = TIMEOUTSB4RESET;
++static int ipi_reset_limit = IPI_RESET_LIMIT;
++static int complete_threshold = COMPLETE_THRESHOLD;
++static int congested_response_us = CONGESTED_RESPONSE_US;
++static int congested_reps = CONGESTED_REPS;
++static int congested_period = CONGESTED_PERIOD;
++static struct dentry *tunables_dir;
++static struct dentry *tunables_file;
++
+ static int __init setup_nobau(char *arg)
+ {
+ 	nobau = 1;
+@@ -52,10 +71,6 @@ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
+ static DEFINE_PER_CPU(struct bau_control, bau_control);
+ static DEFINE_PER_CPU(cpumask_var_t, uv_flush_tlb_mask);
+ 
+-struct reset_args {
+-	int sender;
+-};
+-
+ /*
+  * Determine the first node on a uvhub. 'Nodes' are used for kernel
+  * memory allocation.
+@@ -126,7 +141,7 @@ static inline void uv_bau_process_retry_msg(struct msg_desc *mdp,
+ 	struct ptc_stats *stat;
+ 
+ 	msg = mdp->msg;
+-	stat = &per_cpu(ptcstats, bcp->cpu);
++	stat = bcp->statp;
+ 	stat->d_retries++;
+ 	/*
+ 	 * cancel any message from msg+1 to the retry itself
+@@ -146,15 +161,14 @@ static inline void uv_bau_process_retry_msg(struct msg_desc *mdp,
+ 			slot2 = msg2 - mdp->va_queue_first;
+ 			mmr = uv_read_local_mmr
+ 				(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
+-			msg_res = ((msg2->sw_ack_vector << 8) |
+-				   msg2->sw_ack_vector);
++			msg_res = msg2->sw_ack_vector;
+ 			/*
+ 			 * This is a message retry; clear the resources held
+ 			 * by the previous message only if they timed out.
+ 			 * If it has not timed out we have an unexpected
+ 			 * situation to report.
+ 			 */
+-			if (mmr & (msg_res << 8)) {
++			if (mmr & (msg_res << UV_SW_ACK_NPENDING)) {
+ 				/*
+ 				 * is the resource timed out?
+ 				 * make everyone ignore the cancelled message.
+@@ -164,9 +178,9 @@ static inline void uv_bau_process_retry_msg(struct msg_desc *mdp,
+ 				cancel_count++;
+ 				uv_write_local_mmr(
+ 				    UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS,
+-					(msg_res << 8) | msg_res);
+-			} else
+-				printk(KERN_INFO "note bau retry: no effect\n");
++					(msg_res << UV_SW_ACK_NPENDING) |
++					 msg_res);
++			}
+ 		}
+ 	}
+ 	if (!cancel_count)
+@@ -190,7 +204,7 @@ static void uv_bau_process_message(struct msg_desc *mdp,
+ 	 * This must be a normal message, or retry of a normal message
+ 	 */
+ 	msg = mdp->msg;
+-	stat = &per_cpu(ptcstats, bcp->cpu);
++	stat = bcp->statp;
+ 	if (msg->address == TLB_FLUSH_ALL) {
+ 		local_flush_tlb();
+ 		stat->d_alltlb++;
+@@ -274,7 +288,7 @@ uv_do_reset(void *ptr)
+ 
+ 	bcp = &per_cpu(bau_control, smp_processor_id());
+ 	rap = (struct reset_args *)ptr;
+-	stat = &per_cpu(ptcstats, bcp->cpu);
++	stat = bcp->statp;
+ 	stat->d_resets++;
+ 
+ 	/*
+@@ -302,13 +316,13 @@ uv_do_reset(void *ptr)
+ 			 */
+ 			mmr = uv_read_local_mmr
+ 					(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
+-			msg_res = ((msg->sw_ack_vector << 8) |
+-						   msg->sw_ack_vector);
++			msg_res = msg->sw_ack_vector;
+ 			if (mmr & msg_res) {
+ 				stat->d_rcanceled++;
+ 				uv_write_local_mmr(
+ 				    UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS,
+-							msg_res);
++					(msg_res << UV_SW_ACK_NPENDING) |
++					 msg_res);
+ 			}
+ 		}
+ 	}
+@@ -386,17 +400,12 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
+ 	unsigned long mmr_offset, int right_shift, int this_cpu,
+ 	struct bau_control *bcp, struct bau_control *smaster, long try)
+ {
+-	int relaxes = 0;
+ 	unsigned long descriptor_status;
+-	unsigned long mmr;
+-	unsigned long mask;
+ 	cycles_t ttime;
+-	cycles_t timeout_time;
+-	struct ptc_stats *stat = &per_cpu(ptcstats, this_cpu);
++	struct ptc_stats *stat = bcp->statp;
+ 	struct bau_control *hmaster;
+ 
+ 	hmaster = bcp->uvhub_master;
+-	timeout_time = get_cycles() + bcp->timeout_interval;
+ 
+ 	/* spin on the status MMR, waiting for it to go idle */
+ 	while ((descriptor_status = (((unsigned long)
+@@ -423,7 +432,8 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
+ 			 * pending.  In that case hardware returns the
+ 			 * ERROR that looks like a destination timeout.
+ 			 */
+-			if (cycles_2_us(ttime - bcp->send_message) < BIOS_TO) {
++			if (cycles_2_us(ttime - bcp->send_message) <
++							timeout_us) {
+ 				bcp->conseccompletes = 0;
+ 				return FLUSH_RETRY_PLUGGED;
+ 			}
+@@ -435,26 +445,6 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
+ 			 * descriptor_status is still BUSY
+ 			 */
+ 			cpu_relax();
+-			relaxes++;
+-			if (relaxes >= 10000) {
+-				relaxes = 0;
+-				if (get_cycles() > timeout_time) {
+-					quiesce_local_uvhub(hmaster);
+-
+-					/* single-thread the register change */
+-					spin_lock(&hmaster->masks_lock);
+-					mmr = uv_read_local_mmr(mmr_offset);
+-					mask = 0UL;
+-					mask |= (3UL < right_shift);
+-					mask = ~mask;
+-					mmr &= mask;
+-					uv_write_local_mmr(mmr_offset, mmr);
+-					spin_unlock(&hmaster->masks_lock);
+-					end_uvhub_quiesce(hmaster);
+-					stat->s_busy++;
+-					return FLUSH_GIVEUP;
+-				}
+-			}
+ 		}
+ 	}
+ 	bcp->conseccompletes++;
+@@ -494,56 +484,116 @@ static inline int atomic_inc_unless_ge(spinlock_t *lock, atomic_t *v, int u)
+ 	return 1;
+ }
+ 
++/*
++ * Our retries are blocked by all destination swack resources being
++ * in use, and a timeout is pending. In that case hardware immediately
++ * returns the ERROR that looks like a destination timeout.
++ */
++static void
++destination_plugged(struct bau_desc *bau_desc, struct bau_control *bcp,
++			struct bau_control *hmaster, struct ptc_stats *stat)
++{
++	udelay(bcp->plugged_delay);
++	bcp->plugged_tries++;
++	if (bcp->plugged_tries >= bcp->plugsb4reset) {
++		bcp->plugged_tries = 0;
++		quiesce_local_uvhub(hmaster);
++		spin_lock(&hmaster->queue_lock);
++		uv_reset_with_ipi(&bau_desc->distribution, bcp->cpu);
++		spin_unlock(&hmaster->queue_lock);
++		end_uvhub_quiesce(hmaster);
++		bcp->ipi_attempts++;
++		stat->s_resets_plug++;
++	}
++}
++
++static void
++destination_timeout(struct bau_desc *bau_desc, struct bau_control *bcp,
++			struct bau_control *hmaster, struct ptc_stats *stat)
++{
++	hmaster->max_bau_concurrent = 1;
++	bcp->timeout_tries++;
++	if (bcp->timeout_tries >= bcp->timeoutsb4reset) {
++		bcp->timeout_tries = 0;
++		quiesce_local_uvhub(hmaster);
++		spin_lock(&hmaster->queue_lock);
++		uv_reset_with_ipi(&bau_desc->distribution, bcp->cpu);
++		spin_unlock(&hmaster->queue_lock);
++		end_uvhub_quiesce(hmaster);
++		bcp->ipi_attempts++;
++		stat->s_resets_timeout++;
++	}
++}
++
++/*
++ * Completions are taking a very long time due to a congested numalink
++ * network.
++ */
++static void
++disable_for_congestion(struct bau_control *bcp, struct ptc_stats *stat)
++{
++	int tcpu;
++	struct bau_control *tbcp;
++
++	/* let only one cpu do this disabling */
++	spin_lock(&disable_lock);
++	if (!baudisabled && bcp->period_requests &&
++	    ((bcp->period_time / bcp->period_requests) > congested_cycles)) {
++		/* it becomes this cpu's job to turn on the use of the
++		   BAU again */
++		baudisabled = 1;
++		bcp->set_bau_off = 1;
++		bcp->set_bau_on_time = get_cycles() +
++			sec_2_cycles(bcp->congested_period);
++		stat->s_bau_disabled++;
++		for_each_present_cpu(tcpu) {
++			tbcp = &per_cpu(bau_control, tcpu);
++				tbcp->baudisabled = 1;
++		}
++	}
++	spin_unlock(&disable_lock);
++}
++
+ /**
+  * uv_flush_send_and_wait
+  *
+  * Send a broadcast and wait for it to complete.
+  *
+- * The flush_mask contains the cpus the broadcast is to be sent to, plus
++ * The flush_mask contains the cpus the broadcast is to be sent to including
+  * cpus that are on the local uvhub.
+  *
+- * Returns NULL if all flushing represented in the mask was done. The mask
+- * is zeroed.
+- * Returns @flush_mask if some remote flushing remains to be done. The
+- * mask will have some bits still set, representing any cpus on the local
+- * uvhub (not current cpu) and any on remote uvhubs if the broadcast failed.
++ * Returns 0 if all flushing represented in the mask was done.
++ * Returns 1 if it gives up entirely and the original cpu mask is to be
++ * returned to the kernel.
+  */
+-const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
+-					     struct cpumask *flush_mask,
+-					     struct bau_control *bcp)
++int uv_flush_send_and_wait(struct bau_desc *bau_desc,
++			   struct cpumask *flush_mask, struct bau_control *bcp)
+ {
+ 	int right_shift;
+-	int uvhub;
+-	int bit;
+ 	int completion_status = 0;
+ 	int seq_number = 0;
+ 	long try = 0;
+ 	int cpu = bcp->uvhub_cpu;
+ 	int this_cpu = bcp->cpu;
+-	int this_uvhub = bcp->uvhub;
+ 	unsigned long mmr_offset;
+ 	unsigned long index;
+ 	cycles_t time1;
+ 	cycles_t time2;
+-	struct ptc_stats *stat = &per_cpu(ptcstats, bcp->cpu);
++	cycles_t elapsed;
++	struct ptc_stats *stat = bcp->statp;
+ 	struct bau_control *smaster = bcp->socket_master;
+ 	struct bau_control *hmaster = bcp->uvhub_master;
+ 
+-	/*
+-	 * Spin here while there are hmaster->max_concurrent or more active
+-	 * descriptors. This is the per-uvhub 'throttle'.
+-	 */
+ 	if (!atomic_inc_unless_ge(&hmaster->uvhub_lock,
+ 			&hmaster->active_descriptor_count,
+-			hmaster->max_concurrent)) {
++			hmaster->max_bau_concurrent)) {
+ 		stat->s_throttles++;
+ 		do {
+ 			cpu_relax();
+ 		} while (!atomic_inc_unless_ge(&hmaster->uvhub_lock,
+ 			&hmaster->active_descriptor_count,
+-			hmaster->max_concurrent));
++			hmaster->max_bau_concurrent));
+ 	}
+-
+ 	while (hmaster->uvhub_quiesce)
+ 		cpu_relax();
+ 
+@@ -557,23 +607,10 @@ const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
+ 	}
+ 	time1 = get_cycles();
+ 	do {
+-		/*
+-		 * Every message from any given cpu gets a unique message
+-		 * sequence number. But retries use that same number.
+-		 * Our message may have timed out at the destination because
+-		 * all sw-ack resources are in use and there is a timeout
+-		 * pending there.  In that case, our last send never got
+-		 * placed into the queue and we need to persist until it
+-		 * does.
+-		 *
+-		 * Make any retry a type MSG_RETRY so that the destination will
+-		 * free any resource held by a previous message from this cpu.
+-		 */
+ 		if (try == 0) {
+-			/* use message type set by the caller the first time */
++			bau_desc->header.msg_type = MSG_REGULAR;
+ 			seq_number = bcp->message_number++;
+ 		} else {
+-			/* use RETRY type on all the rest; same sequence */
+ 			bau_desc->header.msg_type = MSG_RETRY;
+ 			stat->s_retry_messages++;
+ 		}
+@@ -581,50 +618,17 @@ const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
+ 		index = (1UL << UVH_LB_BAU_SB_ACTIVATION_CONTROL_PUSH_SHFT) |
+ 			bcp->uvhub_cpu;
+ 		bcp->send_message = get_cycles();
+-
+ 		uv_write_local_mmr(UVH_LB_BAU_SB_ACTIVATION_CONTROL, index);
+-
+ 		try++;
+ 		completion_status = uv_wait_completion(bau_desc, mmr_offset,
+ 			right_shift, this_cpu, bcp, smaster, try);
+ 
+ 		if (completion_status == FLUSH_RETRY_PLUGGED) {
+-			/*
+-			 * Our retries may be blocked by all destination swack
+-			 * resources being consumed, and a timeout pending. In
+-			 * that case hardware immediately returns the ERROR
+-			 * that looks like a destination timeout.
+-			 */
+-			udelay(TIMEOUT_DELAY);
+-			bcp->plugged_tries++;
+-			if (bcp->plugged_tries >= PLUGSB4RESET) {
+-				bcp->plugged_tries = 0;
+-				quiesce_local_uvhub(hmaster);
+-				spin_lock(&hmaster->queue_lock);
+-				uv_reset_with_ipi(&bau_desc->distribution,
+-							this_cpu);
+-				spin_unlock(&hmaster->queue_lock);
+-				end_uvhub_quiesce(hmaster);
+-				bcp->ipi_attempts++;
+-				stat->s_resets_plug++;
+-			}
++			destination_plugged(bau_desc, bcp, hmaster, stat);
+ 		} else if (completion_status == FLUSH_RETRY_TIMEOUT) {
+-			hmaster->max_concurrent = 1;
+-			bcp->timeout_tries++;
+-			udelay(TIMEOUT_DELAY);
+-			if (bcp->timeout_tries >= TIMEOUTSB4RESET) {
+-				bcp->timeout_tries = 0;
+-				quiesce_local_uvhub(hmaster);
+-				spin_lock(&hmaster->queue_lock);
+-				uv_reset_with_ipi(&bau_desc->distribution,
+-								this_cpu);
+-				spin_unlock(&hmaster->queue_lock);
+-				end_uvhub_quiesce(hmaster);
+-				bcp->ipi_attempts++;
+-				stat->s_resets_timeout++;
+-			}
++			destination_timeout(bau_desc, bcp, hmaster, stat);
+ 		}
+-		if (bcp->ipi_attempts >= 3) {
++		if (bcp->ipi_attempts >= bcp->ipi_reset_limit) {
+ 			bcp->ipi_attempts = 0;
+ 			completion_status = FLUSH_GIVEUP;
+ 			break;
+@@ -633,49 +637,36 @@ const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
+ 	} while ((completion_status == FLUSH_RETRY_PLUGGED) ||
+ 		 (completion_status == FLUSH_RETRY_TIMEOUT));
+ 	time2 = get_cycles();
+-
+-	if ((completion_status == FLUSH_COMPLETE) && (bcp->conseccompletes > 5)
+-	    && (hmaster->max_concurrent < hmaster->max_concurrent_constant))
+-			hmaster->max_concurrent++;
+-
+-	/*
+-	 * hold any cpu not timing out here; no other cpu currently held by
+-	 * the 'throttle' should enter the activation code
+-	 */
++	bcp->plugged_tries = 0;
++	bcp->timeout_tries = 0;
++	if ((completion_status == FLUSH_COMPLETE) &&
++	    (bcp->conseccompletes > bcp->complete_threshold) &&
++	    (hmaster->max_bau_concurrent <
++					hmaster->max_bau_concurrent_constant))
++			hmaster->max_bau_concurrent++;
+ 	while (hmaster->uvhub_quiesce)
+ 		cpu_relax();
+ 	atomic_dec(&hmaster->active_descriptor_count);
+-
+-	/* guard against cycles wrap */
+-	if (time2 > time1)
+-		stat->s_time += (time2 - time1);
+-	else
+-		stat->s_requestor--; /* don't count this one */
++	if (time2 > time1) {
++		elapsed = time2 - time1;
++		stat->s_time += elapsed;
++		if ((completion_status == FLUSH_COMPLETE) && (try == 1)) {
++			bcp->period_requests++;
++			bcp->period_time += elapsed;
++			if ((elapsed > congested_cycles) &&
++			    (bcp->period_requests > bcp->congested_reps)) {
++				disable_for_congestion(bcp, stat);
++			}
++		}
++	} else
++		stat->s_requestor--;
+ 	if (completion_status == FLUSH_COMPLETE && try > 1)
+ 		stat->s_retriesok++;
+ 	else if (completion_status == FLUSH_GIVEUP) {
+-		/*
+-		 * Cause the caller to do an IPI-style TLB shootdown on
+-		 * the target cpu's, all of which are still in the mask.
+-		 */
+ 		stat->s_giveup++;
+-		return flush_mask;
+-	}
+-
+-	/*
+-	 * Success, so clear the remote cpu's from the mask so we don't
+-	 * use the IPI method of shootdown on them.
+-	 */
+-	for_each_cpu(bit, flush_mask) {
+-		uvhub = uv_cpu_to_blade_id(bit);
+-		if (uvhub == this_uvhub)
+-			continue;
+-		cpumask_clear_cpu(bit, flush_mask);
++		return 1;
+ 	}
+-	if (!cpumask_empty(flush_mask))
+-		return flush_mask;
+-
+-	return NULL;
++	return 0;
+ }
+ 
+ /**
+@@ -707,70 +698,89 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 					  struct mm_struct *mm,
+ 					  unsigned long va, unsigned int cpu)
+ {
+-	int remotes;
+ 	int tcpu;
+ 	int uvhub;
+ 	int locals = 0;
++	int remotes = 0;
++	int hubs = 0;
+ 	struct bau_desc *bau_desc;
+ 	struct cpumask *flush_mask;
+ 	struct ptc_stats *stat;
+ 	struct bau_control *bcp;
++	struct bau_control *tbcp;
+ 
++	/* kernel was booted 'nobau' */
+ 	if (nobau)
+ 		return cpumask;
+ 
+ 	bcp = &per_cpu(bau_control, cpu);
++	stat = bcp->statp;
++
++	/* bau was disabled due to slow response */
++	if (bcp->baudisabled) {
++		/* the cpu that disabled it must re-enable it */
++		if (bcp->set_bau_off) {
++			if (get_cycles() >= bcp->set_bau_on_time) {
++				stat->s_bau_reenabled++;
++				baudisabled = 0;
++				for_each_present_cpu(tcpu) {
++					tbcp = &per_cpu(bau_control, tcpu);
++					tbcp->baudisabled = 0;
++					tbcp->period_requests = 0;
++					tbcp->period_time = 0;
++				}
++			}
++		}
++		return cpumask;
++	}
++
+ 	/*
+ 	 * Each sending cpu has a per-cpu mask which it fills from the caller's
+-	 * cpu mask.  Only remote cpus are converted to uvhubs and copied.
++	 * cpu mask.  All cpus are converted to uvhubs and copied to the
++	 * activation descriptor.
+ 	 */
+ 	flush_mask = (struct cpumask *)per_cpu(uv_flush_tlb_mask, cpu);
+-	/*
+-	 * copy cpumask to flush_mask, removing current cpu
+-	 * (current cpu should already have been flushed by the caller and
+-	 *  should never be returned if we return flush_mask)
+-	 */
++	/* don't actually do a shootdown of the local cpu */
+ 	cpumask_andnot(flush_mask, cpumask, cpumask_of(cpu));
+ 	if (cpu_isset(cpu, *cpumask))
+-		locals++;  /* current cpu was targeted */
++		stat->s_ntargself++;
+ 
+ 	bau_desc = bcp->descriptor_base;
+ 	bau_desc += UV_ITEMS_PER_DESCRIPTOR * bcp->uvhub_cpu;
+-
+ 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
+-	remotes = 0;
++
++	/* cpu statistics */
+ 	for_each_cpu(tcpu, flush_mask) {
+ 		uvhub = uv_cpu_to_blade_id(tcpu);
+-		if (uvhub == bcp->uvhub) {
+-			locals++;
+-			continue;
+-		}
+ 		bau_uvhub_set(uvhub, &bau_desc->distribution);
+-		remotes++;
+-	}
+-	if (remotes == 0) {
+-		/*
+-		 * No off_hub flushing; return status for local hub.
+-		 * Return the caller's mask if all were local (the current
+-		 * cpu may be in that mask).
+-		 */
+-		if (locals)
+-			return cpumask;
++		if (uvhub == bcp->uvhub)
++			locals++;
+ 		else
+-			return NULL;
++			remotes++;
+ 	}
+-	stat = &per_cpu(ptcstats, cpu);
++	if ((locals + remotes) == 0)
++		return NULL;
+ 	stat->s_requestor++;
+-	stat->s_ntargcpu += remotes;
++	stat->s_ntargcpu += remotes + locals;
++	stat->s_ntargremotes += remotes;
++	stat->s_ntarglocals += locals;
+ 	remotes = bau_uvhub_weight(&bau_desc->distribution);
+-	stat->s_ntarguvhub += remotes;
+-	if (remotes >= 16)
++
++	/* uvhub statistics */
++	hubs = bau_uvhub_weight(&bau_desc->distribution);
++	if (locals) {
++		stat->s_ntarglocaluvhub++;
++		stat->s_ntargremoteuvhub += (hubs - 1);
++	} else
++		stat->s_ntargremoteuvhub += hubs;
++	stat->s_ntarguvhub += hubs;
++	if (hubs >= 16)
+ 		stat->s_ntarguvhub16++;
+-	else if (remotes >= 8)
++	else if (hubs >= 8)
+ 		stat->s_ntarguvhub8++;
+-	else if (remotes >= 4)
++	else if (hubs >= 4)
+ 		stat->s_ntarguvhub4++;
+-	else if (remotes >= 2)
++	else if (hubs >= 2)
+ 		stat->s_ntarguvhub2++;
+ 	else
+ 		stat->s_ntarguvhub1++;
+@@ -779,10 +789,13 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
+ 	bau_desc->payload.sending_cpu = cpu;
+ 
+ 	/*
+-	 * uv_flush_send_and_wait returns null if all cpu's were messaged, or
+-	 * the adjusted flush_mask if any cpu's were not messaged.
++	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
++	 * or 1 if it gave up and the original cpumask should be returned.
+ 	 */
+-	return uv_flush_send_and_wait(bau_desc, flush_mask, bcp);
++	if (!uv_flush_send_and_wait(bau_desc, flush_mask, bcp))
++		return NULL;
++	else
++		return cpumask;
+ }
+ 
+ /*
+@@ -810,7 +823,7 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
+ 
+ 	time_start = get_cycles();
+ 	bcp = &per_cpu(bau_control, smp_processor_id());
+-	stat = &per_cpu(ptcstats, smp_processor_id());
++	stat = bcp->statp;
+ 	msgdesc.va_queue_first = bcp->va_queue_first;
+ 	msgdesc.va_queue_last = bcp->va_queue_last;
+ 	msg = bcp->bau_msg_head;
+@@ -908,12 +921,12 @@ static void uv_ptc_seq_stop(struct seq_file *file, void *data)
+ }
+ 
+ static inline unsigned long long
+-millisec_2_cycles(unsigned long millisec)
++microsec_2_cycles(unsigned long microsec)
+ {
+ 	unsigned long ns;
+ 	unsigned long long cyc;
+ 
+-	ns = millisec * 1000;
++	ns = microsec * 1000;
+ 	cyc = (ns << CYC2NS_SCALE_FACTOR)/(per_cpu(cyc2ns, smp_processor_id()));
+ 	return cyc;
+ }
+@@ -931,15 +944,19 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
+ 
+ 	if (!cpu) {
+ 		seq_printf(file,
+-			"# cpu sent stime numuvhubs numuvhubs16 numuvhubs8 ");
++			"# cpu sent stime self locals remotes ncpus localhub ");
+ 		seq_printf(file,
+-			"numuvhubs4 numuvhubs2 numuvhubs1 numcpus dto ");
++			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
++		seq_printf(file,
++			"numuvhubs4 numuvhubs2 numuvhubs1 dto ");
+ 		seq_printf(file,
+ 			"retries rok resetp resett giveup sto bz throt ");
+ 		seq_printf(file,
+ 			"sw_ack recv rtime all ");
+ 		seq_printf(file,
+-			"one mult none retry canc nocan reset rcan\n");
++			"one mult none retry canc nocan reset rcan ");
++		seq_printf(file,
++			"disable enable\n");
+ 	}
+ 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
+ 		stat = &per_cpu(ptcstats, cpu);
+@@ -947,18 +964,23 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
+ 		seq_printf(file,
+ 			"cpu %d %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
+ 			   cpu, stat->s_requestor, cycles_2_us(stat->s_time),
+-			   stat->s_ntarguvhub, stat->s_ntarguvhub16,
++			   stat->s_ntargself, stat->s_ntarglocals,
++			   stat->s_ntargremotes, stat->s_ntargcpu,
++			   stat->s_ntarglocaluvhub, stat->s_ntargremoteuvhub,
++			   stat->s_ntarguvhub, stat->s_ntarguvhub16);
++		seq_printf(file, "%ld %ld %ld %ld %ld ",
+ 			   stat->s_ntarguvhub8, stat->s_ntarguvhub4,
+ 			   stat->s_ntarguvhub2, stat->s_ntarguvhub1,
+-			   stat->s_ntargcpu, stat->s_dtimeout);
++			   stat->s_dtimeout);
+ 		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld ",
+ 			   stat->s_retry_messages, stat->s_retriesok,
+ 			   stat->s_resets_plug, stat->s_resets_timeout,
+ 			   stat->s_giveup, stat->s_stimeout,
+ 			   stat->s_busy, stat->s_throttles);
++
+ 		/* destination side statistics */
+ 		seq_printf(file,
+-			   "%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
++			   "%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
+ 			   uv_read_global_mmr64(uv_cpu_to_pnode(cpu),
+ 					UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE),
+ 			   stat->d_requestee, cycles_2_us(stat->d_time),
+@@ -966,15 +988,36 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
+ 			   stat->d_nomsg, stat->d_retries, stat->d_canceled,
+ 			   stat->d_nocanceled, stat->d_resets,
+ 			   stat->d_rcanceled);
++		seq_printf(file, "%ld %ld\n",
++			stat->s_bau_disabled, stat->s_bau_reenabled);
+ 	}
+ 
+ 	return 0;
+ }
+ 
+ /*
++ * Display the tunables thru debugfs
++ */
++static ssize_t tunables_read(struct file *file, char __user *userbuf,
++						size_t count, loff_t *ppos)
++{
++	char buf[300];
++	int ret;
++
++	ret = snprintf(buf, 300, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
++		"max_bau_concurrent plugged_delay plugsb4reset",
++		"timeoutsb4reset ipi_reset_limit complete_threshold",
++		"congested_response_us congested_reps congested_period",
++		max_bau_concurrent, plugged_delay, plugsb4reset,
++		timeoutsb4reset, ipi_reset_limit, complete_threshold,
++		congested_response_us, congested_reps, congested_period);
++
++	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
++}
++
++/*
+  * -1: resetf the statistics
+  *  0: display meaning of the statistics
+- * >0: maximum concurrent active descriptors per uvhub (throttle)
+  */
+ static ssize_t uv_ptc_proc_write(struct file *file, const char __user *user,
+ 				 size_t count, loff_t *data)
+@@ -983,7 +1026,6 @@ static ssize_t uv_ptc_proc_write(struct file *file, const char __user *user,
+ 	long input_arg;
+ 	char optstr[64];
+ 	struct ptc_stats *stat;
+-	struct bau_control *bcp;
+ 
+ 	if (count == 0 || count > sizeof(optstr))
+ 		return -EINVAL;
+@@ -1059,29 +1101,158 @@ static ssize_t uv_ptc_proc_write(struct file *file, const char __user *user,
+ 		"reset:    number of ipi-style reset requests processed\n");
+ 		printk(KERN_DEBUG
+ 		"rcan:     number messages canceled by reset requests\n");
++		printk(KERN_DEBUG
++		"disable:  number times use of the BAU was disabled\n");
++		printk(KERN_DEBUG
++		"enable:   number times use of the BAU was re-enabled\n");
+ 	} else if (input_arg == -1) {
+ 		for_each_present_cpu(cpu) {
+ 			stat = &per_cpu(ptcstats, cpu);
+ 			memset(stat, 0, sizeof(struct ptc_stats));
+ 		}
+-	} else {
+-		uv_bau_max_concurrent = input_arg;
+-		bcp = &per_cpu(bau_control, smp_processor_id());
+-		if (uv_bau_max_concurrent < 1 ||
+-		    uv_bau_max_concurrent > bcp->cpus_in_uvhub) {
+-			printk(KERN_DEBUG
+-				"Error: BAU max concurrent %d; %d is invalid\n",
+-				bcp->max_concurrent, uv_bau_max_concurrent);
+-			return -EINVAL;
+-		}
+-		printk(KERN_DEBUG "Set BAU max concurrent:%d\n",
+-		       uv_bau_max_concurrent);
+-		for_each_present_cpu(cpu) {
+-			bcp = &per_cpu(bau_control, cpu);
+-			bcp->max_concurrent = uv_bau_max_concurrent;
++	}
++
++	return count;
++}
++
++static int local_atoi(const char *name)
++{
++	int val = 0;
++
++	for (;; name++) {
++		switch (*name) {
++		case '0' ... '9':
++			val = 10*val+(*name-'0');
++			break;
++		default:
++			return val;
+ 		}
+ 	}
++}
++
++/*
++ * set the tunables
++ * 0 values reset them to defaults
++ */
++static ssize_t tunables_write(struct file *file, const char __user *user,
++				 size_t count, loff_t *data)
++{
++	int cpu;
++	int cnt = 0;
++	int val;
++	char *p;
++	char *q;
++	char instr[64];
++	struct bau_control *bcp;
++
++	if (count == 0 || count > sizeof(instr)-1)
++		return -EINVAL;
++	if (copy_from_user(instr, user, count))
++		return -EFAULT;
++
++	instr[count] = '\0';
++	/* count the fields */
++	p = instr + strspn(instr, WHITESPACE);
++	q = p;
++	for (; *p; p = q + strspn(q, WHITESPACE)) {
++		q = p + strcspn(p, WHITESPACE);
++		cnt++;
++		if (q == p)
++			break;
++	}
++	if (cnt != 9) {
++		printk(KERN_INFO "bau tunable error: should be 9 numbers\n");
++		return -EINVAL;
++	}
+ 
++	p = instr + strspn(instr, WHITESPACE);
++	q = p;
++	for (cnt = 0; *p; p = q + strspn(q, WHITESPACE), cnt++) {
++		q = p + strcspn(p, WHITESPACE);
++		val = local_atoi(p);
++		switch (cnt) {
++		case 0:
++			if (val == 0) {
++				max_bau_concurrent = MAX_BAU_CONCURRENT;
++				max_bau_concurrent_constant =
++							MAX_BAU_CONCURRENT;
++				continue;
++			}
++			bcp = &per_cpu(bau_control, smp_processor_id());
++			if (val < 1 || val > bcp->cpus_in_uvhub) {
++				printk(KERN_DEBUG
++				"Error: BAU max concurrent %d is invalid\n",
++				val);
++				return -EINVAL;
++			}
++			max_bau_concurrent = val;
++			max_bau_concurrent_constant = val;
++			continue;
++		case 1:
++			if (val == 0)
++				plugged_delay = PLUGGED_DELAY;
++			else
++				plugged_delay = val;
++			continue;
++		case 2:
++			if (val == 0)
++				plugsb4reset = PLUGSB4RESET;
++			else
++				plugsb4reset = val;
++			continue;
++		case 3:
++			if (val == 0)
++				timeoutsb4reset = TIMEOUTSB4RESET;
++			else
++				timeoutsb4reset = val;
++			continue;
++		case 4:
++			if (val == 0)
++				ipi_reset_limit = IPI_RESET_LIMIT;
++			else
++				ipi_reset_limit = val;
++			continue;
++		case 5:
++			if (val == 0)
++				complete_threshold = COMPLETE_THRESHOLD;
++			else
++				complete_threshold = val;
++			continue;
++		case 6:
++			if (val == 0)
++				congested_response_us = CONGESTED_RESPONSE_US;
++			else
++				congested_response_us = val;
++			continue;
++		case 7:
++			if (val == 0)
++				congested_reps = CONGESTED_REPS;
++			else
++				congested_reps = val;
++			continue;
++		case 8:
++			if (val == 0)
++				congested_period = CONGESTED_PERIOD;
++			else
++				congested_period = val;
++			continue;
++		}
++		if (q == p)
++			break;
++	}
++	for_each_present_cpu(cpu) {
++		bcp = &per_cpu(bau_control, cpu);
++		bcp->max_bau_concurrent = max_bau_concurrent;
++		bcp->max_bau_concurrent_constant = max_bau_concurrent;
++		bcp->plugged_delay = plugged_delay;
++		bcp->plugsb4reset = plugsb4reset;
++		bcp->timeoutsb4reset = timeoutsb4reset;
++		bcp->ipi_reset_limit = ipi_reset_limit;
++		bcp->complete_threshold = complete_threshold;
++		bcp->congested_response_us = congested_response_us;
++		bcp->congested_reps = congested_reps;
++		bcp->congested_period = congested_period;
++	}
+ 	return count;
+ }
+ 
+@@ -1097,6 +1268,11 @@ static int uv_ptc_proc_open(struct inode *inode, struct file *file)
+ 	return seq_open(file, &uv_ptc_seq_ops);
+ }
+ 
++static int tunables_open(struct inode *inode, struct file *file)
++{
++	return 0;
++}
++
+ static const struct file_operations proc_uv_ptc_operations = {
+ 	.open		= uv_ptc_proc_open,
+ 	.read		= seq_read,
+@@ -1105,6 +1281,12 @@ static const struct file_operations proc_uv_ptc_operations = {
+ 	.release	= seq_release,
+ };
+ 
++static const struct file_operations tunables_fops = {
++	.open		= tunables_open,
++	.read		= tunables_read,
++	.write		= tunables_write,
++};
++
+ static int __init uv_ptc_init(void)
+ {
+ 	struct proc_dir_entry *proc_uv_ptc;
+@@ -1119,6 +1301,20 @@ static int __init uv_ptc_init(void)
+ 		       UV_PTC_BASENAME);
+ 		return -EINVAL;
+ 	}
++
++	tunables_dir = debugfs_create_dir(UV_BAU_TUNABLES_DIR, NULL);
++	if (!tunables_dir) {
++		printk(KERN_ERR "unable to create debugfs directory %s\n",
++		       UV_BAU_TUNABLES_DIR);
++		return -EINVAL;
++	}
++	tunables_file = debugfs_create_file(UV_BAU_TUNABLES_FILE, 0600,
++			tunables_dir, NULL, &tunables_fops);
++	if (!tunables_file) {
++		printk(KERN_ERR "unable to create debugfs file %s\n",
++		       UV_BAU_TUNABLES_FILE);
++		return -EINVAL;
++	}
+ 	return 0;
+ }
+ 
+@@ -1259,15 +1455,44 @@ static void __init uv_init_uvhub(int uvhub, int vector)
+ }
+ 
+ /*
++ * We will set BAU_MISC_CONTROL with a timeout period.
++ * But the BIOS has set UVH_AGING_PRESCALE_SEL and UVH_TRANSACTION_TIMEOUT.
++ * So the destination timeout period has be be calculated from them.
++ */
++static int
++calculate_destination_timeout(void)
++{
++	unsigned long mmr_image;
++	int mult1;
++	int mult2;
++	int index;
++	int base;
++	int ret;
++	unsigned long ts_ns;
++
++	mult1 = UV_INTD_SOFT_ACK_TIMEOUT_PERIOD & BAU_MISC_CONTROL_MULT_MASK;
++	mmr_image = uv_read_local_mmr(UVH_AGING_PRESCALE_SEL);
++	index = (mmr_image >> BAU_URGENCY_7_SHIFT) & BAU_URGENCY_7_MASK;
++	mmr_image = uv_read_local_mmr(UVH_TRANSACTION_TIMEOUT);
++	mult2 = (mmr_image >> BAU_TRANS_SHIFT) & BAU_TRANS_MASK;
++	base = timeout_base_ns[index];
++	ts_ns = base * mult1 * mult2;
++	ret = ts_ns / 1000;
++	return ret;
++}
++
++/*
+  * initialize the bau_control structure for each cpu
+  */
+ static void uv_init_per_cpu(int nuvhubs)
+ {
+-	int i, j, k;
++	int i;
+ 	int cpu;
+ 	int pnode;
+ 	int uvhub;
+ 	short socket = 0;
++	unsigned short socket_mask;
++	unsigned int uvhub_mask;
+ 	struct bau_control *bcp;
+ 	struct uvhub_desc *bdp;
+ 	struct socket_desc *sdp;
+@@ -1278,7 +1503,7 @@ static void uv_init_per_cpu(int nuvhubs)
+ 		short cpu_number[16];
+ 	};
+ 	struct uvhub_desc {
+-		short num_sockets;
++		unsigned short socket_mask;
+ 		short num_cpus;
+ 		short uvhub;
+ 		short pnode;
+@@ -1286,57 +1511,83 @@ static void uv_init_per_cpu(int nuvhubs)
+ 	};
+ 	struct uvhub_desc *uvhub_descs;
+ 
++	timeout_us = calculate_destination_timeout();
++
+ 	uvhub_descs = (struct uvhub_desc *)
+ 		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+ 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
+ 	for_each_present_cpu(cpu) {
+ 		bcp = &per_cpu(bau_control, cpu);
+ 		memset(bcp, 0, sizeof(struct bau_control));
+-		spin_lock_init(&bcp->masks_lock);
+-		bcp->max_concurrent = uv_bau_max_concurrent;
+ 		pnode = uv_cpu_hub_info(cpu)->pnode;
+ 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
++		uvhub_mask |= (1 << uvhub);
+ 		bdp = &uvhub_descs[uvhub];
+ 		bdp->num_cpus++;
+ 		bdp->uvhub = uvhub;
+ 		bdp->pnode = pnode;
+-		/* time interval to catch a hardware stay-busy bug */
+-		bcp->timeout_interval = millisec_2_cycles(3);
+-		/* kludge: assume uv_hub.h is constant */
+-		socket = (cpu_physical_id(cpu)>>5)&1;
+-		if (socket >= bdp->num_sockets)
+-			bdp->num_sockets = socket+1;
++		/* kludge: 'assuming' one node per socket, and assuming that
++		   disabling a socket just leaves a gap in node numbers */
++		socket = (cpu_to_node(cpu) & 1);;
++		bdp->socket_mask |= (1 << socket);
+ 		sdp = &bdp->socket[socket];
+ 		sdp->cpu_number[sdp->num_cpus] = cpu;
+ 		sdp->num_cpus++;
+ 	}
+-	socket = 0;
+-	for_each_possible_blade(uvhub) {
++	uvhub = 0;
++	while (uvhub_mask) {
++		if (!(uvhub_mask & 1))
++			goto nexthub;
+ 		bdp = &uvhub_descs[uvhub];
+-		for (i = 0; i < bdp->num_sockets; i++) {
+-			sdp = &bdp->socket[i];
+-			for (j = 0; j < sdp->num_cpus; j++) {
+-				cpu = sdp->cpu_number[j];
++		socket_mask = bdp->socket_mask;
++		socket = 0;
++		while (socket_mask) {
++			if (!(socket_mask & 1))
++				goto nextsocket;
++			sdp = &bdp->socket[socket];
++			for (i = 0; i < sdp->num_cpus; i++) {
++				cpu = sdp->cpu_number[i];
+ 				bcp = &per_cpu(bau_control, cpu);
+ 				bcp->cpu = cpu;
+-				if (j == 0) {
++				if (i == 0) {
+ 					smaster = bcp;
+-					if (i == 0)
++					if (socket == 0)
+ 						hmaster = bcp;
+ 				}
+ 				bcp->cpus_in_uvhub = bdp->num_cpus;
+ 				bcp->cpus_in_socket = sdp->num_cpus;
+ 				bcp->socket_master = smaster;
++				bcp->uvhub = bdp->uvhub;
+ 				bcp->uvhub_master = hmaster;
+-				for (k = 0; k < DEST_Q_SIZE; k++)
+-					bcp->socket_acknowledge_count[k] = 0;
+-				bcp->uvhub_cpu =
+-				  uv_cpu_hub_info(cpu)->blade_processor_id;
++				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
++						blade_processor_id;
+ 			}
++nextsocket:
+ 			socket++;
++			socket_mask = (socket_mask >> 1);
+ 		}
++nexthub:
++		uvhub++;
++		uvhub_mask = (uvhub_mask >> 1);
+ 	}
+ 	kfree(uvhub_descs);
++	for_each_present_cpu(cpu) {
++		bcp = &per_cpu(bau_control, cpu);
++		bcp->baudisabled = 0;
++		bcp->statp = &per_cpu(ptcstats, cpu);
++		/* time interval to catch a hardware stay-busy bug */
++		bcp->timeout_interval = microsec_2_cycles(2*timeout_us);
++		bcp->max_bau_concurrent = max_bau_concurrent;
++		bcp->max_bau_concurrent_constant = max_bau_concurrent;
++		bcp->plugged_delay = plugged_delay;
++		bcp->plugsb4reset = plugsb4reset;
++		bcp->timeoutsb4reset = timeoutsb4reset;
++		bcp->ipi_reset_limit = ipi_reset_limit;
++		bcp->complete_threshold = complete_threshold;
++		bcp->congested_response_us = congested_response_us;
++		bcp->congested_reps = congested_reps;
++		bcp->congested_period = congested_period;
++	}
+ }
+ 
+ /*
+@@ -1361,10 +1612,11 @@ static int __init uv_bau_init(void)
+ 		zalloc_cpumask_var_node(&per_cpu(uv_flush_tlb_mask, cur_cpu),
+ 				       GFP_KERNEL, cpu_to_node(cur_cpu));
+ 
+-	uv_bau_max_concurrent = MAX_BAU_CONCURRENT;
+ 	uv_nshift = uv_hub_info->m_val;
+ 	uv_mmask = (1UL << uv_hub_info->m_val) - 1;
+ 	nuvhubs = uv_num_possible_blades();
++	spin_lock_init(&disable_lock);
++	congested_cycles = microsec_2_cycles(congested_response_us);
+ 
+ 	uv_init_per_cpu(nuvhubs);
+ 
+@@ -1383,15 +1635,19 @@ static int __init uv_bau_init(void)
+ 	alloc_intr_gate(vector, uv_bau_message_intr1);
+ 
+ 	for_each_possible_blade(uvhub) {
+-		pnode = uv_blade_to_pnode(uvhub);
+-		/* INIT the bau */
+-		uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_ACTIVATION_CONTROL,
+-				      ((unsigned long)1 << 63));
+-		mmr = 1; /* should be 1 to broadcast to both sockets */
+-		uv_write_global_mmr64(pnode, UVH_BAU_DATA_BROADCAST, mmr);
++		if (uv_blade_nr_possible_cpus(uvhub)) {
++			pnode = uv_blade_to_pnode(uvhub);
++			/* INIT the bau */
++			uv_write_global_mmr64(pnode,
++					UVH_LB_BAU_SB_ACTIVATION_CONTROL,
++					((unsigned long)1 << 63));
++			mmr = 1; /* should be 1 to broadcast to both sockets */
++			uv_write_global_mmr64(pnode, UVH_BAU_DATA_BROADCAST,
++						mmr);
++		}
+ 	}
+ 
+ 	return 0;
+ }
+ core_initcall(uv_bau_init);
+-core_initcall(uv_ptc_init);
++fs_initcall(uv_ptc_init);
