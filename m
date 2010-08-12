@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933983Ab0HLQW0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 12:22:26 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:32843 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933967Ab0HLQWY (ORCPT
+	id S933775Ab0HLQYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 12:24:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40248 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab0HLQYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 12:22:24 -0400
+	Thu, 12 Aug 2010 12:24:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=o1XbnfNRPyIzjWJ04mvbJorTc0M656dKjPD+ARyfAil9YXZRkkXexRN31/qLGEWFdo
-         ENnsNQ4KmcnUVTegJCCo901xEfE6hGH7v//SPx4zwLUrqBRWdpOB4/QVViSA4SajLLDx
-         RaD5e6onRlA+glWshVFuTs+wySUyaBc9keYbk=
-Date: Thu, 12 Aug 2010 09:22:18 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Daniel Mack <daniel@caiaq.de>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Input: fix faulty XXinput_* calls
-Message-ID: <20100812162218.GA21286@core.coreip.homeip.net>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=OSd6dWruAN0OngiNV2J02VR1XFVCUUbAtxoi7v8lbp6lMZzo7mgP1dzrQgrUb0o/U9
+         GG6Ez8BpJtM8YGiqM3qOPLxnrNtyytyuqhLAxi0aw5XQo27FttNaRp1LEzs3VX1Z0eLa
+         LeHQEG+afNOeW7cjPGdBE/WPeE8Q1j703jEYs=
+Message-ID: <4C642047.6030108@gmail.com>
+Date: Thu, 12 Aug 2010 18:24:39 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Christoph Hellwig <hch@lst.de>
+CC: Jiri Slaby <jslaby@suse.cz>, akpm@linux-foundation.org,
+        linux-raid@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [PATCH v2] BLOCK: fix bio.bi_rw handling
+References: <1281616266-4709-1-git-send-email-jslaby@suse.cz> <1281616266-4709-3-git-send-email-jslaby@suse.cz> <20100812160809.GC28689@lst.de>
+In-Reply-To: <20100812160809.GC28689@lst.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Mack <daniel@caiaq.de>
+On 08/12/2010 06:08 PM, Christoph Hellwig wrote:
+> On Thu, Aug 12, 2010 at 02:31:06PM +0200, Jiri Slaby wrote:
+>> Return of the bi_rw tests is no longer bool after commit 74450be1. But
+>> results of such tests are stored in bools. This doesn't fit in there
+>> for some compilers (gcc 4.5 here), so either use !! magic to get real
+>> bools or use ulong where the result is assigned somewhere.
+> 
+> I'd have to look at my copy of the C standard if it's guaranteed,
 
-They've been introduced by 987a6c02 ("Input: switch to input_abs_*()
-access functions") and they appear to be some kind of debug left-over.
+§6.5.3.3 of ANSI C99, par 5:
+The result of the logical negation operator ! is 0 if the value of its
+operand compares unequal to 0, 1 if the value of its operand compares
+equal to 0. The result has type int. The expression !E is equivalent to
+(0==E).
 
-[Dmitry Torokhov: these are my fault - I added XX prefixes in places where
- I wanted to do additional review of the code but failed to actually do
- that in these particular instances.]
+On == (§6.5.9 par 3):
+The == (equal to) and != (not equal to) operators are analogous to the
+relational operators except for their lower precedence. Each of the
+operators yields 1 if the specified relation is true and 0 if it is
+false. The result has type int. For any pair of operands, exactly one of
+the relations is true.
 
-Signed-off-by: Daniel Mack <daniel@caiaq.de>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
+On bool => _Bool (§6.2.5 par 2)
+An object declared as type _Bool is large enough to store the values 0
+and 1.
 
- drivers/input/joystick/amijoy.c  |    2 +-
- drivers/input/keyboard/hil_kbd.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+So it should be safe :).
 
+BTW just of curiosity, sizeof(bool) is 1 here (8 bits).
 
-diff --git a/drivers/input/joystick/amijoy.c b/drivers/input/joystick/amijoy.c
-index e90694f..0bc8620 100644
---- a/drivers/input/joystick/amijoy.c
-+++ b/drivers/input/joystick/amijoy.c
-@@ -139,7 +139,7 @@ static int __init amijoy_init(void)
- 		amijoy_dev[i]->keybit[BIT_WORD(BTN_LEFT)] = BIT_MASK(BTN_LEFT) |
- 			BIT_MASK(BTN_MIDDLE) | BIT_MASK(BTN_RIGHT);
- 		for (j = 0; j < 2; j++) {
--			XXinput_set_abs_params(amijoy_dev[i], ABS_X + j,
-+			input_set_abs_params(amijoy_dev[i], ABS_X + j,
- 					     -1, 1, 0, 0);
- 		}
- 
-diff --git a/drivers/input/keyboard/hil_kbd.c b/drivers/input/keyboard/hil_kbd.c
-index ddd5afd..dcc86b9 100644
---- a/drivers/input/keyboard/hil_kbd.c
-+++ b/drivers/input/keyboard/hil_kbd.c
-@@ -235,7 +235,7 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
- 			if (val < input_abs_min(dev, ABS_X + i))
- 				input_abs_set_min(dev, ABS_X + i, val);
- 			if (val > input_abs_max(dev, ABS_X + i))
--				XXinput_abs_set_max(dev, ABS_X + i, val);
-+				input_abs_set_max(dev, ABS_X + i, val);
- #endif
- 			if (i % 3)
- 				val = input_abs_max(dev, ABS_X + i) - val;
-@@ -391,7 +391,7 @@ static void hil_dev_pointer_setup(struct hil_dev *ptr)
- 			int diff = input_abs_max(input_dev, ABS_X + i) / 10;
- 			input_abs_set_min(input_dev, ABS_X + i,
- 				input_abs_min(input_dev, ABS_X + i) + diff)
--			XXinput_abs_set_max(input_dev, ABS_X + i,
-+			input_abs_set_max(input_dev, ABS_X + i,
- 				input_abs_max(input_dev, ABS_X + i) - diff)
- 		}
- #endif
+regards,
 -- 
-Dmitry
+js
