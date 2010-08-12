@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760844Ab0HLTb4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 15:31:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64510 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158Ab0HLTbx (ORCPT
+	id S1760856Ab0HLTd5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 15:33:57 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:35139 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158Ab0HLTdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 15:31:53 -0400
-Date: Thu, 12 Aug 2010 12:31:21 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH -next] latencytop: fix kconfig dependency warnings
-Message-Id: <20100812123121.a7c99cde.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Aug 2010 15:33:54 -0400
+Date: Thu, 12 Aug 2010 21:33:53 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Subject: Re: [PATCH 0/2] kconfig: fixes for savedefconfig
+Message-ID: <20100812193353.GB32373@merkur.ravnborg.org>
+References: <20100812071023.GA11148@merkur.ravnborg.org> <4C63BB09.80609@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C63BB09.80609@suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, Aug 12, 2010 at 11:12:41AM +0200, Michal Marek wrote:
+> On 12.8.2010 09:10, Sam Ravnborg wrote:
+> > While tranislating all remaining defconfigs in
+> > the kernel to the minimal format I encountered
+> > an issue where the resulting .config was not
+> > equal to the original.
+> > 
+> > This was tracked down to missing info in the saved defconfig file.
+> > 
+> > Arve reported another problem with tristate choice that was
+> > reproduceable with a small config sample.
+> > 
+> > The followng patches fixes both issues.
+> > There is no outstanding issue with respect to savedefconfig.
+> 
+> Applied, thanks a lot Sam!
 
-warning: (LATENCYTOP && HAVE_LATENCYTOP_SUPPORT) selects SCHED_DEBUG which has unmet direct dependencies (DEBUG_KERNEL && PROC_FS)
-warning: (LATENCYTOP && HAVE_LATENCYTOP_SUPPORT) selects SCHEDSTATS which has unmet direct dependencies (DEBUG_KERNEL && PROC_FS)
+I would like to see these patches hit mainline soonish.
+I have a small shellscript that will convert remaining defconfigs to
+the minimal format and like it to be run just before after -rc1.
+But these patches is needed before I can ask Linus to run the script.
 
-Add depends on STACKTRACE_SUPPORT for 'select STACKTRACE'.
-Add depends on PROC_FS since that is where the output goes.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
----
- lib/Kconfig.debug |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
---- linux-next-20100810.orig/lib/Kconfig.debug
-+++ linux-next-20100810/lib/Kconfig.debug
-@@ -1004,13 +1004,16 @@ config FAULT_INJECTION_STACKTRACE_FILTER
- 
- config LATENCYTOP
- 	bool "Latency measuring infrastructure"
-+	depends on HAVE_LATENCYTOP_SUPPORT
-+	depends on DEBUG_KERNEL
-+	depends on STACKTRACE_SUPPORT
-+	depends on PROC_FS
- 	select FRAME_POINTER if !MIPS && !PPC && !S390 && !MICROBLAZE
- 	select KALLSYMS
- 	select KALLSYMS_ALL
- 	select STACKTRACE
- 	select SCHEDSTATS
- 	select SCHED_DEBUG
--	depends on HAVE_LATENCYTOP_SUPPORT
- 	help
- 	  Enable this option if you want to use the LatencyTOP tool
- 	  to find out which userspace is blocking on what kernel operations.
+	Sam
