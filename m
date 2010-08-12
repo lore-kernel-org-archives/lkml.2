@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760154Ab0HLNu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 09:50:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51270 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab0HLNuz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 09:50:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=I1Gcj88uC6P8Zrotn7O88yphcs/uyEnqEh5GEZHcPqu7UBHsYlW7gapYIhdHXmixR3
-         M7pN1JhlvfTkAC4LCpcfkaMUo3JBTzhJvT26/kYnUkB0tAtNYjwSrvH+S8lJC2P7st4R
-         LUyWQuk9k03ZzzNHEgvxwwN3fp247tyZlfiQQ=
+	id S1760164Ab0HLNwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 09:52:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752894Ab0HLNwy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 09:52:54 -0400
+Date: Thu, 12 Aug 2010 09:52:33 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100812135233.GL4879@redhat.com>
+References: <20100804155002.GS3353@redhat.com>
+ <20100804161046.GC5130@lenovo>
+ <20100804162026.GU3353@redhat.com>
+ <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100811220058.GT26154@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <1281606545-20017-1-git-send-email-mcree@orcon.net.nz>
-References: <1281606545-20017-1-git-send-email-mcree@orcon.net.nz>
-From: Matt Turner <mattst88@gmail.com>
-Date: Thu, 12 Aug 2010 09:50:33 -0400
-Message-ID: <AANLkTikWBky79bd5u78Bkm3P2KXrVU=0dWCehEU7sGZg@mail.gmail.com>
-Subject: Re: [PATCH] alpha: convert perf_event to use local_t
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: linux-kernel@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-alpha@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100811220058.GT26154@erda.amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 5:49 AM, Michael Cree <mcree@orcon.net.nz> wrote:
-> Updates the Alpha perf_event code to match the changes
-> recently made to the core perf_event code in commit
-> e78505958cf123048fb48cb56b79cebb8edd15fb.
->
-> Signed-off-by: Michael Cree <mcree@orcon.net.nz>
-> ---
->  arch/alpha/kernel/perf_event.c |   18 +++++++++---------
->  1 files changed, 9 insertions(+), 9 deletions(-)
->
-> diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
-> index 51c39fa..85d8e4f 100644
-> --- a/arch/alpha/kernel/perf_event.c
-> +++ b/arch/alpha/kernel/perf_event.c
-> @@ -241,20 +241,20 @@ static inline unsigned long alpha_read_pmc(int idx)
->  static int alpha_perf_event_set_period(struct perf_event *event,
->                                struct hw_perf_event *hwc, int idx)
->  {
-> -       long left = atomic64_read(&hwc->period_left);
-> +       long left = local64_read(&hwc->period_left);
->        long period = hwc->sample_period;
->        int ret = 0;
->
->        if (unlikely(left <= -period)) {
->                left = period;
-> -               atomic64_set(&hwc->period_left, left);
-> +               local64_set(&hwc->period_left, left);
->                hwc->last_period = period;
->                ret = 1;
->        }
->
->        if (unlikely(left <= 0)) {
->                left += period;
-> -               atomic64_set(&hwc->period_left, left);
-> +               local64_set(&hwc->period_left, left);
->                hwc->last_period = period;
->                ret = 1;
->        }
-> @@ -269,7 +269,7 @@ static int alpha_perf_event_set_period(struct perf_event *event,
->        if (left > (long)alpha_pmu->pmc_max_period[idx])
->                left = alpha_pmu->pmc_max_period[idx];
->
-> -       atomic64_set(&hwc->prev_count, (unsigned long)(-left));
-> +       local64_set(&hwc->prev_count, (unsigned long)(-left));
->
->        alpha_write_pmc(idx, (unsigned long)(-left));
->
-> @@ -300,10 +300,10 @@ static unsigned long alpha_perf_event_update(struct perf_event *event,
->        long delta;
->
->  again:
-> -       prev_raw_count = atomic64_read(&hwc->prev_count);
-> +       prev_raw_count = local64_read(&hwc->prev_count);
->        new_raw_count = alpha_read_pmc(idx);
->
-> -       if (atomic64_cmpxchg(&hwc->prev_count, prev_raw_count,
-> +       if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
->                             new_raw_count) != prev_raw_count)
->                goto again;
->
-> @@ -316,8 +316,8 @@ again:
->                delta += alpha_pmu->pmc_max_period[idx] + 1;
->        }
->
-> -       atomic64_add(delta, &event->count);
-> -       atomic64_sub(delta, &hwc->period_left);
-> +       local64_add(delta, &event->count);
-> +       local64_sub(delta, &hwc->period_left);
->
->        return new_raw_count;
->  }
-> @@ -636,7 +636,7 @@ static int __hw_perf_event_init(struct perf_event *event)
->        if (!hwc->sample_period) {
->                hwc->sample_period = alpha_pmu->pmc_max_period[0];
->                hwc->last_period = hwc->sample_period;
-> -               atomic64_set(&hwc->period_left, hwc->sample_period);
-> +               local64_set(&hwc->period_left, hwc->sample_period);
->        }
->
->        return 0;
+On Thu, Aug 12, 2010 at 12:00:58AM +0200, Robert Richter wrote:
+> I was debuging this a little more, see version 2 below.
+> 
+> -Robert
+> 
 > --
-> 1.7.1
->
->
+> 
+> From 8bb831af56d118b85fc38e0ddc2e516f7504b9fb Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Thu, 5 Aug 2010 16:19:59 +0200
+> Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
+> 
+> When perfctrs are running it is valid to have unhandled nmis, two
+> events could trigger 'simultaneously' raising two back-to-back
+> NMIs. If the first NMI handles both, the latter will be empty and daze
+> the CPU.
+> 
+> The solution to avoid an 'unknown nmi' massage in this case was simply
+> to stop the nmi handler chain when perfctrs are runnning by stating
+> the nmi was handled. This has the drawback that a) we can not detect
+> unknown nmis anymore, and b) subsequent nmi handlers are not called.
+> 
+> This patch addresses this. Now, we check this unknown NMI if it could
+> be a perfctr back-to-back NMI. Otherwise we pass it and let the kernel
+> handle the unknown nmi.
 
-Thanks Michael. I'll apply this when I get back from vacation.
+Seems to cover my concerns.  Great work!
+
+ACK
+
+Cheers,
+Don
