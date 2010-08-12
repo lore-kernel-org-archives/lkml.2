@@ -1,1448 +1,745 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933987Ab0HLUdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 16:33:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36980 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab0HLUds (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 16:33:48 -0400
-Date: Thu, 12 Aug 2010 20:32:48 GMT
-Message-Id: <201008122032.o7CKWmUV010754@hera.kernel.org>
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86/uv for 2.6.36
-Cc: Cliff Wickman <cpw@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, gregkh@suse.de
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 Aug 2010 20:32:50 +0000 (UTC)
+	id S933993Ab0HLUh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:37:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50956 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933716Ab0HLUhx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 16:37:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer;
+        b=pdsBWsKRZBrqXAajItnCszr8BdmyEseTuzFBcNoFLcZqhg+0zcVSDN9HRrc1ljZUWi
+         1L+/2ZZiI0yVCH5iFGkk773HbH/ndgbfko2FgjylPZNA2M88irRDDYSpOzCzCRXUKSXt
+         VnU7RKKrvee+C+FVskIeHJHC7pyuA8IVVc3Mw=
+Subject: [REGRESSION 2.6.35+] crash (maybe kmemleak related)
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary="=-rcKjuCHCqqF74ynbBcxx"
+Date: Thu, 12 Aug 2010 23:37:44 +0300
+Message-ID: <1281645464.3893.25.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Sorry for the late pull request.  Ingo and I had a miscommunication --
-he had seen failures in x86/uv and I thought he meants that he had
-excluded *all* of x86/uv.  These are the patches that were *not*
-excluded and thus have had plenty of testing.
+--=-rcKjuCHCqqF74ynbBcxx
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-I will try to have another pull for you hopefully tomorrow: the two
-patches that were excluded from this pull plus one which fixes the
-problem.
+I am getting this crash on boot very often on git master of Linus tree.
 
-The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
+(Note that I use kmemleak, but disable its scan thread using 
 
-  Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
+'echo "scan=off" > /sys/kernel/debug/kmemleak'
+in rc.local.
 
-are available in the git repository at:
+<7>[   24.438184] wlan0: authenticated
+<7>[   24.441687] wlan0: associate with 00:1b:9e:d8:77:02 (try 1)
+<7>[   24.444425] wlan0: RX AssocResp from 00:1b:9e:d8:77:02 (capab=0x431 status=0 aid=3)
+<7>[   24.444448] wlan0: associated
+<4>[   24.511898] kmemleak: Cannot insert 0xffff880079fe6000 into the object search tree (already existing)
+<4>[   24.511922] Pid: 2031, comm: NetworkManager Not tainted 2.6.35-rc0+ #108
+<4>[   24.511936] Call Trace:
+<4>[   24.511950]  [<ffffffff810dc41a>] create_object+0x27a/0x2d0
+<4>[   24.511966]  [<ffffffff810d7b9b>] ? __slab_alloc+0xab/0x5c0
+<4>[   24.511982]  [<ffffffff81137e71>] ? proc_self_follow_link+0x71/0xa0
+<4>[   24.511999]  [<ffffffff8138ea29>] kmemleak_alloc+0x59/0xd0
+<4>[   24.512013]  [<ffffffff810d8144>] kmem_cache_alloc+0x94/0x100
+<4>[   24.512028]  [<ffffffff81137e71>] proc_self_follow_link+0x71/0xa0
+<4>[   24.512045]  [<ffffffff810ea1bc>] link_path_walk+0x26c/0xd00
+<4>[   24.512060]  [<ffffffff810ebe22>] do_filp_open+0x152/0x660
+<4>[   24.512075]  [<ffffffff810648a0>] ? sched_clock_cpu+0xc0/0x110
+<4>[   24.512091]  [<ffffffff8106e6ac>] ? lock_release_holdtime+0xac/0x150
+<4>[   24.512107]  [<ffffffff8103888d>] ? sub_preempt_count+0x9d/0xd0
+<4>[   24.512123]  [<ffffffff813a0eb0>] ? _raw_spin_unlock+0x30/0x60
+<4>[   24.512139]  [<ffffffff810f7222>] ? alloc_fd+0xf2/0x140
+<4>[   24.512153]  [<ffffffff810dc890>] do_sys_open+0x60/0x110
+<4>[   24.512166]  [<ffffffff810dc96b>] sys_open+0x1b/0x20
+<4>[   24.512181]  [<ffffffff81002deb>] system_call_fastpath+0x16/0x1b
+<6>[   24.512205] kmemleak: Kernel memory leak detector disabled
+<5>[   24.512221] kmemleak: Object 0xffff880079fe6000 (size 4096):
+<5>[   24.512234] kmemleak:   comm "NetworkManager", pid 2031, jiffies 4294939747
+<5>[   24.512248] kmemleak:   min_count = 1
+<5>[   24.512257] kmemleak:   count = 0
+<5>[   24.512265] kmemleak:   flags = 0x1
+<5>[   24.512273] kmemleak:   checksum = 0
+<5>[   24.512281] kmemleak:   backtrace:
+<4>[   24.512289]      [<ffffffff8138ea29>] kmemleak_alloc+0x59/0xd0
+<4>[   24.512304]      [<ffffffff810d8144>] kmem_cache_alloc+0x94/0x100
+<4>[   24.512319]      [<ffffffff810e9d76>] getname+0x36/0x210
+<4>[   24.512333]      [<ffffffff810dc85d>] do_sys_open+0x2d/0x110
+<4>[   24.512347]      [<ffffffff810dc96b>] sys_open+0x1b/0x20
+<4>[   24.512361]      [<ffffffff81002deb>] system_call_fastpath+0x16/0x1b
+<4>[   24.512377]      [<ffffffffffffffff>] 0xffffffffffffffff
+<0>[   24.578578] general protection fault: 0000 [#1] PREEMPT SMP 
+<0>[   24.578667] last sysfs file: /sys/devices/virtual/net/lo/type
+<4>[   24.578719] CPU 0 
+<4>[   24.578734] Modules linked in: af_packet nfsd exportfs nfs lockd nfs_acl auth_rpcgss sunrpc iwl3945 snd_hda_codec_realtek ir_lirc_codec usb_storage lirc_dev uvcvideo iwlcore videodev v4l2_compat_ioctl32 ir_sony_decoder usb_libusual ir_jvc_decoder cpufreq_powersave mac80211 uhci_hcd cpufreq_conservative snd_hda_intel ehci_hcd snd_hda_codec ir_rc6_decoder sdhci_pci cpufreq_userspace joydev r852 sm_common nand sdhci snd_hwdep snd_pcm ir_rc5_decoder acpi_cpufreq mmc_core usbcore tg3 nand_ids ir_nec_decoder mperf cfg80211 ac battery iTCO_wdt coretemp r592 psmouse nand_ecc ene_ir mtd ir_core memstick snd_page_alloc serio_raw evdev libphy sg video
+<4>[   24.579449] 
+<4>[   24.579475] Pid: 2031, comm: autoconf.h Not tainted 2.6.35-rc0+ #108 Nettiling/Aspire 5720     
+<4>[   24.579538] RIP: 0010:[<ffffffff810d8111>]  [<ffffffff810d8111>] kmem_cache_alloc+0x61/0x100
+<4>[   24.579612] RSP: 0018:ffff88007ca0fec8  EFLAGS: 00010002
+<4>[   24.579652] RAX: ffff8800025cffa0 RBX: 00000000000000d0 RCX: 0000000000000000
+<4>[   24.579700] RDX: 0000000000000000 RSI: 00000000000006a5 RDI: ffffffff814d0460
+<4>[   24.579746] RBP: ffff88007ca0fef8 R08: 00007fa12c547300 R09: 00007fa12c55b220
+<4>[   24.579793] R10: 00007fff3dc48160 R11: 0000000000000246 R12: ffffffff8154bfe0
+<4>[   24.579840] R13: 0000000000000292 R14: 68642f6e6962732f R15: ffffffff810e9d76
+<4>[   24.579886] FS:  00007fa12c73e700(0000) GS:ffff880002400000(0000) knlGS:0000000000000000
+<4>[   24.579947] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+<4>[   24.579988] CR2: 00007fa12c2a20e0 CR3: 000000007cb2e000 CR4: 00000000000006f0
+<4>[   24.580036] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+<4>[   24.580084] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+<4>[   24.580130] Process autoconf.h (pid: 2031, threadinfo ffff88007ca0e000, task ffff88007c7d0000)
+<0>[   24.580193] Stack:
+<4>[   24.580218]  ffff88007ca0fee8 0000000000000000 0000000000464356 00000000ffffff9c
+<4>[   24.580281] <0> fffffffffffffff4 000000003dc485d8 ffff88007ca0ff28 ffffffff810e9d76
+<4>[   24.580367] <0> 0000000000000000 0000000000402b40 00000000ffffff9c 0000000000008002
+<0>[   24.580468] Call Trace:
+<4>[   24.580500]  [<ffffffff810e9d76>] getname+0x36/0x210
+<4>[   24.580540]  [<ffffffff810dc85d>] do_sys_open+0x2d/0x110
+<4>[   24.580581]  [<ffffffff810dc96b>] sys_open+0x1b/0x20
+<4>[   24.580621]  [<ffffffff81002deb>] system_call_fastpath+0x16/0x1b
+<0>[   24.580663] Code: 85 8d 00 00 00 9c 41 5d fa 65 48 8b 14 25 38 d4 00 00 49 8b 04 24 48 8d 04 02 4c 8b 30 4d 85 f6 0f 84 84 00 00 00 49 63 54 24 18 <49> 8b 14 16 48 89 10 41 55 9d 4d 85 f6 74 05 66 85 db 78 3b 41 
+<1>[   24.581148] RIP  [<ffffffff810d8111>] kmem_cache_alloc+0x61/0x100
+<4>[   24.581198]  RSP <ffff88007ca0fec8>
+<4>[   24.581233] ---[ end trace 299e97b266f497ee ]---
+<0>[   24.581272] Kernel panic - not syncing: Fatal exception
+<4>[   24.581312] Pid: 2031, comm: autoconf.h Tainted: G      D     2.6.35-rc0+ #108
+<4>[   24.581369] Call Trace:
+<4>[   24.581400]  [<ffffffff8139c61a>] panic+0x96/0x1a3
+<4>[   24.581439]  [<ffffffff810418b5>] ? kmsg_dump+0x125/0x140
+<4>[   24.581480]  [<ffffffff8100737c>] oops_end+0xcc/0xe0
+<4>[   24.581519]  [<ffffffff81007586>] die+0x56/0x90
+<4>[   24.581557]  [<ffffffff81004b32>] do_general_protection+0x152/0x160
+<4>[   24.581608]  [<ffffffff813a142f>] general_protection+0x1f/0x30
+<4>[   24.581651]  [<ffffffff810e9d76>] ? getname+0x36/0x210
+<4>[   24.581692]  [<ffffffff810d8111>] ? kmem_cache_alloc+0x61/0x100
+<4>[   24.581736]  [<ffffffff810e9d76>] getname+0x36/0x210
+<4>[   24.581775]  [<ffffffff810dc85d>] do_sys_open+0x2d/0x110
+<4>[   24.581816]  [<ffffffff810dc96b>] sys_open+0x1b/0x20
+<4>[   24.581855]  [<ffffffff81002deb>] system_call_fastpath+0x16/0x1b
+<0>[   24.581915] Rebooting in 20 seconds..
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-uv-for-linus
+I attach full log of two instances of the crash.
 
-Cliff Wickman (12):
-      x86, UV: Calculate BAU destination timeout
-      x86, UV: BAU tunables into a debugfs file
-      x86, UV: Disable BAU on network congestion
-      x86, UV: Shorten access to BAU statistics structure
-      x86, UV: BAU structure rearranging
-      x86, UV: Correct BAU software acknowledge
-      x86, UV: Correct BAU discovery of hubs and sockets
-      x86, UV: Remove BAU check for stay-busy
-      x86, UV: Correct BAU regular message type
-      x86, UV: BAU broadcast to the local hub
-      x86, UV: Modularize BAU send and wait
-      x86, UV: Initialize BAU MMRs only on hubs with cpus
+Best regards,
+	Maxim Levitsky
 
- arch/x86/include/asm/uv/uv_bau.h |  151 +++++---
- arch/x86/kernel/tlb_uv.c         |  756 +++++++++++++++++++++++++-------------
- 2 files changed, 608 insertions(+), 299 deletions(-)
+--=-rcKjuCHCqqF74ynbBcxx
+Content-Type: application/x-gzip; name="kernel_crash.gz"
+Content-Disposition: attachment; filename="kernel_crash.gz"
+Content-Transfer-Encoding: base64
 
-diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
-index aa558ac..42d412f 100644
---- a/arch/x86/include/asm/uv/uv_bau.h
-+++ b/arch/x86/include/asm/uv/uv_bau.h
-@@ -34,6 +34,7 @@
-  */
- 
- #define UV_ITEMS_PER_DESCRIPTOR		8
-+/* the 'throttle' to prevent the hardware stay-busy bug */
- #define MAX_BAU_CONCURRENT		3
- #define UV_CPUS_PER_ACT_STATUS		32
- #define UV_ACT_STATUS_MASK		0x3
-@@ -45,10 +46,26 @@
- #define UV_DESC_BASE_PNODE_SHIFT	49
- #define UV_PAYLOADQ_PNODE_SHIFT		49
- #define UV_PTC_BASENAME			"sgi_uv/ptc_statistics"
-+#define UV_BAU_BASENAME			"sgi_uv/bau_tunables"
-+#define UV_BAU_TUNABLES_DIR		"sgi_uv"
-+#define UV_BAU_TUNABLES_FILE		"bau_tunables"
-+#define WHITESPACE			" \t\n"
- #define uv_physnodeaddr(x)		((__pa((unsigned long)(x)) & uv_mmask))
- #define UV_ENABLE_INTD_SOFT_ACK_MODE_SHIFT 15
- #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD_SHIFT 16
--#define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD 0x000000000bUL
-+#define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD 0x0000000009UL
-+/* [19:16] SOFT_ACK timeout period  19: 1 is urgency 7  17:16 1 is multiplier */
-+#define BAU_MISC_CONTROL_MULT_MASK 3
-+
-+#define UVH_AGING_PRESCALE_SEL 0x000000b000UL
-+/* [30:28] URGENCY_7  an index into a table of times */
-+#define BAU_URGENCY_7_SHIFT 28
-+#define BAU_URGENCY_7_MASK 7
-+
-+#define UVH_TRANSACTION_TIMEOUT 0x000000b200UL
-+/* [45:40] BAU - BAU transaction timeout select - a multiplier */
-+#define BAU_TRANS_SHIFT 40
-+#define BAU_TRANS_MASK 0x3f
- 
- /*
-  * bits in UVH_LB_BAU_SB_ACTIVATION_STATUS_0/1
-@@ -59,24 +76,21 @@
- #define DESC_STATUS_SOURCE_TIMEOUT	3
- 
- /*
-- * source side threshholds at which message retries print a warning
-- */
--#define SOURCE_TIMEOUT_LIMIT		20
--#define DESTINATION_TIMEOUT_LIMIT	20
--
--/*
-- * misc. delays, in microseconds
-+ * delay for 'plugged' timeout retries, in microseconds
-  */
--#define THROTTLE_DELAY			10
--#define TIMEOUT_DELAY			10
--#define BIOS_TO				1000
--/* BIOS is assumed to set the destination timeout to 1003520 nanoseconds */
-+#define PLUGGED_DELAY			10
- 
- /*
-  * threshholds at which to use IPI to free resources
-  */
-+/* after this # consecutive 'plugged' timeouts, use IPI to release resources */
- #define PLUGSB4RESET 100
--#define TIMEOUTSB4RESET 100
-+/* after this many consecutive timeouts, use IPI to release resources */
-+#define TIMEOUTSB4RESET 1
-+/* at this number uses of IPI to release resources, giveup the request */
-+#define IPI_RESET_LIMIT 1
-+/* after this # consecutive successes, bump up the throttle if it was lowered */
-+#define COMPLETE_THRESHOLD 5
- 
- /*
-  * number of entries in the destination side payload queue
-@@ -96,6 +110,13 @@
- #define FLUSH_COMPLETE			4
- 
- /*
-+ * tuning the action when the numalink network is extremely delayed
-+ */
-+#define CONGESTED_RESPONSE_US 1000 /* 'long' response time, in microseconds */
-+#define CONGESTED_REPS 10 /* long delays averaged over this many broadcasts */
-+#define CONGESTED_PERIOD 30 /* time for the bau to be disabled, in seconds */
-+
-+/*
-  * Distribution: 32 bytes (256 bits) (bytes 0-0x1f of descriptor)
-  * If the 'multilevel' flag in the header portion of the descriptor
-  * has been set to 0, then endpoint multi-unicast mode is selected.
-@@ -300,37 +321,16 @@ struct bau_payload_queue_entry {
- 	/* bytes 24-31 */
- };
- 
--/*
-- * one per-cpu; to locate the software tables
-- */
--struct bau_control {
--	struct bau_desc *descriptor_base;
-+struct msg_desc {
-+	struct bau_payload_queue_entry *msg;
-+	int msg_slot;
-+	int sw_ack_slot;
- 	struct bau_payload_queue_entry *va_queue_first;
- 	struct bau_payload_queue_entry *va_queue_last;
--	struct bau_payload_queue_entry *bau_msg_head;
--	struct bau_control *uvhub_master;
--	struct bau_control *socket_master;
--	unsigned long timeout_interval;
--	atomic_t active_descriptor_count;
--	int max_concurrent;
--	int max_concurrent_constant;
--	int retry_message_scans;
--	int plugged_tries;
--	int timeout_tries;
--	int ipi_attempts;
--	int conseccompletes;
--	short cpu;
--	short uvhub_cpu;
--	short uvhub;
--	short cpus_in_socket;
--	short cpus_in_uvhub;
--	unsigned short message_number;
--	unsigned short uvhub_quiesce;
--	short socket_acknowledge_count[DEST_Q_SIZE];
--	cycles_t send_message;
--	spinlock_t masks_lock;
--	spinlock_t uvhub_lock;
--	spinlock_t queue_lock;
-+};
-+
-+struct reset_args {
-+	int sender;
- };
- 
- /*
-@@ -344,18 +344,25 @@ struct ptc_stats {
- 	unsigned long s_dtimeout; /* destination side timeouts */
- 	unsigned long s_time; /* time spent in sending side */
- 	unsigned long s_retriesok; /* successful retries */
--	unsigned long s_ntargcpu; /* number of cpus targeted */
--	unsigned long s_ntarguvhub; /* number of uvhubs targeted */
--	unsigned long s_ntarguvhub16; /* number of times >= 16 target hubs */
--	unsigned long s_ntarguvhub8; /* number of times >= 8 target hubs */
--	unsigned long s_ntarguvhub4; /* number of times >= 4 target hubs */
--	unsigned long s_ntarguvhub2; /* number of times >= 2 target hubs */
--	unsigned long s_ntarguvhub1; /* number of times == 1 target hub */
-+	unsigned long s_ntargcpu; /* total number of cpu's targeted */
-+	unsigned long s_ntargself; /* times the sending cpu was targeted */
-+	unsigned long s_ntarglocals; /* targets of cpus on the local blade */
-+	unsigned long s_ntargremotes; /* targets of cpus on remote blades */
-+	unsigned long s_ntarglocaluvhub; /* targets of the local hub */
-+	unsigned long s_ntargremoteuvhub; /* remotes hubs targeted */
-+	unsigned long s_ntarguvhub; /* total number of uvhubs targeted */
-+	unsigned long s_ntarguvhub16; /* number of times target hubs >= 16*/
-+	unsigned long s_ntarguvhub8; /* number of times target hubs >= 8 */
-+	unsigned long s_ntarguvhub4; /* number of times target hubs >= 4 */
-+	unsigned long s_ntarguvhub2; /* number of times target hubs >= 2 */
-+	unsigned long s_ntarguvhub1; /* number of times target hubs == 1 */
- 	unsigned long s_resets_plug; /* ipi-style resets from plug state */
- 	unsigned long s_resets_timeout; /* ipi-style resets from timeouts */
- 	unsigned long s_busy; /* status stayed busy past s/w timer */
- 	unsigned long s_throttles; /* waits in throttle */
- 	unsigned long s_retry_messages; /* retry broadcasts */
-+	unsigned long s_bau_reenabled; /* for bau enable/disable */
-+	unsigned long s_bau_disabled; /* for bau enable/disable */
- 	/* destination statistics */
- 	unsigned long d_alltlb; /* times all tlb's on this cpu were flushed */
- 	unsigned long d_onetlb; /* times just one tlb on this cpu was flushed */
-@@ -370,6 +377,52 @@ struct ptc_stats {
- 	unsigned long d_rcanceled; /* number of messages canceled by resets */
- };
- 
-+/*
-+ * one per-cpu; to locate the software tables
-+ */
-+struct bau_control {
-+	struct bau_desc *descriptor_base;
-+	struct bau_payload_queue_entry *va_queue_first;
-+	struct bau_payload_queue_entry *va_queue_last;
-+	struct bau_payload_queue_entry *bau_msg_head;
-+	struct bau_control *uvhub_master;
-+	struct bau_control *socket_master;
-+	struct ptc_stats *statp;
-+	unsigned long timeout_interval;
-+	unsigned long set_bau_on_time;
-+	atomic_t active_descriptor_count;
-+	int plugged_tries;
-+	int timeout_tries;
-+	int ipi_attempts;
-+	int conseccompletes;
-+	int baudisabled;
-+	int set_bau_off;
-+	short cpu;
-+	short uvhub_cpu;
-+	short uvhub;
-+	short cpus_in_socket;
-+	short cpus_in_uvhub;
-+	unsigned short message_number;
-+	unsigned short uvhub_quiesce;
-+	short socket_acknowledge_count[DEST_Q_SIZE];
-+	cycles_t send_message;
-+	spinlock_t uvhub_lock;
-+	spinlock_t queue_lock;
-+	/* tunables */
-+	int max_bau_concurrent;
-+	int max_bau_concurrent_constant;
-+	int plugged_delay;
-+	int plugsb4reset;
-+	int timeoutsb4reset;
-+	int ipi_reset_limit;
-+	int complete_threshold;
-+	int congested_response_us;
-+	int congested_reps;
-+	int congested_period;
-+	cycles_t period_time;
-+	long period_requests;
-+};
-+
- static inline int bau_uvhub_isset(int uvhub, struct bau_target_uvhubmask *dstp)
- {
- 	return constant_test_bit(uvhub, &dstp->bits[0]);
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index 7fea555..59efb53 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -8,6 +8,7 @@
-  */
- #include <linux/seq_file.h>
- #include <linux/proc_fs.h>
-+#include <linux/debugfs.h>
- #include <linux/kernel.h>
- #include <linux/slab.h>
- 
-@@ -22,19 +23,37 @@
- #include <asm/irq_vectors.h>
- #include <asm/timer.h>
- 
--struct msg_desc {
--	struct bau_payload_queue_entry *msg;
--	int msg_slot;
--	int sw_ack_slot;
--	struct bau_payload_queue_entry *va_queue_first;
--	struct bau_payload_queue_entry *va_queue_last;
-+/* timeouts in nanoseconds (indexed by UVH_AGING_PRESCALE_SEL urgency7 30:28) */
-+static int timeout_base_ns[] = {
-+		20,
-+		160,
-+		1280,
-+		10240,
-+		81920,
-+		655360,
-+		5242880,
-+		167772160
- };
--
--#define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	0x000000000bUL
--
--static int uv_bau_max_concurrent __read_mostly;
--
-+static int timeout_us;
- static int nobau;
-+static int baudisabled;
-+static spinlock_t disable_lock;
-+static cycles_t congested_cycles;
-+
-+/* tunables: */
-+static int max_bau_concurrent = MAX_BAU_CONCURRENT;
-+static int max_bau_concurrent_constant = MAX_BAU_CONCURRENT;
-+static int plugged_delay = PLUGGED_DELAY;
-+static int plugsb4reset = PLUGSB4RESET;
-+static int timeoutsb4reset = TIMEOUTSB4RESET;
-+static int ipi_reset_limit = IPI_RESET_LIMIT;
-+static int complete_threshold = COMPLETE_THRESHOLD;
-+static int congested_response_us = CONGESTED_RESPONSE_US;
-+static int congested_reps = CONGESTED_REPS;
-+static int congested_period = CONGESTED_PERIOD;
-+static struct dentry *tunables_dir;
-+static struct dentry *tunables_file;
-+
- static int __init setup_nobau(char *arg)
- {
- 	nobau = 1;
-@@ -52,10 +71,6 @@ static DEFINE_PER_CPU(struct ptc_stats, ptcstats);
- static DEFINE_PER_CPU(struct bau_control, bau_control);
- static DEFINE_PER_CPU(cpumask_var_t, uv_flush_tlb_mask);
- 
--struct reset_args {
--	int sender;
--};
--
- /*
-  * Determine the first node on a uvhub. 'Nodes' are used for kernel
-  * memory allocation.
-@@ -126,7 +141,7 @@ static inline void uv_bau_process_retry_msg(struct msg_desc *mdp,
- 	struct ptc_stats *stat;
- 
- 	msg = mdp->msg;
--	stat = &per_cpu(ptcstats, bcp->cpu);
-+	stat = bcp->statp;
- 	stat->d_retries++;
- 	/*
- 	 * cancel any message from msg+1 to the retry itself
-@@ -146,15 +161,14 @@ static inline void uv_bau_process_retry_msg(struct msg_desc *mdp,
- 			slot2 = msg2 - mdp->va_queue_first;
- 			mmr = uv_read_local_mmr
- 				(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
--			msg_res = ((msg2->sw_ack_vector << 8) |
--				   msg2->sw_ack_vector);
-+			msg_res = msg2->sw_ack_vector;
- 			/*
- 			 * This is a message retry; clear the resources held
- 			 * by the previous message only if they timed out.
- 			 * If it has not timed out we have an unexpected
- 			 * situation to report.
- 			 */
--			if (mmr & (msg_res << 8)) {
-+			if (mmr & (msg_res << UV_SW_ACK_NPENDING)) {
- 				/*
- 				 * is the resource timed out?
- 				 * make everyone ignore the cancelled message.
-@@ -164,9 +178,9 @@ static inline void uv_bau_process_retry_msg(struct msg_desc *mdp,
- 				cancel_count++;
- 				uv_write_local_mmr(
- 				    UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS,
--					(msg_res << 8) | msg_res);
--			} else
--				printk(KERN_INFO "note bau retry: no effect\n");
-+					(msg_res << UV_SW_ACK_NPENDING) |
-+					 msg_res);
-+			}
- 		}
- 	}
- 	if (!cancel_count)
-@@ -190,7 +204,7 @@ static void uv_bau_process_message(struct msg_desc *mdp,
- 	 * This must be a normal message, or retry of a normal message
- 	 */
- 	msg = mdp->msg;
--	stat = &per_cpu(ptcstats, bcp->cpu);
-+	stat = bcp->statp;
- 	if (msg->address == TLB_FLUSH_ALL) {
- 		local_flush_tlb();
- 		stat->d_alltlb++;
-@@ -274,7 +288,7 @@ uv_do_reset(void *ptr)
- 
- 	bcp = &per_cpu(bau_control, smp_processor_id());
- 	rap = (struct reset_args *)ptr;
--	stat = &per_cpu(ptcstats, bcp->cpu);
-+	stat = bcp->statp;
- 	stat->d_resets++;
- 
- 	/*
-@@ -302,13 +316,13 @@ uv_do_reset(void *ptr)
- 			 */
- 			mmr = uv_read_local_mmr
- 					(UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE);
--			msg_res = ((msg->sw_ack_vector << 8) |
--						   msg->sw_ack_vector);
-+			msg_res = msg->sw_ack_vector;
- 			if (mmr & msg_res) {
- 				stat->d_rcanceled++;
- 				uv_write_local_mmr(
- 				    UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE_ALIAS,
--							msg_res);
-+					(msg_res << UV_SW_ACK_NPENDING) |
-+					 msg_res);
- 			}
- 		}
- 	}
-@@ -386,17 +400,12 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
- 	unsigned long mmr_offset, int right_shift, int this_cpu,
- 	struct bau_control *bcp, struct bau_control *smaster, long try)
- {
--	int relaxes = 0;
- 	unsigned long descriptor_status;
--	unsigned long mmr;
--	unsigned long mask;
- 	cycles_t ttime;
--	cycles_t timeout_time;
--	struct ptc_stats *stat = &per_cpu(ptcstats, this_cpu);
-+	struct ptc_stats *stat = bcp->statp;
- 	struct bau_control *hmaster;
- 
- 	hmaster = bcp->uvhub_master;
--	timeout_time = get_cycles() + bcp->timeout_interval;
- 
- 	/* spin on the status MMR, waiting for it to go idle */
- 	while ((descriptor_status = (((unsigned long)
-@@ -423,7 +432,8 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
- 			 * pending.  In that case hardware returns the
- 			 * ERROR that looks like a destination timeout.
- 			 */
--			if (cycles_2_us(ttime - bcp->send_message) < BIOS_TO) {
-+			if (cycles_2_us(ttime - bcp->send_message) <
-+							timeout_us) {
- 				bcp->conseccompletes = 0;
- 				return FLUSH_RETRY_PLUGGED;
- 			}
-@@ -435,26 +445,6 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
- 			 * descriptor_status is still BUSY
- 			 */
- 			cpu_relax();
--			relaxes++;
--			if (relaxes >= 10000) {
--				relaxes = 0;
--				if (get_cycles() > timeout_time) {
--					quiesce_local_uvhub(hmaster);
--
--					/* single-thread the register change */
--					spin_lock(&hmaster->masks_lock);
--					mmr = uv_read_local_mmr(mmr_offset);
--					mask = 0UL;
--					mask |= (3UL < right_shift);
--					mask = ~mask;
--					mmr &= mask;
--					uv_write_local_mmr(mmr_offset, mmr);
--					spin_unlock(&hmaster->masks_lock);
--					end_uvhub_quiesce(hmaster);
--					stat->s_busy++;
--					return FLUSH_GIVEUP;
--				}
--			}
- 		}
- 	}
- 	bcp->conseccompletes++;
-@@ -494,56 +484,116 @@ static inline int atomic_inc_unless_ge(spinlock_t *lock, atomic_t *v, int u)
- 	return 1;
- }
- 
-+/*
-+ * Our retries are blocked by all destination swack resources being
-+ * in use, and a timeout is pending. In that case hardware immediately
-+ * returns the ERROR that looks like a destination timeout.
-+ */
-+static void
-+destination_plugged(struct bau_desc *bau_desc, struct bau_control *bcp,
-+			struct bau_control *hmaster, struct ptc_stats *stat)
-+{
-+	udelay(bcp->plugged_delay);
-+	bcp->plugged_tries++;
-+	if (bcp->plugged_tries >= bcp->plugsb4reset) {
-+		bcp->plugged_tries = 0;
-+		quiesce_local_uvhub(hmaster);
-+		spin_lock(&hmaster->queue_lock);
-+		uv_reset_with_ipi(&bau_desc->distribution, bcp->cpu);
-+		spin_unlock(&hmaster->queue_lock);
-+		end_uvhub_quiesce(hmaster);
-+		bcp->ipi_attempts++;
-+		stat->s_resets_plug++;
-+	}
-+}
-+
-+static void
-+destination_timeout(struct bau_desc *bau_desc, struct bau_control *bcp,
-+			struct bau_control *hmaster, struct ptc_stats *stat)
-+{
-+	hmaster->max_bau_concurrent = 1;
-+	bcp->timeout_tries++;
-+	if (bcp->timeout_tries >= bcp->timeoutsb4reset) {
-+		bcp->timeout_tries = 0;
-+		quiesce_local_uvhub(hmaster);
-+		spin_lock(&hmaster->queue_lock);
-+		uv_reset_with_ipi(&bau_desc->distribution, bcp->cpu);
-+		spin_unlock(&hmaster->queue_lock);
-+		end_uvhub_quiesce(hmaster);
-+		bcp->ipi_attempts++;
-+		stat->s_resets_timeout++;
-+	}
-+}
-+
-+/*
-+ * Completions are taking a very long time due to a congested numalink
-+ * network.
-+ */
-+static void
-+disable_for_congestion(struct bau_control *bcp, struct ptc_stats *stat)
-+{
-+	int tcpu;
-+	struct bau_control *tbcp;
-+
-+	/* let only one cpu do this disabling */
-+	spin_lock(&disable_lock);
-+	if (!baudisabled && bcp->period_requests &&
-+	    ((bcp->period_time / bcp->period_requests) > congested_cycles)) {
-+		/* it becomes this cpu's job to turn on the use of the
-+		   BAU again */
-+		baudisabled = 1;
-+		bcp->set_bau_off = 1;
-+		bcp->set_bau_on_time = get_cycles() +
-+			sec_2_cycles(bcp->congested_period);
-+		stat->s_bau_disabled++;
-+		for_each_present_cpu(tcpu) {
-+			tbcp = &per_cpu(bau_control, tcpu);
-+				tbcp->baudisabled = 1;
-+		}
-+	}
-+	spin_unlock(&disable_lock);
-+}
-+
- /**
-  * uv_flush_send_and_wait
-  *
-  * Send a broadcast and wait for it to complete.
-  *
-- * The flush_mask contains the cpus the broadcast is to be sent to, plus
-+ * The flush_mask contains the cpus the broadcast is to be sent to including
-  * cpus that are on the local uvhub.
-  *
-- * Returns NULL if all flushing represented in the mask was done. The mask
-- * is zeroed.
-- * Returns @flush_mask if some remote flushing remains to be done. The
-- * mask will have some bits still set, representing any cpus on the local
-- * uvhub (not current cpu) and any on remote uvhubs if the broadcast failed.
-+ * Returns 0 if all flushing represented in the mask was done.
-+ * Returns 1 if it gives up entirely and the original cpu mask is to be
-+ * returned to the kernel.
-  */
--const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
--					     struct cpumask *flush_mask,
--					     struct bau_control *bcp)
-+int uv_flush_send_and_wait(struct bau_desc *bau_desc,
-+			   struct cpumask *flush_mask, struct bau_control *bcp)
- {
- 	int right_shift;
--	int uvhub;
--	int bit;
- 	int completion_status = 0;
- 	int seq_number = 0;
- 	long try = 0;
- 	int cpu = bcp->uvhub_cpu;
- 	int this_cpu = bcp->cpu;
--	int this_uvhub = bcp->uvhub;
- 	unsigned long mmr_offset;
- 	unsigned long index;
- 	cycles_t time1;
- 	cycles_t time2;
--	struct ptc_stats *stat = &per_cpu(ptcstats, bcp->cpu);
-+	cycles_t elapsed;
-+	struct ptc_stats *stat = bcp->statp;
- 	struct bau_control *smaster = bcp->socket_master;
- 	struct bau_control *hmaster = bcp->uvhub_master;
- 
--	/*
--	 * Spin here while there are hmaster->max_concurrent or more active
--	 * descriptors. This is the per-uvhub 'throttle'.
--	 */
- 	if (!atomic_inc_unless_ge(&hmaster->uvhub_lock,
- 			&hmaster->active_descriptor_count,
--			hmaster->max_concurrent)) {
-+			hmaster->max_bau_concurrent)) {
- 		stat->s_throttles++;
- 		do {
- 			cpu_relax();
- 		} while (!atomic_inc_unless_ge(&hmaster->uvhub_lock,
- 			&hmaster->active_descriptor_count,
--			hmaster->max_concurrent));
-+			hmaster->max_bau_concurrent));
- 	}
--
- 	while (hmaster->uvhub_quiesce)
- 		cpu_relax();
- 
-@@ -557,23 +607,10 @@ const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
- 	}
- 	time1 = get_cycles();
- 	do {
--		/*
--		 * Every message from any given cpu gets a unique message
--		 * sequence number. But retries use that same number.
--		 * Our message may have timed out at the destination because
--		 * all sw-ack resources are in use and there is a timeout
--		 * pending there.  In that case, our last send never got
--		 * placed into the queue and we need to persist until it
--		 * does.
--		 *
--		 * Make any retry a type MSG_RETRY so that the destination will
--		 * free any resource held by a previous message from this cpu.
--		 */
- 		if (try == 0) {
--			/* use message type set by the caller the first time */
-+			bau_desc->header.msg_type = MSG_REGULAR;
- 			seq_number = bcp->message_number++;
- 		} else {
--			/* use RETRY type on all the rest; same sequence */
- 			bau_desc->header.msg_type = MSG_RETRY;
- 			stat->s_retry_messages++;
- 		}
-@@ -581,50 +618,17 @@ const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
- 		index = (1UL << UVH_LB_BAU_SB_ACTIVATION_CONTROL_PUSH_SHFT) |
- 			bcp->uvhub_cpu;
- 		bcp->send_message = get_cycles();
--
- 		uv_write_local_mmr(UVH_LB_BAU_SB_ACTIVATION_CONTROL, index);
--
- 		try++;
- 		completion_status = uv_wait_completion(bau_desc, mmr_offset,
- 			right_shift, this_cpu, bcp, smaster, try);
- 
- 		if (completion_status == FLUSH_RETRY_PLUGGED) {
--			/*
--			 * Our retries may be blocked by all destination swack
--			 * resources being consumed, and a timeout pending. In
--			 * that case hardware immediately returns the ERROR
--			 * that looks like a destination timeout.
--			 */
--			udelay(TIMEOUT_DELAY);
--			bcp->plugged_tries++;
--			if (bcp->plugged_tries >= PLUGSB4RESET) {
--				bcp->plugged_tries = 0;
--				quiesce_local_uvhub(hmaster);
--				spin_lock(&hmaster->queue_lock);
--				uv_reset_with_ipi(&bau_desc->distribution,
--							this_cpu);
--				spin_unlock(&hmaster->queue_lock);
--				end_uvhub_quiesce(hmaster);
--				bcp->ipi_attempts++;
--				stat->s_resets_plug++;
--			}
-+			destination_plugged(bau_desc, bcp, hmaster, stat);
- 		} else if (completion_status == FLUSH_RETRY_TIMEOUT) {
--			hmaster->max_concurrent = 1;
--			bcp->timeout_tries++;
--			udelay(TIMEOUT_DELAY);
--			if (bcp->timeout_tries >= TIMEOUTSB4RESET) {
--				bcp->timeout_tries = 0;
--				quiesce_local_uvhub(hmaster);
--				spin_lock(&hmaster->queue_lock);
--				uv_reset_with_ipi(&bau_desc->distribution,
--								this_cpu);
--				spin_unlock(&hmaster->queue_lock);
--				end_uvhub_quiesce(hmaster);
--				bcp->ipi_attempts++;
--				stat->s_resets_timeout++;
--			}
-+			destination_timeout(bau_desc, bcp, hmaster, stat);
- 		}
--		if (bcp->ipi_attempts >= 3) {
-+		if (bcp->ipi_attempts >= bcp->ipi_reset_limit) {
- 			bcp->ipi_attempts = 0;
- 			completion_status = FLUSH_GIVEUP;
- 			break;
-@@ -633,49 +637,36 @@ const struct cpumask *uv_flush_send_and_wait(struct bau_desc *bau_desc,
- 	} while ((completion_status == FLUSH_RETRY_PLUGGED) ||
- 		 (completion_status == FLUSH_RETRY_TIMEOUT));
- 	time2 = get_cycles();
--
--	if ((completion_status == FLUSH_COMPLETE) && (bcp->conseccompletes > 5)
--	    && (hmaster->max_concurrent < hmaster->max_concurrent_constant))
--			hmaster->max_concurrent++;
--
--	/*
--	 * hold any cpu not timing out here; no other cpu currently held by
--	 * the 'throttle' should enter the activation code
--	 */
-+	bcp->plugged_tries = 0;
-+	bcp->timeout_tries = 0;
-+	if ((completion_status == FLUSH_COMPLETE) &&
-+	    (bcp->conseccompletes > bcp->complete_threshold) &&
-+	    (hmaster->max_bau_concurrent <
-+					hmaster->max_bau_concurrent_constant))
-+			hmaster->max_bau_concurrent++;
- 	while (hmaster->uvhub_quiesce)
- 		cpu_relax();
- 	atomic_dec(&hmaster->active_descriptor_count);
--
--	/* guard against cycles wrap */
--	if (time2 > time1)
--		stat->s_time += (time2 - time1);
--	else
--		stat->s_requestor--; /* don't count this one */
-+	if (time2 > time1) {
-+		elapsed = time2 - time1;
-+		stat->s_time += elapsed;
-+		if ((completion_status == FLUSH_COMPLETE) && (try == 1)) {
-+			bcp->period_requests++;
-+			bcp->period_time += elapsed;
-+			if ((elapsed > congested_cycles) &&
-+			    (bcp->period_requests > bcp->congested_reps)) {
-+				disable_for_congestion(bcp, stat);
-+			}
-+		}
-+	} else
-+		stat->s_requestor--;
- 	if (completion_status == FLUSH_COMPLETE && try > 1)
- 		stat->s_retriesok++;
- 	else if (completion_status == FLUSH_GIVEUP) {
--		/*
--		 * Cause the caller to do an IPI-style TLB shootdown on
--		 * the target cpu's, all of which are still in the mask.
--		 */
- 		stat->s_giveup++;
--		return flush_mask;
--	}
--
--	/*
--	 * Success, so clear the remote cpu's from the mask so we don't
--	 * use the IPI method of shootdown on them.
--	 */
--	for_each_cpu(bit, flush_mask) {
--		uvhub = uv_cpu_to_blade_id(bit);
--		if (uvhub == this_uvhub)
--			continue;
--		cpumask_clear_cpu(bit, flush_mask);
-+		return 1;
- 	}
--	if (!cpumask_empty(flush_mask))
--		return flush_mask;
--
--	return NULL;
-+	return 0;
- }
- 
- /**
-@@ -707,70 +698,89 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 					  struct mm_struct *mm,
- 					  unsigned long va, unsigned int cpu)
- {
--	int remotes;
- 	int tcpu;
- 	int uvhub;
- 	int locals = 0;
-+	int remotes = 0;
-+	int hubs = 0;
- 	struct bau_desc *bau_desc;
- 	struct cpumask *flush_mask;
- 	struct ptc_stats *stat;
- 	struct bau_control *bcp;
-+	struct bau_control *tbcp;
- 
-+	/* kernel was booted 'nobau' */
- 	if (nobau)
- 		return cpumask;
- 
- 	bcp = &per_cpu(bau_control, cpu);
-+	stat = bcp->statp;
-+
-+	/* bau was disabled due to slow response */
-+	if (bcp->baudisabled) {
-+		/* the cpu that disabled it must re-enable it */
-+		if (bcp->set_bau_off) {
-+			if (get_cycles() >= bcp->set_bau_on_time) {
-+				stat->s_bau_reenabled++;
-+				baudisabled = 0;
-+				for_each_present_cpu(tcpu) {
-+					tbcp = &per_cpu(bau_control, tcpu);
-+					tbcp->baudisabled = 0;
-+					tbcp->period_requests = 0;
-+					tbcp->period_time = 0;
-+				}
-+			}
-+		}
-+		return cpumask;
-+	}
-+
- 	/*
- 	 * Each sending cpu has a per-cpu mask which it fills from the caller's
--	 * cpu mask.  Only remote cpus are converted to uvhubs and copied.
-+	 * cpu mask.  All cpus are converted to uvhubs and copied to the
-+	 * activation descriptor.
- 	 */
- 	flush_mask = (struct cpumask *)per_cpu(uv_flush_tlb_mask, cpu);
--	/*
--	 * copy cpumask to flush_mask, removing current cpu
--	 * (current cpu should already have been flushed by the caller and
--	 *  should never be returned if we return flush_mask)
--	 */
-+	/* don't actually do a shootdown of the local cpu */
- 	cpumask_andnot(flush_mask, cpumask, cpumask_of(cpu));
- 	if (cpu_isset(cpu, *cpumask))
--		locals++;  /* current cpu was targeted */
-+		stat->s_ntargself++;
- 
- 	bau_desc = bcp->descriptor_base;
- 	bau_desc += UV_ITEMS_PER_DESCRIPTOR * bcp->uvhub_cpu;
--
- 	bau_uvhubs_clear(&bau_desc->distribution, UV_DISTRIBUTION_SIZE);
--	remotes = 0;
-+
-+	/* cpu statistics */
- 	for_each_cpu(tcpu, flush_mask) {
- 		uvhub = uv_cpu_to_blade_id(tcpu);
--		if (uvhub == bcp->uvhub) {
--			locals++;
--			continue;
--		}
- 		bau_uvhub_set(uvhub, &bau_desc->distribution);
--		remotes++;
--	}
--	if (remotes == 0) {
--		/*
--		 * No off_hub flushing; return status for local hub.
--		 * Return the caller's mask if all were local (the current
--		 * cpu may be in that mask).
--		 */
--		if (locals)
--			return cpumask;
-+		if (uvhub == bcp->uvhub)
-+			locals++;
- 		else
--			return NULL;
-+			remotes++;
- 	}
--	stat = &per_cpu(ptcstats, cpu);
-+	if ((locals + remotes) == 0)
-+		return NULL;
- 	stat->s_requestor++;
--	stat->s_ntargcpu += remotes;
-+	stat->s_ntargcpu += remotes + locals;
-+	stat->s_ntargremotes += remotes;
-+	stat->s_ntarglocals += locals;
- 	remotes = bau_uvhub_weight(&bau_desc->distribution);
--	stat->s_ntarguvhub += remotes;
--	if (remotes >= 16)
-+
-+	/* uvhub statistics */
-+	hubs = bau_uvhub_weight(&bau_desc->distribution);
-+	if (locals) {
-+		stat->s_ntarglocaluvhub++;
-+		stat->s_ntargremoteuvhub += (hubs - 1);
-+	} else
-+		stat->s_ntargremoteuvhub += hubs;
-+	stat->s_ntarguvhub += hubs;
-+	if (hubs >= 16)
- 		stat->s_ntarguvhub16++;
--	else if (remotes >= 8)
-+	else if (hubs >= 8)
- 		stat->s_ntarguvhub8++;
--	else if (remotes >= 4)
-+	else if (hubs >= 4)
- 		stat->s_ntarguvhub4++;
--	else if (remotes >= 2)
-+	else if (hubs >= 2)
- 		stat->s_ntarguvhub2++;
- 	else
- 		stat->s_ntarguvhub1++;
-@@ -779,10 +789,13 @@ const struct cpumask *uv_flush_tlb_others(const struct cpumask *cpumask,
- 	bau_desc->payload.sending_cpu = cpu;
- 
- 	/*
--	 * uv_flush_send_and_wait returns null if all cpu's were messaged, or
--	 * the adjusted flush_mask if any cpu's were not messaged.
-+	 * uv_flush_send_and_wait returns 0 if all cpu's were messaged,
-+	 * or 1 if it gave up and the original cpumask should be returned.
- 	 */
--	return uv_flush_send_and_wait(bau_desc, flush_mask, bcp);
-+	if (!uv_flush_send_and_wait(bau_desc, flush_mask, bcp))
-+		return NULL;
-+	else
-+		return cpumask;
- }
- 
- /*
-@@ -810,7 +823,7 @@ void uv_bau_message_interrupt(struct pt_regs *regs)
- 
- 	time_start = get_cycles();
- 	bcp = &per_cpu(bau_control, smp_processor_id());
--	stat = &per_cpu(ptcstats, smp_processor_id());
-+	stat = bcp->statp;
- 	msgdesc.va_queue_first = bcp->va_queue_first;
- 	msgdesc.va_queue_last = bcp->va_queue_last;
- 	msg = bcp->bau_msg_head;
-@@ -908,12 +921,12 @@ static void uv_ptc_seq_stop(struct seq_file *file, void *data)
- }
- 
- static inline unsigned long long
--millisec_2_cycles(unsigned long millisec)
-+microsec_2_cycles(unsigned long microsec)
- {
- 	unsigned long ns;
- 	unsigned long long cyc;
- 
--	ns = millisec * 1000;
-+	ns = microsec * 1000;
- 	cyc = (ns << CYC2NS_SCALE_FACTOR)/(per_cpu(cyc2ns, smp_processor_id()));
- 	return cyc;
- }
-@@ -931,15 +944,19 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
- 
- 	if (!cpu) {
- 		seq_printf(file,
--			"# cpu sent stime numuvhubs numuvhubs16 numuvhubs8 ");
-+			"# cpu sent stime self locals remotes ncpus localhub ");
- 		seq_printf(file,
--			"numuvhubs4 numuvhubs2 numuvhubs1 numcpus dto ");
-+			"remotehub numuvhubs numuvhubs16 numuvhubs8 ");
-+		seq_printf(file,
-+			"numuvhubs4 numuvhubs2 numuvhubs1 dto ");
- 		seq_printf(file,
- 			"retries rok resetp resett giveup sto bz throt ");
- 		seq_printf(file,
- 			"sw_ack recv rtime all ");
- 		seq_printf(file,
--			"one mult none retry canc nocan reset rcan\n");
-+			"one mult none retry canc nocan reset rcan ");
-+		seq_printf(file,
-+			"disable enable\n");
- 	}
- 	if (cpu < num_possible_cpus() && cpu_online(cpu)) {
- 		stat = &per_cpu(ptcstats, cpu);
-@@ -947,18 +964,23 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
- 		seq_printf(file,
- 			"cpu %d %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
- 			   cpu, stat->s_requestor, cycles_2_us(stat->s_time),
--			   stat->s_ntarguvhub, stat->s_ntarguvhub16,
-+			   stat->s_ntargself, stat->s_ntarglocals,
-+			   stat->s_ntargremotes, stat->s_ntargcpu,
-+			   stat->s_ntarglocaluvhub, stat->s_ntargremoteuvhub,
-+			   stat->s_ntarguvhub, stat->s_ntarguvhub16);
-+		seq_printf(file, "%ld %ld %ld %ld %ld ",
- 			   stat->s_ntarguvhub8, stat->s_ntarguvhub4,
- 			   stat->s_ntarguvhub2, stat->s_ntarguvhub1,
--			   stat->s_ntargcpu, stat->s_dtimeout);
-+			   stat->s_dtimeout);
- 		seq_printf(file, "%ld %ld %ld %ld %ld %ld %ld %ld ",
- 			   stat->s_retry_messages, stat->s_retriesok,
- 			   stat->s_resets_plug, stat->s_resets_timeout,
- 			   stat->s_giveup, stat->s_stimeout,
- 			   stat->s_busy, stat->s_throttles);
-+
- 		/* destination side statistics */
- 		seq_printf(file,
--			   "%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld\n",
-+			   "%lx %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld ",
- 			   uv_read_global_mmr64(uv_cpu_to_pnode(cpu),
- 					UVH_LB_BAU_INTD_SOFTWARE_ACKNOWLEDGE),
- 			   stat->d_requestee, cycles_2_us(stat->d_time),
-@@ -966,15 +988,36 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
- 			   stat->d_nomsg, stat->d_retries, stat->d_canceled,
- 			   stat->d_nocanceled, stat->d_resets,
- 			   stat->d_rcanceled);
-+		seq_printf(file, "%ld %ld\n",
-+			stat->s_bau_disabled, stat->s_bau_reenabled);
- 	}
- 
- 	return 0;
- }
- 
- /*
-+ * Display the tunables thru debugfs
-+ */
-+static ssize_t tunables_read(struct file *file, char __user *userbuf,
-+						size_t count, loff_t *ppos)
-+{
-+	char buf[300];
-+	int ret;
-+
-+	ret = snprintf(buf, 300, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
-+		"max_bau_concurrent plugged_delay plugsb4reset",
-+		"timeoutsb4reset ipi_reset_limit complete_threshold",
-+		"congested_response_us congested_reps congested_period",
-+		max_bau_concurrent, plugged_delay, plugsb4reset,
-+		timeoutsb4reset, ipi_reset_limit, complete_threshold,
-+		congested_response_us, congested_reps, congested_period);
-+
-+	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
-+}
-+
-+/*
-  * -1: resetf the statistics
-  *  0: display meaning of the statistics
-- * >0: maximum concurrent active descriptors per uvhub (throttle)
-  */
- static ssize_t uv_ptc_proc_write(struct file *file, const char __user *user,
- 				 size_t count, loff_t *data)
-@@ -983,7 +1026,6 @@ static ssize_t uv_ptc_proc_write(struct file *file, const char __user *user,
- 	long input_arg;
- 	char optstr[64];
- 	struct ptc_stats *stat;
--	struct bau_control *bcp;
- 
- 	if (count == 0 || count > sizeof(optstr))
- 		return -EINVAL;
-@@ -1059,29 +1101,158 @@ static ssize_t uv_ptc_proc_write(struct file *file, const char __user *user,
- 		"reset:    number of ipi-style reset requests processed\n");
- 		printk(KERN_DEBUG
- 		"rcan:     number messages canceled by reset requests\n");
-+		printk(KERN_DEBUG
-+		"disable:  number times use of the BAU was disabled\n");
-+		printk(KERN_DEBUG
-+		"enable:   number times use of the BAU was re-enabled\n");
- 	} else if (input_arg == -1) {
- 		for_each_present_cpu(cpu) {
- 			stat = &per_cpu(ptcstats, cpu);
- 			memset(stat, 0, sizeof(struct ptc_stats));
- 		}
--	} else {
--		uv_bau_max_concurrent = input_arg;
--		bcp = &per_cpu(bau_control, smp_processor_id());
--		if (uv_bau_max_concurrent < 1 ||
--		    uv_bau_max_concurrent > bcp->cpus_in_uvhub) {
--			printk(KERN_DEBUG
--				"Error: BAU max concurrent %d; %d is invalid\n",
--				bcp->max_concurrent, uv_bau_max_concurrent);
--			return -EINVAL;
--		}
--		printk(KERN_DEBUG "Set BAU max concurrent:%d\n",
--		       uv_bau_max_concurrent);
--		for_each_present_cpu(cpu) {
--			bcp = &per_cpu(bau_control, cpu);
--			bcp->max_concurrent = uv_bau_max_concurrent;
-+	}
-+
-+	return count;
-+}
-+
-+static int local_atoi(const char *name)
-+{
-+	int val = 0;
-+
-+	for (;; name++) {
-+		switch (*name) {
-+		case '0' ... '9':
-+			val = 10*val+(*name-'0');
-+			break;
-+		default:
-+			return val;
- 		}
- 	}
-+}
-+
-+/*
-+ * set the tunables
-+ * 0 values reset them to defaults
-+ */
-+static ssize_t tunables_write(struct file *file, const char __user *user,
-+				 size_t count, loff_t *data)
-+{
-+	int cpu;
-+	int cnt = 0;
-+	int val;
-+	char *p;
-+	char *q;
-+	char instr[64];
-+	struct bau_control *bcp;
-+
-+	if (count == 0 || count > sizeof(instr)-1)
-+		return -EINVAL;
-+	if (copy_from_user(instr, user, count))
-+		return -EFAULT;
-+
-+	instr[count] = '\0';
-+	/* count the fields */
-+	p = instr + strspn(instr, WHITESPACE);
-+	q = p;
-+	for (; *p; p = q + strspn(q, WHITESPACE)) {
-+		q = p + strcspn(p, WHITESPACE);
-+		cnt++;
-+		if (q == p)
-+			break;
-+	}
-+	if (cnt != 9) {
-+		printk(KERN_INFO "bau tunable error: should be 9 numbers\n");
-+		return -EINVAL;
-+	}
- 
-+	p = instr + strspn(instr, WHITESPACE);
-+	q = p;
-+	for (cnt = 0; *p; p = q + strspn(q, WHITESPACE), cnt++) {
-+		q = p + strcspn(p, WHITESPACE);
-+		val = local_atoi(p);
-+		switch (cnt) {
-+		case 0:
-+			if (val == 0) {
-+				max_bau_concurrent = MAX_BAU_CONCURRENT;
-+				max_bau_concurrent_constant =
-+							MAX_BAU_CONCURRENT;
-+				continue;
-+			}
-+			bcp = &per_cpu(bau_control, smp_processor_id());
-+			if (val < 1 || val > bcp->cpus_in_uvhub) {
-+				printk(KERN_DEBUG
-+				"Error: BAU max concurrent %d is invalid\n",
-+				val);
-+				return -EINVAL;
-+			}
-+			max_bau_concurrent = val;
-+			max_bau_concurrent_constant = val;
-+			continue;
-+		case 1:
-+			if (val == 0)
-+				plugged_delay = PLUGGED_DELAY;
-+			else
-+				plugged_delay = val;
-+			continue;
-+		case 2:
-+			if (val == 0)
-+				plugsb4reset = PLUGSB4RESET;
-+			else
-+				plugsb4reset = val;
-+			continue;
-+		case 3:
-+			if (val == 0)
-+				timeoutsb4reset = TIMEOUTSB4RESET;
-+			else
-+				timeoutsb4reset = val;
-+			continue;
-+		case 4:
-+			if (val == 0)
-+				ipi_reset_limit = IPI_RESET_LIMIT;
-+			else
-+				ipi_reset_limit = val;
-+			continue;
-+		case 5:
-+			if (val == 0)
-+				complete_threshold = COMPLETE_THRESHOLD;
-+			else
-+				complete_threshold = val;
-+			continue;
-+		case 6:
-+			if (val == 0)
-+				congested_response_us = CONGESTED_RESPONSE_US;
-+			else
-+				congested_response_us = val;
-+			continue;
-+		case 7:
-+			if (val == 0)
-+				congested_reps = CONGESTED_REPS;
-+			else
-+				congested_reps = val;
-+			continue;
-+		case 8:
-+			if (val == 0)
-+				congested_period = CONGESTED_PERIOD;
-+			else
-+				congested_period = val;
-+			continue;
-+		}
-+		if (q == p)
-+			break;
-+	}
-+	for_each_present_cpu(cpu) {
-+		bcp = &per_cpu(bau_control, cpu);
-+		bcp->max_bau_concurrent = max_bau_concurrent;
-+		bcp->max_bau_concurrent_constant = max_bau_concurrent;
-+		bcp->plugged_delay = plugged_delay;
-+		bcp->plugsb4reset = plugsb4reset;
-+		bcp->timeoutsb4reset = timeoutsb4reset;
-+		bcp->ipi_reset_limit = ipi_reset_limit;
-+		bcp->complete_threshold = complete_threshold;
-+		bcp->congested_response_us = congested_response_us;
-+		bcp->congested_reps = congested_reps;
-+		bcp->congested_period = congested_period;
-+	}
- 	return count;
- }
- 
-@@ -1097,6 +1268,11 @@ static int uv_ptc_proc_open(struct inode *inode, struct file *file)
- 	return seq_open(file, &uv_ptc_seq_ops);
- }
- 
-+static int tunables_open(struct inode *inode, struct file *file)
-+{
-+	return 0;
-+}
-+
- static const struct file_operations proc_uv_ptc_operations = {
- 	.open		= uv_ptc_proc_open,
- 	.read		= seq_read,
-@@ -1105,6 +1281,12 @@ static const struct file_operations proc_uv_ptc_operations = {
- 	.release	= seq_release,
- };
- 
-+static const struct file_operations tunables_fops = {
-+	.open		= tunables_open,
-+	.read		= tunables_read,
-+	.write		= tunables_write,
-+};
-+
- static int __init uv_ptc_init(void)
- {
- 	struct proc_dir_entry *proc_uv_ptc;
-@@ -1119,6 +1301,20 @@ static int __init uv_ptc_init(void)
- 		       UV_PTC_BASENAME);
- 		return -EINVAL;
- 	}
-+
-+	tunables_dir = debugfs_create_dir(UV_BAU_TUNABLES_DIR, NULL);
-+	if (!tunables_dir) {
-+		printk(KERN_ERR "unable to create debugfs directory %s\n",
-+		       UV_BAU_TUNABLES_DIR);
-+		return -EINVAL;
-+	}
-+	tunables_file = debugfs_create_file(UV_BAU_TUNABLES_FILE, 0600,
-+			tunables_dir, NULL, &tunables_fops);
-+	if (!tunables_file) {
-+		printk(KERN_ERR "unable to create debugfs file %s\n",
-+		       UV_BAU_TUNABLES_FILE);
-+		return -EINVAL;
-+	}
- 	return 0;
- }
- 
-@@ -1259,15 +1455,44 @@ static void __init uv_init_uvhub(int uvhub, int vector)
- }
- 
- /*
-+ * We will set BAU_MISC_CONTROL with a timeout period.
-+ * But the BIOS has set UVH_AGING_PRESCALE_SEL and UVH_TRANSACTION_TIMEOUT.
-+ * So the destination timeout period has be be calculated from them.
-+ */
-+static int
-+calculate_destination_timeout(void)
-+{
-+	unsigned long mmr_image;
-+	int mult1;
-+	int mult2;
-+	int index;
-+	int base;
-+	int ret;
-+	unsigned long ts_ns;
-+
-+	mult1 = UV_INTD_SOFT_ACK_TIMEOUT_PERIOD & BAU_MISC_CONTROL_MULT_MASK;
-+	mmr_image = uv_read_local_mmr(UVH_AGING_PRESCALE_SEL);
-+	index = (mmr_image >> BAU_URGENCY_7_SHIFT) & BAU_URGENCY_7_MASK;
-+	mmr_image = uv_read_local_mmr(UVH_TRANSACTION_TIMEOUT);
-+	mult2 = (mmr_image >> BAU_TRANS_SHIFT) & BAU_TRANS_MASK;
-+	base = timeout_base_ns[index];
-+	ts_ns = base * mult1 * mult2;
-+	ret = ts_ns / 1000;
-+	return ret;
-+}
-+
-+/*
-  * initialize the bau_control structure for each cpu
-  */
- static void uv_init_per_cpu(int nuvhubs)
- {
--	int i, j, k;
-+	int i;
- 	int cpu;
- 	int pnode;
- 	int uvhub;
- 	short socket = 0;
-+	unsigned short socket_mask;
-+	unsigned int uvhub_mask;
- 	struct bau_control *bcp;
- 	struct uvhub_desc *bdp;
- 	struct socket_desc *sdp;
-@@ -1278,7 +1503,7 @@ static void uv_init_per_cpu(int nuvhubs)
- 		short cpu_number[16];
- 	};
- 	struct uvhub_desc {
--		short num_sockets;
-+		unsigned short socket_mask;
- 		short num_cpus;
- 		short uvhub;
- 		short pnode;
-@@ -1286,57 +1511,83 @@ static void uv_init_per_cpu(int nuvhubs)
- 	};
- 	struct uvhub_desc *uvhub_descs;
- 
-+	timeout_us = calculate_destination_timeout();
-+
- 	uvhub_descs = (struct uvhub_desc *)
- 		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
- 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
- 	for_each_present_cpu(cpu) {
- 		bcp = &per_cpu(bau_control, cpu);
- 		memset(bcp, 0, sizeof(struct bau_control));
--		spin_lock_init(&bcp->masks_lock);
--		bcp->max_concurrent = uv_bau_max_concurrent;
- 		pnode = uv_cpu_hub_info(cpu)->pnode;
- 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
-+		uvhub_mask |= (1 << uvhub);
- 		bdp = &uvhub_descs[uvhub];
- 		bdp->num_cpus++;
- 		bdp->uvhub = uvhub;
- 		bdp->pnode = pnode;
--		/* time interval to catch a hardware stay-busy bug */
--		bcp->timeout_interval = millisec_2_cycles(3);
--		/* kludge: assume uv_hub.h is constant */
--		socket = (cpu_physical_id(cpu)>>5)&1;
--		if (socket >= bdp->num_sockets)
--			bdp->num_sockets = socket+1;
-+		/* kludge: 'assuming' one node per socket, and assuming that
-+		   disabling a socket just leaves a gap in node numbers */
-+		socket = (cpu_to_node(cpu) & 1);;
-+		bdp->socket_mask |= (1 << socket);
- 		sdp = &bdp->socket[socket];
- 		sdp->cpu_number[sdp->num_cpus] = cpu;
- 		sdp->num_cpus++;
- 	}
--	socket = 0;
--	for_each_possible_blade(uvhub) {
-+	uvhub = 0;
-+	while (uvhub_mask) {
-+		if (!(uvhub_mask & 1))
-+			goto nexthub;
- 		bdp = &uvhub_descs[uvhub];
--		for (i = 0; i < bdp->num_sockets; i++) {
--			sdp = &bdp->socket[i];
--			for (j = 0; j < sdp->num_cpus; j++) {
--				cpu = sdp->cpu_number[j];
-+		socket_mask = bdp->socket_mask;
-+		socket = 0;
-+		while (socket_mask) {
-+			if (!(socket_mask & 1))
-+				goto nextsocket;
-+			sdp = &bdp->socket[socket];
-+			for (i = 0; i < sdp->num_cpus; i++) {
-+				cpu = sdp->cpu_number[i];
- 				bcp = &per_cpu(bau_control, cpu);
- 				bcp->cpu = cpu;
--				if (j == 0) {
-+				if (i == 0) {
- 					smaster = bcp;
--					if (i == 0)
-+					if (socket == 0)
- 						hmaster = bcp;
- 				}
- 				bcp->cpus_in_uvhub = bdp->num_cpus;
- 				bcp->cpus_in_socket = sdp->num_cpus;
- 				bcp->socket_master = smaster;
-+				bcp->uvhub = bdp->uvhub;
- 				bcp->uvhub_master = hmaster;
--				for (k = 0; k < DEST_Q_SIZE; k++)
--					bcp->socket_acknowledge_count[k] = 0;
--				bcp->uvhub_cpu =
--				  uv_cpu_hub_info(cpu)->blade_processor_id;
-+				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
-+						blade_processor_id;
- 			}
-+nextsocket:
- 			socket++;
-+			socket_mask = (socket_mask >> 1);
- 		}
-+nexthub:
-+		uvhub++;
-+		uvhub_mask = (uvhub_mask >> 1);
- 	}
- 	kfree(uvhub_descs);
-+	for_each_present_cpu(cpu) {
-+		bcp = &per_cpu(bau_control, cpu);
-+		bcp->baudisabled = 0;
-+		bcp->statp = &per_cpu(ptcstats, cpu);
-+		/* time interval to catch a hardware stay-busy bug */
-+		bcp->timeout_interval = microsec_2_cycles(2*timeout_us);
-+		bcp->max_bau_concurrent = max_bau_concurrent;
-+		bcp->max_bau_concurrent_constant = max_bau_concurrent;
-+		bcp->plugged_delay = plugged_delay;
-+		bcp->plugsb4reset = plugsb4reset;
-+		bcp->timeoutsb4reset = timeoutsb4reset;
-+		bcp->ipi_reset_limit = ipi_reset_limit;
-+		bcp->complete_threshold = complete_threshold;
-+		bcp->congested_response_us = congested_response_us;
-+		bcp->congested_reps = congested_reps;
-+		bcp->congested_period = congested_period;
-+	}
- }
- 
- /*
-@@ -1361,10 +1612,11 @@ static int __init uv_bau_init(void)
- 		zalloc_cpumask_var_node(&per_cpu(uv_flush_tlb_mask, cur_cpu),
- 				       GFP_KERNEL, cpu_to_node(cur_cpu));
- 
--	uv_bau_max_concurrent = MAX_BAU_CONCURRENT;
- 	uv_nshift = uv_hub_info->m_val;
- 	uv_mmask = (1UL << uv_hub_info->m_val) - 1;
- 	nuvhubs = uv_num_possible_blades();
-+	spin_lock_init(&disable_lock);
-+	congested_cycles = microsec_2_cycles(congested_response_us);
- 
- 	uv_init_per_cpu(nuvhubs);
- 
-@@ -1383,15 +1635,19 @@ static int __init uv_bau_init(void)
- 	alloc_intr_gate(vector, uv_bau_message_intr1);
- 
- 	for_each_possible_blade(uvhub) {
--		pnode = uv_blade_to_pnode(uvhub);
--		/* INIT the bau */
--		uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_ACTIVATION_CONTROL,
--				      ((unsigned long)1 << 63));
--		mmr = 1; /* should be 1 to broadcast to both sockets */
--		uv_write_global_mmr64(pnode, UVH_BAU_DATA_BROADCAST, mmr);
-+		if (uv_blade_nr_possible_cpus(uvhub)) {
-+			pnode = uv_blade_to_pnode(uvhub);
-+			/* INIT the bau */
-+			uv_write_global_mmr64(pnode,
-+					UVH_LB_BAU_SB_ACTIVATION_CONTROL,
-+					((unsigned long)1 << 63));
-+			mmr = 1; /* should be 1 to broadcast to both sockets */
-+			uv_write_global_mmr64(pnode, UVH_BAU_DATA_BROADCAST,
-+						mmr);
-+		}
- 	}
- 
- 	return 0;
- }
- core_initcall(uv_bau_init);
--core_initcall(uv_ptc_init);
-+fs_initcall(uv_ptc_init);
+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
+
+
+--=-rcKjuCHCqqF74ynbBcxx
+Content-Type: application/x-gzip; name="kernel_crash2.gz"
+Content-Disposition: attachment; filename="kernel_crash2.gz"
+Content-Transfer-Encoding: base64
+
+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
+
+
+--=-rcKjuCHCqqF74ynbBcxx--
+
