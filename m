@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759820Ab0HLKue (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 06:50:34 -0400
-Received: from torres.zugschlus.de ([85.214.131.164]:34679 "EHLO
-	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759764Ab0HLKuc (ORCPT
+	id S1759831Ab0HLKyd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 06:54:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44714 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759789Ab0HLKyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 06:50:32 -0400
-Date: Thu, 12 Aug 2010 12:50:29 +0200
-From: Marc Haber <mh+linux-kernel@zugschlus.de>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
-Subject: Re: e1000e crashes with 2.6.34.x and ThinkPad T60
-Message-ID: <20100812105029.GA6816@torres.zugschlus.de>
-References: <20100724092644.GA13353@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A1366000F42E28@rrsmsx501.amr.corp.intel.com> <20100730125452.GA21444@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660024083FE@rrsmsx501.amr.corp.intel.com> <20100810120458.GB21511@torres.zugschlus.de> <8DD2590731AB5D4C9DBF71A877482A900164D9279F@orsmsx509.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A900164D9279F@orsmsx509.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 12 Aug 2010 06:54:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=SLqztAXYWHNc0G65QWFTn5unGUSs0riTF9kmhz043FwxujVc9YrFJskH/hIVNKEx9b
+         zc4J/T9uV/icbHuK8Jw9yQ/0RhWW2FskvDmnanuXn6EUuqqbr/b+bQinWzLDsAiALPGS
+         C3br2LjKxAfN5D0AFZSCaMjXl46IqAt9aTFDU=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH resend] padata: add missing __percpu markup in include/linux/padata.h
+Date: Thu, 12 Aug 2010 19:54:27 +0900
+Message-Id: <1281610467-9414-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100811182925.GB4097@secunet.com>
+References: <20100811182925.GB4097@secunet.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+parallel_data->queue is a percpu pointer but was missing __percpu markup.
+Add it.
 
-On Tue, Aug 10, 2010 at 09:34:52AM -0700, Allan, Bruce W wrote:
-> [adding e1000-devel, the Intel wired ethernet developers mailing list]
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ include/linux/padata.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks.
-
-> We have had other recent reports of issues with this part that are due to
-> ASPM L1 being enabled.  Would you please try disabling L1 after the driver
-> is loaded as follows (assuming your adapter is still PCI bus/device/number
-> 02:00.0 as indicated in the lspci output you provided earlier):
-> 1) First check the hexadecimal value of the LnkCtl register -
-> # setpci -s 2:0.0 0xf0
-
-$ sudo setpci --version
-setpci version 3.1.7                   
-$ sudo setpci -s 2:0.0 0xf0
-setpci: Missing width.
-Try `setpci --help' for more information.
-$
-
-Looking at --help doesn't help me, sorry.
-
-Greetings
-Marc
-
+diff --git a/include/linux/padata.h b/include/linux/padata.h
+index bdcd1e9..4633b2f 100644
+--- a/include/linux/padata.h
++++ b/include/linux/padata.h
+@@ -127,8 +127,8 @@ struct padata_cpumask {
+  */
+ struct parallel_data {
+ 	struct padata_instance		*pinst;
+-	struct padata_parallel_queue	*pqueue;
+-	struct padata_serial_queue	*squeue;
++	struct padata_parallel_queue	__percpu *pqueue;
++	struct padata_serial_queue	__percpu *squeue;
+ 	atomic_t			seq_nr;
+ 	atomic_t			reorder_objects;
+ 	atomic_t			refcnt;
 -- 
------------------------------------------------------------------------------
-Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
-Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
-Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
+1.7.0.4
+
