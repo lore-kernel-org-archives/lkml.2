@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759610Ab0HLAEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:04:50 -0400
-Received: from kroah.org ([198.145.64.141]:60268 "EHLO coco.kroah.org"
+	id S932838Ab0HLAG3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:06:29 -0400
+Received: from kroah.org ([198.145.64.141]:60392 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759489Ab0HLAE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
-Message-Id: <20100812000126.434600829@clark.site>
+	id S932854Ab0HLAEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:47 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:28 2010
+Message-Id: <20100812000128.130276853@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:50 -0700
+Date: Wed, 11 Aug 2010 17:01:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pavel Kazlou <p.i.kazlou@gmail.com>
-Subject: [35/54] USB: option: Huawei ETS 1220 support added
+        Brian King <brking@linux.vnet.ibm.com>,
+        James Bottomley <James.Bottomley@suse.de>
+Subject: [53/54] [SCSI] ibmvfc: Reduce error recovery timeout
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Pavel Kazlou <p.i.kazlou@gmail.com>
+From: Brian King <brking@linux.vnet.ibm.com>
 
-commit b972302b0a13aaddc9e90da2b4b52722e5d0e776 upstream.
+commit daa142d1773dd3a986f02a8a4da929608d24daaa upstream.
 
-The patch adds Huawei ETS 1220 product id into the list of supported
-devices in 'option' usb serial driver.
+If a command times out resulting in EH getting invoked, we wait for the
+aborted commands to come back after sending the abort. Shorten
+the amount of time we wait for these responses, to ensure we don't
+get stuck in EH for several minutes.
 
-Signed-off-by: Pavel Kazlou <p.i.kazlou@gmail.com>
+Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+Signed-off-by: James Bottomley <James.Bottomley@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/option.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/scsi/ibmvscsi/ibmvfc.c |    2 +-
+ drivers/scsi/ibmvscsi/ibmvfc.h |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -167,6 +167,7 @@ static int  option_resume(struct usb_ser
- #define HUAWEI_PRODUCT_E143E			0x143E
- #define HUAWEI_PRODUCT_E143F			0x143F
- #define HUAWEI_PRODUCT_E14AC			0x14AC
-+#define HUAWEI_PRODUCT_ETS1220			0x1803
+--- a/drivers/scsi/ibmvscsi/ibmvfc.c
++++ b/drivers/scsi/ibmvscsi/ibmvfc.c
+@@ -2245,7 +2245,7 @@ static int ibmvfc_wait_for_ops(struct ib
+ 	DECLARE_COMPLETION_ONSTACK(comp);
+ 	int wait;
+ 	unsigned long flags;
+-	signed long timeout = init_timeout * HZ;
++	signed long timeout = IBMVFC_ABORT_WAIT_TIMEOUT * HZ;
  
- #define QUANTA_VENDOR_ID			0x0408
- #define QUANTA_PRODUCT_Q101			0xEA02
-@@ -503,6 +504,7 @@ static const struct usb_device_id option
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
-+	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
- 	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
- 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
- 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) }, /* Novatel Merlin V640/XV620 */
+ 	ENTER;
+ 	do {
+--- a/drivers/scsi/ibmvscsi/ibmvfc.h
++++ b/drivers/scsi/ibmvscsi/ibmvfc.h
+@@ -38,6 +38,7 @@
+ #define IBMVFC_ADISC_PLUS_CANCEL_TIMEOUT	\
+ 		(IBMVFC_ADISC_TIMEOUT + IBMVFC_ADISC_CANCEL_TIMEOUT)
+ #define IBMVFC_INIT_TIMEOUT		120
++#define IBMVFC_ABORT_WAIT_TIMEOUT	40
+ #define IBMVFC_MAX_REQUESTS_DEFAULT	100
+ 
+ #define IBMVFC_DEBUG			0
 
 
