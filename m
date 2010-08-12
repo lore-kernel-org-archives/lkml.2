@@ -1,95 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760714Ab0HLVam (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:30:42 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53375 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148Ab0HLVal convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:30:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=P14vFvbVRHErOrlq0/mv6Avs0bbjPIE4ZKPGkO5dTIMXiZOHPDyt2fuYuFrS1Gs0v5
-         qXIRgJMM6DZ6ImS42v5u4sQXx/6UMdumJqtepmLJvpYRv4QcIYJG+8smlDWwGckhfomd
-         zDubi0Qn9MRtk2rTQR8gpB7Hzo/cBk/zs5FGE=
+	id S1760794Ab0HLVde (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:33:34 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38359 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753802Ab0HLVdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 17:33:33 -0400
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX19e3mhexrxeAj4UXkEk7/AKDrbF0ImopOufeXOFub
+	yUvz1hLIQVFKiV
+Message-ID: <4C6468A9.7090503@gmx.de>
+Date: Thu, 12 Aug 2010 23:33:29 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1281066910.2168.10.camel@pasglop>
-References: <1281066910.2168.10.camel@pasglop>
-Date: Thu, 12 Aug 2010 23:30:40 +0200
-X-Google-Sender-Auth: wHR2swHOQpw3-haZVWIJ8ovmXOU
-Message-ID: <AANLkTinmhGPHQDX0gmnY9j+K61abgnukw2DrTBG3EUuJ@mail.gmail.com>
-Subject: Re: [PATCH] drm: Fix support for PCI domains
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Dave Airlie <airlied@gmail.com>, dri-devel@lists.sourceforge.net,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH] ipc/shm.c: add RSS and swap size information to /proc/sysvipc/shm
+References: <20100811201345.GA11304@p100.box> <20100812131005.e466a9fd.akpm@linux-foundation.org>
+In-Reply-To: <20100812131005.e466a9fd.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 6, 2010 at 05:55, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> (For some reason I thought that went in ages ago ...)
+On 08/12/2010 10:10 PM, Andrew Morton wrote:
+> On Wed, 11 Aug 2010 22:13:45 +0200
+> Helge Deller<deller@gmx.de>  wrote:
 >
-> This fixes support for PCI domains in what should hopefully be a backward
-> compatible way along with a change to libdrm.
+>> The kernel currently provides no functionality to analyze the RSS
+>> and swap space usage of each individual sysvipc shared memory segment.
+>>
+>> This patch add this info for each existing shm segment by extending
+>> the output of /proc/sysvipc/shm by two columns for RSS and swap.
+>>
+>> Since shmctl(SHM_INFO) already provides a similiar calculation (it
+>> currently sums up all RSS/swap info for all segments), I did split
+>> out a static function which is now used by the /proc/sysvipc/shm
+>> output and shmctl(SHM_INFO).
+>>
 >
-> When the interface version is set to 1.4, we assume userspace understands
-> domains and the world is at peace. We thus pass proper domain numbers
-> instead of 0 to userspace.
+> I suppose that could be useful, although it would be most interesting
+> to hear why _you_ consider it useful?
+
+A reasonable question, and I really should have explained when I did 
+send this patch.
+
+In my job I do work for SAP in the SAP LinuxLab 
+(http://www.sap.com/linux) and take care of the SAP ERP enterprise 
+software on Linux.
+SAP products (esp. the SAP Netweaver ABAP Kernel) uses lots of big 
+shared memory segments (we often have Linux systems with >= 16GB shm 
+usage). Sometimes we get customer reports about "slow" system responses 
+and while looking into their configurations we often find massive 
+swapping activity on the system. With this patch it's now easy to see 
+from the command line if and which shm segments gets swapped out (and 
+how much) and can more easily give recommendations for system tuning.
+Without the patch it's currently not possible to do such shm analysis at 
+all.
+
+So, my patch actually does fix a real-world problem.
+
+By the way - I found another bug/issue in /proc/<pid>/smaps as well. The 
+kernel currently does not adds swapped-out shm pages to the swap size 
+value correctly. The swap size value always stays zero for shm pages. 
+I'm currently preparing a small patch to fix that, which I will send to 
+linux-mm for review soon.
+
+> But is it useful enough to risk breaking existing code which parses
+> that file?  The risk is not great, but it's there.
+
+Sure. The only positive argument is maybe, that I added the new info to 
+the end of the lines. IMHO existing applications which parse /proc files 
+should always take into account, that more text could follow with newer 
+Linux kernels...?
+
+>> ---
+>>
+>>   shm.c |   63 ++++++++++++++++++++++++++++++++++++++++++---------------------
+>>   1 file changed, 42 insertions(+), 21 deletions(-)
+>>
+>>
+>> diff --git a/ipc/shm.c b/ipc/shm.c
+>> --- a/ipc/shm.c
+>> +++ b/ipc/shm.c
+>> @@ -108,7 +108,11 @@ void __init shm_init (void)
+>>   {
+>>   	shm_init_ns(&init_ipc_ns);
+>>   	ipc_init_proc_interface("sysvipc/shm",
+>> -				"       key      shmid perms       size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime\n",
+>> +#if BITS_PER_LONG<= 32
+>> +				"       key      shmid perms       size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime        RSS       swap\n",
+>> +#else
+>> +				"       key      shmid perms                  size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime                   RSS                  swap\n",
 >
-> The newer libdrm will then try 1.4 first, and fallback to 1.1, along with
-> ignoring domains in the later case (well, except on alpha of course)
->
-> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> ---
->  drivers/gpu/drm/drm_ioctl.c |    1 +
->  include/drm/drmP.h          |   18 +++++++++++++-----
->  include/drm/drm_core.h      |    2 +-
->  3 files changed, 15 insertions(+), 6 deletions(-)
+> This adds 11 new spaces between "perms" and "size", only on 64-bit
+> machines.  That was unchangelogged and adds another (smaller) risk of
+> breaking things.  Please explain.
 
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index c1b9871..6d4bad5 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -1071,11 +1071,19 @@ static __inline__ int drm_core_check_feature(struct drm_device *dev,
->        return ((dev->driver->driver_features & feature) ? 1 : 0);
->  }
->
-> -#ifdef __alpha__
-> -#define drm_get_pci_domain(dev) dev->hose->index
-> -#else
-> -#define drm_get_pci_domain(dev) 0
-> -#endif
-> +static inline int drm_get_pci_domain(struct drm_device *dev)
-> +{
-> +#ifndef __alpha__
-> +       /* For historical reasons, drm_get_pci_domain() is busticated
-> +        * on most archs and has to remain so for userspace interface
-> +        * < 1.4, except on alpha which was right from the beginning
-> +        */
-> +       if (dev->if_version < 0x10004)
-> +               return 0;
-> +#endif /* __alpha__ */
-> +
-> +       return pci_domain_nr(dev->pdev->bus);
+Yes, I did added some spaces in front of the "size" field for 64bit 
+kernels to get the columns correct if you cat the contents of the file.
+In sysvipc_shm_proc_show() the kernel prints the size value in 
+"SPEC_SIZE" format, which is defined like this:
 
-error: implicit declaration of function ‘pci_domain_nr’
+#if BITS_PER_LONG <= 32
+#define SIZE_SPEC "%10lu"
+#else
+#define SIZE_SPEC "%21lu"
+#endif
 
-on m68k without PCI.
+So, if the header is not adjusted, the columns are not correctly 
+aligned. I actually tested this on 32- and 64-bit and it seems correct now.
 
-Gr{oetje,eeting}s,
+> This interface is really old and crufty and horrid, but I guess that
+> there's not a lot we can do about that :(
 
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Helge
