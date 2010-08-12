@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760273Ab0HLPsU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:48:20 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:51091 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753262Ab0HLPsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:48:18 -0400
-Date: Thu, 12 Aug 2010 17:48:16 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCHv8 13/13] init.h: add some more documentation to __ref*
-	tags
-Message-ID: <20100812154816.GA31928@merkur.ravnborg.org>
-References: <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com> <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com> <4addd8199cfd6a2aa582904cd6efa01bc77a5290.1281625724.git.m.nazarewicz@samsung.com> <9737a711d395932c8803511ba581722d46be5292.1281625724.git.m.nazarewicz@samsung.com> <f07e8ff5f36d5893e62764b9e372da0cc305a2b5.1281625724.git.m.nazarewicz@samsung.com> <550ddf8273d87cb418dd5716cbec906e74aa03d4.1281625724.git.m.nazarewicz@samsung.com> <ad117de19af4733f113c8631e53556cc308dbf06.1281625724.git.m.nazarewicz@samsung.com> <340f780f91de1b3ca17d0c29d87963205d172f4e.1281625724.git.m.nazarewicz@samsung.com> <cfb1102e8bd59822b76475d58f5e4f1ceadade50.1281625724.git.m.nazarewicz@samsung.com> <596c51e49e129c14531a6367ea7b321ee541bdb5.1281625724.git.m.nazarewicz@samsung.com>
+	id S1760315Ab0HLPsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:48:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50543 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760277Ab0HLPsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 11:48:37 -0400
+Message-ID: <4C6417AB.1050105@zytor.com>
+Date: Thu, 12 Aug 2010 08:47:55 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <596c51e49e129c14531a6367ea7b321ee541bdb5.1281625724.git.m.nazarewicz@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Borislav Petkov <bp@amd64.org>
+CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD machines
+References: <1280940316-7966-1-git-send-email-bp@amd64.org> <1280940316-7966-2-git-send-email-bp@amd64.org> <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812154756.GD2070@aftab>
+In-Reply-To: <20100812154756.GD2070@aftab>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 05:43:56PM +0200, Michal Nazarewicz wrote:
-> The __ref* tags may have been confusing for new kernel
-> developers (I was confused by them for sure) so adding a few
-> more sentences to comment to clear things up for people who
-> see those for the first time.
+On 08/12/2010 08:47 AM, Borislav Petkov wrote:
+>>
+>> Agreed.  I do have a concern about the kernel page tables not being
+>> synchronized into trampoline_pg_dir (it's only an issue for 32-bit
+>> !PAE), so at the very least we need to keep an eye out for it...
 > 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Sam Ravnborg <sam@ravnborg.org>
-Acked-by: Sam Ravnborg <sam@ravnborg.org>
+> I've been working on what you suggested and the patch boots on a 32-bit
+> PAE kernel but keeps rebooting on non-PAE after setting the stack_start
+> on the AP. I could send it out later for you to look at, if you like -
+> you should be able to spot what I'm missing :)...
+> 
+
+Sounds good.  This is obviously .37-or-higher material.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
