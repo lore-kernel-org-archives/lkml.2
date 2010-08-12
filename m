@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099Ab0HLAOb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:14:31 -0400
-Received: from kroah.org ([198.145.64.141]:47863 "EHLO coco.kroah.org"
+	id S933168Ab0HLAO5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:14:57 -0400
+Received: from kroah.org ([198.145.64.141]:47853 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933157Ab0HLAId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:33 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:16 2010
-Message-Id: <20100812000616.087298787@clark.site>
+	id S932536Ab0HLAIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
+Message-Id: <20100812000615.913498735@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:52 -0700
+Date: Wed, 11 Aug 2010 17:05:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Philipp Reisner <philipp.reisner@linbit.com>,
-        Lars Ellenberg <lars.ellenberg@linbit.com>,
-        Jens Axboe <jaxboe@fusionio.com>
-Subject: [37/67] drbd: Initialize all members of sync_conf to their defaults [Bugz 315]
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [35/67] ecryptfs: release reference to lower mount if interpose fails
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,48 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philipp Reisner <philipp.reisner@linbit.com>
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-commit 85f4cc17a62c3ac9edeaf120cdae7261df458053 upstream.
+commit 31f73bee3e170b7cabb35db9e2f4bf7919b9d036 upstream.
 
-Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
-Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
-Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+In ecryptfs_lookup_and_interpose_lower() the lower mount is not decremented
+if allocation of a dentry info struct failed. As a result the lower filesystem
+cant be unmounted any more (since it is considered busy). This patch corrects
+the reference counting.
+
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/drbd/drbd_main.c |   21 ++++++++++++++++++---
- 1 file changed, 18 insertions(+), 3 deletions(-)
+ fs/ecryptfs/inode.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/block/drbd/drbd_main.c
-+++ b/drivers/block/drbd/drbd_main.c
-@@ -2660,9 +2660,24 @@ static void drbd_unplug_fn(struct reques
- 
- static void drbd_set_defaults(struct drbd_conf *mdev)
- {
--	mdev->sync_conf.after      = DRBD_AFTER_DEF;
--	mdev->sync_conf.rate       = DRBD_RATE_DEF;
--	mdev->sync_conf.al_extents = DRBD_AL_EXTENTS_DEF;
-+	/* This way we get a compile error when sync_conf grows,
-+	   and we forgot to initialize it here */
-+	mdev->sync_conf = (struct syncer_conf) {
-+		/* .rate = */		DRBD_RATE_DEF,
-+		/* .after = */		DRBD_AFTER_DEF,
-+		/* .al_extents = */	DRBD_AL_EXTENTS_DEF,
-+		/* .dp_volume = */	DRBD_DP_VOLUME_DEF,
-+		/* .dp_interval = */	DRBD_DP_INTERVAL_DEF,
-+		/* .throttle_th = */	DRBD_RS_THROTTLE_TH_DEF,
-+		/* .hold_off_th = */	DRBD_RS_HOLD_OFF_TH_DEF,
-+		/* .verify_alg = */	{}, 0,
-+		/* .cpu_mask = */	{}, 0,
-+		/* .csums_alg = */	{}, 0,
-+		/* .use_rle = */	0
-+	};
-+
-+	/* Have to use that way, because the layout differs between
-+	   big endian and little endian */
- 	mdev->state = (union drbd_state) {
- 		{ .role = R_SECONDARY,
- 		  .peer = R_UNKNOWN,
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -264,7 +264,7 @@ int ecryptfs_lookup_and_interpose_lower(
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to allocate ecryptfs_dentry_info struct\n",
+ 			__func__);
+-		goto out_dput;
++		goto out_put;
+ 	}
+ 	ecryptfs_set_dentry_lower(ecryptfs_dentry, lower_dentry);
+ 	ecryptfs_set_dentry_lower_mnt(ecryptfs_dentry, lower_mnt);
+@@ -339,8 +339,9 @@ int ecryptfs_lookup_and_interpose_lower(
+ out_free_kmem:
+ 	kmem_cache_free(ecryptfs_header_cache_2, page_virt);
+ 	goto out;
+-out_dput:
++out_put:
+ 	dput(lower_dentry);
++	mntput(lower_mnt);
+ 	d_drop(ecryptfs_dentry);
+ out:
+ 	return rc;
 
 
