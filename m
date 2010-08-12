@@ -1,136 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759661Ab0HLAFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:05:51 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36281 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759486Ab0HLAFr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:05:47 -0400
-Date: Wed, 11 Aug 2010 17:03:56 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Sunil Mushran <sunil.mushran@oracle.com>
-Subject: Re: [PATCH 1/2] fs/ocfs2/dlm: Eliminate update of
- list_for_each_entry loop cursor
-Message-ID: <20100812000355.GA7195@mail.oracle.com>
-Mail-Followup-To: Julia Lawall <julia@diku.dk>,
-	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-	Sunil Mushran <sunil.mushran@oracle.com>
-References: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759610Ab0HLAEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:04:50 -0400
+Received: from kroah.org ([198.145.64.141]:60268 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759489Ab0HLAE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
+Message-Id: <20100812000126.434600829@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 17:00:50 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Pavel Kazlou <p.i.kazlou@gmail.com>
+Subject: [35/54] USB: option: Huawei ETS 1220 support added
+In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 07, 2010 at 11:09:13AM +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> list_for_each_entry uses its first argument to move from one element to the
-> next, so modifying it can break the iteration.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-	Thanks for catching the bug.  It was introduced by 800deef3
-[ocfs2: use list_for_each_entry where benefical].  I blame Christoph.
+------------------
 
-> diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
-> index 9dfaac7..7084a11 100644
-> --- a/fs/ocfs2/dlm/dlmrecovery.c
-> +++ b/fs/ocfs2/dlm/dlmrecovery.c
-> @@ -1792,10 +1792,10 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
->  			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
->  				tmpq = dlm_list_idx_to_ptr(res, j);
->  				list_for_each_entry(lock, tmpq, list) {
-> -					if (lock->ml.cookie != ml->cookie)
-> +					if (lock->ml.cookie != ml->cookie) {
->  						lock = NULL;
-> -					else
->  						break;
-> +					}
->  				}
->  				if (lock)
->  					break;
+From: Pavel Kazlou <p.i.kazlou@gmail.com>
 
-	However, this is not the correct solution.  The goal of the
-original code, which used to use list_for_each(), was to leave lock
-non-NULL if the cookie was found.  Your version merely exits the loop on
-the first non-matching entry, always leaving lock==NULL if there is a
-non-matching entry.
-	One possible solution is to return the original code:
+commit b972302b0a13aaddc9e90da2b4b52722e5d0e776 upstream.
 
---8<-----------------------------------------------------------------
-@@ -1747,7 +1747,7 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 				     struct dlm_migratable_lockres *mres)
- {
- 	struct dlm_migratable_lock *ml;
--	struct list_head *queue;
-+	struct list_head *queue, *iter;
- 	struct list_head *tmpq = NULL;
- 	struct dlm_lock *newlock = NULL;
- 	struct dlm_lockstatus *lksb = NULL;
-@@ -1791,11 +1791,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 			spin_lock(&res->spinlock);
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
--				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
--						lock = NULL;
--					else
-+				list_for_each(iter, tmpq) {
-+					lock = list_entry(iter, struct dlm_lock, list);
-+
-+					if (lock->ml.cookie == ml->cookie)
- 						break;
-+					lock = NULL;
- 				}
- 				if (lock)
- 					break;
--->8-----------------------------------------------------------------
+The patch adds Huawei ETS 1220 product id into the list of supported
+devices in 'option' usb serial driver.
 
-	Another approach would be to keep list_for_each_entry() around,
-but use a better check for entry existence:
+Signed-off-by: Pavel Kazlou <p.i.kazlou@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---8<-----------------------------------------------------------------
-@@ -1792,13 +1792,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
- 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
- 				tmpq = dlm_list_idx_to_ptr(res, j);
- 				list_for_each_entry(lock, tmpq, list) {
--					if (lock->ml.cookie != ml->cookie)
--						lock = NULL;
--					else
-+					if (lock->ml.cookie == ml->cookie)
- 						break;
- 				}
--				if (lock)
-+				if (&lock->list != tmpq)
- 					break;
-+				lock = NULL;
- 			}
+---
+ drivers/usb/serial/option.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -167,6 +167,7 @@ static int  option_resume(struct usb_ser
+ #define HUAWEI_PRODUCT_E143E			0x143E
+ #define HUAWEI_PRODUCT_E143F			0x143F
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
++#define HUAWEI_PRODUCT_ETS1220			0x1803
  
- 			/* lock is always created locally first, and
--->8-----------------------------------------------------------------
+ #define QUANTA_VENDOR_ID			0x0408
+ #define QUANTA_PRODUCT_Q101			0xEA02
+@@ -503,6 +504,7 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) }, /* Novatel Merlin V640/XV620 */
 
-	I think I like the second one better.  Sunil, what do you think?
 
-Joel
-
--- 
-
-Life's Little Instruction Book #335
-
-	"Every so often, push your luck."
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
