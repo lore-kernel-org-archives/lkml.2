@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760656Ab0HLVWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:22:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41343 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753114Ab0HLVWo (ORCPT
+	id S1760719Ab0HLVYy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:24:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57536 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab0HLVYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:22:44 -0400
-Date: Thu, 12 Aug 2010 14:22:11 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Andrea Righi <arighi@develer.com>
-Cc: Stefani Seibold <stefani@seibold.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] kfifo: add kfifo_skip() testcase
-Message-Id: <20100812142211.59e24462.akpm@linux-foundation.org>
-In-Reply-To: <1281627158-9461-2-git-send-email-arighi@develer.com>
-References: <1281627158-9461-1-git-send-email-arighi@develer.com>
-	<1281627158-9461-2-git-send-email-arighi@develer.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 12 Aug 2010 17:24:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Oh/h5XPxYRFOut487+5uy6RDdC3lfCV9ReHxH1Pw86DKdmja6dZ6z21FAG8wNydNqK
+         itLsHWUnVTQfdAoNox6kQP++g36cqd/Whm1T6LdmtrQkRbnc2VzIZjPUpLuimXNcV2U5
+         2s7YtkHmfKU7ZP3tKriOmyC7Z7k45mOGJnn8k=
+Message-ID: <4C64669B.1020605@gmail.com>
+Date: Thu, 12 Aug 2010 23:24:43 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Eric Paris <eparis@redhat.com>, Takashi Iwai <tiwai@suse.de>,
+        Pekka Enberg <penberg@kernel.org>, Thomas Meyer <thomas@m3y3r.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36: Sound stop working
+References: <201008122200.05598.thomas@m3y3r.de> <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com> <s5hpqxntw64.wl%tiwai@suse.de> <4C646110.1040104@gmail.com> <AANLkTi=-2U3PXeUEXzGDdXti_j5yGbfG3yci909MKEHX@mail.gmail.com>
+In-Reply-To: <AANLkTi=-2U3PXeUEXzGDdXti_j5yGbfG3yci909MKEHX@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Aug 2010 17:32:38 +0200
-Andrea Righi <arighi@develer.com> wrote:
+On 08/12/2010 11:18 PM, Linus Torvalds wrote:
+> On Thu, Aug 12, 2010 at 2:01 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+>> Probably I got into this problem yesterday. Found out that PA fails to
+>> open /dev/snd/pcmC0D0p _second_ time. It opens it, then closes, then
+>> opens it again and gets EBUSY. aplay is OK.
 
-> Add a testcase for kfifo_skip() to the byte stream fifo example.
-> 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> ---
->  samples/kfifo/bytestream-example.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> diff --git a/samples/kfifo/bytestream-example.c b/samples/kfifo/bytestream-example.c
-> index 642eef3..2e3a7a8 100644
-> --- a/samples/kfifo/bytestream-example.c
-> +++ b/samples/kfifo/bytestream-example.c
-> @@ -73,6 +73,10 @@ static int __init testfunc(void)
->  	ret = kfifo_in(&test, buf, ret);
->  	printk(KERN_INFO "ret: %d\n", ret);
->  
-> +	/* skip first element of the fifo */
-> +	printk(KERN_INFO "skip 1st element\n");
-> +	kfifo_skip(&test);
-> +
->  	/* put values into the fifo until is full */
->  	for (i = 20; kfifo_put(&test, &i); i++)
->  		;
+Perfectly reproducible in qemu-kvm with ac97 soundhw, i.e. intel8x0
+driver. Just in case you want to debug that easily.
 
-hm, that's not a very good test harness.  A better one would check that
-the resulting kfifo actually contains the expected items in the
-expected order.  AFACIT this will "pass" even if kfifo_skip() is a
-no-op, or execs nethack or something.
-
-Oh well, it's more than we usually get.
+-- 
+js
