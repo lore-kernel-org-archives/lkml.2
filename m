@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760257Ab0HLPfd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:35:33 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33614 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760169Ab0HLPfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:35:31 -0400
-Message-ID: <4C64148D.5080305@zytor.com>
-Date: Thu, 12 Aug 2010 08:34:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Borislav Petkov <bp@amd64.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD	machines
-References: <1280940316-7966-1-git-send-email-bp@amd64.org> <1280940316-7966-2-git-send-email-bp@amd64.org> <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org>
-In-Reply-To: <20100812144142.GY23755@8bytes.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1760283Ab0HLPmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:42:23 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36476 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760211Ab0HLPmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 11:42:20 -0400
+Date: Thu, 12 Aug 2010 17:43:44 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv8 01/13] USB: gadget: g_multi: fixed vendor and product ID
+In-reply-to: <cover.1281625724.git.m.nazarewicz@samsung.com>
+To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Message-id: <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <cover.1281625724.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2010 07:41 AM, Joerg Roedel wrote:
-> On Thu, Aug 05, 2010 at 07:14:14AM -0700, H. Peter Anvin wrote:
->> On 08/05/2010 12:45 AM, Roedel, Joerg wrote:
->> Correct, again.  It's unclear to me if we can get away with the very
->> simple 64-bit approach -- in particular, not including all the 1:1
->> mappings in the kernel -- for all future users, though.
-> 
-> Yeah, We could probably use the same symbol names for the trampoline and
-> the swapper page-table on 32 and 64 bit and merge the code that handles
-> it between the architectures. Shouldn't be too difficult. We cook
-> something up :-)
-> But do you mind to take this patch first? It fixes the occurence of an
-> erratum on AMD hardware, it is a quite simple fix compared to the rework
-> suggested. In fact, I would like to have a simple patch to fix the
-> problem first (and backport it as necessary) and then go the way to
-> rework the current code differences between 32 and 64 bit.
-> 
+This patch fixes the vendor and product ID the gadget uses
+by replacing the temporary IDs that were used during
+development (which should never get into mainline) with
+proper IDs.
 
-Agreed.  I do have a concern about the kernel page tables not being
-synchronized into trampoline_pg_dir (it's only an issue for 32-bit
-!PAE), so at the very least we need to keep an eye out for it...
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/multi.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-	-hpa
-
+diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
+index 795d762..36d67a3 100644
+--- a/drivers/usb/gadget/multi.c
++++ b/drivers/usb/gadget/multi.c
+@@ -74,8 +74,8 @@ MODULE_LICENSE("GPL");
+ 
+ /***************************** Device Descriptor ****************************/
+ 
+-#define MULTI_VENDOR_NUM	0x0525	/* XXX NetChip */
+-#define MULTI_PRODUCT_NUM	0xa4ab	/* XXX */
++#define MULTI_VENDOR_NUM	0x1d6b	/* Linux Foundation */
++#define MULTI_PRODUCT_NUM	0x0104	/* Multifunction Composite Gadget */
+ 
+ 
+ enum {
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+1.7.1
 
