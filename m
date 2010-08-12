@@ -1,140 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758607Ab0HLR0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:26:51 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:54955 "EHLO mail-out1.uio.no"
+	id S1758165Ab0HLRbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:31:16 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:39083 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751822Ab0HLR0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:26:49 -0400
-Subject: Re: [PATCH] nfs: lookupcache coherence bugs in WCC update path
- (revised)
+	id S1751822Ab0HLRbO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 13:31:14 -0400
+Subject: Re: linux-next: Tree for August 9 (nfs)
 From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=WzNzq7wKf0qa+VFuOBYy4yW==0QvdKsTQ88+x@mail.gmail.com>
-References: <87lj8ckb1e.fsf@patl.com> <8762zgmmer.fsf@patl.com>
-	 <1281628195.2873.12.camel@heimdal.trondhjem.org>
-	 <AANLkTi=WzNzq7wKf0qa+VFuOBYy4yW==0QvdKsTQ88+x@mail.gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-nfs@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100812091842.6a3b84b9.randy.dunlap@oracle.com>
+References: <20100809132314.789e13f3.sfr@canb.auug.org.au>
+	 <20100809100856.b03a9bc1.randy.dunlap@oracle.com>
+	 <20100812091842.6a3b84b9.randy.dunlap@oracle.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Aug 2010 13:26:44 -0400
-Message-ID: <1281634004.14329.14.camel@heimdal.trondhjem.org>
+Date: Thu, 12 Aug 2010 13:31:08 -0400
+Message-ID: <1281634268.14329.18.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
 Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 4 sum msgs/h 1 total rcpts 832 max rcpts/h 20 ratelimit 0
+X-UiO-Ratelimit-Test: rcpts/h 8 msgs/h 2 sum rcpts/h 9 sum msgs/h 2 total rcpts 837 max rcpts/h 20 ratelimit 0
 X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: EED4A4A918C25A50E87A7A1E2780A5D41623A4CD
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 320 max/h 6 blacklist 0 greylist 0 ratelimit 0
+X-UiO-Scanned: 23F2AF36AEFF259D455E4152B0188C54146C49BB
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 2 total 321 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-12 at 10:13 -0700, Patrick J. LoPresti wrote:
-> On Thu, Aug 12, 2010 at 8:49 AM, Trond Myklebust
-> <trond.myklebust@fys.uio.no> wrote:
-> >
-> > This looks less than obviously correct to me.
+On Thu, 2010-08-12 at 09:18 -0700, Randy Dunlap wrote:
+> On Mon, 9 Aug 2010 10:08:56 -0700 Randy Dunlap wrote:
 > 
-> I just meant my patch obviously fixes a bug even if you do not believe
-> it is the bug I am encountering.  I claim it is "obvious" based on:
-> 
-> Obvious statement #1:  It is a bug if a directory inode's mtime is
-> EVER updated without invalidating the lookup cache, because that
-> results in a stale cache that does not know it is stale and can
-> persist indefinitely.
+> ping??
 
-Wrong! Not if we _know_ that the mtime was updated due to an action we
-took. We don't have to invalidate the lookup cache every time we create
-a new dentry: we're quite able to add that dentry in to the cache
-ourselves, and we do that.
+Hi Randy,
 
-
-> Obvious statement #2:  The current nfs_wcc_update_inode() code updates
-> the directory inode's mtime without invalidating the lookup cache.
-> 
-> So the current code would be wrong even if it never created a problem
-> in practice.  (Although it does create a problem in practice).
-
-The current code is not wrong.
-
-> > The wcc case is invoked when the ctime/mtime/.... change is known to have occurred due to a file
-> > creation/unlink/... from this client. It is a weak cache consistency case.
-> >
-> > If your client is seeing ENOENT after it created the file itself, then
-> > the problem isn't cache coherency, but a bug in the file creation code.
-> 
-> The client did not create the file itself.
-
-So why is it going through the wcc case, and why does wcc think that the
-client created the file?
-
-> The sequence of operations goes like this:
-> 
-> 1) Client looks up non-existent file, creates negative dentry.
-> 2) File is created by a process on the server.
-> 3) Something causes the client to update its mtime for the directory
-> without invalidating the dentry lookup cache.  (I have not figured out
-> exactly what, but I have "caught it in the act"; see below).
-
-Changing the wcc behaviour won't fix this.
-
-> 4) Client incorrectly returns ENOENT when application next attempts to
-> access file.
-> 
-> You may think this is the usual "multiple updates within one second"
-> issue.  That is what I thought at first, anyway.  But I know it is
-> not, for three reasons...
-> 
-> First, my server is using XFS, which supports sub-second timestamps.
-> 
-> Second, I instrumented nfs_update_inode() to record the inode's mtime
-> and cache_change_attribute on function entry, then to log a message on
-> function return if the inode is a directory whose mtime got updated
-> without also updating cache_change_attribute.  Then I reproduced my
-> issue.  My new log message appeared precisely in those runs where the
-> issue occurred.  (I also instrumented the code to follow the actual
-> sequence of events; I can see that the faulty ENOENT is being returned
-> because the inode's cache_change_attribute matches the stale dentry's
-> d_time.)
-> 
-> Third, my testing confirms that the issue disappears after I apply my
-> patch.  If the problem were the usual "multiple updates in one
-> second", or indeed any server-side issue whatsoever, my patch could
-> not have fixed it.
-
-Then you need to explain why. As I said, the wcc code path should not be
-triggered when the client isn't creating or deleting stuff in the
-directory. The WCC is there to tell you that your client and only your
-client has changed stuff in the directory since it last revalidated the
-mtime.
-
-> Unfortunately, the only test case I have is my real-world application,
-> which I cannot share.  It takes ~30 minutes of running to reproduce
-> every time, and it only happens on maybe 2/3 of the runs, so it has
-> taken me over a week to track this down.  I still do not know the
-> exact sequence of operations that causes the problem; I just know it
-> really is happening.
-> 
-> In summary, the current code is "obviously wrong" because it violates
-> its own invariants by potentially updating a directory's mtime without
-> invalidating its lookup cache.  And it really is happening to me in
-> practice.  My patch fixes both the potential problem (which you can
-> see for yourself) and the actual problem (for which you have only my
-> word).
-
-I disagree.
-
-> Are you unwilling to fix such a bug unless I can provide you a test case?
-
-I can't take the patch as it stands. It is obviously wrong whether or
-not it fixes your test case.
-
-I'm happy to accept that there may be a bug, but you're going to have to
-investigate further what is happening, and figure out why changing the
-WCC code appears to fix the situation.
-My hunch is that you are seeing a server bug rather than a client bug
-here...
+I'm sorry. A heavy travel schedule is affecting my response time at the
+moment. I'll try to take care of this by Tuesday (when I get back home)
+if not before.
 
 Cheers
   Trond
+
+> > On Mon, 9 Aug 2010 13:23:14 +1000 Stephen Rothwell wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > As the merge window is open, please do not add 2.6.37 material to your
+> > > linux-next included trees until after 2.6.36-rc1.
+> > > 
+> > > Changes since 20100807:
+> > 
+> > 
+> > ERROR: "svc_gss_principal" [fs/nfs/nfs.ko] undefined!
+> > 
+> > 
+> > because in fs/nfs/Kconfig, NFS_V4 selects RPCSEC_GSS_KRB5
+> > and/or in fs/nfsd/Kconfig, NFSD_V4 selects RPCSEC_GSS_KRB5.
+> > 
+> > RPCSEC_GSS_KRB5 does 5 selects, but none of these is enforced/followed
+> > by the fs/nfs[d]/Kconfig configs:
+> > 
+> > 	select SUNRPC_GSS
+> > 	select CRYPTO
+> > 	select CRYPTO_MD5
+> > 	select CRYPTO_DES
+> > 	select CRYPTO_CBC
+> > 
+> > 
+> > Failing config is attached.
+> > ---
+> 
+> 
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
 
