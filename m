@@ -1,947 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab0HLWY3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 18:24:29 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:54679 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760951Ab0HLWWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 18:22:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=YYoh8k3shgki0TYldqzcM98naIDisMqlbfeqqBDFxCRidecIoxkkEOqXDlLD07xHpa
-         fEYIj8gHiyVH1253N7AFS/yPHqJFSqo1mWHk1uM3CnVGJjNFtPKxfpkUVtr9avd6IEyr
-         NVIEi6zWjnct3KVHBOyS+8qCYk/PjfUQBFbb8=
-From: bchociej@gmail.com
-To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cmm@us.ibm.com, bcchocie@us.ibm.com, mrlupfer@us.ibm.com,
-        crscott@us.ibm.com, bchociej@gmail.com, mlupfer@gmail.com,
-        conscott@vt.edu
-Subject: [RFC v2 PATCH 3/6] Btrfs: Add hot data relocation facilities
-Date: Thu, 12 Aug 2010 17:22:03 -0500
-Message-Id: <1281651726-23501-4-git-send-email-bchociej@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1281651726-23501-1-git-send-email-bchociej@gmail.com>
-References: <1281651726-23501-1-git-send-email-bchociej@gmail.com>
+	id S934049Ab0HLWYw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 18:24:52 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:33218 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934035Ab0HLWYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 18:24:49 -0400
+Message-ID: <4C6474AA.4040802@free.fr>
+Date: Fri, 13 Aug 2010 00:24:42 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        Siarhei Liakh <sliakh.lkml@gmail.com>
+CC: Xuxian Jiang <jiang@cs.ncsu.edu>, Arjan van de Ven <arjan@linux.intel.com>,
+        James Morris <jmorris@namei.org>
+Subject: [RFC] reworked NX protection for kernel data
+Content-Type: multipart/mixed;
+ boundary="------------070500000409030504090205"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Chociej <bchociej@gmail.com>
+This is a multi-part message in MIME format.
+--------------070500000409030504090205
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-The relocation code operates on the heat hash lists to identify hot or
-cold data logical file ranges that are candidates for relocation. The
-triggering mechanism for relocation is controlled by a global heat
-threshold integer value (fs_root->heat_threshold). Ranges are queued for
-relocation by the periodically-executing relocate kthread, which updates
-the global heat threshold and responds to space pressure on the SSDs.
+Hi,
 
-The heat hash lists index logical ranges by heat and provide a
-constant-time access path to hot or cold range items. The relocation
-kthread uses this path to find hot or cold items to move to/from SSD. To
-ensure that the relocation kthread has a chance to sleep, and to prevent
-thrashing between SSD and HDD, there is a configurable limit to how many
-ranges are moved per iteration of the kthread. This limit may be overrun
-in the case where space pressure requires that items be aggressively
-moved from SSD back to HDD.
+because nobody seems to work on "NX protection for kernel data" patches [1], I decided to rework them a bit :
+- remove unneeded alignment in vmlinux.lds
+- call mark_nxdata_nx in mark_rodata_ro instead of free_initmem
+- fix a bug in my machine where memory was x and rw after kernel data
+- static_protections for bios rom is only enabled when CONFIG_PCI_BIOS (no x64)
+- bios rom is set to x only when probing pcibios (this won't be done is mmconfig is supported).
 
-This needs still more resistance to thrashing and stronger (read:
-actual) guarantees that relocation operations won't -ENOSPC.
+A second patch is more radical : it make the ROM bios memory (0xe0000-0x100000) ro and x, but only for system
+supporting NX (to avoid breaking very old machine). I don't know if it is safe.
 
-The relocation code has introduced two new btrfs block group types:
-BTRFS_BLOCK_GROUP_DATA_SSD and BTRFS_BLOCK_GROUP_METADATA_SSD. The later
-is not currently implemented; to wit, this implementation does not move
-any metadata, including inlined extents, to SSD.
+I am waiting for your comment before reposting all the patches (module and improper large page preservation)
+I only test it on a 32bit NX cpu.
 
-When mkfs'ing a volume with the hot data relocation option, initial
-block groups are allocated to the proper disks. Runtime block group
-allocation only allocates BTRFS_BLOCK_GROUP_DATA
-BTRFS_BLOCK_GROUP_METADATA and BTRFS_BLOCK_GROUP_SYSTEM to HDD, and
-likewise only allocates BTRFS_BLOCK_GROUP_DATA_SSD and
-BTRFS_BLOCK_GROUP_METADATA_SSD to SSD (assuming, critically, the
-HOTDATAMOVE option is set at mount time).
 
-Signed-off-by: Ben Chociej <bchociej@gmail.com>
-Signed-off-by: Matt Lupfer <mlupfer@gmail.com>
-Signed-off-by: Conor Scott <conscott@vt.edu>
-Reviewed-by: Mingming Cao <cmm@us.ibm.com>
----
- fs/btrfs/hotdata_relocate.c |  783 +++++++++++++++++++++++++++++++++++++++++++
- fs/btrfs/hotdata_relocate.h |   73 ++++
- 2 files changed, 856 insertions(+), 0 deletions(-)
- create mode 100644 fs/btrfs/hotdata_relocate.c
- create mode 100644 fs/btrfs/hotdata_relocate.h
+Matthieu
 
-diff --git a/fs/btrfs/hotdata_relocate.c b/fs/btrfs/hotdata_relocate.c
-new file mode 100644
-index 0000000..c5060c4
---- /dev/null
-+++ b/fs/btrfs/hotdata_relocate.c
-@@ -0,0 +1,783 @@
-+/*
-+ * fs/btrfs/hotdata_relocate.c
-+ *
-+ * Copyright (C) 2010 International Business Machines Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License v2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public
-+ * License along with this program; if not, write to the
-+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-+ * Boston, MA 021110-1307, USA.
-+ */
-+
-+#include <linux/kthread.h>
-+#include <linux/list.h>
-+#include <linux/freezer.h>
-+#include <linux/spinlock.h>
-+#include <linux/bio.h>
-+#include <linux/blkdev.h>
-+#include <linux/slab.h>
-+#include "hotdata_map.h"
-+#include "hotdata_relocate.h"
-+#include "btrfs_inode.h"
-+#include "ctree.h"
-+#include "volumes.h"
-+
-+/*
-+ * Hot data relocation strategy:
-+ *
-+ * The relocation code below operates on the heat hash lists to identify
-+ * hot or cold data logical file ranges that are candidates for relocation.
-+ * The triggering mechanism for relocation is controlled by a global heat
-+ * threshold integer value (fs_root->heat_threshold). Ranges are queued
-+ * for relocation by the periodically executing relocate kthread, which
-+ * updates the global heat threshold and responds to space pressure on the
-+ * SSDs.
-+ *
-+ * The heat hash lists index logical ranges by heat and provide a constant-time
-+ * access path to hot or cold range items. The relocation kthread uses this
-+ * path to find hot or cold items to move to/from SSD. To ensure that the
-+ * relocation kthread has a chance to sleep, and to prevent thrashing between
-+ * SSD and HDD, there is a configurable limit to how many ranges are moved per
-+ * iteration of the kthread. This limit may be overrun in the case where space
-+ * pressure requires that items be aggressively moved from SSD back to HDD.
-+ *
-+ * This needs still more resistance to thrashing and stronger (read: actual)
-+ * guarantees that relocation operations won't -ENOSPC.
-+ *
-+ * The relocation code has introduced two new btrfs block group types:
-+ * BTRFS_BLOCK_GROUP_DATA_SSD and BTRFS_BLOCK_GROUP_METADATA_SSD. The later is
-+ * not currently implemented; to wit, this implementation does not move any
-+ * metadata *including inlined extents* to SSD.
-+ *
-+ * When mkfs'ing a volume with the hot data relocation option, initial block
-+ * groups are allocated to the proper disks. Runtime block group allocation
-+ * only allocates BTRFS_BLOCK_GROUP_DATA BTRFS_BLOCK_GROUP_METADATA and
-+ * BTRFS_BLOCK_GROUP_SYSTEM to HDD, and likewise only allocates
-+ * BTRFS_BLOCK_GROUP_DATA_SSD and BTRFS_BLOCK_GROUP_METADATA_SSD to SSD
-+ * (assuming, critically, the HOTDATAMOVE option is set at mount time).
-+ */
-+
-+/*
-+ * prepares hot or cold nodes to be moved to the location specified,
-+ * sets up range args based on whether moving entire inode or range
-+ */
-+static int move_item(struct heat_hashlist_node *heatnode,
-+		     struct btrfs_root *fs_root,
-+		     int location)
+[1]
+Note: this patch depends on "Correct improper large page preservation" patch
+
+This patch expands functionality of CONFIG_DEBUG_RODATA to set main
+(static) kernel data area as NX.
+The following steps are taken to achieve this:
+1. Linker script is adjusted so .text always starts and ends on a page bound
+2. Linker script is adjusted so .rodata and .data always start and
+end on a page boundary
+3. void mark_nxdata_nx(void) added to arch/x86/mm/init.c with actual
+functionality: NX is set for all pages from _etext through _end.
+4. mark_nxdata_nx() called from free_initmem() (after init has been released
+5. free_init_pages() sets released memory NX in arch/x86/mm/init.c
+
+The results of patch application may be observed in the diff of kernel page
+table dumps:
+--- data_nx_pt_before.txt       2009-10-13 07:48:59.000000000 -0400
++++ data_nx_pt_after.txt        2009-10-13 07:26:46.000000000 -0400
+@@ -2,8 +2,9 @@
+ 0x00000000-0xc0000000           3G                           pmd
+ ---[ Kernel Mapping ]---
+ 0xc0000000-0xc0100000           1M     RW             GLB x  pte
+-0xc0100000-0xc048d000        3636K     ro             GLB x  pte
+-0xc048d000-0xc0600000        1484K     RW             GLB x  pte
++0xc0100000-0xc0381000        2564K     ro             GLB x  pte
++0xc0381000-0xc048d000        1072K     ro             GLB NX pte
++0xc048d000-0xc0600000        1484K     RW             GLB NX pte
+ 0xc0600000-0xf7800000         882M     RW         PSE GLB NX pmd
+ 0xf7800000-0xf79fe000        2040K     RW             GLB NX pte
+ 0xf79fe000-0xf7a00000           8K                           pte
+
+The patch have been developed for Linux 2.6.34-rc2 x86 by Siarhei Liakh
+<sliakh.lkml@gmail.com> and Xuxian Jiang <jiang@cs.ncsu.edu>.
+
+V1:  initial patch for 2.6.30
+V2:  patch for 2.6.31-rc7
+V3:  moved all code into arch/x86, adjusted credits
+V4:  fixed ifdef, removed credits from CREDITS
+V5:  fixed an address calculation bug in mark_nxdata_nx()
+V6:  added acked-by and PT dump diff to commit log
+V7:  minor adjustments for -tip
+
+Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
+Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+Reviewed-by: James Morris <jmorris@namei.org>
+
+--------------070500000409030504090205
+Content-Type: text/x-diff;
+ name="kernelnx.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="kernelnx.diff"
+
+diff --git a/arch/x86/kernel/vmlinux.lds.S b/arch/x86/kernel/vmlinux.lds.S
+index d0bb522..958ac45 100644
+--- a/arch/x86/kernel/vmlinux.lds.S
++++ b/arch/x86/kernel/vmlinux.lds.S
+@@ -69,7 +69,7 @@ jiffies_64 = jiffies;
+ 
+ PHDRS {
+ 	text PT_LOAD FLAGS(5);          /* R_E */
+-	data PT_LOAD FLAGS(7);          /* RWE */
++	data PT_LOAD FLAGS(6);          /* RW_ */
+ #ifdef CONFIG_X86_64
+ 	user PT_LOAD FLAGS(5);          /* R_E */
+ #ifdef CONFIG_SMP
+@@ -116,6 +116,10 @@ SECTIONS
+ 
+ 	EXCEPTION_TABLE(16) :text = 0x9090
+ 
++#if defined(CONFIG_DEBUG_RODATA)
++	/* .text should occupy whole number of pages */
++	. = ALIGN(PAGE_SIZE);
++#endif
+ 	X64_ALIGN_DEBUG_RODATA_BEGIN
+ 	RO_DATA(PAGE_SIZE)
+ 	X64_ALIGN_DEBUG_RODATA_END
+@@ -307,7 +311,7 @@ SECTIONS
+ 		__bss_start = .;
+ 		*(.bss..page_aligned)
+ 		*(.bss)
+-		. = ALIGN(4);
++		. = ALIGN(PAGE_SIZE);
+ 		__bss_stop = .;
+ 	}
+ 
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index b278535..bfacdbe 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -362,8 +362,9 @@ void free_init_pages(char *what, unsigned long begin, unsigned long end)
+ 	/*
+ 	 * We just marked the kernel text read only above, now that
+ 	 * we are going to free part of that, we need to make that
+-	 * writeable first.
++	 * writeable and non-executable first.
+ 	 */
++	set_memory_nx(begin, (end - begin) >> PAGE_SHIFT);
+ 	set_memory_rw(begin, (end - begin) >> PAGE_SHIFT);
+ 
+ 	printk(KERN_INFO "Freeing %s: %luk freed\n", what, (end - begin) >> 10);
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index bca7909..85a1a75 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -225,7 +225,7 @@ page_table_range_init(unsigned long start, unsigned long end, pgd_t *pgd_base)
+ 
+ static inline int is_kernel_text(unsigned long addr)
+ {
+-	if (addr >= PAGE_OFFSET && addr <= (unsigned long)__init_end)
++	if (addr >= (unsigned long)_text && addr <= (unsigned long)__init_end)
+ 		return 1;
+ 	return 0;
+ }
+@@ -1033,6 +1033,22 @@ void set_kernel_text_ro(void)
+ 	set_pages_ro(virt_to_page(start), size >> PAGE_SHIFT);
+ }
+ 
++static void mark_nxdata_nx(void)
 +{
-+	struct hot_inode_item *hot_inode_item;
-+	struct hot_range_item *hot_range_item;
-+	struct btrfs_relocate_range_args range_args;
-+	int ret = 0;
-+
-+	if (heatnode->freq_data->flags & FREQ_DATA_TYPE_INODE) {
-+
-+		hot_inode_item = container_of(heatnode->freq_data,
-+					      struct hot_inode_item,
-+					      freq_data);
-+		range_args.start = 0;
-+		/* (u64)-1 moves the whole inode */
-+		range_args.len = (u64)-1;
-+		range_args.flags = 0;
-+		range_args.extent_thresh = 1;
-+		ret = btrfs_relocate_inode(hot_inode_item->i_ino,
-+				     &range_args,
-+				     fs_root,
-+				     location);
-+	} else if (heatnode->freq_data->flags & FREQ_DATA_TYPE_RANGE) {
-+		hot_range_item = container_of(heatnode->freq_data,
-+					      struct hot_range_item,
-+					      freq_data);
-+		range_args.start = hot_range_item->start;
-+		range_args.len = hot_range_item->len;
-+		range_args.flags = 0;
-+		range_args.extent_thresh = 1;
-+		ret = btrfs_relocate_inode(hot_range_item->hot_inode->i_ino,
-+				     &range_args,
-+				     fs_root,
-+				     location);
-+		}
-+	return ret;
-+}
-+
-+/*
-+ * thread iterates through heat hash table and finds hot
-+ * and cold data to move based on ssd pressure.
-+ *
-+ * first iterates through cold items below the heat
-+ * threshold, if the item is on
-+ * ssd and is now cold, we queue it up for relocation
-+ * back to spinning disk. After scanning these items
-+ * we call relocation code on all ranges that have been
-+ * queued up for moving back to hdd.
-+ *
-+ * we then iterate through items above the heat threshold
-+ * and if they are on hdd we que them up to be moved to
-+ * ssd. We then iterate through queue and move hot ranges
-+ * to ssd if they are not already
-+ */
-+static void __do_relocate_kthread(struct btrfs_root *root)
-+{
-+	int i;
-+	int counter;
-+	int heat_threshold;
-+	int location;
-+	int percent_ssd = 0;
-+	struct btrfs_root *fs_root;
-+	struct list_head *relocate_pos, *relocate_pos2;
-+	struct heat_hashlist_node *relocate_heatnode = NULL;
-+	struct list_head relocate_queue_to_rot;
-+	struct list_head relocate_queue_to_nonrot;
-+	static u32 run_count = 1;
-+
-+	run_count++;
-+
-+	fs_root = root->fs_info->fs_root;
-+	percent_ssd = btrfs_update_threshold(fs_root, !(run_count % 15));
-+	heat_threshold = fs_root->heat_threshold;
-+
-+do_cold:
-+	INIT_LIST_HEAD(&relocate_queue_to_rot);
-+
-+	/* Don't move cold data to HDD unless there's space pressure */
-+	if (percent_ssd < HIGH_WATER_LEVEL)
-+		goto do_hot;
-+
-+	counter = 0;
-+
 +	/*
-+	 * Move up to RELOCATE_MAX_ITEMS cold ranges back to spinning.
-+	 * First, queue up items to move on the relocate_queue_to_rot.
-+	 * Using (heat_threshold - 5) to control relocation hopefully
-+	 * prevents some thrashing between SSD and HDD.
++	 * When this called, init has already been executed and released,
++	 * so everything past _etext sould be NX.
 +	 */
-+	for (i = 0; i <  heat_threshold - 5; i++) {
-+		struct hlist_node *pos = NULL, *pos2 = NULL;
-+		struct heat_hashlist_node *heatnode = NULL;
-+		struct hlist_head *hashhead;
-+		rwlock_t *lock;
++	unsigned long start = PFN_ALIGN(_etext);
++	/* this comes from is_kernel_text upper limit. Also HPAGE where used */
++	unsigned long size = (((unsigned long)__init_end + HPAGE_SIZE) & HPAGE_MASK)- start;
 +
-+		hashhead = &fs_root->heat_range_hl[i].hashhead;
-+		lock = &fs_root->heat_range_hl[i].rwlock;
-+		read_lock(lock);
-+
-+		hlist_for_each_safe(pos, pos2, hashhead) {
-+			heatnode = hlist_entry(pos,
-+					struct heat_hashlist_node,
-+					hashnode);
-+
-+			/* queue up on relocate list */
-+			spin_lock(&heatnode->location_lock);
-+			location = heatnode->location;
-+			spin_unlock(&heatnode->location_lock);
-+
-+			if (location != BTRFS_ON_ROTATING) {
-+				atomic_inc(&heatnode->refs);
-+				list_add(&heatnode->node,
-+					 &relocate_queue_to_rot);
-+				counter++;
-+			}
-+
-+			if (counter >= RELOCATE_MAX_ITEMS)
-+				break;
-+		}
-+
-+		read_unlock(lock);
-+	}
-+
-+	/* Second, do the relocation */
-+	list_for_each_safe(relocate_pos, relocate_pos2,
-+		&relocate_queue_to_rot) {
-+
-+		relocate_heatnode = list_entry(relocate_pos,
-+			struct heat_hashlist_node, node);
-+
-+		spin_lock(&relocate_heatnode->location_lock);
-+		location = relocate_heatnode->location;
-+		spin_unlock(&relocate_heatnode->location_lock);
-+
-+		if (location != BTRFS_ON_ROTATING) {
-+			move_item(relocate_heatnode, fs_root,
-+				BTRFS_ON_ROTATING);
-+			relocate_heatnode->location = BTRFS_ON_ROTATING;
-+		}
-+
-+		list_del(relocate_pos);
-+		atomic_dec(&relocate_heatnode->refs);
-+
-+		if (kthread_should_stop())
-+			return;
-+	}
-+
-+	/*
-+	 * Move up to RELOCATE_MAX_ITEMS ranges to SSD. Periodically check
-+	 * for space pressure on SSD and goto do_cold if we've exceeded
-+	 * the SSD capacity high water mark.
-+	 * First, queue up items to move on relocate_queue_to_nonrot.
-+	 */
-+do_hot:
-+	INIT_LIST_HEAD(&relocate_queue_to_nonrot);
-+	counter = 0;
-+
-+	for (i = HEAT_MAX_VALUE; i >= heat_threshold; i--) {
-+		struct hlist_node *pos = NULL, *pos2 = NULL;
-+		struct heat_hashlist_node *heatnode = NULL;
-+		struct hlist_head *hashhead;
-+		rwlock_t *lock;
-+
-+		/* move hot ranges */
-+		hashhead = &fs_root->heat_range_hl[i].hashhead;
-+		lock =  &fs_root->heat_range_hl[i].rwlock;
-+		read_lock(lock);
-+
-+		hlist_for_each_safe(pos, pos2, hashhead) {
-+			heatnode = hlist_entry(pos,
-+					struct heat_hashlist_node,
-+					hashnode);
-+
-+			/* queue up on relocate list */
-+			spin_lock(&heatnode->location_lock);
-+			location = heatnode->location;
-+			spin_unlock(&heatnode->location_lock);
-+
-+			if (location != BTRFS_ON_NONROTATING) {
-+				atomic_inc(&heatnode->refs);
-+				list_add(&heatnode->node,
-+					 &relocate_queue_to_nonrot);
-+				counter++;
-+			}
-+
-+			if (counter >= RELOCATE_MAX_ITEMS)
-+				break;
-+		}
-+
-+		read_unlock(lock);
-+	}
-+
-+	counter = 0;
-+
-+	/* Second, do the relocation */
-+	list_for_each_safe(relocate_pos, relocate_pos2,
-+		&relocate_queue_to_nonrot) {
-+
-+		relocate_heatnode = list_entry(relocate_pos,
-+			struct heat_hashlist_node, node);
-+
-+		spin_lock(&relocate_heatnode->location_lock);
-+		location = relocate_heatnode->location;
-+		spin_unlock(&relocate_heatnode->location_lock);
-+
-+		if (location != BTRFS_ON_NONROTATING) {
-+			move_item(relocate_heatnode, fs_root,
-+				BTRFS_ON_NONROTATING);
-+			relocate_heatnode->location = BTRFS_ON_NONROTATING;
-+		}
-+
-+		list_del(relocate_pos);
-+		atomic_dec(&relocate_heatnode->refs);
-+
-+		if (kthread_should_stop())
-+			return;
-+
-+		/*
-+		 * If we've exceeded the SSD capacity high water mark,
-+		 * goto do_cold to relieve the pressure
-+		 */
-+		if (counter % 50 == 0) {
-+			percent_ssd = btrfs_update_threshold(fs_root, 0);
-+			heat_threshold = fs_root->heat_threshold;
-+
-+			if (percent_ssd >= HIGH_WATER_LEVEL)
-+				goto do_cold;
-+		}
-+
-+		counter++;
-+	}
++	if (__supported_pte_mask & _PAGE_NX)
++		printk(KERN_INFO "NX-protecting the kernel data: %luk\n",
++			size >> 10);
++	set_pages_nx(virt_to_page(start), size >> PAGE_SHIFT);
 +}
 +
-+/* main loop for running relcation thread */
-+static int do_relocate_kthread(void *arg)
-+{
-+	struct btrfs_root *root = arg;
-+	unsigned long delay;
-+	do {
-+		delay = HZ * RELOCATE_TIME_DELAY;
-+		if (mutex_trylock(
-+			&root->fs_info->hot_data_relocate_kthread_mutex)) {
-+			if (btrfs_test_opt(root, HOTDATA_MOVE))
-+				__do_relocate_kthread(root);
-+			mutex_unlock(
-+				&root->fs_info->
-+				hot_data_relocate_kthread_mutex);
-+		}
-+		if (freezing(current)) {
-+			refrigerator();
-+		} else {
-+			set_current_state(TASK_INTERRUPTIBLE);
-+			if (!kthread_should_stop())
-+				schedule_timeout(delay);
-+			__set_current_state(TASK_RUNNING);
-+		}
-+	} while (!kthread_should_stop());
-+	return 0;
-+}
-+
-+/* kick off the relocate kthread */
-+void init_hot_data_relocate_kthread(struct btrfs_root *root)
-+{
-+	root->fs_info->hot_data_relocate_kthread =
-+					kthread_run(do_relocate_kthread,
-+					root,
-+					"hot_data_relocate_kthread");
-+	if (IS_ERR(root->fs_info->hot_data_relocate_kthread))
-+		kthread_stop(root->fs_info->hot_data_relocate_kthread);
-+}
-+
-+/*
-+ * placeholder for function to scan SSDs on startup with HOTDATAMOVE to bring
-+ * access frequency structs into memory to allow that data to be eligible for
-+ * relocation to spinning disk
+ void mark_rodata_ro(void)
+ {
+ 	unsigned long start = PFN_ALIGN(_text);
+@@ -1067,6 +1083,7 @@ void mark_rodata_ro(void)
+ 	printk(KERN_INFO "Testing CPA: write protecting again\n");
+ 	set_pages_ro(virt_to_page(start), size >> PAGE_SHIFT);
+ #endif
++	mark_nxdata_nx();
+ }
+ #endif
+ 
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index ee41bba..0dec7f2 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -761,7 +761,7 @@ void mark_rodata_ro(void)
+ 	unsigned long start = PFN_ALIGN(_text);
+ 	unsigned long rodata_start =
+ 		((unsigned long)__start_rodata + PAGE_SIZE - 1) & PAGE_MASK;
+-	unsigned long end = (unsigned long) &__end_rodata_hpage_align;
++	unsigned long end = (((unsigned long)__init_end + HPAGE_SIZE) & HPAGE_MASK);
+ 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
+ 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
+ 	unsigned long data_start = (unsigned long) &_sdata;
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index 91ce756..d130dc5 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -261,8 +261,10 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	 * The BIOS area between 640k and 1Mb needs to be executable for
+ 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 */
++#ifdef CONFIG_PCI_BIOS
+ 	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+ 		pgprot_val(forbidden) |= _PAGE_NX;
++#endif
+ 
+ 	/*
+ 	 * The kernel text needs to be executable for obvious reasons
+diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
+index 2492d16..34ccb73 100644
+--- a/arch/x86/pci/pcbios.c
++++ b/arch/x86/pci/pcbios.c
+@@ -9,6 +9,7 @@
+ #include <linux/uaccess.h>
+ #include <asm/pci_x86.h>
+ #include <asm/pci-functions.h>
++#include <asm/cacheflush.h>
+ 
+ /* BIOS32 signature: "_32_" */
+ #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
+@@ -420,11 +421,24 @@ int pcibios_set_irq_routing(struct pci_dev *dev, int pin, int irq)
+ }
+ EXPORT_SYMBOL(pcibios_set_irq_routing);
+ 
++/* according some bios specification 
++ * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could 
++ * restrict the x zone to some pages and make it ro. But we
++ * really don't care, processor with NX support should be able to use 
++ * mmconfig for pci that disable pcibios...
 + */
-+static inline void __do_ssd_scan(struct btrfs_device *device)
++static inline void set_bios_x(void)
 +{
-+	return;
++	set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
 +}
 +
-+static int do_ssd_scan_kthread(void *arg)
-+{
-+	struct btrfs_root *root = arg;
-+	struct btrfs_root *dev_root;
-+	struct btrfs_device *device;
-+	struct list_head *devices = &root->fs_info->fs_devices->devices;
-+	int ret = 0;
-+
-+	mutex_lock(&root->fs_info->ssd_scan_kthread_mutex);
-+
-+	if (root->fs_info->sb->s_flags & MS_RDONLY) {
-+		ret = -EROFS;
-+		goto out;
-+	}
-+
-+	dev_root = root->fs_info->dev_root;
-+	mutex_lock(&dev_root->fs_info->volume_mutex);
-+
-+	list_for_each_entry(device, devices, dev_list) {
-+		int device_rotating;
-+		if (!device->writeable)
-+			continue;
-+
-+		device_rotating =
-+			!blk_queue_nonrot(bdev_get_queue(device->bdev));
-+
-+		if (!device_rotating)
-+			__do_ssd_scan(device);
-+
-+		if (ret == -ENOSPC)
-+			break;
-+		BUG_ON(ret);
-+
-+	}
-+	mutex_unlock(&dev_root->fs_info->volume_mutex);
-+
-+	do {
-+		break;
-+	} while (!kthread_should_stop());
-+
-+out:
-+	mutex_unlock(&root->fs_info->ssd_scan_kthread_mutex);
-+
-+	return ret;
-+}
-+
-+void init_ssd_scan_kthread(struct btrfs_root *root)
-+{
-+	root->fs_info->ssd_scan_kthread =
-+					kthread_run(do_ssd_scan_kthread,
-+					root,
-+					"ssd_scan_kthread");
-+	if (IS_ERR(root->fs_info->ssd_scan_kthread))
-+		kthread_stop(root->fs_info->ssd_scan_kthread);
-+}
-+
-+/* returns non-zero if any part of the range is on rotating disk */
-+int btrfs_range_on_rotating(struct btrfs_root *root,
-+			    struct hot_inode_item *hot_inode,
-+			    u64 start, u64 len)
-+{
-+	struct inode *inode;
-+	struct btrfs_key key;
-+	struct extent_map *em = NULL;
-+	struct btrfs_multi_bio *multi_ret = NULL;
-+	struct btrfs_inode *btrfs_inode;
-+	struct btrfs_bio_stripe *bio_stripe;
-+	struct btrfs_multi_bio *multi_bio;
-+	struct block_device *bdev;
-+	int rotating = 0;
-+	int ret_val = 0;
-+	u64 length = 0;
-+	u64 pos = 0, pos2 = 0;
-+	int new = 0;
-+	int i;
-+	unsigned long inode_size = 0;
-+
-+	spin_lock(&hot_inode->lock);
-+	key.objectid = hot_inode->i_ino;
-+	spin_unlock(&hot_inode->lock);
-+
-+	key.type = BTRFS_INODE_ITEM_KEY;
-+	key.offset = 0;
-+	inode = btrfs_iget(root->fs_info->sb, &key, root, &new);
-+
-+	if (IS_ERR(inode)) {
-+		ret_val = -ENOENT;
-+		goto out;
-+	} else if (is_bad_inode(inode)) {
-+		iput(inode);
-+		ret_val = -ENOENT;
-+		goto out;
-+	}
-+
-+	btrfs_inode = BTRFS_I(inode);
-+	inode_size = (unsigned long) i_size_read(inode);
-+
-+	if (start >= inode_size) {
-+		iput(inode);
-+		ret_val = -ENOENT;
-+		goto out;
-+	}
-+
-+	if (len == (u64) -1 || start + len > inode_size)
-+		len = inode_size - start;
-+	else
-+		len = start + len;
-+
-+	for (pos = start; pos < len - 1; pos += length) {
-+		em = btrfs_get_extent(inode, NULL, 0, pos, pos + 1, 0);
-+
-+		length = em->block_len;
-+
-+		/* Location of delayed allocation and inline extents
-+		 * can't be determined */
-+		if (em->block_start == EXTENT_MAP_INLINE ||
-+			em->block_start == EXTENT_MAP_DELALLOC ||
-+			em->block_start == EXTENT_MAP_HOLE) {
-+			ret_val = -1;
-+			iput(inode);
-+			goto out_free_em;
+ void __init pci_pcbios_init(void)
+ {
+-	if ((pci_probe & PCI_PROBE_BIOS) 
+-		&& ((raw_pci_ops = pci_find_bios()))) {
+-		pci_bios_present = 1;
++	if (pci_probe & PCI_PROBE_BIOS) {
++		set_bios_x();
++		if ((raw_pci_ops = pci_find_bios())) {
++			pci_bios_present = 1;
 +		}
-+
-+		for (pos2 = 0; pos2 < em->block_len; pos2 += length) {
-+			btrfs_map_block((struct btrfs_mapping_tree *)
-+				&root->fs_info->mapping_tree, READ,
-+				em->block_start + pos2,
-+				&length, &multi_ret, 0);
-+
-+			multi_bio = multi_ret;
-+
-+			/* Each range may have more than one stripe */
-+			for (i = 0; i < multi_bio->num_stripes; i++) {
-+				bio_stripe = &multi_bio->stripes[i];
-+				bdev  = bio_stripe->dev->bdev;
-+				if (!blk_queue_nonrot(bdev_get_queue(bdev)))
-+					rotating = 1;
-+			}
-+		}
-+		pos += em->block_len;
-+		free_extent_map(em);
-+	}
-+
-+	ret_val = rotating;
-+	iput(inode);
-+	goto out;
-+
-+out_free_em:
-+	free_extent_map(em);
-+out:
-+	kfree(multi_ret);
-+	return ret_val;
-+}
-+
-+static int should_relocate_range(struct inode *inode, u64 start, u64 len,
-+			       int thresh, u64 *last_len, u64 *skip,
-+			       u64 *relocate_end)
-+{
-+	struct extent_io_tree *io_tree = &BTRFS_I(inode)->io_tree;
-+	struct extent_map *em = NULL;
-+	struct extent_map_tree *em_tree = &BTRFS_I(inode)->extent_tree;
-+	int ret = 1;
-+
-+
-+	if (thresh == 0)
-+		thresh = 256 * 1024;
-+
-+	/*
-+	 * make sure that once we start relocating and extent, we keep on
-+	 * relocating it
-+	 */
-+	if (start < *relocate_end)
-+		return 1;
-+
-+	*skip = 0;
-+
-+	/*
-+	 * hopefully we have this extent in the tree already, try without
-+	 * the full extent lock
-+	 */
-+	read_lock(&em_tree->lock);
-+	em = lookup_extent_mapping(em_tree, start, len);
-+	read_unlock(&em_tree->lock);
-+
-+	if (!em) {
-+		/* get the big lock and read metadata off disk */
-+		lock_extent(io_tree, start, start + len - 1, GFP_NOFS);
-+		em = btrfs_get_extent(inode, NULL, 0, start, len, 0);
-+		unlock_extent(io_tree, start, start + len - 1, GFP_NOFS);
-+
-+		if (IS_ERR(em))
-+			return 0;
-+	}
-+
-+	/* this will cover holes, and inline extents */
-+	if (em->block_start >= EXTENT_MAP_LAST_BYTE)
-+		ret = 0;
-+
-+	if (ret) {
-+		*last_len += len;
-+		*relocate_end = extent_map_end(em);
-+	} else {
-+		*last_len = 0;
-+		*skip = extent_map_end(em);
-+		*relocate_end = 0;
-+	}
-+
-+	free_extent_map(em);
-+	return ret;
-+}
-+
-+/*
-+ * take and inode and range args (sub file range) and
-+ * relocate to sdd or spinning based on past location.
-+ *
-+ * loads range into page cache and marks pages as dirty,
-+ * range arg can pass whether or not this should be
-+ * flushed immediately, or whether btrfs workers should
-+ * flush later
-+ *
-+ * based on defrag ioctl
-+ */
-+int btrfs_relocate_inode(unsigned long inode_num,
-+			     struct btrfs_relocate_range_args *range,
-+			     struct btrfs_root *root,
-+			     int location)
-+{
-+	struct inode *inode;
-+	struct extent_io_tree *io_tree;
-+	struct btrfs_ordered_extent *ordered;
-+	struct page *page;
-+	struct btrfs_key key;
-+	struct file_ra_state *ra;
-+	unsigned long last_index;
-+	unsigned long ra_pages = root->fs_info->bdi.ra_pages;
-+	unsigned long total_read = 0;
-+	u64 page_start;
-+	u64 page_end;
-+	u64 last_len = 0;
-+	u64 skip = 0;
-+	u64 relocate_end = 0;
-+	unsigned long i;
-+	int new = 0;
-+	int ret;
-+
-+	key.objectid = inode_num;
-+	key.type = BTRFS_INODE_ITEM_KEY;
-+	key.offset = 0;
-+
-+	inode = btrfs_iget(root->fs_info->sb, &key, root, &new);
-+	if (IS_ERR(inode)) {
-+		ret = -ENOENT;
-+		goto out;
-+	} else if (is_bad_inode(inode)) {
-+		iput(inode);
-+		ret = -ENOENT;
-+		goto out;
-+	}
-+
-+	io_tree = &BTRFS_I(inode)->io_tree;
-+
-+	if (inode->i_size == 0)
-+		return 0;
-+
-+	if (range->start + range->len > range->start) {
-+		last_index = min_t(u64, inode->i_size - 1,
-+			 range->start + range->len - 1) >> PAGE_CACHE_SHIFT;
-+	} else {
-+		last_index = (inode->i_size - 1) >> PAGE_CACHE_SHIFT;
-+	}
-+
-+	i = range->start >> PAGE_CACHE_SHIFT;
-+	ra  = kzalloc(sizeof(*ra), GFP_NOFS);
-+
-+	while (i <= last_index) {
-+		if (!should_relocate_range(inode, (u64)i << PAGE_CACHE_SHIFT,
-+					PAGE_CACHE_SIZE,
-+					range->extent_thresh,
-+					&last_len, &skip,
-+					&relocate_end)) {
-+			unsigned long next;
-+			/*
-+			 * the should_relocate function tells us how much to
-+			 * skip
-+			 * bump our counter by the suggested amount
-+			 */
-+			next = (skip + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
-+			i = max(i + 1, next);
-+			continue;
-+		}
-+
-+		if (total_read % ra_pages == 0) {
-+			btrfs_force_ra(inode->i_mapping, ra, NULL, i,
-+			min(last_index, i + ra_pages - 1));
-+		}
-+		total_read++;
-+		mutex_lock(&inode->i_mutex);
-+		if (range->flags & BTRFS_RELOCATE_RANGE_COMPRESS)
-+			BTRFS_I(inode)->force_compress = 1;
-+
-+		ret  = btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
-+		if (ret)
-+			goto err_unlock;
-+again:
-+		if (inode->i_size == 0 ||
-+		    i > ((inode->i_size - 1) >> PAGE_CACHE_SHIFT)) {
-+			ret = 0;
-+			goto err_reservations;
-+		}
-+
-+		page = grab_cache_page(inode->i_mapping, i);
-+		if (!page) {
-+			ret = -ENOMEM;
-+			goto err_reservations;
-+		}
-+
-+		if (!PageUptodate(page)) {
-+			btrfs_readpage(NULL, page);
-+			lock_page(page);
-+			if (!PageUptodate(page)) {
-+				unlock_page(page);
-+				page_cache_release(page);
-+				ret = -EIO;
-+				goto err_reservations;
-+			}
-+		}
-+
-+		if (page->mapping != inode->i_mapping) {
-+			unlock_page(page);
-+			page_cache_release(page);
-+			goto again;
-+		}
-+
-+		wait_on_page_writeback(page);
-+
-+		if (PageDirty(page)) {
-+			btrfs_delalloc_release_space(inode, PAGE_CACHE_SIZE);
-+			goto loop_unlock;
-+		}
-+
-+		page_start = (u64)page->index << PAGE_CACHE_SHIFT;
-+		page_end = page_start + PAGE_CACHE_SIZE - 1;
-+		lock_extent(io_tree, page_start, page_end, GFP_NOFS);
-+
-+		ordered = btrfs_lookup_ordered_extent(inode, page_start);
-+		if (ordered) {
-+			unlock_extent(io_tree, page_start, page_end, GFP_NOFS);
-+			unlock_page(page);
-+			page_cache_release(page);
-+			btrfs_start_ordered_extent(inode, ordered, 1);
-+			btrfs_put_ordered_extent(ordered);
-+			goto again;
-+		}
-+		set_page_extent_mapped(page);
-+
-+		/*
-+		 * this makes sure page_mkwrite is called on the
-+		 * page if it is dirtied again later
-+		 */
-+		clear_page_dirty_for_io(page);
-+		clear_extent_bits(&BTRFS_I(inode)->io_tree, page_start,
-+				  page_end, EXTENT_DIRTY | EXTENT_DELALLOC |
-+				  EXTENT_DO_ACCOUNTING, GFP_NOFS);
-+
-+		btrfs_set_extent_delalloc(inode, page_start, page_end, NULL);
-+
-+		if (location == BTRFS_ON_NONROTATING) {
-+			btrfs_set_extent_prefer_nonrotating(inode, page_start,
-+							page_end, NULL);
-+			clear_extent_bits(&BTRFS_I(inode)->io_tree, page_start,
-+				  page_end, EXTENT_PREFER_ROTATING, GFP_NOFS);
-+		} else if (location == BTRFS_ON_ROTATING) {
-+			btrfs_set_extent_prefer_rotating(inode, page_start,
-+							page_end, NULL);
-+			clear_extent_bits(&BTRFS_I(inode)->io_tree, page_start,
-+				page_end, EXTENT_PREFER_NONROTATING, GFP_NOFS);
-+		}
-+
-+		ClearPageChecked(page);
-+		set_page_dirty(page);
-+		unlock_extent(io_tree, page_start, page_end, GFP_NOFS);
-+
-+loop_unlock:
-+		unlock_page(page);
-+		page_cache_release(page);
-+		mutex_unlock(&inode->i_mutex);
-+
-+		balance_dirty_pages_ratelimited_nr(inode->i_mapping, 1);
-+		i++;
-+	}
-+	kfree(ra);
-+
-+	if ((range->flags & BTRFS_RELOCATE_RANGE_START_IO))
-+		filemap_flush(inode->i_mapping);
-+
-+	if ((range->flags & BTRFS_RELOCATE_RANGE_COMPRESS)) {
-+		/* the filemap_flush will queue IO into the worker threads, but
-+		 * we have to make sure the IO is actually started and that
-+		 * ordered extents get created before we return
-+		 */
-+		atomic_inc(&root->fs_info->async_submit_draining);
-+		while (atomic_read(&root->fs_info->nr_async_submits) ||
-+		      atomic_read(&root->fs_info->async_delalloc_pages)) {
-+			wait_event(root->fs_info->async_submit_wait,
-+			   (atomic_read(&root->fs_info->
-+					nr_async_submits) == 0 &&
-+			    atomic_read(&root->fs_info->
-+					async_delalloc_pages) == 0));
-+		}
-+		atomic_dec(&root->fs_info->async_submit_draining);
-+
-+		mutex_lock(&inode->i_mutex);
-+		BTRFS_I(inode)->force_compress = 0;
-+		mutex_unlock(&inode->i_mutex);
-+	}
-+
-+	ret = 0;
-+	goto put_inode;
-+
-+err_reservations:
-+	btrfs_delalloc_release_space(inode, PAGE_CACHE_SIZE);
-+err_unlock:
-+	mutex_unlock(&inode->i_mutex);
-+put_inode:
-+	iput(inode);
-+out:
-+	return ret;
-+}
-+
-diff --git a/fs/btrfs/hotdata_relocate.h b/fs/btrfs/hotdata_relocate.h
-new file mode 100644
-index 0000000..e3235d1
---- /dev/null
-+++ b/fs/btrfs/hotdata_relocate.h
-@@ -0,0 +1,73 @@
-+/*
-+ * fs/btrfs/hotdata_relocate.h
-+ *
-+ * Copyright (C) 2010 International Business Machines Corp.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public
-+ * License v2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public
-+ * License along with this program; if not, write to the
-+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-+ * Boston, MA 021110-1307, USA.
-+ */
-+
-+#ifndef __HOTDATARELOCATE__
-+#define __HOTDATARELOCATE__
-+
-+#include "ctree.h"
-+#include "hotdata_map.h"
-+
-+/* flags for the defrag range ioctl */
-+#define BTRFS_RELOCATE_RANGE_COMPRESS 1
-+#define BTRFS_RELOCATE_RANGE_START_IO 2
-+
-+/* where data is located */
-+#define BTRFS_ON_ROTATING	0
-+#define BTRFS_ON_NONROTATING	1
-+#define BTRFS_ON_BOTH		2
-+#define BTRFS_ON_UNKNOWN	3
-+
-+/* run relocation thread every X seconds */
-+#define RELOCATE_TIME_DELAY 1
-+/* maximum number of ranges to move in relocation thread run */
-+#define RELOCATE_MAX_ITEMS 250
-+
-+struct btrfs_relocate_range_args {
-+	/* start of the relocate operation */
-+	u64 start;
-+	/* number of bytes to relocate, use (u64)-1 to say all */
-+	u64 len;
-+	/*
-+	 * flags for the operation, which can include turning
-+	 * on compression for this one relocate
-+	 */
-+	u64 flags;
-+	 /*
-+	 * Use 1 to say every single extent must be rewritten
-+	 */
-+	u32 extent_thresh;
-+};
-+
-+struct btrfs_root;
-+/*
-+ * initialization of relocation kthread,
-+ * called if hotdatamove mount option is passed
-+ */
-+void init_hot_data_relocate_kthread(struct btrfs_root *root);
-+void init_ssd_scan_kthread(struct btrfs_root *root);
-+/* returns 1 if any part of range is on rotating disk (HDD) */
-+int btrfs_range_on_rotating(struct btrfs_root *root,
-+	struct hot_inode_item *hot_inode, u64 start, u64 len);
-+/* relocate inode range to spinning or ssd based on range args */
-+int btrfs_relocate_inode(unsigned long inode_num,
-+			     struct btrfs_relocate_range_args *range,
-+			     struct btrfs_root *root,
-+			     int location);
-+#endif /* __HOTDATARELOCATE__ */
--- 
-1.7.1
+ 	}
+ }
+ 
 
+--------------070500000409030504090205
+Content-Type: text/x-diff;
+ name="kernelnx2.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline;
+ filename="kernelnx2.diff"
+
+diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+index d130dc5..5fd5f4d 100644
+--- a/arch/x86/mm/pageattr.c
++++ b/arch/x86/mm/pageattr.c
+@@ -258,12 +258,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
+ 	pgprot_t required = __pgprot(0);
+ 
+ 	/*
+-	 * The BIOS area between 640k and 1Mb needs to be executable for
++	 * The BIOS area between 896k and 1Mb (ROM) needs to be executable for
+ 	 * PCI BIOS based config access (CONFIG_PCI_GOBIOS) support.
+ 	 */
+ #ifdef CONFIG_PCI_BIOS
+-	if (within(pfn, BIOS_BEGIN >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
+-		pgprot_val(forbidden) |= _PAGE_NX;
++	if ((__supported_pte_mask & _PAGE_NX) &&
++			within(pfn, 0xe0000 >> PAGE_SHIFT, BIOS_END >> PAGE_SHIFT))
++		pgprot_val(forbidden) |= _PAGE_NX|_PAGE_RW;
+ #endif
+ 
+ 	/*
+diff --git a/arch/x86/pci/pcbios.c b/arch/x86/pci/pcbios.c
+index 34ccb73..ac35d6f 100644
+--- a/arch/x86/pci/pcbios.c
++++ b/arch/x86/pci/pcbios.c
+@@ -11,6 +11,7 @@
+ #include <asm/pci-functions.h>
+ #include <asm/cacheflush.h>
+ 
++#define ROM_BEGIN 0xe0000
+ /* BIOS32 signature: "_32_" */
+ #define BIOS32_SIGNATURE	(('_' << 0) + ('3' << 8) + ('2' << 16) + ('_' << 24))
+ 
+@@ -301,7 +302,7 @@ static struct pci_raw_ops * __devinit pci_find_bios(void)
+ 	 * 0xe0000 through 0xfffff for a valid BIOS32 structure.
+ 	 */
+ 
+-	for (check = (union bios32 *) __va(0xe0000);
++	for (check = (union bios32 *) __va(ROM_BEGIN);
+ 	     check <= (union bios32 *) __va(0xffff0);
+ 	     ++check) {
+ 		long sig;
+@@ -424,18 +425,20 @@ EXPORT_SYMBOL(pcibios_set_irq_routing);
+ /* according some bios specification 
+  * http://members.datafast.net.au/dft0802/specs/bios21.pdf, we could 
+  * restrict the x zone to some pages and make it ro. But we
+- * really don't care, processor with NX support should be able to use 
+- * mmconfig for pci that disable pcibios...
++ * really don't care, system rom should always be ro and x.
+  */
+-static inline void set_bios_x(void)
++static inline void set_bios_rox(void)
+ {
+-	set_memory_x(PAGE_OFFSET + BIOS_BEGIN, (BIOS_END - BIOS_BEGIN) >> PAGE_SHIFT);
++	if (__supported_pte_mask & _PAGE_NX) {
++		set_memory_ro(PAGE_OFFSET + ROM_BEGIN, (BIOS_END - ROM_BEGIN) >> PAGE_SHIFT);
++		set_memory_x(PAGE_OFFSET + ROM_BEGIN, (BIOS_END - ROM_BEGIN) >> PAGE_SHIFT);
++	}
+ }
+ 
+ void __init pci_pcbios_init(void)
+ {
+ 	if (pci_probe & PCI_PROBE_BIOS) {
+-		set_bios_x();
++		set_bios_rox();
+ 		if ((raw_pci_ops = pci_find_bios())) {
+ 			pci_bios_present = 1;
+ 		}
+
+--------------070500000409030504090205--
