@@ -1,32 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758906Ab0HLHwK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:52:10 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:35725 "EHLO
+	id S1759019Ab0HLHw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 03:52:58 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46213 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab0HLHwI (ORCPT
+	with ESMTP id S1758393Ab0HLHw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:52:08 -0400
+	Thu, 12 Aug 2010 03:52:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
          :content-type:content-disposition:user-agent;
-        b=eqstxTxK7bbDt98YONMVHPHE2oKmKgBmaLWrCmPohl6GVwfQytwntVgkIPVjc+m9Bg
-         VNbUZydwb3MLUIkX+6gFfQeJUQPp0HBfgyGAfXfy1w/bKh/9kU8VwjNOqKAGHFvas5j/
-         czgKwGZl1wANNQQqftTaTux9zXLfzcy6R0xYI=
-Date: Thu, 12 Aug 2010 09:51:41 +0200
+        b=ugxY55eIA989O0UwElMrN2I5ulFoCVzEwlE8Ru0rINAUHkSUuLToZlSDkB4NDNLVJ9
+         uSIYzE4qWWoYHH1dB91fd74Raljsq66IG3RdTzV61LaG0mUkdxkh0ybG1wWV8/fvwOjh
+         rQmvbULTYFR/tLcZ/5Yh6gYMRuTK7zBXH0hGk=
+Date: Thu, 12 Aug 2010 09:52:36 +0200
 From: Dan Carpenter <error27@gmail.com>
 To: "Michael H. Warfield" <mhw@wittsend.com>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Rakib Mullick <rakib.mullick@gmail.com>, linux-kernel@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, kernel-janitors@vger.kernel.org
-Subject: [patch 1/2] ip2: remove unneeded NULL check
-Message-ID: <20100812075141.GL645@bicker>
+        Rakib Mullick <rakib.mullick@gmail.com>,
+        Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch 2/2] ip2: return -EFAULT on copy_to_user errors
+Message-ID: <20100812075236.GM645@bicker>
 Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
 	"Michael H. Warfield" <mhw@wittsend.com>,
 	Greg Kroah-Hartman <gregkh@suse.de>,
 	Rakib Mullick <rakib.mullick@gmail.com>,
-	linux-kernel@vger.kernel.org, Ben Hutchings <ben@decadent.org.uk>,
+	Ben Hutchings <ben@decadent.org.uk>, linux-kernel@vger.kernel.org,
 	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -36,21 +37,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't pass NULL tty pointers to the close function, and anyway we
-already dereferenced it at this point.  This check can be removed.
+copy_to_user() returns the number of bytes remaining but we want to
+return a negative error code on errors.
 
 Signed-off-by: Dan Carpenter <error27@gmail.com>
 
 diff --git a/drivers/char/ip2/ip2main.c b/drivers/char/ip2/ip2main.c
-index 07f3ea3..8fa041e 100644
+index 8fa041e..d4b71e8 100644
 --- a/drivers/char/ip2/ip2main.c
 +++ b/drivers/char/ip2/ip2main.c
-@@ -1650,7 +1650,7 @@ ip2_close( PTTY tty, struct file *pFile )
- 	/* disable DSS reporting */
- 	i2QueueCommands(PTYPE_INLINE, pCh, 100, 4,
- 				CMD_DCD_NREP, CMD_CTS_NREP, CMD_DSR_NREP, CMD_RI_NREP);
--	if ( !tty || (tty->termios->c_cflag & HUPCL) ) {
-+	if (tty->termios->c_cflag & HUPCL) {
- 		i2QueueCommands(PTYPE_INLINE, pCh, 100, 2, CMD_RTSDN, CMD_DTRDN);
- 		pCh->dataSetOut &= ~(I2_DTR | I2_RTS);
- 		i2QueueCommands( PTYPE_INLINE, pCh, 100, 1, CMD_PAUSE(25));
+@@ -2930,6 +2930,8 @@ ip2_ipl_ioctl (struct file *pFile, UINT cmd, ULONG arg )
+ 				if ( pCh )
+ 				{
+ 					rc = copy_to_user(argp, pCh, sizeof(i2ChanStr));
++					if (rc)
++						rc = -EFAULT;
+ 				} else {
+ 					rc = -ENODEV;
+ 				}
