@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758885Ab0HLBbE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 21:31:04 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53931 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752679Ab0HLBbA (ORCPT
+	id S1758916Ab0HLBgK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 21:36:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47540 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758373Ab0HLBgI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 21:31:00 -0400
+	Wed, 11 Aug 2010 21:36:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=yBAGz4UgPg+Ppb26LITBn43jUx1bATGjR4+UkzKrpZ5py9RGE5ao2mLAGEnx0CIf32
-         8UzxUPCRGulN6g1cb2obnfu5eF95eRqPB0UqjCz2NgXjkYa8E2dNA7zS/Q4HgaCbhpcK
-         JGFFbZ0Ys0sDbIHtwNGDbHPpU9oWAng7xuwXk=
-Subject: [PATCH] regulator: max8998 - fix memory allocation size for
-	max8998->rdev
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain
-Date: Thu, 12 Aug 2010 09:32:59 +0800
-Message-Id: <1281576779.25972.1.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=tPeca2R9l92zJpvGSO0IhMXRDjP32BQXyJydNbUdeN/Fs+Of0ITVTKlduxrtb0zUUj
+         xJxi1YAzkuSjfEqSOFMVly3Dg1wQSsrU3GfttcasA0uwSIIHeQg3Cghet96jDquaZc6w
+         VzxcusYzZWmTWMkISJ8EquUC3Qi5/yedZLFec=
+MIME-Version: 1.0
+In-Reply-To: <4C62F4BD.9030605@vmware.com>
+References: <AANLkTi=4_QnAyY+zcuXwVpPkESjpF7yfMb1RunMQaK7f@mail.gmail.com> 
+	<1281553430.32376.2.camel@hactar> <4C62F4BD.9030605@vmware.com>
+From: Hui Zhu <teawater@gmail.com>
+Date: Thu, 12 Aug 2010 09:35:46 +0800
+Message-ID: <AANLkTimrqy1+hbZY7p2XuY2fXYy4PUAd6i4-kfoqjfKe@mail.gmail.com>
+Subject: Re: Linux Kernel GDB tracepoint module demo release
+To: Michael Snyder <msnyder@vmware.com>,
+        Thiago Jung Bauermann <thiago.bauermann@gmail.com>
+Cc: "gdb@sourceware.org" <gdb@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We only use max8998->rdev[0] .. max8998->rdev[pdata->num_regulators-1],
-max8998->rdev[pdata->num_regulators] is not used.
-Thus fix the memory allocation size.
+Thanks Thiago and Michael, both of them have some limit.  I try to
+make gdb tracepoint and kernel work together directly. :)
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max8998.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
-index ab67298..fbcb385 100644
---- a/drivers/regulator/max8998.c
-+++ b/drivers/regulator/max8998.c
-@@ -549,7 +549,7 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
- 	if (!max8998)
- 		return -ENOMEM;
- 
--	size = sizeof(struct regulator_dev *) * (pdata->num_regulators + 1);
-+	size = sizeof(struct regulator_dev *) * pdata->num_regulators;
- 	max8998->rdev = kzalloc(size, GFP_KERNEL);
- 	if (!max8998->rdev) {
- 		kfree(max8998);
-@@ -583,7 +583,7 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
- 
- 	return 0;
- err:
--	for (i = 0; i <= max8998->num_regulators; i++)
-+	for (i = 0; i < max8998->num_regulators; i++)
- 		if (rdev[i])
- 			regulator_unregister(rdev[i]);
- 
-@@ -599,7 +599,7 @@ static int __devexit max8998_pmic_remove(struct platform_device *pdev)
- 	struct regulator_dev **rdev = max8998->rdev;
- 	int i;
- 
--	for (i = 0; i <= max8998->num_regulators; i++)
-+	for (i = 0; i < max8998->num_regulators; i++)
- 		if (rdev[i])
- 			regulator_unregister(rdev[i]);
- 
--- 
-1.7.2
+Thanks,
+Hui
 
 
-
+On Thu, Aug 12, 2010 at 03:06, Michael Snyder <msnyder@vmware.com> wrote:
+> Thiago Jung Bauermann wrote:
+>>
+>> Hi Hui,
+>>
+>> On Thu, 2010-08-12 at 00:34 +0800, Hui Zhu wrote:
+>>>
+>>> GDB Tracepoint
+>>> (http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html)
+>>> is new feature that make GDB can debug real-time program.
+>>> I think this feature is very fit for debug Linux Kernel.  So I make a
+>>> lkm to make kernel support it. You can get it in
+>>> https://code.google.com/p/kgtp/
+>>
+>> Jim Blandy worked on GDB tracepoint support for the kernel too. I don't
+>> know how his work compares to yours, you might be interested in having a
+>> look:
+>>
+>> http://www.red-bean.com/trac/tracepoints/
+>>
+>
+> There's also the LTTng project: http://lttng.org/
+>
+>
+>
