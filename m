@@ -1,63 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755778Ab0HLHkJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:40:09 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:56568 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475Ab0HLHkF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:40:05 -0400
-Message-ID: <4C63A551.3040701@in.ibm.com>
-Date: Thu, 12 Aug 2010 13:10:01 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
-To: linux-s390@vger.kernel.org
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Latest git build failure on s390 - dma_get_cache_alignment()
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758737Ab0HLHqa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 03:46:30 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49415 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752475Ab0HLHq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 03:46:29 -0400
+Date: Thu, 12 Aug 2010 17:46:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Steve French <smfrench@gmail.com>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wang Lei <wang840925@gmail.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+Message-Id: <20100812174621.b1dbc20f.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTi=iHi=kpk+nsB396B9GWdefj=WJywA2K1PawHxi@mail.gmail.com>
+References: <20100812131741.f3a800d7.sfr@canb.auug.org.au>
+	<AANLkTi=iHi=kpk+nsB396B9GWdefj=WJywA2K1PawHxi@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__12_Aug_2010_17_46_21_+1000_yjLM=8lGx_xPYx0p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Latest 2.6.35 git (2.6.35-git11 : 5af568cbd...) fails to build
-on s390 with following errors :
+--Signature=_Thu__12_Aug_2010_17_46_21_+1000_yjLM=8lGx_xPYx0p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-arch/s390/mm/fault.c:396: warning: frame size of 'do_protection_exception' is 264 bytes
-In file included from include/linux/dmaengine.h:26,
-            from include/linux/skbuff.h:30,
-            from include/linux/icmpv6.h:82,
-            from include/linux/ipv6.h:220,
-            from include/net/ipv6.h:16,
-            from include/linux/sunrpc/clnt.h:25,
-            from include/linux/nfs_fs.h:48,
-            from init/do_mounts.c:20:
-include/linux/dma-mapping.h:145: error: static declaration of 'dma_get_cache_alignment' follows non-static declaration
-include/asm-generic/dma-mapping-broken.h:73: error: previous declaration of 'dma_get_cache_alignment' was here
-make[1]: *** [init/do_mounts.o] Error 1
-make[1]: *** Waiting for unfinished jobs....
-init/do_mounts_md.c: In function 'md_setup_drive':
-init/do_mounts_md.c:241: warning: frame size of 'md_setup_drive' is 496 bytes
-make: *** [init] Error 2
-make: *** Waiting for unfinished jobs....
+Hi Steve,
 
-The code in question was last changed via following commit
+On Wed, 11 Aug 2010 23:04:36 -0500 Steve French <smfrench@gmail.com> wrote:
+>
+> Are you sure that this is a valid config file?  CONFIG_KEYS should be
+> set if CONFIG_DNS_RESOLVER is set?
 
-commit 4565f0170dfc849b3629c27d769db800467baa62
-dma-mapping: unify dma_get_cache_alignment implementations
+It is a ppc64_defconfig.  It has:
 
-Thanks
--Sachin
+# CONFIG_KEYS is not set
+CONFIG_DNS_RESOLVER=3Dy
 
--- 
+CONFIG_NFS_USE_KERNEL_DNS just selects CONFIG_DNS_RESOLVER but there is
+no dependency on CONFIG_KEYS (select does not care about the
+dependencies of the selected config option).
 
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
+> key.h looks like it is included in all arch in this path
+>=20
+> net/dns_resolver/dns_key.c includes
+> include/keys/dns_resolver-type.h which includes
+> include/linux/key-type.h which includes
+> include/linux/key.h
+>=20
+> the line 258 "key_instantiate_and_link" error could occur if
+> "CONFIG_KEYS" is not set in .config
 
+Which t isn't.
+
+> net/dns_resolver/Kconfig config DNS_RESOLVER "depends on NET && KEYS"
+> so ... CONFIG_KEYS should be set ....
+
+See above.  You need CONFIG_NFS_USE_KERNEL_DNS to also depend on
+CONFIG_KEYS ...
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__12_Aug_2010_17_46_21_+1000_yjLM=8lGx_xPYx0p
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMY6bNAAoJEDMEi1NhKgbsTqsH/0RUu72CT13xLIua6gpSidpS
+sC2do6Jb4ISLMVMEDlQbOUniz2Q+GhXylnxoFIHfWPYJywO5K6vS4Y3HPfi4kREs
+SIhNu687LNUGzdCZA47Aqn1BpSjqO6fWWjYGombtN5SG5UcYdsQaGMqypr+vVSJn
+N6Is9sq6/ZjIRdFXk+m6JNnbQGRPBgn/7y2k8BWnbtW520HmKDRqakdqHg71sRLm
+fuQ4L1N8OUUfnFPqdBKRPA+0H9v75Q4zPhKa5GpgR/Yzdi5vD/2U+OlIXaFuxMgG
+qztqdq7Hl40fnVTim0fHalgfKzUx4J2d/zUMSNPLKM6z9Ht6/S+ZR5Ylu3VpyBQ=
+=xbsW
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__12_Aug_2010_17_46_21_+1000_yjLM=8lGx_xPYx0p--
