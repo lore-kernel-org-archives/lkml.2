@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933347Ab0HLAJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:09:14 -0400
-Received: from kroah.org ([198.145.64.141]:47965 "EHLO coco.kroah.org"
+	id S933364Ab0HLAJQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:09:16 -0400
+Received: from kroah.org ([198.145.64.141]:47981 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933264Ab0HLAJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:09:00 -0400
+	id S933285Ab0HLAJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:09:04 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:18 2010
-Message-Id: <20100812000618.231443032@clark.site>
+Message-Id: <20100812000618.496512147@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:06:15 -0700
+Date: Wed, 11 Aug 2010 17:06:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marek Vasut <marek.vasut@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Subject: [60/67] mtd: gen_nand: fix support for multiple chips
+        "David S. Miller" <davem@davemloft.net>
+Subject: [63/67] net: Fix NETDEV_NOTIFY_PEERS to not conflict with NETDEV_BONDING_DESLAVE.
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,32 +25,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marek Vasut <marek.vasut@gmail.com>
+From: David S. Miller <davem@davemloft.net>
 
-commit 81cbb0b17796d81cbd92defe113cf2a7c7a21fbb upstream.
+commit 38117d1495e587fbb10d6e55733139a27893cef5 upstream.
 
-This patch corrects a problem where gen_nand driver assumed there can be only
-one chip and ignored the pdata->chip.nr_chips value.
-
-Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/mtd/nand/plat_nand.c |    2 +-
+ include/linux/notifier.h |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/mtd/nand/plat_nand.c
-+++ b/drivers/mtd/nand/plat_nand.c
-@@ -91,7 +91,7 @@ static int __devinit plat_nand_probe(str
- 	}
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -210,7 +210,7 @@ static inline int notifier_to_errno(int
+ #define NETDEV_POST_INIT	0x0010
+ #define NETDEV_UNREGISTER_BATCH 0x0011
+ #define NETDEV_BONDING_DESLAVE  0x0012
+-#define NETDEV_NOTIFY_PEERS	0x0012
++#define NETDEV_NOTIFY_PEERS	0x0013
  
- 	/* Scan to find existance of the device */
--	if (nand_scan(&data->mtd, 1)) {
-+	if (nand_scan(&data->mtd, pdata->chip.nr_chips)) {
- 		err = -ENXIO;
- 		goto out;
- 	}
+ #define SYS_DOWN	0x0001	/* Notify of system down */
+ #define SYS_RESTART	SYS_DOWN
 
 
