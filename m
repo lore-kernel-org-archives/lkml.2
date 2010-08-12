@@ -1,109 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760115Ab0HLRNh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:13:37 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:32833 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab0HLRNe (ORCPT
+	id S1760406Ab0HLRNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:13:53 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:28667 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758533Ab0HLRNu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:13:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=tnCfF8k7o1Ch70ElyZRqxE9t5E62YbAEoIEe5Kk0WaWJqcA8aaWmr+yqnVXmKxa8ei
-         k7CUlDhh7kpolePGI3UfcWxHRFUMI2YXr/S/QoDMd6cyYdjUmm+EjBQHsEYLaW8HH8i8
-         mQljzAymHWkQc/nWlJBxy2hu3j+1imHyLSJz4=
+	Thu, 12 Aug 2010 13:13:50 -0400
+Message-ID: <4C642BCD.6070201@vmware.com>
+Date: Thu, 12 Aug 2010 10:13:49 -0700
+From: Michael Snyder <msnyder@vmware.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-In-Reply-To: <1281628195.2873.12.camel@heimdal.trondhjem.org>
-References: <87lj8ckb1e.fsf@patl.com>
-	<8762zgmmer.fsf@patl.com>
-	<1281628195.2873.12.camel@heimdal.trondhjem.org>
-Date: Thu, 12 Aug 2010 10:13:30 -0700
-Message-ID: <AANLkTi=WzNzq7wKf0qa+VFuOBYy4yW==0QvdKsTQ88+x@mail.gmail.com>
-Subject: Re: [PATCH] nfs: lookupcache coherence bugs in WCC update path (revised)
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hui Zhu <teawater@gmail.com>
+CC: "gdb@sourceware.org" <gdb@sourceware.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Linux Kernel GDB tracepoint module demo release
+References: <AANLkTi=4_QnAyY+zcuXwVpPkESjpF7yfMb1RunMQaK7f@mail.gmail.com> 	<4C6311E0.5070909@vmware.com> <AANLkTikosGgJ+epKTdmPxMW=OWVTieTRs13mN7-DwsWq@mail.gmail.com>
+In-Reply-To: <AANLkTikosGgJ+epKTdmPxMW=OWVTieTRs13mN7-DwsWq@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 8:49 AM, Trond Myklebust
-<trond.myklebust@fys.uio.no> wrote:
->
-> This looks less than obviously correct to me.
+Very interesting then.  I'd like to see you continue this work.
 
-I just meant my patch obviously fixes a bug even if you do not believe
-it is the bug I am encountering.  I claim it is "obvious" based on:
 
-Obvious statement #1:  It is a bug if a directory inode's mtime is
-EVER updated without invalidating the lookup cache, because that
-results in a stale cache that does not know it is stale and can
-persist indefinitely.
+Hui Zhu wrote:
+> KGTP use Kprobes, I think it can work with most part of kernel.
+> 
+> Thanks,
+> Hui
+> 
+> On Thu, Aug 12, 2010 at 05:10, Michael Snyder <msnyder@vmware.com> wrote:
+>> Actually, this is kind of interesting.
+>> Can your system set a tracepoint at any arbitrary location in the
+>> kernel?  If so, I think that makes it more powerful than existing
+>> systems such as LTTng, which can only trace statically pre-determined
+>> locations.
+>>
+>> Hui Zhu wrote:
+>>> Hi,
+>>>
+>>> GDB Tracepoint
+>>> (http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html)
+>>> is new feature that make GDB can debug real-time program.
+>>> I think this feature is very fit for debug Linux Kernel.  So I make a
+>>> lkm to make kernel support it. You can get it in
+>>> https://code.google.com/p/kgtp/
+>>>
+>>> I just release the demo for it.  It just support collect $reg in
+>>> x86_32.  I will add the other tracepoint support in the future.
+>>>
+>>> For example:
+>>> tar vxjf gtp_20100811.tar.bz2
+>>> cd gtp
+>>> make
+>>> insmod gtp.ko
+>>> gdb ./vmlinux
+>>> GNU gdb (GDB) 7.2.50.20100720-cvs
+>>> Copyright (C) 2010 Free Software Foundation, Inc.
+>>> License GPLv3+: GNU GPL version 3 or later
+>>> <http://gnu.org/licenses/gpl.html>
+>>> This is free software: you are free to change and redistribute it.
+>>> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+>>> and "show warranty" for details.
+>>> This GDB was configured as "i686-pc-linux-gnu".
+>>> For bug reporting instructions, please see:
+>>> <http://www.gnu.org/software/gdb/bugs/>...
+>>> Reading symbols from /vmlinux...done.
+>>> (gdb) target remote /proc/gtp
+>>> Remote debugging using /proc/gtp
+>>> 0x00000000 in ?? ()
+>>> (gdb) trace vfs_readdir
+>>> Tracepoint 1 at 0xc01a1ac0: file
+>>> /home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
+>>> (gdb) actions
+>>> Enter actions for tracepoint 1, one per line.
+>>> End with a line saying just "end".
+>>>> collect $reg
+>>>> end
+>>> (gdb) tstart
+>>> (gdb) shell ls
+>>> (gdb) tstop
+>>> (gdb) tfind
+>>> Found trace frame 0, tracepoint 1
+>>> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900
+>>> <filldir64>,
+>>>    buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+>>> 23      /home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or
+>>> directory.
+>>>        in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>>> (gdb) info reg
+>>> eax            0xc5528d00       -984445696
+>>> ecx            0xc0d09f90       -1060069488
+>>> edx            0xc01a1900       -1072031488
+>>> ebx            0xfffffff7       -9
+>>> esp            0xc0d09f8c       0xc0d09f8c
+>>> ebp            0x0      0x0
+>>> esi            0x8061480        134616192
+>>> edi            0xc5528d00       -984445696
+>>> eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
+>>> eflags         0x286    [ PF SF IF ]
+>>> cs             0x60     96
+>>> ss             0x8061480        134616192
+>>> ds             0x7b     123
+>>> es             0x7b     123
+>>> fs             0x0      0
+>>> gs             0x0      0
+>>> (gdb) tfind
+>>> Found trace frame 1, tracepoint 1
+>>> 0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>>> (gdb) info reg
+>>> eax            0xc5528d00       -984445696
+>>> ecx            0xc0d09f90       -1060069488
+>>> edx            0xc01a1900       -1072031488
+>>> ebx            0xfffffff7       -9
+>>> esp            0xc0d09f8c       0xc0d09f8c
+>>> ebp            0x0      0x0
+>>> esi            0x8061480        134616192
+>>> edi            0xc5528d00       -984445696
+>>> eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
+>>> eflags         0x286    [ PF SF IF ]
+>>> cs             0x60     96
+>>> ss             0x8061480        134616192
+>>> ds             0x7b     123
+>>> es             0x7b     123
+>>> fs             0x0      0
+>>> gs             0x0      0
+>>> (gdb) tfind
+>>> Found trace frame 2, tracepoint 1
+>>> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528300, filler=0xc01a19e0
+>>> <filldir>,
+>>>    buf=0xc6c2df90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+>>> 23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>>> (gdb)
+>>> Found trace frame 3, tracepoint 1
+>>> 0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>>> (gdb)
+>>> Target failed to find requested trace frame.
+>>> (gdb) quit
+>>> A debugging session is active.
+>>>
+>>>        Inferior 1 [Remote target] will be killed.
+>>>
+>>> Quit anyway? (y or n) y
+>>>
+>>> Thanks,
+>>> Hui
+>>
 
-Obvious statement #2:  The current nfs_wcc_update_inode() code updates
-the directory inode's mtime without invalidating the lookup cache.
-
-So the current code would be wrong even if it never created a problem
-in practice.  (Although it does create a problem in practice).
-
-> The wcc case is invoked when the ctime/mtime/.... change is known to have occurred due to a file
-> creation/unlink/... from this client. It is a weak cache consistency case.
->
-> If your client is seeing ENOENT after it created the file itself, then
-> the problem isn't cache coherency, but a bug in the file creation code.
-
-The client did not create the file itself.
-
-The sequence of operations goes like this:
-
-1) Client looks up non-existent file, creates negative dentry.
-2) File is created by a process on the server.
-3) Something causes the client to update its mtime for the directory
-without invalidating the dentry lookup cache.  (I have not figured out
-exactly what, but I have "caught it in the act"; see below).
-4) Client incorrectly returns ENOENT when application next attempts to
-access file.
-
-You may think this is the usual "multiple updates within one second"
-issue.  That is what I thought at first, anyway.  But I know it is
-not, for three reasons...
-
-First, my server is using XFS, which supports sub-second timestamps.
-
-Second, I instrumented nfs_update_inode() to record the inode's mtime
-and cache_change_attribute on function entry, then to log a message on
-function return if the inode is a directory whose mtime got updated
-without also updating cache_change_attribute.  Then I reproduced my
-issue.  My new log message appeared precisely in those runs where the
-issue occurred.  (I also instrumented the code to follow the actual
-sequence of events; I can see that the faulty ENOENT is being returned
-because the inode's cache_change_attribute matches the stale dentry's
-d_time.)
-
-Third, my testing confirms that the issue disappears after I apply my
-patch.  If the problem were the usual "multiple updates in one
-second", or indeed any server-side issue whatsoever, my patch could
-not have fixed it.
-
-Unfortunately, the only test case I have is my real-world application,
-which I cannot share.  It takes ~30 minutes of running to reproduce
-every time, and it only happens on maybe 2/3 of the runs, so it has
-taken me over a week to track this down.  I still do not know the
-exact sequence of operations that causes the problem; I just know it
-really is happening.
-
-In summary, the current code is "obviously wrong" because it violates
-its own invariants by potentially updating a directory's mtime without
-invalidating its lookup cache.  And it really is happening to me in
-practice.  My patch fixes both the potential problem (which you can
-see for yourself) and the actual problem (for which you have only my
-word).
-
-Are you unwilling to fix such a bug unless I can provide you a test case?
-
-Thanks!
-
- - Pat
