@@ -1,82 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760622Ab0HLVQY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:16:24 -0400
+	id S1760663Ab0HLVQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:16:28 -0400
 Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:45427 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752441Ab0HLVQX (ORCPT
+	with ESMTP id S1752441Ab0HLVQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:16:23 -0400
-X-Authority-Analysis: v=1.1 cv=mWMe3HXt1P3ELXxrmMgI9QKdSRnwjSxQbBh3ay0KAh4= c=1 sm=0 a=1vWONz4sPGsA:10 a=GzHTLUccyWwA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=7mOBRU54AAAA:8 a=meVymXHHAAAA:8 a=m-DQbsy-lrDnxNyD1c0A:9 a=wQ9mlR7DB8U8CsJkm3hsmy--eHEA:4 a=DHQQ7jDAcw4A:10 a=WeOa-AV5lc8A:10 a=jeBq3FmKZ4MA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+	Thu, 12 Aug 2010 17:16:25 -0400
+X-Authority-Analysis: v=1.1 cv=mWMe3HXt1P3ELXxrmMgI9QKdSRnwjSxQbBh3ay0KAh4= c=1 sm=0 a=Zj3_4r9UgSQA:10 a=GzHTLUccyWwA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=yPCof4ZbAAAA:8 a=meVymXHHAAAA:8 a=ucrQ1-tTy64ptip4ekEA:9 a=sHW3hMzU9vFR3Glvo1oA:7 a=ALfp84QK8sshyj9sdRiclOKCySgA:4 a=jEp0ucaQiEUA:10 a=7DSvI1NPTFQA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.87.39
-Message-Id: <20100812211620.694683277@goodmis.org>
+Message-Id: <20100812211620.996544008@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 12 Aug 2010 17:14:23 -0400
+Date: Thu, 12 Aug 2010 17:14:24 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Frysinger <vapier@gentoo.org>
-Subject: [PATCH 1/2] tracing: Extend recordmcount to better support Blackfin mcount
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Subject: [PATCH 2/2] tracing/events: Convert format output to seq_file
 References: <20100812211422.440965474@goodmis.org>
-Content-Disposition: inline; filename=0001-tracing-Extend-recordmcount-to-better-support-Blackf.patch
+Content-Disposition: inline; filename=0002-tracing-events-Convert-format-output-to-seq_file.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Steven Rostedt <srostedt@redhat.com>
 
-The mcount call on Blackfin systems includes some stack manipulation
-around the actual call site, so extend the build time perl script to
-support this.  This way we can avoid doing the calculation at runtime.
+Two new events were added that broke the current format output.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-LKML-Reference: <1281079584-21205-1-git-send-email-vapier@gentoo.org>
+Both from the SCSI system: scsi_dispatch_cmd_done and scsi_dispatch_cmd_timeout
+
+The reason is that their print_fmt exceeded a page size. Since the output
+of the format used simple_read_from_buffer and trace_seq, it was limited
+to a page size in output.
+
+This patch converts the printing of the format of an event into seq_file,
+which allows greater than a page size to be shown.
+
+I diffed all event formats comparing the output with and without this
+patch. All matched except for the above two, which showed just:
+
+  FORMAT TOO BIG
+
+without this patch, but now properly displays the output with this patch.
+
+v2: Remove updating *pos in seq start function.
+   [ Thanks to Li Zefan for pointing that out ]
+
+Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+Cc: James Bottomley <James.Bottomley@suse.de>
+Cc: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- scripts/recordmcount.pl |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ kernel/trace/trace_events.c |  208 +++++++++++++++++++++++++++++--------------
+ 1 files changed, 141 insertions(+), 67 deletions(-)
 
-diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-index f3c9c0a..2c56539 100755
---- a/scripts/recordmcount.pl
-+++ b/scripts/recordmcount.pl
-@@ -159,6 +159,7 @@ my $section_regex;	# Find the start of a section
- my $function_regex;	# Find the name of a function
- 			#    (return offset and func name)
- my $mcount_regex;	# Find the call site to mcount (return offset)
-+my $mcount_adjust;	# Address adjustment to mcount offset
- my $alignment;		# The .align value to use for $mcount_section
- my $section_type;	# Section header plus possible alignment command
- my $can_use_local = 0; 	# If we can use local function references
-@@ -213,6 +214,7 @@ $section_regex = "Disassembly of section\\s+(\\S+):";
- $function_regex = "^([0-9a-fA-F]+)\\s+<(.*?)>:";
- $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\smcount\$";
- $section_type = '@progbits';
-+$mcount_adjust = 0;
- $type = ".long";
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 53cffc0..45a8968 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -29,6 +29,8 @@ DEFINE_MUTEX(event_mutex);
  
- if ($arch eq "x86_64") {
-@@ -351,6 +353,9 @@ if ($arch eq "x86_64") {
- } elsif ($arch eq "microblaze") {
-     # Microblaze calls '_mcount' instead of plain 'mcount'.
-     $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s_mcount\$";
-+} elsif ($arch eq "blackfin") {
-+    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s__mcount\$";
-+    $mcount_adjust = -4;
- } else {
-     die "Arch $arch is not supported with CONFIG_FTRACE_MCOUNT_RECORD";
- }
-@@ -511,7 +516,7 @@ while (<IN>) {
-     }
-     # is this a call site to mcount? If so, record it to print later
-     if ($text_found && /$mcount_regex/) {
--	push(@offsets, hex $1);
-+	push(@offsets, (hex $1) + $mcount_adjust);
-     }
+ LIST_HEAD(ftrace_events);
+ 
++#define COMMON_FIELD_COUNT	5
++
+ struct list_head *
+ trace_get_fields(struct ftrace_event_call *event_call)
+ {
+@@ -544,85 +546,155 @@ out:
+ 	return ret;
  }
  
+-static ssize_t
+-event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+-		  loff_t *ppos)
++enum {
++	FORMAT_HEADER		= 1,
++	FORMAT_PRINTFMT		= 2,
++};
++
++static void *f_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+-	struct ftrace_event_call *call = filp->private_data;
++	struct ftrace_event_call *call = m->private;
+ 	struct ftrace_event_field *field;
+ 	struct list_head *head;
+-	struct trace_seq *s;
+-	int common_field_count = 5;
+-	char *buf;
+-	int r = 0;
+-
+-	if (*ppos)
+-		return 0;
++	loff_t index = *pos;
+ 
+-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
++	(*pos)++;
+ 
+-	trace_seq_init(s);
++	head = trace_get_fields(call);
+ 
+-	trace_seq_printf(s, "name: %s\n", call->name);
+-	trace_seq_printf(s, "ID: %d\n", call->event.type);
+-	trace_seq_printf(s, "format:\n");
++	switch ((unsigned long)v) {
++	case FORMAT_HEADER:
+ 
+-	head = trace_get_fields(call);
+-	list_for_each_entry_reverse(field, head, link) {
+-		/*
+-		 * Smartly shows the array type(except dynamic array).
+-		 * Normal:
+-		 *	field:TYPE VAR
+-		 * If TYPE := TYPE[LEN], it is shown:
+-		 *	field:TYPE VAR[LEN]
+-		 */
+-		const char *array_descriptor = strchr(field->type, '[');
+-
+-		if (!strncmp(field->type, "__data_loc", 10))
+-			array_descriptor = NULL;
+-
+-		if (!array_descriptor) {
+-			r = trace_seq_printf(s, "\tfield:%s %s;\toffset:%u;"
+-					"\tsize:%u;\tsigned:%d;\n",
+-					field->type, field->name, field->offset,
+-					field->size, !!field->is_signed);
+-		} else {
+-			r = trace_seq_printf(s, "\tfield:%.*s %s%s;\toffset:%u;"
+-					"\tsize:%u;\tsigned:%d;\n",
+-					(int)(array_descriptor - field->type),
+-					field->type, field->name,
+-					array_descriptor, field->offset,
+-					field->size, !!field->is_signed);
+-		}
++		if (unlikely(list_empty(head)))
++			return NULL;
+ 
+-		if (--common_field_count == 0)
+-			r = trace_seq_printf(s, "\n");
++		field = list_entry(head->prev, struct ftrace_event_field, link);
++		return field;
+ 
+-		if (!r)
+-			break;
++	case FORMAT_PRINTFMT:
++		/* all done */
++		return NULL;
+ 	}
+ 
+-	if (r)
+-		r = trace_seq_printf(s, "\nprint fmt: %s\n",
+-				call->print_fmt);
++	/*
++	 * To separate common fields from event fields, the
++	 * LSB is set on the first event field. Clear it in case.
++	 */
++	v = (void *)((unsigned long)v & ~1L);
+ 
+-	if (!r) {
+-		/*
+-		 * ug!  The format output is bigger than a PAGE!!
+-		 */
+-		buf = "FORMAT TOO BIG\n";
+-		r = simple_read_from_buffer(ubuf, cnt, ppos,
+-					      buf, strlen(buf));
+-		goto out;
++	field = v;
++	if (field->link.prev == head)
++		return (void *)FORMAT_PRINTFMT;
++
++	field = list_entry(field->link.prev, struct ftrace_event_field, link);
++
++	/* Set the LSB to notify f_show to print an extra newline */
++	if (index == COMMON_FIELD_COUNT)
++		field = (struct ftrace_event_field *)
++			((unsigned long)field | 1);
++
++	return field;
++}
++
++static void *f_start(struct seq_file *m, loff_t *pos)
++{
++	loff_t l = 0;
++	void *p;
++
++	/* Start by showing the header */
++	if (!*pos)
++		return (void *)FORMAT_HEADER;
++
++	p = (void *)FORMAT_HEADER;
++	do {
++		p = f_next(m, p, &l);
++	} while (p && l < *pos);
++
++	return p;
++}
++
++static int f_show(struct seq_file *m, void *v)
++{
++	struct ftrace_event_call *call = m->private;
++	struct ftrace_event_field *field;
++	const char *array_descriptor;
++
++	switch ((unsigned long)v) {
++	case FORMAT_HEADER:
++		seq_printf(m, "name: %s\n", call->name);
++		seq_printf(m, "ID: %d\n", call->event.type);
++		seq_printf(m, "format:\n");
++		return 0;
++
++	case FORMAT_PRINTFMT:
++		seq_printf(m, "\nprint fmt: %s\n",
++			   call->print_fmt);
++		return 0;
+ 	}
+ 
+-	r = simple_read_from_buffer(ubuf, cnt, ppos,
+-				    s->buffer, s->len);
+- out:
+-	kfree(s);
+-	return r;
++	/*
++	 * To separate common fields from event fields, the
++	 * LSB is set on the first event field. Clear it and
++	 * print a newline if it is set.
++	 */
++	if ((unsigned long)v & 1) {
++		seq_putc(m, '\n');
++		v = (void *)((unsigned long)v & ~1L);
++	}
++
++	field = v;
++
++	/*
++	 * Smartly shows the array type(except dynamic array).
++	 * Normal:
++	 *	field:TYPE VAR
++	 * If TYPE := TYPE[LEN], it is shown:
++	 *	field:TYPE VAR[LEN]
++	 */
++	array_descriptor = strchr(field->type, '[');
++
++	if (!strncmp(field->type, "__data_loc", 10))
++		array_descriptor = NULL;
++
++	if (!array_descriptor)
++		seq_printf(m, "\tfield:%s %s;\toffset:%u;\tsize:%u;\tsigned:%d;\n",
++			   field->type, field->name, field->offset,
++			   field->size, !!field->is_signed);
++	else
++		seq_printf(m, "\tfield:%.*s %s%s;\toffset:%u;\tsize:%u;\tsigned:%d;\n",
++			   (int)(array_descriptor - field->type),
++			   field->type, field->name,
++			   array_descriptor, field->offset,
++			   field->size, !!field->is_signed);
++
++	return 0;
++}
++
++static void f_stop(struct seq_file *m, void *p)
++{
++}
++
++static const struct seq_operations trace_format_seq_ops = {
++	.start		= f_start,
++	.next		= f_next,
++	.stop		= f_stop,
++	.show		= f_show,
++};
++
++static int trace_format_open(struct inode *inode, struct file *file)
++{
++	struct ftrace_event_call *call = inode->i_private;
++	struct seq_file *m;
++	int ret;
++
++	ret = seq_open(file, &trace_format_seq_ops);
++	if (ret < 0)
++		return ret;
++
++	m = file->private_data;
++	m->private = call;
++
++	return 0;
+ }
+ 
+ static ssize_t
+@@ -820,8 +892,10 @@ static const struct file_operations ftrace_enable_fops = {
+ };
+ 
+ static const struct file_operations ftrace_event_format_fops = {
+-	.open = tracing_open_generic,
+-	.read = event_format_read,
++	.open = trace_format_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = seq_release,
+ };
+ 
+ static const struct file_operations ftrace_event_id_fops = {
 -- 
 1.7.1
 
