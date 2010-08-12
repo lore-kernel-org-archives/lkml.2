@@ -1,65 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934060Ab0HLSnS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 14:43:18 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59637 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934044Ab0HLSnR convert rfc822-to-8bit (ORCPT
+	id S1760758Ab0HLSvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 14:51:54 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:53389 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868Ab0HLSvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 14:43:17 -0400
+	Thu, 12 Aug 2010 14:51:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=L4qY/ZuH5FvVjD23KiRGn9t4O0wvXwukadRnHzhpzDZfAeQDaG+82I2X8E+3OiGcXW
-         9jTV1Jtj64ETtV3KvvJ97wr/PBLisq9mWp3mLrJQYu/rSzK4z9Z/Do6tFeqzm49ps8fu
-         LVy4rIb8tUIe2uYk21TI3YWQ5UmaclFxc9lfU=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=VJtUYq7nZRKcY/F+pTDCdWAdejmRwwvYaiBD0UeIgMNzvztH3jac/Oy0l7q98ONhNT
+         Gbcz+AhCi4RoVsnDHjwrKiiMGwZE0/twGVPxHn8IhuAOjMR7jhjWFisNif1Hah1+v2QY
+         YvpyJ4kkS0mYu9QkIs9xWo0t2zYUxDCEpZAyg=
+Date: Fri, 13 Aug 2010 00:21:51 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH] DMAENGINE: add a slave buffer prep call
+Message-ID: <20100812185150.GA4854@debian>
+References: <1281476766-7066-1-git-send-email-linus.walleij@stericsson.com>
+ <20100811141219.GA5846@debian>
+ <AANLkTikD2LwYwsk6Q-7U-P3o+ujhY_0TqgeqOo=hhjA=@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1281477570-18944-56-git-send-email-gregkh@suse.de>
-References: <20100810214425.GB17385@kroah.com>
-	<1281477570-18944-56-git-send-email-gregkh@suse.de>
-Date: Thu, 12 Aug 2010 11:43:15 -0700
-X-Google-Sender-Auth: SYSetEZeyKdYgHcRO7Au9KhTMkQ
-Message-ID: <AANLkTinc6px4BD7CnuvaBE5kWgZGc9cN45QebjfcbgVb@mail.gmail.com>
-Subject: Re: [PATCH 56/68] serial: MMIO32 support for 8250_early.c
-From: Tony Luck <tony.luck@intel.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Samium Gromoff <_deepfire@feelingofgreen.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikD2LwYwsk6Q-7U-P3o+ujhY_0TqgeqOo=hhjA=@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 2:59 PM, Greg Kroah-Hartman <gregkh@suse.de> wrote:
-> +       if (mmio || mmio32)
-> +               printk(KERN_INFO
-> +                      "Early serial console at MMIO%s 0x%llu (options '%s')\n",
-> +                       mmio32 ? "32" : "",
-> +                       (unsigned long long)port->mapbase,
-> +                       device->options);
-> +       else
-> +               printk(KERN_INFO
-> +                     "Early serial console at I/O port 0x%lu (options '%s')\n",
-> +                       port->iobase,
-> +                       device->options);
-> +
+On Wed, Aug 11, 2010 at 09:02:04PM +0200, Linus Walleij wrote:
+> 2010/8/11 Rabin Vincent <rabin@rab.in>:
+> > On Tue, Aug 10, 2010 at 11:46:06PM +0200, Linus Walleij wrote:
+> >> This makes it possible for engines to implement slave transfers
+> >> to be done to/from a simple kmalloc():ed memory buffer and not
+> >> just from scatterlists.
+> >
+> > Why is this needed?  Drivers can just pass in a single-entry scatterlist
+> > to the existing API to achieve the same functionality, and a couple of
+> > them already do so.
+> 
+> Because of the overhead, simply. Especially if you want to trigger
+> many jobs after each other. (This is necessary in device/slave-DMA
+> since every transaction may fail...) It's not just constructing the
+> sg-headers and freeing them again and again,
 
-This change looks to be responsible for some confusing dmesg output. Here's some
-diff between v2.6.35 and current Linus tree:
+Note that the single length SG list can just be created on the stack.
+For example, sound/soc/sh/siu_pcm.c.
 
+> it's also list traversals
+> here and there since the driver must assume it can be a linked sglist and
+> then two other list traversals for each
+> dma_map_sg()/dma_unmap_sg() pair and ... yeah that's basically
+> it.
 
-< Early serial console at I/O port 0x3f8 (options '115200')
----
-> Early serial console at I/O port 0x1016 (options '115200')
+These list traversals of course run only one iteration for a single
+length SG list.
 
-Note that my serial port didn't move to a different address. Hex(3f8)
-== Decimal(1016)
+> 
+> And the number of extra code lines needed.
 
-I think those two printk formats should be using 'x' format rather than 'u' :-)
+It's about five lines, but yes, these are duplicated in drivers.
 
--Tony
+> 
+> Then it's something conceptwise of creating a list that you know
+> is just always one element that is just not elegant, like taking a queue
+> numer and standing in queue when there is only one customer but
+> hey, maybe it's just me.
+
+While I don't know about the overhead benefits, such an API would
+probably be nice to have to at least avoid duplicating the sglist
+building sequence.
+
+Since it can be easily implemented as a wrapper over the existing API
+with no change to exsting DMA drivers, why does a new cap need to be
+added?  Your suggestion below sounds like a better approach.
+
+> 
+> One way of achieving it for all present drivers is to wrap the passed
+> buffer in a single sglist and pass to the sglist function if the single
+> buffer call is not supported in the driver. Maybe it'd be better if I
+> coded up the patch like that so all driver can rely on this function
+> to be present?
+
+Rabin
