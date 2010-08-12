@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933924Ab0HLPpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:45:07 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:62256 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759992Ab0HLPmU (ORCPT
+	id S933898Ab0HLPpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:45:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33894 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933808Ab0HLPpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:42:20 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Thu, 12 Aug 2010 17:43:45 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv8 02/13] USB: gadget: g_ffs: fixed vendor and product ID
-In-reply-to: <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
-To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Message-id: <313ee18ecf53fb8f1c040656b697de869f0c0856.1281625724.git.m.nazarewicz@samsung.com>
-X-Mailer: git-send-email 1.7.1
-References: <cover.1281625724.git.m.nazarewicz@samsung.com>
- <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
+	Thu, 12 Aug 2010 11:45:42 -0400
+Date: Thu, 12 Aug 2010 17:45:39 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv8 11/13] usb gadget: don't save bind callback in struct
+	usb_composite_driver
+Message-ID: <20100812154539.GA12912@pengutronix.de>
+References: <313ee18ecf53fb8f1c040656b697de869f0c0856.1281625724.git.m.nazarewicz@samsung.com> <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com> <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com> <4addd8199cfd6a2aa582904cd6efa01bc77a5290.1281625724.git.m.nazarewicz@samsung.com> <9737a711d395932c8803511ba581722d46be5292.1281625724.git.m.nazarewicz@samsung.com> <f07e8ff5f36d5893e62764b9e372da0cc305a2b5.1281625724.git.m.nazarewicz@samsung.com> <550ddf8273d87cb418dd5716cbec906e74aa03d4.1281625724.git.m.nazarewicz@samsung.com> <ad117de19af4733f113c8631e53556cc308dbf06.1281625724.git.m.nazarewicz@samsung.com> <340f780f91de1b3ca17d0c29d87963205d172f4e.1281625724.git.m.nazarewicz@samsung.com> <cfb1102e8bd59822b76475d58f5e4f1ceadade50.1281625724.git.m.nazarewicz@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <cfb1102e8bd59822b76475d58f5e4f1ceadade50.1281625724.git.m.nazarewicz@samsung.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the vendor and product ID the gadget uses
-by replacing the temporary IDs that were used during
-development (which should never get into mainline) with
-proper IDs.
+On Thu, Aug 12, 2010 at 05:43:54PM +0200, Michal Nazarewicz wrote:
+> The bind function is most of the time only called at init time so there
+> is no need to save a pointer to it in the composite driver structure.
+> 
+> This fixes many section mismatches reported by modpost.
+> 
+> Signed-off-by: Michał Nazarewicz <m.nazarewicz@samsung.com>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Ack
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/usb/gadget/g_ffs.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Thanks
+Uwe
 
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index a9474f8..3c2f0a4 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -53,8 +53,8 @@ MODULE_AUTHOR("Michal Nazarewicz");
- MODULE_LICENSE("GPL");
- 
- 
--static unsigned short gfs_vendor_id    = 0x0525;	/* XXX NetChip */
--static unsigned short gfs_product_id   = 0xa4ac;	/* XXX */
-+static unsigned short gfs_vendor_id    = 0x1d6b;	/* Linux Foundation */
-+static unsigned short gfs_product_id   = 0x0105;	/* FunctionFS Gadget */
- 
- static struct usb_device_descriptor gfs_dev_desc = {
- 	.bLength		= sizeof gfs_dev_desc,
 -- 
-1.7.1
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
