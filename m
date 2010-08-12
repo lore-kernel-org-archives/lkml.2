@@ -1,81 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab0HLH6S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:58:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57010 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754369Ab0HLH6P (ORCPT
+	id S1759436Ab0HLICR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 04:02:17 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:36455 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932846Ab0HLICL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:58:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=VRLcRtLCTmG2jcp2Y1ace+WOuhCaKVFBhwfvQO8OjLpg37WOITjeIS3nVJ379IOYpP
-         FinzDNXUrZ9sLmx16l74fPqkoNaaDv2E0DyHAKtt2aiXCHhOXuIy0LLEnc0zNRbUsKQh
-         F/TgayO4UoCAhvrd28hhHHs+z3TsnjV1SwexE=
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <667152.31831.qm@web37607.mail.mud.yahoo.com>
-References: <667152.31831.qm@web37607.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Aug 2010 10:58:10 +0300
-Message-ID: <1281599890.4115.6.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Aug 2010 04:02:11 -0400
+Date: Thu, 12 Aug 2010 16:59:41 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
+Message-ID: <20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.00.1008110806070.673@router.home>
+ <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-12 at 00:22 -0700, Alex Dubov wrote: 
-> > Maximum I might need to clear page status bits, but I can
-> > do that later
-> > after I write the block.
-> > This won't be any performance impact because amount of bad
-> > pages
-> > shouldn't be normally greater that zero.
-> > (Otherwise there will be data loss...)
-> 
-> 
-> These things do degrade. I think, memsticks do write-verify, so bad blocks
-> will appear during write and can be marked as such without any data loss.
-> 
-> > 
-> > One interesting thing that I just want your opinion on is
-> > what to do
-> > with correctable errors.
-> > Common sense suggests to relocate the sector + and mark it
-> > bad.
-> > But I don't know how common such sectors are, and thus I
-> > could do more
-> > harm that good by marking too many sectors as bad.
-> 
-> I agree that number of writes to the media should be kept minimal.
-> So bad (in either way) blocks encountered should be logged, but not
-> touched, unless the error appears during an actual write/modify operation.
-> 
-> > 
-> > I hope I create ms_block.c soon, and put that old problem
-> > to the rest.
-> 
-> If you have time and desire, try to put a low level format option in - 
-> some function to erase all blocks, except the system ones.
-> 
-> > 
-> > As time permits I will also port your driver for xD portion
-> > of jMicron
-> > device (which I have).
-> 
-> By the way, I've got some errata for the newer JMicron chipsets. If they
-> have not contacted you yet, I'll forward it to you.
+Basically it is user's responsibility to take care of race condition
+related to direct I/O, but some events which are out of user's control
+(such as memory failure) can happen at any time. So we need to lock and
+set/clear PG_writeback flags in dierct I/O code to protect from data loss.
 
-Yeah, I didn't done anything at that direction, but eventually I get to
-it.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+---
+ fs/direct-io.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-
-Best regards,
-Maxim Levitsky
+diff --git a/fs/direct-io.c b/fs/direct-io.c
+index 7600aac..0d0810d 100644
+--- a/fs/direct-io.c
++++ b/fs/direct-io.c
+@@ -439,7 +439,10 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
+ 			struct page *page = bvec[page_no].bv_page;
+ 
+ 			if (dio->rw == READ && !PageCompound(page))
+-				set_page_dirty_lock(page);
++				set_page_dirty(page);
++			if (dio->rw & WRITE)
++				end_page_writeback(page);
++			unlock_page(page);
+ 			page_cache_release(page);
+ 		}
+ 		bio_put(bio);
+@@ -702,11 +705,14 @@ submit_page_section(struct dio *dio, struct page *page,
+ {
+ 	int ret = 0;
+ 
++	lock_page(page);
++
+ 	if (dio->rw & WRITE) {
+ 		/*
+ 		 * Read accounting is performed in submit_bio()
+ 		 */
+ 		task_io_account_write(len);
++		set_page_writeback(page);
+ 	}
+ 
+ 	/*
+-- 
+1.7.2.1
 
