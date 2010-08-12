@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760025Ab0HLMvO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 08:51:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53744 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879Ab0HLMvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 08:51:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=CznToQuu0KBcgqZNB3Td/f3nhQOk7M59fS1kKsmZEaYwJBdo9huBCEpoiUBmLZ7GuV
-         w2gLgX+ers9lajZnBtm6ok3MmyoYhYKqz6aFygYUIJVyhp14tlA3IaabzPF4sWwrw8Su
-         dJFEM7LxcXGD/oCZAqaDamYEpJJT1XiWo38LY=
-Date: Thu, 12 Aug 2010 15:55:51 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: BUG: using smp_processor_id() in preemptible [00000000] code
-Message-ID: <20100812125551.GC12274@swordfish.minsk.epam.com>
+	id S1760022Ab0HLMxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 08:53:24 -0400
+Received: from THUNK.ORG ([69.25.196.29]:55117 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759907Ab0HLMxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 08:53:21 -0400
+Date: Thu, 12 Aug 2010 08:52:49 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100812125248.GA2763@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Felipe Contreras <felipe.contreras@gmail.com>,
+	Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+	Brian Swetland <swetland@google.com>,
+	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+	arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+	florian@mickler.org, rjw@sisk.pl, peterz@infradead.org,
+	tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+	James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+	galibert@pobox.com, dipankar@in.ibm.com
+References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
+ <AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5I6of5zJg18YgZEa"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Aug 12, 2010 at 03:28:01PM +0300, Felipe Contreras wrote:
+> 
+> The question is why are we adding a user-space API that:
+>  1) no user-space beside Android has expresses interest in implementing
+>  2) is dubious whether the benefits are worth the pain for non-Android
+> user-space
+>  3) will become less and less attractive as dynamic PM gets closer to
+> the sweet-spot, and then surpass it
+>  4) Android can keep in a separate tree until it's clear in the linux
+> community that it's useful (if it ever happens)
 
---5I6of5zJg18YgZEa
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+So, Felipe,
 
-Oops, I'm sorry for the typo in my first mail - m/though/thought/g.
+Do you believe you speak for all of LKML?
 
+Are you willing to tell ZDNet and the Slashdot fanboys that it's OK
+for Suspend blockers to live in a separate tree, and it's not a case
+of OMG!  Google is forking the kernel?
 
-	Sergey
+If you could speak out a passionately on those forums as you have
+here, that would be great.
 
---5I6of5zJg18YgZEa
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkxj71cACgkQfKHnntdSXjSjwgQAlqLVetSoSCFwck0vBHzo4DYC
-rE+kDnnEFI2RWY8AplO1UE5oYOHjZ5FEK+72gUQ70AGq0pJgHLWNyGDooh0f5fT+
-EFKIoFpqMzAkFHG09rLtbQQ/ndubS0nunDUvFOzqe3dhfXGIV+KSBMrc6t2YCb0z
-cG9wWq5M6A/vyzB1+GA=
-=ePkr
------END PGP SIGNATURE-----
-
---5I6of5zJg18YgZEa--
+						- Ted
