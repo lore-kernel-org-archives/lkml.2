@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760896Ab0HLTtq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 15:49:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56027 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754412Ab0HLTto convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 15:49:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <s5hvd7ftyl7.wl%tiwai@suse.de>
-References: <s5hlj8dwrd7.wl%tiwai@suse.de> <AANLkTi=2N_P=zAM73a=dOBX6w0OzsgJi3TqRDu0LyZtB@mail.gmail.com>
- <s5hvd7ftyl7.wl%tiwai@suse.de>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Aug 2010 12:49:08 -0700
-Message-ID: <AANLkTi=kc8FUJuGCTOsAObLmLhKKEUXbW8e0s_b74h+=@mail.gmail.com>
-Subject: Re: [GIT PULL] sound update (#2) for 2.6.36
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1760900Ab0HLTwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 15:52:31 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12488 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754398Ab0HLTw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 15:52:28 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6072"; a="50815857"
+X-IronPort-AV: E=Sophos;i="4.55,359,1278313200"; 
+   d="scan'208";a="3500498"
+Subject: [GIT PULL] MSM mmc_sdcc updates for 2.6.36
+From: Daniel Walker <c_dwalke@quicinc.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Aug 2010 12:52:17 -0700
+Message-ID: <1281642737.26041.23.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 12:33 PM, Takashi Iwai <tiwai@suse.de> wrote:
->
-> If this happens after the pull of my last request, it's possibly the
-> commit eb541337b7a43822fce7d0c9d967ee149b2d9a96:
->    ALSA: hda - Make converter setups sticky
->
-> Could you try to revert it?
 
-I've done some more testing. If I 'cat' something directly to
-/dev/audio, I do get sound. So I wonder whether it's some pulseaudio
-problem, and I'll double-check that it's really the kernel (and not
-the result of a "yum update", for example)
+Hi Linus,
 
-                            Linus
+I know another MSM pull request ;( .. I'll merge all my trees for the
+next merge window, which I planned to do this time but I had some issues
+that prevented it.
+
+Anyway, here are a few trivial fixes for the MSM mmc_sdcc driver.
+Nothing at all earth shattering..
+
+Please pull, and thanks for all the hard work!
+
+Daniel
+
+The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
+
+  Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
+
+are available in the git repository at:
+  git://codeaurora.org/quic/kernel/dwalker/linux-msm.git msm-mmc_sdcc
+
+Daniel Walker (1):
+      mmc: msm: fix up build breakage on !PM
+
+Sahitya Tummala (2):
+      mmc: msm_sdcc: Compile the driver for msm7x30
+      mmc: msm_sdcc: Rename config MMC_MSM7X00A to MMC_MSM
+
+ drivers/mmc/host/Kconfig    |    9 ++++---
+ drivers/mmc/host/Makefile   |    2 +-
+ drivers/mmc/host/msm_sdcc.c |   51 +++++++++++++++++++-----------------------
+ 3 files changed, 29 insertions(+), 33 deletions(-)
+
+
