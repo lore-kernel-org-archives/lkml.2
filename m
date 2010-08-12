@@ -1,77 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760703Ab0HLV1e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:27:34 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58201 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882Ab0HLV1d convert rfc822-to-8bit (ORCPT
+	id S1760723Ab0HLV3E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:29:04 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:54526 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755006Ab0HLV3B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:27:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=tiI3oMcuKmjnXSXgI8gu90xP5xZhC7wDGbAVJP8h5mVgZxSFrSA5ienYANiCEbsTA0
-         S247q0pSwWAwEzWmvbcFxvjZygy1dXgoqhfxWQGTTKse30whrRpBx0XtyypGn+iaX/4+
-         31ZtvaA9HAqTULL84taGI5zjZVeCCVW3uiY0w=
+	Thu, 12 Aug 2010 17:29:01 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=u+3ByHNLAg5PaAgLdE4Pv7t2XM5mtZfUbMX6Qt2Uza1ydlt2Z/DmhiN7ub+FC+ptg
+	KoMZPkqoNiwoyEAgNgezw==
 MIME-Version: 1.0
-In-Reply-To: <201008111659.o7BGxn4g029524@hera.kernel.org>
-References: <201008111659.o7BGxn4g029524@hera.kernel.org>
-Date: Thu, 12 Aug 2010 23:27:32 +0200
-X-Google-Sender-Auth: exCa-xoUCLjgph_4nPNvIuYByOE
-Message-ID: <AANLkTin7+UPYJ5tsyrbUhxcEfbHLMVJQOSrV1_3zQ0V3@mail.gmail.com>
-Subject: Re: rtc/m41t80: use rtc_valid_tm() to check returned tm
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Wan ZongShun <mcuos.com@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <1281635958-21177-1-git-send-email-tzanussi@gmail.com>
+References: <1281635958-21177-1-git-send-email-tzanussi@gmail.com>
+Date: Thu, 12 Aug 2010 23:28:44 +0200
+Message-ID: <AANLkTi=rgu02EB1GtaAb6bk-S8XssinTnaqpiZQVpVRQ@mail.gmail.com>
+Subject: Re: [PATCH] perf trace: get rid of the hard-coded paths in the report scripts
+From: Stephane Eranian <eranian@google.com>
+To: Tom Zanussi <tzanussi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, acme@infradead.org, mingo@elte.hu,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 18:59, Linux Kernel Mailing List
-<linux-kernel@vger.kernel.org> wrote:
-> Gitweb:     http://git.kernel.org/linus/b485fe5ea1008db02abff9ef15be4f31b52df4f7
-
->    rtc/m41t80: use rtc_valid_tm() to check returned tm
+On Thu, Aug 12, 2010 at 7:59 PM, Tom Zanussi <tzanussi@gmail.com> wrote:
+> The perf trace report shell scripts hard-code the exec path of the
+> scripts into their command-lines, which doesn't work if perf has been
+> installed somewhere else.
 >
->    Use rtc_valid_tm() to check returned struct rtc_time *tm - it can avoid
->    returning wrong tm value.
+> Instead, perf trace should create the paths at run-time.  This patch
+> does that and removes the hard-coded paths from all the report scripts.
+>
+> v2 changes: The first version inadvertantly caused scripts run from
+> outside the perf exec path to fail e.g. 'perf trace -s test.py'.  The
+> fix is to try the script name without the exec path first, then the
+> version using the exec path, which restores the expected behavior.
+>
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+> ---
+>  tools/perf/builtin-trace.c                         |   22 ++++++++++++++++---
+>  tools/perf/scripts/perl/bin/failed-syscalls-report |    2 +-
+>  tools/perf/scripts/perl/bin/rw-by-file-report      |    2 +-
+>  tools/perf/scripts/perl/bin/rw-by-pid-report       |    2 +-
+>  tools/perf/scripts/perl/bin/rwtop-report           |    2 +-
+>  tools/perf/scripts/perl/bin/wakeup-latency-report  |    2 +-
+>  tools/perf/scripts/perl/bin/workqueue-stats-report |    2 +-
+>  .../python/bin/failed-syscalls-by-pid-report       |    2 +-
+>  .../perf/scripts/python/bin/sched-migration-report |    2 +-
+>  tools/perf/scripts/python/bin/sctop-report         |    2 +-
+>  .../python/bin/syscall-counts-by-pid-report        |    2 +-
+>  .../perf/scripts/python/bin/syscall-counts-report  |    3 +-
+>  12 files changed, 30 insertions(+), 15 deletions(-)
+>
+> diff --git a/tools/perf/builtin-trace.c b/tools/perf/builtin-trace.c
+> index 40a6a29..88a1883 100644
+> --- a/tools/perf/builtin-trace.c
+> +++ b/tools/perf/builtin-trace.c
+> @@ -573,6 +573,7 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+>        const char *suffix = NULL;
+>        const char **__argv;
+>        char *script_path;
+> +       struct stat perf_stat;
+>        int i, err;
+>
+>        if (argc >= 2 && strncmp(argv[1], "rec", strlen("rec")) == 0) {
+> @@ -689,8 +690,6 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+>                return -EINVAL;
+>
+>        if (generate_script_lang) {
+> -               struct stat perf_stat;
+> -
+>                int input = open(input_name, O_RDONLY);
+>                if (input < 0) {
+>                        perror("failed to open file");
+> @@ -719,10 +718,25 @@ int cmd_trace(int argc, const char **argv, const char *prefix __used)
+>        }
+>
+>        if (script_name) {
+> -               err = scripting_ops->start_script(script_name, argc, argv);
+> +               char script_exec_path[MAXPATHLEN];
+> +
+> +               snprintf(script_exec_path, MAXPATHLEN, "%s", script_name);
+> +               err = stat(script_exec_path, &perf_stat);
 
-> diff --git a/drivers/rtc/rtc-m41t80.c b/drivers/rtc/rtc-m41t80.c
-> index 6dc4e62..66377f3 100644
-> --- a/drivers/rtc/rtc-m41t80.c
-> +++ b/drivers/rtc/rtc-m41t80.c
+Why not simply use access() instead of stat() here?
 
-> @@ -364,7 +364,7 @@ static int m41t80_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *t)
->        t->time.tm_isdst = -1;
->        t->enabled = !!(reg[M41T80_REG_ALARM_MON] & M41T80_ALMON_AFE);
->        t->pending = !!(reg[M41T80_REG_FLAGS] & M41T80_FLAGS_AF);
-> -       return 0;
-> +       return rtc_valid_tm(t);
-
-warning: passing argument 1 of ‘rtc_valid_tm’ from incompatible pointer type
-
-`t' is of type `struct rtc_wkalrm *', not `struct rtc_time *'.
-Probably the intention was:
-
-        return rtc_valid_tm(&t->time);
-
-??
-
->  }
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> +               if (err < 0) {
+> +                       snprintf(script_exec_path, MAXPATHLEN, "%s/scripts/%s",
+> +                                perf_exec_path(), script_name);
+> +                       err = stat(script_exec_path, &perf_stat);
+And here?
