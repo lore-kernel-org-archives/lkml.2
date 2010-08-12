@@ -1,79 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760607Ab0HLUvM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 16:51:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2699 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753970Ab0HLUvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 16:51:11 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Andrew Morton <akpm@linuxfoundation.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-kernel@vger.kernel.org,
-        btrfs-devel <btrfs-devel@oss.oracle.com>
-Subject: [patch] O_DIRECT: fix the splitting up of contiguous I/O
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 12 Aug 2010 16:50:59 -0400
-Message-ID: <x49vd7f368c.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1760460Ab0HLUxZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:53:25 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:51862 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753970Ab0HLUxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 16:53:24 -0400
+Subject: Re: Problem with commit deda2e81961e96be4f2c09328baca4710a2fd1a0
+From: john stultz <johnstul@us.ibm.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C64571F.6000606@lwfinger.net>
+References: <4C64571F.6000606@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Aug 2010 13:52:48 -0700
+Message-ID: <1281646368.4002.66.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2010-08-12 at 15:18 -0500, Larry Finger wrote:
+> Guys,
+> 
+> With the above commit, building an i386 version of the kernel results in the
+> following from the build:
+> 
+> kernel/built-in.o: In function `logarithmic_accumulation':
+> /home/finger/linux-realtek/kernel/time/timekeeping.c:715: undefined reference to
+> `__umoddi3'
+> /home/finger/linux-realtek/kernel/time/timekeeping.c:715: undefined reference to
+> `__udivdi3'
+> make: *** [.tmp_vmlinux1] Error 1
+> 
+> Reverting the patch allows the system to build correctly.
 
-commit c2c6ca4 (direct-io: do not merge logically non-contiguous
-requests) introduced a bug whereby all O_DIRECT I/Os were submitted a
-page at a time to the block layer.  The problem is that the code
-expected dio->block_in_file to correspond to the current page in the
-dio.  In fact, it corresponds to the previous page submitted via
-submit_page_section.  This was purely an oversight, as the
-dio->cur_page_fs_offset field was introduced for just this purpose.
-This patch simply uses the correct variable when calculating whether
-there is a mismatch between contiguous logical blocks and contiguous
-physical blocks (as described in the comments).
+Ugh. I'm surprised it picks *this* loop to optimize instead of the
+similar one right above. I'm guessing its the local raw_nsecs value, but
+whatever.  Also surprised Jason's testing didn't hit this issue, but its
+probably a gcc version thing.
 
-I also switched the if conditional following this check to an else if,
-to ensure that we never call dio_bio_submit twice for the same dio (in
-theory, this should not happen, anyway).
+Regardless, I clearly need to give i386 more love in my testing.
+My profuse apologies.
 
-I've tested this by running blktrace and verifying that a 64KB I/O was
-submitted as a single I/O.  I also ran the patched kernel through
-xfstests' aio tests using xfs, ext4 (with 1k and 4k block sizes) and
-btrfs and verified that there were no regressions as compared to an
-unpatched kernel.
+As suggested by Linus, here's the do_div explicit version. It builds ok
+on i386 & x86_64, but I have not yet tested it. 
 
-Comments, as always, are welcome.
+Larry, Jason: Could you verify it works for you (and avoids the original
+issue)?
 
-Cheers,
-Jeff
+thanks
+-john
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-Acked-by: Josef Bacik <jbacik@redhat.com>
 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 7600aac..445901c 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -632,7 +632,7 @@ static int dio_send_cur_page(struct dio *dio)
- 	int ret = 0;
- 
- 	if (dio->bio) {
--		loff_t cur_offset = dio->block_in_file << dio->blkbits;
-+		loff_t cur_offset = dio->cur_page_fs_offset;
- 		loff_t bio_next_offset = dio->logical_offset_in_bio +
- 			dio->bio->bi_size;
- 
-@@ -657,7 +657,7 @@ static int dio_send_cur_page(struct dio *dio)
- 		 * Submit now if the underlying fs is about to perform a
- 		 * metadata read
- 		 */
--		if (dio->boundary)
-+		else if (dio->boundary)
- 			dio_bio_submit(dio);
+
+>From 70b106aaaa1de81a635bbd7ea6edc244ba098d7e Mon Sep 17 00:00:00 2001
+From: John Stultz <johnstul@us.ibm.com>
+Date: Thu, 12 Aug 2010 13:45:28 -0700
+Subject: [PATCH] time: Workaround gcc loop optimization that causes 64bit div errors
+
+Some versions of gcc apparently aggressively optimize the raw time
+accumulation loop, replacing it with a divide.
+
+On 32bit systems, this causes the following link errors:
+	undefined reference to `__umoddi3'
+	undefined reference to `__udivdi3'
+
+This patch replaces the accumulation loop with a do_div, as suggested
+by Linus.
+
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+---
+ kernel/time/timekeeping.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index dc54b72..d0ef5aa 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -710,9 +710,10 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 	/* Accumulate raw time */
+ 	raw_nsecs = timekeeper.raw_interval << shift;
+ 	raw_nsecs += raw_time.tv_nsec;
+-	while (raw_nsecs >= NSEC_PER_SEC) {
+-		raw_nsecs -= NSEC_PER_SEC;
+-		raw_time.tv_sec++;
++	if (raw_nsecs >= NSEC_PER_SEC) {
++		u64 raw_secs = raw_nsecs;
++		raw_nsecs = do_div(raw_secs, NSEC_PER_SEC);
++		raw_time.tv_sec += raw_secs;
  	}
+ 	raw_time.tv_nsec = raw_nsecs;
  
+-- 
+1.6.0.4
+
+
 
