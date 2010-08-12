@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932898Ab0HLAGl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:06:41 -0400
-Received: from kroah.org ([198.145.64.141]:60385 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932837Ab0HLAEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932850Ab0HLAEq (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 11 Aug 2010 20:04:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:28 2010
-Message-Id: <20100812000128.035534008@clark.site>
+Received: from kroah.org ([198.145.64.141]:60245 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759538Ab0HLAEV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
+Message-Id: <20100812000126.100929823@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:01:07 -0700
+Date: Wed, 11 Aug 2010 17:00:46 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Brian King <brking@linux.vnet.ibm.com>,
-        James Bottomley <James.Bottomley@suse.de>
-Subject: [52/54] [SCSI] ibmvfc: Fix command completion handling
+        Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        David Brownell <david-b@pacbell.net>
+Subject: [31/54] USB: EHCI: remove PCI assumption
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,73 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian King <brking@linux.vnet.ibm.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit f5832fa2f8dc39adcf3ae348d2d6383163235e79 upstream.
+commit ae68a83bdc1971cb02fefc7a686ba6d077065e71 upstream.
 
-Commands which are completed by the VIOS are placed on a CRQ
-in kernel memory for the ibmvfc driver to process. Each CRQ
-entry is 16 bytes. The ibmvfc driver reads the first 8 bytes
-to check if the entry is valid, then reads the next 8 bytes to get
-the handle, which is a pointer the completed command. This fixes
-an issue seen on Power 7 where the processor reordered the
-loads from memory, resulting in processing command completion
-with a stale handle. This could result in command timeouts,
-and also early completion of commands.
+This patch (as1405) fixes a small bug in ehci-hcd's isochronous
+scheduler.  Not all EHCI controllers are PCI, and the code shouldn't
+assume that they are.  Instead, introduce a special flag for
+controllers which need to delay iso scheduling for full-speed devices
+beyond the scheduling threshold.
 
-Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: David Brownell <david-b@pacbell.net>
+Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/ibmvscsi/ibmvfc.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/usb/host/ehci-pci.c   |    1 +
+ drivers/usb/host/ehci-sched.c |   10 ++++------
+ drivers/usb/host/ehci.h       |    1 +
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/scsi/ibmvscsi/ibmvfc.c
-+++ b/drivers/scsi/ibmvscsi/ibmvfc.c
-@@ -3013,6 +3013,7 @@ static struct ibmvfc_async_crq *ibmvfc_n
- 	if (crq->valid & 0x80) {
- 		if (++async_crq->cur == async_crq->size)
- 			async_crq->cur = 0;
-+		rmb();
- 	} else
- 		crq = NULL;
+--- a/drivers/usb/host/ehci-pci.c
++++ b/drivers/usb/host/ehci-pci.c
+@@ -111,6 +111,7 @@ static int ehci_pci_setup(struct usb_hcd
+ 	switch (pdev->vendor) {
+ 	case PCI_VENDOR_ID_INTEL:
+ 		ehci->need_io_watchdog = 0;
++		ehci->fs_i_thresh = 1;
+ 		if (pdev->device == 0x27cc) {
+ 			ehci->broken_periodic = 1;
+ 			ehci_info(ehci, "using broken periodic workaround\n");
+--- a/drivers/usb/host/ehci-sched.c
++++ b/drivers/usb/host/ehci-sched.c
+@@ -1400,7 +1400,6 @@ iso_stream_schedule (
+ 	int			status;
+ 	unsigned		mod = ehci->periodic_size << 3;
+ 	struct ehci_iso_sched	*sched = urb->hcpriv;
+-	struct pci_dev		*pdev;
  
-@@ -3035,6 +3036,7 @@ static struct ibmvfc_crq *ibmvfc_next_cr
- 	if (crq->valid & 0x80) {
- 		if (++queue->cur == queue->size)
- 			queue->cur = 0;
-+		rmb();
- 	} else
- 		crq = NULL;
+ 	if (sched->span > (mod - SCHEDULE_SLOP)) {
+ 		ehci_dbg (ehci, "iso request %p too long\n", urb);
+@@ -1427,15 +1426,14 @@ iso_stream_schedule (
+ 	 * slot in the schedule, implicitly assuming URB_ISO_ASAP.
+ 	 */
+ 	if (likely (!list_empty (&stream->td_list))) {
+-		pdev = to_pci_dev(ehci_to_hcd(ehci)->self.controller);
+ 		start = stream->next_uframe;
  
-@@ -3083,12 +3085,14 @@ static void ibmvfc_tasklet(void *data)
- 		while ((async = ibmvfc_next_async_crq(vhost)) != NULL) {
- 			ibmvfc_handle_async(async, vhost);
- 			async->valid = 0;
-+			wmb();
- 		}
+ 		/* For high speed devices, allow scheduling within the
+-		 * isochronous scheduling threshold.  For full speed devices,
+-		 * don't. (Work around for Intel ICH9 bug.)
++		 * isochronous scheduling threshold.  For full speed devices
++		 * and Intel PCI-based controllers, don't (work around for
++		 * Intel ICH9 bug).
+ 		 */
+-		if (!stream->highspeed &&
+-				pdev->vendor == PCI_VENDOR_ID_INTEL)
++		if (!stream->highspeed && ehci->fs_i_thresh)
+ 			next = now + ehci->i_thresh;
+ 		else
+ 			next = now;
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -130,6 +130,7 @@ struct ehci_hcd {			/* one per controlle
+ 	unsigned		has_amcc_usb23:1;
+ 	unsigned		need_io_watchdog:1;
+ 	unsigned		broken_periodic:1;
++	unsigned		fs_i_thresh:1;	/* Intel iso scheduling */
  
- 		/* Pull all the valid messages off the CRQ */
- 		while ((crq = ibmvfc_next_crq(vhost)) != NULL) {
- 			ibmvfc_handle_crq(crq, vhost);
- 			crq->valid = 0;
-+			wmb();
- 		}
- 
- 		vio_enable_interrupts(vdev);
-@@ -3096,10 +3100,12 @@ static void ibmvfc_tasklet(void *data)
- 			vio_disable_interrupts(vdev);
- 			ibmvfc_handle_async(async, vhost);
- 			async->valid = 0;
-+			wmb();
- 		} else if ((crq = ibmvfc_next_crq(vhost)) != NULL) {
- 			vio_disable_interrupts(vdev);
- 			ibmvfc_handle_crq(crq, vhost);
- 			crq->valid = 0;
-+			wmb();
- 		} else
- 			done = 1;
- 	}
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
 
 
