@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760814Ab0HLV3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:29:31 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:54695 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760680Ab0HLV33 (ORCPT
+	id S1760714Ab0HLVam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:30:42 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:53375 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148Ab0HLVal convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:29:29 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
-	b=sqha0/V3HqK8+6KIJPAUPKFvd3hPmJhkfXBx+3hGqFrVvc7XvPefctQzbsXegzfjB
-	WReJOK3cFwEkAXzD07NRQ==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] x86: Wrong /proc/cpuinfo core id on AMD fam_f model_9
-Date: Thu, 12 Aug 2010 14:28:49 -0700
-Message-Id: <1281648529-29678-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.1
-X-System-Of-Record: true
+	Thu, 12 Aug 2010 17:30:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=P14vFvbVRHErOrlq0/mv6Avs0bbjPIE4ZKPGkO5dTIMXiZOHPDyt2fuYuFrS1Gs0v5
+         qXIRgJMM6DZ6ImS42v5u4sQXx/6UMdumJqtepmLJvpYRv4QcIYJG+8smlDWwGckhfomd
+         zDubi0Qn9MRtk2rTQR8gpB7Hzo/cBk/zs5FGE=
+MIME-Version: 1.0
+In-Reply-To: <1281066910.2168.10.camel@pasglop>
+References: <1281066910.2168.10.camel@pasglop>
+Date: Thu, 12 Aug 2010 23:30:40 +0200
+X-Google-Sender-Auth: wHR2swHOQpw3-haZVWIJ8ovmXOU
+Message-ID: <AANLkTinmhGPHQDX0gmnY9j+K61abgnukw2DrTBG3EUuJ@mail.gmail.com>
+Subject: Re: [PATCH] drm: Fix support for PCI domains
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Dave Airlie <airlied@gmail.com>, dri-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4a376ec3a2599c02207cd4cbd5dbf73783548463 changes cpuinfo cpu_core_id
-from an unique id in a physical package to core id within a node. And it
-does not change phys_proc_id or booted_cores to reflect this new topology.
+On Fri, Aug 6, 2010 at 05:55, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> (For some reason I thought that went in ages ago ...)
+>
+> This fixes support for PCI domains in what should hopefully be a backward
+> compatible way along with a change to libdrm.
+>
+> When the interface version is set to 1.4, we assume userspace understands
+> domains and the world is at peace. We thus pass proper domain numbers
+> instead of 0 to userspace.
+>
+> The newer libdrm will then try 1.4 first, and fallback to 1.1, along with
+> ignoring domains in the later case (well, except on alpha of course)
+>
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+>  drivers/gpu/drm/drm_ioctl.c |    1 +
+>  include/drm/drmP.h          |   18 +++++++++++++-----
+>  include/drm/drm_core.h      |    2 +-
+>  3 files changed, 15 insertions(+), 6 deletions(-)
 
-This breaks the user view of topology in /proc/cpuinfo.
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index c1b9871..6d4bad5 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -1071,11 +1071,19 @@ static __inline__ int drm_core_check_feature(struct drm_device *dev,
+>        return ((dev->driver->driver_features & feature) ? 1 : 0);
+>  }
+>
+> -#ifdef __alpha__
+> -#define drm_get_pci_domain(dev) dev->hose->index
+> -#else
+> -#define drm_get_pci_domain(dev) 0
+> -#endif
+> +static inline int drm_get_pci_domain(struct drm_device *dev)
+> +{
+> +#ifndef __alpha__
+> +       /* For historical reasons, drm_get_pci_domain() is busticated
+> +        * on most archs and has to remain so for userspace interface
+> +        * < 1.4, except on alpha which was right from the beginning
+> +        */
+> +       if (dev->if_version < 0x10004)
+> +               return 0;
+> +#endif /* __alpha__ */
+> +
+> +       return pci_domain_nr(dev->pdev->bus);
 
-With commit 4a376ec /proc/cpuinfo output (for one package) looks something like
-processor: 0..11
-physical id: 0..0
-core id: 0..5 0..5
-siblings: 12
-cpu cores: 12
+error: implicit declaration of function ‘pci_domain_nr’
 
-That is, there are processors with same "physical id" and same "core id" (which
-are not SMT siblings). As I understand, if /proc/cpuinfo says there are 12
-"cpu cores" per package, there should be 12 unique core ids in that package.
-And same "physical id" and "core id" is supposed to indicate SMT siblings.
+on m68k without PCI.
 
-The change below reverts the cpu_core_id part of that commit and
-/proc/cpuinfo has
-processor: 0..11
-physical id: 0..0
-core id: 0..11
-siblings: 12
-cpu cores: 12
+Gr{oetje,eeting}s,
 
+                        Geert
 
-Also, if the intention of the original change was to export two node info,
-then changing just the core id is not enough. User has no way to determine
-which of these 6 cores out of 12 belong to same node by looking at
-/proc/cpuinfo output. Both "physical id" and "cpu cores" has to change
-to reflect that or one more node id needs to be added (I didn't say that :))
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
----
- arch/x86/kernel/cpu/amd.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index e485825..80d3d80 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -281,9 +281,6 @@ static void __cpuinit amd_fixup_dcm(struct cpuinfo_x86 *c)
- 
- 	/* store NodeID, use llc_shared_map to store sibling info */
- 	per_cpu(cpu_llc_id, cpu) = value & 7;
--
--	/* fixup core id to be in range from 0 to (cores_per_node - 1) */
--	c->cpu_core_id = c->cpu_core_id % cores_per_node;
- }
- #endif
- 
--- 
-1.7.1
-
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
