@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932897Ab0HLUHl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 16:07:41 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:34656 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754832Ab0HLUHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 16:07:40 -0400
-Subject: Re: [PATCH 0/8] v5 De-couple sysfs memory directories from memory
- sections
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg KH <greg@kroah.com>
-In-Reply-To: <20100812120816.e97d8b9e.akpm@linux-foundation.org>
-References: <4C60407C.2080608@austin.ibm.com>
-	 <20100812120816.e97d8b9e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Thu, 12 Aug 2010 13:07:03 -0700
-Message-ID: <1281643623.6772.78.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S933696Ab0HLUKT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:10:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:39337 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab0HLUKR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 16:10:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=o0PwybjnJqep1tEG5jSr/l25gH+jg7+lsHZGW1sR0s4w+X45jv2XHj6TH0M7V6qWAl
+         a/x3WJdpnQJhaAkqEhWnvwC7QyzR4pu/aoYz9E2U5aQXmpd6cW0D8NeBPiYcOMzTXcE9
+         sPuNhtdzLSDTlhGqk1YcVmUuidrdQyaDKbHfs=
+MIME-Version: 1.0
+In-Reply-To: <201008122200.05598.thomas@m3y3r.de>
+References: <201008122200.05598.thomas@m3y3r.de>
+Date: Thu, 12 Aug 2010 23:10:15 +0300
+X-Google-Sender-Auth: PlDWiSzWSQfVpH-bzXZD-vkPYE0
+Message-ID: <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com>
+Subject: Re: 2.6.36: Sound stop working
+From: Pekka Enberg <penberg@kernel.org>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-12 at 12:08 -0700, Andrew Morton wrote:
-> > This set of patches allows for each directory created in sysfs
-> > to cover more than one memory section.  The default behavior for
-> > sysfs directory creation is the same, in that each directory
-> > represents a single memory section.  A new file 'end_phys_index'
-> > in each directory contains the physical_id of the last memory
-> > section covered by the directory so that users can easily
-> > determine the memory section range of a directory.
-> 
-> What you're proposing appears to be a non-back-compatible
-> userspace-visible change.  This is a big issue! 
+On Thu, Aug 12, 2010 at 11:00 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> My sound card stop to work since a few commits. I tried to bisect it and ended up with this:
+>
+> There are only 'skip'ped commits left to test.
+> The first bad commit could be any of:
+> 3bcf3860a4ff9bbc522820b4b765e65e4deceb3e
+> c1e5c954020e123d30b4abf4038ce501861bcf9f
+> We cannot bisect more!
+>
+> any ideas what to do now?
 
-Nathan, one thought to get around this at the moment would be to bump up
-the size that we export in /sys/devices/system/memory/block_size_bytes.
-I think you have already done most of the hard work to accomplish
-this.  
-
-You can still add the end_phys_index stuff.  But, for now, it would
-always be equal to start_phys_index.
-
--- Dave
-
+Takashi, maybe this is related to Linus' problem?
