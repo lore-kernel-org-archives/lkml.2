@@ -1,91 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760444Ab0HLRo0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:44:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:22683 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758755Ab0HLRoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:44:21 -0400
-Date: Thu, 12 Aug 2010 10:43:19 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Jan Kara <jack@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Ocfs2-devel] [PATCH 2/3] JBD2: Allow feature checks before
- journal recovery
-Message-ID: <20100812174318.GD6561@mail.oracle.com>
-Mail-Followup-To: Jan Kara <jack@suse.cz>, Ted Ts'o <tytso@mit.edu>,
-	"Patrick J. LoPresti" <lopresti@gmail.com>,
-	ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <874ofr2myq.fsf@patl.com>
- <8739vb2mxr.fsf@patl.com>
+	id S1760438Ab0HLRqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:46:11 -0400
+Received: from smtp2.it.da.ut.ee ([193.40.5.67]:50286 "EHLO smtp2.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947Ab0HLRqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 13:46:10 -0400
+Date: Thu, 12 Aug 2010 20:46:07 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+cc: linux-media@vger.kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fix v4l2-ctrls compilation
+Message-ID: <alpine.SOC.1.00.1008122042270.24365@math.ut.ee>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8739vb2mxr.fsf@patl.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 03:04:16PM -0700, Patrick J. LoPresti wrote:
-> Before we start accessing a huge (> 16 TiB) OCFS2 volume, we need to
-> confirm that its journal supports 64-bit offsets.  In particular, we
-> need to check the journal's feature bits before recovering the journal.
-> 
-> This is not possible with JBD2 at present, because the journal
-> superblock (where the feature bits reside) is not loaded from disk until
-> the journal is recovered.
-> 
-> This patch loads the journal superblock in
-> jbd2_journal_check_used_features() if it has not already been loaded,
-> allowing us to check the feature bits before journal recovery.
-> 
-> Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+Current git has broken v4l2-ctrls compilation - kzalloc et al are 
+missing prototypes. Fix it by including linux/slab.h that contains the 
+definitions.
 
-Dear jbd2 developers,
-	I've pushed this patch to the merge-window branch of ocfs2.git.
-I'm ready to send it to Linus, but I need your OK.
+Signed-off-by: Meelis Roos <mroos@linux.ee>
 
-Joel
-
-> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
-> index bc2ff59..5cfd8d4 100644
-> --- a/fs/jbd2/journal.c
-> +++ b/fs/jbd2/journal.c
-> @@ -1365,6 +1365,10 @@ int jbd2_journal_check_used_features (journal_t *journal, unsigned long compat,
->  
->  	if (!compat && !ro && !incompat)
->  		return 1;
-> +	/* Load journal superblock if it is not loaded yet. */
-> +	if (journal->j_format_version == 0 &&
-> +	    journal_get_superblock(journal) != 0)
-> +		return 0;
->  	if (journal->j_format_version == 1)
->  		return 0;
->  
-> 
-> _______________________________________________
-> Ocfs2-devel mailing list
-> Ocfs2-devel@oss.oracle.com
-> http://oss.oracle.com/mailman/listinfo/ocfs2-devel
+diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
+index 84c1a53..ea8d32c 100644
+--- a/drivers/media/video/v4l2-ctrls.c
++++ b/drivers/media/video/v4l2-ctrls.c
+@@ -19,6 +19,7 @@
+  */
+ 
+ #include <linux/ctype.h>
++#include <linux/slab.h>
+ #include <media/v4l2-ioctl.h>
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-ctrls.h>
 
 -- 
-
- Brain: I shall pollute the water supply with this DNAdefibuliser,
-        turning everyone into mindless slaves.
- Pinky: What about the people who drink bottled water?
- Brain: Pinky, people who pay 5 dollars for a bottle of water are
-        already mindless slaves.
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Meelis Roos <mroos@linux.ee>
