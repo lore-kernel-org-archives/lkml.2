@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760883Ab0HLTkS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 15:40:18 -0400
-Received: from lo.gmane.org ([80.91.229.12]:43173 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754346Ab0HLTkQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 15:40:16 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: walt <w41ter@gmail.com>
-Subject: Re: [BISECTED] Removing BKL causes stack trace during early bootup
-Date: Thu, 12 Aug 2010 12:40:04 -0700
-Message-ID: <4C644E14.60804@gmail.com>
-References: <4C6438BF.9070608@gmail.com> <20100812182633.GB5369@nowhere>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Robert Moore <robert.moore@intel.com>, Len Brown <len.brown@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Steven Rostedt <rostedt@yahoo-wildcard.a05.yahoodns.net>,
-        LKML <linux-kernel@vger.kernel.org>
-X-Gmane-NNTP-Posting-Host: adsl-69-234-182-12.dsl.irvnca.pacbell.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b4pre) Gecko/20100809 Shredder/3.2a1pre
-In-Reply-To: <20100812182633.GB5369@nowhere>
+	id S1760880Ab0HLTsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 15:48:55 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:10422 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754380Ab0HLTsy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 15:48:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=hgcrQycmgmCWMbFRgAQehnyatKp/zE0Ep9KWJOytgY8sIPfJx/ht9OnOyAKpkDwrM
+	UhWaKEDl+3fWS3VtTu0fg==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+References: <20100809181638.GI3026@linux.vnet.ibm.com>
+	<AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
+	<20100811222854.GJ2516@linux.vnet.ibm.com>
+	<AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+	<20100812010612.GL2516@linux.vnet.ibm.com>
+	<AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+	<20100812034435.GA7403@linux.vnet.ibm.com>
+	<AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+	<E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+	<AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<20100812174303.GD2524@linux.vnet.ibm.com>
+	<AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+Date: Thu, 12 Aug 2010 12:48:48 -0700
+Message-ID: <AANLkTinNxZoMab=tG9KXJ9n_nxB1dXHkfk-7xUMWXACW@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+From: Brian Swetland <swetland@google.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: paulmck@linux.vnet.ibm.com, Theodore Tso <tytso@mit.edu>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2010 11:26 AM, Frederic Weisbecker wrote:
-> (Adding ACPI guys and LKML in Cc)
+On Thu, Aug 12, 2010 at 12:34 PM, Felipe Contreras
+<felipe.contreras@gmail.com> wrote:
 >
-> On Thu, Aug 12, 2010 at 11:09:03AM -0700, walt wrote:
->> Hi guys.  This commit produces a non-fatal call trace very early during boot
->> on my dual-CPU amd64 machine (but not on my single-CPU x86):
->>
->> commit 5e3d20a68f63fc5a310687d81956c3b96e488b84
->> Author: Arnd Bergmann<arnd@xxxx.de>
->> Date:   Sun Jul 4 00:02:26 2010 +0200
->>
->>      init: Remove the BKL from startup code
->>
->
-> Hi,
->
-> Thanks for bisecting this.
+> Not Ubuntu, not Fedora, not MeeGo, not anyone with a typical
+> user-space seems to be having this problem. I can argue to you that
+> this problem can be solved in easier ways, but instead I will argue
+> that perhaps we should wait for somebody besides Android to complain
+> about it before providing a "solution". Because after all, what good
+> is a "solution" provided by the kernel, if the user-space is not going
+> to use it, ever.
 
-> This is due to ACPI that does buggy checks and then sleeps too early.
->
-> I'm attaching it here.
+I'm curious, when does Android count as a user of the kernel?  I
+gather that volume of sales or users doesn't count.  Do we have to
+include some percentage of "desktop" Linux?
 
-> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> index e5039a2..8da1e8c 100644
-> --- a/include/acpi/platform/aclinux.h
-> +++ b/include/acpi/platform/aclinux.h
-> @@ -152,7 +152,7 @@ static inline void *acpi_os_acquire_object(acpi_cache_t * cache)
->   #include<linux/hardirq.h>
->   #define ACPI_PREEMPTION_POINT() \
->   	do { \
-> -		if (!in_atomic_preempt_off()&&  !irqs_disabled()) \
-> +		if (!in_atomic()&&  !irqs_disabled()) \
->   			cond_resched(); \
->   	} while (0)
->
+If we're an undesirable second-class citizen, why do people care that
+"android is forking the kernel"?
 
-Your patch eliminates my stack trace, thanks.  Must be the same trace.
+I guess I don't understand,
 
-Nick, thanks for your excellent hints.  The stack trace was obviously
-scrolling off the top, as you suggested.  Next time I'll notice it :)
-
+Brian
