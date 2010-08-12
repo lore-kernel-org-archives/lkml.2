@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759807Ab0HLKrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 06:47:43 -0400
-Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:44330 "EHLO
-	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759753Ab0HLKrm convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 06:47:42 -0400
-X-AuditID: 12074423-b7cb4ae000000a9b-57-4c63d1412b6a
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
-Date: Thu, 12 Aug 2010 06:47:27 -0400
-Cc: paulmck@linux.vnet.ibm.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
-References: <20100808155719.GB3635@thunk.org> <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com> <20100808213821.GD3635@thunk.org> <20100809112453.77210acc@lxorguk.ukuu.org.uk> <20100809181638.GI3026@linux.vnet.ibm.com> <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com> <20100811222854.GJ2516@linux.vnet.ibm.com> <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com> <20100812010612.GL2516@linux.vnet.ibm.com> <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com> <20100812034435.GA7403@linux.vnet.ibm.com> <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-X-Mailer: Apple Mail (2.1081)
-X-Brightmail-Tracker: AAAAAA==
+	id S1759820Ab0HLKue (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 06:50:34 -0400
+Received: from torres.zugschlus.de ([85.214.131.164]:34679 "EHLO
+	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759764Ab0HLKuc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 06:50:32 -0400
+Date: Thu, 12 Aug 2010 12:50:29 +0200
+From: Marc Haber <mh+linux-kernel@zugschlus.de>
+To: "Allan, Bruce W" <bruce.w.allan@intel.com>
+Cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
+        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
+        Linux Kernel Network Developers <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
+Subject: Re: e1000e crashes with 2.6.34.x and ThinkPad T60
+Message-ID: <20100812105029.GA6816@torres.zugschlus.de>
+References: <20100724092644.GA13353@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A1366000F42E28@rrsmsx501.amr.corp.intel.com> <20100730125452.GA21444@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660024083FE@rrsmsx501.amr.corp.intel.com> <20100810120458.GB21511@torres.zugschlus.de> <8DD2590731AB5D4C9DBF71A877482A900164D9279F@orsmsx509.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A900164D9279F@orsmsx509.amr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Felipe,
+Hi,
 
-One thing I'm not clear on --- what's your goal?   Is your goal to keep suspend-blockers out of the kernel?   Is it to try to convince the android team suspend-blockers are a bad idea and to change Android to not use them?  Is it to push some other agenda?  Is it to discourage the Android team from trying to waste more time trying to get suspend-blockers (or equivalent functionality) from being added into the kernel?
+On Tue, Aug 10, 2010 at 09:34:52AM -0700, Allan, Bruce W wrote:
+> [adding e1000-devel, the Intel wired ethernet developers mailing list]
 
-You seem to be arguing quite passionately, but I'm not sure what you're trying to do.
+Thanks.
 
--- Ted
+> We have had other recent reports of issues with this part that are due to
+> ASPM L1 being enabled.  Would you please try disabling L1 after the driver
+> is loaded as follows (assuming your adapter is still PCI bus/device/number
+> 02:00.0 as indicated in the lspci output you provided earlier):
+> 1) First check the hexadecimal value of the LnkCtl register -
+> # setpci -s 2:0.0 0xf0
 
+$ sudo setpci --version
+setpci version 3.1.7                   
+$ sudo setpci -s 2:0.0 0xf0
+setpci: Missing width.
+Try `setpci --help' for more information.
+$
+
+Looking at --help doesn't help me, sorry.
+
+Greetings
+Marc
+
+-- 
+-----------------------------------------------------------------------------
+Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
+Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
