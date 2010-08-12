@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759603Ab0HLA1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:27:46 -0400
-Received: from kroah.org ([198.145.64.141]:60116 "EHLO coco.kroah.org"
+	id S1759524Ab0HLA1k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:27:40 -0400
+Received: from kroah.org ([198.145.64.141]:60125 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759376Ab0HLAD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:03:57 -0400
+	id S1759420Ab0HLAEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:00 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.313885680@clark.site>
+Message-Id: <20100812000124.492358858@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:26 -0700
+Date: Wed, 11 Aug 2010 17:00:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [11/54] PCI: disable MSI on VIA K8M800
+        Miklos Szeredi <mszeredi@suse.cz>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [13/54] splice: fix misuse of SPLICE_F_NONBLOCK
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Miklos Szeredi <miklos@szeredi.hu>
 
-commit 549e15611b4ac1de51ef0e0a79c2704f50a638a2 upstream.
+commit 6965031d331a642e31278fa1b5bd47f372ffdd5d upstream.
 
-MSI delivery from on-board ahci controller doesn't work on K8M800.  At
-this point, it's unclear whether the culprit is with the ahci
-controller or the host bridge.  Given the track record and considering
-the rather minimal impact of MSI, disabling it seems reasonable.
+SPLICE_F_NONBLOCK is clearly documented to only affect blocking on the
+pipe.  In __generic_file_splice_read(), however, it causes an EAGAIN
+if the page is currently being read.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Rainer Hurtado Navarro <publio.escipion.el.africano@gmail.com>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+This makes it impossible to write an application that only wants
+failure if the pipe is full.  For example if the same process is
+handling both ends of a pipe and isn't otherwise able to determine
+whether a splice to the pipe will fill it or not.
+
+We could make the read non-blocking on O_NONBLOCK or some other splice
+flag, but for now this is the simplest fix.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/splice.c |   12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2115,6 +2115,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3336, quirk_disable_all_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3351, quirk_disable_all_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3364, quirk_disable_all_msi);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8380_0, quirk_disable_all_msi);
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -366,17 +366,7 @@ __generic_file_splice_read(struct file *
+ 		 * If the page isn't uptodate, we may need to start io on it
+ 		 */
+ 		if (!PageUptodate(page)) {
+-			/*
+-			 * If in nonblock mode then dont block on waiting
+-			 * for an in-flight io page
+-			 */
+-			if (flags & SPLICE_F_NONBLOCK) {
+-				if (!trylock_page(page)) {
+-					error = -EAGAIN;
+-					break;
+-				}
+-			} else
+-				lock_page(page);
++			lock_page(page);
  
- /* Disable MSI on chipsets that are known to not support it */
- static void __devinit quirk_disable_msi(struct pci_dev *dev)
+ 			/*
+ 			 * Page was truncated, or invalidated by the
 
 
