@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760782Ab0HLTEQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 15:04:16 -0400
-Received: from 8bytes.org ([88.198.83.132]:40699 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754051Ab0HLTEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 15:04:15 -0400
-Date: Thu, 12 Aug 2010 21:04:14 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Borislav Petkov <bp@amd64.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD
-	machines
-Message-ID: <20100812190414.GA23755@8bytes.org>
-References: <1280940316-7966-1-git-send-email-bp@amd64.org> <1280940316-7966-2-git-send-email-bp@amd64.org> <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812170644.GZ23755@8bytes.org> <4C644507.9020606@zytor.com>
+	id S1760792Ab0HLTFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 15:05:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52130 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757886Ab0HLTFe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 15:05:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=xTvB2wSGE4yIpeBMTeAjzhQXAKFbDAlMWW3ZlStlLuHD5ZFFKZQFmnTTzL49rzl3KM
+         heTl88F/zNXCgQrQqZ2o8jioi9QmpzZ6mtBCJEl5zHWA7hRXGnan8GhaEnp+nly3LqWo
+         Zqo3AQaAGB8EZnYmcrtmkSihPCNSQjLc27qTU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C644507.9020606@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100812182128.GC2763@thunk.org>
+References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
+	<AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
+	<20100812125248.GA2763@thunk.org>
+	<AANLkTin4=qpDWEKLwes_af6mSCW+ED7v-fWzD34JywU1@mail.gmail.com>
+	<20100812182128.GC2763@thunk.org>
+Date: Thu, 12 Aug 2010 22:05:30 +0300
+Message-ID: <AANLkTinZ_gViUjVmEbkmour3BC=PcchJDARs4GaCuQwO@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Felipe Contreras <felipe.contreras@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 12:01:27PM -0700, H. Peter Anvin wrote:
-> On 08/12/2010 10:06 AM, Joerg Roedel wrote:
+On Thu, Aug 12, 2010 at 9:21 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Thu, Aug 12, 2010 at 07:46:03PM +0300, Felipe Contreras wrote:
+>
+>> All the Android community had to do is push the drivers *without*
+>> suspend blockers, then the Android kernel wouldn't be so different and
+>> thus wouldn't be considered a fork. AFAIU the kernel side wakelocks
+>> are already in the kernel, so there's no excuse not to merge the
+>> drivers.
+>
+> What's there is not good enough, because it's missing the statistics
+> and reporting so that badly behaved kernel and userspace drivers that
+> take wakelocks can be found.
 
-> > The synchronization problem might be real. The cpu_init function uses
-> > per-cpu variables which might not be present in the early synced
-> > tramponline page table (iirc). The change to swapper_pg_dir and the
-> > global tlb flush should probably be moved to the very beginning of the
-> > start_secondary function.
-> > 
-> 
-> Are you going to submit an updated patch, then?
+You don't need to have all the code merged in, hell, you only needed
+wakelock stubs.
 
-Yes, I will send it next week when I am back in office and gave it some
-testing.
+You should take the point of view of the community as a whole, and
+forget about Android for a second; the important thing is to bring the
+code-bases closer, and that means merging the drivers. For that, you
+don't need anything extra.
 
-	Joerg
-
+-- 
+Felipe Contreras
