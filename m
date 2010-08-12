@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933333Ab0HLASs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:18:48 -0400
-Received: from kroah.org ([198.145.64.141]:60500 "EHLO coco.kroah.org"
+	id S933060Ab0HLAIE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:08:04 -0400
+Received: from kroah.org ([198.145.64.141]:60469 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933068Ab0HLAII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:08 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:14 2010
-Message-Id: <20100812000614.210307305@clark.site>
+	id S933005Ab0HLAHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:07:55 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:13 2010
+Message-Id: <20100812000613.592076890@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:32 -0700
+Date: Wed, 11 Aug 2010 17:05:25 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [17/67] x86, mtrr: Use stop machine context to rendezvous all the cpus
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Markus Grabner <grabner@icg.tugraz.at>
+Subject: [10/67] Staging: line6: needs to select SND_PCM
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,216 +26,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <suresh.b.siddha@intel.com>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-commit 68f202e4e87cfab4439568bf397fcc5c7cf8d729 upstream.
+commit e928c077e5cdcd72ee762125b37232aec1ff49f3 upstream.
 
-Use the stop machine context rather than IPI's to rendezvous all the cpus for
-MTRR initialization that happens during cpu bringup or for MTRR modifications
-during runtime.
+line6 uses snd_pcm*() functions, so it should select SND_PCM.
 
-This avoids deadlock scenario (reported by Prarit) like:
+ERROR: "snd_pcm_period_elapsed" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_set_ops" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_lib_free_pages" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_lib_ioctl" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_lib_malloc_pages" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_hw_constraint_ratdens" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_format_physical_width" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_lib_preallocate_pages_for_all" [drivers/staging/line6/line6usb.ko] undefined!
+ERROR: "snd_pcm_new" [drivers/staging/line6/line6usb.ko] undefined!
 
-cpu A holds a read_lock (tasklist_lock for example) with irqs enabled
-cpu B waits for the same lock with irqs disabled using write_lock_irq
-cpu C doing set_mtrr() (during AP bringup for example), which will try to
-rendezvous all the cpus using IPI's
-
-This will result in C and A come to the rendezvous point and waiting
-for B. B is stuck forever waiting for the lock and thus not
-reaching the rendezvous point.
-
-Using stop cpu (run in the process context of per cpu based keventd) to do
-this rendezvous, avoids this deadlock scenario.
-
-Also make sure all the cpu's are in the rendezvous handler before we proceed
-with the local_irq_save() on each cpu. This lock step disabling irqs on all
-the cpus will avoid other deadlock scenarios (for example involving
-with the blocking smp_call_function's etc).
-
-   [ This problem is very old. Marking -stable only for 2.6.35 as the
-     stop_one_cpu_nowait() API is present only in 2.6.35. Any older
-     kernel interested in this fix need to do some more work in backporting
-     this patch. ]
-
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <1280515602.2682.10.camel@sbsiddha-MOBL3.sc.intel.com>
-Acked-by: Prarit Bhargava <prarit@redhat.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Markus Grabner <grabner@icg.tugraz.at>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/mtrr/main.c |   56 ++++++++++++++++++++++++++++++----------
- arch/x86/kernel/smpboot.c       |    7 +++++
- 2 files changed, 50 insertions(+), 13 deletions(-)
+ drivers/staging/line6/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -35,6 +35,7 @@
- 
- #include <linux/types.h> /* FIXME: kvm_para.h needs this */
- 
-+#include <linux/stop_machine.h>
- #include <linux/kvm_para.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
-@@ -143,22 +144,28 @@ struct set_mtrr_data {
- 	mtrr_type	smp_type;
- };
- 
-+static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
-+
- /**
-- * ipi_handler - Synchronisation handler. Executed by "other" CPUs.
-+ * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
-  * @info: pointer to mtrr configuration data
-  *
-  * Returns nothing.
-  */
--static void ipi_handler(void *info)
-+static int mtrr_work_handler(void *info)
- {
- #ifdef CONFIG_SMP
- 	struct set_mtrr_data *data = info;
- 	unsigned long flags;
- 
-+	atomic_dec(&data->count);
-+	while (!atomic_read(&data->gate))
-+		cpu_relax();
-+
- 	local_irq_save(flags);
- 
- 	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
-+	while (atomic_read(&data->gate))
- 		cpu_relax();
- 
- 	/*  The master has cleared me to execute  */
-@@ -173,12 +180,13 @@ static void ipi_handler(void *info)
- 	}
- 
- 	atomic_dec(&data->count);
--	while (atomic_read(&data->gate))
-+	while (!atomic_read(&data->gate))
- 		cpu_relax();
- 
- 	atomic_dec(&data->count);
- 	local_irq_restore(flags);
- #endif
-+	return 0;
- }
- 
- static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-@@ -198,7 +206,7 @@ static inline int types_compatible(mtrr_
-  *
-  * This is kinda tricky, but fortunately, Intel spelled it out for us cleanly:
-  *
-- * 1. Send IPI to do the following:
-+ * 1. Queue work to do the following on all processors:
-  * 2. Disable Interrupts
-  * 3. Wait for all procs to do so
-  * 4. Enter no-fill cache mode
-@@ -215,14 +223,17 @@ static inline int types_compatible(mtrr_
-  * 15. Enable interrupts.
-  *
-  * What does that mean for us? Well, first we set data.count to the number
-- * of CPUs. As each CPU disables interrupts, it'll decrement it once. We wait
-- * until it hits 0 and proceed. We set the data.gate flag and reset data.count.
-- * Meanwhile, they are waiting for that flag to be set. Once it's set, each
-+ * of CPUs. As each CPU announces that it started the rendezvous handler by
-+ * decrementing the count, We reset data.count and set the data.gate flag
-+ * allowing all the cpu's to proceed with the work. As each cpu disables
-+ * interrupts, it'll decrement data.count once. We wait until it hits 0 and
-+ * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
-+ * are waiting for that flag to be cleared. Once it's cleared, each
-  * CPU goes through the transition of updating MTRRs.
-  * The CPU vendors may each do it differently,
-  * so we call mtrr_if->set() callback and let them take care of it.
-  * When they're done, they again decrement data->count and wait for data.gate
-- * to be reset.
-+ * to be set.
-  * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
-  * Everyone then enables interrupts and we all continue on.
-  *
-@@ -234,6 +245,9 @@ set_mtrr(unsigned int reg, unsigned long
- {
- 	struct set_mtrr_data data;
- 	unsigned long flags;
-+	int cpu;
-+
-+	preempt_disable();
- 
- 	data.smp_reg = reg;
- 	data.smp_base = base;
-@@ -246,10 +260,15 @@ set_mtrr(unsigned int reg, unsigned long
- 	atomic_set(&data.gate, 0);
- 
- 	/* Start the ball rolling on other CPUs */
--	if (smp_call_function(ipi_handler, &data, 0) != 0)
--		panic("mtrr: timed out waiting for other CPUs\n");
-+	for_each_online_cpu(cpu) {
-+		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
-+
-+		if (cpu == smp_processor_id())
-+			continue;
-+
-+		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
-+	}
- 
--	local_irq_save(flags);
- 
- 	while (atomic_read(&data.count))
- 		cpu_relax();
-@@ -259,6 +278,16 @@ set_mtrr(unsigned int reg, unsigned long
- 	smp_wmb();
- 	atomic_set(&data.gate, 1);
- 
-+	local_irq_save(flags);
-+
-+	while (atomic_read(&data.count))
-+		cpu_relax();
-+
-+	/* Ok, reset count and toggle gate */
-+	atomic_set(&data.count, num_booting_cpus() - 1);
-+	smp_wmb();
-+	atomic_set(&data.gate, 0);
-+
- 	/* Do our MTRR business */
- 
- 	/*
-@@ -279,7 +308,7 @@ set_mtrr(unsigned int reg, unsigned long
- 
- 	atomic_set(&data.count, num_booting_cpus() - 1);
- 	smp_wmb();
--	atomic_set(&data.gate, 0);
-+	atomic_set(&data.gate, 1);
- 
- 	/*
- 	 * Wait here for everyone to have seen the gate change
-@@ -289,6 +318,7 @@ set_mtrr(unsigned int reg, unsigned long
- 		cpu_relax();
- 
- 	local_irq_restore(flags);
-+	preempt_enable();
- }
- 
- /**
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -816,6 +816,13 @@ do_rest:
- 			if (cpumask_test_cpu(cpu, cpu_callin_mask))
- 				break;	/* It has booted */
- 			udelay(100);
-+			/*
-+			 * Allow other tasks to run while we wait for the
-+			 * AP to come online. This also gives a chance
-+			 * for the MTRR work(triggered by the AP coming online)
-+			 * to be completed in the stop machine context.
-+			 */
-+			schedule();
- 		}
- 
- 		if (cpumask_test_cpu(cpu, cpu_callin_mask))
+--- a/drivers/staging/line6/Kconfig
++++ b/drivers/staging/line6/Kconfig
+@@ -2,6 +2,7 @@ config LINE6_USB
+ 	tristate "Line6 USB support"
+ 	depends on USB && SND
+ 	select SND_RAWMIDI
++	select SND_PCM
+ 	help
+ 	  This is a driver for the guitar amp, cab, and effects modeller
+ 	  PODxt Pro by Line6 (and similar devices), supporting the
 
 
