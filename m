@@ -1,70 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760089Ab0HLNRv convert rfc822-to-quoted-printable (ORCPT
-	<rfc822;w@1wt.eu>); Thu, 12 Aug 2010 09:17:51 -0400
-Received: from smtp-out-205.synserver.de ([212.40.180.205]:1059 "HELO
-	smtp-out-205.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753558Ab0HLNRs (ORCPT
+	id S1760103Ab0HLNTr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 09:19:47 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:48208 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753558Ab0HLNTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 09:17:48 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 14549
-Date: Thu, 12 Aug 2010 15:17:45 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Alan Ott <alan@signal11.us>, Heinz Diehl <htd@fritha.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-Message-ID: <20100812131745.GA1618@arch.tripp.de>
-References: <20100812091659.GA1591@arch.tripp.de>
- <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz>
- <20100812113624.GB1591@arch.tripp.de>
- <20100812114513.GA1584@arch.tripp.de>
- <20100812115657.GA1611@arch.tripp.de>
- <alpine.LNX.2.00.1008121401580.2702@pobox.suse.cz>
- <alpine.LNX.2.00.1008121457060.2702@pobox.suse.cz>
- <20100812130411.GA1626@arch.tripp.de>
- <4C63F285.8070801@signal11.us>
- <alpine.LNX.2.00.1008121510180.2702@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1008121510180.2702@pobox.suse.cz>
+	Thu, 12 Aug 2010 09:19:46 -0400
+From: Dave Martin <dave.martin@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>, kernel-team@lists.ubuntu.com,
+        Will Deacon <Will.Deacon@arm.com>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        Dave Martin <dave.martin@linaro.org>
+Subject: [PATCH v2] perf symbols: fix symbol offset breakage with separated debug
+Date: Thu, 12 Aug 2010 14:19:33 +0100
+Message-Id: <1281619173-14004-1-git-send-email-dave.martin@linaro.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1280836116-6654-3-git-send-email-dave.martin@linaro.org>
+References: <1280836116-6654-3-git-send-email-dave.martin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from QUOTED-PRINTABLE to 8bit by mail.home.local id o7CDJ22P011082
 
-On Thu, Aug 12, 2010 at 03:11:39PM +0200, Jiri Kosina wrote:
-> On Thu, 12 Aug 2010, Alan Ott wrote:
-> > > > >        
-> > > > Could please those of you, who are able to reproduce the problem, verify
-> > > > whether the patch below (completely untested) makes everything behave
-> > > > again? Thanks.
-> > > >      
-> > > Yes, everything behaves again. Thanks Jiri.
-> > >    
-> > 
-> > Seconded. Works good. Thanks for your support Jiri.
-> 
-> Thanks for your testing. I still need to think a little bit more about 
-> whether this is indeed an appropriate fix or there might be still some 
-> problem.
+Applies to 2.6.35
+(git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6.git
+perf/core branch)
 
-No need to hurry. Rc1 isn't even out yet.
+The new patch loads the ELF section headers from a separate
+file if necessary, to avoid getting confused by the different
+section file offsets seen in debug images.  Invalid section
+headers are detected by checking for the presence of non-
+writable SHT_NOBITS sections, which don't make sense under
+normal circumstances.
 
-> Once I will be applying this, I will put
-> 
-> 	Reported-and-tested-by: 
-> 
-> tag for both of you Alan and Markus, is that fine?
+In particular, this allows symbols in ET_EXEC images to get
+fixed up correctly in the presence of separated debug images.
 
-It's also fine with me.
+The image search loop is also tidied up to fix a minor bug
+which would perform the same image load attempt more than
+once in some situations.
 
+For non-separated images, the headers should get loaded from
+the same image as the symbols, in the usual way.
+
+Signed-off-by: Dave Martin <dave.martin@linaro.org>
+---
+ tools/perf/util/symbol.c |  185 +++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 173 insertions(+), 12 deletions(-)
+
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index 1a36773..21ae9df 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1,4 +1,5 @@
+ #define _GNU_SOURCE
++#include <assert.h>
+ #include <ctype.h>
+ #include <dirent.h>
+ #include <errno.h>
+@@ -978,8 +979,106 @@ static size_t elf_addr_to_index(Elf *elf, GElf_Addr addr)
+ 	return -1;
+ }
+ 
++/**
++ * Read all section headers, copying them into a separate array so they survive
++ * elf_end.
++ *
++ * @elf: the libelf instance to operate on.
++ * @ehdr: the elf header: this must already have been read with gelf_getehdr().
++ * @count: the number of headers read is assigned to *count on successful
++ *	return.  count must not be NULL.
++ *
++ * Returns a pointer to the allocated headers, which should be deallocated with
++ * free() when no longer needed.
++ */
++static GElf_Shdr *elf_get_all_shdrs(Elf *elf, GElf_Ehdr const *ehdr,
++				    unsigned *count)
++{
++	GElf_Shdr *shdrs;
++	Elf_Scn *scn;
++	unsigned max_index = 0;
++	unsigned i;
++
++	shdrs = malloc(ehdr->e_shnum * sizeof *shdrs);
++	if (!shdrs)
++		return NULL;
++
++	for (i = 0; i < ehdr->e_shnum; i++)
++		shdrs[i].sh_type = SHT_NULL;
++
++	for (scn = NULL; (scn = elf_nextscn(elf, scn)); ) {
++		size_t j;
++
++		/*
++		 * Just assuming we get section 0, 1, ... in sequence may lead
++		 * to wrong section indices.  Check the index explicitly:
++		 */
++		j = elf_ndxscn(scn);
++		assert(j < ehdr->e_shnum);
++
++		if (j > max_index)
++			max_index = j;
++
++		if (!gelf_getshdr(scn, &shdrs[j]))
++			goto error;
++	}
++
++	*count = max_index + 1;
++	return shdrs;
++
++error:
++	free(shdrs);
++	return NULL;
++}
++
++/**
++ * Check that the section headers @shdrs reflect accurately the file data
++ * layout of the image that was loaded during perf record.  This is generally
++ * not true for separated debug images generated with e.g.,
++ * objcopy --only-keep-debug.
++ *
++ * We identify invalid files by checking for non-empty sections which are
++ * declared as having no file data (SHT_NOBITS) but are not writable.
++ *
++ * @shdrs: the full set of section headers, as loaded by elf_get_all_shdrs().
++ * @count: the number of headers present in @shdrs.
++ *
++ * Returns 1 for valid headers, 0 otherwise.
++ */
++static int elf_check_shdrs_valid(GElf_Shdr const *shdrs, unsigned count)
++{
++	unsigned i;
++
++	for (i = 0; i < count; i++) {
++		if (shdrs[i].sh_type == SHT_NOBITS &&
++		    !(shdrs[i].sh_flags & SHF_WRITE) &&
++		    shdrs[i].sh_size != 0)
++			return 0;
++	}
++
++	return 1;
++}
++
++/*
++ * Notes:
++ *
++ * If saved_shdrs is non-NULL, the section headers will be read if found, and
++ * will be used for address fixups.  saved_shdrs_count must also be non-NULL in
++ * this case.  This may be needed for separated debug images, since the section
++ * headers and symbols may need to come from separate images in that case.
++ *
++ * Note: irrespective of whether this function returns successfully,
++ * *saved_shdrs may get initialised if saved_shdrs is non-NULL.  It is the
++ * caller's responsibility to free() it when non longer needed.
++ *
++ * If want_symtab == 1, this function will only load symbols from .symtab
++ * sections.  Otherwise (want_symtab == 0), .dynsym or .symtab symbols are
++ * loaded.  This feature is used by dso__load() to search for the best image
++ * to load.
++ */
+ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			 int fd, symbol_filter_t filter, int kmodule,
++			 GElf_Shdr **saved_shdrs, unsigned *saved_shdrs_count,
+ 			 int want_symtab)
+ {
+ 	struct kmap *kmap = self->kernel ? map__kmap(map) : NULL;
+@@ -998,6 +1097,9 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 	int nr = 0;
+ 	size_t opdidx = 0;
+ 
++	if (saved_shdrs != NULL)
++		assert(saved_shdrs_count != NULL);
++
+ 	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
+ 	if (elf == NULL) {
+ 		pr_debug("%s: cannot read %s ELF file.\n", __func__, name);
+@@ -1021,6 +1123,34 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			goto out_elf_end;
+ 	}
+ 
++	/*
++	 * Copy all section headers from the image if requested and if not
++	 * already loaded.
++	 */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL) {
++		GElf_Shdr *shdrs;
++		unsigned count;
++
++		shdrs = elf_get_all_shdrs(elf, &ehdr, &count);
++		if (shdrs == NULL)
++			goto out_elf_end;
++
++		/*
++		 * Only keep the headers if they reflect the actual run-time
++		 * image's file layout:
++		 */
++		if (elf_check_shdrs_valid(shdrs, count)) {
++			*saved_shdrs = shdrs;
++			*saved_shdrs_count = count;
++		} else
++			free(shdrs);
++	}
++
++	/* If no genuine ELF headers are available yet, give up: we can't
++	 * adjust symbols correctly in that case: */
++	if (saved_shdrs != NULL && *saved_shdrs == NULL)
++		goto out_elf_end;
++
+ 	sec = elf_section_by_name(elf, &ehdr, &shdr, ".symtab", NULL);
+ 	if (sec == NULL) {
+ 		if (want_symtab)
+@@ -1031,6 +1161,9 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			goto out_elf_end;
+ 	}
+ 
++	if (saved_shdrs != NULL && *saved_shdrs == NULL)
++		goto out_elf_end;
++
+ 	opdsec = elf_section_by_name(elf, &ehdr, &opdshdr, ".opd", &opdidx);
+ 	if (opdsec)
+ 		opddata = elf_rawdata(opdsec, NULL);
+@@ -1153,12 +1286,25 @@ static int dso__load_sym(struct dso *self, struct map *map, const char *name,
+ 			goto new_symbol;
+ 		}
+ 
++		/*
++		 * Currently, symbols for shared objects and PIE executables
++		 * (i.e., ET_DYN) do not seem to get adjusted.  This might need
++		 * to change if file offset == virtual address is not actually
++		 * guaranteed for these images.  ELF doesn't provide this
++		 * guarantee natively.
++		 */
+ 		if (curr_dso->adjust_symbols) {
+ 			pr_debug4("%s: adjusting symbol: st_value: %#Lx "
+ 				  "sh_addr: %#Lx sh_offset: %#Lx\n", __func__,
+ 				  (u64)sym.st_value, (u64)shdr.sh_addr,
+ 				  (u64)shdr.sh_offset);
+-			sym.st_value -= shdr.sh_addr - shdr.sh_offset;
++			if (saved_shdrs && *saved_shdrs &&
++			    sym.st_shndx < *saved_shdrs_count)
++				sym.st_value -=
++					(*saved_shdrs)[sym.st_shndx].sh_addr -
++					(*saved_shdrs)[sym.st_shndx].sh_offset;
++			else
++				sym.st_value -= shdr.sh_addr - shdr.sh_offset;
+ 		}
+ 		/*
+ 		 * We need to figure out if the object was created from C++ sources
+@@ -1395,6 +1541,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	struct machine *machine;
+ 	const char *root_dir;
+ 	int want_symtab;
++	GElf_Shdr *saved_shdrs = NULL;
++	unsigned saved_shdrs_count;
+ 
+ 	dso__set_loaded(self, map->type);
+ 
+@@ -1425,13 +1573,13 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 	 * On the first pass, only load images if they have a full symtab.
+ 	 * Failing that, do a second pass where we accept .dynsym also
+ 	 */
+-	for (self->origin = DSO__ORIG_BUILD_ID_CACHE, want_symtab = 1;
+-	     self->origin != DSO__ORIG_NOT_FOUND;
+-	     self->origin++) {
++	self->origin = DSO__ORIG_BUILD_ID_CACHE;
++	want_symtab = 1;
++	while (1) {
+ 		switch (self->origin) {
+ 		case DSO__ORIG_BUILD_ID_CACHE:
+ 			if (dso__build_id_filename(self, name, size) == NULL)
+-				continue;
++				goto continue_next;
+ 			break;
+ 		case DSO__ORIG_FEDORA:
+ 			snprintf(name, size, "/usr/lib/debug%s.debug",
+@@ -1445,7 +1593,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 			char build_id_hex[BUILD_ID_SIZE * 2 + 1];
+ 
+ 			if (!self->has_build_id)
+-				continue;
++				goto continue_next;
+ 
+ 			build_id__sprintf(self->build_id,
+ 					  sizeof(self->build_id),
+@@ -1469,21 +1617,24 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 		default:
+ 			/*
+ 			 * If we wanted a full symtab but no image had one,
+-			 * relax our requirements and repeat the search.
++			 * relax our requirements and repeat the search,
++			 * providing we saw some valid section headers:
+ 			 */
+-			if (want_symtab) {
++			if (want_symtab && saved_shdrs != NULL) {
+ 				want_symtab = 0;
+ 				self->origin = DSO__ORIG_BUILD_ID_CACHE;
+-			} else
+ 				continue;
++			} else
++				goto done;
+ 		}
+ 
+ 		/* Name is now the name of the next image to try */
+ 		fd = open(name, O_RDONLY);
+ 		if (fd < 0)
+-			continue;
++			goto continue_next;
+ 
+ 		ret = dso__load_sym(self, map, name, fd, filter, 0,
++				    &saved_shdrs, &saved_shdrs_count,
+ 				    want_symtab);
+ 		close(fd);
+ 
+@@ -1492,7 +1643,7 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 		 * info!?!?
+ 		 */
+ 		if (!ret)
+-			continue;
++			goto continue_next;
+ 
+ 		if (ret > 0) {
+ 			int nr_plt = dso__synthesize_plt_symbols(self, map, filter);
+@@ -1500,9 +1651,18 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
+ 				ret += nr_plt;
+ 			break;
+ 		}
++
++continue_next:
++		self->origin++;
++		continue;
+ 	}
+ 
++done:
+ 	free(name);
++
++	if (saved_shdrs)
++		free(saved_shdrs);
++
+ 	if (ret < 0 && strstr(self->name, " (deleted)") != NULL)
+ 		return 0;
+ 	return ret;
+@@ -1768,7 +1928,8 @@ static int dso__load_vmlinux(struct dso *self, struct map *map,
+ 		return -1;
+ 
+ 	dso__set_loaded(self, map->type);
+-	err = dso__load_sym(self, map, vmlinux, fd, filter, 0, 0);
++	err = dso__load_sym(self, map, vmlinux, fd, filter, 0,
++			    NULL, NULL, 0);
+ 	close(fd);
+ 
+ 	if (err > 0)
 -- 
-»A man who doesn't know he is in prison can never escape.«
-William S. Burroughs
+1.7.0.4
+
