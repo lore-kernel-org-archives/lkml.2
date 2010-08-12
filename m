@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074Ab0HLAPj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:15:39 -0400
-Received: from kroah.org ([198.145.64.141]:47842 "EHLO coco.kroah.org"
+	id S933179Ab0HLAQL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:16:11 -0400
+Received: from kroah.org ([198.145.64.141]:47821 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933139Ab0HLAI2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:28 -0400
+	id S933126Ab0HLAIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:23 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
-Message-Id: <20100812000615.730985743@clark.site>
+Message-Id: <20100812000615.331811368@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:48 -0700
+Date: Wed, 11 Aug 2010 17:05:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Chris Wright <chrisw@sous-sol.org>,
-        "Serge E. Hallyn" <serue@us.ibm.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Daniel P. Berrange" <berrange@redhat.com>
-Subject: [33/67] blkdev: cgroup whitelist permission fix
+        NeilBrown <neilb@suse.de>
+Subject: [29/67] md/raid10: fix deadlock with unaligned read during resync
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,57 +25,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wright <chrisw@sous-sol.org>
+From: NeilBrown <neilb@suse.de>
 
-commit b7300b78d1a87625975a799a109a2f98d77757c8 upstream.
+commit 51e9ac77035a3dfcb6fc0a88a0d80b6f99b5edb1 upstream.
 
-The cgroup device whitelist code gets confused when trying to grant
-permission to a disk partition that is not currently open.  Part of
-blkdev_open() includes __blkdev_get() on the whole disk.
+If the 'bio_split' path in raid10-read is used while
+resync/recovery is happening it is possible to deadlock.
+Fix this be elevating ->nr_waiting for the duration of both
+parts of the split request.
 
-Basically, the only ways to reliably allow a cgroup access to a partition
-on a block device when using the whitelist are to 1) also give it access
-to the whole block device or 2) make sure the partition is already open in
-a different context.
+This fixes a bug that has been present since 2.6.22
+but has only started manifesting recently for unknown reasons.
+It is suitable for and -stable since then.
 
-The patch avoids the cgroup check for the whole disk case when opening a
-partition.
-
-Addresses https://bugzilla.redhat.com/show_bug.cgi?id=589662
-
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-Reported-by: Vivek Goyal <vgoyal@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by:  Justin Bronder <jsbronder@gentoo.org>
+Tested-by:  Justin Bronder <jsbronder@gentoo.org>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/block_dev.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/md/raid10.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1339,10 +1339,12 @@ static int __blkdev_get(struct block_dev
- 	/*
- 	 * hooks: /n/, see "layering violations".
- 	 */
--	ret = devcgroup_inode_permission(bdev->bd_inode, perm);
--	if (ret != 0) {
--		bdput(bdev);
--		return ret;
-+	if (!for_part) {
-+		ret = devcgroup_inode_permission(bdev->bd_inode, perm);
-+		if (ret != 0) {
-+			bdput(bdev);
-+			return ret;
-+		}
- 	}
+--- a/drivers/md/raid10.c
++++ b/drivers/md/raid10.c
+@@ -825,11 +825,29 @@ static int make_request(mddev_t *mddev,
+ 		 */
+ 		bp = bio_split(bio,
+ 			       chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
++
++		/* Each of these 'make_request' calls will call 'wait_barrier'.
++		 * If the first succeeds but the second blocks due to the resync
++		 * thread raising the barrier, we will deadlock because the
++		 * IO to the underlying device will be queued in generic_make_request
++		 * and will never complete, so will never reduce nr_pending.
++		 * So increment nr_waiting here so no new raise_barriers will
++		 * succeed, and so the second wait_barrier cannot block.
++		 */
++		spin_lock_irq(&conf->resync_lock);
++		conf->nr_waiting++;
++		spin_unlock_irq(&conf->resync_lock);
++
+ 		if (make_request(mddev, &bp->bio1))
+ 			generic_make_request(&bp->bio1);
+ 		if (make_request(mddev, &bp->bio2))
+ 			generic_make_request(&bp->bio2);
  
- 	lock_kernel();
++		spin_lock_irq(&conf->resync_lock);
++		conf->nr_waiting--;
++		wake_up(&conf->wait_barrier);
++		spin_unlock_irq(&conf->resync_lock);
++
+ 		bio_pair_release(bp);
+ 		return 0;
+ 	bad_map:
 
 
