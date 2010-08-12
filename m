@@ -1,118 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0HLF4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 01:56:24 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:49307 "EHLO smtp.gentoo.org"
+	id S1753230Ab0HLF7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 01:59:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31562 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752485Ab0HLF4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 01:56:21 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] kconfig: fix warnings in fgets/fwrite usage
-Date: Thu, 12 Aug 2010 01:56:19 -0400
-Message-Id: <1281592579-343-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.2
+	id S1752485Ab0HLF7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 01:59:54 -0400
+Date: Thu, 12 Aug 2010 06:59:26 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, Mike Snitzer <snitzer@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Takahiro Yasui <tyasui@redhat.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        Milan Broz <mbroz@redhat.com>, Peter Rajnoha <prajnoha@redhat.com>,
+        Arnd Bergmann <arnd@relay.de.ibm.com>, Julia Lawall <julia@diku.dk>,
+        Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+        Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+        dm-devel@redhat.com
+Subject: [git pull] device-mapper patches for 2.6.36
+Message-ID: <20100812055926.GF4535@agk-dp.fab.redhat.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+	Mike Snitzer <snitzer@redhat.com>,
+	Mikulas Patocka <mpatocka@redhat.com>,
+	Takahiro Yasui <tyasui@redhat.com>,
+	Jun'ichi Nomura <j-nomura@ce.jp.nec.com>,
+	Milan Broz <mbroz@redhat.com>, Peter Rajnoha <prajnoha@redhat.com>,
+	Arnd Bergmann <arnd@relay.de.ibm.com>, Julia Lawall <julia@diku.dk>,
+	Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+	Will Drewry <wad@chromium.org>, linux-kernel@vger.kernel.org,
+	dm-devel@redhat.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add some helper functions that abort on failure, and change the fwrite
-and fget calls to use those.  This should kill off all the ugly gcc
-warnings that some distros emit about ignoring return values due to
-usage of warn_unused_result attributes.
+[Resent with mailing lists I lost from the cc - again...]
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- scripts/kconfig/conf.c     |    4 ++--
- scripts/kconfig/confdata.c |    2 +-
- scripts/kconfig/expr.c     |    2 +-
- scripts/kconfig/lkc.h      |   24 ++++++++++++++++++++++++
- 4 files changed, 28 insertions(+), 4 deletions(-)
+Please pull from:
 
-diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
-index 274f271..b382a39 100644
---- a/scripts/kconfig/conf.c
-+++ b/scripts/kconfig/conf.c
-@@ -108,7 +108,7 @@ static int conf_askvalue(struct symbol *sym, const char *def)
- 		check_stdin();
- 	case oldaskconfig:
- 		fflush(stdout);
--		fgets(line, 128, stdin);
-+		xfgets(line, 128, stdin);
- 		return 1;
- 	default:
- 		break;
-@@ -306,7 +306,7 @@ static int conf_choice(struct menu *menu)
- 			check_stdin();
- 		case oldaskconfig:
- 			fflush(stdout);
--			fgets(line, 128, stdin);
-+			xfgets(line, 128, stdin);
- 			strip(line);
- 			if (line[0] == '?') {
- 				print_help(menu);
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index f81f263..7d9f271 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -412,7 +412,7 @@ static void conf_write_string(bool headerfile, const char *name,
- 	while (1) {
- 		l = strcspn(str, "\"\\");
- 		if (l) {
--			fwrite(str, l, 1, out);
-+			xfwrite(str, l, 1, out);
- 			str += l;
- 		}
- 		if (!*str)
-diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
-index 8f18e37..330e7c0 100644
---- a/scripts/kconfig/expr.c
-+++ b/scripts/kconfig/expr.c
-@@ -1087,7 +1087,7 @@ void expr_print(struct expr *e, void (*fn)(void *, struct symbol *, const char *
- 
- static void expr_print_file_helper(void *data, struct symbol *sym, const char *str)
- {
--	fwrite(str, strlen(str), 1, data);
-+	xfwrite(str, strlen(str), 1, data);
- }
- 
- void expr_fprint(struct expr *e, FILE *out)
-diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
-index 76db065..a3bd66a 100644
---- a/scripts/kconfig/lkc.h
-+++ b/scripts/kconfig/lkc.h
-@@ -169,6 +169,30 @@ static inline bool sym_has_value(struct symbol *sym)
- 	return sym->flags & SYMBOL_DEF_USER ? true : false;
- }
- 
-+#define internal_error(fmt, args...) \
-+do { \
-+	fprintf(stderr, "%s:%s:%i: %s: " fmt "\n", __FILE__, \
-+		__func__, __LINE__, _("internal error"), ## args); \
-+	exit(1); \
-+} while (0)
-+
-+#define xfwrite(ptr, size, nmemb, stream) \
-+({ \
-+	size_t _nmemb = (nmemb); \
-+	size_t ret = fwrite(ptr, size, _nmemb, stream); \
-+	if (ret != _nmemb) \
-+		internal_error("%s", _("fwrite() came up short")); \
-+	ret; \
-+})
-+
-+#define xfgets(s, size, stream) \
-+({ \
-+	char *ret = fgets(s, size, stream); \
-+	if (ret == NULL) \
-+		internal_error("%s", _("fgets() came up short")); \
-+	ret; \
-+})
-+
- #ifdef __cplusplus
- }
- #endif
--- 
-1.7.2
+  master.kernel.org:/pub/scm/linux/kernel/git/agk/linux-2.6-dm.git master
 
+to get the following device-mapper fixes and enhancements for inclusion in
+2.6.36.
+
+The main enhancement here is discard support.  We left the dm-crypt target out
+of this for now, hoping we might find some cryptographers to help us consider
+this.
+ 
+Alasdair G Kergon (3):
+      dm mpath: fix NULL pointer dereference when path parameters missing
+      dm ioctl: make __dev_status void
+      dm: use dm_target_offset macro
+
+Arnd Bergmann (1):
+      dm ioctl: use nonseekable_open
+
+Julia Lawall (1):
+      dm crypt: use kstrdup
+
+Kiyoshi Ueda (3):
+      dm: prevent access to md being deleted
+      dm ioctl: release _hash_lock between devices in remove_all
+      dm: separate device deletion from dm_put
+
+Mike Snitzer (11):
+      dm ioctl: make bio or request based device type immutable
+      dm: do not initialise full request queue when bio based
+      dm: rename map_info flush_request to target_request_nr
+      dm: linear support discard
+      dm: use common __issue_target_request for flush and discard support
+      dm: factor out max_io_len_target_boundary
+      dm: zero silently drop discards
+      dm delay: support discard
+      dm: error return error for discards
+      dm: split discard requests on target boundaries
+      dm mpath: support discard
+
+Mikulas Patocka (7):
+      dm snapshot: iterate origin and cow devices
+      dm snapshot: test chunk size against both origin and snapshot
+      dm: skip second flush on bio unsupported error
+      dm snapshot: implement merge
+      dm stripe: move sector translation to a function
+      dm stripe: optimize sector division
+      dm stripe: support discards
+
+Milan Broz (2):
+      dm crypt: simplify crypt_config destruction logic
+      dm crypt: simplify crypt_ctr
+
+Peter Rajnoha (3):
+      dm ioctl: remove __dev_status from geometry and target message
+      dm ioctl: return uevent flag after rename
+      dm: allow autoloading of dm mod
+
+Tomohiro Kusumi (1):
+      dm snapshot: persistent use define for disk header chunk size
+
+Will Drewry (1):
+      dm ioctl: refactor dm_table_complete
+
+ Documentation/devices.txt       |    1 +
+ drivers/md/dm-crypt.c           |  342 +++++++++++++++++++++------------------
+ drivers/md/dm-delay.c           |    6 +-
+ drivers/md/dm-exception-store.c |    4 +-
+ drivers/md/dm-exception-store.h |    3 +-
+ drivers/md/dm-ioctl.c           |  207 ++++++++++++------------
+ drivers/md/dm-linear.c          |    3 +-
+ drivers/md/dm-mpath.c           |   11 ++
+ drivers/md/dm-raid1.c           |    2 +-
+ drivers/md/dm-snap-persistent.c |    6 +-
+ drivers/md/dm-snap.c            |   62 +++++--
+ drivers/md/dm-stripe.c          |   87 +++++++++--
+ drivers/md/dm-table.c           |   99 +++++++++++-
+ drivers/md/dm-target.c          |    5 +
+ drivers/md/dm-zero.c            |    5 +
+ drivers/md/dm.c                 |  329 ++++++++++++++++++++++++++++---------
+ drivers/md/dm.h                 |   14 ++-
+ include/linux/device-mapper.h   |   16 ++-
+ include/linux/dm-ioctl.h        |    5 +-
+ include/linux/miscdevice.h      |    1 +
+ 20 files changed, 822 insertions(+), 386 deletions(-)
+
+Thanks,
+Alasdair.
