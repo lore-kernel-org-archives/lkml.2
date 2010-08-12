@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652Ab0HLVTX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:19:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57192 "EHLO
+	id S1760656Ab0HLVWp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:22:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41343 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752441Ab0HLVTW (ORCPT
+	by vger.kernel.org with ESMTP id S1753114Ab0HLVWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:19:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C646110.1040104@gmail.com>
-References: <201008122200.05598.thomas@m3y3r.de> <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com>
- <s5hpqxntw64.wl%tiwai@suse.de> <4C646110.1040104@gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Aug 2010 14:18:54 -0700
-Message-ID: <AANLkTi=-2U3PXeUEXzGDdXti_j5yGbfG3yci909MKEHX@mail.gmail.com>
-Subject: Re: 2.6.36: Sound stop working
-To: Jiri Slaby <jirislaby@gmail.com>, Eric Paris <eparis@redhat.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 12 Aug 2010 17:22:44 -0400
+Date: Thu, 12 Aug 2010 14:22:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Righi <arighi@develer.com>
+Cc: Stefani Seibold <stefani@seibold.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] kfifo: add kfifo_skip() testcase
+Message-Id: <20100812142211.59e24462.akpm@linux-foundation.org>
+In-Reply-To: <1281627158-9461-2-git-send-email-arighi@develer.com>
+References: <1281627158-9461-1-git-send-email-arighi@develer.com>
+	<1281627158-9461-2-git-send-email-arighi@develer.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric needs to be cc'd.. Sorry for the extra quoting.
+On Thu, 12 Aug 2010 17:32:38 +0200
+Andrea Righi <arighi@develer.com> wrote:
 
-                      Linus
----
-On Thu, Aug 12, 2010 at 2:01 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
-> On 08/12/2010 10:26 PM, Takashi Iwai wrote:
->> At Thu, 12 Aug 2010 23:10:15 +0300,
->> Pekka Enberg wrote:
->>>
->>> On Thu, Aug 12, 2010 at 11:00 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
->>>> My sound card stop to work since a few commits. I tried to bisect it and ended up with this:
->>>>
->>>> There are only 'skip'ped commits left to test.
->>>> The first bad commit could be any of:
->>>> 3bcf3860a4ff9bbc522820b4b765e65e4deceb3e
->>>> c1e5c954020e123d30b4abf4038ce501861bcf9f
->>>> We cannot bisect more!
->>>>
->>>> any ideas what to do now?
->>>
->>> Takashi, maybe this is related to Linus' problem?
->>
->> Yeah, I guess so, since I couldn't see any obvious problem in sound/*.
->>
->> PulseAudio uses inotify in udev-detection module, at least.
->> It's possible that inotify change may hit the sound in the end.
->
-> Probably I got into this problem yesterday. Found out that PA fails to
-> open /dev/snd/pcmC0D0p _second_ time. It opens it, then closes, then
-> opens it again and gets EBUSY. aplay is OK.
->
-> (If this is the same issue.)
->
-> --
-> js
->
+> Add a testcase for kfifo_skip() to the byte stream fifo example.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+>  samples/kfifo/bytestream-example.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/samples/kfifo/bytestream-example.c b/samples/kfifo/bytestream-example.c
+> index 642eef3..2e3a7a8 100644
+> --- a/samples/kfifo/bytestream-example.c
+> +++ b/samples/kfifo/bytestream-example.c
+> @@ -73,6 +73,10 @@ static int __init testfunc(void)
+>  	ret = kfifo_in(&test, buf, ret);
+>  	printk(KERN_INFO "ret: %d\n", ret);
+>  
+> +	/* skip first element of the fifo */
+> +	printk(KERN_INFO "skip 1st element\n");
+> +	kfifo_skip(&test);
+> +
+>  	/* put values into the fifo until is full */
+>  	for (i = 20; kfifo_put(&test, &i); i++)
+>  		;
+
+hm, that's not a very good test harness.  A better one would check that
+the resulting kfifo actually contains the expected items in the
+expected order.  AFACIT this will "pass" even if kfifo_skip() is a
+no-op, or execs nethack or something.
+
+Oh well, it's more than we usually get.
