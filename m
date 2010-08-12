@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933293Ab0HLALy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:11:54 -0400
-Received: from kroah.org ([198.145.64.141]:47951 "EHLO coco.kroah.org"
+	id S933438Ab0HLAML (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:12:11 -0400
+Received: from kroah.org ([198.145.64.141]:47928 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933243Ab0HLAI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:57 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:18 2010
-Message-Id: <20100812000617.929957852@clark.site>
+	id S933222Ab0HLAIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:17 2010
+Message-Id: <20100812000617.485594030@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:06:12 -0700
+Date: Wed, 11 Aug 2010 17:06:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Cyril Lacoux <clacoux@ifeelgood.org>,
-        Marcel Holtmann <marcel@holtmann.org>
-Subject: [57/67] Bluetooth: Added support for controller shipped with iMac i5
+        "David A. Ranch" <dranch@trinnet.net>
+Subject: [52/67] USB: ftdi_sio: device id for Navitator
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,44 +25,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Cyril Lacoux <clacoux@ifeelgood.org>
+From: dranch@trinnet.net <dranch@trinnet.net>
 
-commit 0a79f67445de50ca0a8dc1d34f3cc406d89c28b2 upstream.
+commit b6180ef7c99574c3350bbffa2a3a9d675321543d upstream.
 
-Device class is ff(vend.) instead of e0(wlcon).
+This patch is to add a US Interface, Inc. "Navigator" USB device.
+Specifically, it's a HAM Radio USB sound modem that also
+incorporates three pairs of unique FTDI serial ports.  The standard
+Linux FTDI serial driver will only recognize the first two serial
+ports of an unknown FDTI derived device and this patch adds in
+recognition to these specific new IDs.
 
-Output from command `usb-devices`:
-T:  Bus=01 Lev=03 Prnt=03 Port=00 Cnt=01 Dev#=  6 Spd=12  MxCh= 0
-D:  Ver= 2.00 Cls=ff(vend.) Sub=01 Prot=01 MxPS=64 #Cfgs=  1
-P:  Vendor=05ac ProdID=8215 Rev=01.82
-S:  Manufacturer=Apple Inc.
-S:  Product=Bluetooth USB Host Controller
-S:  SerialNumber=7C6D62936607
-C:  #Ifs= 4 Cfg#= 1 Atr=e0 MxPwr=0mA
-I:  If#= 0 Alt= 0 #EPs= 3 Cls=ff(vend.) Sub=01 Prot=01 Driver=btusb
-I:  If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-I:  If#= 2 Alt= 0 #EPs= 2 Cls=ff(vend.) Sub=ff Prot=ff Driver=(none)
-I:  If#= 3 Alt= 0 #EPs= 0 Cls=fe(app. ) Sub=01 Prot=00 Driver=(none)
-
-Signed-off-by: Cyril Lacoux <clacoux@ifeelgood.org>
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
+Signed-off-by: David A. Ranch <dranch@trinnet.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/bluetooth/btusb.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     |    3 +++
+ drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -59,6 +59,9 @@ static struct usb_device_id btusb_table[
- 	/* Generic Bluetooth USB device */
- 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -157,6 +157,9 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_5_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_6_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_7_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_USINT_CAT_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_USINT_WKEY_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_USINT_RS232_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_ACTZWAVE_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IRTRANS_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_IPLUS_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -40,6 +40,11 @@
  
-+	/* Apple iMac11,1 */
-+	{ USB_DEVICE(0x05ac, 0x8215) },
+ #define FTDI_NXTCAM_PID		0xABB8 /* NXTCam for Mindstorms NXT */
+ 
++/* US Interface Navigator (http://www.usinterface.com/) */
++#define FTDI_USINT_CAT_PID	0xb810	/* Navigator CAT and 2nd PTT lines */
++#define FTDI_USINT_WKEY_PID	0xb811	/* Navigator WKEY and FSK lines */
++#define FTDI_USINT_RS232_PID	0xb812	/* Navigator RS232 and CONFIG lines */
 +
- 	/* AVM BlueFRITZ! USB v2.0 */
- 	{ USB_DEVICE(0x057c, 0x3800) },
- 
+ /* OOCDlink by Joern Kaipf <joernk@web.de>
+  * (http://www.joernonline.de/dw/doku.php?id=start&idx=projects:oocdlink) */
+ #define FTDI_OOCDLINK_PID	0xbaf8	/* Amontec JTAGkey */
 
 
