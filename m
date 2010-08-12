@@ -1,129 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761032Ab0HLWkU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 18:40:20 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:18736 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754575Ab0HLWkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 18:40:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=E1Ap8lCkrxEK9a2XEhmNkV1ZZpQXAAh0LRKiDiHrzQq9wrv4R1QpVZzPZAKFeIK9t
-	J+MJx/xhLZ/klJ9iVqoCA==
-Date: Thu, 12 Aug 2010 15:40:02 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Helge Deller <deller@gmx.de>
-cc: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH] ipc/shm.c: add RSS and swap size information to
- /proc/sysvipc/shm
-In-Reply-To: <4C6468A9.7090503@gmx.de>
-Message-ID: <alpine.DEB.1.00.1008121522150.9966@tigran.mtv.corp.google.com>
-References: <20100811201345.GA11304@p100.box> <20100812131005.e466a9fd.akpm@linux-foundation.org> <4C6468A9.7090503@gmx.de>
-User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
+	id S1761057Ab0HLW6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 18:58:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40223 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752489Ab0HLW6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 18:58:32 -0400
+Date: Fri, 13 Aug 2010 00:56:13 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Milton Miller <miltonm@bga.com>
+Cc: gentoo@mgorny.alt.pl, linux-kernel@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] setlocalversion: fix version for untaged nontip
+ mercurial revs
+Message-ID: <20100812225613.GB19690@sepie.suse.cz>
+References: <fix-hg-id-resend1@mdm.bga.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <fix-hg-id-resend1@mdm.bga.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 12 Aug 2010, Helge Deller wrote:
-> On 08/12/2010 10:10 PM, Andrew Morton wrote:
-> > On Wed, 11 Aug 2010 22:13:45 +0200
-> > Helge Deller<deller@gmx.de>  wrote:
-> > 
-> > > The kernel currently provides no functionality to analyze the RSS
-> > > and swap space usage of each individual sysvipc shared memory segment.
-> > > 
-> > > This patch add this info for each existing shm segment by extending
-> > > the output of /proc/sysvipc/shm by two columns for RSS and swap.
-> > > 
-> > > Since shmctl(SHM_INFO) already provides a similiar calculation (it
-> > > currently sums up all RSS/swap info for all segments), I did split
-> > > out a static function which is now used by the /proc/sysvipc/shm
-> > > output and shmctl(SHM_INFO).
-> > > 
-> > 
-> > I suppose that could be useful, although it would be most interesting
-> > to hear why _you_ consider it useful?
+On Thu, Jul 22, 2010 at 10:19:38AM -0500, Milton Miller wrote:
+> The manpage for cut says it will return all lines without the delimiter
+> unless -s is specified.
 > 
-> A reasonable question, and I really should have explained when I did send this
-> patch.
+> When I backed up my mecurial tree to generate modules, I found that the
+> scm part of localversion was turning up blank.
 > 
-> In my job I do work for SAP in the SAP LinuxLab (http://www.sap.com/linux) and
-> take care of the SAP ERP enterprise software on Linux.
-> SAP products (esp. the SAP Netweaver ABAP Kernel) uses lots of big shared
-> memory segments (we often have Linux systems with >= 16GB shm usage).
-> Sometimes we get customer reports about "slow" system responses and while
-> looking into their configurations we often find massive swapping activity on
-> the system. With this patch it's now easy to see from the command line if and
-> which shm segments gets swapped out (and how much) and can more easily give
-> recommendations for system tuning.
-> Without the patch it's currently not possible to do such shm analysis at all.
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> Cc: Michal Marek <mmarek@suse.cz>
+> Cc: "Michał Górny" <gentoo@mgorny.alt.pl>
 > 
-> So, my patch actually does fix a real-world problem.
-
-That's good justification, thanks.
-
+> ---
+> This version is against linux next-20100721.  The diff against 35-rc
+> would be shifted left one tab stop and have different line numbers, should
+> this be sent to stable.
 > 
-> By the way - I found another bug/issue in /proc/<pid>/smaps as well. The
-> kernel currently does not adds swapped-out shm pages to the swap size value
-> correctly. The swap size value always stays zero for shm pages. I'm currently
-> preparing a small patch to fix that, which I will send to linux-mm for review
-> soon.
-
-I certainly wouldn't call smaps's present behaviour on it a bug: but given
-your justification above, I can see that it would be more useful to you,
-and probably to others, for it to be changed in the way that you suggest,
-to reveal the underlying swap.
-
-Hmm, I wonder what that patch is going to look like...
-
+> Resend without 8-bit characters (maintainers name) in header
+> Added linux-kbuild@vger.kernel.org which get-maintainer did not
 > 
-> > But is it useful enough to risk breaking existing code which parses
-> > that file?  The risk is not great, but it's there.
-> 
-> Sure. The only positive argument is maybe, that I added the new info to the
-> end of the lines. IMHO existing applications which parse /proc files should
-> always take into account, that more text could follow with newer Linux
-> kernels...?
+> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+> index a7b9f76..872312f 100755
+> --- a/scripts/setlocalversion
+> +++ b/scripts/setlocalversion
+> @@ -86,7 +86,7 @@ scm_version()
+>  
+>  	# Check for mercurial and a mercurial repo.
+>  	if hgid=`hg id 2>/dev/null`; then
+> -		tag=`printf '%s' "$hgid" | cut -d' ' -f2`
+> +		tag=`printf '%s' "$hgid" | cut -s -d' ' -f2`
+>  
+>  		# Do we have an untagged version?
+>  		if [ -z "$tag" -o "$tag" = tip ]; then
 
-I hope so too.  And agree you're right to correct the 64-bit header
-alignment, and to show the new fields in bytes rather than pages.
-But one little thing in your patch upsets me greatly...
+Sorry, I somehow missed this patch. I applied it now.
 
-> 
-> > > ---
-> > > 
-> > >   shm.c |   63
-> > > ++++++++++++++++++++++++++++++++++++++++++---------------------
-> > >   1 file changed, 42 insertions(+), 21 deletions(-)
-> > > 
-> > > 
-> > > diff --git a/ipc/shm.c b/ipc/shm.c
-> > > --- a/ipc/shm.c
-> > > +++ b/ipc/shm.c
-> > > @@ -108,7 +108,11 @@ void __init shm_init (void)
-> > >   {
-> > >   	shm_init_ns(&init_ipc_ns);
-> > >   	ipc_init_proc_interface("sysvipc/shm",
-> > > -				"       key      shmid perms       size  cpid
-> > > lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime\n",
-> > > +#if BITS_PER_LONG<= 32
-> > > +				"       key      shmid perms       size  cpid
-> > > lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime
-> > > RSS       swap\n",
-> > > +#else
-> > > +				"       key      shmid perms
-> > > size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime
-> > > ctime                   RSS                  swap\n",
-
-... why oh why do you write "RSS" in uppercase, when every other field
-is named in lowercase?  Please change that to "rss" and then
-
-Acked-by: Hugh Dickins <hughd@google.com>
+Michal
