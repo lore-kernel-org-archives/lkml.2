@@ -1,98 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760266Ab0HLPmV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:42:21 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:62256 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760149Ab0HLPmT (ORCPT
+	id S933885Ab0HLPnx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:43:53 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:62137 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760270Ab0HLPmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:42:19 -0400
+	Thu, 12 Aug 2010 11:42:22 -0400
 MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-Date: Thu, 12 Aug 2010 17:43:43 +0200
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Thu, 12 Aug 2010 17:43:48 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv8 00/13] Various USB improvements
+Subject: [PATCHv8 05/13] USB: gadget: functionfs: code cleanup
+In-reply-to: <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org
-Message-id: <cover.1281625724.git.m.nazarewicz@samsung.com>
+Message-id: <4addd8199cfd6a2aa582904cd6efa01bc77a5290.1281625724.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
+References: <cover.1281625724.git.m.nazarewicz@samsung.com>
+ <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
+ <313ee18ecf53fb8f1c040656b697de869f0c0856.1281625724.git.m.nazarewicz@samsung.com>
+ <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com>
+ <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andy Shevchenko has found a bug in one of my patch sent earlier so
-resending everything rebased on next.  This also include Uwe's and
-mine patches for section mismatches with my previous approach
-reverted.  
+This patch removes some of the string registration from the
+FunctionFS Gadget as composite layer can handle the
+iManufacturer and iProduct for us.
 
-This patchset contains all my patches sent earlier.
+It also removes some of the module parameters which were
+redundant as well as changes the name of others to better much
+the module parameter of the composite layer.
 
-* The first two patches should be included as quickly as possible. *
+Other then that, it also fixes formatting of multiline comments
+to match the coding style.
 
-Sorry for spamming but I might have less time to work on those in the
-next few weeks so I just wanted to send everything I have ready for
-submission.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/g_ffs.c |   85 ++++++++++++++-----------------------------
+ 1 files changed, 28 insertions(+), 57 deletions(-)
 
-Michal Nazarewicz (11):
-  USB: gadget: g_multi: fixed vendor and product ID
-  USB: gadget: g_ffs: fixed vendor and product ID
-  USB: gadget: composite: Better string override handling
-  USB: gadget: mass_storage: moved strings handling code to composite
-  USB: gadget: functionfs: code cleanup
-  USB: gadget: g_multi: moved strings handling code to composite
-  usb: gadget: storage: remove nofua file when unbinding
-  usb: gadget: mass_storage: optional SCSI WRITE FUA bit
-  Revert "USB: gadget: section mismatch warning fixed"
-  usb gadget: don't save bind callback in struct usb_composite_driver
-  init.h: add some more documentation to __ref* tags
-
-Uwe Kleine-König (2):
-  usb gadget: don't save bind callback in struct usb_gadget_driver
-  usb gadget: don't save bind callback in struct usb_configuration
-
- drivers/usb/gadget/amd5536udc.c     |    9 ++-
- drivers/usb/gadget/at91_udc.c       |   11 ++--
- drivers/usb/gadget/atmel_usba_udc.c |    7 +-
- drivers/usb/gadget/audio.c          |   10 +--
- drivers/usb/gadget/cdc2.c           |   10 +--
- drivers/usb/gadget/ci13xxx_udc.c    |   18 +++--
- drivers/usb/gadget/composite.c      |  128 +++++++++++++++++++++++------------
- drivers/usb/gadget/dbgp.c           |    3 +-
- drivers/usb/gadget/dummy_hcd.c      |   10 ++--
- drivers/usb/gadget/ether.c          |   16 ++---
- drivers/usb/gadget/f_loopback.c     |    7 +-
- drivers/usb/gadget/f_mass_storage.c |   16 ++++-
- drivers/usb/gadget/f_sourcesink.c   |    5 +-
- drivers/usb/gadget/file_storage.c   |    6 +-
- drivers/usb/gadget/fsl_qe_udc.c     |   12 ++--
- drivers/usb/gadget/fsl_udc_core.c   |   10 ++--
- drivers/usb/gadget/g_ffs.c          |   91 ++++++++-----------------
- drivers/usb/gadget/gmidi.c          |    5 +-
- drivers/usb/gadget/goku_udc.c       |    9 ++-
- drivers/usb/gadget/hid.c            |   10 +--
- drivers/usb/gadget/imx_udc.c        |    9 ++-
- drivers/usb/gadget/inode.c          |    6 +-
- drivers/usb/gadget/langwell_udc.c   |    9 ++-
- drivers/usb/gadget/lh7a40x_udc.c    |   10 ++--
- drivers/usb/gadget/m66592-udc.c     |    9 ++-
- drivers/usb/gadget/mass_storage.c   |   82 +++--------------------
- drivers/usb/gadget/multi.c          |   36 +++-------
- drivers/usb/gadget/net2280.c        |   10 ++--
- drivers/usb/gadget/nokia.c          |    8 +-
- drivers/usb/gadget/omap_udc.c       |   10 ++--
- drivers/usb/gadget/printer.c        |    7 +-
- drivers/usb/gadget/pxa25x_udc.c     |    9 ++-
- drivers/usb/gadget/pxa27x_udc.c     |   12 ++--
- drivers/usb/gadget/r8a66597-udc.c   |    9 ++-
- drivers/usb/gadget/s3c-hsotg.c      |    9 ++-
- drivers/usb/gadget/s3c2410_udc.c    |   17 ++---
- drivers/usb/gadget/serial.c         |   11 ++--
- drivers/usb/gadget/webcam.c         |   11 ++--
- drivers/usb/gadget/zero.c           |    5 +-
- drivers/usb/musb/musb_gadget.c      |    9 ++-
- include/linux/init.h                |   13 +++-
- include/linux/usb/composite.h       |   40 ++++++-----
- include/linux/usb/gadget.h          |   20 ++---
- 43 files changed, 350 insertions(+), 404 deletions(-)
+diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
+index 3c2f0a4..52fd3fa 100644
+--- a/drivers/usb/gadget/g_ffs.c
++++ b/drivers/usb/gadget/g_ffs.c
+@@ -52,9 +52,8 @@ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_AUTHOR("Michal Nazarewicz");
+ MODULE_LICENSE("GPL");
+ 
+-
+-static unsigned short gfs_vendor_id    = 0x1d6b;	/* Linux Foundation */
+-static unsigned short gfs_product_id   = 0x0105;	/* FunctionFS Gadget */
++#define GFS_VENDOR_ID	0x1d6b	/* Linux Foundation */
++#define GFS_PRODUCT_ID	0x0105	/* FunctionFS Gadget */
+ 
+ static struct usb_device_descriptor gfs_dev_desc = {
+ 	.bLength		= sizeof gfs_dev_desc,
+@@ -63,29 +62,16 @@ static struct usb_device_descriptor gfs_dev_desc = {
+ 	.bcdUSB			= cpu_to_le16(0x0200),
+ 	.bDeviceClass		= USB_CLASS_PER_INTERFACE,
+ 
+-	/* Vendor and product id can be overridden by module parameters.  */
+-	/* .idVendor		= cpu_to_le16(gfs_vendor_id), */
+-	/* .idProduct		= cpu_to_le16(gfs_product_id), */
+-	/* .bcdDevice		= f(hardware) */
+-	/* .iManufacturer	= DYNAMIC */
+-	/* .iProduct		= DYNAMIC */
+-	/* NO SERIAL NUMBER */
+-	.bNumConfigurations	= 1,
++	.idVendor		= cpu_to_le16(GFS_VENDOR_ID),
++	.idProduct		= cpu_to_le16(GFS_PRODUCT_ID),
+ };
+ 
+-#define GFS_MODULE_PARAM_DESC(name, field) \
+-	MODULE_PARM_DESC(name, "Value of the " #field " field of the device descriptor sent to the host.  Takes effect only prior to the user-space driver registering to the FunctionFS.")
+-
+-module_param_named(usb_class,    gfs_dev_desc.bDeviceClass,    byte,   0644);
+-GFS_MODULE_PARAM_DESC(usb_class, bDeviceClass);
+-module_param_named(usb_subclass, gfs_dev_desc.bDeviceSubClass, byte,   0644);
+-GFS_MODULE_PARAM_DESC(usb_subclass, bDeviceSubClass);
+-module_param_named(usb_protocol, gfs_dev_desc.bDeviceProtocol, byte,   0644);
+-GFS_MODULE_PARAM_DESC(usb_protocol, bDeviceProtocol);
+-module_param_named(usb_vendor,   gfs_vendor_id,                ushort, 0644);
+-GFS_MODULE_PARAM_DESC(usb_vendor, idVendor);
+-module_param_named(usb_product,  gfs_product_id,               ushort, 0644);
+-GFS_MODULE_PARAM_DESC(usb_product, idProduct);
++module_param_named(bDeviceClass,    gfs_dev_desc.bDeviceClass,    byte,   0644);
++MODULE_PARM_DESC(bDeviceClass, "USB Device class");
++module_param_named(bDeviceSubClass, gfs_dev_desc.bDeviceSubClass, byte,   0644);
++MODULE_PARM_DESC(bDeviceSubClass, "USB Device subclass");
++module_param_named(bDeviceProtocol, gfs_dev_desc.bDeviceProtocol, byte,   0644);
++MODULE_PARM_DESC(bDeviceProtocol, "USB Device protocol");
+ 
+ 
+ 
+@@ -95,8 +81,10 @@ static const struct usb_descriptor_header *gfs_otg_desc[] = {
+ 		.bLength		= sizeof(struct usb_otg_descriptor),
+ 		.bDescriptorType	= USB_DT_OTG,
+ 
+-		/* REVISIT SRP-only hardware is possible, although
+-		 * it would not be called "OTG" ... */
++		/*
++		 * REVISIT SRP-only hardware is possible, although
++		 * it would not be called "OTG" ...
++		 */
+ 		.bmAttributes		= USB_OTG_SRP | USB_OTG_HNP,
+ 	},
+ 
+@@ -105,19 +93,7 @@ static const struct usb_descriptor_header *gfs_otg_desc[] = {
+ 
+ /* string IDs are assigned dynamically */
+ 
+-enum {
+-	GFS_STRING_MANUFACTURER_IDX,
+-	GFS_STRING_PRODUCT_IDX,
+-	GFS_STRING_FIRST_CONFIG_IDX,
+-};
+-
+-static       char gfs_manufacturer[50];
+-static const char gfs_driver_desc[] = DRIVER_DESC;
+-static const char gfs_short_name[]  = DRIVER_NAME;
+-
+ static struct usb_string gfs_strings[] = {
+-	[GFS_STRING_MANUFACTURER_IDX].s = gfs_manufacturer,
+-	[GFS_STRING_PRODUCT_IDX].s = gfs_driver_desc,
+ #ifdef CONFIG_USB_FUNCTIONFS_RNDIS
+ 	{ .s = "FunctionFS + RNDIS" },
+ #endif
+@@ -168,11 +144,12 @@ static int gfs_unbind(struct usb_composite_dev *cdev);
+ static int gfs_do_config(struct usb_configuration *c);
+ 
+ static struct usb_composite_driver gfs_driver = {
+-	.name		= gfs_short_name,
++	.name		= DRIVER_NAME,
+ 	.dev		= &gfs_dev_desc,
+ 	.strings	= gfs_dev_strings,
+ 	.bind		= gfs_bind,
+ 	.unbind		= gfs_unbind,
++	.iProduct	= DRIVER_DESC,
+ };
+ 
+ 
+@@ -245,20 +222,10 @@ static int gfs_bind(struct usb_composite_dev *cdev)
+ 	if (unlikely(ret < 0))
+ 		goto error_quick;
+ 
+-	gfs_dev_desc.idVendor  = cpu_to_le16(gfs_vendor_id);
+-	gfs_dev_desc.idProduct = cpu_to_le16(gfs_product_id);
+-
+-	snprintf(gfs_manufacturer, sizeof gfs_manufacturer, "%s %s with %s",
+-		 init_utsname()->sysname, init_utsname()->release,
+-		 cdev->gadget->name);
+-
+ 	ret = usb_string_ids_tab(cdev, gfs_strings);
+ 	if (unlikely(ret < 0))
+ 		goto error;
+ 
+-	gfs_dev_desc.iManufacturer = gfs_strings[GFS_STRING_MANUFACTURER_IDX].id;
+-	gfs_dev_desc.iProduct      = gfs_strings[GFS_STRING_PRODUCT_IDX].id;
+-
+ 	ret = functionfs_bind(gfs_ffs_data, cdev);
+ 	if (unlikely(ret < 0))
+ 		goto error;
+@@ -266,9 +233,8 @@ static int gfs_bind(struct usb_composite_dev *cdev)
+ 	for (i = 0; i < ARRAY_SIZE(gfs_configurations); ++i) {
+ 		struct gfs_configuration *c = gfs_configurations + i;
+ 
+-		ret = GFS_STRING_FIRST_CONFIG_IDX + i;
+-		c->c.label			= gfs_strings[ret].s;
+-		c->c.iConfiguration		= gfs_strings[ret].id;
++		c->c.label			= gfs_strings[i].s;
++		c->c.iConfiguration		= gfs_strings[i].id;
+ 		c->c.bind			= gfs_do_config;
+ 		c->c.bConfigurationValue	= 1 + i;
+ 		c->c.bmAttributes		= USB_CONFIG_ATT_SELFPOWER;
+@@ -293,13 +259,14 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
+ {
+ 	ENTER();
+ 
+-	/* We may have been called in an error recovery frem
++	/*
++	 * We may have been called in an error recovery from
+ 	 * composite_bind() after gfs_unbind() failure so we need to
+ 	 * check if gfs_ffs_data is not NULL since gfs_bind() handles
+ 	 * all error recovery itself.  I'd rather we werent called
+ 	 * from composite on orror recovery, but what you're gonna
+-	 * do...? */
+-
++	 * do...?
++	 */
+ 	if (gfs_ffs_data) {
+ 		gether_cleanup();
+ 		functionfs_unbind(gfs_ffs_data);
+@@ -334,14 +301,16 @@ static int gfs_do_config(struct usb_configuration *c)
+ 	if (unlikely(ret < 0))
+ 		return ret;
+ 
+-	/* After previous do_configs there may be some invalid
++	/*
++	 * After previous do_configs there may be some invalid
+ 	 * pointers in c->interface array.  This happens every time
+ 	 * a user space function with fewer interfaces than a user
+ 	 * space function that was run before the new one is run.  The
+ 	 * compasit's set_config() assumes that if there is no more
+ 	 * then MAX_CONFIG_INTERFACES interfaces in a configuration
+ 	 * then there is a NULL pointer after the last interface in
+-	 * c->interface array.  We need to make sure this is true. */
++	 * c->interface array.  We need to make sure this is true.
++	 */
+ 	if (c->next_interface_id < ARRAY_SIZE(c->interface))
+ 		c->interface[c->next_interface_id] = NULL;
+ 
+@@ -350,10 +319,12 @@ static int gfs_do_config(struct usb_configuration *c)
+ 
+ 
+ #ifdef CONFIG_USB_FUNCTIONFS_ETH
++
+ static int eth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
+ {
+ 	return can_support_ecm(c->cdev->gadget)
+ 		? ecm_bind_config(c, ethaddr)
+ 		: geth_bind_config(c, ethaddr);
+ }
++
+ #endif
+-- 
+1.7.1
 
