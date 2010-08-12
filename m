@@ -1,211 +1,556 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760943Ab0HLWWo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 18:22:44 -0400
+	id S1760969Ab0HLWWz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 18:22:55 -0400
 Received: from mail-qy0-f181.google.com ([209.85.216.181]:54679 "EHLO
 	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754839Ab0HLWWm (ORCPT
+	with ESMTP id S1754839Ab0HLWWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 18:22:42 -0400
+	Thu, 12 Aug 2010 18:22:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=oe5V9Lt6VXTNv1dNyjctQ5ZtFqPTF+C3nFTfrs/G1OZ6T1YxCWFMkUkulaSBOLp89Y
-         X6zJNRf1PgtYbV4dzYcDEmSIPJlVCxlP606DbRL7Mgwh1sr3AdqfD0fu1o3rYHRlTFe6
-         Xu4TCvfXHBOIDjZHNpu+5TE8RVv9RYKDMKzrw=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=KroJ43NlpWUHRIf+SPT8cukkYtZ2disuffZF9/iUa3EDVNmLZPkNGbxR/mvMS/XRON
+         m97LhmX1M+CJQG/V+0kIWoXm09RS8mt9mXGJLXIsOOg200PFrUsebVKFTlcyWmG31R7i
+         fbO+VV8zzY6tXLtgxKeFw0DCCvXiZHZ8jEeRw=
 From: bchociej@gmail.com
 To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
         cmm@us.ibm.com, bcchocie@us.ibm.com, mrlupfer@us.ibm.com,
         crscott@us.ibm.com, bchociej@gmail.com, mlupfer@gmail.com,
         conscott@vt.edu
-Subject: [RFC v2 PATCH 0/6] Btrfs: Add hot data relocation functionality
-Date: Thu, 12 Aug 2010 17:22:00 -0500
-Message-Id: <1281651726-23501-1-git-send-email-bchociej@gmail.com>
+Subject: [RFC v2 PATCH 1/6] Btrfs: Add experimental hot data hash list index
+Date: Thu, 12 Aug 2010 17:22:01 -0500
+Message-Id: <1281651726-23501-2-git-send-email-bchociej@gmail.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1281651726-23501-1-git-send-email-bchociej@gmail.com>
+References: <1281651726-23501-1-git-send-email-bchociej@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These patches are a replacement for our previous hot data tracking
-patches. They include some bugfixes as well as the previously promised
-hot data relocation code for moving frequently accessed data to SSD.
-Structurally, the patches are quite similar to the first set, with the
-notable addition of new hotdata_relocate.{c,h} files. Matt Lupfer and
-Conor Scott have done as much of the coding as I have, if not more. So,
-many thanks to those guys, along with Mingming Cao, Steve French, Steve
-Pratt, and Chris Mason, without which this little project would have
-been impossible.
+From: Ben Chociej <bchociej@gmail.com>
 
-
-INTRODUCTION:
-
-This patch series adds experimental support for relocation of hot data
-to SSD in Btrfs. Essentially, this means maintaining some key stats
-(like number of reads/writes, last read/write time, frequency of
-reads/writes), then distilling those numbers down to a single
-"temperature" value that reflects what data is "hot," and using that
-temperature to move data to SSDs.
-
-The long-term goal of these patches is to allow Btrfs to intelligently
-utilize SSDs in a heterogenous volume. Incidentally, this project has
-been motivated by the Project Ideas page on the Btrfs wiki.
-
-Of course, users are warned not to run this code outside of development
-environments. These patches are EXPERIMENTAL, and as such they might eat
-your data and/or memory. That said, the code should be relatively safe
-when the hotdatatrack and hotdatamove mount options are disabled.
-
-
-MOTIVATION:
-
-The overall goal of enabling hot data relocation to SSD has been
-motivated by the Project Ideas page on the Btrfs wiki at
-<https://btrfs.wiki.kernel.org/index.php/Project_ideas>. It is hoped
-that this initial patchset will eventually mature into a usable hybrid
-storage feature set for Btrfs.
-
-This is essentially the traditional cache argument: SSD is fast and
-expensive; HDD is cheap but slow. ZFS, for example, can already take
-advantage of SSD caching. Btrfs should also be able to take advantage of
-hybrid storage without many broad, sweeping changes to existing code.
-
-With Btrfs's COW approach, an external cache (where data is *moved* to
-SSD, rather than just cached there) makes a lot of sense. These patches,
-in contrast to the previous version, now enable the hot data relocation
-functionality. While performance testing so far has been extremely
-basic, the code has shown promising results in random read tests (about
-5x throughput by adding an SSD of about 20% of the total capacity of the
-volume).
-
-
-SUMMARY:
-
-- Hooks in existing Btrfs functions to track data access frequency
-  (btrfs_direct_IO, btrfs_readpages, and extent_write_cache_pages)
-
-- New rbtrees for tracking access frequency of inodes and sub-file
-  ranges (hotdata_map.c)
-
-- A hash list for indexing data by its temperature (hotdata_hash.c)
-
-- A debugfs interface for dumping data from the rbtrees (debugfs.c)
-
-- A background kthread for relocating data to faster media based on
-  temperature
-
-- Mount options for enabling temperature tracking (-o hotdatatrack,
-  -o hotdatamove; move implies track; both default to disabled)
-
-- An ioctl to retrieve the frequency information collected for a certain
-  file
-
-- Ioctls to enable/disable frequency tracking and relocation per inode.
-
-
-DIFFSTAT:
-
-$ git diff --stat --summary -M
-
- fs/btrfs/Makefile           |    3 +-
- fs/btrfs/ctree.h            |   96 ++++
- fs/btrfs/debugfs.c          |  532 ++++++++++++++++++++++
- fs/btrfs/debugfs.h          |   89 ++++
- fs/btrfs/disk-io.c          |   28 ++
- fs/btrfs/extent-tree.c      |   62 +++-
- fs/btrfs/extent_io.c        |   34 ++
- fs/btrfs/extent_io.h        |    7 +
- fs/btrfs/hotdata_hash.c     |  338 ++++++++++++++
- fs/btrfs/hotdata_hash.h     |  155 +++++++
- fs/btrfs/hotdata_map.c      |  804 +++++++++++++++++++++++++++++++++
- fs/btrfs/hotdata_map.h      |  167 +++++++
- fs/btrfs/hotdata_relocate.c |  783 ++++++++++++++++++++++++++++++++
- fs/btrfs/hotdata_relocate.h |   73 +++
- fs/btrfs/inode.c            |  164 +++++++-
- fs/btrfs/ioctl.c            |  142 ++++++-
- fs/btrfs/ioctl.h            |   23 +
- fs/btrfs/super.c            |   62 +++-
- fs/btrfs/volumes.c          |   38 ++-
- 19 files changed, 3580 insertions(+), 20 deletions(-)
-
- create mode 100644 fs/btrfs/debugfs.c
- create mode 100644 fs/btrfs/debugfs.h
- create mode 100644 fs/btrfs/hotdata_hash.c
- create mode 100644 fs/btrfs/hotdata_hash.h
- create mode 100644 fs/btrfs/hotdata_map.c
- create mode 100644 fs/btrfs/hotdata_map.h
- create mode 100644 fs/btrfs/hotdata_relocate.c
- create mode 100644 fs/btrfs/hotdata_relocate.h
-
-
-IMPLEMENTATION (in a nutshell):
-
-Hooks have been added to various functions (btrfs_writepage(s),
-btrfs_readpages, btrfs_direct_IO, and extent_write_cache_pages) in
-order to track data access patterns. Each of these hooks calls a new
-function, btrfs_update_freqs, that records each access to an inode,
-possibly including some sub-file-level information as well. A data
-structure containing some various frequency metrics gets updated with
-the latest access information.
-
->From there, a hash list takes over the job of figuring out a total
-"temperature" value for the data and indexing that temperature for fast
-lookup in the future. The function that does the temperature
-distillation is rather sensitive and can be tuned/tweaked by altering
-various #defined values in hotdata_hash.h.
-
-As for the actual data relocation, a kthread runs periodically that uses
-the hashlist to find data eligible for relocation, either
-to or from SSD. It then initiates the transfer of the data to the
-preferred media type by allocating to an appropriate block group
-type on the destination media, based on the temperature of the file and
-the speed of the media.
-
-Aside from the core functionality, there is a debugfs interface to spit
-out some of the data that is collected, and ioctls are also introduced
-to manipulate the new functionality on a per-inode basis.
-
-
-HOW TO USE HOTDATA RELOCATION:
-
-First, format like this:
-
-	# mkfs.btrfs -h <spinning_disk_blockdev> [any_blockdev] ...
-
-Note that a spinning disk must be the first block device listed, or you
-will receive a warning and unexpected behavior. To use hot data tracking
-alone, you only need one block device, and it needn't be an SSD. To use
-hot data relocation, you should have at least one spinning disk and at
-least one SSD. Then...
-
-	# mount -o hotdatamove <any_blockdev> <mountpoint>
-
-Optionally, view information about hot data from debugfs:
-
-	# cat /sys/kernel/debug/btrfs_data/<blockdev>/inode_data
-	# cat /sys/kernel/debug/btrfs_data/<blockdev>/range_data
-
-
-KNOWN ISSUES:
-(When hotdatatrack or hotdatamove mount options are enabled)
-
-- Occasional errors (-EIO) from read/write syscalls.
-
-- Heavy file creation workloads encounter high lock contention,
-  significantly impacting performance.
-
-
-FUTURE GOALS:
-
-- Store more information about data temperature / access frequency
-  persistently between mounts.
-
-- Track temperature of and relocate metadata (and inline extents) to
-  SSD.
-
+Adds a hash table structure to efficiently lookup the data temperature
+of a file. Also adds a function to calculate that temperature based on
+some metrics kept in custom frequency data structs (in the next patch).
 
 Signed-off-by: Ben Chociej <bchociej@gmail.com>
 Signed-off-by: Matt Lupfer <mlupfer@gmail.com>
 Signed-off-by: Conor Scott <conscott@vt.edu>
 Reviewed-by: Mingming Cao <cmm@us.ibm.com>
-Reviewed-by: Steve French <smfrench@gmail.com>
+---
+ fs/btrfs/hotdata_hash.c |  338 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/btrfs/hotdata_hash.h |  155 ++++++++++++++++++++++
+ 2 files changed, 493 insertions(+), 0 deletions(-)
+ create mode 100644 fs/btrfs/hotdata_hash.c
+ create mode 100644 fs/btrfs/hotdata_hash.h
+
+diff --git a/fs/btrfs/hotdata_hash.c b/fs/btrfs/hotdata_hash.c
+new file mode 100644
+index 0000000..b789edd
+--- /dev/null
++++ b/fs/btrfs/hotdata_hash.c
+@@ -0,0 +1,338 @@
++/*
++ * fs/btrfs/hotdata_hash.c
++ *
++ * Copyright (C) 2010 International Business Machines Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public
++ * License v2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public
++ * License along with this program; if not, write to the
++ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
++ * Boston, MA 021110-1307, USA.
++ */
++
++#include <linux/list.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/module.h>
++#include <linux/spinlock.h>
++#include <linux/hardirq.h>
++#include <linux/hash.h>
++#include <linux/kthread.h>
++#include <linux/freezer.h>
++#include "hotdata_map.h"
++#include "hotdata_hash.h"
++#include "hotdata_relocate.h"
++#include "async-thread.h"
++#include "ctree.h"
++
++struct heat_hashlist_node *alloc_heat_hashlist_node(gfp_t mask)
++{
++	struct heat_hashlist_node *node;
++
++	node = kmalloc(sizeof(struct heat_hashlist_node), mask);
++	if (!node || IS_ERR(node))
++		return node;
++	INIT_HLIST_NODE(&node->hashnode);
++	node->freq_data = NULL;
++	node->hlist = NULL;
++	node->location = BTRFS_ON_ROTATING;
++	spin_lock_init(&node->lock);
++	spin_lock_init(&node->location_lock);
++	atomic_set(&node->refs, 1);
++
++	return node;
++}
++
++void free_heat_hashlists(struct btrfs_root *root)
++{
++	int i;
++
++	/* Free node/range heat hash lists */
++	for (i = 0; i < HEAT_HASH_SIZE; i++) {
++		struct hlist_node *pos = NULL, *pos2 = NULL;
++		struct heat_hashlist_node *heatnode = NULL;
++
++		hlist_for_each_safe(pos, pos2,
++			&root->heat_inode_hl[i].hashhead) {
++			heatnode = hlist_entry(pos, struct heat_hashlist_node,
++				hashnode);
++			hlist_del(pos);
++			kfree(heatnode);
++		}
++		hlist_for_each_safe(pos, pos2,
++			&root->heat_range_hl[i].hashhead) {
++			heatnode = hlist_entry(pos, struct heat_hashlist_node,
++				hashnode);
++			hlist_del(pos);
++			kfree(heatnode);
++		}
++	}
++}
++
++/*
++ * btrfs_get_temp is responsible for distilling the six heat criteria, which
++ * are described in detail in hotdata_hash.h) down into a single temperature
++ * value for the data, which is an integer between 0 and HEAT_MAX_VALUE.
++ *
++ * To accomplish this, the raw values from the btrfs_freq_data structure
++ * are shifted various ways in order to make the temperature calculation more
++ * or less sensitive to each value.
++ *
++ * Once this calibration has happened, we do some additional normalization and
++ * make sure that everything fits nicely in a u32. From there, we take a very
++ * rudimentary kind of "average" of each of the values, where the *_COEFF_POWER
++ * values act as weights for the average.
++ *
++ * Finally, we use the HEAT_HASH_BITS value, which determines the size of the
++ * heat hash list, to normalize the temperature to the proper granularity.
++ */
++int btrfs_get_temp(struct btrfs_freq_data *fdata)
++{
++	u32 result = 0;
++
++	struct timespec ckt = current_kernel_time();
++	u64 cur_time = timespec_to_ns(&ckt);
++
++	u32 nrr_heat = fdata->nr_reads << NRR_MULTIPLIER_POWER;
++	u32 nrw_heat = fdata->nr_writes << NRW_MULTIPLIER_POWER;
++
++	u64 ltr_heat = (cur_time - timespec_to_ns(&fdata->last_read_time))
++			>> LTR_DIVIDER_POWER;
++	u64 ltw_heat = (cur_time - timespec_to_ns(&fdata->last_write_time))
++			>> LTW_DIVIDER_POWER;
++
++	u64 avr_heat = (((u64) -1) - fdata->avg_delta_reads)
++			>> AVR_DIVIDER_POWER;
++	u64 avw_heat = (((u64) -1) - fdata->avg_delta_writes)
++			>> AVR_DIVIDER_POWER;
++
++	if (ltr_heat >= ((u64) 1 << 32))
++		ltr_heat = 0;
++	else
++		ltr_heat = ((u64) 1 << 32) - ltr_heat;
++	/* ltr_heat is now guaranteed to be u32 safe */
++
++	if (ltw_heat >= ((u64) 1 << 32))
++		ltw_heat = 0;
++	else
++		ltw_heat = ((u64) 1 << 32) - ltw_heat;
++	/* ltw_heat is now guaranteed to be u32 safe */
++
++	if (avr_heat >= ((u64) 1 << 32))
++		avr_heat = (u32) -1;
++	/* avr_heat is now guaranteed to be u32 safe */
++
++	if (avw_heat >= ((u64) 1 << 32))
++		avr_heat = (u32) -1;
++	/* avw_heat is now guaranteed to be u32 safe */
++
++	nrr_heat = nrr_heat >> (3 - NRR_COEFF_POWER);
++	nrw_heat = nrw_heat >> (3 - NRW_COEFF_POWER);
++	ltr_heat = ltr_heat >> (3 - LTR_COEFF_POWER);
++	ltw_heat = ltw_heat >> (3 - LTW_COEFF_POWER);
++	avr_heat = avr_heat >> (3 - AVR_COEFF_POWER);
++	avw_heat = avw_heat >> (3 - AVW_COEFF_POWER);
++
++	result = nrr_heat + nrw_heat + (u32) ltr_heat +
++		 (u32) ltw_heat + (u32) avr_heat + (u32) avw_heat;
++
++	return result >> (32 - HEAT_HASH_BITS);
++}
++
++static int is_old(struct btrfs_freq_data *freq_data)
++{
++	int ret = 0;
++	struct timespec ckt = current_kernel_time();
++
++	u64 cur_time = timespec_to_ns(&ckt);
++	u64 last_read_ns = (cur_time -
++			    timespec_to_ns(&freq_data->last_read_time));
++	u64 last_write_ns = (cur_time -
++			     timespec_to_ns(&freq_data->last_write_time));
++	u64 kick_ns = TIME_TO_KICK * (u64)1000000000;
++	if ((last_read_ns > kick_ns) && (last_write_ns > kick_ns))
++		ret = 1;
++	return ret;
++}
++
++
++/* update temps for each range item for aging purposes */
++static void btrfs_update_range_data(struct hot_inode_item *hot_inode,
++				    struct btrfs_root *root)
++{
++	struct hot_range_tree *inode_range_tree;
++	struct rb_node *node;
++	struct rb_node *old_node;
++	struct hot_range_item *current_range;
++	int location, range_is_old;
++
++	inode_range_tree = &hot_inode->hot_range_tree;
++	write_lock(&inode_range_tree->lock);
++	node = rb_first(&inode_range_tree->map);
++	/* Walk the hot_range_tree for inode */
++	while (node) {
++		current_range = rb_entry(node, struct hot_range_item, rb_node);
++		btrfs_update_heat_index(&current_range->freq_data, root);
++		old_node = node;
++		node = rb_next(node);
++		/* if the inode is cold and off ssd, quit keeping track of it */
++		spin_lock(&current_range->heat_node->location_lock);
++		location = current_range->heat_node->location;
++		spin_unlock(&current_range->heat_node->location_lock);
++
++		spin_lock(&current_range->lock);
++		range_is_old = is_old(&current_range->freq_data);
++		spin_unlock(&current_range->lock);
++
++		if (range_is_old && location == BTRFS_ON_ROTATING) {
++			if (atomic_read(&current_range->heat_node->refs) <= 1)
++				btrfs_remove_range_from_heat_index(hot_inode,
++							current_range, root);
++		}
++	}
++	write_unlock(&inode_range_tree->lock);
++}
++
++/* update temps for each hot inode item and hot range item for aging purposes */
++static void iterate_and_update_heat(struct btrfs_root *root)
++{
++	struct btrfs_root *fs_root;
++	struct hot_inode_item *current_hot_inode;
++	struct hot_inode_tree *hot_inode_tree;
++	unsigned long inode_num;
++
++	hot_inode_tree = &root->hot_inode_tree;
++
++	fs_root = root->fs_info->fs_root;
++	/* walk the inode tree */
++	current_hot_inode = find_next_hot_inode(fs_root, 0);
++	while (current_hot_inode) {
++		btrfs_update_heat_index(&current_hot_inode->freq_data, root);
++		btrfs_update_range_data(current_hot_inode, fs_root);
++		inode_num = current_hot_inode->i_ino;
++		free_hot_inode_item(current_hot_inode);
++		current_hot_inode = find_next_hot_inode(fs_root,
++				inode_num + 1);
++	}
++}
++
++/*
++ * kthread iterates each hot_inode_item and hot_range_item
++ * and update temperatures to be shifted in heat hash table
++ * for purposes of relocation and such hot file detection
++ */
++static int update_inode_kthread(void *arg)
++{
++	struct btrfs_root *root = arg;
++	unsigned long delay;
++	do {
++		delay = HZ * HEAT_UPDATE_DELAY;
++		if (mutex_trylock(&root->fs_info->
++			hot_data_update_kthread_mutex)) {
++			iterate_and_update_heat(root);
++			mutex_unlock(&root->fs_info->
++				     hot_data_update_kthread_mutex);
++		}
++		if (freezing(current)) {
++			refrigerator();
++		} else {
++			set_current_state(TASK_INTERRUPTIBLE);
++			if (!kthread_should_stop())
++				schedule_timeout(delay);
++			__set_current_state(TASK_RUNNING);
++		}
++	} while (!kthread_should_stop());
++	return 0;
++}
++
++/* init the kthread to do temp updates */
++void init_hash_list_kthread(struct btrfs_root *root)
++{
++	root->fs_info->hot_data_update_kthread =
++					kthread_run(update_inode_kthread,
++					root,
++					"update_hot_inode_kthread");
++	if (IS_ERR(root->fs_info->hot_data_update_kthread))
++		kthread_stop(root->fs_info->hot_data_update_kthread);
++}
++
++/*
++ * take hot inode that is now cold and remove from indexes and clean up
++ * any memory associted, involves removing hot inode from rb tree, and
++ * heat hash lists, and freeing up all memory and range memory.
++ */
++void btrfs_remove_inode_from_heat_index(struct hot_inode_item *hot_inode,
++				  struct btrfs_root *root)
++{
++	struct rb_node *node2;
++	struct hot_range_item *hr;
++
++	/* remove hot inode item from rb tree */
++	write_lock(&root->hot_inode_tree.lock);
++	remove_hot_inode_item(&root->hot_inode_tree, hot_inode);
++	write_unlock(&root->hot_inode_tree.lock);
++
++	/* remove the hot inode item from hash table */
++	write_lock(&hot_inode->heat_node->hlist->rwlock);
++	hlist_del(&hot_inode->heat_node->hashnode);
++	write_unlock(&hot_inode->heat_node->hlist->rwlock);
++
++	/* remove ranges in inode from rb-tree and heat table first */
++	write_lock(&hot_inode->hot_range_tree.lock);
++	node2 = rb_first(&hot_inode->hot_range_tree.map);
++	while (node2) {
++		hr = rb_entry(node2, struct hot_range_item,
++			rb_node);
++
++		/* remove range from range tree */
++		remove_hot_range_item(&hot_inode->hot_range_tree, hr);
++
++		/* remove range from hash list */
++		write_lock(&hr->heat_node->hlist->rwlock);
++		hlist_del(&hr->heat_node->hashnode);
++		write_unlock(&hr->heat_node->hlist->rwlock);
++
++		/*free up memory */
++		kfree(hr->heat_node);
++		free_hot_range_item(hr);
++
++		node2 = rb_first(&hot_inode->hot_range_tree.map);
++	}
++	write_unlock(&hot_inode->hot_range_tree.lock);
++
++	/* free up associated inode memory */
++	kfree(hot_inode->heat_node);
++	free_hot_inode_item(hot_inode);
++}
++
++/*
++ * take hot range that is now cold and remove from indexes and clean up
++ * any memory associted, involves removing hot range from rb tree, and
++ * heat hash lists, and freeing up all memory.
++ */
++void btrfs_remove_range_from_heat_index(struct hot_inode_item *hot_inode,
++					struct hot_range_item *hr,
++					struct btrfs_root *root)
++{
++	/* remove range from rb tree */
++	remove_hot_range_item(&hot_inode->hot_range_tree, hr);
++
++	/* remove range from hash list */
++	spin_lock(&hr->heat_node->lock);
++	write_lock(&hr->heat_node->hlist->rwlock);
++	hlist_del(&hr->heat_node->hashnode);
++	write_unlock(&hr->heat_node->hlist->rwlock);
++	spin_unlock(&hr->heat_node->lock);
++
++	/*free up memory */
++	kfree(hr->heat_node);
++	free_hot_range_item(hr);
++}
+diff --git a/fs/btrfs/hotdata_hash.h b/fs/btrfs/hotdata_hash.h
+new file mode 100644
+index 0000000..10d28ee
+--- /dev/null
++++ b/fs/btrfs/hotdata_hash.h
+@@ -0,0 +1,155 @@
++/*
++ * fs/btrfs/hotdata_hash.h
++ *
++ * Copyright (C) 2010 International Business Machines Corp.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public
++ * License v2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public
++ * License along with this program; if not, write to the
++ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
++ * Boston, MA 021110-1307, USA.
++ */
++
++#ifndef __HOTDATAHASH__
++#define __HOTDATAHASH__
++
++#include <linux/list.h>
++#include <linux/hash.h>
++
++#define HEAT_HASH_BITS 8
++#define HEAT_HASH_SIZE (1 << HEAT_HASH_BITS)
++#define HEAT_HASH_MASK (HEAT_HASH_SIZE - 1)
++#define HEAT_MIN_VALUE 0
++#define HEAT_MAX_VALUE (HEAT_HASH_SIZE - 1)
++#define HEAT_NO_MIGRATE HEAT_HASH_SIZE
++
++/* time to quit keeping track of tracking data (seconds)*/
++#define TIME_TO_KICK 400
++
++/* set how often to update temps (seconds) */
++#define HEAT_UPDATE_DELAY 400
++
++/* initial heat threshold temperature */
++#define HEAT_INITIAL_THRESH 150
++
++/*
++ * The following comments explain what exactly comprises a unit of heat.
++ *
++ * Each of six values of heat are calculated and combined in order to form an
++ * overall temperature for the data:
++ *
++ * NRR - number of reads since mount
++ * NRW - number of writes since mount
++ * LTR - time elapsed since last read (ns)
++ * LTW - time elapsed since last write (ns)
++ * AVR - average delta between recent reads (ns)
++ * AVW - average delta between recent writes (ns)
++ *
++ * These values are divided (right-shifted) according to the *_DIVIDER_POWER
++ * values defined below to bring the numbers into a reasonable range. You can
++ * modify these values to fit your needs. However, each heat unit is a u32 and
++ * thus maxes out at 2^32 - 1. Therefore, you must choose your dividers quite
++ * carefully or else they could max out or be stuck at zero quite easily.
++ *
++ * (E.g., if you chose AVR_DIVIDER_POWER = 0, nothing less than 4s of atime
++ * delta would bring the temperature above zero, ever.)
++ *
++ * Finally, each value is added to the overall temperature between 0 and 8
++ * times, depending on its *_COEFF_POWER value. Note that the coefficients are
++ * also actually implemented with shifts, so take care to treat these values
++ * as powers of 2. (I.e., 0 means we'll add it to the temp once; 1 = 2x, etc.)
++ */
++
++/* NRR/NRW heat unit = 2^X accesses */
++#define NRR_MULTIPLIER_POWER 20
++#define NRR_COEFF_POWER 0
++#define NRW_MULTIPLIER_POWER 20
++#define NRW_COEFF_POWER 0
++
++/* LTR/LTW heat unit = 2^X ns of age */
++#define LTR_DIVIDER_POWER 30
++#define LTR_COEFF_POWER 1
++#define LTW_DIVIDER_POWER 30
++#define LTW_COEFF_POWER 1
++
++/*
++ * AVR/AVW cold unit = 2^X ns of average delta
++ * AVR/AVW heat unit = HEAT_MAX_VALUE - cold unit
++ *
++ * E.g., data with an average delta between 0 and 2^X ns will have a cold value
++ * of 0, which means a heat value equal to HEAT_MAX_VALUE.
++ */
++#define AVR_DIVIDER_POWER 40
++#define AVR_COEFF_POWER 0
++#define AVW_DIVIDER_POWER 40
++#define AVW_COEFF_POWER 0
++
++struct btrfs_root;
++
++/* Hash list heads for heat hash table */
++struct heat_hashlist_entry {
++	struct hlist_head hashhead;
++	rwlock_t rwlock;
++	u32 temperature;
++};
++
++/* Nodes stored in each hash list of hash table */
++struct heat_hashlist_node {
++	struct hlist_node hashnode;
++	struct list_head node;
++	struct btrfs_freq_data *freq_data;
++	struct heat_hashlist_entry *hlist;
++
++	/*
++	 * number of references to this node
++	 * equals 1 (hashlist entry) + number
++	 * of private relocation lists it is on
++	 */
++	atomic_t refs;
++
++	spinlock_t lock; /* protects hlist */
++	spinlock_t location_lock; /* protects location */
++	u8 location; /*flag for whether or not on rotating*/
++};
++
++struct heat_hashlist_node *alloc_heat_hashlist_node(gfp_t mask);
++void free_heat_hashlists(struct btrfs_root *root);
++
++/*
++ * Returns a value from 0 to HEAT_MAX_VALUE indicating the temperature of the
++ * file (and consequently its bucket number in hashlist) (see hotdata_hash.c)
++ */
++int btrfs_get_temp(struct btrfs_freq_data *fdata);
++
++/*
++ * initialize kthread for each new mount point that
++ * periodically goes through hot inodes and hot ranges and ages them
++ * based on frequency of access
++ */
++void init_hash_list_kthread(struct btrfs_root *root);
++
++/*
++ * recalculates temperatures for inode or range
++ * and moves around in heat hash table based on temp
++ */
++void btrfs_update_heat_index(struct btrfs_freq_data *fdata,
++			       struct btrfs_root *root);
++
++/* remove from index and clean up all memory associated with hot range */
++void btrfs_remove_range_from_heat_index(struct hot_inode_item *hot_inode,
++					struct hot_range_item *hr,
++					struct btrfs_root *root);
++
++/* remove form index and clean up all memory associated with hot inode */
++void btrfs_remove_inode_from_heat_index(struct hot_inode_item *hot_inode,
++				  struct btrfs_root *root);
++
++#endif /* __HOTDATAHASH__ */
+-- 
+1.7.1
+
