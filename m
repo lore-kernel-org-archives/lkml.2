@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933080Ab0HLAIM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:08:12 -0400
-Received: from kroah.org ([198.145.64.141]:60482 "EHLO coco.kroah.org"
+	id S933132Ab0HLAIY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:08:24 -0400
+Received: from kroah.org ([198.145.64.141]:47810 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933046Ab0HLAIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:00 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:13 2010
-Message-Id: <20100812000613.854304247@clark.site>
+	id S933095Ab0HLAIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
+Message-Id: <20100812000615.054782298@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:28 -0700
+Date: Wed, 11 Aug 2010 17:05:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Lytochkin Boris <lytboris@gmail.com>,
-        Alexander Beregalov <a.beregalov@gmail.com>
-Subject: [13/67] serial: add support for OX16PCI958 card
+        Borislav Petkov <bp@alien8.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [26/67] ide-cd: Do not access completed requests in the irq handler
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lytochkin Boris <lytboris@gmail.com>
+From: Borislav Petkov <bp@alien8.de>
 
-commit e847003f00d5eca3e3b3a6a1199f82b51293faf6 upstream.
+commit 110712828365ccafcc61a7f4db44c31ed4cf8793 upstream.
 
-Signed-off-by: Lytochkin Boris <lytboris@gmail.com>
-Tested-by: Lytochkin Boris <lytboris@gmail.com>
-Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
+ide_cd_error_cmd() can complete an erroneous request with leftover
+buffers. Signal this with its return value so that the request is not
+accessed after its completion in the irq handler and we oops.
+
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/8250_pci.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/ide/ide-cd.c |   14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/drivers/serial/8250_pci.c
-+++ b/drivers/serial/8250_pci.c
-@@ -994,6 +994,7 @@ static int skip_tx_en_setup(struct seria
- #define PCI_DEVICE_ID_TITAN_800E	0xA014
- #define PCI_DEVICE_ID_TITAN_200EI	0xA016
- #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
-+#define PCI_DEVICE_ID_OXSEMI_16PCI958	0x9538
+--- a/drivers/ide/ide-cd.c
++++ b/drivers/ide/ide-cd.c
+@@ -506,15 +506,22 @@ int ide_cd_queue_pc(ide_drive_t *drive,
+ 	return (flags & REQ_FAILED) ? -EIO : 0;
+ }
  
- /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
- #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
-@@ -1542,6 +1543,8 @@ enum pci_board_num_t {
- 	pbn_b2_4_921600,
- 	pbn_b2_8_921600,
+-static void ide_cd_error_cmd(ide_drive_t *drive, struct ide_cmd *cmd)
++/*
++ * returns true if rq has been completed
++ */
++static bool ide_cd_error_cmd(ide_drive_t *drive, struct ide_cmd *cmd)
+ {
+ 	unsigned int nr_bytes = cmd->nbytes - cmd->nleft;
  
-+	pbn_b2_8_1152000,
+ 	if (cmd->tf_flags & IDE_TFLAG_WRITE)
+ 		nr_bytes -= cmd->last_xfer_len;
+ 
+-	if (nr_bytes > 0)
++	if (nr_bytes > 0) {
+ 		ide_complete_rq(drive, 0, nr_bytes);
++		return true;
++	}
 +
- 	pbn_b2_bt_1_115200,
- 	pbn_b2_bt_2_115200,
- 	pbn_b2_bt_4_115200,
-@@ -1960,6 +1963,13 @@ static struct pciserial_board pci_boards
- 		.uart_offset	= 8,
- 	},
++	return false;
+ }
  
-+	[pbn_b2_8_1152000] = {
-+		.flags		= FL_BASE2,
-+		.num_ports	= 8,
-+		.base_baud	= 1152000,
-+		.uart_offset	= 8,
-+	},
-+
- 	[pbn_b2_bt_1_115200] = {
- 		.flags		= FL_BASE2|FL_BASE_BARS,
- 		.num_ports	= 1,
-@@ -2875,6 +2885,9 @@ static struct pci_device_id serial_pci_t
- 	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI952,
- 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
- 		pbn_b0_bt_2_921600 },
-+	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI958,
-+		PCI_ANY_ID , PCI_ANY_ID, 0, 0,
-+		pbn_b2_8_1152000 },
+ static ide_startstop_t cdrom_newpc_intr(ide_drive_t *drive)
+@@ -679,7 +686,8 @@ out_end:
+ 		}
  
- 	/*
- 	 * Oxford Semiconductor Inc. Tornado PCI express device range.
+ 		if (uptodate == 0 && rq->bio)
+-			ide_cd_error_cmd(drive, cmd);
++			if (ide_cd_error_cmd(drive, cmd))
++				return ide_stopped;
+ 
+ 		/* make sure it's fully ended */
+ 		if (blk_fs_request(rq) == 0) {
 
 
