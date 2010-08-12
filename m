@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760795Ab0HLTLW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 15:11:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41265 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754427Ab0HLTLV (ORCPT
+	id S1760809Ab0HLTOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 15:14:23 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62392 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760332Ab0HLTOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 15:11:21 -0400
-Date: Thu, 12 Aug 2010 12:10:59 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-mtd@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-Subject: [PATCH -next] ubi: fix kconfig unmet dependency
-Message-Id: <20100812121059.e1d40380.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Aug 2010 15:14:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=iuHWJsduk/F5kbaDbrRdSbxNnswaPplaRrEgHT91rzFVjoEDDEFh64gswmWHiDM4Cw
+         tpACgPDV9smxebLD4xZvvO3UYWGel6suVuxzlg3SYW02Oh6nWt2z0+j4DxU74p94ZwsR
+         /vcR12Q5mUxr+RdyCpX6oO+5ZA/ihbsmwALhs=
+MIME-Version: 1.0
+In-Reply-To: <20100812150030.GB27749@pengutronix.de>
+References: <20100812150030.GB27749@pengutronix.de>
+Date: Thu, 12 Aug 2010 12:14:20 -0700
+X-Google-Sender-Auth: YSA4mc8hg0N9rkCqKxmxhTIKZn4
+Message-ID: <AANLkTikSExz3ELLEZ90LgitTsxwkE1dxu1BM1VhfCOmy@mail.gmail.com>
+Subject: Re: dmaengine questions
+From: Dan Williams <dan.j.williams@intel.com>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.ml.walleij@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, Aug 12, 2010 at 8:00 AM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> Hi,
+>
+> I am currently looking into implementing the Freescale i.MX SDMA engine
+> into the dmaengine API. The SDMA engine can handle sg transfers from/to
+> devices. During implementation some questions came up.
+>
+> On the i.MX we already have a DMA engine which can do slave dma
+> transfers, the IPU (drivers/dma/ipu/), which is exclusively used for
+> image operations. My problem is that I found no way for the clients
+> to select which DMA engine to use as both have the same capabilities
+> (DMA_SLAVE).
 
-warning: (OPTPROBES && KPROBES && HAVE_OPTPROBES && !PREEMPT && DEBUG_KERNEL || MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || LOCKDEP && DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT || LATENCYTOP && HAVE_LATENCYTOP_SUPPORT && DEBUG_KERNEL && STACKTRACE_SUPPORT && PROC_FS) selects KALLSYMS_ALL which has unmet direct dependencies (DEBUG_KERNEL && KALLSYMS)
+Yes, if you need finer grained matching of channels, beyond simple
+capability matching, this is the intended purpose of the
+'dma_filter_fn' and 'filter_param' arguments to dma_request_channel.
+Dmaengine will pass all available channels that match the base
+capability to the filter function for further, usually architecture
+specific, discrimination.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Artem Bityutskiy <dedekind1@gmail.com>
-Cc:	linux-mtd@lists.infradead.org
----
- drivers/mtd/ubi/Kconfig.debug |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> For the SDMA engine the clients have to pass some platform specific data
+> to the SDMA engine (dma request line, word width and the like). The
+> current mechanism is to pass this data through the dma_chan->private
+> field, which seems more like tunneling instead of passing the data as we
+> lose type safety. Are there any ideas to improve this?
 
-This builds cleanly.  Will it execute OK?
-or we can make MTD_UBI_DEBUG depend on KALLSYMS_ALL.
+Hopefully dma_chan->private can eventually be phased out in favor of
+Linus' dma_slave_config scheme [1].
 
---- linux-next-20100810.orig/drivers/mtd/ubi/Kconfig.debug
-+++ linux-next-20100810/drivers/mtd/ubi/Kconfig.debug
-@@ -6,7 +6,7 @@ config MTD_UBI_DEBUG
- 	depends on SYSFS
- 	depends on MTD_UBI
- 	select DEBUG_FS
--	select KALLSYMS_ALL
-+	select KALLSYMS_ALL if KALLSYMS && DEBUG_KERNEL
- 	help
- 	  This option enables UBI debugging.
- 
+--
+Dan
+
+[1]: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=c156d0a5
