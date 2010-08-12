@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab0HLHK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:10:27 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:57096 "EHLO
+	id S1758893Ab0HLHL4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 03:11:56 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:38587 "EHLO
 	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752416Ab0HLHKZ (ORCPT
+	with ESMTP id S1752281Ab0HLHLy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:10:25 -0400
-Date: Thu, 12 Aug 2010 09:10:23 +0200
+	Thu, 12 Aug 2010 03:11:54 -0400
 From: Sam Ravnborg <sam@ravnborg.org>
-To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Subject: [PATCH 0/2] kconfig: fixes for savedefconfig
-Message-ID: <20100812071023.GA11148@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>
+Subject: [PATCH 1/2] kconfig: fix savedefconfig for tristate choices
+Date: Thu, 12 Aug 2010 09:11:51 +0200
+Message-Id: <1281597112-31019-1-git-send-email-sam@ravnborg.org>
+X-Mailer: git-send-email 1.6.0.6
+In-Reply-To: <20100812071023.GA11148@merkur.ravnborg.org>
+References: <20100812071023.GA11148@merkur.ravnborg.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While tranislating all remaining defconfigs in
-the kernel to the minimal format I encountered
-an issue where the resulting .config was not
-equal to the original.
+savedefconfig failed to save choice symbols equal to 'y'
+for tristate choices.
+This resulted in this value being lost.
 
-This was tracked down to missing info in the saved defconfig file.
+In particular is fixes an issue where
 
-Arve reported another problem with tristate choice that was
-reproduceable with a small config sample.
+	make ARCH=avr32 atngw100_defconfig
+	make ARCH=avr32 savedefconfig
+	cp defconfig arch/avr32/configs/atngw100_defconfig
+	make ARCH=avr32 atngw100_defconfig
+	diff -u .config .config.old
 
-The followng patches fixes both issues.
-There is no outstanding issue with respect to savedefconfig.
+failed to produce an identical .config.
 
-	Sam
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
+ scripts/kconfig/confdata.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-Sam Ravnborg (2):
-      kconfig: fix savedefconfig for tristate choices
-      kconfig: fix tristate choice with minimal config
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index f81f263..e5d66e4 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -497,7 +497,7 @@ int conf_write_defconfig(const char *filename)
+ 			/*
+ 			 * If symbol is a choice value and equals to the
+ 			 * default for a choice - skip.
+-			 * But only if value equal to "y".
++			 * But only if value is bool and equal to "y" .
+ 			 */
+ 			if (sym_is_choice_value(sym)) {
+ 				struct symbol *cs;
+@@ -506,9 +506,8 @@ int conf_write_defconfig(const char *filename)
+ 				cs = prop_get_symbol(sym_get_choice_prop(sym));
+ 				ds = sym_choice_default(cs);
+ 				if (sym == ds) {
+-					if ((sym->type == S_BOOLEAN ||
+-					sym->type == S_TRISTATE) &&
+-					sym_get_tristate_value(sym) == yes)
++					if ((sym->type == S_BOOLEAN) &&
++					    sym_get_tristate_value(sym) == yes)
+ 						goto next_menu;
+ 				}
+ 			}
+-- 
+1.6.0.6
 
- scripts/kconfig/confdata.c |  109 ++++++++++++++++++++++++++++----------------
- 1 files changed, 70 insertions(+), 39 deletions(-)
