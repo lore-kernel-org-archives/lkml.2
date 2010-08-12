@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893Ab0HLLc1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 07:32:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:53111 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757448Ab0HLLcY convert rfc822-to-8bit (ORCPT
+	id S1759901Ab0HLLdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 07:33:44 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:54645 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759877Ab0HLLdm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 07:32:24 -0400
+	Thu, 12 Aug 2010 07:33:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=jtofsm/Vj3x8r+pUNCS4fVk+30GGOGgyke271yKYn3xxIIOikrWqpFDaSmV9XXI1SS
-         YBXMuMBlsucJIo6LaihRse+zTohzWHGNn4Thn+t3EA5hM7p5Ka2863ppllBLlun+pTJC
-         qaxO7tG4CBMYvInnFqVRFF3nfbeN4+w6b7ueI=
+        b=onnV+vGu6cIbK7XORnka9Dg+gUHpcZDvponFQ0dHNW1a/BZj2OfxASKnoiq5rnU31J
+         UQ5yfKT2Mw4mwfdDCkm9XjQcLnFk44d4KHOboOqumLe0Ynnhvl0B63Re4T6lTLJNcfdN
+         bqMoAQK14Ffq+F7dyD6tsU+wtH2ti8v0jgpS0=
 MIME-Version: 1.0
-In-Reply-To: <1a8a7e76daf68acaeecf4334848703318355a3a2.1281365237.git.m.nazarewicz@samsung.com>
+In-Reply-To: <3e2dabb188e85bde4b942193be4414e53c604e04.1281365237.git.m.nazarewicz@samsung.com>
 References: <cover.1281365237.git.m.nazarewicz@samsung.com>
 	<49ebe5a39e05aa55a19d33a2141736d215873f86.1281365237.git.m.nazarewicz@samsung.com>
 	<b4fe56570ecb77ec6acbab4502f7ad87b72885e1.1281365237.git.m.nazarewicz@samsung.com>
@@ -24,9 +24,10 @@ References: <cover.1281365237.git.m.nazarewicz@samsung.com>
 	<e37b282da3898486df3fc33cbb1de5e1b6bc26c3.1281365237.git.m.nazarewicz@samsung.com>
 	<dadbebba90720630077702d19240acca9fdb2182.1281365237.git.m.nazarewicz@samsung.com>
 	<1a8a7e76daf68acaeecf4334848703318355a3a2.1281365237.git.m.nazarewicz@samsung.com>
-Date: Thu, 12 Aug 2010 14:32:23 +0300
-Message-ID: <AANLkTinyPBp4HtWuxM=kSbe6nL2WP65B3tq-nCyMKJov@mail.gmail.com>
-Subject: Re: [PATCHv7 7/8] usb: gadget: storage: remove nofua file when unbinding
+	<3e2dabb188e85bde4b942193be4414e53c604e04.1281365237.git.m.nazarewicz@samsung.com>
+Date: Thu, 12 Aug 2010 14:33:41 +0300
+Message-ID: <AANLkTi=RBuXMgAohF1=1eNwZh791Q0CgX60CHUsBrBTK@mail.gmail.com>
+Subject: Re: [PATCHv7 8/8] usb: gadget: mass_storage: optional SCSI WRITE FUA bit
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
@@ -43,38 +44,16 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Mon, Aug 9, 2010 at 6:02 PM, Michal Nazarewicz
 <m.nazarewicz@samsung.com> wrote:
-> The dev_attr_nofua file was created during fsg_bind() but
-> was never removed.  Made it a bit more symmetrical and added
-> code to remove the file in fsg_unbind().
+> The nofua parameter (optionally ignore SCSI WRITE FUA) was added
+> to the File Storage Gadget some time ago.  This patch adds the
+> same functionality to the Mass Storage Function.
 >
 > Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 > Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-> ---
->  drivers/usb/gadget/file_storage.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-> index a857b7a..ab77792 100644
-> --- a/drivers/usb/gadget/file_storage.c
-> +++ b/drivers/usb/gadget/file_storage.c
-> @@ -3178,6 +3178,7 @@ static void /* __init_or_exit */ fsg_unbind(struct usb_gadget *gadget)
->        for (i = 0; i < fsg->nluns; ++i) {
->                curlun = &fsg->luns[i];
->                if (curlun->registered) {
-> +                       device_remove_file(&curlun->dev, &dev_attr_nofua);
->                        device_remove_file(&curlun->dev, &dev_attr_ro);
->                        device_remove_file(&curlun->dev, &dev_attr_file);
->                        fsg_lun_close(curlun);
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-Acked-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+> +               rc = device_create_file(&curlun->dev, &dev_attr_nofua);
+> +               if (rc)
+> +                       goto error_luns;
+It has the same issue as my original patch - forgot to remove device node.
 
 -- 
 With Best Regards,
