@@ -1,65 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760161Ab0HLNtA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 09:49:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62420 "EHLO
+	id S1760154Ab0HLNu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 09:50:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:51270 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab0HLNs6 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753108Ab0HLNuz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 09:48:58 -0400
+	Thu, 12 Aug 2010 09:50:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=CW5j16jVrs5QL8cSToIxrSqtTmviJoD0B+2zlGMS6Xl6kqzqNbY7KcGHQZvSuGkEye
-         r/Z176jYvlmFnx6sWyLKRoyB1AnWqibvTFyf5KhmxrJUWbd60aagpbVyKnJN292AWIoD
-         IcJieTscHTdXBqT+v7V+XRuz3NwYHCtixCbUk=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Mike Frysinger <vapier.adi@gmail.com>
-Subject: Re: [PATCH 1/2 v2] ARM: Fix gen_nand probe structures contents
-Date: Thu, 12 Aug 2010 15:48:28 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, nico@fluxnic.net, kernel@wantstofly.org,
-        kernel@pengutronix.de, u.kleine-koenig@pengutronix.de,
-        kaloz@openwrt.org, khc@pm.waw.pl, tj@kernel.org, gregkh@suse.de,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Artem.Bityutskiy@nokia.com, David.Woodhouse@intel.com,
-        ralf@linux-mips.org, uclinux-dist-devel@blackfin.uclinux.org,
-        yakovenkov@gmail.com, w.sang@pengutronix.de
-References: <1281581635-26213-1-git-send-email-marek.vasut@gmail.com> <201008121304.01178.marek.vasut@gmail.com> <AANLkTimuyuNGsTAfJXi7TL4HQH-botNcakse5NHj2fc0@mail.gmail.com>
-In-Reply-To: <AANLkTimuyuNGsTAfJXi7TL4HQH-botNcakse5NHj2fc0@mail.gmail.com>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=I1Gcj88uC6P8Zrotn7O88yphcs/uyEnqEh5GEZHcPqu7UBHsYlW7gapYIhdHXmixR3
+         M7pN1JhlvfTkAC4LCpcfkaMUo3JBTzhJvT26/kYnUkB0tAtNYjwSrvH+S8lJC2P7st4R
+         LUyWQuk9k03ZzzNHEgvxwwN3fp247tyZlfiQQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+In-Reply-To: <1281606545-20017-1-git-send-email-mcree@orcon.net.nz>
+References: <1281606545-20017-1-git-send-email-mcree@orcon.net.nz>
+From: Matt Turner <mattst88@gmail.com>
+Date: Thu, 12 Aug 2010 09:50:33 -0400
+Message-ID: <AANLkTikWBky79bd5u78Bkm3P2KXrVU=0dWCehEU7sGZg@mail.gmail.com>
+Subject: Re: [PATCH] alpha: convert perf_event to use local_t
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: linux-kernel@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201008121548.28507.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne ÄŒt 12. srpna 2010 14:47:06 Mike Frysinger napsal(a):
-> On Thu, Aug 12, 2010 at 07:04, Marek Vasut wrote:
-> > Dne ÄŒt 12. srpna 2010 05:36:31 Mike Frysinger napsal(a):
-> >> On Wed, Aug 11, 2010 at 22:53, Marek Vasut wrote:
-> >> > These three platforms didn't properly fill nr_chips in gen_nand
-> >> > registration and
-> >> 
-> >> > therefore depended on gen_nand bug fixed by the following patch:
-> >> the Blackfin arch has a mailing list ... no need to pick out people
-> > 
-> > Hi, that's true, but there's that "scripts/get_maintainer.pl" thing which
-> > gave me this list.
-> 
-> yes, but typically that's a shotgun approach that grabs way more
-> people and can easily fall out of date (people no longer
-> exist/etc...).  personally, i use it as a fallback when MAINTAINERS
-> doesnt cover it.
-> -mike
+On Thu, Aug 12, 2010 at 5:49 AM, Michael Cree <mcree@orcon.net.nz> wrote:
+> Updates the Alpha perf_event code to match the changes
+> recently made to the core perf_event code in commit
+> e78505958cf123048fb48cb56b79cebb8edd15fb.
+>
+> Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+> ---
+>  arch/alpha/kernel/perf_event.c |   18 +++++++++---------
+>  1 files changed, 9 insertions(+), 9 deletions(-)
+>
+> diff --git a/arch/alpha/kernel/perf_event.c b/arch/alpha/kernel/perf_event.c
+> index 51c39fa..85d8e4f 100644
+> --- a/arch/alpha/kernel/perf_event.c
+> +++ b/arch/alpha/kernel/perf_event.c
+> @@ -241,20 +241,20 @@ static inline unsigned long alpha_read_pmc(int idx)
+>  static int alpha_perf_event_set_period(struct perf_event *event,
+>                                struct hw_perf_event *hwc, int idx)
+>  {
+> -       long left = atomic64_read(&hwc->period_left);
+> +       long left = local64_read(&hwc->period_left);
+>        long period = hwc->sample_period;
+>        int ret = 0;
+>
+>        if (unlikely(left <= -period)) {
+>                left = period;
+> -               atomic64_set(&hwc->period_left, left);
+> +               local64_set(&hwc->period_left, left);
+>                hwc->last_period = period;
+>                ret = 1;
+>        }
+>
+>        if (unlikely(left <= 0)) {
+>                left += period;
+> -               atomic64_set(&hwc->period_left, left);
+> +               local64_set(&hwc->period_left, left);
+>                hwc->last_period = period;
+>                ret = 1;
+>        }
+> @@ -269,7 +269,7 @@ static int alpha_perf_event_set_period(struct perf_event *event,
+>        if (left > (long)alpha_pmu->pmc_max_period[idx])
+>                left = alpha_pmu->pmc_max_period[idx];
+>
+> -       atomic64_set(&hwc->prev_count, (unsigned long)(-left));
+> +       local64_set(&hwc->prev_count, (unsigned long)(-left));
+>
+>        alpha_write_pmc(idx, (unsigned long)(-left));
+>
+> @@ -300,10 +300,10 @@ static unsigned long alpha_perf_event_update(struct perf_event *event,
+>        long delta;
+>
+>  again:
+> -       prev_raw_count = atomic64_read(&hwc->prev_count);
+> +       prev_raw_count = local64_read(&hwc->prev_count);
+>        new_raw_count = alpha_read_pmc(idx);
+>
+> -       if (atomic64_cmpxchg(&hwc->prev_count, prev_raw_count,
+> +       if (local64_cmpxchg(&hwc->prev_count, prev_raw_count,
+>                             new_raw_count) != prev_raw_count)
+>                goto again;
+>
+> @@ -316,8 +316,8 @@ again:
+>                delta += alpha_pmu->pmc_max_period[idx] + 1;
+>        }
+>
+> -       atomic64_add(delta, &event->count);
+> -       atomic64_sub(delta, &hwc->period_left);
+> +       local64_add(delta, &event->count);
+> +       local64_sub(delta, &hwc->period_left);
+>
+>        return new_raw_count;
+>  }
+> @@ -636,7 +636,7 @@ static int __hw_perf_event_init(struct perf_event *event)
+>        if (!hwc->sample_period) {
+>                hwc->sample_period = alpha_pmu->pmc_max_period[0];
+>                hwc->last_period = hwc->sample_period;
+> -               atomic64_set(&hwc->period_left, hwc->sample_period);
+> +               local64_set(&hwc->period_left, hwc->sample_period);
+>        }
+>
+>        return 0;
+> --
+> 1.7.1
+>
+>
 
-The more eyes on the code, the better :)
-
-Cheers
+Thanks Michael. I'll apply this when I get back from vacation.
