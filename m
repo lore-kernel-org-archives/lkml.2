@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933476Ab0HLA0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:26:41 -0400
-Received: from kroah.org ([198.145.64.141]:60141 "EHLO coco.kroah.org"
+	id S1759453Ab0HLAEB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:04:01 -0400
+Received: from kroah.org ([198.145.64.141]:60079 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759327Ab0HLAEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:04 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.826016127@clark.site>
+	id S1759278Ab0HLADt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:03:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:23 2010
+Message-Id: <20100812000123.684503111@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:32 -0700
+Date: Wed, 11 Aug 2010 17:00:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Huewe <peterhuewe@gmx.de>,
-        Henrik Kretzschmar <henne@nachtwindheim.de>
-Subject: [17/54] drivers/video/w100fb.c: ignore void return value / fix build failure
+        Marcin Slusarz <marcin.slusarz@gmail.com>, Pekka Paalanen <pq@iki.fi>,
+        Stuart Bennett <stuart@freedesktop.org>,
+        Marcin Kocielnicki <koriakin@0x04.net>, nouveau@lists.freedesktop.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [04/54] x86, kmmio/mmiotrace: Fix double free of kmmio_fault_pages
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +28,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Huewe <peterhuewe@gmx.de>
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
 
-commit fa260c00c1aa5c657793a7221e40d2400df5afd8 upstream.
+commit 8b8f79b927b6b302bb65fb8c56e7a19be5fbdbef upstream.
 
-Fix a build failure "error: void value not ignored as it ought to be"
-by removing an assignment of a void return value.  The functionality of
-the code is not changed.
+After every iounmap mmiotrace has to free kmmio_fault_pages, but
+it can't do it directly, so it defers freeing by RCU.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-Acked-by: Henrik Kretzschmar <henne@nachtwindheim.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+It usually works, but when mmiotraced code calls ioremap-iounmap
+multiple times without sleeping between (so RCU won't kick in
+and start freeing) it can be given the same virtual address, so
+at every iounmap mmiotrace will schedule the same pages for
+release. Obviously it will explode on second free.
+
+Fix it by marking kmmio_fault_pages which are scheduled for
+release and not adding them second time.
+
+Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Tested-by: Marcin Kocielnicki <koriakin@0x04.net>
+Tested-by: Shinpei KATO <shinpei@il.is.s.u-tokyo.ac.jp>
+Acked-by: Pekka Paalanen <pq@iki.fi>
+Cc: Stuart Bennett <stuart@freedesktop.org>
+Cc: Marcin Kocielnicki <koriakin@0x04.net>
+Cc: nouveau@lists.freedesktop.org
+LKML-Reference: <20100613215654.GA3829@joi.lan>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/w100fb.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/mm/kmmio.c         |   16 +++++++++++++---
+ arch/x86/mm/testmmiotrace.c |   22 ++++++++++++++++++++++
+ 2 files changed, 35 insertions(+), 3 deletions(-)
 
---- a/drivers/video/w100fb.c
-+++ b/drivers/video/w100fb.c
-@@ -858,9 +858,9 @@ unsigned long w100fb_gpio_read(int port)
- void w100fb_gpio_write(int port, unsigned long value)
- {
- 	if (port==W100_GPIO_PORT_A)
--		value = writel(value, remapped_regs + mmGPIO_DATA);
-+		writel(value, remapped_regs + mmGPIO_DATA);
- 	else
--		value = writel(value, remapped_regs + mmGPIO_DATA2);
-+		writel(value, remapped_regs + mmGPIO_DATA2);
+--- a/arch/x86/mm/kmmio.c
++++ b/arch/x86/mm/kmmio.c
+@@ -45,6 +45,8 @@ struct kmmio_fault_page {
+ 	 * Protected by kmmio_lock, when linked into kmmio_page_table.
+ 	 */
+ 	int count;
++
++	bool scheduled_for_release;
+ };
+ 
+ struct kmmio_delayed_release {
+@@ -398,8 +400,11 @@ static void release_kmmio_fault_page(uns
+ 	BUG_ON(f->count < 0);
+ 	if (!f->count) {
+ 		disarm_kmmio_fault_page(f);
+-		f->release_next = *release_list;
+-		*release_list = f;
++		if (!f->scheduled_for_release) {
++			f->release_next = *release_list;
++			*release_list = f;
++			f->scheduled_for_release = true;
++		}
+ 	}
  }
- EXPORT_SYMBOL(w100fb_gpio_read);
- EXPORT_SYMBOL(w100fb_gpio_write);
+ 
+@@ -471,8 +476,10 @@ static void remove_kmmio_fault_pages(str
+ 			prevp = &f->release_next;
+ 		} else {
+ 			*prevp = f->release_next;
++			f->release_next = NULL;
++			f->scheduled_for_release = false;
+ 		}
+-		f = f->release_next;
++		f = *prevp;
+ 	}
+ 	spin_unlock_irqrestore(&kmmio_lock, flags);
+ 
+@@ -510,6 +517,9 @@ void unregister_kmmio_probe(struct kmmio
+ 	kmmio_count--;
+ 	spin_unlock_irqrestore(&kmmio_lock, flags);
+ 
++	if (!release_list)
++		return;
++
+ 	drelease = kmalloc(sizeof(*drelease), GFP_ATOMIC);
+ 	if (!drelease) {
+ 		pr_crit("leaking kmmio_fault_page objects.\n");
+--- a/arch/x86/mm/testmmiotrace.c
++++ b/arch/x86/mm/testmmiotrace.c
+@@ -90,6 +90,27 @@ static void do_test(unsigned long size)
+ 	iounmap(p);
+ }
+ 
++/*
++ * Tests how mmiotrace behaves in face of multiple ioremap / iounmaps in
++ * a short time. We had a bug in deferred freeing procedure which tried
++ * to free this region multiple times (ioremap can reuse the same address
++ * for many mappings).
++ */
++static void do_test_bulk_ioremapping(void)
++{
++	void __iomem *p;
++	int i;
++
++	for (i = 0; i < 10; ++i) {
++		p = ioremap_nocache(mmio_address, PAGE_SIZE);
++		if (p)
++			iounmap(p);
++	}
++
++	/* Force freeing. If it will crash we will know why. */
++	synchronize_rcu();
++}
++
+ static int __init init(void)
+ {
+ 	unsigned long size = (read_far) ? (8 << 20) : (16 << 10);
+@@ -104,6 +125,7 @@ static int __init init(void)
+ 		   "and writing 16 kB of rubbish in there.\n",
+ 		   size >> 10, mmio_address);
+ 	do_test(size);
++	do_test_bulk_ioremapping();
+ 	pr_info("All done.\n");
+ 	return 0;
+ }
 
 
