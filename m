@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759109Ab0HLO6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 10:58:20 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:40093 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751386Ab0HLO6T (ORCPT
+	id S1760180Ab0HLPAh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:00:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52936 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751386Ab0HLPAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 10:58:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=VjCUuCgNSM3X47xG0N96GVhcN3lUiMtTdzHnfRohTXrRsl4vNKqS8/ZS2N6YRhzCn1
-         vbH16Dt7zxplQKJ/rYLCEPBHjuyCEs1mGaSNWlFw//jQ+wKKaP2e+Gxld4O5iBu5AUcD
-         4oG0jFvNuYtkj/W6Hcdbx1DgIMqY43gsLgIVU=
+	Thu, 12 Aug 2010 11:00:32 -0400
+Date: Thu, 12 Aug 2010 17:00:30 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: dmaengine questions
+Message-ID: <20100812150030.GB27749@pengutronix.de>
 MIME-Version: 1.0
-Date: Thu, 12 Aug 2010 16:58:13 +0200
-X-Google-Sender-Auth: H285OS-eTtK_4OSRAHgsFiC7C9o
-Message-ID: <AANLkTikK5m_DE_bzcuiqOpoSVqFzUp=GeD5k01foop=E@mail.gmail.com>
-Subject: [ANNOUNCE][UNOFFICIAL] 2.6.33.8
-From: John Kacur <jkacur@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 11:24:53 up 40 days, 35 min, 57 users,  load average: 0.84, 2.28,
+	2.30
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no longer any official 2.6.33 stable releases after 2.6.33.7
-However, 2.6.33.y is the basis for the real-time kernel.
-So, I went through the changes from 2.6.32.17->2.6.32.18
-and from 2.6.34.2->2.6.34.3
-and cherry picked the ones that I thought applied to 2.6.33.7 in order
-to create my own unofficial stable update 2.6.33.8
+Hi,
 
-Testing has been very limited, just make allyesconfig and
-allmodconfig, and then booting on my personal machine,
-so use with caution. However, I am happy to share my results with
-anyone who is interested.
+I am currently looking into implementing the Freescale i.MX SDMA engine
+into the dmaengine API. The SDMA engine can handle sg transfers from/to
+devices. During implementation some questions came up.
 
-You can pull the git tree here.
-git://git.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git
-branch: stable/linux-2.6.33.y
+On the i.MX we already have a DMA engine which can do slave dma
+transfers, the IPU (drivers/dma/ipu/), which is exclusively used for
+image operations. My problem is that I found no way for the clients
+to select which DMA engine to use as both have the same capabilities
+(DMA_SLAVE).
 
-I will continue to do this as long as it is still useful for -rt, and
-share the results with everyone.
+For the SDMA engine the clients have to pass some platform specific data
+to the SDMA engine (dma request line, word width and the like). The
+current mechanism is to pass this data through the dma_chan->private
+field, which seems more like tunneling instead of passing the data as we
+lose type safety. Are there any ideas to improve this?
 
-Thanks
+Sascha
+
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
