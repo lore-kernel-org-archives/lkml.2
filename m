@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758818Ab0HLHWp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:22:45 -0400
-Received: from web37607.mail.mud.yahoo.com ([209.191.87.90]:23833 "HELO
-	web37607.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753601Ab0HLHWo convert rfc822-to-8bit
+	id S932917Ab0HLH11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 03:27:27 -0400
+Received: from web37601.mail.mud.yahoo.com ([209.191.87.84]:37658 "HELO
+	web37601.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755778Ab0HLH10 convert rfc822-to-8bit
 	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:22:44 -0400
+	Thu, 12 Aug 2010 03:27:26 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.com;
   h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=JGJ5h5+OJsDh8eP4kOkI+Rga0lW6bQz+ieosjtxKO2Kz0RHYNE4Q+oxyvE81IKNRH1lUnGSo0JGv1uxIvHM7rUAx3TrMYd3TeH5Uqu8HM7SIgxWSqTdgF04xPmkP5Sz2LvpQ+TCq4CEkTHeZbRFypqt0fi9sPV8YdlYKUI4VYuo=;
-Message-ID: <667152.31831.qm@web37607.mail.mud.yahoo.com>
-X-YMail-OSG: mteLbt4VM1leTfGlxLRJqwoKMrXkcpQyW0VhZW6moU27F7h
- YwmIFrQnHMlYRHBtHnQP6tqrbPkjOL1BrB7oOBcX5wkCl.Ni.FNaSjcMLBpb
- fByGpasXo4qHryEeJmYYQX6Y8h1N92wb3g1f_grsGGMwjz0yvjP_MUmqaswz
- qa6pbJRro2JCMpmIuqMtyu_Jrh4fS7Eyt6V18HHIO6rICKvEGTPgIKYxwibr
- h4EUdqcvO4ONPp9VakKhbbZfSXRpWfyaGpSCdTLlB6DxXXyWSZcSNBa12wvE
- qhYBsRaHUiFv8mJvpRy.l0zgG5r0-
+  b=iAonhL+m9HYHuWoe3wOeqZ1VfYYugwJLjFd4H1mW+nX0gdC6TCR3OL8cR7RyPVHJ8Yhp/W5JszyJVwjKqdzYqwGAKbx6K+WMflUiohrccY+o6dMVLLIf1+koQSo1uajL4gVxEPFKti/xFf6XTmR/B1wP6CBKEg45Km+NnLKu8TE=;
+Message-ID: <535171.19301.qm@web37601.mail.mud.yahoo.com>
+X-YMail-OSG: td47kiEVM1l79MUE8otncdv4zZJtPhWWT2t9mnKSylHwGYR
+ qP9RkdPCfw3BHkP4E0WvV_G3TXaL1vl0lpEDvSdrp4Uzj4NAwfqPnqhYXbIR
+ pxntYeOUwnxGQVFjopZsDYOKzVEchSQ2BXB0TYKS1kusREeIbSU4jrZV5j0L
+ Qb8bbQductfvOpToMOTPa.wdKcKC6aFL4sBEA2WK94291wpxIkcwEpkVDmav
+ EMYESoHYEa1FXau5MlMYMLXRZ3VF20NwMXEcf.ormmNYTqZupLSVUo54.JYF
+ .xjalQxlVIhwdR09LRi4y0HPs9_346YvbkNOyTf30rr0Ea15cJt5UCg--
 X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Thu, 12 Aug 2010 00:22:43 -0700 (PDT)
+Date: Thu, 12 Aug 2010 00:27:24 -0700 (PDT)
 From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+Subject: JMicron chipset update
 To: Maxim Levitsky <maximlevitsky@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
 In-Reply-To: <1281515524.21459.14.camel@maxim-laptop>
@@ -32,46 +32,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Maximum I might need to clear page status bits, but I can
-> do that later
-> after I write the block.
-> This won't be any performance impact because amount of bad
-> pages
-> shouldn't be normally greater that zero.
-> (Otherwise there will be data loss...)
+Apparently, the values I was using to configure a jmicron memstick
+interface only work with some chipset revisions. So they've sent me the
+following message.
+
+If you've got a working jmicron adapter handy, you may want to try these
+changes.
+
+-----------------
+We found that there is a definition problem in your code about
+JMicron MS Controller.
+    Our new product would get problem with this part.
+    Following is the bit definition in our code.
+
+    // --- Clock Control Register - Offset 0x48 --- //
+    // D[31:4] Reserved
+    // D[3]    Force MMIO Control.  0: Control by PCI CNFG, 1: Control
+by MMIO.
+    // D[2:0]  Clock MUX Select
+    #define MSHC_CLKMUX_CONTROL_BY_MMIO   0x00000008
+    #define MSHC_CLKMUX_CLK_40MHZ                  0x00000001
+    #define MSHC_CLKMUX_CLK_50MHZ                  0x00000002
+    #define MSHC_CLKMUX_CLK_62_5MHZ              0x00000004
+    #define MSHC_CLKMUX_CLK_60MHZ                  0x00000010  // Must
+set PCICnfg Offset BCh D[0] to 1
+    #define MSHC_CLKMUX_CLK_OFF                      0x00000000
+    #define MSHC_CLKMUX_CLK_MASK                   0x00000017
+
+    Driver have to set this register to 0x08 to clear default clock
+setting.
+    And then set its value with specfic clock setting (EX:  40MHz ->
+0x09, 50MHz -> 0x0A) to change clock.
+    (For MS Pro-HG, we suggest to use 50MHz with 8-bit parallel mode.)
+   
+    Besides, driver have to set the register to 40MHz setting before
+identify MS card for safe.
 
 
-These things do degrade. I think, memsticks do write-verify, so bad blocks
-will appear during write and can be marked as such without any data loss.
-
-> 
-> One interesting thing that I just want your opinion on is
-> what to do
-> with correctable errors.
-> Common sense suggests to relocate the sector + and mark it
-> bad.
-> But I don't know how common such sectors are, and thus I
-> could do more
-> harm that good by marking too many sectors as bad.
-
-I agree that number of writes to the media should be kept minimal.
-So bad (in either way) blocks encountered should be logged, but not
-touched, unless the error appears during an actual write/modify operation.
-
-> 
-> I hope I create ms_block.c soon, and put that old problem
-> to the rest.
-
-If you have time and desire, try to put a low level format option in - 
-some function to erase all blocks, except the system ones.
-
-> 
-> As time permits I will also port your driver for xD portion
-> of jMicron
-> device (which I have).
-
-By the way, I've got some errata for the newer JMicron chipsets. If they
-have not contacted you yet, I'll forward it to you.
 
 
 
