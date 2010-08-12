@@ -1,233 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933885Ab0HLPnx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:43:53 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:62137 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760270Ab0HLPmW (ORCPT
+	id S933896Ab0HLPoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:44:12 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:62256 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760264Ab0HLPmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:42:22 -0400
+	Thu, 12 Aug 2010 11:42:21 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Thu, 12 Aug 2010 17:43:48 +0200
+Date: Thu, 12 Aug 2010 17:43:47 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv8 05/13] USB: gadget: functionfs: code cleanup
-In-reply-to: <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv8 04/13] USB: gadget: mass_storage: moved strings handling code
+ to composite
+In-reply-to: <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org
-Message-id: <4addd8199cfd6a2aa582904cd6efa01bc77a5290.1281625724.git.m.nazarewicz@samsung.com>
+Message-id: <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
 References: <cover.1281625724.git.m.nazarewicz@samsung.com>
  <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
  <313ee18ecf53fb8f1c040656b697de869f0c0856.1281625724.git.m.nazarewicz@samsung.com>
  <48e2d6507f004252a012cf25bc0a06e5cb69808f.1281625724.git.m.nazarewicz@samsung.com>
- <f2f6babb8b593d5c6f6141604bd647658d59f124.1281625724.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes some of the string registration from the
-FunctionFS Gadget as composite layer can handle the
-iManufacturer and iProduct for us.
+This patch removes string registration from the Mass Storage
+Gadget.  With recent changes to the composite framework, all
+that we need is handled by the composite layer.  This means
+composite registers a string ID for manufacturer and product.
 
-It also removes some of the module parameters which were
-redundant as well as changes the name of others to better much
-the module parameter of the composite layer.
-
-Other then that, it also fixes formatting of multiline comments
-to match the coding style.
+This also adds the "needs_serial" so that composite layer will
+issue a warning if user space fails to provide the iSerialNumber
+module parameter.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/g_ffs.c |   85 ++++++++++++++-----------------------------
- 1 files changed, 28 insertions(+), 57 deletions(-)
+ drivers/usb/gadget/mass_storage.c |   72 +++---------------------------------
+ 1 files changed, 6 insertions(+), 66 deletions(-)
 
-diff --git a/drivers/usb/gadget/g_ffs.c b/drivers/usb/gadget/g_ffs.c
-index 3c2f0a4..52fd3fa 100644
---- a/drivers/usb/gadget/g_ffs.c
-+++ b/drivers/usb/gadget/g_ffs.c
-@@ -52,9 +52,8 @@ MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_AUTHOR("Michal Nazarewicz");
- MODULE_LICENSE("GPL");
- 
--
--static unsigned short gfs_vendor_id    = 0x1d6b;	/* Linux Foundation */
--static unsigned short gfs_product_id   = 0x0105;	/* FunctionFS Gadget */
-+#define GFS_VENDOR_ID	0x1d6b	/* Linux Foundation */
-+#define GFS_PRODUCT_ID	0x0105	/* FunctionFS Gadget */
- 
- static struct usb_device_descriptor gfs_dev_desc = {
- 	.bLength		= sizeof gfs_dev_desc,
-@@ -63,29 +62,16 @@ static struct usb_device_descriptor gfs_dev_desc = {
- 	.bcdUSB			= cpu_to_le16(0x0200),
- 	.bDeviceClass		= USB_CLASS_PER_INTERFACE,
- 
--	/* Vendor and product id can be overridden by module parameters.  */
--	/* .idVendor		= cpu_to_le16(gfs_vendor_id), */
--	/* .idProduct		= cpu_to_le16(gfs_product_id), */
--	/* .bcdDevice		= f(hardware) */
--	/* .iManufacturer	= DYNAMIC */
--	/* .iProduct		= DYNAMIC */
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 585f255..493d153 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -75,10 +75,6 @@ static struct usb_device_descriptor msg_device_desc = {
+ 	/* Vendor and product id can be overridden by module parameters.  */
+ 	.idVendor =		cpu_to_le16(FSG_VENDOR_ID),
+ 	.idProduct =		cpu_to_le16(FSG_PRODUCT_ID),
+-	/* .bcdDevice = f(hardware) */
+-	/* .iManufacturer = DYNAMIC */
+-	/* .iProduct = DYNAMIC */
 -	/* NO SERIAL NUMBER */
--	.bNumConfigurations	= 1,
-+	.idVendor		= cpu_to_le16(GFS_VENDOR_ID),
-+	.idProduct		= cpu_to_le16(GFS_PRODUCT_ID),
+ 	.bNumConfigurations =	1,
  };
  
--#define GFS_MODULE_PARAM_DESC(name, field) \
--	MODULE_PARM_DESC(name, "Value of the " #field " field of the device descriptor sent to the host.  Takes effect only prior to the user-space driver registering to the FunctionFS.")
+@@ -86,7 +82,8 @@ static struct usb_otg_descriptor otg_descriptor = {
+ 	.bLength =		sizeof otg_descriptor,
+ 	.bDescriptorType =	USB_DT_OTG,
+ 
+-	/* REVISIT SRP-only hardware is possible, although
++	/*
++	 * REVISIT SRP-only hardware is possible, although
+ 	 * it would not be called "OTG" ...
+ 	 */
+ 	.bmAttributes =		USB_OTG_SRP | USB_OTG_HNP,
+@@ -98,33 +95,6 @@ static const struct usb_descriptor_header *otg_desc[] = {
+ };
+ 
+ 
+-/* string IDs are assigned dynamically */
 -
--module_param_named(usb_class,    gfs_dev_desc.bDeviceClass,    byte,   0644);
--GFS_MODULE_PARAM_DESC(usb_class, bDeviceClass);
--module_param_named(usb_subclass, gfs_dev_desc.bDeviceSubClass, byte,   0644);
--GFS_MODULE_PARAM_DESC(usb_subclass, bDeviceSubClass);
--module_param_named(usb_protocol, gfs_dev_desc.bDeviceProtocol, byte,   0644);
--GFS_MODULE_PARAM_DESC(usb_protocol, bDeviceProtocol);
--module_param_named(usb_vendor,   gfs_vendor_id,                ushort, 0644);
--GFS_MODULE_PARAM_DESC(usb_vendor, idVendor);
--module_param_named(usb_product,  gfs_product_id,               ushort, 0644);
--GFS_MODULE_PARAM_DESC(usb_product, idProduct);
-+module_param_named(bDeviceClass,    gfs_dev_desc.bDeviceClass,    byte,   0644);
-+MODULE_PARM_DESC(bDeviceClass, "USB Device class");
-+module_param_named(bDeviceSubClass, gfs_dev_desc.bDeviceSubClass, byte,   0644);
-+MODULE_PARM_DESC(bDeviceSubClass, "USB Device subclass");
-+module_param_named(bDeviceProtocol, gfs_dev_desc.bDeviceProtocol, byte,   0644);
-+MODULE_PARM_DESC(bDeviceProtocol, "USB Device protocol");
- 
- 
- 
-@@ -95,8 +81,10 @@ static const struct usb_descriptor_header *gfs_otg_desc[] = {
- 		.bLength		= sizeof(struct usb_otg_descriptor),
- 		.bDescriptorType	= USB_DT_OTG,
- 
--		/* REVISIT SRP-only hardware is possible, although
--		 * it would not be called "OTG" ... */
-+		/*
-+		 * REVISIT SRP-only hardware is possible, although
-+		 * it would not be called "OTG" ...
-+		 */
- 		.bmAttributes		= USB_OTG_SRP | USB_OTG_HNP,
- 	},
- 
-@@ -105,19 +93,7 @@ static const struct usb_descriptor_header *gfs_otg_desc[] = {
- 
- /* string IDs are assigned dynamically */
- 
--enum {
--	GFS_STRING_MANUFACTURER_IDX,
--	GFS_STRING_PRODUCT_IDX,
--	GFS_STRING_FIRST_CONFIG_IDX,
+-#define STRING_MANUFACTURER_IDX		0
+-#define STRING_PRODUCT_IDX		1
+-#define STRING_CONFIGURATION_IDX	2
+-
+-static char manufacturer[50];
+-
+-static struct usb_string strings_dev[] = {
+-	[STRING_MANUFACTURER_IDX].s = manufacturer,
+-	[STRING_PRODUCT_IDX].s = DRIVER_DESC,
+-	[STRING_CONFIGURATION_IDX].s = "Self Powered",
+-	{  } /* end of list */
 -};
 -
--static       char gfs_manufacturer[50];
--static const char gfs_driver_desc[] = DRIVER_DESC;
--static const char gfs_short_name[]  = DRIVER_NAME;
+-static struct usb_gadget_strings stringtab_dev = {
+-	.language	= 0x0409,	/* en-us */
+-	.strings	= strings_dev,
+-};
 -
- static struct usb_string gfs_strings[] = {
--	[GFS_STRING_MANUFACTURER_IDX].s = gfs_manufacturer,
--	[GFS_STRING_PRODUCT_IDX].s = gfs_driver_desc,
- #ifdef CONFIG_USB_FUNCTIONFS_RNDIS
- 	{ .s = "FunctionFS + RNDIS" },
- #endif
-@@ -168,11 +144,12 @@ static int gfs_unbind(struct usb_composite_dev *cdev);
- static int gfs_do_config(struct usb_configuration *c);
+-static struct usb_gadget_strings *dev_strings[] = {
+-	&stringtab_dev,
+-	NULL,
+-};
+-
+-
+-
+ /****************************** Configurations ******************************/
  
- static struct usb_composite_driver gfs_driver = {
--	.name		= gfs_short_name,
-+	.name		= DRIVER_NAME,
- 	.dev		= &gfs_dev_desc,
- 	.strings	= gfs_dev_strings,
- 	.bind		= gfs_bind,
- 	.unbind		= gfs_unbind,
-+	.iProduct	= DRIVER_DESC,
+ static struct fsg_module_parameters mod_data = {
+@@ -173,52 +143,22 @@ static struct usb_configuration msg_config_driver = {
+ 	.label			= "Linux File-Backed Storage",
+ 	.bind			= msg_do_config,
+ 	.bConfigurationValue	= 1,
+-	/* .iConfiguration = DYNAMIC */
+ 	.bmAttributes		= USB_CONFIG_ATT_SELFPOWER,
  };
  
  
-@@ -245,20 +222,10 @@ static int gfs_bind(struct usb_composite_dev *cdev)
- 	if (unlikely(ret < 0))
- 		goto error_quick;
- 
--	gfs_dev_desc.idVendor  = cpu_to_le16(gfs_vendor_id);
--	gfs_dev_desc.idProduct = cpu_to_le16(gfs_product_id);
 -
--	snprintf(gfs_manufacturer, sizeof gfs_manufacturer, "%s %s with %s",
--		 init_utsname()->sysname, init_utsname()->release,
--		 cdev->gadget->name);
--
- 	ret = usb_string_ids_tab(cdev, gfs_strings);
- 	if (unlikely(ret < 0))
- 		goto error;
+ /****************************** Gadget Bind ******************************/
  
--	gfs_dev_desc.iManufacturer = gfs_strings[GFS_STRING_MANUFACTURER_IDX].id;
--	gfs_dev_desc.iProduct      = gfs_strings[GFS_STRING_PRODUCT_IDX].id;
 -
- 	ret = functionfs_bind(gfs_ffs_data, cdev);
- 	if (unlikely(ret < 0))
- 		goto error;
-@@ -266,9 +233,8 @@ static int gfs_bind(struct usb_composite_dev *cdev)
- 	for (i = 0; i < ARRAY_SIZE(gfs_configurations); ++i) {
- 		struct gfs_configuration *c = gfs_configurations + i;
- 
--		ret = GFS_STRING_FIRST_CONFIG_IDX + i;
--		c->c.label			= gfs_strings[ret].s;
--		c->c.iConfiguration		= gfs_strings[ret].id;
-+		c->c.label			= gfs_strings[i].s;
-+		c->c.iConfiguration		= gfs_strings[i].id;
- 		c->c.bind			= gfs_do_config;
- 		c->c.bConfigurationValue	= 1 + i;
- 		c->c.bmAttributes		= USB_CONFIG_ATT_SELFPOWER;
-@@ -293,13 +259,14 @@ static int gfs_unbind(struct usb_composite_dev *cdev)
+ static int __ref msg_bind(struct usb_composite_dev *cdev)
  {
- 	ENTER();
+-	struct usb_gadget *gadget = cdev->gadget;
+ 	int status;
  
--	/* We may have been called in an error recovery frem
-+	/*
-+	 * We may have been called in an error recovery from
- 	 * composite_bind() after gfs_unbind() failure so we need to
- 	 * check if gfs_ffs_data is not NULL since gfs_bind() handles
- 	 * all error recovery itself.  I'd rather we werent called
- 	 * from composite on orror recovery, but what you're gonna
--	 * do...? */
+-	/* Allocate string descriptor numbers ... note that string
+-	 * contents can be overridden by the composite_dev glue.
+-	 */
 -
-+	 * do...?
-+	 */
- 	if (gfs_ffs_data) {
- 		gether_cleanup();
- 		functionfs_unbind(gfs_ffs_data);
-@@ -334,14 +301,16 @@ static int gfs_do_config(struct usb_configuration *c)
- 	if (unlikely(ret < 0))
- 		return ret;
+-	/* device descriptor strings: manufacturer, product */
+-	snprintf(manufacturer, sizeof manufacturer, "%s %s with %s",
+-	         init_utsname()->sysname, init_utsname()->release,
+-	         gadget->name);
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_MANUFACTURER_IDX].id = status;
+-	msg_device_desc.iManufacturer = status;
+-
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_PRODUCT_IDX].id = status;
+-	msg_device_desc.iProduct = status;
+-
+-	status = usb_string_id(cdev);
+-	if (status < 0)
+-		return status;
+-	strings_dev[STRING_CONFIGURATION_IDX].id = status;
+-	msg_config_driver.iConfiguration = status;
+-
+-	/* register our second configuration */
+ 	status = usb_add_config(cdev, &msg_config_driver);
+ 	if (status < 0)
+ 		return status;
  
--	/* After previous do_configs there may be some invalid
-+	/*
-+	 * After previous do_configs there may be some invalid
- 	 * pointers in c->interface array.  This happens every time
- 	 * a user space function with fewer interfaces than a user
- 	 * space function that was run before the new one is run.  The
- 	 * compasit's set_config() assumes that if there is no more
- 	 * then MAX_CONFIG_INTERFACES interfaces in a configuration
- 	 * then there is a NULL pointer after the last interface in
--	 * c->interface array.  We need to make sure this is true. */
-+	 * c->interface array.  We need to make sure this is true.
-+	 */
- 	if (c->next_interface_id < ARRAY_SIZE(c->interface))
- 		c->interface[c->next_interface_id] = NULL;
- 
-@@ -350,10 +319,12 @@ static int gfs_do_config(struct usb_configuration *c)
- 
- 
- #ifdef CONFIG_USB_FUNCTIONFS_ETH
-+
- static int eth_bind_config(struct usb_configuration *c, u8 ethaddr[ETH_ALEN])
- {
- 	return can_support_ecm(c->cdev->gadget)
- 		? ecm_bind_config(c, ethaddr)
- 		: geth_bind_config(c, ethaddr);
+-	dev_info(&gadget->dev, DRIVER_DESC ", version: " DRIVER_VERSION "\n");
++	dev_info(&cdev->gadget->dev,
++		 DRIVER_DESC ", version: " DRIVER_VERSION "\n");
+ 	set_bit(0, &msg_registered);
+ 	return 0;
  }
-+
- #endif
+@@ -226,12 +166,12 @@ static int __ref msg_bind(struct usb_composite_dev *cdev)
+ 
+ /****************************** Some noise ******************************/
+ 
+-
+ static struct usb_composite_driver msg_driver = {
+ 	.name		= "g_mass_storage",
+ 	.dev		= &msg_device_desc,
+-	.strings	= dev_strings,
+ 	.bind		= msg_bind,
++	.iProduct	= DRIVER_DESC,
++	.needs_serial	= 1,
+ };
+ 
+ MODULE_DESCRIPTION(DRIVER_DESC);
 -- 
 1.7.1
 
