@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932928Ab0HLAHC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:07:02 -0400
-Received: from kroah.org ([198.145.64.141]:60371 "EHLO coco.kroah.org"
+	id S932826Ab0HLAEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:04:43 -0400
+Received: from kroah.org ([198.145.64.141]:60241 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932827Ab0HLAEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:44 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:27 2010
-Message-Id: <20100812000127.850447683@clark.site>
+	id S1759474Ab0HLAEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
+Message-Id: <20100812000126.009082161@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:01:05 -0700
+Date: Wed, 11 Aug 2010 17:00:45 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [50/54] drm/i915: Use RSEN instead of HTPLG for tfp410 monitor detection.
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        =?ISO-8859-15?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [30/54] ARM: 6280/1: imx: Fix build failure when including <mach/gpio.h> without <linux/spinlock.h>
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,30 +27,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Müller <dave.mueller@gmx.ch>
+From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-commit f458823b864c6def488f951a79986fa205aba4f1 upstream.
+commit 868003ca7ad17ac6c1606dc36101f10a7825b399 upstream.
 
-Presence detection of a digital monitor seems not to be reliable using
-the HTPLG bit.
+This is a follow up to
 
-Dave Müller <dave.mueller@gmx.ch>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+	14cb0de (arm/imx/gpio: add spinlock protection)
+
+and fixes the following build failure:
+
+	  CC      arch/arm/mach-imx/pcm970-baseboard.o
+	In file included from arch/arm/include/asm/gpio.h:6,
+			 from include/linux/gpio.h:8,
+			 from arch/arm/mach-imx/pcm970-baseboard.c:20:
+	arch/arm/plat-mxc/include/mach/gpio.h:40: error: expected specifier-qualifier-list before 'spinlock_t'
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 
 ---
- drivers/gpu/drm/i915/dvo_tfp410.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/plat-mxc/include/mach/gpio.h |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/gpu/drm/i915/dvo_tfp410.c
-+++ b/drivers/gpu/drm/i915/dvo_tfp410.c
-@@ -216,7 +216,7 @@ static enum drm_connector_status tfp410_
- 	uint8_t ctl2;
+--- a/arch/arm/plat-mxc/include/mach/gpio.h
++++ b/arch/arm/plat-mxc/include/mach/gpio.h
+@@ -19,6 +19,7 @@
+ #ifndef __ASM_ARCH_MXC_GPIO_H__
+ #define __ASM_ARCH_MXC_GPIO_H__
  
- 	if (tfp410_readb(dvo, TFP410_CTL_2, &ctl2)) {
--		if (ctl2 & TFP410_CTL_2_HTPLG)
-+		if (ctl2 & TFP410_CTL_2_RSEN)
- 			ret = connector_status_connected;
- 		else
- 			ret = connector_status_disconnected;
++#include <linux/spinlock.h>
+ #include <mach/hardware.h>
+ #include <asm-generic/gpio.h>
+ 
 
 
