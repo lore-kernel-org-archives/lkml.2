@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760729Ab0HLSUU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 14:20:20 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40617 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab0HLSUR (ORCPT
+	id S1760741Ab0HLSV2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 14:21:28 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49824 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753653Ab0HLSVZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 14:20:17 -0400
-Date: Thu, 12 Aug 2010 15:20:00 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Tom Zanussi <tzanussi@gmail.com>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        fweisbec@gmail.com, peterz@infradead.org
-Subject: Re: [PATCH] perf trace: get rid of the hard-coded paths in the
- report scripts
-Message-ID: <20100812182000.GD21829@ghostprotocols.net>
-References: <1281635958-21177-1-git-send-email-tzanussi@gmail.com>
+	Thu, 12 Aug 2010 14:21:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=x1FAmfWaf+5wYo/4JG/aCo6seDXPMQbXJ1Xmdbwvne3O6fQhQWuMwEs+uRvKCz56i7
+         6lRX9Rfihzx7GFIi7jYm55c25p1KsyM8Ms2wqeKpw5pSQ/IYtSbUeN4B6UkHW9Fzag/J
+         r+Veo63EQYs6GO5aiMdT6jBksjJN3xDcrVLAQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281635958-21177-1-git-send-email-tzanussi@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100812174621.b1dbc20f.sfr@canb.auug.org.au>
+References: <20100812131741.f3a800d7.sfr@canb.auug.org.au>
+	<AANLkTi=iHi=kpk+nsB396B9GWdefj=WJywA2K1PawHxi@mail.gmail.com>
+	<20100812174621.b1dbc20f.sfr@canb.auug.org.au>
+Date: Thu, 12 Aug 2010 13:21:22 -0500
+Message-ID: <AANLkTi=bAGSrPbqmOUbt9O7G0SbOXYTtNDYZ-e5JPsrS@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wang Lei <wang840925@gmail.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Aug 12, 2010 at 12:59:18PM -0500, Tom Zanussi escreveu:
-> The perf trace report shell scripts hard-code the exec path of the
-> scripts into their command-lines, which doesn't work if perf has been
-> installed somewhere else.
-> 
-> Instead, perf trace should create the paths at run-time.  This patch
-> does that and removes the hard-coded paths from all the report scripts.
-> 
-> v2 changes: The first version inadvertantly caused scripts run from
-> outside the perf exec path to fail e.g. 'perf trace -s test.py'.  The
-> fix is to try the script name without the exec path first, then the
-> version using the exec path, which restores the expected behavior.
-> 
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+On Thu, Aug 12, 2010 at 2:46 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> See above.  You need CONFIG_NFS_USE_KERNEL_DNS to also depend on
+> CONFIG_KEYS ...
 
-Stephane,
+Fixed in cifs-2.6.git
 
-	Lemme know when you tried this patch so that I can merge it with
-a Tested-by: you tag, ok?
 
-- Arnaldo
+-- 
+Thanks,
+
+Steve
