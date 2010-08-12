@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933145Ab0HLAIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:08:30 -0400
-Received: from kroah.org ([198.145.64.141]:47825 "EHLO coco.kroah.org"
+	id S933185Ab0HLAIj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:08:39 -0400
+Received: from kroah.org ([198.145.64.141]:47873 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932536Ab0HLAIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:24 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
-Message-Id: <20100812000615.433588319@clark.site>
+	id S933163Ab0HLAIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:16 2010
+Message-Id: <20100812000616.266177483@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:45 -0700
+Date: Wed, 11 Aug 2010 17:05:54 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Milton Miller <miltonm@bga.com>, Anton Blanchard <anton@samba.org>,
-        Sonny Rao <sonnyrao@us.ibm.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [30/67] e100/e1000*/igb*/ixgb*: Add missing read memory barrier
+        Tejun Heo <tj@kernel.org>, Jens Axboe <jaxboe@fusionio.com>
+Subject: [39/67] bio, fs: update RWA_MASK, READA and SWRITE to match the corresponding BIO_RW_* bits
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,219 +25,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 2d0bb1c1f4524befe9f0fcf0d0cd3081a451223f upstream.
+commit aca27ba9618276dd2f777bcd5a1419589ccf1ca8 upstream.
 
-Based on patches from Sonny Rao and Milton Miller...
+Commit a82afdf (block: use the same failfast bits for bio and request)
+moved BIO_RW_* bits around such that they match up with REQ_* bits.
+Unfortunately, fs.h hard coded RW_MASK, RWA_MASK, READ, WRITE, READA
+and SWRITE as 0, 1, 2 and 3, and expected them to match with BIO_RW_*
+bits.  READ/WRITE didn't change but BIO_RW_AHEAD was moved to bit 4
+instead of bit 1, breaking RWA_MASK, READA and SWRITE.
 
-Combined the patches to fix up clean_tx_irq and clean_rx_irq.
+This patch updates RWA_MASK, READA and SWRITE such that they match the
+BIO_RW_* bits again.  A follow up patch will update the definitions to
+directly use BIO_RW_* bits so that this kind of breakage won't happen
+again.
 
-The PowerPC architecture does not require loads to independent bytes
-to be ordered without adding an explicit barrier.
+Neil also spotted missing RWA_MASK conversion.
 
-In ixgbe_clean_rx_irq we load the status bit then load the packet data.
-With packet split disabled if these loads go out of order we get a
-stale packet, but we will notice the bad sequence numbers and drop it.
+Stable: The offending commit a82afdf was released with v2.6.32, so
+this patch should be applied to all kernels since then but it must
+_NOT_ be applied to kernels earlier than that.
 
-The problem occurs with packet split enabled where the TCP/IP header
-and data are in different descriptors. If the reads go out of order
-we may have data that doesn't match the TCP/IP header. Since we use
-hardware checksumming this bad data is never verified and it makes it
-all the way to the application.
-
-This bug was found during stress testing and adding this barrier has
-been shown to fix it.  The bug can manifest as a data integrity issue
-(bad payload data) or as a BUG in skb_pull().
-
-This was a nasty bug to hunt down, if people agree with the fix I think
-it's a candidate for stable.
-
-Previously Submitted to e1000-devel only for ixgbe
-
-http://marc.info/?l=e1000-devel&m=126593062701537&w=3
-
-We've now seen this problem hit with other device drivers (e1000e mostly)
-So I'm resubmitting with fixes for other Intel Device Drivers with
-similar issues.
-
-CC: Milton Miller <miltonm@bga.com>
-CC: Anton Blanchard <anton@samba.org>
-CC: Sonny Rao <sonnyrao@us.ibm.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-and-bisected-by: Vladislav Bolkhovitin <vst@vlnb.net>
+Root-caused-by: Neil Brown <neilb@suse.de>
+Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/e100.c                 |    2 ++
- drivers/net/e1000/e1000_main.c     |    3 +++
- drivers/net/e1000e/netdev.c        |    4 ++++
- drivers/net/igb/igb_main.c         |    2 ++
- drivers/net/igbvf/netdev.c         |    2 ++
- drivers/net/ixgb/ixgb_main.c       |    2 ++
- drivers/net/ixgbe/ixgbe_main.c     |    1 +
- drivers/net/ixgbevf/ixgbevf_main.c |    2 ++
- 8 files changed, 18 insertions(+)
+ include/linux/fs.h |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/e100.c
-+++ b/drivers/net/e100.c
-@@ -1779,6 +1779,7 @@ static int e100_tx_clean(struct nic *nic
- 	for (cb = nic->cb_to_clean;
- 	    cb->status & cpu_to_le16(cb_complete);
- 	    cb = nic->cb_to_clean = cb->next) {
-+		rmb(); /* read skb after status */
- 		netif_printk(nic, tx_done, KERN_DEBUG, nic->netdev,
- 			     "cb[%d]->status = 0x%04X\n",
- 			     (int)(((void*)cb - (void*)nic->cbs)/sizeof(struct cb)),
-@@ -1927,6 +1928,7 @@ static int e100_rx_indicate(struct nic *
- 
- 	netif_printk(nic, rx_status, KERN_DEBUG, nic->netdev,
- 		     "status=0x%04X\n", rfd_status);
-+	rmb(); /* read size after status bit */
- 
- 	/* If data isn't ready, nothing to indicate */
- 	if (unlikely(!(rfd_status & cb_complete))) {
---- a/drivers/net/e1000/e1000_main.c
-+++ b/drivers/net/e1000/e1000_main.c
-@@ -3448,6 +3448,7 @@ static bool e1000_clean_tx_irq(struct e1
- 	while ((eop_desc->upper.data & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
- 		bool cleaned = false;
-+		rmb();	/* read buffer_info after eop_desc */
- 		for ( ; !cleaned; count++) {
- 			tx_desc = E1000_TX_DESC(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -3637,6 +3638,7 @@ static bool e1000_clean_jumbo_rx_irq(str
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
-@@ -3843,6 +3845,7 @@ static bool e1000_clean_rx_irq(struct e1
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -774,6 +774,7 @@ static bool e1000_clean_rx_irq(struct e1
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
-@@ -984,6 +985,7 @@ static bool e1000_clean_tx_irq(struct e1
- 	while ((eop_desc->upper.data & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
- 		bool cleaned = false;
-+		rmb(); /* read buffer_info after eop_desc */
- 		for (; !cleaned; count++) {
- 			tx_desc = E1000_TX_DESC(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -1080,6 +1082,7 @@ static bool e1000_clean_rx_irq_ps(struct
- 			break;
- 		(*work_done)++;
- 		skb = buffer_info->skb;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 
- 		/* in the packet split case this is header only */
- 		prefetch(skb->data - NET_IP_ALIGN);
-@@ -1279,6 +1282,7 @@ static bool e1000_clean_jumbo_rx_irq(str
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
---- a/drivers/net/igb/igb_main.c
-+++ b/drivers/net/igb/igb_main.c
-@@ -5344,6 +5344,7 @@ static bool igb_clean_tx_irq(struct igb_
- 
- 	while ((eop_desc->wb.status & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
-+		rmb();	/* read buffer_info after eop_desc status */
- 		for (cleaned = false; !cleaned; count++) {
- 			tx_desc = E1000_TX_DESC_ADV(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -5549,6 +5550,7 @@ static bool igb_clean_rx_irq_adv(struct
- 		if (*work_done >= budget)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		skb = buffer_info->skb;
- 		prefetch(skb->data - NET_IP_ALIGN);
---- a/drivers/net/igbvf/netdev.c
-+++ b/drivers/net/igbvf/netdev.c
-@@ -248,6 +248,7 @@ static bool igbvf_clean_rx_irq(struct ig
- 		if (*work_done >= work_to_do)
- 			break;
- 		(*work_done)++;
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 
- 		buffer_info = &rx_ring->buffer_info[i];
- 
-@@ -780,6 +781,7 @@ static bool igbvf_clean_tx_irq(struct ig
- 
- 	while ((eop_desc->wb.status & cpu_to_le32(E1000_TXD_STAT_DD)) &&
- 	       (count < tx_ring->count)) {
-+		rmb();	/* read buffer_info after eop_desc status */
- 		for (cleaned = false; !cleaned; count++) {
- 			tx_desc = IGBVF_TX_DESC_ADV(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
---- a/drivers/net/ixgb/ixgb_main.c
-+++ b/drivers/net/ixgb/ixgb_main.c
-@@ -1816,6 +1816,7 @@ ixgb_clean_tx_irq(struct ixgb_adapter *a
- 
- 	while (eop_desc->status & IXGB_TX_DESC_STATUS_DD) {
- 
-+		rmb(); /* read buffer_info after eop_desc */
- 		for (cleaned = false; !cleaned; ) {
- 			tx_desc = IXGB_TX_DESC(*tx_ring, i);
- 			buffer_info = &tx_ring->buffer_info[i];
-@@ -1976,6 +1977,7 @@ ixgb_clean_rx_irq(struct ixgb_adapter *a
- 			break;
- 
- 		(*work_done)++;
-+		rmb();	/* read descriptor and rx_buffer_info after status DD */
- 		status = rx_desc->status;
- 		skb = buffer_info->skb;
- 		buffer_info->skb = NULL;
---- a/drivers/net/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ixgbe/ixgbe_main.c
-@@ -748,6 +748,7 @@ static bool ixgbe_clean_tx_irq(struct ix
- 	while ((eop_desc->wb.status & cpu_to_le32(IXGBE_TXD_STAT_DD)) &&
- 	       (count < tx_ring->work_limit)) {
- 		bool cleaned = false;
-+		rmb(); /* read buffer_info after eop_desc */
- 		for ( ; !cleaned; count++) {
- 			struct sk_buff *skb;
- 			tx_desc = IXGBE_TX_DESC_ADV(*tx_ring, i);
---- a/drivers/net/ixgbevf/ixgbevf_main.c
-+++ b/drivers/net/ixgbevf/ixgbevf_main.c
-@@ -231,6 +231,7 @@ static bool ixgbevf_clean_tx_irq(struct
- 	while ((eop_desc->wb.status & cpu_to_le32(IXGBE_TXD_STAT_DD)) &&
- 	       (count < tx_ring->work_limit)) {
- 		bool cleaned = false;
-+		rmb(); /* read buffer_info after eop_desc */
- 		for ( ; !cleaned; count++) {
- 			struct sk_buff *skb;
- 			tx_desc = IXGBE_TX_DESC_ADV(*tx_ring, i);
-@@ -518,6 +519,7 @@ static bool ixgbevf_clean_rx_irq(struct
- 			break;
- 		(*work_done)++;
- 
-+		rmb(); /* read descriptor and rx_buffer_info after status DD */
- 		if (adapter->flags & IXGBE_FLAG_RX_PS_ENABLED) {
- 			hdr_info = le16_to_cpu(ixgbevf_get_hdr_info(rx_desc));
- 			len = (hdr_info & IXGBE_RXDADV_HDRBUFLEN_MASK) >>
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -145,11 +145,11 @@ struct inodes_stat_t {
+  *
+  */
+ #define RW_MASK		1
+-#define RWA_MASK	2
++#define RWA_MASK		16
+ #define READ 0
+ #define WRITE 1
+-#define READA 2		/* read-ahead  - don't block if no resources */
+-#define SWRITE 3	/* for ll_rw_block() - wait for buffer lock */
++#define READA			16 /* readahead - don't block if no resources */
++#define SWRITE			17 /* for ll_rw_block(), wait for buffer lock */
+ #define READ_SYNC	(READ | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_UNPLUG))
+ #define READ_META	(READ | (1 << BIO_RW_META))
+ #define WRITE_SYNC_PLUG	(WRITE | (1 << BIO_RW_SYNCIO) | (1 << BIO_RW_NOIDLE))
 
 
