@@ -1,92 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550Ab0HLF0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 01:26:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39218 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750919Ab0HLF0p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 01:26:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:references:cc:date:message-id:mime-version
-         :content-type;
-        b=w1BadbosDSEAWZ7rZs+QQjMVY7qN/QWGADk9o6vmet5VsC4MmVfRKfrBJ9g1va2j7X
-         lR1imAR94T0dT70D1gNG2MB2EK2dzcqKYU2l/0Yylgnhl8G+H4H8OwhDssKA9m9qvGW7
-         KLGeRTz8oHIQAwyf9cVO1DPtm14jkpxWXibfs=
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: linux-nfs@vger.kernel.org
-Subject: [PATCH] nfs: lookupcache coherence bugs in WCC update path (revised)
-References: <87lj8ckb1e.fsf@patl.com>
-CC: linux-kernel@vger.kernel.org
-Date: Wed, 11 Aug 2010 22:26:36 -0700
-Message-ID: <8762zgmmer.fsf@patl.com>
+	id S1752688Ab0HLFqR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 01:46:17 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:32979 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752504Ab0HLFqQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 01:46:16 -0400
+Date: Thu, 12 Aug 2010 07:46:13 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Joel Becker <Joel.Becker@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Sunil Mushran <sunil.mushran@oracle.com>
+Subject: Re: [PATCH 1/2] fs/ocfs2/dlm: Eliminate update of list_for_each_entry
+ loop cursor
+In-Reply-To: <20100812000355.GA7195@mail.oracle.com>
+Message-ID: <Pine.LNX.4.64.1008120735200.16027@ask.diku.dk>
+References: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
+ <20100812000355.GA7195@mail.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Well, crud.  I screwed up the previous diff and was missing a
-close-curly.  This version actually compiles...)
+On Wed, 11 Aug 2010, Joel Becker wrote:
 
-This patch fixes some coherence bugs in the NFS "dentry lookup cache".
+> On Sat, Aug 07, 2010 at 11:09:13AM +0200, Julia Lawall wrote:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > list_for_each_entry uses its first argument to move from one element to the
+> > next, so modifying it can break the iteration.
+> 
+> 	Thanks for catching the bug.  It was introduced by 800deef3
+> [ocfs2: use list_for_each_entry where benefical].  I blame Christoph.
+> 
+> > diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+> > index 9dfaac7..7084a11 100644
+> > --- a/fs/ocfs2/dlm/dlmrecovery.c
+> > +++ b/fs/ocfs2/dlm/dlmrecovery.c
+> > @@ -1792,10 +1792,10 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+> >  			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+> >  				tmpq = dlm_list_idx_to_ptr(res, j);
+> >  				list_for_each_entry(lock, tmpq, list) {
+> > -					if (lock->ml.cookie != ml->cookie)
+> > +					if (lock->ml.cookie != ml->cookie) {
+> >  						lock = NULL;
+> > -					else
+> >  						break;
+> > +					}
+> >  				}
+> >  				if (lock)
+> >  					break;
+> 
+> 	However, this is not the correct solution.  The goal of the
+> original code, which used to use list_for_each(), was to leave lock
+> non-NULL if the cookie was found.  Your version merely exits the loop on
+> the first non-matching entry, always leaving lock==NULL if there is a
+> non-matching entry.
+> 	One possible solution is to return the original code:
+> 
+> --8<-----------------------------------------------------------------
+> @@ -1747,7 +1747,7 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+>  				     struct dlm_migratable_lockres *mres)
+>  {
+>  	struct dlm_migratable_lock *ml;
+> -	struct list_head *queue;
+> +	struct list_head *queue, *iter;
+>  	struct list_head *tmpq = NULL;
+>  	struct dlm_lock *newlock = NULL;
+>  	struct dlm_lockstatus *lksb = NULL;
+> @@ -1791,11 +1791,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+>  			spin_lock(&res->spinlock);
+>  			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+>  				tmpq = dlm_list_idx_to_ptr(res, j);
+> -				list_for_each_entry(lock, tmpq, list) {
+> -					if (lock->ml.cookie != ml->cookie)
+> -						lock = NULL;
+> -					else
+> +				list_for_each(iter, tmpq) {
+> +					lock = list_entry(iter, struct dlm_lock, list);
+> +
+> +					if (lock->ml.cookie == ml->cookie)
+>  						break;
+> +					lock = NULL;
+>  				}
+>  				if (lock)
+>  					break;
+> -->8-----------------------------------------------------------------
+> 
+> 	Another approach would be to keep list_for_each_entry() around,
+> but use a better check for entry existence:
+> 
+> --8<-----------------------------------------------------------------
+> @@ -1792,13 +1792,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+>  			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+>  				tmpq = dlm_list_idx_to_ptr(res, j);
+>  				list_for_each_entry(lock, tmpq, list) {
+> -					if (lock->ml.cookie != ml->cookie)
+> -						lock = NULL;
+> -					else
+> +					if (lock->ml.cookie == ml->cookie)
+>  						break;
+>  				}
+> -				if (lock)
+> +				if (&lock->list != tmpq)
+>  					break;
+> +				lock = NULL;
+>  			}
 
-The NFS dentry lookup cache provides the nfs_force_lookup_revalidate()
-call to invalidate all cached dentries associated with an inode.  In
-general, the NFS client uses the ctime and mtime in the inode to detect
-when changes are made on the server.
+This seems a bit ugly to me, since it exposes the implementation of the 
+list abstraction.  What about the following:
 
-Therefore, to maintain cache coherence, nfs_force_lookup_revalidate()
-must be called whenever the ctime or mtime of a directory inode is
-updated with fresh data from the server.  There are a few spots in
-nfs_wcc_update_inode() where this rule is violated, making it possible
-for the lookup cache to return arbitrarily stale data.
+lock = NULL;
+list_for_each_entry(x, tmpq, list) {
+	if (x->ml.cookie == ml->cookie) {
+	   	lock = x;
+		break;
+	}
+}
 
-This actually bit me in practice.  I have an application where a
-negative dentry results in -ENOENT for a file that was created 30+
-minutes earlier (despite the "noac" mount option).  Unfortunately I
-cannot share my test case, but I believe the following simple patch is
-"obviously correct", and I can confirm that it fixes my issue.
-
-CC: stable <stable@kernel.org>
-Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
-
----
-
---- linux-2.6.35/fs/nfs/inode.c.orig	2010-08-01 15:11:14.000000000 -0700
-+++ linux-2.6.35/fs/nfs/inode.c	2010-08-11 22:18:30.000000000 -0700
-@@ -819,21 +819,29 @@ static void nfs_wcc_update_inode(struct
- 			&& (fattr->valid & NFS_ATTR_FATTR_CHANGE)
- 			&& nfsi->change_attr == fattr->pre_change_attr) {
- 		nfsi->change_attr = fattr->change_attr;
--		if (S_ISDIR(inode->i_mode))
-+		if (S_ISDIR(inode->i_mode)) {
- 			nfsi->cache_validity |= NFS_INO_INVALID_DATA;
-+			nfs_force_lookup_revalidate(inode);
-+		}
- 	}
- 	/* If we have atomic WCC data, we may update some attributes */
- 	if ((fattr->valid & NFS_ATTR_FATTR_PRECTIME)
- 			&& (fattr->valid & NFS_ATTR_FATTR_CTIME)
--			&& timespec_equal(&inode->i_ctime, &fattr->pre_ctime))
--			memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
-+			&& timespec_equal(&inode->i_ctime,
-+					  &fattr->pre_ctime)) {
-+		if (S_ISDIR(inode->i_mode))
-+			nfs_force_lookup_revalidate(inode);
-+		memcpy(&inode->i_ctime, &fattr->ctime, sizeof(inode->i_ctime));
-+	}
- 
- 	if ((fattr->valid & NFS_ATTR_FATTR_PREMTIME)
- 			&& (fattr->valid & NFS_ATTR_FATTR_MTIME)
- 			&& timespec_equal(&inode->i_mtime, &fattr->pre_mtime)) {
- 			memcpy(&inode->i_mtime, &fattr->mtime, sizeof(inode->i_mtime));
--			if (S_ISDIR(inode->i_mode))
-+			if (S_ISDIR(inode->i_mode)) {
- 				nfsi->cache_validity |= NFS_INO_INVALID_DATA;
-+				nfs_force_lookup_revalidate(inode);
-+			}
- 	}
- 	if ((fattr->valid & NFS_ATTR_FATTR_PRESIZE)
- 			&& (fattr->valid & NFS_ATTR_FATTR_SIZE)
+julia
