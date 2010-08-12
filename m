@@ -1,104 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758823Ab0HKX5u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:57:50 -0400
-Received: from kroah.org ([198.145.64.141]:40088 "EHLO coco.kroah.org"
+	id S1758942Ab0HLAmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:42:40 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32699 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758742Ab0HKX5n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:57:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:54:57 2010
-Message-Id: <20100811235457.235319244@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:53:59 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Julia Lawall <julia@diku.dk>, Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: [018/111] fs/ecryptfs/file.c: introduce missing free
-In-Reply-To: <20100811235623.GA24440@kroah.com>
+	id S1758843Ab0HLAme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:42:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,355,1278313200"; 
+   d="scan'208";a="544169565"
+Subject: Re: +
+ drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch added to
+ -mm tree
+From: Huang Ying <ying.huang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gcosta@redhat.com" <gcosta@redhat.com>,
+        "hpa@zytor.com" <hpa@zytor.com>, "lenb@kernel.org" <lenb@kernel.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+In-Reply-To: <20100811173327.3ae325ff.akpm@linux-foundation.org>
+References: <201008112336.o7BNaNEj020805@imap1.linux-foundation.org>
+	 <20100811164310.a4790773.randy.dunlap@oracle.com>
+	 <20100811173327.3ae325ff.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Aug 2010 08:42:31 +0800
+Message-ID: <1281573751.2744.1415.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Thu, 2010-08-12 at 08:33 +0800, Andrew Morton wrote:
+> On Wed, 11 Aug 2010 16:43:10 -0700 Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> 
+> > On Wed, 11 Aug 2010 16:06:24 -0700 akpm@linux-foundation.org wrote:
+> > 
+> > > 
+> > > The patch titled
+> > >      drivers/acpi/apei/erst-dbg.c: get_user(u64) doesn't work on i386
+> > > has been added to the -mm tree.  Its filename is
+> > >      drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch
+> > > 
+> > > Before you just go and hit "reply", please:
+> > >    a) Consider who else should be cc'ed
+> > >    b) Prefer to cc a suitable mailing list as well
+> > >    c) Ideally: find the original patch on the mailing list and do a
+> > >       reply-to-all to that, adding suitable additional cc's
+> > > 
+> > > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > > 
+> > > See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
+> > > out what to do about this
+> > > 
+> > > The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> > > 
+> > > ------------------------------------------------------
+> > > Subject: drivers/acpi/apei/erst-dbg.c: get_user(u64) doesn't work on i386
+> > > From: Andrew Morton <akpm@linux-foundation.org>
+> > > 
+> > > Might be an x86 bug?  A get_user() on a u64 on i386 expands to
+> > > 
+> > > #define __get_user_8(__ret_gu, __val_gu, ptr)				\
+> > > 		__get_user_x(X, __ret_gu, __val_gu, ptr)
+> > > 
+> > > which emits a call to __get_user_X(), which doesn't exist.
+> > > 
+> > > Kludge around it with copy_from_user().
+> > > 
+> > 
+> > Reported and fixed yesterday.
+> 
+> Not very well.
+> 
+> +		rc = copy_from_user(&record_id, (void __user *)arg,
+> +				    sizeof(u64));
+> 
+> better to use sizeof(record_id).
 
-------------------
+Will fix this with a new version. And the ssize printk format string.
 
-From: Julia Lawall <julia@diku.dk>
+> Where's Len??
+>
+> Anyway, this should be fixed in x86 core, I suspect.
 
-commit ceeab92971e8af05c1e81a4ff2c271124b55bb9b upstream.
+Yes. I think so too.
 
-The comments in the code indicate that file_info should be released if the
-function fails.  This releasing is done at the label out_free, not out.
-
-The semantic match that finds this problem is as follows:
-(http://www.emn.fr/x-info/coccinelle/)
-
-// <smpl>
-@r exists@
-local idexpression x;
-statement S;
-expression E;
-identifier f,f1,l;
-position p1,p2;
-expression *ptr != NULL;
-@@
-
-x@p1 = kmem_cache_zalloc(...);
-...
-if (x == NULL) S
-<... when != x
-     when != if (...) { <+...x...+> }
-(
-x->f1 = E
-|
- (x->f1 == NULL || ...)
-|
- f(...,x->f1,...)
-)
-...>
-(
- return <+...x...+>;
-|
- return@p2 ...;
-)
-
-@script:python@
-p1 << r.p1;
-p2 << r.p2;
-@@
-
-print "* file: %s kmem_cache_zalloc %s" % (p1[0].file,p1[0].line)
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ecryptfs/file.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -198,7 +198,7 @@ static int ecryptfs_open(struct inode *i
- 			       "the persistent file for the dentry with name "
- 			       "[%s]; rc = [%d]\n", __func__,
- 			       ecryptfs_dentry->d_name.name, rc);
--			goto out;
-+			goto out_free;
- 		}
- 	}
- 	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_RDONLY)
-@@ -206,7 +206,7 @@ static int ecryptfs_open(struct inode *i
- 		rc = -EPERM;
- 		printk(KERN_WARNING "%s: Lower persistent file is RO; eCryptfs "
- 		       "file must hence be opened RO\n", __func__);
--		goto out;
-+		goto out_free;
- 	}
- 	ecryptfs_set_file_lower(
- 		file, ecryptfs_inode_to_private(inode)->lower_file);
+Best Regards,
+Huang Ying
 
 
