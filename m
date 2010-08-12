@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab0HLFGv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 01:06:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48829 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab0HLFGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 01:06:48 -0400
-Message-ID: <4C638140.1080202@zytor.com>
-Date: Wed, 11 Aug 2010 22:06:08 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1751812Ab0HLFJk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 01:09:40 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:40071 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab0HLFJj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 01:09:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=pOcPVKqeT9EUHL9CNvEGx288M4qMoCohR7i6zDasfhV4HOdVy+4Eg/DxMV/lFMSi2
+	4begImmhw3flc5MHZ7rEQ==
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        gcosta@redhat.com, lenb@kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        ying.huang@intel.com,
-        Linux Arch Mailing List <linux-arch@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: + drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch
- added to -mm tree
-References: <201008112336.o7BNaNEj020805@imap1.linux-foundation.org>	<20100811164310.a4790773.randy.dunlap@oracle.com>	<20100811173327.3ae325ff.akpm@linux-foundation.org>	<4C63771B.6030005@zytor.com> <20100811213013.ab501c6e.akpm@linux-foundation.org>
-In-Reply-To: <20100811213013.ab501c6e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTimDGbrja5EgGQ+sQxHBRNMnmt7=rjtOfwAKEKFe@mail.gmail.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	<1274733081-4623-7-git-send-email-walken@google.com>
+	<AANLkTikFEy26V4epRGCJiDkQNQ5BH0fPP0C=4phUB=o3@mail.gmail.com>
+	<AANLkTimDGbrja5EgGQ+sQxHBRNMnmt7=rjtOfwAKEKFe@mail.gmail.com>
+Date: Wed, 11 Aug 2010 22:09:34 -0700
+Message-ID: <AANLkTim3thKSwTHSQ7UXir+1cT9cfFaEjTFGGMdz0_Bt@mail.gmail.com>
+Subject: Re: [PATCH 06/11] rwsem: wake queued readers when writer blocks on 
+	active read lock
+From: Michel Lespinasse <walken@google.com>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Waychison <mikew@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2010 09:30 PM, Andrew Morton wrote:
-> 
-> It occurs so rarely that it's probably not worth bothering about, IMO.
-> 
+On Wed, Aug 11, 2010 at 10:02 PM, Michel Lespinasse <walken@google.com> wrote:
+> In arch/ia64/include/asm/rwsem.h I see RWSEM_WAITING_BIAS defined as
+> -__IA64_UL_CONST(0x0000000100000000)
+>
+> This makes it a large, positive unsigned value. This is probably
+> throwing off the rwsem_atomic_update(0, sem) < RWSEM_WAITING_BIAS
+> comparison in my patch (supposed to be long versus long, but actually
+> is long versus unsigned long on ia64).
 
-I think the real question is if we want people to convert:
-
-	if (copy_from_user(foo, bar, sizeof *foo))
-		return -EFAULT;
-
-... into ...
-
-	if (get_user(*foo, bar))
-		return -EFAULT;
-
-... or ...
-
-	rv = get_user(*foo, bar);
-	if (rv)
-		return rv;
-
-... where *foo is a structure type.  It does have the advantage that a
-single API does everything, simple or not, but has the disadvantage that
-the partial-access semantics are now less explicit.
-
-	-hpa
+FYI, I just verified that RWSEM_WAITING_BIAS is defined as signed on
+all architectures except for ia64. So, this would be consistent with
+the issue being observed only on ia64.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
