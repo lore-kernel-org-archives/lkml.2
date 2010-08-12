@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759418Ab0HLAVB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:21:01 -0400
-Received: from kroah.org ([198.145.64.141]:60432 "EHLO coco.kroah.org"
+	id S1759585Ab0HLAVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:21:17 -0400
+Received: from kroah.org ([198.145.64.141]:60426 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932890Ab0HLAHn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:07:43 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:13 2010
-Message-Id: <20100812000612.971650948@clark.site>
+	id S932836Ab0HLAHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:07:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:12 2010
+Message-Id: <20100812000612.881053456@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:18 -0700
+Date: Wed, 11 Aug 2010 17:05:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Scott Wood <scottwood@freescale.com>,
-        Paul Mackerras <paulus@samba.org>
-Subject: [03/67] perf, powerpc: fsl_emb: Restore setting perf_sample_data.period
+        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: [02/67] ata_piix: fix locking around SIDPR access
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,31 +25,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Scott Wood <scottwood@freescale.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 69e77a8b0426ded5d924eea7dbe4eca51e09f530 upstream.
+commit 213373cf974fe69e78ec894b07f45ae2f5a3a078 upstream.
 
-Commit 6b95ed345b9faa4ab3598a82991968f2e9f851bb changed from
-a struct initializer to perf_sample_data_init(), but the setting
-of the .period member was left out.
+SIDPR window registers are shared across ports and as each access is
+done in two steps, accesses to different ports under EH may race.
+This primarily is caused by incorrect host locking in EH context and
+should be fixed by defining locking requirements for each EH operation
+which can be used during EH and enforcing them but for now work around
+the problem by adding a dedicated SIDPR lock and grabbing it for each
+SIDPR access.
 
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Mark Knecht <markknecht@gmail.com>
+Reported-by: Paul Check <paul@thechecks.ca>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/kernel/perf_event_fsl_emb.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/ata/ata_piix.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/powerpc/kernel/perf_event_fsl_emb.c
-+++ b/arch/powerpc/kernel/perf_event_fsl_emb.c
-@@ -569,6 +569,7 @@ static void record_and_restart(struct pe
- 		struct perf_sample_data data;
+--- a/drivers/ata/ata_piix.c
++++ b/drivers/ata/ata_piix.c
+@@ -158,6 +158,7 @@ struct piix_map_db {
+ struct piix_host_priv {
+ 	const int *map;
+ 	u32 saved_iocfg;
++	spinlock_t sidpr_lock;	/* FIXME: remove once locking in EH is fixed */
+ 	void __iomem *sidpr;
+ };
  
- 		perf_sample_data_init(&data, 0);
-+		data.period = event->hw.last_period;
+@@ -951,12 +952,15 @@ static int piix_sidpr_scr_read(struct at
+ 			       unsigned int reg, u32 *val)
+ {
+ 	struct piix_host_priv *hpriv = link->ap->host->private_data;
++	unsigned long flags;
  
- 		if (perf_event_overflow(event, nmi, &data, regs)) {
- 			/*
+ 	if (reg >= ARRAY_SIZE(piix_sidx_map))
+ 		return -EINVAL;
+ 
++	spin_lock_irqsave(&hpriv->sidpr_lock, flags);
+ 	piix_sidpr_sel(link, reg);
+ 	*val = ioread32(hpriv->sidpr + PIIX_SIDPR_DATA);
++	spin_unlock_irqrestore(&hpriv->sidpr_lock, flags);
+ 	return 0;
+ }
+ 
+@@ -964,12 +968,15 @@ static int piix_sidpr_scr_write(struct a
+ 				unsigned int reg, u32 val)
+ {
+ 	struct piix_host_priv *hpriv = link->ap->host->private_data;
++	unsigned long flags;
+ 
+ 	if (reg >= ARRAY_SIZE(piix_sidx_map))
+ 		return -EINVAL;
+ 
++	spin_lock_irqsave(&hpriv->sidpr_lock, flags);
+ 	piix_sidpr_sel(link, reg);
+ 	iowrite32(val, hpriv->sidpr + PIIX_SIDPR_DATA);
++	spin_unlock_irqrestore(&hpriv->sidpr_lock, flags);
+ 	return 0;
+ }
+ 
+@@ -1566,6 +1573,7 @@ static int __devinit piix_init_one(struc
+ 	hpriv = devm_kzalloc(dev, sizeof(*hpriv), GFP_KERNEL);
+ 	if (!hpriv)
+ 		return -ENOMEM;
++	spin_lock_init(&hpriv->sidpr_lock);
+ 
+ 	/* Save IOCFG, this will be used for cable detection, quirk
+ 	 * detection and restoration on detach.  This is necessary
 
 
