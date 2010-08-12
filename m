@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab0HLA2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:28:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38167 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759376Ab0HLA2B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:28:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Y66bJ463AD5xbWpNeSyDkgHZ/CX65KnRYHYDQRCO9AsPJH1XjYDOsSsR3Ga3tAgLPu
-         sklEpR0GmfetqqQMQd9MuUbTZoHNkmzzDIGWBHpdeik6PAU+OvQ76/ZggwbvGlEpWhZp
-         aNEIJiitrg8iUuFKPYt8GZNYiI5WSieMnhO0w=
-MIME-Version: 1.0
-In-Reply-To: <20100811222854.GJ2516@linux.vnet.ibm.com>
-References: <AANLkTikyRhtfX4R3x_NDgHnXssmfVuhjC5PbhRZ0a7su@mail.gmail.com>
-	<alpine.DEB.2.00.1008062010510.30564@asgard.lang.hm>
-	<20100807061558.GA28087@thunk.org>
-	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
-	<20100808155719.GB3635@thunk.org>
-	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
-	<20100808213821.GD3635@thunk.org>
-	<20100809112453.77210acc@lxorguk.ukuu.org.uk>
-	<20100809181638.GI3026@linux.vnet.ibm.com>
-	<AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
-	<20100811222854.GJ2516@linux.vnet.ibm.com>
-Date: Thu, 12 Aug 2010 03:28:00 +0300
-Message-ID: <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759319Ab0HLADz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:03:55 -0400
+Received: from kroah.org ([198.145.64.141]:60069 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759225Ab0HLADs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:03:48 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:23 2010
+Message-Id: <20100812000123.599374394@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 17:00:18 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [03/54] powerpc: fix build with make 3.82
+In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 1:28 AM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Wed, Aug 11, 2010 at 10:18:51PM +0300, Felipe Contreras wrote:
->> On Mon, Aug 9, 2010 at 9:16 PM, Paul E. McKenney
->> <paulmck@linux.vnet.ibm.com> wrote:
->> > But wouldn't an office suite run as a power-oblivious application on an
->> > Android device?  After all, office applications do not need to run when
->> > the screen is turned off, so these the applications do not need to use
->> > suspend blockers.
->>
->> Ideally the system would be suspended even when the screen is on. If
->> there are no "trusted" applications running at the same time, then
->> openoffice wouldn't load at all. Right?
->
-> My understanding is that Android systems in fact do not suspend when
-> the screen is on, and that most (perhaps all) other systems do not
-> opportunistically suspend at all.  There has been some speculation about
-> what a hypothetical Android having a non-volatile display might do,
-> but as far as I know, this is just speculation.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-I have a desktop system in mind. If opportunistic suspend is only
-triggered when the display is off, then it's no good for normal usage,
-and therefore dynamic PC needs to get its act together... specially
-for laptops.
+------------------
 
--- 
-Felipe Contreras
+From: Sam Ravnborg <sam@ravnborg.org>
+
+commit e32e78c5ee8aadef020fbaecbe6fb741ed9029fd upstream.
+
+Thomas Backlund reported that the powerpc build broke with make 3.82.
+It failed with the following message:
+
+    arch/powerpc/Makefile:183: *** mixed implicit and normal rules.  Stop.
+
+The fix is to avoid mixing non-wildcard and wildcard targets.
+
+Reported-by: Thomas Backlund <tmb@mandriva.org>
+Tested-by: Thomas Backlund <tmb@mandriva.org>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ arch/powerpc/Makefile |   16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -158,9 +158,11 @@ drivers-$(CONFIG_OPROFILE)	+= arch/power
+ # Default to zImage, override when needed
+ all: zImage
+ 
+-BOOT_TARGETS = zImage zImage.initrd uImage zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
++# With make 3.82 we cannot mix normal and wildcard targets
++BOOT_TARGETS1 := zImage zImage.initrd uImaged
++BOOT_TARGETS2 := zImage% dtbImage% treeImage.% cuImage.% simpleImage.%
+ 
+-PHONY += $(BOOT_TARGETS)
++PHONY += $(BOOT_TARGETS1) $(BOOT_TARGETS2)
+ 
+ boot := arch/$(ARCH)/boot
+ 
+@@ -175,10 +177,16 @@ relocs_check: arch/powerpc/relocs_check.
+ zImage: relocs_check
+ endif
+ 
+-$(BOOT_TARGETS): vmlinux
++$(BOOT_TARGETS1): vmlinux
++	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
++$(BOOT_TARGETS2): vmlinux
++	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
++
++
++bootwrapper_install:
+ 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+ 
+-bootwrapper_install %.dtb:
++%.dtb:
+ 	$(Q)$(MAKE) ARCH=ppc64 $(build)=$(boot) $(patsubst %,$(boot)/%,$@)
+ 
+ define archhelp
+
+
