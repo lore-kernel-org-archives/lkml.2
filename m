@@ -1,159 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab0HLAWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:22:32 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:52181 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932921Ab0HLAW2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:22:28 -0400
-Date: Wed, 11 Aug 2010 17:21:54 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Tomasz Buchert <Tomasz.Buchert@inria.fr>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroup_freezer: Freezing and task move race fix
-Message-ID: <20100812002154.GJ2927@count0.beaverton.ibm.com>
-References: <1281470001-14320-1-git-send-email-tomasz.buchert@inria.fr>
- <20100810215741.GC2927@count0.beaverton.ibm.com>
- <4C61D044.2060703@inria.fr>
- <20100811042738.GH2927@count0.beaverton.ibm.com>
- <4C6252CF.1090100@inria.fr>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C6252CF.1090100@inria.fr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932921Ab0HLAW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:22:56 -0400
+Received: from kroah.org ([198.145.64.141]:60296 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759583Ab0HLAEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:32 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:27 2010
+Message-Id: <20100812000126.925577446@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 17:00:55 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Oliver Neukum <oneukum@suse.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Christian Lamparter <chunkeey@googlemail.com>
+Subject: [40/54] USB: fix thread-unsafe anchor utiliy routines
+In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 09:35:43AM +0200, Tomasz Buchert wrote:
-> Matt Helsley a écrit :
-> > On Wed, Aug 11, 2010 at 12:18:44AM +0200, Tomasz Buchert wrote:
-> >> Matt Helsley a écrit :
-> >>> On Tue, Aug 10, 2010 at 09:53:21PM +0200, Tomasz Buchert wrote:
-> >>>> Writing 'FROZEN' to freezer.state file does not
-> >>>> forbid the task to be moved away from its cgroup
-> >>>> (for a very short time). Nevertheless the moved task
-> >>>> can become frozen OUTSIDE its cgroup which puts
-> >>>> discussed task in a permanent 'D' state.
-> >>>>
-> >>>> This patch forbids migration of either FROZEN
-> >>>> or FREEZING tasks.
-> >>>>
-> >>>> This behavior was observed and easily reproduced on
-> >>>> a single core laptop. Program and instructions how
-> >>>> to reproduce the bug can be fetched from:
-> >>>> http://pentium.hopto.org/~thinred/repos/linux-misc/freezer_bug.c
-> >>> Thanks for the report and the test code.
-> >>>
-> >>> I'm will try to reproduce this race in the next few hours and analyze
-> >>> it since I'm not sure the patch really fixes the race -- it may only
-> >>> make the race trigger less frequently.
-> >>>
-> >>> At the very least the patch won't break the current code since it's
-> >>> essentially a more-strict version of is_task_frozen_enough() -- it lets
-> >>> fewer tasks attach/detach to/from frozen cgroups.
-> >>>
-> >>> Cheers,
-> >>> 	-Matt Helsley
-> >> Hi Matt!
-> >> I am a novice if it comes to the kernel and I find the cgroup_freezer
-> >> code especially complicated, so definetely this may be not enough to fix that.
-> >> Notice also that if you uncomment the line 55 in my testcase this will also
-> >> trigger the race! This, however, makes sense since process may not be in the cgroup anymore
-> >> and consequently won't be thawed.
-> > 
-> > OK, I triggered it with that. Interesting.
-> > 
-> 
-> Good!
-> 
-> >> I think that this patch fixes these problems because it does the flag checking in a right order:
-> >> first freezing() is used and then frozen() which assures (see frozen_process()) that
-> >> the race will not happen. Right? :)
-> > 
-> > I see what you mean. It still seems like it wouldn't actually fix the race -- just make it
-> > harder to trigger. I think you're saying this is what happens without the patch:
-> > 
-> > Time	"bug" goes through these states		cgroup code checks for these states
-> > -----------------------------------------------------------------------------------
-> > |	freezing
-> > |						is_frozen? Nope.
-> > |	frozen
-> > |						is_freezing? Nope.
-> > |						<move>
-> > V
-> > 
-> My first scenario was a bit different:
-> Time	"bug" goes through these states		cgroup code checks for these states
-> -----------------------------------------------------------------------------------
-> |	freezing
-> |						is_task_frozen_enough? Nope.
-> |						<move>
-> |	frozen
-> V
-> but the problem is the same.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-I think I found a bug in the cgroup freezer which your patch fixes.
-However I don't think it's a race.
+------------------
 
-/* Task is frozen or will freeze immediately when next it gets woken */
-static bool is_task_frozen_enough(struct task_struct *task)
-{
-        return frozen(task) ||
-                (task_is_stopped_or_traced(task) && freezing(task));
-}
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-So it will only refuse to attach freezing tasks which have been stopped
-or traced! Yet for attach we need to refuse to move _any_ freezing tasks.
+commit b3e670443b7fb8a2d29831b62b44a039c283e351 upstream.
 
-Though stopped/traced _is_ relevant to the cgroup freezer state itself.
-If we uses frozen(task) || freezing(task) to determine whether a cgroup
-is frozen then it would be possible for the task to still be active
-when the cgroup is finally reported FROZEN. However that's not possible
-when the task is stopped/traced *and* freezing since even if woken it
-won't exit the kernel before entering the refrigerator.
+This patch fixes a race condition in two utility routines
+related to the removal/unlinking of urbs from an anchor.
 
-> > But, without having carefully investigated the details, this could just as easily happen
-> > with your patch:
-> > 
-> > Time	"bug" goes through these states		cgroup code checks for these states
-> > -----------------------------------------------------------------------------------
-> > |						is_freezing? Nope.
-> > |						is_frozen? Nope.
-> > |	freezing
-> > |						<move>
-> > |	frozen
-> > V
-> > 
-> 
-> This can't happen as far as I know because there is cgroup_lock around the code in freezer_write()
-> and freezer_can_attach().
-> The task can't enter 'freezing' state when can_attach is executed.
+If two threads are concurrently accessing the same anchor,
+both could end up with the same urb - thinking they are
+the exclusive owner.
 
-You're right, cgroup_mutex should protect against that. However presumably
-that same logic applies to the first case. So again I don't think the bug
-is a race.
+Alan Stern pointed out a related issue in
+usb_unlink_anchored_urbs:
 
-<snipped the remaining cases which should be the same>
+"The URB isn't removed from the anchor until it completes
+ (as a by-product of completion, in fact), which might not
+ be for quite some time after the unlink call returns.
+ In the meantime, the subroutine will keep trying to unlink
+ it, over and over again."
 
-At this point I think the bug description in your patch needs to change
-but the patch itself is perfect. Assuming you agree with my assessment
-of the bug I think the process is: you'll rewrite the description, add -stable
-maintaners to your current Cc's (since this bug is simple, exists in previous
-versions, and is somewhat nasty), add:
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Reviewed-by: Matt Helsley <matthltc@us.ibm.com>
-Tested-by: Matt Helsley <matthltc@us.ibm.com>
+---
+ drivers/usb/core/urb.c |   50 ++++++++++++++++++++-----------------------------
+ 1 file changed, 21 insertions(+), 29 deletions(-)
 
-and send it to Andrew Morton. Hopefully then (if not before) Paul and Li
-will ack it.
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -137,6 +137,16 @@ void usb_anchor_urb(struct urb *urb, str
+ }
+ EXPORT_SYMBOL_GPL(usb_anchor_urb);
+ 
++/* Callers must hold anchor->lock */
++static void __usb_unanchor_urb(struct urb *urb, struct usb_anchor *anchor)
++{
++	urb->anchor = NULL;
++	list_del(&urb->anchor_list);
++	usb_put_urb(urb);
++	if (list_empty(&anchor->urb_list))
++		wake_up(&anchor->wait);
++}
++
+ /**
+  * usb_unanchor_urb - unanchors an URB
+  * @urb: pointer to the urb to anchor
+@@ -156,17 +166,14 @@ void usb_unanchor_urb(struct urb *urb)
+ 		return;
+ 
+ 	spin_lock_irqsave(&anchor->lock, flags);
+-	if (unlikely(anchor != urb->anchor)) {
+-		/* we've lost the race to another thread */
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		return;
+-	}
+-	urb->anchor = NULL;
+-	list_del(&urb->anchor_list);
++	/*
++	 * At this point, we could be competing with another thread which
++	 * has the same intention. To protect the urb from being unanchored
++	 * twice, only the winner of the race gets the job.
++	 */
++	if (likely(anchor == urb->anchor))
++		__usb_unanchor_urb(urb, anchor);
+ 	spin_unlock_irqrestore(&anchor->lock, flags);
+-	usb_put_urb(urb);
+-	if (list_empty(&anchor->urb_list))
+-		wake_up(&anchor->wait);
+ }
+ EXPORT_SYMBOL_GPL(usb_unanchor_urb);
+ 
+@@ -750,20 +757,11 @@ EXPORT_SYMBOL_GPL(usb_unpoison_anchored_
+ void usb_unlink_anchored_urbs(struct usb_anchor *anchor)
+ {
+ 	struct urb *victim;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&anchor->lock, flags);
+-	while (!list_empty(&anchor->urb_list)) {
+-		victim = list_entry(anchor->urb_list.prev, struct urb,
+-				    anchor_list);
+-		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		/* this will unanchor the URB */
++	while ((victim = usb_get_from_anchor(anchor)) != NULL) {
+ 		usb_unlink_urb(victim);
+ 		usb_put_urb(victim);
+-		spin_lock_irqsave(&anchor->lock, flags);
+ 	}
+-	spin_unlock_irqrestore(&anchor->lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(usb_unlink_anchored_urbs);
+ 
+@@ -800,12 +798,11 @@ struct urb *usb_get_from_anchor(struct u
+ 		victim = list_entry(anchor->urb_list.next, struct urb,
+ 				    anchor_list);
+ 		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		usb_unanchor_urb(victim);
++		__usb_unanchor_urb(victim, anchor);
+ 	} else {
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+ 		victim = NULL;
+ 	}
++	spin_unlock_irqrestore(&anchor->lock, flags);
+ 
+ 	return victim;
+ }
+@@ -827,12 +824,7 @@ void usb_scuttle_anchored_urbs(struct us
+ 	while (!list_empty(&anchor->urb_list)) {
+ 		victim = list_entry(anchor->urb_list.prev, struct urb,
+ 				    anchor_list);
+-		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		/* this may free the URB */
+-		usb_unanchor_urb(victim);
+-		usb_put_urb(victim);
+-		spin_lock_irqsave(&anchor->lock, flags);
++		__usb_unanchor_urb(victim, anchor);
+ 	}
+ 	spin_unlock_irqrestore(&anchor->lock, flags);
+ }
 
-Thanks!
 
-Cheers,
-	-Matt Helsley
