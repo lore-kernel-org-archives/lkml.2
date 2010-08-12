@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759555Ab0HLA1o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:27:44 -0400
-Received: from kroah.org ([198.145.64.141]:60119 "EHLO coco.kroah.org"
+	id S1759603Ab0HLA1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:27:46 -0400
+Received: from kroah.org ([198.145.64.141]:60116 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758926Ab0HLAD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:03:58 -0400
+	id S1759376Ab0HLAD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:03:57 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.406202399@clark.site>
+Message-Id: <20100812000124.313885680@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:27 -0700
+Date: Wed, 11 Aug 2010 17:00:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [12/54] solos-pci: Fix race condition in tasklet RX handling
+        Tejun Heo <tj@kernel.org>, Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [11/54] PCI: disable MSI on VIA K8M800
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,66 +25,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Woodhouse <David.Woodhouse@intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 1f6ea6e511e5ec730d8e88651da1b7b6e8fd1333 upstream.
+commit 549e15611b4ac1de51ef0e0a79c2704f50a638a2 upstream.
 
-We were seeing faults in the solos-pci receive tasklet when packets
-arrived for a VCC which was currently being closed:
+MSI delivery from on-board ahci controller doesn't work on K8M800.  At
+this point, it's unclear whether the culprit is with the ahci
+controller or the host bridge.  Given the track record and considering
+the rather minimal impact of MSI, disabling it seems reasonable.
 
-[18842.727906] EIP: [<e082f490>] br2684_push+0x19/0x234 [br2684] SS:ESP 0068:dfb89d14
-
-[18845.090712] [<c13ecff3>] ? do_page_fault+0x0/0x2e1
-[18845.120042] [<e082f490>] ? br2684_push+0x19/0x234 [br2684]
-[18845.153530] [<e084fa13>] solos_bh+0x28b/0x7c8 [solos_pci]
-[18845.186488] [<e084f711>] ? solos_irq+0x2d/0x51 [solos_pci]
-[18845.219960] [<c100387b>] ? handle_irq+0x3b/0x48
-[18845.247732] [<c10265cb>] ? irq_exit+0x34/0x57
-[18845.274437] [<c1025720>] tasklet_action+0x42/0x69
-[18845.303247] [<c102643f>] __do_softirq+0x8e/0x129
-[18845.331540] [<c10264ff>] do_softirq+0x25/0x2a
-[18845.358274] [<c102664c>] _local_bh_enable_ip+0x5e/0x6a
-[18845.389677] [<c102666d>] local_bh_enable+0xb/0xe
-[18845.417944] [<e08490a8>] ppp_unregister_channel+0x32/0xbb [ppp_generic]
-[18845.458193] [<e08731ad>] pppox_unbind_sock+0x18/0x1f [pppox]
-
-This patch uses an RCU-inspired approach to fix it. In the RX tasklet's
-find_vcc() function we first refuse to use a VCC which already has the
-ATM_VF_READY bit cleared. And in the VCC close function, we synchronise
-with the tasklet to ensure that it can't still be using the VCC before
-we continue and allow the VCC to be destroyed.
-
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Tested-by: Nathan Williams <nathan@traverse.com.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Rainer Hurtado Navarro <publio.escipion.el.africano@gmail.com>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/atm/solos-pci.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ drivers/pci/quirks.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/atm/solos-pci.c
-+++ b/drivers/atm/solos-pci.c
-@@ -781,7 +781,8 @@ static struct atm_vcc *find_vcc(struct a
- 	sk_for_each(s, node, head) {
- 		vcc = atm_sk(s);
- 		if (vcc->dev == dev && vcc->vci == vci &&
--		    vcc->vpi == vpi && vcc->qos.rxtp.traffic_class != ATM_NONE)
-+		    vcc->vpi == vpi && vcc->qos.rxtp.traffic_class != ATM_NONE &&
-+		    test_bit(ATM_VF_READY, &vcc->flags))
- 			goto out;
- 	}
- 	vcc = NULL;
-@@ -907,6 +908,10 @@ static void pclose(struct atm_vcc *vcc)
- 	clear_bit(ATM_VF_ADDR, &vcc->flags);
- 	clear_bit(ATM_VF_READY, &vcc->flags);
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2115,6 +2115,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AT
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3336, quirk_disable_all_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3351, quirk_disable_all_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3364, quirk_disable_all_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8380_0, quirk_disable_all_msi);
  
-+	/* Hold up vcc_destroy_socket() (our caller) until solos_bh() in the
-+	   tasklet has finished processing any incoming packets (and, more to
-+	   the point, using the vcc pointer). */
-+	tasklet_unlock_wait(&card->tlet);
- 	return;
- }
- 
+ /* Disable MSI on chipsets that are known to not support it */
+ static void __devinit quirk_disable_msi(struct pci_dev *dev)
 
 
