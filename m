@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759616Ab0HLAX4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:23:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48044 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758663Ab0HLAXp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:23:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sxArHPYjgAIW9WhM/HjJHww5cRgsKNonb3bgVyY9saOLcl6SxxQO3Y4QeIxPqkUApF
-         SWYhsjbCxmb1tcgWnJqR+h3DMwjktd+pAu+e9LSaebGigW8pe/uhQzIoG4xIPO7hTUlJ
-         /cjs7kQGTyCpMwRbupXPLK8rQHuOK+m53Nm6Y=
-MIME-Version: 1.0
-In-Reply-To: <EA6E0E5D-0F18-4F9A-BB39-11958E82BC69@opensource.wolfsonmicro.com>
-References: <alpine.DEB.2.00.1008051800360.25170@asgard.lang.hm>
-	<20100806123047.GE31326@sirena.org.uk>
-	<20100806172226.GH2432@linux.vnet.ibm.com>
-	<20100806173325.GA25367@rakim.wolfsonmicro.main>
-	<20100806181832.GJ2432@linux.vnet.ibm.com>
-	<alpine.DEB.2.00.1008061517130.30564@asgard.lang.hm>
-	<20100807001431.GA3252@opensource.wolfsonmicro.com>
-	<alpine.DEB.2.00.1008061741460.30564@asgard.lang.hm>
-	<20100807062828.GB28087@thunk.org>
-	<AANLkTinTfKRfAUJqggcK9Cgo9BTXfqMjJ2SXZS=D1bmT@mail.gmail.com>
-	<20100808160810.GA7968@srcf.ucam.org>
-	<AANLkTik3FN5tTO8sgwz32b8s2SLnc8D1=14yU-a2betp@mail.gmail.com>
-	<EA6E0E5D-0F18-4F9A-BB39-11958E82BC69@opensource.wolfsonmicro.com>
-Date: Thu, 12 Aug 2010 03:23:44 +0300
-Message-ID: <AANLkTi=yqnOdsJvq8dYmCjS6Ja758d9y+CUAHG069Mmd@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Ted Ts'o" <tytso@mit.edu>,
-        "david@lang.hm" <david@lang.hm>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Brian Swetland <swetland@google.com>,
-        kevin granade <kevin.granade@gmail.com>,
-        "Arve Hj?nnev?g" <arve@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Arjan van de Ven <arjan@infradead.org>,
-        "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pavel@ucw.cz" <pavel@ucw.cz>,
-        "florian@mickler.org" <florian@mickler.org>,
-        "stern@rowland.harvard.edu" <stern@rowland.harvard.edu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759559Ab0HLAEZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:04:25 -0400
+Received: from kroah.org ([198.145.64.141]:60160 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759489Ab0HLAEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:09 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:25 2010
+Message-Id: <20100812000125.172406133@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 17:00:36 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Chris Wright <chrisw@sous-sol.org>,
+        "Serge E. Hallyn" <serue@us.ibm.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Daniel P. Berrange" <berrange@redhat.com>
+Subject: [21/54] blkdev: cgroup whitelist permission fix
+In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 8, 2010 at 9:34 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On 8 Aug 2010, at 18:08, Felipe Contreras <felipe.contreras@gmail.com> wrote:
->
->> On Sun, Aug 8, 2010 at 7:08 PM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->>> It's clearly possible for a pathological Android application to destroy
->>> the power management policy. But to do that, the author would have to
->>> explicitly take a wakelock. That's difficult to do by accident.
->>
->> The writer can take a wakelock the whole time the application is
->> running (isn't that the typical case?), because perhaps the author
->> realizes that way the application works correctly, or he copy-pasted
->> it from somewhere else.
->
-> That would be exceptionally unusual. A more common case is that the application will take a wakelock while performing some specific long running task which needs no user intervention such as downloading a file or displaying constantly update status that the user is not expected to respond to. There's no need for applications to take wakelocks while the user is directly interacting with them since the system will be kept awake as a result of the user interaction, the wakelocks are used to override the default suspend that occurs when the user is not interacting with the device.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-Fair enough, but if that the case, if suspend blockers are to be used
-in desktop software, everything would need extensive modifications
-just to work. I remember somebody said that was not the case, I
-thought it was because the lock could be held the whole time the
-application is running.
+------------------
 
--- 
-Felipe Contreras
+From: Chris Wright <chrisw@sous-sol.org>
+
+commit b7300b78d1a87625975a799a109a2f98d77757c8 upstream.
+
+The cgroup device whitelist code gets confused when trying to grant
+permission to a disk partition that is not currently open.  Part of
+blkdev_open() includes __blkdev_get() on the whole disk.
+
+Basically, the only ways to reliably allow a cgroup access to a partition
+on a block device when using the whitelist are to 1) also give it access
+to the whole block device or 2) make sure the partition is already open in
+a different context.
+
+The patch avoids the cgroup check for the whole disk case when opening a
+partition.
+
+Addresses https://bugzilla.redhat.com/show_bug.cgi?id=589662
+
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+Tested-by: Serge E. Hallyn <serue@us.ibm.com>
+Reported-by: Vivek Goyal <vgoyal@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: "Daniel P. Berrange" <berrange@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/block_dev.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -1192,10 +1192,12 @@ static int __blkdev_get(struct block_dev
+ 	/*
+ 	 * hooks: /n/, see "layering violations".
+ 	 */
+-	ret = devcgroup_inode_permission(bdev->bd_inode, perm);
+-	if (ret != 0) {
+-		bdput(bdev);
+-		return ret;
++	if (!for_part) {
++		ret = devcgroup_inode_permission(bdev->bd_inode, perm);
++		if (ret != 0) {
++			bdput(bdev);
++			return ret;
++		}
+ 	}
+ 
+ 	lock_kernel();
+
+
