@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759630Ab0HLAE4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:04:56 -0400
-Received: from kroah.org ([198.145.64.141]:60282 "EHLO coco.kroah.org"
+	id S1759644Ab0HLAFB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:05:01 -0400
+Received: from kroah.org ([198.145.64.141]:60328 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758639Ab0HLAE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:29 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
-Message-Id: <20100812000126.736501271@clark.site>
+	id S1759514Ab0HLAEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:27 2010
+Message-Id: <20100812000127.415022732@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:53 -0700
+Date: Wed, 11 Aug 2010 17:01:00 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alessio Igor Bogani <abogani@texware.it>
-Subject: [38/54] USB: cp210x: Add four new device IDs
+        Ian Campbell <ian.campbell@citrix.com>,
+        Stephen Hemminger <shemminger@linux-foundation.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [45/54] arp_notify: allow drivers to explicitly request a notification event.
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,29 +28,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alessio Igor Bogani <abogani@texware.it>
+From: Ian Campbell <Ian.Campbell@citrix.com>
 
-commit 356c5a4834a74c621715f7a7f16ded914eecbd3c upstream.
+commit 06c4648d46d1b757d6b9591a86810be79818b60c upstream.
 
-Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
+Currently such notifications are only generated when the device comes up or the
+address changes. However one use case for these notifications is to enable
+faster network recovery after a virtual machine migration (by causing switches
+to relearn their MAC tables). A migration appears to the network stack as a
+temporary loss of carrier and therefore does not trigger either of the current
+conditions. Rather than adding carrier up as a trigger (which can cause issues
+when interfaces a flapping) simply add an interface which the driver can use
+to explicitly trigger the notification.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Stephen Hemminger <shemminger@linux-foundation.org>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/cp210x.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ include/linux/netdevice.h |    2 ++
+ include/linux/notifier.h  |    1 +
+ net/ipv4/devinet.c        |    1 +
+ net/sched/sch_generic.c   |   18 ++++++++++++++++++
+ 4 files changed, 22 insertions(+)
 
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -128,6 +128,10 @@ static const struct usb_device_id id_tab
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
- 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
-+	{ USB_DEVICE(0x16DC, 0x0010) }, /* W-IE-NE-R Plein & Baus GmbH PL512 Power Supply */
-+	{ USB_DEVICE(0x16DC, 0x0011) }, /* W-IE-NE-R Plein & Baus GmbH RCM Remote Control for MARATON Power Supply */
-+	{ USB_DEVICE(0x16DC, 0x0012) }, /* W-IE-NE-R Plein & Baus GmbH MPOD Multi Channel Power Supply */
-+	{ USB_DEVICE(0x16DC, 0x0015) }, /* W-IE-NE-R Plein & Baus GmbH CML Control, Monitoring and Data Logger */
- 	{ } /* Terminating Entry */
- };
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -1661,6 +1661,8 @@ extern void netif_carrier_on(struct net_
  
+ extern void netif_carrier_off(struct net_device *dev);
+ 
++extern void netif_notify_peers(struct net_device *dev);
++
+ /**
+  *	netif_dormant_on - mark device as dormant.
+  *	@dev: network device
+--- a/include/linux/notifier.h
++++ b/include/linux/notifier.h
+@@ -203,6 +203,7 @@ static inline int notifier_to_errno(int
+ #define NETDEV_BONDING_NEWTYPE  0x000F
+ #define NETDEV_POST_INIT	0x0010
+ #define NETDEV_UNREGISTER_BATCH 0x0011
++#define NETDEV_NOTIFY_PEERS	0x0012
+ 
+ #define SYS_DOWN	0x0001	/* Notify of system down */
+ #define SYS_RESTART	SYS_DOWN
+--- a/net/ipv4/devinet.c
++++ b/net/ipv4/devinet.c
+@@ -1081,6 +1081,7 @@ static int inetdev_event(struct notifier
+ 		}
+ 		ip_mc_up(in_dev);
+ 		/* fall through */
++	case NETDEV_NOTIFY_PEERS:
+ 	case NETDEV_CHANGEADDR:
+ 		/* Send gratuitous ARP to notify of link change */
+ 		if (IN_DEV_ARP_NOTIFY(in_dev)) {
+--- a/net/sched/sch_generic.c
++++ b/net/sched/sch_generic.c
+@@ -325,6 +325,24 @@ void netif_carrier_off(struct net_device
+ }
+ EXPORT_SYMBOL(netif_carrier_off);
+ 
++/**
++ * 	netif_notify_peers - notify network peers about existence of @dev
++ * 	@dev: network device
++ *
++ * Generate traffic such that interested network peers are aware of
++ * @dev, such as by generating a gratuitous ARP. This may be used when
++ * a device wants to inform the rest of the network about some sort of
++ * reconfiguration such as a failover event or virtual machine
++ * migration.
++ */
++void netif_notify_peers(struct net_device *dev)
++{
++	rtnl_lock();
++	call_netdevice_notifiers(NETDEV_NOTIFY_PEERS, dev);
++	rtnl_unlock();
++}
++EXPORT_SYMBOL(netif_notify_peers);
++
+ /* "NOOP" scheduler: the best scheduler, recommended for all interfaces
+    under all circumstances. It is difficult to invent anything faster or
+    cheaper.
 
 
