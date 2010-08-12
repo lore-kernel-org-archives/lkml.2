@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933290Ab0HLAMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:12:09 -0400
-Received: from kroah.org ([198.145.64.141]:47941 "EHLO coco.kroah.org"
+	id S933388Ab0HLAMe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:12:34 -0400
+Received: from kroah.org ([198.145.64.141]:47923 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933239Ab0HLAIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:54 -0400
+	id S933208Ab0HLAIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:50 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:17 2010
-Message-Id: <20100812000617.736350512@clark.site>
+Message-Id: <20100812000617.375453972@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:06:10 -0700
+Date: Wed, 11 Aug 2010 17:06:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Oliver Neukum <oneukum@suse.de>, Greg Kroah-Hartman <greg@kroah.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Christian Lamparter <chunkeey@googlemail.com>
-Subject: [55/67] USB: fix thread-unsafe anchor utiliy routines
+        Andrew Bird <ajb@spheresystems.co.uk>
+Subject: [51/67] USB: option: add huawei k3765 k4505 devices to work properly
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,130 +25,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Andrew Bird <ajb@spheresystems.co.uk>
 
-commit b3e670443b7fb8a2d29831b62b44a039c283e351 upstream.
+commit 0372a754be9aa43e19fd86c9bc04796d43b55e38 upstream.
 
-This patch fixes a race condition in two utility routines
-related to the removal/unlinking of urbs from an anchor.
+This patch adds the product IDs of Huawei's K3765 and K4505 mobile
+broadband usb modems to option.c. It also adds a quirk to the option
+probe function so that binding to the device's network interface(class
+0xff) is avoided. This is necessary to allow another driver to bind to
+that, and to avoid programs like wvdial opening a nonfunctioning tty
+during modem discovery.
 
-If two threads are concurrently accessing the same anchor,
-both could end up with the same urb - thinking they are
-the exclusive owner.
-
-Alan Stern pointed out a related issue in
-usb_unlink_anchored_urbs:
-
-"The URB isn't removed from the anchor until it completes
- (as a by-product of completion, in fact), which might not
- be for quite some time after the unlink call returns.
- In the meantime, the subroutine will keep trying to unlink
- it, over and over again."
-
-Cc: Oliver Neukum <oneukum@suse.de>
-Cc: Greg Kroah-Hartman <greg@kroah.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
+Signed-off-by: Andrew Bird <ajb@spheresystems.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/urb.c |   50 ++++++++++++++++++++-----------------------------
- 1 file changed, 21 insertions(+), 29 deletions(-)
+ drivers/usb/serial/option.c |   11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
---- a/drivers/usb/core/urb.c
-+++ b/drivers/usb/core/urb.c
-@@ -137,6 +137,16 @@ void usb_anchor_urb(struct urb *urb, str
- }
- EXPORT_SYMBOL_GPL(usb_anchor_urb);
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -145,6 +145,8 @@ static void option_instat_callback(struc
+ #define HUAWEI_PRODUCT_E143D			0x143D
+ #define HUAWEI_PRODUCT_E143E			0x143E
+ #define HUAWEI_PRODUCT_E143F			0x143F
++#define HUAWEI_PRODUCT_K4505			0x1464
++#define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
+ #define HUAWEI_PRODUCT_ETS1220			0x1803
  
-+/* Callers must hold anchor->lock */
-+static void __usb_unanchor_urb(struct urb *urb, struct usb_anchor *anchor)
-+{
-+	urb->anchor = NULL;
-+	list_del(&urb->anchor_list);
-+	usb_put_urb(urb);
-+	if (list_empty(&anchor->urb_list))
-+		wake_up(&anchor->wait);
-+}
+@@ -483,6 +485,8 @@ static const struct usb_device_id option
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_ETS1220, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
+@@ -1019,6 +1023,13 @@ static int option_probe(struct usb_seria
+ 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
+ 		return -ENODEV;
+ 
++	/* Don't bind network interfaces on Huawei K3765 & K4505 */
++	if (serial->dev->descriptor.idVendor == HUAWEI_VENDOR_ID &&
++		(serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K3765 ||
++			serial->dev->descriptor.idProduct == HUAWEI_PRODUCT_K4505) &&
++		serial->interface->cur_altsetting->desc.bInterfaceNumber == 1)
++		return -ENODEV;
 +
- /**
-  * usb_unanchor_urb - unanchors an URB
-  * @urb: pointer to the urb to anchor
-@@ -156,17 +166,14 @@ void usb_unanchor_urb(struct urb *urb)
- 		return;
+ 	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
  
- 	spin_lock_irqsave(&anchor->lock, flags);
--	if (unlikely(anchor != urb->anchor)) {
--		/* we've lost the race to another thread */
--		spin_unlock_irqrestore(&anchor->lock, flags);
--		return;
--	}
--	urb->anchor = NULL;
--	list_del(&urb->anchor_list);
-+	/*
-+	 * At this point, we could be competing with another thread which
-+	 * has the same intention. To protect the urb from being unanchored
-+	 * twice, only the winner of the race gets the job.
-+	 */
-+	if (likely(anchor == urb->anchor))
-+		__usb_unanchor_urb(urb, anchor);
- 	spin_unlock_irqrestore(&anchor->lock, flags);
--	usb_put_urb(urb);
--	if (list_empty(&anchor->urb_list))
--		wake_up(&anchor->wait);
- }
- EXPORT_SYMBOL_GPL(usb_unanchor_urb);
- 
-@@ -749,20 +756,11 @@ EXPORT_SYMBOL_GPL(usb_unpoison_anchored_
- void usb_unlink_anchored_urbs(struct usb_anchor *anchor)
- {
- 	struct urb *victim;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&anchor->lock, flags);
--	while (!list_empty(&anchor->urb_list)) {
--		victim = list_entry(anchor->urb_list.prev, struct urb,
--				    anchor_list);
--		usb_get_urb(victim);
--		spin_unlock_irqrestore(&anchor->lock, flags);
--		/* this will unanchor the URB */
-+	while ((victim = usb_get_from_anchor(anchor)) != NULL) {
- 		usb_unlink_urb(victim);
- 		usb_put_urb(victim);
--		spin_lock_irqsave(&anchor->lock, flags);
- 	}
--	spin_unlock_irqrestore(&anchor->lock, flags);
- }
- EXPORT_SYMBOL_GPL(usb_unlink_anchored_urbs);
- 
-@@ -799,12 +797,11 @@ struct urb *usb_get_from_anchor(struct u
- 		victim = list_entry(anchor->urb_list.next, struct urb,
- 				    anchor_list);
- 		usb_get_urb(victim);
--		spin_unlock_irqrestore(&anchor->lock, flags);
--		usb_unanchor_urb(victim);
-+		__usb_unanchor_urb(victim, anchor);
- 	} else {
--		spin_unlock_irqrestore(&anchor->lock, flags);
- 		victim = NULL;
- 	}
-+	spin_unlock_irqrestore(&anchor->lock, flags);
- 
- 	return victim;
- }
-@@ -826,12 +823,7 @@ void usb_scuttle_anchored_urbs(struct us
- 	while (!list_empty(&anchor->urb_list)) {
- 		victim = list_entry(anchor->urb_list.prev, struct urb,
- 				    anchor_list);
--		usb_get_urb(victim);
--		spin_unlock_irqrestore(&anchor->lock, flags);
--		/* this may free the URB */
--		usb_unanchor_urb(victim);
--		usb_put_urb(victim);
--		spin_lock_irqsave(&anchor->lock, flags);
-+		__usb_unanchor_urb(victim, anchor);
- 	}
- 	spin_unlock_irqrestore(&anchor->lock, flags);
- }
+ 	if (!data)
 
 
