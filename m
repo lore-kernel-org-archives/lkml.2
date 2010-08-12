@@ -1,89 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760383Ab0HLRZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:25:34 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:45034 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab0HLRYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:24:34 -0400
-Message-Id: <20100812172622.349333778@de.ibm.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 12 Aug 2010 19:25:46 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: [PATCH/RFC 2/5] [PATCH] sched: pass sched_domain_level to sched_power_savings_store
-References: <20100812172544.655648128@de.ibm.com>
-Content-Disposition: inline; filename=02-sched-powersavings.diff
+	id S1758607Ab0HLR0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:26:51 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:54955 "EHLO mail-out1.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751822Ab0HLR0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 13:26:49 -0400
+Subject: Re: [PATCH] nfs: lookupcache coherence bugs in WCC update path
+ (revised)
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTi=WzNzq7wKf0qa+VFuOBYy4yW==0QvdKsTQ88+x@mail.gmail.com>
+References: <87lj8ckb1e.fsf@patl.com> <8762zgmmer.fsf@patl.com>
+	 <1281628195.2873.12.camel@heimdal.trondhjem.org>
+	 <AANLkTi=WzNzq7wKf0qa+VFuOBYy4yW==0QvdKsTQ88+x@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Aug 2010 13:26:44 -0400
+Message-ID: <1281634004.14329.14.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 4 sum msgs/h 1 total rcpts 832 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: EED4A4A918C25A50E87A7A1E2780A5D41623A4CD
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 320 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Thu, 2010-08-12 at 10:13 -0700, Patrick J. LoPresti wrote:
+> On Thu, Aug 12, 2010 at 8:49 AM, Trond Myklebust
+> <trond.myklebust@fys.uio.no> wrote:
+> >
+> > This looks less than obviously correct to me.
+> 
+> I just meant my patch obviously fixes a bug even if you do not believe
+> it is the bug I am encountering.  I claim it is "obvious" based on:
+> 
+> Obvious statement #1:  It is a bug if a directory inode's mtime is
+> EVER updated without invalidating the lookup cache, because that
+> results in a stale cache that does not know it is stale and can
+> persist indefinitely.
 
-Pass the corresponding sched domain level to sched_power_savings_store instead
-of a yes/no flag which indicates if the level is SMT or MC.
-This is needed to easily extend the function so it can be used for a third
-level.
+Wrong! Not if we _know_ that the mtime was updated due to an action we
+took. We don't have to invalidate the lookup cache every time we create
+a new dentry: we're quite able to add that dentry in to the cache
+ourselves, and we do that.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
 
- kernel/sched.c |   17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+> Obvious statement #2:  The current nfs_wcc_update_inode() code updates
+> the directory inode's mtime without invalidating the lookup cache.
+> 
+> So the current code would be wrong even if it never created a problem
+> in practice.  (Although it does create a problem in practice).
 
-diff -urpN linux-2.6/kernel/sched.c linux-2.6-patched/kernel/sched.c
---- linux-2.6/kernel/sched.c	2010-08-11 13:47:22.000000000 +0200
-+++ linux-2.6-patched/kernel/sched.c	2010-08-11 13:47:22.000000000 +0200
-@@ -7380,7 +7380,8 @@ static void arch_reinit_sched_domains(vo
- 	put_online_cpus();
- }
- 
--static ssize_t sched_power_savings_store(const char *buf, size_t count, int smt)
-+static ssize_t sched_power_savings_store(const char *buf, size_t count,
-+					 enum sched_domain_level sd_level)
- {
- 	unsigned int level = 0;
- 
-@@ -7397,10 +7398,16 @@ static ssize_t sched_power_savings_store
- 	if (level >= MAX_POWERSAVINGS_BALANCE_LEVELS)
- 		return -EINVAL;
- 
--	if (smt)
-+	switch (sd_level) {
-+	case SD_LV_SIBLING:
- 		sched_smt_power_savings = level;
--	else
-+		break;
-+	case SD_LV_MC:
- 		sched_mc_power_savings = level;
-+		break;
-+	default:
-+		break;
-+	}
- 
- 	arch_reinit_sched_domains();
- 
-@@ -7418,7 +7425,7 @@ static ssize_t sched_mc_power_savings_st
- 					    struct sysdev_class_attribute *attr,
- 					    const char *buf, size_t count)
- {
--	return sched_power_savings_store(buf, count, 0);
-+	return sched_power_savings_store(buf, count, SD_LV_MC);
- }
- static SYSDEV_CLASS_ATTR(sched_mc_power_savings, 0644,
- 			 sched_mc_power_savings_show,
-@@ -7436,7 +7443,7 @@ static ssize_t sched_smt_power_savings_s
- 					     struct sysdev_class_attribute *attr,
- 					     const char *buf, size_t count)
- {
--	return sched_power_savings_store(buf, count, 1);
-+	return sched_power_savings_store(buf, count, SD_LV_SIBLING);
- }
- static SYSDEV_CLASS_ATTR(sched_smt_power_savings, 0644,
- 		   sched_smt_power_savings_show,
+The current code is not wrong.
+
+> > The wcc case is invoked when the ctime/mtime/.... change is known to have occurred due to a file
+> > creation/unlink/... from this client. It is a weak cache consistency case.
+> >
+> > If your client is seeing ENOENT after it created the file itself, then
+> > the problem isn't cache coherency, but a bug in the file creation code.
+> 
+> The client did not create the file itself.
+
+So why is it going through the wcc case, and why does wcc think that the
+client created the file?
+
+> The sequence of operations goes like this:
+> 
+> 1) Client looks up non-existent file, creates negative dentry.
+> 2) File is created by a process on the server.
+> 3) Something causes the client to update its mtime for the directory
+> without invalidating the dentry lookup cache.  (I have not figured out
+> exactly what, but I have "caught it in the act"; see below).
+
+Changing the wcc behaviour won't fix this.
+
+> 4) Client incorrectly returns ENOENT when application next attempts to
+> access file.
+> 
+> You may think this is the usual "multiple updates within one second"
+> issue.  That is what I thought at first, anyway.  But I know it is
+> not, for three reasons...
+> 
+> First, my server is using XFS, which supports sub-second timestamps.
+> 
+> Second, I instrumented nfs_update_inode() to record the inode's mtime
+> and cache_change_attribute on function entry, then to log a message on
+> function return if the inode is a directory whose mtime got updated
+> without also updating cache_change_attribute.  Then I reproduced my
+> issue.  My new log message appeared precisely in those runs where the
+> issue occurred.  (I also instrumented the code to follow the actual
+> sequence of events; I can see that the faulty ENOENT is being returned
+> because the inode's cache_change_attribute matches the stale dentry's
+> d_time.)
+> 
+> Third, my testing confirms that the issue disappears after I apply my
+> patch.  If the problem were the usual "multiple updates in one
+> second", or indeed any server-side issue whatsoever, my patch could
+> not have fixed it.
+
+Then you need to explain why. As I said, the wcc code path should not be
+triggered when the client isn't creating or deleting stuff in the
+directory. The WCC is there to tell you that your client and only your
+client has changed stuff in the directory since it last revalidated the
+mtime.
+
+> Unfortunately, the only test case I have is my real-world application,
+> which I cannot share.  It takes ~30 minutes of running to reproduce
+> every time, and it only happens on maybe 2/3 of the runs, so it has
+> taken me over a week to track this down.  I still do not know the
+> exact sequence of operations that causes the problem; I just know it
+> really is happening.
+> 
+> In summary, the current code is "obviously wrong" because it violates
+> its own invariants by potentially updating a directory's mtime without
+> invalidating its lookup cache.  And it really is happening to me in
+> practice.  My patch fixes both the potential problem (which you can
+> see for yourself) and the actual problem (for which you have only my
+> word).
+
+I disagree.
+
+> Are you unwilling to fix such a bug unless I can provide you a test case?
+
+I can't take the patch as it stands. It is obviously wrong whether or
+not it fixes your test case.
+
+I'm happy to accept that there may be a bug, but you're going to have to
+investigate further what is happening, and figure out why changing the
+WCC code appears to fix the situation.
+My hunch is that you are seeing a server bug rather than a client bug
+here...
+
+Cheers
+  Trond
 
