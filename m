@@ -1,98 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760407Ab0HLRnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:43:21 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:32940 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758755Ab0HLRnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:43:18 -0400
-Date: Thu, 12 Aug 2010 10:43:03 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100812174303.GD2524@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100809181638.GI3026@linux.vnet.ibm.com>
- <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
- <20100811222854.GJ2516@linux.vnet.ibm.com>
- <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
- <20100812010612.GL2516@linux.vnet.ibm.com>
- <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
- <20100812034435.GA7403@linux.vnet.ibm.com>
- <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
- <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
- <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	id S1760444Ab0HLRo0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:44:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22683 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758755Ab0HLRoV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 13:44:21 -0400
+Date: Thu, 12 Aug 2010 10:43:19 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Jan Kara <jack@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [Ocfs2-devel] [PATCH 2/3] JBD2: Allow feature checks before
+ journal recovery
+Message-ID: <20100812174318.GD6561@mail.oracle.com>
+Mail-Followup-To: Jan Kara <jack@suse.cz>, Ted Ts'o <tytso@mit.edu>,
+	"Patrick J. LoPresti" <lopresti@gmail.com>,
+	ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <874ofr2myq.fsf@patl.com>
+ <8739vb2mxr.fsf@patl.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+In-Reply-To: <8739vb2mxr.fsf@patl.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 02:11:22PM +0300, Felipe Contreras wrote:
-> On Thu, Aug 12, 2010 at 1:47 PM, Theodore Tso <tytso@mit.edu> wrote:
-> > One thing I'm not clear on --- what's your goal?   Is your goal to keep suspend-blockers out of the kernel?   Is it to try to convince the android team suspend-blockers are a bad idea and to change Android to not use them?  Is it to push some other agenda?  Is it to discourage the Android team from trying to waste more time trying to get suspend-blockers (or equivalent functionality) from being added into the kernel?
+On Thu, Jul 22, 2010 at 03:04:16PM -0700, Patrick J. LoPresti wrote:
+> Before we start accessing a huge (> 16 TiB) OCFS2 volume, we need to
+> confirm that its journal supports 64-bit offsets.  In particular, we
+> need to check the journal's feature bits before recovering the journal.
 > 
-> My goal is to shine light. I've heard many invalid arguments in favor
-> of suspend blockers, I want to shut them down.
+> This is not possible with JBD2 at present, because the journal
+> superblock (where the feature bits reside) is not loaded from disk until
+> the journal is recovered.
 > 
-> In my mind it's crystal clear that independently of what opportunistic
-> suspend is supposed to be fixing, the fact of the matter is that it's
-> not a silver bullet as it's claimed to be.
+> This patch loads the journal superblock in
+> jbd2_journal_check_used_features() if it has not already been loaded,
+> allowing us to check the feature bits before journal recovery.
+> 
+> Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
 
-The question is not whether suspend blockers are a silver bullet (in my
-opinion there are no silver bullets), but rather whether or not suspend
-blockers are useful.
+Dear jbd2 developers,
+	I've pushed this patch to the merge-window branch of ocfs2.git.
+I'm ready to send it to Linus, but I need your OK.
 
-> So far, nobody has refuted these:
->  1) opportunistic suspend needs a good behaved user-space to work properly
+Joel
 
-As does dynamic power management.
+> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> index bc2ff59..5cfd8d4 100644
+> --- a/fs/jbd2/journal.c
+> +++ b/fs/jbd2/journal.c
+> @@ -1365,6 +1365,10 @@ int jbd2_journal_check_used_features (journal_t *journal, unsigned long compat,
+>  
+>  	if (!compat && !ro && !incompat)
+>  		return 1;
+> +	/* Load journal superblock if it is not loaded yet. */
+> +	if (journal->j_format_version == 0 &&
+> +	    journal_get_superblock(journal) != 0)
+> +		return 0;
+>  	if (journal->j_format_version == 1)
+>  		return 0;
+>  
+> 
+> _______________________________________________
+> Ocfs2-devel mailing list
+> Ocfs2-devel@oss.oracle.com
+> http://oss.oracle.com/mailman/listinfo/ocfs2-devel
 
->  2) if suspend blockers are enabled in a system, *all* user-space must
-> implement them to work correctly
+-- 
 
-Really?  From what I can see, only PM-driving applications need to use
-suspend blockers.
+ Brain: I shall pollute the water supply with this DNAdefibuliser,
+        turning everyone into mindless slaves.
+ Pinky: What about the people who drink bottled water?
+ Brain: Pinky, people who pay 5 dollars for a bottle of water are
+        already mindless slaves.
 
->  3) implementing suspend blockers in user-space is not a straight-forward task
-
-Fortunately, experience thus far has shown that only a small fraction of
-applications need to use suspend blockers.  (Or perhaps you are instead
-saying that the implementation of the suspend-blocker infrastructure
-itself is not straightforward?  It is not clear from your words.)
-
->  4) there's a point where sleeping (not doing work) has diminished returns
-
-This one I agree with.
-
-> So, as the length of this thread has shown, the benefits of
-> opportunistic suspend are *dubious* at best, and more likely not worth
-> the changes needed in user-space which eventually will get pretty
-> close to what suspend blockers can achieve even in ideal circumstances
-> by just doing dynamic PM.
-
-The length of this thread (and the ones preceding it) is mostly due to
-people talking past each other.  For example, the Android folks seem to
-believe that it is important that relatively unskilled people be able
-to write simple apps, and that the system nevertheless be able to run
-these apps in a relatively energy efficient manner.  Your proposals do
-not address this issue.  This might be because you are not aware of
-this desire, because you are not aware of the computing history that
-argues in favor of this requirement, or because you simply don't like
-this requirement.  Whatever the reason, until you face this requirement
-head on, either addressing it or proving that it need not be addressed,
-you will continue to be talking past the Android folks.
-
-							Thanx, Paul
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
