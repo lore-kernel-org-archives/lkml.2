@@ -1,86 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760679Ab0HLWUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 18:20:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36486 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752553Ab0HLWUC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 18:20:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100812215246.GK31363@ZenIV.linux.org.uk>
-References: <201008122200.05598.thomas@m3y3r.de> <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com>
- <s5hpqxntw64.wl%tiwai@suse.de> <4C646110.1040104@gmail.com>
- <s5hbp97ttt5.wl%tiwai@suse.de> <AANLkTi=s-KFuUnmNaDN6OYaiwZiaBLbYB5MCwde7tvvw@mail.gmail.com>
- <20100812215246.GK31363@ZenIV.linux.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Aug 2010 15:19:31 -0700
-Message-ID: <AANLkTimesXb7Ut3aO71HjmNjV_Q53p0Jr5j4kLTwsRGh@mail.gmail.com>
-Subject: Re: 2.6.36: Sound stop working
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Takashi Iwai <tiwai@suse.de>, Eric Paris <eparis@redhat.com>,
-        Jiri Slaby <jirislaby@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1760943Ab0HLWWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 18:22:44 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:54679 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754839Ab0HLWWm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 18:22:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=oe5V9Lt6VXTNv1dNyjctQ5ZtFqPTF+C3nFTfrs/G1OZ6T1YxCWFMkUkulaSBOLp89Y
+         X6zJNRf1PgtYbV4dzYcDEmSIPJlVCxlP606DbRL7Mgwh1sr3AdqfD0fu1o3rYHRlTFe6
+         Xu4TCvfXHBOIDjZHNpu+5TE8RVv9RYKDMKzrw=
+From: bchociej@gmail.com
+To: chris.mason@oracle.com, linux-btrfs@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cmm@us.ibm.com, bcchocie@us.ibm.com, mrlupfer@us.ibm.com,
+        crscott@us.ibm.com, bchociej@gmail.com, mlupfer@gmail.com,
+        conscott@vt.edu
+Subject: [RFC v2 PATCH 0/6] Btrfs: Add hot data relocation functionality
+Date: Thu, 12 Aug 2010 17:22:00 -0500
+Message-Id: <1281651726-23501-1-git-send-email-bchociej@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 2:52 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Thu, Aug 12, 2010 at 02:41:51PM -0700, Linus Torvalds wrote:
->
->> Yeah. The f_count stuff is disgusting. This revert patch makes things
->> work for me again. And I suspect it's the right thing to do
->> regardless. I reacted to that ugly __fput() hackery when I pulled the
->> fanotify tree, but I let it slide. I clearly should have let my taste
->> guide me more.
->>
->> fsnotify playing games with fput/fget is almost certainly totally wrong.
->>
->> Al, what was the problem that caused you to think that we want to have
->> a 'struct file' here? Is it just the fact that some of those fsnotify
->> things use that 'path' structure that is embedded in the parent? But
->> isn't the simplest fix for that to just _copy_ the "struct path"
->> rather than pass the "struct file" around?
->
-> I agree that what this crap is doing to f_count is blatantly wrong,
-> of course - no arguments here.  I *do* have a reason to want struct
-> file, but not that way, TYVM.
->
-> Basically, dentry_open() is not even promised to work on arbitrary
-> dentry.  Thanks to !@#!@#!@#!@# intents crap we are not promised
-> that the damn thing won't need setup by ->lookup/->d_revalidate.
-> We _are_ more or less promised that it'll work while the file is
-> opened (provided that /proc/*/fd/* is openable), but that's it.
+These patches are a replacement for our previous hot data tracking
+patches. They include some bugfixes as well as the previously promised
+hot data relocation code for moving frequently accessed data to SSD.
+Structurally, the patches are quite similar to the first set, with the
+notable addition of new hotdata_relocate.{c,h} files. Matt Lupfer and
+Conor Scott have done as much of the coding as I have, if not more. So,
+many thanks to those guys, along with Mingming Cao, Steve French, Steve
+Pratt, and Chris Mason, without which this little project would have
+been impossible.
 
-Hmm. We do basically dentry_open() these days with the whole
-path_init() of a dfd. Yes, we have the 'struct file', but the only
-thing we take from there is the dentry.
 
-So why not just say that 'dentry_open()' is exactly that path_init()
-setup, and then look up an empty path. Allow a non-directory, and
-leave it to the filesystems to then say "I can't do that at all" if
-they really want to. fanotify seems to be perfectly happy with the
-lookup failing.
+INTRODUCTION:
 
-So I'm not convinced this is really a fanotify problem, as much as a
-VFS layer thing.
+This patch series adds experimental support for relocation of hot data
+to SSD in Btrfs. Essentially, this means maintaining some key stats
+(like number of reads/writes, last read/write time, frequency of
+reads/writes), then distilling those numbers down to a single
+"temperature" value that reflects what data is "hot," and using that
+temperature to move data to SSDs.
 
-> It's not an API that can be made to work on an arbitrary dentries.  If
-> caller knows what it's dealing with, it's OK, but not in general.  And
-> no, I'm not fond of that situation, to put it mildly.
+The long-term goal of these patches is to allow Btrfs to intelligently
+utilize SSDs in a heterogenous volume. Incidentally, this project has
+been motivated by the Project Ideas page on the Btrfs wiki.
 
-So I think it's probably doable for arbitrary dentries too, although
-maybe we need to have a special "reopen()" function. I suspect few
-filesystems will care, and if you can fail it, the ones that do care
-deeply are home free too. No?
+Of course, users are warned not to run this code outside of development
+environments. These patches are EXPERIMENTAL, and as such they might eat
+your data and/or memory. That said, the code should be relatively safe
+when the hotdatatrack and hotdatamove mount options are disabled.
 
-> I'll see what can be done to fix that mess more or less right way...
 
-.. but I assume you don't wan tto keep those "struct file" games in
-fanotify regardless, right? So we can fix the sound issue by the
-revert I sent out, no?
+MOTIVATION:
 
-                    Linus
+The overall goal of enabling hot data relocation to SSD has been
+motivated by the Project Ideas page on the Btrfs wiki at
+<https://btrfs.wiki.kernel.org/index.php/Project_ideas>. It is hoped
+that this initial patchset will eventually mature into a usable hybrid
+storage feature set for Btrfs.
+
+This is essentially the traditional cache argument: SSD is fast and
+expensive; HDD is cheap but slow. ZFS, for example, can already take
+advantage of SSD caching. Btrfs should also be able to take advantage of
+hybrid storage without many broad, sweeping changes to existing code.
+
+With Btrfs's COW approach, an external cache (where data is *moved* to
+SSD, rather than just cached there) makes a lot of sense. These patches,
+in contrast to the previous version, now enable the hot data relocation
+functionality. While performance testing so far has been extremely
+basic, the code has shown promising results in random read tests (about
+5x throughput by adding an SSD of about 20% of the total capacity of the
+volume).
+
+
+SUMMARY:
+
+- Hooks in existing Btrfs functions to track data access frequency
+  (btrfs_direct_IO, btrfs_readpages, and extent_write_cache_pages)
+
+- New rbtrees for tracking access frequency of inodes and sub-file
+  ranges (hotdata_map.c)
+
+- A hash list for indexing data by its temperature (hotdata_hash.c)
+
+- A debugfs interface for dumping data from the rbtrees (debugfs.c)
+
+- A background kthread for relocating data to faster media based on
+  temperature
+
+- Mount options for enabling temperature tracking (-o hotdatatrack,
+  -o hotdatamove; move implies track; both default to disabled)
+
+- An ioctl to retrieve the frequency information collected for a certain
+  file
+
+- Ioctls to enable/disable frequency tracking and relocation per inode.
+
+
+DIFFSTAT:
+
+$ git diff --stat --summary -M
+
+ fs/btrfs/Makefile           |    3 +-
+ fs/btrfs/ctree.h            |   96 ++++
+ fs/btrfs/debugfs.c          |  532 ++++++++++++++++++++++
+ fs/btrfs/debugfs.h          |   89 ++++
+ fs/btrfs/disk-io.c          |   28 ++
+ fs/btrfs/extent-tree.c      |   62 +++-
+ fs/btrfs/extent_io.c        |   34 ++
+ fs/btrfs/extent_io.h        |    7 +
+ fs/btrfs/hotdata_hash.c     |  338 ++++++++++++++
+ fs/btrfs/hotdata_hash.h     |  155 +++++++
+ fs/btrfs/hotdata_map.c      |  804 +++++++++++++++++++++++++++++++++
+ fs/btrfs/hotdata_map.h      |  167 +++++++
+ fs/btrfs/hotdata_relocate.c |  783 ++++++++++++++++++++++++++++++++
+ fs/btrfs/hotdata_relocate.h |   73 +++
+ fs/btrfs/inode.c            |  164 +++++++-
+ fs/btrfs/ioctl.c            |  142 ++++++-
+ fs/btrfs/ioctl.h            |   23 +
+ fs/btrfs/super.c            |   62 +++-
+ fs/btrfs/volumes.c          |   38 ++-
+ 19 files changed, 3580 insertions(+), 20 deletions(-)
+
+ create mode 100644 fs/btrfs/debugfs.c
+ create mode 100644 fs/btrfs/debugfs.h
+ create mode 100644 fs/btrfs/hotdata_hash.c
+ create mode 100644 fs/btrfs/hotdata_hash.h
+ create mode 100644 fs/btrfs/hotdata_map.c
+ create mode 100644 fs/btrfs/hotdata_map.h
+ create mode 100644 fs/btrfs/hotdata_relocate.c
+ create mode 100644 fs/btrfs/hotdata_relocate.h
+
+
+IMPLEMENTATION (in a nutshell):
+
+Hooks have been added to various functions (btrfs_writepage(s),
+btrfs_readpages, btrfs_direct_IO, and extent_write_cache_pages) in
+order to track data access patterns. Each of these hooks calls a new
+function, btrfs_update_freqs, that records each access to an inode,
+possibly including some sub-file-level information as well. A data
+structure containing some various frequency metrics gets updated with
+the latest access information.
+
+>From there, a hash list takes over the job of figuring out a total
+"temperature" value for the data and indexing that temperature for fast
+lookup in the future. The function that does the temperature
+distillation is rather sensitive and can be tuned/tweaked by altering
+various #defined values in hotdata_hash.h.
+
+As for the actual data relocation, a kthread runs periodically that uses
+the hashlist to find data eligible for relocation, either
+to or from SSD. It then initiates the transfer of the data to the
+preferred media type by allocating to an appropriate block group
+type on the destination media, based on the temperature of the file and
+the speed of the media.
+
+Aside from the core functionality, there is a debugfs interface to spit
+out some of the data that is collected, and ioctls are also introduced
+to manipulate the new functionality on a per-inode basis.
+
+
+HOW TO USE HOTDATA RELOCATION:
+
+First, format like this:
+
+	# mkfs.btrfs -h <spinning_disk_blockdev> [any_blockdev] ...
+
+Note that a spinning disk must be the first block device listed, or you
+will receive a warning and unexpected behavior. To use hot data tracking
+alone, you only need one block device, and it needn't be an SSD. To use
+hot data relocation, you should have at least one spinning disk and at
+least one SSD. Then...
+
+	# mount -o hotdatamove <any_blockdev> <mountpoint>
+
+Optionally, view information about hot data from debugfs:
+
+	# cat /sys/kernel/debug/btrfs_data/<blockdev>/inode_data
+	# cat /sys/kernel/debug/btrfs_data/<blockdev>/range_data
+
+
+KNOWN ISSUES:
+(When hotdatatrack or hotdatamove mount options are enabled)
+
+- Occasional errors (-EIO) from read/write syscalls.
+
+- Heavy file creation workloads encounter high lock contention,
+  significantly impacting performance.
+
+
+FUTURE GOALS:
+
+- Store more information about data temperature / access frequency
+  persistently between mounts.
+
+- Track temperature of and relocate metadata (and inline extents) to
+  SSD.
+
+
+Signed-off-by: Ben Chociej <bchociej@gmail.com>
+Signed-off-by: Matt Lupfer <mlupfer@gmail.com>
+Signed-off-by: Conor Scott <conscott@vt.edu>
+Reviewed-by: Mingming Cao <cmm@us.ibm.com>
+Reviewed-by: Steve French <smfrench@gmail.com>
