@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760336Ab0HLQgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 12:36:06 -0400
-Received: from mtagate4.de.ibm.com ([195.212.17.164]:54425 "EHLO
-	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760051Ab0HLQgD (ORCPT
+	id S1760375Ab0HLQhQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 12:37:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16494 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760080Ab0HLQhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 12:36:03 -0400
-Subject: Re: Fw: [PATCH net-next] drivers/s390/net/qeth_l3_main.c: Use %pI6
-From: Ursula Braun <ubraun@linux.vnet.ibm.com>
-To: Ursula Braun1 <ursula.braun@de.ibm.com>
-Cc: blaschka@linux.vnet.ibm.com, linux-s390@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <OF89C50871.5ED34E2A-ONC125777D.005A40DE-C125777D.005A4DDE@de.ibm.com>
-References: <OF89C50871.5ED34E2A-ONC125777D.005A40DE-C125777D.005A4DDE@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Aug 2010 18:36:00 +0200
-Message-ID: <1281630960.12375.8.camel@braunu-laptop>
+	Thu, 12 Aug 2010 12:37:15 -0400
+Date: Thu, 12 Aug 2010 09:36:43 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, linux-mmc@vger.kernel.org
+Subject: [PATCH] mmc: fix for CONFIG_PM disabled
+Message-Id: <20100812093643.852adc98.randy.dunlap@oracle.com>
+In-Reply-To: <201008112340.o7BNenDe021017@imap1.linux-foundation.org>
+References: <201008112340.o7BNenDe021017@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACK
-Thanks Joe - we make sure your patch is submitted to Dave Miller within
-our next submission of qeth patches.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Ursula
+Minimal patch to fix mmc to build when CONFIG_PM is not enabled:
 
-> From:     Joe Perches <joe@perches.com>
-> To:       Frank Blaschka <blaschka@linux.vnet.ibm.com>
-> Subject:  [PATCH net-next] drivers/s390/net/qeth_l3_main.c: Use %pI6
+(.text+0x128fcd): undefined reference to `mmc_pm_notify'
 
-> Format an ipv6 address using vsprintf extensions.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
-> drivers/s390/net/qeth_l3_main.c |    7 +------
-> 1 files changed, 1 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/s390/net/qeth_l3_main.c
-> b/drivers/s390/net/qeth_l3_main.c
-> index e22ae24..561bdc8 100644
-> --- a/drivers/s390/net/qeth_l3_main.c
-> +++ b/drivers/s390/net/qeth_l3_main.c
-> @@ -103,12 +103,7 @@ int qeth_l3_string_to_ipaddr4(const char *buf,
-> __u8 *addr)
-> 
-> void qeth_l3_ipaddr6_to_string(const __u8 *addr, char *buf)
-> {
-> -                 sprintf(buf, "%02x%02x:%02x%02x:%02x%02x:%02x%02x"
-> -                                       ":%02x%02x:%02x%02x:%02x%02x:%
-> 02x%02x",
-> -                                       addr[0], addr[1], addr[2],
-> addr[3],
-> -                                       addr[4], addr[5], addr[6],
-> addr[7],
-> -                                       addr[8], addr[9], addr[10],
-> addr[11],
-> -                                       addr[12], addr[13], addr[14],
-> addr[15]);
-> +                 sprintf(buf, "%pI6", addr);
-> }
-> 
-> int qeth_l3_string_to_ipaddr6(const char *buf, __u8 *addr)
-> 
-> 
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/mmc/core/host.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
+Seems to be needed in mainline also.
 
+--- mmotm-2010-0811-1610.orig/drivers/mmc/core/host.c
++++ mmotm-2010-0811-1610/drivers/mmc/core/host.c
+@@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extr
+ 	init_waitqueue_head(&host->wq);
+ 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+ 	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
++#ifdef CONFIG_PM
+ 	host->pm_notify.notifier_call = mmc_pm_notify;
++#endif
+ 
+ 	/*
+ 	 * By default, hosts do not support SGIO or large requests.
