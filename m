@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933555Ab0HLA0x (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:26:53 -0400
-Received: from kroah.org ([198.145.64.141]:60135 "EHLO coco.kroah.org"
+	id S933575Ab0HLA04 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:26:56 -0400
+Received: from kroah.org ([198.145.64.141]:60131 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759015Ab0HLAED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:03 -0400
+	id S1758826Ab0HLAEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:02 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.740684787@clark.site>
+Message-Id: <20100812000124.658111089@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:31 -0700
+Date: Wed, 11 Aug 2010 17:00:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Hugh Dickins <hughd@google.com>
-Subject: [16/54] mm: fix corruption of hibernation caused by reusing swap during image saving
+        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>
+Subject: [15/54] Char: nozomi, set tty->driver_data appropriately
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,65 +25,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 966cca029f739716fbcc8068b8c6dfe381f86fc3 upstream.
+commit bf9c1fca9ae9a79ed209e7ab2c10b3862f3f6f72 upstream.
 
-Since 2.6.31, swap_map[]'s refcounting was changed to show that a used
-swap entry is just for swap-cache, can be reused.  Then, while scanning
-free entry in swap_map[], a swap entry may be able to be reclaimed and
-reused.  It was caused by commit c9e444103b5e7a5 ("mm: reuse unused swap
-entry if necessary").
+Sorry, one more fix, this one depends on the other, so this is rather 2/2.
+--
 
-But this caused deta corruption at resume. The scenario is
+tty->driver_data is used all over the code, but never set. This
+results in oopses like:
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000130
+IP: [<ffffffff814a0040>] mutex_lock+0x10/0x40
+...
+Pid: 2157, comm: modem-manager Not tainted 2.6.34.1-0.1-desktop #1 2768DR7/2768DR7
+RIP: 0010:[<ffffffff814a0040>]  [<ffffffff814a0040>] mutex_lock+0x10/0x40
+RSP: 0018:ffff88007b16fa50  EFLAGS: 00010286
+RAX: 0000000000000000 RBX: 0000000000000130 RCX: 0000000000000003
+RDX: 0000000000000003 RSI: 0000000000000286 RDI: 0000000000000130
+RBP: 0000000000001000 R08: 0000000000000000 R09: 0000000000000000
+R10: 0000000000000001 R11: 0000000000000000 R12: 0000000000000130
+R13: 0000000000000001 R14: 0000000000000000 R15: ffff88007b16feb4
+...
+Call Trace:
+ [<ffffffffa077690d>] ntty_write_room+0x4d/0x90 [nozomi]
+...
 
-- Assume a clean-swap cache, but mapped.
+Set tty->driver_data to the computed port in .install to not recompute it in
+every place where needed. Switch .open to use driver_data too.
 
-- at hibernation_snapshot[], clean-swap-cache is saved as
-  clean-swap-cache and swap_map[] is marked as SWAP_HAS_CACHE.
-
-- then, save_image() is called.  And reuse SWAP_HAS_CACHE entry to save
-  image, and break the contents.
-
-After resume:
-
-- the memory reclaim runs and finds clean-not-referenced-swap-cache and
-  discards it because it's marked as clean.  But here, the contents on
-  disk and swap-cache is inconsistent.
-
-Hance memory is corrupted.
-
-This patch avoids the bug by not reclaiming swap-entry during hibernation.
-This is a quick fix for backporting.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Rafael J. Wysocki <rjw@sisk.pl>
-Reported-by: Ondreg Zary <linux@rainbow-software.org>
-Tested-by: Ondreg Zary <linux@rainbow-software.org>
-Tested-by: Andrea Gelmini <andrea.gelmini@gmail.com>
-Acked-by: Hugh Dickins <hughd@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/swapfile.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/char/nozomi.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -315,8 +315,10 @@ checks:
- 	if (offset > si->highest_bit)
- 		scan_base = offset = si->lowest_bit;
+--- a/drivers/char/nozomi.c
++++ b/drivers/char/nozomi.c
+@@ -1612,6 +1612,7 @@ static int ntty_install(struct tty_drive
+ 	if (ret == 0) {
+ 		tty_driver_kref_get(driver);
+ 		tty->count++;
++		tty->driver_data = port;
+ 		driver->ttys[tty->index] = tty;
+ 	}
+ 	return ret;
+@@ -1640,7 +1641,7 @@ static int ntty_activate(struct tty_port
  
--	/* reuse swap entry of cache-only swap if not busy. */
--	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
-+	/* reuse swap entry of cache-only swap if not hibernation. */
-+	if (vm_swap_full()
-+		&& usage == SWAP_HAS_CACHE
-+		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
- 		int swap_was_freed;
- 		spin_unlock(&swap_lock);
- 		swap_was_freed = __try_to_reclaim_swap(si, offset);
+ static int ntty_open(struct tty_struct *tty, struct file *filp)
+ {
+-	struct port *port = get_port_by_tty(tty);
++	struct port *port = tty->driver_data;
+ 	return tty_port_open(&port->port, tty, filp);
+ }
+ 
 
 
