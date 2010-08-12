@@ -1,153 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760406Ab0HLRNx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:13:53 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:28667 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758533Ab0HLRNu (ORCPT
+	id S1757363Ab0HLRYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:24:35 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:35410 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab0HLRYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:13:50 -0400
-Message-ID: <4C642BCD.6070201@vmware.com>
-Date: Thu, 12 Aug 2010 10:13:49 -0700
-From: Michael Snyder <msnyder@vmware.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
-To: Hui Zhu <teawater@gmail.com>
-CC: "gdb@sourceware.org" <gdb@sourceware.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Linux Kernel GDB tracepoint module demo release
-References: <AANLkTi=4_QnAyY+zcuXwVpPkESjpF7yfMb1RunMQaK7f@mail.gmail.com> 	<4C6311E0.5070909@vmware.com> <AANLkTikosGgJ+epKTdmPxMW=OWVTieTRs13mN7-DwsWq@mail.gmail.com>
-In-Reply-To: <AANLkTikosGgJ+epKTdmPxMW=OWVTieTRs13mN7-DwsWq@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 12 Aug 2010 13:24:33 -0400
+Message-Id: <20100812172544.655648128@de.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Thu, 12 Aug 2010 19:25:44 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH/RFC 0/5] sched: add new 'book' scheduling domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Very interesting then.  I'd like to see you continue this work.
+This patch set adds (yet) another scheduling domain to the scheduler. The
+reason for this is that the recent (s390) z196 architecture has four cache
+levels and uniform memory access (sort of -- see below).
+The cpu/cache/memory hierarchy is as follows:
 
+Each cpu has its private L1 (64KB I-cache + 128KB D-cache) and L2 (1.5MB)
+cache.
+A core consists of four cpus with a 24MB shared L3 cache.
+A book consists of six cores with a 192MB shared L4 cache.
 
-Hui Zhu wrote:
-> KGTP use Kprobes, I think it can work with most part of kernel.
-> 
-> Thanks,
-> Hui
-> 
-> On Thu, Aug 12, 2010 at 05:10, Michael Snyder <msnyder@vmware.com> wrote:
->> Actually, this is kind of interesting.
->> Can your system set a tracepoint at any arbitrary location in the
->> kernel?  If so, I think that makes it more powerful than existing
->> systems such as LTTng, which can only trace statically pre-determined
->> locations.
->>
->> Hui Zhu wrote:
->>> Hi,
->>>
->>> GDB Tracepoint
->>> (http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html)
->>> is new feature that make GDB can debug real-time program.
->>> I think this feature is very fit for debug Linux Kernel.  So I make a
->>> lkm to make kernel support it. You can get it in
->>> https://code.google.com/p/kgtp/
->>>
->>> I just release the demo for it.  It just support collect $reg in
->>> x86_32.  I will add the other tracepoint support in the future.
->>>
->>> For example:
->>> tar vxjf gtp_20100811.tar.bz2
->>> cd gtp
->>> make
->>> insmod gtp.ko
->>> gdb ./vmlinux
->>> GNU gdb (GDB) 7.2.50.20100720-cvs
->>> Copyright (C) 2010 Free Software Foundation, Inc.
->>> License GPLv3+: GNU GPL version 3 or later
->>> <http://gnu.org/licenses/gpl.html>
->>> This is free software: you are free to change and redistribute it.
->>> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
->>> and "show warranty" for details.
->>> This GDB was configured as "i686-pc-linux-gnu".
->>> For bug reporting instructions, please see:
->>> <http://www.gnu.org/software/gdb/bugs/>...
->>> Reading symbols from /vmlinux...done.
->>> (gdb) target remote /proc/gtp
->>> Remote debugging using /proc/gtp
->>> 0x00000000 in ?? ()
->>> (gdb) trace vfs_readdir
->>> Tracepoint 1 at 0xc01a1ac0: file
->>> /home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
->>> (gdb) actions
->>> Enter actions for tracepoint 1, one per line.
->>> End with a line saying just "end".
->>>> collect $reg
->>>> end
->>> (gdb) tstart
->>> (gdb) shell ls
->>> (gdb) tstop
->>> (gdb) tfind
->>> Found trace frame 0, tracepoint 1
->>> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900
->>> <filldir64>,
->>>    buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
->>> 23      /home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or
->>> directory.
->>>        in /home/teawater/kernel/linux-2.6/fs/readdir.c
->>> (gdb) info reg
->>> eax            0xc5528d00       -984445696
->>> ecx            0xc0d09f90       -1060069488
->>> edx            0xc01a1900       -1072031488
->>> ebx            0xfffffff7       -9
->>> esp            0xc0d09f8c       0xc0d09f8c
->>> ebp            0x0      0x0
->>> esi            0x8061480        134616192
->>> edi            0xc5528d00       -984445696
->>> eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
->>> eflags         0x286    [ PF SF IF ]
->>> cs             0x60     96
->>> ss             0x8061480        134616192
->>> ds             0x7b     123
->>> es             0x7b     123
->>> fs             0x0      0
->>> gs             0x0      0
->>> (gdb) tfind
->>> Found trace frame 1, tracepoint 1
->>> 0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
->>> (gdb) info reg
->>> eax            0xc5528d00       -984445696
->>> ecx            0xc0d09f90       -1060069488
->>> edx            0xc01a1900       -1072031488
->>> ebx            0xfffffff7       -9
->>> esp            0xc0d09f8c       0xc0d09f8c
->>> ebp            0x0      0x0
->>> esi            0x8061480        134616192
->>> edi            0xc5528d00       -984445696
->>> eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
->>> eflags         0x286    [ PF SF IF ]
->>> cs             0x60     96
->>> ss             0x8061480        134616192
->>> ds             0x7b     123
->>> es             0x7b     123
->>> fs             0x0      0
->>> gs             0x0      0
->>> (gdb) tfind
->>> Found trace frame 2, tracepoint 1
->>> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528300, filler=0xc01a19e0
->>> <filldir>,
->>>    buf=0xc6c2df90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
->>> 23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
->>> (gdb)
->>> Found trace frame 3, tracepoint 1
->>> 0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
->>> (gdb)
->>> Target failed to find requested trace frame.
->>> (gdb) quit
->>> A debugging session is active.
->>>
->>>        Inferior 1 [Remote target] will be killed.
->>>
->>> Quit anyway? (y or n) y
->>>
->>> Thanks,
->>> Hui
->>
+The z196 architecture has no SMT.
+Also the statement that we have uniform memory access is not entirely
+correct. Actually the machine uses memory striping, so it "looks" like
+we have UMA until the next slice of memory gets accessed.
+However there is no interface which tells us which piece of memory is local
+or remote. So we (have to) simplify and assume that the cost of each memory
+access with L4 cache miss is the same.
 
+In order to somehow use the information about the cache hierarchy so that
+the scheduler can make some decisions that improves cache hits I added the
+'BOOK' scheduling domain between the MC and CPU domains.
+
+First performance measurements however show now effect - neither good nor
+bad. So it might be that the workloads aren't good enough, or that the
+implementation is simply wrong.
+
+Either way, since its currently very hard to get machine time for additional
+measurements I thought it might be a good idea to post the patches as an RFC
+even if we do not have any convincing arguments.
+
+Also please note that the scheduling domain initializers certainly need some
+tuning:
+The line
+#define SD_BOOK_INIT SD_CPU_INIT
+within the arch support patch is just there so it compiles and until we have
+something that really works.
+
+As for the patches, I thinks that the first two patches could be merged
+anytime since those are only cleanup/preparation patches.
+Patch three adds the new scheduling domain and patch four the code needed
+to represent books via the cpu topology sysfs interface.
+Patch five is just the architecture backend.
+
+A boot of a logical partition with 20 cpus, shared on two books, gives these
+initializion output to the console:
+
+Brought up 20 CPUs
+CPU0 attaching sched-domain:
+ domain 0: span 0-5 level BOOK
+  groups: 0 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048)
+  domain 1: span 0-19 level CPU
+   groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
+CPU1 attaching sched-domain:
+ domain 0: span 1-3 level MC
+  groups: 1 2 3
+  domain 1: span 0-5 level BOOK
+   groups: 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048) 0
+   domain 2: span 0-19 level CPU
+    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
+CPU2 attaching sched-domain:
+ domain 0: span 1-3 level MC
+  groups: 2 3 1
+  domain 1: span 0-5 level BOOK
+   groups: 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048) 0
+   domain 2: span 0-19 level CPU
+    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
+CPU3 attaching sched-domain:
+ domain 0: span 1-3 level MC
+  groups: 3 1 2
+  domain 1: span 0-5 level BOOK
+   groups: 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048) 0
+   domain 2: span 0-19 level CPU
+    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
+CPU4 attaching sched-domain:
+ domain 0: span 4-5 level MC
+  groups: 4 5
+  domain 1: span 0-5 level BOOK
+   groups: 4-5 (cpu_power = 2048) 0 1-3 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
+CPU5 attaching sched-domain:
+ domain 0: span 4-5 level MC
+  groups: 5 4
+  domain 1: span 0-5 level BOOK
+   groups: 4-5 (cpu_power = 2048) 0 1-3 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
+CPU6 attaching sched-domain:
+ domain 0: span 6-9 level MC
+  groups: 6 7 8 9
+  domain 1: span 6-19 level BOOK
+   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU7 attaching sched-domain:
+ domain 0: span 6-9 level MC
+  groups: 7 8 9 6
+  domain 1: span 6-19 level BOOK
+   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU8 attaching sched-domain:
+ domain 0: span 6-9 level MC
+  groups: 8 9 6 7
+  domain 1: span 6-19 level BOOK
+   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU9 attaching sched-domain:
+ domain 0: span 6-9 level MC
+  groups: 9 6 7 8
+  domain 1: span 6-19 level BOOK
+   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU10 attaching sched-domain:
+ domain 0: span 10-11 level MC
+  groups: 10 11
+  domain 1: span 6-19 level BOOK
+   groups: 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU11 attaching sched-domain:
+ domain 0: span 10-11 level MC
+  groups: 11 10
+  domain 1: span 6-19 level BOOK
+   groups: 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU12 attaching sched-domain:
+ domain 0: span 12-13 level MC
+  groups: 12 13
+  domain 1: span 6-19 level BOOK
+   groups: 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU13 attaching sched-domain:
+ domain 0: span 12-13 level MC
+  groups: 13 12
+  domain 1: span 6-19 level BOOK
+   groups: 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU14 attaching sched-domain:
+ domain 0: span 14-16 level MC
+  groups: 14 15 16
+  domain 1: span 6-19 level BOOK
+   groups: 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU15 attaching sched-domain:
+ domain 0: span 14-16 level MC
+  groups: 15 16 14
+  domain 1: span 6-19 level BOOK
+   groups: 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU16 attaching sched-domain:
+ domain 0: span 14-16 level MC
+  groups: 16 14 15
+  domain 1: span 6-19 level BOOK
+   groups: 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU17 attaching sched-domain:
+ domain 0: span 17-19 level MC
+  groups: 17 18 19
+  domain 1: span 6-19 level BOOK
+   groups: 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU18 attaching sched-domain:
+ domain 0: span 17-19 level MC
+  groups: 18 19 17
+  domain 1: span 6-19 level BOOK
+   groups: 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
+CPU19 attaching sched-domain:
+ domain 0: span 17-19 level MC
+  groups: 19 17 18
+  domain 1: span 6-19 level BOOK
+   groups: 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072)
+   domain 2: span 0-19 level CPU
+    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
