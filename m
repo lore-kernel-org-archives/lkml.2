@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934027Ab0HLSJZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 14:09:25 -0400
-Received: from lo.gmane.org ([80.91.229.12]:34897 "EHLO lo.gmane.org"
+	id S1760726Ab0HLSO2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 14:14:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62920 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753145Ab0HLSJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 14:09:23 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: walt <w41ter@gmail.com>
-Subject: [BISECTED] Removing BKL causes stack trace during early bootup
-Date: Thu, 12 Aug 2010 11:09:03 -0700
-Message-ID: <4C6438BF.9070608@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760571Ab0HLSOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 14:14:25 -0400
+Message-ID: <4C643A08.3000605@redhat.com>
+Date: Thu, 12 Aug 2010 15:14:32 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100803 Red Hat/3.1.2-1.el6 Lightning/1.0b2 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+Subject: [GIT PULL for 2.6.36] V4L/DVB fixes
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis>
-X-Gmane-NNTP-Posting-Host: adsl-69-234-182-12.dsl.irvnca.pacbell.net
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b4pre) Gecko/20100809 Shredder/3.2a1pre
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi guys.  This commit produces a non-fatal call trace very early during boot
-on my dual-CPU amd64 machine (but not on my single-CPU x86):
+Linus,
 
-commit 5e3d20a68f63fc5a310687d81956c3b96e488b84
-Author: Arnd Bergmann <arnd@xxxx.de>
-Date:   Sun Jul 4 00:02:26 2010 +0200
+Please pull from:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
 
-     init: Remove the BKL from startup code
+For 3 build fixes.
 
-The trace whizzes by so fast that I can't read it, and the trace doesn't appear
-in any of the logs.  Is there a way to capture such a trace, like maybe changing
-it to a fatal error?
+Cheers,
+Mauro.
 
-Thanks!
+The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
 
+  Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
+
+Mauro Carvalho Chehab (2):
+      V4L/DVB: Fix IR_CORE dependencies
+      V4L/DVB: fix Kconfig to depends on VIDEO_IR
+
+Randy Dunlap (1):
+      V4L/DVB: v4l2-ctrls.c: needs to include slab.h
+
+ drivers/media/IR/Kconfig            |    9 ++++++++-
+ drivers/media/dvb/dm1105/Kconfig    |    2 +-
+ drivers/media/dvb/dvb-usb/Kconfig   |    2 +-
+ drivers/media/dvb/siano/Kconfig     |    2 +-
+ drivers/media/dvb/ttpci/Kconfig     |    2 +-
+ drivers/media/video/bt8xx/Kconfig   |    2 +-
+ drivers/media/video/cx18/Kconfig    |    2 +-
+ drivers/media/video/cx231xx/Kconfig |    2 +-
+ drivers/media/video/cx23885/Kconfig |    2 +-
+ drivers/media/video/cx88/Kconfig    |    2 +-
+ drivers/media/video/em28xx/Kconfig  |    2 +-
+ drivers/media/video/ivtv/Kconfig    |    2 +-
+ drivers/media/video/saa7134/Kconfig |    2 +-
+ drivers/media/video/tlg2300/Kconfig |    2 +-
+ drivers/media/video/v4l2-ctrls.c    |    1 +
+ 15 files changed, 22 insertions(+), 14 deletions(-)
 
