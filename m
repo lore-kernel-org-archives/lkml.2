@@ -1,152 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759288Ab0HLICO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 04:02:14 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:36447 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932549Ab0HLICJ (ORCPT
+	id S933155Ab0HLIFU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 04:05:20 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:60895 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932846Ab0HLIFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 04:02:09 -0400
-Date: Thu, 12 Aug 2010 16:57:30 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC] [PATCH 1/4] hugetlb: prepare exclusion control functions for
- hugepage
-Message-ID: <20100812075730.GC6112@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.DEB.2.00.1008110806070.673@router.home>
- <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+	Thu, 12 Aug 2010 04:05:13 -0400
+Date: Thu, 12 Aug 2010 10:07:01 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: linux-s390@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Subject: Re: Latest git build failure on s390 - dma_get_cache_alignment()
+Message-ID: <20100812080701.GB7814@osiris.boeblingen.de.ibm.com>
+References: <4C63A551.3040701@in.ibm.com>
+ <20100812075532.GA7814@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100812075532.GA7814@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch defines some helper functions to avoid race condition
-on hugepage I/O. We assume that locking/unlocking subpages are
-done in ascending/descending order in adderss to avoid deadlock.
+On Thu, Aug 12, 2010 at 09:55:32AM +0200, Heiko Carstens wrote:
+> On Thu, Aug 12, 2010 at 01:10:01PM +0530, Sachin Sant wrote:
+> > Latest 2.6.35 git (2.6.35-git11 : 5af568cbd...) fails to build
+> > on s390 with following errors :
+> > 
+> > arch/s390/mm/fault.c:396: warning: frame size of 'do_protection_exception' is 264 bytes
+> > In file included from include/linux/dmaengine.h:26,
+> >            from include/linux/skbuff.h:30,
+> >            from include/linux/icmpv6.h:82,
+> >            from include/linux/ipv6.h:220,
+> >            from include/net/ipv6.h:16,
+> >            from include/linux/sunrpc/clnt.h:25,
+> >            from include/linux/nfs_fs.h:48,
+> >            from init/do_mounts.c:20:
+> > include/linux/dma-mapping.h:145: error: static declaration of 'dma_get_cache_alignment' follows non-static declaration
+> > include/asm-generic/dma-mapping-broken.h:73: error: previous declaration of 'dma_get_cache_alignment' was here
+> > make[1]: *** [init/do_mounts.o] Error 1
+> > make[1]: *** Waiting for unfinished jobs....
+> > init/do_mounts_md.c: In function 'md_setup_drive':
+> > init/do_mounts_md.c:241: warning: frame size of 'md_setup_drive' is 496 bytes
+> > make: *** [init] Error 2
+> > make: *** Waiting for unfinished jobs....
+> > 
+> > The code in question was last changed via following commit
+> > 
+> > commit 4565f0170dfc849b3629c27d769db800467baa62
+> > dma-mapping: unify dma_get_cache_alignment implementations
+> 
+> Cc'ing linux-arch since the original patch got posted there as well.
+> 
+> Patch below should fix it.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+> 
+>  include/asm-generic/dma-mapping-common.h |    8 ++++++++
+>  include/linux/dma-mapping.h              |    8 --------
+>  2 files changed, 8 insertions(+), 8 deletions(-)
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Crap. By far not all converted architectures include dma-mapping-common.h
+from their private dma-mapping header file. So the patch would probably
+introduce a couple of new compile errors.
+Looks like we need an explicit ifdef.
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 ---
- include/linux/hugetlb.h |   55 +++++++++++++++++++++++++++++++++++++++++++++++
- mm/memory-failure.c     |   24 ++++++++++++++++++++
- 2 files changed, 79 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index c7b4dae..dabed89 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -312,6 +312,55 @@ static inline struct hstate *page_hstate(struct page *page)
- 	return size_to_hstate(PAGE_SIZE << compound_order(page));
+ include/linux/dma-mapping.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index e0670a5..ce29b81 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -142,6 +142,7 @@ static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+ 		return -EIO;
  }
  
-+/*
-+ * Locking functions for hugepage.
-+ * We assume that locking/unlocking subpages are done
-+ * in ascending/descending order in adderss to avoid deadlock.
-+ */
-+
-+/* If no subpage is locked, return 1. Otherwise, return 0. */
-+static inline int trylock_huge_page(struct page *page)
-+{
-+	int i;
-+	int ret = 1;
-+	int nr_pages = pages_per_huge_page(page_hstate(page));
-+	for (i = 0; i < nr_pages; i++)
-+		ret &= trylock_page(page + i);
-+	return ret;
-+}
-+
-+static inline void lock_huge_page(struct page *page)
-+{
-+	int i;
-+	int nr_pages = pages_per_huge_page(page_hstate(page));
-+	for (i = 0; i < nr_pages; i++)
-+		lock_page(page + i);
-+}
-+
-+static inline void lock_huge_page_nosync(struct page *page)
-+{
-+	int i;
-+	int nr_pages = pages_per_huge_page(page_hstate(page));
-+	for (i = 0; i < nr_pages; i++)
-+		lock_page_nosync(page + i);
-+}
-+
-+static inline void unlock_huge_page(struct page *page)
-+{
-+	int i;
-+	int nr_pages = pages_per_huge_page(page_hstate(page));
-+	for (i = nr_pages - 1; i >= 0; i--)
-+		unlock_page(page + i);
-+}
-+
-+static inline void wait_on_huge_page_writeback(struct page *page)
-+{
-+	int i;
-+	int nr_pages = pages_per_huge_page(page_hstate(page));
-+	for (i = 0; i < nr_pages; i++)
-+		wait_on_page_writeback(page + i);
-+}
-+
- #else
- struct hstate {};
- #define alloc_huge_page_node(h, nid) NULL
-@@ -329,6 +378,12 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
++#ifdef CONFIG_HAS_DMA
+ static inline int dma_get_cache_alignment(void)
  {
+ #ifdef ARCH_DMA_MINALIGN
+@@ -149,6 +150,7 @@ static inline int dma_get_cache_alignment(void)
+ #endif
  	return 1;
  }
-+#define page_hstate(p) NULL
-+#define trylock_huge_page(p) NULL
-+#define lock_huge_page(p) NULL
-+#define lock_huge_page_nosync(p) NULL
-+#define unlock_huge_page(p) NULL
-+#define wait_on_huge_page_writeback(p) NULL
- #endif
++#endif
  
- #endif /* _LINUX_HUGETLB_H */
-diff --git a/mm/memory-failure.c b/mm/memory-failure.c
-index 1e9794d..e387098 100644
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -950,6 +950,30 @@ static void clear_page_hwpoison_huge_page(struct page *hpage)
- 	decrement_corrupted_huge_page(hpage);
- }
- 
-+static void lock_page_against_memory_failure(struct page *p)
-+{
-+	if (PageHuge(p))
-+		lock_huge_page_nosync(p);
-+	else
-+		lock_page_nosync(p);
-+}
-+
-+static void unlock_page_against_memory_failure(struct page *p)
-+{
-+	if (PageHuge(p))
-+		unlock_huge_page(p);
-+	else
-+		unlock_page(p);
-+}
-+
-+static void wait_on_pages_writeback_against_memory_failure(struct page *p)
-+{
-+	if (PageHuge(p))
-+		wait_on_huge_page_writeback(p);
-+	else
-+		wait_on_page_writeback(p);
-+}
-+
- int __memory_failure(unsigned long pfn, int trapno, int flags)
- {
- 	struct page_state *ps;
--- 
-1.7.2.1
+ /* flags for the coherent memory api */
+ #define	DMA_MEMORY_MAP			0x01
