@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760784Ab0HLV3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:29:15 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:11770 "EHLO
+	id S1760814Ab0HLV3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:29:31 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:54695 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760735Ab0HLV3N convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1760680Ab0HLV33 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:29:13 -0400
+	Thu, 12 Aug 2010 17:29:29 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=uwijGc7430fU/7kh8JWiSXne3kcFgKwlnYynWEvoxXPnGg4qBYyaJvA5i3/4lB3iJ
-	X8w1l/nG/sXdJ63nmVU0w==
-MIME-Version: 1.0
-In-Reply-To: <20100812182000.GD21829@ghostprotocols.net>
-References: <1281635958-21177-1-git-send-email-tzanussi@gmail.com>
-	<20100812182000.GD21829@ghostprotocols.net>
-Date: Thu, 12 Aug 2010 23:29:09 +0200
-Message-ID: <AANLkTimNZa-HR7bquzNRc9igLajJjTmveJ+XReCgbKJZ@mail.gmail.com>
-Subject: Re: [PATCH] perf trace: get rid of the hard-coded paths in the report scripts
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, fweisbec@gmail.com, peterz@infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
+	b=sqha0/V3HqK8+6KIJPAUPKFvd3hPmJhkfXBx+3hGqFrVvc7XvPefctQzbsXegzfjB
+	WReJOK3cFwEkAXzD07NRQ==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
+Subject: [PATCH] x86: Wrong /proc/cpuinfo core id on AMD fam_f model_9
+Date: Thu, 12 Aug 2010 14:28:49 -0700
+Message-Id: <1281648529-29678-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.1
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 8:20 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Thu, Aug 12, 2010 at 12:59:18PM -0500, Tom Zanussi escreveu:
->> The perf trace report shell scripts hard-code the exec path of the
->> scripts into their command-lines, which doesn't work if perf has been
->> installed somewhere else.
->>
->> Instead, perf trace should create the paths at run-time.  This patch
->> does that and removes the hard-coded paths from all the report scripts.
->>
->> v2 changes: The first version inadvertantly caused scripts run from
->> outside the perf exec path to fail e.g. 'perf trace -s test.py'.  The
->> fix is to try the script name without the exec path first, then the
->> version using the exec path, which restores the expected behavior.
->>
->> Reported-by: Stephane Eranian <eranian@google.com>
->> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
->
-> Stephane,
->
->        Lemme know when you tried this patch so that I can merge it with
-> a Tested-by: you tag, ok?
->
-Will get back to you tomorrow morning (your time).
+Commit 4a376ec3a2599c02207cd4cbd5dbf73783548463 changes cpuinfo cpu_core_id
+from an unique id in a physical package to core id within a node. And it
+does not change phys_proc_id or booted_cores to reflect this new topology.
+
+This breaks the user view of topology in /proc/cpuinfo.
+
+With commit 4a376ec /proc/cpuinfo output (for one package) looks something like
+processor: 0..11
+physical id: 0..0
+core id: 0..5 0..5
+siblings: 12
+cpu cores: 12
+
+That is, there are processors with same "physical id" and same "core id" (which
+are not SMT siblings). As I understand, if /proc/cpuinfo says there are 12
+"cpu cores" per package, there should be 12 unique core ids in that package.
+And same "physical id" and "core id" is supposed to indicate SMT siblings.
+
+The change below reverts the cpu_core_id part of that commit and
+/proc/cpuinfo has
+processor: 0..11
+physical id: 0..0
+core id: 0..11
+siblings: 12
+cpu cores: 12
+
+
+Also, if the intention of the original change was to export two node info,
+then changing just the core id is not enough. User has no way to determine
+which of these 6 cores out of 12 belong to same node by looking at
+/proc/cpuinfo output. Both "physical id" and "cpu cores" has to change
+to reflect that or one more node id needs to be added (I didn't say that :))
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+---
+ arch/x86/kernel/cpu/amd.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index e485825..80d3d80 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -281,9 +281,6 @@ static void __cpuinit amd_fixup_dcm(struct cpuinfo_x86 *c)
+ 
+ 	/* store NodeID, use llc_shared_map to store sibling info */
+ 	per_cpu(cpu_llc_id, cpu) = value & 7;
+-
+-	/* fixup core id to be in range from 0 to (cores_per_node - 1) */
+-	c->cpu_core_id = c->cpu_core_id % cores_per_node;
+ }
+ #endif
+ 
+-- 
+1.7.1
+
