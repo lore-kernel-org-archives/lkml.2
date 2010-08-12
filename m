@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760185Ab0HLOPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 10:15:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55453 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759974Ab0HLOPr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 10:15:47 -0400
-Message-ID: <4C6401FD.1050600@zytor.com>
-Date: Thu, 12 Aug 2010 07:15:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1760194Ab0HLOQg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 10:16:36 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46039 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759974Ab0HLOQf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 10:16:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=N1sgrzX0jfqjIazg7P3UIUO+IoS+7TRwqm05ZCabIFVn84un/Cmqe4pIlV3xTiV+jd
+         IVq+MbISZbd0MkfLV7gBMJ9LYbsDnXOZdAyIFSG4DSSICuA5gt8rscCei2Z0NTksuXQ8
+         VNEhyPBTDRl/lHrsHEsPNf13sBtfxFaTdnhqQ=
+Date: Thu, 12 Aug 2010 16:16:32 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>, Joern Engel <joern@logfs.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Last ioctl bkl pushdown in the LogFS tree, but no pull request?
+Message-ID: <20100812141629.GA5369@nowhere>
 MIME-Version: 1.0
-To: "Ma, Ling" <ling.ma@intel.com>
-CC: Namhyung Kim <namhyung@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [PATCH V2] [X86] Fix potential issue on memmove
-References: <1281595715.1631.5.camel@leonhard> <C10D3FB0CD45994C8A51FEC1227CE22F0E483AD918@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <C10D3FB0CD45994C8A51FEC1227CE22F0E483AD918@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2010 11:52 PM, Ma, Ling wrote:
-> Thanks, I will fix it in next version.
+Joern,
 
-Also, please split this into two patches -- one for fixing memmove, and
-the other for re-enabling the alias avoidance in memcpy.
-	
-	-hpa
+The Logfs tree contains the last ioctl bkl pushdown that is not yet upstream.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+git://git.kernel.org/pub/scm/linux/kernel/git/joern/logfs.git
+	ddbb5dd99c40a695d5d75645b5a18bef394acb16
+	"logfs: kill BKL"
+
+This patch seems to have missed the 2.6.35 merge window already. Do you
+plan to make a pull request for 2.6.36 that includes this patch?
+
+In fact the merge window is almost closed now. Since this is delaying
+the final removal of struct file_operations:ioctl, the only solution
+for us would be to cherry pick this patch from your tree. But
+really I would hate to do that behind your back.
+
+Please tell us what are your plans.
+
+Thanks.
 
