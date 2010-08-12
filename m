@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761194Ab0HLXoI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 19:44:08 -0400
-Received: from kroah.org ([198.145.64.141]:59562 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755516Ab0HLXoG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 19:44:06 -0400
-Date: Thu, 12 Aug 2010 16:43:36 -0700
-From: Greg KH <greg@kroah.com>
-To: linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: usbutils 0.90 release
-Message-ID: <20100812234336.GA17737@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1761172Ab0HLXqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 19:46:01 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:35970 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755492Ab0HLXqA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 19:46:00 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=tR+YFXtB7g7or/gThDOz5P5COaJpyfCJTNQLnixg60dMJk6ClSl/BFiwloxvXbk53WRogIFa+qmGI4Lu6/cznc77i3/M6+qf1ejsIgeAiFbr6zKRZ83Khe/BOXv2tf2c;
+Date: Thu, 12 Aug 2010 16:45:57 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        dri-devel@lists.sourceforge.net,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] drm: Fix support for PCI domains
+Message-ID: <20100812164557.5f2513a6@virtuousgeek.org>
+In-Reply-To: <AANLkTi=BowHspOUSDmwkdN3o9qhh6rJtEZwCnTRP-VrS@mail.gmail.com>
+References: <1281066910.2168.10.camel@pasglop>
+	<AANLkTinmhGPHQDX0gmnY9j+K61abgnukw2DrTBG3EUuJ@mail.gmail.com>
+	<AANLkTi=BowHspOUSDmwkdN3o9qhh6rJtEZwCnTRP-VrS@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the 0.90 release of usbutils.
+On Fri, 13 Aug 2010 09:33:35 +1000
+Dave Airlie <airlied@gmail.com> wrote:
 
-Big thing is support for the audio class descriptors.  Other than that,
-it's just a lot of little things, as can be seen in the changelog below.
+> On Fri, Aug 13, 2010 at 7:30 AM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+> > On Fri, Aug 6, 2010 at 05:55, Benjamin Herrenschmidt
+> > <benh@kernel.crashing.org> wrote:
+> >> (For some reason I thought that went in ages ago ...)
+> >>
+> >> This fixes support for PCI domains in what should hopefully be a backward
+> >> compatible way along with a change to libdrm.
+> >>
+> >> When the interface version is set to 1.4, we assume userspace understands
+> >> domains and the world is at peace. We thus pass proper domain numbers
+> >> instead of 0 to userspace.
+> >>
+> >> The newer libdrm will then try 1.4 first, and fallback to 1.1, along with
+> >> ignoring domains in the later case (well, except on alpha of course)
+> >>
+> >> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >> ---
+> >>  drivers/gpu/drm/drm_ioctl.c |    1 +
+> >>  include/drm/drmP.h          |   18 +++++++++++++-----
+> >>  include/drm/drm_core.h      |    2 +-
+> >>  3 files changed, 15 insertions(+), 6 deletions(-)
+> >
+> >> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> >> index c1b9871..6d4bad5 100644
+> >> --- a/include/drm/drmP.h
+> >> +++ b/include/drm/drmP.h
+> >> @@ -1071,11 +1071,19 @@ static __inline__ int drm_core_check_feature(struct drm_device *dev,
+> >>        return ((dev->driver->driver_features & feature) ? 1 : 0);
+> >>  }
+> >>
+> >> -#ifdef __alpha__
+> >> -#define drm_get_pci_domain(dev) dev->hose->index
+> >> -#else
+> >> -#define drm_get_pci_domain(dev) 0
+> >> -#endif
+> >> +static inline int drm_get_pci_domain(struct drm_device *dev)
+> >> +{
+> >> +#ifndef __alpha__
+> >> +       /* For historical reasons, drm_get_pci_domain() is busticated
+> >> +        * on most archs and has to remain so for userspace interface
+> >> +        * < 1.4, except on alpha which was right from the beginning
+> >> +        */
+> >> +       if (dev->if_version < 0x10004)
+> >> +               return 0;
+> >> +#endif /* __alpha__ */
+> >> +
+> >> +       return pci_domain_nr(dev->pdev->bus);
+> >
+> > error: implicit declaration of function ‘pci_domain_nr’
+> > on m68k without PCI.
+> 
+> I don't think I want to add an ifdef CONFIG_PCI into the drm layer for
+> this, since we seem to be okay everywhere else,
+> 
+> lets ask jbarnes, not sure if its safe to just add this to the
+> !CONFIG_PCI section of the linux/pci.h
 
-The package can be downladed from kernel.org:
-	http://www.kernel.org/pub/linux/utils/usb/usbutils/
+Hm, so pci_domain_nr should just return 0 on platforms where
+CONFIG_PCI_DOMAINS isn't set.  I'd expect that to be the case when
+CONFIG_PCI=n...  Maybe we just need to shuffle the definition around?
 
-We've switched over to using git for development now, which makes things
-much easier than the old cvs tree.  The tree can be found on both
-kernel.org and github.com if you want to fork it and send us changes
-easier:
-	http://git.kernel.org/?p=linux/kernel/git/gregkh/usbutils.git
-	http://github.com/gregkh/usbutils/tree/master
-
-thanks,
-
-greg k-h
-
------------
-
-Shortlog of changes since last release (0.86):
-
-
-Aurelien Jarno (1):
-      fix bcdDFUVersion endianness
-
-Chris Clayton (1):
-      Patch to add additional devices to usb.ids
-
-Daniel Mack (7):
-      dump_audiostreaming_interface(): fix ac-3 decoder
-      parse USB audio class 2 control interface types
-      parse USB audio class 2 streaming interfaces
-      parse USB audio class 2 endpoints
-      dump_audio_bmcontrols(): tell users about faulty bmControl bits
-      dump_audiostreaming_interface(): drop audio class 2 FORMAT_TYPE length check
-      lsusb: fix iFeature position calculation for UAC2 feature units
-
-Greg Kroah-Hartman (6):
-      reserve a USB Ethernet Gadget driver device id.
-      fix up wording of NCM Ethernet gadget device id
-      fix up some signed/unsigned warnings in lsusb.c
-      move #defines around a bit to make it more orderly.
-      more gadget device ids reserved for the Linux Foundation vendor id
-      Fix up a lot of memory leaks
-
-Ludovic Rousseau (1):
-      Update Gemplus id
-
-Matthew Wilcox (1):
-      Decode USB 3 Endpoint Companion Descriptors
-
-Nix (1):
-      Include config.h before everything else.
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
