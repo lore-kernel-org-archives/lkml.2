@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933735Ab0HLOaq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 10:30:46 -0400
-Received: from 8bytes.org ([88.198.83.132]:50538 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933703Ab0HLOam (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 10:30:42 -0400
-Date: Thu, 12 Aug 2010 16:30:40 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v4] arm: msm: Add MSM IOMMU support.
-Message-ID: <20100812143040.GX23755@8bytes.org>
-References: <1281469529-23340-1-git-send-email-stepanm@codeaurora.org>
+	id S933688Ab0HLObl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 10:31:41 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:49914 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753875Ab0HLObj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 10:31:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YHcwKK7uJBIC9wHFy5DnWUqk+kzJ0FajmtNqOJgwSX3ZG8LMeQMCpju1VFKQ1WA+jX
+         g+tR89Cdp0bKAzfHb7BCXlJ0fi0wSwMTdY88BJPDTpAiEjj04ezM7o6ieNYh6UnbkZvl
+         tNm+vlpoFpDspakOoTNjiXAPybrfDfqCZNMyE=
+Date: Thu, 12 Aug 2010 18:31:33 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100812143133.GA5719@lenovo>
+References: <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com> <20100809200245.GF6056@lenovo> <20100810074200.GE26154@erda.amd.com> <20100810161627.GB6893@lenovo> <20100810164124.GK26154@erda.amd.com> <20100810172451.GD6893@lenovo> <20100810190541.GN26154@erda.amd.com> <20100810192428.GE6893@lenovo> <20100812132419.GX26154@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281469529-23340-1-git-send-email-stepanm@codeaurora.org>
+In-Reply-To: <20100812132419.GX26154@erda.amd.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stepan,
+On Thu, Aug 12, 2010 at 03:24:19PM +0200, Robert Richter wrote:
+> On 10.08.10 15:24:28, Cyrill Gorcunov wrote:
+> > On Tue, Aug 10, 2010 at 09:05:41PM +0200, Robert Richter wrote:
+> > > On 10.08.10 13:24:51, Cyrill Gorcunov wrote:
+> > > 
+> > > > It gets masked on NMI arrival, at least for some models (Core Duo, P4,
+> > > > P6 M and I suspect more theh that, that was the reason oprofile has
+> > > > it, also there is a note in SDM V3a page 643).
+> > > 
+> > > Yes, that's right, I never noticed that. Maybe it is better to
+> > > implement the apic write it in model specific code then.
+> > > 
+> > 
+> > Perhaps we can make it simplier I think, ie like it was before -- we just
+> > move it under your new DIE_NMIUNKNOWN, in separate patch of course. Though
+> > I'm fine with either way.
+> 
+> I do not understand why you want to put this in the 'unknown'
+> path. Isn't it necessary to unmask the vector with every call of the
+> nmi handler?
+> 
+> -Robert
+> 
 
-On Tue, Aug 10, 2010 at 12:45:29PM -0700, Stepan Moskovchenko wrote:
-> Add support for the IOMMUs found on the upcoming Qualcomm
-> MSM8x60 chips. These IOMMUs allow virtualization of the
-> address space used by most of the multimedia cores on these
-> chips. The driver implements the kernel's IOMMU API.
+Heh, it's simple - I'm screwed. Robert you're right, of course it should NOT
+be under every 'unknown' nmi. I thought about small optimization here, but
+I think all this should be done only _after_ your patch is merged.
 
-Using the IOMMU-API seems to work out well for this at the first glance.
-I will give your patch a more deep review next week when I am back in
-office. I really appreciate that your work fits into the IOMMU-API now.
-
-So long,
-
-   Joerg
-
+Sorry for confuse ;)
+ 
+	-- Cyrill
