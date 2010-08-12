@@ -1,159 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761121Ab0HLXKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 19:10:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51643
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760954Ab0HLXKd (ORCPT
+	id S1761142Ab0HLXMI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 19:12:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36204 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761087Ab0HLXMF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 19:10:33 -0400
-Date: Thu, 12 Aug 2010 16:10:50 -0700 (PDT)
-Message-Id: <20100812.161050.246523792.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 12 Aug 2010 19:12:05 -0400
+Date: Thu, 12 Aug 2010 16:11:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andreas <andihartmann@01019freenet.de>
+Cc: linux-kernel@vger.kernel.org, Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: rt61pci - bad performance
+Message-Id: <20100812161157.00d5377f.akpm@linux-foundation.org>
+In-Reply-To: <i3lug9$bfn$1@ID-44327.news.uni-berlin.de>
+References: <i3lug9$bfn$1@ID-44327.news.uni-berlin.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc's added)
 
-1) qlcnic driver using way too much stack space during probe, fix
-   from Dan Carpenter.
+On Sun, 08 Aug 2010 11:49:49 +0200
+Andreas <andihartmann@01019freenet.de> wrote:
 
-2) sfq was oops'able during config because it only partially provided
-   the classful qdisc interfaces.  Fix this, and also add validation
-   code during qdisc registry so that we can catch this ahead of time
-   in the future.  From Jarek Poplawski.
+> Hello!
+> 
+> I've got the following hardware
+> 
+> 
+> 01:05.0 Network controller: RaLink RT2561/RT61 rev B 802.11g
+>          Subsystem: Micro-Star International Co., Ltd. Device b833
+>          Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV+ VGASnoop- 
+> ParErr- Stepping- SERR- FastB2B- DisINTx-
+>          Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=slow >TAbort- 
+> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>          Latency: 128, Cache Line Size: 64 bytes
+>          Interrupt: pin A routed to IRQ 21
+>          Region 0: Memory at cc000000 (32-bit, non-prefetchable) [size=32K]
+>          Capabilities: [40] Power Management version 2
+>                  Flags: PMEClk- DSI- D1- D2- AuxCurrent=0mA 
+> PME(D0-,D1-,D2-,D3hot-,D3cold-)
+>                  Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+>          Kernel driver in use: ndiswrapper
+> 
+> 
+> running on a 32bit notebook with kernel 2.6.34-12-desktop (OpenSuSE 
+> 11.3). There is no difference between the compat-wireless-modules 
+> 2010-07-20 and the original modules shipped with the openSuSE 11.3 kernel.
+> 
+> If the rt61-chip is connected to a AP using rt61pci, the best 
+> throughput, which can be achieved (at the same place), is about 1,7 
+> MBytes/s.
+> 
+> kernel: [  656.112190] cfg80211: Calling CRDA to update world regulatory 
+> domain
+> kernel: [  656.112267] cfg80211: Calling CRDA for country: DE
+> kernel: [  656.169518] cfg80211: Regulatory domain changed to country: DE
+> kernel: [  656.169524]     (start_freq - end_freq @ bandwidth), 
+> (max_antenna_gain, max_eirp)
+> kernel: [  656.169528]     (2400000 KHz - 2483500 KHz @ 40000 KHz), 
+> (N/A, 2000 mBm)
+> kernel: [  656.169532]     (5150000 KHz - 5350000 KHz @ 40000 KHz), 
+> (N/A, 2000 mBm)
+> kernel: [  656.169535]     (5470000 KHz - 5725000 KHz @ 40000 KHz), 
+> (N/A, 2698 mBm)
+> kernel: [  656.206228] rt61pci 0000:01:05.0: PCI INT A -> GSI 21 (level, 
+> low) -> IRQ 21
+> kernel: [  656.219941] phy0: Selected rate control algorithm 'minstrel'
+> kernel: [  656.222216] Registered led device: rt61pci-phy0::radio
+> kernel: [  656.222658] Registered led device: rt61pci-phy0::assoc
+> kernel: notebook1 ifup:     wlan0     device: RaLink RT2561/RT61 rev B 
+> 802.11g
+> 
+> 
+> 
+> wlan0     IEEE 802.11bg  ESSID:"--------"
+>            Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
+>            Bit Rate=1 Mb/s   Tx-Power=5 dBm
+>            Retry  long limit:7   RTS thr:off   Fragment thr:off
+>            Encryption key:off
+>            Power Management:off
+>            Link Quality=38/70  Signal level=-72 dBm
+>            Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+>            Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+> 
+> The throughput is measured with ping -f -s 7000 and xosview -n.
+> 
+> 
+> 
+> 
+> If I'm using ndiswrapper with the windows driver, first of all, I can 
+> see additional information in iwconfig:
+> 
+> wlan0     IEEE 802.11g  ESSID:"--------"
+>            Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
+>            Bit Rate=54 Mb/s   Tx-Power:20 dBm   Sensitivity=-121 dBm
+>            RTS thr=2347 B   Fragment thr=2346 B
+>            Encryption key:some key   Security mode:restricted
+>            Power Management:off
+>            Link Quality:62/100  Signal level:-56 dBm  Noise level:-96 dBm
+>            Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+>            Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+> 
+> 
+> There is a switch for sensitivity (which is not supported with rt61pci) 
+> and the link quality compared with ndiswrapper is worse (38% to 62%).
+> 
+> The following is remarkably too:
+> ndiswrapper uses a Tx-Power of 20 dBm, rt61pci only 5 dBm. I don't know, 
+> why rt61pci uses 5 dBm. It's a hard limit and I can't set it on a value 
+> higher than 5 unless the driver is patched. Nevertheless, setting a 
+> higher value (of 20 dBm) by patch does not mean to get a better performance.
+> Ndiswrapper shows an encryption key, rt61pci not. Does it mean, that 
+> rt61pci doesn't use hardware encryption?
+> 
+> 
+> With ndiswrapper, the rt61pci-chip achieves a throughput of 2,6 MBytes/s 
+> - that's about 1 MByte/s more than rt61pci.
+> 
+> I have to say, that the difference between rt61pci and ndiswrapper gets 
+> worse if the link quality is getting more badly. Or in other words: 
+> ndiswrapper handles bad connections better then rt61pci.
+> 
+> 
+> Do you have any idea to get rt61pci working as fast as ndiswrapper?
+> 
 
-3) Properly undo pci_enable_device() when PCI driver probe fails in
-   ISDN.  From Kulikov Vasiliy.
-
-4) Buffer overflow fix in CAN protocol from Oliver Kartkopp.
-
-5) kernel-doc and Kconfig dependency fixups from Randy Dunlap.
-
-6) s390 driver use macros named READ/WRITE, fix to avoid namespace
-   conflicts.  From Heiko Carstens and Ursula Braun.
-
-7) Minor fixes to CAIF protocol stack from Sjur Braendeland.
-
-8) The usual assortment of wireless fixes via John Linville and co.
-
-Please pull, thanks a lot.
-
-The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
-
-  Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Ben Greear (1):
-      net: Use NET_XMIT_SUCCESS where possible.
-
-Dan Carpenter (2):
-      qlcnic: clean up qlcnic_init_pci_info()
-      qlcnic: using too much stack
-
-David S. Miller (3):
-      farsync: Fix compile warnings.
-      usbnet: rx_submit() should return an error code.
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-
-Heiko Carstens (1):
-      claw: rename READ/WRITE defines to avoid redefinitions
-
-Jarek Poplawski (4):
-      pkt_sched: sch_sfq: Add dummy unbind_tcf and put handles. Was: [PATCH] sfq: add dummy bind/unbind handles
-      pkt_sched: Add some basic qdisc class ops verification. Was: [PATCH] sfq: add dummy bind/unbind handles
-      pkt_sched: Fix sch_sfq vs tc_modify_qdisc oops
-      pkt_sched: Check .walk and .leaf class handlers
-
-Johannes Berg (2):
-      cfg80211: fix locking in action frame TX
-      iwlagn: fix rts cts protection
-
-John W. Linville (4):
-      Revert "p54pci: Add PCI ID for SMC2802W"
-      libertas: fix build break by including linux/sched.h
-      Merge branch 'master' of git://git.kernel.org/.../holtmann/bluetooth-2.6
-      net: make netpoll_rx return bool for !CONFIG_NETPOLL
-
-Kulikov Vasiliy (3):
-      isdn: avm: call pci_disable_device() if pci_probe() failed
-      isdn: avm: call pci_disable_device() if pci_probe() failed
-      isdn: mISDN: call pci_disable_device() if pci_probe() failed
-
-Mat Martineau (4):
-      Bluetooth: Fix endianness issue with L2CAP MPS configuration
-      Bluetooth: Change default L2CAP ERTM retransmit timeout
-      Bluetooth: Fix incorrect setting of remote_tx_win for L2CAP ERTM
-      Bluetooth: Use 3-DH5 payload size for default ERTM max PDU size
-
-Oliver Hartkopp (1):
-      can: add limit for nframes and clean up signed/unsigned variables
-
-Randy Dunlap (4):
-      etherdevice.h: fix kernel-doc typo
-      net/sock.h: add missing kernel-doc notation
-      phy.c: fix kernel-doc warnings
-      phylib: available for any speed ethernet
-
-Sjur Braendeland (2):
-      caif: Bugfix - Increase default headroom size for control channel.
-      caif-spi: Bugfix SPI_DATA_POS settings were inverted.
-
-Ursula Braun (1):
-      ctcm: rename READ/WRITE defines to avoid redefinitions
-
- drivers/isdn/hardware/avm/c4.c              |    1 +
- drivers/isdn/hardware/avm/t1pci.c           |    1 +
- drivers/isdn/hardware/mISDN/mISDNinfineon.c |    5 +-
- drivers/net/caif/caif_spi_slave.c           |    4 +-
- drivers/net/phy/Kconfig                     |    2 +-
- drivers/net/phy/phy.c                       |    2 +-
- drivers/net/qlcnic/qlcnic_main.c            |   72 ++++++++++-------
- drivers/net/usb/usbnet.c                    |   22 ++++--
- drivers/net/wan/farsync.c                   |   15 ++--
- drivers/net/wireless/iwlwifi/iwl-1000.c     |    2 +-
- drivers/net/wireless/iwlwifi/iwl-3945.c     |   18 +----
- drivers/net/wireless/iwlwifi/iwl-4965.c     |    2 +-
- drivers/net/wireless/iwlwifi/iwl-5000.c     |   10 +-
- drivers/net/wireless/iwlwifi/iwl-6000.c     |   16 ++--
- drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c |   19 ++++-
- drivers/net/wireless/iwlwifi/iwl-agn-tx.c   |   20 +-----
- drivers/net/wireless/iwlwifi/iwl-agn.c      |   85 +++++---------------
- drivers/net/wireless/iwlwifi/iwl-core.c     |   29 ++++++-
- drivers/net/wireless/iwlwifi/iwl-core.h     |   14 ++--
- drivers/net/wireless/iwlwifi/iwl3945-base.c |    5 +-
- drivers/net/wireless/libertas/cfg.c         |    1 +
- drivers/net/wireless/p54/p54pci.c           |    2 -
- drivers/s390/net/claw.c                     |  118 +++++++++++++-------------
- drivers/s390/net/claw.h                     |    4 +-
- drivers/s390/net/ctcm_fsms.c                |   60 +++++++-------
- drivers/s390/net/ctcm_main.c                |   80 +++++++++---------
- drivers/s390/net/ctcm_main.h                |    4 +-
- drivers/s390/net/ctcm_mpc.c                 |   64 ++++++++-------
- drivers/s390/net/ctcm_sysfs.c               |   20 +++---
- include/linux/etherdevice.h                 |    2 +-
- include/linux/netpoll.h                     |    2 +-
- include/net/bluetooth/l2cap.h               |    4 +-
- include/net/sock.h                          |    4 +-
- net/bluetooth/l2cap.c                       |   11 +--
- net/caif/cfpkt_skbuff.c                     |    2 +-
- net/can/bcm.c                               |   41 ++++++---
- net/dsa/Kconfig                             |    2 +-
- net/sched/sch_api.c                         |   22 ++++-
- net/sched/sch_atm.c                         |    4 +-
- net/sched/sch_sfq.c                         |   14 +++-
- net/sched/sch_tbf.c                         |    4 +-
- net/sched/sch_teql.c                        |    2 +-
- net/wireless/mlme.c                         |    8 ++-
- 43 files changed, 428 insertions(+), 391 deletions(-)
