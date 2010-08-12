@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab0HLBhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 21:37:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33295 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759020Ab0HLBhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 21:37:45 -0400
-Message-ID: <4C634FEF.1040503@zytor.com>
-Date: Wed, 11 Aug 2010 18:35:43 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1759053Ab0HLBjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 21:39:19 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63855 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758831Ab0HLBjQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 21:39:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=sYvyS5HoynOeAMZ21ljd2OBIbetgU6jTZY5T+6OyC87nvIjILsdlF7xB9xLsJbtXR6
+         L5sDeiPpx0zI2bU2Jp8H0w/GYm7P9CuBPYPEJOkU+mj28kYa90oU0YgIcmhEbGqLWtyf
+         yHrWtaD6S6cVwzgG+c7Y9GJ++4XprpAX4cxGM=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        gcosta@redhat.com, lenb@kernel.org, mingo@elte.hu, tglx@linutronix.de,
-        ying.huang@intel.com
-Subject: Re: + drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch
- added to -mm tree
-References: <201008112336.o7BNaNEj020805@imap1.linux-foundation.org>	<20100811164310.a4790773.randy.dunlap@oracle.com> <20100811173327.3ae325ff.akpm@linux-foundation.org>
-In-Reply-To: <20100811173327.3ae325ff.akpm@linux-foundation.org>
+Date: Thu, 12 Aug 2010 09:39:15 +0800
+Message-ID: <AANLkTimQSppX5HzBoAcU73+7odFBJ8jXHBtszBO+8LVm@mail.gmail.com>
+Subject: [PATCH] IPVS : bugfix for ICMPv6 checksum calculation
+From: xiaoyu Du <tingsrain@gmail.com>
+To: linux-kernel@vger.kernel.org, Simon Horman <horms@verge.net.au>,
+        lvs-devel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/11/2010 05:33 PM, Andrew Morton wrote:
-> 
-> Not very well.
-> 
-> +		rc = copy_from_user(&record_id, (void __user *)arg,
-> +				    sizeof(u64));
-> 
-> better to use sizeof(record_id).
-> 
-> Where's Len??
-> 
-> Anyway, this should be fixed in x86 core, I suspect.
+Hi:
 
-Agreed.  Looking at it now.
+This patch correct the ICMPv6 checksum calculation when IPv6 vs is used.
 
-	-hpa
+Signed-off-by: Xiaoyu Du <tingsrain@gmail.com>
+---
+ net/netfilter/ipvs/ip_vs_core.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+diff --git a/net/netfilter/ipvs/ip_vs_core.c b/net/netfilter/ipvs/ip_vs_core.c
+index 4f8ddba..124a1ae 100644
+--- a/net/netfilter/ipvs/ip_vs_core.c
++++ b/net/netfilter/ipvs/ip_vs_core.c
+@@ -638,8 +638,12 @@ void ip_vs_nat_icmp_v6(struct sk_buff *skb,
+struct ip_vs_protocol *pp,
 
+ 	/* And finally the ICMP checksum */
+ 	icmph->icmp6_cksum = 0;
+-	/* TODO IPv6: is this correct for ICMPv6? */
+ 	ip_vs_checksum_complete(skb, icmp_offset);
++	icmph->icmp6_cksum = csum_ipv6_magic(&iph->saddr,
++			&iph->daddr,
++			skb->len - icmp_offset, IPPROTO_ICMPV6,
++			skb->csum);
++
+ 	skb->ip_summed = CHECKSUM_UNNECESSARY;
+
+ 	if (inout)
+--
