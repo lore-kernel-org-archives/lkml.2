@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759222Ab0HKX7F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 19:59:05 -0400
-Received: from kroah.org ([198.145.64.141]:43473 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759012Ab0HKX6p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:58:45 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:01 2010
-Message-Id: <20100811235501.870761315@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:54:50 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Yang Hongyang <yanghy@cn.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Jeff Mahoney <jeffm@suse.com>
-Subject: [069/111] Btrfs: fix a memory leak in btrfs_init_acl
-In-Reply-To: <20100811235623.GA24440@kroah.com>
+	id S1753518Ab0HLAcX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:32:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48440 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758431Ab0HLAcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:32:18 -0400
+Date: Wed, 11 Aug 2010 17:33:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, gcosta@redhat.com, hpa@zytor.com,
+        lenb@kernel.org, mingo@elte.hu, tglx@linutronix.de,
+        ying.huang@intel.com
+Subject: Re: +
+ drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch added to
+ -mm tree
+Message-Id: <20100811173327.3ae325ff.akpm@linux-foundation.org>
+In-Reply-To: <20100811164310.a4790773.randy.dunlap@oracle.com>
+References: <201008112336.o7BNaNEj020805@imap1.linux-foundation.org>
+	<20100811164310.a4790773.randy.dunlap@oracle.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+On Wed, 11 Aug 2010 16:43:10 -0700 Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-------------------
+> On Wed, 11 Aug 2010 16:06:24 -0700 akpm@linux-foundation.org wrote:
+> 
+> > 
+> > The patch titled
+> >      drivers/acpi/apei/erst-dbg.c: get_user(u64) doesn't work on i386
+> > has been added to the -mm tree.  Its filename is
+> >      drivers-acpi-apei-erst-dbgc-get_useru64-doesnt-work-on-i386.patch
+> > 
+> > Before you just go and hit "reply", please:
+> >    a) Consider who else should be cc'ed
+> >    b) Prefer to cc a suitable mailing list as well
+> >    c) Ideally: find the original patch on the mailing list and do a
+> >       reply-to-all to that, adding suitable additional cc's
+> > 
+> > *** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > 
+> > See http://userweb.kernel.org/~akpm/stuff/added-to-mm.txt to find
+> > out what to do about this
+> > 
+> > The current -mm tree may be found at http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > ------------------------------------------------------
+> > Subject: drivers/acpi/apei/erst-dbg.c: get_user(u64) doesn't work on i386
+> > From: Andrew Morton <akpm@linux-foundation.org>
+> > 
+> > Might be an x86 bug?  A get_user() on a u64 on i386 expands to
+> > 
+> > #define __get_user_8(__ret_gu, __val_gu, ptr)				\
+> > 		__get_user_x(X, __ret_gu, __val_gu, ptr)
+> > 
+> > which emits a call to __get_user_X(), which doesn't exist.
+> > 
+> > Kludge around it with copy_from_user().
+> > 
+> 
+> Reported and fixed yesterday.
 
-From: Yang Hongyang <yanghy@cn.fujitsu.com>
+Not very well.
 
-commit f858153c367a397235d3e81136741e40e44faf1d upstream.
++		rc = copy_from_user(&record_id, (void __user *)arg,
++				    sizeof(u64));
 
-In btrfs_init_acl() cloned acl is not released
+better to use sizeof(record_id).
 
-Signed-off-by: Yang Hongyang <yanghy@cn.fujitsu.com>
-Signed-off-by: Chris Mason <chris.mason@oracle.com>
-Acked-by: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Where's Len??
 
 
----
- fs/btrfs/acl.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/fs/btrfs/acl.c
-+++ b/fs/btrfs/acl.c
-@@ -272,6 +272,7 @@ int btrfs_init_acl(struct btrfs_trans_ha
- 						    ACL_TYPE_ACCESS);
- 			}
- 		}
-+		posix_acl_release(clone);
- 	}
- failed:
- 	posix_acl_release(acl);
-
-
+Anyway, this should be fixed in x86 core, I suspect.
