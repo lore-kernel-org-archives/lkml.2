@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759943Ab0HLL5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 07:57:02 -0400
-Received: from smtp-out-205.synserver.de ([212.40.180.205]:1091 "EHLO
-	smtp-out-205.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759931Ab0HLL5A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 07:57:00 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 9518
-Date: Thu, 12 Aug 2010 13:56:57 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Heinz Diehl <htd@fritha.org>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
-        Alan Ott <alan@signal11.us>
-Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
- called
-Message-ID: <20100812115657.GA1611@arch.tripp.de>
-References: <20100810210941.GA7938@fritha.org>
- <20100810223215.GA1609@arch.tripp.de>
- <alpine.LNX.2.00.1008121108540.2702@pobox.suse.cz>
- <20100812091659.GA1591@arch.tripp.de>
- <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz>
- <20100812113624.GB1591@arch.tripp.de>
- <20100812114513.GA1584@arch.tripp.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100812114513.GA1584@arch.tripp.de>
+	id S933610Ab0HLL5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 07:57:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759931Ab0HLL5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 07:57:09 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100811150746.GA9070@suse.de>
+References: <20100811150746.GA9070@suse.de> <20100811140102.19596.84876.stgit@warthog.procyon.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: dhowells@redhat.com, ebiederm@xmission.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Break the kobject namespace defs into their own header
+Date: Thu, 12 Aug 2010 12:56:25 +0100
+Message-ID: <12812.1281614185@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 01:45:13PM +0200, Markus Trippelsdorf wrote:
-> On Thu, Aug 12, 2010 at 01:36:24PM +0200, Markus Trippelsdorf wrote:
-> > On Thu, Aug 12, 2010 at 01:18:15PM +0200, Jiri Kosina wrote:
-> > > On Thu, 12 Aug 2010, Markus Trippelsdorf wrote:
-> > > 
-> > > > On Thu, Aug 12, 2010 at 11:11:50AM +0200, Jiri Kosina wrote:
-> > > > > 
-> > > > > Guys, could you please send me your .config with which you are 
-> > > > > experiencing the problem, so that I can try to reproduce it with it?
-> > > > 
-> > > > Attached.
-> > > 
-> > > So I had to add support for HW of mine (SATA_VIA, PATA_VIA, disabled the 
-> > > radeon firmware stuff, and, most importantly, enabled UHCI, which is what 
-> > > is on machine I am using now for testing), and disconnect-connect cycle 
-> > > works nicely:
-> > > 
-> > > usb 3-2: USB disconnect, address 3
-> > > usb 3-2: new low speed USB device using uhci_hcd and address 4
-> > > input: mouse USB mouse with wheel as /devices/pci0000:00/0000:00:10.1/usb3/3-2/3-2:1.0/input/input6
-> > > generic-usb 0003:05B8:3091.0004: input,hidraw0: USB HID v1.10 Mouse [mouse USB mouse with wheel] on usb-0000:00:10.1-2/input0
-> > > input: mouse USB mouse with wheel as /devices/pci0000:00/0000:00:10.1/usb3/3-2/3-2:1.1/input/input7
-> > > generic-usb 0003:05B8:3091.0005: input,hidraw1: USB HID v1.10 Keyboard [mouse USB mouse with wheel] on usb-0000:00:10.1-2/input1
-> > > 
-> > > so still no BUG from kobject refcounting, and the hidraw numbers are the 
-> > > same. The major difference seems to be that I am using UHCI and you have 
-> > > your HID devices connected through OHCI, is that correct?
-> > 
-> > Correct. And I should add that it very easy to reproduce here; just
-> > disconnecting the usb receiver triggers the WARNING.
-> 
-> Disabling USB_HIDDEV in my .config solves the problem (there is no
-> WARNING anymore when disconnecting the receiver).
+Greg KH <gregkh@suse.de> wrote:
 
-Reverting bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a with USB_HIDDEV
-enabled also solves the problem. So there must be a bug in that patch:
+> What "ordering problem" is there?  I don't see a build error here, do
+> you?
 
-commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
-Author: Arnd Bergmann <arnd@arndb.de>
-Date:   Sun Jul 11 15:34:05 2010 +0200
+Yes:
 
-    HID: hiddev: use usb_find_interface, get rid of BKL
-    
-    This removes the private hiddev_table in the usbhid
-    driver and changes it to use usb_find_interface
-    instead.
-    
-    The advantage is that we can avoid the race between
-    usb_register_dev and usb_open and no longer need the
-    big kernel lock.
-    
-    This doesn't introduce race condition -- the intf pointer could be
-    invalidated only in hiddev_disconnect() through usb_deregister_dev(),
-    but that will block on minor_rwsem and not actually remove the device
-    until usb_open().
-    
-    Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-    Cc: Jiri Kosina <jkosina@suse.cz>
-    Cc: "Greg Kroah-Hartman" <gregkh@suse.de>
-    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+  CC      arch/mn10300/kernel/asm-offsets.s
+In file included from include/linux/kobject.h:21,
+                 from include/linux/sched.h:91,
+                 from arch/mn10300/kernel/asm-offsets.c:7:
+include/linux/sysfs.h:177: warning: parameter 1 ('type') has incomplete type
+  GEN     include/generated/asm-offsets.h
+  CALL    scripts/checksyscalls.sh
+<stdin>:1526:2: warning: #warning syscall fanotify_init not implemented
+<stdin>:1530:2: warning: #warning syscall fanotify_mark not implemented
+<stdin>:1534:2: warning: #warning syscall prlimit64 not implemented
+  CC      init/main.o
+  CC      arch/mn10300/mm/init.o
+  CC      arch/mn10300/kernel/process.o
+In file included from include/linux/kobject.h:21,
+                 from include/linux/sched.h:91,
+                 from include/linux/utsname.h:35,
+                 from /warthog/am33/linux-2.6-mn10300/arch/mn10300/include/asm/elf.h:15,
+                 from include/linux/elf.h:7,
+                 from include/linux/module.h:14,
+                 from init/main.c:13:
+include/linux/sysfs.h:177: warning: parameter 1 ('type') has incomplete type
+In file included from include/linux/kobject.h:21,
+                 from include/linux/sched.h:91,
+                 from arch/mn10300/mm/init.c:13:
+include/linux/sysfs.h:177: warning: parameter 1 ('type') has incomplete type
+In file included from include/linux/kobject.h:21,
+                 from include/linux/sched.h:91,
+                 from include/linux/utsname.h:35,
+                 from /warthog/am33/linux-2.6-mn10300/arch/mn10300/include/asm/elf.h:15,
+                 from include/linux/elf.h:7,
+                 from include/linux/module.h:14,
+                 from arch/mn10300/kernel/process.c:11:
+include/linux/sysfs.h:177: warning: parameter 1 ('type') has incomplete type
+...
 
 
--- 
-»A man who doesn't know he is in prison can never escape.«
-William S. Burroughs
+The problem appears to be that 
+
+	enum kobj_ns_type
+
+is defined in linux/kobject.h but referenced in linux/sysfs.h, which is
+included by linux/kobject.h.  Whilst I see a predeclaration at the top of
+linux/sysfs.h, my compiler seems to ignore it.
+
+The compiler is:
+
+	gcc version 3.4-am33-04r2-5
+
+which is a supported version according to the compiler-gcc3.h header file.
+
+David
