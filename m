@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933350Ab0HLA01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:26:27 -0400
-Received: from kroah.org ([198.145.64.141]:60152 "EHLO coco.kroah.org"
+	id S933476Ab0HLA0l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:26:41 -0400
+Received: from kroah.org ([198.145.64.141]:60141 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759476Ab0HLAEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:06 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:25 2010
-Message-Id: <20100812000124.994647483@clark.site>
+	id S1759327Ab0HLAEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:04 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
+Message-Id: <20100812000124.826016127@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:34 -0700
+Date: Wed, 11 Aug 2010 17:00:32 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Borislav Petkov <bp@alien8.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [19/54] ide-cd: Do not access completed requests in the irq handler
+        Peter Huewe <peterhuewe@gmx.de>,
+        Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [17/54] drivers/video/w100fb.c: ignore void return value / fix build failure
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,58 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Borislav Petkov <bp@alien8.de>
+From: Peter Huewe <peterhuewe@gmx.de>
 
-commit 110712828365ccafcc61a7f4db44c31ed4cf8793 upstream.
+commit fa260c00c1aa5c657793a7221e40d2400df5afd8 upstream.
 
-ide_cd_error_cmd() can complete an erroneous request with leftover
-buffers. Signal this with its return value so that the request is not
-accessed after its completion in the irq handler and we oops.
+Fix a build failure "error: void value not ignored as it ought to be"
+by removing an assignment of a void return value.  The functionality of
+the code is not changed.
 
-Signed-off-by: Borislav Petkov <bp@alien8.de>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Acked-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ide/ide-cd.c |   14 +++++++++++---
- 1 file changed, 11 insertions(+), 3 deletions(-)
+ drivers/video/w100fb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/ide/ide-cd.c
-+++ b/drivers/ide/ide-cd.c
-@@ -506,15 +506,22 @@ int ide_cd_queue_pc(ide_drive_t *drive,
- 	return (flags & REQ_FAILED) ? -EIO : 0;
- }
- 
--static void ide_cd_error_cmd(ide_drive_t *drive, struct ide_cmd *cmd)
-+/*
-+ * returns true if rq has been completed
-+ */
-+static bool ide_cd_error_cmd(ide_drive_t *drive, struct ide_cmd *cmd)
+--- a/drivers/video/w100fb.c
++++ b/drivers/video/w100fb.c
+@@ -858,9 +858,9 @@ unsigned long w100fb_gpio_read(int port)
+ void w100fb_gpio_write(int port, unsigned long value)
  {
- 	unsigned int nr_bytes = cmd->nbytes - cmd->nleft;
- 
- 	if (cmd->tf_flags & IDE_TFLAG_WRITE)
- 		nr_bytes -= cmd->last_xfer_len;
- 
--	if (nr_bytes > 0)
-+	if (nr_bytes > 0) {
- 		ide_complete_rq(drive, 0, nr_bytes);
-+		return true;
-+	}
-+
-+	return false;
+ 	if (port==W100_GPIO_PORT_A)
+-		value = writel(value, remapped_regs + mmGPIO_DATA);
++		writel(value, remapped_regs + mmGPIO_DATA);
+ 	else
+-		value = writel(value, remapped_regs + mmGPIO_DATA2);
++		writel(value, remapped_regs + mmGPIO_DATA2);
  }
- 
- static ide_startstop_t cdrom_newpc_intr(ide_drive_t *drive)
-@@ -679,7 +686,8 @@ out_end:
- 		}
- 
- 		if (uptodate == 0 && rq->bio)
--			ide_cd_error_cmd(drive, cmd);
-+			if (ide_cd_error_cmd(drive, cmd))
-+				return ide_stopped;
- 
- 		/* make sure it's fully ended */
- 		if (blk_fs_request(rq) == 0) {
+ EXPORT_SYMBOL(w100fb_gpio_read);
+ EXPORT_SYMBOL(w100fb_gpio_write);
 
 
