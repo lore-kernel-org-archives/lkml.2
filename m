@@ -1,47 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760719Ab0HLVYy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:24:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57536 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190Ab0HLVYs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:24:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=Oh/h5XPxYRFOut487+5uy6RDdC3lfCV9ReHxH1Pw86DKdmja6dZ6z21FAG8wNydNqK
-         itLsHWUnVTQfdAoNox6kQP++g36cqd/Whm1T6LdmtrQkRbnc2VzIZjPUpLuimXNcV2U5
-         2s7YtkHmfKU7ZP3tKriOmyC7Z7k45mOGJnn8k=
-Message-ID: <4C64669B.1020605@gmail.com>
-Date: Thu, 12 Aug 2010 23:24:43 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.8) Gecko/20100802 SUSE/3.1.2 Thunderbird/3.1.2
+	id S1760701Ab0HLVYq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:24:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38024 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754190Ab0HLVYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 17:24:44 -0400
+Date: Thu, 12 Aug 2010 23:24:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 10/11] fs, block: propagate REQ_FLUSH/FUA interface to
+ upper layers
+Message-ID: <20100812212404.GB3665@quack.suse.cz>
+References: <1281616891-5691-1-git-send-email-tj@kernel.org>
+ <1281616891-5691-11-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Eric Paris <eparis@redhat.com>, Takashi Iwai <tiwai@suse.de>,
-        Pekka Enberg <penberg@kernel.org>, Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.36: Sound stop working
-References: <201008122200.05598.thomas@m3y3r.de> <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com> <s5hpqxntw64.wl%tiwai@suse.de> <4C646110.1040104@gmail.com> <AANLkTi=-2U3PXeUEXzGDdXti_j5yGbfG3yci909MKEHX@mail.gmail.com>
-In-Reply-To: <AANLkTi=-2U3PXeUEXzGDdXti_j5yGbfG3yci909MKEHX@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281616891-5691-11-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2010 11:18 PM, Linus Torvalds wrote:
-> On Thu, Aug 12, 2010 at 2:01 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
->> Probably I got into this problem yesterday. Found out that PA fails to
->> open /dev/snd/pcmC0D0p _second_ time. It opens it, then closes, then
->> opens it again and gets EBUSY. aplay is OK.
+On Thu 12-08-10 14:41:30, Tejun Heo wrote:
+> Propagate deprecation of REQ_HARDBARRIER and new REQ_FLUSH/FUA
+> interface to upper layers.
+> 
+> * WRITE_BARRIER is marked deprecated and WRITE_FLUSH, WRITE_FUA and
+>   WRITE_FLUSH_FUA are added.
+> 
+> * REQ_COMMON_MASK now includes REQ_FLUSH | REQ_FUA so that they are
+>   copied from bio to request.
+> 
+> * BH_Ordered is marked deprecated and BH_Flush and BH_FUA are added.
+  Deprecating BH_Ordered is fine but I wouldn't introduce new BH flags for
+this. BH flags should be used for buffer state, not for encoding how the
+buffer should be written (there were actually bugs in the past because of
+this). Being able to set proper flags when calling submit_bh() in the rw
+parameter is enough.
 
-Perfectly reproducible in qemu-kvm with ac97 soundhw, i.e. intel8x0
-driver. Just in case you want to debug that easily.
+								Honza
 
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Christoph Hellwig <hch@infradead.org>
+> ---
+>  fs/buffer.c                 |   27 ++++++++++++++++-----------
+>  include/linux/blk_types.h   |    2 +-
+>  include/linux/buffer_head.h |    8 ++++++--
+>  include/linux/fs.h          |   20 +++++++++++++-------
+>  4 files changed, 36 insertions(+), 21 deletions(-)
+> 
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index d54812b..ec32fbb 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -3019,18 +3019,23 @@ int submit_bh(int rw, struct buffer_head * bh)
+>  	BUG_ON(buffer_delay(bh));
+>  	BUG_ON(buffer_unwritten(bh));
+>  
+> -	/*
+> -	 * Mask in barrier bit for a write (could be either a WRITE or a
+> -	 * WRITE_SYNC
+> -	 */
+> -	if (buffer_ordered(bh) && (rw & WRITE))
+> -		rw |= WRITE_BARRIER;
+> +	if (rw & WRITE) {
+> +		/* ordered is deprecated, will be removed */
+> +		if (buffer_ordered(bh))
+> +			rw |= WRITE_BARRIER;
+>  
+> -	/*
+> -	 * Only clear out a write error when rewriting
+> -	 */
+> -	if (test_set_buffer_req(bh) && (rw & WRITE))
+> -		clear_buffer_write_io_error(bh);
+> +		if (buffer_flush(bh))
+> +			rw |= WRITE_FLUSH;
+> +
+> +		if (buffer_fua(bh))
+> +			rw |= WRITE_FUA;
+> +
+> +		/*
+> +		 * Only clear out a write error when rewriting
+> +		 */
+> +		if (test_set_buffer_req(bh))
+> +			clear_buffer_write_io_error(bh);
+> +	}
+>  
+>  	/*
+>  	 * from here on down, it's all bio -- do the initial mapping,
+> diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
+> index 8e9887d..6609fc0 100644
+> --- a/include/linux/blk_types.h
+> +++ b/include/linux/blk_types.h
+> @@ -164,7 +164,7 @@ enum rq_flag_bits {
+>  	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
+>  #define REQ_COMMON_MASK \
+>  	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_HARDBARRIER | REQ_SYNC | \
+> -	 REQ_META| REQ_DISCARD | REQ_NOIDLE)
+> +	 REQ_META | REQ_DISCARD | REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
+>  
+>  #define REQ_UNPLUG		(1 << __REQ_UNPLUG)
+>  #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
+> diff --git a/include/linux/buffer_head.h b/include/linux/buffer_head.h
+> index 1b9ba19..498bd8b 100644
+> --- a/include/linux/buffer_head.h
+> +++ b/include/linux/buffer_head.h
+> @@ -32,8 +32,10 @@ enum bh_state_bits {
+>  	BH_Delay,	/* Buffer is not yet allocated on disk */
+>  	BH_Boundary,	/* Block is followed by a discontiguity */
+>  	BH_Write_EIO,	/* I/O error on write */
+> -	BH_Ordered,	/* ordered write */
+> -	BH_Eopnotsupp,	/* operation not supported (barrier) */
+> +	BH_Ordered,	/* DEPRECATED: ordered write */
+> +	BH_Eopnotsupp,	/* DEPRECATED: operation not supported (barrier) */
+> +	BH_Flush,	/* Flush device cache before executing IO */
+> +	BH_FUA,		/* Data should be on non-volatile media on completion */
+>  	BH_Unwritten,	/* Buffer is allocated on disk but not written */
+>  	BH_Quiet,	/* Buffer Error Prinks to be quiet */
+>  
+> @@ -126,6 +128,8 @@ BUFFER_FNS(Delay, delay)
+>  BUFFER_FNS(Boundary, boundary)
+>  BUFFER_FNS(Write_EIO, write_io_error)
+>  BUFFER_FNS(Ordered, ordered)
+> +BUFFER_FNS(Flush, flush)
+> +BUFFER_FNS(FUA, fua)
+>  BUFFER_FNS(Eopnotsupp, eopnotsupp)
+>  BUFFER_FNS(Unwritten, unwritten)
+>  
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 4ebd8eb..6e30b0b 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -138,13 +138,13 @@ struct inodes_stat_t {
+>   * SWRITE_SYNC
+>   * SWRITE_SYNC_PLUG	Like WRITE_SYNC/WRITE_SYNC_PLUG, but locks the buffer.
+>   *			See SWRITE.
+> - * WRITE_BARRIER	Like WRITE_SYNC, but tells the block layer that all
+> - *			previously submitted writes must be safely on storage
+> - *			before this one is started. Also guarantees that when
+> - *			this write is complete, it itself is also safely on
+> - *			storage. Prevents reordering of writes on both sides
+> - *			of this IO.
+> - *
+> + * WRITE_BARRIER	DEPRECATED. Always fails. Use FLUSH/FUA instead.
+> + * WRITE_FLUSH		Like WRITE_SYNC but with preceding cache flush.
+> + * WRITE_FUA		Like WRITE_SYNC but data is guaranteed to be on
+> + *			non-volatile media on completion.
+> + * WRITE_FLUSH_FUA	Combination of WRITE_FLUSH and FUA.  The IO is preceded
+> + *			by a cache flush and data is guaranteed to be on
+> + *			non-volatile media on completion.
+>   */
+>  #define RW_MASK			REQ_WRITE
+>  #define RWA_MASK		REQ_RAHEAD
+> @@ -162,6 +162,12 @@ struct inodes_stat_t {
+>  #define WRITE_META		(WRITE | REQ_META)
+>  #define WRITE_BARRIER		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
+>  				 REQ_HARDBARRIER)
+> +#define WRITE_FLUSH		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
+> +				 REQ_FLUSH)
+> +#define WRITE_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
+> +				 REQ_FUA)
+> +#define WRITE_FLUSH_FUA		(WRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG | \
+> +				 REQ_FLUSH | REQ_FUA)
+>  #define SWRITE_SYNC_PLUG	(SWRITE | REQ_SYNC | REQ_NOIDLE)
+>  #define SWRITE_SYNC		(SWRITE | REQ_SYNC | REQ_NOIDLE | REQ_UNPLUG)
+>  
+> -- 
+> 1.7.1
+> 
 -- 
-js
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
