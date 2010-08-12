@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760310Ab0HLPmn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:42:43 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:62137 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933806Ab0HLPm1 (ORCPT
+	id S933856Ab0HLPmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:42:47 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:36476 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933648Ab0HLPmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:42:27 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: text/plain; charset=UTF-8
-Date: Thu, 12 Aug 2010 17:43:56 +0200
+	Thu, 12 Aug 2010 11:42:24 -0400
+Date: Thu, 12 Aug 2010 17:43:53 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv8 13/13] init.h: add some more documentation to __ref* tags
-In-reply-to: <c4e57f3ae9153e524e7422527ef5e7351c1cf10c.1281625724.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv8 10/13] usb gadget: don't save bind callback in struct
+ usb_gadget_driver
+In-reply-to: <ad117de19af4733f113c8631e53556cc308dbf06.1281625724.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>
 Cc: linux-kernel@vger.kernel.org,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Sam Ravnborg <sam@ravnborg.org>
-Message-id: <596c51e49e129c14531a6367ea7b321ee541bdb5.1281625724.git.m.nazarewicz@samsung.com>
+	<u.kleine-koenig@pengutronix.de>
+Message-id: <340f780f91de1b3ca17d0c29d87963205d172f4e.1281625724.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
-iPlanet-SMTP-Warning: Lines longer than SMTP allows found and truncated.
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
 References: <cover.1281625724.git.m.nazarewicz@samsung.com>
  <76f0f5732bfbbb36d50baf05ecdd12bec3396275.1281625724.git.m.nazarewicz@samsung.com>
  <313ee18ecf53fb8f1c040656b697de869f0c0856.1281625724.git.m.nazarewicz@samsung.com>
@@ -32,55 +31,1115 @@ References: <cover.1281625724.git.m.nazarewicz@samsung.com>
  <f07e8ff5f36d5893e62764b9e372da0cc305a2b5.1281625724.git.m.nazarewicz@samsung.com>
  <550ddf8273d87cb418dd5716cbec906e74aa03d4.1281625724.git.m.nazarewicz@samsung.com>
  <ad117de19af4733f113c8631e53556cc308dbf06.1281625724.git.m.nazarewicz@samsung.com>
- <340f780f91de1b3ca17d0c29d87963205d172f4e.1281625724.git.m.nazarewicz@samsung.com>
- <cfb1102e8bd59822b76475d58f5e4f1ceadade50.1281625724.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The __ref* tags may have been confusing for new kernel
-developers (I was confused by them for sure) so adding a few
-more sentences to comment to clear things up for people who
-see those for the first time.
+From: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Sam Ravnborg <sam@ravnborg.org>
+To accomplish this the function to register a gadget driver takes the bind
+function as a second argument.  To make things clearer rename the function
+to resemble platform_driver_probe.
+
+This fixes many section mismatches like
+
+	WARNING: drivers/usb/gadget/g_printer.o(.data+0xc): Section mismatch in
+	reference from the variable printer_driver to the function
+	.init.text:printer_bind()
+	The variable printer_driver references
+	the function __init printer_bind()
+
+All callers are fixed.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+[m.nazarewicz@samsung.com: added dbgp]
+Signed-off-by: Michał Nazarewicz <m.nazarewicz@samsung.com>
 ---
- include/linux/init.h |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/amd5536udc.c     |    9 +++++----
+ drivers/usb/gadget/at91_udc.c       |   11 ++++++-----
+ drivers/usb/gadget/atmel_usba_udc.c |    7 ++++---
+ drivers/usb/gadget/ci13xxx_udc.c    |   18 ++++++++++--------
+ drivers/usb/gadget/composite.c      |    3 +--
+ drivers/usb/gadget/dbgp.c           |    3 +--
+ drivers/usb/gadget/dummy_hcd.c      |   10 +++++-----
+ drivers/usb/gadget/file_storage.c   |    3 +--
+ drivers/usb/gadget/fsl_qe_udc.c     |   12 ++++++------
+ drivers/usb/gadget/fsl_udc_core.c   |   10 +++++-----
+ drivers/usb/gadget/gmidi.c          |    3 +--
+ drivers/usb/gadget/goku_udc.c       |    9 +++++----
+ drivers/usb/gadget/imx_udc.c        |    9 +++++----
+ drivers/usb/gadget/inode.c          |    6 ++----
+ drivers/usb/gadget/langwell_udc.c   |    9 +++++----
+ drivers/usb/gadget/lh7a40x_udc.c    |   10 +++++-----
+ drivers/usb/gadget/m66592-udc.c     |    9 +++++----
+ drivers/usb/gadget/net2280.c        |   10 +++++-----
+ drivers/usb/gadget/omap_udc.c       |   10 +++++-----
+ drivers/usb/gadget/printer.c        |    5 ++---
+ drivers/usb/gadget/pxa25x_udc.c     |    9 +++++----
+ drivers/usb/gadget/pxa27x_udc.c     |   12 +++++++-----
+ drivers/usb/gadget/r8a66597-udc.c   |    9 +++++----
+ drivers/usb/gadget/s3c-hsotg.c      |    9 +++++----
+ drivers/usb/gadget/s3c2410_udc.c    |   17 ++++++++---------
+ drivers/usb/musb/musb_gadget.c      |    9 +++++----
+ include/linux/usb/gadget.h          |   20 ++++++++------------
+ 27 files changed, 127 insertions(+), 124 deletions(-)
 
-diff --git a/include/linux/init.h b/include/linux/init.h
-index de99430..577671c 100644
---- a/include/linux/init.h
-+++ b/include/linux/init.h
-@@ -46,16 +46,23 @@
- #define __exitdata	__section(.exit.data)
- #define __exit_call	__used __section(.exitcall.exit)
+diff --git a/drivers/usb/gadget/amd5536udc.c b/drivers/usb/gadget/amd5536udc.c
+index 731150d..fadebfd 100644
+--- a/drivers/usb/gadget/amd5536udc.c
++++ b/drivers/usb/gadget/amd5536udc.c
+@@ -1954,13 +1954,14 @@ static int setup_ep0(struct udc *dev)
+ }
  
--/* modpost check for section mismatches during the kernel build.
-+/*
-+ * modpost check for section mismatches during the kernel build.
-  * A section mismatch happens when there are references from a
-  * code or data section to an init section (both code or data).
-  * The init sections are (for most archs) discarded by the kernel
-  * when early init has completed so all such references are potential bugs.
-  * For exit sections the same issue exists.
-+ *
-  * The following markers are used for the cases where the reference to
-  * the *init / *exit section (code or data) is valid and will teach
-- * modpost not to issue a warning.
-- * The markers follow same syntax rules as __init / __initdata. */
-+ * modpost not to issue a warning.  Intended semantics is that a code or
-+ * data tagged __ref* can reference code or data from init section without
-+ * producing a warning (of course, no warning does not mean code is
-+ * correct, so optimally document why the __ref is needed and why it's OK).
-+ *
-+ * The markers follow same syntax rules as __init / __initdata.
-+ */
- #define __ref            __section(.ref.text) noinline
- #define __refdata        __section(.ref.data)
- #define __refconst       __section(.ref.rodata)
+ /* Called by gadget driver to register itself */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct udc		*dev = udc;
+ 	int			retval;
+ 	u32 tmp;
+ 
+-	if (!driver || !driver->bind || !driver->setup
++	if (!driver || !bind || !driver->setup
+ 			|| driver->speed != USB_SPEED_HIGH)
+ 		return -EINVAL;
+ 	if (!dev)
+@@ -1972,7 +1973,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	dev->driver = driver;
+ 	dev->gadget.dev.driver = &driver->driver;
+ 
+-	retval = driver->bind(&dev->gadget);
++	retval = bind(&dev->gadget);
+ 
+ 	/* Some gadget drivers use both ep0 directions.
+ 	 * NOTE: to gadget driver, ep0 is just one endpoint...
+@@ -2000,7 +2001,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	return 0;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ /* shutdown requests and disconnect from gadget */
+ static void
+diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
+index d90c9e8..bdec36a 100644
+--- a/drivers/usb/gadget/at91_udc.c
++++ b/drivers/usb/gadget/at91_udc.c
+@@ -1627,7 +1627,8 @@ static void at91_vbus_timer(unsigned long data)
+ 		schedule_work(&udc->vbus_timer_work);
+ }
+ 
+-int usb_gadget_register_driver (struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct at91_udc	*udc = &controller;
+ 	int		retval;
+@@ -1635,7 +1636,7 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 
+ 	if (!driver
+ 			|| driver->speed < USB_SPEED_FULL
+-			|| !driver->bind
++			|| !bind
+ 			|| !driver->setup) {
+ 		DBG("bad parameter.\n");
+ 		return -EINVAL;
+@@ -1652,9 +1653,9 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	udc->enabled = 1;
+ 	udc->selfpowered = 1;
+ 
+-	retval = driver->bind(&udc->gadget);
++	retval = bind(&udc->gadget);
+ 	if (retval) {
+-		DBG("driver->bind() returned %d\n", retval);
++		DBG("bind() returned %d\n", retval);
+ 		udc->driver = NULL;
+ 		udc->gadget.dev.driver = NULL;
+ 		dev_set_drvdata(&udc->gadget.dev, NULL);
+@@ -1670,7 +1671,7 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	DBG("bound to %s\n", driver->driver.name);
+ 	return 0;
+ }
+-EXPORT_SYMBOL (usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index d623c7b..e4810c6 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1789,7 +1789,8 @@ out:
+ 	return IRQ_HANDLED;
+ }
+ 
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct usba_udc *udc = &the_udc;
+ 	unsigned long flags;
+@@ -1812,7 +1813,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	clk_enable(udc->pclk);
+ 	clk_enable(udc->hclk);
+ 
+-	ret = driver->bind(&udc->gadget);
++	ret = bind(&udc->gadget);
+ 	if (ret) {
+ 		DBG(DBG_ERR, "Could not bind to driver %s: error %d\n",
+ 			driver->driver.name, ret);
+@@ -1841,7 +1842,7 @@ err_driver_bind:
+ 	udc->gadget.dev.driver = NULL;
+ 	return ret;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/ci13xxx_udc.c b/drivers/usb/gadget/ci13xxx_udc.c
+index 6996951..98b36fc 100644
+--- a/drivers/usb/gadget/ci13xxx_udc.c
++++ b/drivers/usb/gadget/ci13xxx_udc.c
+@@ -2340,12 +2340,15 @@ static const struct usb_ep_ops usb_ep_ops = {
+ static const struct usb_gadget_ops usb_gadget_ops;
+ 
+ /**
+- * usb_gadget_register_driver: register a gadget driver
++ * usb_gadget_probe_driver: register a gadget driver
++ * @driver: the driver being registered
++ * @bind: the driver's bind callback
+  *
+- * Check usb_gadget_register_driver() at "usb_gadget.h" for details
+- * Interrupts are enabled here
++ * Check usb_gadget_probe_driver() at <linux/usb/gadget.h> for details.
++ * Interrupts are enabled here.
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct ci13xxx *udc = _udc;
+ 	unsigned long i, k, flags;
+@@ -2354,7 +2357,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	trace("%p", driver);
+ 
+ 	if (driver             == NULL ||
+-	    driver->bind       == NULL ||
++	    bind               == NULL ||
+ 	    driver->unbind     == NULL ||
+ 	    driver->setup      == NULL ||
+ 	    driver->disconnect == NULL ||
+@@ -2430,7 +2433,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	udc->gadget.dev.driver = &driver->driver;
+ 
+ 	spin_unlock_irqrestore(udc->lock, flags);
+-	retval = driver->bind(&udc->gadget);                /* MAY SLEEP */
++	retval = bind(&udc->gadget);                /* MAY SLEEP */
+ 	spin_lock_irqsave(udc->lock, flags);
+ 
+ 	if (retval) {
+@@ -2447,7 +2450,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		usb_gadget_unregister_driver(driver);
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ /**
+  * usb_gadget_unregister_driver: unregister a gadget driver
+@@ -2462,7 +2465,6 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ 	trace("%p", driver);
+ 
+ 	if (driver             == NULL ||
+-	    driver->bind       == NULL ||
+ 	    driver->unbind     == NULL ||
+ 	    driver->setup      == NULL ||
+ 	    driver->disconnect == NULL ||
+diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+index 471c759..0d3f4b7 100644
+--- a/drivers/usb/gadget/composite.c
++++ b/drivers/usb/gadget/composite.c
+@@ -1207,7 +1207,6 @@ composite_resume(struct usb_gadget *gadget)
+ static struct usb_gadget_driver composite_driver = {
+ 	.speed		= USB_SPEED_HIGH,
+ 
+-	.bind		= composite_bind,
+ 	.unbind		= composite_unbind,
+ 
+ 	.setup		= composite_setup,
+@@ -1249,7 +1248,7 @@ int usb_composite_register(struct usb_composite_driver *driver)
+ 	composite_driver.driver.name = driver->name;
+ 	composite = driver;
+ 
+-	return usb_gadget_register_driver(&composite_driver);
++	return usb_gadget_probe_driver(&composite_driver, composite_bind);
+ }
+ 
+ /**
+diff --git a/drivers/usb/gadget/dbgp.c b/drivers/usb/gadget/dbgp.c
+index 0ed50a2..40cd3a0 100644
+--- a/drivers/usb/gadget/dbgp.c
++++ b/drivers/usb/gadget/dbgp.c
+@@ -405,7 +405,6 @@ fail:
+ static struct usb_gadget_driver dbgp_driver = {
+ 	.function = "dbgp",
+ 	.speed = USB_SPEED_HIGH,
+-	.bind = dbgp_bind,
+ 	.unbind = dbgp_unbind,
+ 	.setup = dbgp_setup,
+ 	.disconnect = dbgp_disconnect,
+@@ -417,7 +416,7 @@ static struct usb_gadget_driver dbgp_driver = {
+ 
+ static int __init dbgp_init(void)
+ {
+-	return usb_gadget_register_driver(&dbgp_driver);
++	return usb_gadget_probe_driver(&dbgp_driver, dbgp_bind);
+ }
+ 
+ static void __exit dbgp_exit(void)
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index dc65462..7bb9d78 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -748,7 +748,8 @@ static DEVICE_ATTR (function, S_IRUGO, show_function, NULL);
+  */
+ 
+ int
+-usb_gadget_register_driver (struct usb_gadget_driver *driver)
++usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct dummy	*dum = the_controller;
+ 	int		retval, i;
+@@ -757,8 +758,7 @@ usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 		return -EINVAL;
+ 	if (dum->driver)
+ 		return -EBUSY;
+-	if (!driver->bind || !driver->setup
+-			|| driver->speed == USB_SPEED_UNKNOWN)
++	if (!bind || !driver->setup || driver->speed == USB_SPEED_UNKNOWN)
+ 		return -EINVAL;
+ 
+ 	/*
+@@ -796,7 +796,7 @@ usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	dum->gadget.dev.driver = &driver->driver;
+ 	dev_dbg (udc_dev(dum), "binding gadget driver '%s'\n",
+ 			driver->driver.name);
+-	retval = driver->bind(&dum->gadget);
++	retval = bind(&dum->gadget);
+ 	if (retval) {
+ 		dum->driver = NULL;
+ 		dum->gadget.dev.driver = NULL;
+@@ -812,7 +812,7 @@ usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	usb_hcd_poll_rh_status (dummy_to_hcd (dum));
+ 	return 0;
+ }
+-EXPORT_SYMBOL (usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int
+ usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
+index aae04c2..132a1c0 100644
+--- a/drivers/usb/gadget/file_storage.c
++++ b/drivers/usb/gadget/file_storage.c
+@@ -3608,7 +3608,6 @@ static struct usb_gadget_driver		fsg_driver = {
+ 	.speed		= USB_SPEED_FULL,
+ #endif
+ 	.function	= (char *) fsg_string_product,
+-	.bind		= fsg_bind,
+ 	.unbind		= fsg_unbind,
+ 	.disconnect	= fsg_disconnect,
+ 	.setup		= fsg_setup,
+@@ -3650,7 +3649,7 @@ static int __init fsg_init(void)
+ 	if ((rc = fsg_alloc()) != 0)
+ 		return rc;
+ 	fsg = the_fsg;
+-	if ((rc = usb_gadget_register_driver(&fsg_driver)) != 0)
++	if ((rc = usb_gadget_probe_driver(&fsg_driver, fsg_bind)) != 0)
+ 		kref_put(&fsg->ref, fsg_release);
+ 	return rc;
+ }
+diff --git a/drivers/usb/gadget/fsl_qe_udc.c b/drivers/usb/gadget/fsl_qe_udc.c
+index a5ea2c1..792d5ef 100644
+--- a/drivers/usb/gadget/fsl_qe_udc.c
++++ b/drivers/usb/gadget/fsl_qe_udc.c
+@@ -2302,9 +2302,10 @@ static irqreturn_t qe_udc_irq(int irq, void *_udc)
+ }
+ 
+ /*-------------------------------------------------------------------------
+-	Gadget driver register and unregister.
++	Gadget driver probe and unregister.
+  --------------------------------------------------------------------------*/
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	int retval;
+ 	unsigned long flags = 0;
+@@ -2315,8 +2316,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	if (!driver || (driver->speed != USB_SPEED_FULL
+ 			&& driver->speed != USB_SPEED_HIGH)
+-			|| !driver->bind || !driver->disconnect
+-			|| !driver->setup)
++			|| !bind || !driver->disconnect || !driver->setup)
+ 		return -EINVAL;
+ 
+ 	if (udc_controller->driver)
+@@ -2332,7 +2332,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	udc_controller->gadget.speed = (enum usb_device_speed)(driver->speed);
+ 	spin_unlock_irqrestore(&udc_controller->lock, flags);
+ 
+-	retval = driver->bind(&udc_controller->gadget);
++	retval = bind(&udc_controller->gadget);
+ 	if (retval) {
+ 		dev_err(udc_controller->dev, "bind to %s --> %d",
+ 				driver->driver.name, retval);
+@@ -2353,7 +2353,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		udc_controller->gadget.name, driver->driver.name);
+ 	return 0;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
+index d933e63..4c55eda 100644
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -1759,7 +1759,8 @@ static irqreturn_t fsl_udc_irq(int irq, void *_udc)
+  * Hook to gadget drivers
+  * Called by initialization code of gadget drivers
+ *----------------------------------------------------------------*/
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	int retval = -ENODEV;
+ 	unsigned long flags = 0;
+@@ -1769,8 +1770,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	if (!driver || (driver->speed != USB_SPEED_FULL
+ 				&& driver->speed != USB_SPEED_HIGH)
+-			|| !driver->bind || !driver->disconnect
+-			|| !driver->setup)
++			|| !bind || !driver->disconnect || !driver->setup)
+ 		return -EINVAL;
+ 
+ 	if (udc_controller->driver)
+@@ -1786,7 +1786,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	spin_unlock_irqrestore(&udc_controller->lock, flags);
+ 
+ 	/* bind udc driver to gadget driver */
+-	retval = driver->bind(&udc_controller->gadget);
++	retval = bind(&udc_controller->gadget);
+ 	if (retval) {
+ 		VDBG("bind to %s --> %d", driver->driver.name, retval);
+ 		udc_controller->gadget.dev.driver = NULL;
+@@ -1808,7 +1808,7 @@ out:
+ 		       retval);
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ /* Disconnect from gadget driver */
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+diff --git a/drivers/usb/gadget/gmidi.c b/drivers/usb/gadget/gmidi.c
+index b7bf880..0ab7e14 100644
+--- a/drivers/usb/gadget/gmidi.c
++++ b/drivers/usb/gadget/gmidi.c
+@@ -1292,7 +1292,6 @@ static void gmidi_resume(struct usb_gadget *gadget)
+ static struct usb_gadget_driver gmidi_driver = {
+ 	.speed		= USB_SPEED_FULL,
+ 	.function	= (char *)longname,
+-	.bind		= gmidi_bind,
+ 	.unbind		= gmidi_unbind,
+ 
+ 	.setup		= gmidi_setup,
+@@ -1309,7 +1308,7 @@ static struct usb_gadget_driver gmidi_driver = {
+ 
+ static int __init gmidi_init(void)
+ {
+-	return usb_gadget_register_driver(&gmidi_driver);
++	return usb_gadget_probe_driver(&gmidi_driver, gmidi_bind);
+ }
+ module_init(gmidi_init);
+ 
+diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+index 1088d08..49fbd4d 100644
+--- a/drivers/usb/gadget/goku_udc.c
++++ b/drivers/usb/gadget/goku_udc.c
+@@ -1343,14 +1343,15 @@ static struct goku_udc	*the_controller;
+  * disconnect is reported.  then a host may connect again, or
+  * the driver might get unbound.
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct goku_udc	*dev = the_controller;
+ 	int			retval;
+ 
+ 	if (!driver
+ 			|| driver->speed < USB_SPEED_FULL
+-			|| !driver->bind
++			|| !bind
+ 			|| !driver->disconnect
+ 			|| !driver->setup)
+ 		return -EINVAL;
+@@ -1363,7 +1364,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	driver->driver.bus = NULL;
+ 	dev->driver = driver;
+ 	dev->gadget.dev.driver = &driver->driver;
+-	retval = driver->bind(&dev->gadget);
++	retval = bind(&dev->gadget);
+ 	if (retval) {
+ 		DBG(dev, "bind to driver %s --> error %d\n",
+ 				driver->driver.name, retval);
+@@ -1380,7 +1381,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	DBG(dev, "registered gadget driver '%s'\n", driver->driver.name);
+ 	return 0;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ static void
+ stop_activity(struct goku_udc *dev, struct usb_gadget_driver *driver)
+diff --git a/drivers/usb/gadget/imx_udc.c b/drivers/usb/gadget/imx_udc.c
+index e743122..ed02664 100644
+--- a/drivers/usb/gadget/imx_udc.c
++++ b/drivers/usb/gadget/imx_udc.c
+@@ -1319,14 +1319,15 @@ static struct imx_udc_struct controller = {
+  * USB gadged driver functions
+  *******************************************************************************
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct imx_udc_struct *imx_usb = &controller;
+ 	int retval;
+ 
+ 	if (!driver
+ 		|| driver->speed < USB_SPEED_FULL
+-		|| !driver->bind
++		|| !bind
+ 		|| !driver->disconnect
+ 		|| !driver->setup)
+ 			return -EINVAL;
+@@ -1342,7 +1343,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	retval = device_add(&imx_usb->gadget.dev);
+ 	if (retval)
+ 		goto fail;
+-	retval = driver->bind(&imx_usb->gadget);
++	retval = bind(&imx_usb->gadget);
+ 	if (retval) {
+ 		D_ERR(imx_usb->dev, "<%s> bind to driver %s --> error %d\n",
+ 			__func__, driver->driver.name, retval);
+@@ -1362,7 +1363,7 @@ fail:
+ 	imx_usb->gadget.dev.driver = NULL;
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index fc35406..e2e8eda 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1775,7 +1775,6 @@ static struct usb_gadget_driver gadgetfs_driver = {
+ 	.speed		= USB_SPEED_FULL,
+ #endif
+ 	.function	= (char *) driver_desc,
+-	.bind		= gadgetfs_bind,
+ 	.unbind		= gadgetfs_unbind,
+ 	.setup		= gadgetfs_setup,
+ 	.disconnect	= gadgetfs_disconnect,
+@@ -1798,7 +1797,6 @@ static int gadgetfs_probe (struct usb_gadget *gadget)
+ 
+ static struct usb_gadget_driver probe_driver = {
+ 	.speed		= USB_SPEED_HIGH,
+-	.bind		= gadgetfs_probe,
+ 	.unbind		= gadgetfs_nop,
+ 	.setup		= (void *)gadgetfs_nop,
+ 	.disconnect	= gadgetfs_nop,
+@@ -1908,7 +1906,7 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 
+ 	/* triggers gadgetfs_bind(); then we can enumerate. */
+ 	spin_unlock_irq (&dev->lock);
+-	value = usb_gadget_register_driver (&gadgetfs_driver);
++	value = usb_gadget_probe_driver(&gadgetfs_driver, gadgetfs_bind);
+ 	if (value != 0) {
+ 		kfree (dev->buf);
+ 		dev->buf = NULL;
+@@ -2047,7 +2045,7 @@ gadgetfs_fill_super (struct super_block *sb, void *opts, int silent)
+ 		return -ESRCH;
+ 
+ 	/* fake probe to determine $CHIP */
+-	(void) usb_gadget_register_driver (&probe_driver);
++	(void) usb_gadget_probe_driver(&probe_driver, gadgetfs_probe);
+ 	if (!CHIP)
+ 		return -ENODEV;
+ 
+diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+index d41b69c..6200e21 100644
+--- a/drivers/usb/gadget/langwell_udc.c
++++ b/drivers/usb/gadget/langwell_udc.c
+@@ -1804,7 +1804,8 @@ static DEVICE_ATTR(langwell_udc, S_IRUGO, show_langwell_udc, NULL);
+  * the driver might get unbound.
+  */
+ 
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct langwell_udc	*dev = the_controller;
+ 	unsigned long		flags;
+@@ -1827,7 +1828,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	spin_unlock_irqrestore(&dev->lock, flags);
+ 
+-	retval = driver->bind(&dev->gadget);
++	retval = bind(&dev->gadget);
+ 	if (retval) {
+ 		DBG(dev, "bind to driver %s --> %d\n",
+ 				driver->driver.name, retval);
+@@ -1865,7 +1866,7 @@ err_unbind:
+ 	DBG(dev, "<--- %s()\n", __func__);
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ 
+ /* unregister gadget driver */
+@@ -1879,7 +1880,7 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ 
+ 	DBG(dev, "---> %s()\n", __func__);
+ 
+-	if (unlikely(!driver || !driver->bind || !driver->unbind))
++	if (unlikely(!driver || !driver->unbind))
+ 		return -EINVAL;
+ 
+ 	/* unbind OTG transceiver */
+diff --git a/drivers/usb/gadget/lh7a40x_udc.c b/drivers/usb/gadget/lh7a40x_udc.c
+index fded3fc..6b58bd8 100644
+--- a/drivers/usb/gadget/lh7a40x_udc.c
++++ b/drivers/usb/gadget/lh7a40x_udc.c
+@@ -408,7 +408,8 @@ static void udc_enable(struct lh7a40x_udc *dev)
+ /*
+   Register entry point for the peripheral controller driver.
+ */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct lh7a40x_udc *dev = the_controller;
+ 	int retval;
+@@ -417,7 +418,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	if (!driver
+ 			|| driver->speed != USB_SPEED_FULL
+-			|| !driver->bind
++			|| !bind
+ 			|| !driver->disconnect
+ 			|| !driver->setup)
+ 		return -EINVAL;
+@@ -431,7 +432,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	dev->gadget.dev.driver = &driver->driver;
+ 
+ 	device_add(&dev->gadget.dev);
+-	retval = driver->bind(&dev->gadget);
++	retval = bind(&dev->gadget);
+ 	if (retval) {
+ 		printk(KERN_WARNING "%s: bind to driver %s --> error %d\n",
+ 		       dev->gadget.name, driver->driver.name, retval);
+@@ -453,8 +454,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	return 0;
+ }
+-
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ /*
+   Unregister entry point for the peripheral controller driver.
+diff --git a/drivers/usb/gadget/m66592-udc.c b/drivers/usb/gadget/m66592-udc.c
+index 166bf71..2ce1f49 100644
+--- a/drivers/usb/gadget/m66592-udc.c
++++ b/drivers/usb/gadget/m66592-udc.c
+@@ -1454,14 +1454,15 @@ static struct usb_ep_ops m66592_ep_ops = {
+ /*-------------------------------------------------------------------------*/
+ static struct m66592 *the_controller;
+ 
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct m66592 *m66592 = the_controller;
+ 	int retval;
+ 
+ 	if (!driver
+ 			|| driver->speed != USB_SPEED_HIGH
+-			|| !driver->bind
++			|| !bind
+ 			|| !driver->setup)
+ 		return -EINVAL;
+ 	if (!m66592)
+@@ -1480,7 +1481,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		goto error;
+ 	}
+ 
+-	retval = driver->bind (&m66592->gadget);
++	retval = bind(&m66592->gadget);
+ 	if (retval) {
+ 		pr_err("bind to driver error (%d)\n", retval);
+ 		device_del(&m66592->gadget.dev);
+@@ -1505,7 +1506,7 @@ error:
+ 
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/net2280.c b/drivers/usb/gadget/net2280.c
+index 9498be8..d09155b 100644
+--- a/drivers/usb/gadget/net2280.c
++++ b/drivers/usb/gadget/net2280.c
+@@ -1929,7 +1929,8 @@ static void ep0_start (struct net2280 *dev)
+  * disconnect is reported.  then a host may connect again, or
+  * the driver might get unbound.
+  */
+-int usb_gadget_register_driver (struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct net2280		*dev = the_controller;
+ 	int			retval;
+@@ -1941,8 +1942,7 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	 */
+ 	if (!driver
+ 			|| driver->speed != USB_SPEED_HIGH
+-			|| !driver->bind
+-			|| !driver->setup)
++			|| !bind || !driver->setup)
+ 		return -EINVAL;
+ 	if (!dev)
+ 		return -ENODEV;
+@@ -1957,7 +1957,7 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	driver->driver.bus = NULL;
+ 	dev->driver = driver;
+ 	dev->gadget.dev.driver = &driver->driver;
+-	retval = driver->bind (&dev->gadget);
++	retval = bind(&dev->gadget);
+ 	if (retval) {
+ 		DEBUG (dev, "bind to driver %s --> %d\n",
+ 				driver->driver.name, retval);
+@@ -1993,7 +1993,7 @@ err_unbind:
+ 	dev->driver = NULL;
+ 	return retval;
+ }
+-EXPORT_SYMBOL (usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ static void
+ stop_activity (struct net2280 *dev, struct usb_gadget_driver *driver)
+diff --git a/drivers/usb/gadget/omap_udc.c b/drivers/usb/gadget/omap_udc.c
+index f81e4f0..61d3ca6 100644
+--- a/drivers/usb/gadget/omap_udc.c
++++ b/drivers/usb/gadget/omap_udc.c
+@@ -2102,7 +2102,8 @@ static inline int machine_without_vbus_sense(void)
+ 		);
+ }
+ 
+-int usb_gadget_register_driver (struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	int		status = -ENODEV;
+ 	struct omap_ep	*ep;
+@@ -2114,8 +2115,7 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	if (!driver
+ 			// FIXME if otg, check:  driver->is_otg
+ 			|| driver->speed < USB_SPEED_FULL
+-			|| !driver->bind
+-			|| !driver->setup)
++			|| !bind || !driver->setup)
+ 		return -EINVAL;
+ 
+ 	spin_lock_irqsave(&udc->lock, flags);
+@@ -2145,7 +2145,7 @@ int usb_gadget_register_driver (struct usb_gadget_driver *driver)
+ 	if (udc->dc_clk != NULL)
+ 		omap_udc_enable_clock(1);
+ 
+-	status = driver->bind (&udc->gadget);
++	status = bind(&udc->gadget);
+ 	if (status) {
+ 		DBG("bind to %s --> %d\n", driver->driver.name, status);
+ 		udc->gadget.dev.driver = NULL;
+@@ -2186,7 +2186,7 @@ done:
+ 		omap_udc_enable_clock(0);
+ 	return status;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver (struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
+index 04c7bbf..ded080a 100644
+--- a/drivers/usb/gadget/printer.c
++++ b/drivers/usb/gadget/printer.c
+@@ -1543,7 +1543,6 @@ static struct usb_gadget_driver printer_driver = {
+ 	.speed		= DEVSPEED,
+ 
+ 	.function	= (char *) driver_desc,
+-	.bind		= printer_bind,
+ 	.unbind		= printer_unbind,
+ 
+ 	.setup		= printer_setup,
+@@ -1579,11 +1578,11 @@ init(void)
+ 		return status;
+ 	}
+ 
+-	status = usb_gadget_register_driver(&printer_driver);
++	status = usb_gadget_probe_driver(&printer_driver, printer_bind);
+ 	if (status) {
+ 		class_destroy(usb_gadget_class);
+ 		unregister_chrdev_region(g_printer_devno, 1);
+-		DBG(dev, "usb_gadget_register_driver %x\n", status);
++		DBG(dev, "usb_gadget_probe_driver %x\n", status);
+ 	}
+ 
+ 	return status;
+diff --git a/drivers/usb/gadget/pxa25x_udc.c b/drivers/usb/gadget/pxa25x_udc.c
+index be5fb34..b37f92c 100644
+--- a/drivers/usb/gadget/pxa25x_udc.c
++++ b/drivers/usb/gadget/pxa25x_udc.c
+@@ -1280,14 +1280,15 @@ static void udc_enable (struct pxa25x_udc *dev)
+  * disconnect is reported.  then a host may connect again, or
+  * the driver might get unbound.
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct pxa25x_udc	*dev = the_controller;
+ 	int			retval;
+ 
+ 	if (!driver
+ 			|| driver->speed < USB_SPEED_FULL
+-			|| !driver->bind
++			|| !bind
+ 			|| !driver->disconnect
+ 			|| !driver->setup)
+ 		return -EINVAL;
+@@ -1308,7 +1309,7 @@ fail:
+ 		dev->gadget.dev.driver = NULL;
+ 		return retval;
+ 	}
+-	retval = driver->bind(&dev->gadget);
++	retval = bind(&dev->gadget);
+ 	if (retval) {
+ 		DMSG("bind to driver %s --> error %d\n",
+ 				driver->driver.name, retval);
+@@ -1338,7 +1339,7 @@ fail:
+ bind_fail:
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ static void
+ stop_activity(struct pxa25x_udc *dev, struct usb_gadget_driver *driver)
+diff --git a/drivers/usb/gadget/pxa27x_udc.c b/drivers/usb/gadget/pxa27x_udc.c
+index 98dfa18..2efd673 100644
+--- a/drivers/usb/gadget/pxa27x_udc.c
++++ b/drivers/usb/gadget/pxa27x_udc.c
+@@ -1790,8 +1790,9 @@ static void udc_enable(struct pxa_udc *udc)
+ }
+ 
+ /**
+- * usb_gadget_register_driver - Register gadget driver
++ * usb_gadget_probe_driver - Register gadget driver
+  * @driver: gadget driver
++ * @bind: bind function
+  *
+  * When a driver is successfully registered, it will receive control requests
+  * including set_configuration(), which enables non-control requests.  Then
+@@ -1803,12 +1804,13 @@ static void udc_enable(struct pxa_udc *udc)
+  *
+  * Returns 0 if no error, -EINVAL, -ENODEV, -EBUSY otherwise
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct pxa_udc *udc = the_controller;
+ 	int retval;
+ 
+-	if (!driver || driver->speed < USB_SPEED_FULL || !driver->bind
++	if (!driver || driver->speed < USB_SPEED_FULL || !bind
+ 			|| !driver->disconnect || !driver->setup)
+ 		return -EINVAL;
+ 	if (!udc)
+@@ -1826,7 +1828,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		dev_err(udc->dev, "device_add error %d\n", retval);
+ 		goto add_fail;
+ 	}
+-	retval = driver->bind(&udc->gadget);
++	retval = bind(&udc->gadget);
+ 	if (retval) {
+ 		dev_err(udc->dev, "bind to driver %s --> error %d\n",
+ 			driver->driver.name, retval);
+@@ -1857,7 +1859,7 @@ add_fail:
+ 	udc->gadget.dev.driver = NULL;
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ 
+ /**
+diff --git a/drivers/usb/gadget/r8a66597-udc.c b/drivers/usb/gadget/r8a66597-udc.c
+index 70a8178..5545d41 100644
+--- a/drivers/usb/gadget/r8a66597-udc.c
++++ b/drivers/usb/gadget/r8a66597-udc.c
+@@ -1405,14 +1405,15 @@ static struct usb_ep_ops r8a66597_ep_ops = {
+ /*-------------------------------------------------------------------------*/
+ static struct r8a66597 *the_controller;
+ 
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct r8a66597 *r8a66597 = the_controller;
+ 	int retval;
+ 
+ 	if (!driver
+ 			|| driver->speed != USB_SPEED_HIGH
+-			|| !driver->bind
++			|| !bind
+ 			|| !driver->setup)
+ 		return -EINVAL;
+ 	if (!r8a66597)
+@@ -1431,7 +1432,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		goto error;
+ 	}
+ 
+-	retval = driver->bind(&r8a66597->gadget);
++	retval = bind(&r8a66597->gadget);
+ 	if (retval) {
+ 		printk(KERN_ERR "bind to driver error (%d)\n", retval);
+ 		device_del(&r8a66597->gadget.dev);
+@@ -1456,7 +1457,7 @@ error:
+ 
+ 	return retval;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/s3c-hsotg.c b/drivers/usb/gadget/s3c-hsotg.c
+index 521ebed..ec9db61 100644
+--- a/drivers/usb/gadget/s3c-hsotg.c
++++ b/drivers/usb/gadget/s3c-hsotg.c
+@@ -2525,7 +2525,8 @@ static int s3c_hsotg_corereset(struct s3c_hsotg *hsotg)
+ 	return 0;
+ }
+ 
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct s3c_hsotg *hsotg = our_hsotg;
+ 	int ret;
+@@ -2545,7 +2546,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		dev_err(hsotg->dev, "%s: bad speed\n", __func__);
+ 	}
+ 
+-	if (!driver->bind || !driver->setup) {
++	if (!bind || !driver->setup) {
+ 		dev_err(hsotg->dev, "%s: missing entry points\n", __func__);
+ 		return -EINVAL;
+ 	}
+@@ -2564,7 +2565,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		goto err;
+ 	}
+ 
+-	ret = driver->bind(&hsotg->gadget);
++	ret = bind(&hsotg->gadget);
+ 	if (ret) {
+ 		dev_err(hsotg->dev, "failed bind %s\n", driver->driver.name);
+ 
+@@ -2689,7 +2690,7 @@ err:
+ 	hsotg->gadget.dev.driver = NULL;
+ 	return ret;
+ }
+-EXPORT_SYMBOL(usb_gadget_register_driver);
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
+ {
+diff --git a/drivers/usb/gadget/s3c2410_udc.c b/drivers/usb/gadget/s3c2410_udc.c
+index ea2b3c7..c244895 100644
+--- a/drivers/usb/gadget/s3c2410_udc.c
++++ b/drivers/usb/gadget/s3c2410_udc.c
+@@ -1632,15 +1632,15 @@ static void s3c2410_udc_enable(struct s3c2410_udc *dev)
+ }
+ 
+ /*
+- *	usb_gadget_register_driver
++ *	usb_gadget_probe_driver
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	struct s3c2410_udc *udc = the_controller;
+ 	int		retval;
+ 
+-	dprintk(DEBUG_NORMAL, "usb_gadget_register_driver() '%s'\n",
+-		driver->driver.name);
++	dprintk(DEBUG_NORMAL, "%s() '%s'\n", __func__, driver->driver.name);
+ 
+ 	/* Sanity checks */
+ 	if (!udc)
+@@ -1649,10 +1649,9 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	if (udc->driver)
+ 		return -EBUSY;
+ 
+-	if (!driver->bind || !driver->setup
+-			|| driver->speed < USB_SPEED_FULL) {
++	if (!bind || !driver->setup || driver->speed < USB_SPEED_FULL) {
+ 		printk(KERN_ERR "Invalid driver: bind %p setup %p speed %d\n",
+-			driver->bind, driver->setup, driver->speed);
++			bind, driver->setup, driver->speed);
+ 		return -EINVAL;
+ 	}
+ #if defined(MODULE)
+@@ -1675,7 +1674,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	dprintk(DEBUG_NORMAL, "binding gadget driver '%s'\n",
+ 		driver->driver.name);
+ 
+-	if ((retval = driver->bind (&udc->gadget)) != 0) {
++	if ((retval = bind(&udc->gadget)) != 0) {
+ 		device_del(&udc->gadget.dev);
+ 		goto register_error;
+ 	}
+@@ -1690,6 +1689,7 @@ register_error:
+ 	udc->gadget.dev.driver = NULL;
+ 	return retval;
+ }
++EXPORT_SYMBOL(usb_gadget_probe_driver);
+ 
+ /*
+  *	usb_gadget_unregister_driver
+@@ -2049,7 +2049,6 @@ static void __exit udc_exit(void)
+ }
+ 
+ EXPORT_SYMBOL(usb_gadget_unregister_driver);
+-EXPORT_SYMBOL(usb_gadget_register_driver);
+ 
+ module_init(udc_init);
+ module_exit(udc_exit);
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index a83a139..7cc713f 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1695,9 +1695,11 @@ void musb_gadget_cleanup(struct musb *musb)
+  * -ENOMEM no memeory to perform the operation
+  *
+  * @param driver the gadget driver
++ * @param bind the driver's bind function
+  * @return <0 if error, 0 if everything is fine
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver)
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *))
+ {
+ 	int retval;
+ 	unsigned long flags;
+@@ -1705,8 +1707,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 
+ 	if (!driver
+ 			|| driver->speed != USB_SPEED_HIGH
+-			|| !driver->bind
+-			|| !driver->setup)
++			|| !bind || !driver->setup)
+ 		return -EINVAL;
+ 
+ 	/* driver must be initialized to support peripheral mode */
+@@ -1734,7 +1735,7 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 	spin_unlock_irqrestore(&musb->lock, flags);
+ 
+ 	if (retval == 0) {
+-		retval = driver->bind(&musb->g);
++		retval = bind(&musb->g);
+ 		if (retval != 0) {
+ 			DBG(3, "bind to driver %s failed --> %d\n",
+ 					driver->driver.name, retval);
+diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
+index d3ef42d..006412c 100644
+--- a/include/linux/usb/gadget.h
++++ b/include/linux/usb/gadget.h
+@@ -705,11 +705,6 @@ static inline int usb_gadget_disconnect(struct usb_gadget *gadget)
+  * struct usb_gadget_driver - driver for usb 'slave' devices
+  * @function: String describing the gadget's function
+  * @speed: Highest speed the driver handles.
+- * @bind: Invoked when the driver is bound to a gadget, usually
+- *	after registering the driver.
+- *	At that point, ep0 is fully initialized, and ep_list holds
+- *	the currently-available endpoints.
+- *	Called in a context that permits sleeping.
+  * @setup: Invoked for ep0 control requests that aren't handled by
+  *	the hardware level driver. Most calls must be handled by
+  *	the gadget driver, including descriptor and configuration
+@@ -774,7 +769,6 @@ static inline int usb_gadget_disconnect(struct usb_gadget *gadget)
+ struct usb_gadget_driver {
+ 	char			*function;
+ 	enum usb_device_speed	speed;
+-	int			(*bind)(struct usb_gadget *);
+ 	void			(*unbind)(struct usb_gadget *);
+ 	int			(*setup)(struct usb_gadget *,
+ 					const struct usb_ctrlrequest *);
+@@ -798,17 +792,19 @@ struct usb_gadget_driver {
+  */
+ 
+ /**
+- * usb_gadget_register_driver - register a gadget driver
+- * @driver:the driver being registered
++ * usb_gadget_probe_driver - probe a gadget driver
++ * @driver: the driver being registered
++ * @bind: the driver's bind callback
+  * Context: can sleep
+  *
+  * Call this in your gadget driver's module initialization function,
+  * to tell the underlying usb controller driver about your driver.
+- * The driver's bind() function will be called to bind it to a
+- * gadget before this registration call returns.  It's expected that
+- * the bind() functions will be in init sections.
++ * The @bind() function will be called to bind it to a gadget before this
++ * registration call returns.  It's expected that the @bind() function will
++ * be in init sections.
+  */
+-int usb_gadget_register_driver(struct usb_gadget_driver *driver);
++int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
++		int (*bind)(struct usb_gadget *));
+ 
+ /**
+  * usb_gadget_unregister_driver - unregister a gadget driver
 -- 
 1.7.1
 
