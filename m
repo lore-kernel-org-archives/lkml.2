@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933336Ab0HLALh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:11:37 -0400
-Received: from kroah.org ([198.145.64.141]:47954 "EHLO coco.kroah.org"
+	id S933221Ab0HLAIv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:08:51 -0400
+Received: from kroah.org ([198.145.64.141]:47911 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933172Ab0HLAI6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:58 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:18 2010
-Message-Id: <20100812000618.032248444@clark.site>
+	id S933049Ab0HLAIq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:17 2010
+Message-Id: <20100812000617.103856828@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:06:13 -0700
+Date: Wed, 11 Aug 2010 17:06:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Arjan van de Ven <arjan@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [58/67] sched: Revert nohz_ratelimit() for now
+        Phil Dibowitz <phil@ipom.com>
+Subject: [48/67] USB delay init quirk for logitech Harmony 700-series devices
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,77 +25,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Phil Dibowitz <phil@ipom.com>
 
-commit 396e894d289d69bacf5acd983c97cd6e21a14c08 upstream.
+commit 93362a875fc69881ae69299efaf19a55a1f57db0 upstream.
 
-Norbert reported that nohz_ratelimit() causes his laptop to burn about
-4W (40%) extra. For now back out the change and see if we can adjust
-the power management code to make better decisions.
+The Logitech Harmony 700 series needs an extra delay during
+initialization.  This patch adds a USB quirk which enables such a delay
+and adds the device to the quirks list.
 
-Reported-by: Norbert Preining <preining@logic.at>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Mike Galbraith <efault@gmx.de>
-Cc: Arjan van de Ven <arjan@infradead.org>
-LKML-Reference: <new-submission>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Phil Dibowitz <phil@ipom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- include/linux/sched.h    |    6 ------
- kernel/sched.c           |   10 ----------
- kernel/time/tick-sched.c |    2 +-
- 3 files changed, 1 insertion(+), 17 deletions(-)
+ drivers/usb/core/hub.c     |    6 +++++-
+ drivers/usb/core/quirks.c  |    3 +++
+ include/linux/usb/quirks.h |    4 ++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
 
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -274,17 +274,11 @@ extern cpumask_var_t nohz_cpu_mask;
- #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
- extern int select_nohz_load_balancer(int cpu);
- extern int get_nohz_load_balancer(void);
--extern int nohz_ratelimit(int cpu);
- #else
- static inline int select_nohz_load_balancer(int cpu)
- {
- 	return 0;
- }
--
--static inline int nohz_ratelimit(int cpu)
--{
--	return 0;
--}
- #endif
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -20,6 +20,7 @@
+ #include <linux/usb.h>
+ #include <linux/usbdevice_fs.h>
+ #include <linux/usb/hcd.h>
++#include <linux/usb/quirks.h>
+ #include <linux/kthread.h>
+ #include <linux/mutex.h>
+ #include <linux/freezer.h>
+@@ -1801,7 +1802,6 @@ int usb_new_device(struct usb_device *ud
+ 	pm_runtime_set_active(&udev->dev);
+ 	pm_runtime_enable(&udev->dev);
  
- /*
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1232,16 +1232,6 @@ void wake_up_idle_cpu(int cpu)
- 		smp_send_reschedule(cpu);
- }
+-	usb_detect_quirks(udev);
+ 	err = usb_enumerate_device(udev);	/* Read descriptors */
+ 	if (err < 0)
+ 		goto fail;
+@@ -3111,6 +3111,10 @@ static void hub_port_connect_change(stru
+ 		if (status < 0)
+ 			goto loop;
  
--int nohz_ratelimit(int cpu)
--{
--	struct rq *rq = cpu_rq(cpu);
--	u64 diff = rq->clock - rq->nohz_stamp;
--
--	rq->nohz_stamp = rq->clock;
--
--	return diff < (NSEC_PER_SEC / HZ) >> 1;
--}
--
- #endif /* CONFIG_NO_HZ */
++		usb_detect_quirks(udev);
++		if (udev->quirks & USB_QUIRK_DELAY_INIT)
++			msleep(1000);
++
+ 		/* consecutive bus-powered hubs aren't reliable; they can
+ 		 * violate the voltage drop budget.  if the new child has
+ 		 * a "powered" LED, users should notice we didn't enable it
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -38,6 +38,9 @@ static const struct usb_device_id usb_qu
+ 	/* Creative SB Audigy 2 NX */
+ 	{ USB_DEVICE(0x041e, 0x3020), .driver_info = USB_QUIRK_RESET_RESUME },
  
- static u64 sched_avg_period(void)
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -325,7 +325,7 @@ void tick_nohz_stop_sched_tick(int inidl
- 	} while (read_seqretry(&xtime_lock, seq));
++	/* Logitech Harmony 700-series */
++	{ USB_DEVICE(0x046d, 0xc122), .driver_info = USB_QUIRK_DELAY_INIT },
++
+ 	/* Philips PSC805 audio device */
+ 	{ USB_DEVICE(0x0471, 0x0155), .driver_info = USB_QUIRK_RESET_RESUME },
  
- 	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
--	    arch_needs_cpu(cpu) || nohz_ratelimit(cpu)) {
-+	    arch_needs_cpu(cpu)) {
- 		next_jiffies = last_jiffies + 1;
- 		delta_jiffies = 1;
- 	} else {
+--- a/include/linux/usb/quirks.h
++++ b/include/linux/usb/quirks.h
+@@ -26,4 +26,8 @@
+    and can't handle talking to these interfaces */
+ #define USB_QUIRK_HONOR_BNUMINTERFACES	0x00000020
+ 
++/* device needs a pause during initialization, after we read the device
++   descriptor */
++#define USB_QUIRK_DELAY_INIT		0x00000040
++
+ #endif /* __LINUX_USB_QUIRKS_H */
 
 
