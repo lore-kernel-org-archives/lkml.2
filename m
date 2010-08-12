@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759480Ab0HLA1W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:27:22 -0400
-Received: from kroah.org ([198.145.64.141]:60126 "EHLO coco.kroah.org"
+	id S1759392Ab0HLAD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:03:57 -0400
+Received: from kroah.org ([198.145.64.141]:60058 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759432Ab0HLAEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:01 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.574813541@clark.site>
+	id S1758926Ab0HLADq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:03:46 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:23 2010
+Message-Id: <20100812000123.413199056@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:29 -0700
+Date: Wed, 11 Aug 2010 17:00:16 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Jiri Slaby <jslaby@suse.cz>, Alan Cox <alan@linux.intel.com>
-Subject: [14/54] Char: nozomi, fix tty->count counting
+        Alok N Kataria <akataria@vmware.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [01/54] x86, vmware: Preset lpj values when on VMware.
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,33 +26,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Alok Kataria <akataria@vmware.com>
 
-commit ee78bb95b7bea08b7774a02073ea2bb45611a9e1 upstream.
+commit 9f242dc10e0c3c1eb32d8c83c18650a35fd7f80d upstream.
 
-Currently ntty_install omits to increment tty count and we get the
-following warnings:
-Warning: dev (noz2) tty->count(0) != #fd's(1) in tty_open
+When running on VMware's platform, we have seen situations where
+the AP's try to calibrate the lpj values and fail to get good calibration
+runs becasue of timing issues. As a result delays don't work correctly
+on all cpus.
 
-So to fix that, add one tty->count++ there.
+The solutions is to set preset_lpj value based on the current tsc frequency
+value. This is similar to what KVM does as well.
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Alok N Kataria <akataria@vmware.com>
+LKML-Reference: <1280790637.14933.29.camel@ank32.eng.vmware.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/nozomi.c |    1 +
- 1 file changed, 1 insertion(+)
+ arch/x86/kernel/cpu/vmware.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/drivers/char/nozomi.c
-+++ b/drivers/char/nozomi.c
-@@ -1611,6 +1611,7 @@ static int ntty_install(struct tty_drive
- 	ret = tty_init_termios(tty);
- 	if (ret == 0) {
- 		tty_driver_kref_get(driver);
-+		tty->count++;
- 		driver->ttys[tty->index] = tty;
- 	}
- 	return ret;
+--- a/arch/x86/kernel/cpu/vmware.c
++++ b/arch/x86/kernel/cpu/vmware.c
+@@ -51,7 +51,7 @@ static inline int __vmware_platform(void
+ 
+ static unsigned long vmware_get_tsc_khz(void)
+ {
+-	uint64_t tsc_hz;
++	uint64_t tsc_hz, lpj;
+ 	uint32_t eax, ebx, ecx, edx;
+ 
+ 	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
+@@ -62,6 +62,13 @@ static unsigned long vmware_get_tsc_khz(
+ 	printk(KERN_INFO "TSC freq read from hypervisor : %lu.%03lu MHz\n",
+ 			 (unsigned long) tsc_hz / 1000,
+ 			 (unsigned long) tsc_hz % 1000);
++
++	if (!preset_lpj) {
++		lpj = ((u64)tsc_hz * 1000);
++		do_div(lpj, HZ);
++		preset_lpj = lpj;
++	}
++
+ 	return tsc_hz;
+ }
+ 
 
 
