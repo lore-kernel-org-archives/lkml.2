@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab0HLAIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:08:04 -0400
-Received: from kroah.org ([198.145.64.141]:60469 "EHLO coco.kroah.org"
+	id S933493Ab0HLATA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:19:00 -0400
+Received: from kroah.org ([198.145.64.141]:60495 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933005Ab0HLAHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:07:55 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:13 2010
-Message-Id: <20100812000613.592076890@clark.site>
+	id S932906Ab0HLAIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:06 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:14 2010
+Message-Id: <20100812000614.121467523@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:25 -0700
+Date: Wed, 11 Aug 2010 17:05:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Markus Grabner <grabner@icg.tugraz.at>
-Subject: [10/67] Staging: line6: needs to select SND_PCM
+        David Woodhouse <David.Woodhouse@intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [16/67] solos-pci: Fix race condition in tasklet RX handling
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,39 +26,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: David Woodhouse <David.Woodhouse@intel.com>
 
-commit e928c077e5cdcd72ee762125b37232aec1ff49f3 upstream.
+commit 1f6ea6e511e5ec730d8e88651da1b7b6e8fd1333 upstream.
 
-line6 uses snd_pcm*() functions, so it should select SND_PCM.
+We were seeing faults in the solos-pci receive tasklet when packets
+arrived for a VCC which was currently being closed:
 
-ERROR: "snd_pcm_period_elapsed" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_set_ops" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_lib_free_pages" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_lib_ioctl" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_lib_malloc_pages" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_hw_constraint_ratdens" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_format_physical_width" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_lib_preallocate_pages_for_all" [drivers/staging/line6/line6usb.ko] undefined!
-ERROR: "snd_pcm_new" [drivers/staging/line6/line6usb.ko] undefined!
+[18842.727906] EIP: [<e082f490>] br2684_push+0x19/0x234 [br2684] SS:ESP 0068:dfb89d14
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Markus Grabner <grabner@icg.tugraz.at>
+[18845.090712] [<c13ecff3>] ? do_page_fault+0x0/0x2e1
+[18845.120042] [<e082f490>] ? br2684_push+0x19/0x234 [br2684]
+[18845.153530] [<e084fa13>] solos_bh+0x28b/0x7c8 [solos_pci]
+[18845.186488] [<e084f711>] ? solos_irq+0x2d/0x51 [solos_pci]
+[18845.219960] [<c100387b>] ? handle_irq+0x3b/0x48
+[18845.247732] [<c10265cb>] ? irq_exit+0x34/0x57
+[18845.274437] [<c1025720>] tasklet_action+0x42/0x69
+[18845.303247] [<c102643f>] __do_softirq+0x8e/0x129
+[18845.331540] [<c10264ff>] do_softirq+0x25/0x2a
+[18845.358274] [<c102664c>] _local_bh_enable_ip+0x5e/0x6a
+[18845.389677] [<c102666d>] local_bh_enable+0xb/0xe
+[18845.417944] [<e08490a8>] ppp_unregister_channel+0x32/0xbb [ppp_generic]
+[18845.458193] [<e08731ad>] pppox_unbind_sock+0x18/0x1f [pppox]
+
+This patch uses an RCU-inspired approach to fix it. In the RX tasklet's
+find_vcc() function we first refuse to use a VCC which already has the
+ATM_VF_READY bit cleared. And in the VCC close function, we synchronise
+with the tasklet to ensure that it can't still be using the VCC before
+we continue and allow the VCC to be destroyed.
+
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+Tested-by: Nathan Williams <nathan@traverse.com.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/staging/line6/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/atm/solos-pci.c |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
---- a/drivers/staging/line6/Kconfig
-+++ b/drivers/staging/line6/Kconfig
-@@ -2,6 +2,7 @@ config LINE6_USB
- 	tristate "Line6 USB support"
- 	depends on USB && SND
- 	select SND_RAWMIDI
-+	select SND_PCM
- 	help
- 	  This is a driver for the guitar amp, cab, and effects modeller
- 	  PODxt Pro by Line6 (and similar devices), supporting the
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -781,7 +781,8 @@ static struct atm_vcc *find_vcc(struct a
+ 	sk_for_each(s, node, head) {
+ 		vcc = atm_sk(s);
+ 		if (vcc->dev == dev && vcc->vci == vci &&
+-		    vcc->vpi == vpi && vcc->qos.rxtp.traffic_class != ATM_NONE)
++		    vcc->vpi == vpi && vcc->qos.rxtp.traffic_class != ATM_NONE &&
++		    test_bit(ATM_VF_READY, &vcc->flags))
+ 			goto out;
+ 	}
+ 	vcc = NULL;
+@@ -907,6 +908,10 @@ static void pclose(struct atm_vcc *vcc)
+ 	clear_bit(ATM_VF_ADDR, &vcc->flags);
+ 	clear_bit(ATM_VF_READY, &vcc->flags);
+ 
++	/* Hold up vcc_destroy_socket() (our caller) until solos_bh() in the
++	   tasklet has finished processing any incoming packets (and, more to
++	   the point, using the vcc pointer). */
++	tasklet_unlock_wait(&card->tlet);
+ 	return;
+ }
+ 
 
 
