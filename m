@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758916Ab0HLBgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 21:36:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47540 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758373Ab0HLBgI convert rfc822-to-8bit (ORCPT
+	id S1758993Ab0HLBh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 21:37:29 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37623 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758303Ab0HLBh1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 21:36:08 -0400
+	Wed, 11 Aug 2010 21:37:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type:content-transfer-encoding;
-        b=tPeca2R9l92zJpvGSO0IhMXRDjP32BQXyJydNbUdeN/Fs+Of0ITVTKlduxrtb0zUUj
-         xJxi1YAzkuSjfEqSOFMVly3Dg1wQSsrU3GfttcasA0uwSIIHeQg3Cghet96jDquaZc6w
-         VzxcusYzZWmTWMkISJ8EquUC3Qi5/yedZLFec=
+        b=slP4rD9u+nFWk6Ze/ZToJrqYQGBr9KNmWqW7VZhB66yAp2JqHBVJlIwyNIJWxqldui
+         oVu22MYvwR8cYjtNtgp74JTk2GYFg0DrwQ6GyyoTnU8FJUPeDGUo+JFR++yzk75iLRix
+         61vKSsFVGwHYvXUyxqvGqOeYSeFB3dPiAcW4w=
 MIME-Version: 1.0
-In-Reply-To: <4C62F4BD.9030605@vmware.com>
+In-Reply-To: <4C6311E0.5070909@vmware.com>
 References: <AANLkTi=4_QnAyY+zcuXwVpPkESjpF7yfMb1RunMQaK7f@mail.gmail.com> 
-	<1281553430.32376.2.camel@hactar> <4C62F4BD.9030605@vmware.com>
+	<4C6311E0.5070909@vmware.com>
 From: Hui Zhu <teawater@gmail.com>
-Date: Thu, 12 Aug 2010 09:35:46 +0800
-Message-ID: <AANLkTimrqy1+hbZY7p2XuY2fXYy4PUAd6i4-kfoqjfKe@mail.gmail.com>
+Date: Thu, 12 Aug 2010 09:37:06 +0800
+Message-ID: <AANLkTikosGgJ+epKTdmPxMW=OWVTieTRs13mN7-DwsWq@mail.gmail.com>
 Subject: Re: Linux Kernel GDB tracepoint module demo release
-To: Michael Snyder <msnyder@vmware.com>,
-        Thiago Jung Bauermann <thiago.bauermann@gmail.com>
+To: Michael Snyder <msnyder@vmware.com>
 Cc: "gdb@sourceware.org" <gdb@sourceware.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -32,35 +31,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Thiago and Michael, both of them have some limit.  I try to
-make gdb tracepoint and kernel work together directly. :)
+KGTP use Kprobes, I think it can work with most part of kernel.
 
 Thanks,
 Hui
 
-
-On Thu, Aug 12, 2010 at 03:06, Michael Snyder <msnyder@vmware.com> wrote:
-> Thiago Jung Bauermann wrote:
+On Thu, Aug 12, 2010 at 05:10, Michael Snyder <msnyder@vmware.com> wrote:
+> Actually, this is kind of interesting.
+> Can your system set a tracepoint at any arbitrary location in the
+> kernel?  If so, I think that makes it more powerful than existing
+> systems such as LTTng, which can only trace statically pre-determined
+> locations.
+>
+> Hui Zhu wrote:
 >>
->> Hi Hui,
+>> Hi,
 >>
->> On Thu, 2010-08-12 at 00:34 +0800, Hui Zhu wrote:
+>> GDB Tracepoint
+>> (http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html)
+>> is new feature that make GDB can debug real-time program.
+>> I think this feature is very fit for debug Linux Kernel.  So I make a
+>> lkm to make kernel support it. You can get it in
+>> https://code.google.com/p/kgtp/
+>>
+>> I just release the demo for it.  It just support collect $reg in
+>> x86_32.  I will add the other tracepoint support in the future.
+>>
+>> For example:
+>> tar vxjf gtp_20100811.tar.bz2
+>> cd gtp
+>> make
+>> insmod gtp.ko
+>> gdb ./vmlinux
+>> GNU gdb (GDB) 7.2.50.20100720-cvs
+>> Copyright (C) 2010 Free Software Foundation, Inc.
+>> License GPLv3+: GNU GPL version 3 or later
+>> <http://gnu.org/licenses/gpl.html>
+>> This is free software: you are free to change and redistribute it.
+>> There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+>> and "show warranty" for details.
+>> This GDB was configured as "i686-pc-linux-gnu".
+>> For bug reporting instructions, please see:
+>> <http://www.gnu.org/software/gdb/bugs/>...
+>> Reading symbols from /vmlinux...done.
+>> (gdb) target remote /proc/gtp
+>> Remote debugging using /proc/gtp
+>> 0x00000000 in ?? ()
+>> (gdb) trace vfs_readdir
+>> Tracepoint 1 at 0xc01a1ac0: file
+>> /home/teawater/kernel/linux-2.6/fs/readdir.c, line 23.
+>> (gdb) actions
+>> Enter actions for tracepoint 1, one per line.
+>> End with a line saying just "end".
 >>>
->>> GDB Tracepoint
->>> (http://sourceware.org/gdb/current/onlinedocs/gdb/Tracepoints.html)
->>> is new feature that make GDB can debug real-time program.
->>> I think this feature is very fit for debug Linux Kernel.  So I make a
->>> lkm to make kernel support it. You can get it in
->>> https://code.google.com/p/kgtp/
+>>> collect $reg
+>>> end
 >>
->> Jim Blandy worked on GDB tracepoint support for the kernel too. I don't
->> know how his work compares to yours, you might be interested in having a
->> look:
+>> (gdb) tstart
+>> (gdb) shell ls
+>> (gdb) tstop
+>> (gdb) tfind
+>> Found trace frame 0, tracepoint 1
+>> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528d00, filler=0xc01a1900
+>> <filldir64>,
+>>    buf=0xc0d09f90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+>> 23      /home/teawater/kernel/linux-2.6/fs/readdir.c: No such file or
+>> directory.
+>>        in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>> (gdb) info reg
+>> eax            0xc5528d00       -984445696
+>> ecx            0xc0d09f90       -1060069488
+>> edx            0xc01a1900       -1072031488
+>> ebx            0xfffffff7       -9
+>> esp            0xc0d09f8c       0xc0d09f8c
+>> ebp            0x0      0x0
+>> esi            0x8061480        134616192
+>> edi            0xc5528d00       -984445696
+>> eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
+>> eflags         0x286    [ PF SF IF ]
+>> cs             0x60     96
+>> ss             0x8061480        134616192
+>> ds             0x7b     123
+>> es             0x7b     123
+>> fs             0x0      0
+>> gs             0x0      0
+>> (gdb) tfind
+>> Found trace frame 1, tracepoint 1
+>> 0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>> (gdb) info reg
+>> eax            0xc5528d00       -984445696
+>> ecx            0xc0d09f90       -1060069488
+>> edx            0xc01a1900       -1072031488
+>> ebx            0xfffffff7       -9
+>> esp            0xc0d09f8c       0xc0d09f8c
+>> ebp            0x0      0x0
+>> esi            0x8061480        134616192
+>> edi            0xc5528d00       -984445696
+>> eip            0xc01a1ac1       0xc01a1ac1 <vfs_readdir+1>
+>> eflags         0x286    [ PF SF IF ]
+>> cs             0x60     96
+>> ss             0x8061480        134616192
+>> ds             0x7b     123
+>> es             0x7b     123
+>> fs             0x0      0
+>> gs             0x0      0
+>> (gdb) tfind
+>> Found trace frame 2, tracepoint 1
+>> #0  0xc01a1ac1 in vfs_readdir (file=0xc5528300, filler=0xc01a19e0
+>> <filldir>,
+>>    buf=0xc6c2df90) at /home/teawater/kernel/linux-2.6/fs/readdir.c:23
+>> 23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>> (gdb)
+>> Found trace frame 3, tracepoint 1
+>> 0xc01a1ac1      23      in /home/teawater/kernel/linux-2.6/fs/readdir.c
+>> (gdb)
+>> Target failed to find requested trace frame.
+>> (gdb) quit
+>> A debugging session is active.
 >>
->> http://www.red-bean.com/trac/tracepoints/
+>>        Inferior 1 [Remote target] will be killed.
 >>
->
-> There's also the LTTng project: http://lttng.org/
->
+>> Quit anyway? (y or n) y
+>>
+>> Thanks,
+>> Hui
 >
 >
