@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932730Ab0HLH4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:56:51 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56975 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758393Ab0HLH4s (ORCPT
+	id S1759256Ab0HLH6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 03:58:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57010 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754369Ab0HLH6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:56:48 -0400
-Date: Thu, 12 Aug 2010 09:56:41 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: Rabin Vincent <rabin@rab.in>, Dan Williams <dan.j.williams@intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] DMAENGINE: add a slave buffer prep call
-Message-ID: <20100812075641.GX27749@pengutronix.de>
-References: <1281476766-7066-1-git-send-email-linus.walleij@stericsson.com> <20100811141219.GA5846@debian> <AANLkTikD2LwYwsk6Q-7U-P3o+ujhY_0TqgeqOo=hhjA=@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikD2LwYwsk6Q-7U-P3o+ujhY_0TqgeqOo=hhjA=@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:55:23 up 39 days, 23:06, 37 users,  load average: 0.05, 0.32,
-	0.32
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 12 Aug 2010 03:58:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=VRLcRtLCTmG2jcp2Y1ace+WOuhCaKVFBhwfvQO8OjLpg37WOITjeIS3nVJ379IOYpP
+         FinzDNXUrZ9sLmx16l74fPqkoNaaDv2E0DyHAKtt2aiXCHhOXuIy0LLEnc0zNRbUsKQh
+         F/TgayO4UoCAhvrd28hhHHs+z3TsnjV1SwexE=
+Subject: Re: [PATCH 2/2] MEMSTICK: Add driver for Ricoh R5C592 Card reader.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <667152.31831.qm@web37607.mail.mud.yahoo.com>
+References: <667152.31831.qm@web37607.mail.mud.yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Aug 2010 10:58:10 +0300
+Message-ID: <1281599890.4115.6.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 09:02:04PM +0200, Linus Walleij wrote:
-> 2010/8/11 Rabin Vincent <rabin@rab.in>:
+On Thu, 2010-08-12 at 00:22 -0700, Alex Dubov wrote: 
+> > Maximum I might need to clear page status bits, but I can
+> > do that later
+> > after I write the block.
+> > This won't be any performance impact because amount of bad
+> > pages
+> > shouldn't be normally greater that zero.
+> > (Otherwise there will be data loss...)
 > 
-> > On Tue, Aug 10, 2010 at 11:46:06PM +0200, Linus Walleij wrote:
-> >> This makes it possible for engines to implement slave transfers
-> >> to be done to/from a simple kmalloc():ed memory buffer and not
-> >> just from scatterlists.
-> >
-> > Why is this needed?  Drivers can just pass in a single-entry scatterlist
-> > to the existing API to achieve the same functionality, and a couple of
-> > them already do so.
 > 
-> Because of the overhead, simply. Especially if you want to trigger
-> many jobs after each other. (This is necessary in device/slave-DMA
-> since every transaction may fail...) It's not just constructing the
-> sg-headers and freeing them again and again, it's also list traversals
-> here and there since the driver must assume it can be a linked sglist and
-> then two other list traversals for each
-> dma_map_sg()/dma_unmap_sg() pair and ... yeah that's basically
-> it.
+> These things do degrade. I think, memsticks do write-verify, so bad blocks
+> will appear during write and can be marked as such without any data loss.
 > 
-> And the number of extra code lines needed.
+> > 
+> > One interesting thing that I just want your opinion on is
+> > what to do
+> > with correctable errors.
+> > Common sense suggests to relocate the sector + and mark it
+> > bad.
+> > But I don't know how common such sectors are, and thus I
+> > could do more
+> > harm that good by marking too many sectors as bad.
 > 
-> Then it's something conceptwise of creating a list that you know
-> is just always one element that is just not elegant, like taking a queue
-> numer and standing in queue when there is only one customer but
-> hey, maybe it's just me.
+> I agree that number of writes to the media should be kept minimal.
+> So bad (in either way) blocks encountered should be logged, but not
+> touched, unless the error appears during an actual write/modify operation.
 > 
-> One way of achieving it for all present drivers is to wrap the passed
-> buffer in a single sglist and pass to the sglist function if the single
-> buffer call is not supported in the driver. Maybe it'd be better if I
-> coded up the patch like that so all driver can rely on this function
-> to be present?
+> > 
+> > I hope I create ms_block.c soon, and put that old problem
+> > to the rest.
+> 
+> If you have time and desire, try to put a low level format option in - 
+> some function to erase all blocks, except the system ones.
+> 
+> > 
+> > As time permits I will also port your driver for xD portion
+> > of jMicron
+> > device (which I have).
+> 
+> By the way, I've got some errata for the newer JMicron chipsets. If they
+> have not contacted you yet, I'll forward it to you.
 
-+1 for this approach as it seems easier to implement and has benefits
-for all drivers.
-
-Sascha
+Yeah, I didn't done anything at that direction, but eventually I get to
+it.
 
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Best regards,
+Maxim Levitsky
+
