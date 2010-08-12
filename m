@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759532Ab0HLAET (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:04:19 -0400
-Received: from kroah.org ([198.145.64.141]:60144 "EHLO coco.kroah.org"
+	id S1759340Ab0HLAYq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:24:46 -0400
+Received: from kroah.org ([198.145.64.141]:60252 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759474Ab0HLAEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:05 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.909597025@clark.site>
+	id S1759545Ab0HLAEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:22 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
+Message-Id: <20100812000126.182641316@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:33 -0700
+Date: Wed, 11 Aug 2010 17:00:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Johannes Berg <johannes.berg@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [18/54] iwlwifi: fix TX tracer
+        Steven Robertson <steven@strobe.cc>, Pete Zaitcev <zaitcev@redhat.com>
+Subject: [32/54] USB: resizing usbmon binary interface buffer causes protection faults
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +25,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Steven Robertson <steven@strobe.cc>
 
-commit e95b743536937a72e1560c85696b425c5d1a1c18 upstream.
+commit 33d973ad88ceb83ed1449592b7574b5b5bb33ac6 upstream.
 
-The TX tracing code copies with the wrong length,
-which will typically copy too little data. Fix
-this by using the correct length variable.
+Enlarging the buffer size via the MON_IOCT_RING_SIZE ioctl causes
+general protection faults. It appears the culprit is an incorrect
+argument to mon_free_buff: instead of passing the size of the current
+buffer being freed, the size of the new buffer is passed.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Use the correct size argument to mon_free_buff when changing the size of
+the buffer.
+
+Signed-off-by: Steven Robertson <steven@strobe.cc>
+Acked-by: Pete Zaitcev <zaitcev@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-devtrace.h |    2 +-
+ drivers/usb/mon/mon_bin.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-devtrace.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-devtrace.h
-@@ -193,7 +193,7 @@ TRACE_EVENT(iwlwifi_dev_tx,
- 		__entry->framelen = buf0_len + buf1_len;
- 		memcpy(__get_dynamic_array(tfd), tfd, tfdlen);
- 		memcpy(__get_dynamic_array(buf0), buf0, buf0_len);
--		memcpy(__get_dynamic_array(buf1), buf1, buf0_len);
-+		memcpy(__get_dynamic_array(buf1), buf1, buf1_len);
- 	),
- 	TP_printk("[%p] TX %.2x (%zu bytes)",
- 		  __entry->priv,
+--- a/drivers/usb/mon/mon_bin.c
++++ b/drivers/usb/mon/mon_bin.c
+@@ -1010,7 +1010,7 @@ static int mon_bin_ioctl(struct inode *i
+ 
+ 		mutex_lock(&rp->fetch_lock);
+ 		spin_lock_irqsave(&rp->b_lock, flags);
+-		mon_free_buff(rp->b_vec, size/CHUNK_SIZE);
++		mon_free_buff(rp->b_vec, rp->b_size/CHUNK_SIZE);
+ 		kfree(rp->b_vec);
+ 		rp->b_vec  = vec;
+ 		rp->b_size = size;
 
 
