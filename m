@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933518Ab0HLAQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:16:56 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60938 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933267Ab0HLAQw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:16:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=GPtAmNMIIN4lm0WJ5RhycUPd0kbwNwXKzzLo2B1eJNV6GGvNmz2VNqYVy5ZEg8QM8A
-         rdNpjBn+TD6kFLLD6zqXAeOYZyQTfgxjYmXdDdcj6pApYJ4Yi1D8TOZyXccSScabOM8K
-         8xsBfh7WuhtRSKQ4YnWYrdV5DLP5cLRThXF9Y=
-MIME-Version: 1.0
-In-Reply-To: <20100811165403.6713d206.randy.dunlap@oracle.com>
-References: <AANLkTimGwbP8_fachx9pwTyX1wZxxT1iGrKziWMmxunL@mail.gmail.com> 
-	<20100811165403.6713d206.randy.dunlap@oracle.com>
-From: Pistis Valentino <vale.pistis@gmail.com>
-Date: Thu, 12 Aug 2010 02:16:32 +0200
-Message-ID: <AANLkTi=D+ZAkg1PYHH-t4u4LFFoY9zOX+DpA_xMU=bY=@mail.gmail.com>
-Subject: Re: Problems Compile Misc Module Example
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S933157Ab0HLARY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:17:24 -0400
+Received: from kroah.org ([198.145.64.141]:60525 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933086Ab0HLAIP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:15 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:14 2010
+Message-Id: <20100812000614.686010480@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 17:05:37 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Peter Huewe <peterhuewe@gmx.de>,
+        Henrik Kretzschmar <henne@nachtwindheim.de>
+Subject: [22/67] drivers/video/w100fb.c: ignore void return value / fix build failure
+In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes i used this Makefile for compiling a module (and no errors),
-but the problem is in the compiling the service_ase.
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-The section 2 of Documentation describe the same makefile that i use.
+------------------
 
-I do not know what else to do
+From: Peter Huewe <peterhuewe@gmx.de>
 
-============== Makefile ================
+commit fa260c00c1aa5c657793a7221e40d2400df5afd8 upstream.
 
-obj-m := driver_ase.o
+Fix a build failure "error: void value not ignored as it ought to be"
+by removing an assignment of a void return value.  The functionality of
+the code is not changed.
 
-KDIR    := /lib/modules/$(shell uname -r)/build
-PWD     := $(shell pwd)
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Acked-by: Henrik Kretzschmar <henne@nachtwindheim.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-all:
-	$(MAKE) -C $(KDIR) M=$(PWD) modules
+---
+ drivers/video/w100fb.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-clean:
-	$(MAKE) -C $(KDIR) M=$(PWD) clean
-===========================================
+--- a/drivers/video/w100fb.c
++++ b/drivers/video/w100fb.c
+@@ -858,9 +858,9 @@ unsigned long w100fb_gpio_read(int port)
+ void w100fb_gpio_write(int port, unsigned long value)
+ {
+ 	if (port==W100_GPIO_PORT_A)
+-		value = writel(value, remapped_regs + mmGPIO_DATA);
++		writel(value, remapped_regs + mmGPIO_DATA);
+ 	else
+-		value = writel(value, remapped_regs + mmGPIO_DATA2);
++		writel(value, remapped_regs + mmGPIO_DATA2);
+ }
+ EXPORT_SYMBOL(w100fb_gpio_read);
+ EXPORT_SYMBOL(w100fb_gpio_write);
 
 
-
-2010/8/12 Randy Dunlap <randy.dunlap@oracle.com>:
-> On Thu, 12 Aug 2010 01:46:27 +0200 Pistis Valentino wrote:
->
->> Hello everyone,
->>
->> I'm studying how to build kernel modules.
->> Right now I have found some strange errors and nothing solutions in the web.
->>
->> I compiled my kernel module "driver_ase" whose files are driver_ase.h,
->> driver_ase.c.
->> No errors in compilation, the module is also loaded correctly.
->>
->> I wrote a small service "service_ase.c" using the kernel module that I created.
->> I found a lot of errors.
->> the only explanation IMO is that the directory has been renamed  from
->> "/usr/src/linux-2.6.34.2/include/asm" in
->> "/usr/src/linux-2.6.34.2/include/asm-generic", the errors make me
->> think that some header file has not yet updated.
->>
->> You may like this or something wrong?
->>
->> Could you help me please?
->>
->> I'm using Debian Sidux with 2.6.34.2 kernel compiled.
->>
->> In the bottom of the mail has the source codes, and the error.
->> It is a bit long error message, sorry!
->
-> You need a minimal Makefile.
-> Please see Documentation/kbuild/modules.txt, section 2. How to build external modules.
->
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
