@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759516Ab0HLAEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:04:15 -0400
-Received: from kroah.org ([198.145.64.141]:60111 "EHLO coco.kroah.org"
+	id S1759570Ab0HLAE2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:04:28 -0400
+Received: from kroah.org ([198.145.64.141]:60176 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759225Ab0HLAD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:03:56 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
-Message-Id: <20100812000124.213115116@clark.site>
+	id S1759496Ab0HLAEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:11 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:25 2010
+Message-Id: <20100812000125.377151747@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:25 -0700
+Date: Wed, 11 Aug 2010 17:00:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [10/54] PCI: Do not run NVidia quirks related to MSI with MSI disabled
+        Lino Sanfilippo <LinoSanfilippo@gmx.de>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [23/54] ecryptfs: release reference to lower mount if interpose fails
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,38 +26,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
 
-commit 3d2a531804d16cd8df6dbbb0429c6f143e756049 upstream.
+commit 31f73bee3e170b7cabb35db9e2f4bf7919b9d036 upstream.
 
-There is no reason to run NVidia-specific quirks related to HT MSI
-mappings with MSI disabled via pci=nomsi, so make
-__nv_msi_ht_cap_quirk() return immediately in that case.
+In ecryptfs_lookup_and_interpose_lower() the lower mount is not decremented
+if allocation of a dentry info struct failed. As a result the lower filesystem
+cant be unmounted any more (since it is considered busy). This patch corrects
+the reference counting.
 
-This allows at least one machine to boot 100% of the time with
-pci=nomsi (it still doesn't boot reliably without that).
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16443 .
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/pci/quirks.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/ecryptfs/inode.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2390,6 +2390,9 @@ static void __devinit __nv_msi_ht_cap_qu
- 	int pos;
- 	int found;
- 
-+	if (!pci_msi_enabled())
-+		return;
-+
- 	/* check if there is HT MSI cap or enabled on this device */
- 	found = ht_check_msi_mapping(dev);
- 
+--- a/fs/ecryptfs/inode.c
++++ b/fs/ecryptfs/inode.c
+@@ -273,7 +273,7 @@ int ecryptfs_lookup_and_interpose_lower(
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to allocate ecryptfs_dentry_info struct\n",
+ 			__func__);
+-		goto out_dput;
++		goto out_put;
+ 	}
+ 	ecryptfs_set_dentry_lower(ecryptfs_dentry, lower_dentry);
+ 	ecryptfs_set_dentry_lower_mnt(ecryptfs_dentry, lower_mnt);
+@@ -348,8 +348,9 @@ int ecryptfs_lookup_and_interpose_lower(
+ out_free_kmem:
+ 	kmem_cache_free(ecryptfs_header_cache_2, page_virt);
+ 	goto out;
+-out_dput:
++out_put:
+ 	dput(lower_dentry);
++	mntput(lower_mnt);
+ 	d_drop(ecryptfs_dentry);
+ out:
+ 	return rc;
 
 
