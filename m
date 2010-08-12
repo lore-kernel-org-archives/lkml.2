@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933934Ab0HLUV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 16:21:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57664 "EHLO mx2.suse.de"
+	id S933901Ab0HLU0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:26:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57807 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932767Ab0HLUV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 16:21:28 -0400
-Date: Thu, 12 Aug 2010 22:21:27 +0200
-Message-ID: <s5hr5i3twe0.wl%tiwai@suse.de>
+	id S1754988Ab0HLU0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 16:26:12 -0400
+Date: Thu, 12 Aug 2010 22:26:11 +0200
+Message-ID: <s5hpqxntw64.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] sound update (#2) for 2.6.36
-In-Reply-To: <AANLkTinfEQ-ojY7GbBgLPQU-6iFZ+KVQ9LU1h9xBMQMf@mail.gmail.com>
-References: <s5hlj8dwrd7.wl%tiwai@suse.de>
-	<AANLkTi=2N_P=zAM73a=dOBX6w0OzsgJi3TqRDu0LyZtB@mail.gmail.com>
-	<s5hvd7ftyl7.wl%tiwai@suse.de>
-	<AANLkTi=kc8FUJuGCTOsAObLmLhKKEUXbW8e0s_b74h+=@mail.gmail.com>
-	<AANLkTinfEQ-ojY7GbBgLPQU-6iFZ+KVQ9LU1h9xBMQMf@mail.gmail.com>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Thomas Meyer <thomas@m3y3r.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: 2.6.36: Sound stop working
+In-Reply-To: <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com>
+References: <201008122200.05598.thomas@m3y3r.de>
+	<AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,31 +26,26 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 12 Aug 2010 12:57:20 -0700,
-Linus Torvalds wrote:
+At Thu, 12 Aug 2010 23:10:15 +0300,
+Pekka Enberg wrote:
 > 
-> On Thu, Aug 12, 2010 at 12:49 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
+> On Thu, Aug 12, 2010 at 11:00 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+> > My sound card stop to work since a few commits. I tried to bisect it and ended up with this:
 > >
-> > I've done some more testing. If I 'cat' something directly to
-> > /dev/audio, I do get sound. So I wonder whether it's some pulseaudio
-> > problem, and I'll double-check that it's really the kernel (and not
-> > the result of a "yum update", for example)
+> > There are only 'skip'ped commits left to test.
+> > The first bad commit could be any of:
+> > 3bcf3860a4ff9bbc522820b4b765e65e4deceb3e
+> > c1e5c954020e123d30b4abf4038ce501861bcf9f
+> > We cannot bisect more!
+> >
+> > any ideas what to do now?
 > 
-> It's definitely kernel-related.
-> 
-> kernel v2.6.35-05791-g45d7f32 works. v2.6.35-7786-gad41a1e does not.
-> And reverting that "Make converter setups sticky" commit doesn't make
-> any difference.
+> Takashi, maybe this is related to Linus' problem?
 
-I see no relevant commits regarding HD-audio (at least for ALC889)
-between these two points except for "Make converter setups sticky".
-And, the fact that /dev/audio works implies that the PCM stream works
-basically.  So, I have no idea for now.  It might be outside the sound
-stack.
+Yeah, I guess so, since I couldn't see any obvious problem in sound/*.
 
-I'll try the latest tree on my machine whether I can reproduce the
-problem.
+PulseAudio uses inotify in udev-detection module, at least.
+It's possible that inotify change may hit the sound in the end.
 
 
 thanks,
