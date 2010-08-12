@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758826Ab0HLBYM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 21:24:12 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:57086 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932880Ab0HLBYG convert rfc822-to-8bit (ORCPT
+	id S1758862Ab0HLBZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 21:25:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48200 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752395Ab0HLBZX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 21:24:06 -0400
+	Wed, 11 Aug 2010 21:25:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Ya3/XMml8+JwNpsVctcYuSI6LuVlbiFZCZ2BIco5OFaiLYeLLmxD9OOzL5+2GZYAPH
-         V2IeUnb3wGN+gg0qmXP/Jir40IFF+drK6l4G+r4MoWGsKGw0utsSFNKjCfLErPGbraCj
-         7kIgLsrwnjdBs7jbpjNlG6IiRvBwXtUkPM5U8=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IE1bpZqjGhiG6BvitCPmGb0T8vb2CAIXkde93ayIhxyaWnSbhhjkrvQkAIcrgPHT98
+         QBNimQ+ptJ0f6GEldNxrGpjER/8tC0iykzQsvDMtiGwszNNhjmNag09UPlZZVSV3FyhU
+         aB0KTiD8+xmt/BuixZrS+kvhbo4U7E7uSxRos=
 MIME-Version: 1.0
-In-Reply-To: <1274733081-4623-7-git-send-email-walken@google.com>
-References: <1274733081-4623-1-git-send-email-walken@google.com>
-	<1274733081-4623-7-git-send-email-walken@google.com>
-Date: Wed, 11 Aug 2010 18:24:04 -0700
-X-Google-Sender-Auth: pDbWhQ34yBoK0kldAowrlUx2qmc
-Message-ID: <AANLkTikFEy26V4epRGCJiDkQNQ5BH0fPP0C=4phUB=o3@mail.gmail.com>
-Subject: Re: [PATCH 06/11] rwsem: wake queued readers when writer blocks on 
-	active read lock
-From: Tony Luck <tony.luck@intel.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Waychison <mikew@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100812010612.GL2516@linux.vnet.ibm.com>
+References: <20100807061558.GA28087@thunk.org>
+	<AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
+	<20100808155719.GB3635@thunk.org>
+	<AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
+	<20100808213821.GD3635@thunk.org>
+	<20100809112453.77210acc@lxorguk.ukuu.org.uk>
+	<20100809181638.GI3026@linux.vnet.ibm.com>
+	<AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
+	<20100811222854.GJ2516@linux.vnet.ibm.com>
+	<AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+	<20100812010612.GL2516@linux.vnet.ibm.com>
+Date: Thu, 12 Aug 2010 04:25:21 +0300
+Message-ID: <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
+        david@lang.hm, Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 1:31 PM, Michel Lespinasse <walken@google.com> wrote:
-> This change addresses the following situation:
+On Thu, Aug 12, 2010 at 4:06 AM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Aug 12, 2010 at 03:28:00AM +0300, Felipe Contreras wrote:
+>> On Thu, Aug 12, 2010 at 1:28 AM, Paul E. McKenney
+>> <paulmck@linux.vnet.ibm.com> wrote:
+>> > On Wed, Aug 11, 2010 at 10:18:51PM +0300, Felipe Contreras wrote:
+>> >> On Mon, Aug 9, 2010 at 9:16 PM, Paul E. McKenney
+>> >> <paulmck@linux.vnet.ibm.com> wrote:
+>> >> > But wouldn't an office suite run as a power-oblivious application on an
+>> >> > Android device? Â After all, office applications do not need to run when
+>> >> > the screen is turned off, so these the applications do not need to use
+>> >> > suspend blockers.
+>> >>
+>> >> Ideally the system would be suspended even when the screen is on. If
+>> >> there are no "trusted" applications running at the same time, then
+>> >> openoffice wouldn't load at all. Right?
+>> >
+>> > My understanding is that Android systems in fact do not suspend when
+>> > the screen is on, and that most (perhaps all) other systems do not
+>> > opportunistically suspend at all. Â There has been some speculation about
+>> > what a hypothetical Android having a non-volatile display might do,
+>> > but as far as I know, this is just speculation.
+>>
+>> I have a desktop system in mind. If opportunistic suspend is only
+>> triggered when the display is off, then it's no good for normal usage,
+>> and therefore dynamic PC needs to get its act together... specially
+>> for laptops.
 >
-> - Thread A acquires the rwsem for read
-> - Thread B tries to acquire the rwsem for write, notices there is already
->  an active owner for the rwsem.
-> - Thread C tries to acquire the rwsem for read, notices that thread B already
->  tried to acquire it.
-> - Thread C grabs the spinlock and queues itself on the wait queue.
-> - Thread B grabs the spinlock and queues itself behind C. At this point A is
->  the only remaining active owner on the rwsem.
->
-> In this situation thread B could notice that it was the last active writer
-> on the rwsem, and decide to wake C to let it proceed in parallel with A
-> since they both only want the rwsem for read.
->
-> Signed-off-by: Michel Lespinasse <walken@google.com>
+> If I understand you correctly, you are saying that both opportunistic
+> suspend and dynamic power control should be used together, with dynamic
+> power control being used for short non-busy periods (as in between
+> keystrokes) and opportunistic suspend being used for longer non-busy
+> periods (as in while grabbing a coffee). Â That combination of usage
+> sounds promising to me.
 
-Linus tree this morning[1] was behaving badly on ia64 ... processes would wander
-off into some unkillable state ... and since this happened to processes starting
-from rc*.d I couln't get the system up to a login prompt. System is a 32-way
-(4 sockets * quad-core * hyperthread).
+No. In the future x86 will be fixed, but for now let's imagine an ARM laptop.
 
-git bisect pins the blame on this change (commit 424acaaeb...).
-Reverting it (and
-it's successor a8618a0e - because I assumed that it depended on 424...) gives
-me a kernel that works fine.
+> That said, I don't know that anyone has really sat down and thought
+> through how one might apply suspend blockers to a desktop system.
+> I suspect that there are several ways to go about it.
 
-Not sure what is wrong with this change. Maybe ia64 needs some more memory
-ordering bits than the changed code provides? I can dig into it a bit
-harder tomorrow,
-but I thought you'd like an early heads-up in case anyone else is seeing similar
-problems.
+Think in terms of an ARM laptop. What good is opportunistic suspend if
+it's not going to help when the laptop is being used?
 
--Tony
-
-[1] N.B. I've been on vacation - so this morning's tree was the first
-I'd tried since 2.6.35
+-- 
+Felipe Contreras
