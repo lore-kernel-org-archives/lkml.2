@@ -1,74 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759177Ab0HLAEw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:04:52 -0400
-Received: from kroah.org ([198.145.64.141]:60278 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759568Ab0HLAE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:04:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:26 2010
-Message-Id: <20100812000126.636674657@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:52 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David A. Ranch" <dranch@trinnet.net>
-Subject: [37/54] USB: ftdi_sio: device id for Navitator
-In-Reply-To: <20100812000249.GA30948@kroah.com>
+	id S1759661Ab0HLAFv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:05:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36281 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759486Ab0HLAFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:05:47 -0400
+Date: Wed, 11 Aug 2010 17:03:56 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        Sunil Mushran <sunil.mushran@oracle.com>
+Subject: Re: [PATCH 1/2] fs/ocfs2/dlm: Eliminate update of
+ list_for_each_entry loop cursor
+Message-ID: <20100812000355.GA7195@mail.oracle.com>
+Mail-Followup-To: Julia Lawall <julia@diku.dk>,
+	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+	Sunil Mushran <sunil.mushran@oracle.com>
+References: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1008071108540.5821@ask.diku.dk>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+On Sat, Aug 07, 2010 at 11:09:13AM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> list_for_each_entry uses its first argument to move from one element to the
+> next, so modifying it can break the iteration.
 
-------------------
+	Thanks for catching the bug.  It was introduced by 800deef3
+[ocfs2: use list_for_each_entry where benefical].  I blame Christoph.
 
-From: dranch@trinnet.net <dranch@trinnet.net>
+> diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+> index 9dfaac7..7084a11 100644
+> --- a/fs/ocfs2/dlm/dlmrecovery.c
+> +++ b/fs/ocfs2/dlm/dlmrecovery.c
+> @@ -1792,10 +1792,10 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+>  			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+>  				tmpq = dlm_list_idx_to_ptr(res, j);
+>  				list_for_each_entry(lock, tmpq, list) {
+> -					if (lock->ml.cookie != ml->cookie)
+> +					if (lock->ml.cookie != ml->cookie) {
+>  						lock = NULL;
+> -					else
+>  						break;
+> +					}
+>  				}
+>  				if (lock)
+>  					break;
 
-commit b6180ef7c99574c3350bbffa2a3a9d675321543d upstream.
+	However, this is not the correct solution.  The goal of the
+original code, which used to use list_for_each(), was to leave lock
+non-NULL if the cookie was found.  Your version merely exits the loop on
+the first non-matching entry, always leaving lock==NULL if there is a
+non-matching entry.
+	One possible solution is to return the original code:
 
-This patch is to add a US Interface, Inc. "Navigator" USB device.
-Specifically, it's a HAM Radio USB sound modem that also
-incorporates three pairs of unique FTDI serial ports.  The standard
-Linux FTDI serial driver will only recognize the first two serial
-ports of an unknown FDTI derived device and this patch adds in
-recognition to these specific new IDs.
-
-Signed-off-by: David A. Ranch <dranch@trinnet.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/usb/serial/ftdi_sio.c     |    3 +++
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 8 insertions(+)
-
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -162,6 +162,9 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_7_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_USINT_CAT_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_USINT_WKEY_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_USINT_RS232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACTZWAVE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IRTRANS_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IPLUS_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -40,6 +40,11 @@
- 
- #define FTDI_NXTCAM_PID		0xABB8 /* NXTCam for Mindstorms NXT */
- 
-+/* US Interface Navigator (http://www.usinterface.com/) */
-+#define FTDI_USINT_CAT_PID	0xb810	/* Navigator CAT and 2nd PTT lines */
-+#define FTDI_USINT_WKEY_PID	0xb811	/* Navigator WKEY and FSK lines */
-+#define FTDI_USINT_RS232_PID	0xb812	/* Navigator RS232 and CONFIG lines */
+--8<-----------------------------------------------------------------
+@@ -1747,7 +1747,7 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 				     struct dlm_migratable_lockres *mres)
+ {
+ 	struct dlm_migratable_lock *ml;
+-	struct list_head *queue;
++	struct list_head *queue, *iter;
+ 	struct list_head *tmpq = NULL;
+ 	struct dlm_lock *newlock = NULL;
+ 	struct dlm_lockstatus *lksb = NULL;
+@@ -1791,11 +1791,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 			spin_lock(&res->spinlock);
+ 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+ 				tmpq = dlm_list_idx_to_ptr(res, j);
+-				list_for_each_entry(lock, tmpq, list) {
+-					if (lock->ml.cookie != ml->cookie)
+-						lock = NULL;
+-					else
++				list_for_each(iter, tmpq) {
++					lock = list_entry(iter, struct dlm_lock, list);
 +
- /* OOCDlink by Joern Kaipf <joernk@web.de>
-  * (http://www.joernonline.de/dw/doku.php?id=start&idx=projects:oocdlink) */
- #define FTDI_OOCDLINK_PID	0xbaf8	/* Amontec JTAGkey */
++					if (lock->ml.cookie == ml->cookie)
+ 						break;
++					lock = NULL;
+ 				}
+ 				if (lock)
+ 					break;
+-->8-----------------------------------------------------------------
 
+	Another approach would be to keep list_for_each_entry() around,
+but use a better check for entry existence:
 
+--8<-----------------------------------------------------------------
+@@ -1792,13 +1792,12 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+ 				tmpq = dlm_list_idx_to_ptr(res, j);
+ 				list_for_each_entry(lock, tmpq, list) {
+-					if (lock->ml.cookie != ml->cookie)
+-						lock = NULL;
+-					else
++					if (lock->ml.cookie == ml->cookie)
+ 						break;
+ 				}
+-				if (lock)
++				if (&lock->list != tmpq)
+ 					break;
++				lock = NULL;
+ 			}
+ 
+ 			/* lock is always created locally first, and
+-->8-----------------------------------------------------------------
+
+	I think I like the second one better.  Sunil, what do you think?
+
+Joel
+
+-- 
+
+Life's Little Instruction Book #335
+
+	"Every so often, push your luck."
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
