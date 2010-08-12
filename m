@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761057Ab0HLW6e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 18:58:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40223 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752489Ab0HLW6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 18:58:32 -0400
-Date: Fri, 13 Aug 2010 00:56:13 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Milton Miller <miltonm@bga.com>
-Cc: gentoo@mgorny.alt.pl, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] setlocalversion: fix version for untaged nontip
- mercurial revs
-Message-ID: <20100812225613.GB19690@sepie.suse.cz>
-References: <fix-hg-id-resend1@mdm.bga.com>
+	id S1761092Ab0HLXEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 19:04:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52840 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761034Ab0HLXEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 19:04:33 -0400
+Date: Thu, 12 Aug 2010 16:03:53 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Jan Kara <jack@suse.cz>, "Ted Ts'o" <tytso@mit.edu>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Ocfs2-devel] [PATCH 2/3] JBD2: Allow feature checks before
+ journal recovery
+Message-ID: <20100812230353.GE22777@mail.oracle.com>
+Mail-Followup-To: Jan Kara <jack@suse.cz>, Ted Ts'o <tytso@mit.edu>,
+	"Patrick J. LoPresti" <lopresti@gmail.com>,
+	ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <874ofr2myq.fsf@patl.com>
+ <8739vb2mxr.fsf@patl.com>
+ <20100812174318.GD6561@mail.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <fix-hg-id-resend1@mdm.bga.com>
+In-Reply-To: <20100812174318.GD6561@mail.oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 10:19:38AM -0500, Milton Miller wrote:
-> The manpage for cut says it will return all lines without the delimiter
-> unless -s is specified.
+On Thu, Aug 12, 2010 at 10:43:19AM -0700, Joel Becker wrote:
+> On Thu, Jul 22, 2010 at 03:04:16PM -0700, Patrick J. LoPresti wrote:
+> > Before we start accessing a huge (> 16 TiB) OCFS2 volume, we need to
+> > confirm that its journal supports 64-bit offsets.  In particular, we
+> > need to check the journal's feature bits before recovering the journal.
+> > 
+> > This is not possible with JBD2 at present, because the journal
+> > superblock (where the feature bits reside) is not loaded from disk until
+> > the journal is recovered.
+> > 
+> > This patch loads the journal superblock in
+> > jbd2_journal_check_used_features() if it has not already been loaded,
+> > allowing us to check the feature bits before journal recovery.
+> > 
+> > Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
 > 
-> When I backed up my mecurial tree to generate modules, I found that the
-> scm part of localversion was turning up blank.
-> 
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: "Michał Górny" <gentoo@mgorny.alt.pl>
-> 
-> ---
-> This version is against linux next-20100721.  The diff against 35-rc
-> would be shifted left one tab stop and have different line numbers, should
-> this be sent to stable.
-> 
-> Resend without 8-bit characters (maintainers name) in header
-> Added linux-kbuild@vger.kernel.org which get-maintainer did not
-> 
-> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-> index a7b9f76..872312f 100755
-> --- a/scripts/setlocalversion
-> +++ b/scripts/setlocalversion
-> @@ -86,7 +86,7 @@ scm_version()
->  
->  	# Check for mercurial and a mercurial repo.
->  	if hgid=`hg id 2>/dev/null`; then
-> -		tag=`printf '%s' "$hgid" | cut -d' ' -f2`
-> +		tag=`printf '%s' "$hgid" | cut -s -d' ' -f2`
->  
->  		# Do we have an untagged version?
->  		if [ -z "$tag" -o "$tag" = tip ]; then
+> Dear jbd2 developers,
+> 	I've pushed this patch to the merge-window branch of ocfs2.git.
+> I'm ready to send it to Linus, but I need your OK.
 
-Sorry, I somehow missed this patch. I applied it now.
+	To be specific, I'd really like an Acked-by.
 
-Michal
+Joel
+
+-- 
+
+"The doctrine of human equality reposes on this: that there is no
+ man really clever who has not found that he is stupid."
+	- Gilbert K. Chesterson
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
