@@ -1,296 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759731Ab0HLDzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 23:55:22 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47497 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759671Ab0HLDzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 23:55:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,356,1278313200"; 
-   d="scan'208";a="544202819"
-Subject: [PATCH -v3] ACPI, APEI, ERST debug support
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Aug 2010 11:55:17 +0800
-Message-ID: <1281585317.2744.1468.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1750893Ab0HLEEm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 00:04:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63667 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750731Ab0HLEEi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 00:04:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hPgk8HFeG4MXq/rSlsUR1fX/FJAlWUyBR92NQqzRi35dfCp6IEKpjxy67wlX3f6dFc
+         CFcNapE4HxhzMK9Hd5nxyRjJWruoQGGzTmw5CR5AyVgDTaKXMKi0lOvv0QGzsHjaWQUa
+         /QUp/QpAqTp7oDwzzTn6u3GeAE621RWaHU75s=
+MIME-Version: 1.0
+In-Reply-To: <20100812131741.f3a800d7.sfr@canb.auug.org.au>
+References: <20100812131741.f3a800d7.sfr@canb.auug.org.au>
+Date: Wed, 11 Aug 2010 23:04:36 -0500
+Message-ID: <AANLkTi=iHi=kpk+nsB396B9GWdefj=WJywA2K1PawHxi@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the cifs tree
+From: Steve French <smfrench@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-cifs@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Wang Lei <wang840925@gmail.com>,
+        Bryan Schumaker <bjschuma@netapp.com>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Len,
+On Wed, Aug 11, 2010 at 10:17 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> After merging the cifs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> net/dns_resolver/dns_key.c: In function 'dns_resolver_instantiate':
+> net/dns_resolver/dns_key.c:70: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:70: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:99: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:128: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:136: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:143: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:144: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:149: error: implicit declaration of function 'key_payload_reserve'
+> net/dns_resolver/dns_key.c:162: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c: In function 'dns_resolver_match':
+> net/dns_resolver/dns_key.c:178: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c: In function 'dns_resolver_describe':
+> net/dns_resolver/dns_key.c:211: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:213: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c:217: error: dereferencing pointer to incomplete type
+> net/dns_resolver/dns_key.c: At top level:
+> net/dns_resolver/dns_key.c:220: error: variable 'key_type_dns_resolver' has initializer but incomplete type
+> net/dns_resolver/dns_key.c:221: error: unknown field 'name' specified in initializer
+> net/dns_resolver/dns_key.c:221: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:221: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c:222: error: unknown field 'instantiate' specified in initializer
+> net/dns_resolver/dns_key.c:222: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:222: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c:223: error: unknown field 'match' specified in initializer
+> net/dns_resolver/dns_key.c:223: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:223: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c:224: error: unknown field 'revoke' specified in initializer
+> net/dns_resolver/dns_key.c:224: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:224: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c:225: error: unknown field 'destroy' specified in initializer
+> net/dns_resolver/dns_key.c:225: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:225: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c:226: error: unknown field 'describe' specified in initializer
+> net/dns_resolver/dns_key.c:226: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:226: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c:227: error: unknown field 'read' specified in initializer
+> net/dns_resolver/dns_key.c:227: warning: excess elements in struct initializer
+> net/dns_resolver/dns_key.c:227: warning: (near initialization for 'key_type_dns_resolver')
+> net/dns_resolver/dns_key.c: In function 'init_dns_resolver':
+> net/dns_resolver/dns_key.c:237: error: invalid use of undefined type 'struct key_type'
+> net/dns_resolver/dns_key.c:249: error: implicit declaration of function 'key_alloc'
+> net/dns_resolver/dns_key.c:249: error: 'key_type_keyring' undeclared (first use in this function)
+> net/dns_resolver/dns_key.c:249: error: (Each undeclared identifier is reported only once
+> net/dns_resolver/dns_key.c:249: error: for each function it appears in.)
+> net/dns_resolver/dns_key.c:250: error: 'KEY_POS_ALL' undeclared (first use in this function)
+> net/dns_resolver/dns_key.c:250: error: 'KEY_POS_SETATTR' undeclared (first use in this function)
+> net/dns_resolver/dns_key.c:251: error: 'KEY_USR_VIEW' undeclared (first use in this function)
+> net/dns_resolver/dns_key.c:251: error: 'KEY_USR_READ' undeclared (first use in this function)
+> net/dns_resolver/dns_key.c:252: error: 'KEY_ALLOC_NOT_IN_QUOTA' undeclared (first use in this function)
+> net/dns_resolver/dns_key.c:258: error: implicit declaration of function 'key_instantiate_and_link'
+> net/dns_resolver/dns_key.c:262: error: implicit declaration of function 'register_key_type'
+> net/dns_resolver/dns_key.c:268: error: 'struct cred' has no member named 'thread_keyring'
+> net/dns_resolver/dns_key.c:269: error: 'struct cred' has no member named 'jit_keyring'
+> net/dns_resolver/dns_key.c: In function 'exit_dns_resolver':
+> net/dns_resolver/dns_key.c:285: error: implicit declaration of function 'unregister_key_type'
+> net/dns_resolver/dns_key.c:288: error: invalid use of undefined type 'struct key_type'
 
-This is v3 of ERST debug support patch, fixes i386 build error and
-warning. Please replace it in acpi-test.git.
+> Presumably this code has not been built on powerpc before.  Casued by
+> commit 1a4240f4764ac78adbf4b0ebb49b3bd8c72ffa11 ("DNS: Separate out CIFS
+> DNS Resolver code") (and the build was probably enabled by commit
+> c2e8139c9f797baa46515af6d350c51823736cbb ("NFS: Use kernel DNS resolver
+> [ver #2]").
+>
+> I can only imagine that linux/key.h is included indirectly on x86.
+Are you sure that this is a valid config file?  CONFIG_KEYS should be
+set if CONFIG_DNS_RESOLVER is set?
 
-Best Regards,
-Huang Ying
--------------------------------------------->
-This patch adds debugging/testing support to ERST. A misc device is
-implemented to export raw ERST read/write/clear etc operations to user
-space. With this patch, we can add ERST testing support to
-linuxfirmwarekit ISO (linuxfirmwarekit.org) to verify the kernel
-support and the firmware implementation.
+key.h looks like it is included in all arch in this path
 
+net/dns_resolver/dns_key.c includes
+include/keys/dns_resolver-type.h which includes
+include/linux/key-type.h which includes
+include/linux/key.h
 
-v3:
-
-- Fix ssize_t printk format string instead of cast.
-
-v2:
-
-- Fix build error on i386
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/acpi/apei/Kconfig    |    9 +
- drivers/acpi/apei/Makefile   |    1 
- drivers/acpi/apei/erst-dbg.c |  207 +++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 217 insertions(+)
- create mode 100644 drivers/acpi/apei/erst-dbg.c
-
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -28,3 +28,12 @@ config ACPI_APEI_EINJ
- 	  EINJ provides a hardware error injection mechanism, it is
- 	  mainly used for debugging and testing the other parts of
- 	  APEI and some other RAS features.
-+
-+config ACPI_APEI_ERST_DEBUG
-+	tristate "APEI Error Record Serialization Table (ERST) Debug Support"
-+	depends on ACPI_APEI
-+	help
-+	  ERST is a way provided by APEI to save and retrieve hardware
-+	  error infomation to and from a persistent store. Enable this
-+	  if you want to debugging and testing the ERST kernel support
-+	  and firmware implementation.
---- a/drivers/acpi/apei/Makefile
-+++ b/drivers/acpi/apei/Makefile
-@@ -1,5 +1,6 @@
- obj-$(CONFIG_ACPI_APEI)		+= apei.o
- obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
- obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
-+obj-$(CONFIG_ACPI_APEI_ERST_DEBUG) += erst-dbg.o
- 
- apei-y := apei-base.o hest.o cper.o erst.o
---- /dev/null
-+++ b/drivers/acpi/apei/erst-dbg.c
-@@ -0,0 +1,207 @@
-+/*
-+ * APEI Error Record Serialization Table debug support
-+ *
-+ * ERST is a way provided by APEI to save and retrieve hardware error
-+ * infomation to and from a persistent store. This file provide the
-+ * debugging/testing support for ERST kernel support and firmware
-+ * implementation.
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/uaccess.h>
-+#include <acpi/apei.h>
-+#include <linux/miscdevice.h>
-+
-+#include "apei-internal.h"
-+
-+#define ERST_DBG_PFX			"ERST DBG: "
-+
-+#define ERST_DBG_RECORD_LEN_MAX		4096
-+
-+static void *erst_dbg_buf;
-+static unsigned int erst_dbg_buf_len;
-+
-+/* Prevent erst_dbg_read/write from being invoked concurrently */
-+static DEFINE_MUTEX(erst_dbg_mutex);
-+
-+static int erst_dbg_open(struct inode *inode, struct file *file)
-+{
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	return nonseekable_open(inode, file);
-+}
-+
-+static long erst_dbg_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
-+{
-+	int rc;
-+	u64 record_id;
-+	u32 record_count;
-+
-+	switch (cmd) {
-+	case APEI_ERST_CLEAR_RECORD:
-+		rc = copy_from_user(&record_id, (void __user *)arg,
-+				    sizeof(record_id));
-+		if (rc)
-+			return -EFAULT;
-+		return erst_clear(record_id);
-+	case APEI_ERST_GET_RECORD_COUNT:
-+		rc = erst_get_record_count();
-+		if (rc < 0)
-+			return rc;
-+		record_count = rc;
-+		rc = put_user(record_count, (u32 __user *)arg);
-+		if (rc)
-+			return rc;
-+		return 0;
-+	default:
-+		return -ENOTTY;
-+	}
-+}
-+
-+static ssize_t erst_dbg_read(struct file *filp, char __user *ubuf,
-+			     size_t usize, loff_t *off)
-+{
-+	int rc;
-+	ssize_t len = 0;
-+	u64 id;
-+
-+	if (*off != 0)
-+		return -EINVAL;
-+
-+	if (mutex_lock_interruptible(&erst_dbg_mutex) != 0)
-+		return -EINTR;
-+
-+retry_next:
-+	rc = erst_get_next_record_id(&id);
-+	if (rc)
-+		goto out;
-+	/* no more record */
-+	if (id == APEI_ERST_INVALID_RECORD_ID)
-+		goto out;
-+retry:
-+	rc = len = erst_read(id, erst_dbg_buf, erst_dbg_buf_len);
-+	/* The record may be cleared by others, try read next record */
-+	if (rc == -ENOENT)
-+		goto retry_next;
-+	if (rc < 0)
-+		goto out;
-+	if (len > ERST_DBG_RECORD_LEN_MAX) {
-+		pr_warning(ERST_DBG_PFX
-+			   "Record (ID: 0x%llx) length is too long: %zd\n",
-+			   id, len);
-+		rc = -EIO;
-+		goto out;
-+	}
-+	if (len > erst_dbg_buf_len) {
-+		kfree(erst_dbg_buf);
-+		rc = -ENOMEM;
-+		erst_dbg_buf = kmalloc(len, GFP_KERNEL);
-+		if (!erst_dbg_buf)
-+			goto out;
-+		erst_dbg_buf_len = len;
-+		goto retry;
-+	}
-+
-+	rc = -EINVAL;
-+	if (len > usize)
-+		goto out;
-+
-+	rc = -EFAULT;
-+	if (copy_to_user(ubuf, erst_dbg_buf, len))
-+		goto out;
-+	rc = 0;
-+out:
-+	mutex_unlock(&erst_dbg_mutex);
-+	return rc ? rc : len;
-+}
-+
-+static ssize_t erst_dbg_write(struct file *filp, const char __user *ubuf,
-+			      size_t usize, loff_t *off)
-+{
-+	int rc;
-+	struct cper_record_header *rcd;
-+
-+	if (!capable(CAP_SYS_ADMIN))
-+		return -EPERM;
-+
-+	if (usize > ERST_DBG_RECORD_LEN_MAX) {
-+		pr_err(ERST_DBG_PFX "Too long record to be written\n");
-+		return -EINVAL;
-+	}
-+
-+	if (mutex_lock_interruptible(&erst_dbg_mutex))
-+		return -EINTR;
-+	if (usize > erst_dbg_buf_len) {
-+		kfree(erst_dbg_buf);
-+		rc = -ENOMEM;
-+		erst_dbg_buf = kmalloc(usize, GFP_KERNEL);
-+		if (!erst_dbg_buf)
-+			goto out;
-+		erst_dbg_buf_len = usize;
-+	}
-+	rc = copy_from_user(erst_dbg_buf, ubuf, usize);
-+	if (rc) {
-+		rc = -EFAULT;
-+		goto out;
-+	}
-+	rcd = erst_dbg_buf;
-+	rc = -EINVAL;
-+	if (rcd->record_length != usize)
-+		goto out;
-+
-+	rc = erst_write(erst_dbg_buf);
-+
-+out:
-+	mutex_unlock(&erst_dbg_mutex);
-+	return rc < 0 ? rc : usize;
-+}
-+
-+static const struct file_operations erst_dbg_ops = {
-+	.owner		= THIS_MODULE,
-+	.open		= erst_dbg_open,
-+	.read		= erst_dbg_read,
-+	.write		= erst_dbg_write,
-+	.unlocked_ioctl	= erst_dbg_ioctl,
-+};
-+
-+static struct miscdevice erst_dbg_dev = {
-+	.minor	= MISC_DYNAMIC_MINOR,
-+	.name	= "erst_dbg",
-+	.fops	= &erst_dbg_ops,
-+};
-+
-+static __init int erst_dbg_init(void)
-+{
-+	return misc_register(&erst_dbg_dev);
-+}
-+
-+static __exit void erst_dbg_exit(void)
-+{
-+	misc_deregister(&erst_dbg_dev);
-+	kfree(erst_dbg_buf);
-+}
-+
-+module_init(erst_dbg_init);
-+module_exit(erst_dbg_exit);
-+
-+MODULE_AUTHOR("Huang Ying");
-+MODULE_DESCRIPTION("APEI Error Record Serialization Table debug support");
-+MODULE_LICENSE("GPL");
+the line 258 "key_instantiate_and_link" error could occur if
+"CONFIG_KEYS" is not set in .config
+net/dns_resolver/Kconfig config DNS_RESOLVER "depends on NET && KEYS"
+so ... CONFIG_KEYS should be set ....
 
 
+
+
+
+
+
+-- 
+Thanks,
+
+Steve
