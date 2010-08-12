@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443Ab0HLBFk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 21:05:40 -0400
-Received: from clueserver.org ([65.102.45.174]:60331 "EHLO clueserver.org"
+	id S1758669Ab0HLBGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 21:06:30 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:46766 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752154Ab0HLBFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 21:05:39 -0400
-X-Greylist: delayed 2214 seconds by postgrey-1.27 at vger.kernel.org; Wed, 11 Aug 2010 21:05:39 EDT
-Date: Wed, 11 Aug 2010 17:27:29 -0700 (PDT)
-From: alan <alan@clueserver.org>
-X-X-Sender: alan@mail.fnordora.org
-To: Rogier Wolff <R.E.Wolff@BitWizard.nl>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Jeff Garzik <jeff@garzik.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Question on siig sata 3 controller
-In-Reply-To: <20100810134817.GA25874@bitwizard.nl>
-Message-ID: <alpine.LRH.2.00.1008111726210.28286@mail.fnordora.org>
-References: <34979.10.6.6.23.1276144792.squirrel@10.6.6.2> <4C10A81F.50801@garzik.org> <54318.10.6.6.23.1276222123.squirrel@10.6.6.2> <20100615065714.GA9034@bitwizard.nl> <20100615110748.4303a106@lxorguk.ukuu.org.uk> <20100615145342.GC26989@bitwizard.nl>
- <20100615160137.62c92494@lxorguk.ukuu.org.uk> <1276622732.6843.2.camel@zowie.clueserver.org> <20100810134817.GA25874@bitwizard.nl>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1757571Ab0HLBG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 21:06:28 -0400
+Date: Wed, 11 Aug 2010 18:06:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
+        david@lang.hm, Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100812010612.GL2516@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100807061558.GA28087@thunk.org>
+ <AANLkTi=sMVjya9CH6UoZwJCXJTDRgBhnPXmApU_RHVTi@mail.gmail.com>
+ <20100808155719.GB3635@thunk.org>
+ <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com>
+ <20100808213821.GD3635@thunk.org>
+ <20100809112453.77210acc@lxorguk.ukuu.org.uk>
+ <20100809181638.GI3026@linux.vnet.ibm.com>
+ <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
+ <20100811222854.GJ2516@linux.vnet.ibm.com>
+ <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Aug 2010, Rogier Wolff wrote:
+On Thu, Aug 12, 2010 at 03:28:00AM +0300, Felipe Contreras wrote:
+> On Thu, Aug 12, 2010 at 1:28 AM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> > On Wed, Aug 11, 2010 at 10:18:51PM +0300, Felipe Contreras wrote:
+> >> On Mon, Aug 9, 2010 at 9:16 PM, Paul E. McKenney
+> >> <paulmck@linux.vnet.ibm.com> wrote:
+> >> > But wouldn't an office suite run as a power-oblivious application on an
+> >> > Android device?  After all, office applications do not need to run when
+> >> > the screen is turned off, so these the applications do not need to use
+> >> > suspend blockers.
+> >>
+> >> Ideally the system would be suspended even when the screen is on. If
+> >> there are no "trusted" applications running at the same time, then
+> >> openoffice wouldn't load at all. Right?
+> >
+> > My understanding is that Android systems in fact do not suspend when
+> > the screen is on, and that most (perhaps all) other systems do not
+> > opportunistically suspend at all.  There has been some speculation about
+> > what a hypothetical Android having a non-volatile display might do,
+> > but as far as I know, this is just speculation.
+> 
+> I have a desktop system in mind. If opportunistic suspend is only
+> triggered when the display is off, then it's no good for normal usage,
+> and therefore dynamic PC needs to get its act together... specially
+> for laptops.
 
-> On Tue, Jun 15, 2010 at 10:25:32AM -0700, Alan wrote:
->> On Tue, 2010-06-15 at 16:01 +0100, Alan Cox wrote:
->>>> Is one of these modules the driver for this controller? I think it's
->>>> AHCI: lshw says it uses ports cc00 ... and a bunch of others, and
->>>> those ports are claimed by ahci according to /proc/ioports. Ah! I need
->>>> better eyes. lshw already mentions that it's ahci...
->>>
->>> AHCI will be driving it.
->>
->> I have seen this problem with the 2.6.33 kernel in Fedora 13. The
->> problem goes away in 2.6.35-rc3. (Though networking is fubared for me on
->> that kernel, so I have not migrated to it.)
->>
->> My understanding is the "fix" in the driver was to blacklist ncq for
->> that controller. I have not verified that yet.
->
-> One of my disks died again a while ago. So I went to the machine to
-> replace the drive. But I forgot to write down which one had died. So I
-> started it up again. Now I had 7 disks again like before, but a
-> different drive was now "gone". So my RAID had only 6 out of 8 drives
-> and was "gone". Together with some 4.7T worth of data on it....
->
-> Next I went to the machine with a spare sata card. I removed the
-> drives from the ASUS U3S6 card, and put them on the old pci sata card.
->
-> By the time I logged in on the machine, the RAID had found 8/8 drives
-> and I think it had already started rebuilding.....
->
-> I now haven't had any problems with the drives in more than a week.
->
-> Performance of the raid has dropped from 600Mb to around 400Mb/sec,
-> obviously because the PCI card cannot handle 200Mb/sec of disk IO.
->
-> I'm open to suggestions for cheap highperformance WORKING PCIe sata
-> cards....
+If I understand you correctly, you are saying that both opportunistic
+suspend and dynamic power control should be used together, with dynamic
+power control being used for short non-busy periods (as in between
+keystrokes) and opportunistic suspend being used for longer non-busy
+periods (as in while grabbing a coffee).  That combination of usage
+sounds promising to me.
 
-I found that if I ran the latest of Linus' kernels, the controller worked 
-correctly.  There is obviously a change that needs to get backported into 
-the other working kernels.
+That said, I don't know that anyone has really sat down and thought
+through how one might apply suspend blockers to a desktop system.
+I suspect that there are several ways to go about it.
 
--- 
-Truth is stranger than fiction because fiction has to make sense.
+							Thanx, Paul
