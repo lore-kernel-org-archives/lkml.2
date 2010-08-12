@@ -1,278 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759098Ab0HLADK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:03:10 -0400
-Received: from kroah.org ([198.145.64.141]:43734 "EHLO coco.kroah.org"
+	id S1759377Ab0HLADZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:03:25 -0400
+Received: from kroah.org ([198.145.64.141]:60052 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759321Ab0HKX7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:05 2010
-Message-Id: <20100811235505.105064964@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:24 -0700
+	id S1759225Ab0HLADX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:03:23 -0400
+Date: Wed, 11 Aug 2010 17:02:49 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tao Ma <tao.ma@oracle.com>, Joel Becker <joel.becker@oracle.com>
-Subject: [103/111] ocfs2: Find proper end cpos for a leaf refcount block.
-In-Reply-To: <20100811235623.GA24440@kroah.com>
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/54] 2.6.34.4 -stable review
+Message-ID: <20100812000249.GA30948@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
 
-------------------
+This is the start of the stable review cycle for the 2.6.34.4 release.
+There are 54 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let us know.  If anyone is a maintainer of the proper subsystem, and
+wants to add a Signed-off-by: line to the patch, please respond with it.
 
-From: Tao Ma <tao.ma@oracle.com>
+Responses should be made by Friday, August 13, 2010, 20:00:00 UTC.
+Anything received after that time might be too late.
 
-commit 38a04e432768ec0b016f3c687b4de31ac111ae59 upstream.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.34.4-rc1.gz
+and the diffstat can be found below.
 
-ocfs2 refcount tree is stored as an extent tree while
-the leaf ocfs2_refcount_rec points to a refcount block.
+thanks,
 
-The following step can trip a kernel panic.
-mkfs.ocfs2 -b 512 -C 1M --fs-features=refcount $DEVICE
-mount -t ocfs2 $DEVICE $MNT_DIR
-FILE_NAME=$RANDOM
-FILE_NAME_1=$RANDOM
-FILE_REF="${FILE_NAME}_ref"
-FILE_REF_1="${FILE_NAME}_ref_1"
-for((i=0;i<305;i++))
-do
-# /mnt/1048576 is a file with 1048576 sizes.
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME_1
-done
-for((i=0;i<3;i++))
-do
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
-done
+greg k-h
 
-for((i=0;i<2;i++))
-do
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME_1
-done
-
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
-
-for((i=0;i<11;i++))
-do
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME
-cat /mnt/1048576 >> $MNT_DIR/$FILE_NAME_1
-done
-reflink $MNT_DIR/$FILE_NAME $MNT_DIR/$FILE_REF
-# write_f is a program which will write some bytes to a file at offset.
-# write_f -f file_name -l offset -w write_bytes.
-./write_f -f $MNT_DIR/$FILE_REF -l $[310*1048576] -w 4096
-./write_f -f $MNT_DIR/$FILE_REF -l $[306*1048576] -w 4096
-./write_f -f $MNT_DIR/$FILE_REF -l $[311*1048576] -w 4096
-./write_f -f $MNT_DIR/$FILE_NAME -l $[310*1048576] -w 4096
-./write_f -f $MNT_DIR/$FILE_NAME -l $[311*1048576] -w 4096
-reflink $MNT_DIR/$FILE_NAME $MNT_DIR/$FILE_REF_1
-./write_f -f $MNT_DIR/$FILE_NAME -l $[311*1048576] -w 4096
-#kernel panic here.
-
-The reason is that if the ocfs2_extent_rec is the last record
-in a leaf extent block, the old solution fails to find the
-suitable end cpos. So this patch try to walk through the b-tree,
-find the next sub root and get the c_pos the next sub-tree starts
-from.
-
-btw, I have runned tristan's test case against the patched kernel
-for several days and this type of kernel panic never happens again.
-
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
-Signed-off-by: Joel Becker <joel.becker@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ocfs2/alloc.c        |   10 ++--
- fs/ocfs2/alloc.h        |    5 ++
- fs/ocfs2/refcounttree.c |  117 ++++++++++++++++++++++++++++++++++++++++++++----
- 3 files changed, 119 insertions(+), 13 deletions(-)
-
---- a/fs/ocfs2/alloc.c
-+++ b/fs/ocfs2/alloc.c
-@@ -1765,9 +1765,9 @@ set_and_inc:
-  *
-  * The array index of the subtree root is passed back.
-  */
--static int ocfs2_find_subtree_root(struct ocfs2_extent_tree *et,
--				   struct ocfs2_path *left,
--				   struct ocfs2_path *right)
-+int ocfs2_find_subtree_root(struct ocfs2_extent_tree *et,
-+			    struct ocfs2_path *left,
-+			    struct ocfs2_path *right)
- {
- 	int i = 0;
- 
-@@ -2872,8 +2872,8 @@ out:
-  * This looks similar, but is subtly different to
-  * ocfs2_find_cpos_for_left_leaf().
-  */
--static int ocfs2_find_cpos_for_right_leaf(struct super_block *sb,
--					  struct ocfs2_path *path, u32 *cpos)
-+int ocfs2_find_cpos_for_right_leaf(struct super_block *sb,
-+				   struct ocfs2_path *path, u32 *cpos)
- {
- 	int i, j, ret = 0;
- 	u64 blkno;
---- a/fs/ocfs2/alloc.h
-+++ b/fs/ocfs2/alloc.h
-@@ -317,4 +317,9 @@ int ocfs2_path_bh_journal_access(handle_
- int ocfs2_journal_access_path(struct ocfs2_caching_info *ci,
- 			      handle_t *handle,
- 			      struct ocfs2_path *path);
-+int ocfs2_find_cpos_for_right_leaf(struct super_block *sb,
-+				   struct ocfs2_path *path, u32 *cpos);
-+int ocfs2_find_subtree_root(struct ocfs2_extent_tree *et,
-+			    struct ocfs2_path *left,
-+			    struct ocfs2_path *right);
- #endif /* OCFS2_ALLOC_H */
---- a/fs/ocfs2/refcounttree.c
-+++ b/fs/ocfs2/refcounttree.c
-@@ -969,6 +969,103 @@ out:
- }
- 
- /*
-+ * Find the end range for a leaf refcount block indicated by
-+ * el->l_recs[index].e_blkno.
-+ */
-+static int ocfs2_get_refcount_cpos_end(struct ocfs2_caching_info *ci,
-+				       struct buffer_head *ref_root_bh,
-+				       struct ocfs2_extent_block *eb,
-+				       struct ocfs2_extent_list *el,
-+				       int index,  u32 *cpos_end)
-+{
-+	int ret, i, subtree_root;
-+	u32 cpos;
-+	u64 blkno;
-+	struct super_block *sb = ocfs2_metadata_cache_get_super(ci);
-+	struct ocfs2_path *left_path = NULL, *right_path = NULL;
-+	struct ocfs2_extent_tree et;
-+	struct ocfs2_extent_list *tmp_el;
-+
-+	if (index < le16_to_cpu(el->l_next_free_rec) - 1) {
-+		/*
-+		 * We have a extent rec after index, so just use the e_cpos
-+		 * of the next extent rec.
-+		 */
-+		*cpos_end = le32_to_cpu(el->l_recs[index+1].e_cpos);
-+		return 0;
-+	}
-+
-+	if (!eb || (eb && !eb->h_next_leaf_blk)) {
-+		/*
-+		 * We are the last extent rec, so any high cpos should
-+		 * be stored in this leaf refcount block.
-+		 */
-+		*cpos_end = UINT_MAX;
-+		return 0;
-+	}
-+
-+	/*
-+	 * If the extent block isn't the last one, we have to find
-+	 * the subtree root between this extent block and the next
-+	 * leaf extent block and get the corresponding e_cpos from
-+	 * the subroot. Otherwise we may corrupt the b-tree.
-+	 */
-+	ocfs2_init_refcount_extent_tree(&et, ci, ref_root_bh);
-+
-+	left_path = ocfs2_new_path_from_et(&et);
-+	if (!left_path) {
-+		ret = -ENOMEM;
-+		mlog_errno(ret);
-+		goto out;
-+	}
-+
-+	cpos = le32_to_cpu(eb->h_list.l_recs[index].e_cpos);
-+	ret = ocfs2_find_path(ci, left_path, cpos);
-+	if (ret) {
-+		mlog_errno(ret);
-+		goto out;
-+	}
-+
-+	right_path = ocfs2_new_path_from_path(left_path);
-+	if (!right_path) {
-+		ret = -ENOMEM;
-+		mlog_errno(ret);
-+		goto out;
-+	}
-+
-+	ret = ocfs2_find_cpos_for_right_leaf(sb, left_path, &cpos);
-+	if (ret) {
-+		mlog_errno(ret);
-+		goto out;
-+	}
-+
-+	ret = ocfs2_find_path(ci, right_path, cpos);
-+	if (ret) {
-+		mlog_errno(ret);
-+		goto out;
-+	}
-+
-+	subtree_root = ocfs2_find_subtree_root(&et, left_path,
-+					       right_path);
-+
-+	tmp_el = left_path->p_node[subtree_root].el;
-+	blkno = left_path->p_node[subtree_root+1].bh->b_blocknr;
-+	for (i = 0; i < le32_to_cpu(tmp_el->l_next_free_rec); i++) {
-+		if (le64_to_cpu(tmp_el->l_recs[i].e_blkno) == blkno) {
-+			*cpos_end = le32_to_cpu(tmp_el->l_recs[i+1].e_cpos);
-+			break;
-+		}
-+	}
-+
-+	BUG_ON(i == le32_to_cpu(tmp_el->l_next_free_rec));
-+
-+out:
-+	ocfs2_free_path(left_path);
-+	ocfs2_free_path(right_path);
-+	return ret;
-+}
-+
-+/*
-  * Given a cpos and len, try to find the refcount record which contains cpos.
-  * 1. If cpos can be found in one refcount record, return the record.
-  * 2. If cpos can't be found, return a fake record which start from cpos
-@@ -983,10 +1080,10 @@ static int ocfs2_get_refcount_rec(struct
- 				  struct buffer_head **ret_bh)
- {
- 	int ret = 0, i, found;
--	u32 low_cpos;
-+	u32 low_cpos, uninitialized_var(cpos_end);
- 	struct ocfs2_extent_list *el;
--	struct ocfs2_extent_rec *tmp, *rec = NULL;
--	struct ocfs2_extent_block *eb;
-+	struct ocfs2_extent_rec *rec = NULL;
-+	struct ocfs2_extent_block *eb = NULL;
- 	struct buffer_head *eb_bh = NULL, *ref_leaf_bh = NULL;
- 	struct super_block *sb = ocfs2_metadata_cache_get_super(ci);
- 	struct ocfs2_refcount_block *rb =
-@@ -1034,12 +1131,16 @@ static int ocfs2_get_refcount_rec(struct
- 		}
- 	}
- 
--	/* adjust len when we have ocfs2_extent_rec after it. */
--	if (found && i < le16_to_cpu(el->l_next_free_rec) - 1) {
--		tmp = &el->l_recs[i+1];
-+	if (found) {
-+		ret = ocfs2_get_refcount_cpos_end(ci, ref_root_bh,
-+						  eb, el, i, &cpos_end);
-+		if (ret) {
-+			mlog_errno(ret);
-+			goto out;
-+		}
- 
--		if (le32_to_cpu(tmp->e_cpos) < cpos + len)
--			len = le32_to_cpu(tmp->e_cpos) - cpos;
-+		if (cpos_end < low_cpos + len)
-+			len = cpos_end - low_cpos;
- 	}
- 
- 	ret = ocfs2_read_refcount_block(ci, le64_to_cpu(rec->e_blkno),
-
-
+ Makefile                                    |    2 +-
+ arch/arm/Kconfig                            |   12 ++++
+ arch/arm/include/asm/tlbflush.h             |    8 +++
+ arch/arm/mach-pxa/cm-x300.c                 |    3 +-
+ arch/arm/plat-mxc/include/mach/gpio.h       |    1 +
+ arch/powerpc/Makefile                       |   16 ++++-
+ arch/x86/include/asm/cmpxchg_32.h           |   68 ++++++++++----------
+ arch/x86/include/asm/cmpxchg_64.h           |   40 ++++++------
+ arch/x86/kernel/cpu/vmware.c                |    9 +++-
+ arch/x86/mm/kmmio.c                         |   16 ++++-
+ arch/x86/mm/testmmiotrace.c                 |   22 +++++++
+ arch/x86/pci/acpi.c                         |    9 +++
+ drivers/ata/ata_piix.c                      |    8 +++
+ drivers/atm/solos-pci.c                     |    7 ++-
+ drivers/bluetooth/btusb.c                   |    3 +
+ drivers/char/nozomi.c                       |    4 +-
+ drivers/gpu/drm/drm_edid.c                  |    4 +-
+ drivers/gpu/drm/i915/dvo_tfp410.c           |    2 +-
+ drivers/gpu/drm/i915/intel_dp.c             |   27 +++++++-
+ drivers/ide/ide-cd.c                        |   14 +++-
+ drivers/md/bitmap.c                         |    4 +-
+ drivers/md/bitmap.h                         |    1 +
+ drivers/md/raid1.c                          |   25 +++++--
+ drivers/md/raid10.c                         |   18 +++++
+ drivers/mtd/nand/plat_nand.c                |    2 +-
+ drivers/net/smsc911x.c                      |   92 +++++++++++++++------------
+ drivers/net/wireless/iwlwifi/iwl-devtrace.h |    2 +-
+ drivers/net/xen-netfront.c                  |    1 +
+ drivers/pci/quirks.c                        |    4 +
+ drivers/scsi/ibmvscsi/ibmvfc.c              |    8 ++-
+ drivers/scsi/ibmvscsi/ibmvfc.h              |    1 +
+ drivers/staging/line6/Kconfig               |    1 +
+ drivers/staging/panel/panel.c               |    2 +
+ drivers/staging/rt2860/usb_main_dev.c       |    1 +
+ drivers/usb/core/hub.c                      |    6 ++-
+ drivers/usb/core/quirks.c                   |    3 +
+ drivers/usb/core/urb.c                      |   50 ++++++---------
+ drivers/usb/host/ehci-pci.c                 |    1 +
+ drivers/usb/host/ehci-sched.c               |   10 +--
+ drivers/usb/host/ehci.h                     |    1 +
+ drivers/usb/misc/usbtest.c                  |    6 ++-
+ drivers/usb/mon/mon_bin.c                   |    2 +-
+ drivers/usb/serial/cp210x.c                 |    4 +
+ drivers/usb/serial/ftdi_sio.c               |    4 +
+ drivers/usb/serial/ftdi_sio_ids.h           |   10 +++
+ drivers/usb/serial/option.c                 |   13 ++++
+ drivers/video/w100fb.c                      |    4 +-
+ drivers/xen/events.c                        |    1 +
+ fs/block_dev.c                              |   10 ++-
+ fs/ecryptfs/file.c                          |   60 +++++++++++-------
+ fs/ecryptfs/inode.c                         |    5 +-
+ fs/jfs/xattr.c                              |   87 +++++++++++--------------
+ fs/signalfd.c                               |    2 +
+ fs/splice.c                                 |   12 +---
+ include/linux/fs.h                          |    6 +-
+ include/linux/interrupt.h                   |    7 ++-
+ include/linux/netdevice.h                   |    2 +
+ include/linux/notifier.h                    |    1 +
+ include/linux/usb/quirks.h                  |    4 +
+ kernel/irq/manage.c                         |    2 +-
+ mm/swapfile.c                               |    6 +-
+ net/ipv4/devinet.c                          |    1 +
+ net/sched/sch_generic.c                     |   18 +++++
+ 63 files changed, 513 insertions(+), 262 deletions(-)
