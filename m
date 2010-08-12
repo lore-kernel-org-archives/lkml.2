@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933000Ab0HLAHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:07:55 -0400
-Received: from kroah.org ([198.145.64.141]:60442 "EHLO coco.kroah.org"
+	id S933087Ab0HLATt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:19:49 -0400
+Received: from kroah.org ([198.145.64.141]:60476 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932958Ab0HLAHq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:07:46 -0400
+	id S933011Ab0HLAH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:07:57 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:13 2010
-Message-Id: <20100812000613.137972824@clark.site>
+Message-Id: <20100812000613.674427535@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:20 -0700
+Date: Wed, 11 Aug 2010 17:05:26 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>, Pekka Paalanen <pq@iki.fi>,
-        Stuart Bennett <stuart@freedesktop.org>,
-        Marcin Kocielnicki <koriakin@0x04.net>, nouveau@lists.freedesktop.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [05/67] x86, kmmio/mmiotrace: Fix double free of kmmio_fault_pages
+        Peter Huewe <peterhuewe@gmx.de>, Willy Tarreau <w@1wt.eu>
+Subject: [11/67] Staging: panel: Prevent double-calling of parport_release - fix oops.
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,122 +25,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: Peter Huewe <peterhuewe@gmx.de>
 
-commit 8b8f79b927b6b302bb65fb8c56e7a19be5fbdbef upstream.
+commit 060132ae42cce3f9d2fd34d9a17b98362b44b9f9 upstream.
 
-After every iounmap mmiotrace has to free kmmio_fault_pages, but
-it can't do it directly, so it defers freeing by RCU.
+This patch prevents the code from calling parport_release and
+parport_unregister_device twice with the same arguments - and thus fixes an oops.
 
-It usually works, but when mmiotraced code calls ioremap-iounmap
-multiple times without sleeping between (so RCU won't kick in
-and start freeing) it can be given the same virtual address, so
-at every iounmap mmiotrace will schedule the same pages for
-release. Obviously it will explode on second free.
+Rationale:
+After the first call the parport is already released and the
+handle isn't valid anymore and calling parport_release and
+parport_unregister_device twice isn't a good idea.
 
-Fix it by marking kmmio_fault_pages which are scheduled for
-release and not adding them second time.
-
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Tested-by: Marcin Kocielnicki <koriakin@0x04.net>
-Tested-by: Shinpei KATO <shinpei@il.is.s.u-tokyo.ac.jp>
-Acked-by: Pekka Paalanen <pq@iki.fi>
-Cc: Stuart Bennett <stuart@freedesktop.org>
-Cc: Marcin Kocielnicki <koriakin@0x04.net>
-Cc: nouveau@lists.freedesktop.org
-LKML-Reference: <20100613215654.GA3829@joi.lan>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Acked-by: Willy Tarreau <w@1wt.eu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/kmmio.c         |   16 +++++++++++++---
- arch/x86/mm/testmmiotrace.c |   22 ++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 3 deletions(-)
+ drivers/staging/panel/panel.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/x86/mm/kmmio.c
-+++ b/arch/x86/mm/kmmio.c
-@@ -45,6 +45,8 @@ struct kmmio_fault_page {
- 	 * Protected by kmmio_lock, when linked into kmmio_page_table.
- 	 */
- 	int count;
-+
-+	bool scheduled_for_release;
- };
- 
- struct kmmio_delayed_release {
-@@ -398,8 +400,11 @@ static void release_kmmio_fault_page(uns
- 	BUG_ON(f->count < 0);
- 	if (!f->count) {
- 		disarm_kmmio_fault_page(f);
--		f->release_next = *release_list;
--		*release_list = f;
-+		if (!f->scheduled_for_release) {
-+			f->release_next = *release_list;
-+			*release_list = f;
-+			f->scheduled_for_release = true;
-+		}
- 	}
- }
- 
-@@ -471,8 +476,10 @@ static void remove_kmmio_fault_pages(str
- 			prevp = &f->release_next;
- 		} else {
- 			*prevp = f->release_next;
-+			f->release_next = NULL;
-+			f->scheduled_for_release = false;
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -2179,6 +2179,7 @@ int panel_init(void)
+ 		if (pprt) {
+ 			parport_release(pprt);
+ 			parport_unregister_device(pprt);
++			pprt = NULL;
  		}
--		f = f->release_next;
-+		f = *prevp;
+ 		parport_unregister_driver(&panel_driver);
+ 		printk(KERN_ERR "Panel driver version " PANEL_VERSION
+@@ -2228,6 +2229,7 @@ static void __exit panel_cleanup_module(
+ 		/* TODO: free all input signals */
+ 		parport_release(pprt);
+ 		parport_unregister_device(pprt);
++		pprt = NULL;
  	}
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-@@ -510,6 +517,9 @@ void unregister_kmmio_probe(struct kmmio
- 	kmmio_count--;
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-+	if (!release_list)
-+		return;
-+
- 	drelease = kmalloc(sizeof(*drelease), GFP_ATOMIC);
- 	if (!drelease) {
- 		pr_crit("leaking kmmio_fault_page objects.\n");
---- a/arch/x86/mm/testmmiotrace.c
-+++ b/arch/x86/mm/testmmiotrace.c
-@@ -90,6 +90,27 @@ static void do_test(unsigned long size)
- 	iounmap(p);
- }
- 
-+/*
-+ * Tests how mmiotrace behaves in face of multiple ioremap / iounmaps in
-+ * a short time. We had a bug in deferred freeing procedure which tried
-+ * to free this region multiple times (ioremap can reuse the same address
-+ * for many mappings).
-+ */
-+static void do_test_bulk_ioremapping(void)
-+{
-+	void __iomem *p;
-+	int i;
-+
-+	for (i = 0; i < 10; ++i) {
-+		p = ioremap_nocache(mmio_address, PAGE_SIZE);
-+		if (p)
-+			iounmap(p);
-+	}
-+
-+	/* Force freeing. If it will crash we will know why. */
-+	synchronize_rcu();
-+}
-+
- static int __init init(void)
- {
- 	unsigned long size = (read_far) ? (8 << 20) : (16 << 10);
-@@ -104,6 +125,7 @@ static int __init init(void)
- 		   "and writing 16 kB of rubbish in there.\n",
- 		   size >> 10, mmio_address);
- 	do_test(size);
-+	do_test_bulk_ioremapping();
- 	pr_info("All done.\n");
- 	return 0;
+ 	parport_unregister_driver(&panel_driver);
  }
 
 
