@@ -1,45 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759926Ab0HLLpZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 07:45:25 -0400
-Received: from smtp-out-205.synserver.de ([212.40.180.205]:1087 "EHLO
-	smtp-out-205.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933581Ab0HLLpV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 07:45:21 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 22696
-Date: Thu, 12 Aug 2010 13:45:13 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Jiri Kosina <jkosina@suse.cz>
+	id S933593Ab0HLL4D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 07:56:03 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50142 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759898Ab0HLL4A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 07:56:00 -0400
+Date: Thu, 12 Aug 2010 13:55:58 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
 Cc: Heinz Diehl <htd@fritha.org>, linux-kernel@vger.kernel.org,
         linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
         Alan Ott <alan@signal11.us>
 Subject: Re: [BUG] object: is not initialized, yet kobject_put() is being
  called
-Message-ID: <20100812114513.GA1584@arch.tripp.de>
-References: <20100810210941.GA7938@fritha.org>
- <20100810223215.GA1609@arch.tripp.de>
- <alpine.LNX.2.00.1008121108540.2702@pobox.suse.cz>
- <20100812091659.GA1591@arch.tripp.de>
- <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz>
- <20100812113624.GB1591@arch.tripp.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 In-Reply-To: <20100812113624.GB1591@arch.tripp.de>
+Message-ID: <alpine.LNX.2.00.1008121354180.2702@pobox.suse.cz>
+References: <20100810210941.GA7938@fritha.org> <20100810223215.GA1609@arch.tripp.de> <alpine.LNX.2.00.1008121108540.2702@pobox.suse.cz> <20100812091659.GA1591@arch.tripp.de> <alpine.LNX.2.00.1008121148100.2702@pobox.suse.cz>
+ <20100812113624.GB1591@arch.tripp.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 01:36:24PM +0200, Markus Trippelsdorf wrote:
-> On Thu, Aug 12, 2010 at 01:18:15PM +0200, Jiri Kosina wrote:
-> > On Thu, 12 Aug 2010, Markus Trippelsdorf wrote:
-> > 
-> > > On Thu, Aug 12, 2010 at 11:11:50AM +0200, Jiri Kosina wrote:
-> > > > 
+On Thu, 12 Aug 2010, Markus Trippelsdorf wrote:
+
 > > > > Guys, could you please send me your .config with which you are 
 > > > > experiencing the problem, so that I can try to reproduce it with it?
 > > > 
@@ -64,9 +51,12 @@ On Thu, Aug 12, 2010 at 01:36:24PM +0200, Markus Trippelsdorf wrote:
 > Correct. And I should add that it very easy to reproduce here; just
 > disconnecting the usb receiver triggers the WARNING.
 
-Disabling USB_HIDDEV in my .config solves the problem (there is no
-WARNING anymore when disconnecting the receiver).
+Hmm ... there is a certain interface of the device which doesn't get 
+connected to input, right? (0003:046D:C52B.0008).
+
+What happens if you compile without CONFIG_HIDRAW and/or 
+CONFIG_USB_HIDDEV?
 
 -- 
-»A man who doesn't know he is in prison can never escape.«
-William S. Burroughs
+Jiri Kosina
+SUSE Labs, Novell Inc.
