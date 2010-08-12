@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760157Ab0HLNnw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 09:43:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12492 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab0HLNnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 09:43:51 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<alpine.DEB.2.00.1008110806070.673@router.home>
-	<20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
-	<20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 12 Aug 2010 09:42:21 -0400
-In-Reply-To: <20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp> (Naoya
-	Horiguchi's message of "Thu, 12 Aug 2010 16:59:41 +0900")
-Message-ID: <x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1760161Ab0HLNtA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 09:49:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62420 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab0HLNs6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 09:48:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=CW5j16jVrs5QL8cSToIxrSqtTmviJoD0B+2zlGMS6Xl6kqzqNbY7KcGHQZvSuGkEye
+         r/Z176jYvlmFnx6sWyLKRoyB1AnWqibvTFyf5KhmxrJUWbd60aagpbVyKnJN292AWIoD
+         IcJieTscHTdXBqT+v7V+XRuz3NwYHCtixCbUk=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH 1/2 v2] ARM: Fix gen_nand probe structures contents
+Date: Thu, 12 Aug 2010 15:48:28 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux@arm.linux.org.uk, nico@fluxnic.net, kernel@wantstofly.org,
+        kernel@pengutronix.de, u.kleine-koenig@pengutronix.de,
+        kaloz@openwrt.org, khc@pm.waw.pl, tj@kernel.org, gregkh@suse.de,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Artem.Bityutskiy@nokia.com, David.Woodhouse@intel.com,
+        ralf@linux-mips.org, uclinux-dist-devel@blackfin.uclinux.org,
+        yakovenkov@gmail.com, w.sang@pengutronix.de
+References: <1281581635-26213-1-git-send-email-marek.vasut@gmail.com> <201008121304.01178.marek.vasut@gmail.com> <AANLkTimuyuNGsTAfJXi7TL4HQH-botNcakse5NHj2fc0@mail.gmail.com>
+In-Reply-To: <AANLkTimuyuNGsTAfJXi7TL4HQH-botNcakse5NHj2fc0@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008121548.28507.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+Dne Čt 12. srpna 2010 14:47:06 Mike Frysinger napsal(a):
+> On Thu, Aug 12, 2010 at 07:04, Marek Vasut wrote:
+> > Dne Čt 12. srpna 2010 05:36:31 Mike Frysinger napsal(a):
+> >> On Wed, Aug 11, 2010 at 22:53, Marek Vasut wrote:
+> >> > These three platforms didn't properly fill nr_chips in gen_nand
+> >> > registration and
+> >> 
+> >> > therefore depended on gen_nand bug fixed by the following patch:
+> >> the Blackfin arch has a mailing list ... no need to pick out people
+> > 
+> > Hi, that's true, but there's that "scripts/get_maintainer.pl" thing which
+> > gave me this list.
+> 
+> yes, but typically that's a shotgun approach that grabs way more
+> people and can easily fall out of date (people no longer
+> exist/etc...).  personally, i use it as a fallback when MAINTAINERS
+> doesnt cover it.
+> -mike
 
-> Basically it is user's responsibility to take care of race condition
-> related to direct I/O, but some events which are out of user's control
-> (such as memory failure) can happen at any time. So we need to lock and
-> set/clear PG_writeback flags in dierct I/O code to protect from data loss.
+The more eyes on the code, the better :)
 
-Did you do any performance testing of this?  If not, please do and
-report back.  I'm betting users won't be pleased with the results.
-
-Cheers,
-Jeff
-
->
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  fs/direct-io.c |    8 +++++++-
->  1 files changed, 7 insertions(+), 1 deletions(-)
->
-> diff --git a/fs/direct-io.c b/fs/direct-io.c
-> index 7600aac..0d0810d 100644
-> --- a/fs/direct-io.c
-> +++ b/fs/direct-io.c
-> @@ -439,7 +439,10 @@ static int dio_bio_complete(struct dio *dio, struct bio *bio)
->  			struct page *page = bvec[page_no].bv_page;
->  
->  			if (dio->rw == READ && !PageCompound(page))
-> -				set_page_dirty_lock(page);
-> +				set_page_dirty(page);
-> +			if (dio->rw & WRITE)
-> +				end_page_writeback(page);
-> +			unlock_page(page);
->  			page_cache_release(page);
->  		}
->  		bio_put(bio);
-> @@ -702,11 +705,14 @@ submit_page_section(struct dio *dio, struct page *page,
->  {
->  	int ret = 0;
->  
-> +	lock_page(page);
-> +
->  	if (dio->rw & WRITE) {
->  		/*
->  		 * Read accounting is performed in submit_bio()
->  		 */
->  		task_io_account_write(len);
-> +		set_page_writeback(page);
->  	}
->  
->  	/*
+Cheers
