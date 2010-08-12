@@ -1,103 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759154Ab0HLHxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 03:53:47 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:53305 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753176Ab0HLHxo (ORCPT
+	id S1758968Ab0HLHzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 03:55:06 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:40692 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752693Ab0HLHzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 03:53:44 -0400
-Date: Thu, 12 Aug 2010 09:55:32 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Sachin Sant <sachinp@in.ibm.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Subject: Re: Latest git build failure on s390 - dma_get_cache_alignment()
-Message-ID: <20100812075532.GA7814@osiris.boeblingen.de.ibm.com>
-References: <4C63A551.3040701@in.ibm.com>
+	Thu, 12 Aug 2010 03:55:04 -0400
+Date: Thu, 12 Aug 2010 16:53:23 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] Hugepage migration (v2)
+Message-ID: <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.00.1008110806070.673@router.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-2022-jp
 Content-Disposition: inline
-In-Reply-To: <4C63A551.3040701@in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.00.1008110806070.673@router.home>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 01:10:01PM +0530, Sachin Sant wrote:
-> Latest 2.6.35 git (2.6.35-git11 : 5af568cbd...) fails to build
-> on s390 with following errors :
+On Wed, Aug 11, 2010 at 08:09:59AM -0500, Christoph Lameter wrote:
+> On Tue, 10 Aug 2010, Naoya Horiguchi wrote:
 > 
-> arch/s390/mm/fault.c:396: warning: frame size of 'do_protection_exception' is 264 bytes
-> In file included from include/linux/dmaengine.h:26,
->            from include/linux/skbuff.h:30,
->            from include/linux/icmpv6.h:82,
->            from include/linux/ipv6.h:220,
->            from include/net/ipv6.h:16,
->            from include/linux/sunrpc/clnt.h:25,
->            from include/linux/nfs_fs.h:48,
->            from init/do_mounts.c:20:
-> include/linux/dma-mapping.h:145: error: static declaration of 'dma_get_cache_alignment' follows non-static declaration
-> include/asm-generic/dma-mapping-broken.h:73: error: previous declaration of 'dma_get_cache_alignment' was here
-> make[1]: *** [init/do_mounts.o] Error 1
-> make[1]: *** Waiting for unfinished jobs....
-> init/do_mounts_md.c: In function 'md_setup_drive':
-> init/do_mounts_md.c:241: warning: frame size of 'md_setup_drive' is 496 bytes
-> make: *** [init] Error 2
-> make: *** Waiting for unfinished jobs....
+> > There were two points of issue.
+> >
+> > * Dividing hugepage migration functions from original migration code.
+> >   This is to avoid complexity.
+> >   In present version, some high level migration routines are defined to handle
+> >   hugepage, but some low level routines (such as migrate_copy_page() etc.)
+> >   are shared with original migration code in order not to increase duplication.
 > 
-> The code in question was last changed via following commit
+> I hoped that we can avoid the branching for taking stuff off the lru and
+> put pages back later to the lru. Seems that we still do that. Can be
+> refactor the code in such a way that the lru handling cleanly isolates?
+> There are now multiple use cases for migration that could avoid LRU
+> handling even for PAGE_SIZE pages.
+
+OK.
+I'll rewrite isolation_lru_page() and putback_lru_page() like this:
+
+   isolation_lru_page()
+      for PAGE_SIZE page : delete from LRU list and get count
+      for hugepage       : just get count
+
+   putback_lru_page()
+      for PAGE_SIZE page : add to LRU list and put count
+      for hugepage       : just put count
+
+By doing this, we can avoid ugly code in individual migration callers.
+
+
+> > * Locking problem between direct I/O and hugepage migration
+> >   As a result of digging the race between hugepage I/O and hugepage migration,
+> >   (where hugepage I/O can be seen only in direct I/O,)
+> >   I noticed that without additional locking we can avoid this race condition
+> >   because in direct I/O we can get whether some subpages are under I/O or not
+> >   from reference count of the head page and hugepage migration safely fails
+> >   if some references remain.  So no data lost should occurs on the migration
+> >   concurrent with direct I/O.
 > 
-> commit 4565f0170dfc849b3629c27d769db800467baa62
-> dma-mapping: unify dma_get_cache_alignment implementations
+> Can you also avoid refcounts being increased during migration?
 
-Cc'ing linux-arch since the original patch got posted there as well.
+Yes. I think this will be done in above-mentioned refactoring.
 
-Patch below should fix it.
+> The page
+> lock is taken for the PAGE_SIZEd migration case. Can direct I/O be stopped
+> by taking the page lock on the head page? If not then races can still
+> occur.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
+Ah. I missed it.
+This patch only handles migration under direct I/O.
+For the opposite (direct I/O under migration) it's not true.
+I wrote additional patches (later I'll reply to this email)
+for solving locking problem. Could you review them?
 
- include/asm-generic/dma-mapping-common.h |    8 ++++++++
- include/linux/dma-mapping.h              |    8 --------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+(Maybe these patches are beyond the scope of hugepage migration patch,
+so is it better to propose them separately?)
 
-diff --git a/include/asm-generic/dma-mapping-common.h b/include/asm-generic/dma-mapping-common.h
-index 0c80bb3..8079c72 100644
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -160,6 +160,14 @@ dma_sync_sg_for_device(struct device *dev, struct scatterlist *sg,
- 
- }
- 
-+static inline int dma_get_cache_alignment(void)
-+{
-+#ifdef ARCH_DMA_MINALIGN
-+	return ARCH_DMA_MINALIGN;
-+#endif
-+	return 1;
-+}
-+
- #define dma_map_single(d, a, s, r) dma_map_single_attrs(d, a, s, r, NULL)
- #define dma_unmap_single(d, a, s, r) dma_unmap_single_attrs(d, a, s, r, NULL)
- #define dma_map_sg(d, s, n, r) dma_map_sg_attrs(d, s, n, r, NULL)
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index e0670a5..89b7e1a 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -142,14 +142,6 @@ static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
- 		return -EIO;
- }
- 
--static inline int dma_get_cache_alignment(void)
--{
--#ifdef ARCH_DMA_MINALIGN
--	return ARCH_DMA_MINALIGN;
--#endif
--	return 1;
--}
--
- /* flags for the coherent memory api */
- #define	DMA_MEMORY_MAP			0x01
- #define DMA_MEMORY_IO			0x02
+Thanks,
+Naoya Horiguchi
