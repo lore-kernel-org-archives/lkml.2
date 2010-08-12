@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933213Ab0HLAO3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:14:29 -0400
-Received: from kroah.org ([198.145.64.141]:47869 "EHLO coco.kroah.org"
+	id S933099Ab0HLAOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:14:31 -0400
+Received: from kroah.org ([198.145.64.141]:47863 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933158Ab0HLAIe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:34 -0400
+	id S933157Ab0HLAId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:33 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:16 2010
-Message-Id: <20100812000616.181969463@clark.site>
+Message-Id: <20100812000616.087298787@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:53 -0700
+Date: Wed, 11 Aug 2010 17:05:52 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
@@ -17,7 +17,7 @@ Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         Philipp Reisner <philipp.reisner@linbit.com>,
         Lars Ellenberg <lars.ellenberg@linbit.com>,
         Jens Axboe <jaxboe@fusionio.com>
-Subject: [38/67] drbd: Disable delay probes for the upcomming release
+Subject: [37/67] drbd: Initialize all members of sync_conf to their defaults [Bugz 315]
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,7 +29,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Philipp Reisner <philipp.reisner@linbit.com>
 
-commit 6710a5760355be8f2e51682f41b0d3fc76550309 upstream.
+commit 85f4cc17a62c3ac9edeaf120cdae7261df458053 upstream.
 
 Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
 Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
@@ -37,23 +37,38 @@ Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/block/drbd/drbd_main.c |    6 +-----
- 1 file changed, 1 insertion(+), 5 deletions(-)
+ drivers/block/drbd/drbd_main.c |   21 ++++++++++++++++++---
+ 1 file changed, 18 insertions(+), 3 deletions(-)
 
 --- a/drivers/block/drbd/drbd_main.c
 +++ b/drivers/block/drbd/drbd_main.c
-@@ -2371,11 +2371,7 @@ static int _drbd_send_zc_ee(struct drbd_
+@@ -2660,9 +2660,24 @@ static void drbd_unplug_fn(struct reques
  
- static void consider_delay_probes(struct drbd_conf *mdev)
+ static void drbd_set_defaults(struct drbd_conf *mdev)
  {
--	if (mdev->state.conn != C_SYNC_SOURCE || mdev->agreed_pro_version < 93)
--		return;
--
--	if (mdev->dp_volume_last + mdev->sync_conf.dp_volume * 2 < mdev->send_cnt)
--		drbd_send_delay_probes(mdev);
-+	return;
- }
- 
- static int w_delay_probes(struct drbd_conf *mdev, struct drbd_work *w, int cancel)
+-	mdev->sync_conf.after      = DRBD_AFTER_DEF;
+-	mdev->sync_conf.rate       = DRBD_RATE_DEF;
+-	mdev->sync_conf.al_extents = DRBD_AL_EXTENTS_DEF;
++	/* This way we get a compile error when sync_conf grows,
++	   and we forgot to initialize it here */
++	mdev->sync_conf = (struct syncer_conf) {
++		/* .rate = */		DRBD_RATE_DEF,
++		/* .after = */		DRBD_AFTER_DEF,
++		/* .al_extents = */	DRBD_AL_EXTENTS_DEF,
++		/* .dp_volume = */	DRBD_DP_VOLUME_DEF,
++		/* .dp_interval = */	DRBD_DP_INTERVAL_DEF,
++		/* .throttle_th = */	DRBD_RS_THROTTLE_TH_DEF,
++		/* .hold_off_th = */	DRBD_RS_HOLD_OFF_TH_DEF,
++		/* .verify_alg = */	{}, 0,
++		/* .cpu_mask = */	{}, 0,
++		/* .csums_alg = */	{}, 0,
++		/* .use_rle = */	0
++	};
++
++	/* Have to use that way, because the layout differs between
++	   big endian and little endian */
+ 	mdev->state = (union drbd_state) {
+ 		{ .role = R_SECONDARY,
+ 		  .peer = R_UNKNOWN,
 
 
