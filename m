@@ -1,174 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761084Ab0HLXIN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 19:08:13 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33834 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753091Ab0HLXIJ (ORCPT
+	id S1761121Ab0HLXKe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 19:10:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51643
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760954Ab0HLXKd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 19:08:09 -0400
-Date: Thu, 12 Aug 2010 16:08:04 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ACPI: Fix wrong atomicity check in preemption point
-Message-Id: <20100812160804.3578a724.akpm@linux-foundation.org>
-In-Reply-To: <4911F71203A09E4D9981D27F9D830858AC6DB2A6@orsmsx503.amr.corp.intel.com>
-References: <1281152316-5907-1-git-send-regression-fweisbec@gmail.com>
-	<4911F71203A09E4D9981D27F9D830858AC6DB2A6@orsmsx503.amr.corp.intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Thu, 12 Aug 2010 19:10:33 -0400
+Date: Thu, 12 Aug 2010 16:10:50 -0700 (PDT)
+Message-Id: <20100812.161050.246523792.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 9 Aug 2010 08:56:28 -0700
-"Moore, Robert" <robert.moore@intel.com> wrote:
 
-> >-----Original Message-----
-> >From: Frederic Weisbecker [mailto:fweisbec@gmail.com]
-> >Sent: Friday, August 06, 2010 8:39 PM
-> >To: Brown, Len
-> >Cc: LKML; Frederic Weisbecker; Moore, Robert
-> >Subject: [PATCH] ACPI: Fix wrong atomicity check in preemption point
-> >
-> >The acpi preemption point checks the atomicity of the context
-> >using in_atomic_preempt_off(). This helper must be used only
-> >to check the atomicity before a prior call to preempt_disable(),
-> >which is not what we want here.
-> >
-> >What we want is to simply check if we are in an atomic section.
-> >This helper is actually only used by the scheduler for particular
-> >needs and shouldn't be used outside.
-> >
-> >The check made here is then always wrong. We will schedule only if
-> >preemption has been disabled once. It never has been a problem
-> >during the boot because premption is disabled and moreover the BKL
-> >is held, so we increase twice the preempt count. But now that
-> >we drop the bkl from the boot, the preempt count is only increased
-> >once, and then we schedule in the acpi preemption point while we
-> >shouldn't.
-> >
-> >In fact using such in_atomic*() like helpers is quite fragile to
-> >guess if we can schedule, but still, in_atomic() is less buggy than
-> >what was there before.
-> >
-> >This fixes:
-> >
-> >[    0.008086] BUG: scheduling while atomic: swapper/0/0x10000002
-> >[    0.008167] no locks held by swapper/0.
-> >[    0.008243] Modules linked in:
-> >[    0.008356] Pid: 0, comm: swapper Not tainted 2.6.35+ #793
-> >[    0.008437] Call Trace:
-> >[    0.008519]  [<ffffffff8106eab3>] ? __debug_show_held_locks+0x13/0x30
-> >[    0.008605]  [<ffffffff81039a65>] __schedule_bug+0x85/0x90
-> >[    0.008690]  [<ffffffff815edf20>] schedule+0x670/0x840
-> >[    0.008775]  [<ffffffff8129ff88>] ? acpi_os_release_object+0x9/0xd
-> >[    0.008860]  [<ffffffff812beca0>] ? acpi_ps_free_op+0x22/0x24
-> >[    0.008944]  [<ffffffff8103ccd5>] __cond_resched+0x25/0x40
-> >[    0.009008]  [<ffffffff815ee1ed>] _cond_resched+0x2d/0x40
-> >[    0.009091]  [<ffffffff812bdf4a>] acpi_ps_complete_op+0x292/0x2a8
-> >[    0.009174]  [<ffffffff812be7b6>] acpi_ps_parse_loop+0x856/0x9ac
-> >[    0.010008]  [<ffffffff812bd81d>] acpi_ps_parse_aml+0x9a/0x2b9
-> >[    0.010092]  [<ffffffff812bc048>] acpi_ns_one_complete_parse+0xfc/0x117
-> >[    0.010176]  [<ffffffff812bc07f>] acpi_ns_parse_table+0x1c/0x35
-> >[    0.010259]  [<ffffffff812b9606>] acpi_ns_load_table+0x4a/0x8c
-> >[    0.010343]  [<ffffffff812c075f>] acpi_load_tables+0xa0/0x164
-> >[    0.010429]  [<ffffffff819751e1>] ? acpi_initialize_subsystem+0x69/0x91
-> >[    0.010513]  [<ffffffff819740df>] acpi_early_init+0x6c/0xf7
-> >[    0.010598]  [<ffffffff8194fd68>] start_kernel+0x3b3/0x3fb
-> >[    0.010681]  [<ffffffff8194f26d>] x86_64_start_reservations+0x7d/0x89
-> >[    0.010765]  [<ffffffff8194f359>] x86_64_start_kernel+0xe0/0xf2
-> >
->
-> I'll be happy to include this in the aclinux.h file if the day ever comes when it is stable.
-> 
-> 
+1) qlcnic driver using way too much stack space during probe, fix
+   from Dan Carpenter.
 
-(top-posting repaired.  Please don't.)
+2) sfq was oops'able during config because it only partially provided
+   the classful qdisc interfaces.  Fix this, and also add validation
+   code during qdisc registry so that we can catch this ahead of time
+   in the future.  From Jarek Poplawski.
 
-Linus merged the below fix yesterday.  It's tagged for -stable
-backporting.  
+3) Properly undo pci_enable_device() when PCI driver probe fails in
+   ISDN.  From Kulikov Vasiliy.
 
+4) Buffer overflow fix in CAN protocol from Oliver Kartkopp.
 
-From: Thomas Gleixner <tglx@linutronix.de>
+5) kernel-doc and Kconfig dependency fixups from Randy Dunlap.
 
-The ACPI_PREEMPTION_POINT() logic was introduced in commit 8bd108d
-(ACPICA: add preemption point after each opcode parse).  The follow up
-commits abe1dfab6, 138d15692, c084ca70 tried to fix the preemption logic
-back and forth, but nobody noticed that the usage of
-in_atomic_preempt_off() in that context is wrong.
+6) s390 driver use macros named READ/WRITE, fix to avoid namespace
+   conflicts.  From Heiko Carstens and Ursula Braun.
 
-The check which guards the call of cond_resched() is:
+7) Minor fixes to CAIF protocol stack from Sjur Braendeland.
 
-    if (!in_atomic_preempt_off() && !irqs_disabled())
+8) The usual assortment of wireless fixes via John Linville and co.
 
-in_atomic_preempt_off() is not intended for general use as the comment
-above the macro definition clearly says:
+Please pull, thanks a lot.
 
- * Check whether we were atomic before we did preempt_disable():
- * (used by the scheduler, *after* releasing the kernel lock)
+The following changes since commit ad41a1e0cab07c5125456e8d38e5b1ab148d04aa:
 
-On a CONFIG_PREEMPT=n kernel the usage of in_atomic_preempt_off() works by
-accident, but with CONFIG_PREEMPT=y it's just broken.
+  Merge branch 'io_remap_pfn_range' of git://www.jni.nu/cris (2010-08-12 10:17:19 -0700)
 
-The whole purpose of the ACPI_PREEMPTION_POINT() is to reduce the latency
-on a CONFIG_PREEMPT=n kernel, so make ACPI_PREEMPTION_POINT() depend on
-CONFIG_PREEMPT=n and remove the in_atomic_preempt_off() check.
+are available in the git repository at:
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16210
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
 
-[akpm@linux-foundation.org: fix build]
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Len Brown <lenb@kernel.org>
-Cc: Francois Valenduc <francois.valenduc@tvcablenet.be>
-Cc: Lin Ming <ming.m.lin@intel.com>
-Cc: <stable@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
+Ben Greear (1):
+      net: Use NET_XMIT_SUCCESS where possible.
 
- drivers/acpi/apei/erst.c        |    1 +
- include/acpi/platform/aclinux.h |   10 +++++++---
- 2 files changed, 8 insertions(+), 3 deletions(-)
+Dan Carpenter (2):
+      qlcnic: clean up qlcnic_init_pci_info()
+      qlcnic: using too much stack
 
-diff -puN drivers/acpi/apei/erst.c~acpi-fix-bogus-preemption-logic drivers/acpi/apei/erst.c
---- a/drivers/acpi/apei/erst.c~acpi-fix-bogus-preemption-logic
-+++ a/drivers/acpi/apei/erst.c
-@@ -33,6 +33,7 @@
- #include <linux/uaccess.h>
- #include <linux/cper.h>
- #include <linux/nmi.h>
-+#include <linux/hardirq.h>
- #include <acpi/apei.h>
- 
- #include "apei-internal.h"
-diff -puN include/acpi/platform/aclinux.h~acpi-fix-bogus-preemption-logic include/acpi/platform/aclinux.h
---- a/include/acpi/platform/aclinux.h~acpi-fix-bogus-preemption-logic
-+++ a/include/acpi/platform/aclinux.h
-@@ -148,13 +148,17 @@ static inline void *acpi_os_acquire_obje
- #define ACPI_ALLOCATE_ZEROED(a) acpi_os_allocate_zeroed(a)
- #define ACPI_FREE(a)            kfree(a)
- 
--/* Used within ACPICA to show where it is safe to preempt execution */
--#include <linux/hardirq.h>
-+#ifndef CONFIG_PREEMPT
-+/*
-+ * Used within ACPICA to show where it is safe to preempt execution
-+ * when CONFIG_PREEMPT=n
-+ */
- #define ACPI_PREEMPTION_POINT() \
- 	do { \
--		if (!in_atomic_preempt_off() && !irqs_disabled()) \
-+		if (!irqs_disabled()) \
- 			cond_resched(); \
- 	} while (0)
-+#endif
- 
- #endif /* __KERNEL__ */
- 
-_
+David S. Miller (3):
+      farsync: Fix compile warnings.
+      usbnet: rx_submit() should return an error code.
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
 
+Heiko Carstens (1):
+      claw: rename READ/WRITE defines to avoid redefinitions
+
+Jarek Poplawski (4):
+      pkt_sched: sch_sfq: Add dummy unbind_tcf and put handles. Was: [PATCH] sfq: add dummy bind/unbind handles
+      pkt_sched: Add some basic qdisc class ops verification. Was: [PATCH] sfq: add dummy bind/unbind handles
+      pkt_sched: Fix sch_sfq vs tc_modify_qdisc oops
+      pkt_sched: Check .walk and .leaf class handlers
+
+Johannes Berg (2):
+      cfg80211: fix locking in action frame TX
+      iwlagn: fix rts cts protection
+
+John W. Linville (4):
+      Revert "p54pci: Add PCI ID for SMC2802W"
+      libertas: fix build break by including linux/sched.h
+      Merge branch 'master' of git://git.kernel.org/.../holtmann/bluetooth-2.6
+      net: make netpoll_rx return bool for !CONFIG_NETPOLL
+
+Kulikov Vasiliy (3):
+      isdn: avm: call pci_disable_device() if pci_probe() failed
+      isdn: avm: call pci_disable_device() if pci_probe() failed
+      isdn: mISDN: call pci_disable_device() if pci_probe() failed
+
+Mat Martineau (4):
+      Bluetooth: Fix endianness issue with L2CAP MPS configuration
+      Bluetooth: Change default L2CAP ERTM retransmit timeout
+      Bluetooth: Fix incorrect setting of remote_tx_win for L2CAP ERTM
+      Bluetooth: Use 3-DH5 payload size for default ERTM max PDU size
+
+Oliver Hartkopp (1):
+      can: add limit for nframes and clean up signed/unsigned variables
+
+Randy Dunlap (4):
+      etherdevice.h: fix kernel-doc typo
+      net/sock.h: add missing kernel-doc notation
+      phy.c: fix kernel-doc warnings
+      phylib: available for any speed ethernet
+
+Sjur Braendeland (2):
+      caif: Bugfix - Increase default headroom size for control channel.
+      caif-spi: Bugfix SPI_DATA_POS settings were inverted.
+
+Ursula Braun (1):
+      ctcm: rename READ/WRITE defines to avoid redefinitions
+
+ drivers/isdn/hardware/avm/c4.c              |    1 +
+ drivers/isdn/hardware/avm/t1pci.c           |    1 +
+ drivers/isdn/hardware/mISDN/mISDNinfineon.c |    5 +-
+ drivers/net/caif/caif_spi_slave.c           |    4 +-
+ drivers/net/phy/Kconfig                     |    2 +-
+ drivers/net/phy/phy.c                       |    2 +-
+ drivers/net/qlcnic/qlcnic_main.c            |   72 ++++++++++-------
+ drivers/net/usb/usbnet.c                    |   22 ++++--
+ drivers/net/wan/farsync.c                   |   15 ++--
+ drivers/net/wireless/iwlwifi/iwl-1000.c     |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-3945.c     |   18 +----
+ drivers/net/wireless/iwlwifi/iwl-4965.c     |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-5000.c     |   10 +-
+ drivers/net/wireless/iwlwifi/iwl-6000.c     |   16 ++--
+ drivers/net/wireless/iwlwifi/iwl-agn-hcmd.c |   19 ++++-
+ drivers/net/wireless/iwlwifi/iwl-agn-tx.c   |   20 +-----
+ drivers/net/wireless/iwlwifi/iwl-agn.c      |   85 +++++---------------
+ drivers/net/wireless/iwlwifi/iwl-core.c     |   29 ++++++-
+ drivers/net/wireless/iwlwifi/iwl-core.h     |   14 ++--
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |    5 +-
+ drivers/net/wireless/libertas/cfg.c         |    1 +
+ drivers/net/wireless/p54/p54pci.c           |    2 -
+ drivers/s390/net/claw.c                     |  118 +++++++++++++-------------
+ drivers/s390/net/claw.h                     |    4 +-
+ drivers/s390/net/ctcm_fsms.c                |   60 +++++++-------
+ drivers/s390/net/ctcm_main.c                |   80 +++++++++---------
+ drivers/s390/net/ctcm_main.h                |    4 +-
+ drivers/s390/net/ctcm_mpc.c                 |   64 ++++++++-------
+ drivers/s390/net/ctcm_sysfs.c               |   20 +++---
+ include/linux/etherdevice.h                 |    2 +-
+ include/linux/netpoll.h                     |    2 +-
+ include/net/bluetooth/l2cap.h               |    4 +-
+ include/net/sock.h                          |    4 +-
+ net/bluetooth/l2cap.c                       |   11 +--
+ net/caif/cfpkt_skbuff.c                     |    2 +-
+ net/can/bcm.c                               |   41 ++++++---
+ net/dsa/Kconfig                             |    2 +-
+ net/sched/sch_api.c                         |   22 ++++-
+ net/sched/sch_atm.c                         |    4 +-
+ net/sched/sch_sfq.c                         |   14 +++-
+ net/sched/sch_tbf.c                         |    4 +-
+ net/sched/sch_teql.c                        |    2 +-
+ net/wireless/mlme.c                         |    8 ++-
+ 43 files changed, 428 insertions(+), 391 deletions(-)
