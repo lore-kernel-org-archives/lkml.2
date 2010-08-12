@@ -1,137 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759458Ab0HLAAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:00:05 -0400
-Received: from kroah.org ([198.145.64.141]:43777 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759362Ab0HKX7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 16:55:05 2010
-Message-Id: <20100811235505.712326775@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 16:55:31 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [110/111] md/raid1: delay reads that could overtake behind-writes.
-In-Reply-To: <20100811235623.GA24440@kroah.com>
+	id S1759470Ab0HLAAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:00:08 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:56034 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1759409Ab0HKX7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 19:59:48 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+DjCc7LjqDFIvmsGQk+9RhNSCfzuL/BJoT7ZJtPS
+	80kdNguuWo2s37
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Joseph Chan <JosephChan@via.com.tw>
+Subject: [[PATCH 09/11]] viafb: add new output device management
+Date: Thu, 12 Aug 2010 00:10:06 +0000
+Message-Id: <1281571806-9013-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
+References: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.32-stable review patch.  If anyone has any objections, please let us know.
+viafb: add new output device management
 
-------------------
+This patch adds a new output device management that stores for each
+IGA which output devices are routed to it and a compatiblity layer
+that converts the old per-output device values in the new format.
+Bounding the output devices to each IGA is a central idea of the
+cleanup. Doing it this way should be easier and make much more sense
+than the old format which happily mixed different output devices
+together and did not even take into account that some devices are no
+longer available on newer chipsets.
 
-From: NeilBrown <neilb@suse.de>
-
-commit e555190d82c0f58e825e3cbd9e6ebe2e7ac713bd upstream.
-
-When a raid1 array is configured to support write-behind
-on some devices, it normally only reads from other devices.
-If all devices are write-behind (because the rest have failed)
-it is possible for a read request to be serviced before a
-behind-write request, which would appear as data corruption.
-
-So when forced to read from a WriteMostly device, wait for any
-write-behind to complete, and don't start any more behind-writes.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Joseph Chan <JosephChan@via.com.tw>
 ---
- drivers/md/bitmap.c |    4 +++-
- drivers/md/bitmap.h |    3 +++
- drivers/md/raid1.c  |   25 ++++++++++++++++++-------
- 3 files changed, 24 insertions(+), 8 deletions(-)
+ drivers/video/via/hw.c       |  102 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/video/via/hw.h       |    9 ++++
+ drivers/video/via/viafbdev.h |    3 +
+ 3 files changed, 114 insertions(+), 0 deletions(-)
 
---- a/drivers/md/bitmap.c
-+++ b/drivers/md/bitmap.c
-@@ -1317,7 +1317,8 @@ void bitmap_endwrite(struct bitmap *bitm
+diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
+index 638cf96..30cc2f0 100644
+--- a/drivers/video/via/hw.c
++++ b/drivers/video/via/hw.c
+@@ -753,6 +753,66 @@ void write_dac_reg(u8 index, u8 r, u8 g, u8 b)
+ 	outb(b, LUT_DATA);
+ }
+ 
++static u32 get_dvi_devices(int output_interface)
++{
++	switch (output_interface) {
++	case INTERFACE_DVP0:
++		return VIA_96 | VIA_6C;
++
++	case INTERFACE_DVP1:
++		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
++			return VIA_93;
++		else
++			return VIA_DVP1;
++
++	case INTERFACE_DFP_HIGH:
++		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
++			return 0;
++		else
++			return VIA_LVDS2 | VIA_96;
++
++	case INTERFACE_DFP_LOW:
++		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
++			return 0;
++		else
++			return VIA_DVP1 | VIA_LVDS1;
++
++	case INTERFACE_TMDS:
++		return VIA_LVDS1;
++	}
++
++	return 0;
++}
++
++static u32 get_lcd_devices(int output_interface)
++{
++	switch (output_interface) {
++	case INTERFACE_DVP0:
++		return VIA_96;
++
++	case INTERFACE_DVP1:
++		return VIA_DVP1;
++
++	case INTERFACE_DFP_HIGH:
++		return VIA_LVDS2 | VIA_96;
++
++	case INTERFACE_DFP_LOW:
++		return VIA_LVDS1 | VIA_DVP1;
++
++	case INTERFACE_DFP:
++		return VIA_LVDS1 | VIA_LVDS2;
++
++	case INTERFACE_LVDS0:
++	case INTERFACE_LVDS0LVDS1:
++		return VIA_LVDS1;
++
++	case INTERFACE_LVDS1:
++		return VIA_LVDS2;
++	}
++
++	return 0;
++}
++
+ /*Set IGA path for each device*/
+ void viafb_set_iga_path(void)
  {
- 	if (!bitmap) return;
- 	if (behind) {
--		atomic_dec(&bitmap->behind_writes);
-+		if (atomic_dec_and_test(&bitmap->behind_writes))
-+			wake_up(&bitmap->behind_wait);
- 		PRINTK(KERN_DEBUG "dec write-behind count %d/%d\n",
- 		  atomic_read(&bitmap->behind_writes), bitmap->max_write_behind);
- 	}
-@@ -1629,6 +1630,7 @@ int bitmap_create(mddev_t *mddev)
- 	atomic_set(&bitmap->pending_writes, 0);
- 	init_waitqueue_head(&bitmap->write_wait);
- 	init_waitqueue_head(&bitmap->overflow_wait);
-+	init_waitqueue_head(&bitmap->behind_wait);
- 
- 	bitmap->mddev = mddev;
- 
---- a/drivers/md/bitmap.h
-+++ b/drivers/md/bitmap.h
-@@ -254,6 +254,9 @@ struct bitmap {
- 	wait_queue_head_t write_wait;
- 	wait_queue_head_t overflow_wait;
- 
-+#ifndef __GENKSYMS__
-+	wait_queue_head_t behind_wait;
-+#endif
- };
- 
- /* the bitmap API */
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -845,6 +845,15 @@ static int make_request(struct request_q
+@@ -819,6 +879,48 @@ void viafb_set_iga_path(void)
+ 			viaparinfo->tmds_setting_info->iga_path = IGA1;
  		}
- 		mirror = conf->mirrors + rdisk;
- 
-+		if (test_bit(WriteMostly, &mirror->rdev->flags) &&
-+		    bitmap) {
-+			/* Reading from a write-mostly device must
-+			 * take care not to over-take any writes
-+			 * that are 'behind'
-+			 */
-+			wait_event(bitmap->behind_wait,
-+				   atomic_read(&bitmap->behind_writes) == 0);
-+		}
- 		r1_bio->read_disk = rdisk;
- 
- 		read_bio = bio_clone(bio, GFP_NOIO);
-@@ -922,9 +931,13 @@ static int make_request(struct request_q
- 		set_bit(R1BIO_Degraded, &r1_bio->state);
  	}
++
++	viaparinfo->shared->iga1_devices = 0;
++	viaparinfo->shared->iga2_devices = 0;
++	if (viafb_CRT_ON) {
++		if (viaparinfo->crt_setting_info->iga_path == IGA1)
++			viaparinfo->shared->iga1_devices |= VIA_CRT;
++		else
++			viaparinfo->shared->iga2_devices |= VIA_CRT;
++	}
++
++	if (viafb_DVI_ON) {
++		if (viaparinfo->tmds_setting_info->iga_path == IGA1)
++			viaparinfo->shared->iga1_devices |= get_dvi_devices(
++				viaparinfo->chip_info->
++				tmds_chip_info.output_interface);
++		else
++			viaparinfo->shared->iga2_devices |= get_dvi_devices(
++				viaparinfo->chip_info->
++				tmds_chip_info.output_interface);
++	}
++
++	if (viafb_LCD_ON) {
++		if (viaparinfo->lvds_setting_info->iga_path == IGA1)
++			viaparinfo->shared->iga1_devices |= get_lcd_devices(
++				viaparinfo->chip_info->
++				lvds_chip_info.output_interface);
++		else
++			viaparinfo->shared->iga2_devices |= get_lcd_devices(
++				viaparinfo->chip_info->
++				lvds_chip_info.output_interface);
++	}
++
++	if (viafb_LCD2_ON) {
++		if (viaparinfo->lvds_setting_info2->iga_path == IGA1)
++			viaparinfo->shared->iga1_devices |= get_lcd_devices(
++				viaparinfo->chip_info->
++				lvds_chip_info2.output_interface);
++		else
++			viaparinfo->shared->iga2_devices |= get_lcd_devices(
++				viaparinfo->chip_info->
++				lvds_chip_info2.output_interface);
++	}
+ }
  
--	/* do behind I/O ? */
-+	/* do behind I/O ?
-+	 * Not if there are too many, or cannot allocate memory,
-+	 * or a reader on WriteMostly is waiting for behind writes
-+	 * to flush */
- 	if (bitmap &&
- 	    atomic_read(&bitmap->behind_writes) < bitmap->max_write_behind &&
-+	    !waitqueue_active(&bitmap->behind_wait) &&
- 	    (behind_pages = alloc_behind_pages(bio)) != NULL)
- 		set_bit(R1BIO_BehindIO, &r1_bio->state);
+ static void set_color_register(u8 index, u8 red, u8 green, u8 blue)
+diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
+index 39f3a69..c52a1d5 100644
+--- a/drivers/video/via/hw.h
++++ b/drivers/video/via/hw.h
+@@ -30,6 +30,15 @@
+ #define viafb_write_reg(i, p, d)		via_write_reg(p, i, d)
+ #define viafb_write_reg_mask(i, p, d, m)	via_write_reg_mask(p, i, d, m)
  
-@@ -2105,15 +2118,13 @@ static int stop(mddev_t *mddev)
- {
- 	conf_t *conf = mddev->private;
- 	struct bitmap *bitmap = mddev->bitmap;
--	int behind_wait = 0;
++/* VIA output devices */
++#define VIA_6C		0x00000001
++#define VIA_93		0x00000002
++#define VIA_96		0x00000004
++#define VIA_CRT		0x00000010
++#define VIA_DVP1	0x00000020
++#define VIA_LVDS1	0x00000040
++#define VIA_LVDS2	0x00000080
++
+ /***************************************************
+ * Definition IGA1 Design Method of CRTC Registers *
+ ****************************************************/
+diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
+index 52a35fa..945a47a 100644
+--- a/drivers/video/via/viafbdev.h
++++ b/drivers/video/via/viafbdev.h
+@@ -40,6 +40,9 @@
+ #define VIAFB_NUM_I2C		5
  
- 	/* wait for behind writes to complete */
--	while (bitmap && atomic_read(&bitmap->behind_writes) > 0) {
--		behind_wait++;
--		printk(KERN_INFO "raid1: behind writes in progress on device %s, waiting to stop (%d)\n", mdname(mddev), behind_wait);
--		set_current_state(TASK_UNINTERRUPTIBLE);
--		schedule_timeout(HZ); /* wait a second */
-+	if (bitmap && atomic_read(&bitmap->behind_writes) > 0) {
-+		printk(KERN_INFO "raid1: behind writes in progress on device %s, waiting to stop.\n", mdname(mddev));
- 		/* need to kick something here to make sure I/O goes? */
-+		wait_event(bitmap->behind_wait,
-+			   atomic_read(&bitmap->behind_writes) == 0);
- 	}
+ struct viafb_shared {
++	u32 iga1_devices;
++	u32 iga2_devices;
++
+ 	struct proc_dir_entry *proc_entry;	/*viafb proc entry */
+ 	struct viafb_dev *vdev;			/* Global dev info */
  
- 	raise_barrier(conf);
-
+-- 
+1.6.3.2
 
