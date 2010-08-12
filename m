@@ -1,207 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757363Ab0HLRYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 13:24:35 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:35410 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969Ab0HLRYd (ORCPT
+	id S1758016Ab0HLRYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 13:24:40 -0400
+Received: from mtagate4.de.ibm.com ([195.212.17.164]:33603 "EHLO
+	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752969Ab0HLRYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 13:24:33 -0400
-Message-Id: <20100812172544.655648128@de.ibm.com>
+	Thu, 12 Aug 2010 13:24:36 -0400
+Message-Id: <20100812172623.140578409@de.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Thu, 12 Aug 2010 19:25:44 +0200
+Date: Thu, 12 Aug 2010 19:25:47 +0200
 From: Heiko Carstens <heiko.carstens@de.ibm.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Mike Galbraith <efault@gmx.de>,
         Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
         Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [PATCH/RFC 0/5] sched: add new 'book' scheduling domain
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [PATCH/RFC 3/5] [PATCH] sched: add book scheduling domain
+References: <20100812172544.655648128@de.ibm.com>
+Content-Disposition: inline; filename=03-sched-book.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds (yet) another scheduling domain to the scheduler. The
-reason for this is that the recent (s390) z196 architecture has four cache
-levels and uniform memory access (sort of -- see below).
-The cpu/cache/memory hierarchy is as follows:
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-Each cpu has its private L1 (64KB I-cache + 128KB D-cache) and L2 (1.5MB)
-cache.
-A core consists of four cpus with a 24MB shared L3 cache.
-A book consists of six cores with a 192MB shared L4 cache.
+On top of the SMT and MC scheduling domains this adds the BOOK scheduling
+domain. This is useful for machines that have a four level cache hierarchy
+and but do not fall into the NUMA category.
 
-The z196 architecture has no SMT.
-Also the statement that we have uniform memory access is not entirely
-correct. Actually the machine uses memory striping, so it "looks" like
-we have UMA until the next slice of memory gets accessed.
-However there is no interface which tells us which piece of memory is local
-or remote. So we (have to) simplify and assume that the cost of each memory
-access with L4 cache miss is the same.
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+---
 
-In order to somehow use the information about the cache hierarchy so that
-the scheduler can make some decisions that improves cache hits I added the
-'BOOK' scheduling domain between the MC and CPU domains.
+ arch/s390/defconfig      |    1 
+ include/linux/sched.h    |   19 +++++++
+ include/linux/topology.h |    6 ++
+ kernel/sched.c           |  112 ++++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sched_fair.c      |   11 ++--
+ 5 files changed, 137 insertions(+), 12 deletions(-)
 
-First performance measurements however show now effect - neither good nor
-bad. So it might be that the workloads aren't good enough, or that the
-implementation is simply wrong.
+diff -urpN linux-2.6/arch/s390/defconfig linux-2.6-patched/arch/s390/defconfig
+--- linux-2.6/arch/s390/defconfig	2010-08-02 00:11:14.000000000 +0200
++++ linux-2.6-patched/arch/s390/defconfig	2010-08-11 13:47:23.000000000 +0200
+@@ -248,6 +248,7 @@ CONFIG_64BIT=y
+ CONFIG_SMP=y
+ CONFIG_NR_CPUS=32
+ CONFIG_HOTPLUG_CPU=y
++# CONFIG_SCHED_BOOK is not set
+ CONFIG_COMPAT=y
+ CONFIG_SYSVIPC_COMPAT=y
+ CONFIG_AUDIT_ARCH=y
+diff -urpN linux-2.6/include/linux/sched.h linux-2.6-patched/include/linux/sched.h
+--- linux-2.6/include/linux/sched.h	2010-08-11 13:47:16.000000000 +0200
++++ linux-2.6-patched/include/linux/sched.h	2010-08-11 13:47:23.000000000 +0200
+@@ -807,7 +807,9 @@ enum powersavings_balance_level {
+ 	MAX_POWERSAVINGS_BALANCE_LEVELS
+ };
+ 
+-extern int sched_mc_power_savings, sched_smt_power_savings;
++extern int sched_smt_power_savings;
++extern int sched_mc_power_savings;
++extern int sched_book_power_savings;
+ 
+ static inline int sd_balance_for_mc_power(void)
+ {
+@@ -820,11 +822,23 @@ static inline int sd_balance_for_mc_powe
+ 	return 0;
+ }
+ 
+-static inline int sd_balance_for_package_power(void)
++static inline int sd_balance_for_book_power(void)
+ {
+ 	if (sched_mc_power_savings | sched_smt_power_savings)
+ 		return SD_POWERSAVINGS_BALANCE;
+ 
++	if (!sched_book_power_savings)
++		return SD_PREFER_SIBLING;
++
++	return 0;
++}
++
++static inline int sd_balance_for_package_power(void)
++{
++	if (sched_book_power_savings | sched_mc_power_savings |
++	    sched_smt_power_savings)
++		return SD_POWERSAVINGS_BALANCE;
++
+ 	return SD_PREFER_SIBLING;
+ }
+ 
+@@ -875,6 +889,7 @@ enum sched_domain_level {
+ 	SD_LV_NONE = 0,
+ 	SD_LV_SIBLING,
+ 	SD_LV_MC,
++	SD_LV_BOOK,
+ 	SD_LV_CPU,
+ 	SD_LV_NODE,
+ 	SD_LV_ALLNODES,
+diff -urpN linux-2.6/include/linux/topology.h linux-2.6-patched/include/linux/topology.h
+--- linux-2.6/include/linux/topology.h	2010-08-11 13:47:16.000000000 +0200
++++ linux-2.6-patched/include/linux/topology.h	2010-08-11 13:47:23.000000000 +0200
+@@ -201,6 +201,12 @@ int arch_update_cpu_topology(void);
+ 	.balance_interval	= 64,					\
+ }
+ 
++#ifdef CONFIG_SCHED_BOOK
++#ifndef SD_BOOK_INIT
++#error Please define an appropriate SD_BOOK_INIT in include/asm/topology.h!!!
++#endif
++#endif /* CONFIG_SCHED_BOOK */
++
+ #ifdef CONFIG_NUMA
+ #ifndef SD_NODE_INIT
+ #error Please define an appropriate SD_NODE_INIT in include/asm/topology.h!!!
+diff -urpN linux-2.6/kernel/sched.c linux-2.6-patched/kernel/sched.c
+--- linux-2.6/kernel/sched.c	2010-08-11 13:47:23.000000000 +0200
++++ linux-2.6-patched/kernel/sched.c	2010-08-11 13:47:23.000000000 +0200
+@@ -6472,7 +6472,9 @@ static void sched_domain_node_span(int n
+ }
+ #endif /* CONFIG_NUMA */
+ 
+-int sched_smt_power_savings = 0, sched_mc_power_savings = 0;
++int sched_smt_power_savings;
++int sched_mc_power_savings;
++int sched_book_power_savings;
+ 
+ /*
+  * The cpus mask in sched_group and sched_domain hangs off the end.
+@@ -6500,6 +6502,7 @@ struct s_data {
+ 	cpumask_var_t		nodemask;
+ 	cpumask_var_t		this_sibling_map;
+ 	cpumask_var_t		this_core_map;
++	cpumask_var_t		this_book_map;
+ 	cpumask_var_t		send_covered;
+ 	cpumask_var_t		tmpmask;
+ 	struct sched_group	**sched_group_nodes;
+@@ -6511,6 +6514,7 @@ enum s_alloc {
+ 	sa_rootdomain,
+ 	sa_tmpmask,
+ 	sa_send_covered,
++	sa_this_book_map,
+ 	sa_this_core_map,
+ 	sa_this_sibling_map,
+ 	sa_nodemask,
+@@ -6564,6 +6568,31 @@ cpu_to_core_group(int cpu, const struct 
+ }
+ #endif /* CONFIG_SCHED_MC */
+ 
++/*
++ * book sched-domains:
++ */
++#ifdef CONFIG_SCHED_BOOK
++static DEFINE_PER_CPU(struct static_sched_domain, book_domains);
++static DEFINE_PER_CPU(struct static_sched_group, sched_group_book);
++
++static int
++cpu_to_book_group(int cpu, const struct cpumask *cpu_map,
++		  struct sched_group **sg, struct cpumask *mask)
++{
++	int group = cpu;
++#ifdef CONFIG_SCHED_MC
++	cpumask_and(mask, cpu_coregroup_mask(cpu), cpu_map);
++	group = cpumask_first(mask);
++#elif defined(CONFIG_SCHED_SMT)
++	cpumask_and(mask, topology_thread_cpumask(cpu), cpu_map);
++	group = cpumask_first(mask);
++#endif
++	if (sg)
++		*sg = &per_cpu(sched_group_book, group).sg;
++	return group;
++}
++#endif /* CONFIG_SCHED_BOOK */
++
+ static DEFINE_PER_CPU(struct static_sched_domain, phys_domains);
+ static DEFINE_PER_CPU(struct static_sched_group, sched_group_phys);
+ 
+@@ -6572,7 +6601,10 @@ cpu_to_phys_group(int cpu, const struct 
+ 		  struct sched_group **sg, struct cpumask *mask)
+ {
+ 	int group;
+-#ifdef CONFIG_SCHED_MC
++#ifdef CONFIG_SCHED_BOOK
++	cpumask_and(mask, cpu_book_mask(cpu), cpu_map);
++	group = cpumask_first(mask);
++#elif defined(CONFIG_SCHED_MC)
+ 	cpumask_and(mask, cpu_coregroup_mask(cpu), cpu_map);
+ 	group = cpumask_first(mask);
+ #elif defined(CONFIG_SCHED_SMT)
+@@ -6833,6 +6865,9 @@ SD_INIT_FUNC(CPU)
+ #ifdef CONFIG_SCHED_MC
+  SD_INIT_FUNC(MC)
+ #endif
++#ifdef CONFIG_SCHED_BOOK
++ SD_INIT_FUNC(BOOK)
++#endif
+ 
+ static int default_relax_domain_level = -1;
+ 
+@@ -6882,6 +6917,8 @@ static void __free_domain_allocs(struct 
+ 		free_cpumask_var(d->tmpmask); /* fall through */
+ 	case sa_send_covered:
+ 		free_cpumask_var(d->send_covered); /* fall through */
++	case sa_this_book_map:
++		free_cpumask_var(d->this_book_map); /* fall through */
+ 	case sa_this_core_map:
+ 		free_cpumask_var(d->this_core_map); /* fall through */
+ 	case sa_this_sibling_map:
+@@ -6928,8 +6965,10 @@ static enum s_alloc __visit_domain_alloc
+ 		return sa_nodemask;
+ 	if (!alloc_cpumask_var(&d->this_core_map, GFP_KERNEL))
+ 		return sa_this_sibling_map;
+-	if (!alloc_cpumask_var(&d->send_covered, GFP_KERNEL))
++	if (!alloc_cpumask_var(&d->this_book_map, GFP_KERNEL))
+ 		return sa_this_core_map;
++	if (!alloc_cpumask_var(&d->send_covered, GFP_KERNEL))
++		return sa_this_book_map;
+ 	if (!alloc_cpumask_var(&d->tmpmask, GFP_KERNEL))
+ 		return sa_send_covered;
+ 	d->rd = alloc_rootdomain();
+@@ -6987,6 +7026,23 @@ static struct sched_domain *__build_cpu_
+ 	return sd;
+ }
+ 
++static struct sched_domain *__build_book_sched_domain(struct s_data *d,
++	const struct cpumask *cpu_map, struct sched_domain_attr *attr,
++	struct sched_domain *parent, int i)
++{
++	struct sched_domain *sd = parent;
++#ifdef CONFIG_SCHED_BOOK
++	sd = &per_cpu(book_domains, i).sd;
++	SD_INIT(sd, BOOK);
++	set_domain_attribute(sd, attr);
++	cpumask_and(sched_domain_span(sd), cpu_map, cpu_book_mask(i));
++	sd->parent = parent;
++	parent->child = sd;
++	cpu_to_book_group(i, cpu_map, &sd->groups, d->tmpmask);
++#endif
++	return sd;
++}
++
+ static struct sched_domain *__build_mc_sched_domain(struct s_data *d,
+ 	const struct cpumask *cpu_map, struct sched_domain_attr *attr,
+ 	struct sched_domain *parent, int i)
+@@ -7044,6 +7100,15 @@ static void build_sched_groups(struct s_
+ 						d->send_covered, d->tmpmask);
+ 		break;
+ #endif
++#ifdef CONFIG_SCHED_BOOK
++	case SD_LV_BOOK: /* set up book groups */
++		cpumask_and(d->this_book_map, cpu_map, cpu_book_mask(cpu));
++		if (cpu == cpumask_first(d->this_book_map))
++			init_sched_build_groups(d->this_book_map, cpu_map,
++						&cpu_to_book_group,
++						d->send_covered, d->tmpmask);
++		break;
++#endif
+ 	case SD_LV_CPU: /* set up physical groups */
+ 		cpumask_and(d->nodemask, cpumask_of_node(cpu), cpu_map);
+ 		if (!cpumask_empty(d->nodemask))
+@@ -7091,12 +7156,14 @@ static int __build_sched_domains(const s
+ 
+ 		sd = __build_numa_sched_domains(&d, cpu_map, attr, i);
+ 		sd = __build_cpu_sched_domain(&d, cpu_map, attr, sd, i);
++		sd = __build_book_sched_domain(&d, cpu_map, attr, sd, i);
+ 		sd = __build_mc_sched_domain(&d, cpu_map, attr, sd, i);
+ 		sd = __build_smt_sched_domain(&d, cpu_map, attr, sd, i);
+ 	}
+ 
+ 	for_each_cpu(i, cpu_map) {
+ 		build_sched_groups(&d, SD_LV_SIBLING, cpu_map, i);
++		build_sched_groups(&d, SD_LV_BOOK, cpu_map, i);
+ 		build_sched_groups(&d, SD_LV_MC, cpu_map, i);
+ 	}
+ 
+@@ -7127,6 +7194,12 @@ static int __build_sched_domains(const s
+ 		init_sched_groups_power(i, sd);
+ 	}
+ #endif
++#ifdef CONFIG_SCHED_BOOK
++	for_each_cpu(i, cpu_map) {
++		sd = &per_cpu(book_domains, i).sd;
++		init_sched_groups_power(i, sd);
++	}
++#endif
+ 
+ 	for_each_cpu(i, cpu_map) {
+ 		sd = &per_cpu(phys_domains, i).sd;
+@@ -7152,6 +7225,8 @@ static int __build_sched_domains(const s
+ 		sd = &per_cpu(cpu_domains, i).sd;
+ #elif defined(CONFIG_SCHED_MC)
+ 		sd = &per_cpu(core_domains, i).sd;
++#elif defined(CONFIG_SCHED_BOOK)
++		sd = &per_cpu(book_domains, i).sd;
+ #else
+ 		sd = &per_cpu(phys_domains, i).sd;
+ #endif
+@@ -7368,7 +7443,8 @@ match2:
+ 	mutex_unlock(&sched_domains_mutex);
+ }
+ 
+-#if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
++#if defined(CONFIG_SCHED_BOOK) || defined(CONFIG_SCHED_MC) || \
++    defined(CONFIG_SCHED_SMT)
+ static void arch_reinit_sched_domains(void)
+ {
+ 	get_online_cpus();
+@@ -7405,6 +7481,9 @@ static ssize_t sched_power_savings_store
+ 	case SD_LV_MC:
+ 		sched_mc_power_savings = level;
+ 		break;
++	case SD_LV_BOOK:
++		sched_book_power_savings = level;
++		break;
+ 	default:
+ 		break;
+ 	}
+@@ -7414,6 +7493,24 @@ static ssize_t sched_power_savings_store
+ 	return count;
+ }
+ 
++#ifdef CONFIG_SCHED_BOOK
++static ssize_t sched_book_power_savings_show(struct sysdev_class *class,
++					     struct sysdev_class_attribute *attr,
++					     char *page)
++{
++	return sprintf(page, "%u\n", sched_book_power_savings);
++}
++static ssize_t sched_book_power_savings_store(struct sysdev_class *class,
++					      struct sysdev_class_attribute *attr,
++					      const char *buf, size_t count)
++{
++	return sched_power_savings_store(buf, count, SD_LV_BOOK);
++}
++static SYSDEV_CLASS_ATTR(sched_book_power_savings, 0644,
++			 sched_book_power_savings_show,
++			 sched_book_power_savings_store);
++#endif
++
+ #ifdef CONFIG_SCHED_MC
+ static ssize_t sched_mc_power_savings_show(struct sysdev_class *class,
+ 					   struct sysdev_class_attribute *attr,
+@@ -7464,9 +7561,14 @@ int __init sched_create_sysfs_power_savi
+ 		err = sysfs_create_file(&cls->kset.kobj,
+ 					&attr_sched_mc_power_savings.attr);
+ #endif
++#ifdef CONFIG_SCHED_BOOK
++	if (!err && book_capable())
++		err = sysfs_create_file(&cls->kset.kobj,
++					&attr_sched_book_power_savings.attr);
++#endif
+ 	return err;
+ }
+-#endif /* CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
++#endif /* CONFIG_SCHED_BOOK || CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
+ 
+ /*
+  * Update cpusets according to cpu_active mask.  If cpusets are
+diff -urpN linux-2.6/kernel/sched_fair.c linux-2.6-patched/kernel/sched_fair.c
+--- linux-2.6/kernel/sched_fair.c	2010-08-11 13:47:16.000000000 +0200
++++ linux-2.6-patched/kernel/sched_fair.c	2010-08-11 13:47:23.000000000 +0200
+@@ -2039,7 +2039,8 @@ struct sd_lb_stats {
+ 	unsigned long busiest_group_capacity;
+ 
+ 	int group_imb; /* Is there imbalance in this sd */
+-#if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
++#if defined(CONFIG_SCHED_BOOK) || defined(CONFIG_SCHED_MC) || \
++    defined(CONFIG_SCHED_SMT)
+ 	int power_savings_balance; /* Is powersave balance needed for this sd */
+ 	struct sched_group *group_min; /* Least loaded group in sd */
+ 	struct sched_group *group_leader; /* Group which relieves group_min */
+@@ -2096,8 +2097,8 @@ static inline int get_sd_load_idx(struct
+ 	return load_idx;
+ }
+ 
+-
+-#if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
++#if defined(CONFIG_SCHED_BOOK) || defined(CONFIG_SCHED_MC) || \
++    defined(CONFIG_SCHED_SMT)
+ /**
+  * init_sd_power_savings_stats - Initialize power savings statistics for
+  * the given sched_domain, during load balancing.
+@@ -2217,7 +2218,7 @@ static inline int check_power_save_busie
+ 	return 1;
+ 
+ }
+-#else /* CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
++#else /* CONFIG_SCHED_BOOK || CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
+ static inline void init_sd_power_savings_stats(struct sched_domain *sd,
+ 	struct sd_lb_stats *sds, enum cpu_idle_type idle)
+ {
+@@ -2235,7 +2236,7 @@ static inline int check_power_save_busie
+ {
+ 	return 0;
+ }
+-#endif /* CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
++#endif /* CONFIG_SCHED_BOOK || CONFIG_SCHED_MC || CONFIG_SCHED_SMT */
+ 
+ 
+ unsigned long default_scale_freq_power(struct sched_domain *sd, int cpu)
 
-Either way, since its currently very hard to get machine time for additional
-measurements I thought it might be a good idea to post the patches as an RFC
-even if we do not have any convincing arguments.
-
-Also please note that the scheduling domain initializers certainly need some
-tuning:
-The line
-#define SD_BOOK_INIT SD_CPU_INIT
-within the arch support patch is just there so it compiles and until we have
-something that really works.
-
-As for the patches, I thinks that the first two patches could be merged
-anytime since those are only cleanup/preparation patches.
-Patch three adds the new scheduling domain and patch four the code needed
-to represent books via the cpu topology sysfs interface.
-Patch five is just the architecture backend.
-
-A boot of a logical partition with 20 cpus, shared on two books, gives these
-initializion output to the console:
-
-Brought up 20 CPUs
-CPU0 attaching sched-domain:
- domain 0: span 0-5 level BOOK
-  groups: 0 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048)
-  domain 1: span 0-19 level CPU
-   groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
-CPU1 attaching sched-domain:
- domain 0: span 1-3 level MC
-  groups: 1 2 3
-  domain 1: span 0-5 level BOOK
-   groups: 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048) 0
-   domain 2: span 0-19 level CPU
-    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
-CPU2 attaching sched-domain:
- domain 0: span 1-3 level MC
-  groups: 2 3 1
-  domain 1: span 0-5 level BOOK
-   groups: 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048) 0
-   domain 2: span 0-19 level CPU
-    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
-CPU3 attaching sched-domain:
- domain 0: span 1-3 level MC
-  groups: 3 1 2
-  domain 1: span 0-5 level BOOK
-   groups: 1-3 (cpu_power = 3072) 4-5 (cpu_power = 2048) 0
-   domain 2: span 0-19 level CPU
-    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
-CPU4 attaching sched-domain:
- domain 0: span 4-5 level MC
-  groups: 4 5
-  domain 1: span 0-5 level BOOK
-   groups: 4-5 (cpu_power = 2048) 0 1-3 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
-CPU5 attaching sched-domain:
- domain 0: span 4-5 level MC
-  groups: 5 4
-  domain 1: span 0-5 level BOOK
-   groups: 4-5 (cpu_power = 2048) 0 1-3 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 0-5 (cpu_power = 6144) 6-19 (cpu_power = 14336)
-CPU6 attaching sched-domain:
- domain 0: span 6-9 level MC
-  groups: 6 7 8 9
-  domain 1: span 6-19 level BOOK
-   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU7 attaching sched-domain:
- domain 0: span 6-9 level MC
-  groups: 7 8 9 6
-  domain 1: span 6-19 level BOOK
-   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU8 attaching sched-domain:
- domain 0: span 6-9 level MC
-  groups: 8 9 6 7
-  domain 1: span 6-19 level BOOK
-   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU9 attaching sched-domain:
- domain 0: span 6-9 level MC
-  groups: 9 6 7 8
-  domain 1: span 6-19 level BOOK
-   groups: 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU10 attaching sched-domain:
- domain 0: span 10-11 level MC
-  groups: 10 11
-  domain 1: span 6-19 level BOOK
-   groups: 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU11 attaching sched-domain:
- domain 0: span 10-11 level MC
-  groups: 11 10
-  domain 1: span 6-19 level BOOK
-   groups: 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU12 attaching sched-domain:
- domain 0: span 12-13 level MC
-  groups: 12 13
-  domain 1: span 6-19 level BOOK
-   groups: 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU13 attaching sched-domain:
- domain 0: span 12-13 level MC
-  groups: 13 12
-  domain 1: span 6-19 level BOOK
-   groups: 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU14 attaching sched-domain:
- domain 0: span 14-16 level MC
-  groups: 14 15 16
-  domain 1: span 6-19 level BOOK
-   groups: 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU15 attaching sched-domain:
- domain 0: span 14-16 level MC
-  groups: 15 16 14
-  domain 1: span 6-19 level BOOK
-   groups: 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU16 attaching sched-domain:
- domain 0: span 14-16 level MC
-  groups: 16 14 15
-  domain 1: span 6-19 level BOOK
-   groups: 14-16 (cpu_power = 3072) 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU17 attaching sched-domain:
- domain 0: span 17-19 level MC
-  groups: 17 18 19
-  domain 1: span 6-19 level BOOK
-   groups: 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU18 attaching sched-domain:
- domain 0: span 17-19 level MC
-  groups: 18 19 17
-  domain 1: span 6-19 level BOOK
-   groups: 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
-CPU19 attaching sched-domain:
- domain 0: span 17-19 level MC
-  groups: 19 17 18
-  domain 1: span 6-19 level BOOK
-   groups: 17-19 (cpu_power = 3072) 6-9 (cpu_power = 4096) 10-11 (cpu_power = 2048) 12-13 (cpu_power = 2048) 14-16 (cpu_power = 3072)
-   domain 2: span 0-19 level CPU
-    groups: 6-19 (cpu_power = 14336) 0-5 (cpu_power = 6144)
