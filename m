@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760315Ab0HLPsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:48:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50543 "EHLO mail.zytor.com"
+	id S1760338Ab0HLPuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:50:12 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:33554 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760277Ab0HLPsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:48:37 -0400
-Message-ID: <4C6417AB.1050105@zytor.com>
-Date: Thu, 12 Aug 2010 08:47:55 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD machines
-References: <1280940316-7966-1-git-send-email-bp@amd64.org> <1280940316-7966-2-git-send-email-bp@amd64.org> <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812154756.GD2070@aftab>
-In-Reply-To: <20100812154756.GD2070@aftab>
-Content-Type: text/plain; charset=UTF-8
+	id S1760259Ab0HLPuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 11:50:09 -0400
+Subject: Re: [PATCH] nfs: lookupcache coherence bugs in WCC update path
+ (revised)
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <8762zgmmer.fsf@patl.com>
+References: <87lj8ckb1e.fsf@patl.com>  <8762zgmmer.fsf@patl.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 12 Aug 2010 11:49:55 -0400
+Message-ID: <1281628195.2873.12.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
 Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 3 msgs/h 1 sum rcpts/h 5 sum msgs/h 1 total rcpts 827 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: DF4D03E5B1420C4C3C78B4C2E1BF4B6B8B22B503
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 318 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/12/2010 08:47 AM, Borislav Petkov wrote:
->>
->> Agreed.  I do have a concern about the kernel page tables not being
->> synchronized into trampoline_pg_dir (it's only an issue for 32-bit
->> !PAE), so at the very least we need to keep an eye out for it...
+On Wed, 2010-08-11 at 22:26 -0700, Patrick J. LoPresti wrote:
+> (Well, crud.  I screwed up the previous diff and was missing a
+> close-curly.  This version actually compiles...)
 > 
-> I've been working on what you suggested and the patch boots on a 32-bit
-> PAE kernel but keeps rebooting on non-PAE after setting the stack_start
-> on the AP. I could send it out later for you to look at, if you like -
-> you should be able to spot what I'm missing :)...
+> This patch fixes some coherence bugs in the NFS "dentry lookup cache".
 > 
+> The NFS dentry lookup cache provides the nfs_force_lookup_revalidate()
+> call to invalidate all cached dentries associated with an inode.  In
+> general, the NFS client uses the ctime and mtime in the inode to detect
+> when changes are made on the server.
+> 
+> Therefore, to maintain cache coherence, nfs_force_lookup_revalidate()
+> must be called whenever the ctime or mtime of a directory inode is
+> updated with fresh data from the server.  There are a few spots in
+> nfs_wcc_update_inode() where this rule is violated, making it possible
+> for the lookup cache to return arbitrarily stale data.
+> 
+> This actually bit me in practice.  I have an application where a
+> negative dentry results in -ENOENT for a file that was created 30+
+> minutes earlier (despite the "noac" mount option).  Unfortunately I
+> cannot share my test case, but I believe the following simple patch is
+> "obviously correct", and I can confirm that it fixes my issue.
 
-Sounds good.  This is obviously .37-or-higher material.
+This looks less than obviously correct to me. The wcc case is invoked
+when the ctime/mtime/.... change is known to have occurred due to a file
+creation/unlink/... from this client. It is a weak cache consistency
+case.
 
-	-hpa
+If your client is seeing ENOENT after it created the file itself, then
+the problem isn't cache coherency, but a bug in the file creation code.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Cheers
+  Trond
+
 
