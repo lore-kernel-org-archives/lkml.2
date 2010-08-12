@@ -1,122 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760794Ab0HLVde (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 17:33:34 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:38359 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753802Ab0HLVdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 17:33:33 -0400
-X-Authenticated: #1045983
-X-Provags-ID: V01U2FsdGVkX19e3mhexrxeAj4UXkEk7/AKDrbF0ImopOufeXOFub
-	yUvz1hLIQVFKiV
-Message-ID: <4C6468A9.7090503@gmx.de>
-Date: Thu, 12 Aug 2010 23:33:29 +0200
-From: Helge Deller <deller@gmx.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1760878Ab0HLVih (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 17:38:37 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41051 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754932Ab0HLVid (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 17:38:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RmSVORAa21O1PMtxsPQ4TbQAEIXldgDWs5/o5dA6V4YIbtNk2DmR3DO83aqQeXD9a7
+         D77hSN/lsGFFUeWaYUCO5Ez40qOcdf8JTNZOkznjBGwze50+3Iuu2PauAYzQo5dMFrmg
+         TbrDkoQlzvFPW6vGfrZf/E28G7We/B36jCD0Q=
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH] ipc/shm.c: add RSS and swap size information to /proc/sysvipc/shm
-References: <20100811201345.GA11304@p100.box> <20100812131005.e466a9fd.akpm@linux-foundation.org>
-In-Reply-To: <20100812131005.e466a9fd.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+In-Reply-To: <201008102300.o7AN0WQA000440@hera.kernel.org>
+References: <201008102300.o7AN0WQA000440@hera.kernel.org>
+Date: Thu, 12 Aug 2010 23:38:32 +0200
+X-Google-Sender-Auth: jpBlFmNWUgV6631o9QbszOG7xgc
+Message-ID: <AANLkTinrtjD-VKhS03OOuxxyf0hTLFZ3uQQPL=siARoQ@mail.gmail.com>
+Subject: Re: USB: EHCI Debug Port Device Gadget
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: stephane duverger <stephane.duverger@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7CLclgi013879
 
-On 08/12/2010 10:10 PM, Andrew Morton wrote:
-> On Wed, 11 Aug 2010 22:13:45 +0200
-> Helge Deller<deller@gmx.de>  wrote:
+On Wed, Aug 11, 2010 at 01:00, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> Gitweb:     http://git.kernel.org/linus/f6c826a90055dd05905982f7a3f60e0bcaa0434e
+
+>    USB: EHCI Debug Port Device Gadget
+
+> diff --git a/drivers/usb/gadget/dbgp.c b/drivers/usb/gadget/dbgp.c
+> new file mode 100644
+> index 0000000..0ed50a2
+> --- /dev/null
+> +++ b/drivers/usb/gadget/dbgp.c
+
+> +static int dbgp_setup(struct usb_gadget *gadget,
+> +                     const struct usb_ctrlrequest *ctrl)
+> +{
+> +       struct usb_request *req = dbgp.req;
+> +       u8 request = ctrl->bRequest;
+> +       u16 value = le16_to_cpu(ctrl->wValue);
+> +       u16 length = le16_to_cpu(ctrl->wLength);
+> +       int err = 0;
+> +       void *data;
+> +       u16 len;
+> +
+> +       gadget->ep0->driver_data = gadget;
+> +
+> +       if (request == USB_REQ_GET_DESCRIPTOR) {
+> +               switch (value>>8) {
+> +               case USB_DT_DEVICE:
+> +                       dev_dbg(&dbgp.gadget->dev, "setup: desc device\n");
+> +                       len = sizeof device_desc;
+> +                       data = &device_desc;
+> +                       break;
+> +               case USB_DT_DEBUG:
+> +                       dev_dbg(&dbgp.gadget->dev, "setup: desc debug\n");
+> +                       len = sizeof dbg_desc;
+> +                       data = &dbg_desc;
+> +                       break;
+> +               default:
+> +                       goto fail;
+> +               }
+> +       } else if (request == USB_REQ_SET_FEATURE &&
+> +                  value == USB_DEVICE_DEBUG_MODE) {
+> +               len = 0;
+> +               data = NULL;
+> +               dev_dbg(&dbgp.gadget->dev, "setup: feat debug\n");
+> +#ifdef CONFIG_USB_G_DBGP_PRINTK
+> +               err = dbgp_enable_ep();
+> +#else
+> +               err = gserial_connect(dbgp.serial, 0);
+> +#endif
+> +               if (err < 0)
+> +                       goto fail;
+> +       } else
+> +               goto fail;
+> +
+> +       if (len >= 0) {
+
+warning: comparison is always true due to limited range of data type
+
+len is u16. Perhaps the test was intended to be `(len > 0)'?
+
+> +               req->length = min(length, len);
+> +               req->zero = len < req->length;
+> +               if (data && req->length)
+> +                       memcpy(req->buf, data, req->length);
+> +
+> +               req->complete = dbgp_setup_complete;
+> +               return usb_ep_queue(gadget->ep0, req, GFP_ATOMIC);
+> +       }
+> +
+> +fail:
+> +       dev_dbg(&dbgp.gadget->dev,
+> +               "setup: failure req %x v %x\n", request, value);
+> +       return err;
+> +}
+> +
+> +static struct usb_gadget_driver dbgp_driver = {
+> +       .function = "dbgp",
+> +       .speed = USB_SPEED_HIGH,
+> +       .bind = dbgp_bind,
+> +       .unbind = dbgp_unbind,
+> +       .setup = dbgp_setup,
+> +       .disconnect = dbgp_disconnect,
+> +       .driver = {
+> +               .owner = THIS_MODULE,
+> +               .name = "dbgp"
+> +       },
+> +};
+> +
+> +static int __init dbgp_init(void)
+> +{
+> +       return usb_gadget_register_driver(&dbgp_driver);
+> +}
+> +
+> +static void __exit dbgp_exit(void)
+> +{
+> +       usb_gadget_unregister_driver(&dbgp_driver);
+> +#ifdef CONFIG_USB_G_DBGP_SERIAL
+> +       gserial_cleanup();
+> +#endif
+> +}
+> +
+> +MODULE_AUTHOR("Stephane Duverger");
+> +MODULE_LICENSE("GPL");
+> +module_init(dbgp_init);
+> +module_exit(dbgp_exit);
+> --
+> To unsubscribe from this list: send the line "unsubscribe git-commits-head" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 >
->> The kernel currently provides no functionality to analyze the RSS
->> and swap space usage of each individual sysvipc shared memory segment.
->>
->> This patch add this info for each existing shm segment by extending
->> the output of /proc/sysvipc/shm by two columns for RSS and swap.
->>
->> Since shmctl(SHM_INFO) already provides a similiar calculation (it
->> currently sums up all RSS/swap info for all segments), I did split
->> out a static function which is now used by the /proc/sysvipc/shm
->> output and shmctl(SHM_INFO).
->>
->
-> I suppose that could be useful, although it would be most interesting
-> to hear why _you_ consider it useful?
 
-A reasonable question, and I really should have explained when I did 
-send this patch.
 
-In my job I do work for SAP in the SAP LinuxLab 
-(http://www.sap.com/linux) and take care of the SAP ERP enterprise 
-software on Linux.
-SAP products (esp. the SAP Netweaver ABAP Kernel) uses lots of big 
-shared memory segments (we often have Linux systems with >= 16GB shm 
-usage). Sometimes we get customer reports about "slow" system responses 
-and while looking into their configurations we often find massive 
-swapping activity on the system. With this patch it's now easy to see 
-from the command line if and which shm segments gets swapped out (and 
-how much) and can more easily give recommendations for system tuning.
-Without the patch it's currently not possible to do such shm analysis at 
-all.
 
-So, my patch actually does fix a real-world problem.
+-- 
+Gr{oetje,eeting}s,
 
-By the way - I found another bug/issue in /proc/<pid>/smaps as well. The 
-kernel currently does not adds swapped-out shm pages to the swap size 
-value correctly. The swap size value always stays zero for shm pages. 
-I'm currently preparing a small patch to fix that, which I will send to 
-linux-mm for review soon.
+                        Geert
 
-> But is it useful enough to risk breaking existing code which parses
-> that file?  The risk is not great, but it's there.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Sure. The only positive argument is maybe, that I added the new info to 
-the end of the lines. IMHO existing applications which parse /proc files 
-should always take into account, that more text could follow with newer 
-Linux kernels...?
-
->> ---
->>
->>   shm.c |   63 ++++++++++++++++++++++++++++++++++++++++++---------------------
->>   1 file changed, 42 insertions(+), 21 deletions(-)
->>
->>
->> diff --git a/ipc/shm.c b/ipc/shm.c
->> --- a/ipc/shm.c
->> +++ b/ipc/shm.c
->> @@ -108,7 +108,11 @@ void __init shm_init (void)
->>   {
->>   	shm_init_ns(&init_ipc_ns);
->>   	ipc_init_proc_interface("sysvipc/shm",
->> -				"       key      shmid perms       size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime\n",
->> +#if BITS_PER_LONG<= 32
->> +				"       key      shmid perms       size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime        RSS       swap\n",
->> +#else
->> +				"       key      shmid perms                  size  cpid  lpid nattch   uid   gid  cuid  cgid      atime      dtime      ctime                   RSS                  swap\n",
->
-> This adds 11 new spaces between "perms" and "size", only on 64-bit
-> machines.  That was unchangelogged and adds another (smaller) risk of
-> breaking things.  Please explain.
-
-Yes, I did added some spaces in front of the "size" field for 64bit 
-kernels to get the columns correct if you cat the contents of the file.
-In sysvipc_shm_proc_show() the kernel prints the size value in 
-"SPEC_SIZE" format, which is defined like this:
-
-#if BITS_PER_LONG <= 32
-#define SIZE_SPEC "%10lu"
-#else
-#define SIZE_SPEC "%21lu"
-#endif
-
-So, if the header is not adjusted, the columns are not correctly 
-aligned. I actually tested this on 32- and 64-bit and it seems correct now.
-
-> This interface is really old and crufty and horrid, but I guess that
-> there's not a lot we can do about that :(
-
-Helge
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
