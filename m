@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933495Ab0HLAQV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:16:21 -0400
-Received: from kroah.org ([198.145.64.141]:47816 "EHLO coco.kroah.org"
+	id S933108Ab0HLAIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:08:19 -0400
+Received: from kroah.org ([198.145.64.141]:47796 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932974Ab0HLAIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
-Message-Id: <20100812000615.235736426@clark.site>
+	id S933095Ab0HLAIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:16 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:14 2010
+Message-Id: <20100812000614.784450541@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:43 -0700
+Date: Wed, 11 Aug 2010 17:05:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        NeilBrown <neilb@suse.de>
-Subject: [28/67] md: fix another deadlock with removing sysfs attributes.
+        Johannes Berg <johannes.berg@intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [23/67] iwlwifi: fix TX tracer
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,117 +26,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit bb4f1e9d0e2ef93de8e36ca0f5f26625fcd70b7d upstream.
+commit e95b743536937a72e1560c85696b425c5d1a1c18 upstream.
 
-Move the deletion of sysfs attributes from reconfig_mutex to
-open_mutex didn't really help as a process can try to take
-open_mutex while holding reconfig_mutex, so the same deadlock can
-happen, just requiring one more process to be involved in the chain.
+The TX tracing code copies with the wrong length,
+which will typically copy too little data. Fix
+this by using the correct length variable.
 
-I looks like I cannot easily use locking to wait for the sysfs
-deletion to complete, so don't.
-
-The only things that we cannot do while the deletions are still
-pending is other things which can change the sysfs namespace: run,
-takeover, stop.  Each of these can fail with -EBUSY.
-So set a flag while doing a sysfs deletion, and fail run, takeover,
-stop if that flag is set.
-
-This is suitable for 2.6.35.x
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/md/md.c |   31 +++++++++++++++++--------------
- drivers/md/md.h |    4 ++++
- 2 files changed, 21 insertions(+), 14 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl-devtrace.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/md/md.c
-+++ b/drivers/md/md.c
-@@ -532,13 +532,17 @@ static void mddev_unlock(mddev_t * mddev
- 		 * an access to the files will try to take reconfig_mutex
- 		 * while holding the file unremovable, which leads to
- 		 * a deadlock.
--		 * So hold open_mutex instead - we are allowed to take
--		 * it while holding reconfig_mutex, and md_run can
--		 * use it to wait for the remove to complete.
-+		 * So hold set sysfs_active while the remove in happeing,
-+		 * and anything else which might set ->to_remove or my
-+		 * otherwise change the sysfs namespace will fail with
-+		 * -EBUSY if sysfs_active is still set.
-+		 * We set sysfs_active under reconfig_mutex and elsewhere
-+		 * test it under the same mutex to ensure its correct value
-+		 * is seen.
- 		 */
- 		struct attribute_group *to_remove = mddev->to_remove;
- 		mddev->to_remove = NULL;
--		mutex_lock(&mddev->open_mutex);
-+		mddev->sysfs_active = 1;
- 		mutex_unlock(&mddev->reconfig_mutex);
- 
- 		if (to_remove != &md_redundancy_group)
-@@ -550,7 +554,7 @@ static void mddev_unlock(mddev_t * mddev
- 				sysfs_put(mddev->sysfs_action);
- 			mddev->sysfs_action = NULL;
- 		}
--		mutex_unlock(&mddev->open_mutex);
-+		mddev->sysfs_active = 0;
- 	} else
- 		mutex_unlock(&mddev->reconfig_mutex);
- 
-@@ -2960,7 +2964,9 @@ level_store(mddev_t *mddev, const char *
- 	 *  - new personality will access other array.
- 	 */
- 
--	if (mddev->sync_thread || mddev->reshape_position != MaxSector)
-+	if (mddev->sync_thread ||
-+	    mddev->reshape_position != MaxSector ||
-+	    mddev->sysfs_active)
- 		return -EBUSY;
- 
- 	if (!mddev->pers->quiesce) {
-@@ -4344,13 +4350,9 @@ static int md_run(mddev_t *mddev)
- 
- 	if (mddev->pers)
- 		return -EBUSY;
--
--	/* These two calls synchronise us with the
--	 * sysfs_remove_group calls in mddev_unlock,
--	 * so they must have completed.
--	 */
--	mutex_lock(&mddev->open_mutex);
--	mutex_unlock(&mddev->open_mutex);
-+	/* Cannot run until previous stop completes properly */
-+	if (mddev->sysfs_active)
-+		return -EBUSY;
- 
- 	/*
- 	 * Analyze all RAID superblock(s)
-@@ -4716,7 +4718,8 @@ static int do_md_stop(mddev_t * mddev, i
- 	mdk_rdev_t *rdev;
- 
- 	mutex_lock(&mddev->open_mutex);
--	if (atomic_read(&mddev->openers) > is_open) {
-+	if (atomic_read(&mddev->openers) > is_open ||
-+	    mddev->sysfs_active) {
- 		printk("md: %s still in use.\n",mdname(mddev));
- 		err = -EBUSY;
- 	} else if (mddev->pers) {
---- a/drivers/md/md.h
-+++ b/drivers/md/md.h
-@@ -125,6 +125,10 @@ struct mddev_s
- 	int				suspended;
- 	atomic_t			active_io;
- 	int				ro;
-+	int				sysfs_active; /* set when sysfs deletes
-+						       * are happening, so run/
-+						       * takeover/stop are not safe
-+						       */
- 
- 	struct gendisk			*gendisk;
- 
+--- a/drivers/net/wireless/iwlwifi/iwl-devtrace.h
++++ b/drivers/net/wireless/iwlwifi/iwl-devtrace.h
+@@ -193,7 +193,7 @@ TRACE_EVENT(iwlwifi_dev_tx,
+ 		__entry->framelen = buf0_len + buf1_len;
+ 		memcpy(__get_dynamic_array(tfd), tfd, tfdlen);
+ 		memcpy(__get_dynamic_array(buf0), buf0, buf0_len);
+-		memcpy(__get_dynamic_array(buf1), buf1, buf0_len);
++		memcpy(__get_dynamic_array(buf1), buf1, buf1_len);
+ 	),
+ 	TP_printk("[%p] TX %.2x (%zu bytes)",
+ 		  __entry->priv,
 
 
