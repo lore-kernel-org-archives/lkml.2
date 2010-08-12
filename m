@@ -1,66 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759798Ab0HLKqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 06:46:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754628Ab0HLKqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 06:46:04 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
-        Avi Kivity <avi@redhat.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH] x86: fpu xstate fix memory poison overwritten
-Date: Thu, 12 Aug 2010 18:45:45 +0800
-Message-Id: <1281609945-2861-1-git-send-email-dfeng@redhat.com>
+	id S1759807Ab0HLKrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 06:47:43 -0400
+Received: from DMZ-MAILSEC-SCANNER-6.MIT.EDU ([18.7.68.35]:44330 "EHLO
+	dmz-mailsec-scanner-6.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759753Ab0HLKrm convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 06:47:42 -0400
+X-AuditID: 12074423-b7cb4ae000000a9b-57-4c63d1412b6a
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+Date: Thu, 12 Aug 2010 06:47:27 -0400
+Cc: paulmck@linux.vnet.ibm.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        david@lang.hm, Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+References: <20100808155719.GB3635@thunk.org> <AANLkTinM5e2HGOFavODPZNzZx4KshDSjsvKN4pLpGGgr@mail.gmail.com> <20100808213821.GD3635@thunk.org> <20100809112453.77210acc@lxorguk.ukuu.org.uk> <20100809181638.GI3026@linux.vnet.ibm.com> <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com> <20100811222854.GJ2516@linux.vnet.ibm.com> <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com> <20100812010612.GL2516@linux.vnet.ibm.com> <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com> <20100812034435.GA7403@linux.vnet.ibm.com> <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+X-Mailer: Apple Mail (2.1081)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fpu.state is allocated from task_xstate_cachep, the size of
-task_xstate_cachep is xstate_size. But fpu.state is an union
-struct, which size is bigger than xstate_size if cpu_has_xsave,
-so if we want to visit fpu.state->xsave, the memory we allocated
-for fpu.state is not enough.
+Felipe,
 
-This caused many poison/redzone overwritten alerts on task_xstate while using kvm.
+One thing I'm not clear on --- what's your goal?   Is your goal to keep suspend-blockers out of the kernel?   Is it to try to convince the android team suspend-blockers are a bad idea and to change Android to not use them?  Is it to push some other agenda?  Is it to discourage the Android team from trying to waste more time trying to get suspend-blockers (or equivalent functionality) from being added into the kernel?
 
-[ 1899.399373] =============================================================================
-[ 1899.399377] BUG task_xstate: Poison overwritten
-[ 1899.399378] -----------------------------------------------------------------------------
-[ 1899.399379]
-[ 1899.399382] INFO: 0xffff88020aca2100-0xffff88020aca217f. First byte 0x0 instead of 0x6b
-[ 1899.399385] INFO: Slab 0xffffea000725c300 objects=23 used=12 fp=0xffff88020aca2100 flags=0x200000000040c1
-[ 1899.399387] INFO: Object 0xffff88020aca2100 @offset=8448 fp=0xffff88020aca23c0
+You seem to be arguing quite passionately, but I'm not sure what you're trying to do.
 
-With this patch applied, the poison overwritten alert disappeared.
-
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Brian Gerst <brgerst@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/x86/kernel/process.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index d401f1d..609bee5 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -59,7 +59,7 @@ void free_thread_info(struct thread_info *ti)
- void arch_task_cache_init(void)
- {
-         task_xstate_cachep =
--        	kmem_cache_create("task_xstate", xstate_size,
-+		kmem_cache_create("task_xstate", sizeof(union thread_xstate),
- 				  __alignof__(union thread_xstate),
- 				  SLAB_PANIC | SLAB_NOTRACK, NULL);
- }
--- 
-1.7.2.1
+-- Ted
 
