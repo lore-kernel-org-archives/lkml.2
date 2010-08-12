@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760245Ab0HLPY7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:24:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64942 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760237Ab0HLPYz (ORCPT
+	id S933781Ab0HLPbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:31:31 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:56108 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754182Ab0HLPba convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:24:55 -0400
+	Thu, 12 Aug 2010 11:31:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=mm4mCXUjnmMvPVWZPWlsAShh3VzxeR/M/j7ZlLh7AtR4dlGt7I451icNonM0CDWiBt
-         E2Dj1c4o6IlRZHE+YYweuEOPjsoVv3eyV4oDBbqMwyB/So95Qal2jIIJTxIE7Iw+X0aK
-         hqBzAFbVzXeYJ1T2XfOupXQzI41nALVWU6ypA=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=r36KOU3/n9SN8MgfXmwuPHUlVQuSnu8kPFFsvyQsSfBxg4swWvkbgELuPPUYCoo9Cs
+         IKMZ4YHQjfOPYUF6G+u2XzUVQgpByhUy82jrTf+9sFPBkO2YEXGlfsUOonIXnFYKBLDk
+         FV3ppG4C9Qiq9JrnFNScQI+7YAj6WFZmib1No=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik1K3AMQhT+HA7z33A3BpE+UXPJ+a14qNT=mgz7@mail.gmail.com>
-References: <AANLkTik1K3AMQhT+HA7z33A3BpE+UXPJ+a14qNT=mgz7@mail.gmail.com>
-Date: Thu, 12 Aug 2010 08:24:53 -0700
-Message-ID: <AANLkTikEm0=pp_CgBLHyUvnDjGiupADOnm3sOcmUR_hf@mail.gmail.com>
-Subject: Re: [ANNOUNCE] [REALTIME] 2.6.33.8-rt30-jk
-From: Mark Knecht <markknecht@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, RT <linux-rt-users@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100812151226.GA21753@suse.de>
+References: <AANLkTikK5m_DE_bzcuiqOpoSVqFzUp=GeD5k01foop=E@mail.gmail.com>
+	<20100812151226.GA21753@suse.de>
+Date: Thu, 12 Aug 2010 17:31:29 +0200
+X-Google-Sender-Auth: 0Cdu5v1-TXgArD9dXnKXcgSnafE
+Message-ID: <AANLkTikgddxg01_RfgZiNXf9PV2pmXRu5M7YRBbKBdLL@mail.gmail.com>
+Subject: Re: [ANNOUNCE][UNOFFICIAL] 2.6.33.8
+From: John Kacur <jkacur@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 8:05 AM, John Kacur <jkacur@redhat.com> wrote:
-> I'm announcing the release of 2.6.33.8-rt30-jk
-> The -jk indicates that it is my own -rt version, and not the official
-> one that Thomas releases.
-> However, it would be great if you tested it and reported your results.
+On Thu, Aug 12, 2010 at 5:12 PM, Greg KH <gregkh@suse.de> wrote:
+> On Thu, Aug 12, 2010 at 04:58:13PM +0200, John Kacur wrote:
+>> There are no longer any official 2.6.33 stable releases after 2.6.33.7
+>> However, 2.6.33.y is the basis for the real-time kernel.
 >
-> You can fetch it via git from
-> git://git.kernel.org/pub/scm/linux/kernel/git/jkacur/jk-2.6.git
-> branch: rt/2.6.33-jk
+> Why is the -rt kernel sticking with this older version?  Any specific
+> reason to not move to .34 or at the least, .35?
 >
-> Thanks, enjoy!
 
-;-) Any chance of you hacking out a 2.6.35 version? ;-)
-
-I've got a new i980x 6-core, 12-thread machine that problems
-recognizing all the disk drives on 2.6.34 without patches, but works
-very well on 2.6.35. I'd love to play with the real-time kernel on it
-doing audio.
-
-Cheers,
-Mark
+Nope, just lack of manpower. We need to stabilize on a version, so we've been
+working with .33. At some point, we'll move to the latest. We've been
+skipping every
+other kernel, but not by design, just chance.
