@@ -1,56 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab0HLAPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:15:07 -0400
-Received: from www.tglx.de ([62.245.132.106]:47122 "EHLO www.tglx.de"
+	id S933374Ab0HLAP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:15:26 -0400
+Received: from kroah.org ([198.145.64.141]:47848 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932986Ab0HLAO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:14:56 -0400
-Date: Thu, 12 Aug 2010 02:14:54 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: Leon Woestenberg <leon.woestenberg@gmail.com>
-Cc: "Hans J. Koch" <hjk@linutronix.de>, Tom Lyon <pugs@cisco.com>,
-        mst@redhat.com, gregkh@suse.de, chrisw@sous-sol.org, joro@8bytes.org,
-        avi@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: UIO DMA to userspace question
-Message-ID: <20100812001453.GC6411@local>
-References: <AANLkTimWdaBrJz-dQ3MHWwG7iZ5m1opSmLFKva880csi@mail.gmail.com>
- <20100809111155.GB2569@local>
- <20100810001244.GD2569@local>
- <AANLkTingmHe9z6KLp_euogxbXCTCZN+DMs2oEpC6VDKn@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTingmHe9z6KLp_euogxbXCTCZN+DMs2oEpC6VDKn@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933078Ab0HLAI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:29 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:15 2010
+Message-Id: <20100812000615.816894818@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 11 Aug 2010 17:05:49 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Subject: [34/67] eCryptfs: Handle ioctl calls with unlocked and compat functions
+In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 08:42:35PM +0200, Leon Woestenberg wrote:
-[...]
-> 
-> I am currently refraining from using UIO, as I don't like the head
-> ache feature :-)
+2.6.35-stable review patch.  If anyone has any objections, please let us know.
 
-Well, if you need feature X, capability Y, or usecase Z, feel free to send
-patches.
+------------------
 
-I (and several of my colleagues) wrote quite a lot of UIO drivers for
-various chips in the last 4 years. I never had a device that needed DMA
-on my desk yet, otherwise support for it would be in mainline now.
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 
-UIO was mainly invented to prevent people from writing large character
-device drivers that will never make it to mainline, and then having to
-maintain them off-tree. It is not a general purpose driver interface
-but a small framework to handle a special class of hardware that doesn't
-fit into any other subsystem. If you've got such hardware, and you need
-a certain feature, think about how it can be done, and let us know.
+commit c43f7b8fb03be8bcc579bfc4e6ab70eac887ab55 upstream.
 
-Thanks,
-Hans
+Lower filesystems that only implemented unlocked_ioctl weren't being
+passed ioctl calls because eCryptfs only checked for
+lower_file->f_op->ioctl and returned -ENOTTY if it was NULL.
 
-> 
-> Regards,
-> -- 
-> Leon
+eCryptfs shouldn't implement ioctl(), since it doesn't require the BKL.
+This patch introduces ecryptfs_unlocked_ioctl() and
+ecryptfs_compat_ioctl(), which passes the calls on to the lower file
+system.
+
+https://bugs.launchpad.net/ecryptfs/+bug/469664
+
+Reported-by: James Dupin <james.dupin@gmail.com>
+Signed-off-by: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ecryptfs/file.c |   56 +++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 35 insertions(+), 21 deletions(-)
+
+--- a/fs/ecryptfs/file.c
++++ b/fs/ecryptfs/file.c
+@@ -292,12 +292,40 @@ static int ecryptfs_fasync(int fd, struc
+ 	return rc;
+ }
+ 
+-static int ecryptfs_ioctl(struct inode *inode, struct file *file,
+-			  unsigned int cmd, unsigned long arg);
++static long
++ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	struct file *lower_file = NULL;
++	long rc = -ENOTTY;
++
++	if (ecryptfs_file_to_private(file))
++		lower_file = ecryptfs_file_to_lower(file);
++	if (lower_file && lower_file->f_op && lower_file->f_op->unlocked_ioctl)
++		rc = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
++	return rc;
++}
++
++#ifdef CONFIG_COMPAT
++static long
++ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	struct file *lower_file = NULL;
++	long rc = -ENOIOCTLCMD;
++
++	if (ecryptfs_file_to_private(file))
++		lower_file = ecryptfs_file_to_lower(file);
++	if (lower_file && lower_file->f_op && lower_file->f_op->compat_ioctl)
++		rc = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
++	return rc;
++}
++#endif
+ 
+ const struct file_operations ecryptfs_dir_fops = {
+ 	.readdir = ecryptfs_readdir,
+-	.ioctl = ecryptfs_ioctl,
++	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = ecryptfs_compat_ioctl,
++#endif
+ 	.open = ecryptfs_open,
+ 	.flush = ecryptfs_flush,
+ 	.release = ecryptfs_release,
+@@ -313,7 +341,10 @@ const struct file_operations ecryptfs_ma
+ 	.write = do_sync_write,
+ 	.aio_write = generic_file_aio_write,
+ 	.readdir = ecryptfs_readdir,
+-	.ioctl = ecryptfs_ioctl,
++	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = ecryptfs_compat_ioctl,
++#endif
+ 	.mmap = generic_file_mmap,
+ 	.open = ecryptfs_open,
+ 	.flush = ecryptfs_flush,
+@@ -322,20 +353,3 @@ const struct file_operations ecryptfs_ma
+ 	.fasync = ecryptfs_fasync,
+ 	.splice_read = generic_file_splice_read,
+ };
+-
+-static int
+-ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+-	       unsigned long arg)
+-{
+-	int rc = 0;
+-	struct file *lower_file = NULL;
+-
+-	if (ecryptfs_file_to_private(file))
+-		lower_file = ecryptfs_file_to_lower(file);
+-	if (lower_file && lower_file->f_op && lower_file->f_op->ioctl)
+-		rc = lower_file->f_op->ioctl(ecryptfs_inode_to_lower(inode),
+-					     lower_file, cmd, arg);
+-	else
+-		rc = -ENOTTY;
+-	return rc;
+-}
+
+
