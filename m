@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab0HLAHq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:07:46 -0400
-Received: from kroah.org ([198.145.64.141]:60423 "EHLO coco.kroah.org"
+	id S933080Ab0HLAIM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:08:12 -0400
+Received: from kroah.org ([198.145.64.141]:60482 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932820Ab0HLAHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:07:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:12 2010
-Message-Id: <20100812000612.790256790@clark.site>
+	id S933046Ab0HLAIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:00 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:13 2010
+Message-Id: <20100812000613.854304247@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:16 -0700
+Date: Wed, 11 Aug 2010 17:05:28 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Alok N Kataria <akataria@vmware.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [01/67] x86, vmware: Preset lpj values when on VMware.
+        Lytochkin Boris <lytboris@gmail.com>,
+        Alexander Beregalov <a.beregalov@gmail.com>
+Subject: [13/67] serial: add support for OX16PCI958 card
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +26,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alok Kataria <akataria@vmware.com>
+From: Lytochkin Boris <lytboris@gmail.com>
 
-commit 9f242dc10e0c3c1eb32d8c83c18650a35fd7f80d upstream.
+commit e847003f00d5eca3e3b3a6a1199f82b51293faf6 upstream.
 
-When running on VMware's platform, we have seen situations where
-the AP's try to calibrate the lpj values and fail to get good calibration
-runs becasue of timing issues. As a result delays don't work correctly
-on all cpus.
-
-The solutions is to set preset_lpj value based on the current tsc frequency
-value. This is similar to what KVM does as well.
-
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-LKML-Reference: <1280790637.14933.29.camel@ank32.eng.vmware.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Lytochkin Boris <lytboris@gmail.com>
+Tested-by: Lytochkin Boris <lytboris@gmail.com>
+Signed-off-by: Alexander Beregalov <a.beregalov@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/vmware.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
+ drivers/serial/8250_pci.c |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
---- a/arch/x86/kernel/cpu/vmware.c
-+++ b/arch/x86/kernel/cpu/vmware.c
-@@ -51,7 +51,7 @@ static inline int __vmware_platform(void
+--- a/drivers/serial/8250_pci.c
++++ b/drivers/serial/8250_pci.c
+@@ -994,6 +994,7 @@ static int skip_tx_en_setup(struct seria
+ #define PCI_DEVICE_ID_TITAN_800E	0xA014
+ #define PCI_DEVICE_ID_TITAN_200EI	0xA016
+ #define PCI_DEVICE_ID_TITAN_200EISI	0xA017
++#define PCI_DEVICE_ID_OXSEMI_16PCI958	0x9538
  
- static unsigned long vmware_get_tsc_khz(void)
- {
--	uint64_t tsc_hz;
-+	uint64_t tsc_hz, lpj;
- 	uint32_t eax, ebx, ecx, edx;
+ /* Unknown vendors/cards - this should not be in linux/pci_ids.h */
+ #define PCI_SUBDEVICE_ID_UNKNOWN_0x1584	0x1584
+@@ -1542,6 +1543,8 @@ enum pci_board_num_t {
+ 	pbn_b2_4_921600,
+ 	pbn_b2_8_921600,
  
- 	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
-@@ -62,6 +62,13 @@ static unsigned long vmware_get_tsc_khz(
- 	printk(KERN_INFO "TSC freq read from hypervisor : %lu.%03lu MHz\n",
- 			 (unsigned long) tsc_hz / 1000,
- 			 (unsigned long) tsc_hz % 1000);
++	pbn_b2_8_1152000,
 +
-+	if (!preset_lpj) {
-+		lpj = ((u64)tsc_hz * 1000);
-+		do_div(lpj, HZ);
-+		preset_lpj = lpj;
-+	}
-+
- 	return tsc_hz;
- }
+ 	pbn_b2_bt_1_115200,
+ 	pbn_b2_bt_2_115200,
+ 	pbn_b2_bt_4_115200,
+@@ -1960,6 +1963,13 @@ static struct pciserial_board pci_boards
+ 		.uart_offset	= 8,
+ 	},
  
++	[pbn_b2_8_1152000] = {
++		.flags		= FL_BASE2,
++		.num_ports	= 8,
++		.base_baud	= 1152000,
++		.uart_offset	= 8,
++	},
++
+ 	[pbn_b2_bt_1_115200] = {
+ 		.flags		= FL_BASE2|FL_BASE_BARS,
+ 		.num_ports	= 1,
+@@ -2875,6 +2885,9 @@ static struct pci_device_id serial_pci_t
+ 	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI952,
+ 		PCI_ANY_ID, PCI_ANY_ID, 0, 0,
+ 		pbn_b0_bt_2_921600 },
++	{	PCI_VENDOR_ID_OXSEMI, PCI_DEVICE_ID_OXSEMI_16PCI958,
++		PCI_ANY_ID , PCI_ANY_ID, 0, 0,
++		pbn_b2_8_1152000 },
+ 
+ 	/*
+ 	 * Oxford Semiconductor Inc. Tornado PCI express device range.
 
 
