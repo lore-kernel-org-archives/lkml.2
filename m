@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470Ab0HLAAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:00:08 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:56034 "HELO mail.gmx.net"
+	id S1759454Ab0HLAAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:00:36 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:59053 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1759409Ab0HKX7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 19:59:48 -0400
+	id S1759208Ab0HLAAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:00:32 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+DjCc7LjqDFIvmsGQk+9RhNSCfzuL/BJoT7ZJtPS
-	80kdNguuWo2s37
+X-Provags-ID: V01U2FsdGVkX18fWoccSqkfKqqI6Pn26V4bFj9nMfa4QGZUEqaDbc
+	q1338vPwQti8YQ
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Joseph Chan <JosephChan@via.com.tw>
-Subject: [[PATCH 09/11]] viafb: add new output device management
-Date: Thu, 12 Aug 2010 00:10:06 +0000
-Message-Id: <1281571806-9013-1-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [[PATCH 10/11]] viafb: use new device routing
+Date: Thu, 12 Aug 2010 00:11:08 +0000
+Message-Id: <1281571868-9050-1-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
 References: <1281570580-8253-1-git-send-email-FlorianSchandinat@gmx.de>
@@ -25,179 +25,223 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-viafb: add new output device management
+viafb: use new device routing
 
-This patch adds a new output device management that stores for each
-IGA which output devices are routed to it and a compatiblity layer
-that converts the old per-output device values in the new format.
-Bounding the output devices to each IGA is a central idea of the
-cleanup. Doing it this way should be easier and make much more sense
-than the old format which happily mixed different output devices
-together and did not even take into account that some devices are no
-longer available on newer chipsets.
+This patch uses the iga{1,2}_devices variables to select which IGA
+should be the source. Doing this is convinient, more powerfull
+than the older scheme and easy extendable to support further output
+devices. It is not yet completed as the device on/off selection needs
+to be converted to the same scheme to take full advantage.
+No visible changes yet as we want to complete the transition before
+anouncing any unstabke interface.
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Cc: Joseph Chan <JosephChan@via.com.tw>
 ---
- drivers/video/via/hw.c       |  102 ++++++++++++++++++++++++++++++++++++++++++
- drivers/video/via/hw.h       |    9 ++++
- drivers/video/via/viafbdev.h |    3 +
- 3 files changed, 114 insertions(+), 0 deletions(-)
+ drivers/video/via/hw.c |  101 ++++++++++++++++++------------------------------
+ 1 files changed, 38 insertions(+), 63 deletions(-)
 
 diff --git a/drivers/video/via/hw.c b/drivers/video/via/hw.c
-index 638cf96..30cc2f0 100644
+index 30cc2f0..c8f2405 100644
 --- a/drivers/video/via/hw.c
 +++ b/drivers/video/via/hw.c
-@@ -753,6 +753,66 @@ void write_dac_reg(u8 index, u8 r, u8 g, u8 b)
- 	outb(b, LUT_DATA);
- }
+@@ -718,7 +718,6 @@ static struct rgbLUT palLUT_table[] = {
+ 								     0x00}
+ };
  
-+static u32 get_dvi_devices(int output_interface)
-+{
-+	switch (output_interface) {
-+	case INTERFACE_DVP0:
-+		return VIA_96 | VIA_6C;
-+
-+	case INTERFACE_DVP1:
-+		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
-+			return VIA_93;
-+		else
-+			return VIA_DVP1;
-+
-+	case INTERFACE_DFP_HIGH:
-+		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
-+			return 0;
-+		else
-+			return VIA_LVDS2 | VIA_96;
-+
-+	case INTERFACE_DFP_LOW:
-+		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
-+			return 0;
-+		else
-+			return VIA_DVP1 | VIA_LVDS1;
-+
-+	case INTERFACE_TMDS:
-+		return VIA_LVDS1;
-+	}
-+
-+	return 0;
-+}
-+
-+static u32 get_lcd_devices(int output_interface)
-+{
-+	switch (output_interface) {
-+	case INTERFACE_DVP0:
-+		return VIA_96;
-+
-+	case INTERFACE_DVP1:
-+		return VIA_DVP1;
-+
-+	case INTERFACE_DFP_HIGH:
-+		return VIA_LVDS2 | VIA_96;
-+
-+	case INTERFACE_DFP_LOW:
-+		return VIA_LVDS1 | VIA_DVP1;
-+
-+	case INTERFACE_DFP:
-+		return VIA_LVDS1 | VIA_LVDS2;
-+
-+	case INTERFACE_LVDS0:
-+	case INTERFACE_LVDS0LVDS1:
-+		return VIA_LVDS1;
-+
-+	case INTERFACE_LVDS1:
-+		return VIA_LVDS2;
-+	}
-+
-+	return 0;
-+}
-+
- /*Set IGA path for each device*/
- void viafb_set_iga_path(void)
+-static void set_crt_output_path(int set_iga);
+ static void dvi_patch_skew_dvp0(void);
+ static void dvi_patch_skew_dvp_low(void);
+ static void set_dvi_output_path(int set_iga, int output_interface);
+@@ -733,6 +732,7 @@ static void set_display_channel(void);
+ static void device_off(void);
+ static void device_on(void);
+ static void enable_second_display_channel(void);
++static void disable_second_display_channel(void);
+ 
+ void viafb_lock_crt(void)
  {
-@@ -819,6 +879,48 @@ void viafb_set_iga_path(void)
- 			viaparinfo->tmds_setting_info->iga_path = IGA1;
- 		}
+@@ -948,7 +948,7 @@ void viafb_set_output_path(int device, int set_iga, int output_interface)
+ {
+ 	switch (device) {
+ 	case DEVICE_CRT:
+-		set_crt_output_path(set_iga);
++		viafb_write_reg_mask(CR36, VIACR, 0x00, BIT4 + BIT5);
+ 		break;
+ 	case DEVICE_DVI:
+ 		set_dvi_output_path(set_iga, output_interface);
+@@ -957,9 +957,6 @@ void viafb_set_output_path(int device, int set_iga, int output_interface)
+ 		set_lcd_output_path(set_iga, output_interface);
+ 		break;
  	}
-+
-+	viaparinfo->shared->iga1_devices = 0;
-+	viaparinfo->shared->iga2_devices = 0;
-+	if (viafb_CRT_ON) {
-+		if (viaparinfo->crt_setting_info->iga_path == IGA1)
-+			viaparinfo->shared->iga1_devices |= VIA_CRT;
-+		else
-+			viaparinfo->shared->iga2_devices |= VIA_CRT;
-+	}
-+
-+	if (viafb_DVI_ON) {
-+		if (viaparinfo->tmds_setting_info->iga_path == IGA1)
-+			viaparinfo->shared->iga1_devices |= get_dvi_devices(
-+				viaparinfo->chip_info->
-+				tmds_chip_info.output_interface);
-+		else
-+			viaparinfo->shared->iga2_devices |= get_dvi_devices(
-+				viaparinfo->chip_info->
-+				tmds_chip_info.output_interface);
-+	}
-+
-+	if (viafb_LCD_ON) {
-+		if (viaparinfo->lvds_setting_info->iga_path == IGA1)
-+			viaparinfo->shared->iga1_devices |= get_lcd_devices(
-+				viaparinfo->chip_info->
-+				lvds_chip_info.output_interface);
-+		else
-+			viaparinfo->shared->iga2_devices |= get_lcd_devices(
-+				viaparinfo->chip_info->
-+				lvds_chip_info.output_interface);
-+	}
-+
-+	if (viafb_LCD2_ON) {
-+		if (viaparinfo->lvds_setting_info2->iga_path == IGA1)
-+			viaparinfo->shared->iga1_devices |= get_lcd_devices(
-+				viaparinfo->chip_info->
-+				lvds_chip_info2.output_interface);
-+		else
-+			viaparinfo->shared->iga2_devices |= get_lcd_devices(
-+				viaparinfo->chip_info->
-+				lvds_chip_info2.output_interface);
-+	}
+-
+-	if (set_iga == IGA2)
+-		enable_second_display_channel();
  }
  
- static void set_color_register(u8 index, u8 red, u8 green, u8 blue)
-diff --git a/drivers/video/via/hw.h b/drivers/video/via/hw.h
-index 39f3a69..c52a1d5 100644
---- a/drivers/video/via/hw.h
-+++ b/drivers/video/via/hw.h
-@@ -30,6 +30,15 @@
- #define viafb_write_reg(i, p, d)		via_write_reg(p, i, d)
- #define viafb_write_reg_mask(i, p, d, m)	via_write_reg_mask(p, i, d, m)
+ static void set_source_common(u8 index, u8 offset, u8 iga)
+@@ -1030,10 +1027,22 @@ static inline void set_lvds2_source(u8 iga)
+ 	set_source_common(0x97, 4, iga);
+ }
  
-+/* VIA output devices */
-+#define VIA_6C		0x00000001
-+#define VIA_93		0x00000002
-+#define VIA_96		0x00000004
-+#define VIA_CRT		0x00000010
-+#define VIA_DVP1	0x00000020
-+#define VIA_LVDS1	0x00000040
-+#define VIA_LVDS2	0x00000080
+-static void set_crt_output_path(int set_iga)
++void via_set_source(u32 devices, u8 iga)
+ {
+-	viafb_write_reg_mask(CR36, VIACR, 0x00, BIT4 + BIT5);
+-	set_crt_source(set_iga);
++	if (devices & VIA_6C)
++		set_6C_source(iga);
++	if (devices & VIA_93)
++		set_93_source(iga);
++	if (devices & VIA_96)
++		set_96_source(iga);
++	if (devices & VIA_CRT)
++		set_crt_source(iga);
++	if (devices & VIA_DVP1)
++		set_dvp1_source(iga);
++	if (devices & VIA_LVDS1)
++		set_lvds1_source(iga);
++	if (devices & VIA_LVDS2)
++		set_lvds2_source(iga);
+ }
+ 
+ static void dvi_patch_skew_dvp0(void)
+@@ -1106,8 +1115,6 @@ static void set_dvi_output_path(int set_iga, int output_interface)
+ {
+ 	switch (output_interface) {
+ 	case INTERFACE_DVP0:
+-		set_96_source(set_iga);
+-		set_6C_source(set_iga);
+ 		viafb_write_reg_mask(CR6B, VIACR, 0x01, BIT0);
+ 		viafb_write_reg_mask(CR6C, VIACR, 0x21, BIT0 + BIT5);
+ 		viafb_write_reg_mask(SR1E, VIASR, 0xC0, BIT7 + BIT6);
+@@ -1115,21 +1122,14 @@ static void set_dvi_output_path(int set_iga, int output_interface)
+ 		break;
+ 
+ 	case INTERFACE_DVP1:
+-		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266) {
+-			set_93_source(set_iga);
++		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
+ 			viafb_write_reg_mask(CR93, VIACR, 0x21, BIT0 + BIT5);
+-		} else {
+-			set_dvp1_source(set_iga);
+-		}
+ 
+ 		viafb_write_reg_mask(SR1E, VIASR, 0x30, BIT4 + BIT5);
+ 		break;
+ 	case INTERFACE_DFP_HIGH:
+-		if (viaparinfo->chip_info->gfx_chip_name != UNICHROME_CLE266) {
++		if (viaparinfo->chip_info->gfx_chip_name != UNICHROME_CLE266)
+ 			via_write_reg_mask(VIACR, CR97, 0x03, 0x03);
+-			set_lvds2_source(set_iga);
+-			set_96_source(set_iga);
+-		}
+ 
+ 		viafb_write_reg_mask(SR2A, VIASR, 0x0C, BIT2 + BIT3);
+ 		break;
+@@ -1137,15 +1137,9 @@ static void set_dvi_output_path(int set_iga, int output_interface)
+ 	case INTERFACE_DFP_LOW:
+ 		if (viaparinfo->chip_info->gfx_chip_name == UNICHROME_CLE266)
+ 			break;
+-		set_dvp1_source(set_iga);
+-		set_lvds1_source(set_iga);
+ 		viafb_write_reg_mask(SR2A, VIASR, 0x03, BIT0 + BIT1);
+ 		dvi_patch_skew_dvp_low();
+ 		break;
+-
+-	case INTERFACE_TMDS:
+-		set_lvds1_source(set_iga);
+-		break;
+ 	}
+ 
+ 	if (set_iga == IGA2) {
+@@ -1163,53 +1157,19 @@ static void set_lcd_output_path(int set_iga, int output_interface)
+ 	viafb_write_reg_mask(CR6B, VIACR, 0x00, BIT3);
+ 	viafb_write_reg_mask(CR6A, VIACR, 0x08, BIT3);
+ 	switch (output_interface) {
+-	case INTERFACE_DVP0:
+-		set_96_source(set_iga);
+-		if (set_iga == IGA2)
+-			viafb_write_reg(CR91, VIACR, 0x00);
+-		break;
+-
+-	case INTERFACE_DVP1:
+-		set_dvp1_source(set_iga);
+-		if (set_iga == IGA2)
+-			viafb_write_reg(CR91, VIACR, 0x00);
+-		break;
+-
+-	case INTERFACE_DFP_HIGH:
+-		set_lvds2_source(set_iga);
+-		set_96_source(set_iga);
+-		if (set_iga == IGA2)
+-			viafb_write_reg(CR91, VIACR, 0x00);
+-		break;
+-
+-	case INTERFACE_DFP_LOW:
+-		set_lvds1_source(set_iga);
+-		set_dvp1_source(set_iga);
+-		if (set_iga == IGA2)
+-			viafb_write_reg(CR91, VIACR, 0x00);
+-		break;
+-
+ 	case INTERFACE_DFP:
+ 		if ((UNICHROME_K8M890 == viaparinfo->chip_info->gfx_chip_name)
+ 		    || (UNICHROME_P4M890 ==
+ 		    viaparinfo->chip_info->gfx_chip_name))
+ 			viafb_write_reg_mask(CR97, VIACR, 0x84,
+ 				       BIT7 + BIT2 + BIT1 + BIT0);
+-
+-		set_lvds1_source(set_iga);
+-		set_lvds2_source(set_iga);
++	case INTERFACE_DVP0:
++	case INTERFACE_DVP1:
++	case INTERFACE_DFP_HIGH:
++	case INTERFACE_DFP_LOW:
+ 		if (set_iga == IGA2)
+ 			viafb_write_reg(CR91, VIACR, 0x00);
+ 		break;
+-
+-	case INTERFACE_LVDS0:
+-	case INTERFACE_LVDS0LVDS1:
+-		set_lvds1_source(set_iga);
+-		break;
+-
+-	case INTERFACE_LVDS1:
+-		set_lvds2_source(set_iga);
+-		break;
+ 	}
+ }
+ 
+@@ -2454,6 +2414,13 @@ int viafb_setmode(struct VideoModeTable *vmode_tbl, int video_bpp,
+ 	via_set_primary_color_depth(viaparinfo->depth);
+ 	via_set_secondary_color_depth(viafb_dual_fb ? viaparinfo1->depth
+ 		: viaparinfo->depth);
++	via_set_source(viaparinfo->shared->iga1_devices, IGA1);
++	via_set_source(viaparinfo->shared->iga2_devices, IGA2);
++	if (viaparinfo->shared->iga2_devices)
++		enable_second_display_channel();
++	else
++		disable_second_display_channel();
 +
- /***************************************************
- * Definition IGA1 Design Method of CRTC Registers *
- ****************************************************/
-diff --git a/drivers/video/via/viafbdev.h b/drivers/video/via/viafbdev.h
-index 52a35fa..945a47a 100644
---- a/drivers/video/via/viafbdev.h
-+++ b/drivers/video/via/viafbdev.h
-@@ -40,6 +40,9 @@
- #define VIAFB_NUM_I2C		5
+ 	/* Update Refresh Rate Setting */
  
- struct viafb_shared {
-+	u32 iga1_devices;
-+	u32 iga2_devices;
+ 	/* Clear On Screen */
+@@ -2647,6 +2614,14 @@ static void enable_second_display_channel(void)
+ 	viafb_write_reg_mask(CR6A, VIACR, BIT6, BIT6);
+ }
+ 
++static void disable_second_display_channel(void)
++{
++	/* to disable second display channel. */
++	viafb_write_reg_mask(CR6A, VIACR, 0x00, BIT6);
++	viafb_write_reg_mask(CR6A, VIACR, 0x00, BIT7);
++	viafb_write_reg_mask(CR6A, VIACR, BIT6, BIT6);
++}
 +
- 	struct proc_dir_entry *proc_entry;	/*viafb proc entry */
- 	struct viafb_dev *vdev;			/* Global dev info */
- 
+ void viafb_set_dpa_gfx(int output_interface, struct GFX_DPA_SETTING\
+ 					*p_gfx_dpa_setting)
+ {
 -- 
 1.6.3.2
 
