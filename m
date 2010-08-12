@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933438Ab0HLAML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:12:11 -0400
-Received: from kroah.org ([198.145.64.141]:47928 "EHLO coco.kroah.org"
+	id S933290Ab0HLAMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:12:09 -0400
+Received: from kroah.org ([198.145.64.141]:47941 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933222Ab0HLAIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:08:51 -0400
+	id S933239Ab0HLAIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:08:54 -0400
 X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:17 2010
-Message-Id: <20100812000617.485594030@clark.site>
+Message-Id: <20100812000617.736350512@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:06:07 -0700
+Date: Wed, 11 Aug 2010 17:06:10 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        "David A. Ranch" <dranch@trinnet.net>
-Subject: [52/67] USB: ftdi_sio: device id for Navitator
+        Oliver Neukum <oneukum@suse.de>, Greg Kroah-Hartman <greg@kroah.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Christian Lamparter <chunkeey@googlemail.com>
+Subject: [55/67] USB: fix thread-unsafe anchor utiliy routines
 In-Reply-To: <20100812000641.GA6348@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,50 +27,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: dranch@trinnet.net <dranch@trinnet.net>
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-commit b6180ef7c99574c3350bbffa2a3a9d675321543d upstream.
+commit b3e670443b7fb8a2d29831b62b44a039c283e351 upstream.
 
-This patch is to add a US Interface, Inc. "Navigator" USB device.
-Specifically, it's a HAM Radio USB sound modem that also
-incorporates three pairs of unique FTDI serial ports.  The standard
-Linux FTDI serial driver will only recognize the first two serial
-ports of an unknown FDTI derived device and this patch adds in
-recognition to these specific new IDs.
+This patch fixes a race condition in two utility routines
+related to the removal/unlinking of urbs from an anchor.
 
-Signed-off-by: David A. Ranch <dranch@trinnet.net>
+If two threads are concurrently accessing the same anchor,
+both could end up with the same urb - thinking they are
+the exclusive owner.
+
+Alan Stern pointed out a related issue in
+usb_unlink_anchored_urbs:
+
+"The URB isn't removed from the anchor until it completes
+ (as a by-product of completion, in fact), which might not
+ be for quite some time after the unlink call returns.
+ In the meantime, the subroutine will keep trying to unlink
+ it, over and over again."
+
+Cc: Oliver Neukum <oneukum@suse.de>
+Cc: Greg Kroah-Hartman <greg@kroah.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Christian Lamparter <chunkeey@googlemail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/serial/ftdi_sio.c     |    3 +++
- drivers/usb/serial/ftdi_sio_ids.h |    5 +++++
- 2 files changed, 8 insertions(+)
+ drivers/usb/core/urb.c |   50 ++++++++++++++++++++-----------------------------
+ 1 file changed, 21 insertions(+), 29 deletions(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -157,6 +157,9 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_5_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_6_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SCS_DEVICE_7_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_USINT_CAT_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_USINT_WKEY_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_USINT_RS232_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACTZWAVE_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IRTRANS_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_IPLUS_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -40,6 +40,11 @@
+--- a/drivers/usb/core/urb.c
++++ b/drivers/usb/core/urb.c
+@@ -137,6 +137,16 @@ void usb_anchor_urb(struct urb *urb, str
+ }
+ EXPORT_SYMBOL_GPL(usb_anchor_urb);
  
- #define FTDI_NXTCAM_PID		0xABB8 /* NXTCam for Mindstorms NXT */
- 
-+/* US Interface Navigator (http://www.usinterface.com/) */
-+#define FTDI_USINT_CAT_PID	0xb810	/* Navigator CAT and 2nd PTT lines */
-+#define FTDI_USINT_WKEY_PID	0xb811	/* Navigator WKEY and FSK lines */
-+#define FTDI_USINT_RS232_PID	0xb812	/* Navigator RS232 and CONFIG lines */
++/* Callers must hold anchor->lock */
++static void __usb_unanchor_urb(struct urb *urb, struct usb_anchor *anchor)
++{
++	urb->anchor = NULL;
++	list_del(&urb->anchor_list);
++	usb_put_urb(urb);
++	if (list_empty(&anchor->urb_list))
++		wake_up(&anchor->wait);
++}
 +
- /* OOCDlink by Joern Kaipf <joernk@web.de>
-  * (http://www.joernonline.de/dw/doku.php?id=start&idx=projects:oocdlink) */
- #define FTDI_OOCDLINK_PID	0xbaf8	/* Amontec JTAGkey */
+ /**
+  * usb_unanchor_urb - unanchors an URB
+  * @urb: pointer to the urb to anchor
+@@ -156,17 +166,14 @@ void usb_unanchor_urb(struct urb *urb)
+ 		return;
+ 
+ 	spin_lock_irqsave(&anchor->lock, flags);
+-	if (unlikely(anchor != urb->anchor)) {
+-		/* we've lost the race to another thread */
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		return;
+-	}
+-	urb->anchor = NULL;
+-	list_del(&urb->anchor_list);
++	/*
++	 * At this point, we could be competing with another thread which
++	 * has the same intention. To protect the urb from being unanchored
++	 * twice, only the winner of the race gets the job.
++	 */
++	if (likely(anchor == urb->anchor))
++		__usb_unanchor_urb(urb, anchor);
+ 	spin_unlock_irqrestore(&anchor->lock, flags);
+-	usb_put_urb(urb);
+-	if (list_empty(&anchor->urb_list))
+-		wake_up(&anchor->wait);
+ }
+ EXPORT_SYMBOL_GPL(usb_unanchor_urb);
+ 
+@@ -749,20 +756,11 @@ EXPORT_SYMBOL_GPL(usb_unpoison_anchored_
+ void usb_unlink_anchored_urbs(struct usb_anchor *anchor)
+ {
+ 	struct urb *victim;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&anchor->lock, flags);
+-	while (!list_empty(&anchor->urb_list)) {
+-		victim = list_entry(anchor->urb_list.prev, struct urb,
+-				    anchor_list);
+-		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		/* this will unanchor the URB */
++	while ((victim = usb_get_from_anchor(anchor)) != NULL) {
+ 		usb_unlink_urb(victim);
+ 		usb_put_urb(victim);
+-		spin_lock_irqsave(&anchor->lock, flags);
+ 	}
+-	spin_unlock_irqrestore(&anchor->lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(usb_unlink_anchored_urbs);
+ 
+@@ -799,12 +797,11 @@ struct urb *usb_get_from_anchor(struct u
+ 		victim = list_entry(anchor->urb_list.next, struct urb,
+ 				    anchor_list);
+ 		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		usb_unanchor_urb(victim);
++		__usb_unanchor_urb(victim, anchor);
+ 	} else {
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+ 		victim = NULL;
+ 	}
++	spin_unlock_irqrestore(&anchor->lock, flags);
+ 
+ 	return victim;
+ }
+@@ -826,12 +823,7 @@ void usb_scuttle_anchored_urbs(struct us
+ 	while (!list_empty(&anchor->urb_list)) {
+ 		victim = list_entry(anchor->urb_list.prev, struct urb,
+ 				    anchor_list);
+-		usb_get_urb(victim);
+-		spin_unlock_irqrestore(&anchor->lock, flags);
+-		/* this may free the URB */
+-		usb_unanchor_urb(victim);
+-		usb_put_urb(victim);
+-		spin_lock_irqsave(&anchor->lock, flags);
++		__usb_unanchor_urb(victim, anchor);
+ 	}
+ 	spin_unlock_irqrestore(&anchor->lock, flags);
+ }
 
 
