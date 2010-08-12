@@ -1,101 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759585Ab0HLAVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:21:17 -0400
-Received: from kroah.org ([198.145.64.141]:60426 "EHLO coco.kroah.org"
+	id S1759265Ab0HLAVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:21:21 -0400
+Received: from kroah.org ([198.145.64.141]:60351 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932836Ab0HLAHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:07:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:06:12 2010
-Message-Id: <20100812000612.881053456@clark.site>
+	id S932810Ab0HLAEl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:27 2010
+Message-Id: <20100812000127.671295845@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:05:17 -0700
+Date: Wed, 11 Aug 2010 17:01:03 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: [02/67] ata_piix: fix locking around SIDPR access
-In-Reply-To: <20100812000641.GA6348@kroah.com>
+        Ian Campbell <ian.campbell@citrix.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        xen-devel@lists.xensource.com, linux-input@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, devicetree-discuss@lists.ozlabs.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [48/54] irq: Add new IRQ flag IRQF_NO_SUSPEND
+In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.35-stable review patch.  If anyone has any objections, please let us know.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Ian Campbell <ian.campbell@citrix.com>
 
-commit 213373cf974fe69e78ec894b07f45ae2f5a3a078 upstream.
+commit 685fd0b4ea3f0f1d5385610b0d5b57775a8d5842 upstream.
 
-SIDPR window registers are shared across ports and as each access is
-done in two steps, accesses to different ports under EH may race.
-This primarily is caused by incorrect host locking in EH context and
-should be fixed by defining locking requirements for each EH operation
-which can be used during EH and enforcing them but for now work around
-the problem by adding a dedicated SIDPR lock and grabbing it for each
-SIDPR access.
+A small number of users of IRQF_TIMER are using it for the implied no
+suspend behaviour on interrupts which are not timer interrupts.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Mark Knecht <markknecht@gmail.com>
-Reported-by: Paul Check <paul@thechecks.ca>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Therefore add a new IRQF_NO_SUSPEND flag, rename IRQF_TIMER to
+__IRQF_TIMER and redefine IRQF_TIMER in terms of these new flags.
+
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>
+Cc: xen-devel@lists.xensource.com
+Cc: linux-input@vger.kernel.org
+Cc: linuxppc-dev@ozlabs.org
+Cc: devicetree-discuss@lists.ozlabs.org
+LKML-Reference: <1280398595-29708-1-git-send-email-ian.campbell@citrix.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/ata/ata_piix.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ include/linux/interrupt.h |    7 ++++++-
+ kernel/irq/manage.c       |    2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
 
---- a/drivers/ata/ata_piix.c
-+++ b/drivers/ata/ata_piix.c
-@@ -158,6 +158,7 @@ struct piix_map_db {
- struct piix_host_priv {
- 	const int *map;
- 	u32 saved_iocfg;
-+	spinlock_t sidpr_lock;	/* FIXME: remove once locking in EH is fixed */
- 	void __iomem *sidpr;
- };
+--- a/include/linux/interrupt.h
++++ b/include/linux/interrupt.h
+@@ -52,16 +52,21 @@
+  * IRQF_ONESHOT - Interrupt is not reenabled after the hardirq handler finished.
+  *                Used by threaded interrupts which need to keep the
+  *                irq line disabled until the threaded handler has been run.
++ * IRQF_NO_SUSPEND - Do not disable this IRQ during suspend
++ *
+  */
+ #define IRQF_DISABLED		0x00000020
+ #define IRQF_SAMPLE_RANDOM	0x00000040
+ #define IRQF_SHARED		0x00000080
+ #define IRQF_PROBE_SHARED	0x00000100
+-#define IRQF_TIMER		0x00000200
++#define __IRQF_TIMER		0x00000200
+ #define IRQF_PERCPU		0x00000400
+ #define IRQF_NOBALANCING	0x00000800
+ #define IRQF_IRQPOLL		0x00001000
+ #define IRQF_ONESHOT		0x00002000
++#define IRQF_NO_SUSPEND		0x00004000
++
++#define IRQF_TIMER		(__IRQF_TIMER | IRQF_NO_SUSPEND)
  
-@@ -951,12 +952,15 @@ static int piix_sidpr_scr_read(struct at
- 			       unsigned int reg, u32 *val)
+ /*
+  * Bits used by threaded handlers:
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -200,7 +200,7 @@ static inline int setup_affinity(unsigne
+ void __disable_irq(struct irq_desc *desc, unsigned int irq, bool suspend)
  {
- 	struct piix_host_priv *hpriv = link->ap->host->private_data;
-+	unsigned long flags;
- 
- 	if (reg >= ARRAY_SIZE(piix_sidx_map))
- 		return -EINVAL;
- 
-+	spin_lock_irqsave(&hpriv->sidpr_lock, flags);
- 	piix_sidpr_sel(link, reg);
- 	*val = ioread32(hpriv->sidpr + PIIX_SIDPR_DATA);
-+	spin_unlock_irqrestore(&hpriv->sidpr_lock, flags);
- 	return 0;
- }
- 
-@@ -964,12 +968,15 @@ static int piix_sidpr_scr_write(struct a
- 				unsigned int reg, u32 val)
- {
- 	struct piix_host_priv *hpriv = link->ap->host->private_data;
-+	unsigned long flags;
- 
- 	if (reg >= ARRAY_SIZE(piix_sidx_map))
- 		return -EINVAL;
- 
-+	spin_lock_irqsave(&hpriv->sidpr_lock, flags);
- 	piix_sidpr_sel(link, reg);
- 	iowrite32(val, hpriv->sidpr + PIIX_SIDPR_DATA);
-+	spin_unlock_irqrestore(&hpriv->sidpr_lock, flags);
- 	return 0;
- }
- 
-@@ -1566,6 +1573,7 @@ static int __devinit piix_init_one(struc
- 	hpriv = devm_kzalloc(dev, sizeof(*hpriv), GFP_KERNEL);
- 	if (!hpriv)
- 		return -ENOMEM;
-+	spin_lock_init(&hpriv->sidpr_lock);
- 
- 	/* Save IOCFG, this will be used for cable detection, quirk
- 	 * detection and restoration on detach.  This is necessary
+ 	if (suspend) {
+-		if (!desc->action || (desc->action->flags & IRQF_TIMER))
++		if (!desc->action || (desc->action->flags & IRQF_NO_SUSPEND))
+ 			return;
+ 		desc->status |= IRQ_SUSPENDED;
+ 	}
 
 
