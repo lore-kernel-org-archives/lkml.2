@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760515Ab0HLUHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 16:07:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33103 "EHLO hera.kernel.org"
+	id S932897Ab0HLUHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:07:41 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:34656 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754412Ab0HLUHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 16:07:06 -0400
-Date: Thu, 12 Aug 2010 20:06:48 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        akpm@linux-foundation.org, cpw@sgi.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, cpw@sgi.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <E1OiZcw-0001Hb-2g@eag09.americas.sgi.com>
-References: <E1OiZcw-0001Hb-2g@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86, UV: Make kdump avoid stack dumps - fix !CONFIG_KEXEC breakage
-Message-ID: <tip-1d6225e8cc5598f2bc5c992f9c88b1137763e8e1@git.kernel.org>
-Git-Commit-ID: 1d6225e8cc5598f2bc5c992f9c88b1137763e8e1
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 Aug 2010 20:06:49 +0000 (UTC)
+	id S1754832Ab0HLUHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 16:07:40 -0400
+Subject: Re: [PATCH 0/8] v5 De-couple sysfs memory directories from memory
+ sections
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg KH <greg@kroah.com>
+In-Reply-To: <20100812120816.e97d8b9e.akpm@linux-foundation.org>
+References: <4C60407C.2080608@austin.ibm.com>
+	 <20100812120816.e97d8b9e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Thu, 12 Aug 2010 13:07:03 -0700
+Message-ID: <1281643623.6772.78.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1d6225e8cc5598f2bc5c992f9c88b1137763e8e1
-Gitweb:     http://git.kernel.org/tip/1d6225e8cc5598f2bc5c992f9c88b1137763e8e1
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Mon, 9 Aug 2010 16:11:22 -0500
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 12 Aug 2010 12:23:55 -0700
+On Thu, 2010-08-12 at 12:08 -0700, Andrew Morton wrote:
+> > This set of patches allows for each directory created in sysfs
+> > to cover more than one memory section.  The default behavior for
+> > sysfs directory creation is the same, in that each directory
+> > represents a single memory section.  A new file 'end_phys_index'
+> > in each directory contains the physical_id of the last memory
+> > section covered by the directory so that users can easily
+> > determine the memory section range of a directory.
+> 
+> What you're proposing appears to be a non-back-compatible
+> userspace-visible change.  This is a big issue! 
 
-x86, UV: Make kdump avoid stack dumps - fix !CONFIG_KEXEC breakage
+Nathan, one thought to get around this at the moment would be to bump up
+the size that we export in /sys/devices/system/memory/block_size_bytes.
+I think you have already done most of the hard work to accomplish
+this.  
 
-This replaces Version 1 of this patch, which broke the build when
-CONFIG_KEXEC and CONFIG_CRASH_DUMP were configured off.  In that case
-the storage for the 'in_crash_kexec' flag was never built.
+You can still add the end_phys_index stuff.  But, for now, it would
+always be equal to start_phys_index.
 
-This version defines that flag as 0 if CONFIG_KEXEC is not set.
-The patch is tested with all combinations of those two options.
+-- Dave
 
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <E1OiZcw-0001Hb-2g@eag09.americas.sgi.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/kdebug.h |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/kdebug.h b/arch/x86/include/asm/kdebug.h
-index 7a2910b..5bdfca8 100644
---- a/arch/x86/include/asm/kdebug.h
-+++ b/arch/x86/include/asm/kdebug.h
-@@ -33,6 +33,11 @@ extern void __show_regs(struct pt_regs *regs, int all);
- extern void show_regs(struct pt_regs *regs);
- extern unsigned long oops_begin(void);
- extern void oops_end(unsigned long, struct pt_regs *, int signr);
-+#ifdef CONFIG_KEXEC
- extern int in_crash_kexec;
-+#else
-+/* no crash dump is ever in progress if no crash kernel can be kexec'd */
-+#define in_crash_kexec 0
-+#endif
- 
- #endif /* _ASM_X86_KDEBUG_H */
