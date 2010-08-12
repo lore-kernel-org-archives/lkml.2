@@ -1,198 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760239Ab0HLPeG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 11:34:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45447 "EHLO hera.kernel.org"
+	id S1760257Ab0HLPfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 11:35:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33614 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754182Ab0HLPeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 11:34:04 -0400
-Date: Thu, 12 Aug 2010 15:33:47 GMT
-From: tip-bot for Luca Barbieri <luca@luca-barbieri.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        luca@luca-barbieri.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        luca@luca-barbieri.com, tglx@linutronix.de
-In-Reply-To: <tip-30246557a06bb20618bed906a06d1e1e0faa8bb4@git.kernel.org>
-References: <tip-30246557a06bb20618bed906a06d1e1e0faa8bb4@git.kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, asm: Use a lower case name for the end macro in atomic64_386_32.S
-Message-ID: <tip-417484d47e115774745ef025bce712a102b6f86f@git.kernel.org>
-Git-Commit-ID: 417484d47e115774745ef025bce712a102b6f86f
-X-Mailer: tip-git-log-daemon
+	id S1760169Ab0HLPfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 11:35:31 -0400
+Message-ID: <4C64148D.5080305@zytor.com>
+Date: Thu, 12 Aug 2010 08:34:37 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Borislav Petkov <bp@amd64.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD	machines
+References: <1280940316-7966-1-git-send-email-bp@amd64.org> <1280940316-7966-2-git-send-email-bp@amd64.org> <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org>
+In-Reply-To: <20100812144142.GY23755@8bytes.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 Aug 2010 15:33:48 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  417484d47e115774745ef025bce712a102b6f86f
-Gitweb:     http://git.kernel.org/tip/417484d47e115774745ef025bce712a102b6f86f
-Author:     Luca Barbieri <luca@luca-barbieri.com>
-AuthorDate: Thu, 12 Aug 2010 07:00:35 -0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 12 Aug 2010 07:04:16 -0700
+On 08/12/2010 07:41 AM, Joerg Roedel wrote:
+> On Thu, Aug 05, 2010 at 07:14:14AM -0700, H. Peter Anvin wrote:
+>> On 08/05/2010 12:45 AM, Roedel, Joerg wrote:
+>> Correct, again.  It's unclear to me if we can get away with the very
+>> simple 64-bit approach -- in particular, not including all the 1:1
+>> mappings in the kernel -- for all future users, though.
+> 
+> Yeah, We could probably use the same symbol names for the trampoline and
+> the swapper page-table on 32 and 64 bit and merge the code that handles
+> it between the architectures. Shouldn't be too difficult. We cook
+> something up :-)
+> But do you mind to take this patch first? It fixes the occurence of an
+> erratum on AMD hardware, it is a quite simple fix compared to the rework
+> suggested. In fact, I would like to have a simple patch to fix the
+> problem first (and backport it as necessary) and then go the way to
+> rework the current code differences between 32 and 64 bit.
+> 
 
-x86, asm: Use a lower case name for the end macro in atomic64_386_32.S
+Agreed.  I do have a concern about the kernel page tables not being
+synchronized into trampoline_pg_dir (it's only an issue for 32-bit
+!PAE), so at the very least we need to keep an eye out for it...
 
-Use a lowercase name for the end macro, which somehow fixes a binutils 2.16
-problem.
+	-hpa
 
-Signed-off-by: Luca Barbieri <luca@luca-barbieri.com>
-LKML-Reference: <tip-30246557a06bb20618bed906a06d1e1e0faa8bb4@git.kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/lib/atomic64_386_32.S |   38 ++++++++++++++++++++------------------
- 1 files changed, 20 insertions(+), 18 deletions(-)
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-diff --git a/arch/x86/lib/atomic64_386_32.S b/arch/x86/lib/atomic64_386_32.S
-index 78ee8e0..2cda60a 100644
---- a/arch/x86/lib/atomic64_386_32.S
-+++ b/arch/x86/lib/atomic64_386_32.S
-@@ -26,35 +26,37 @@
- .endm
- 
- #define BEGIN(op) \
--.macro END; \
-+.macro endp; \
- 	CFI_ENDPROC; \
- ENDPROC(atomic64_##op##_386); \
--.purgem END; \
-+.purgem endp; \
- .endm; \
- ENTRY(atomic64_##op##_386); \
- 	CFI_STARTPROC; \
- 	LOCK v;
- 
-+#define ENDP endp
-+
- #define RET \
- 	UNLOCK v; \
- 	ret
- 
--#define RET_END \
-+#define RET_ENDP \
- 	RET; \
--	END
-+	ENDP
- 
- #define v %ecx
- BEGIN(read)
- 	movl  (v), %eax
- 	movl 4(v), %edx
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %esi
- BEGIN(set)
- 	movl %ebx,  (v)
- 	movl %ecx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v  %esi
-@@ -63,14 +65,14 @@ BEGIN(xchg)
- 	movl 4(v), %edx
- 	movl %ebx,  (v)
- 	movl %ecx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %ecx
- BEGIN(add)
- 	addl %eax,  (v)
- 	adcl %edx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %ecx
-@@ -79,14 +81,14 @@ BEGIN(add_return)
- 	adcl 4(v), %edx
- 	movl %eax,  (v)
- 	movl %edx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %ecx
- BEGIN(sub)
- 	subl %eax,  (v)
- 	sbbl %edx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %ecx
-@@ -98,14 +100,14 @@ BEGIN(sub_return)
- 	adcl 4(v), %edx
- 	movl %eax,  (v)
- 	movl %edx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %esi
- BEGIN(inc)
- 	addl $1,  (v)
- 	adcl $0, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %esi
-@@ -116,14 +118,14 @@ BEGIN(inc_return)
- 	adcl $0, %edx
- 	movl %eax,  (v)
- 	movl %edx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %esi
- BEGIN(dec)
- 	subl $1,  (v)
- 	sbbl $0, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %esi
-@@ -134,7 +136,7 @@ BEGIN(dec_return)
- 	sbbl $0, %edx
- 	movl %eax,  (v)
- 	movl %edx, 4(v)
--RET_END
-+RET_ENDP
- #undef v
- 
- #define v %ecx
-@@ -156,7 +158,7 @@ BEGIN(add_unless)
- 	jne 1b
- 	xorl %eax, %eax
- 	jmp 2b
--END
-+ENDP
- #undef v
- 
- #define v %esi
-@@ -177,7 +179,7 @@ BEGIN(inc_not_zero)
- 	testl %edx, %edx
- 	jne 1b
- 	jmp 2b
--END
-+ENDP
- #undef v
- 
- #define v %esi
-@@ -190,5 +192,5 @@ BEGIN(dec_if_positive)
- 	movl %eax,  (v)
- 	movl %edx, 4(v)
- 1:
--RET_END
-+RET_ENDP
- #undef v
