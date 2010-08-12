@@ -1,41 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab0HLT6T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 15:58:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46234 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753428Ab0HLT6Q (ORCPT
+	id S1758466Ab0HLUB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 16:01:29 -0400
+Received: from www17.your-server.de ([213.133.104.17]:41894 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab0HLUB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 15:58:16 -0400
+	Thu, 12 Aug 2010 16:01:28 -0400
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.36: Sound stop working
+Date: Thu, 12 Aug 2010 22:00:05 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-00268-gf70ab54; KDE/4.4.5; i686; ; )
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=kc8FUJuGCTOsAObLmLhKKEUXbW8e0s_b74h+=@mail.gmail.com>
-References: <s5hlj8dwrd7.wl%tiwai@suse.de> <AANLkTi=2N_P=zAM73a=dOBX6w0OzsgJi3TqRDu0LyZtB@mail.gmail.com>
- <s5hvd7ftyl7.wl%tiwai@suse.de> <AANLkTi=kc8FUJuGCTOsAObLmLhKKEUXbW8e0s_b74h+=@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 12 Aug 2010 12:57:20 -0700
-Message-ID: <AANLkTinfEQ-ojY7GbBgLPQU-6iFZ+KVQ9LU1h9xBMQMf@mail.gmail.com>
-Subject: Re: [GIT PULL] sound update (#2) for 2.6.36
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008122200.05598.thomas@m3y3r.de>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 12:49 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> I've done some more testing. If I 'cat' something directly to
-> /dev/audio, I do get sound. So I wonder whether it's some pulseaudio
-> problem, and I'll double-check that it's really the kernel (and not
-> the result of a "yum update", for example)
+My sound card stop to work since a few commits. I tried to bisect it and ended up with this:
 
-It's definitely kernel-related.
+There are only 'skip'ped commits left to test.
+The first bad commit could be any of:
+3bcf3860a4ff9bbc522820b4b765e65e4deceb3e
+c1e5c954020e123d30b4abf4038ce501861bcf9f
+We cannot bisect more!
 
-kernel v2.6.35-05791-g45d7f32 works. v2.6.35-7786-gad41a1e does not.
-And reverting that "Make converter setups sticky" commit doesn't make
-any difference.
+any ideas what to do now?
 
-I'll start bisecting it.
-
-                            Linus
