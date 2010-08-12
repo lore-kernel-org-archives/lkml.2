@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933678Ab0HLMo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 08:44:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38342 "EHLO hera.kernel.org"
+	id S933758Ab0HLMqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 08:46:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38366 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751944Ab0HLMoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 08:44:19 -0400
+	id S933675Ab0HLMo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 08:44:26 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
         linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
@@ -14,363 +14,238 @@ To: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
         swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
         dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
         hare@suse.de
-Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@infradead.org>
-Subject: [PATCH 08/11] block: rename barrier/ordered to flush
-Date: Thu, 12 Aug 2010 14:41:28 +0200
-Message-Id: <1281616891-5691-9-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Nick Piggin <npiggin@kernel.dk>, "Michael S. Tsirkin" <mst@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@xensource.com>,
+        Chris Wright <chrisw@sous-sol.org>
+Subject: [PATCH 02/11] block: kill QUEUE_ORDERED_BY_TAG
+Date: Thu, 12 Aug 2010 14:41:22 +0200
+Message-Id: <1281616891-5691-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1281616891-5691-1-git-send-email-tj@kernel.org>
 References: <1281616891-5691-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 Aug 2010 12:43:52 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 12 Aug 2010 12:43:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With ordering requirements dropped, barrier and ordered are misnomers.
-Now all block layer does is sequencing FLUSH and FUA.  Rename them to
-flush.
+Nobody is making meaningful use of ORDERED_BY_TAG now and queue
+draining for barrier requests will be removed soon which will render
+the advantage of tag ordering moot.  Kill ORDERED_BY_TAG.  The
+following users are affected.
+
+* brd: converted to ORDERED_DRAIN.
+* virtio_blk: ORDERED_TAG path was already marked deprecated.  Removed.
+* xen-blkfront: ORDERED_TAG case dropped.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Jeremy Fitzhardinge <jeremy@xensource.com>
+Cc: Chris Wright <chrisw@sous-sol.org>
 ---
- block/blk-core.c       |   21 +++++-----
- block/blk-flush.c      |   98 +++++++++++++++++++++++------------------------
- block/blk.h            |    4 +-
- include/linux/blkdev.h |   26 ++++++------
- 4 files changed, 73 insertions(+), 76 deletions(-)
+ block/blk-barrier.c          |   35 +++++++----------------------------
+ drivers/block/brd.c          |    2 +-
+ drivers/block/virtio_blk.c   |    9 ---------
+ drivers/block/xen-blkfront.c |    8 +++-----
+ drivers/scsi/sd.c            |    4 +---
+ include/linux/blkdev.h       |   17 +----------------
+ 6 files changed, 13 insertions(+), 62 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 82bd6d9..efe391b 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -136,7 +136,7 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
- {
- 	struct request_queue *q = rq->q;
- 
--	if (&q->bar_rq != rq) {
-+	if (&q->flush_rq != rq) {
- 		if (error)
- 			clear_bit(BIO_UPTODATE, &bio->bi_flags);
- 		else if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-@@ -160,13 +160,12 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
- 		if (bio->bi_size == 0)
- 			bio_endio(bio, error);
- 	} else {
--
- 		/*
--		 * Okay, this is the barrier request in progress, just
--		 * record the error;
-+		 * Okay, this is the sequenced flush request in
-+		 * progress, just record the error;
- 		 */
--		if (error && !q->orderr)
--			q->orderr = error;
-+		if (error && !q->flush_err)
-+			q->flush_err = error;
+diff --git a/block/blk-barrier.c b/block/blk-barrier.c
+index f0faefc..c807e9c 100644
+--- a/block/blk-barrier.c
++++ b/block/blk-barrier.c
+@@ -26,10 +26,7 @@ int blk_queue_ordered(struct request_queue *q, unsigned ordered)
+ 	if (ordered != QUEUE_ORDERED_NONE &&
+ 	    ordered != QUEUE_ORDERED_DRAIN &&
+ 	    ordered != QUEUE_ORDERED_DRAIN_FLUSH &&
+-	    ordered != QUEUE_ORDERED_DRAIN_FUA &&
+-	    ordered != QUEUE_ORDERED_TAG &&
+-	    ordered != QUEUE_ORDERED_TAG_FLUSH &&
+-	    ordered != QUEUE_ORDERED_TAG_FUA) {
++	    ordered != QUEUE_ORDERED_DRAIN_FUA) {
+ 		printk(KERN_ERR "blk_queue_ordered: bad value %d\n", ordered);
+ 		return -EINVAL;
  	}
- }
- 
-@@ -520,7 +519,7 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
- 	init_timer(&q->unplug_timer);
- 	setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
- 	INIT_LIST_HEAD(&q->timeout_list);
--	INIT_LIST_HEAD(&q->pending_barriers);
-+	INIT_LIST_HEAD(&q->pending_flushes);
- 	INIT_WORK(&q->unplug_work, blk_unplug_work);
- 
- 	kobject_init(&q->kobj, &blk_queue_ktype);
-@@ -1758,11 +1757,11 @@ static void blk_account_io_completion(struct request *req, unsigned int bytes)
- static void blk_account_io_done(struct request *req)
- {
- 	/*
--	 * Account IO completion.  bar_rq isn't accounted as a normal
--	 * IO on queueing nor completion.  Accounting the containing
--	 * request is enough.
-+	 * Account IO completion.  flush_rq isn't accounted as a
-+	 * normal IO on queueing nor completion.  Accounting the
-+	 * containing request is enough.
- 	 */
--	if (blk_do_io_stat(req) && req != &req->q->bar_rq) {
-+	if (blk_do_io_stat(req) && req != &req->q->flush_rq) {
- 		unsigned long duration = jiffies - req->start_time;
- 		const int rw = rq_data_dir(req);
- 		struct hd_struct *part;
-diff --git a/block/blk-flush.c b/block/blk-flush.c
-index e8b2e5c..dd87322 100644
---- a/block/blk-flush.c
-+++ b/block/blk-flush.c
-@@ -9,41 +9,38 @@
- 
- #include "blk.h"
- 
--static struct request *queue_next_ordseq(struct request_queue *q);
-+static struct request *queue_next_fseq(struct request_queue *q);
- 
--/*
-- * Cache flushing for ordered writes handling
-- */
--unsigned blk_ordered_cur_seq(struct request_queue *q)
-+unsigned blk_flush_cur_seq(struct request_queue *q)
- {
--	if (!q->ordseq)
-+	if (!q->flush_seq)
- 		return 0;
--	return 1 << ffz(q->ordseq);
-+	return 1 << ffz(q->flush_seq);
- }
- 
--static struct request *blk_ordered_complete_seq(struct request_queue *q,
--						unsigned seq, int error)
-+static struct request *blk_flush_complete_seq(struct request_queue *q,
-+					      unsigned seq, int error)
- {
- 	struct request *next_rq = NULL;
- 
--	if (error && !q->orderr)
--		q->orderr = error;
-+	if (error && !q->flush_err)
-+		q->flush_err = error;
- 
--	BUG_ON(q->ordseq & seq);
--	q->ordseq |= seq;
-+	BUG_ON(q->flush_seq & seq);
-+	q->flush_seq |= seq;
- 
--	if (blk_ordered_cur_seq(q) != QUEUE_ORDSEQ_DONE) {
--		/* not complete yet, queue the next ordered sequence */
--		next_rq = queue_next_ordseq(q);
-+	if (blk_flush_cur_seq(q) != QUEUE_FSEQ_DONE) {
-+		/* not complete yet, queue the next flush sequence */
-+		next_rq = queue_next_fseq(q);
- 	} else {
--		/* complete this barrier request */
--		__blk_end_request_all(q->orig_bar_rq, q->orderr);
--		q->orig_bar_rq = NULL;
--		q->ordseq = 0;
--
--		/* dispatch the next barrier if there's one */
--		if (!list_empty(&q->pending_barriers)) {
--			next_rq = list_entry_rq(q->pending_barriers.next);
-+		/* complete this flush request */
-+		__blk_end_request_all(q->orig_flush_rq, q->flush_err);
-+		q->orig_flush_rq = NULL;
-+		q->flush_seq = 0;
-+
-+		/* dispatch the next flush if there's one */
-+		if (!list_empty(&q->pending_flushes)) {
-+			next_rq = list_entry_rq(q->pending_flushes.next);
- 			list_move(&next_rq->queuelist, &q->queue_head);
- 		}
- 	}
-@@ -53,19 +50,19 @@ static struct request *blk_ordered_complete_seq(struct request_queue *q,
- static void pre_flush_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_PREFLUSH, error);
-+	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_PREFLUSH, error);
- }
- 
--static void bar_end_io(struct request *rq, int error)
-+static void flush_data_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_BAR, error);
-+	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_DATA, error);
- }
- 
- static void post_flush_end_io(struct request *rq, int error)
- {
- 	elv_completed_request(rq->q, rq);
--	blk_ordered_complete_seq(rq->q, QUEUE_ORDSEQ_POSTFLUSH, error);
-+	blk_flush_complete_seq(rq->q, QUEUE_FSEQ_POSTFLUSH, error);
- }
- 
- static void queue_flush(struct request_queue *q, struct request *rq,
-@@ -74,34 +71,34 @@ static void queue_flush(struct request_queue *q, struct request *rq,
- 	blk_rq_init(q, rq);
- 	rq->cmd_type = REQ_TYPE_FS;
- 	rq->cmd_flags = REQ_FLUSH;
--	rq->rq_disk = q->orig_bar_rq->rq_disk;
-+	rq->rq_disk = q->orig_flush_rq->rq_disk;
- 	rq->end_io = end_io;
- 
- 	elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
- }
- 
--static struct request *queue_next_ordseq(struct request_queue *q)
-+static struct request *queue_next_fseq(struct request_queue *q)
- {
--	struct request *rq = &q->bar_rq;
-+	struct request *rq = &q->flush_rq;
- 
--	switch (blk_ordered_cur_seq(q)) {
--	case QUEUE_ORDSEQ_PREFLUSH:
-+	switch (blk_flush_cur_seq(q)) {
-+	case QUEUE_FSEQ_PREFLUSH:
- 		queue_flush(q, rq, pre_flush_end_io);
- 		break;
- 
--	case QUEUE_ORDSEQ_BAR:
-+	case QUEUE_FSEQ_DATA:
- 		/* initialize proxy request and queue it */
- 		blk_rq_init(q, rq);
--		init_request_from_bio(rq, q->orig_bar_rq->bio);
-+		init_request_from_bio(rq, q->orig_flush_rq->bio);
- 		rq->cmd_flags &= ~REQ_HARDBARRIER;
- 		if (q->ordered & QUEUE_ORDERED_DO_FUA)
- 			rq->cmd_flags |= REQ_FUA;
--		rq->end_io = bar_end_io;
-+		rq->end_io = flush_data_end_io;
- 
- 		elv_insert(q, rq, ELEVATOR_INSERT_FRONT);
- 		break;
- 
--	case QUEUE_ORDSEQ_POSTFLUSH:
-+	case QUEUE_FSEQ_POSTFLUSH:
- 		queue_flush(q, rq, post_flush_end_io);
- 		break;
- 
-@@ -111,19 +108,20 @@ static struct request *queue_next_ordseq(struct request_queue *q)
- 	return rq;
- }
- 
--struct request *blk_do_ordered(struct request_queue *q, struct request *rq)
-+struct request *blk_do_flush(struct request_queue *q, struct request *rq)
- {
- 	unsigned skip = 0;
- 
- 	if (!(rq->cmd_flags & REQ_HARDBARRIER))
- 		return rq;
- 
--	if (q->ordseq) {
-+	if (q->flush_seq) {
- 		/*
--		 * Barrier is already in progress and they can't be
--		 * processed in parallel.  Queue for later processing.
-+		 * Sequenced flush is already in progress and they
-+		 * can't be processed in parallel.  Queue for later
-+		 * processing.
- 		 */
--		list_move_tail(&rq->queuelist, &q->pending_barriers);
-+		list_move_tail(&rq->queuelist, &q->pending_flushes);
- 		return NULL;
- 	}
- 
-@@ -138,11 +136,11 @@ struct request *blk_do_ordered(struct request_queue *q, struct request *rq)
- 	}
- 
- 	/*
--	 * Start a new ordered sequence
-+	 * Start a new flush sequence
- 	 */
--	q->orderr = 0;
-+	q->flush_err = 0;
- 	q->ordered = q->next_ordered;
--	q->ordseq |= QUEUE_ORDSEQ_STARTED;
-+	q->flush_seq |= QUEUE_FSEQ_STARTED;
- 
- 	/*
+@@ -155,21 +152,9 @@ static inline bool start_ordered(struct request_queue *q, struct request **rqp)
  	 * For an empty barrier, there's no actual BAR request, which
-@@ -154,19 +152,19 @@ struct request *blk_do_ordered(struct request_queue *q, struct request *rq)
+ 	 * in turn makes POSTFLUSH unnecessary.  Mask them off.
+ 	 */
+-	if (!blk_rq_sectors(rq)) {
++	if (!blk_rq_sectors(rq))
+ 		q->ordered &= ~(QUEUE_ORDERED_DO_BAR |
+ 				QUEUE_ORDERED_DO_POSTFLUSH);
+-		/*
+-		 * Empty barrier on a write-through device w/ ordered
+-		 * tag has no command to issue and without any command
+-		 * to issue, ordering by tag can't be used.  Drain
+-		 * instead.
+-		 */
+-		if ((q->ordered & QUEUE_ORDERED_BY_TAG) &&
+-		    !(q->ordered & QUEUE_ORDERED_DO_PREFLUSH)) {
+-			q->ordered &= ~QUEUE_ORDERED_BY_TAG;
+-			q->ordered |= QUEUE_ORDERED_BY_DRAIN;
+-		}
+-	}
  
  	/* stash away the original request */
  	blk_dequeue_request(rq);
--	q->orig_bar_rq = rq;
-+	q->orig_flush_rq = rq;
+@@ -210,7 +195,7 @@ static inline bool start_ordered(struct request_queue *q, struct request **rqp)
+ 	} else
+ 		skip |= QUEUE_ORDSEQ_PREFLUSH;
  
- 	if (!(q->ordered & QUEUE_ORDERED_DO_PREFLUSH))
--		skip |= QUEUE_ORDSEQ_PREFLUSH;
-+		skip |= QUEUE_FSEQ_PREFLUSH;
+-	if ((q->ordered & QUEUE_ORDERED_BY_DRAIN) && queue_in_flight(q))
++	if (queue_in_flight(q))
+ 		rq = NULL;
+ 	else
+ 		skip |= QUEUE_ORDSEQ_DRAIN;
+@@ -257,16 +242,10 @@ bool blk_do_ordered(struct request_queue *q, struct request **rqp)
+ 	    rq != &q->pre_flush_rq && rq != &q->post_flush_rq)
+ 		return true;
  
- 	if (!(q->ordered & QUEUE_ORDERED_DO_BAR))
--		skip |= QUEUE_ORDSEQ_BAR;
-+		skip |= QUEUE_FSEQ_DATA;
+-	if (q->ordered & QUEUE_ORDERED_BY_TAG) {
+-		/* Ordered by tag.  Blocking the next barrier is enough. */
+-		if (is_barrier && rq != &q->bar_rq)
+-			*rqp = NULL;
+-	} else {
+-		/* Ordered by draining.  Wait for turn. */
+-		WARN_ON(blk_ordered_req_seq(rq) < blk_ordered_cur_seq(q));
+-		if (blk_ordered_req_seq(rq) > blk_ordered_cur_seq(q))
+-			*rqp = NULL;
+-	}
++	/* Ordered by draining.  Wait for turn. */
++	WARN_ON(blk_ordered_req_seq(rq) < blk_ordered_cur_seq(q));
++	if (blk_ordered_req_seq(rq) > blk_ordered_cur_seq(q))
++		*rqp = NULL;
  
- 	if (!(q->ordered & QUEUE_ORDERED_DO_POSTFLUSH))
--		skip |= QUEUE_ORDSEQ_POSTFLUSH;
-+		skip |= QUEUE_FSEQ_POSTFLUSH;
- 
- 	/* complete skipped sequences and return the first sequence */
--	return blk_ordered_complete_seq(q, skip, 0);
-+	return blk_flush_complete_seq(q, skip, 0);
+ 	return true;
  }
+diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+index 1c7f637..47a4127 100644
+--- a/drivers/block/brd.c
++++ b/drivers/block/brd.c
+@@ -482,7 +482,7 @@ static struct brd_device *brd_alloc(int i)
+ 	if (!brd->brd_queue)
+ 		goto out_free_dev;
+ 	blk_queue_make_request(brd->brd_queue, brd_make_request);
+-	blk_queue_ordered(brd->brd_queue, QUEUE_ORDERED_TAG);
++	blk_queue_ordered(brd->brd_queue, QUEUE_ORDERED_DRAIN);
+ 	blk_queue_max_hw_sectors(brd->brd_queue, 1024);
+ 	blk_queue_bounce_limit(brd->brd_queue, BLK_BOUNCE_ANY);
  
- static void bio_end_empty_barrier(struct bio *bio, int err)
-diff --git a/block/blk.h b/block/blk.h
-index 08081e4..24b92bd 100644
---- a/block/blk.h
-+++ b/block/blk.h
-@@ -51,7 +51,7 @@ static inline void blk_clear_rq_complete(struct request *rq)
-  */
- #define ELV_ON_HASH(rq)		(!hlist_unhashed(&(rq)->hash))
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 2aafafc..7965280 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -395,15 +395,6 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 		 * to implement write barrier support.
+ 		 */
+ 		blk_queue_ordered(q, QUEUE_ORDERED_DRAIN_FLUSH);
+-	} else if (virtio_has_feature(vdev, VIRTIO_BLK_F_BARRIER)) {
+-		/*
+-		 * If the BARRIER feature is supported the host expects us
+-		 * to order request by tags.  This implies there is not
+-		 * volatile write cache on the host, and that the host
+-		 * never re-orders outstanding I/O.  This feature is not
+-		 * useful for real life scenarious and deprecated.
+-		 */
+-		blk_queue_ordered(q, QUEUE_ORDERED_TAG);
+ 	} else {
+ 		/*
+ 		 * If the FLUSH feature is not supported we must assume that
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 510ab86..25ffbf9 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -424,8 +424,7 @@ static int xlvbd_barrier(struct blkfront_info *info)
+ 	const char *barrier;
  
--struct request *blk_do_ordered(struct request_queue *q, struct request *rq);
-+struct request *blk_do_flush(struct request_queue *q, struct request *rq);
+ 	switch (info->feature_barrier) {
+-	case QUEUE_ORDERED_DRAIN:	barrier = "enabled (drain)"; break;
+-	case QUEUE_ORDERED_TAG:		barrier = "enabled (tag)"; break;
++	case QUEUE_ORDERED_DRAIN:	barrier = "enabled"; break;
+ 	case QUEUE_ORDERED_NONE:	barrier = "disabled"; break;
+ 	default:			return -EINVAL;
+ 	}
+@@ -1078,8 +1077,7 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	 * we're dealing with a very old backend which writes
+ 	 * synchronously; draining will do what needs to get done.
+ 	 *
+-	 * If there are barriers, then we can do full queued writes
+-	 * with tagged barriers.
++	 * If there are barriers, then we use flush.
+ 	 *
+ 	 * If barriers are not supported, then there's no much we can
+ 	 * do, so just set ordering to NONE.
+@@ -1087,7 +1085,7 @@ static void blkfront_connect(struct blkfront_info *info)
+ 	if (err)
+ 		info->feature_barrier = QUEUE_ORDERED_DRAIN;
+ 	else if (barrier)
+-		info->feature_barrier = QUEUE_ORDERED_TAG;
++		info->feature_barrier = QUEUE_ORDERED_DRAIN_FLUSH;
+ 	else
+ 		info->feature_barrier = QUEUE_ORDERED_NONE;
  
- static inline struct request *__elv_next_request(struct request_queue *q)
- {
-@@ -60,7 +60,7 @@ static inline struct request *__elv_next_request(struct request_queue *q)
- 	while (1) {
- 		while (!list_empty(&q->queue_head)) {
- 			rq = list_entry_rq(q->queue_head.next);
--			rq = blk_do_ordered(q, rq);
-+			rq = blk_do_flush(q, rq);
- 			if (rq)
- 				return rq;
- 		}
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 8e2e893..05a15b0 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -2151,9 +2151,7 @@ static int sd_revalidate_disk(struct gendisk *disk)
+ 
+ 	/*
+ 	 * We now have all cache related info, determine how we deal
+-	 * with ordered requests.  Note that as the current SCSI
+-	 * dispatch function can alter request order, we cannot use
+-	 * QUEUE_ORDERED_TAG_* even when ordered tag is supported.
++	 * with ordered requests.
+ 	 */
+ 	if (sdkp->WCE)
+ 		ordered = sdkp->DPOFUA
 diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 522ecda..87e58f0 100644
+index 89c855c..96ef5f1 100644
 --- a/include/linux/blkdev.h
 +++ b/include/linux/blkdev.h
-@@ -357,13 +357,13 @@ struct request_queue
- 	/*
- 	 * for flush operations
+@@ -469,12 +469,7 @@ enum {
+ 	 * DRAIN	: ordering by draining is enough
+ 	 * DRAIN_FLUSH	: ordering by draining w/ pre and post flushes
+ 	 * DRAIN_FUA	: ordering by draining w/ pre flush and FUA write
+-	 * TAG		: ordering by tag is enough
+-	 * TAG_FLUSH	: ordering by tag w/ pre and post flushes
+-	 * TAG_FUA	: ordering by tag w/ pre flush and FUA write
  	 */
-+	unsigned int		ordered, next_ordered;
- 	unsigned int		flush_flags;
--
--	unsigned int		ordered, next_ordered, ordseq;
--	int			orderr;
--	struct request		bar_rq;
--	struct request		*orig_bar_rq;
--	struct list_head	pending_barriers;
-+	unsigned int		flush_seq;
-+	int			flush_err;
-+	struct request		flush_rq;
-+	struct request		*orig_flush_rq;
-+	struct list_head	pending_flushes;
+-	QUEUE_ORDERED_BY_DRAIN		= 0x01,
+-	QUEUE_ORDERED_BY_TAG		= 0x02,
+ 	QUEUE_ORDERED_DO_PREFLUSH	= 0x10,
+ 	QUEUE_ORDERED_DO_BAR		= 0x20,
+ 	QUEUE_ORDERED_DO_POSTFLUSH	= 0x40,
+@@ -482,8 +477,7 @@ enum {
  
- 	struct mutex		sysfs_lock;
+ 	QUEUE_ORDERED_NONE		= 0x00,
  
-@@ -489,13 +489,13 @@ enum {
+-	QUEUE_ORDERED_DRAIN		= QUEUE_ORDERED_BY_DRAIN |
+-					  QUEUE_ORDERED_DO_BAR,
++	QUEUE_ORDERED_DRAIN		= QUEUE_ORDERED_DO_BAR,
+ 	QUEUE_ORDERED_DRAIN_FLUSH	= QUEUE_ORDERED_DRAIN |
+ 					  QUEUE_ORDERED_DO_PREFLUSH |
+ 					  QUEUE_ORDERED_DO_POSTFLUSH,
+@@ -491,15 +485,6 @@ enum {
+ 					  QUEUE_ORDERED_DO_PREFLUSH |
  					  QUEUE_ORDERED_DO_FUA,
  
+-	QUEUE_ORDERED_TAG		= QUEUE_ORDERED_BY_TAG |
+-					  QUEUE_ORDERED_DO_BAR,
+-	QUEUE_ORDERED_TAG_FLUSH		= QUEUE_ORDERED_TAG |
+-					  QUEUE_ORDERED_DO_PREFLUSH |
+-					  QUEUE_ORDERED_DO_POSTFLUSH,
+-	QUEUE_ORDERED_TAG_FUA		= QUEUE_ORDERED_TAG |
+-					  QUEUE_ORDERED_DO_PREFLUSH |
+-					  QUEUE_ORDERED_DO_FUA,
+-
  	/*
--	 * Ordered operation sequence
-+	 * FLUSH/FUA sequences.
+ 	 * Ordered operation sequence
  	 */
--	QUEUE_ORDSEQ_STARTED	= (1 << 0), /* flushing in progress */
--	QUEUE_ORDSEQ_PREFLUSH	= (1 << 1), /* pre-flushing in progress */
--	QUEUE_ORDSEQ_BAR	= (1 << 2), /* barrier write in progress */
--	QUEUE_ORDSEQ_POSTFLUSH	= (1 << 3), /* post-flushing in progress */
--	QUEUE_ORDSEQ_DONE	= (1 << 4),
-+	QUEUE_FSEQ_STARTED	= (1 << 0), /* flushing in progress */
-+	QUEUE_FSEQ_PREFLUSH	= (1 << 1), /* pre-flushing in progress */
-+	QUEUE_FSEQ_DATA		= (1 << 2), /* data write in progress */
-+	QUEUE_FSEQ_POSTFLUSH	= (1 << 3), /* post-flushing in progress */
-+	QUEUE_FSEQ_DONE		= (1 << 4),
- };
- 
- #define blk_queue_plugged(q)	test_bit(QUEUE_FLAG_PLUGGED, &(q)->queue_flags)
-@@ -507,7 +507,7 @@ enum {
- #define blk_queue_nonrot(q)	test_bit(QUEUE_FLAG_NONROT, &(q)->queue_flags)
- #define blk_queue_io_stat(q)	test_bit(QUEUE_FLAG_IO_STAT, &(q)->queue_flags)
- #define blk_queue_add_random(q)	test_bit(QUEUE_FLAG_ADD_RANDOM, &(q)->queue_flags)
--#define blk_queue_flushing(q)	((q)->ordseq)
-+#define blk_queue_flushing(q)	((q)->flush_seq)
- #define blk_queue_stackable(q)	\
- 	test_bit(QUEUE_FLAG_STACKABLE, &(q)->queue_flags)
- #define blk_queue_discard(q)	test_bit(QUEUE_FLAG_DISCARD, &(q)->queue_flags)
 -- 
 1.7.1
 
