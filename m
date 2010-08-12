@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab0HLAEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 11 Aug 2010 20:04:01 -0400
-Received: from kroah.org ([198.145.64.141]:60079 "EHLO coco.kroah.org"
+	id S933555Ab0HLA0x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 11 Aug 2010 20:26:53 -0400
+Received: from kroah.org ([198.145.64.141]:60135 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759278Ab0HLADt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 11 Aug 2010 20:03:49 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:23 2010
-Message-Id: <20100812000123.684503111@clark.site>
+	id S1759015Ab0HLAED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 11 Aug 2010 20:04:03 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 11 17:01:24 2010
+Message-Id: <20100812000124.740684787@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Wed, 11 Aug 2010 17:00:19 -0700
+Date: Wed, 11 Aug 2010 17:00:31 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Marcin Slusarz <marcin.slusarz@gmail.com>, Pekka Paalanen <pq@iki.fi>,
-        Stuart Bennett <stuart@freedesktop.org>,
-        Marcin Kocielnicki <koriakin@0x04.net>, nouveau@lists.freedesktop.org,
-        Ingo Molnar <mingo@elte.hu>
-Subject: [04/54] x86, kmmio/mmiotrace: Fix double free of kmmio_fault_pages
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Hugh Dickins <hughd@google.com>
+Subject: [16/54] mm: fix corruption of hibernation caused by reusing swap during image saving
 In-Reply-To: <20100812000249.GA30948@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,122 +26,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-commit 8b8f79b927b6b302bb65fb8c56e7a19be5fbdbef upstream.
+commit 966cca029f739716fbcc8068b8c6dfe381f86fc3 upstream.
 
-After every iounmap mmiotrace has to free kmmio_fault_pages, but
-it can't do it directly, so it defers freeing by RCU.
+Since 2.6.31, swap_map[]'s refcounting was changed to show that a used
+swap entry is just for swap-cache, can be reused.  Then, while scanning
+free entry in swap_map[], a swap entry may be able to be reclaimed and
+reused.  It was caused by commit c9e444103b5e7a5 ("mm: reuse unused swap
+entry if necessary").
 
-It usually works, but when mmiotraced code calls ioremap-iounmap
-multiple times without sleeping between (so RCU won't kick in
-and start freeing) it can be given the same virtual address, so
-at every iounmap mmiotrace will schedule the same pages for
-release. Obviously it will explode on second free.
+But this caused deta corruption at resume. The scenario is
 
-Fix it by marking kmmio_fault_pages which are scheduled for
-release and not adding them second time.
+- Assume a clean-swap cache, but mapped.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Tested-by: Marcin Kocielnicki <koriakin@0x04.net>
-Tested-by: Shinpei KATO <shinpei@il.is.s.u-tokyo.ac.jp>
-Acked-by: Pekka Paalanen <pq@iki.fi>
-Cc: Stuart Bennett <stuart@freedesktop.org>
-Cc: Marcin Kocielnicki <koriakin@0x04.net>
-Cc: nouveau@lists.freedesktop.org
-LKML-Reference: <20100613215654.GA3829@joi.lan>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+- at hibernation_snapshot[], clean-swap-cache is saved as
+  clean-swap-cache and swap_map[] is marked as SWAP_HAS_CACHE.
+
+- then, save_image() is called.  And reuse SWAP_HAS_CACHE entry to save
+  image, and break the contents.
+
+After resume:
+
+- the memory reclaim runs and finds clean-not-referenced-swap-cache and
+  discards it because it's marked as clean.  But here, the contents on
+  disk and swap-cache is inconsistent.
+
+Hance memory is corrupted.
+
+This patch avoids the bug by not reclaiming swap-entry during hibernation.
+This is a quick fix for backporting.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-by: Ondreg Zary <linux@rainbow-software.org>
+Tested-by: Ondreg Zary <linux@rainbow-software.org>
+Tested-by: Andrea Gelmini <andrea.gelmini@gmail.com>
+Acked-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/mm/kmmio.c         |   16 +++++++++++++---
- arch/x86/mm/testmmiotrace.c |   22 ++++++++++++++++++++++
- 2 files changed, 35 insertions(+), 3 deletions(-)
+ mm/swapfile.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/arch/x86/mm/kmmio.c
-+++ b/arch/x86/mm/kmmio.c
-@@ -45,6 +45,8 @@ struct kmmio_fault_page {
- 	 * Protected by kmmio_lock, when linked into kmmio_page_table.
- 	 */
- 	int count;
-+
-+	bool scheduled_for_release;
- };
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -315,8 +315,10 @@ checks:
+ 	if (offset > si->highest_bit)
+ 		scan_base = offset = si->lowest_bit;
  
- struct kmmio_delayed_release {
-@@ -398,8 +400,11 @@ static void release_kmmio_fault_page(uns
- 	BUG_ON(f->count < 0);
- 	if (!f->count) {
- 		disarm_kmmio_fault_page(f);
--		f->release_next = *release_list;
--		*release_list = f;
-+		if (!f->scheduled_for_release) {
-+			f->release_next = *release_list;
-+			*release_list = f;
-+			f->scheduled_for_release = true;
-+		}
- 	}
- }
- 
-@@ -471,8 +476,10 @@ static void remove_kmmio_fault_pages(str
- 			prevp = &f->release_next;
- 		} else {
- 			*prevp = f->release_next;
-+			f->release_next = NULL;
-+			f->scheduled_for_release = false;
- 		}
--		f = f->release_next;
-+		f = *prevp;
- 	}
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-@@ -510,6 +517,9 @@ void unregister_kmmio_probe(struct kmmio
- 	kmmio_count--;
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-+	if (!release_list)
-+		return;
-+
- 	drelease = kmalloc(sizeof(*drelease), GFP_ATOMIC);
- 	if (!drelease) {
- 		pr_crit("leaking kmmio_fault_page objects.\n");
---- a/arch/x86/mm/testmmiotrace.c
-+++ b/arch/x86/mm/testmmiotrace.c
-@@ -90,6 +90,27 @@ static void do_test(unsigned long size)
- 	iounmap(p);
- }
- 
-+/*
-+ * Tests how mmiotrace behaves in face of multiple ioremap / iounmaps in
-+ * a short time. We had a bug in deferred freeing procedure which tried
-+ * to free this region multiple times (ioremap can reuse the same address
-+ * for many mappings).
-+ */
-+static void do_test_bulk_ioremapping(void)
-+{
-+	void __iomem *p;
-+	int i;
-+
-+	for (i = 0; i < 10; ++i) {
-+		p = ioremap_nocache(mmio_address, PAGE_SIZE);
-+		if (p)
-+			iounmap(p);
-+	}
-+
-+	/* Force freeing. If it will crash we will know why. */
-+	synchronize_rcu();
-+}
-+
- static int __init init(void)
- {
- 	unsigned long size = (read_far) ? (8 << 20) : (16 << 10);
-@@ -104,6 +125,7 @@ static int __init init(void)
- 		   "and writing 16 kB of rubbish in there.\n",
- 		   size >> 10, mmio_address);
- 	do_test(size);
-+	do_test_bulk_ioremapping();
- 	pr_info("All done.\n");
- 	return 0;
- }
+-	/* reuse swap entry of cache-only swap if not busy. */
+-	if (vm_swap_full() && si->swap_map[offset] == SWAP_HAS_CACHE) {
++	/* reuse swap entry of cache-only swap if not hibernation. */
++	if (vm_swap_full()
++		&& usage == SWAP_HAS_CACHE
++		&& si->swap_map[offset] == SWAP_HAS_CACHE) {
+ 		int swap_was_freed;
+ 		spin_unlock(&swap_lock);
+ 		swap_was_freed = __try_to_reclaim_swap(si, offset);
 
 
