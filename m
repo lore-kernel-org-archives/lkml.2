@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab0HMVtG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:49:06 -0400
-Received: from kroah.org ([198.145.64.141]:51680 "EHLO coco.kroah.org"
+	id S1755213Ab0HMVtF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:49:05 -0400
+Received: from kroah.org ([198.145.64.141]:51675 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754996Ab0HMVtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:49:04 -0400
+	id S1753343Ab0HMVtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 17:49:03 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug 13 14:46:46 2010
-Message-Id: <20100813214646.217005989@clark.site>
+Message-Id: <20100813214646.132070415@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 13 Aug 2010 14:42:57 -0700
+Date: Fri, 13 Aug 2010 14:42:56 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [2/3] mm: fix missing page table unmap for stack guard page failure case
+Subject: [1/3] mm: keep a guard page below a grow-down stack segment
 In-Reply-To: <20100813214704.GA18960@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,32 +26,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 5528f9132cf65d4d892bcbc5684c61e7822b21e9 upstream.
+commit 320b2b8de12698082609ebbc1a17165727f4c893 upstream.
 
-.. which didn't show up in my tests because it's a no-op on x86-64 and
-most other architectures.  But we enter the function with the last-level
-page table mapped, and should unmap it at exit.
+This is a rather minimally invasive patch to solve the problem of the
+user stack growing into a memory mapped area below it.  Whenever we fill
+the first page of the stack segment, expand the segment down by one
+page.
 
+Now, admittedly some odd application might _want_ the stack to grow down
+into the preceding memory mapping, and so we may at some point need to
+make this a process tunable (some people might also want to have more
+than a single page of guarding), but let's try the minimal approach
+first.
+
+Tested with trivial application that maps a single page just below the
+stack, and then starts recursing.  Without this, we will get a SIGSEGV
+_after_ the stack has smashed the mapping.  With this patch, we'll get a
+nice SIGBUS just as the stack touches the page just above the mapping.
+
+Requested-by: Keith Packard <keithp@keithp.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ mm/memory.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
 --- a/mm/memory.c
 +++ b/mm/memory.c
-@@ -2428,8 +2428,10 @@ static int do_anonymous_page(struct mm_s
+@@ -2396,6 +2396,26 @@ out_nomap:
+ }
+ 
+ /*
++ * This is like a special single-page "expand_downwards()",
++ * except we must first make sure that 'address-PAGE_SIZE'
++ * doesn't hit another vma.
++ *
++ * The "find_vma()" will do the right thing even if we wrap
++ */
++static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
++{
++	address &= PAGE_MASK;
++	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
++		address -= PAGE_SIZE;
++		if (find_vma(vma->vm_mm, address) != vma)
++			return -ENOMEM;
++
++		expand_stack(vma, address);
++	}
++	return 0;
++}
++
++/*
+  * We enter with non-exclusive mmap_sem (to exclude vma changes,
+  * but allow concurrent faults), and pte mapped but not yet locked.
+  * We return with mmap_sem still held, but pte unmapped and unlocked.
+@@ -2408,6 +2428,9 @@ static int do_anonymous_page(struct mm_s
  	spinlock_t *ptl;
  	pte_t entry;
  
--	if (check_stack_guard_page(vma, address) < 0)
-+	if (check_stack_guard_page(vma, address) < 0) {
-+		pte_unmap(page_table);
- 		return VM_FAULT_SIGBUS;
-+	}
- 
++	if (check_stack_guard_page(vma, address) < 0)
++		return VM_FAULT_SIGBUS;
++
  	/* Allocate our own private page. */
  	pte_unmap(page_table);
+ 
 
 
