@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934220Ab0HMMHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 08:07:00 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43763 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761519Ab0HMMG7 (ORCPT
+	id S1761566Ab0HMMOX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 08:14:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57472 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761543Ab0HMMOV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 08:06:59 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-        Igor Grinberg <grinberg@compulab.co.il>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH v2] ARM: imx: fix build failure concerning otg/ulpi
-Date: Fri, 13 Aug 2010 14:06:50 +0200
-Message-Id: <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <4C65246E.1000906@ru.mvista.com>
-References: <4C65246E.1000906@ru.mvista.com>
+	Fri, 13 Aug 2010 08:14:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Yw/n1QjDOJnQcF7wqu9rCgmHvnqrywpjNrK+NpYWiNSCJLGNeMfZObUjfy71/3JBDQ
+         jjWSz6D7knWzOn+tqL06V9vNoXzpBl6nkdrHBd8tTx5LB7proWWekznuZbTHgimrY9Od
+         +t5PHPsX1GVDuL5VBN9WLdGMEKJuHUaw+W0fw=
 MIME-Version: 1.0
+Date: Fri, 13 Aug 2010 21:14:20 +0900
+Message-ID: <AANLkTinDWt_Fxk=VoHfZ+ePfLO8LBtv0fg5xhuN1OxuM@mail.gmail.com>
+Subject: [PATCH] video: v4l2-ctrls.c missing include
+From: Jerome Pinot <ngc891@gmail.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <trivial@kernel.org>, Linus Torvalds <torvalds@osdl.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The build failure was introduced by
+A missing include in drivers/media/video/v4l2-ctrls.c makes the kernel
+(2.6.35-07788-g320b2b8) fail to build:
 
-	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
+  CC      drivers/media/video/v4l2-ctrls.o
+drivers/media/video/v4l2-ctrls.c: In function ‘v4l2_ctrl_handler_init’:
+drivers/media/video/v4l2-ctrls.c:766: error: implicit declaration of
+function ‘kzalloc’
+drivers/media/video/v4l2-ctrls.c:767: warning: assignment makes
+pointer from integer without a cast
+drivers/media/video/v4l2-ctrls.c: In function ‘v4l2_ctrl_handler_free’:
+drivers/media/video/v4l2-ctrls.c:786: error: implicit declaration of
+function ‘kfree’
+drivers/media/video/v4l2-ctrls.c: In function ‘handler_new_ref’:
+drivers/media/video/v4l2-ctrls.c:896: warning: assignment makes
+pointer from integer without a cast
+drivers/media/video/v4l2-ctrls.c: In function ‘v4l2_ctrl_new’:
+drivers/media/video/v4l2-ctrls.c:975: warning: assignment makes
+pointer from integer without a cast
+drivers/media/video/v4l2-ctrls.c: In function ‘v4l2_g_ext_ctrls’:
+drivers/media/video/v4l2-ctrls.c:1528: error: implicit declaration of
+function ‘kmalloc’
+drivers/media/video/v4l2-ctrls.c:1528: warning: assignment makes
+pointer from integer without a cast
+drivers/media/video/v4l2-ctrls.c: In function ‘try_set_ext_ctrls’:
+drivers/media/video/v4l2-ctrls.c:1752: warning: assignment makes
+pointer from integer without a cast
+make[3]: *** [drivers/media/video/v4l2-ctrls.o] Error 1
+make[2]: *** [drivers/media/video] Error 2
+make[1]: *** [drivers/media] Error 2
+make: *** [drivers] Error 2
 
-Cc: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Mike Rapoport <mike@compulab.co.il>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- arch/arm/mach-imx/mach-cpuimx27.c  |    4 ++--
- arch/arm/mach-imx/mach-pca100.c    |    4 ++--
- arch/arm/mach-mx25/mach-cpuimx25.c |    2 +-
- arch/arm/mach-mx3/mach-cpuimx35.c  |    2 +-
- 4 files changed, 6 insertions(+), 6 deletions(-)
+The following trivial patch corrects this.
 
-diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
-index 575ff1a..339150a 100644
---- a/arch/arm/mach-imx/mach-cpuimx27.c
-+++ b/arch/arm/mach-imx/mach-cpuimx27.c
-@@ -279,13 +279,13 @@ static void __init eukrea_cpuimx27_init(void)
- #if defined(CONFIG_USB_ULPI)
- 	if (otg_mode_host) {
- 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
--				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-+				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
- 
- 		mxc_register_device(&mxc_otg_host, &otg_pdata);
- 	}
- 
- 	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
--				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-+				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
- 
- 	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
- #endif
-diff --git a/arch/arm/mach-imx/mach-pca100.c b/arch/arm/mach-imx/mach-pca100.c
-index a389d11..23c9e1f 100644
---- a/arch/arm/mach-imx/mach-pca100.c
-+++ b/arch/arm/mach-imx/mach-pca100.c
-@@ -419,13 +419,13 @@ static void __init pca100_init(void)
- #if defined(CONFIG_USB_ULPI)
- 	if (otg_mode_host) {
- 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
--				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-+				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
- 
- 		mxc_register_device(&mxc_otg_host, &otg_pdata);
- 	}
- 
- 	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
--				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-+				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
- 
- 	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
- #endif
-diff --git a/arch/arm/mach-mx25/mach-cpuimx25.c b/arch/arm/mach-mx25/mach-cpuimx25.c
-index 56b2e26..a5f0174 100644
---- a/arch/arm/mach-mx25/mach-cpuimx25.c
-+++ b/arch/arm/mach-mx25/mach-cpuimx25.c
-@@ -138,7 +138,7 @@ static void __init eukrea_cpuimx25_init(void)
- #if defined(CONFIG_USB_ULPI)
- 	if (otg_mode_host) {
- 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
--				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-+				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
- 
- 		mxc_register_device(&mxc_otg, &otg_pdata);
- 	}
-diff --git a/arch/arm/mach-mx3/mach-cpuimx35.c b/arch/arm/mach-mx3/mach-cpuimx35.c
-index 63f970f..9770a6a 100644
---- a/arch/arm/mach-mx3/mach-cpuimx35.c
-+++ b/arch/arm/mach-mx3/mach-cpuimx35.c
-@@ -192,7 +192,7 @@ static void __init mxc_board_init(void)
- #if defined(CONFIG_USB_ULPI)
- 	if (otg_mode_host) {
- 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
--				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-+				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
- 
- 		mxc_register_device(&mxc_otg_host, &otg_pdata);
- 	}
+Signed-off-by: Jerome Pinot <ngc891@gmail.com>
+--
+diff --git a/drivers/media/video/v4l2-ctrls.c b/drivers/media/video/v4l2-ctrls.c
+index 84c1a53..ea8d32c 100644
+--- a/drivers/media/video/v4l2-ctrls.c
++++ b/drivers/media/video/v4l2-ctrls.c
+@@ -19,6 +19,7 @@
+  */
+
+ #include <linux/ctype.h>
++#include <linux/slab.h>
+ #include <media/v4l2-ioctl.h>
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-ctrls.h>
+
+
+
 -- 
-1.7.1
-
+Jérôme Pinot
+http://ngc891.blogdns.net/
