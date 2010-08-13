@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934335Ab0HMNHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:07:51 -0400
-Received: from verein.lst.de ([213.95.11.210]:40507 "EHLO verein.lst.de"
+	id S1761590Ab0HMNJt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:09:49 -0400
+Received: from king.tilera.com ([72.1.168.226]:13968 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934276Ab0HMNHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:07:49 -0400
-Date: Fri, 13 Aug 2010 15:06:57 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
-        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, jack@suse.cz,
-        rwheeler@redhat.com, hare@suse.de,
-        Christoph Hellwig <hch@infradead.org>, Nick Piggin <npiggin@kernel.dk>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@xensource.com>,
-        Chris Wright <chrisw@sous-sol.org>
-Subject: Re: [PATCH 02/11] block: kill QUEUE_ORDERED_BY_TAG
-Message-ID: <20100813130657.GA4140@lst.de>
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <1281616891-5691-3-git-send-email-tj@kernel.org> <4C654100.3060307@vlnb.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C654100.3060307@vlnb.net>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1761575Ab0HMNJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 09:09:47 -0400
+Message-Id: <201008131309.o7DD9kp6005837@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Fri, 13 Aug 2010 08:23:07 -0400
+Subject: [PATCH] arch/tile: correct a bug in freeing bootmem by VA for the optional second initrd.
+To: linux-kernel@vger.kernel.org
+X-OriginalArrivalTime: 13 Aug 2010 13:09:46.0500 (UTC) FILETIME=[CD841440:01CB3AE8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 04:56:32PM +0400, Vladislav Bolkhovitin wrote:
-> Tejun Heo, on 08/12/2010 04:41 PM wrote:
-> >Nobody is making meaningful use of ORDERED_BY_TAG now and queue
-> >draining for barrier requests will be removed soon which will render
-> >the advantage of tag ordering moot.
-> 
-> Have you seen Hannes Reinecke's and my measurements in 
-> http://marc.info/?l=linux-scsi&m=128110662528485&w=2 and 
-> http://marc.info/?l=linux-scsi&m=128111995217405&w=2 correspondingly?
-> 
-> If yes, what else evidences do you need to see that the tag ordering is 
-> a big performance win?
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/kernel/setup.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-It's not tag odering that is a win but big queue depth.  That's what you
-measured and what I fully agree on.  I haven't been able to get out of
-Hannes what he actually measured.
+diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
+index 4dd21c1..e7d54c7 100644
+--- a/arch/tile/kernel/setup.c
++++ b/arch/tile/kernel/setup.c
+@@ -953,7 +953,7 @@ static void __init load_hv_initrd(void)
+ 	if (rc != stat.size) {
+ 		pr_err("Error reading %d bytes from hvfs file '%s': %d\n",
+ 		       stat.size, initramfs_file, rc);
+-		free_bootmem((unsigned long) initrd, stat.size);
++		free_initrd_mem((unsigned long) initrd, stat.size);
+ 		return;
+ 	}
+ 	initrd_start = (unsigned long) initrd;
+@@ -962,7 +962,7 @@ static void __init load_hv_initrd(void)
+ 
+ void __init free_initrd_mem(unsigned long begin, unsigned long end)
+ {
+-	free_bootmem(begin, end - begin);
++	free_bootmem(__pa(begin), end - begin);
+ }
+ 
+ static void __init validate_hv(void)
+-- 
+1.6.5.2
 
-And if you'd actually look at the patchset allowing deep queues is
-exactly what it allows us, and while I haven't done testing on this
-patchset but only on my previous version it does get us back to use
-the full potential of large arrays exactly because of that.
