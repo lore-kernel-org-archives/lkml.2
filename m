@@ -1,43 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762031Ab0HMSBu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 14:01:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39272 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab0HMSBt (ORCPT
+	id S1761984Ab0HMSJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 14:09:42 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36658 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab0HMSJi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 14:01:49 -0400
+	Fri, 13 Aug 2010 14:09:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=X8k8qdqjQ3/czu9xVrjqczdslHIyt99zmwIvJC1TOjeVxIDgQ7isONtlXnfCSJo/T6
-         ks5XYauvHbiaS2QyrFJUB4e1RfXTev/E8tAPV07nMVQ7Bgi0QM6hkn4lrkwKpMWYi3oH
-         +Rcn07kmWfYpspXW6Ql2JX8fg9eG73wchTHcI=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=G9jusMsHixzHkzGZDhJX31T7RrY0fO6/7YgrBeigiBXEEkt0p3deidWlGXXMx7qwg4
+         G3XVM1Cj3itXix3netC6l5v84ef03eA2FIIYtqgcLkHaz9NhLuDpWjUmTdclqQLNxQDs
+         n6Qa3GAv2RnYto9OpsZTKLpVgFah2nLeojiFc=
 MIME-Version: 1.0
-Date: Sat, 14 Aug 2010 02:01:47 +0800
-Message-ID: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
-Subject: linux-2.6.35+ causes LVM to fail with " device-mapper: version ioctl
- failed: Inappropriate ioctl for device"
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: lkml <linux-kernel@vger.kernel.org>, lvm-devel@redhat.com,
-        dm-devel@redhat.com
+In-Reply-To: <20100813175410.GA8202@samba1>
+References: <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<1280524978.2452.9.camel@segv.aura.of.mankind>
+	<20100801092529.5e6ba0e0@corrin.poochiereds.net>
+	<20100805235218.GB31233@jeremy-laptop>
+	<20100806133836.49757af9@notabene>
+	<20100808121208.GA7329@jeremy-laptop>
+	<20100808085301.24f53e5a@tlielax.poochiereds.net>
+	<20100808130501.GA9851@jeremy-laptop>
+	<20100813125432.GB8945@fieldses.org>
+	<20100813175410.GA8202@samba1>
+Date: Fri, 13 Aug 2010 13:09:36 -0500
+Message-ID: <AANLkTik3dBUgDEww8E+3T=bvKh7a5j82tBKStjVM73p3@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+ file stats available [ver #6]
+From: Steve French <smfrench@gmail.com>
+To: Jeremy Allison <jra@samba.org>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Jeff Layton <jlayton@redhat.com>,
+        Neil Brown <neilb@suse.de>, utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems one of these commits in
-8357422d4bf33bc2c35884d4016c3fc9efbbc1d2 is causing LVM2
-(LVM2.2.02.72) to fail.
+On Fri, Aug 13, 2010 at 12:54 PM, Jeremy Allison <jra@samba.org> wrote:
+> On Fri, Aug 13, 2010 at 08:54:32AM -0400, J. Bruce Fields wrote:
+>> On Sun, Aug 08, 2010 at 06:05:01AM -0700, Jeremy Allison wrote:
+>> > We don't need to ape Windows in everything.
+>> > The coming ACL disaster will show that (we will go from an ACL
+>> > model that is slightly too complex to use, to one that is impossibly
+>> > complex to use :-).
+>>
+>> Care to elaborate?
+>
+> POSIX ACLs -> RichACLs (NT-style). Not criticising Andreas here,
+> people are asking for this. But Windows ACLs are a nightmare
+> beyond human comprehension :-). In the "too complex to be
+> usable" camp.
 
-Previously good logical volumes cannot be mounted anymore, and new one
-cannot be created. All failed with the error ...
+Not much choice - even community colleges now have
+to teach students about this ACL model in their sysadmin courses.
 
-"device-mapper: version ioctl failed: Inappropriate ioctl for device"
+>> And what would native ACL support mean for Samba?
+>
+> RichACLs'll do it, but I feel sorry for the admins :-).
+
+Yes - RichACLs and Windows ACLs allow you to set
+some strange combinations of permssion bits.
+RichACLs will make a more natural mapping for
+Samba and NFSv4 - and it is far too late to
+remove the requirement for Windows and
+MacOS (among other clients) support.
 
 
-Is there a new LVM2 for this new dm ioctl or the dm is not right?
 
-
+-- 
 Thanks,
-Jeff.
+
+Steve
