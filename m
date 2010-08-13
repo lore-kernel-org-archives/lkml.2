@@ -1,97 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754557Ab0HMHU2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:20:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43881 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088Ab0HMHU1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:20:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:in-reply-to:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=x2AFc+DSHKRAlKbhj1Yk2xK1pT2rPodIPWvQVTyv6sS0Mvo0k2m9kCgrpiOaFKAF+
-	IFNVEjJ6cYfWVem8xE8dg==
-Subject: [PATCH] Fixed a mismatch between the users of radix_tree and the
-	implementation.
-In-Reply-To: <20100813071535.18490.79633.stgit@bumblebee1.mtv.corp.google.com>
-To: paulmck@us.ibm.com, nickpiggin@yahoo.com.au, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-From: Salman Qazi <sqazi@google.com>
-Cc: adurbin@google.com
-Date: Fri, 13 Aug 2010 00:20:11 -0700
-Message-ID: <20100813071735.18763.14706.stgit@bumblebee1.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	id S1754714Ab0HMHWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:22:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42449 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751640Ab0HMHW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 03:22:27 -0400
+Message-ID: <4C64F21D.7010409@kernel.org>
+Date: Fri, 13 Aug 2010 09:19:57 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Jan Kara <jack@suse.cz>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, rwheeler@redhat.com, hare@suse.de,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 10/11] fs, block: propagate REQ_FLUSH/FUA interface to
+ upper layers
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <1281616891-5691-11-git-send-email-tj@kernel.org> <20100812212404.GB3665@quack.suse.cz>
+In-Reply-To: <20100812212404.GB3665@quack.suse.cz>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 13 Aug 2010 07:21:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This matters for the lockless page cache, in particular find_get_pages implementation.
+Hello, Jan.
 
-In the following case, we get can get a deadlock:
+On 08/12/2010 11:24 PM, Jan Kara wrote:
+> On Thu 12-08-10 14:41:30, Tejun Heo wrote:
+>> Propagate deprecation of REQ_HARDBARRIER and new REQ_FLUSH/FUA
+>> interface to upper layers.
+>>
+>> * WRITE_BARRIER is marked deprecated and WRITE_FLUSH, WRITE_FUA and
+>>   WRITE_FLUSH_FUA are added.
+>>
+>> * REQ_COMMON_MASK now includes REQ_FLUSH | REQ_FUA so that they are
+>>   copied from bio to request.
+>>
+>> * BH_Ordered is marked deprecated and BH_Flush and BH_FUA are added.
+>
+>   Deprecating BH_Ordered is fine but I wouldn't introduce new BH flags for
+> this. BH flags should be used for buffer state, not for encoding how the
+> buffer should be written (there were actually bugs in the past because of
+> this). Being able to set proper flags when calling submit_bh() in the rw
+> parameter is enough.
 
-    0.  The radix tree contains two items, one has the index 0.
-    1.  The reader (in this case find_get_pages) takes the rcu_read_lock.
-    2.  The reader acquires slot(s) for item(s) including the index 0 item.
-    3.  The non-zero index item is deleted, and as a consequence the other item
-        is moved to the root of the tree.  The place where it used to be is
-        queued for deletion after the readers finish.
-    4.  The reader looks at the index 0 slot, and finds that the page has 0 ref count
-    5.  The reader looks at it again, hoping that the item will either be freed
-        or the ref count will increase.  This never happens, as the slot it
-        is looking at will never be updated.  Also, this slot can never be reclaimed
-        because the reader is holding rcu_read_lock and is in an infinite loop.
+Ah, okay, I was just trying to match the BH_Ordered usage but you're
+saying just requiring submit_bh() users to specify appropriate REQ_*
+(or WRITE_*) in @rw is okay, right?  I'll drop the bh part then.
 
-This can be reproduced with reliably by running dbench followed by compilebench under
-autotest.  I have not been able to construct a small targeted repro case.
+Thanks.
 
-There is also a similar potential issue with insertion.  Storing the first
-element in the root and then moving it to a new slot on insertion of a
-second element would potentially lead to a similar problem.
-
-Both of these issues have been fixed in this change.
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
----
- lib/radix-tree.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
-
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e907858..035d5aa 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -252,11 +252,6 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
- 	while (index > radix_tree_maxindex(height))
- 		height++;
- 
--	if (root->rnode == NULL) {
--		root->height = height;
--		goto out;
--	}
--
- 	do {
- 		unsigned int newheight;
- 		if (!(node = radix_tree_node_alloc(root)))
-@@ -278,7 +273,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
- 		rcu_assign_pointer(root->rnode, node);
- 		root->height = newheight;
- 	} while (height > root->height);
--out:
-+
- 	return 0;
- }
- 
-@@ -1154,7 +1149,7 @@ EXPORT_SYMBOL(radix_tree_gang_lookup_tag_slot);
- static inline void radix_tree_shrink(struct radix_tree_root *root)
- {
- 	/* try to shrink tree height */
--	while (root->height > 0) {
-+	while (root->height > 1) {
- 		struct radix_tree_node *to_free = root->rnode;
- 		void *newptr;
- 
-
+-- 
+tejun
