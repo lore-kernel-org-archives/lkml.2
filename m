@@ -1,80 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761599Ab0HMNRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:17:50 -0400
-Received: from verein.lst.de ([213.95.11.210]:36214 "EHLO verein.lst.de"
+	id S934333Ab0HMNYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:24:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37833 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761505Ab0HMNRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:17:49 -0400
-Date: Fri, 13 Aug 2010 15:17:22 +0200
-From: Christoph Hellwig <hch@lst.de>
+	id S934280Ab0HMNYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 09:24:05 -0400
+Message-ID: <4C6546E0.7070208@kernel.org>
+Date: Fri, 13 Aug 2010 15:21:36 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
 To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
-        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, jack@suse.cz,
-        rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
-Message-ID: <20100813131722.GB4140@lst.de>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, jack@suse.cz, rwheeler@redhat.com, hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
 References: <1281616891-5691-1-git-send-email-tj@kernel.org> <4C6540C5.8070108@vlnb.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <4C6540C5.8070108@vlnb.net>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0.001 () BAYES_56
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 13 Aug 2010 13:23:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 04:55:33PM +0400, Vladislav Bolkhovitin wrote:
-> I'm not mentioning the obvious that a common functionality (enforcing 
-> requests ordering in this case) should be handled by a common library, 
-> but not internally by a zillion file systems Linux has.
+Hello,
 
-I/O ordering is still handled mostly by common code, that is the
-pagecache and the buffercache, although a few filesystems like XFS and
-btrfs have their own implementation of the second one.
+On 08/13/2010 02:55 PM, Vladislav Bolkhovitin wrote:
+> If requested, I can develop the interface further.
 
-The current ordered semantics of barriers have only successfull
-implemented by a complete queue drain, and not effectively been used
-by filesystems.  This patchset removes the bogus global ordering
-enforced by the block layer whenever a filesystems wants to be able
-to use cache flushes, and because of that allows deeper outstanding
-queue depth I/O with less latency.
+I still think the benefit of ordering by tag would be marginal at
+best, and what have you guys measured there?  Under the current
+framework, there's no easy way to measure full ordered-by-tag
+implementation.  The mechanism for filesystems to communicate the
+ordering information (which would be a partially ordered graph) just
+isn't there and there is no way the current usage of ordering-by-tag
+only for barrier sequence can achieve anything close to that level of
+difference.
 
-Now I know you in particular are a fan of scsi ordered tags.  And as I
-told you before I'm open to review such an implementation if it shows
-us any advantages.  Adding it after this patch is in fact not any more
-complicated than before, I'd almost be tempted it's easier as you don't
-have to plug it into the complex state machine we used for barriers, and
-more importantly we drop the requirement for the barrier sequence to
-be atomic, which in fact made implementing barriers using tagged queues
-impossible with the current scsi layer.
+Ripping out the original ordering by tag mechanism doesn't amount to
+much.  The use of ordering-by-tag was pretty half-assed there anyway.
+If you think exporting full ordering information from filesystem to
+the lower layers is worthwhile, please go ahead.  It would be very
+interesting to see how much actual difference it can make compared to
+ordering-by-filesystem and if it's actually better and the added
+complexity is manageable, there's no reason not to do that.
 
-As far as playing with ordered tags it's just adding a new flag for
-it on the bio that gets passed down to the driver.  For a final version
-you'd need a queue-level feature if it's supported, but you don't
-even need that for the initial work.  Then you can implement a
-variant of blk_do_flush that does away with queueing additional requests
-once finish but queues all two or three at the same time with your
-new ordered flag set, at which point you are back to the level or
-ordered tag usage that the old code allows.  You're still left with
-all the hard problems of actually implementing error handling for it
-and using it higher up in the filesystem and generic page cache code.
+Thank you.
 
-I'd really love to see your results, up to the point of just trying
-that once I get a little spare time.  But my theory is that it won't
-help us - the problem with ordered tags is that they enforce global
-ordering while we currently have local ordering.  While it will reduce
-the latency for the process waiting for an fsync or similar it will
-affect other I/O going on in the background and reduce the devices
-ability to reorder that I/O.
-
-So for now this patch set is a massive improvement of performance for
-workloads we care about, while removing the interface we put in place
-to allow a theoretical optimization that didn't show up for 8 years
-before, and in fact made the interface just complicated enough to make
-that optimization so hard.
+-- 
+tejun
