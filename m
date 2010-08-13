@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761593Ab0HMN2B (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:28:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51651 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990Ab0HMN2A (ORCPT
+	id S1761610Ab0HMNbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:31:49 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:49465 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755198Ab0HMNbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:28:00 -0400
+	Fri, 13 Aug 2010 09:31:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=vCExaWerS3/U17eVwb2bCHCSvaEDVTsoQaE4nAQ4mGb4W0dDaLwoNRlGH4WnJ2Bmcx
-         54XL/mP3kyzsQIxLyLQB49Eirsd/umxFjbfDjK8n4NFgADz1dwR1Km3BoHWkDqizBswK
-         XuFR2Y/enHxab+lRcj0ReqDYhpvVePAnAwWAk=
-Subject: [QUESTION] Need some explanations in regard to memory alignment of
- requests that a block device receives
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Alex Dubov <oakad@yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 Aug 2010 16:27:51 +0300
-Message-ID: <1281706071.4160.18.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=fJeGWEJbGaLlZF3i9ldIav5uULj/mO2i7kMZvwncKYlFgskGUtYSEI4Ox3KNVpvPlD
+         XcLaehk8P/R0zvcky6riemehEMb1aoKBCI4IJlqXM1omiMl8+vAK7CC4uaKglq218ei3
+         iXSlQyyoWqaQnO5MoIZ+ahOAWnKLoWNnYz16k=
+MIME-Version: 1.0
+In-Reply-To: <1281691874-8154-1-git-send-email-dries.vanpuymbroeck@dekimo.com>
+References: <1281691874-8154-1-git-send-email-dries.vanpuymbroeck@dekimo.com>
+Date: Fri, 13 Aug 2010 21:31:46 +0800
+Message-ID: <AANLkTikk7T6v8zwzEQuZ7yDgf6AcdEfNJr7BG+z1O02n@mail.gmail.com>
+Subject: Re: [PATCH] USB: Gadget: g_multi: added INF file for gadget with
+ multiple configurations
+From: Xiaofan Chen <xiaofanc@gmail.com>
+To: Dries Van Puymbroeck <dries.van.puymbroeck@gmail.com>
+Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+        =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <mina86@mina86.com>,
+        Dries Van Puymbroeck <dries.vanpuymbroeck@dekimo.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Aug 13, 2010 at 5:31 PM, Dries Van Puymbroeck
+<dries.van.puymbroeck@gmail.com> wrote:
+> When a mutlifunction gadget has more than 1 configuration, Windows does not
+> use its generic driver for multifunctional USB devices.
 
-I currently am writing a block driver for Legacy Memory sticks.
+Sorry but what do you mean by the above?
+As per the previous discussions, it seems that a registry entry hack
+(for Vista and Windows 7) is needed.
+http://msdn.microsoft.com/en-us/library/ff538059%28VS.85%29.aspx
 
-I have few questions about that type of data my ->request will receive
-from kernel.
+> This commit adds an INF file that will load the required Windows driver
+> as well as a short description in gadget_multi.txt
 
-First of all I think that by default, driver receives requests that
-contains just one sector and it isn't in high memory.
+It seems to me your inf file forces the USB Generic
+Parent Driver (for USB Composite Device) to load. But for which
+configuration? I do not have any device to test myself. But
+I tend to guess it will still be the first configuration (either
+RNDIS or CDC ECM).
 
-However I am opting in to allow to receive requests that have many
-sectors span several memory regions, and be in highmem).
-The request is converted to scatterlist upon which I operate.
-(Untill this point I did the same think Alex does in mspro_blk.c)
+I did see something similar for WMCDC.
+http://msdn.microsoft.com/en-us/library/ff538833%28VS.85%29.aspx
+http://msdn.microsoft.com/en-us/library/ff537100%28v=VS.85%29.aspx
 
-For simplicity lets assume 512 byte hardware sector size.
-
-However is there a guarantee that incoming memory segments will be
-aligned on 512 byte boundary?
-
-If this isn't true I run into 2 problems:
-
-1. Sector can span 2 pages. Therefore if I decide to do pio, and I use
-kmap_atomic (because of highmem), I need first map 1st page, read/write
-it, unmap it, and then then do the same with 2nd page.
-
-
-2. Sectors can span 2 memory regions.
-This is even worse. For DMA I would need to bounce the sector.
-Also it becames very difficult to handle input on sector by sector basis
-(short of bouncing everything...)
-
-
-If the above is true (I hope), then I have different problem.
-
-The problem is that I will have small buffer that will contain few
-hardware sectors.
-I currently allocate it using kmalloc.
-However I want to send that buffer to same functions that deal with IO,
-therefore I need it to be aligned on 512 byte boundary.
-
-Is there a way to allocate aligned memory (short of allocating more and
-aligning pointer manually which I hate to do)
-Maybe I should just use __get_free_pages?
-(I will need a buffer of page or two (once per driver load) I think).
-
-Best regards,
-Maxim Levitsky
-
-
+-- 
+Xiaofan
