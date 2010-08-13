@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896Ab0HMVmh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:42:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:43239 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750969Ab0HMVmg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:42:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=jk2pv8UZav6wy/m9xpBzg55wkNADoyjFH3I2NNBv/OFetuZlsywMNox5E5kF7r0rWT
-         FRv31OQq1YTSYcOCm/YU431HkPYmhRMqGwltNsSaNgm+f8fTd8znoZ8BlPqnJC2Utt4H
-         2jPAaVzTNoq3dxHlc7wF+ZA95E0mtzjSF0G2A=
+	id S1754974Ab0HMVsp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:48:45 -0400
+Received: from kroah.org ([198.145.64.141]:51671 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753343Ab0HMVso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 17:48:44 -0400
+Date: Fri, 13 Aug 2010 14:47:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [0/3] 2.6.27.52 stable review
+Message-ID: <20100813214704.GA18960@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20100517212138.GA21629@elte.hu>
-References: <20100517212138.GA21629@elte.hu>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 13 Aug 2010 17:42:15 -0400
-Message-ID: <AANLkTikvJna6vnc73RVhVAJZ8mERJoFk=V6Nwq-3HHWz@mail.gmail.com>
-Subject: Re: [GIT PULL] core/hweight changes for v2.6.35
-To: Borislav Petkov <petkovbb@googlemail.com>,
-        Chris Metcalf <cmetcalf@tilera.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 17:21, Ingo Molnar wrote:
->  arch/alpha/include/asm/bitops.h            |   18 +++++----
->  arch/ia64/include/asm/bitops.h             |   11 +++--
->  arch/sparc/include/asm/bitops_64.h         |   11 +++--
->  arch/x86/include/asm/bitops.h              |    4 +-
->  include/asm-generic/bitops/arch_hweight.h  |   25 ++++++++++++
->  include/asm-generic/bitops/const_hweight.h |   42 ++++++++++++++++++++
->  include/asm-generic/bitops/hweight.h       |    8 +---
+NOTE!
 
-did this miss Blackfin because the original patch was against the
-2.6.34 tree ?  just wondering why it now build fails ...
+If I could get some people to please test this -rc release?  It contains
+a few core changes that I couldn't validate myself as I don't seem to
+have a machine that will even boot the .27 kernel anymore after my move.
 
-doing a simple grep shows that the new "tile" arch may also be broken
-as it uses "hweight32" ...
+I didn't want to include them in the last .27-stable release because of
+this, so any testing is much appreciated.  Especially if you happen to
+run across any signal and/or stack issues that might be floating around
+in the ether...
 
-considering __sw_hweightX only exist when the generic hweight is in
-play, wouldnt it make sense to have
-include/asm-generic/bitops/arch_hweight.h not always define things ?
-then most arches can simply pull in
-include/asm-generic/bitops/hweight.h without having to worry about the
-random inner details of hweight cruft.
+----
 
-diff --git a/include/asm-generic/bitops/arch_hweight.h
-b/include/asm-generic/bitops/arch_hweight.h
-index 6a211f4..3a62e38 100644
---- a/include/asm-generic/bitops/arch_hweight.h
-+++ b/include/asm-generic/bitops/arch_hweight.h
-@@ -1,8 +1,15 @@
- #ifndef _ASM_GENERIC_BITOPS_ARCH_HWEIGHT_H_
- #define _ASM_GENERIC_BITOPS_ARCH_HWEIGHT_H_
+This is the start of the stable review cycle for the 2.6.27.52 release.
+There are 3 patches in this series, all will be posted as a response to
+this one.  If anyone has any issues with these being applied, please let
+us know.  If anyone is a maintainer of the proper subsystem, and wants
+to add a Signed-off-by: line to the patch, please respond with it.
 
-+#ifdef CONFIG_GENERIC_HWEIGHT
-+
- #include <asm/types.h>
+Responses should be made by Monday, August 16, 2010, 20:00:00 UTC.
+Anything received after that time might be too late.
 
-+extern unsigned int __sw_hweight8(unsigned int w);
-+extern unsigned int __sw_hweight16(unsigned int w);
-+extern unsigned int __sw_hweight32(unsigned int w);
-+extern unsigned long __sw_hweight64(__u64 w);
-+
- static inline unsigned int __arch_hweight32(unsigned int w)
- {
-    return __sw_hweight32(w);
-@@ -22,4 +29,7 @@ static inline unsigned long __arch_hweight64(__u64 w)
- {
-    return __sw_hweight64(w);
- }
-+
-+#endif /* CONFIG_GENERIC_HWEIGHT */
-+
- #endif /* _ASM_GENERIC_BITOPS_HWEIGHT_H_ */
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index fc68053..2e58012 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -10,11 +10,6 @@
- #define BITS_TO_LONGS(nr)  DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
- #endif
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.52-rc1.gz
+and the diffstat can be found below.
 
--extern unsigned int __sw_hweight8(unsigned int w);
--extern unsigned int __sw_hweight16(unsigned int w);
--extern unsigned int __sw_hweight32(unsigned int w);
--extern unsigned long __sw_hweight64(__u64 w);
--
- /*
-  * Include this here because some architectures need generic_ffs/fls in
-  * scope
--mike
+thanks,
+
+greg k-h
+
+ Makefile            |    2 +-
+ arch/x86/mm/fault.c |    9 ++++++++-
+ mm/memory.c         |   25 +++++++++++++++++++++++++
+ 3 files changed, 34 insertions(+), 2 deletions(-)
