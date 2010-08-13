@@ -1,38 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176Ab0HMHIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:08:04 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:45025 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753994Ab0HMHIC (ORCPT
+	id S1754155Ab0HMHPq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:15:46 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54324 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab0HMHPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:08:02 -0400
-X-Sasl-enc: roSKg/hXO6I0swwtB59M+HUSFLkQXXhExDA9NljUpVAd 1281683280
-Message-ID: <4C64EF69.7040804@ladisch.de>
-Date: Fri, 13 Aug 2010 09:08:25 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Fri, 13 Aug 2010 03:15:43 -0400
+Message-ID: <4C64F112.8050504@canonical.com>
+Date: Fri, 13 Aug 2010 15:15:30 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-CC: alsa-devel <alsa-devel@alsa-project.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [REGRESSION 2.6.35+] Pulseaudio fails to work with
- sound device
-References: <1281644945.3893.18.camel@maxim-laptop>
-In-Reply-To: <1281644945.3893.18.camel@maxim-laptop>
-Content-Type: text/plain; charset=us-ascii
+To: Corentin Chary <corentin.chary@gmail.com>
+CC: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH] ideapad-laptop: add new driver
+References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>	<AANLkTikBZ2SmqWavZ8bw69yQ_A5GTTcB13RKEzUuUcx3@mail.gmail.com>	<4C64EC01.9040103@canonical.com> <AANLkTim9jcbRwZt7E0gwVwQyETAEhe-tKP3NvGSAPknX@mail.gmail.com>
+In-Reply-To: <AANLkTim9jcbRwZt7E0gwVwQyETAEhe-tKP3NvGSAPknX@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxim Levitsky wrote:
-> Trying to migrate to git master of kernel tree I see that my sound
-> stopped working.
+On 08/13/2010 03:01 PM, Corentin Chary wrote:
+>> Could you point me where is the rfkill driver? Sorry I do not find it.
+>>
+>> I will see what I can do.
+>>
+>> Thanks.
+>>
+> 
+> Here is the thread
+> http://thread.gmane.org/gmane.linux.drivers.platform.x86.devel/471
+> 
+Yes, I believe I can. will read patch from David and merge.
 
-Probably this bug:
-http://mailman.alsa-project.org/pipermail/alsa-devel/2010-August/030526.html
+But I think i will not use \_SB_.SECN as major interface. I know there is
+another command code of EC that can access HW switch status and shutdown
+the interface.
 
 
-Regards,
-Clemens
