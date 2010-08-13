@@ -1,53 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761530Ab0HMLtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 07:49:41 -0400
-Received: from verein.lst.de ([213.95.11.210]:60585 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819Ab0HMLti (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 07:49:38 -0400
-Date: Fri, 13 Aug 2010 13:48:58 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
-Message-ID: <20100813114858.GA31937@lst.de>
-References: <1281616891-5691-1-git-send-email-tj@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281616891-5691-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1761535Ab0HMLyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 07:54:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:46097 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761519Ab0HMLyF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 07:54:05 -0400
+Message-ID: <4C65323F.8090907@windriver.com>
+Date: Fri, 13 Aug 2010 06:53:35 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: john stultz <johnstul@us.ibm.com>
+CC: Larry Finger <Larry.Finger@lwfinger.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Problem with commit deda2e81961e96be4f2c09328baca4710a2fd1a0
+References: <4C64571F.6000606@lwfinger.net> <1281646368.4002.66.camel@localhost.localdomain> <4C64B93A.5010403@lwfinger.net> <1281684638.3940.11.camel@work-vm>
+In-Reply-To: <1281684638.3940.11.camel@work-vm>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Aug 2010 11:53:36.0715 (UTC) FILETIME=[29B639B0:01CB3ADE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patchset looks functionally correct to me, and with a small patch
-to make use of WRITE_FUA_FLUSH survives xfstests, and instrumenting the
-underlying qemu shows that we actually get the flush requests where we should.
+On 08/13/2010 02:30 AM, john stultz wrote:
+> On Thu, 2010-08-12 at 22:17 -0500, Larry Finger wrote:
+>   
+>> On 08/12/2010 03:52 PM, john stultz wrote:
+>>     
+>>> Ugh. I'm surprised it picks *this* loop to optimize instead of the
+>>> similar one right above. I'm guessing its the local raw_nsecs value, but
+>>> whatever.  Also surprised Jason's testing didn't hit this issue, but its
+>>> probably a gcc version thing.
+>>>
+>>> Regardless, I clearly need to give i386 more love in my testing.
+>>> My profuse apologies.
+>>>
+>>> As suggested by Linus, here's the do_div explicit version. It builds ok
+>>> on i386 & x86_64, but I have not yet tested it. 
+>>>
+>>> Larry, Jason: Could you verify it works for you (and avoids the original
+>>> issue)?
+>>>       
+>> This one builds for me with both compilers. It appears to run OK. As to the
+>> original issue - I don't think I ever saw the problem. I'll leave that question
+>> for Jason.
+>>     
+>
+> Thanks for the testing! 
+>
+> I also managed to trigger the link issue with a 64bit gcc-4.3 cross
+> compiling to 32bit. However both 32bit and 64bit gcc-4.4 didn't trigger
+> the link issue, so it looks like its fixed in gcc.
+>
+> Regardless, after my own testing, the change looks good to me. Raw time
+> is accumulating properly relative to monotonic time.
+>
+> Assuming Jason has no complaints it should be able to be pushed in.
+>
+>   
 
-No performance or power fail testing done yet.
+No complaints here.  The edge case remains solved on the low MHZ 32 bit
+system.
 
-But I do not like the transition very much.  The new WRITE_FUA_FLUSH
-request is exactly what filesystems expect from a current barrier
-request, so I'd rather move to that functionality without breaking stuff
-inbetween.
+The reason I never saw any problem in all my test configurations was
+that gcc 4.4 is the oldest compiler I have in any of the configurations
+I am using.   I could have been more specific in my original mail on the
+subject but it was tested with a 32bit cross compiler as well as a 64bit
+cross compiler.
 
-So if it was to me I'd keep patches 1, 2, 4 and 5 from your series, than
-a main one to relax barrier semantics, then have the renaming patches 7
-and 8, and possible keep patch 11 separate from the main implementation
-change, and if absolutely also a separate one to introduce REQ_FUA and
-REQ_FLUSH in the bio interface, but keep things working while doing
-this.
+Many thanks to all who helped draw this odd ball case to closure.
 
-Then we can patches do disable the reiserfs barrier "optimization" as
-the very first one, and DM/MD support which I'm currently working on
-as the last one and we can start doing the heavy testing.
-
+Jason.
