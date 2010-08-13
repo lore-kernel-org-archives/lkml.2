@@ -1,127 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818Ab0HMWpy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 18:45:54 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:39442 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755542Ab0HMWpx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 18:45:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=tDWjJA1qOVJaJ/MtZsYUu0Epp21qCnrJwUpFjr0BdFBCInU/eBbUpO4K2yQKDiMNJ
-	EYa9+Up+l/xA01ODdwkdA==
-Date: Fri, 13 Aug 2010 15:45:36 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Helge Deller <deller@gmx.de>
-cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: Re: [PATCH][RFC] Fix up rss/swap usage of shm segments in
- /proc/pid/smaps
-In-Reply-To: <20100813195252.GA2450@p100.box>
-Message-ID: <alpine.DEB.1.00.1008131455070.12356@tigran.mtv.corp.google.com>
-References: <20100811201345.GA11304@p100.box> <20100812131005.e466a9fd.akpm@linux-foundation.org> <4C6468A9.7090503@gmx.de> <alpine.DEB.1.00.1008121522150.9966@tigran.mtv.corp.google.com> <20100813195252.GA2450@p100.box>
-User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1755995Ab0HMWsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 18:48:42 -0400
+Received: from 1wt.eu ([62.212.114.60]:40888 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755779Ab0HMWsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 18:48:41 -0400
+Date: Sat, 14 Aug 2010 00:45:04 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, stable-review@kernel.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [0/3] 2.6.27.52 stable review
+Message-ID: <20100813224504.GA20861@1wt.eu>
+References: <20100813214704.GA18960@kroah.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100813214704.GA18960@kroah.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010, Helge Deller wrote:
+On Fri, Aug 13, 2010 at 02:47:04PM -0700, Greg KH wrote:
+> NOTE!
 > 
-> I tried quite hard to implement rss/swap accounting for shm segments inside
-> smaps_pte_range() which is a callback function of walk_page_range() in
-> show_smap().
-
-Sorry, I think the short answer will be that you should give up on this:
-reasons below.
-
+> If I could get some people to please test this -rc release?  It contains
+> a few core changes that I couldn't validate myself as I don't seem to
+> have a machine that will even boot the .27 kernel anymore after my move.
 > 
-> Given the fact that I'm no linux-mm expert, I might have overseen other
-> possibilities, but my experiments inside smaps_pte_range() were not
-> very successful:
-> From my tests, a swapped-out shm segment 
-> 	- fails on the "is_swap_pte()" test, and
-> 	- succeeds on the "!pte_present()" test (since it's swapped
-> 	  out).
+> I didn't want to include them in the last .27-stable release because of
+> this, so any testing is much appreciated.  Especially if you happen to
+> run across any signal and/or stack issues that might be floating around
+> in the ether...
 
-Yes.
+I will try it, Greg. If you want specific tests, do not hesitate to tell
+me which ones.
 
-> So, here would it be possible to add such accounting for swap, but how
-> can I then see that this pte is 
-> 	a) belonging to a shm segment?, and
-> 	b) see if this page/pte was really swapped out and not just not
-> yet written to at all?
+Willy
 
-You would have to add a function in mm/shmem.c to do this: it would
-need to check vma->vm_file to work out if this vma belongs to it,
-and use shmem_swp_alloc() to check if the page there is on swap.  OTOH
-I'm not sure if you could call it while holding page table lock or not.
-
-> As answers I found:
-> 	a) (vma->vm_flags & VM_MAYSHARE) is true for shm segments (is
-> 		this check sufficient?)
-
-No, VM_MAYSHARE is set on many other kinds of mapping too; and is not
-set on all mappings of shmem objects - there is no good reason to
-include SysV shm segments here, yet omit other kinds of shmem object
-(/dev/shm POSIX shared memory, shared-anonymous mappings, mappings of
-tmpfs files).
-
-> 	b) no idea.
-> 
-> But if I add this page to the mss.swap entry, all pages including such 
-> which haven't been touched yet at all are suddenly counted as
-> swapped-out...?
-> 
-> Any hints here would be great...
-> 
-> 
-> As an alternative solution, I created the following patch.
-> This one works nicely, but it's just a fix-up of the mss.resident and
-> mss.swap values after walk_page_range() was called.
-> It's mostly a copy of the shm_add_rss_swap() function from 
-> my previous patch (http://marc.info/?l=linux-mm&m=128171161101817&w=2).
-> Do you think such a fix-up-afterwards-approach is acceptable at all?
-> If yes, a new patch on top of my ipc/shm.c patch would be easy (and
-> small).
-
-Not acceptable, I'm afraid.  Nothing wrong with a fix-up-afterwards
-approach as such, but it's assuming that the vma covers the full extent
-of the shmem object.  That is very often the case, but by no means
-necessarily so (whereas it is always the case that one vma cannot cover
-more than one object).  So you do have to count pageslot by pageslot.
-
-There are two reasons why I think you have to abandon this.  One is
-that /proc/<pid>/smaps is reporting on the userspace mappings, saying
-where swap is instanced in them.  Some of those mappings may be of
-shmem objects, and some of those shmem objects may use swap backing
-themselves, but that's different from the mapping using swap directly.
-
-One can argue about that distinction, but it is how all this is
-designed, and blurring that distinction tends to get into trouble.
-(It's reasonable to think of anonymous mappings as mappings of anon
-objects, which just happen to find room for the swp_entry in the page
-table: but then it's a happy accident that smaps can see them.)
-
-The second reason is that since 2.6.34, /proc/<pid>/status shows
-VmSwap: we would not want a huge discrepancy between what it shows
-in swap and what /proc/<pid>/smaps shows in swap, but nor would we
-want to make /proc/<pid>/status scan through page tables enquiring
-of shmem.
-
-All this stands in contrast to your /proc/sysvipc/shm patch, which
-is rightly dealing with one class of shmem object, not via mappings
-of those objects.
-
-There is a case for a "where has my swap gone" tool, which examines
-the different kinds of object involved (anonymous mappings as well
-as shmem objects), and shows them all somehow.  But that's a lot
-more work than just extending an existing stats display.
-
-Hugh
