@@ -1,188 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755582Ab0HMUca (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 16:32:30 -0400
-Received: from ns2.cypress.com ([157.95.67.5]:48644 "EHLO ns2.cypress.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab0HMUc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 16:32:27 -0400
-Subject: Re: EXPORT_SYMBOL(fat_get_block)
-From: David Cross <david.cross@cypress.com>
-Reply-To: david.cross@cypress.com
-To: Greg KH <gregkh@suse.de>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org
-In-Reply-To: <20100813192826.GA5078@suse.de>
-References: <1281721539.5839.4.camel@odc-laptop>
-	 <20100813175402.GA15024@suse.de> <1281724992.12189.16.camel@odc-laptop>
-	 <20100813190128.GA1372@suse.de> <1281727059.16672.20.camel@odc-laptop>
-	 <20100813192826.GA5078@suse.de>
-Content-Type: text/plain
-Organization: Cypress
-Date: Fri, 13 Aug 2010 13:32:15 -0700
-Message-Id: <1281731535.29175.17.camel@odc-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-Brightmail-Tracker: AAAAAA==
-X-MailScanner: 
+	id S1755629Ab0HMUfv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 16:35:51 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36349 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213Ab0HMUfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 16:35:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:in-reply-to:references:user-agent:x-face
+         :face:x-url:x-pgp-fp:x-pgp:date:message-id:mime-version:content-type;
+        b=hq/T4QwYQTNDwtAmCiOf6Ylpb/vtdPUOqnyAvWdNl76JZ9Sgbgp53sgHxxi3iWecp5
+         f5itubschvh/i7WfLFiW1WWVF/YP6cPxMBzg2SBqJyx/cMEtT52H1Y9fRojHXC8PZH4G
+         yucI/VNRUMd9xbK55CzUZU2sMrAcPlT6qBVwU=
+From: Michal Nazarewicz <mina86@mina86.com>
+To: Xiaofan Chen <xiaofanc@gmail.com>
+Cc: Dries Van Puymbroeck <dries.van.puymbroeck@gmail.com>,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        =?utf-8?Q?Micha?= =?utf-8?Q?=C5=82?= Nazarewicz 
+	<m.nazarewicz@samsung.com>,
+        Dries Van Puymbroeck <dries.vanpuymbroeck@dekimo.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] USB: Gadget: g_multi: added INF file for gadget with multiple configurations
+In-Reply-To: <AANLkTikk7T6v8zwzEQuZ7yDgf6AcdEfNJr7BG+z1O02n@mail.gmail.com>
+	(Xiaofan Chen's message of "Fri, 13 Aug 2010 21:31:46 +0800")
+References: <1281691874-8154-1-git-send-email-dries.vanpuymbroeck@dekimo.com>
+	<AANLkTikk7T6v8zwzEQuZ7yDgf6AcdEfNJr7BG+z1O02n@mail.gmail.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
+X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
+X-Url: http://mina86.com/
+X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
+X-PGP: B7C6DF1E
+Date: Fri, 13 Aug 2010 22:35:39 +0200
+Message-ID: <87sk2i45es.fsf@erwin.mina86.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 12:28 -0700, Greg KH wrote:
-> On Fri, Aug 13, 2010 at 12:17:39PM -0700, David Cross wrote:
-> > On Fri, 2010-08-13 at 12:01 -0700, Greg KH wrote:
-> > > On Fri, Aug 13, 2010 at 11:43:12AM -0700, David Cross wrote:
-> > > > On Fri, 2010-08-13 at 10:54 -0700, Greg KH wrote:
-> > > > > On Fri, Aug 13, 2010 at 10:45:39AM -0700, David Cross wrote:
-> > > > > > Hello Hirofumi,
-> > > > > > I would like to export this symbol from the vfat code and add this patch
-> > > > > > to the Linux kernel. You are listed as the MAINTAINER for FAT and VFAT.
-> > > > > > As such, I need your approval to do it. 
-> > > > > > The reason that I need to export this symbol is to allow for file based
-> > > > > > DMA in which the file needs to be pre-allocated. The pre-allocated block
-> > > > > > addresses are passed to a DMA engine which then directly transfers the
-> > > > > > data to non-volatile storage.
-> > > > > > Please let me know if you have any objections to exporting this symbol
-> > > > > > or if you need additional information from me concerning this change
-> > > > > > request. I am happy to answer any questions that you may have about this
-> > > > > > in the meantime.
-> > > > > 
-> > > > > Wait, _I_ have an objection to exporting this symbol.
-> > > > > 
-> > > > > I really don't think it is needed at this point in time, as we really
-> > > > > need to figure out exactly what your driver is doing to want to need to
-> > > > > call this function.
-> > > > 
-> > > > OK, I am trying to answer all questions on this topic that I am getting,
-> > > > but honestly I have not gotten a lot so far. 
-> > > 
-> > > That's because not many people have noticed the code yet :)
-> > > 
-> > > > > So please, let's not export it for now, when we get to the point that we
-> > > > > all agree that this driver is doing the "correct" thing, then we can
-> > > > > export the symbol, ok?
-> > > > 
-> > > > Sure, I think that the driver is doing the correct thing, but that is
-> > > > mostly because I have not found another way to solve this issue.
-> > > 
-> > > What specifically is the issue here that you are trying to solve?
-> >   We are trying to solve the issue of all data needing to go through the
-> > processor, even when its ultimate destination is non-volatile media.
-> > 	
-> > > And why has no other driver ever needed this type of functionality
-> > > before?
-> >   I am not sure, but my guess is because this represents a novel solution to 
-> > a performance problem.
-> 
-> What exactly are the performance issues with doing this from userspace,
-> vs. the FAT hack?
-Usually it takes a lot longer. West Bridge can do MTP transfers at the performance of the storage device. 
-Sending the file data through the processor is typically much slower.
+Xiaofan Chen <xiaofanc@gmail.com> writes:
 
-> > > We have a userspace MTP driver for Linux, using gadgetfs, right?  So
-> > > none of this is applicable from what I can tell.
-> > Yes, the g_mtp development has started, but it is not integrated yet
-> > last I checked. Most of the applications for this driver have used
-> > gadgetfs as well in order to handle the protocol itself. So, I think it
-> > is applicable.
-> 
-> No, there's another MTP stack already released that works just fine on
-> Linux.  You can find it at:
-> 	http://wiki.meego.com/Buteo
-Thanks, I have seen this as well. This is not a driver though, it is an
-MTP protocol stack. This is similar to the applications I have worked
-with. The driver is not attempting to replace either the protocol stack
-or the use of gadgetfs. All that it is providing is a gadget peripheral
-controller driver (that can be used with gadgetfs) along with the
-ability to perform pre-allocation and allow for direct transfer. I
-re-checked this stack once again to make sure that it had not
-fundamentally changed and it seems not to have. What it uses is a
-storageserver abstraction to the file system. At the low level this is
-still operating on files at the level of open(), read(), write(),
-close(). There is no alloc() in the list that I can see. So, I agree
-that there is a working stack. As you can tell, the driver is not
-attempting to re-create or replace this working stack.  
+> On Fri, Aug 13, 2010 at 5:31 PM, Dries Van Puymbroeck
+> <dries.van.puymbroeck@gmail.com> wrote:
+>> When a mutlifunction gadget has more than 1 configuration, Windows does not
+>> use its generic driver for multifunctional USB devices.
+>
+> Sorry but what do you mean by the above?
+> As per the previous discussions, it seems that a registry entry hack
+> (for Vista and Windows 7) is needed.
+> http://msdn.microsoft.com/en-us/library/ff538059%28VS.85%29.aspx
+>
+>> This commit adds an INF file that will load the required Windows driver
+>> as well as a short description in gadget_multi.txt
+>
+> It seems to me your inf file forces the USB Generic
+> Parent Driver (for USB Composite Device) to load. But for which
+> configuration? I do not have any device to test myself. But
+> I tend to guess it will still be the first configuration (either
+> RNDIS or CDC ECM).
 
-> > > > The West Bridge driver goes for option two for performance reasons. In
-> > > > doing this, it needs to get information from the file system on where to
-> > > > store the file.
-> > > 
-> > > Look at how Linux already handles MTP for how to handle this properly, I
-> > > don't think there is any need to do any of this from within the kernel.
-> > I somewhat familiar with how Linux handles MTP. The current model is
-> > CPU-centric and all data goes through the main processor from what I
-> > have seen. This is a working solution, but not always a very fast one. I
-> > agree though that this would not need to be done within the kernel if we
-> > had a userspace method for file allocation and commitment.
-> 
-> Again, what's wrong with using the processor here?  What else does it
-> have to do at this point in time?
-Judging by the current batch of Android phones: run a video conference, update a users twitter page,
-take high resolution photographs, get live stock updates via desktop
-widget, receive a phone call, play back Youtube, stream Pandora, manage
-media content, post a new profile picture on facebook, get corporate
-email, etc. I am sure we can both come up with many more examples.
+2-configuration g_multi has configuration with RNDIS as the first one so
+that's pretty perfect for us.
 
-> > > > >What happens if this isn't a FAT partition on the >device?
-> > > > Good question. So far, it has been stored on a FAT partition in most use
-> > > > cases because the user typically wants the option to enumerate the
-> > > > device as mass storage as well or be able to see content on a PC if the
-> > > > SD card is removed. However, there is no reason that this could not be
-> > > > done with ext2 or other filesystems on non-removable media.
-> > > 
-> > > Like NTFS?  How are you going to handle that when you run out of size
-> > > due to the limitations of FAT?  Hint, that's not going to work with this
-> > > type of solution...
-> > Isn't this also a userspace problem? When I run out of space on my Linux machine,
-> > the message "no space left on device" pops up. Why is this solution any
-> > more prone to size limitations compared with any other?
-> 
-> No, my point is that for larger disk sizes, you can't use FAT, you have
-> to use NTFS to be interoperable with other operating systems.  Your
-> solution will not handle that jump to larger storage sizes as you are
-> relying on FAT.
-This is so far not an issue for removable media. Do I really need to handle NTFS interoperability now?
-If so, do you agree with Christoph's feedback concerning the implementation? Could I add 
-hooks to other file systems and leave them unpopulated?
-
-> > > > This would require some work to figure out how to implement a
-> > > > pre-allocation interface with it. Alternatively a more general
-> > > > pre-allocation interface could be added (falloc()) to implemented file
-> > > > systems to make this process easier.  
-> > > 
-> > > Userspace handles this quite easily already, see above.
-> > I don't see how userspace handles this from the comments above. I do
-> > understand that there is a userspace MTP driver, but I don't see a
-> > method for pre-allocation of files from the information above. Am I
-> > missing something?
-> 
-> Yes, the pre-allocation is done in userspace, and then the data is
-> copied to the filesystem then.  The kernel doesn't have to have any
-> filesystem specific hacks in it to try to handle this at all.
-Where do you see pre-allocation done in the Buteo MTP stack? Looking at
-the implementation, it appears to be allocated during write wherein a
-data buffer and pointer is passed in. 
-
-> Take a look at the above link for what you might want to do instead.
-> Because of this, I'm guessing that a lot of this code can be removed
-> from the driver, right?
-If there were a user space method to pre-allocate the file, it would
-definitely trim down the ioctls in the gadget driver. Instead of
-pre-allocating the file, we would just need to send down the physical
-block numbers for the transfer destination. I am still not seeing where
-this user space method exists though.
-
-Thanks,
-David
-
-
-
----------------------------------------------------------------
-This message and any attachments may contain Cypress (or its
-subsidiaries) confidential information. If it has been received
-in error, please advise the sender and immediately delete this
-message.
----------------------------------------------------------------
-
+-- 
+Best regards,                                         _     _
+ .o. | Liege of Serenly Enlightened Majesty of      o' \,=./ `o
+ ..o | Computer Science,  Michal "mina86" Nazarewicz   (o o)
+ ooo +--<mina86-tlen.pl>--<jid:mina86-jabber.org>--ooO--(_)--Ooo--
