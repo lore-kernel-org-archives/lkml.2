@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934483Ab0HMOzk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 10:55:40 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:49493 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934288Ab0HMOzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 10:55:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=KhOGwT+yvHmnIIm1HMKnzQEaf7++YlXsacYK/yoC+Pv0lcqDZ0XWvJijnSURG9HjD7
-         pnDkR2RUZWjUdzUTNKOMJXR4ijVoI+p0ZlT2MIlnOK7f9T12twn8HfjBPAYX88ozeKsq
-         eAhot1Ho0p/cHdn5py/deN3dufwb5gOV1LNY0=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] bitmap: fix address_space conversion on __bitmap_parse
-Date: Fri, 13 Aug 2010 23:55:34 +0900
-Message-Id: <1281711334-28428-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S934499Ab0HMO60 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 10:58:26 -0400
+Received: from kroah.org ([198.145.64.141]:49251 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934371Ab0HMO6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 10:58:23 -0400
+Date: Fri, 13 Aug 2010 07:49:29 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: Re: linux-next: build warning after merge of the final tree (usb
+ tree related)
+Message-ID: <20100813144929.GA25259@kroah.com>
+References: <20100802141823.143b2a36.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100802141823.143b2a36.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-buf can be a user-space pointer in case of is_user, 3rd arg, is 1.
-But casting to ubuf lacks required address_space notations. Add it.
+On Mon, Aug 02, 2010 at 02:18:23PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) produced these warnings:
+> 
+> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:718: warning: 'fsg_show_nofua' defined but not used
+> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:782: warning: 'fsg_store_nofua' defined but not used
+> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:718: warning: 'fsg_show_nofua' defined but not used
+> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:782: warning: 'fsg_store_nofua' defined but not used
+> 
+> Introduced by commit ed4825f7332669779540be27cb263daf22af3b1c ("USB:
+> gadget: storage: optional SCSI WRITE FUA bit") from the usb tree.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- lib/bitmap.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+Sorry about missing this, I have a patch to fix this up now.
 
-diff --git a/lib/bitmap.c b/lib/bitmap.c
-index ffb78c9..42205d8 100644
---- a/lib/bitmap.c
-+++ b/lib/bitmap.c
-@@ -422,7 +422,7 @@ int __bitmap_parse(const char *buf, unsigned int buflen,
- {
- 	int c, old_c, totaldigits, ndigits, nchunks, nbits;
- 	u32 chunk;
--	const char __user *ubuf = buf;
-+	const char __user *ubuf = (const char __user __force *) buf;
- 
- 	bitmap_zero(maskp, nmaskbits);
- 
-@@ -507,7 +507,8 @@ int bitmap_parse_user(const char __user *ubuf,
- {
- 	if (!access_ok(VERIFY_READ, ubuf, ulen))
- 		return -EFAULT;
--	return __bitmap_parse((const char *)ubuf, ulen, 1, maskp, nmaskbits);
-+	return __bitmap_parse((const char __force *)ubuf, ulen, 1,
-+			      maskp, nmaskbits);
- }
- EXPORT_SYMBOL(bitmap_parse_user);
- 
--- 
-1.7.0.4
-
+greg k-h
