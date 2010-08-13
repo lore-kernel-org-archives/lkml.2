@@ -1,80 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934615Ab0HMQTu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 12:19:50 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:53718 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761770Ab0HMQTe convert rfc822-to-8bit (ORCPT
+	id S934607Ab0HMQU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 12:20:57 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:37400 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1761746Ab0HMQU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 12:19:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=xedxmhyqCHLx6rsnpYP98ioOH4v8QMu/TBdR28yJMFFLfCw2KJ0qTCotXK+xN8YSzk
-         LgbULRlZP45Szxig0NnSRm5CQlwH6KZThAuF5a845aA6BQ7VlAaYmpc8G3K/Ov98ruzw
-         xDXXK2lUsOAWG181ZgUxyHoi06XgR5U6U7ygc=
-MIME-Version: 1.0
-In-Reply-To: <20100813155738.GA11507@isilmar-3.linta.de>
-References: <20100812010612.GL2516@linux.vnet.ibm.com>
-	<AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
-	<20100812034435.GA7403@linux.vnet.ibm.com>
-	<AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
-	<E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
-	<AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	<20100812174303.GD2524@linux.vnet.ibm.com>
-	<AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
-	<20100813152254.GD2511@linux.vnet.ibm.com>
-	<AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
-	<20100813155738.GA11507@isilmar-3.linta.de>
-Date: Fri, 13 Aug 2010 19:19:33 +0300
-Message-ID: <AANLkTikN2zKcLtFJ6EdBU=iqT78bZKt_rKQoPNBRXJHj@mail.gmail.com>
-Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
- take three
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>, paulmck@linux.vnet.ibm.com,
-        david@lang.hm, Theodore Tso <tytso@mit.edu>, peterz@infradead.org,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        James.Bottomley@suse.de, galibert@pobox.com, florian@mickler.org,
-        menage@google.com, linux-pm@lists.linux-foundation.org,
-        swmike@swm.pp.se, tglx@linutronix.de,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, arjan@infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Aug 2010 12:20:56 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=J2vR5VXJftrQKrEyxgBSR6mWIHqAjk1y+xzrxrjbcMqHWuox+0/nz4feOf0QnsEB0+lGP+7QaoeJ8R3w4I4JLY+0QGzOmnkuf0UKlEf5DLp5gqg21JcHUFLpnRmOLTjM;
+Date: Fri, 13 Aug 2010 09:20:20 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Brian Swetland <swetland@google.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
+        paulmck@linux.vnet.ibm.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        david@lang.hm, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, arve@android.com, mjg59@srcf.ucam.org,
+        pavel@ucw.cz, florian@mickler.org, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100813092020.41290f1f@virtuousgeek.org>
+In-Reply-To: <201008130528.21887.rjw@sisk.pl>
+References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<AANLkTimjfU2zu4reEVdOwWwtFHPQ33_Gna6xS2XHRG-h@mail.gmail.com>
+	<20100812125712.48b7fc26@virtuousgeek.org>
+	<201008130528.21887.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 6:57 PM, Dominik Brodowski
-<linux@dominikbrodowski.net> wrote:
->> >> Not Ubuntu, not Fedora, not MeeGo, not anyone with a typical
->> >> user-space seems to be having this problem. I can argue to you that
->> >> this problem can be solved in easier ways, but instead I will argue
->> >> that perhaps we should wait for somebody besides Android to complain
->> >> about it before providing a "solution". Because after all, what good
->> >> is a "solution" provided by the kernel, if the user-space is not going
->> >> to use it, ever.
->> >
->> > At this point in the discussion, I am quite prepared to believe that you
->> > will avoid using suspend blockers, and that you will further do everything
->> > in your power to prevent anyone else from using suspend blockers.  ;-)
->>
->> I'm not tying anybody's hands.
->>
->> How are people using real-time linux if it's not on mainline? Well,
->> duuh, you apply the patches. If say Fedora was interested on it, they
->> could apply the patches, and see for themselves. People do that all
->> the time, with the mm tree, with Con Koliva's patches, etc. Once
->> people are happy with the results, things get merged. Why should this
->> be any different?
->
-> Because millions of users are happy -- with Android, including suspend
-> blockers.
+On Fri, 13 Aug 2010 05:28:21 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-I explicitly said somebody besides Android, specifically, somebody
-with a typical linux ecosystem. You are not addressing the argument at
-hand, that nobody else wants to tackle the issue this way, thus only
-making the discussion more difficult.
+> On Thursday, August 12, 2010, Jesse Barnes wrote:
+> > On Thu, 12 Aug 2010 12:19:34 -0700
+> > Brian Swetland <swetland@google.com> wrote:
+> > > Question though -- has every feature ever added to the kernel been a
+> > > feature that there's pre-existing usage of?  Seems like a chicken and
+> > > egg problem.  Also, some people seem to think there's value in being
+> > > able to build kernels "out of the box" that work with the Android
+> > > userspace -- given that there are a few devices out there that have
+> > > that userspace on 'em.
+> > 
+> > We generally try to merge new features like this along with code that
+> > uses said feature, but there are always exceptions.  We've merged code
+> > one release or more before the new code gets used for example, which is
+> > fine IMO.  What we don't want to see is some new drop of code added and
+> > abandoned, but you already knew that.
+> > 
+> > At any rate, if Felipe is the only one arguing against including
+> > suspend blockers in the kernel, you're probably in good shape.  Based
+> > on my (rather cursory I admit) evaluation of this thread, it seems like
+> > reasonable people agree that there's a place for a suspend blocker like
+> > API in the kernel, and that dynamic power management is also highly
+> > desirable.  So where's the git pull request already? :)
+> 
+> In fact my patch going in that direction has been merged already and that
+> code will likely be extended to cover some needs and cases I didn't have in
+> mind when I was preparing it.
+
+Yeah, I like what you've done with dynamic power management, really
+good stuff (the approach is very similar to the one I used for vblank
+interrupt management in the drm layer).
+
+Ted's point about providing the user with a way of knowing which apps
+are blocking things is a good one though, and doesn't seem too hard to
+add.  It might even be possible to do it largely with scripts wrapping
+fuser and such.
+
+> However, having discussed the whole issue for many times and reconsidered it
+> thoroughly, I think that it's inappropriate to identify the suspend blockers
+> (or wakelocks) framework with the opportunistic suspend feature as proposed in
+> the original submission of the "suspend blockers" patchset.  IMO they really
+> are not the same thing and while the suspend blockers framework is used by
+> Android to implement opportunistic suspend, I don't really believe this is the
+> right approach.
+> 
+> We really need something similar to suspend blockers to avoid races between
+> a suspend process and wakeup events, but it isn't necessary to provide user
+> space with an interface allowing it to use these things directly.  Such an
+> interface is only necessary in the specific implementation in which the system
+> is suspended as soon as the number of "active" suspend blockers goes down to
+> zero.  Arguably, though, this isn't the only possible way to implement a
+> mechanism allowing the system to be suspended automatically when it appears
+> to be inactive.
+> 
+> Namely, one can use a user space power manager for this purpose and actually
+> the OLPC project has been doing that successfully for some time, which clearly
+> demonstrates that the Android approach to this problem is not the only one
+> possible.  Moreover, the kernel's system suspend (or hibernate for that matter)
+> code has not been designed to be started from within the kernel.  It's been
+> designed to allow a privileged user space process to request the kernel to
+> put the system into a sleep state at any given time regardless of what the
+> other user space processes are doing.  While it can be started from within the
+> kernel, this isn't particularly nice and, in the Android case, starting it from
+> within the kernel requires permission from multiple user space processes
+> (given by not taking suspend blockers these processes are allowed to use).
+
+Yes, I see your point.  But I actually think this is a fairly minor
+distinction.  In one case, a privileged app decides when to suspend the
+system, in the other case, one or more of several privileged apps
+decide when a suspend should not be allowed to occur.  It's just a
+matter of where you want to put the code and where you want the
+complexity.  In general, we try to keep such complexity out of the
+kernel, but not always; there are compelling cases for putting
+complexity in the kernel to provide uniformity and flexibility (e.g.
+application state save/restore vs. system-wide checkpoints, the former
+preserves the "if it can be done outside the kernel, it should be",
+while the latter provides much greater flexibility and avoids the need
+to port applications to potentially incompatible or unportable state
+saves/restore libraries).
 
 -- 
-Felipe Contreras
+Jesse Barnes, Intel Open Source Technology Center
