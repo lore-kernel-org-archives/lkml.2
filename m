@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665Ab0HMUi7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 16:38:59 -0400
-Received: from king.tilera.com ([72.1.168.226]:17731 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755213Ab0HMUi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 16:38:57 -0400
-Message-Id: <201008132038.o7DKct4N002252@lab-8.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 13 Aug 2010 16:37:00 -0400
-Subject: [PATCH] arch/tile: extend syscall ABI to set r1 on return as well.
-To: linux-kernel@vger.kernel.org
-X-OriginalArrivalTime: 13 Aug 2010 20:38:56.0114 (UTC) FILETIME=[8CBCD520:01CB3B27]
+	id S1755743Ab0HMUkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 16:40:40 -0400
+Received: from www84.your-server.de ([213.133.104.84]:59829 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755213Ab0HMUkj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 16:40:39 -0400
+Subject: Re: [PATCH 1/3] kfifo: fix kernel BUG in dma example
+From: Stefani Seibold <stefani@seibold.net>
+To: Andrea Righi <arighi@develer.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <1281729545-1663-1-git-send-email-arighi@develer.com>
+References: <1281729545-1663-1-git-send-email-arighi@develer.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 13 Aug 2010 22:40:37 +0200
+Message-ID: <1281732037.12228.0.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, the tile architecture ABI for syscall return has just been
-that r0 holds the return value, and an error is only signalled like it is
-for kernel code, with a negative small number.
 
-However, this means that in multiple places in userspace we end up writing
-the same three-cycle idiom that tests for a small negative number for
-error.  It seems cleaner to instead move that code into the kernel, and
-set r1 to hold zero on success or errno on failure; previously, r1 was
-just zeroed on return from the kernel (to avoid leaking kernel state).
-This way a single conditional branch after the syscall is sufficient
-to test for the failure case.  The number of cycles taken is the same,
-but the error-checking code is in just one place, so total code size is
-smaller, and random userspace syscall code is easier to understand.
+The scatterlist is used uninitialized in kfifo_dma_in_prepare(). This
+triggers the following bug if CONFIG_DEBUG_SG=y:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+  ------------[ cut here ]------------
+  kernel BUG at include/linux/scatterlist.h:65!
+  invalid opcode: 0000 [#1] PREEMPT SMP
+  ...
+  Call Trace:
+   [<ffffffff810a1eab>] setup_sgl+0x6b/0xe0
+   [<ffffffffa03d7000>] ? example_init+0x0/0x265 [dma_example]
+   [<ffffffff810a2021>] __kfifo_dma_in_prepare+0x21/0x30
+   [<ffffffffa03d7124>] example_init+0x124/0x265 [dma_example]
+   [<ffffffff810f9c55>] ? trace_module_notify+0x25/0x370
+   [<ffffffff81110c6e>] ? free_pages_prepare+0x11e/0x1e0
+   [<ffffffff8106f2b1>] ? get_parent_ip+0x11/0x50
+   [<ffffffff810f9c55>] ? trace_module_notify+0x25/0x370
+   [<ffffffff810b65fd>] ? trace_hardirqs_on+0xd/0x10
+   [<ffffffff814beade>] ? mutex_unlock+0xe/0x10
+   [<ffffffff810f9c71>] ? trace_module_notify+0x41/0x370
+   [<ffffffff810a77d5>] ? __blocking_notifier_call_chain+0x45/0x80
+   [<ffffffff81137b7a>] ? vfree+0x2a/0x30
+   [<ffffffff810a6ac3>] ? up_read+0x23/0x40
+   [<ffffffff810a77f5>] ? __blocking_notifier_call_chain+0x65/0x80
+   [<ffffffff810001e3>] do_one_initcall+0x43/0x180
+   [<ffffffff810c577a>] sys_init_module+0xba/0x200
+   [<ffffffff8103819b>] system_call_fastpath+0x16/0x1b
+  RIP  [<ffffffff810a1e31>] setup_sgl_buf+0x1a1/0x1b0
+   RSP <ffff88006720dc98>
+  ---[ end trace a72b979fd3c1d3a5 ]---
+
+Add the proper initialization to avoid the bug.
+
+Signed-off-by: Andrea Righi <arighi@develer.com>
+Acked-by: Stefani Seibold <stefani@seibold.net>
 ---
- arch/tile/kernel/intvec_32.S |   14 ++++++++++++--
- 1 files changed, 12 insertions(+), 2 deletions(-)
+ samples/kfifo/dma-example.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
-index 3404c75..84f296c 100644
---- a/arch/tile/kernel/intvec_32.S
-+++ b/arch/tile/kernel/intvec_32.S
-@@ -952,7 +952,7 @@ STD_ENTRY(interrupt_return)
- 	 * able to safely read all the remaining words on those cache
- 	 * lines without waiting for the memory subsystem.
- 	 */
--	pop_reg_zero r0, r1, sp, PTREGS_OFFSET_REG(30) - PTREGS_OFFSET_REG(0)
-+	pop_reg_zero r0, r28, sp, PTREGS_OFFSET_REG(30) - PTREGS_OFFSET_REG(0)
- 	pop_reg_zero r30, r2, sp, PTREGS_OFFSET_PC - PTREGS_OFFSET_REG(30)
- 	pop_reg_zero r21, r3, sp, PTREGS_OFFSET_EX1 - PTREGS_OFFSET_PC
- 	pop_reg_zero lr, r4, sp, PTREGS_OFFSET_REG(52) - PTREGS_OFFSET_EX1
-@@ -1017,7 +1017,17 @@ STD_ENTRY(interrupt_return)
- 	{ move r22, zero; move r23, zero }
- 	{ move r24, zero; move r25, zero }
- 	{ move r26, zero; move r27, zero }
--	{ move r28, zero; move r29, zero }
-+
-+	/* Set r1 to errno if we are returning an error, otherwise zero. */
-+	{
-+	 moveli r29, 1024
-+	 sub    r1, zero, r0
-+	}
-+	slt_u   r29, r1, r29
-+	{
-+	 mnz    r1, r29, r1
-+	 move   r29, zero
-+	}
- 	iret
+diff --git a/samples/kfifo/dma-example.c b/samples/kfifo/dma-example.c
+index b9482c2..03433ca 100644
+--- a/samples/kfifo/dma-example.c
++++ b/samples/kfifo/dma-example.c
+@@ -45,6 +45,7 @@ static int __init example_init(void)
  
- 	/*
--- 
-1.6.5.2
+ 	printk(KERN_INFO "queue len: %u\n", kfifo_len(&fifo));
+ 
++	sg_init_table(sg, ARRAY_SIZE(sg));
+ 	ret = kfifo_dma_in_prepare(&fifo, sg, ARRAY_SIZE(sg), FIFO_SIZE);
+ 	printk(KERN_INFO "DMA sgl entries: %d\n", ret);
+ 
+
 
