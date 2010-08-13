@@ -1,143 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762103Ab0HMT2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 15:28:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45138 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762004Ab0HMT2f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 15:28:35 -0400
-Date: Fri, 13 Aug 2010 12:28:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Cross <david.cross@cypress.com>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: EXPORT_SYMBOL(fat_get_block)
-Message-ID: <20100813192826.GA5078@suse.de>
-References: <1281721539.5839.4.camel@odc-laptop>
- <20100813175402.GA15024@suse.de>
- <1281724992.12189.16.camel@odc-laptop>
- <20100813190128.GA1372@suse.de>
- <1281727059.16672.20.camel@odc-laptop>
+	id S1762111Ab0HMT3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 15:29:14 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:27089 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762004Ab0HMT3M convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 15:29:12 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	content-type:content-transfer-encoding:x-system-of-record;
+	b=oXf1K7jmH+ToI+3cUeJOU9Y6tUEh1SujFYgk+VOjdyVEK36IG3girICtDEvahcjYF
+	dgSF7sO7Y+HkhjTJ4h8NA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281727059.16672.20.camel@odc-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100813190801.GB26950@thunk.org>
+References: <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+	<E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+	<AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<20100812174303.GD2524@linux.vnet.ibm.com>
+	<AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+	<20100813152254.GD2511@linux.vnet.ibm.com>
+	<AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
+	<20100813155738.GA11507@isilmar-3.linta.de>
+	<AANLkTikN2zKcLtFJ6EdBU=iqT78bZKt_rKQoPNBRXJHj@mail.gmail.com>
+	<1281719489.8407.17.camel@mulgrave.site>
+	<20100813190801.GB26950@thunk.org>
+Date: Fri, 13 Aug 2010 12:29:08 -0700
+Message-ID: <AANLkTi=SZoRmQyBm0Gs1kp-4nTrDy-ktmWppwgneQghG@mail.gmail.com>
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
+ take three
+From: Brian Swetland <swetland@google.com>
+To: "Ted Ts'o" <tytso@mit.edu>, James Bottomley <James.Bottomley@suse.de>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        paulmck@linux.vnet.ibm.com, david@lang.hm, peterz@infradead.org,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        galibert@pobox.com, florian@mickler.org, menage@google.com,
+        linux-pm@lists.linux-foundation.org, swmike@swm.pp.se,
+        tglx@linutronix.de, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        arjan@infradead.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 12:17:39PM -0700, David Cross wrote:
-> On Fri, 2010-08-13 at 12:01 -0700, Greg KH wrote:
-> > On Fri, Aug 13, 2010 at 11:43:12AM -0700, David Cross wrote:
-> > > On Fri, 2010-08-13 at 10:54 -0700, Greg KH wrote:
-> > > > On Fri, Aug 13, 2010 at 10:45:39AM -0700, David Cross wrote:
-> > > > > Hello Hirofumi,
-> > > > > I would like to export this symbol from the vfat code and add this patch
-> > > > > to the Linux kernel. You are listed as the MAINTAINER for FAT and VFAT.
-> > > > > As such, I need your approval to do it. 
-> > > > > The reason that I need to export this symbol is to allow for file based
-> > > > > DMA in which the file needs to be pre-allocated. The pre-allocated block
-> > > > > addresses are passed to a DMA engine which then directly transfers the
-> > > > > data to non-volatile storage.
-> > > > > Please let me know if you have any objections to exporting this symbol
-> > > > > or if you need additional information from me concerning this change
-> > > > > request. I am happy to answer any questions that you may have about this
-> > > > > in the meantime.
-> > > > 
-> > > > Wait, _I_ have an objection to exporting this symbol.
-> > > > 
-> > > > I really don't think it is needed at this point in time, as we really
-> > > > need to figure out exactly what your driver is doing to want to need to
-> > > > call this function.
-> > > 
-> > > OK, I am trying to answer all questions on this topic that I am getting,
-> > > but honestly I have not gotten a lot so far. 
-> > 
-> > That's because not many people have noticed the code yet :)
-> > 
-> > > > So please, let's not export it for now, when we get to the point that we
-> > > > all agree that this driver is doing the "correct" thing, then we can
-> > > > export the symbol, ok?
-> > > 
-> > > Sure, I think that the driver is doing the correct thing, but that is
-> > > mostly because I have not found another way to solve this issue.
-> > 
-> > What specifically is the issue here that you are trying to solve?
->   We are trying to solve the issue of all data needing to go through the
-> processor, even when its ultimate destination is non-volatile media.
-> 	
-> > And why has no other driver ever needed this type of functionality
-> > before?
->   I am not sure, but my guess is because this represents a novel solution to 
-> a performance problem.
+On Fri, Aug 13, 2010 at 12:08 PM, Ted Ts'o <tytso@mit.edu> wrote:
+> On Fri, Aug 13, 2010 at 01:11:29PM -0400, James Bottomley wrote:
+>>
+>> The facts are that suspend blockers identifies a race within our suspend
+>> to ram system that permeates from top to bottom (that's from server to
+>> mobile).  The problem is that resume events are racy with respect to
+>> suspend and vice versa.  This manifests itself most annoyingly on my
+>> laptop in the "double suspend" case: where I suspend with a pending
+>> suspend event, my laptop will resume and then immediately re-suspend
+>> (leading me to kick myself and remind myself to check it stayed up
+>> before pushing unsuspend and walking away).  The other annoying case is
+>> that if I accidentally close the lid before presenting, I have to wait
+>> until the system is fully down before pressing resume.
+>
+> This is all true, but it's also only one aspect of the problem.  I
+> agree with you that this is the part of the problem which affects
+> Linux at all scales, from Cloud servers in a data center that want to
+> suspend themselves when there's no work to do (and then fail to
+> respond to the WOL packet) to mobile platforms that are suspending
+> much more frequently.
+>
+> However, it doesn't follow that this is the _only_ problem that the
+> Android folks might be interested in solving.  Opportunistic suspend
+> is a different part of the problem space, which is generally believed
+> by the Android developers as being far more efficient than a
+> user-space suspend manager.  Rafael has stated his complete
+> unwillingness to deal with this part of the problem.  OK, so that
+> probably means that for Android, it will have to be an out-of-tree
+> kernel patch.
+>
+> The question, then, is whether a solution which addresses the only
+> part of the problem which Rafael is interested in dealing with at this
+> point, is sufficient such that (a) the kernel-level opportunistic
+> suspend can be done as an out-of-tree patch, while simultaneously (b)
+> allowing device drivers for Android devices can utilize Rafael's
+> interfaces to solve the race design bug currently found in our suspend
+> subsystem, while (c) requiring minimal changes to the Android
+> userspace, and (d) providing all of the statistics and debugging
+> functionality required by the Android userspace.
+>
+> If we can engineer a solution which meets (a), (b), (c), and (d)
+> above, then everyone will be happy.
 
-What exactly are the performance issues with doing this from userspace,
-vs. the FAT hack?
+Arve's suspend blockers patch stack actually separates the core
+functionality (ability for drivers to delay suspend while doing work
+suspend would interfere with), from the ability to hold suspend
+blockers from userspace (a separate, smaller patch building on the
+core functionality).
 
-> > We have a userspace MTP driver for Linux, using gadgetfs, right?  So
-> > none of this is applicable from what I can tell.
-> Yes, the g_mtp development has started, but it is not integrated yet
-> last I checked. Most of the applications for this driver have used
-> gadgetfs as well in order to handle the protocol itself. So, I think it
-> is applicable.
-
-No, there's another MTP stack already released that works just fine on
-Linux.  You can find it at:
-	http://wiki.meego.com/Buteo
-
-> > > The West Bridge driver goes for option two for performance reasons. In
-> > > doing this, it needs to get information from the file system on where to
-> > > store the file.
-> > 
-> > Look at how Linux already handles MTP for how to handle this properly, I
-> > don't think there is any need to do any of this from within the kernel.
-> I somewhat familiar with how Linux handles MTP. The current model is
-> CPU-centric and all data goes through the main processor from what I
-> have seen. This is a working solution, but not always a very fast one. I
-> agree though that this would not need to be done within the kernel if we
-> had a userspace method for file allocation and commitment.
-
-Again, what's wrong with using the processor here?  What else does it
-have to do at this point in time?
-
-> > > >What happens if this isn't a FAT partition on the >device?
-> > > Good question. So far, it has been stored on a FAT partition in most use
-> > > cases because the user typically wants the option to enumerate the
-> > > device as mass storage as well or be able to see content on a PC if the
-> > > SD card is removed. However, there is no reason that this could not be
-> > > done with ext2 or other filesystems on non-removable media.
-> > 
-> > Like NTFS?  How are you going to handle that when you run out of size
-> > due to the limitations of FAT?  Hint, that's not going to work with this
-> > type of solution...
-> Isn't this also a userspace problem? When I run out of space on my Linux machine,
-> the message "no space left on device" pops up. Why is this solution any
-> more prone to size limitations compared with any other?
-
-No, my point is that for larger disk sizes, you can't use FAT, you have
-to use NTFS to be interoperable with other operating systems.  Your
-solution will not handle that jump to larger storage sizes as you are
-relying on FAT.
-
-> > > This would require some work to figure out how to implement a
-> > > pre-allocation interface with it. Alternatively a more general
-> > > pre-allocation interface could be added (falloc()) to implemented file
-> > > systems to make this process easier.  
-> > 
-> > Userspace handles this quite easily already, see above.
-> I don't see how userspace handles this from the comments above. I do
-> understand that there is a userspace MTP driver, but I don't see a
-> method for pre-allocation of files from the information above. Am I
-> missing something?
-
-Yes, the pre-allocation is done in userspace, and then the data is
-copied to the filesystem then.  The kernel doesn't have to have any
-filesystem specific hacks in it to try to handle this at all.
-
-Take a look at the above link for what you might want to do instead.
-Because of this, I'm guessing that a lot of this code can be removed
-from the driver, right?
-
-thanks,
-
-greg k-h
+Brian
