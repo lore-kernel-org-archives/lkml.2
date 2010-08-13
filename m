@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934347Ab0HMNPh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:15:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:47039 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934270Ab0HMNPf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:15:35 -0400
-Message-ID: <4C654544.5010002@ru.mvista.com>
-Date: Fri, 13 Aug 2010 17:14:44 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
-MIME-Version: 1.0
-To: Kukjin Kim <kgene.kim@samsung.com>
-CC: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Maxim Levitsky'" <maximlevitsky@gmail.com>, ben-linux@fluff.org
-Subject: Re: undefined reference to `mmc_pm_notify' when selected MMC without
- PM.
-References: <009301cb3ad3$77c8a620$6759f260$%kim@samsung.com>
-In-Reply-To: <009301cb3ad3$77c8a620$6759f260$%kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1761599Ab0HMNRu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:17:50 -0400
+Received: from verein.lst.de ([213.95.11.210]:36214 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761505Ab0HMNRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 09:17:49 -0400
+Date: Fri, 13 Aug 2010 15:17:22 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
+        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, jack@suse.cz,
+        rwheeler@redhat.com, hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
+Message-ID: <20100813131722.GB4140@lst.de>
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <4C6540C5.8070108@vlnb.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6540C5.8070108@vlnb.net>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0.001 () BAYES_56
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+On Fri, Aug 13, 2010 at 04:55:33PM +0400, Vladislav Bolkhovitin wrote:
+> I'm not mentioning the obvious that a common functionality (enforcing 
+> requests ordering in this case) should be handled by a common library, 
+> but not internally by a zillion file systems Linux has.
 
-Kukjin Kim wrote:
+I/O ordering is still handled mostly by common code, that is the
+pagecache and the buffercache, although a few filesystems like XFS and
+btrfs have their own implementation of the second one.
 
-> Following is build error when selected MMC without PM.
+The current ordered semantics of barriers have only successfull
+implemented by a complete queue drain, and not effectively been used
+by filesystems.  This patchset removes the bogus global ordering
+enforced by the block layer whenever a filesystems wants to be able
+to use cache flushes, and because of that allows deeper outstanding
+queue depth I/O with less latency.
 
-> drivers/built-in.o: In function `mmc_alloc_host':
-> drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
-> make[1]: *** [.tmp_vmlinux1] Error 1
-> make: *** [sub-make] Error 2
+Now I know you in particular are a fan of scsi ordered tags.  And as I
+told you before I'm open to review such an implementation if it shows
+us any advantages.  Adding it after this patch is in fact not any more
+complicated than before, I'd almost be tempted it's easier as you don't
+have to plug it into the complex state machine we used for barriers, and
+more importantly we drop the requirement for the barrier sequence to
+be atomic, which in fact made implementing barriers using tagged queues
+impossible with the current scsi layer.
 
-> That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
-> insert/removal during suspend/resume '
-> (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
+As far as playing with ordered tags it's just adding a new flag for
+it on the bio that gets passed down to the driver.  For a final version
+you'd need a queue-level feature if it's supported, but you don't
+even need that for the initial work.  Then you can implement a
+variant of blk_do_flush that does away with queueing additional requests
+once finish but queues all two or three at the same time with your
+new ordered flag set, at which point you are back to the level or
+ordered tag usage that the old code allows.  You're still left with
+all the hard problems of actually implementing error handling for it
+and using it higher up in the filesystem and generic page cache code.
 
-> Below is temporary patch for avoiding build error.
-> But I'm not sure about this... :-(
+I'd really love to see your results, up to the point of just trying
+that once I get a little spare time.  But my theory is that it won't
+help us - the problem with ordered tags is that they enforce global
+ordering while we currently have local ordering.  While it will reduce
+the latency for the process waiting for an fsync or similar it will
+affect other I/O going on in the background and reduce the devices
+ability to reorder that I/O.
 
-> ---
-
-> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> index 0efe631..d80cfdc 100644
-> --- a/drivers/mmc/core/host.c
-> +++ b/drivers/mmc/core/host.c
-> @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
-> *dev)
->         init_waitqueue_head(&host->wq);
->         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
->         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
-> mmc_host_deeper_disable);
-
-    Looks like your patch is line-wrapped...
-
-> +#ifdef CONFIG_PM
->         host->pm_notify.notifier_call = mmc_pm_notify;
-> +#endif
-
-WBR, Sergei
-
+So for now this patch set is a massive improvement of performance for
+workloads we care about, while removing the interface we put in place
+to allow a theoretical optimization that didn't show up for 8 years
+before, and in fact made the interface just complicated enough to make
+that optimization so hard.
