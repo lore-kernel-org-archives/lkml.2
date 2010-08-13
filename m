@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab0HMH2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:28:10 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40979 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754662Ab0HMH2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:28:06 -0400
-Date: Fri, 13 Aug 2010 17:27:52 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: geert@linux-m68k.org, heiko.carstens@de.ibm.com, sachinp@in.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-arch@vger.kernel.org
-Subject: Re: Latest git build failure on s390 - dma_get_cache_alignment()
-Message-Id: <20100813172752.4acd7089.sfr@canb.auug.org.au>
-In-Reply-To: <20100813154056S.fujita.tomonori@lab.ntt.co.jp>
-References: <20100812075532.GA7814@osiris.boeblingen.de.ibm.com>
-	<20100812080701.GB7814@osiris.boeblingen.de.ibm.com>
-	<AANLkTinnLY4LZ-3xbKEJVR3Qjw5xghRZ6i=tWfw8hJHH@mail.gmail.com>
-	<20100813154056S.fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__13_Aug_2010_17_27_52_+1000_tt4O3sC_AJ2BUEg/"
+	id S1755434Ab0HMH33 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:29:29 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:5766 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754130Ab0HMH3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 03:29:24 -0400
+Date: Fri, 13 Aug 2010 01:29:20 -0600
+From: dann frazier <dannf@hp.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-kernel@vger.kernel.org,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Thomas Mingarelli <thomas.mingarelli@hp.com>
+Subject: Re: [PATCH 00/15] hpwdt: make NMI code a config option (+ other
+ cleanup)
+Message-ID: <20100813072920.GB21527@ldl.fc.hp.com>
+References: <1280274663-9160-1-git-send-email-dannf@hp.com>
+ <20100805214102.GA4288@infomag.iguana.be>
+ <20100806212648.GA30843@infomag.iguana.be>
+ <20100806212933.GA10779@ldl.fc.hp.com>
+ <20100811124911.GH4288@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100811124911.GH4288@infomag.iguana.be>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__13_Aug_2010_17_27_52_+1000_tt4O3sC_AJ2BUEg/
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Aug 11, 2010 at 02:49:11PM +0200, Wim Van Sebroeck wrote:
+> Hi Dan,
+> 
+> > > watchdog: hpwdt (10/12): Construct status message w/ kasprintf and emit it with dev_info
+> > > watchdog: hpwdt (11/12): Use "decoding" instead of "sourcing"
+> > > watchdog: hpwdt (12/12): Make NMI decoding a compile-time option
+> > > 
+> > > (patch 12 can still be improved).
+> > 
+> > Thanks! I'll work on the #ifdef'ing & get you a new #12
+> 
+> I did some changes in the last 3 patches:
+> I removed patch 10, made patch 11 patch 10 and added and extra patch that moves the nmi decoding init and exit functions in seperate modules.
+> I'll sent you the 3 new patches. Just let me know if they are OK.
 
-Hi,
+Yes, they look very much like the changes I was preparing - but I got
+sidetracked by vacation before I could test :) I pulled your tree &
+ran a few sanity tests - looks good. Thanks for doing this!
 
-On Fri, 13 Aug 2010 15:45:31 +0900 FUJITA Tomonori <fujita.tomonori@lab.ntt=
-.co.jp> wrote:
->
-> Any chance to test the -mm tree on linux-next compile platform?
 
-We do, I just have to remember to import the -mm tree manually.
-
-See: http://kisskb.ellerman.id.au/kisskb/branch/14/
-
-Even better would be to get most of the -mm tree into linux-next itself ...=
- ;-)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__13_Aug_2010_17_27_52_+1000_tt4O3sC_AJ2BUEg/
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMZPP4AAoJEDMEi1NhKgbsUpgH/i+rOsQBjUb1fMM1fCAsri88
-kplvk4N69NuBC3CCYJYjaLIrM0Led7eTxyymPr+46fcTmqU6epmyyvsuMs5vJT+R
-BGg+tEP3NwE0T5skBzy9ov82a/ZAmTlghggPuBz2tyJnJTviScTzp3Y3HE4lmzjq
-Ir+oxJWxI0d7YoFVrdY2WCyU3036MHzpXOF7bFt3GMQkKtYZTLH3tItBEtuxSzmU
-YfvBBXeTo6JBO1KS4bbzONLp3hR4vOK1qw3fiEZ+nt9GUanC21FGLlriesUzoizc
-7bcxkr3imJ93bSBgYFCfpn4sIteyW2HMwQJipU/xexyPbZFBxXIm9mMaf5GSKyo=
-=dwTS
------END PGP SIGNATURE-----
-
---Signature=_Fri__13_Aug_2010_17_27_52_+1000_tt4O3sC_AJ2BUEg/--
+-- 
+dann frazier | ProLiant Linux
