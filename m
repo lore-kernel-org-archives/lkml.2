@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132Ab0HMRmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 13:42:21 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:46709 "EHLO
+	id S1762001Ab0HMRnR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 13:43:17 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:46691 "EHLO
 	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761922Ab0HMRlp (ORCPT
+	with ESMTP id S1755404Ab0HMRlp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Aug 2010 13:41:45 -0400
 From: Sage Weil <sage@newdream.net>
@@ -12,419 +12,275 @@ To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-scsi@vger.kernel.org
 Cc: ceph-devel@vger.kernel.org, hch@lst.de, akpm@linux-foundation.org,
         yehuda@hq.newdream.net, Sage Weil <sage@newdream.net>
-Subject: [PATCH 5/8] ceph-rbd: refactor mount related functions, add helpers
-Date: Fri, 13 Aug 2010 10:40:37 -0700
-Message-Id: <1281721240-26130-6-git-send-email-sage@newdream.net>
+Subject: [PATCH 0/8] rados block device and ceph refactor
+Date: Fri, 13 Aug 2010 10:40:32 -0700
+Message-Id: <1281721240-26130-1-git-send-email-sage@newdream.net>
 X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1281721240-26130-1-git-send-email-sage@newdream.net>
-References: <1281721240-26130-1-git-send-email-sage@newdream.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yehuda Sadeh <yehuda@hq.newdream.net>
+Hi,
 
-Removed some functions' static declarations, separated mount
-operation to __open_session and open_root_dentry for clients
-that don't need the latter (rbd). Added other helper functions
-that will be used later in the rbd.
+The rados block device (rbd) implements a network block device backed by 
+the Ceph distributed object store (think nbd/iSCSI, but distributed and 
+fault tolerant).  At the suggestion of Christoph and James, this version 
+of the patchset factors out the common Ceph bits (the network protocol, 
+cluster membership, and object storage parts) into a libceph module 
+(currently in net/ceph/ and include/linux/ceph/) that is shared by the 
+file system component (fs/ceph) and rbd (drivers/block/rbd.c). The first 
+few patches lay some groundwork, #7 moves does the ceph -> libceph+ceph 
+split, and #8 adds the block device driver.
 
-Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
-Signed-off-by: Sage Weil <sage@newdream.net>
+The block device code has been in linux-next for a while, but it could 
+use some review by someone more familiar with the block layer. The rbd 
+code is originally based on osdblk, and has a similar sysfs interface 
+(rbd also supports snapshots, so there are a few more knobs for that).
+
+Two questions --
+
+1- Are net/ceph/ and include/linux/ceph/ appropriate locations for the 
+libceph code?  (It seemed more similar to other net/ residents than the 
+stuff in lib/.)
+
+2- Do I need an explicit ACK from any block people before sending this 
+to Linus?  Carrying/rebasing the refactoring patch out of tree will be 
+tedious, so I would like to push it sooner rather than later.
+
+Thanks!
+sage
+
+PS This code is also available in git at
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git rbd
+
 ---
- fs/ceph/file.c       |   48 ++++++++++++++++-
- fs/ceph/osd_client.h |    1 +
- fs/ceph/super.c      |  149 +++++++++++++++++++++++++++++++++++++------------
- fs/ceph/super.h      |   27 ++++++++-
- 4 files changed, 184 insertions(+), 41 deletions(-)
 
-diff --git a/fs/ceph/file.c b/fs/ceph/file.c
-index 8c044a4..d1e57c1 100644
---- a/fs/ceph/file.c
-+++ b/fs/ceph/file.c
-@@ -317,7 +317,7 @@ void ceph_release_page_vector(struct page **pages, int num_pages)
- /*
-  * allocate a vector new pages
-  */
--static struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags)
-+struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags)
- {
- 	struct page **pages;
- 	int i;
-@@ -363,6 +363,52 @@ static int copy_user_to_page_vector(struct page **pages,
- 	return len;
- }
- 
-+int ceph_copy_to_page_vector(struct page **pages,
-+				    const char *data,
-+				    loff_t off, size_t len)
-+{
-+	int i = 0;
-+	size_t po = off & ~PAGE_CACHE_MASK;
-+	size_t left = len;
-+	size_t l;
-+
-+	while (left > 0) {
-+		l = min_t(size_t, PAGE_CACHE_SIZE-po, left);
-+		memcpy(page_address(pages[i]) + po, data, l);
-+		data += l;
-+		left -= l;
-+		po += l;
-+		if (po == PAGE_CACHE_SIZE) {
-+			po = 0;
-+			i++;
-+		}
-+	}
-+	return len;
-+}
-+
-+int ceph_copy_from_page_vector(struct page **pages,
-+				    char *data,
-+				    loff_t off, size_t len)
-+{
-+	int i = 0;
-+	size_t po = off & ~PAGE_CACHE_MASK;
-+	size_t left = len;
-+	size_t l;
-+
-+	while (left > 0) {
-+		l = min_t(size_t, PAGE_CACHE_SIZE-po, left);
-+		memcpy(data, page_address(pages[i]) + po, l);
-+		data += l;
-+		left -= l;
-+		po += l;
-+		if (po == PAGE_CACHE_SIZE) {
-+			po = 0;
-+			i++;
-+		}
-+	}
-+	return len;
-+}
-+
- /*
-  * copy user data from a page vector into a user pointer
-  */
-diff --git a/fs/ceph/osd_client.h b/fs/ceph/osd_client.h
-index d583d1b..0a82bd1 100644
---- a/fs/ceph/osd_client.h
-+++ b/fs/ceph/osd_client.h
-@@ -69,6 +69,7 @@ struct ceph_osd_request {
- 	struct list_head  r_unsafe_item;
- 
- 	struct inode *r_inode;         	      /* for use by callbacks */
-+	void *r_priv;			      /* ditto */
- 
- 	char              r_oid[40];          /* object name */
- 	int               r_oid_len;
-diff --git a/fs/ceph/super.c b/fs/ceph/super.c
-index ff295c9..c7a9ef4 100644
---- a/fs/ceph/super.c
-+++ b/fs/ceph/super.c
-@@ -421,14 +421,15 @@ static int parse_fsid(const char *str, struct ceph_fsid *fsid)
- 	return err;
- }
- 
--static struct ceph_mount_args *parse_mount_args(int flags, char *options,
--						const char *dev_name,
--						const char **path)
-+struct ceph_mount_args *parse_mount_args(int flags, char *options,
-+					 const char *dev_name,
-+					 const char **path)
- {
- 	struct ceph_mount_args *args;
- 	const char *c;
- 	int err = -ENOMEM;
- 	substring_t argstr[MAX_OPT_ARGS];
-+	const char *end_path;
- 
- 	args = kzalloc(sizeof(*args), GFP_KERNEL);
- 	if (!args)
-@@ -460,23 +461,29 @@ static struct ceph_mount_args *parse_mount_args(int flags, char *options,
- 	err = -EINVAL;
- 	if (!dev_name)
- 		goto out;
--	*path = strstr(dev_name, ":/");
--	if (*path == NULL) {
--		pr_err("device name is missing path (no :/ in %s)\n",
--		       dev_name);
--		goto out;
-+
-+	if (path) {
-+		*path = strstr(dev_name, ":/");
-+		if (*path == NULL) {
-+			pr_err("device name is missing path (no :/ in %s)\n",
-+			       dev_name);
-+			goto out;
-+		}
-+		end_path = *path;
-+
-+		/* path on server */
-+		*path += 2;
-+		dout("server path '%s'\n", *path);
-+	} else {
-+		end_path = dev_name + strlen(dev_name);
- 	}
- 
- 	/* get mon ip(s) */
--	err = ceph_parse_ips(dev_name, *path, args->mon_addr,
-+	err = ceph_parse_ips(dev_name, end_path, args->mon_addr,
- 			     CEPH_MAX_MON, &args->num_mon);
- 	if (err < 0)
- 		goto out;
- 
--	/* path on server */
--	*path += 2;
--	dout("server path '%s'\n", *path);
--
- 	/* parse mount options */
- 	while ((c = strsep(&options, ",")) != NULL) {
- 		int token, intval, ret;
-@@ -605,18 +612,60 @@ out:
- 	return ERR_PTR(err);
- }
- 
--static void destroy_mount_args(struct ceph_mount_args *args)
-+void ceph_destroy_mount_args(struct ceph_mount_args *args)
- {
- 	dout("destroy_mount_args %p\n", args);
- 	kfree(args->snapdir_name);
--	args->snapdir_name = NULL;
- 	kfree(args->name);
--	args->name = NULL;
- 	kfree(args->secret);
--	args->secret = NULL;
- 	kfree(args);
- }
- 
-+static int strcmp_null(const char *s1, const char *s2)
-+{
-+	if (!s1 && !s2)
-+		return 0;
-+	if (s1 && !s2)
-+		return -1;
-+	if (!s1 && s2)
-+		return 1;
-+	return strcmp(s1, s2);
-+}
-+
-+int ceph_compare_mount_args(struct ceph_mount_args *new_args,
-+			    struct ceph_client *client)
-+{
-+	struct ceph_mount_args *args1 = new_args;
-+	struct ceph_mount_args *args2 = client->mount_args;
-+	int ofs = offsetof(struct ceph_mount_args, mon_addr);
-+	int i;
-+	int ret;
-+
-+	ret = memcmp(args1, args2, ofs);
-+	if (ret)
-+		return ret;
-+
-+	ret = strcmp_null(args1->snapdir_name, args2->snapdir_name);
-+	if (ret)
-+		return ret;
-+
-+	ret = strcmp_null(args1->name, args2->name);
-+	if (ret)
-+		return ret;
-+
-+	ret = strcmp_null(args1->secret, args2->secret);
-+	if (ret)
-+		return ret;
-+
-+	for (i = 0; i < args1->num_mon; i++) {
-+		if (ceph_monmap_contains(client->monc.monmap,
-+				 &args1->mon_addr[i]))
-+			return 0;
-+	}
-+
-+	return -1;
-+}
-+
- /*
-  * create a fresh client instance
-  */
-@@ -703,7 +752,7 @@ fail:
- 	return ERR_PTR(err);
- }
- 
--static void ceph_destroy_client(struct ceph_client *client)
-+void ceph_destroy_client(struct ceph_client *client)
- {
- 	dout("destroy_client %p\n", client);
- 
-@@ -732,7 +781,7 @@ static void ceph_destroy_client(struct ceph_client *client)
- 		ceph_messenger_destroy(client->msgr);
- 	mempool_destroy(client->wb_pagevec_pool);
- 
--	destroy_mount_args(client->mount_args);
-+	ceph_destroy_mount_args(client->mount_args);
- 
- 	kfree(client);
- 	dout("destroy_client %p done\n", client);
-@@ -813,17 +862,12 @@ static struct dentry *open_root_dentry(struct ceph_client *client,
- /*
-  * mount: join the ceph cluster, and open root directory.
-  */
--static int ceph_mount(struct ceph_client *client, struct vfsmount *mnt,
--		      const char *path)
-+static int __ceph_open_session(struct ceph_client *client,
-+			       unsigned long started)
- {
- 	struct ceph_entity_addr *myaddr = NULL;
- 	int err;
- 	unsigned long timeout = client->mount_args->mount_timeout * HZ;
--	unsigned long started = jiffies;  /* note the start time */
--	struct dentry *root;
--
--	dout("mount start\n");
--	mutex_lock(&client->mount_mutex);
- 
- 	/* initialize the messenger */
- 	if (client->msgr == NULL) {
-@@ -831,9 +875,8 @@ static int ceph_mount(struct ceph_client *client, struct vfsmount *mnt,
- 			myaddr = &client->mount_args->my_addr;
- 		client->msgr = ceph_messenger_create(myaddr);
- 		if (IS_ERR(client->msgr)) {
--			err = PTR_ERR(client->msgr);
- 			client->msgr = NULL;
--			goto out;
-+			return PTR_ERR(client->msgr);
- 		}
- 		client->msgr->nocrc = ceph_test_opt(client, NOCRC);
- 	}
-@@ -841,26 +884,58 @@ static int ceph_mount(struct ceph_client *client, struct vfsmount *mnt,
- 	/* open session, and wait for mon, mds, and osd maps */
- 	err = ceph_monc_open_session(&client->monc);
- 	if (err < 0)
--		goto out;
-+		return err;
- 
- 	while (!have_mon_and_osd_map(client)) {
- 		err = -EIO;
- 		if (timeout && time_after_eq(jiffies, started + timeout))
--			goto out;
-+			return err;
- 
- 		/* wait */
- 		dout("mount waiting for mon_map\n");
- 		err = wait_event_interruptible_timeout(client->auth_wq,
--		       have_mon_and_osd_map(client) || (client->auth_err < 0),
--		       timeout);
-+			have_mon_and_osd_map(client) || (client->auth_err < 0),
-+			timeout);
- 		if (err == -EINTR || err == -ERESTARTSYS)
--			goto out;
--		if (client->auth_err < 0) {
--			err = client->auth_err;
--			goto out;
--		}
-+			return err;
-+		if (client->auth_err < 0)
-+			return client->auth_err;
- 	}
- 
-+	return 0;
-+}
-+
-+int ceph_open_session(struct ceph_client *client)
-+{
-+	int ret;
-+	unsigned long started = jiffies;  /* note the start time */
-+
-+	dout("open_session start\n");
-+	mutex_lock(&client->mount_mutex);
-+
-+	ret = __ceph_open_session(client, started);
-+
-+	mutex_unlock(&client->mount_mutex);
-+	return ret;
-+}
-+
-+/*
-+ * mount: join the ceph cluster, and open root directory.
-+ */
-+static int ceph_mount(struct ceph_client *client, struct vfsmount *mnt,
-+		      const char *path)
-+{
-+	int err;
-+	unsigned long started = jiffies;  /* note the start time */
-+	struct dentry *root;
-+
-+	dout("mount start\n");
-+	mutex_lock(&client->mount_mutex);
-+
-+	err = __ceph_open_session(client, started);
-+	if (err < 0)
-+		goto out;
-+
- 	dout("mount opening root\n");
- 	root = open_root_dentry(client, "", started);
- 	if (IS_ERR(root)) {
-diff --git a/fs/ceph/super.h b/fs/ceph/super.h
-index bdf089f..a8e70fc 100644
---- a/fs/ceph/super.h
-+++ b/fs/ceph/super.h
-@@ -54,14 +54,11 @@
- #define ceph_test_opt(client, opt) \
- 	(!!((client)->mount_args->flags & CEPH_OPT_##opt))
- 
--
- struct ceph_mount_args {
- 	int sb_flags;
- 	int flags;
- 	struct ceph_fsid fsid;
- 	struct ceph_entity_addr my_addr;
--	int num_mon;
--	struct ceph_entity_addr *mon_addr;
- 	int mount_timeout;
- 	int osd_idle_ttl;
- 	int osd_timeout;
-@@ -73,6 +70,13 @@ struct ceph_mount_args {
- 	int cap_release_safety;
- 	int max_readdir;       /* max readdir result (entires) */
- 	int max_readdir_bytes; /* max readdir result (bytes) */
-+
-+	/* any type that can't be simply compared or doesn't need
-+	   need to be compared should go beyond this point,
-+	   ceph_compare_mount_args() should be updated accordingly */
-+	struct ceph_entity_addr *mon_addr; /* should be the first
-+					      pointer type of args */
-+	int num_mon;
- 	char *snapdir_name;   /* default ".snap" */
- 	char *name;
- 	char *secret;
-@@ -747,6 +751,16 @@ extern struct kmem_cache *ceph_file_cachep;
- 
- extern const char *ceph_msg_type_name(int type);
- extern int ceph_check_fsid(struct ceph_client *client, struct ceph_fsid *fsid);
-+extern struct ceph_mount_args *parse_mount_args(int flags, char *options,
-+						const char *dev_name,
-+						const char **path);
-+extern void ceph_destroy_mount_args(struct ceph_mount_args *args);
-+extern int ceph_compare_mount_args(struct ceph_mount_args *new_args,
-+			    struct ceph_client *client);
-+extern struct ceph_client *ceph_create_client(struct ceph_mount_args *args,
-+					      int need_mdsc);
-+extern void ceph_destroy_client(struct ceph_client *client);
-+extern int ceph_open_session(struct ceph_client *client);
- 
- /* inode.c */
- extern const struct inode_operations ceph_file_iops;
-@@ -853,6 +867,13 @@ extern int ceph_mmap(struct file *file, struct vm_area_struct *vma);
- /* file.c */
- extern const struct file_operations ceph_file_fops;
- extern const struct address_space_operations ceph_aops;
-+extern int ceph_copy_to_page_vector(struct page **pages,
-+				    const char *data,
-+				    loff_t off, size_t len);
-+extern int ceph_copy_from_page_vector(struct page **pages,
-+				    char *data,
-+				    loff_t off, size_t len);
-+extern struct page **ceph_alloc_page_vector(int num_pages, gfp_t flags);
- extern int ceph_open(struct inode *inode, struct file *file);
- extern struct dentry *ceph_lookup_open(struct inode *dir, struct dentry *dentry,
- 				       struct nameidata *nd, int mode,
--- 
-1.7.0
+Sage Weil (1):
+  ceph: factor out libceph from Ceph file system
+
+Yehuda Sadeh (7):
+  ceph-rbd: lookup pool in osdmap by name
+  ceph-rbd: refactor osdc requests creation functions
+  ceph-rbd: messenger and osdc changes for rbd
+  ceph-rbd: enable creation of clients that don't need mds
+  ceph-rbd: refactor mount related functions, add helpers
+  ceph-rbd: osdc support for osd call and rollback operations
+  rbd: introduce rados block device (rbd), based on libceph
+
+ MAINTAINERS                       |   11 +
+ drivers/block/Kconfig             |   13 +
+ drivers/block/Makefile            |    1 +
+ drivers/block/rbd.c               | 1844 ++++++++++++++++++++++++++++
+ drivers/block/rbd_types.h         |   73 ++
+ fs/ceph/Kconfig                   |   14 +-
+ fs/ceph/Makefile                  |   11 +-
+ fs/ceph/README                    |   20 -
+ fs/ceph/addr.c                    |   65 +-
+ fs/ceph/armor.c                   |  103 --
+ fs/ceph/auth.c                    |  259 ----
+ fs/ceph/auth.h                    |   92 --
+ fs/ceph/auth_none.c               |  131 --
+ fs/ceph/auth_none.h               |   30 -
+ fs/ceph/auth_x.c                  |  684 -----------
+ fs/ceph/auth_x.h                  |   49 -
+ fs/ceph/auth_x_protocol.h         |   90 --
+ fs/ceph/buffer.c                  |   65 -
+ fs/ceph/buffer.h                  |   39 -
+ fs/ceph/caps.c                    |   35 +-
+ fs/ceph/ceph_debug.h              |   37 -
+ fs/ceph/ceph_frag.c               |    3 +-
+ fs/ceph/ceph_frag.h               |  109 --
+ fs/ceph/ceph_fs.c                 |   72 --
+ fs/ceph/ceph_fs.h                 |  728 -----------
+ fs/ceph/ceph_hash.c               |  118 --
+ fs/ceph/ceph_hash.h               |   13 -
+ fs/ceph/ceph_strings.c            |  193 ---
+ fs/ceph/crush/crush.c             |  151 ---
+ fs/ceph/crush/crush.h             |  180 ---
+ fs/ceph/crush/hash.c              |  149 ---
+ fs/ceph/crush/hash.h              |   17 -
+ fs/ceph/crush/mapper.c            |  609 ---------
+ fs/ceph/crush/mapper.h            |   20 -
+ fs/ceph/crypto.c                  |  412 -------
+ fs/ceph/crypto.h                  |   48 -
+ fs/ceph/debugfs.c                 |  407 ++-----
+ fs/ceph/decode.h                  |  196 ---
+ fs/ceph/dir.c                     |   55 +-
+ fs/ceph/export.c                  |    5 +-
+ fs/ceph/file.c                    |  207 +---
+ fs/ceph/inode.c                   |   19 +-
+ fs/ceph/ioctl.c                   |   11 +-
+ fs/ceph/locks.c                   |    6 +-
+ fs/ceph/mds_client.c              |   85 +-
+ fs/ceph/mds_client.h              |   20 +-
+ fs/ceph/mdsmap.c                  |   11 +-
+ fs/ceph/mdsmap.h                  |   62 -
+ fs/ceph/messenger.c               | 2277 ----------------------------------
+ fs/ceph/messenger.h               |  253 ----
+ fs/ceph/mon_client.c              | 1018 ---------------
+ fs/ceph/mon_client.h              |  121 --
+ fs/ceph/msgpool.c                 |   64 -
+ fs/ceph/msgpool.h                 |   25 -
+ fs/ceph/msgr.h                    |  175 ---
+ fs/ceph/osd_client.c              | 1539 -----------------------
+ fs/ceph/osd_client.h              |  167 ---
+ fs/ceph/osdmap.c                  | 1110 -----------------
+ fs/ceph/osdmap.h                  |  128 --
+ fs/ceph/pagelist.c                |   55 -
+ fs/ceph/pagelist.h                |   54 -
+ fs/ceph/rados.h                   |  405 ------
+ fs/ceph/snap.c                    |   10 +-
+ fs/ceph/strings.c                 |  117 ++
+ fs/ceph/super.c                   | 1154 +++++++----------
+ fs/ceph/super.h                   |  397 +++----
+ fs/ceph/types.h                   |   29 -
+ fs/ceph/xattr.c                   |   15 +-
+ include/linux/ceph/auth.h         |   92 ++
+ include/linux/ceph/buffer.h       |   39 +
+ include/linux/ceph/ceph_debug.h   |   37 +
+ include/linux/ceph/ceph_frag.h    |  109 ++
+ include/linux/ceph/ceph_fs.h      |  728 +++++++++++
+ include/linux/ceph/ceph_hash.h    |   13 +
+ include/linux/ceph/crush/crush.h  |  180 +++
+ include/linux/ceph/crush/hash.h   |   17 +
+ include/linux/ceph/crush/mapper.h |   20 +
+ include/linux/ceph/debugfs.h      |   33 +
+ include/linux/ceph/decode.h       |  201 +++
+ include/linux/ceph/libceph.h      |  249 ++++
+ include/linux/ceph/mdsmap.h       |   62 +
+ include/linux/ceph/messenger.h    |  261 ++++
+ include/linux/ceph/mon_client.h   |  122 ++
+ include/linux/ceph/msgpool.h      |   25 +
+ include/linux/ceph/msgr.h         |  175 +++
+ include/linux/ceph/osd_client.h   |  234 ++++
+ include/linux/ceph/osdmap.h       |  130 ++
+ include/linux/ceph/pagelist.h     |   54 +
+ include/linux/ceph/rados.h        |  405 ++++++
+ include/linux/ceph/types.h        |   29 +
+ net/Kconfig                       |    1 +
+ net/Makefile                      |    1 +
+ net/ceph/Kconfig                  |   27 +
+ net/ceph/Makefile                 |   37 +
+ net/ceph/armor.c                  |  103 ++
+ net/ceph/auth.c                   |  259 ++++
+ net/ceph/auth_none.c              |  132 ++
+ net/ceph/auth_none.h              |   29 +
+ net/ceph/auth_x.c                 |  685 +++++++++++
+ net/ceph/auth_x.h                 |   50 +
+ net/ceph/auth_x_protocol.h        |   90 ++
+ net/ceph/buffer.c                 |   68 +
+ net/ceph/ceph_common.c            |  529 ++++++++
+ net/ceph/ceph_fs.c                |   75 ++
+ net/ceph/ceph_hash.c              |  118 ++
+ net/ceph/ceph_strings.c           |   84 ++
+ net/ceph/crush/crush.c            |  151 +++
+ net/ceph/crush/hash.c             |  149 +++
+ net/ceph/crush/mapper.c           |  609 +++++++++
+ net/ceph/crypto.c                 |  412 +++++++
+ net/ceph/crypto.h                 |   48 +
+ net/ceph/debugfs.c                |  268 ++++
+ net/ceph/messenger.c              | 2453 +++++++++++++++++++++++++++++++++++++
+ net/ceph/mon_client.c             | 1027 ++++++++++++++++
+ net/ceph/msgpool.c                |   64 +
+ net/ceph/osd_client.c             | 1773 +++++++++++++++++++++++++++
+ net/ceph/osdmap.c                 | 1128 +++++++++++++++++
+ net/ceph/pagelist.c               |   57 +
+ net/ceph/pagevec.c                |  223 ++++
+ 119 files changed, 16847 insertions(+), 13703 deletions(-)
+ create mode 100644 drivers/block/rbd.c
+ create mode 100644 drivers/block/rbd_types.h
+ delete mode 100644 fs/ceph/README
+ delete mode 100644 fs/ceph/armor.c
+ delete mode 100644 fs/ceph/auth.c
+ delete mode 100644 fs/ceph/auth.h
+ delete mode 100644 fs/ceph/auth_none.c
+ delete mode 100644 fs/ceph/auth_none.h
+ delete mode 100644 fs/ceph/auth_x.c
+ delete mode 100644 fs/ceph/auth_x.h
+ delete mode 100644 fs/ceph/auth_x_protocol.h
+ delete mode 100644 fs/ceph/buffer.c
+ delete mode 100644 fs/ceph/buffer.h
+ delete mode 100644 fs/ceph/ceph_debug.h
+ delete mode 100644 fs/ceph/ceph_frag.h
+ delete mode 100644 fs/ceph/ceph_fs.c
+ delete mode 100644 fs/ceph/ceph_fs.h
+ delete mode 100644 fs/ceph/ceph_hash.c
+ delete mode 100644 fs/ceph/ceph_hash.h
+ delete mode 100644 fs/ceph/ceph_strings.c
+ delete mode 100644 fs/ceph/crush/crush.c
+ delete mode 100644 fs/ceph/crush/crush.h
+ delete mode 100644 fs/ceph/crush/hash.c
+ delete mode 100644 fs/ceph/crush/hash.h
+ delete mode 100644 fs/ceph/crush/mapper.c
+ delete mode 100644 fs/ceph/crush/mapper.h
+ delete mode 100644 fs/ceph/crypto.c
+ delete mode 100644 fs/ceph/crypto.h
+ delete mode 100644 fs/ceph/decode.h
+ delete mode 100644 fs/ceph/mdsmap.h
+ delete mode 100644 fs/ceph/messenger.c
+ delete mode 100644 fs/ceph/messenger.h
+ delete mode 100644 fs/ceph/mon_client.c
+ delete mode 100644 fs/ceph/mon_client.h
+ delete mode 100644 fs/ceph/msgpool.c
+ delete mode 100644 fs/ceph/msgpool.h
+ delete mode 100644 fs/ceph/msgr.h
+ delete mode 100644 fs/ceph/osd_client.c
+ delete mode 100644 fs/ceph/osd_client.h
+ delete mode 100644 fs/ceph/osdmap.c
+ delete mode 100644 fs/ceph/osdmap.h
+ delete mode 100644 fs/ceph/pagelist.c
+ delete mode 100644 fs/ceph/pagelist.h
+ delete mode 100644 fs/ceph/rados.h
+ create mode 100644 fs/ceph/strings.c
+ delete mode 100644 fs/ceph/types.h
+ create mode 100644 include/linux/ceph/auth.h
+ create mode 100644 include/linux/ceph/buffer.h
+ create mode 100644 include/linux/ceph/ceph_debug.h
+ create mode 100644 include/linux/ceph/ceph_frag.h
+ create mode 100644 include/linux/ceph/ceph_fs.h
+ create mode 100644 include/linux/ceph/ceph_hash.h
+ create mode 100644 include/linux/ceph/crush/crush.h
+ create mode 100644 include/linux/ceph/crush/hash.h
+ create mode 100644 include/linux/ceph/crush/mapper.h
+ create mode 100644 include/linux/ceph/debugfs.h
+ create mode 100644 include/linux/ceph/decode.h
+ create mode 100644 include/linux/ceph/libceph.h
+ create mode 100644 include/linux/ceph/mdsmap.h
+ create mode 100644 include/linux/ceph/messenger.h
+ create mode 100644 include/linux/ceph/mon_client.h
+ create mode 100644 include/linux/ceph/msgpool.h
+ create mode 100644 include/linux/ceph/msgr.h
+ create mode 100644 include/linux/ceph/osd_client.h
+ create mode 100644 include/linux/ceph/osdmap.h
+ create mode 100644 include/linux/ceph/pagelist.h
+ create mode 100644 include/linux/ceph/rados.h
+ create mode 100644 include/linux/ceph/types.h
+ create mode 100644 net/ceph/Kconfig
+ create mode 100644 net/ceph/Makefile
+ create mode 100644 net/ceph/armor.c
+ create mode 100644 net/ceph/auth.c
+ create mode 100644 net/ceph/auth_none.c
+ create mode 100644 net/ceph/auth_none.h
+ create mode 100644 net/ceph/auth_x.c
+ create mode 100644 net/ceph/auth_x.h
+ create mode 100644 net/ceph/auth_x_protocol.h
+ create mode 100644 net/ceph/buffer.c
+ create mode 100644 net/ceph/ceph_common.c
+ create mode 100644 net/ceph/ceph_fs.c
+ create mode 100644 net/ceph/ceph_hash.c
+ create mode 100644 net/ceph/ceph_strings.c
+ create mode 100644 net/ceph/crush/crush.c
+ create mode 100644 net/ceph/crush/hash.c
+ create mode 100644 net/ceph/crush/mapper.c
+ create mode 100644 net/ceph/crypto.c
+ create mode 100644 net/ceph/crypto.h
+ create mode 100644 net/ceph/debugfs.c
+ create mode 100644 net/ceph/messenger.c
+ create mode 100644 net/ceph/mon_client.c
+ create mode 100644 net/ceph/msgpool.c
+ create mode 100644 net/ceph/osd_client.c
+ create mode 100644 net/ceph/osdmap.c
+ create mode 100644 net/ceph/pagelist.c
+ create mode 100644 net/ceph/pagevec.c
 
