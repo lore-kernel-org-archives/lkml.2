@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934298Ab0HMM4q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 08:56:46 -0400
-Received: from fieldses.org ([174.143.236.118]:60758 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761575Ab0HMM4l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 08:56:41 -0400
-Date: Fri, 13 Aug 2010 08:54:32 -0400
-To: Jeremy Allison <jra@samba.org>
-Cc: Jeff Layton <jlayton@redhat.com>, Neil Brown <neilb@suse.de>,
-        utz lehmann <lkml123@s2y4n2c.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsde@jasper.es
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100813125432.GB8945@fieldses.org>
-References: <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
- <1280524978.2452.9.camel@segv.aura.of.mankind>
- <20100801092529.5e6ba0e0@corrin.poochiereds.net>
- <20100805235218.GB31233@jeremy-laptop>
- <20100806133836.49757af9@notabene>
- <20100808121208.GA7329@jeremy-laptop>
- <20100808085301.24f53e5a@tlielax.poochiereds.net>
- <20100808130501.GA9851@jeremy-laptop>
+	id S934311Ab0HMM5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 08:57:08 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:55662 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934273Ab0HMM5E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 08:57:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=TlS0AsNQHCYFBPjntlvvPnZIwBjQTGJXOuUb07TB90Zjc9Wpg0GZd6GErzA+P8aAmX
+         JV6vpvkch23K6cT9veRc0zQYbwLXULZ3ZbDWgrdcql6f5I9zJVT25P4ikWQ/WIEHDnZT
+         OxgTjIHa8Vu+Hku1oXGIoPl16/ZvqKjsqpfKU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100808130501.GA9851@jeremy-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+Date: Fri, 13 Aug 2010 14:57:03 +0200
+Message-ID: <AANLkTik_yRPzJoOgY_ze8aFG6G1CXZ4D4XMNL6d66W2C@mail.gmail.com>
+Subject: [PATCH] scsi: IPS, IBMMCA: Use hex_asc_hi and hex_asc_lo
+From: Uros Bizjak <ubizjak@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 08, 2010 at 06:05:01AM -0700, Jeremy Allison wrote:
-> We don't need to ape Windows in everything.
-> The coming ACL disaster will show that (we will go from an ACL
-> model that is slightly too complex to use, to one that is impossibly
-> complex to use :-).
+Trivial substitution for private implementations, compile tested on i386.
 
-Care to elaborate?
+Signed-off-by: Uros Bizjak <ubizjak@gmail.com>
 
-And what would native ACL support mean for Samba?
+diff --git a/drivers/scsi/ibmmca.c b/drivers/scsi/ibmmca.c
+index 9a4b69d..c152eca 100644
+--- a/drivers/scsi/ibmmca.c
++++ b/drivers/scsi/ibmmca.c
+@@ -1002,12 +1002,11 @@ static char *ti_p(int dev)
+ /* interpreter for logical device numbers (ldn) */
+ static char *ti_l(int val)
+ {
+-	const char hex[16] = "0123456789abcdef";
+ 	static char answer[2];
 
---b.
+ 	answer[1] = (char) (0x0);
+ 	if (val <= MAX_LOG_DEV)
+-		answer[0] = hex[val];
++		answer[0] = hex_asc_lo(val);
+ 	else
+ 		answer[0] = '-';
+ 	return (char *) &answer;
+diff --git a/drivers/scsi/ips.c b/drivers/scsi/ips.c
+index f83a116..3c25573 100644
+--- a/drivers/scsi/ips.c
++++ b/drivers/scsi/ips.c
+@@ -2315,9 +2315,6 @@ ips_get_bios_version(ips_ha_t * ha, int intr)
+ 	uint8_t minor;
+ 	uint8_t subminor;
+ 	uint8_t *buffer;
+-	char hexDigits[] =
+-	    { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C',
+-     'D', 'E', 'F' };
+
+ 	METHOD_TRACE("ips_get_bios_version", 1);
+
+@@ -2448,13 +2445,13 @@ ips_get_bios_version(ips_ha_t * ha, int intr)
+ 		}
+ 	}
+
+-	ha->bios_version[0] = hexDigits[(major & 0xF0) >> 4];
++	ha->bios_version[0] = hex_asc_hi(major);
+ 	ha->bios_version[1] = '.';
+-	ha->bios_version[2] = hexDigits[major & 0x0F];
+-	ha->bios_version[3] = hexDigits[subminor];
++	ha->bios_version[2] = hex_asc_lo(major);
++	ha->bios_version[3] = hex_asc_lo(subminor);
+ 	ha->bios_version[4] = '.';
+-	ha->bios_version[5] = hexDigits[(minor & 0xF0) >> 4];
+-	ha->bios_version[6] = hexDigits[minor & 0x0F];
++	ha->bios_version[5] = hex_asc_hi(minor);
++	ha->bios_version[6] = hex_asc_lo(minor);
+ 	ha->bios_version[7] = 0;
+ }
