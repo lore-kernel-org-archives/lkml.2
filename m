@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934332Ab0HMNOf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:14:35 -0400
-Received: from centrinvest.ru ([94.25.115.130]:51977 "EHLO centrinvest.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761578Ab0HMNOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:14:33 -0400
-From: "Andrey Panin" <pazke@centrinvest.ru>
-Date: Fri, 13 Aug 2010 17:14:22 +0400
-To: bchociej@gmail.com
-Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        cmm@us.ibm.com, bcchocie@us.ibm.com, mrlupfer@us.ibm.com,
-        crscott@us.ibm.com, mlupfer@gmail.com, conscott@vt.edu
-Subject: Re: [PATCH 2/2] Btrfs-progs: Add hot data support in mkfs
-Message-ID: <20100813131422.GA615@centrinvest.ru>
-Mail-Followup-To: bchociej@gmail.com, chris.mason@oracle.com,
-	linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	linux-kernel@vger.kernel.org, cmm@us.ibm.com, bcchocie@us.ibm.com,
-	mrlupfer@us.ibm.com, crscott@us.ibm.com, mlupfer@gmail.com,
-	conscott@vt.edu
-References: <1281652177-23562-1-git-send-email-bchociej@gmail.com>
- <1281652177-23562-3-git-send-email-bchociej@gmail.com>
+	id S934347Ab0HMNPh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:15:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47039 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934270Ab0HMNPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 09:15:35 -0400
+Message-ID: <4C654544.5010002@ru.mvista.com>
+Date: Fri, 13 Aug 2010 17:14:44 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281652177-23562-3-git-send-email-bchociej@gmail.com>
-X-Uname: Linux 2.6.26-1-amd64 x86_64
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Anti-Virus: kav4lms: continue
+To: Kukjin Kim <kgene.kim@samsung.com>
+CC: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Maxim Levitsky'" <maximlevitsky@gmail.com>, ben-linux@fluff.org
+Subject: Re: undefined reference to `mmc_pm_notify' when selected MMC without
+ PM.
+References: <009301cb3ad3$77c8a620$6759f260$%kim@samsung.com>
+In-Reply-To: <009301cb3ad3$77c8a620$6759f260$%kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 224, 08 12, 2010 at 05:29:37PM -0500, bchociej@gmail.com wrote:
-> From: Ben Chociej <bchociej@gmail.com>
-> 
-> Modified mkfs.btrfs to add hot data relocation option (-h) which
-> preallocates BTRFS_BLOCK_GROUP_DATA_SSD and
-> BTRFS_BLOCK_GROUP_METADATA_SSD at mkfs time for future use by hot data
-> relocation code.  Also added a userspace function to detect whether a
-> block device is an SSD by reading the sysfs block queue rotational flag.
+Hello.
 
-IMHO this policy is too inflexible. What if I have large array of slow SATA 
-disks and some fast SAS ones ?
+Kukjin Kim wrote:
+
+> Following is build error when selected MMC without PM.
+
+> drivers/built-in.o: In function `mmc_alloc_host':
+> drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
+> make[1]: *** [.tmp_vmlinux1] Error 1
+> make: *** [sub-make] Error 2
+
+> That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
+> insert/removal during suspend/resume '
+> (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
+
+> Below is temporary patch for avoiding build error.
+> But I'm not sure about this... :-(
+
+> ---
+
+> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> index 0efe631..d80cfdc 100644
+> --- a/drivers/mmc/core/host.c
+> +++ b/drivers/mmc/core/host.c
+> @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
+> *dev)
+>         init_waitqueue_head(&host->wq);
+>         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+>         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
+> mmc_host_deeper_disable);
+
+    Looks like your patch is line-wrapped...
+
+> +#ifdef CONFIG_PM
+>         host->pm_notify.notifier_call = mmc_pm_notify;
+> +#endif
+
+WBR, Sergei
+
