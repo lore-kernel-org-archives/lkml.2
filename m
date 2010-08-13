@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237Ab0HMXch (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 19:32:37 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:56664 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755444Ab0HMXcg (ORCPT
+	id S1756275Ab0HMXdK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 19:33:10 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:51437 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755444Ab0HMXdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 19:32:36 -0400
+	Fri, 13 Aug 2010 19:33:08 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=hTH2Bp3yUgod/+HSz0LUQDFroujrweTFKxhQ4G58KV9SLwgg0NR0LyBnwN2+wIf6Pat5i8bVFKuC5PknhEhLgkgwRRfOD9lmj4WuubKP9jJR6O3wnOEX0WW8R97zWntH;
-Date: Fri, 13 Aug 2010 16:32:32 -0700
+	b=m2srGYyhfd2te4lfQuoe84UJ7rHSnt8CLV3xzU9zTc5bVZrWHkXNUGctiKHwIi6TXZybCa/EV/MbKj0RtFXQIB9eKckhdBOq8GInjs6hnl7Gp2Nb/zYo1n0XpqOkIA97;
+Date: Fri, 13 Aug 2010 16:33:06 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 21/42] drivers/pci: Adjust confusing if indentation
-Message-ID: <20100813163232.56f93c28@virtuousgeek.org>
-In-Reply-To: <Pine.LNX.4.64.1008052223010.31692@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052223010.31692@ask.diku.dk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Tejun Heo <tj@kernel.org>,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 4/8] proc/pci: kill BKL
+Message-ID: <20100813163306.08ec5715@virtuousgeek.org>
+In-Reply-To: <1278194552-24943-5-git-send-email-arnd@arndb.de>
+References: <1278194552-24943-1-git-send-email-arnd@arndb.de>
+	<1278194552-24943-5-git-send-email-arnd@arndb.de>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,17 +30,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 5 Aug 2010 22:23:16 +0200 (CEST)
-Julia Lawall <julia@diku.dk> wrote:
+On Sun,  4 Jul 2010 00:02:28 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-> From: Julia Lawall <julia@diku.dk>
+> All operations in the pci procfs ioctl functions are
+> atomic, so no lock is needed here.
 > 
-> Indent the branch of an if.
+> Also add a compat_ioctl method, since all the commands
+> are compatible in 32 bit mode.
 > 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: linux-pci@vger.kernel.org
+> ---
 
-Applied to my linux-next branch, thanks.
+Oops, I had assumed this was going through some master 'kill the bkl'
+tree.  Applied to my linux-next branch now though, sorry for the delay.
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
