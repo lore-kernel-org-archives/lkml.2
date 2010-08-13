@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab0HMVJG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:09:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60516 "EHLO mail.zytor.com"
+	id S1752575Ab0HMVJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:09:48 -0400
+Received: from thunk.org ([69.25.196.29]:54749 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab0HMVJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:09:02 -0400
-Message-ID: <4C65B449.4010905@zytor.com>
-Date: Fri, 13 Aug 2010 14:08:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Shaohua Li <shaohua.li@intel.com>, Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [patch]x86: avoid unnecessary tlb flush
-References: <1281065308.29094.5.camel@sli10-desk.sh.intel.com> <20100805221913.4da0f8be.akpm@linux-foundation.org> <1281660475.21194.1.camel@sli10-desk.sh.intel.com> <alpine.DEB.1.00.1008131222110.26182@tigran.mtv.corp.google.com>
-In-Reply-To: <alpine.DEB.1.00.1008131222110.26182@tigran.mtv.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751599Ab0HMVJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 17:09:47 -0400
+Date: Fri, 13 Aug 2010 17:09:42 -0400
+Message-Id: <E1Ok1VW-0003Hx-QA@tytso-glaptop>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] ext4 update for 2.6.36
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2010 12:29 PM, Hugh Dickins wrote:
-> 
-> Just added Andrea to the Cc list: he did that TLB flush in 1a44e149,
-> I'd feel more comfortable noop-ing it on x86 if you've convinced him.
-> 
-> Hugh
+Hi Linus,
 
-Andrea is probably on his way back from LinuxCon, but looking at the
-original patch it might be something that non-x86 architectures need,
-but which can be optimized specifically on x86, since x86 has explicit
-"no flush needed when going to more permissive" semantics.
+No other late-breaking bug reports/regressions have turned up, and since
+I want to get this fixed before -rc1 gets released, please pull:
 
-	-hpa
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git for_linus
+
+I fixed the compile warning basically as you suggested, but with a
+better name and with the comments moved to the inline function where
+they would make more sense.
+
+Thanks,
+
+						- Ted
+
+Theodore Ts'o (1):
+      ext4: clean up compiler warning in start_this_handle()
+
+ fs/jbd2/transaction.c |   46 +++++++++++++++++++++++++++-------------------
+ 1 files changed, 27 insertions(+), 19 deletions(-)
