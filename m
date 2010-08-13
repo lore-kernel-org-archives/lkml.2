@@ -1,152 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762026Ab0HMS2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 14:28:54 -0400
-Received: from reptilian.habets.pp.se ([193.151.93.131]:2392 "EHLO
-	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834Ab0HMS2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 14:28:53 -0400
-X-Greylist: delayed 1990 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Aug 2010 14:28:52 EDT
-Date: Fri, 13 Aug 2010 19:55:40 +0200 (CEST)
-From: Thomas Habets <thomas@habets.pp.se>
-X-X-Sender: thompa@red.crap.retrofitta.se
+	id S1762036Ab0HMSbC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 14:31:02 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:40543 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752572Ab0HMSbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 14:31:01 -0400
+From: John Stultz <johnstul@us.ibm.com>
 To: linux-kernel@vger.kernel.org
-Subject: BUG: IPv6 stops working after a while, needs ip ne del command to
- reset
-Message-ID: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Cc: John Stultz <johnstul@us.ibm.com>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Larry Finger <Larry.Finger@lwfinger.net>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] time: Workaround gcc loop optimization that causes 64bit div errors
+Date: Fri, 13 Aug 2010 11:30:58 -0700
+Message-Id: <1281724258-19898-1-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Early 4.3 versions of gcc apparently aggressively optimize the raw
+time accumulation loop, replacing it with a divide.
 
-(originally sent to netdev on aug 6th)
+On 32bit systems, this causes the following link errors:
+	undefined reference to `__umoddi3'
+	undefined reference to `__udivdi3'
 
-IPv6 initially works, but when I leave it alone overnight I'm unable to ping 
-even my default gw.
+The gcc issue has been fixed in 4.4 and greater.
 
-Static global IPv6 addresses configured on both ends. No access lists on either 
-end.
+This patch replaces the accumulation loop with a do_div, as suggested
+by Linus.
 
-Kernel version: 2.6.35 mainline (amd64) and 2.6.33.6.
-Kernel config: http://pastebin.com/raw.php?i=Y6S8iKW7
-Dist: Debian Lenny (5.0.5), nothing special to my knowledge.
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+CC: Jason Wessel <jason.wessel@windriver.com>
+CC: Larry Finger <Larry.Finger@lwfinger.net>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Linus Torvalds <torvalds@linux-foundation.org>
+---
+ kernel/time/timekeeping.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-I seem to have the same issue that Mikael Abrahamsson encountered with Ubuntu 
-kernels 2.6.26.3, 2.6.26-5-generic and 2.6.27-2-generic, and mainline kernels 
-2.6.25, 2.6.26 and 2.6.27:
-   https://bugs.launchpad.net/ubuntu/+source/linux/+bug/263260
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index e960d82..49010d8 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -710,9 +710,10 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
+ 	/* Accumulate raw time */
+ 	raw_nsecs = timekeeper.raw_interval << shift;
+ 	raw_nsecs += raw_time.tv_nsec;
+-	while (raw_nsecs >= NSEC_PER_SEC) {
+-		raw_nsecs -= NSEC_PER_SEC;
+-		raw_time.tv_sec++;
++	if (raw_nsecs >= NSEC_PER_SEC) {
++		u64 raw_secs = raw_nsecs;
++		raw_nsecs = do_div(raw_secs, NSEC_PER_SEC);
++		raw_time.tv_sec += raw_secs;
+ 	}
+ 	raw_time.tv_nsec = raw_nsecs;
+ 
+-- 
+1.6.0.4
 
-He got IPv6 running again without rebooting using "networking stop, ifconfig 
-eth0 down, networking start, kill dhclient", while I narrowed it down to just 
-deleting the ipv6 neighbor (ip ne del..., see below). Rebooting also causes it 
-to start working again.
-
-It's very reproducible. I just leave it overnight and it breaks every time.
-
-I am willing and able to try patches at any time, the box is not in production.
-
-No iptables, no ip6tables. IP6tables support is not even compiled in.
-
-NIC is "Broadcom Corporation NetXtreme BCM5715 Gigabit ethernet (rev a3)"
-according to lspci.
-
-Other end is a directly connected Cisco 7600 (routed port) that I have access 
-to, but it's in production use. IPv4 works perfectly over this same port. Only 
-lo and eth0 are UP.
-
-
-Output when broken
-------------------
-$ uname -a
-Linux XXXXX 2.6.35 #1 SMP Tue Aug 3 09:25:51 CEST 2010 x86_64
-GNU/Linux
-
-$ ip -6 a sh
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436
-     inet6 2a00:800:1000:64::1/128 scope global
-        valid_lft forever preferred_lft forever
-     inet6 ::1/128 scope host
-        valid_lft forever preferred_lft forever
-2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qlen 1000
-     inet6 2a00:800:752:1::5c:2/112 scope global
-        valid_lft forever preferred_lft forever
-     inet6 fe80::224:81ff:fea3:4424/64 scope link
-        valid_lft forever preferred_lft forever
-
-(I have tried removing 2a00:800:1000:64::1/128 from lo, same issue)
-
-$ ip -6 r sh
-2a00:800:752:1::5c:0/112 dev eth0  proto kernel  metric 256  mtu 1500
-advmss 14 hoplimit 4294967295 unreachable
-2a00:800:1000:64::1 dev lo proto kernel  metric 256  error -101 mtu 16436 
-advmss 16376 hoplimit 4294967295
-fe80::/64 dev eth0  proto kernel  metric 256  mtu 1500 advmss 1440
-hoplimit 4294967295
-default via 2a00:800:752:1::5c:1 dev eth0  metric 1024  mtu 1500 advmss 1440 
-hoplimit 4294967295
-
-$ ping6 2a00:800:752:1::5c:1
-PING 2a00:800:752:1::5c:1(2a00:800:752:1::5c:1) 56 data bytes
-^C
---- 2a00:800:752:1::5c:1 ping statistics ---
-22 packets transmitted, 0 received, 100% packet loss, time 21006ms
-
-
-# Tcpdpump on the problem machine shows mostly the pings, but also periodically 
-some ND:
-
-[...]
-12:54:02.683672 00:24:81:a3:44:24 > 00:22:55:17:4b:80, ethertype IPv6
-(0x86dd), length 118: 2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo 
-request, seq 12, length 64
-12:54:02.693669 00:24:81:a3:44:24 > 00:22:55:17:4b:80, ethertype IPv6
-(0x86dd), length 86: fe80::224:81ff:fea3:4424 > 2a00:800:752:1::5c:1: ICMP6, 
-neighbor solicitation, who has 2a00:800:752:1::5c:1, length 32
-12:54:02.693832 00:22:55:17:4b:80 > 00:24:81:a3:44:24, ethertype IPv6
-(0x86dd), length 78: 2a00:800:752:1::5c:1 > fe80::224:81ff:fea3:4424: ICMP6, 
-neighbor advertisement, tgt is 2a00:800:752:1::5c:1, length 24
-12:54:03.683672 00:24:81:a3:44:24 > 00:22:55:17:4b:80, ethertype IPv6
-(0x86dd), length 118: 2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo 
-request, seq 13, length 64
-[...]
-
-$ ip -6 ne
-fe80::222:55ff:fe17:4b80 dev eth0 lladdr 00:22:55:17:4b:80 router STALE
-2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router STALE
-
-
-Fixing the adjacency
---------------------
-$ ping6 2a00:800:752:1::5c:1
-PING 2a00:800:752:1::5c:1(2a00:800:752:1::5c:1) 56 data bytes
-^C
---- 2a00:800:752:1::5c:1 ping statistics ---
-51 packets transmitted, 0 received, 100% packet loss, time 50006ms
-
-$ sudo ip ne del 2a00:800:752:1::5c:1 dev eth0
-$ ping6 2a00:800:752:1::5c:1
-PING 2a00:800:752:1::5c:1(2a00:800:752:1::5c:1) 56 data bytes
-64 bytes from 2a00:800:752:1::5c:1: icmp_seq=1 ttl=64 time=31.9 ms
-64 bytes from 2a00:800:752:1::5c:1: icmp_seq=2 ttl=64 time=0.212 ms
-
-$ ip -6 ne
-fe80::222:55ff:fe17:4b80 dev eth0 lladdr 00:22:55:17:4b:80 router REACHABLE
-2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router REACHABLE
-
-(Note that after a few minutes it goes back to STALE, but pinging still works 
-and brings back the state to REACHABLE, so it's not that it can't get out of 
-STALE once there, it seems).
-
----------
-typedef struct me_s {
-   char name[]      = { "Thomas Habets" };
-   char email[]     = { "thomas@habets.pp.se" };
-   char kernel[]    = { "Linux" };
-   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
-   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
-   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
-} me_t;
