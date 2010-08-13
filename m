@@ -1,546 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761806Ab0HMPjQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 11:39:16 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:47793 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754790Ab0HMPjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 11:39:09 -0400
-From: Alexandre Bounine <alexandre.bounine@idt.com>
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Cc: Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Li Yang <leoli@freescale.com>, Kumar Gala <galak@kernel.crashing.org>
-Subject: [PATCH 9/9] RapidIO: Add support for IDT CPS Gen2 switches
-Date: Fri, 13 Aug 2010 11:18:06 -0400
-Message-Id: <1281712686-31308-10-git-send-email-alexandre.bounine@idt.com>
-X-Mailer: git-send-email 1.7.0.5
-In-Reply-To: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com>
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com>
+	id S934543Ab0HMPkc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 11:40:32 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65232 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754790Ab0HMPka convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 11:40:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Naa5lFSEyDn4tsWHW9qh7vqYsAv0PNQaRkGlq/GCA5J33/cq/AKPKfgR5OSx6JokXL
+         02e7A9Z6aYsvL7QDJ02KGTtAOUamsRjzKxUzZO2bq+70hBfHGWcqVlicf3HSOWe9Mh+8
+         Y6i5pIW8bwcHC8yfee7Pkg2DeEUmYIzd2u6n4=
+MIME-Version: 1.0
+In-Reply-To: <20100813152254.GD2511@linux.vnet.ibm.com>
+References: <20100811222854.GJ2516@linux.vnet.ibm.com>
+	<AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+	<20100812010612.GL2516@linux.vnet.ibm.com>
+	<AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+	<20100812034435.GA7403@linux.vnet.ibm.com>
+	<AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+	<E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+	<AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<20100812174303.GD2524@linux.vnet.ibm.com>
+	<AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+	<20100813152254.GD2511@linux.vnet.ibm.com>
+Date: Fri, 13 Aug 2010 18:40:28 +0300
+Message-ID: <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        david@lang.hm, Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
+        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
+        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the RIO switch driver and definitions for IDT CPS-1848 and CPS-1616 Gen2
-devices.
+On Fri, Aug 13, 2010 at 6:22 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Thu, Aug 12, 2010 at 10:34:47PM +0300, Felipe Contreras wrote:
+>> "PM-driving applications" is a new invention, so how do you know if an
+>> application belongs to this category or not? Some application might be
+>> non-PM-driving most of the time, but suddenly become PM-driving. Well,
+>> you have to analyze *all* of them.
+>
+> A PM-driving application is one that exerts control over the system's
+> power state.  In the case of Android, a PM-driving application is one
+> that is permitted to acquire suspend blockers.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Reviewed-by: Thomas Moll <thomas.moll@sysgo.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Li Yang <leoli@freescale.com>
-Cc: Kumar Gala <galak@kernel.crashing.org>
----
- drivers/rapidio/switches/Kconfig    |    7 +
- drivers/rapidio/switches/Makefile   |    1 +
- drivers/rapidio/switches/idt_gen2.c |  439 +++++++++++++++++++++++++++++++++++
- include/linux/rio_ids.h             |    2 +
- include/linux/rio_regs.h            |    4 +
- 5 files changed, 453 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rapidio/switches/idt_gen2.c
+I already mentioned that a "PM-driving application" might not have
+suspend-blockers; because the user denied them, or because the
+developer forgot them.
 
-diff --git a/drivers/rapidio/switches/Kconfig b/drivers/rapidio/switches/Kconfig
-index 2b4e9b2..f47fee5 100644
---- a/drivers/rapidio/switches/Kconfig
-+++ b/drivers/rapidio/switches/Kconfig
-@@ -20,6 +20,13 @@ config RAPIDIO_TSI568
- 	---help---
- 	  Includes support for IDT Tsi568 serial RapidIO switch.
- 
-+config RAPIDIO_CPS_GEN2
-+	bool "IDT CPS Gen.2 SRIO switch support"
-+	depends on RAPIDIO
-+	default n
-+	---help---
-+	  Includes support for ITD CPS Gen.2 serial RapidIO switches.
-+
- config RAPIDIO_TSI500
- 	bool "Tsi500 Parallel RapidIO switch support"
- 	depends on RAPIDIO
-diff --git a/drivers/rapidio/switches/Makefile b/drivers/rapidio/switches/Makefile
-index fe4adc3..48d67a6 100644
---- a/drivers/rapidio/switches/Makefile
-+++ b/drivers/rapidio/switches/Makefile
-@@ -6,6 +6,7 @@ obj-$(CONFIG_RAPIDIO_TSI57X)	+= tsi57x.o
- obj-$(CONFIG_RAPIDIO_CPS_XX)	+= idtcps.o
- obj-$(CONFIG_RAPIDIO_TSI568)	+= tsi568.o
- obj-$(CONFIG_RAPIDIO_TSI500)	+= tsi500.o
-+obj-$(CONFIG_RAPIDIO_CPS_GEN2)	+= idt_gen2.o
- 
- ifeq ($(CONFIG_RAPIDIO_DEBUG),y)
- EXTRA_CFLAGS += -DDEBUG
-diff --git a/drivers/rapidio/switches/idt_gen2.c b/drivers/rapidio/switches/idt_gen2.c
-new file mode 100644
-index 0000000..0de4a9c
---- /dev/null
-+++ b/drivers/rapidio/switches/idt_gen2.c
-@@ -0,0 +1,439 @@
-+/*
-+ * IDT CPS Gen.2 Serial RapidIO switch family support
-+ *
-+ * Copyright 2010 Integrated Device Technology, Inc.
-+ * Alexandre Bounine <alexandre.bounine@idt.com>
-+ *
-+ * This program is free software; you can redistribute  it and/or modify it
-+ * under  the terms of  the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the  License, or (at your
-+ * option) any later version.
-+ */
-+
-+#include <linux/rio.h>
-+#include <linux/rio_drv.h>
-+#include <linux/rio_ids.h>
-+#include <linux/delay.h>
-+#include "../rio.h"
-+
-+#define LOCAL_RTE_CONF_DESTID_SEL	0x010070
-+#define LOCAL_RTE_CONF_DESTID_SEL_PSEL	0x0000001f
-+
-+#define IDT_LT_ERR_REPORT_EN	0x03100c
-+
-+#define IDT_PORT_ERR_REPORT_EN(n)	(0x031044 + (n)*0x40)
-+#define IDT_PORT_ERR_REPORT_EN_BC	0x03ff04
-+
-+#define IDT_PORT_ISERR_REPORT_EN(n)	(0x03104C + (n)*0x40)
-+#define IDT_PORT_ISERR_REPORT_EN_BC	0x03ff0c
-+#define IDT_PORT_INIT_TX_ACQUIRED	0x00000020
-+
-+#define IDT_LANE_ERR_REPORT_EN(n)	(0x038010 + (n)*0x100)
-+#define IDT_LANE_ERR_REPORT_EN_BC	0x03ff10
-+
-+#define IDT_DEV_CTRL_1		0xf2000c
-+#define IDT_DEV_CTRL_1_GENPW		0x02000000
-+#define IDT_DEV_CTRL_1_PRSTBEH		0x00000001
-+
-+#define IDT_CFGBLK_ERR_CAPTURE_EN	0x020008
-+#define IDT_CFGBLK_ERR_REPORT		0xf20014
-+#define IDT_CFGBLK_ERR_REPORT_GENPW		0x00000002
-+
-+#define IDT_AUX_PORT_ERR_CAP_EN	0x020000
-+#define IDT_AUX_ERR_REPORT_EN	0xf20018
-+#define IDT_AUX_PORT_ERR_LOG_I2C	0x00000002
-+#define IDT_AUX_PORT_ERR_LOG_JTAG	0x00000001
-+
-+#define	IDT_ISLTL_ADDRESS_CAP	0x021014
-+
-+#define IDT_RIO_DOMAIN		0xf20020
-+#define IDT_RIO_DOMAIN_MASK		0x000000ff
-+
-+#define IDT_PW_INFO_CSR		0xf20024
-+
-+#define IDT_SOFT_RESET		0xf20040
-+#define IDT_SOFT_RESET_REQ		0x00030097
-+
-+#define IDT_I2C_MCTRL		0xf20050
-+#define IDT_I2C_MCTRL_GENPW		0x04000000
-+
-+#define IDT_JTAG_CTRL		0xf2005c
-+#define IDT_JTAG_CTRL_GENPW		0x00000002
-+
-+#define IDT_LANE_CTRL(n)	(0xff8000 + (n)*0x100)
-+#define IDT_LANE_CTRL_BC	0xffff00
-+#define IDT_LANE_CTRL_GENPW		0x00200000
-+#define IDT_LANE_DFE_1_BC	0xffff18
-+#define IDT_LANE_DFE_2_BC	0xffff1c
-+
-+#define IDT_PORT_OPS(n)		(0xf40004 + (n)*0x100)
-+#define IDT_PORT_OPS_GENPW		0x08000000
-+#define IDT_PORT_OPS_PL_ELOG		0x00000040
-+#define IDT_PORT_OPS_LL_ELOG		0x00000020
-+#define IDT_PORT_OPS_LT_ELOG		0x00000010
-+#define IDT_PORT_OPS_BC		0xf4ff04
-+
-+#define IDT_PORT_ISERR_DET(n)	(0xf40008 + (n)*0x100)
-+
-+#define IDT_ERR_CAP		0xfd0000
-+#define IDT_ERR_CAP_LOG_OVERWR		0x00000004
-+
-+#define IDT_ERR_RD		0xfd0004
-+
-+#define IDT_DEFAULT_ROUTE	0xde
-+#define IDT_NO_ROUTE		0xdf
-+
-+static int
-+idtg2_route_add_entry(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u16 table, u16 route_destid, u8 route_port)
-+{
-+	/*
-+	 * Select routing table to update
-+	 */
-+	if (table == RIO_GLOBAL_TABLE)
-+		table = 0;
-+	else
-+		table++;
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  LOCAL_RTE_CONF_DESTID_SEL, table);
-+
-+	/*
-+	 * Program destination port for the specified destID
-+	 */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  RIO_STD_RTE_CONF_DESTID_SEL_CSR,
-+				  (u32)route_destid);
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  RIO_STD_RTE_CONF_PORT_SEL_CSR,
-+				  (u32)route_port);
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_route_get_entry(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u16 table, u16 route_destid, u8 *route_port)
-+{
-+	u32 result;
-+
-+	/*
-+	 * Select routing table to read
-+	 */
-+	if (table == RIO_GLOBAL_TABLE)
-+		table = 0;
-+	else
-+		table++;
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  LOCAL_RTE_CONF_DESTID_SEL, table);
-+
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  RIO_STD_RTE_CONF_DESTID_SEL_CSR,
-+				  route_destid);
-+
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+				 RIO_STD_RTE_CONF_PORT_SEL_CSR, &result);
-+
-+	if (IDT_DEFAULT_ROUTE == (u8)result || IDT_NO_ROUTE == (u8)result)
-+		*route_port = RIO_INVALID_ROUTE;
-+	else
-+		*route_port = (u8)result;
-+
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_route_clr_table(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u16 table)
-+{
-+	u32 i;
-+
-+	/*
-+	 * Select routing table to read
-+	 */
-+	if (table == RIO_GLOBAL_TABLE)
-+		table = 0;
-+	else
-+		table++;
-+
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  LOCAL_RTE_CONF_DESTID_SEL, table);
-+
-+	for (i = 0x80000000; i <= 0x800000ff;) {
-+		rio_mport_write_config_32(mport, destid, hopcount,
-+			RIO_STD_RTE_CONF_DESTID_SEL_CSR, i);
-+		rio_mport_write_config_32(mport, destid, hopcount,
-+			RIO_STD_RTE_CONF_PORT_SEL_CSR,
-+			(IDT_DEFAULT_ROUTE << 24) | (IDT_DEFAULT_ROUTE << 16) |
-+			(IDT_DEFAULT_ROUTE << 8) | IDT_DEFAULT_ROUTE);
-+		i += 4;
-+	}
-+
-+	return 0;
-+}
-+
-+
-+static int
-+idtg2_set_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u8 sw_domain)
-+{
-+	/*
-+	 * Switch domain configuration operates only at global level
-+	 */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+				  IDT_RIO_DOMAIN, (u32)sw_domain);
-+	return 0;
-+}
-+
-+static int
-+idtg2_get_domain(struct rio_mport *mport, u16 destid, u8 hopcount,
-+		       u8 *sw_domain)
-+{
-+	u32 regval;
-+
-+	/*
-+	 * Switch domain configuration operates only at global level
-+	 */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+				IDT_RIO_DOMAIN, &regval);
-+
-+	*sw_domain = (u8)(regval & 0xff);
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_em_init(struct rio_dev *rdev)
-+{
-+	struct rio_mport *mport = rdev->net->hport;
-+	u16 destid = rdev->rswitch->destid;
-+	u8 hopcount = rdev->rswitch->hopcount;
-+	u32 regval;
-+
-+	/*
-+	 * This routine performs device-specific initialization only.
-+	 * All standard EM configuration should be performed at upper level.
-+	 */
-+
-+	pr_debug("RIO: %s [%d:%d]\n", __func__, destid, hopcount);
-+
-+	/* Set Port-Write info CSR: PRIO=3 and CRF=1 */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PW_INFO_CSR, 0x0000e000);
-+
-+	/*
-+	 * Configure LT LAYER error reporting.
-+	 */
-+
-+	/* Enable standard (RIO.p8) error reporting */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_LT_ERR_REPORT_EN,
-+			REM_LTL_ERR_ILLTRAN | REM_LTL_ERR_UNSOLR |
-+			REM_LTL_ERR_UNSUPTR);
-+
-+	/* Use Port-Writes for LT layer error reporting.
-+	 * Enable per-port reset
-+	 */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_DEV_CTRL_1, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_DEV_CTRL_1,
-+			regval | IDT_DEV_CTRL_1_GENPW | IDT_DEV_CTRL_1_PRSTBEH);
-+
-+	/*
-+	 * Configure PORT error reporting.
-+	 */
-+
-+	/* Report all RIO.p8 errors supported by device */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PORT_ERR_REPORT_EN_BC, 0x807e8037);
-+
-+	/* Configure repoting of implementation specific errors/events */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PORT_ISERR_REPORT_EN_BC, IDT_PORT_INIT_TX_ACQUIRED);
-+
-+	/* Use Port-Writes for port error reporting and enable error logging */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_PORT_OPS_BC, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_PORT_OPS_BC, regval | IDT_PORT_OPS_GENPW |
-+			IDT_PORT_OPS_PL_ELOG |
-+			IDT_PORT_OPS_LL_ELOG |
-+			IDT_PORT_OPS_LT_ELOG);
-+	/* Overwrite error log if full */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_ERR_CAP, IDT_ERR_CAP_LOG_OVERWR);
-+
-+	/*
-+	 * Configure LANE error reporting.
-+	 */
-+
-+	/* Disable line error reporting */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_LANE_ERR_REPORT_EN_BC, 0);
-+
-+	/* Use Port-Writes for lane error reporting (when enabled) */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_LANE_CTRL_BC, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_LANE_CTRL_BC, regval | IDT_LANE_CTRL_GENPW);
-+
-+	/*
-+	 * Configure AUX error reporting.
-+	 */
-+
-+	/* Disable JTAG and I2C Error capture */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_AUX_PORT_ERR_CAP_EN, 0);
-+
-+	/* Disable JTAG and I2C Error reporting/logging */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_AUX_ERR_REPORT_EN, 0);
-+
-+	/* Disable Port-Write notification from JTAG */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_JTAG_CTRL, 0);
-+
-+	/* Disable Port-Write notification from I2C */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_I2C_MCTRL, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_I2C_MCTRL,
-+			regval & ~IDT_I2C_MCTRL_GENPW);
-+
-+	/*
-+	 * Configure CFG_BLK error reporting.
-+	 */
-+
-+	/* Disable Configuration Block error capture */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_CFGBLK_ERR_CAPTURE_EN, 0);
-+
-+	/* Disable Port-Writes for Configuration Block error reporting */
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+			IDT_CFGBLK_ERR_REPORT, &regval);
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+			IDT_CFGBLK_ERR_REPORT,
-+			regval & ~IDT_CFGBLK_ERR_REPORT_GENPW);
-+
-+	/* set TVAL = ~50us */
-+	rio_mport_write_config_32(mport, destid, hopcount,
-+		rdev->phys_efptr + RIO_PORT_LINKTO_CTL_CSR, 0x8e << 8);
-+
-+	return 0;
-+}
-+
-+static int
-+idtg2_em_handler(struct rio_dev *rdev, u8 portnum)
-+{
-+	struct rio_mport *mport = rdev->net->hport;
-+	u16 destid = rdev->rswitch->destid;
-+	u8 hopcount = rdev->rswitch->hopcount;
-+	u32 regval, em_perrdet, em_ltlerrdet;
-+
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+		rdev->em_efptr + RIO_EM_LTL_ERR_DETECT, &em_ltlerrdet);
-+	if (em_ltlerrdet) {
-+		/* Service Logical/Transport Layer Error(s) */
-+		if (em_ltlerrdet & REM_LTL_ERR_IMPSPEC) {
-+			/* Implementation specific error reported */
-+			rio_mport_read_config_32(mport, destid, hopcount,
-+					IDT_ISLTL_ADDRESS_CAP, &regval);
-+
-+			pr_debug("RIO: %s Implementation Specific LTL errors" \
-+				 " 0x%x @(0x%x)\n",
-+				 rio_name(rdev), em_ltlerrdet, regval);
-+
-+			/* Clear implementation specific address capture CSR */
-+			rio_mport_write_config_32(mport, destid, hopcount,
-+					IDT_ISLTL_ADDRESS_CAP, 0);
-+
-+		}
-+	}
-+
-+	rio_mport_read_config_32(mport, destid, hopcount,
-+		rdev->em_efptr + RIO_EM_PN_ERR_DETECT(portnum), &em_perrdet);
-+	if (em_perrdet) {
-+		/* Service Port-Level Error(s) */
-+		if (em_perrdet & REM_PED_IMPL_SPEC) {
-+			/* Implementation Specific port error reported */
-+
-+			/* Get IS errors reported */
-+			rio_mport_read_config_32(mport, destid, hopcount,
-+					IDT_PORT_ISERR_DET(portnum), &regval);
-+
-+			pr_debug("RIO: %s Implementation Specific Port" \
-+				 " errors 0x%x\n", rio_name(rdev), regval);
-+
-+			/* Clear all implementation specific events */
-+			rio_mport_write_config_32(mport, destid, hopcount,
-+					IDT_PORT_ISERR_DET(portnum), 0);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t
-+idtg2_show_errlog(struct device *dev, struct device_attribute *attr, char *buf)
-+{
-+	struct rio_dev *rdev = to_rio_dev(dev);
-+	struct rio_mport *mport = rdev->net->hport;
-+	u16 destid = rdev->rswitch->destid;
-+	u8 hopcount = rdev->rswitch->hopcount;
-+	ssize_t len = 0;
-+	u32 regval;
-+
-+	while (!rio_mport_read_config_32(mport, destid, hopcount,
-+					 IDT_ERR_RD, &regval)) {
-+		if (!regval)    /* 0 = end of log */
-+			break;
-+		len += snprintf(buf + len, PAGE_SIZE - len,
-+					"%08x\n", regval);
-+		if (len >= (PAGE_SIZE - 10))
-+			break;
-+	}
-+
-+	return len;
-+}
-+
-+static DEVICE_ATTR(errlog, S_IRUGO, idtg2_show_errlog, NULL);
-+
-+static int idtg2_sysfs(struct rio_dev *rdev, int create)
-+{
-+	struct device *dev = &rdev->dev;
-+	int err = 0;
-+
-+	if (create) {
-+		/* Initialize sysfs entries */
-+		err = device_create_file(dev, &dev_attr_errlog);
-+		if (err)
-+			dev_err(dev, "Unable create sysfs errlog file\n");
-+	} else
-+		device_remove_file(dev, &dev_attr_errlog);
-+
-+
-+	return err;
-+}
-+
-+static int idtg2_switch_init(struct rio_dev *rdev, int do_enum)
-+{
-+	pr_debug("RIO: %s for %s\n", __func__, rio_name(rdev));
-+	rdev->rswitch->add_entry = idtg2_route_add_entry;
-+	rdev->rswitch->get_entry = idtg2_route_get_entry;
-+	rdev->rswitch->clr_table = idtg2_route_clr_table;
-+	rdev->rswitch->set_domain = idtg2_set_domain;
-+	rdev->rswitch->get_domain = idtg2_get_domain;
-+	rdev->rswitch->em_init = idtg2_em_init;
-+	rdev->rswitch->em_handle = idtg2_em_handler;
-+	rdev->rswitch->sw_sysfs = idtg2_sysfs;
-+
-+	return 0;
-+}
-+
-+DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTCPS1848, idtg2_switch_init);
-+DECLARE_RIO_SWITCH_INIT(RIO_VID_IDT, RIO_DID_IDTCPS1616, idtg2_switch_init);
-diff --git a/include/linux/rio_ids.h b/include/linux/rio_ids.h
-index db50e1c..ee7b6ad 100644
---- a/include/linux/rio_ids.h
-+++ b/include/linux/rio_ids.h
-@@ -34,5 +34,7 @@
- #define RIO_DID_IDTCPS16		0x035b
- #define RIO_DID_IDTCPS6Q		0x035f
- #define RIO_DID_IDTCPS10Q		0x035e
-+#define RIO_DID_IDTCPS1848		0x0374
-+#define RIO_DID_IDTCPS1616		0x0379
- 
- #endif				/* LINUX_RIO_IDS_H */
-diff --git a/include/linux/rio_regs.h b/include/linux/rio_regs.h
-index 49a4dc7..7f98fb6 100644
---- a/include/linux/rio_regs.h
-+++ b/include/linux/rio_regs.h
-@@ -263,6 +263,10 @@
- #define RIO_EM_EFB_HEADER	0x000	/* Error Management Extensions Block Header */
- #define RIO_EM_LTL_ERR_DETECT	0x008	/* Logical/Transport Layer Error Detect CSR */
- #define RIO_EM_LTL_ERR_EN	0x00c	/* Logical/Transport Layer Error Enable CSR */
-+#define  REM_LTL_ERR_ILLTRAN		0x08000000 /* Illegal Transaction decode */
-+#define  REM_LTL_ERR_UNSOLR		0x00800000 /* Unsolicited Response */
-+#define  REM_LTL_ERR_UNSUPTR		0x00400000 /* Unsupported Transaction */
-+#define  REM_LTL_ERR_IMPSPEC		0x000000ff /* Implementation Specific */
- #define RIO_EM_LTL_HIADDR_CAP	0x010	/* Logical/Transport Layer High Address Capture CSR */
- #define RIO_EM_LTL_ADDR_CAP	0x014	/* Logical/Transport Layer Address Capture CSR */
- #define RIO_EM_LTL_DEVID_CAP	0x018	/* Logical/Transport Layer Device ID Capture CSR */
+>> Think about this... is bash a PM driving application? No, but what if
+>> you run: 'sleep 3600 && alarm.sh'.
+>
+> That is an excellent example, as it applies equally to dynamic power
+> management.  By how much are you allowed to delay the wakeup?
+
+Huh? Certainly not days, which if Android guys are right, might be how
+much the task will be delayed.
+
+>> Perhaps I should rewrite that as:
+>> 2) if suspend blockers are enabled in the system; *all* user-space is affected
+>
+> That is speculation on your part.
+
+Not really. Say you have 100 packages in your system, how do you know
+which ones would be PM-driving? Can you grep for something, or see if
+they open certain file? No, you have to analyze them one by one; they
+*all* are affected, although not all might require modifications.
+
+But assuming I'm wrong, that's precisely the reason why a practical
+exercise would help.
+
+>> This "requirement" is specific to Android's user-space, isn't it?
+>
+> That is your speculation.
+
+Which is why we need something practical.
+
+>> Not Ubuntu, not Fedora, not MeeGo, not anyone with a typical
+>> user-space seems to be having this problem. I can argue to you that
+>> this problem can be solved in easier ways, but instead I will argue
+>> that perhaps we should wait for somebody besides Android to complain
+>> about it before providing a "solution". Because after all, what good
+>> is a "solution" provided by the kernel, if the user-space is not going
+>> to use it, ever.
+>
+> At this point in the discussion, I am quite prepared to believe that you
+> will avoid using suspend blockers, and that you will further do everything
+> in your power to prevent anyone else from using suspend blockers.  ;-)
+
+I'm not tying anybody's hands.
+
+How are people using real-time linux if it's not on mainline? Well,
+duuh, you apply the patches. If say Fedora was interested on it, they
+could apply the patches, and see for themselves. People do that all
+the time, with the mm tree, with Con Koliva's patches, etc. Once
+people are happy with the results, things get merged. Why should this
+be any different?
+
 -- 
-1.7.0.5
-
+Felipe Contreras
