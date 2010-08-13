@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934153Ab0HMJeq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 05:34:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56632 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934042Ab0HMJel (ORCPT
+	id S934164Ab0HMJes (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 05:34:48 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:43950 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934145Ab0HMJeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 05:34:41 -0400
-Subject: Re: [PATCH] ideapad-laptop: add new driver
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C650FFB.7090602@canonical.com>
-References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>
-	 <1281690893.23680.475.camel@localhost>  <4C650FFB.7090602@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 Aug 2010 10:34:38 +0100
-Message-ID: <1281692078.23680.487.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
+	Fri, 13 Aug 2010 05:34:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6072"; a="50762825"
+Message-ID: <4C6511AD.4060800@codeaurora.org>
+Date: Fri, 13 Aug 2010 15:04:37 +0530
+From: Trilok Soni <tsoni@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+CC: Neil Leeder <nleeder@codeaurora.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>
+Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
+References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <0680EC522D0CC943BC586913CF3768C003B3909F9C@dbde02.ent.ti.com>
+In-Reply-To: <0680EC522D0CC943BC586913CF3768C003B3909F9C@dbde02.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 17:27 +0800, Ike Panhc wrote:
-> Yes, IIRC EC will send i8042 keycode when you booting with QS button, not
-> with power button. atkbd.c reports unknown key after booting with QS button. 
+Hi Shubhrajyoti,
 
-That's interesting. I don't *ever* boot with the QS button; I get the
-keycodes when I boot normally. I tried the QS button precisely once, but
-only *after* I blew away the original contents of the hard drive with my
-MeeGo installation, so it didn't boot.
+>> +
+>> +gpio_request_fail:
+>> +	input_unregister_device(context->qcitp_dev);
+>> +	context->qcitp_dev = NULL;
+>> +
+>> +register_fail:
+>> +	input_free_device(context->qcitp_dev);
+> You may like to revisit the use of free after unregister.
+> 
 
-Do you know how to restore it? Or do you have a copy of the 'lenovo-ec'
-module that it apparently contains?
+That looks OK, because qcitp_dev is set to NULL before this call.
 
-I did keep the Windows restore partition, just in case I needed to go
-back to it to get wireless working. But when I tried to recover, it told
-me it didn't like my partition table -- so I fixed that and next time I
-booted into the OS recovery, it just dumped me at a command prompt and
-didn't even manage to start the graphical recovery tool.
+---Trilok Soni
 
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
