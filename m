@@ -1,115 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934543Ab0HMPkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 11:40:32 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65232 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754790Ab0HMPka convert rfc822-to-8bit (ORCPT
+	id S1761794Ab0HMPml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 11:42:41 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:52101 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754790Ab0HMPmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 11:40:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Naa5lFSEyDn4tsWHW9qh7vqYsAv0PNQaRkGlq/GCA5J33/cq/AKPKfgR5OSx6JokXL
-         02e7A9Z6aYsvL7QDJ02KGTtAOUamsRjzKxUzZO2bq+70hBfHGWcqVlicf3HSOWe9Mh+8
-         Y6i5pIW8bwcHC8yfee7Pkg2DeEUmYIzd2u6n4=
+	Fri, 13 Aug 2010 11:42:39 -0400
+X-SpamScore: -20
+X-BigFish: VPS-20(zz1432N98dN936eM4015Lzz1202hzz8275bh8275dhz32i2a8h43h)
+X-WSS-ID: 0L73KT8-02-6S0-02
+X-M-MSG: 
+Date: Fri, 13 Aug 2010 17:39:10 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Carl E. Love" <cel@us.ibm.com>,
+        Michael Ellerman <michaele@au1.ibm.com>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: [PATCH] oprofile: fix crash when accessing freed task structs
+Message-ID: <20100813153910.GD26154@erda.amd.com>
+References: <1279775680.1970.13.camel@pasglop>
+ <20100728122111.GO26154@erda.amd.com>
+ <1280799573.1902.81.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <20100813152254.GD2511@linux.vnet.ibm.com>
-References: <20100811222854.GJ2516@linux.vnet.ibm.com>
-	<AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
-	<20100812010612.GL2516@linux.vnet.ibm.com>
-	<AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
-	<20100812034435.GA7403@linux.vnet.ibm.com>
-	<AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
-	<E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
-	<AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	<20100812174303.GD2524@linux.vnet.ibm.com>
-	<AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
-	<20100813152254.GD2511@linux.vnet.ibm.com>
-Date: Fri, 13 Aug 2010 18:40:28 +0300
-Message-ID: <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1280799573.1902.81.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 6:22 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Thu, Aug 12, 2010 at 10:34:47PM +0300, Felipe Contreras wrote:
->> "PM-driving applications" is a new invention, so how do you know if an
->> application belongs to this category or not? Some application might be
->> non-PM-driving most of the time, but suddenly become PM-driving. Well,
->> you have to analyze *all* of them.
+On 02.08.10 21:39:33, Benjamin Herrenschmidt wrote:
+
+> I can't tell that much about the workload, I don't have access to it
+> either, let's say that from my point of view it's a "customer" binary
+> blob.
+> 
+> I can re-trigger it though.
+
+Benjamin,
+
+can you try the patch below?
+
+Thanks,
+
+-Robert
+
+>From 4435322debc38097e9e863e14597ab3f78814d14 Mon Sep 17 00:00:00 2001
+From: Robert Richter <robert.richter@amd.com>
+Date: Fri, 13 Aug 2010 16:29:04 +0200
+Subject: [PATCH] oprofile: fix crash when accessing freed task structs
+
+This patch fixes a crash during shutdown reported below. The crash is
+caused be accessing already freed task structs. The fix changes the
+order for registering and unregistering notifier callbacks.
+
+All notifiers must be initialized before buffers start working. To
+stop buffer synchronization we cancel all workqueues, unregister the
+notifier callback and then flush all buffers. After all of this we
+finally can free all tasks listed.
+
+This should avoid accessing freed tasks.
+
+On 22.07.10 01:14:40, Benjamin Herrenschmidt wrote:
+
+> So the initial observation is a spinlock bad magic followed by a crash
+> in the spinlock debug code:
 >
-> A PM-driving application is one that exerts control over the system's
-> power state.  In the case of Android, a PM-driving application is one
-> that is permitted to acquire suspend blockers.
-
-I already mentioned that a "PM-driving application" might not have
-suspend-blockers; because the user denied them, or because the
-developer forgot them.
-
->> Think about this... is bash a PM driving application? No, but what if
->> you run: 'sleep 3600 && alarm.sh'.
+> [ 1541.586531] BUG: spinlock bad magic on CPU#5, events/5/136
+> [ 1541.597564] Unable to handle kernel paging request for data at address 0x6b6b6b6b6b6b6d03
 >
-> That is an excellent example, as it applies equally to dynamic power
-> management.  By how much are you allowed to delay the wakeup?
-
-Huh? Certainly not days, which if Android guys are right, might be how
-much the task will be delayed.
-
->> Perhaps I should rewrite that as:
->> 2) if suspend blockers are enabled in the system; *all* user-space is affected
+> Backtrace looks like:
 >
-> That is speculation on your part.
-
-Not really. Say you have 100 packages in your system, how do you know
-which ones would be PM-driving? Can you grep for something, or see if
-they open certain file? No, you have to analyze them one by one; they
-*all* are affected, although not all might require modifications.
-
-But assuming I'm wrong, that's precisely the reason why a practical
-exercise would help.
-
->> This "requirement" is specific to Android's user-space, isn't it?
+>       spin_bug+0x74/0xd4
+>       ._raw_spin_lock+0x48/0x184
+>       ._spin_lock+0x10/0x24
+>       .get_task_mm+0x28/0x8c
+>       .sync_buffer+0x1b4/0x598
+>       .wq_sync_buffer+0xa0/0xdc
+>       .worker_thread+0x1d8/0x2a8
+>       .kthread+0xa8/0xb4
+>       .kernel_thread+0x54/0x70
 >
-> That is your speculation.
+> So we are accessing a freed task struct in the work queue when
+> processing the samples.
 
-Which is why we need something practical.
+Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ drivers/oprofile/buffer_sync.c |   27 ++++++++++++++-------------
+ drivers/oprofile/cpu_buffer.c  |    2 --
+ 2 files changed, 14 insertions(+), 15 deletions(-)
 
->> Not Ubuntu, not Fedora, not MeeGo, not anyone with a typical
->> user-space seems to be having this problem. I can argue to you that
->> this problem can be solved in easier ways, but instead I will argue
->> that perhaps we should wait for somebody besides Android to complain
->> about it before providing a "solution". Because after all, what good
->> is a "solution" provided by the kernel, if the user-space is not going
->> to use it, ever.
->
-> At this point in the discussion, I am quite prepared to believe that you
-> will avoid using suspend blockers, and that you will further do everything
-> in your power to prevent anyone else from using suspend blockers.  ;-)
+diff --git a/drivers/oprofile/buffer_sync.c b/drivers/oprofile/buffer_sync.c
+index a9352b2..b7e755f 100644
+--- a/drivers/oprofile/buffer_sync.c
++++ b/drivers/oprofile/buffer_sync.c
+@@ -141,16 +141,6 @@ static struct notifier_block module_load_nb = {
+ 	.notifier_call = module_load_notify,
+ };
+ 
+-
+-static void end_sync(void)
+-{
+-	end_cpu_work();
+-	/* make sure we don't leak task structs */
+-	process_task_mortuary();
+-	process_task_mortuary();
+-}
+-
+-
+ int sync_start(void)
+ {
+ 	int err;
+@@ -158,7 +148,7 @@ int sync_start(void)
+ 	if (!zalloc_cpumask_var(&marked_cpus, GFP_KERNEL))
+ 		return -ENOMEM;
+ 
+-	start_cpu_work();
++	mutex_lock(&buffer_mutex);
+ 
+ 	err = task_handoff_register(&task_free_nb);
+ 	if (err)
+@@ -173,7 +163,10 @@ int sync_start(void)
+ 	if (err)
+ 		goto out4;
+ 
++	start_cpu_work();
++
+ out:
++	mutex_unlock(&buffer_mutex);
+ 	return err;
+ out4:
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+@@ -182,7 +175,6 @@ out3:
+ out2:
+ 	task_handoff_unregister(&task_free_nb);
+ out1:
+-	end_sync();
+ 	free_cpumask_var(marked_cpus);
+ 	goto out;
+ }
+@@ -190,11 +182,20 @@ out1:
+ 
+ void sync_stop(void)
+ {
++	/* flush buffers */
++	mutex_lock(&buffer_mutex);
++	end_cpu_work();
+ 	unregister_module_notifier(&module_load_nb);
+ 	profile_event_unregister(PROFILE_MUNMAP, &munmap_nb);
+ 	profile_event_unregister(PROFILE_TASK_EXIT, &task_exit_nb);
+ 	task_handoff_unregister(&task_free_nb);
+-	end_sync();
++	mutex_unlock(&buffer_mutex);
++	flush_scheduled_work();
++
++	/* make sure we don't leak task structs */
++	process_task_mortuary();
++	process_task_mortuary();
++
+ 	free_cpumask_var(marked_cpus);
+ }
+ 
+diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
+index 219f79e..f179ac2 100644
+--- a/drivers/oprofile/cpu_buffer.c
++++ b/drivers/oprofile/cpu_buffer.c
+@@ -120,8 +120,6 @@ void end_cpu_work(void)
+ 
+ 		cancel_delayed_work(&b->work);
+ 	}
+-
+-	flush_scheduled_work();
+ }
+ 
+ /*
+-- 
+1.7.1.1
 
-I'm not tying anybody's hands.
 
-How are people using real-time linux if it's not on mainline? Well,
-duuh, you apply the patches. If say Fedora was interested on it, they
-could apply the patches, and see for themselves. People do that all
-the time, with the mm tree, with Con Koliva's patches, etc. Once
-people are happy with the results, things get merged. Why should this
-be any different?
 
 -- 
-Felipe Contreras
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
