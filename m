@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab0HMUKS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 16:10:18 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:41110 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753Ab0HMUKQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 16:10:16 -0400
-Subject: Re: [PATCH] kvm: make mmu_shrink() fit shrinker's requirement
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
-In-Reply-To: <4C5A844C.60105@redhat.com>
-References: <4C591313.50402@cn.fujitsu.com>  <4C5A844C.60105@redhat.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Fri, 13 Aug 2010 13:10:04 -0700
-Message-ID: <1281730204.30865.12.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755481Ab0HMUaa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 16:30:30 -0400
+Received: from n70.bullet.mail.sp1.yahoo.com ([98.136.44.38]:21980 "HELO
+	n70.bullet.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755323Ab0HMUa2 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 16:30:28 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 524560.81105.bm@omp122.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=dLKPS+JdCyEFfbu8f/4Wo3avopENIRnFqm1PI7cESnwDikZo/0KD3ipkXHXQaOEyc7w6Jlkd1R4wWijgsJngRQMdGdpHdACOMxaeiwLnIRDkP1rZFLc17ShK0ZIndHKuOPp3AnADSJ6iMZofvvSzQpr0IUSaaz9oMGfs+DdYk7U=;
+Message-ID: <920296.5376.qm@web180304.mail.gq1.yahoo.com>
+X-YMail-OSG: hjUtgDwVM1lINKhOrtVOVneT827HqHPxaNm3.Y52le.G9S8
+ HCjCiFAOZ_yfAOU_nBci1bvPwEN8Maa.2kKWc7SkjumfR1DbEefBA0.NqTIP
+ VHfsWRUWVXsxuWzmfhUEOg54mtoI_PqADNHQ__2wq7HlMeRZwXVyxi1T.3DE
+ zsrtnBnATOIxDYRwm34bB1QzbX7ODYrwVRtCRhiy1mICRxsDB6oiU7uw3bBq
+ XpPU83mRTmO.5ukR9WG5ruzy21TeC4gM6sWkgA8yCA.lSX3aMoVu22AvYyaw
+ OsFUshraA0thykjCZN7yW1OPpjvoamgNBK4lD65yNYbvVRgyjyynqTCeT0yc
+ cZaG8xY2m37z2Tk4-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Fri, 13 Aug 2010 13:30:26 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv8 04/13] USB: gadget: mass_storage: moved strings handling code to composite
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.44L0.1008131110130.12397-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-05 at 12:28 +0300, Avi Kivity wrote:
-> On 08/04/2010 10:13 AM, Lai Jiangshan wrote:
-> > mmu_shrink() should attempt to free @nr_to_scan entries.
-> 
-> This conflicts with Dave's patchset.
-> 
-> Dave, what's going on with those patches?  They're starting to smell.
-
-These seem to fix the original problem reporter's issue.  They were run
-with 64 guests on a 32GB machine.  No stability problems popped up in
-this testing, or since I last sent the patches to you.  The results from
-both the test with only the first four patches and with the entire set
-of nine looked pretty identical.
-
-That tells me that we should only push the first four for now:
-
-	abstract kvm x86 mmu->n_free_mmu_pages
-	rename x86 kvm->arch.n_alloc_mmu_pages
-	replace x86 kvm n_free_mmu_pages with n_used_mmu_pages
-	create aggregate kvm_total_used_mmu_pages value  
 
 
--- Dave
+--- On Fri, 8/13/10, Alan Stern <stern@rowland.harvard.edu> wrote:
+. 
+> ... based on all
+> the preceding discussion, I now think the best
+> approach may be _never
+> to make up a fake serial number.  Use the module
+> parameter, if any, and
+> otherwise issue a warning and don't have
+> a serial number string
+> descriptor (even though that violates the spec).
+
+
+Agreed, and that's what I had asked for.  I didn't
+see code faking up a serial ... did I miss such?
+
+If so, let's see a new patch with no faking.
+
+
 
