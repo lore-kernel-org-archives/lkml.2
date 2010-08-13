@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761535Ab0HMLyJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 07:54:09 -0400
-Received: from mail.windriver.com ([147.11.1.11]:46097 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761519Ab0HMLyF (ORCPT
+	id S1761547Ab0HMLya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 07:54:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48022 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761519Ab0HMLy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 07:54:05 -0400
-Message-ID: <4C65323F.8090907@windriver.com>
-Date: Fri, 13 Aug 2010 06:53:35 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Fri, 13 Aug 2010 07:54:28 -0400
+Date: Fri, 13 Aug 2010 07:54:24 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Nigel Cunningham <nigel@tuxonice.net>, Mark Lord <kernel@teksavvy.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
+ used!
+Message-ID: <20100813115424.GA24737@infradead.org>
+References: <4C58C528.4000606@tuxonice.net>
+ <4C5960B0.7020003@teksavvy.com>
+ <4C59DA16.4020500@tuxonice.net>
+ <AANLkTik_PH-7T7OFtzaCtPbAHE6pqnYMUsjP25KtsRnR@mail.gmail.com>
+ <4C5A59FC.1030304@tuxonice.net>
+ <AANLkTi=NMHkKduZzsLiiYt3=w8++8epb5aGrqv7V3-vB@mail.gmail.com>
+ <4C5B925A.5000409@tuxonice.net>
+ <AANLkTinU24v6Mty54YL3gv3M5S+4jdN5vHD54KknchAG@mail.gmail.com>
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Problem with commit deda2e81961e96be4f2c09328baca4710a2fd1a0
-References: <4C64571F.6000606@lwfinger.net> <1281646368.4002.66.camel@localhost.localdomain> <4C64B93A.5010403@lwfinger.net> <1281684638.3940.11.camel@work-vm>
-In-Reply-To: <1281684638.3940.11.camel@work-vm>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Aug 2010 11:53:36.0715 (UTC) FILETIME=[29B639B0:01CB3ADE]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinU24v6Mty54YL3gv3M5S+4jdN5vHD54KknchAG@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2010 02:30 AM, john stultz wrote:
-> On Thu, 2010-08-12 at 22:17 -0500, Larry Finger wrote:
->   
->> On 08/12/2010 03:52 PM, john stultz wrote:
->>     
->>> Ugh. I'm surprised it picks *this* loop to optimize instead of the
->>> similar one right above. I'm guessing its the local raw_nsecs value, but
->>> whatever.  Also surprised Jason's testing didn't hit this issue, but its
->>> probably a gcc version thing.
->>>
->>> Regardless, I clearly need to give i386 more love in my testing.
->>> My profuse apologies.
->>>
->>> As suggested by Linus, here's the do_div explicit version. It builds ok
->>> on i386 & x86_64, but I have not yet tested it. 
->>>
->>> Larry, Jason: Could you verify it works for you (and avoids the original
->>> issue)?
->>>       
->> This one builds for me with both compilers. It appears to run OK. As to the
->> original issue - I don't think I ever saw the problem. I'll leave that question
->> for Jason.
->>     
->
-> Thanks for the testing! 
->
-> I also managed to trigger the link issue with a 64bit gcc-4.3 cross
-> compiling to 32bit. However both 32bit and 64bit gcc-4.4 didn't trigger
-> the link issue, so it looks like its fixed in gcc.
->
-> Regardless, after my own testing, the change looks good to me. Raw time
-> is accumulating properly relative to monotonic time.
->
-> Assuming Jason has no complaints it should be able to be pushed in.
->
->   
+On Fri, Aug 06, 2010 at 03:07:25PM -0700, Hugh Dickins wrote:
+> If REQ_SOFTBARRIER means that the device is still free to reorder a
+> write, which was issued after discard completion was reported, before
+> the discard (so later discarding the data written), then certainly I
+> agree with Christoph (now Cc'ed) that the REQ_HARDBARRIER is
+> unavoidable there; but if not, then it's not needed for the swap case.
+>  I hope to gain a little more enlightenment on such barriers shortly.
 
-No complaints here.  The edge case remains solved on the low MHZ 32 bit
-system.
+REQ_SOFTBARRIER is indeed purely a reordering barrier inside the block
+elevator.
 
-The reason I never saw any problem in all my test configurations was
-that gcc 4.4 is the oldest compiler I have in any of the configurations
-I am using.   I could have been more specific in my original mail on the
-subject but it was tested with a 32bit cross compiler as well as a 64bit
-cross compiler.
+> What does seem over the top to me, is for mm/swapfile.c's
+> blkdev_issue_discard()s to be asking for both BLKDEV_IFL_WAIT and
+> BLKDEV_IFL_BARRIER: those swap discards were originally written just
+> to use barriers, without needing to wait for completion in there.  I'd
+> be interested to hear if cutting out the BLKDEV_IFL_WAITs makes the
+> swap discards behave acceptably again for you - but understand that
+> you won't have a chance to try that until later next week.
 
-Many thanks to all who helped draw this odd ball case to closure.
-
-Jason.
+That does indeed look incorrect to me.  Any kind of explicit waits
+usually mean the caller provides ordering.  Getting rid of
+BLKDEV_IFL_BARRIER in the swap code ASAP would indeed be beneficial
+given that we are trying to get rid of hard barriers completely soon.
+Auditing the existing blkdev_issue_discard callers in filesystems
+is high on the todo list for me.
