@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761888Ab0HMRN3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 13:13:29 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:51120 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754642Ab0HMRN2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 13:13:28 -0400
-Date: Fri, 13 Aug 2010 10:13:19 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Ted Ts'o" <tytso@mit.edu>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100813171319.GL2511@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100810044541.GA2817@linux.vnet.ibm.com>
- <20100810093849.138e2318@lxorguk.ukuu.org.uk>
- <20100811004223.GH2379@linux.vnet.ibm.com>
- <AANLkTik7Po9OuKC-QBZ=E83J70sU_ewNi+nNWgcjjLXd@mail.gmail.com>
- <20100811221258.GI2516@linux.vnet.ibm.com>
- <AANLkTi=fJjM=uWeV+L66ajM9rhrL0t1OO-C7ThNRdbae@mail.gmail.com>
- <20100812161935.GC2524@linux.vnet.ibm.com>
- <AANLkTi=51cFa0t5ZYj2CMiauuW80ZWTrm1tQkn63Et0F@mail.gmail.com>
- <20100813151451.GC2511@linux.vnet.ibm.com>
- <AANLkTimGHYZ4ndznJY-vjBb164xMSiGMeoJs=9=baSFi@mail.gmail.com>
+	id S1761912Ab0HMR1v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 13:27:51 -0400
+Received: from be1ssnxpe1.nxp.com ([57.67.164.69]:55919 "EHLO
+	be1ssnxpe1.nxp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761896Ab0HMR1u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 13:27:50 -0400
+From: Kevin Wells <kevin.wells@nxp.com>
+To: Wolfram Sang <w.sang@pengutronix.de>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>
+CC: Durgesh Pattamatta <durgesh.pattamatta@nxp.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kevin Wells <wellsk40@gmail.com>
+Date: Fri, 13 Aug 2010 19:27:12 +0200
+Subject: RE: [rtc-linux] [PATCH] rtc: rtc-lpc32xx: Introduce RTC driver for
+	the LPC32XX SoC (v3)
+Thread-Topic: [rtc-linux] [PATCH] rtc: rtc-lpc32xx: Introduce RTC driver for
+	the LPC32XX SoC (v3)
+Thread-Index: Acs626SvJ0w7ebhXR9GUC2h7F5liCAAJ4eGw
+Message-ID: <083DF309106F364B939360100EC290F80AC719CAEF@eu1rdcrdc1wx030.exi.nxp.com>
+References: <1281650244-9889-1-git-send-email-wellsk40@gmail.com>
+	<1281650244-9889-2-git-send-email-wellsk40@gmail.com>
+ <20100813112933.GA23852@pengutronix.de>
+In-Reply-To: <20100813112933.GA23852@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimGHYZ4ndznJY-vjBb164xMSiGMeoJs=9=baSFi@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.0.10011,1.0.148,0.0.0000 definitions=2010-08-13_05:2010-08-13,2010-08-13,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 06:28:27PM +0300, Felipe Contreras wrote:
-> On Fri, Aug 13, 2010 at 6:14 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Aug 12, 2010 at 08:52:22PM +0300, Felipe Contreras wrote:
-> >>  4) no, we can't say anything about what opportunistic suspend means in practice
-> >
-> > Here I disagree.  The Android folks have used it for quite some time.
-> > We might not be able to apply their experience directly to other software
-> > stacks, but we should nevertheless be able to learn quite a bit from it.
+Hi Wolfram,
+
+Thanks for continued testing and review of the driver.
+
+> > +
+> > +#define LPC32XX_RTC_MATCH0_EN		(1 << 0)
+> > +#define LPC32XX_RTC_MATCH1_EN		(1 << 1)
+> > +#define LPC32XX_RTC_ONSW_MATCH0_EN	(1 << 2)
+> > +#define LPC32XX_RTC_ONSW_MATCH1_EN	(1 << 3)
+> > +#define LPC32XX_RTC_SW_RESET		(1 << 4)
+> > +#define LPC32XX_RTC_CNTR_DIS		(1 << 6)
+> > +#define LPC32XX_RTC_ONSW_FORCE_HIGH	(1 << 7)
 > 
-> So when it comes to practice you are relying solely on what Android people say.
+> I would have liked LPC32XX_RTC_CTRL_* as a prefix better as mentioned last
+> time. It will do here for the RTC as it doesn't have much registers, though.
+> 
+> > +
+> > +#define LPC32XX_RTC_MATCH0_INT_STS	(1 << 0)
+> > +#define LPC32XX_RTC_MATCH1_INT_STS	(1 << 1)
+> > +#define LPC32XX_RTC_ONSW_INT_STS	(1 << 2)
+> 
+> ditto for including the register name.
+> 
 
-So when it comes to practice with suspend blockers, only the Android
-people have any experience, so theirs is the only experience with
-suspend blockers that there is to rely on.  ;-)  ;-)  ;-)
+No problem here..I'll change these.
 
-> If it's true that it's easy to spot the "PM-driving applications",
-> then it shouldn't be hard for a guy from the Android team to assemble
-> a basic typical system (X.org, dbus, etc.) with suspend-blockers in a
-> couple of days.
+> > +static int lpc32xx_rtc_alarm_irq_enable(struct device *dev,
+> > +	unsigned int enabled)
+> > +{
+> > +	struct lpc32xx_rtc *rtc = dev_get_drvdata(dev);
+> > +	u32 tmp;
+> > +
+> > +	spin_lock_irq(&rtc->lock);
+> > +	tmp = rtc_readl(rtc, LPC32XX_RTC_CTRL);
+> > +
+> > +	if (enabled) {
+> > +		rtc->alarm_enabled = 1;
+> > +		tmp |= LPC32XX_RTC_MATCH0_EN;
+> > +	} else {
+> > +		rtc->alarm_enabled = 0;
+> > +		tmp &= ~LPC32XX_RTC_MATCH0_EN;
+> > +	}
+> 
+> Maybe 'rtc->alarm_enabled = enabled;' or similar could be used. Didn't check
+> thouroughly.
+> 
 
-I am happy to let the Android guys determine the best use for their time.
+I picked this specific approach because the type in the local rtc structure
+is unsigned char (matching the struct rtc_wkalrm type) while the passed
+parameter 'enabled' is unsigned long. I considered these..
+	rtc->alarm_enabled = (unsigned char) enabled;
+and
+	rtc->alarm_enabled = !!enabled;
 
-							Thanx, Paul
+The direct assignment seemed the best approach to avoid some type of cast or
+extra logic.
+
+> > +	/*
+> > +	 * The RTC is on a seperate power domain and can keep it's state
+> > +	 * across a chip power cycle. If the RTC has never been previously
+> > +	 * setup, then set it up now for the first time.
+> > +	 */
+> > +	tmp = rtc_readl(rtc, LPC32XX_RTC_CTRL);
+> > +	if (rtc_readl(rtc, LPC32XX_RTC_KEY) == LPC32XX_RTC_KEY_ONSW_LOADVAL)
+> > +{
+> 
+> This cannot work; it really should be '!=' otherwise the time will be reset at
+> every reboot!
+> 
+
+Hmm, this was a good find. If the key value isn't setup correctly, the
+boot ROM will clear the RTC counter on power-on reset. The time isn't being
+cleared on my board, so something is setting up the key elsewhere. Your
+suggested fix is probably the right fix, but I'll review. Sorry - I won't
+get updates for this available until next week.
+
