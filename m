@@ -1,131 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761966Ab0HMST1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 14:19:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34318 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab0HMSTY (ORCPT
+	id S1762010Ab0HMSYR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 14:24:17 -0400
+Received: from exprod7og127.obsmtp.com ([64.18.2.210]:57721 "EHLO
+	exprod7og127.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834Ab0HMSYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 14:19:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=kmmxnyd6FM3dG+GYqm/wX4lq8a0EhaIrVbNvsL+vGd12FZBL6YtTQsLQHGWQYJ/k6R
-         Rh9HS4wJ5A/Yiw0StshcX5bIo7HX84rA/5F6YlMDMYDuSUG3WickalnvmPWNkZZ+BaG6
-         mVH9F05oLryRNIe/dbR08fvC/G1VD1hWIBsD4=
-Date: Fri, 13 Aug 2010 22:18:33 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Andrew Lunn <andrew@lunn.ch>,
-        Sven Eckelmann <sven.eckelmann@gmx.de>,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: batman-adv: design suggestions
-Message-ID: <20100813181833.GA5632@albatros>
-References: <20100809203403.GA16183@albatros>
+	Fri, 13 Aug 2010 14:24:16 -0400
+Message-ID: <4C658D66.3020801@genband.com>
+Date: Fri, 13 Aug 2010 12:22:30 -0600
+From: Chris Friesen <chris.friesen@genband.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100809203403.GA16183@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org
+Subject: defunct processes owned by init, not being reaped ?
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 13 Aug 2010 18:22:31.0418 (UTC) FILETIME=[7E4755A0:01CB3B14]
+X-TM-AS-Product-Ver: SMEX-8.0.0.4160-6.500.1024-17568.001
+X-TM-AS-Result: No--16.517300-5.000000-31
+X-TM-AS-User-Approved-Sender: No
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 00:34 +0400, Vasiliy Kulikov wrote:
-> 2) It seems to me that NF_HOOK() at hard-interface.c:458 is misused:
-> 
->     ...
-> 	ret = NF_HOOK(PF_BRIDGE, NF_BR_LOCAL_IN, skb, dev, NULL,
-> 		      batman_skb_recv_finish);
-> 	if (ret != 1)
-> 		goto err_out;
-> 
-> 	/* packet should hold at least type and version */
-> 	if (unlikely(skb_headlen(skb) < 2))
-> 		goto err_free;
-> 
-> 	/* expect a valid ethernet header here. */
-> 	if (unlikely(skb->mac_len != sizeof(struct ethhdr)
-> 				|| !skb_mac_header(skb)))
-> 		goto err_free;
->     ...
-> 
->     static int batman_skb_recv_finish(struct sk_buff *skb)
->     {
->         return NF_ACCEPT;
->     }
-> 
->   As I understand, if there is any hook that returns NF_STOLEN, then skb
->   is leaked.
 
-New ideas ;)
+I'm seeing something very strange.  I've got a system running a modified
+2.6.27.18.  There are two tasks that are showing up as defunct but owned
+by init:
 
-a) Currently processing of tables does not confirm to its names.
+root@typhoon-base-unit1:/root> ps -ef|grep defun
+root    9933   1  0 09:05 ?   00:00:23 [oamFmLogServerP] <defunct>
+root    9959   1  0 09:05 ?   00:00:21 [oamFmCliServerP] <defunct>
+root   27674 17021  0 18:17 pts/2  00:00:00 grep defun
 
- From `man ebtables`:
-    ...
-    filter  is  the  default  table and contains three built-in
-    chains: INPUT (for frames destined for the  bridge itself,
-    on  the  level of the MAC destination address), OUTPUT (for
-    locally-generated or (b)routed  frames)  and  FORWARD (for
-    frames being forwarded by the bridge).
-    nat is mostly used to change the mac addresses and contains
-    three built-in chains: PREROUTING (for altering  frames as
-    soon  as they come in), OUTPUT (for altering locally gener‐
-    ated or (b)routed  frames  before  they  are  bridged) and
-    POSTROUTING  (for  altering  frames as they are about to go
-    out). A small note on the naming of chains  PREROUTING and
-    POSTROUTING: it would be more accurate to call them PREFOR‐
-    WARDING and POSTFORWARDING, but for all those who come from
-    the  iptables  world  to  ebtables it is easier to have the
-    same names. Note that you can change the name (-E)  if you
-    don't like the default.
-    ...
+I tried sending init a SIGCHLD to force it to reap them.  Init tries to
+wait for any children, but it doesn't catch them and they remain
+defunct--here's the strace of init:
 
-   Second argument to this NF_HOOK() should be NF_BR_PRE_ROUTING as it is not
-   know yet whether this packet is for local machine.
-
-  NF_BR_LOCAL_IN should locate in interface_rx just before netif_rx [*] - see below
-  NF_BR_LOCAL_OUT in interface_tx before big 'if (is_bcast ...)' [*]
-  NF_BR_POST_ROUTING in send_skb_packet instead of current NF_BR_LOCAL_OUT
-  NF_BR_FORWARD somewhere in recv_{bat,icmp,unicast,bcast}_packet() if
-    packet is being forwarded [*]
+stat64("/dev/initctl", {st_mode=S_IFIFO|0600, st_size=0, ...}) = 0
+fstat64(10, {st_mode=S_IFIFO|0600, st_size=0, ...}) = 0
+stat64("/dev/initctl", {st_mode=S_IFIFO|0600, st_size=0, ...}) = 0
+select(11, [10], NULL, NULL, {5, 0})    = ? ERESTARTNOHAND (To be restarted)
+--- SIGCHLD (Child exited) @ 0 (0) ---
+waitpid(-1, 0xffcbf6ac, WNOHANG)        = 0
+sigreturn()                             = ? (mask now [])
+time(NULL)                              = 1281723340
 
 
-b) Why do you use bridge tables at all? This layer does not know
-anything about batman layer, only ethernet that is only a tunnel for
-batman. So, it is able to hook traffic from concrete prev-hop routers,
-but not from original sources of packets. I think it is not enough for
-network filter.  
-   Also if you want to process [*] cases you have to append fake
-ethernet headers before network header as NF_HOOK() would use ethernet
-header.
-
-So, I see 2 solutions:
- 1) write your own table layer similar to ebtables & userland tool :) It
-is costly, but you'll be able to fully filter/hook of batman traffic.
- 2) write ebtables module to check batman header fields. It is slightly 
-slower, but potentially may do the same as (1).
-
-However, I think it is not so important and may be rated as feature.
-
-
-c) Maybe it's better to give user an ability to tune some network
-parameters? Like ttl, whether answer to icmp, ratelimit of generating
-output icmps, etc.
-
-
-d) Why do you send icmp TTL exceeded for the icmp itself? E.g. in case
-of loop or/and small default TTL you'll probably get a storm of icmps.
-Exactly in this case IP silently drops TTL exceeded icmps ;)
-
-
-Hope this information will be usefull.
-
+Anyone got any ideas what could possibly result in this sort of behaviour?
 
 Thanks,
-Vasiliy.
+
+Chris
+
+-- 
+Chris Friesen
+Software Developer
+GENBAND
+chris.friesen@genband.com
+www.genband.com
