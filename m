@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934581Ab0HMQFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 12:05:54 -0400
-Received: from kroah.org ([198.145.64.141]:41163 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755034Ab0HMQFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 12:05:52 -0400
-Date: Fri, 13 Aug 2010 09:05:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build warning after merge of the final tree (usb
- tree related)
-Message-ID: <20100813160548.GA21222@kroah.com>
-References: <20100802141823.143b2a36.sfr@canb.auug.org.au>
- <20100813144929.GA25259@kroah.com>
- <AANLkTi=GY7ndsAhe4u0ZjpuGU8Bhh+dUxQt+oaNtvTC0@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=GY7ndsAhe4u0ZjpuGU8Bhh+dUxQt+oaNtvTC0@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934585Ab0HMQGu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 12:06:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51447 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab0HMQGt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 12:06:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=BQrpyV//S+H+nljhMvhIp/ncupXToP/cyXYh9I/QqAjbv2aByCM2e7P7Bvuj/ZLmXR
+         axjV7cwdXqaNaHgsRvQxYnYhAnehQ/AAdPSh5AlAlEav4Bs0I/z3bI4hdOICfkWXD0cg
+         W+ijhvIJJs4lB57He5APdxTq5kS580HI4gqWw=
+From: Namhyung Kim <namhyung@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] add __user markup in copy_user_handle_tail()
+Date: Sat, 14 Aug 2010 01:06:44 +0900
+Message-Id: <1281715604-5174-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 06:03:49PM +0300, Andy Shevchenko wrote:
-> On Fri, Aug 13, 2010 at 5:49 PM, Greg KH <greg@kroah.com> wrote:
-> >> After merging the final tree, today's linux-next build (powerpc
-> >> allyesconfig) produced these warnings:
-> >>
-> >> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:718: warning: 'fsg_show_nofua' defined but not used
-> >> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:782: warning: 'fsg_store_nofua' defined but not used
-> >> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:718: warning: 'fsg_show_nofua' defined but not used
-> >> /scratch/sfr/next/drivers/usb/gadget/storage_common.c:782: warning: 'fsg_store_nofua' defined but not used
-> >>
-> >> Introduced by commit ed4825f7332669779540be27cb263daf22af3b1c ("USB:
-> >> gadget: storage: optional SCSI WRITE FUA bit") from the usb tree.
-> >
-> > Sorry about missing this, I have a patch to fix this up now.
-> 
-> I hope you are talking about last Michal's approach:
-> <550ddf8273d87cb418dd5716cbec906e74aa03d4.1281625724.git.m.nazarewicz@samsung.com>
+__get/put_user_nocheck() requires 2nd arg should be a user pointer but was missing
+__user markup. Add it.
 
-Yes.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ arch/x86/lib/usercopy_64.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/lib/usercopy_64.c b/arch/x86/lib/usercopy_64.c
+index b7c2849..84b0c1b 100644
+--- a/arch/x86/lib/usercopy_64.c
++++ b/arch/x86/lib/usercopy_64.c
+@@ -170,14 +170,17 @@ copy_user_handle_tail(char *to, char *from, unsigned len, unsigned zerorest)
+ 	unsigned zero_len;
+ 
+ 	for (; len; --len) {
+-		if (__get_user_nocheck(c, from++, sizeof(char)))
++		if (__get_user_nocheck(c, (u8 __user __force *) from++,
++				       sizeof(char)))
+ 			break;
+-		if (__put_user_nocheck(c, to++, sizeof(char)))
++		if (__put_user_nocheck(c, (u8 __user __force *) to++,
++				       sizeof(char)))
+ 			break;
+ 	}
+ 
+ 	for (c = 0, zero_len = len; zerorest && zero_len; --zero_len)
+-		if (__put_user_nocheck(c, to++, sizeof(char)))
++		if (__put_user_nocheck(c, (u8 __user __force *) to++,
++				       sizeof(char)))
+ 			break;
+ 	return len;
+ }
+-- 
+1.7.0.4
+
