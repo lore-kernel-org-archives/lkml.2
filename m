@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934590Ab0HMQJH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 12:09:07 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:65290 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab0HMQJF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 12:09:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=nbGKNs4A2KPhv7EQtAmdalEd7nCGUZY6tzuhN7qzs913MxCUC2XsgmUso2EuWaxEOl
-         UO8yCulKfVg9ytqIMYqRBPjZIb0ROmjL4ewcmmK65dSTrUaq9ihj11tGY+UZ1E7Gi7eU
-         d23q+GEJiPzxEvvz4EuWfRG5jxCcFJSUl9qZs=
+	id S934600Ab0HMQTb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 12:19:31 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:48441 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754564Ab0HMQTa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 12:19:30 -0400
+Date: Fri, 13 Aug 2010 18:19:28 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Joe Perches <joe@perches.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>, paulmck@linux.vnet.ibm.com,
+        david@lang.hm, Theodore Tso <tytso@mit.edu>, peterz@infradead.org,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        James.Bottomley@suse.de, galibert@pobox.com, florian@mickler.org,
+        menage@google.com, linux-pm@lists.linux-foundation.org,
+        swmike@swm.pp.se, tglx@linutronix.de,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, arjan@infradead.org
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
+	take three
+Message-ID: <20100813161928.GA16898@isilmar-3.linta.de>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	Felipe Contreras <felipe.contreras@gmail.com>,
+	paulmck@linux.vnet.ibm.com, david@lang.hm,
+	Theodore Tso <tytso@mit.edu>, peterz@infradead.org,
+	Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+	James.Bottomley@suse.de, galibert@pobox.com, florian@mickler.org,
+	menage@google.com, linux-pm@lists.linux-foundation.org,
+	swmike@swm.pp.se, tglx@linutronix.de,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, arjan@infradead.org
+References: <20100812034435.GA7403@linux.vnet.ibm.com> <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com> <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu> <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com> <20100812174303.GD2524@linux.vnet.ibm.com> <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com> <20100813152254.GD2511@linux.vnet.ibm.com> <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com> <20100813155738.GA11507@isilmar-3.linta.de> <1281715607.15486.102.camel@Joe-Laptop>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin6cHofTWkAysi_hojxaYUJtXg44_F0AyffMy5k@mail.gmail.com>
-References: <1274733081-4623-1-git-send-email-walken@google.com>
-	<1274733081-4623-7-git-send-email-walken@google.com>
-	<AANLkTikFEy26V4epRGCJiDkQNQ5BH0fPP0C=4phUB=o3@mail.gmail.com>
-	<AANLkTimDGbrja5EgGQ+sQxHBRNMnmt7=rjtOfwAKEKFe@mail.gmail.com>
-	<AANLkTim3thKSwTHSQ7UXir+1cT9cfFaEjTFGGMdz0_Bt@mail.gmail.com>
-	<AANLkTikz2=pa5csA+pqDfKc_zYihyn+C9pUb_YNS9g0L@mail.gmail.com>
-	<AANLkTiny_GOfvX-t=SoXZVi8uO3SHC_h2YgbPtCcLXcu@mail.gmail.com>
-	<AANLkTin6cHofTWkAysi_hojxaYUJtXg44_F0AyffMy5k@mail.gmail.com>
-Date: Fri, 13 Aug 2010 09:09:04 -0700
-X-Google-Sender-Auth: LD7UjAbb9KzhDgBbB_CIKSzwS3g
-Message-ID: <AANLkTi=hW0ceGxAPko4qG6uRz6tSEQEdzxRdeKWMueiz@mail.gmail.com>
-Subject: Re: [PATCH 06/11] rwsem: wake queued readers when writer blocks on
- active read lock
-From: Tony Luck <tony.luck@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>, David Howells <dhowells@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Waychison <mikew@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281715607.15486.102.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 3:23 PM, Tony Luck <tony.luck@gmail.com> wrote:
-> I'm going to try the current kernel with the 424acaae reverted (and
-> with the ia64 rwsem.h reverted too) to check whether this is still the same
-> root cause
+On Fri, Aug 13, 2010 at 09:06:47AM -0700, Joe Perches wrote:
+> On Fri, 2010-08-13 at 17:57 +0200, Dominik Brodowski wrote:
+> > Because millions of users are happy -- with Android, including suspend
+> > blockers.
+> 
+> I'd guess there are on the order of 20 users
+> that have built and deployed a kernel with
+> Android suspend blockers support.
 
-This kernel ran "make clean ; make -j32" all night long. It's completed 415
-cycles with no apparent problems. Average cycle time is 147.2 seconds.
-Minimum is 144, max is 158 ... which all looks very normal.
+You mean non-Google users?
 
-It's probably a good thing that the unsigned RWSEM_WAITING_BIAS
-problem led me to this commit with a problem that showed up during
-boot. I'd hate to be bisecting this based on a problem that only shows
-up after an unknown number of kernel builds :-)
+> The total deployed systems is relatively meaningless.
 
-Still no reports from other architectures? So this still seems to be an
-ia64 specific problem. Time to start reading rwsem.c
+Well, it wasn't meaningless wrt noveau:
 
--Tony
+"I've heard all the excuses. If it isn't ready, they shouldn't ship it to
+millions of people. And if it's ready, they should work on merging it.
+
+No excuses.
+
+Linus"
+
+So let's get the suspend blockers to Linus.
+
+Best
+	Dominik
