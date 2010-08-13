@@ -1,116 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934621Ab0HMQXR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 12:23:17 -0400
-Received: from xenotime.net ([72.52.115.56]:49658 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1761774Ab0HMQXO convert rfc822-to-8bit (ORCPT
+	id S1761822Ab0HMQge (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 12:36:34 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:57895 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752635Ab0HMQgb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 12:23:14 -0400
-Date: Fri, 13 Aug 2010 09:23:09 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Kevin Curtis <kevin.curtis@farsite.co.uk>,
-        Phillip Lougher <phillip@lougher.demon.co.uk>,
-        Faisal Latif <faisal.latif@intel.com>,
-        Chien Tung <chien.tin.tung@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Samuel Ortiz <samuel.ortiz@intel.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-wireless@vger.kernel.org, x86@kernel.org,
-        linux-rdma@vger.kernel.org
-Subject: Re: i386 allmodconfig, current mainline
-Message-Id: <20100813092309.fd54fc28.rdunlap@xenotime.net>
-In-Reply-To: <AANLkTimtZ7H=rT68V6UGC2GBky8z9VJ5m6-pwFHfm7yw@mail.gmail.com>
-References: <20100809164346.6e30cf8c.akpm@linux-foundation.org>
-	<20100810101521.0dcd4393.sfr@canb.auug.org.au>
-	<AANLkTimtZ7H=rT68V6UGC2GBky8z9VJ5m6-pwFHfm7yw@mail.gmail.com>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Aug 2010 12:36:31 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH v2] s3fb: add DDC support
+Date: Fri, 13 Aug 2010 18:36:16 +0200
+User-Agent: KMail/1.9.10
+Cc: Ondrej Zajicek <santiago@crfreenet.org>, linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+References: <201008112218.11535.linux@rainbow-software.org> <20100812131421.bb2839f8.akpm@linux-foundation.org>
+In-Reply-To: <20100812131421.bb2839f8.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201008131836.18835.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 10 Aug 2010 18:53:20 +0200 Geert Uytterhoeven wrote:
+Add I2C support for the DDC bus to s3fb driver. This is only bus support,
+driver does not use EDID.
 
-> On Tue, Aug 10, 2010 at 02:15, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> > On Mon, 9 Aug 2010 16:43:46 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
-> >>
-> >> Guys.  What's goin' on out there?
-> >
-> > I guess we are all so up to date that noone does 32 bit builds any
-> > more ...  Also noone is bothering to look at the build logs:
-> >
-> > linus tree: http://kisskb.ellerman.id.au/kisskb/branch/3/
-> > linux-next: http://kisskb.ellerman.id.au/kisskb/branch/9/
-> 
-> Yeah, we have build failures migrating from -next to -linus :-(
-> 
-> BTW, still no one has commented on http://lkml.org/lkml/2010/7/13/378?
+Tested on Trio64V+, Trio64V2/DX, Virge (2 cards), Virge/DX (4 cards) and
+Trio3D/2X (3 cards) with i2cdetect and decode-edid.
 
-OK.
+Will probably not work on Trio32 - my 2 cards have DDC support in BIOS that
+looks different from the other cards but the DDC pins on the VGA connector
+are not connected.
 
-The diff (regression) script output looks useful to me.
-The log summary is still quite (too) verbose, or maybe that's partly due
-to the number of warnings & errors.  :(
+Virge/GX, Virge/GX2 and Virge/VX are untested.
 
 
-Maybe someone could look at http://www.xenotime.net/linux/scripts/buildsummary.pl also.
-
-Here is today's linux-next *i386* build summary, short mode (totals only):
-
-> buildsummary.pl -t build*.out | more
-build-r5372.out: totals: error/warning files: 27, errors: 3, warnings: 44, Section mismatches: 36
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5373.out: totals: error/warning files: 10, errors: 3, warnings: 14, Section mismatches: 36
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5374.out: totals: error/warning files: 29, errors: 0, warnings: 45, Section mismatches: 38
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5375.out: totals: error/warning files: 18, errors: 3, warnings: 36, Section mismatches: 38
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5377.out: totals: error/warning files: 21, errors: 0, warnings: 43, Section mismatches: 67
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5380.out: totals: error/warning files: 16, errors: 4, warnings: 22, Section mismatches: 81
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5381.out: totals: error/warning files: 17, errors: 3, warnings: 75, Section mismatches: 88
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5383.out: totals: error/warning files: 11, errors: 0, warnings: 32, Section mismatches: 130
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5384.out: totals: error/warning files: 23, errors: 3, warnings: 47, Section mismatches: 150
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5385.out: totals: error/warning files: 6, errors: 12, warnings: 9, Section mismatches: 160
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5386.out: totals: error/warning files: 10, errors: 1, warnings: 53, Section mismatches: 163
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5387.out: totals: error/warning files: 18, errors: 0, warnings: 45, Section mismatches: 164
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5388.out: totals: error/warning files: 7, errors: 1, warnings: 8, Section mismatches: 164
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5389.out: totals: error/warning files: 43, errors: 0, warnings: 80, Section mismatches: 167
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5390.out: totals: error/warning files: 12, errors: 0, warnings: 18, Section mismatches: 167
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5391.out: totals: error/warning files: 46, errors: 0, warnings: 77, Section mismatches: 170
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5392.out: totals: error/warning files: 15, errors: 12, warnings: 31, Section mismatches: 184
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5393.out: totals: error/warning files: 15, errors: 0, warnings: 23, Section mismatches: 187
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5394.out: totals: error/warning files: 76, errors: 0, warnings: 141, Section mismatches: 190
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5395.out: totals: error/warning files: 11, errors: 0, warnings: 18, Section mismatches: 192
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-build-r5396.out: totals: error/warning files: 22, errors: 0, warnings: 28, Section mismatches: 193
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+This time with Kconfig part present.
+
+--- linux-2.6.35-rc2/drivers/video/s3fb.c	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/s3fb.c	2010-08-10 19:42:38.000000000 +0200
+@@ -25,6 +25,10 @@
+ #include <linux/console.h> /* Why should fb driver call console functions? because acquire_console_sem() */
+ #include <video/vga.h>
+ 
++#include <linux/i2c.h>
++#include <linux/i2c-id.h>
++#include <linux/i2c-algo-bit.h>
++
+ #ifdef CONFIG_MTRR
+ #include <asm/mtrr.h>
+ #endif
+@@ -36,6 +40,12 @@
+ 	struct mutex open_lock;
+ 	unsigned int ref_count;
+ 	u32 pseudo_palette[16];
++#ifdef CONFIG_FB_S3_DDC
++	u8 __iomem *mmio;
++	bool ddc_registered;
++	struct i2c_adapter ddc_adapter;
++	struct i2c_algo_bit_data ddc_algo;
++#endif
+ };
+ 
+ 
+@@ -102,6 +112,9 @@
+ #define CHIP_UNDECIDED_FLAG	0x80
+ #define CHIP_MASK		0xFF
+ 
++#define MMIO_OFFSET		0x1000000
++#define MMIO_SIZE		0x10000
++
+ /* CRT timing register sets */
+ 
+ static const struct vga_regset s3_h_total_regs[]        = {{0x00, 0, 7}, {0x5D, 0, 0}, VGA_REGSET_END};
+@@ -164,6 +177,118 @@
+ 
+ /* ------------------------------------------------------------------------- */
+ 
++#ifdef CONFIG_FB_S3_DDC
++
++#define DDC_REG		0xaa		/* Trio 3D and probably Virge/GX2 */
++#define DDC_MMIO_REG	0xff20		/* Trio, Virge, Virge/DX, not sure about Virge/GX and VX */
++#define DDC_SCL_OUT	(1 << 0)
++#define DDC_SDA_OUT	(1 << 1)
++#define DDC_SCL_IN	(1 << 2)
++#define DDC_SDA_IN	(1 << 3)
++#define DDC_DRIVE_EN	(1 << 4)
++
++static bool s3fb_ddc_needs_mmio(int chip)
++{
++	return !(chip == CHIP_356_VIRGE_GX2  ||
++		 chip == CHIP_357_VIRGE_GX2P ||
++		 chip == CHIP_359_VIRGE_GX2P ||
++		 chip == CHIP_360_TRIO3D_1X  ||
++		 chip == CHIP_362_TRIO3D_2X  ||
++		 chip == CHIP_368_TRIO3D_2X);
++}
++
++static u8 s3fb_ddc_read(struct s3fb_info *par)
++{
++	if (s3fb_ddc_needs_mmio(par->chip))
++		return readb(par->mmio + DDC_MMIO_REG);
++	else
++		return vga_rcrt(NULL, DDC_REG);
++}
++
++static void s3fb_ddc_write(struct s3fb_info *par, u8 val)
++{
++	if (s3fb_ddc_needs_mmio(par->chip))
++		writeb(val, par->mmio + DDC_MMIO_REG);
++	else
++		vga_wcrt(NULL, DDC_REG, val);
++}
++
++static void s3fb_ddc_setscl(void *data, int val)
++{
++	struct s3fb_info *par = data;
++	unsigned char reg;
++
++	reg = s3fb_ddc_read(par) | DDC_DRIVE_EN;
++	if (val)
++		reg |= DDC_SCL_OUT;
++	else
++		reg &= ~DDC_SCL_OUT;
++	s3fb_ddc_write(par, reg);
++}
++
++static void s3fb_ddc_setsda(void *data, int val)
++{
++	struct s3fb_info *par = data;
++	unsigned char reg;
++
++	reg = s3fb_ddc_read(par) | DDC_DRIVE_EN;
++	if (val)
++		reg |= DDC_SDA_OUT;
++	else
++		reg &= ~DDC_SDA_OUT;
++	s3fb_ddc_write(par, reg);
++}
++
++static int s3fb_ddc_getscl(void *data)
++{
++	struct s3fb_info *par = data;
++
++	return !!(s3fb_ddc_read(par) & DDC_SCL_IN);
++}
++
++static int s3fb_ddc_getsda(void *data)
++{
++	struct s3fb_info *par = data;
++
++	return !!(s3fb_ddc_read(par) & DDC_SDA_IN);
++}
++
++static int __devinit s3fb_setup_ddc_bus(struct fb_info *info)
++{
++	struct s3fb_info *par = info->par;
++
++	strlcpy(par->ddc_adapter.name, info->fix.id,
++		sizeof(par->ddc_adapter.name));
++	par->ddc_adapter.owner		= THIS_MODULE;
++	par->ddc_adapter.class		= I2C_CLASS_DDC;
++	par->ddc_adapter.algo_data	= &par->ddc_algo;
++	par->ddc_adapter.dev.parent	= info->device;
++	par->ddc_algo.setsda		= s3fb_ddc_setsda;
++	par->ddc_algo.setscl		= s3fb_ddc_setscl;
++	par->ddc_algo.getsda		= s3fb_ddc_getsda;
++	par->ddc_algo.getscl		= s3fb_ddc_getscl;
++	par->ddc_algo.udelay		= 10;
++	par->ddc_algo.timeout		= 20;
++	par->ddc_algo.data		= par;
++
++	i2c_set_adapdata(&par->ddc_adapter, par);
++
++	/*
++	 * some Virge cards have external MUX to switch chip I2C bus between
++	 * DDC and extension pins - switch it do DDC
++	 */
++/*	vga_wseq(NULL, 0x08, 0x06); - not needed, already unlocked */
++	svga_wseq_mask(0x0d, 0x00, 0x03);
++	/* some Virge need this or the DDC is ignored */
++	svga_wcrt_mask(0x5c, 0x03, 0x03);
++
++	return i2c_bit_add_bus(&par->ddc_adapter);
++}
++#endif /* CONFIG_FB_S3_DDC */
++
++
++/* ------------------------------------------------------------------------- */
++
+ /* Set font in S3 fast text mode */
+ 
+ static void s3fb_settile_fast(struct fb_info *info, struct fb_tilemap *map)
+@@ -1019,6 +1144,21 @@
+ 	info->fix.accel = FB_ACCEL_NONE;
+ 	info->pseudo_palette = (void*) (par->pseudo_palette);
+ 
++#ifdef CONFIG_FB_S3_DDC
++	/* Enable MMIO if needed */
++	if (s3fb_ddc_needs_mmio(par->chip)) {
++		par->mmio = ioremap(info->fix.smem_start + MMIO_OFFSET, MMIO_SIZE);
++		if (par->mmio)
++			svga_wcrt_mask(0x53, 0x08, 0x08);	/* enable MMIO */
++		else
++			dev_err(info->device, "unable to map MMIO at 0x%lx, disabling DDC",
++				info->fix.smem_start + MMIO_OFFSET);
++	}
++	if (!s3fb_ddc_needs_mmio(par->chip) || par->mmio)
++		if (s3fb_setup_ddc_bus(info) == 0)
++			par->ddc_registered = true;
++#endif
++
+ 	/* Prepare startup mode */
+ 	rc = fb_find_mode(&(info->var), info, mode_option, NULL, 0, NULL, 8);
+ 	if (! ((rc == 1) || (rc == 2))) {
+@@ -1064,6 +1204,12 @@
+ 	fb_dealloc_cmap(&info->cmap);
+ err_alloc_cmap:
+ err_find_mode:
++#ifdef CONFIG_FB_S3_DDC
++	if (par->ddc_registered)
++		i2c_del_adapter(&par->ddc_adapter);
++	if (par->mmio)
++		iounmap(par->mmio);
++#endif
+ 	pci_iounmap(dev, info->screen_base);
+ err_iomap:
+ 	pci_release_regions(dev);
+@@ -1095,6 +1241,13 @@
+ 		unregister_framebuffer(info);
+ 		fb_dealloc_cmap(&info->cmap);
+ 
++#ifdef CONFIG_FB_S3_DDC
++		if (par->ddc_registered)
++			i2c_del_adapter(&par->ddc_adapter);
++		if (par->mmio)
++			iounmap(par->mmio);
++#endif
++
+ 		pci_iounmap(dev, info->screen_base);
+ 		pci_release_regions(dev);
+ /*		pci_disable_device(dev); */
+--- linux-2.6.35-rc2/drivers/video/Kconfig	2010-06-06 05:43:24.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/Kconfig	2010-08-08 18:48:31.000000000 +0200
+@@ -1435,6 +1444,15 @@ config FB_S3
+ 	---help---
+ 	  Driver for graphics boards with S3 Trio / S3 Virge chip.
+ 
++config FB_S3_DDC
++	bool "DDC for S3 support"
++	depends on FB_S3
++	select FB_DDC
++	default y
++	help
++	  Say Y here if you want DDC support for your S3 graphics card
++	  This is only I2C bus support, driver does not use EDID.
++
+ config FB_SAVAGE
+ 	tristate "S3 Savage support"
+ 	depends on FB && PCI && EXPERIMENTAL
+
+
+
+-- 
+Ondrej Zary
