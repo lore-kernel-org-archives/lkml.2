@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab0HMH4u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:56:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54424 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243Ab0HMH4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:56:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,362,1278313200"; 
-   d="scan'208";a="595993613"
-From: Sheng Yang <sheng@linux.intel.com>
-Organization: Intel Opensource Technology Center
-To: Xiaotian Feng <dfeng@redhat.com>
-Subject: Re: [PATCH] kvm: fix poison overwritten caused by using wrong xstate size
-Date: Fri, 13 Aug 2010 15:56:25 +0800
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
-Cc: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Brian Gerst <brgerst@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-References: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com> <1281683951-19814-1-git-send-email-dfeng@redhat.com>
-In-Reply-To: <1281683951-19814-1-git-send-email-dfeng@redhat.com>
+	id S1761338Ab0HMIHJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 04:07:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44955 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab0HMIHF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 04:07:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tpWnLUI2maKiIFPWf9G5syDHgsHdsqzHhb0VPVjITtZx1KhPchUDhBmrm1jdkrgOL2
+         AMEupMPjRSX5kMEsam4gwhAskIPGKJQvRy1vyj6D5IL8FAow9XNaRceFYXc6bkyLMf5h
+         sCK1KzD3l2uYPAriiDLXx/bqAxJI1q8cFEBRA=
+Date: Fri, 13 Aug 2010 10:07:23 +0200
+From: Richard Cochran <richardcochran@gmail.com>
+To: "Development for the MeeGo Project (discussion list)" 
+	<meego-dev@meego.com>
+Cc: "Wang, Qi" <qi.wang@intel.com>,
+        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [MeeGo-dev] [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588
+ driver to 2.6.35
+Message-ID: <20100813080723.GB4727@riccoc20.at.omicron.at>
+References: <4C612AA4.5040100@dsn.okisemi.com>
+ <20100810171343.GE21220@suse.de>
+ <002601cb3926$edaf24d0$66f8800a@maildom.okisemi.com>
+ <20100811151510.GB9180@suse.de>
+ <D5AB6E638E5A3E4B8F4406B113A5A19A28EA26B2@shsmsx501.ccr.corp.intel.com>
+ <20100812020027.GA14121@suse.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008131556.26318.sheng@linux.intel.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100812020027.GA14121@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 13 August 2010 15:19:11 Xiaotian Feng wrote:
-> fpu.state is allocated from task_xstate_cachep, the size of
-> task_xstate_cachep is xstate_size. xstate_size is set from cpuid
-> instruction, which is often smaller than sizeof(struct xsave_struct). kvm
-> is using sizeof(struct xsave_struct) to fill in/out fpu.state.xsave, as
-> what we allocated for fpu.state is xstate_size, kernel will write out of
-> memory and caused poison/redzone/padding overwritten warnings.
->
-> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-> Cc: Brian Gerst <brgerst@gmail.com>
-> Cc: Avi Kivity <avi@redhat.com>
-> Cc: Robert Richter <robert.richter@amd.com>
-> Cc: Sheng Yang <sheng@linux.intel.com>
-> Cc: Marcelo Tosatti <mtosatti@redhat.com>
-> Cc: Gleb Natapov <gleb@redhat.com>
-> Cc: Jan Kiszka <jan.kiszka@siemens.com>
- 
-Reviewed-by: Sheng Yang <sheng@linux.intel.com>
+On Wed, Aug 11, 2010 at 07:00:27PM -0700, Greg KH wrote:
+> On Thu, Aug 12, 2010 at 09:13:24AM +0800, Wang, Qi wrote:
+> > > Please express yours.  Why do you feel you need these to be ioctls?
+> > > What exactly are they doing?  Where is the documentation for them all?
+> 
+> You forgot to answer this.
 
---
-regards
-Yang, Sheng
+I recently introduced a PTP clock infrastructure on the netdev
+list. While the patch set is still under review, some necessary
+background patches have already been accepted, and the response to the
+API has been positive.
 
-> ---
->  arch/x86/kernel/i387.c |    1 +
->  arch/x86/kvm/x86.c     |    4 ++--
->  2 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index 1f11f5c..a46cb35 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -40,6 +40,7 @@
-> 
->  static unsigned int		mxcsr_feature_mask __read_mostly = 0xffffffffu;
->  unsigned int xstate_size;
-> +EXPORT_SYMBOL_GPL(xstate_size);
->  unsigned int sig_xstate_ia32_size = sizeof(struct _fpstate_ia32);
->  static struct i387_fxsave_struct fx_scratch __cpuinitdata;
-> 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 25f1907..3a09c62 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -2387,7 +2387,7 @@ static void kvm_vcpu_ioctl_x86_get_xsave(struct
-> kvm_vcpu *vcpu, if (cpu_has_xsave)
->  		memcpy(guest_xsave->region,
->  			&vcpu->arch.guest_fpu.state->xsave,
-> -			sizeof(struct xsave_struct));
-> +			xstate_size);
->  	else {
->  		memcpy(guest_xsave->region,
->  			&vcpu->arch.guest_fpu.state->fxsave,
-> @@ -2405,7 +2405,7 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct
-> kvm_vcpu *vcpu,
-> 
->  	if (cpu_has_xsave)
->  		memcpy(&vcpu->arch.guest_fpu.state->xsave,
-> -			guest_xsave->region, sizeof(struct xsave_struct));
-> +			guest_xsave->region, xstate_size);
->  	else {
->  		if (xstate_bv & ~XSTATE_FPSSE)
->  			return -EINVAL;
+One major goal of the framework is to reduce the amount of driver code
+need to support a new PTP clock. Another goal is remove the need for
+MAC drivers to add a bunch of new, private ioctls just for PTP.
+
+Please take a look at that patch set (latest was v4) and also submit
+any PTP code on the netdev list for review.
+
+In any case, a MAC driver that offers time stamping on network packets
+must implement the SO_TIMESTAMPING API, which has been a part of Linux
+since 2.6.30.
+
+Richard
