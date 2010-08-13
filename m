@@ -1,64 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761419Ab0HMJYq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 05:24:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51925 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761390Ab0HMJYo (ORCPT
+	id S934121Ab0HMJ1j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 05:27:39 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:43956 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761408Ab0HMJ1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 05:24:44 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        David Brownell <david-b@pacbell.net>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] mmc: build fix: mmc_pm_notify is only available with CONFIG_PM=y
-Date: Fri, 13 Aug 2010 11:24:33 +0200
-Message-Id: <1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1276809814-28683-1-git-send-email-maximlevitsky@gmail.com>
-References: <1276809814-28683-1-git-send-email-maximlevitsky@gmail.com>
+	Fri, 13 Aug 2010 05:27:36 -0400
+Message-ID: <4C650FFB.7090602@canonical.com>
+Date: Fri, 13 Aug 2010 17:27:23 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>
+CC: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ideapad-laptop: add new driver
+References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com> <1281690893.23680.475.camel@localhost>
+In-Reply-To: <1281690893.23680.475.camel@localhost>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes a build breakage introduced by
+On 08/13/2010 05:14 PM, David Woodhouse wrote:
+> 
+> Hm, interesting. What model (and BIOS version) are you testing with?
+I have two machine, B550 and S10-3, the BIOS date/version of S10-3 is the
+same with you.
 
-	4c2ef25 (mmc: fix all hangs related to mmc/sd card insert/removal during suspend/resume)
-
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: David Brownell <david-b@pacbell.net>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-mmc@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/mmc/core/host.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-index 0efe631..d80cfdc 100644
---- a/drivers/mmc/core/host.c
-+++ b/drivers/mmc/core/host.c
-@@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
- 	init_waitqueue_head(&host->wq);
- 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
- 	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
-+#ifdef CONFIG_PM
- 	host->pm_notify.notifier_call = mmc_pm_notify;
-+#endif
- 
- 	/*
- 	 * By default, hosts do not support SGIO or large requests.
--- 
-1.7.1
+> 
+> On my S10-3, (DMI BIOS version 2ACN23WW, date 03/12/2010), I get these
+> keys through the normal keyboard controller -- and we can tell the
+> brightness up/down apart, too.
+> 
+> http://git.kernel.org/?p=linux/hotplug/udev.git;a=commitdiff;h=9cd075e3
+> 
+> Do you see those keycodes too... and do they *stop* arriving through the
+> keyboard controller when you load your driver?
+> 
+Yes, IIRC EC will send i8042 keycode when you booting with QS button, not
+with power button. atkbd.c reports unknown key after booting with QS button.
 
