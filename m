@@ -1,64 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934195Ab0HMKy1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 06:54:27 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:63826 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934175Ab0HMKy0 (ORCPT
+	id S934198Ab0HMK4O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 06:56:14 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:44510 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934171Ab0HMK4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 06:54:26 -0400
-Subject: Re: [REGRESSION 2.6.35+] crash (maybe kmemleak related)
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-In-Reply-To: <AANLkTi=uD1FAPcu1_dVy_KhnqHwqj1rjpZTA8bn96q9i@mail.gmail.com>
-References: <AANLkTi=uD1FAPcu1_dVy_KhnqHwqj1rjpZTA8bn96q9i@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Fri, 13 Aug 2010 11:38:39 +0100
-Message-ID: <1281695919.25390.31.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Aug 2010 10:38:39.0528 (UTC) FILETIME=[B12DF280:01CB3AD3]
+	Fri, 13 Aug 2010 06:56:12 -0400
+Message-ID: <4C65246E.1000906@ru.mvista.com>
+Date: Fri, 13 Aug 2010 14:54:38 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Igor Grinberg <grinberg@compulab.co.il>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] ARM: imx: fix build failure concerning otg/ulpi
+References: <1275464450-23003-2-git-send-email-grinberg@compulab.co.il> <1281694891-7527-1-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <1281694891-7527-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 11:28 +0100, Pekka Enberg wrote:
-> On Fri, Aug 13, 2010 at 12:26 PM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > This kmemleak warning tells us that the kmemleak_alloc() hook got called
-> > with a pointer (0xffff880079fe6000) that's already registered with
-> > kmemleak. The first trace tells us where the hook gets called from while
-> > the second trace shows the details of the already existing pointer.
-> >
-> > So __getname() allocates the same 4096 bytes block twice via
-> > kmem_cache_alloc() but there is no kmemleak_free() call between them and
-> > kmemleak gives up. It disables itself but does not panic the system.
-> >
-> > Pekka, were there any recent changes in the slab/slob/slub area and
-> > maybe a kmemleak_free() hook is missing? Or maybe something else went
-> > wrong with the slab allocator and returns an already allocated block?
-> >
-> >> <0>[   24.578578] general protection fault: 0000 [#1] PREEMPT SMP
-> >
-> > That's what's causing the fault but it doesn't seem to be related to
-> > kmemleak.
+Hello.
+
+Uwe Kleine-König wrote:
+
+> The build failure was introduced by
 > 
-> Looking at Maxim's log, slab seems to be corrupted. I don't see
-> anything obviously wrong with SLUB (which he is using) kmemleak hooks
-> so it doesn't look like a slab allocator problem either. Could this be
-> related to the bootmem kmemleak hook changes?
+> 	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
 
-I don't think in this case since both allocations came via
-kmem_cache_alloc() (and not one from bootmem and the other from slab, as
-it happened to me in the past). But it's worth trying with kmemleak
-disabled.
+> Cc: Igor Grinberg <grinberg@compulab.co.il>
+> Cc: Mike Rapoport <mike@compulab.co.il>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
 
--- 
-Catalin
+    Signoff is missing.
+
+
+> diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
+> index 575ff1a..339150a 100644
+> --- a/arch/arm/mach-imx/mach-cpuimx27.c
+> +++ b/arch/arm/mach-imx/mach-cpuimx27.c
+> @@ -279,13 +279,13 @@ static void __init eukrea_cpuimx27_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  		mxc_register_device(&mxc_otg_host, &otg_pdata);
+>  	}
+>  
+>  	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
+>  #endif
+> diff --git a/arch/arm/mach-imx/mach-pca100.c b/arch/arm/mach-imx/mach-pca100.c
+> index a389d11..23c9e1f 100644
+> --- a/arch/arm/mach-imx/mach-pca100.c
+> +++ b/arch/arm/mach-imx/mach-pca100.c
+> @@ -419,13 +419,13 @@ static void __init pca100_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  		mxc_register_device(&mxc_otg_host, &otg_pdata);
+>  	}
+>  
+>  	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
+>  #endif
+> diff --git a/arch/arm/mach-mx25/mach-cpuimx25.c b/arch/arm/mach-mx25/mach-cpuimx25.c
+> index 56b2e26..0134fb8 100644
+> --- a/arch/arm/mach-mx25/mach-cpuimx25.c
+> +++ b/arch/arm/mach-mx25/mach-cpuimx25.c
+> @@ -138,7 +138,7 @@ static void __init eukrea_cpuimx25_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				USB_OTG_DRV_VBUS | ULPI_OTG_DRVVBUS_EXT);
+
+    Not ULPI_OTG_DRVVBUS, like in other cases?
+
+>  
+>  		mxc_register_device(&mxc_otg, &otg_pdata);
+>  	}
+> diff --git a/arch/arm/mach-mx3/mach-cpuimx35.c b/arch/arm/mach-mx3/mach-cpuimx35.c
+> index 63f970f..117f90e 100644
+> --- a/arch/arm/mach-mx3/mach-cpuimx35.c
+> +++ b/arch/arm/mach-mx3/mach-cpuimx35.c
+> @@ -192,7 +192,7 @@ static void __init mxc_board_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				USB_OTG_DRV_VBUS | ULPI_OTG_DRVVBUS_EXT);
+
+    Same question here...
+
+WBR, Sergei
 
