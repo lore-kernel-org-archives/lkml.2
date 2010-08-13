@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934333Ab0HMNYH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:24:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37833 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934280Ab0HMNYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:24:05 -0400
-Message-ID: <4C6546E0.7070208@kernel.org>
-Date: Fri, 13 Aug 2010 15:21:36 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, jack@suse.cz, rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <4C6540C5.8070108@vlnb.net>
-In-Reply-To: <4C6540C5.8070108@vlnb.net>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1761593Ab0HMN2B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:28:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51651 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab0HMN2A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 09:28:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=vCExaWerS3/U17eVwb2bCHCSvaEDVTsoQaE4nAQ4mGb4W0dDaLwoNRlGH4WnJ2Bmcx
+         54XL/mP3kyzsQIxLyLQB49Eirsd/umxFjbfDjK8n4NFgADz1dwR1Km3BoHWkDqizBswK
+         XuFR2Y/enHxab+lRcj0ReqDYhpvVePAnAwWAk=
+Subject: [QUESTION] Need some explanations in regard to memory alignment of
+ requests that a block device receives
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Alex Dubov <oakad@yahoo.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Aug 2010 16:27:51 +0300
+Message-ID: <1281706071.4160.18.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 13 Aug 2010 13:23:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On 08/13/2010 02:55 PM, Vladislav Bolkhovitin wrote:
-> If requested, I can develop the interface further.
+I currently am writing a block driver for Legacy Memory sticks.
 
-I still think the benefit of ordering by tag would be marginal at
-best, and what have you guys measured there?  Under the current
-framework, there's no easy way to measure full ordered-by-tag
-implementation.  The mechanism for filesystems to communicate the
-ordering information (which would be a partially ordered graph) just
-isn't there and there is no way the current usage of ordering-by-tag
-only for barrier sequence can achieve anything close to that level of
-difference.
+I have few questions about that type of data my ->request will receive
+from kernel.
 
-Ripping out the original ordering by tag mechanism doesn't amount to
-much.  The use of ordering-by-tag was pretty half-assed there anyway.
-If you think exporting full ordering information from filesystem to
-the lower layers is worthwhile, please go ahead.  It would be very
-interesting to see how much actual difference it can make compared to
-ordering-by-filesystem and if it's actually better and the added
-complexity is manageable, there's no reason not to do that.
+First of all I think that by default, driver receives requests that
+contains just one sector and it isn't in high memory.
 
-Thank you.
+However I am opting in to allow to receive requests that have many
+sectors span several memory regions, and be in highmem).
+The request is converted to scatterlist upon which I operate.
+(Untill this point I did the same think Alex does in mspro_blk.c)
 
--- 
-tejun
+For simplicity lets assume 512 byte hardware sector size.
+
+However is there a guarantee that incoming memory segments will be
+aligned on 512 byte boundary?
+
+If this isn't true I run into 2 problems:
+
+1. Sector can span 2 pages. Therefore if I decide to do pio, and I use
+kmap_atomic (because of highmem), I need first map 1st page, read/write
+it, unmap it, and then then do the same with 2nd page.
+
+
+2. Sectors can span 2 memory regions.
+This is even worse. For DMA I would need to bounce the sector.
+Also it becames very difficult to handle input on sector by sector basis
+(short of bouncing everything...)
+
+
+If the above is true (I hope), then I have different problem.
+
+The problem is that I will have small buffer that will contain few
+hardware sectors.
+I currently allocate it using kmalloc.
+However I want to send that buffer to same functions that deal with IO,
+therefore I need it to be aligned on 512 byte boundary.
+
+Is there a way to allocate aligned memory (short of allocating more and
+aligning pointer manually which I hate to do)
+Maybe I should just use __get_free_pages?
+(I will need a buffer of page or two (once per driver load) I think).
+
+Best regards,
+Maxim Levitsky
+
+
