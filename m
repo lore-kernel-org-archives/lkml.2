@@ -1,48 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab0HMHPq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:15:46 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:54324 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751640Ab0HMHPn (ORCPT
+	id S1754291Ab0HMHQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:16:06 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:42308 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754211Ab0HMHPu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:15:43 -0400
-Message-ID: <4C64F112.8050504@canonical.com>
-Date: Fri, 13 Aug 2010 15:15:30 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	Fri, 13 Aug 2010 03:15:50 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=I2+1kRWq1BM4yTYc96yoLuw6Vu7CpREG2UCrEo+DWXrEa8ozbo6wasPHseRPv85Q4
+	wLtT7l9eDGWAvs8cpu7/g==
+Subject: [PATCH] Fixed a mismatch between the users of radix_tree and the
+	implementation.
+To: npiggin@suse.de, paulmck@us.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+From: Salman Qazi <sqazi@google.com>
+Cc: adurbin@google.com
+Date: Fri, 13 Aug 2010 00:15:35 -0700
+Message-ID: <20100813071535.18490.79633.stgit@bumblebee1.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Corentin Chary <corentin.chary@gmail.com>
-CC: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: [PATCH] ideapad-laptop: add new driver
-References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>	<AANLkTikBZ2SmqWavZ8bw69yQ_A5GTTcB13RKEzUuUcx3@mail.gmail.com>	<4C64EC01.9040103@canonical.com> <AANLkTim9jcbRwZt7E0gwVwQyETAEhe-tKP3NvGSAPknX@mail.gmail.com>
-In-Reply-To: <AANLkTim9jcbRwZt7E0gwVwQyETAEhe-tKP3NvGSAPknX@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/2010 03:01 PM, Corentin Chary wrote:
->> Could you point me where is the rfkill driver? Sorry I do not find it.
->>
->> I will see what I can do.
->>
->> Thanks.
->>
-> 
-> Here is the thread
-> http://thread.gmane.org/gmane.linux.drivers.platform.x86.devel/471
-> 
-Yes, I believe I can. will read patch from David and merge.
+This matters for the lockless page cache, in particular find_get_pages implementation.
 
-But I think i will not use \_SB_.SECN as major interface. I know there is
-another command code of EC that can access HW switch status and shutdown
-the interface.
+In the following case, we get can get a deadlock:
 
+    0.  The radix tree contains two items, one has the index 0.
+    1.  The reader (in this case find_get_pages) takes the rcu_read_lock.
+    2.  The reader acquires slot(s) for item(s) including the index 0 item.
+    3.  The non-zero index item is deleted, and as a consequence the other item
+        is moved to the root of the tree.  The place where it used to be is
+        queued for deletion after the readers finish.
+    4.  The reader looks at the index 0 slot, and finds that the page has 0 ref count
+    5.  The reader looks at it again, hoping that the item will either be freed
+        or the ref count will increase.  This never happens, as the slot it
+        is looking at will never be updated.  Also, this slot can never be reclaimed
+        because the reader is holding rcu_read_lock and is in an infinite loop.
+
+This can be reproduced with reliably by running dbench followed by compilebench under
+autotest.  I have not been able to construct a small targeted repro case.
+
+There is also a similar potential issue with insertion.  Storing the first
+element in the root and then moving it to a new slot on insertion of a
+second element would potentially lead to a similar problem.
+
+Both of these issues have been fixed in this change.
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ lib/radix-tree.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index e907858..035d5aa 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -252,11 +252,6 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+ 	while (index > radix_tree_maxindex(height))
+ 		height++;
+ 
+-	if (root->rnode == NULL) {
+-		root->height = height;
+-		goto out;
+-	}
+-
+ 	do {
+ 		unsigned int newheight;
+ 		if (!(node = radix_tree_node_alloc(root)))
+@@ -278,7 +273,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+ 		rcu_assign_pointer(root->rnode, node);
+ 		root->height = newheight;
+ 	} while (height > root->height);
+-out:
++
+ 	return 0;
+ }
+ 
+@@ -1154,7 +1149,7 @@ EXPORT_SYMBOL(radix_tree_gang_lookup_tag_slot);
+ static inline void radix_tree_shrink(struct radix_tree_root *root)
+ {
+ 	/* try to shrink tree height */
+-	while (root->height > 0) {
++	while (root->height > 1) {
+ 		struct radix_tree_node *to_free = root->rnode;
+ 		void *newptr;
+ 
 
