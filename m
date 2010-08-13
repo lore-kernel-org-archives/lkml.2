@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab0HMVtF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:49:05 -0400
-Received: from kroah.org ([198.145.64.141]:51675 "EHLO coco.kroah.org"
+	id S1755391Ab0HMVtW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:49:22 -0400
+Received: from kroah.org ([198.145.64.141]:51683 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753343Ab0HMVtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:49:03 -0400
+	id S1755153Ab0HMVtF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 17:49:05 -0400
 X-Mailbox-Line: From gregkh@clark.site Fri Aug 13 14:46:46 2010
-Message-Id: <20100813214646.132070415@clark.site>
+Message-Id: <20100813214646.299156413@clark.site>
 User-Agent: quilt/0.48-11.2
-Date: Fri, 13 Aug 2010 14:42:56 -0700
+Date: Fri, 13 Aug 2010 14:42:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
         akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [1/3] mm: keep a guard page below a grow-down stack segment
+Subject: [3/3] x86: dont send SIGBUS for kernel page faults
 In-Reply-To: <20100813214704.GA18960@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,72 +24,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+Based on commit 96054569190bdec375fe824e48ca1f4e3b53dd36 upstream,
+authored by Linus Torvalds.
 
-commit 320b2b8de12698082609ebbc1a17165727f4c893 upstream.
+This is my backport to the .27 kernel tree, hopefully preserving
+the same functionality.
 
-This is a rather minimally invasive patch to solve the problem of the
-user stack growing into a memory mapped area below it.  Whenever we fill
-the first page of the stack segment, expand the segment down by one
-page.
+Original commit message:
+	It's wrong for several reasons, but the most direct one is that the
+	fault may be for the stack accesses to set up a previous SIGBUS.  When
+	we have a kernel exception, the kernel exception handler does all the
+	fixups, not some user-level signal handler.
 
-Now, admittedly some odd application might _want_ the stack to grow down
-into the preceding memory mapping, and so we may at some point need to
-make this a process tunable (some people might also want to have more
-than a single page of guarding), but let's try the minimal approach
-first.
+	Even apart from the nested SIGBUS issue, it's also wrong to give out
+	kernel fault addresses in the signal handler info block, or to send a
+	SIGBUS when a system call already returns EFAULT.
 
-Tested with trivial application that maps a single page just below the
-stack, and then starts recursing.  Without this, we will get a SIGSEGV
-_after_ the stack has smashed the mapping.  With this patch, we'll get a
-nice SIGBUS just as the stack touches the page just above the mapping.
-
-Requested-by: Keith Packard <keithp@keithp.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- mm/memory.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ arch/x86/mm/fault.c |    9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2396,6 +2396,26 @@ out_nomap:
- }
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -589,6 +589,7 @@ void __kprobes do_page_fault(struct pt_r
+ 	unsigned long address;
+ 	int write, si_code;
+ 	int fault;
++	int should_exit_no_context = 0;
+ #ifdef CONFIG_X86_64
+ 	unsigned long flags;
+ #endif
+@@ -876,6 +877,9 @@ no_context:
+ 	oops_end(flags, regs, SIGKILL);
+ #endif
  
++	if (should_exit_no_context)
++		return;
++
  /*
-+ * This is like a special single-page "expand_downwards()",
-+ * except we must first make sure that 'address-PAGE_SIZE'
-+ * doesn't hit another vma.
-+ *
-+ * The "find_vma()" will do the right thing even if we wrap
-+ */
-+static inline int check_stack_guard_page(struct vm_area_struct *vma, unsigned long address)
-+{
-+	address &= PAGE_MASK;
-+	if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
-+		address -= PAGE_SIZE;
-+		if (find_vma(vma->vm_mm, address) != vma)
-+			return -ENOMEM;
-+
-+		expand_stack(vma, address);
+  * We ran out of memory, or some other thing happened to us that made
+  * us unable to handle the page fault gracefully.
+@@ -901,8 +905,11 @@ do_sigbus:
+ 	up_read(&mm->mmap_sem);
+ 
+ 	/* Kernel mode? Handle exceptions or die */
+-	if (!(error_code & PF_USER))
++	if (!(error_code & PF_USER)) {
++		should_exit_no_context = 1;
+ 		goto no_context;
 +	}
-+	return 0;
-+}
 +
-+/*
-  * We enter with non-exclusive mmap_sem (to exclude vma changes,
-  * but allow concurrent faults), and pte mapped but not yet locked.
-  * We return with mmap_sem still held, but pte unmapped and unlocked.
-@@ -2408,6 +2428,9 @@ static int do_anonymous_page(struct mm_s
- 	spinlock_t *ptl;
- 	pte_t entry;
- 
-+	if (check_stack_guard_page(vma, address) < 0)
-+		return VM_FAULT_SIGBUS;
-+
- 	/* Allocate our own private page. */
- 	pte_unmap(page_table);
- 
+ #ifdef CONFIG_X86_32
+ 	/* User space => ok to do another page fault */
+ 	if (is_prefetch(regs, address, error_code))
 
 
