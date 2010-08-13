@@ -1,142 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934557Ab0HMPXD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 11:23:03 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:60686 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934427Ab0HMPXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 11:23:00 -0400
-Date: Fri, 13 Aug 2010 08:22:54 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Theodore Tso <tytso@mit.edu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, stern@rowland.harvard.edu,
-        peterz@infradead.org, tglx@linutronix.de, menage@google.com,
-        david-b@pacbell.net, James.Bottomley@suse.de, arjan@infradead.org,
-        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100813152254.GD2511@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100811222854.GJ2516@linux.vnet.ibm.com>
- <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
- <20100812010612.GL2516@linux.vnet.ibm.com>
- <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
- <20100812034435.GA7403@linux.vnet.ibm.com>
- <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
- <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
- <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
- <20100812174303.GD2524@linux.vnet.ibm.com>
- <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934552Ab0HMP1g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 11:27:36 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35282 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934495Ab0HMP1d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 11:27:33 -0400
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net,
+        linux-kernel@vger.kernel.org, Maxim Levitsky <maximlevitsky@gmail.com>,
+        David Quan <David.Quan@atheros.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, stable@kernel.org,
+        "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Subject: [PATCH] ath5k: disable ASPM L0s for all cards
+Date: Fri, 13 Aug 2010 11:27:28 -0400
+Message-Id: <1281713248-25761-1-git-send-email-lrodriguez@atheros.com>
+X-Mailer: git-send-email 1.6.2.rc1.3.g81d3f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 10:34:47PM +0300, Felipe Contreras wrote:
-> On Thu, Aug 12, 2010 at 8:43 PM, Paul E. McKenney
-> <paulmck@linux.vnet.ibm.com> wrote:
-> > On Thu, Aug 12, 2010 at 02:11:22PM +0300, Felipe Contreras wrote:
-> >> So far, nobody has refuted these:
-> >>  1) opportunistic suspend needs a good behaved user-space to work properly
-> >
-> > As does dynamic power management.
-> 
-> Thus remains unrefuted.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
 
-Glad we agree that both dynamic power management and opportunistic
-power management need applications to be written carefully.  Of course,
-dynamic power management requires all of the code in those applications
-to be carefully written, while experience indicates that opportunistic
-suspend requires only a small fraction to be carefully written.
+Atheros PCIe wireless cards handled by ath5k do require L0s disabled.
+For distributions shipping with CONFIG_PCIEASPM (this will be enabled
+by default in the future in 2.6.36) this will also mean both L1 and L0s
+will be disabled when a pre 1.1 PCIe device is detected. We do know L1
+works correctly even for all ath5k pre 1.1 PCIe devices though but cannot
+currently undue the effect of a blacklist, for details you can read
+pcie_aspm_sanity_check() and see how it adjusts the device link
+capability.
 
-> >>  2) if suspend blockers are enabled in a system, *all* user-space must
-> >> implement them to work correctly
-> >
-> > Really?  From what I can see, only PM-driving applications need to use
-> > suspend blockers.
-> 
-> "PM-driving applications" is a new invention, so how do you know if an
-> application belongs to this category or not? Some application might be
-> non-PM-driving most of the time, but suddenly become PM-driving. Well,
-> you have to analyze *all* of them.
+It may be possible in the future to implement some PCI API to allow
+drivers to override blacklists for pre 1.1 PCIe but for now it is
+best to accept that both L0s and L1 will be disabled completely for
+distributions shipping with CONFIG_PCIEASPM rather than having this
+issue present. Motivation for adding this new API will be to help
+with power consumption for some of these devices.
 
-A PM-driving application is one that exerts control over the system's
-power state.  In the case of Android, a PM-driving application is one
-that is permitted to acquire suspend blockers.
+Example of issues you'd see:
 
-> Think about this... is bash a PM driving application? No, but what if
-> you run: 'sleep 3600 && alarm.sh'.
+  - On the Acer Aspire One (AOA150, Atheros Communications Inc. AR5001
+    Wireless Network Adapter [168c:001c] (rev 01)) doesn't work well
+    with ASPM enabled, the card will eventually stall on heavy traffic
+    with often 'unsupported jumbo' warnings appearing. Disabling
+    ASPM L0s in ath5k fixes these problems.
 
-That is an excellent example, as it applies equally to dynamic power
-management.  By how much are you allowed to delay the wakeup?
+  - On the same card you would see a storm of RXORN interrupts
+    even though medium is idle.
 
-> Perhaps I should rewrite that as:
-> 2) if suspend blockers are enabled in the system; *all* user-space is affected
+Credit for root causing and fixing the bug goes to Jussi Kivilinna.
 
-That is speculation on your part.
+Cc: David Quan <David.Quan@atheros.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Tim Gardner <tim.gardner@canonical.com>
+Cc: Jussi Kivilinna <jussi.kivilinna@mbnet.fi>
+Cc: stable@kernel.org
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+---
 
-> >>  3) implementing suspend blockers in user-space is not a straight-forward task
-> >
-> > Fortunately, experience thus far has shown that only a small fraction of
-> > applications need to use suspend blockers.
-> 
-> Wrong. We don't have any experience on that at all on typical linux
-> ecosystems (remember that Android's user-space is very special).
+Maxim, it was just reported this patch never made it upstream
+so I just took the liberty to submit it and also clear up the
+commit log and comments a little more in terms of actual impact
+and possible future fixes. I've also Cc'd stable so this can
+get propagated down to 2.6.32 as well.
 
-Android's experience might not apply exactly to typical Linux ecosystems,
-but we really can learn quite a bit from it -- at least if we can bring
-ourselves to do so.
+ drivers/net/wireless/ath/ath5k/base.c |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
 
-> >> So, as the length of this thread has shown, the benefits of
-> >> opportunistic suspend are *dubious* at best, and more likely not worth
-> >> the changes needed in user-space which eventually will get pretty
-> >> close to what suspend blockers can achieve even in ideal circumstances
-> >> by just doing dynamic PM.
-> >
-> > The length of this thread (and the ones preceding it) is mostly due to
-> > people talking past each other.
-> 
-> Perhaps half of the thread, or even one quarter of the thread can be
-> attributed to that, but still the rest I think it's because people
-> keep pushing in, and people keep pushing out.
+diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
+index 0d5de25..373dcfe 100644
+--- a/drivers/net/wireless/ath/ath5k/base.c
++++ b/drivers/net/wireless/ath/ath5k/base.c
+@@ -48,6 +48,7 @@
+ #include <linux/netdevice.h>
+ #include <linux/cache.h>
+ #include <linux/pci.h>
++#include <linux/pci-aspm.h>
+ #include <linux/ethtool.h>
+ #include <linux/uaccess.h>
+ #include <linux/slab.h>
+@@ -476,6 +477,26 @@ ath5k_pci_probe(struct pci_dev *pdev,
+ 	int ret;
+ 	u8 csz;
+ 
++	/*
++	 * L0s needs to be disabled on all ath5k cards.
++	 *
++	 * For distributions shipping with CONFIG_PCIEASPM (this will be enabled
++	 * by default in the future in 2.6.36) this will also mean both L1 and
++	 * L0s will be disabled when a pre 1.1 PCIe device is detected. We do
++	 * know L1 works correctly even for all ath5k pre 1.1 PCIe devices
++	 * though but cannot currently undue the effect of a blacklist, for
++	 * details you can read pcie_aspm_sanity_check() and see how it adjusts
++	 * the device link capability.
++	 *
++	 * It may be possible in the future to implement some PCI API to allow
++	 * drivers to override blacklists for pre 1.1 PCIe but for now it is
++	 * best to accept that both L0s and L1 will be disabled completely for
++	 * distributions shipping with CONFIG_PCIEASPM rather than having this
++	 * issue present. Motivation for adding this new API will be to help
++	 * with power consumption for some of these devices.
++	 */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S);
++
+ 	ret = pci_enable_device(pdev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "can't enable device\n");
+-- 
+1.7.0.4
 
-Fair enough.  I wasn't differentiating between people mistakenly talking
-past each other and intentionally talking past each other, but if you
-want to differentiate, feel free to do so.
-
-> > For example, the Android folks seem to
-> > believe that it is important that relatively unskilled people be able
-> > to write simple apps, and that the system nevertheless be able to run
-> > these apps in a relatively energy efficient manner.  Your proposals do
-> > not address this issue.  This might be because you are not aware of
-> > this desire, because you are not aware of the computing history that
-> > argues in favor of this requirement, or because you simply don't like
-> > this requirement.  Whatever the reason, until you face this requirement
-> > head on, either addressing it or proving that it need not be addressed,
-> > you will continue to be talking past the Android folks.
-> 
-> This "requirement" is specific to Android's user-space, isn't it?
-
-That is your speculation.
-
-> Not Ubuntu, not Fedora, not MeeGo, not anyone with a typical
-> user-space seems to be having this problem. I can argue to you that
-> this problem can be solved in easier ways, but instead I will argue
-> that perhaps we should wait for somebody besides Android to complain
-> about it before providing a "solution". Because after all, what good
-> is a "solution" provided by the kernel, if the user-space is not going
-> to use it, ever.
-
-At this point in the discussion, I am quite prepared to believe that you
-will avoid using suspend blockers, and that you will further do everything
-in your power to prevent anyone else from using suspend blockers.  ;-)
-
-							Thanx, Paul
