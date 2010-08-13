@@ -1,173 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab0HMHwX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:52:23 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:40897 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755024Ab0HMHwV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:52:21 -0400
-Date: Fri, 13 Aug 2010 03:52:14 -0400
-From: Simon Horman <horms@verge.net.au>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, nhorman@redhat.com,
-        kexec@lists.infradead.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, akpm@linux-foundation.org,
-        Vivek Goyal <vgoyal@redhat.com>,
-        huang ying <huang.ying.caritas@gmail.com>, ebiederm@xmission.com
-Subject: Re: [Resend][Patch v2] kexec: increase max of kexec segments and
- use dynamic allocation
-Message-ID: <20100813075214.GA5399@verge.net.au>
-References: <20100813054314.5564.21503.sendpatchset@localhost.localdomain>
+	id S1755848Ab0HMH4u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:56:50 -0400
+Received: from mga01.intel.com ([192.55.52.88]:54424 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755243Ab0HMH4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 03:56:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,362,1278313200"; 
+   d="scan'208";a="595993613"
+From: Sheng Yang <sheng@linux.intel.com>
+Organization: Intel Opensource Technology Center
+To: Xiaotian Feng <dfeng@redhat.com>
+Subject: Re: [PATCH] kvm: fix poison overwritten caused by using wrong xstate size
+Date: Fri, 13 Aug 2010 15:56:25 +0800
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; x86_64; ; )
+Cc: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Brian Gerst <brgerst@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+References: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com> <1281683951-19814-1-git-send-email-dfeng@redhat.com>
+In-Reply-To: <1281683951-19814-1-git-send-email-dfeng@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100813054314.5564.21503.sendpatchset@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008131556.26318.sheng@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 01:38:54AM -0400, Amerigo Wang wrote:
-> 
-> Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine with
-> many memory ranges.  When hibernate on a machine with disjoint memory we do
-> need one segment for each memory region. Increase this hard limit to 16K
-> which is reasonably large.
-> 
-> And change ->segment from a static array to a dynamically allocated memory.
+On Friday 13 August 2010 15:19:11 Xiaotian Feng wrote:
+> fpu.state is allocated from task_xstate_cachep, the size of
+> task_xstate_cachep is xstate_size. xstate_size is set from cpuid
+> instruction, which is often smaller than sizeof(struct xsave_struct). kvm
+> is using sizeof(struct xsave_struct) to fill in/out fpu.state.xsave, as
+> what we allocated for fpu.state is xstate_size, kernel will write out of
+> memory and caused poison/redzone/padding overwritten warnings.
+>
+> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: Brian Gerst <brgerst@gmail.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Robert Richter <robert.richter@amd.com>
+> Cc: Sheng Yang <sheng@linux.intel.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Jan Kiszka <jan.kiszka@siemens.com>
+ 
+Reviewed-by: Sheng Yang <sheng@linux.intel.com>
 
-FWIW, this looks good to me.
+--
+regards
+Yang, Sheng
 
-Reviewed-by: Simon Horman <horms@verge.net.au>
-
-> 
-> Cc: Neil Horman <nhorman@redhat.com>
-> Cc: Vivek Goyal <vgoyal@redhat.com>
-> Cc: huang ying <huang.ying.caritas@gmail.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Signed-off-by: WANG Cong <amwang@redhat.com>
-> 
 > ---
+>  arch/x86/kernel/i387.c |    1 +
+>  arch/x86/kvm/x86.c     |    4 ++--
+>  2 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
-> index 583af70..93f0542 100644
-> --- a/arch/powerpc/kernel/machine_kexec_64.c
-> +++ b/arch/powerpc/kernel/machine_kexec_64.c
-> @@ -134,10 +134,7 @@ static void copy_segments(unsigned long ind)
->  void kexec_copy_flush(struct kimage *image)
->  {
->  	long i, nr_segments = image->nr_segments;
-> -	struct  kexec_segment ranges[KEXEC_SEGMENT_MAX];
-> -
-> -	/* save the ranges on the stack to efficiently flush the icache */
-> -	memcpy(ranges, image->segment, sizeof(ranges));
-> +	struct  kexec_segment range;
->  
->  	/*
->  	 * After this call we may not use anything allocated in dynamic
-> @@ -151,9 +148,11 @@ void kexec_copy_flush(struct kimage *image)
->  	 * we need to clear the icache for all dest pages sometime,
->  	 * including ones that were in place on the original copy
->  	 */
-> -	for (i = 0; i < nr_segments; i++)
-> -		flush_icache_range((unsigned long)__va(ranges[i].mem),
-> -			(unsigned long)__va(ranges[i].mem + ranges[i].memsz));
-> +	for (i = 0; i < nr_segments; i++) {
-> +		memcpy(&range, &image->segment[i], sizeof(range));
-> +		flush_icache_range((unsigned long)__va(range.mem),
-> +			(unsigned long)__va(range.mem + range.memsz));
-> +	}
->  }
->  
->  #ifdef CONFIG_SMP
-> diff --git a/include/linux/kexec.h b/include/linux/kexec.h
-> index 03e8e8d..ec783c1 100644
-> --- a/include/linux/kexec.h
-> +++ b/include/linux/kexec.h
-> @@ -57,7 +57,7 @@ typedef unsigned long kimage_entry_t;
->  #define IND_DONE         0x4
->  #define IND_SOURCE       0x8
->  
-> -#define KEXEC_SEGMENT_MAX 16
-> +#define KEXEC_SEGMENT_MAX (1024*16)
->  struct kexec_segment {
->  	void __user *buf;
->  	size_t bufsz;
-> @@ -86,7 +86,7 @@ struct kimage {
->  	struct page *swap_page;
->  
->  	unsigned long nr_segments;
-> -	struct kexec_segment segment[KEXEC_SEGMENT_MAX];
-> +	struct kexec_segment *segment;
->  
->  	struct list_head control_pages;
->  	struct list_head dest_pages;
-> diff --git a/kernel/kexec.c b/kernel/kexec.c
-> index c0613f7..22ff794 100644
-> --- a/kernel/kexec.c
-> +++ b/kernel/kexec.c
-> @@ -131,6 +131,11 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
->  	if (!image)
->  		goto out;
->  
-> +	image->segment = kzalloc(nr_segments * sizeof(struct kexec_segment),
-> +				 GFP_KERNEL);
-> +	if (!image->segment)
-> +		goto out;
-> +
->  	image->head = 0;
->  	image->entry = &image->head;
->  	image->last_entry = &image->head;
-> @@ -218,8 +223,10 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
->  out:
->  	if (result == 0)
->  		*rimage = image;
-> -	else
-> +	else if (image) {
-> +		kfree(image->segment);
->  		kfree(image);
-> +	}
->  
->  	return result;
->  
-> @@ -263,8 +270,10 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
->   out:
->  	if (result == 0)
->  		*rimage = image;
-> -	else
-> +	else if (image) {
-> +		kfree(image->segment);
->  		kfree(image);
-> +	}
->  
->  	return result;
->  }
-> @@ -332,8 +341,10 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
->  out:
->  	if (result == 0)
->  		*rimage = image;
-> -	else
-> +	else if (image) {
-> +		kfree(image->segment);
->  		kfree(image);
-> +	}
->  
->  	return result;
->  }
-> @@ -658,6 +669,7 @@ static void kimage_free(struct kimage *image)
->  
->  	/* Free the kexec control pages... */
->  	kimage_free_page_list(&image->control_pages);
-> +	kfree(image->segment);
->  	kfree(image);
->  }
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+> index 1f11f5c..a46cb35 100644
+> --- a/arch/x86/kernel/i387.c
+> +++ b/arch/x86/kernel/i387.c
+> @@ -40,6 +40,7 @@
+> 
+>  static unsigned int		mxcsr_feature_mask __read_mostly = 0xffffffffu;
+>  unsigned int xstate_size;
+> +EXPORT_SYMBOL_GPL(xstate_size);
+>  unsigned int sig_xstate_ia32_size = sizeof(struct _fpstate_ia32);
+>  static struct i387_fxsave_struct fx_scratch __cpuinitdata;
+> 
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 25f1907..3a09c62 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2387,7 +2387,7 @@ static void kvm_vcpu_ioctl_x86_get_xsave(struct
+> kvm_vcpu *vcpu, if (cpu_has_xsave)
+>  		memcpy(guest_xsave->region,
+>  			&vcpu->arch.guest_fpu.state->xsave,
+> -			sizeof(struct xsave_struct));
+> +			xstate_size);
+>  	else {
+>  		memcpy(guest_xsave->region,
+>  			&vcpu->arch.guest_fpu.state->fxsave,
+> @@ -2405,7 +2405,7 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct
+> kvm_vcpu *vcpu,
+> 
+>  	if (cpu_has_xsave)
+>  		memcpy(&vcpu->arch.guest_fpu.state->xsave,
+> -			guest_xsave->region, sizeof(struct xsave_struct));
+> +			guest_xsave->region, xstate_size);
+>  	else {
+>  		if (xstate_bv & ~XSTATE_FPSSE)
+>  			return -EINVAL;
