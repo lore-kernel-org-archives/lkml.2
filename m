@@ -1,89 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab0HMHTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:19:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62526 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751640Ab0HMHTh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:19:37 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: x86@kernel.org, kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Brian Gerst <brgerst@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: [PATCH] kvm: fix poison overwritten caused by using wrong xstate size
-Date: Fri, 13 Aug 2010 15:19:11 +0800
-Message-Id: <1281683951-19814-1-git-send-email-dfeng@redhat.com>
-In-Reply-To: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com>
-References: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com>
+	id S1754557Ab0HMHU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:20:28 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43881 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754088Ab0HMHU1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 03:20:27 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:in-reply-to:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=x2AFc+DSHKRAlKbhj1Yk2xK1pT2rPodIPWvQVTyv6sS0Mvo0k2m9kCgrpiOaFKAF+
+	IFNVEjJ6cYfWVem8xE8dg==
+Subject: [PATCH] Fixed a mismatch between the users of radix_tree and the
+	implementation.
+In-Reply-To: <20100813071535.18490.79633.stgit@bumblebee1.mtv.corp.google.com>
+To: paulmck@us.ibm.com, nickpiggin@yahoo.com.au, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+From: Salman Qazi <sqazi@google.com>
+Cc: adurbin@google.com
+Date: Fri, 13 Aug 2010 00:20:11 -0700
+Message-ID: <20100813071735.18763.14706.stgit@bumblebee1.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fpu.state is allocated from task_xstate_cachep, the size of task_xstate_cachep
-is xstate_size. xstate_size is set from cpuid instruction, which is often
-smaller than sizeof(struct xsave_struct). kvm is using sizeof(struct xsave_struct)
-to fill in/out fpu.state.xsave, as what we allocated for fpu.state is
-xstate_size, kernel will write out of memory and caused poison/redzone/padding
-overwritten warnings.
+This matters for the lockless page cache, in particular find_get_pages implementation.
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Brian Gerst <brgerst@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Robert Richter <robert.richter@amd.com>
-Cc: Sheng Yang <sheng@linux.intel.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Gleb Natapov <gleb@redhat.com>
-Cc: Jan Kiszka <jan.kiszka@siemens.com>
+In the following case, we get can get a deadlock:
+
+    0.  The radix tree contains two items, one has the index 0.
+    1.  The reader (in this case find_get_pages) takes the rcu_read_lock.
+    2.  The reader acquires slot(s) for item(s) including the index 0 item.
+    3.  The non-zero index item is deleted, and as a consequence the other item
+        is moved to the root of the tree.  The place where it used to be is
+        queued for deletion after the readers finish.
+    4.  The reader looks at the index 0 slot, and finds that the page has 0 ref count
+    5.  The reader looks at it again, hoping that the item will either be freed
+        or the ref count will increase.  This never happens, as the slot it
+        is looking at will never be updated.  Also, this slot can never be reclaimed
+        because the reader is holding rcu_read_lock and is in an infinite loop.
+
+This can be reproduced with reliably by running dbench followed by compilebench under
+autotest.  I have not been able to construct a small targeted repro case.
+
+There is also a similar potential issue with insertion.  Storing the first
+element in the root and then moving it to a new slot on insertion of a
+second element would potentially lead to a similar problem.
+
+Both of these issues have been fixed in this change.
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
 ---
- arch/x86/kernel/i387.c |    1 +
- arch/x86/kvm/x86.c     |    4 ++--
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ lib/radix-tree.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 1f11f5c..a46cb35 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -40,6 +40,7 @@
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index e907858..035d5aa 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -252,11 +252,6 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+ 	while (index > radix_tree_maxindex(height))
+ 		height++;
  
- static unsigned int		mxcsr_feature_mask __read_mostly = 0xffffffffu;
- unsigned int xstate_size;
-+EXPORT_SYMBOL_GPL(xstate_size);
- unsigned int sig_xstate_ia32_size = sizeof(struct _fpstate_ia32);
- static struct i387_fxsave_struct fx_scratch __cpuinitdata;
+-	if (root->rnode == NULL) {
+-		root->height = height;
+-		goto out;
+-	}
+-
+ 	do {
+ 		unsigned int newheight;
+ 		if (!(node = radix_tree_node_alloc(root)))
+@@ -278,7 +273,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+ 		rcu_assign_pointer(root->rnode, node);
+ 		root->height = newheight;
+ 	} while (height > root->height);
+-out:
++
+ 	return 0;
+ }
  
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 25f1907..3a09c62 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -2387,7 +2387,7 @@ static void kvm_vcpu_ioctl_x86_get_xsave(struct kvm_vcpu *vcpu,
- 	if (cpu_has_xsave)
- 		memcpy(guest_xsave->region,
- 			&vcpu->arch.guest_fpu.state->xsave,
--			sizeof(struct xsave_struct));
-+			xstate_size);
- 	else {
- 		memcpy(guest_xsave->region,
- 			&vcpu->arch.guest_fpu.state->fxsave,
-@@ -2405,7 +2405,7 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
+@@ -1154,7 +1149,7 @@ EXPORT_SYMBOL(radix_tree_gang_lookup_tag_slot);
+ static inline void radix_tree_shrink(struct radix_tree_root *root)
+ {
+ 	/* try to shrink tree height */
+-	while (root->height > 0) {
++	while (root->height > 1) {
+ 		struct radix_tree_node *to_free = root->rnode;
+ 		void *newptr;
  
- 	if (cpu_has_xsave)
- 		memcpy(&vcpu->arch.guest_fpu.state->xsave,
--			guest_xsave->region, sizeof(struct xsave_struct));
-+			guest_xsave->region, xstate_size);
- 	else {
- 		if (xstate_bv & ~XSTATE_FPSSE)
- 			return -EINVAL;
--- 
-1.7.2.1
 
