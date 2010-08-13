@@ -1,51 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761443Ab0HMKNf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 06:13:35 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60965 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754831Ab0HMKNe (ORCPT
+	id S1761451Ab0HMKVm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 06:21:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41728 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761431Ab0HMKVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 06:13:34 -0400
-Message-ID: <4C651AC9.6040901@monstr.eu>
-Date: Fri, 13 Aug 2010 12:13:29 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Mike Frysinger <vapier@gentoo.org>,
-        Greg Ungerer <gerg@uclinux.org>
-Subject: 12fdff3fc2483f906ae6404a6e8dcf2550310b6f - Add a dummy printk function
- for the maintenance of unused printks
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Aug 2010 06:21:41 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Cc: Igor Grinberg <grinberg@compulab.co.il>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] ARM: imx: fix build failure concerning otg/ulpi
+Date: Fri, 13 Aug 2010 12:21:31 +0200
+Message-Id: <1281694891-7527-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1275464450-23003-2-git-send-email-grinberg@compulab.co.il>
+References: <1275464450-23003-2-git-send-email-grinberg@compulab.co.il>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+The build failure was introduced by
 
-you forget to remove no_printk() from mm/nommu.c in subject commit.
+	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
 
-I expect that same problen on all noMMU platforms.
+Cc: Igor Grinberg <grinberg@compulab.co.il>
+Cc: Mike Rapoport <mike@compulab.co.il>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ arch/arm/mach-imx/mach-cpuimx27.c  |    4 ++--
+ arch/arm/mach-imx/mach-pca100.c    |    4 ++--
+ arch/arm/mach-mx25/mach-cpuimx25.c |    2 +-
+ arch/arm/mach-mx3/mach-cpuimx35.c  |    2 +-
+ 4 files changed, 6 insertions(+), 6 deletions(-)
 
-
-Error message:
-mm/nommu.c:41: error: conflicting types for 'no_printk'
-include/linux/kernel.h:314: error: previous definition of 'no_printk' 
-was here
-mm/nommu.c: In function 'do_munmap':
-mm/nommu.c:1576: warning: format '%zx' expects type 'size_t', but 
-argument 4 has type 'unsigned int'
-make[1]: *** [mm/nommu.o] Error 1
-make: *** [mm] Error 2
-
-Thanks,
-Michal
-
+diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
+index 575ff1a..339150a 100644
+--- a/arch/arm/mach-imx/mach-cpuimx27.c
++++ b/arch/arm/mach-imx/mach-cpuimx27.c
+@@ -279,13 +279,13 @@ static void __init eukrea_cpuimx27_init(void)
+ #if defined(CONFIG_USB_ULPI)
+ 	if (otg_mode_host) {
+ 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+-				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
++				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+ 
+ 		mxc_register_device(&mxc_otg_host, &otg_pdata);
+ 	}
+ 
+ 	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+-				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
++				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+ 
+ 	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
+ #endif
+diff --git a/arch/arm/mach-imx/mach-pca100.c b/arch/arm/mach-imx/mach-pca100.c
+index a389d11..23c9e1f 100644
+--- a/arch/arm/mach-imx/mach-pca100.c
++++ b/arch/arm/mach-imx/mach-pca100.c
+@@ -419,13 +419,13 @@ static void __init pca100_init(void)
+ #if defined(CONFIG_USB_ULPI)
+ 	if (otg_mode_host) {
+ 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+-				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
++				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+ 
+ 		mxc_register_device(&mxc_otg_host, &otg_pdata);
+ 	}
+ 
+ 	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+-				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
++				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+ 
+ 	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
+ #endif
+diff --git a/arch/arm/mach-mx25/mach-cpuimx25.c b/arch/arm/mach-mx25/mach-cpuimx25.c
+index 56b2e26..0134fb8 100644
+--- a/arch/arm/mach-mx25/mach-cpuimx25.c
++++ b/arch/arm/mach-mx25/mach-cpuimx25.c
+@@ -138,7 +138,7 @@ static void __init eukrea_cpuimx25_init(void)
+ #if defined(CONFIG_USB_ULPI)
+ 	if (otg_mode_host) {
+ 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+-				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
++				USB_OTG_DRV_VBUS | ULPI_OTG_DRVVBUS_EXT);
+ 
+ 		mxc_register_device(&mxc_otg, &otg_pdata);
+ 	}
+diff --git a/arch/arm/mach-mx3/mach-cpuimx35.c b/arch/arm/mach-mx3/mach-cpuimx35.c
+index 63f970f..117f90e 100644
+--- a/arch/arm/mach-mx3/mach-cpuimx35.c
++++ b/arch/arm/mach-mx3/mach-cpuimx35.c
+@@ -192,7 +192,7 @@ static void __init mxc_board_init(void)
+ #if defined(CONFIG_USB_ULPI)
+ 	if (otg_mode_host) {
+ 		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+-				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
++				USB_OTG_DRV_VBUS | ULPI_OTG_DRVVBUS_EXT);
+ 
+ 		mxc_register_device(&mxc_otg_host, &otg_pdata);
+ 	}
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+1.7.1
+
