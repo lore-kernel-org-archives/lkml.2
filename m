@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761085Ab0HMBZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 21:25:55 -0400
-Received: from torres.zugschlus.de ([85.214.131.164]:41860 "EHLO
-	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760528Ab0HMBZy (ORCPT
+	id S1761052Ab0HMBbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 21:31:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51465 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754261Ab0HMBba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 21:25:54 -0400
-Date: Fri, 13 Aug 2010 03:25:51 +0200
-From: Marc Haber <mh+linux-kernel@zugschlus.de>
-To: "Allan, Bruce W" <bruce.w.allan@intel.com>
-Cc: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
-        Linux Kernel Developers <linux-kernel@vger.kernel.org>,
-        Linux Kernel Network Developers <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sf.net" <e1000-devel@lists.sf.net>
-Subject: Re: e1000e crashes with 2.6.34.x and ThinkPad T60
-Message-ID: <20100813012551.GA25398@torres.zugschlus.de>
-References: <20100724092644.GA13353@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A1366000F42E28@rrsmsx501.amr.corp.intel.com> <20100730125452.GA21444@torres.zugschlus.de> <EA929A9653AAE14F841771FB1DE5A13660024083FE@rrsmsx501.amr.corp.intel.com> <20100810120458.GB21511@torres.zugschlus.de> <8DD2590731AB5D4C9DBF71A877482A900164D9279F@orsmsx509.amr.corp.intel.com>
+	Thu, 12 Aug 2010 21:31:30 -0400
+Date: Thu, 12 Aug 2010 18:30:59 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Cloning arch-independant KConfig
+Message-ID: <20100813013059.GJ22777@mail.oracle.com>
+Mail-Followup-To: Sam Ravnborg <sam@ravnborg.org>,
+	linux-kernel@vger.kernel.org
+References: <20100812233837.GG22777@mail.oracle.com>
+ <20100813012052.GA2079@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8DD2590731AB5D4C9DBF71A877482A900164D9279F@orsmsx509.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100813012052.GA2079@merkur.ravnborg.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bruce,
+On Fri, Aug 13, 2010 at 03:20:52AM +0200, Sam Ravnborg wrote:
+> Today there are a few ways you can do so already.
+> Say that you have saved away the known good one as "good", which is
+> a direct copy of your .config.
+> 
+> Then you can do for example:
+> KCONFIG_ALLCONFIG=good make alldefconfig
+> 
+> This will produce a config wich is almost equal to what you had before,
+> and with defaults for all new stuff.
+> I tested it where I used a sparc defconfig as input to a i386
+> config and it just worked.
 
-On Tue, Aug 10, 2010 at 09:34:52AM -0700, Allan, Bruce W wrote:
-> We have had other recent reports of issues with this part that are due to
-> ASPM L1 being enabled.  Would you please try disabling L1 after the driver
-> is loaded as follows (assuming your adapter is still PCI bus/device/number
-> 02:00.0 as indicated in the lspci output you provided earlier):
-> 1) First check the hexadecimal value of the LnkCtl register -
-> # setpci -s 2:0.0 0xf0
-> 2) Disable ASPM (both L0s and L1) by zeroing out bits 0 and 1 in the value
-> returned by the previous step.  For example, if it returned 42 (hex 42,
-> that is) -
-> # setpci -s 2:0.0 0xf0=0x40
-> 3) Confirm ASPM is disabled by checking the output from lspci again.
+	That seems pretty reasonable.
 
-It returned 42, and after setting 0x40, LnkCtl now says "ASPM Disabled".
+> cat .config good > new
+> mv new .config
+> make menuconfig
+> 
+> This will trigger a lot of override warnings - which you just ignore.
+> Resulting config is then mostly from "good".
 
-I'll dock the system now and will report after the weekend or after
-the first crash.
+	The problem with this, which I've definitely done before, is I
+never know what paths in menuconfig to look down.  The alldefconfig
+choice seems saner because it provides a dirt-simple CPU setup.
 
-Greetings
-Marc
+Joel
 
 -- 
------------------------------------------------------------------------------
-Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
-Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 72739834
-Nordisch by Nature |  How to make an American Quilt | Fax: *49 3221 2323190
+
+"Can any of you seriously say the Bill of Rights could get through
+ Congress today?  It wouldn't even get out of committee."
+	- F. Lee Bailey
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
