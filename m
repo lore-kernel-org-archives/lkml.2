@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab0HMGhP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 02:37:15 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47391 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752799Ab0HMGhK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 02:37:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Lw5qpqKclVTjHJLe8jjPh0I5kHWzFKfcPmgFemuKUkzauNIc+Rlww6s5mqKNgZ8TEV
-         gDvurA5hWhD0T452M72fW2P3tQBeUkuMXux0//y6bX+UEmrtFWVmZc4IahFf7fX+ML8O
-         xsqXkQw8WDruq02BuH+peKrCprAPAhBaVBB/w=
-MIME-Version: 1.0
-In-Reply-To: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>
-References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>
-Date: Fri, 13 Aug 2010 08:37:09 +0200
-Message-ID: <AANLkTikBZ2SmqWavZ8bw69yQ_A5GTTcB13RKEzUuUcx3@mail.gmail.com>
-Subject: Re: [PATCH] ideapad-laptop: add new driver
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753202Ab0HMGqL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 02:46:11 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47369 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752609Ab0HMGqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 02:46:08 -0400
+Date: Fri, 13 Aug 2010 15:45:34 +0900
+To: heiko.carstens@de.ibm.com
+Cc: sachinp@in.ibm.com, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
+        akpm@linux-foundation.org, linux-arch@vger.kernel.org
+Subject: Re: Latest git build failure on s390 - dma_get_cache_alignment()
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100812080701.GB7814@osiris.boeblingen.de.ibm.com>
+References: <4C63A551.3040701@in.ibm.com>
+	<20100812075532.GA7814@osiris.boeblingen.de.ibm.com>
+	<20100812080701.GB7814@osiris.boeblingen.de.ibm.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100813154412F.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 13 Aug 2010 15:45:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 6:08 AM, Ike Panhc <ike.pan@canonical.com> wrote:
-> ideapad-laptop is a new driver which enable hotkeys on Lenovo Ideapad laptops
->
-> The driver will bind on ACPI HID:VPC2004. When hotkey pressed, the notify
-> function will be called and query EC to tell which key pressed.
->
-> Hotkeys enabled listed below:
->  * LCD backlight switch - reports KEY_DISPLAY_OFF
->  * One key restore - reports KEY_PROG1
->  * Brightness Up/down - reports KEY_BRIGHTNESS_CYCLE
->   Both up/down keys reports the same event. Need to find other way to detect
->  * Touchpad switch - reports KEY_F13
->  * Video output switch - reports KEY_SWITCHVIDEOMODE
->  * Camera switch - reports KEY_CAMERA
->  * Video resolution switch - reports KEY_VIDEO_NEXT
->  * S/W rfkill key - reports KEY_WLAN
->
-> The developing git tree as reference:
->  git://kernel.ubuntu.com/ikepanhc/ideapad-laptop.git
->
-> This patch made against current checkout of mainline kernel.
+On Thu, 12 Aug 2010 10:07:01 +0200
+Heiko Carstens <heiko.carstens@de.ibm.com> wrote:
 
-Cool, now we got two ideapad drivers :p.
+> Crap. By far not all converted architectures include dma-mapping-common.h
+> from their private dma-mapping header file. So the patch would probably
+> introduce a couple of new compile errors.
+> Looks like we need an explicit ifdef.
+> 
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> ---
+> 
+>  include/linux/dma-mapping.h |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> 
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index e0670a5..ce29b81 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -142,6 +142,7 @@ static inline int dma_set_seg_boundary(struct device *dev, unsigned long mask)
+>  		return -EIO;
+>  }
+>  
+> +#ifdef CONFIG_HAS_DMA
+>  static inline int dma_get_cache_alignment(void)
+>  {
+>  #ifdef ARCH_DMA_MINALIGN
+> @@ -149,6 +150,7 @@ static inline int dma_get_cache_alignment(void)
+>  #endif
+>  	return 1;
+>  }
+> +#endif
 
-David just sent an rfkill driver to this list. Maybe you could merge your work ?
+Very sorry about this.
 
-Thanks,
--- 
-Corentin Chary
-http://xf.iksaif.net
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+
+Looks like we had better to clean up dma-mapping headers on both
+HAS_DMA and !HAS_DMA though.
