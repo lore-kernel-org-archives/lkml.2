@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761488Ab0HMKlF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 06:41:05 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:39316 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761449Ab0HMKlB (ORCPT
+	id S1761495Ab0HMKnX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 06:43:23 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53671 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761456Ab0HMKnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 06:41:01 -0400
-Date: Fri, 13 Aug 2010 11:39:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
-        david@lang.hm, Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, rjw@sisk.pl, peterz@infradead.org,
-        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
-        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
-        galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100813113914.487394e1@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100812182128.GC2763@thunk.org>
-References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	<Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
-	<AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
-	<20100812125248.GA2763@thunk.org>
-	<AANLkTin4=qpDWEKLwes_af6mSCW+ED7v-fWzD34JywU1@mail.gmail.com>
-	<20100812182128.GC2763@thunk.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; i686-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 13 Aug 2010 06:43:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=fqVbftyzpltp/qMy0jGDvOrYS/hDBJ2LtPz3V/yMDEeb+blZMvD4S2pR/3nDtLfbuk
+         3irvhFFCDYbg+fjLr1mwdx36aOVQPN+ip56Glt1eDvjdkRXua55cOMkBujSo35lLnDQv
+         og1NMyGtTOj/jnAlo6Q7smw6gcQPyAAMqDG6Q=
+MIME-Version: 1.0
+In-Reply-To: <20100812195224.GA6370@comet.dominikbrodowski.net>
+References: <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+	<20100812010612.GL2516@linux.vnet.ibm.com>
+	<AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+	<20100812034435.GA7403@linux.vnet.ibm.com>
+	<AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+	<E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+	<AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<20100812174303.GD2524@linux.vnet.ibm.com>
+	<AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+	<AANLkTinNxZoMab=tG9KXJ9n_nxB1dXHkfk-7xUMWXACW@mail.gmail.com>
+	<20100812195224.GA6370@comet.dominikbrodowski.net>
+Date: Fri, 13 Aug 2010 13:43:08 +0300
+Message-ID: <AANLkTimCrOqizJ7LL7t3hN=wMF_oxNFPxKbjWz_AsZ_U@mail.gmail.com>
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
+ take three
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Brian Swetland <swetland@google.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
+        Theodore Tso <tytso@mit.edu>, peterz@infradead.org,
+        linux-kernel@vger.kernel.org, James.Bottomley@suse.de,
+        galibert@pobox.com, florian@mickler.org, menage@google.com,
+        swmike@swm.pp.se, linux-pm@lists.linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, tglx@linutronix.de,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, arjan@infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I have a similar problem with the whole pm_qos subsystem, as I've said
-> earlier.  If some badly behaved application claims to want 0us
-> wireless latency, and keeps the radio on all the time, there is no way
-> for me to find out which is the badly behaved application --- even
+On Thu, Aug 12, 2010 at 10:52 PM, Dominik Brodowski
+<linux@dominikbrodowski.net> wrote:
+> On Thu, Aug 12, 2010 at 12:48:48PM -0700, Brian Swetland wrote:
+>> I guess I don't understand,
+>
+> I guess I don't, either -- there are some parts of the kernel used by only a
+> handful of users... and here we speak about million users...
 
-Well firstly you want limits so SELinux says "No" (or rlimit or similar)
-and secondly you want sysfs views.
+A driver that sits in a corner and doesn't show in the 'menuconfig' of
+most people and is used by small fraction of user-space applications
+(perhaps even 0) is just fine. But we are talking of something
+centric, that can be enabled on all systems, and that affects all
+user-space.
 
-This is like file permissions - its not hard
+-- 
+Felipe Contreras
