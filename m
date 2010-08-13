@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761956Ab0HMRyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 13:54:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36013 "EHLO mx2.suse.de"
+	id S1761993Ab0HMRyV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 13:54:21 -0400
+Received: from fn.samba.org ([216.83.154.106]:35234 "EHLO lists.samba.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab0HMRyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 13:54:11 -0400
-Date: Fri, 13 Aug 2010 10:54:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Cross <david.cross@cypress.com>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: EXPORT_SYMBOL(fat_get_block)
-Message-ID: <20100813175402.GA15024@suse.de>
-References: <1281721539.5839.4.camel@odc-laptop>
+	id S1761965Ab0HMRyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 13:54:17 -0400
+Date: Fri, 13 Aug 2010 10:54:10 -0700
+From: Jeremy Allison <jra@samba.org>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jeremy Allison <jra@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        Neil Brown <neilb@suse.de>, utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+Message-ID: <20100813175410.GA8202@samba1>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+ <1280524978.2452.9.camel@segv.aura.of.mankind>
+ <20100801092529.5e6ba0e0@corrin.poochiereds.net>
+ <20100805235218.GB31233@jeremy-laptop>
+ <20100806133836.49757af9@notabene>
+ <20100808121208.GA7329@jeremy-laptop>
+ <20100808085301.24f53e5a@tlielax.poochiereds.net>
+ <20100808130501.GA9851@jeremy-laptop>
+ <20100813125432.GB8945@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281721539.5839.4.camel@odc-laptop>
+In-Reply-To: <20100813125432.GB8945@fieldses.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 10:45:39AM -0700, David Cross wrote:
-> Hello Hirofumi,
-> I would like to export this symbol from the vfat code and add this patch
-> to the Linux kernel. You are listed as the MAINTAINER for FAT and VFAT.
-> As such, I need your approval to do it. 
-> The reason that I need to export this symbol is to allow for file based
-> DMA in which the file needs to be pre-allocated. The pre-allocated block
-> addresses are passed to a DMA engine which then directly transfers the
-> data to non-volatile storage.
-> Please let me know if you have any objections to exporting this symbol
-> or if you need additional information from me concerning this change
-> request. I am happy to answer any questions that you may have about this
-> in the meantime.
+On Fri, Aug 13, 2010 at 08:54:32AM -0400, J. Bruce Fields wrote:
+> On Sun, Aug 08, 2010 at 06:05:01AM -0700, Jeremy Allison wrote:
+> > We don't need to ape Windows in everything.
+> > The coming ACL disaster will show that (we will go from an ACL
+> > model that is slightly too complex to use, to one that is impossibly
+> > complex to use :-).
+> 
+> Care to elaborate?
 
-Wait, _I_ have an objection to exporting this symbol.
+POSIX ACLs -> RichACLs (NT-style). Not criticising Andreas here,
+people are asking for this. But Windows ACLs are a nightmare
+beyond human comprehension :-). In the "too complex to be
+usable" camp.
 
-I really don't think it is needed at this point in time, as we really
-need to figure out exactly what your driver is doing to want to need to
-call this function.
+> And what would native ACL support mean for Samba?
 
-So please, let's not export it for now, when we get to the point that we
-all agree that this driver is doing the "correct" thing, then we can
-export the symbol, ok?
+RichACLs'll do it, but I feel sorry for the admins :-).
 
-thanks,
-
-greg k-h
+Jeremy.
