@@ -1,156 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761621Ab0HMNeZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 09:34:25 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60824 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755198Ab0HMNeW convert rfc822-to-8bit (ORCPT
+	id S934320Ab0HMNsG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 09:48:06 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:62238 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934257Ab0HMNsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 09:34:22 -0400
-From: "Murphy, Dan" <dmurphy@ti.com>
-To: "V, Hemanth" <hemanthv@ti.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Fri, 13 Aug 2010 08:34:07 -0500
-Subject: RE: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
-Thread-Topic: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
-Thread-Index: Acs66emzlg1cykdvRZe1F4aBsCQIGwAAJcrQ
-Message-ID: <C9D59C82B94F474B872F2092A87F261412470D0874@dlee07.ent.ti.com>
-References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
- <4BF6753B.60201@cam.ac.uk> <0ebd01cb3ae5$a0dcfc70$LocalHost@wipblrx0099946>
-In-Reply-To: <0ebd01cb3ae5$a0dcfc70$LocalHost@wipblrx0099946>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Aug 2010 09:48:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=BBM+pKREX/TfCkrwecIwcoIuaD2KSngzliXAoEpsawTGCyiy/FhuJ4+AZdL7riWxe4
+         D75pLKYG20V98wyHStZ4qCtC+U8u2eApkZ2wsGEhz2p66fe7DpoQ972fhZzNuVRR86SP
+         h/HNKEDMhiTfgB30nZhoA8oLEBskgbl2wnCQc=
+Date: Fri, 13 Aug 2010 16:47:56 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org
+Subject: general protection fault: 0000 [#1] PREEMPT SMP
+Message-ID: <20100813134756.GA5235@swordfish.minsk.epam.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="azLHFNyN32YCQGCU"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hemanth
-I have a few comments on this patch.
 
-+static ssize_t cma3000_store_attr_mdfftmr(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-+	unsigned long val;
-+	int error;
-+
-+	error = strict_strtoul(buf, 0, &val);
-+	if (error)
-+		return error;
-+
-+	mutex_lock(&data->mutex);
-+	data->pdata.mdfftmr = val;
-+
-+	disable_irq(data->client->irq);
-You should use disable_irq_nosync here.  This may not work properly on SMP.
+--azLHFNyN32YCQGCU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +	if (val == CMARANGE_2G) {
-> +		ctrl |= CMA3000_RANGE2G;
-> +		data->pdata.g_range = CMARANGE_2G;
-> +	} else if (val == CMARANGE_8G) {
-> +		ctrl |= CMA3000_RANGE8G;
-> +		data->pdata.g_range = CMARANGE_8G;
+Hello,
 
-Why are you modifying the platform data?  Why not just keep it in a global or a glocal structure and modify it that way?
-> +	} else {
-> +		error = -EINVAL;
-> +		goto err_op_failed;
-> +	}
-> +
-> +	g_range = data->pdata.g_range;
-> +	fuzz_x = data->pdata.fuzz_x;
-> +	fuzz_y = data->pdata.fuzz_y;
-> +	fuzz_z = data->pdata.fuzz_z;
-Why are you storing these locally and then using them once can't we eliminate these completely and just pass the platform data values into the set params?
-> +
-> +	disable_irq(data->client->irq);
-You should use disable_irq_nosync here.  This may not work properly on SMP.
+Got this traces today:
 
-> +	cma3000_set(data, CMA3000_CTRL, ctrl, "ctrl");
-> +
-> +	input_set_abs_params(data->input_dev, ABS_X, -g_range,
-> +				g_range, fuzz_x, 0);
-> +	input_set_abs_params(data->input_dev, ABS_Y, -g_range,
-> +				g_range, fuzz_y, 0);
-> +	input_set_abs_params(data->input_dev, ABS_Z, -g_range,
-> +				g_range, fuzz_z, 0);
-Don't necessarily agree with modifying the parameters for the input device on the fly.  Some implementations may be a read once on init and do not go back and check this.
+[   29.940248] CPU 1 is now offline
+[   29.941025] general protection fault: 0000 [#1] PREEMPT SMP=20
+[   29.941103] last sysfs file: /sys/devices/system/cpu/cpu1/online
+[   29.941157] CPU 0=20
+[   29.941178] Modules linked in: snd_hwdep snd_hda_codec_atihdmi snd_seq_d=
+ummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device battery ac wmi s=
+nd_pcm_oss snd_mixer_oss button snd_hda_codec_realtek radeon broadcom snd_h=
+da_intel
+snd_hda_codec snd_pcm snd_timer snd soundcore snd_page_alloc usbhid hid tg3=
+ libphy psmouse serio_raw evdev ttm drm_kms_helper ehci_hcd sr_mod usbcore =
+cdrom sd_mod ahci libahci
+[   29.941679]=20
+[   29.941699] Pid: 5208, comm: bash Not tainted 2.6.36-rc0-git12-07921-g60=
+bf26a-dirty #124 Aspire 5741G    /Aspire 5741G   =20
+[   29.941792] RIP: 0010:[<ffffffff810640a1>]  [<ffffffff810640a1>] __lock_=
+acquire+0x4e9/0x17fd
+[   29.941878] RSP: 0018:ffff88015751dbc8  EFLAGS: 00010082
+[   29.941926] RAX: 0000000000000001 RBX: ffff880152284920 RCX: 00000000000=
+00000
+[   29.941988] RDX: dead4ead00000202 RSI: 0000000000000000 RDI: ffff8801522=
+84920
+[   29.942049] RBP: ffff88015751dca8 R08: 0000000000000002 R09: 00000000000=
+00001
+[   29.942111] R10: 0000000000000000 R11: 0000000000000005 R12: ffff8801504=
+c3f60
+[   29.942171] R13: 0000000000000000 R14: 0000000000000000 R15: 00000000000=
+00002
+[   29.942233] FS:  00007f53580ca700(0000) GS:ffff880002200000(0000) knlGS:=
+0000000000000000
+[   29.942303] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   29.942353] CR2: 00007fb030079000 CR3: 0000000151b5a000 CR4: 00000000000=
+006f0
+[   29.942414] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 00000000000=
+00000
+[   29.942475] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 00000000000=
+00400
+[   29.942536] Process bash (pid: 5208, threadinfo ffff88015751c000, task f=
+fff8801504c3f60)
+[   29.942604] Stack:
+[   29.942625]  ffff8801569a4888 ffff88015751dc48 ffff88015751dcb8 ffffffff=
+81132b2a
+[   29.942702] <0> ffff8801504c3f60 0000000000000001 ffff880100000000 fffff=
+fff8186c0a0
+[   29.942789] <0> ffffffff00000000 0000000000000004 ffff8801504c3f60 ffff8=
+801504c3f60
+[   29.942880] Call Trace:
+[   29.942910]  [<ffffffff81132b2a>] ? sysfs_deactivate+0x3e/0xec
+[   29.942966]  [<ffffffff81062ddd>] ? mark_held_locks+0x50/0x72
+[   29.943019]  [<ffffffff81065893>] lock_acquire+0x97/0xb6
+[   29.943072]  [<ffffffff8137145b>] ? percpu_counter_hotcpu_callback+0x3e/=
+0x93
+[   29.943136]  [<ffffffff81374321>] ? mutex_lock_nested+0x2f3/0x31b
+[   29.943192]  [<ffffffff81371446>] ? percpu_counter_hotcpu_callback+0x29/=
+0x93
+[   29.943257]  [<ffffffff8137568d>] _raw_spin_lock_irqsave+0x4e/0x60
+[   29.943313]  [<ffffffff8137145b>] ? percpu_counter_hotcpu_callback+0x3e/=
+0x93
+[   29.943376]  [<ffffffff8137145b>] percpu_counter_hotcpu_callback+0x3e/0x=
+93
+[   29.943441]  [<ffffffff81057344>] notifier_call_chain+0x32/0x5e
+[   29.943494]  [<ffffffff8105738f>] __raw_notifier_call_chain+0x9/0xb
+[   29.943552]  [<ffffffff8103c6e3>] __cpu_notify+0x1b/0x2d
+[   29.943602]  [<ffffffff8103c703>] cpu_notify+0xe/0x10
+[   29.943649]  [<ffffffff8103c70e>] cpu_notify_nofail+0x9/0x11
+[   29.943703]  [<ffffffff81362d82>] _cpu_down+0x151/0x206
+[   29.943751]  [<ffffffff81362ea8>] cpu_down+0x28/0x35
+[   29.943798]  [<ffffffff8136430d>] store_online+0x27/0x6e
+[   29.943850]  [<ffffffff812923ab>] sysdev_store+0x1b/0x1d
+[   29.943899]  [<ffffffff811321b2>] sysfs_write_file+0x103/0x13f
+[   29.943955]  [<ffffffff810daf92>] vfs_write+0xb0/0x14f
+[   29.944003]  [<ffffffff810db22e>] sys_write+0x45/0x6c
+[   29.944054]  [<ffffffff81002002>] system_call_fastpath+0x16/0x1b
+[   29.946132] Code: 85 c0 0f 84 a4 12 00 00 be 0b 03 00 00 83 3d 5e c4 f5 =
+00 00 0f 85 92 12 00 00 e9 a4 11 00 00 45 31 f6 48 85 d2 0f 84 81 12 00 00 =
+<f0> ff 82 98 01 00 00 45 8b 84 24 20 07 00 00 83 3d 79 ce 6a 00=20
+[   29.951109] RIP  [<ffffffff810640a1>] __lock_acquire+0x4e9/0x17fd
+[   29.953421]  RSP <ffff88015751dbc8>
+[   29.965605] ---[ end trace 34832156140843b2 ]---
+[   29.967758] note: bash[5208] exited with preempt_count 1
+[   29.969997] BUG: scheduling while atomic: bash/5208/0x10000002
+[   29.972098] INFO: lockdep is turned off.
+[   29.974167] Modules linked in: snd_hwdep snd_hda_codec_atihdmi snd_seq_d=
+ummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device battery ac wmi s=
+nd_pcm_oss snd_mixer_oss button snd_hda_codec_realtek radeon broadcom snd_h=
+da_intel
+snd_hda_codec snd_pcm snd_timer snd soundcore snd_page_alloc usbhid hid tg3=
+ libphy psmouse serio_raw evdev ttm drm_kms_helper ehci_hcd sr_mod usbcore =
+cdrom sd_mod ahci libahci
+[   29.981076] Pid: 5208, comm: bash Tainted: G      D     2.6.36-rc0-git12=
+-07921-g60bf26a-dirty #124
+[   29.983375] Call Trace:
+[   29.985672]  [<ffffffff8102dd6a>] __schedule_bug+0x72/0x77
+[   29.987996]  [<ffffffff81372790>] schedule+0xdc/0x8f2
+[   29.990342]  [<ffffffff810360f9>] __cond_resched+0x13/0x1f
+[   29.992607]  [<ffffffff813730c5>] _cond_resched+0x29/0x30
+[   29.994912]  [<ffffffff810bbe97>] unmap_vmas+0x747/0x92b
+[   29.997198]  [<ffffffff810c15cd>] exit_mmap+0xda/0x184
+[   29.999410]  [<ffffffff8103888e>] mmput+0x28/0xcf
+[   30.001623]  [<ffffffff8103cd21>] exit_mm+0x109/0x116
+[   30.003791]  [<ffffffff81375db0>] ? _raw_spin_unlock_irq+0x55/0x59
+[   30.005931]  [<ffffffff8103e387>] do_exit+0x1fe/0x6c0
+[   30.008070]  [<ffffffff8103c6a5>] ? kmsg_dump+0x14f/0x16a
+[   30.010205]  [<ffffffff810060c4>] oops_end+0x8f/0x94
+[   30.012285]  [<ffffffff81006206>] die+0x55/0x5e
+[   30.014369]  [<ffffffff8100371c>] do_general_protection+0x135/0x13d
+[   30.016453]  [<ffffffff81376304>] ? irq_return+0x0/0xc
+[   30.018546]  [<ffffffff813764e5>] general_protection+0x25/0x30
+[   30.020643]  [<ffffffff810640a1>] ? __lock_acquire+0x4e9/0x17fd
+[   30.022719]  [<ffffffff81132b2a>] ? sysfs_deactivate+0x3e/0xec
+[   30.024804]  [<ffffffff81062ddd>] ? mark_held_locks+0x50/0x72
+[   30.026883]  [<ffffffff81065893>] lock_acquire+0x97/0xb6
+[   30.028932]  [<ffffffff8137145b>] ? percpu_counter_hotcpu_callback+0x3e/=
+0x93
+[   30.031017]  [<ffffffff81374321>] ? mutex_lock_nested+0x2f3/0x31b
+[   30.033076]  [<ffffffff81371446>] ? percpu_counter_hotcpu_callback+0x29/=
+0x93
+[   30.035171]  [<ffffffff8137568d>] _raw_spin_lock_irqsave+0x4e/0x60
+[   30.037272]  [<ffffffff8137145b>] ? percpu_counter_hotcpu_callback+0x3e/=
+0x93
+[   30.039372]  [<ffffffff8137145b>] percpu_counter_hotcpu_callback+0x3e/0x=
+93
+[   30.041515]  [<ffffffff81057344>] notifier_call_chain+0x32/0x5e
+[   30.043653]  [<ffffffff8105738f>] __raw_notifier_call_chain+0x9/0xb
+[   30.045777]  [<ffffffff8103c6e3>] __cpu_notify+0x1b/0x2d
+[   30.047927]  [<ffffffff8103c703>] cpu_notify+0xe/0x10
+[   30.050049]  [<ffffffff8103c70e>] cpu_notify_nofail+0x9/0x11
+[   30.052172]  [<ffffffff81362d82>] _cpu_down+0x151/0x206
+[   30.054308]  [<ffffffff81362ea8>] cpu_down+0x28/0x35
+[   30.056413]  [<ffffffff8136430d>] store_online+0x27/0x6e
+[   30.058546]  [<ffffffff812923ab>] sysdev_store+0x1b/0x1d
+[   30.060537]  [<ffffffff811321b2>] sysfs_write_file+0x103/0x13f
+[   30.062357]  [<ffffffff810daf92>] vfs_write+0xb0/0x14f
+[   30.064167]  [<ffffffff810db22e>] sys_write+0x45/0x6c
+[   30.065943]  [<ffffffff81002002>] system_call_fastpath+0x16/0x1b
 
 
-+		ret = request_threaded_irq(data->client->irq, NULL,
-+					cma3000_thread_irq,
-+					irqflags | IRQF_ONESHOT,
-+					data->client->name, data);
 
-This is implemented wrong.  You are doing a lot of processing in the IRQ context here.  Especially calls out to a peripheral.  The NULL should be your handler thread where you do all the device processing.
-
-Also this implementation only suggests that the HW has the IRQ connected what about devices that the IRQ line was not connected?
-
-I have changed this driver to adjust all the issues above.  Let me know if you want the patches or the files.
-
-Dan
-
------Original Message-----
-From: linux-input-owner@vger.kernel.org [mailto:linux-input-owner@vger.kernel.org] On Behalf Of V, Hemanth
-Sent: Friday, August 13, 2010 7:47 AM
-To: Jonathan Cameron; Andrew Morton
-Cc: linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org
-Subject: Re: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
-
------ Original Message ----- 
-From: "Jonathan Cameron" <jic23@cam.ac.uk>
-To: "Hemanth V" <hemanthv@ti.com>
-Cc: <linux-input@vger.kernel.org>; <linux-kernel@vger.kernel.org>; 
-<linux-omap@vger.kernel.org>
-Sent: Friday, May 21, 2010 5:27 PM
-Subject: Re: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
+	Sergey
 
 
-> On 05/21/10 07:52, Hemanth V wrote:
->> From: Hemanth V <hemanthv@ti.com>
->> Date: Thu, 20 May 2010 20:18:17 +0530
->> Subject: [PATCH] input: CMA3000 Accelerometer Driver
->>
->> This patch adds support for CMA3000 Tri-axis accelerometer, which
->> supports Motion detect, Measurement and Free fall modes.
->> CMA3000 supports both I2C/SPI bus for communication, currently the
->> driver supports I2C based communication.
->>
->> Driver reports acceleration data through input subsystem and supports
->> sysfs for configuration changes.
->>
->> This is V2 of patch, which fixes open source review comments
->>
->
-> Hi,
->
-> The driver is nice and clean.
->
-> Still leaving aside the long argued question of whether this should be
-> in input.  If you care for my views on that there are plenty or other
-> threads! There are a few things I'd still like to suggest:
->
 
-Jonathan, Andrew
 
-Is there any way forward for this patch, I am unable to induce any response
-from the input maintainer
+--azLHFNyN32YCQGCU
+Content-Type: application/pgp-signature
+Content-Disposition: inline
 
-Thanks
-Hemanth 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
---
-To unsubscribe from this list: send the line "unsubscribe linux-input" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+iJwEAQECAAYFAkxlTQwACgkQfKHnntdSXjRpaAP/VzLQLd5QVML3rtlfEfgYhL91
+BAsZfQXV3kvuRwjOKYcLdgg0S9KR2CBwNx7dJuDwOTFnvwV49SigZpg7Gwu9cKaT
+QRy8l8gWeTv06kMTR7LttgsOxEd41ZOBtBagPtqK8kSgLt6KDk9ZxTjbpkceJdPd
+8YZ65NNzQfjJYabogLw=
+=0isZ
+-----END PGP SIGNATURE-----
+
+--azLHFNyN32YCQGCU--
