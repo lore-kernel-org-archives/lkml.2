@@ -1,67 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751750Ab0HMUyB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 16:54:01 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:51189 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751393Ab0HMUx7 (ORCPT
+	id S1752113Ab0HMUzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 16:55:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:64177 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab0HMUzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 16:53:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=rUlUYJLMotO/U0HR02SJN6n0Lde6CFyLBSh1/ZNPwzn5nBCtVS8peY1D60vf+PvbJU
-         rn8ddCINdui76ZLZDnLtL4iuK/lzXEjHcFRm7QqRyXFMomS8xMXql6z4C9ESv9x/fSK1
-         ASO/bzJtXFM8ZEUpqqzmizDpYplR8Jrz/cDok=
-MIME-Version: 1.0
-In-Reply-To: <1281726579.2810.10.camel@localhost.localdomain>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<AANLkTin2P5kcrC1SU-ANffSHyW8Ar4x4+qFuqVMFhYJE@mail.gmail.com>
-	<AANLkTin-dksybH0ANypheovXXubwd+SRCpurdVRU7-Z=@mail.gmail.com>
-	<1281726579.2810.10.camel@localhost.localdomain>
-Date: Fri, 13 Aug 2010 13:53:57 -0700
-Message-ID: <AANLkTinJ04d2Bjuv2E4OOG=35TSHArEP6cHqGUQVUoy2@mail.gmail.com>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 13 Aug 2010 16:55:10 -0400
+X-Authority-Analysis: v=1.1 cv=lkxCD/5/46GCnpIirYorSQYl6SFYRu3AvdhUIdWuqHk= c=1 sm=0 a=oC6nfymtsbUA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=VwQbUJbxAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=MXK2Ef5vOhNAgs8QZVMA:9 a=AVB56uzOcn3CwX2NMaEA:7 a=QjhhHKUI10q-9ZOTEKU4w9Foo08A:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Subject: [PATCH][GIT PULL] tracing: Sanitize value returned from
+ write(trace_marker, "...", len)
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Marcin Slusarz <marcin.slusarz@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 13 Aug 2010 16:55:07 -0400
+Message-ID: <1281732907.3058.77.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 12:09 PM, john stultz <johnstul@us.ibm.com> wrote:
->
-> So other then "show some numbers", my only thought that might make the
-> patch more attractive is that rather than a global change, or a static
-> CONFIG_ option, would it maybe make more sense as a mount option?
 
-I really like this idea.
+Ingo,
 
-Consider the following "revision 2" of my proposal:
+I had this sitting in my quilt queue, and did not realize I never
+committed it. This is on top of my previous two pull requests.
 
-1) Add a function pointer "current_fs_time" to struct super_block.
+Thanks,
 
-2) Replace all calls of the form:
+-- Steve
 
-    current_fs_time(sb);
+Please pull the latest tip/perf/urgent-3 tree, which can be found at:
 
-with
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent-3
 
-  sb->current_fs_time(sb);
 
- 3) Arrange for the default value to point to the current implementation.
+Marcin Slusarz (1):
+      tracing: Sanitize value returned from write(trace_marker, "...", len)
 
-These first three could be one patch.  They change no functionality;
-they just enable the next step.
+----
+ kernel/trace/trace.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
+---------------------------
+commit 1aa54bca6ee0d07ebcafb8ca8074b624d80724aa
+Author: Marcin Slusarz <marcin.slusarz@gmail.com>
+Date:   Wed Jul 28 01:18:01 2010 +0200
 
-Finally:
+    tracing: Sanitize value returned from write(trace_marker, "...", len)
+    
+    When userspace code writes non-new-line-terminated string to trace_marker
+    file, write handler appends new-line and returns number of bytes written
+    to trace buffer, so
+    write(fd, "abc", 3) will return 4
+    
+    That's unexpected and unfortunately it confuses glibc's fprintf function.
+    
+    Example:
+    int main() {
+      fprintf(stderr, "abc");
+      return 0;
+    }
+    
+    $ gcc test.c -o test
+    $ echo mmiotrace > /sys/kernel/debug/tracing/current_tracer
+    $ ./test 2>/sys/kernel/debug/tracing/trace_marker
+    
+    results in infinite loop:
+    write(fd, "abc", 3) = 4
+    write(fd, "", 1) = 0
+    write(fd, "", 1) = 0
+    write(fd, "", 1) = 0
+    write(fd, "", 1) = 0
+    write(fd, "", 1) = 0
+    write(fd, "", 1) = 0
+    write(fd, "", 1) = 0
+    (...)
+    
+    ...and kernel trace buffer full of empty markers.
+    
+    Fix it by sanitizing write return value.
+    
+    Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+    LKML-Reference: <20100727231801.GB2826@joi.lan>
+    Cc: Frederic Weisbecker <fweisbec@gmail.com>
+    Cc: Ingo Molnar <mingo@redhat.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-  4) Add a mount option to cause sb->current_fs_time(sb) to use the
-hi-res implementation.
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 086d363..88b42d1 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3498,6 +3498,7 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+ 					size_t cnt, loff_t *fpos)
+ {
+ 	char *buf;
++	size_t written;
+ 
+ 	if (tracing_disabled)
+ 		return -EINVAL;
+@@ -3519,11 +3520,15 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
+ 	} else
+ 		buf[cnt] = '\0';
+ 
+-	cnt = mark_printk("%s", buf);
++	written = mark_printk("%s", buf);
+ 	kfree(buf);
+-	*fpos += cnt;
++	*fpos += written;
+ 
+-	return cnt;
++	/* don't tell userspace we wrote more - it might confuse them */
++	if (written > cnt)
++		written = cnt;
++
++	return written;
+ }
+ 
+ static int tracing_clock_show(struct seq_file *m, void *v)
 
-Comments?
 
- - Pat
