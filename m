@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934597Ab0HMQGy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 12:06:54 -0400
-Received: from mail.perches.com ([173.55.12.10]:1067 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755034Ab0HMQGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 12:06:50 -0400
-Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
- take three
-From: Joe Perches <joe@perches.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>, paulmck@linux.vnet.ibm.com,
-        david@lang.hm, Theodore Tso <tytso@mit.edu>, peterz@infradead.org,
-        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-        James.Bottomley@suse.de, galibert@pobox.com, florian@mickler.org,
-        menage@google.com, linux-pm@lists.linux-foundation.org,
-        swmike@swm.pp.se, tglx@linutronix.de,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, arjan@infradead.org
-In-Reply-To: <20100813155738.GA11507@isilmar-3.linta.de>
-References: <20100812010612.GL2516@linux.vnet.ibm.com>
-	 <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
-	 <20100812034435.GA7403@linux.vnet.ibm.com>
-	 <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
-	 <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
-	 <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	 <20100812174303.GD2524@linux.vnet.ibm.com>
-	 <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
-	 <20100813152254.GD2511@linux.vnet.ibm.com>
-	 <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
-	 <20100813155738.GA11507@isilmar-3.linta.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 Aug 2010 09:06:47 -0700
-Message-ID: <1281715607.15486.102.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S934590Ab0HMQJH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 12:09:07 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:65290 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab0HMQJF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 12:09:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=nbGKNs4A2KPhv7EQtAmdalEd7nCGUZY6tzuhN7qzs913MxCUC2XsgmUso2EuWaxEOl
+         UO8yCulKfVg9ytqIMYqRBPjZIb0ROmjL4ewcmmK65dSTrUaq9ihj11tGY+UZ1E7Gi7eU
+         d23q+GEJiPzxEvvz4EuWfRG5jxCcFJSUl9qZs=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTin6cHofTWkAysi_hojxaYUJtXg44_F0AyffMy5k@mail.gmail.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	<1274733081-4623-7-git-send-email-walken@google.com>
+	<AANLkTikFEy26V4epRGCJiDkQNQ5BH0fPP0C=4phUB=o3@mail.gmail.com>
+	<AANLkTimDGbrja5EgGQ+sQxHBRNMnmt7=rjtOfwAKEKFe@mail.gmail.com>
+	<AANLkTim3thKSwTHSQ7UXir+1cT9cfFaEjTFGGMdz0_Bt@mail.gmail.com>
+	<AANLkTikz2=pa5csA+pqDfKc_zYihyn+C9pUb_YNS9g0L@mail.gmail.com>
+	<AANLkTiny_GOfvX-t=SoXZVi8uO3SHC_h2YgbPtCcLXcu@mail.gmail.com>
+	<AANLkTin6cHofTWkAysi_hojxaYUJtXg44_F0AyffMy5k@mail.gmail.com>
+Date: Fri, 13 Aug 2010 09:09:04 -0700
+X-Google-Sender-Auth: LD7UjAbb9KzhDgBbB_CIKSzwS3g
+Message-ID: <AANLkTi=hW0ceGxAPko4qG6uRz6tSEQEdzxRdeKWMueiz@mail.gmail.com>
+Subject: Re: [PATCH 06/11] rwsem: wake queued readers when writer blocks on
+ active read lock
+From: Tony Luck <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michel Lespinasse <walken@google.com>, David Howells <dhowells@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Waychison <mikew@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 17:57 +0200, Dominik Brodowski wrote:
-> Because millions of users are happy -- with Android, including suspend
-> blockers.
+On Thu, Aug 12, 2010 at 3:23 PM, Tony Luck <tony.luck@gmail.com> wrote:
+> I'm going to try the current kernel with the 424acaae reverted (and
+> with the ia64 rwsem.h reverted too) to check whether this is still the same
+> root cause
 
-I'd guess there are on the order of 20 users
-that have built and deployed a kernel with
-Android suspend blockers support.
+This kernel ran "make clean ; make -j32" all night long. It's completed 415
+cycles with no apparent problems. Average cycle time is 147.2 seconds.
+Minimum is 144, max is 158 ... which all looks very normal.
 
-The total deployed systems is relatively meaningless.
+It's probably a good thing that the unsigned RWSEM_WAITING_BIAS
+problem led me to this commit with a problem that showed up during
+boot. I'd hate to be bisecting this based on a problem that only shows
+up after an unknown number of kernel builds :-)
 
+Still no reports from other architectures? So this still seems to be an
+ia64 specific problem. Time to start reading rwsem.c
+
+-Tony
