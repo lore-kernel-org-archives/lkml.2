@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762036Ab0HMSbC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 14:31:02 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:40543 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572Ab0HMSbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 14:31:01 -0400
-From: John Stultz <johnstul@us.ibm.com>
+	id S1762044Ab0HMScN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 14:32:13 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:36957 "EHLO
+	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761995Ab0HMScM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 14:32:12 -0400
+Date: Fri, 13 Aug 2010 11:32:11 -0700
+From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Larry Finger <Larry.Finger@lwfinger.net>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] time: Workaround gcc loop optimization that causes 64bit div errors
-Date: Fri, 13 Aug 2010 11:30:58 -0700
-Message-Id: <1281724258-19898-1-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
+Subject: [PATCH 1/1] kfifo: fix DMA sample driver
+Message-ID: <20100813183211.GB18691@ovro.caltech.edu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Fri, 13 Aug 2010 11:32:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Early 4.3 versions of gcc apparently aggressively optimize the raw
-time accumulation loop, replacing it with a divide.
+The kfifo DMA sample driver is broken. It does not properly initialize
+the scatterlist, and therefore causes a kernel BUG with
+CONFIG_DEBUG_SG=y.
 
-On 32bit systems, this causes the following link errors:
-	undefined reference to `__umoddi3'
-	undefined reference to `__udivdi3'
-
-The gcc issue has been fixed in 4.4 and greater.
-
-This patch replaces the accumulation loop with a do_div, as suggested
-by Linus.
-
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-CC: Jason Wessel <jason.wessel@windriver.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- kernel/time/timekeeping.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ samples/kfifo/dma-example.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index e960d82..49010d8 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -710,9 +710,10 @@ static cycle_t logarithmic_accumulation(cycle_t offset, int shift)
- 	/* Accumulate raw time */
- 	raw_nsecs = timekeeper.raw_interval << shift;
- 	raw_nsecs += raw_time.tv_nsec;
--	while (raw_nsecs >= NSEC_PER_SEC) {
--		raw_nsecs -= NSEC_PER_SEC;
--		raw_time.tv_sec++;
-+	if (raw_nsecs >= NSEC_PER_SEC) {
-+		u64 raw_secs = raw_nsecs;
-+		raw_nsecs = do_div(raw_secs, NSEC_PER_SEC);
-+		raw_time.tv_sec += raw_secs;
- 	}
- 	raw_time.tv_nsec = raw_nsecs;
+diff --git a/samples/kfifo/dma-example.c b/samples/kfifo/dma-example.c
+index b9482c2..baa5060 100644
+--- a/samples/kfifo/dma-example.c
++++ b/samples/kfifo/dma-example.c
+@@ -45,6 +45,9 @@ static int __init example_init(void)
+ 
+ 	printk(KERN_INFO "queue len: %u\n", kfifo_len(&fifo));
+ 
++	/* initialize scatterlist */
++	sg_init_table(sg, ARRAY_SIZE(sg));
++
+ 	ret = kfifo_dma_in_prepare(&fifo, sg, ARRAY_SIZE(sg), FIFO_SIZE);
+ 	printk(KERN_INFO "DMA sgl entries: %d\n", ret);
  
 -- 
-1.6.0.4
+1.7.1
 
