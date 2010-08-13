@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab0HMHQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:16:06 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:42308 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab0HMHPu (ORCPT
+	id S1754248Ab0HMHSp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:18:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41816 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751640Ab0HMHSn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:15:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=subject:to:from:cc:date:message-id:user-agent:
-	mime-version:content-type:content-transfer-encoding:x-system-of-record;
-	b=I2+1kRWq1BM4yTYc96yoLuw6Vu7CpREG2UCrEo+DWXrEa8ozbo6wasPHseRPv85Q4
-	wLtT7l9eDGWAvs8cpu7/g==
-Subject: [PATCH] Fixed a mismatch between the users of radix_tree and the
-	implementation.
-To: npiggin@suse.de, paulmck@us.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
-From: Salman Qazi <sqazi@google.com>
-Cc: adurbin@google.com
-Date: Fri, 13 Aug 2010 00:15:35 -0700
-Message-ID: <20100813071535.18490.79633.stgit@bumblebee1.mtv.corp.google.com>
-User-Agent: StGit/0.15
+	Fri, 13 Aug 2010 03:18:43 -0400
+Date: Fri, 13 Aug 2010 00:17:25 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Ted Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>, ocfs2-devel@oss.oracle.com,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Ocfs2-devel] [PATCH 2/3] JBD2: Allow feature checks before
+ journal recovery
+Message-ID: <20100813071720.GA21279@mail.oracle.com>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
+	"Patrick J. LoPresti" <lopresti@gmail.com>,
+	ocfs2-devel@oss.oracle.com, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <874ofr2myq.fsf@patl.com>
+ <8739vb2mxr.fsf@patl.com>
+ <20100812174318.GD6561@mail.oracle.com>
+ <20100813033930.GG2763@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100813033930.GG2763@thunk.org>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This matters for the lockless page cache, in particular find_get_pages implementation.
+On Thu, Aug 12, 2010 at 11:39:30PM -0400, Ted Ts'o wrote:
+> On Thu, Aug 12, 2010 at 10:43:19AM -0700, Joel Becker wrote:
+> > On Thu, Jul 22, 2010 at 03:04:16PM -0700, Patrick J. LoPresti wrote:
+> > > Before we start accessing a huge (> 16 TiB) OCFS2 volume, we need to
+> > > confirm that its journal supports 64-bit offsets.  In particular, we
+> > > need to check the journal's feature bits before recovering the journal.
+> > > 
+> > > This is not possible with JBD2 at present, because the journal
+> > > superblock (where the feature bits reside) is not loaded from disk until
+> > > the journal is recovered.
+> > > 
+> > > This patch loads the journal superblock in
+> > > jbd2_journal_check_used_features() if it has not already been loaded,
+> > > allowing us to check the feature bits before journal recovery.
+> > > 
+> > > Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+> > 
+> > Dear jbd2 developers,
+> > 	I've pushed this patch to the merge-window branch of ocfs2.git.
+> > I'm ready to send it to Linus, but I need your OK.
+> 
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 
-In the following case, we get can get a deadlock:
+	Thanks Ted!
 
-    0.  The radix tree contains two items, one has the index 0.
-    1.  The reader (in this case find_get_pages) takes the rcu_read_lock.
-    2.  The reader acquires slot(s) for item(s) including the index 0 item.
-    3.  The non-zero index item is deleted, and as a consequence the other item
-        is moved to the root of the tree.  The place where it used to be is
-        queued for deletion after the readers finish.
-    4.  The reader looks at the index 0 slot, and finds that the page has 0 ref count
-    5.  The reader looks at it again, hoping that the item will either be freed
-        or the ref count will increase.  This never happens, as the slot it
-        is looking at will never be updated.  Also, this slot can never be reclaimed
-        because the reader is holding rcu_read_lock and is in an infinite loop.
+Joel
 
-This can be reproduced with reliably by running dbench followed by compilebench under
-autotest.  I have not been able to construct a small targeted repro case.
+-- 
 
-There is also a similar potential issue with insertion.  Storing the first
-element in the root and then moving it to a new slot on insertion of a
-second element would potentially lead to a similar problem.
+"I don't even butter my bread; I consider that cooking."
+         - Katherine Cebrian
 
-Both of these issues have been fixed in this change.
-
-Signed-off-by: Salman Qazi <sqazi@google.com>
----
- lib/radix-tree.c |    9 ++-------
- 1 files changed, 2 insertions(+), 7 deletions(-)
-
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index e907858..035d5aa 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -252,11 +252,6 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
- 	while (index > radix_tree_maxindex(height))
- 		height++;
- 
--	if (root->rnode == NULL) {
--		root->height = height;
--		goto out;
--	}
--
- 	do {
- 		unsigned int newheight;
- 		if (!(node = radix_tree_node_alloc(root)))
-@@ -278,7 +273,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
- 		rcu_assign_pointer(root->rnode, node);
- 		root->height = newheight;
- 	} while (height > root->height);
--out:
-+
- 	return 0;
- }
- 
-@@ -1154,7 +1149,7 @@ EXPORT_SYMBOL(radix_tree_gang_lookup_tag_slot);
- static inline void radix_tree_shrink(struct radix_tree_root *root)
- {
- 	/* try to shrink tree height */
--	while (root->height > 0) {
-+	while (root->height > 1) {
- 		struct radix_tree_node *to_free = root->rnode;
- 		void *newptr;
- 
-
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
