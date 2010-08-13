@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab0HMVyd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:54:33 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55542 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752880Ab0HMVyc (ORCPT
+	id S1754029Ab0HMV4p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:56:45 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38413 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903Ab0HMV4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:54:32 -0400
-Date: Fri, 13 Aug 2010 22:54:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: khc@pm.waw.pl, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-Message-ID: <20100813215413.GA21607@n2100.arm.linux.org.uk>
-References: <m3sk2m433u.fsf@intrepid.localdomain> <20100811110448S.fujita.tomonori@lab.ntt.co.jp> <20100811072532.GA21511@n2100.arm.linux.org.uk> <20100813152224H.fujita.tomonori@lab.ntt.co.jp>
+	Fri, 13 Aug 2010 17:56:44 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6073"; a="50960746"
+Message-ID: <4C65BF99.9030601@codeaurora.org>
+Date: Fri, 13 Aug 2010 17:56:41 -0400
+From: Neil Leeder <nleeder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100813152224H.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-input@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Trilok Soni <tsoni@codeaurora.org>
+Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
+References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <4C642E6D.6000908@codeaurora.org> <4C64363A.4080406@codeaurora.org> <20100813024912.GA2661@core.coreip.homeip.net>
+In-Reply-To: <20100813024912.GA2661@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 03:23:53PM +0900, FUJITA Tomonori wrote:
-> On Wed, 11 Aug 2010 08:25:32 +0100
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > It doesn't break dmabounce.
-> > 
-> > What it breaks is the fact that a PCI device which can do 32-bit DMA is
-> > connected to a PCI bus which can only access the first 64MB of memory
-> > through the host bridge, but the system has more than 64MB available.
-> > 
-> > Allowing a 32-bit DMA mask means that dmabounce can't detect that memory
-> > above 64MB needs to be bounced to memory below the 64MB boundary.
-> 
-> But dmabounce doesn't look at dev->coherent_dma_mask.
-> 
-> The change breaks __dma_alloc_buffer()? If we set dev->coherent_dma_mask
-> to DMA_BIT_MASK(32) for ixp4xx's pci devices, __dma_alloc_buffer()
-> doesn't use GFP_DMA.
+On 8/12/2010 10:49 PM, Dmitry Torokhov wrote:
+> On Thu, Aug 12, 2010 at 01:58:18PM -0400, Neil Leeder wrote:
+> Actually, since this is not a new touchpad but simply a PS/2 interface
+> it should be implemented as a serio driver, not input device driver.
+>
+Dmitri,
 
-With an incorrect coherent_dma_mask, dma_alloc_coherent() will return
-memory outside of the 64MB window.  This means that when dmabounce comes
-to allocate the replacement buffer, it gets a buffer which won't be
-accessible to the DMA controller - which is a condition it doesn't check
-for.
+Thanks for supplying that serio driver. I just have a couple of questions.
 
-Ergo, it breaks dmabounce.
+Even though the interface on the wpce775x EC happens to be a PS/2 
+interface, this is completely hidden by the firmware on that device. To 
+the linux driver it looks like a dedicated i2c connection directly to 
+the touchpad. You can't substitute any other device on that PS/2 
+interface without rewriting the firmware in the EC - it's not a generic 
+interface.  A manufacturer could even move the touchpad from the PS/2 
+interface to say GPIOs, re-write the firmware and the linux driver 
+couldn't tell the difference. Does that change the rationale for using a 
+serio driver?
+
+If the request to use a serio driver is still valid, then it seems that 
+the workqueue from the interrupt handler sends each byte of data 
+received over i2c in a separate serio_interrupt() call to the touchpad 
+driver. Touchpad data comes in 3-byte packets, so the touchpad driver 
+will have to re-assemble the packet from 3 separate interrupts. Is that 
+the intended use?
+
+> Could you please tell me if the following works for you? Note that it
+> expects IRQ to be set up properly (edge vs. level trigger) by the
+> platform code
+
+The i2c_board_info that supplies the irq # from platform code doesn't 
+have a way to set i2c flags, and can't set_irq_type() until after 
+irq_request(). This may require another platform_data struct to pass the 
+trigger level in.
+
+Thanks.
+
+--
+Neil
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
