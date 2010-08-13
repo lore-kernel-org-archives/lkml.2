@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756269Ab0HMXgG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 19:36:06 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60277 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756093Ab0HMXgE (ORCPT
+	id S1756332Ab0HMXiF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 19:38:05 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46710 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756093Ab0HMXiC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 19:36:04 -0400
+	Fri, 13 Aug 2010 19:38:02 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=Khhm5hkMl5BeLTlDkAlL3IeInWciBHQARXhgKMUPJA1fVqaWk1gxkulOgW7yPNLFlU
-         8/kiioqdv+xowCXTZ999ex+T97/zxULx4wo7Zrsn3mxtFwVdYnBidGQlxwb81DuY2Z4q
-         ZnOUIPlCjzrt1AmgDdWonOxax0SuTub0EycS4=
+        b=gAiqHjusiHRimrhPYGifwQ1k+ZwqU64pGJV8MbhmEU/6DlpzSGJa11ZwbmTUvANlBm
+         0zztKfCzl+WiPIpLjI2GashFv57TbZqK0r7z3s/sQKiSQOZyb6D6Gm0S2HNLOJ/sxHEf
+         cCqRIU75doYRM08Nk1BZzNDlqzsYhAeWqkOoA=
 MIME-Version: 1.0
-In-Reply-To: <4C65D263.6050904@zytor.com>
-References: <F0CB3B1C601247indou.takao@jp.fujitsu.com>
-	<4C65C630.4070008@zytor.com>
-	<987664A83D2D224EAE907B061CE93D53015B2DAD87@orsmsx505.amr.corp.intel.com>
-	<m1r5i2kt0n.fsf@fess.ebiederm.org>
-	<4C65D263.6050904@zytor.com>
-Date: Fri, 13 Aug 2010 16:36:03 -0700
-Message-ID: <AANLkTim8U87uZ73BcFc42O6EFWuNkA5UjhhiNeVLtAWT@mail.gmail.com>
-Subject: Re: [PATCH][EFI] Run EFI in physical mode
+In-Reply-To: <AANLkTi=c9DsAZArMpbz-7wUmR3nPQyAsOyOYxmeKh=2Q@mail.gmail.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	<1274733081-4623-7-git-send-email-walken@google.com>
+	<AANLkTikFEy26V4epRGCJiDkQNQ5BH0fPP0C=4phUB=o3@mail.gmail.com>
+	<AANLkTimDGbrja5EgGQ+sQxHBRNMnmt7=rjtOfwAKEKFe@mail.gmail.com>
+	<AANLkTim3thKSwTHSQ7UXir+1cT9cfFaEjTFGGMdz0_Bt@mail.gmail.com>
+	<AANLkTikz2=pa5csA+pqDfKc_zYihyn+C9pUb_YNS9g0L@mail.gmail.com>
+	<AANLkTiny_GOfvX-t=SoXZVi8uO3SHC_h2YgbPtCcLXcu@mail.gmail.com>
+	<AANLkTin6cHofTWkAysi_hojxaYUJtXg44_F0AyffMy5k@mail.gmail.com>
+	<AANLkTi=hW0ceGxAPko4qG6uRz6tSEQEdzxRdeKWMueiz@mail.gmail.com>
+	<AANLkTi=c9DsAZArMpbz-7wUmR3nPQyAsOyOYxmeKh=2Q@mail.gmail.com>
+Date: Fri, 13 Aug 2010 16:38:02 -0700
+Message-ID: <AANLkTi=o6g2cxcL_F-ZTZZkMUFT39jLtyRdTigZRbA5o@mail.gmail.com>
+Subject: Re: [PATCH 06/11] rwsem: wake queued readers when writer blocks on
+ active read lock
 From: Tony Luck <tony.luck@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "vgoyal@redhat.com" <vgoyal@redhat.com>,
-        "nhorman@tuxdriver.com" <nhorman@tuxdriver.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michel Lespinasse <walken@google.com>, David Howells <dhowells@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Waychison <mikew@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 4:16 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I guess my real question was "is this something IA64 could benefit from
-> and/or could we make the IA64 code more similar to the x86 bits"?
+Aha!. I think I found it.
 
-If Eric's recollection about the "weird floating point fixup routines"[1]
-performance issues are correct - then ia64 won't want to do this.
+This embarrassing declaration in ia64's asm/atomic.h:
+
+static __inline__ int
+ia64_atomic64_add (__s64 i, atomic64_t *v)
+
+looks to be the key.  Obviously it would be better to return all
+64 bits of the answer using "long" rather than just 32 bits with "int".
+The critical change in the rwsem code that exposed this silliness
+is:
+
+-           (rwsem_atomic_update(0, sem) & RWSEM_ACTIVE_MASK))
+-               /* Someone grabbed the sem already */
++           rwsem_atomic_update(0, sem) < RWSEM_WAITING_BIAS)
++               /* Someone grabbed the sem for write already */
+
+i.e. the old code only looked at the low 32-bits of the return value
+(RWSEM_ACTIVE_MASK is 0xffffffff) - so the truncation didn't
+matter.
+
+ia64_atomic64_add() has been broken like this since before the
+dawn of git time in 2.6.12. Obviously we haven't been using
+atomic64_t much.
+
+Running a new test now. 12 iterations so far (which is slightly
+further than this test usually gets ... but I'll let it run for a few
+more hours before declaring victory).
 
 -Tony
-
-[1] more usually called FPSWA - floating point software assist - which
-handle a bunch or corner cases in denormalized floating point values
-that the h/w doesn't cover.
