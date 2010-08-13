@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761228Ab0HMByq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 21:54:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4241 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990Ab0HMByp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 21:54:45 -0400
-Subject: Re: 2.6.36: Sound stop working
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Takashi Iwai <tiwai@suse.de>,
-        Jiri Slaby <jirislaby@gmail.com>, Pekka Enberg <penberg@kernel.org>,
-        Thomas Meyer <thomas@m3y3r.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTimesXb7Ut3aO71HjmNjV_Q53p0Jr5j4kLTwsRGh@mail.gmail.com>
-References: <201008122200.05598.thomas@m3y3r.de>
-	 <AANLkTikZ4wA4jJ0AnWMXYmgWVBShRW=Yu67J0QvebRx0@mail.gmail.com>
-	 <s5hpqxntw64.wl%tiwai@suse.de> <4C646110.1040104@gmail.com>
-	 <s5hbp97ttt5.wl%tiwai@suse.de>
-	 <AANLkTi=s-KFuUnmNaDN6OYaiwZiaBLbYB5MCwde7tvvw@mail.gmail.com>
-	 <20100812215246.GK31363@ZenIV.linux.org.uk>
-	 <AANLkTimesXb7Ut3aO71HjmNjV_Q53p0Jr5j4kLTwsRGh@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 12 Aug 2010 21:53:51 -0400
-Message-ID: <1281664431.2996.60.camel@dhcp231-200.rdu.redhat.com>
+	id S1761277Ab0HMCON (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 22:14:13 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:50122 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755251Ab0HMCOM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 22:14:12 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Takashi Iwai <tiwai@suse.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jiri Slaby <jirislaby@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Wu Fengguang <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: mmotm 2010-08-11 - audio volume issues
+In-Reply-To: Your message of "Thu, 12 Aug 2010 23:11:42 +0200."
+             <s5hd3tntu29.wl%tiwai@suse.de>
+From: Valdis.Kletnieks@vt.edu
+References: <201008112340.o7BNenDe021017@imap1.linux-foundation.org> <5043.1281639572@localhost> <4C64624E.7040002@gmail.com>
+            <s5hd3tntu29.wl%tiwai@suse.de>
 Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1281665605_4567P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 12 Aug 2010 22:13:25 -0400
+Message-ID: <4695.1281665605@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C64AA46.0105,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=single engine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-12 at 15:19 -0700, Linus Torvalds wrote:
-> On Thu, Aug 12, 2010 at 2:52 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Thu, Aug 12, 2010 at 02:41:51PM -0700, Linus Torvalds wrote:
+--==_Exmh_1281665605_4567P
+Content-Type: text/plain; charset=us-ascii
 
-> > I'll see what can be done to fix that mess more or less right way...
+On Thu, 12 Aug 2010 23:11:42 +0200, Takashi Iwai said:
+> At Thu, 12 Aug 2010 23:06:22 +0200,
+> Jiri Slaby wrote:
+> > 
+> > On 08/12/2010 08:59 PM, Valdis.Kletnieks@vt.edu wrote:
+> > > On Wed, 11 Aug 2010 16:10:49 PDT, akpm@linux-foundation.org said:
+> > >> The mm-of-the-moment snapshot 2010-08-11-16-10 has been uploaded to
+> > >>
+> > >>    http://userweb.kernel.org/~akpm/mmotm/
+> > > 
+> > > Something appears to be borked in the ALSA arena.  There's no actual volume coming
+> > > out of the system, and 'alsamixer' is insisting that the volume slider only goes from 0
+> > > to 10% or so, no further.  However, experimentation shows that the volume slider
+> > > in 'xine' *does* affect the 'Amp-Out vals' lines, and alsamixer has *no* effect on
+> > > what 'Amp-Out vals' lists.
+> > > 
+> > > A diff of alsa-info.sh for the two kernels shows them being identical, so I'm only
+> > > attaching one copy.
+> > > 
+> > > It may be the weekend before I find time to do a bisection of this.
+> > 
+> > Didn't you (like some other people) get into the state where pulseaudio
+> > doesn't work? It chooses as an output a dummy driver automatically, then
+> > you can change volume, play sound, but actually it all goes to /dev/null.
+> > 
+> > It took me a while before I figured out that it's a "dummy" driver I
+> > have in pulseaudio.
 > 
-> .. but I assume you don't wan tto keep those "struct file" games in
-> fanotify regardless, right? So we can fix the sound issue by the
-> revert I sent out, no?
+> Looks like there is a breakage regarding open/close due to fs/notify/*
+> changes.  I guess you can hear still sounds like:
+> 
+> 	% aplay -Dplughw foo.wav
 
-Sorry I'm just coming into this now that it is 'solved.'  I just got
-back to my hotel from Linuxcon and haven't been checking e-mail.  I
-guess noone (including me) is testing sound in linux-next   :(.  I
-wonder what kind of tom foolery it must be doing with f_count (like I
-am) to have hit problems.
+Confirming that Linus's patch fixes it for me:
 
-I certainly agree the revert patch you sent should be applied if the
-worst artifact for calling dentry_open() with an 'arbitrary dentry' is
-that it fails.
+commit 2069601b3f0ea38170d4b509b89f3ca0a373bdc1
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Thu Aug 12 14:23:04 2010 -0700
 
-An easier long term fix might be a 'dentry_open_as' which I can call in
-the context of the original opening process but which will be done (for
-security/accounting/fd table/etc purposes) as the process which will
-ultimately consume the new struct file.  I don't know which would be
-better/easier for the VFS, Al?
+    Revert "fsnotify: store struct file not struct path"
+    
+    This reverts commit 3bcf3860a4ff9bbc522820b4b765e65e4deceb3e (and the
+    accompanying commit c1e5c954020e "vfs/fsnotify: fsnotify_close can delay
+    the final work in fput" that was a horribly ugly hack to make it work at
+    all).
 
--Eric
+
+
+--==_Exmh_1281665605_4567P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMZKpFcC3lWbTT17ARAufmAJ9goOndYraZ66zllcjiuyc/Ns5wKgCZAWp1
+LomGTJVERVbUPSSBCZBaz/w=
+=f7M+
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1281665605_4567P--
 
