@@ -1,112 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab0HMHbO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 03:31:14 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:9495 "EHLO
-	VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751640Ab0HMHbN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 03:31:13 -0400
-X-SpamScore: -1
-X-BigFish: VPS-1(zz1432N98dNzz1202hzz8275eh8275bh7606fh3198rz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L72Y7C-02-A7C-02
-X-M-MSG: 
-Date: Fri, 13 Aug 2010 09:04:35 +0200
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
-To: Venkatesh Pallipadi <venki@google.com>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Wrong /proc/cpuinfo core id on AMD fam_f model_9
-Message-ID: <20100813070435.GE4569@loge.amd.com>
-References: <1281648529-29678-1-git-send-email-venki@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <1281648529-29678-1-git-send-email-venki@google.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1755630Ab0HMHbY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 03:31:24 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:37378 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755473Ab0HMHbX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 03:31:23 -0400
+Subject: Re: Problem with commit deda2e81961e96be4f2c09328baca4710a2fd1a0
+From: john stultz <johnstul@us.ibm.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Jason Wessel <jason.wessel@windriver.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C64B93A.5010403@lwfinger.net>
+References: <4C64571F.6000606@lwfinger.net>
+	 <1281646368.4002.66.camel@localhost.localdomain>
+	 <4C64B93A.5010403@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Aug 2010 00:30:38 -0700
+Message-ID: <1281684638.3940.11.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 05:28:49PM -0400, Venkatesh Pallipadi wrote:
-> Commit 4a376ec3a2599c02207cd4cbd5dbf73783548463 changes cpuinfo cpu_core_id
-> from an unique id in a physical package to core id within a node. And it
-> does not change phys_proc_id or booted_cores to reflect this new topology.
-
-It shouldn't change phys_proc_id because that is supposed to be the
-socket information. (both for AMD and Intel)
-
-> This breaks the user view of topology in /proc/cpuinfo.
+On Thu, 2010-08-12 at 22:17 -0500, Larry Finger wrote:
+> On 08/12/2010 03:52 PM, john stultz wrote:
+> > 
+> > Ugh. I'm surprised it picks *this* loop to optimize instead of the
+> > similar one right above. I'm guessing its the local raw_nsecs value, but
+> > whatever.  Also surprised Jason's testing didn't hit this issue, but its
+> > probably a gcc version thing.
+> > 
+> > Regardless, I clearly need to give i386 more love in my testing.
+> > My profuse apologies.
+> > 
+> > As suggested by Linus, here's the do_div explicit version. It builds ok
+> > on i386 & x86_64, but I have not yet tested it. 
+> > 
+> > Larry, Jason: Could you verify it works for you (and avoids the original
+> > issue)?
 > 
-> With commit 4a376ec /proc/cpuinfo output (for one package) looks something like
-> processor: 0..11
-> physical id: 0..0
-> core id: 0..5 0..5
-> siblings: 12
-> cpu cores: 12
-> 
-> That is, there are processors with same "physical id" and same "core id" (which
-> are not SMT siblings). As I understand, if /proc/cpuinfo says there are 12
-> "cpu cores" per package, there should be 12 unique core ids in that package.
-> And same "physical id" and "core id" is supposed to indicate SMT siblings.
+> This one builds for me with both compilers. It appears to run OK. As to the
+> original issue - I don't think I ever saw the problem. I'll leave that question
+> for Jason.
 
-I don't agree. That's rather an Intel centric view. You should use
-thread_sibling information to identify this.  See the topology
-sub-directory for each CPU.
+Thanks for the testing! 
 
-> The change below reverts the cpu_core_id part of that commit and
+I also managed to trigger the link issue with a 64bit gcc-4.3 cross
+compiling to 32bit. However both 32bit and 64bit gcc-4.4 didn't trigger
+the link issue, so it looks like its fixed in gcc.
 
-Please don't do that. Potentially you are breaking user space. You
-rather need to know the core id (0..5) within a node instead of the
-CoreId (0..11) within the entire package. See AMD's BKDG for family
-0x10 CPUs. As a rule of thumb you require the ID of a core within one
-Node -- not within a package.
+Regardless, after my own testing, the change looks good to me. Raw time
+is accumulating properly relative to monotonic time.
 
-> /proc/cpuinfo has
-> processor: 0..11
-> physical id: 0..0
-> core id: 0..11
-> siblings: 12
-> cpu cores: 12
+Assuming Jason has no complaints it should be able to be pushed in.
 
-> Also, if the intention of the original change was to export two node info,
-> then changing just the core id is not enough. User has no way to determine
-> which of these 6 cores out of 12 belong to same node by looking at
-> /proc/cpuinfo output.
-
-Yes, you can't get this info from /proc/cpuinfo output. But
-/proc/cpuinfo is completely useless to gather entire toplogy
-information anyway.  You should extract most stuff from the topology
-subdirectory for CPUs.
-
-> Both "physical id" and "cpu cores" has to change
-> to reflect that or one more node id needs to be added (I didn't say that :))
-
-No, physical id has _not_ to change.
-
-The other option -- exporting NodeId -- I tried last year but this
-was rejected. (see http://marc.info/?l=linux-kernel&m=124964980507887)
-Did not have time to work on implementing other proposed solutions though ... Sigh
-
-Thus, so far, the node sibling information is only reflected in the L3
-cache sibling mask for Magny-Cours-CPUs. Ugly, but working.
-
-> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-
-NOT-Acked-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-
-
-Andreas
-
--- 
-Operating | Advanced Micro Devices GmbH
-  System  | Einsteinring 24, 85609 Dornach b. München, Germany
- Research | Geschäftsführer: Alberto Bozzo, Andrew Bowd
-  Center  | Sitz: Dornach, Gemeinde Aschheim, Landkreis München
-  (OSRC)  | Registergericht München, HRB Nr. 43632
+Thanks again for the quick reporting and verification.
+-john
 
 
