@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761052Ab0HMBbb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 12 Aug 2010 21:31:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51465 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754261Ab0HMBba (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 12 Aug 2010 21:31:30 -0400
-Date: Thu, 12 Aug 2010 18:30:59 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Cloning arch-independant KConfig
-Message-ID: <20100813013059.GJ22777@mail.oracle.com>
-Mail-Followup-To: Sam Ravnborg <sam@ravnborg.org>,
-	linux-kernel@vger.kernel.org
-References: <20100812233837.GG22777@mail.oracle.com>
- <20100813012052.GA2079@merkur.ravnborg.org>
+	id S1761149Ab0HMBgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 12 Aug 2010 21:36:05 -0400
+Received: from snt0-omc1-s16.snt0.hotmail.com ([65.55.90.27]:5546 "EHLO
+	snt0-omc1-s16.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754906Ab0HMBgD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 12 Aug 2010 21:36:03 -0400
+Message-ID: <SNT125-W54B7AF8536BAFB36EB0118C3980@phx.gbl>
+X-Originating-IP: [96.253.143.208]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <konrad.wilk@oracle.com>, <fujita.tomonori@lab.ntt.co.jp>
+CC: <sa212+lkml@cyconix.com>, <linux-kernel@vger.kernel.org>, <x86@kernel.org>
+Subject: RE: Driver: PCIe: 'pci_map_sg' returning invalid bus address?
+Date: Thu, 12 Aug 2010 18:35:59 -0700
+Importance: Normal
+In-Reply-To: <20100804145154.GC23544@phenom.dumpdata.com>
+References: <4C593245.5070303@cyconix.com>
+ <20100804190808D.fujita.tomonori@lab.ntt.co.jp>
+ <4C594D78.6090407@cyconix.com>
+ <20100804210206A.fujita.tomonori@lab.ntt.co.jp>,<20100804145154.GC23544@phenom.dumpdata.com>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100813012052.GA2079@merkur.ravnborg.org>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 13 Aug 2010 01:36:01.0485 (UTC) FILETIME=[E312D7D0:01CB3A87]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 03:20:52AM +0200, Sam Ravnborg wrote:
-> Today there are a few ways you can do so already.
-> Say that you have saved away the known good one as "good", which is
-> a direct copy of your .config.
-> 
-> Then you can do for example:
-> KCONFIG_ALLCONFIG=good make alldefconfig
-> 
-> This will produce a config wich is almost equal to what you had before,
-> and with defaults for all new stuff.
-> I tested it where I used a sparc defconfig as input to a i386
-> config and it just worked.
 
-	That seems pretty reasonable.
+> > - add swiotlb support to x86_32 (I don't think that it's difficult but
+> > I might miss something).
+>
+> I think the highmem support might be a bit tricky. The PowerPC folks
+> did some work in there, so it _ought_ to work.
+>
+> Evan, you could edit arch/x86/Kconfig and change:
+> config SWIOTLB
+> def_bool y if X86_64
+>
+> to say
+> def_bool y if X86
+>
+> and see how it works? FYI, it might wreak havoc on your machine thought,
+> so be sure you have a fail-safe kernel and backup your root/home
+> directory.
+>
+> (FYI, I made Xen-SWIOTLB be capable of running under X86_32 and so far
+> no trouble.. but that is not baremetal obviously).
+In fact, if you are going to port swiotlb, why not port the entire iommu support to x86_32 with PAE too?
+In fact, I am really irritated at how the x86-64 port was developed completely separate from mainline, when 
+it is just a variant of the same x86 arch. For another example of this, look at the history of ACPI SRAT support
+in Linux.
 
-> cat .config good > new
-> mv new .config
-> make menuconfig
-> 
-> This will trigger a lot of override warnings - which you just ignore.
-> Resulting config is then mostly from "good".
-
-	The problem with this, which I've definitely done before, is I
-never know what paths in menuconfig to look down.  The alldefconfig
-choice seems saner because it provides a dirt-simple CPU setup.
-
-Joel
-
--- 
-
-"Can any of you seriously say the Bill of Rights could get through
- Congress today?  It wouldn't even get out of committee."
-	- F. Lee Bailey
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+Yuhong Bao
+ 		 	   		  
