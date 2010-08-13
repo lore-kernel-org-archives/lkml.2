@@ -1,92 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267Ab0HMVAV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:00:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42891 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab0HMVAT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:00:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=MZgZvyYM17u2S+tPNGwT2pJ7jrkxy3uKdS4nr07lQnWlFS6lyHk/wrSiJC3A2jm3AD
-         WV2aNy0WKBEaQfcpGzIUl6ySbbNaITNipOj2S4+DHfpDgTCzWt/ho9rAsgfcCyuocuk2
-         1o6ln7r8LzfFJqaoydTC92IUBXM4/URBxreyI=
-Date: Fri, 13 Aug 2010 22:59:58 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] kfifo: __must_check helper casts everything to unsigned
-Message-ID: <20100813205936.GS645@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Stefani Seibold <stefani@seibold.net>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Andi Kleen <ak@linux.intel.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Mauro Carvalho Chehab <mchehab@redhat.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	id S1752203Ab0HMVEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:04:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34762 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750847Ab0HMVEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 17:04:10 -0400
+Message-ID: <4C65B327.8020605@zytor.com>
+Date: Fri, 13 Aug 2010 14:03:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Xiaotian Feng <dfeng@redhat.com>, avi Kivity <avi@redhat.com>
+CC: x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Brian Gerst <brgerst@gmail.com>, Avi Kivity <avi@redhat.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Sheng Yang <sheng@linux.intel.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: [PATCH] kvm: fix poison overwritten caused by using wrong xstate
+ size
+References: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com> <1281683951-19814-1-git-send-email-dfeng@redhat.com>
+In-Reply-To: <1281683951-19814-1-git-send-email-dfeng@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a new wrapper to add a __must_check to kfifo macros.  The
-problem is that it casts everything to unsigned.  That breaks for places
-that check stuff like:
+Avi, do you want to take this one or should I?
 
-	if (kfifo_alloc(&dlci->_fifo, 4096, GFP_KERNEL) < 0)
+	-hpa
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+On 08/13/2010 12:19 AM, Xiaotian Feng wrote:
+> fpu.state is allocated from task_xstate_cachep, the size of task_xstate_cachep
+> is xstate_size. xstate_size is set from cpuid instruction, which is often
+> smaller than sizeof(struct xsave_struct). kvm is using sizeof(struct xsave_struct)
+> to fill in/out fpu.state.xsave, as what we allocated for fpu.state is
+> xstate_size, kernel will write out of memory and caused poison/redzone/padding
+> overwritten warnings.
+> 
+> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+> Cc: Brian Gerst <brgerst@gmail.com>
+> Cc: Avi Kivity <avi@redhat.com>
+> Cc: Robert Richter <robert.richter@amd.com>
+> Cc: Sheng Yang <sheng@linux.intel.com>
+> Cc: Marcelo Tosatti <mtosatti@redhat.com>
+> Cc: Gleb Natapov <gleb@redhat.com>
+> Cc: Jan Kiszka <jan.kiszka@siemens.com>
+> ---
+>  arch/x86/kernel/i387.c |    1 +
+>  arch/x86/kvm/x86.c     |    4 ++--
+>  2 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+> index 1f11f5c..a46cb35 100644
+> --- a/arch/x86/kernel/i387.c
+> +++ b/arch/x86/kernel/i387.c
+> @@ -40,6 +40,7 @@
+>  
+>  static unsigned int		mxcsr_feature_mask __read_mostly = 0xffffffffu;
+>  unsigned int xstate_size;
+> +EXPORT_SYMBOL_GPL(xstate_size);
+>  unsigned int sig_xstate_ia32_size = sizeof(struct _fpstate_ia32);
+>  static struct i387_fxsave_struct fx_scratch __cpuinitdata;
+>  
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index 25f1907..3a09c62 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -2387,7 +2387,7 @@ static void kvm_vcpu_ioctl_x86_get_xsave(struct kvm_vcpu *vcpu,
+>  	if (cpu_has_xsave)
+>  		memcpy(guest_xsave->region,
+>  			&vcpu->arch.guest_fpu.state->xsave,
+> -			sizeof(struct xsave_struct));
+> +			xstate_size);
+>  	else {
+>  		memcpy(guest_xsave->region,
+>  			&vcpu->arch.guest_fpu.state->fxsave,
+> @@ -2405,7 +2405,7 @@ static int kvm_vcpu_ioctl_x86_set_xsave(struct kvm_vcpu *vcpu,
+>  
+>  	if (cpu_has_xsave)
+>  		memcpy(&vcpu->arch.guest_fpu.state->xsave,
+> -			guest_xsave->region, sizeof(struct xsave_struct));
+> +			guest_xsave->region, xstate_size);
+>  	else {
+>  		if (xstate_bv & ~XSTATE_FPSSE)
+>  			return -EINVAL;
 
-diff --git a/include/linux/kfifo.h b/include/linux/kfifo.h
-index 311f875..437cc0d 100644
---- a/include/linux/kfifo.h
-+++ b/include/linux/kfifo.h
-@@ -177,6 +177,12 @@ __kfifo_must_check_helper(unsigned int val)
- 	return val;
- }
- 
-+static inline int __must_check
-+__kfifo_must_check_helper_signed(int val)
-+{
-+	return val;
-+}
-+
- /**
-  * kfifo_initialized - Check if the fifo is initialized
-  * @fifo: address of the fifo to check
-@@ -323,7 +329,7 @@ __kfifo_must_check_helper( \
-  * Return 0 if no error, otherwise an error code.
-  */
- #define kfifo_alloc(fifo, size, gfp_mask) \
--__kfifo_must_check_helper( \
-+__kfifo_must_check_helper_signed( \
- ({ \
- 	typeof(fifo + 1) __tmp = (fifo); \
- 	struct __kfifo *__kfifo = &__tmp->kfifo; \
-@@ -609,7 +615,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_from_user(fifo, from, len, copied) \
--__kfifo_must_check_helper( \
-+__kfifo_must_check_helper_signed( \
- ({ \
- 	typeof(fifo + 1) __tmp = (fifo); \
- 	const void __user *__from = (from); \
-@@ -637,7 +643,7 @@ __kfifo_must_check_helper( \
-  * writer, you don't need extra locking to use these macro.
-  */
- #define	kfifo_to_user(fifo, to, len, copied) \
--__kfifo_must_check_helper( \
-+__kfifo_must_check_helper_signed( \
- ({ \
- 	typeof(fifo + 1) __tmp = (fifo); \
- 	void __user *__to = (to); \
