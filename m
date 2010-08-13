@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934585Ab0HMQGu (ORCPT <rfc822;w@1wt.eu>);
+	id S934597Ab0HMQGy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 12:06:54 -0400
+Received: from mail.perches.com ([173.55.12.10]:1067 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755034Ab0HMQGu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 13 Aug 2010 12:06:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51447 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034Ab0HMQGt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 12:06:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=BQrpyV//S+H+nljhMvhIp/ncupXToP/cyXYh9I/QqAjbv2aByCM2e7P7Bvuj/ZLmXR
-         axjV7cwdXqaNaHgsRvQxYnYhAnehQ/AAdPSh5AlAlEav4Bs0I/z3bI4hdOICfkWXD0cg
-         W+ijhvIJJs4lB57He5APdxTq5kS580HI4gqWw=
-From: Namhyung Kim <namhyung@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] add __user markup in copy_user_handle_tail()
-Date: Sat, 14 Aug 2010 01:06:44 +0900
-Message-Id: <1281715604-5174-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
+ take three
+From: Joe Perches <joe@perches.com>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>, paulmck@linux.vnet.ibm.com,
+        david@lang.hm, Theodore Tso <tytso@mit.edu>, peterz@infradead.org,
+        Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
+        James.Bottomley@suse.de, galibert@pobox.com, florian@mickler.org,
+        menage@google.com, linux-pm@lists.linux-foundation.org,
+        swmike@swm.pp.se, tglx@linutronix.de,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, arjan@infradead.org
+In-Reply-To: <20100813155738.GA11507@isilmar-3.linta.de>
+References: <20100812010612.GL2516@linux.vnet.ibm.com>
+	 <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+	 <20100812034435.GA7403@linux.vnet.ibm.com>
+	 <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+	 <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+	 <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	 <20100812174303.GD2524@linux.vnet.ibm.com>
+	 <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+	 <20100813152254.GD2511@linux.vnet.ibm.com>
+	 <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
+	 <20100813155738.GA11507@isilmar-3.linta.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Aug 2010 09:06:47 -0700
+Message-ID: <1281715607.15486.102.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__get/put_user_nocheck() requires 2nd arg should be a user pointer but was missing
-__user markup. Add it.
+On Fri, 2010-08-13 at 17:57 +0200, Dominik Brodowski wrote:
+> Because millions of users are happy -- with Android, including suspend
+> blockers.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/lib/usercopy_64.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+I'd guess there are on the order of 20 users
+that have built and deployed a kernel with
+Android suspend blockers support.
 
-diff --git a/arch/x86/lib/usercopy_64.c b/arch/x86/lib/usercopy_64.c
-index b7c2849..84b0c1b 100644
---- a/arch/x86/lib/usercopy_64.c
-+++ b/arch/x86/lib/usercopy_64.c
-@@ -170,14 +170,17 @@ copy_user_handle_tail(char *to, char *from, unsigned len, unsigned zerorest)
- 	unsigned zero_len;
- 
- 	for (; len; --len) {
--		if (__get_user_nocheck(c, from++, sizeof(char)))
-+		if (__get_user_nocheck(c, (u8 __user __force *) from++,
-+				       sizeof(char)))
- 			break;
--		if (__put_user_nocheck(c, to++, sizeof(char)))
-+		if (__put_user_nocheck(c, (u8 __user __force *) to++,
-+				       sizeof(char)))
- 			break;
- 	}
- 
- 	for (c = 0, zero_len = len; zerorest && zero_len; --zero_len)
--		if (__put_user_nocheck(c, to++, sizeof(char)))
-+		if (__put_user_nocheck(c, (u8 __user __force *) to++,
-+				       sizeof(char)))
- 			break;
- 	return len;
- }
--- 
-1.7.0.4
+The total deployed systems is relatively meaningless.
 
