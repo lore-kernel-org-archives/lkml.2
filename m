@@ -1,513 +1,431 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976Ab0HMVYt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 17:24:49 -0400
-Received: from kroah.org ([198.145.64.141]:41119 "EHLO coco.kroah.org"
+	id S1753645Ab0HMV0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 17:26:21 -0400
+Received: from kroah.org ([198.145.64.141]:41129 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753255Ab0HMVYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 17:24:21 -0400
-Date: Fri, 13 Aug 2010 14:24:09 -0700
+	id S1752507Ab0HMV0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 17:26:19 -0400
+Date: Fri, 13 Aug 2010 14:24:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Subject: Re: Linux 2.6.27.51
-Message-ID: <20100813212409.GD22102@kroah.com>
-References: <20100813212355.GC22102@kroah.com>
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.19
+Message-ID: <20100813212447.GE22102@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100813212355.GC22102@kroah.com>
+Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 040c479..5382c55 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,7 +1,7 @@
- VERSION = 2
- PATCHLEVEL = 6
- SUBLEVEL = 27
--EXTRAVERSION = .50
-+EXTRAVERSION = .51
- NAME = Trembling Tortoise
- 
- # *DOCUMENTATION*
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 001c099..07e27f7 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1179,7 +1179,7 @@ static const struct pv_time_ops xen_time_ops __initdata = {
- 	.set_wallclock = xen_set_wallclock,
- 	.get_wallclock = xen_get_wallclock,
- 	.get_tsc_khz = xen_tsc_khz,
--	.sched_clock = xen_sched_clock,
-+	.sched_clock = xen_clocksource_read,
- };
- 
- static const struct pv_cpu_ops xen_cpu_ops __initdata = {
-diff --git a/arch/x86/xen/time.c b/arch/x86/xen/time.c
-index 685b774..d0f176e 100644
---- a/arch/x86/xen/time.c
-+++ b/arch/x86/xen/time.c
-@@ -30,8 +30,6 @@
- #define TIMER_SLOP	100000
- #define NS_PER_TICK	(1000000000LL / HZ)
- 
--static cycle_t xen_clocksource_read(void);
--
- /* runstate info updated by Xen */
- static DEFINE_PER_CPU(struct vcpu_runstate_info, runstate);
- 
-@@ -158,45 +156,6 @@ static void do_stolen_accounting(void)
- 	account_steal_time(idle_task(smp_processor_id()), ticks);
- }
- 
--/*
-- * Xen sched_clock implementation.  Returns the number of unstolen
-- * nanoseconds, which is nanoseconds the VCPU spent in RUNNING+BLOCKED
-- * states.
-- */
--unsigned long long xen_sched_clock(void)
--{
--	struct vcpu_runstate_info state;
--	cycle_t now;
--	u64 ret;
--	s64 offset;
--
--	/*
--	 * Ideally sched_clock should be called on a per-cpu basis
--	 * anyway, so preempt should already be disabled, but that's
--	 * not current practice at the moment.
--	 */
--	preempt_disable();
--
--	now = xen_clocksource_read();
--
--	get_runstate_snapshot(&state);
--
--	WARN_ON(state.state != RUNSTATE_running);
--
--	offset = now - state.state_entry_time;
--	if (offset < 0)
--		offset = 0;
--
--	ret = state.time[RUNSTATE_blocked] +
--		state.time[RUNSTATE_running] +
--		offset;
--
--	preempt_enable();
--
--	return ret;
--}
--
--
- /* Get the TSC speed from Xen */
- unsigned long xen_tsc_khz(void)
- {
-@@ -213,7 +172,7 @@ unsigned long xen_tsc_khz(void)
- 	return xen_khz;
- }
- 
--static cycle_t xen_clocksource_read(void)
-+cycle_t xen_clocksource_read(void)
- {
-         struct pvclock_vcpu_time_info *src;
- 	cycle_t ret;
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index dd3c231..8a3c823 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -3,6 +3,7 @@
- 
- #include <linux/init.h>
- #include <linux/irqreturn.h>
-+#include <linux/clocksource.h>
- #include <xen/xen-ops.h>
- 
- /* These are code, but not functions.  Defined in entry.S */
-@@ -37,7 +38,7 @@ unsigned long xen_tsc_khz(void);
- void __init xen_time_init(void);
- unsigned long xen_get_wallclock(void);
- int xen_set_wallclock(unsigned long time);
--unsigned long long xen_sched_clock(void);
-+cycle_t xen_clocksource_read(void);
- 
- irqreturn_t xen_debug_interrupt(int irq, void *dev_id);
- 
-diff --git a/drivers/char/nvram.c b/drivers/char/nvram.c
-index 39f6357..1a5d40d 100644
---- a/drivers/char/nvram.c
-+++ b/drivers/char/nvram.c
-@@ -265,10 +265,16 @@ nvram_write(struct file *file, const char __user *buf, size_t count, loff_t *ppo
- 	unsigned char contents[NVRAM_BYTES];
- 	unsigned i = *ppos;
- 	unsigned char *tmp;
--	int len;
- 
--	len = (NVRAM_BYTES - i) < count ? (NVRAM_BYTES - i) : count;
--	if (copy_from_user(contents, buf, len))
-+	if (i >= NVRAM_BYTES)
-+		return 0;	/* Past EOF */
-+
-+	if (count > NVRAM_BYTES - i)
-+		count = NVRAM_BYTES - i;
-+	if (count > NVRAM_BYTES)
-+		return -EFAULT;	/* Can't happen, but prove it to gcc */
-+
-+	if (copy_from_user(contents, buf, count))
- 		return -EFAULT;
- 
- 	spin_lock_irq(&rtc_lock);
-@@ -276,7 +282,7 @@ nvram_write(struct file *file, const char __user *buf, size_t count, loff_t *ppo
- 	if (!__nvram_check_checksum())
- 		goto checksum_err;
- 
--	for (tmp = contents; count-- > 0 && i < NVRAM_BYTES; ++i, ++tmp)
-+	for (tmp = contents; count--; ++i, ++tmp)
- 		__nvram_write_byte(*tmp, i);
- 
- 	__nvram_set_checksum();
-diff --git a/drivers/md/raid10.c b/drivers/md/raid10.c
-index dbf51e9..6fcedbe 100644
---- a/drivers/md/raid10.c
-+++ b/drivers/md/raid10.c
-@@ -818,11 +818,29 @@ static int make_request(struct request_queue *q, struct bio * bio)
- 		 */
- 		bp = bio_split(bio, bio_split_pool,
- 			       chunk_sects - (bio->bi_sector & (chunk_sects - 1)) );
-+
-+		/* Each of these 'make_request' calls will call 'wait_barrier'.
-+		 * If the first succeeds but the second blocks due to the resync
-+		 * thread raising the barrier, we will deadlock because the
-+		 * IO to the underlying device will be queued in generic_make_request
-+		 * and will never complete, so will never reduce nr_pending.
-+		 * So increment nr_waiting here so no new raise_barriers will
-+		 * succeed, and so the second wait_barrier cannot block.
-+		 */
-+		spin_lock_irq(&conf->resync_lock);
-+		conf->nr_waiting++;
-+		spin_unlock_irq(&conf->resync_lock);
-+
- 		if (make_request(q, &bp->bio1))
- 			generic_make_request(&bp->bio1);
- 		if (make_request(q, &bp->bio2))
- 			generic_make_request(&bp->bio2);
- 
-+		spin_lock_irq(&conf->resync_lock);
-+		conf->nr_waiting--;
-+		wake_up(&conf->wait_barrier);
-+		spin_unlock_irq(&conf->resync_lock);
-+
- 		bio_pair_release(bp);
- 		return 0;
- 	bad_map:
-diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index 5368689..e09684e 100644
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -1833,6 +1833,7 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_RS480, quirk_disabl
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3336, quirk_disable_all_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3351, quirk_disable_all_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_VT3364, quirk_disable_all_msi);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, PCI_DEVICE_ID_VIA_8380_0, quirk_disable_all_msi);
- 
- /* Disable MSI on chipsets that are known to not support it */
- static void __devinit quirk_disable_msi(struct pci_dev *dev)
-diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-index bbc723a..45cb94c 100644
---- a/fs/ecryptfs/file.c
-+++ b/fs/ecryptfs/file.c
-@@ -199,7 +199,7 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
- 			       "the persistent file for the dentry with name "
- 			       "[%s]; rc = [%d]\n", __func__,
- 			       ecryptfs_dentry->d_name.name, rc);
--			goto out;
-+			goto out_free;
- 		}
- 	}
- 	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_RDONLY)
-@@ -207,7 +207,7 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
- 		rc = -EPERM;
- 		printk(KERN_WARNING "%s: Lower persistent file is RO; eCryptfs "
- 		       "file must hence be opened RO\n", __func__);
--		goto out;
-+		goto out_free;
- 	}
- 	ecryptfs_set_file_lower(
- 		file, ecryptfs_inode_to_private(inode)->lower_file);
-@@ -303,12 +303,40 @@ static int ecryptfs_fasync(int fd, struct file *file, int flag)
- 	return rc;
- }
- 
--static int ecryptfs_ioctl(struct inode *inode, struct file *file,
--			  unsigned int cmd, unsigned long arg);
-+static long
-+ecryptfs_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOTTY;
-+
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->unlocked_ioctl)
-+		rc = lower_file->f_op->unlocked_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+
-+#ifdef CONFIG_COMPAT
-+static long
-+ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	struct file *lower_file = NULL;
-+	long rc = -ENOIOCTLCMD;
-+
-+	if (ecryptfs_file_to_private(file))
-+		lower_file = ecryptfs_file_to_lower(file);
-+	if (lower_file && lower_file->f_op && lower_file->f_op->compat_ioctl)
-+		rc = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
-+	return rc;
-+}
-+#endif
- 
- const struct file_operations ecryptfs_dir_fops = {
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -325,7 +353,10 @@ const struct file_operations ecryptfs_main_fops = {
- 	.write = do_sync_write,
- 	.aio_write = generic_file_aio_write,
- 	.readdir = ecryptfs_readdir,
--	.ioctl = ecryptfs_ioctl,
-+	.unlocked_ioctl = ecryptfs_unlocked_ioctl,
-+#ifdef CONFIG_COMPAT
-+	.compat_ioctl = ecryptfs_compat_ioctl,
-+#endif
- 	.mmap = generic_file_mmap,
- 	.open = ecryptfs_open,
- 	.flush = ecryptfs_flush,
-@@ -334,20 +365,3 @@ const struct file_operations ecryptfs_main_fops = {
- 	.fasync = ecryptfs_fasync,
- 	.splice_read = generic_file_splice_read,
- };
--
--static int
--ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
--	       unsigned long arg)
--{
--	int rc = 0;
--	struct file *lower_file = NULL;
--
--	if (ecryptfs_file_to_private(file))
--		lower_file = ecryptfs_file_to_lower(file);
--	if (lower_file && lower_file->f_op && lower_file->f_op->ioctl)
--		rc = lower_file->f_op->ioctl(ecryptfs_inode_to_lower(inode),
--					     lower_file, cmd, arg);
--	else
--		rc = -ENOTTY;
--	return rc;
--}
-diff --git a/fs/jfs/xattr.c b/fs/jfs/xattr.c
-index 9b7f2cd..f35a40b 100644
---- a/fs/jfs/xattr.c
-+++ b/fs/jfs/xattr.c
-@@ -85,46 +85,25 @@ struct ea_buffer {
- #define EA_MALLOC	0x0008
- 
- 
-+static int is_known_namespace(const char *name)
-+{
-+	if (strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
-+	    strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
-+		return false;
-+
-+	return true;
-+}
-+
- /*
-  * These three routines are used to recognize on-disk extended attributes
-  * that are in a recognized namespace.  If the attribute is not recognized,
-  * "os2." is prepended to the name
-  */
--static inline int is_os2_xattr(struct jfs_ea *ea)
-+static int is_os2_xattr(struct jfs_ea *ea)
- {
--	/*
--	 * Check for "system."
--	 */
--	if ((ea->namelen >= XATTR_SYSTEM_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "user."
--	 */
--	if ((ea->namelen >= XATTR_USER_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "security."
--	 */
--	if ((ea->namelen >= XATTR_SECURITY_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_SECURITY_PREFIX,
--		     XATTR_SECURITY_PREFIX_LEN))
--		return false;
--	/*
--	 * Check for "trusted."
--	 */
--	if ((ea->namelen >= XATTR_TRUSTED_PREFIX_LEN) &&
--	    !strncmp(ea->name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN))
--		return false;
--	/*
--	 * Add any other valid namespace prefixes here
--	 */
--
--	/*
--	 * We assume it's OS/2's flat namespace
--	 */
--	return true;
-+	return !is_known_namespace(ea->name);
- }
- 
- static inline int name_size(struct jfs_ea *ea)
-@@ -768,13 +747,23 @@ static int can_set_xattr(struct inode *inode, const char *name,
- 	if (!strncmp(name, XATTR_SYSTEM_PREFIX, XATTR_SYSTEM_PREFIX_LEN))
- 		return can_set_system_xattr(inode, name, value, value_len);
- 
-+	if (!strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN)) {
-+		/*
-+		 * This makes sure that we aren't trying to set an
-+		 * attribute in a different namespace by prefixing it
-+		 * with "os2."
-+		 */
-+		if (is_known_namespace(name + XATTR_OS2_PREFIX_LEN))
-+				return -EOPNOTSUPP;
-+		return 0;
-+	}
-+
- 	/*
- 	 * Don't allow setting an attribute in an unknown namespace.
- 	 */
- 	if (strncmp(name, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN) &&
- 	    strncmp(name, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN) &&
--	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN) &&
--	    strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN))
-+	    strncmp(name, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN))
- 		return -EOPNOTSUPP;
- 
- 	return 0;
-@@ -956,19 +945,8 @@ ssize_t __jfs_getxattr(struct inode *inode, const char *name, void *data,
- 	int xattr_size;
- 	ssize_t size;
- 	int namelen = strlen(name);
--	char *os2name = NULL;
- 	char *value;
- 
--	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
--		os2name = kmalloc(namelen - XATTR_OS2_PREFIX_LEN + 1,
--				  GFP_KERNEL);
--		if (!os2name)
--			return -ENOMEM;
--		strcpy(os2name, name + XATTR_OS2_PREFIX_LEN);
--		name = os2name;
--		namelen -= XATTR_OS2_PREFIX_LEN;
--	}
--
- 	down_read(&JFS_IP(inode)->xattr_sem);
- 
- 	xattr_size = ea_get(inode, &ea_buf, 0);
-@@ -1006,8 +984,6 @@ ssize_t __jfs_getxattr(struct inode *inode, const char *name, void *data,
-       out:
- 	up_read(&JFS_IP(inode)->xattr_sem);
- 
--	kfree(os2name);
--
- 	return size;
- }
- 
-@@ -1016,6 +992,19 @@ ssize_t jfs_getxattr(struct dentry *dentry, const char *name, void *data,
- {
- 	int err;
- 
-+	if (strncmp(name, XATTR_OS2_PREFIX, XATTR_OS2_PREFIX_LEN) == 0) {
-+		/*
-+		 * skip past "os2." prefix
-+		 */
-+		name += XATTR_OS2_PREFIX_LEN;
-+		/*
-+		 * Don't allow retrieving properly prefixed attributes
-+		 * by prepending them with "os2."
-+		 */
-+		if (is_known_namespace(name))
-+			return -EOPNOTSUPP;
-+	}
-+
- 	err = __jfs_getxattr(dentry->d_inode, name, data, buf_size);
- 
- 	return err;
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index b07565c..d98bea8 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -87,6 +87,7 @@ static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
- 		 err |= __put_user(kinfo->si_tid, &uinfo->ssi_tid);
- 		 err |= __put_user(kinfo->si_overrun, &uinfo->ssi_overrun);
- 		 err |= __put_user((long) kinfo->si_ptr, &uinfo->ssi_ptr);
-+		 err |= __put_user(kinfo->si_int, &uinfo->ssi_int);
- 		break;
- 	case __SI_POLL:
- 		err |= __put_user(kinfo->si_band, &uinfo->ssi_band);
-@@ -110,6 +111,7 @@ static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
- 		err |= __put_user(kinfo->si_pid, &uinfo->ssi_pid);
- 		err |= __put_user(kinfo->si_uid, &uinfo->ssi_uid);
- 		err |= __put_user((long) kinfo->si_ptr, &uinfo->ssi_ptr);
-+		err |= __put_user(kinfo->si_int, &uinfo->ssi_int);
- 		break;
- 	default:
- 		/*
-diff --git a/fs/splice.c b/fs/splice.c
-index 2f2d8c1..4e1ea5e 100644
---- a/fs/splice.c
-+++ b/fs/splice.c
-@@ -366,17 +366,7 @@ __generic_file_splice_read(struct file *in, loff_t *ppos,
- 		 * If the page isn't uptodate, we may need to start io on it
- 		 */
- 		if (!PageUptodate(page)) {
--			/*
--			 * If in nonblock mode then dont block on waiting
--			 * for an in-flight io page
--			 */
--			if (flags & SPLICE_F_NONBLOCK) {
--				if (!trylock_page(page)) {
--					error = -EAGAIN;
--					break;
--				}
--			} else
--				lock_page(page);
-+			lock_page(page);
- 
- 			/*
- 			 * Page was truncated, or invalidated by the
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index f2e574d..801c08b 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -176,6 +176,9 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
- 	int ret = 0;
- 	struct device *dev;
- 
-+	if (bdi->dev)	/* The driver needs to use separate queues per device */
-+		goto exit;
-+
- 	va_start(args, fmt);
- 	dev = device_create_vargs(bdi_class, parent, MKDEV(0, 0), bdi, fmt, args);
- 	va_end(args);
+I'm announcing the release of the 2.6.32.19 kernel.
+
+All users of the 2.6.32 kernel series must upgrade.
+
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=summary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                    |    2 
+ arch/arm/Kconfig                            |   12 
+ arch/arm/include/asm/tlbflush.h             |    8 
+ arch/arm/plat-mxc/include/mach/gpio.h       |    1 
+ arch/ia64/hp/common/sba_iommu.c             |   38 +
+ arch/ia64/kernel/time.c                     |    4 
+ arch/powerpc/Makefile                       |   16 
+ arch/powerpc/include/asm/ppc-pci.h          |    5 
+ arch/powerpc/kernel/time.c                  |    5 
+ arch/powerpc/platforms/pseries/eeh.c        |    4 
+ arch/powerpc/platforms/pseries/eeh_driver.c |    4 
+ arch/powerpc/platforms/pseries/eeh_event.c  |    2 
+ arch/s390/include/asm/cputime.h             |    8 
+ arch/s390/kernel/s390_ext.c                 |    2 
+ arch/s390/kernel/time.c                     |    3 
+ arch/s390/kernel/vtime.c                    |    2 
+ arch/x86/include/asm/cmpxchg_32.h           |   86 +--
+ arch/x86/include/asm/cmpxchg_64.h           |   88 +--
+ arch/x86/kernel/apic/io_apic.c              |   28 -
+ arch/x86/kernel/cpu/vmware.c                |   10 
+ arch/x86/kernel/vsyscall_64.c               |    5 
+ arch/x86/mm/fault.c                         |    4 
+ arch/x86/mm/init_64.c                       |   19 
+ crypto/testmgr.c                            |   84 +++
+ drivers/acpi/processor_perflib.c            |    6 
+ drivers/ata/ata_piix.c                      |    8 
+ drivers/atm/solos-pci.c                     |    7 
+ drivers/block/loop.c                        |    2 
+ drivers/bluetooth/btusb.c                   |    3 
+ drivers/char/nvram.c                        |   14 
+ drivers/gpu/drm/drm_edid.c                  |    4 
+ drivers/gpu/drm/i915/dvo_tfp410.c           |    2 
+ drivers/ide/ide-cd.c                        |   14 
+ drivers/md/bitmap.c                         |    4 
+ drivers/md/bitmap.h                         |    3 
+ drivers/md/raid1.c                          |   25 
+ drivers/md/raid10.c                         |   18 
+ drivers/net/smsc911x.c                      |   92 +--
+ drivers/net/xen-netfront.c                  |    1 
+ drivers/pci/quirks.c                        |    4 
+ drivers/s390/cio/cio.c                      |    1 
+ drivers/scsi/aic7xxx/aic79xx_core.c         |   53 +-
+ drivers/scsi/ibmvscsi/ibmvfc.c              |    8 
+ drivers/scsi/ibmvscsi/ibmvfc.h              |    1 
+ drivers/staging/line6/Kconfig               |    1 
+ drivers/staging/panel/panel.c               |    2 
+ drivers/usb/core/hub.c                      |    6 
+ drivers/usb/core/quirks.c                   |    3 
+ drivers/usb/core/urb.c                      |   50 -
+ drivers/usb/misc/usbtest.c                  |    6 
+ drivers/usb/mon/mon_bin.c                   |    2 
+ drivers/usb/serial/cp210x.c                 |    4 
+ drivers/usb/serial/ftdi_sio.c               |    4 
+ drivers/usb/serial/ftdi_sio_ids.h           |   10 
+ drivers/usb/serial/option.c                 |   13 
+ drivers/video/w100fb.c                      |    4 
+ drivers/xen/events.c                        |    1 
+ fs/block_dev.c                              |   10 
+ fs/btrfs/acl.c                              |   36 -
+ fs/btrfs/btrfs_inode.h                      |    5 
+ fs/btrfs/ctree.c                            |  229 +++++---
+ fs/btrfs/ctree.h                            |   40 +
+ fs/btrfs/dir-item.c                         |   19 
+ fs/btrfs/disk-io.c                          |   40 +
+ fs/btrfs/extent-tree.c                      |  112 ++--
+ fs/btrfs/extent_io.c                        |    3 
+ fs/btrfs/file.c                             |  729 ++++++++++++----------------
+ fs/btrfs/inode.c                            |  624 ++++++++++++++---------
+ fs/btrfs/ioctl.c                            |   34 -
+ fs/btrfs/ordered-data.c                     |  117 +++-
+ fs/btrfs/ordered-data.h                     |    5 
+ fs/btrfs/relocation.c                       |   43 +
+ fs/btrfs/super.c                            |   20 
+ fs/btrfs/transaction.c                      |   44 -
+ fs/btrfs/transaction.h                      |    6 
+ fs/btrfs/tree-log.c                         |   86 +--
+ fs/btrfs/volumes.c                          |   19 
+ fs/btrfs/xattr.c                            |   80 ++-
+ fs/btrfs/xattr.h                            |    9 
+ fs/dlm/ast.c                                |   74 ++
+ fs/dlm/ast.h                                |    4 
+ fs/dlm/config.c                             |   24 
+ fs/dlm/debug_fs.c                           |    2 
+ fs/dlm/dir.c                                |    7 
+ fs/dlm/dlm_internal.h                       |   11 
+ fs/dlm/lock.c                               |  120 +++-
+ fs/dlm/lockspace.c                          |   15 
+ fs/dlm/lowcomms.c                           |    6 
+ fs/dlm/member.c                             |    8 
+ fs/dlm/memory.c                             |    6 
+ fs/dlm/netlink.c                            |    2 
+ fs/dlm/plock.c                              |    6 
+ fs/dlm/rcom.c                               |    2 
+ fs/dlm/requestqueue.c                       |    2 
+ fs/dlm/user.c                               |   22 
+ fs/dlm/user.h                               |    4 
+ fs/ecryptfs/file.c                          |   60 +-
+ fs/ecryptfs/inode.c                         |    5 
+ fs/ext4/move_extent.c                       |    3 
+ fs/ext4/super.c                             |   27 -
+ fs/jfs/xattr.c                              |   87 +--
+ fs/ocfs2/alloc.c                            |   10 
+ fs/ocfs2/alloc.h                            |    5 
+ fs/ocfs2/locks.c                            |    2 
+ fs/ocfs2/refcounttree.c                     |  117 ++++
+ fs/ocfs2/super.c                            |    4 
+ fs/proc/array.c                             |    5 
+ fs/reiserfs/journal.c                       |   15 
+ fs/reiserfs/xattr_security.c                |    2 
+ fs/signalfd.c                               |    2 
+ fs/splice.c                                 |   12 
+ include/linux/clocksource.h                 |    6 
+ include/linux/fs.h                          |    6 
+ include/linux/interrupt.h                   |    7 
+ include/linux/netdevice.h                   |    2 
+ include/linux/notifier.h                    |    1 
+ include/linux/reiserfs_xattr.h              |    5 
+ include/linux/sched.h                       |    4 
+ include/linux/tick.h                        |    3 
+ include/linux/usb/quirks.h                  |    4 
+ kernel/exit.c                               |   20 
+ kernel/fork.c                               |    3 
+ kernel/irq/manage.c                         |    2 
+ kernel/sched.c                              |   71 ++
+ kernel/sys.c                                |   18 
+ kernel/time/tick-sched.c                    |   75 +-
+ kernel/time/timekeeping.c                   |    6 
+ mm/memory-failure.c                         |   21 
+ mm/memory.c                                 |   25 
+ mm/swapfile.c                               |    6 
+ net/ipv4/devinet.c                          |    1 
+ net/sched/sch_generic.c                     |   18 
+ 132 files changed, 2549 insertions(+), 1552 deletions(-)
+
+
+Adam Jackson (1):
+      drm/edid: Fix the HDTV hack sync adjustment
+
+Alessio Igor Bogani (1):
+      USB: cp210x: Add four new device IDs
+
+Alok Kataria (1):
+      x86, vmware: Preset lpj values when on VMware.
+
+Andrew Bird (1):
+      USB: option: add huawei k3765 k4505 devices to work properly
+
+Aneesh Kumar K.V (2):
+      Btrfs: Use correct values when updating inode i_size on fallocate
+      Btrfs: apply updated fallocate i_size fix
+
+Benjamin Herrenschmidt (1):
+      mutex: Don't spin when the owner CPU is offline or other weird cases
+
+Borislav Petkov (1):
+      ide-cd: Do not access completed requests in the irq handler
+
+Breno Leitao (1):
+      powerpc/eeh: Fix a bug when pci structure is null
+
+Brian King (2):
+      ibmvfc: Fix command completion handling
+      ibmvfc: Reduce error recovery timeout
+
+Catalin Marinas (1):
+      smsc911x: Add spinlocks around registers access
+
+Chris Mason (2):
+      Btrfs: make sure fallocate properly starts a transaction
+      Btrfs: deal with NULL acl sent to btrfs_set_acl
+
+Chris Wright (1):
+      blkdev: cgroup whitelist permission fix
+
+Christian Lamparter (1):
+      USB: fix thread-unsafe anchor utiliy routines
+
+Cyril Lacoux (1):
+      Bluetooth: Added support for controller shipped with iMac i5
+
+Darrick J. Wong (1):
+      ACPI: Fix regression where _PPC is not read at boot even when ignore_ppc=0
+
+Dave Kleikamp (1):
+      jfs: don't allow os2 xattr namespace overlap with others
+
+Dave Müller (1):
+      drm/i915: Use RSEN instead of HTPLG for tfp410 monitor detection.
+
+David S. Miller (1):
+      net: Fix NETDEV_NOTIFY_PEERS to not conflict with NETDEV_BONDING_DESLAVE.
+
+David Teigland (3):
+      dlm: always use GFP_NOFS
+      dlm: fix ordering of bast and cast
+      dlm: send reply before bast
+
+David Woodhouse (1):
+      solos-pci: Fix race condition in tasklet RX handling
+
+Eric Sandeen (2):
+      ext4: fix freeze deadlock under IO
+      ext4: Fix optional-arg mount options
+
+Eric W. Biederman (1):
+      x86: Fix out of order of gsi
+
+FUJITA Tomonori (1):
+      fix SBA IOMMU to handle allocation failure properly
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.19
+
+H. Peter Anvin (2):
+      nvram: Fix write beyond end condition; prove to gcc copy is safe
+      x86: Add memory modify constraints to xchg() and cmpxchg()
+
+Hannes Reinecke (1):
+      aic79xx: check for non-NULL scb in ahd_handle_nonpkt_busfree
+
+Hidetoshi Seto (2):
+      sched: Fix granularity of task_u/stime()
+      sched, cputime: Introduce thread_group_times()
+
+Ian Campbell (4):
+      arp_notify: allow drivers to explicitly request a notification event.
+      xen: netfront: explicitly generate arp_notify event after migration.
+      irq: Add new IRQ flag IRQF_NO_SUSPEND
+      xen: Do not suspend IPI IRQs.
+
+Jan Engelhardt (1):
+      btrfs: fix missing last-entry in readdir(3)
+
+Jan Kara (1):
+      ocfs2: Set MS_POSIXACL on remount
+
+Jeff Mahoney (2):
+      reiserfs: properly honor read-only devices
+      reiserfs: fix oops while creating privroot with selinux enabled
+
+Jiri Slaby (1):
+      Btrfs, fix memory leaks in error paths
+
+John G. Rogers (1):
+      USB: serial: enabling support for Segway RMP in ftdi_sio
+
+Josef Bacik (9):
+      Btrfs: make metadata chunks smaller
+      Btrfs: fix regression in orphan cleanup
+      Btrfs: fix possible panic on unmount
+      Btrfs: run orphan cleanup on default fs root
+      Btrfs: do not mark the chunk as readonly if in degraded mode
+      Btrfs: check return value of open_bdev_exclusive properly
+      Btrfs: check total number of devices when removing missing
+      Btrfs: do not try and lookup the file extent when finishing ordered io
+      Btrfs: kfree correct pointer during mount option parsing
+
+Julia Lawall (1):
+      fs/ecryptfs/file.c: introduce missing free
+
+KAMEZAWA Hiroyuki (1):
+      mm: fix corruption of hibernation caused by reusing swap during image saving
+
+Lin Ming (1):
+      timekeeping: Fix clock_gettime vsyscall time warp
+
+Lino Sanfilippo (1):
+      ecryptfs: release reference to lower mount if interpose fails
+
+Linus Torvalds (3):
+      mm: keep a guard page below a grow-down stack segment
+      mm: fix missing page table unmap for stack guard page failure case
+      x86: don't send SIGBUS for kernel page faults
+
+Martin Schwidefsky (2):
+      nohz: Introduce arch_needs_cpu
+      nohz: Reuse ktime in sub-functions of tick_check_idle.
+
+Matthew Wilcox (1):
+      Btrfs: Show discard option in /proc/mounts
+
+Miao Xie (1):
+      Btrfs: remove BUG_ON() due to mounting bad filesystem
+
+Miklos Szeredi (1):
+      splice: fix misuse of SPLICE_F_NONBLOCK
+
+Ming Lei (1):
+      USB: usbtest: avoid to free coherent buffer in atomic context
+
+Nathan Lynch (1):
+      signalfd: fill in ssi_int for posix timers and message queues
+
+NeilBrown (2):
+      md/raid10: fix deadlock with unaligned read during resync
+      md/raid1: delay reads that could overtake behind-writes.
+
+Nikanth Karthikesan (1):
+      loop: Update mtime when writing using aops
+
+Pavel Kazlou (1):
+      USB: option: Huawei ETS 1220 support added
+
+Peter Huewe (2):
+      Staging: panel: Prevent double-calling of parport_release - fix oops.
+      drivers/video/w100fb.c: ignore void return value / fix build failure
+
+Phil Dibowitz (1):
+      USB delay init quirk for logitech Harmony 700-series devices
+
+Rafael J. Wysocki (1):
+      PCI: Do not run NVidia quirks related to MSI with MSI disabled
+
+Randy Dunlap (1):
+      Staging: line6: needs to select SND_PCM
+
+Roel Kluin (1):
+      Btrfs: make error return negative in btrfs_sync_file()
+
+Sachin Prabhu (1):
+      Skip check for mandatory locks when unlocking
+
+Sage Weil (1):
+      Btrfs: fail mount on bad mount options
+
+Sam Ravnborg (1):
+      powerpc: fix build with make 3.82
+
+Shaohua Li (1):
+      Btrfs: btrfs_mark_extent_written uses the wrong slot
+
+Shaohui Zheng (1):
+      memory hotplug: fix a bug on /dev/mem for 64-bit kernels
+
+Song Youquan (1):
+      crypto: testmgr - Fix complain about lack test for internal used algorithm
+
+Steven Robertson (1):
+      USB: resizing usbmon binary interface buffer causes protection faults
+
+TARUISI Hiroaki (1):
+      Btrfs: deny sys_link across subvolumes.
+
+Tao Ma (1):
+      ocfs2: Find proper end cpos for a leaf refcount block.
+
+Tejun Heo (3):
+      ata_piix: fix locking around SIDPR access
+      PCI: disable MSI on VIA K8M800
+      bio, fs: update RWA_MASK, READA and SWRITE to match the corresponding BIO_RW_* bits
+
+Theodore Ts'o (1):
+      ext4: Make sure the MOVE_EXT ioctl can't overwrite append-only files
+
+Tyler Hicks (1):
+      eCryptfs: Handle ioctl calls with unlocked and compat functions
+
+Uwe Kleine-König (1):
+      ARM: 6280/1: imx: Fix build failure when including <mach/gpio.h> without <linux/spinlock.h>
+
+Will Deacon (1):
+      ARM: 6299/1: errata: TLBIASIDIS and TLBIMVAIS operations can broadcast a faulty ASID
+
+Wu Fengguang (2):
+      HWPOISON: remove the anonymous entry
+      HWPOISON: abort on failed unmap
+
+Yan, Zheng (17):
+      Btrfs: Avoid superfluous tree-log writeout
+      Btrfs: Add btrfs_duplicate_item
+      Btrfs: Rewrite btrfs_drop_extents
+      Btrfs: Fix disk_i_size update corner case
+      Btrfs: Avoid orphan inodes cleanup while replaying log
+      Btrfs: Avoid orphan inodes cleanup during committing transaction
+      Btrfs: Make fallocate(2) more ENOSPC friendly
+      Btrfs: Make truncate(2) more ENOSPC friendly
+      Btrfs: Pass transaction handle to security and ACL initialization functions
+      Btrfs: Add delayed iput
+      Btrfs: Fix btrfs_drop_extent_cache for skip pinned case
+      Btrfs: Fix per root used space accounting
+      Btrfs: don't add extent 0 to the free space cache v2
+      Btrfs: align offsets for btrfs_ordered_update_i_size
+      Btrfs: Fix race in btrfs_mark_extent_written
+      Btrfs: fix race between allocate and release extent buffer.
+      Btrfs: Fix oopsen when dropping empty tree.
+
+Yang Hongyang (1):
+      Btrfs: fix a memory leak in btrfs_init_acl
+
+dranch@trinnet.net (1):
+      USB: ftdi_sio: device id for Navitator
+
