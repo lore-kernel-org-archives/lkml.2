@@ -1,97 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092Ab0HNTBi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 15:01:38 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:58322 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758042Ab0HNTBh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 15:01:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=J8bnz8ssn8D3p4QgtrLVUyg6eowkTMNrzR71PYsfRWINGF9TQsKHp6+lnIrmiui+BK
-         PXPgQlW6RAcK0ZLgSrs0FbW0Y2gSJZGsU9vC66zzhd/hol40c5QNGsbPPYsV+KwcXGv3
-         bQ9i6dHT4f4sUbJ0VG/BajJ0BS8j8nrOdJpl8=
+	id S1751735Ab0HNTPo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 15:15:44 -0400
+Received: from kroah.org ([198.145.64.141]:56883 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab0HNTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 15:15:42 -0400
+Date: Sat, 14 Aug 2010 12:12:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Grant Coady <gcoady.lk@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [0/3] 2.6.27.52 stable review
+Message-ID: <20100814191224.GB5940@kroah.com>
+References: <20100813214704.GA18960@kroah.com>
+ <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com>
+ <20100813230712.GA1703@suse.de>
+ <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com>
+ <20100814001158.GA2849@suse.de>
+ <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTingwMvoVm_J6cmm_K3=G9rCYwOrQ=-5vK_wzGcX@mail.gmail.com>
-References: <AANLkTimNborh0AtHkdnN-aCizDu4+S6ORmeoKzS_nEVH@mail.gmail.com>
-	<AANLkTikNTZSqZ-sa0uGY0FnjDnOziu4qR8fEitD2TPQc@mail.gmail.com>
-	<AANLkTi=TNsb_JaP0_us8C0XQwRK3qaUdviA-YxcwT223@mail.gmail.com>
-	<201008141427.03946.edt@aei.ca>
-	<AANLkTingwMvoVm_J6cmm_K3=G9rCYwOrQ=-5vK_wzGcX@mail.gmail.com>
-Date: Sat, 14 Aug 2010 21:01:36 +0200
-Message-ID: <AANLkTimCVjMBf0AOfky=KFsM9nh5z2Gg0p_Vvyc8_maK@mail.gmail.com>
-Subject: Re: Linux 2.6.35.2
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ed Tomlinson <edt@aei.ca>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org, arthur@psw.ro,
-        wylda@volny.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 8:47 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, Aug 14, 2010 at 11:27 AM, Ed Tomlinson <edt@aei.ca> wrote:
->>
->> It seems to be helping here.  Without it 35.2 would either stall in boot or give lots of tracebacks.  With it things
->> start normally and my background stuff works as expected.
->
-> Ok, thanks. I've committed it to the -git tree.
->
-> Just to verify: you have CONFIG_HIGHPTE enabled on a x86-32 kernel,
-> right? I'd have expected this to not ever show up anywhere else, and
-> I'm just verifying that there isn't anything else going on. I'm
-> appending the commit message, the patch hasn't changed.
->
->                            Linus
-> ---
->
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Sat Aug 14 11:44:56 2010 -0700
->
->    mm: fix page table unmap for stack guard page properly
->
->    We do in fact need to unmap the page table _before_ doing the whole
->    stack guard page logic, because if it is needed (mainly 32-bit x86 with
->    PAE and CONFIG_HIGHPTE, but other architectures may use it too) then it
->    will do a kmap_atomic/kunmap_atomic.
->
->    And those kmaps will create an atomic region that we cannot do
->    allocations in.  However, the whole stack expand code will need to do
->    anon_vma_prepare() and vma_lock_anon_vma() and they cannot do that in an
->    atomic region.
->
->    Now, a better model might actually be to do the anon_vma_prepare() when
->    _creating_ a VM_GROWSDOWN segment, and not have to worry about any of
->    this at page fault time.  But in the meantime, this is the
->    straightforward fix for the issue.
->
->    See https://bugzilla.kernel.org/show_bug.cgi?id=16588 for details.
->
->    Reported-by: Wylda <wylda@volny.cz>
->    Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
->    Reported-by: Mike Pagano <mpagano@gentoo.org>
->    Reported-by: François Valenduc <francois.valenduc@tvcablenet.be>
->    Tested-by: Ed Tomlinson <edt@aei.ca>
->    Cc: Pekka Enberg <penberg@kernel.org>
->    Cc: Greg KH <gregkh@suse.de>
->    Cc: stable@kernel.org
->    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
->  mm/memory.c |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
->
+On Sat, Aug 14, 2010 at 05:24:36PM +1000, Grant Coady wrote:
+> On Fri, 13 Aug 2010 17:11:58 -0700, you wrote:
+> 
+> >On Sat, Aug 14, 2010 at 09:47:08AM +1000, Grant Coady wrote:
+> >> Hi Greg,
+> >> 
+> >> I scraped the patches out of the messages and edited Makefile :)
+> >> 
+> >> On Fri, 13 Aug 2010 16:07:12 -0700, you wrote:
+> >> 
+> >> >On Sat, Aug 14, 2010 at 08:36:34AM +1000, Grant Coady wrote:
+> >> >> On Fri, 13 Aug 2010 14:47:04 -0700, you wrote:
+> >> >> 
+> >> >> >NOTE!
+> >> >> >
+> >> >> >If I could get some people to please test this -rc release?  It contains
+> >> >> >a few core changes that I couldn't validate myself as I don't seem to
+> >> >> >have a machine that will even boot the .27 kernel anymore after my move.
+> >> 
+> >> Machine is running, but there's a lot of these in the dmesg:
+> >> 
+> >> WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
+> >> Modules linked in:
+> >> Pid: 320, comm: khelper Not tainted 2.6.27.52-rc1a #57
+> >>  [<c011b54f>] warn_on_slowpath+0x5f/0x90
+> >>  [<c0145a53>] __alloc_pages_internal+0x93/0x420
+> >>  [<c01456bd>] buffered_rmqueue+0x11d/0x210
+> >>  [<c015e09a>] allocate_slab+0x4a/0xd0
+> >>  [<c015e149>] setup_object+0x29/0x30
+> >>  [<c015e204>] new_slab+0xb4/0x130
+> >>  [<c015e6ec>] __slab_alloc+0xac/0x120
+> >>  [<c01529e7>] acct_stack_growth+0xe7/0xf0
+> >>  [<c0152afa>] expand_stack+0x7a/0x90
+> >>  [<c014fc61>] do_anonymous_page+0x121/0x130
+> >>  [<c0150268>] handle_mm_fault+0x1b8/0x1e0
+> >>  [<c014e724>] get_user_pages+0xe4/0x270
+> >>  [<c0166ac9>] get_arg_page+0x49/0xc0
+> >>  [<c0166e5b>] copy_strings+0xdb/0x180
+> >>  [<c0166f29>] copy_strings_kernel+0x29/0x40
+> >>  [<c0167dae>] do_execve+0xde/0x1d0
+> >>  [<c0101f1f>] sys_execve+0x2f/0x60
+> >>  [<c0103036>] syscall_call+0x7/0xb
+> >>  [<c011007b>] ioapic_register_intr+0x10b/0x110
+> >>  [<c0106bfc>] kernel_execve+0x1c/0x30
+> >>  [<c0128efc>] ____call_usermodehelper+0x5c/0xc0
+> >>  [<c0128ea0>] ____call_usermodehelper+0x0/0xc0
+> >>  [<c0103b1b>] kernel_thread_helper+0x7/0x1c
+> >>  =======================
+> >> ---[ end trace 62e879f3daf4be6a ]---
+> >
+> >I'm guessing that 2.6.27.51 didn't cause those warnings as well?
+> 
+> Not in .51, the .51 dmesg is up now too:
+> 
+>  http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.51a.gz
 
-Missing: Tested-by: Wylda <wylda@volny.cz>
+Thanks, can you try 2.6.52-rc2 now?  It should have the fix for this in
+it.
 
-I am building now upstream (2.6.35-git15) with that patch to see if it
-fixes the issues there, too. Report later.
-
-- Sedat -
+greg k-h
