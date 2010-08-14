@@ -1,96 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab0HNPKi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 11:10:38 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:37295 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342Ab0HNPKh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 11:10:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=p1N9T9mkYs5fstiCFjp2qGjG3hdqYjfBmUK1yJ0DtGxGq0gIOojIRGQZkvsJeK93x8
-         3DSSAj3CBYosC7PpSX3u/KrLVyL/t3iAnirFSBhzLYx2D/iXW+GCmD6gmY6yOUe1EbES
-         8xb8Gm4OhSq4iYDix15F4/wSIiD0+uX7czO14=
+	id S1756885Ab0HNPLD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 11:11:03 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:51850 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753084Ab0HNPLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 11:11:02 -0400
+Date: Sat, 14 Aug 2010 08:10:48 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
+        galibert@pobox.com, dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100814151048.GA2461@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100809181638.GI3026@linux.vnet.ibm.com>
+ <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
+ <20100811222854.GJ2516@linux.vnet.ibm.com>
+ <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+ <20100812010612.GL2516@linux.vnet.ibm.com>
+ <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+ <20100812034435.GA7403@linux.vnet.ibm.com>
+ <20100813115751.3bbbafbd@lxorguk.ukuu.org.uk>
+ <20100813152912.GE2511@linux.vnet.ibm.com>
+ <20100814073843.GA27430@elf.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <59961099b1fbdb3e827d3c9f9bed3532@linux.psw.ro>
-References: <20100813212313.GA22102@kroah.com>
-	<a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
-	<AANLkTi=YfKZkE6ee6rE9LvtAiQ6F0YaTHbN+O_dTGHKb@mail.gmail.com>
-	<20100814133942.GA17430@suse.de>
-	<59961099b1fbdb3e827d3c9f9bed3532@linux.psw.ro>
-Date: Sat, 14 Aug 2010 17:10:36 +0200
-Message-ID: <AANLkTimSuqd_5YG3b9aUDmTaQQskhQBbS2_aerBzjsHQ@mail.gmail.com>
-Subject: Re: Linux 2.6.35.2
-From: Bjarke Istrup Pedersen <gurligebis@gmail.com>
-To: Arthur Titeica <arthur@psw.ro>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100814073843.GA27430@elf.ucw.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/14 Arthur Titeica <arthur@psw.ro>:
-> On Sat, 14 Aug 2010 06:39:42 -0700, Greg KH <gregkh@suse.de> wrote:
->> On Sat, Aug 14, 2010 at 02:21:31PM +0300, Pekka Enberg wrote:
->>> On Sat, Aug 14, 2010 at 1:35 PM, Arthur Titeica <arthur@psw.ro> wrote:
->>> > On Fri, 13 Aug 2010 14:23:13 -0700, Greg KH <gregkh@suse.de> wrote:
->>> >> I'm announcing the release of the 2.6.35.2 kernel.
->>> >>
->>> >> All users of the 2.6.35 kernel series must upgrade.
->>> >>
->>> >
->>> > I'm not sure this is the right mailing list but this is the first
->>> > kernel that fails to boot for me (since 2.6.33.x).
->>> >
->>> > The laptop just restarts right after "Freeing unused kernel memory:
->>> > 628k freed"
->>> >
->>> > 2.6.35.1 is fine with the same .config.
->>> >
->>> > Anyone willing to help me to debug?
->>>
->>> You could try 'git bisect' between v2.6.35.1 and v2.6.35.2 to narrow
->>> the problem down to a specific commit.
->>
->> Yes, if you could please do that, it would be most appreciated.
->>
-> I'm trying but I'm not even close to a dev and anything beyond 'git
-> pull' looks tricky.
->
-> I've gotten so far:
->
-> $ git bisect start
-> $ git bisect bad
-> $ git bisect good v2.6.35.1
-> fatal: Needed a single revision
-> Bad rev input: v2.6.35.1
-> $ git bisect good v2.6.35
-> Bisecting: 3941 revisions left to test after this (roughly 12 steps)
-> [2192482ee5ce5d5d4a6cec0c351b2d3a744606eb] Merge branch 'for-rmk' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into
-> devel-stable
->
-> What next? ;)
->
+On Sat, Aug 14, 2010 at 09:38:44AM +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > > > > Think in terms of an ARM laptop. What good is opportunistic suspend if
+> > > > > it's not going to help when the laptop is being used?
+> > > > 
+> > > > For when the laptop is not being used, presumably.
+> > > 
+> > > Or in time between keystrokes for most of the platform (backlight
+> > > excepted). The Intel MID x86 devices are at the point that suspend/resume
+> > > time on x86 is being hurt by the kernel rewriting smp alternatives as we
+> > > go from 2 processors live to 1 and back.
+> > 
+> > Given that you are talking about going from 2 processors to 1 and back,
+> > I would guess that you are not actually talking about suspend/resume,
+> > which is a system-wide thing rather than a CPU-by-CPU thing.  I am not
+> > sure whether you are using CPU hotplug or invoking SMP alternatives once
+> > all but one CPU is idle.
+> 
+> When entering system suspend, we disable non-boot-CPUs to simplify
+> locking. We reenable them when going out of suspend.
 
-Build your kernel, and see if it boots.
-If it boots, run: git bisect good
-If it doesn't boot, run: git bisect bad
+Thank you for the info, Pavel!
 
-Repeat the process until it is done (should be close to 12 times).
-When it is done, it will tell you which commit is the one that breaks booting.
+So once you are down to one CPU, the last CPU shuts the system off,
+itself included?  Or does the last CPU "run" in a deep idle state
+throughout suspend?  (My guess is the former, and I am also curious
+whether the cache SRAMs are powered off, etc.  But figured I should ask
+rather than guessing.)
 
->
-> --
-> Arthur Titeica
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+							Thanx, Paul
