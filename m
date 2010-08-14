@@ -1,254 +1,339 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755468Ab0HNUxZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 16:53:25 -0400
-Received: from 70.mail-out.ovh.net ([91.121.185.63]:45949 "HELO
-	70.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755274Ab0HNUxY (ORCPT
+	id S1755572Ab0HNUyt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 16:54:49 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:42149 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755274Ab0HNUyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 16:53:24 -0400
-Message-ID: <4C67023D.6050603@example.com>
-Date: Sat, 14 Aug 2010 22:53:17 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	Sat, 14 Aug 2010 16:54:47 -0400
+Date: Sat, 14 Aug 2010 22:54:45 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux arch <linux-arch@vger.kernel.org>
+Cc: Michal Marek <mmarek@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Subject: [GIT] defconfig + unifdef cleanup (touches many archs)
+Message-ID: <20100814205445.GA29267@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: ioctl definition - has it changed recently?
-Content-Type: multipart/mixed;
- boundary="------------080300060609060708090802"
-X-Ovh-Tracer-Id: 162129588668952856
-X-Ovh-Remote: 83.24.108.121 (doa121.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080300060609060708090802
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Hi Linus.
 
-Hello,
+Following pull request contains two simple cleanups.
+[See end of mail for the full diffstat]
+I would like these to be included during the merge
+window to avoid too much merge issues later.
 
-I build new kernels when they become available. Now I have a problem. 
-After I install new kernel I have to run NVidia setup script. Starting 
-from git15 it fails, see attached file. The error line is here:
+The use of unifdef-y in various Kbuild files for
+exported headers is dropped. unifdef-y have had the
+same functionality as header-y for a long time.
+And people assumed it was special...
+All users are dropped (touches a lot of arch Kbuild
+files too).
 
-    /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c: At top level:
-    /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: error: 
-unknown field ‘ioctl’ specified in initializer
-    /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: warning: 
-initialization from incompatible pointer type
+The diffstat for this change alone looks like this:
 
-In git14 everything was OK, but now it is not, also with the Git synced 
-kernel. Has something changed from git14 times? I hope that it changed 
-in Linux because it will be fixed earlier than NVidia source.
+ Documentation/kbuild/makefiles.txt    |    6 -
+ arch/alpha/include/asm/Kbuild         |   11 +-
+ arch/arm/include/asm/Kbuild           |    2 +-
+ arch/blackfin/include/asm/Kbuild      |    4 +-
+ arch/cris/include/asm/Kbuild          |    5 +-
+ arch/frv/include/asm/Kbuild           |    3 +-
+ arch/ia64/include/asm/Kbuild          |    9 +-
+ arch/parisc/include/asm/Kbuild        |    2 +-
+ arch/powerpc/include/asm/Kbuild       |   53 ++--
+ arch/s390/include/asm/Kbuild          |   11 +-
+ arch/sh/include/asm/Kbuild            |    9 +-
+ arch/x86/include/asm/Kbuild           |   29 +-
+ include/asm-generic/Kbuild            |    9 +-
+ include/asm-generic/Kbuild.asm        |   67 +++---
+ include/drm/Kbuild                    |   26 +-
+ include/linux/Kbuild                  |  468 ++++++++++++++++----------------
+ include/linux/byteorder/Kbuild        |    4 +-
+ include/linux/dvb/Kbuild              |    7 +-
+ include/linux/netfilter/Kbuild        |   19 +-
+ include/linux/netfilter_arp/Kbuild    |    3 +-
+ include/linux/netfilter_bridge/Kbuild |    5 +-
+ include/linux/netfilter_ipv4/Kbuild   |    5 +-
+ include/linux/netfilter_ipv6/Kbuild   |    5 +-
+ include/linux/nfsd/Kbuild             |   12 +-
+ include/linux/sunrpc/Kbuild           |    2 +-
+ include/sound/Kbuild                  |    9 +-
+ include/video/Kbuild                  |    5 +-
+ scripts/Makefile.headersinst          |    3 +-
+ 28 files changed, 387 insertions(+), 406 deletions(-)
 
-My graphic card is 01:00.0 VGA compatible controller: nVidia Corporation 
-G96 [GeForce 9400 GT] (rev a1)
 
-Regards,
+I wrote a small script to convert remaining defconfig
+file to the new minimal format.
+The script checked that the resulting .config was
+the same with the old (verbose) format and the
+new (minimal) format.
+This turned out to be a very good regression test as
+I found 2 issues in kconfig and one issue in
+arch/sh/Kconfig and one issue in arch/tile/Makefile.
+Fixes for these are sent via the usual channels and
+is _not_ in this pull request.
+This pull does not depend on having these issues solved.
 
-Piotr Hosowicz
 
--- 
-Muller wiedział, że Rosjanie, zamieszawszy cukier, zostawiają łyżkę w
-szklance z herbatą. Chcąc sprawdzić Stirlitza, zaprosił go do siebie
-na herbatę. Stirlitz wsypał cukier do szklanki, zamieszał go, wyjął
-łyżeczkę, położył ją na spodeczku, po czym pokazał Mullerowi język.
-NP: Peter Green Splinter Group - There's A River
-NB: 2.6.35-git14
+The summary of the defconfig changes looks like this:
 
---------------080300060609060708090802
-Content-Type: text/x-log;
- name="nvidia-installer.log"
-Content-Transfer-Encoding: 8bit
-Content-Disposition: attachment;
- filename="nvidia-installer.log"
+ 197 files changed, 1181 insertions(+), 207237 deletions(-)
 
-nvidia-installer log file '/var/log/nvidia-installer.log'
-creation time: Sat Aug 14 18:57:00 2010
-installer version: 256.35
+A nice noise reduction patch.
 
-option status:
-  license pre-accepted    : false
-  update                  : false
-  force update            : false
-  expert                  : true
-  uninstall               : false
-  driver info             : false
-  precompiled interfaces  : true
-  no ncurses color        : false
-  query latest version    : false
-  OpenGL header files     : true
-  no questions            : false
-  silent                  : false
-  no recursion            : false
-  no backup               : false
-  kernel module only      : false
-  sanity                  : false
-  add this kernel         : false
-  no runlevel check       : false
-  no network              : false
-  no ABI note             : false
-  no RPMs                 : false
-  no kernel module        : false
-  force SELinux           : default
-  no X server check       : false
-  no cc version check     : false
-  force tls               : (not specified)
-  force compat32 tls      : (not specified)
-  X install prefix        : (not specified)
-  X library install path  : (not specified)
-  X module install path   : (not specified)
-  OpenGL install prefix   : (not specified)
-  OpenGL install libdir   : (not specified)
-  compat32 install chroot : (not specified)
-  compat32 install prefix : (not specified)
-  compat32 install libdir : (not specified)
-  utility install prefix  : (not specified)
-  utility install libdir  : (not specified)
-  doc install prefix      : (not specified)
-  kernel name             : (not specified)
-  kernel include path     : (not specified)
-  kernel source path      : /usr/src/linux-2.6.35-git15
-  kernel output path      : (not specified)
-  kernel install path     : (not specified)
-  proc mount point        : /proc
-  ui                      : (not specified)
-  tmpdir                  : /tmp
-  ftp mirror              : ftp://download.nvidia.com
-  RPM file list           : (not specified)
 
-chdir("./")
-Using: nvidia-installer ncurses user interface
--> Searching for system utilities:
--> found `ldconfig` : `/sbin/ldconfig`
--> found `ldd` : `/usr/bin/ldd`
--> found `ld` : `/usr/bin/ld`
--> found `objcopy` : `/usr/bin/objcopy`
--> found `grep` : `/bin/grep`
--> found `dmesg` : `/bin/dmesg`
--> found `tail` : `/usr/bin/tail`
--> found `cut` : `/usr/bin/cut`
--> found `tr` : `/usr/bin/tr`
--> found `sed` : `/bin/sed`
--> found `chcon` : `/usr/bin/chcon`
--> found `pkg-config` : `/usr/bin/pkg-config`
--> found `X` : `/usr/bin/X`
--> Searching for module utilities:
--> found `insmod` : `/sbin/insmod`
--> found `modprobe` : `/sbin/modprobe`
--> found `rmmod` : `/sbin/rmmod`
--> found `lsmod` : `/sbin/lsmod`
--> found `depmod` : `/sbin/depmod`
--> License accepted.
--> Installing NVIDIA driver version 256.35.
--> There appears to already be a driver installed on your system (version: 256.
-   35).  As part of installing this driver (version: 256.35), the existing driv
-   er will be uninstalled.  Are you sure you want to continue? ('no' will abort
-   installation) (Answer: Yes)
--> No distribution pre-install script found.
--> Kernel module installation path (Answer:
-   '/lib/modules/2.6.35-git15/kernel/drivers/video')
--> Kernel module installation path: /lib/modules/2.6.35-git15/kernel/drivers/vi
-   deo
--> No precompiled kernel interface was found to match your kernel; this means
-   that the installer will need to compile a new kernel interface.
--> Checking development tools:
--> found `cc` : `/usr/bin/cc`
--> found `make` : `/usr/bin/make`
--> Performing CC sanity check with CC="cc".
--> Performing CC version check with CC="cc".
--> Using the kernel source path '/usr/src/linux-2.6.35-git15' as specified by
-   the '--kernel-source-path' commandline option.
--> Kernel source path (Answer: '/usr/src/linux-2.6.35-git15')
--> Kernel source path: '/usr/src/linux-2.6.35-git15'
--> Kernel output path: '/usr/src/linux-2.6.35-git15'
--> Performing rivafb check.
--> Performing nvidiafb check.
--> Performing Xen check.
--> Cleaning kernel module build directory.
-   executing: 'cd ./kernel; make clean'...
--> Building kernel module:
-   executing: 'cd ./kernel; make module SYSSRC=/usr/src/linux-2.6.35-git15 SYSO
-   UT=/usr/src/linux-2.6.35-git15'...
-   NVIDIA: calling KBUILD...
-   test -e include/generated/autoconf.h -a -e include/config/auto.conf || (		\
-   	echo;								\
-   	echo "  ERROR: Kernel configuration is invalid.";		\
-   	echo "         include/generated/autoconf.h or include/config/auto.conf are
-   missing.";\
-   	echo "         Run 'make oldconfig && make prepare' on kernel src to fix it
-   .";	\
-   	echo;								\
-   	/bin/false)
-   mkdir -p /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/.tmp_versions ; r
-   m -f /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/.tmp_versions/*
-   make -f scripts/Makefile.build obj=/tmp/selfgz6622/NVIDIA-Linux-x86_64-256.3
-   5/kernel
-     cc -Wp,-MD,/tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/.nv.o.d  -nos
-   tdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/4.4.5/include -I/usr/src/linux-
-   2.6.35-git15/arch/x86/include -Iinclude  -include include/generated/autoconf
-   .h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict
-   -aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-secu
-   rity -fno-delete-null-pointer-checks -O
-   s -m64 -march=core2 -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumul
-   ate-outgoing-args -fstack-protector -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL
-   _FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronou
-   s-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=2
-   048 -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -Wdeclaration-aft
-   er-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -I/tmp/
-   selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel -Wall -MD -Wsign-compare -Wno-c
-   ast-qual -Wno-error -D__KERNEL__ -DMODULE -DNVRM -DNV_VERSION_STRING=\"256.3
-   5\" -mcmodel=kernel -mno-red-zone -UDEBUG -U_DEBUG -DNDEBUG  -DMODULE  -D"KB
-   UILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(nv)"  -D"KBUILD_MODNAME=KBUILD
-   _STR(nvidia)" -D"DEBUG_HASH=29" -D"DEBUG_HASH2=36" -c -o /tmp/selfgz6622/NVI
-   DIA-Linux-x86_64-256.35/kernel/.tmp_nv.o /tmp/selfgz6622/NVIDIA-Linux-x86_64
-   -256.35/kernel/nv.c
-   In file included from include/linux/kernel.h:17,
-                    from include/linux/sched.h:54,
-                    from include/linux/utsname.h:35,
-                    from /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv-l
-   inux.h:27,
-                    from /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c
-   :13:
-   include/linux/bitops.h: In function ‘hweight_long’:
-   include/linux/bitops.h:49: warning: signed and unsigned type in conditional 
-   expression
-   In file included from /usr/src/linux-2.6.35-git15/arch/x86/include/asm/uacce
-   ss.h:573,
-                    from include/linux/poll.h:14,
-                    from /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv-l
-   inux.h:84,
-                    from /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c
-   :13:
-   /usr/src/linux-2.6.35-git15/arch/x86/include/asm/uaccess_64.h: In function �
-   ��copy_from_user’:
-   /usr/src/linux-2.6.35-git15/arch/x86/include/asm/uaccess_64.h:54: warning: c
-   omparison between signed and unsigned integer expressions
-   /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c: At top level:
-   /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: error: unknown f
-   ield ‘ioctl’ specified in initializer
-   /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: warning: initial
-   ization from incompatible pointer type
-   make[3]: *** [/tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.o] Błąd
-   1
-   make[2]: *** [_module_/tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel] Bł
-   ąd 2
-   NVIDIA: left KBUILD.
-   nvidia.ko failed to build!
-   make[1]: *** [module] Błąd 1
-   make: *** [module] Błąd 2
--> Error.
-ERROR: Unable to build the NVIDIA kernel module.
-ERROR: Installation has failed.  Please see the file
-       '/var/log/nvidia-installer.log' for details.  You may find suggestions
-       on fixing installation problems in the README available on the Linux
-       driver download page at www.nvidia.com.
--> No distribution failed-install script found.
+Please pull from:
 
---------------080300060609060708090802--
+The following changes since commit c29c08b59875fe053471cf9eb66f8cfef39bc509:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../jejb/scsi-misc-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/sam/cleanup.git master
+
+	Sam
+
+
+Sam Ravnborg (4):
+      include: replace unifdef-y with header-y
+      archs: replace unifdef-y with header-y
+      kbuild: drop unifdef-y support
+      defconfig reduction
+
+Full diffstat:
+
+ Documentation/kbuild/makefiles.txt                 |    6 -
+ arch/alpha/defconfig                               |  884 +--------
+ arch/alpha/include/asm/Kbuild                      |   11 +-
+ arch/arm/include/asm/Kbuild                        |    2 +-
+ arch/avr32/configs/atngw100_defconfig              | 1249 -----------
+ arch/avr32/configs/atngw100_evklcd100_defconfig    | 1374 ------------
+ arch/avr32/configs/atngw100_evklcd101_defconfig    | 1369 ------------
+ arch/avr32/configs/atngw100_mrmt_defconfig         | 1213 -----------
+ arch/avr32/configs/atngw100mkii_defconfig          | 1254 -----------
+ .../avr32/configs/atngw100mkii_evklcd100_defconfig | 1377 ------------
+ .../avr32/configs/atngw100mkii_evklcd101_defconfig | 1378 ------------
+ arch/avr32/configs/atstk1002_defconfig             | 1319 ------------
+ arch/avr32/configs/atstk1003_defconfig             |  946 +--------
+ arch/avr32/configs/atstk1004_defconfig             |  601 +------
+ arch/avr32/configs/atstk1006_defconfig             | 1321 ------------
+ arch/avr32/configs/favr-32_defconfig               | 1079 +----------
+ arch/avr32/configs/hammerhead_defconfig            | 1311 +------------
+ arch/avr32/configs/merisc_defconfig                | 1105 ----------
+ arch/avr32/configs/mimc200_defconfig               |  991 +---------
+ arch/blackfin/configs/BF518F-EZBRD_defconfig       | 1307 ------------
+ arch/blackfin/configs/BF526-EZBRD_defconfig        | 1594 --------------
+ arch/blackfin/configs/BF527-EZKIT-V2_defconfig     | 1698 ---------------
+ arch/blackfin/configs/BF527-EZKIT_defconfig        | 1651 --------------
+ arch/blackfin/configs/BF533-EZKIT_defconfig        | 1222 -----------
+ arch/blackfin/configs/BF533-STAMP_defconfig        | 1384 ------------
+ arch/blackfin/configs/BF537-STAMP_defconfig        | 1435 -------------
+ arch/blackfin/configs/BF538-EZKIT_defconfig        | 1365 ------------
+ arch/blackfin/configs/BF548-EZKIT_defconfig        | 1757 ---------------
+ arch/blackfin/configs/BF561-ACVILON_defconfig      | 1482 -------------
+ arch/blackfin/configs/BF561-EZKIT_defconfig        | 1206 -----------
+ arch/blackfin/configs/BlackStamp_defconfig         | 1098 +----------
+ arch/blackfin/configs/CM-BF527_defconfig           | 1404 ------------
+ arch/blackfin/configs/CM-BF533_defconfig           |  841 --------
+ arch/blackfin/configs/CM-BF537E_defconfig          | 1112 ----------
+ arch/blackfin/configs/CM-BF537U_defconfig          |  986 ---------
+ arch/blackfin/configs/CM-BF548_defconfig           | 1367 ------------
+ arch/blackfin/configs/CM-BF561_defconfig           | 1049 ---------
+ arch/blackfin/configs/H8606_defconfig              | 1085 +----------
+ arch/blackfin/configs/IP0X_defconfig               | 1164 +----------
+ arch/blackfin/configs/PNAV-10_defconfig            | 1371 ------------
+ arch/blackfin/configs/SRV1_defconfig               | 1217 +-----------
+ arch/blackfin/configs/TCM-BF518_defconfig          | 1240 -----------
+ arch/blackfin/configs/TCM-BF537_defconfig          | 1085 ----------
+ arch/blackfin/include/asm/Kbuild                   |    4 +-
+ arch/cris/configs/artpec_3_defconfig               |  538 -----
+ arch/cris/configs/etrax-100lx_defconfig            |  489 +-----
+ arch/cris/configs/etrax-100lx_v2_defconfig         |  537 -----
+ arch/cris/configs/etraxfs_defconfig                |  545 -----
+ arch/cris/include/asm/Kbuild                       |    5 +-
+ arch/frv/defconfig                                 |  600 +------
+ arch/frv/include/asm/Kbuild                        |    3 +-
+ arch/h8300/defconfig                               |  333 +---
+ arch/ia64/configs/bigsur_defconfig                 |  183 +-
+ arch/ia64/configs/generic_defconfig                |  351 ++--
+ arch/ia64/configs/gensparse_defconfig              |  313 ++--
+ arch/ia64/configs/sim_defconfig                    |   87 +-
+ arch/ia64/configs/tiger_defconfig                  |  265 ++--
+ arch/ia64/configs/xen_domu_defconfig               |  279 ++--
+ arch/ia64/configs/zx1_defconfig                    |  231 +-
+ arch/ia64/include/asm/Kbuild                       |    9 +-
+ arch/m32r/configs/m32104ut_defconfig               |  897 +--------
+ arch/m32r/configs/m32700ut.smp_defconfig           |  779 +-------
+ arch/m32r/configs/m32700ut.up_defconfig            |  777 +-------
+ arch/m32r/configs/mappi.nommu_defconfig            |  609 ------
+ arch/m32r/configs/mappi.smp_defconfig              |  710 +-------
+ arch/m32r/configs/mappi.up_defconfig               |  709 +------
+ arch/m32r/configs/mappi2.opsp_defconfig            |  681 ------
+ arch/m32r/configs/mappi2.vdec2_defconfig           |  680 ------
+ arch/m32r/configs/mappi3.smp_defconfig             |  714 +-------
+ arch/m32r/configs/oaks32r_defconfig                |  583 -----
+ arch/m32r/configs/opsput_defconfig                 |  664 ------
+ arch/m32r/configs/usrv_defconfig                   |  693 +------
+ arch/m68k/configs/amiga_defconfig                  |  867 +--------
+ arch/m68k/configs/apollo_defconfig                 |  784 -------
+ arch/m68k/configs/atari_defconfig                  |  824 +-------
+ arch/m68k/configs/bvme6000_defconfig               |  758 -------
+ arch/m68k/configs/hp300_defconfig                  |  793 -------
+ arch/m68k/configs/mac_defconfig                    |  815 -------
+ arch/m68k/configs/multi_defconfig                  |  895 +--------
+ arch/m68k/configs/mvme147_defconfig                |  759 -------
+ arch/m68k/configs/mvme16x_defconfig                |  758 -------
+ arch/m68k/configs/q40_defconfig                    |  839 --------
+ arch/m68k/configs/sun3_defconfig                   |  779 -------
+ arch/m68k/configs/sun3x_defconfig                  |  790 -------
+ arch/m68knommu/configs/m5208evb_defconfig          |  559 -----
+ arch/m68knommu/configs/m5249evb_defconfig          |  580 -----
+ arch/m68knommu/configs/m5272c3_defconfig           |  580 -----
+ arch/m68knommu/configs/m5275evb_defconfig          |  580 -----
+ arch/m68knommu/configs/m5307c3_defconfig           |  600 ------
+ arch/m68knommu/configs/m5407c3_defconfig           |  589 -----
+ arch/m68knommu/defconfig                           |  588 +-----
+ arch/microblaze/configs/mmu_defconfig              |  842 +--------
+ arch/microblaze/configs/nommu_defconfig            |  849 +--------
+ arch/mips/configs/ar7_defconfig                    | 1119 ----------
+ arch/mips/configs/bcm47xx_defconfig                | 1593 --------------
+ arch/mips/configs/bcm63xx_defconfig                | 1135 ----------
+ arch/mips/configs/bigsur_defconfig                 | 1357 ------------
+ arch/mips/configs/capcella_defconfig               |  779 +-------
+ arch/mips/configs/cavium-octeon_defconfig          |  850 +--------
+ arch/mips/configs/cobalt_defconfig                 | 1143 +----------
+ arch/mips/configs/db1000_defconfig                 | 1064 ----------
+ arch/mips/configs/db1100_defconfig                 | 1085 ----------
+ arch/mips/configs/db1200_defconfig                 | 1396 ------------
+ arch/mips/configs/db1500_defconfig                 | 1152 ----------
+ arch/mips/configs/db1550_defconfig                 | 1292 -----------
+ arch/mips/configs/decstation_defconfig             |  860 +--------
+ arch/mips/configs/e55_defconfig                    |  543 -----
+ arch/mips/configs/fuloong2e_defconfig              | 1563 --------------
+ arch/mips/configs/gpr_defconfig                    | 1711 ---------------
+ arch/mips/configs/ip22_defconfig                   |  918 +--------
+ arch/mips/configs/ip27_defconfig                   | 1167 +----------
+ arch/mips/configs/ip28_defconfig                   |  807 +-------
+ arch/mips/configs/ip32_defconfig                   | 1031 ---------
+ arch/mips/configs/jazz_defconfig                   | 1116 +----------
+ arch/mips/configs/jmr3927_defconfig                |  800 -------
+ arch/mips/configs/lasat_defconfig                  |  753 -------
+ arch/mips/configs/lemote2f_defconfig               | 1750 ---------------
+ arch/mips/configs/malta_defconfig                  | 1250 +-----------
+ arch/mips/configs/markeins_defconfig               | 1269 +-----------
+ arch/mips/configs/mipssim_defconfig                |  601 +------
+ arch/mips/configs/mpc30x_defconfig                 |  780 -------
+ arch/mips/configs/msp71xx_defconfig                | 1400 +------------
+ arch/mips/configs/mtx1_defconfig                   | 1797 ----------------
+ arch/mips/configs/pb1100_defconfig                 | 1096 ----------
+ arch/mips/configs/pb1200_defconfig                 | 1397 ------------
+ arch/mips/configs/pb1500_defconfig                 | 1233 -----------
+ arch/mips/configs/pb1550_defconfig                 | 1288 -----------
+ arch/mips/configs/pnx8335-stb225_defconfig         | 1051 +---------
+ arch/mips/configs/pnx8550-jbs_defconfig            | 1204 +-----------
+ arch/mips/configs/pnx8550-stb810_defconfig         | 1200 +-----------
+ arch/mips/configs/powertv_defconfig                | 1535 --------------
+ arch/mips/configs/rb532_defconfig                  | 1328 ------------
+ arch/mips/configs/rbtx49xx_defconfig               |  981 ---------
+ arch/mips/configs/rm200_defconfig                  | 1379 +------------
+ arch/mips/configs/sb1250-swarm_defconfig           |  960 +--------
+ arch/mips/configs/tb0219_defconfig                 |  830 +--------
+ arch/mips/configs/tb0226_defconfig                 |  833 +--------
+ arch/mips/configs/tb0287_defconfig                 | 1003 +---------
+ arch/mips/configs/workpad_defconfig                |  708 ------
+ arch/mips/configs/wrppmc_defconfig                 |  896 +--------
+ arch/mips/configs/yosemite_defconfig               |  824 +-------
+ arch/mn10300/configs/asb2303_defconfig             |  563 -----
+ arch/parisc/configs/712_defconfig                  |  909 --------
+ arch/parisc/configs/a500_defconfig                 | 1110 ----------
+ arch/parisc/configs/b180_defconfig                 | 1144 ----------
+ arch/parisc/configs/c3000_defconfig                | 1353 +------------
+ arch/parisc/configs/default_defconfig              | 1380 ------------
+ arch/parisc/include/asm/Kbuild                     |    2 +-
+ arch/powerpc/include/asm/Kbuild                    |   53 +-
+ arch/s390/defconfig                                |  970 ---------
+ arch/s390/include/asm/Kbuild                       |   11 +-
+ arch/score/configs/spct6600_defconfig              |  632 ------
+ arch/sh/configs/ap325rxa_defconfig                 | 1331 ------------
+ arch/sh/configs/cayman_defconfig                   | 1319 ------------
+ arch/sh/configs/dreamcast_defconfig                | 1087 ----------
+ arch/sh/configs/ecovec24-romimage_defconfig        | 1016 ---------
+ arch/sh/configs/ecovec24_defconfig                 | 1631 --------------
+ arch/sh/configs/edosk7705_defconfig                |  481 -----
+ arch/sh/configs/edosk7760_defconfig                | 1118 ----------
+ arch/sh/configs/espt_defconfig                     | 1159 ----------
+ arch/sh/configs/hp6xx_defconfig                    |  936 --------
+ arch/sh/configs/kfr2r09-romimage_defconfig         |  763 -------
+ arch/sh/configs/kfr2r09_defconfig                  | 1033 ---------
+ arch/sh/configs/landisk_defconfig                  | 1446 -------------
+ arch/sh/configs/lboxre2_defconfig                  | 1324 ------------
+ arch/sh/configs/magicpanelr2_defconfig             | 1060 ---------
+ arch/sh/configs/microdev_defconfig                 |  974 ---------
+ arch/sh/configs/migor_defconfig                    | 1304 ------------
+ arch/sh/configs/polaris_defconfig                  |  972 ---------
+ arch/sh/configs/r7780mp_defconfig                  | 1569 --------------
+ arch/sh/configs/r7785rp_defconfig                  | 1582 --------------
+ arch/sh/configs/rsk7201_defconfig                  |  745 -------
+ arch/sh/configs/rsk7203_defconfig                  | 1159 ----------
+ arch/sh/configs/rts7751r2d1_defconfig              | 1582 --------------
+ arch/sh/configs/rts7751r2dplus_defconfig           | 1661 ---------------
+ arch/sh/configs/sdk7780_defconfig                  | 1568 --------------
+ arch/sh/configs/sdk7786_defconfig                  | 1773 +----------------
+ arch/sh/configs/se7206_defconfig                   | 1000 ---------
+ arch/sh/configs/se7343_defconfig                   | 1244 -----------
+ arch/sh/configs/se7619_defconfig                   |  706 ------
+ arch/sh/configs/se7705_defconfig                   |  996 ---------
+ arch/sh/configs/se7712_defconfig                   | 1088 ----------
+ arch/sh/configs/se7721_defconfig                   | 1229 -----------
+ arch/sh/configs/se7722_defconfig                   | 1031 ---------
+ arch/sh/configs/se7724_defconfig                   | 1682 ---------------
+ arch/sh/configs/se7750_defconfig                   | 1030 ---------
+ arch/sh/configs/se7751_defconfig                   |  990 ---------
+ arch/sh/configs/se7780_defconfig                   | 1366 ------------
+ arch/sh/configs/sh03_defconfig                     | 1218 -----------
+ arch/sh/configs/sh7710voipgw_defconfig             | 1012 ---------
+ arch/sh/configs/sh7724_generic_defconfig           |  707 ------
+ arch/sh/configs/sh7763rdp_defconfig                | 1172 ----------
+ arch/sh/configs/sh7770_generic_defconfig           |  697 ------
+ arch/sh/configs/sh7785lcr_32bit_defconfig          | 1734 ---------------
+ arch/sh/configs/sh7785lcr_defconfig                | 1537 --------------
+ arch/sh/configs/shmin_defconfig                    |  908 --------
+ arch/sh/configs/shx3_defconfig                     | 1312 ------------
+ arch/sh/configs/snapgear_defconfig                 |  954 ---------
+ arch/sh/configs/systemh_defconfig                  |  677 ------
+ arch/sh/configs/titan_defconfig                    | 1612 --------------
+ arch/sh/configs/ul2_defconfig                      | 1233 -----------
+ arch/sh/configs/urquell_defconfig                  | 1732 ---------------
+ arch/sh/include/asm/Kbuild                         |    9 +-
+ arch/sparc/configs/sparc32_defconfig               | 1120 ----------
+ arch/sparc/configs/sparc64_defconfig               | 1714 ---------------
+ arch/tile/configs/tile_defconfig                   | 1219 -----------
+ arch/x86/configs/i386_defconfig                    | 2242 +-------------------
+ arch/x86/configs/x86_64_defconfig                  | 2209 +-------------------
+ arch/x86/include/asm/Kbuild                        |   29 +-
+ include/asm-generic/Kbuild                         |    9 +-
+ include/asm-generic/Kbuild.asm                     |   67 +-
+ include/drm/Kbuild                                 |   26 +-
+ include/linux/Kbuild                               |  468 ++--
+ include/linux/byteorder/Kbuild                     |    4 +-
+ include/linux/dvb/Kbuild                           |    7 +-
+ include/linux/netfilter/Kbuild                     |   19 +-
+ include/linux/netfilter_arp/Kbuild                 |    3 +-
+ include/linux/netfilter_bridge/Kbuild              |    5 +-
+ include/linux/netfilter_ipv4/Kbuild                |    5 +-
+ include/linux/netfilter_ipv6/Kbuild                |    5 +-
+ include/linux/nfsd/Kbuild                          |   12 +-
+ include/linux/sunrpc/Kbuild                        |    2 +-
+ include/sound/Kbuild                               |    9 +-
+ include/video/Kbuild                               |    5 +-
+ scripts/Makefile.headersinst                       |    3 +-
+ 225 files changed, 1568 insertions(+), 207643 deletions(-)
