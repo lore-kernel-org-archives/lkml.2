@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753539Ab0HNTpT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 15:45:19 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:9551 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab0HNTpS (ORCPT
+	id S1753756Ab0HNTrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 15:47:15 -0400
+Received: from mail001.aei.ca ([206.123.6.130]:52115 "EHLO mail001.aei.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752610Ab0HNTrO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 15:45:18 -0400
-Date: Sat, 14 Aug 2010 21:45:05 +0200
-From: Jean Delvare <khali@linux-fr.org>
+	Sat, 14 Aug 2010 15:47:14 -0400
+From: Ed Tomlinson <edt@aei.ca>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: [GIT PULL] hwmon updates for 2.6.36
-Message-ID: <20100814214505.42480679@hyperion.delvare>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: Linux 2.6.35.2
+Date: Sat, 14 Aug 2010 15:47:08 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.2-crc+; KDE/4.4.5; x86_64; ; )
+Cc: sedat.dilek@gmail.com, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org, arthur@psw.ro,
+        wylda@volny.cz
+References: <AANLkTimNborh0AtHkdnN-aCizDu4+S6ORmeoKzS_nEVH@mail.gmail.com> <201008141427.03946.edt@aei.ca> <AANLkTingwMvoVm_J6cmm_K3=G9rCYwOrQ=-5vK_wzGcX@mail.gmail.com>
+In-Reply-To: <AANLkTingwMvoVm_J6cmm_K3=G9rCYwOrQ=-5vK_wzGcX@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008141547.08722.edt@aei.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Saturday 14 August 2010 14:47:45 Linus Torvalds wrote:
+> On Sat, Aug 14, 2010 at 11:27 AM, Ed Tomlinson <edt@aei.ca> wrote:
+> >
+> > It seems to be helping here.  Without it 35.2 would either stall in boot or give lots of tracebacks.  With it things
+> > start normally and my background stuff works as expected.
+> 
+> Ok, thanks. I've committed it to the -git tree.
+> 
+> Just to verify: you have CONFIG_HIGHPTE enabled on a x86-32 kernel,
+> right? I'd have expected this to not ever show up anywhere else, and
+> I'm just verifying that there isn't anything else going on. I'm
+> appending the commit message, the patch hasn't changed.
 
-Please pull hwmon subsystem updates for Linux 2.6.35 from:
+No.  I have a x86-64 based kernel (amd64).
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git hwmon-for-linus
+Ed
 
-We have support for new chips (SMSC EMC2103 and Nuvoton W83667HG-B),
-improvements to the pc87427 driver, and random other small fixes,
-improvements and cleanups.
-
- Documentation/hwmon/emc2103         |   33 ++
- Documentation/hwmon/ltc4245         |   24 +-
- Documentation/hwmon/pc87427         |   27 +-
- Documentation/hwmon/sysfs-interface |   29 +-
- Documentation/hwmon/w83627ehf       |   15 +-
- MAINTAINERS                         |   14 +
- drivers/hwmon/Kconfig               |   14 +-
- drivers/hwmon/Makefile              |    1 +
- drivers/hwmon/asc7621.c             |    9 +-
- drivers/hwmon/emc1403.c             |   33 ++
- drivers/hwmon/emc2103.c             |  740 ++++++++++++++++++++++++++++++
- drivers/hwmon/it87.c                |   46 ++-
- drivers/hwmon/k8temp.c              |    3 +-
- drivers/hwmon/lm75.c                |   39 ++
- drivers/hwmon/lm75.h                |    1 +
- drivers/hwmon/ltc4245.c             |  177 +++++++-
- drivers/hwmon/pc87360.c             |   31 +-
- drivers/hwmon/pc87427.c             |  862 ++++++++++++++++++++++++++++++++---
- drivers/hwmon/via-cputemp.c         |    2 +-
- drivers/hwmon/w83627ehf.c           |   97 ++++-
- include/linux/i2c/ltc4245.h         |   21 +
- 21 files changed, 2085 insertions(+), 133 deletions(-)
- create mode 100644 Documentation/hwmon/emc2103
- create mode 100644 drivers/hwmon/emc2103.c
- create mode 100644 include/linux/i2c/ltc4245.h
-
----------------
-
-Alan Cox (1):
-      hwmon: (emc1403) Add power support
-
-Guenter Roeck (4):
-      hwmon: Add 3 critical limit attributes to sysfs-interface
-      hwmon: Add 4 current alarm/beep attributes to sysfs-interface
-      hwmon: (w83627ehf) Driver cleanup
-      hwmon: (w83627ehf) Add support for W83667HG-B
-
-H. Peter Anvin (1):
-      hwmon: (via-cputemp) Remove bogus "SHOW" global variable
-
-Ira W. Snyder (1):
-      hwmon: (ltc4245) Expose all GPIO pins as analog voltages
-
-Jean Delvare (11):
-      hwmon: (pc87360) Fix device resource declaration
-      hwmon: (it87) Export labels for internal sensors
-      hwmon: (asc7621) Clean up and improve detect function
-      hwmon: Remove in[0-*]_fault from sysfs-interface
-      hwmon: (pc87427) Handle disabled fan inputs properly
-      hwmon: (pc87427) Minor style cleanups
-      hwmon: (pc87427) Add support for manual fan speed control
-      hwmon: (pc87427) Add support for the second logical device
-      hwmon: (pc87427) Add temperature monitoring support
-      hwmon: (pc87427) Move sysfs file removal to a separate function
-      hwmon: (pc87427) Add a maintainer
-
-Julia Lawall (1):
-      hwmon: (k8temp) Adjust confusing if indentation
-
-Randy Dunlap (1):
-      hwmon: jc42 depends on I2C
-
-Shubhrajyoti Datta (1):
-      hwmon: (lm75) Add suspend/resume feature
-
-Steve Glendinning (1):
-      hwmon: Add driver for SMSC EMC2103 temperature monitor and fan controller
-
-Thanks,
--- 
-Jean Delvare
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Sat Aug 14 11:44:56 2010 -0700
+> 
+>     mm: fix page table unmap for stack guard page properly
+> 
+>     We do in fact need to unmap the page table _before_ doing the whole
+>     stack guard page logic, because if it is needed (mainly 32-bit x86 with
+>     PAE and CONFIG_HIGHPTE, but other architectures may use it too) then it
+>     will do a kmap_atomic/kunmap_atomic.
+> 
+>     And those kmaps will create an atomic region that we cannot do
+>     allocations in.  However, the whole stack expand code will need to do
+>     anon_vma_prepare() and vma_lock_anon_vma() and they cannot do that in an
+>     atomic region.
+> 
+>     Now, a better model might actually be to do the anon_vma_prepare() when
+>     _creating_ a VM_GROWSDOWN segment, and not have to worry about any of
+>     this at page fault time.  But in the meantime, this is the
+>     straightforward fix for the issue.
+> 
+>     See https://bugzilla.kernel.org/show_bug.cgi?id=16588 for details.
+> 
+>     Reported-by: Wylda <wylda@volny.cz>
+>     Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+>     Reported-by: Mike Pagano <mpagano@gentoo.org>
+>     Reported-by: François Valenduc <francois.valenduc@tvcablenet.be>
+>     Tested-by: Ed Tomlinson <edt@aei.ca>
+>     Cc: Pekka Enberg <penberg@kernel.org>
+>     Cc: Greg KH <gregkh@suse.de>
+>     Cc: stable@kernel.org
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+>  mm/memory.c |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
