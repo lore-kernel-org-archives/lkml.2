@@ -1,81 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab0HNIwU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 04:52:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54322 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932985Ab0HNIwT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 04:52:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:organization:message-id:references
-         :in-reply-to:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=f1SeAli6BHWgqupCSWTxnociRouLtfhNr9daycYPzMy8pmM0rEo2Z5iwyv9ENjyRz2
-         pGiWfNWnbLlKKKWObmdxQHVVe9s12rbsai34piA+8yZsrIVq/Pfj/TykAOJkibkgGvm/
-         k7mYRvXAXdpuOjucBVWkJjjoVMgiqm7tgCCaE=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [Stable-review] [0/3] 2.6.27.52 stable review
-Date: Sat, 14 Aug 2010 18:52:01 +1000
-Organization: scattered
-Message-ID: <88mc66l6fnh1i5mhqo3gqmdlti2vajesar@4ax.com>
-References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <AANLkTimruyaAB-raY2ywqPQSR-h+yp7tME=eTKngcMQm@mail.gmail.com> <20100814004729.GA3695@suse.de> <h6hc66dkok3im9jpph1oj2m40ijju6c9la@4ax.com> <20100814074333.GF21003@1wt.eu>
-In-Reply-To: <20100814074333.GF21003@1wt.eu>
-X-Mailer: Forte Agent 6.00/32.1186
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S933443Ab0HNIxd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 04:53:33 -0400
+Received: from mx0.vr-web.de ([195.200.35.198]:39825 "EHLO mx0.vr-web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932985Ab0HNIxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 04:53:32 -0400
+From: Andreas <andihartmann@01019freenet.de>
+X-Newsgroups: linux.kernel
+Subject: Re: rt61pci - bad performance
+Date: Sat, 14 Aug 2010 10:55:17 +0200
+Organization: privat
+Message-ID: <4C6659F5.9080706@01019freenet.de>
+References: <ffaPE-58l-5@gated-at.bofh.it> <fgPe2-2X7-19@gated-at.bofh.it> <fgXXY-KJ-1@gated-at.bofh.it>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: abuse@arcor.de
+To: Helmut Schaa <helmut.schaa@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.3a6pre) Gecko/20100803 SeaMonkey/2.1a2
+In-Reply-To: <fgXXY-KJ-1@gated-at.bofh.it>
+To: linux-kernel@vger.kernel.org
+X-BitDefender-Scanner: Clean, Agent: BitDefender Courier 3.0.2 on
+ vrwf103, sigver: 7.28621
+X-BitDefender-CF-Stamp: none
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Aug 2010 09:43:33 +0200, you wrote:
-
->On Sat, Aug 14, 2010 at 05:34:55PM +1000, Grant Coady wrote:
->> On Fri, 13 Aug 2010 17:47:29 -0700, you wrote:
->> 
->> >On Fri, Aug 13, 2010 at 05:12:57PM -0700, Linus Torvalds wrote:
->> >> On Fri, Aug 13, 2010 at 4:47 PM, Grant Coady <gcoady.lk@gmail.com> wrote:
->> >> >
->> >> > Machine is running, but there's a lot of these in the dmesg:
->> >> >
->> >> > WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
->> >> 
->> >> That would seem to be because of the lack of commit 05fa199d45c in
->> >> 2.6.27. It got marked for stable, but probably never went so far back
->> >> as 2.6.27.
->> >
->> >Yup, I didn't include it there.  Grant, if you add that, does the
->> >warning go away?
->> 
->> I'm sorry, no idea at all how to cherry pick that, I don't know git :( 
->> 
->> Google brings up this thread but not that commit, point me at it and 
->> I'll try it.  
+Helmut Schaa wrote:
+> Hi Andreas,
 >
->Simply apply this patch (even by hand) :
+> Am Freitag 13 August 2010 schrieb Andrew Morton:
+>> (cc's added)
+>>
+>> On Sun, 08 Aug 2010 11:49:49 +0200
+>> Andreas<andihartmann@01019freenet.de>  wrote:
 >
->   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff_plain;h=05fa199d45c
+> [...]
 >
->It solved the warnings for me.
+>>> wlan0     IEEE 802.11bg  ESSID:"--------"
+>>>             Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
+>>>             Bit Rate=1 Mb/s   Tx-Power=5 dBm
+>>>             Retry  long limit:7   RTS thr:off   Fragment thr:off
+>>>             Encryption key:off
+>>>             Power Management:off
+>>>             Link Quality=38/70  Signal level=-72 dBm
+>>>             Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+>>>             Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+>>>
+>>> The throughput is measured with ping -f -s 7000 and xosview -n.
+>
+> This doesn't look like an appropriate way to measure the throughput. You
+> should use something like iperf [1] or netperf [2] for your measurements
+> to get more accurate results.
+>
+>>> If I'm using ndiswrapper with the windows driver, first of all, I can
+>>> see additional information in iwconfig:
+>>>
+>>> wlan0     IEEE 802.11g  ESSID:"--------"
+>>>             Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
+>>>             Bit Rate=54 Mb/s   Tx-Power:20 dBm   Sensitivity=-121 dBm
+>>>             RTS thr=2347 B   Fragment thr=2346 B
+>>>             Encryption key:some key   Security mode:restricted
+>>>             Power Management:off
+>>>             Link Quality:62/100  Signal level:-56 dBm  Noise level:-96 dBm
+>>>             Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
+>>>             Tx excessive retries:0  Invalid misc:0   Missed beacon:0
+>>>
+>>>
+>>> There is a switch for sensitivity (which is not supported with rt61pci)
+>>> and the link quality compared with ndiswrapper is worse (38% to 62%).
+>
+> I wouldn't trust the link quality values that much, the calculation in rt61pi
+> is most likely different from what the windows driver does. So it is not
+> really comparable.
 
-Thanks Willy, got:
+I detected the problem using tunneled ssh-x-sessions and during copying 
+of data. I'm not really interested in the link-quality - I just need a 
+high performance :-).
 
-grant@deltree:~/linux/linux-2.6.27.52-rc1b$ patch -p1 < ../patch-05fa199d45c
-patching file mm/mmap.c
-Hunk #1 succeeded at 1573 (offset -2 lines).
+>>> The following is remarkably too:
+>>> ndiswrapper uses a Tx-Power of 20 dBm, rt61pci only 5 dBm. I don't know,
+>>> why rt61pci uses 5 dBm. It's a hard limit and I can't set it on a value
+>>> higher than 5 unless the driver is patched. Nevertheless, setting a
+>>> higher value (of 20 dBm) by patch does not mean to get a better performance.
+>
+> Could you elaborate please? Did you actually try to patch it or is this just
+> an assumption?
 
-Compiling. . . 
+see my other mail!
 
-Yup, works for me :)
+>>> Ndiswrapper shows an encryption key, rt61pci not. Does it mean, that
+>>> rt61pci doesn't use hardware encryption?
+>
+> hw crypto should be enabled by default in rt61pci, however, I don't know
+> if it is actually working ;)
 
-  http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.52-rc1b.gz
+How can I see if it's working?
 
-Cheers,
-Grant.
+>>> With ndiswrapper, the rt61pci-chip achieves a throughput of 2,6 MBytes/s
+>>> - that's about 1 MByte/s more than rt61pci.
+>>>
+>>> I have to say, that the difference between rt61pci and ndiswrapper gets
+>>> worse if the link quality is getting more badly. Or in other words:
+>>> ndiswrapper handles bad connections better then rt61pci.
+>>>
+>>>
+>>> Do you have any idea to get rt61pci working as fast as ndiswrapper?
+>
+> Please run proper measurements first and post the results again.
+
+I did some measurements with netperf (TCP_STREAM):
+
+
+ndiswrapper
+===========
+
+(OpenSuSE 11.2 2.6.31.13-21):
+download
+average        min        max
+20,88        19,02        22,19 MBit/s    (6 runs)
+
+upstream
+average        min        max
+21,46        18,84        22,26 MBits/s    (7 runs)
+
+
+OpenSuSE 11.3 (2.6.34-12-desktop)
+download
+average        min        max
+21,41        20,51        22,51 MBit/s    (16 runs)
+
+
+upstream
+average        min        max
+error
+
+
+rt61pci (patched - compat-wireless-2010-07-20)
+==============================================
+
+OpenSuSE 11.3 (2.6.34-12-desktop)
+download
+average        min        max
+15,54        12,4        17,19 MBit/s    (25 runs)
+
+upstream
+average        min        max
+13,54        12,1        14,04 MBits/s    (7 runs)
+
+
+rt61pci (original (unpatched) from OpenSuSE 11.3)
+==============================================
+
+download
+0,7 MBit/s
+
+upstream
+error (interrupted system call)
+
+
+If you compare ndiswrapper with rt61pci patched, there is a difference 
+of about 6 MBits/s. The unpatched version can't be used at all.
+
+Another point is the upstream issue with ndiswrapper with 
+2.6.34-kernels, which appears under some conditions (under "normal" 
+conditions, I didn't see this problem yet).
+
+Do you need some special tests? Please ask for them - I'll try to 
+provide them!
+
+
+Thanks for you help,
+kind regards,
+Andreas
