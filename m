@@ -1,54 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab0HNOP6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 10:15:58 -0400
-Received: from ns.penguin.cz ([84.21.108.25]:47549 "EHLO ns.penguin.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756628Ab0HNOP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 10:15:56 -0400
-Subject: Re: zaurus pata_pcmcia corrupted filesystem
-From: Stanislav Brabec <utx@penguin.cz>
-To: Cyril Hrubis <metan@ucw.cz>
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Robert Hancock <hancockrwd@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>
-In-Reply-To: <20100814113937.GB9346@atrey.karlin.mff.cuni.cz>
-References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
-	 <20100814094353.GB926@boggieman.bredbandsbolaget.se>
-	 <1281782580.6707.1.camel@utx.lan>
-	 <20100814113937.GB9346@atrey.karlin.mff.cuni.cz>
-Content-Type: text/plain; charset="ISO-8859-2"
-Date: Sat, 14 Aug 2010 16:15:51 +0200
-Message-ID: <1281795351.15157.3.camel@utx.lan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S934732Ab0HNOWT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 10:22:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:45664 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756597Ab0HNOWS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 10:22:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t2HaUuxOeqWXrotJWVPorPznvNWBHHzm2LUn2SXNcyQH1oWba0KIISiZ7P+xpeR4PY
+         B/jhZzxFmAAUArNBiUrnfAhc9nsZctty9ifGPUqrHTFcD0IEro0nRLDxtrLZDpdsqiy4
+         5tOcXj8PcAchRSZl5Secr3tVwO1A2daEolpuE=
+Date: Sat, 14 Aug 2010 16:22:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Andrew Benton <b3nton@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: reiserfs bug?
+Message-ID: <20100814142212.GB5343@nowhere>
+References: <4C668D3F.9040900@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="EeQfGwPcQSOJBaQU"
+Content-Disposition: inline
+In-Reply-To: <4C668D3F.9040900@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyril Hrubis wrote:
 
-> These seems to be different, at least it newer occured so often to me. Now
-> installing debian packages often fails because it cannot remove temporary
-> files, the filesystem worked reasonably good before.
+--EeQfGwPcQSOJBaQU
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+On Sat, Aug 14, 2010 at 01:34:07PM +0100, Andrew Benton wrote:
+> Hello World!
+> I've just recompiled my kernel (current Linus tree), rebooted into it, 
+> everything seems to work Ok. I wanted to change 1 option so I 
+> recompiled again. Right at the end of the build Xorg server died and on 
+> the screen was printed:
 > 
-> The usecase is to unpack archive with a lot rather small files somewhere deeper
-> to the filesystem tree. Eg. installing gtk2-devel failed miserably when trying
-> to move all the header files from *.h.dpkg-new to *.h, this works rather good
-> with old driver.
+> ------------[ cut here ]------------
+> kernel BUG at /home/andy/save/src/linux-2.6/fs/inode.c:298!
+> invalid opcode: 0000 [#1] SMP 
+> last sysfs file: /sys/devices/virtual/vc/vcsa2/uevent
+> CPU 0 
+> Pid: 17243, comm: mv Not tainted 2.6.35+ #1 MS-7521/MS-7521
+> RIP: 0010:[<ffffffff810b325b>]  [<ffffffff810b325b>] end_writeback+0x5b/0x70
+> RSP: 0018:ffff880114d7dcf8  EFLAGS: 00010202
+> RAX: 0000000000000060 RBX: ffff88013fab00f8 RCX: 0000000000000000
+> RDX: 0000000000000000 RSI: 00000000ffffffff RDI: ffff88013fab00f8
+> RBP: 00000000ffffffff R08: 0000000000000f36 R09: 0000000000000f36
+> R10: 0000000000000bac R11: 0000000000000000 R12: ffff88013f9ac540
+> R13: 0000000000000000 R14: ffff88010fd31500 R15: ffff88010fd31440
+> FS:  00007f306e5be700(0000) GS:ffff880001a00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 00007f306debb080 CR3: 000000013d730000 CR4: 00000000000406f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process mv (pid: 17243, threadinfo ffff880114d7c000, task ffff88013cf73430)
+> Stack:
+>  ffff88013fab00f8 ffffffff810f57a7 ffff88013e608400 0000000000000000
+> <0> 0000000000000000 0000000000000000 0000000000000000 0000000000000000
+> <0> 0000000000000000 0000000000000000 ffff88010fd31500 ffff88013fab00f8
+> Call Trace:
+>  [<ffffffff810f57a7>] ? reiserfs_evict_inode+0x47/0x130
+>  [<ffffffff810b328a>] ? evict+0x1a/0xa0
+>  [<ffffffff810b3f6c>] ? iput+0x19c/0x280
+>  [<ffffffff810afdb7>] ? d_kill+0x47/0x80
+>  [<ffffffff810b0dbf>] ? dput+0x9f/0x180
+>  [<ffffffff810abb1b>] ? sys_renameat+0x21b/0x270
+>  [<ffffffff81088449>] ? handle_mm_fault+0x1b9/0x940
+>  [<ffffffff8102118f>] ? do_page_fault+0x1cf/0x320
+>  [<ffffffff810021ab>] ? system_call_fastpath+0x16/0x1b
+> Code: 1d 48 8d bf d0 01 00 00 b9 02 00 00 00 48 c7 c2 70 2b 0b 81 be 07 00 00 00 e8 42 b0 49 00 48 c7 83 d0 01 00 00 60 00 00 00 5b c3 <0f> 0b 0f 0b 0f 0b 0f 0b 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 
+> RIP  [<ffffffff810b325b>] end_writeback+0x5b/0x70
+>  RSP <ffff880114d7dcf8>
+> ---[ end trace fdd5f8a966d540a4 ]---
+> 
+> The Opps mentions reiserfs. The only reiserfs partition I have is /boot 
+> (grub won't boot from btrfs) and the script I use to recompile the 
+> kernel copies it into /boot when the new kernel is ready.
+> 
+> Andy
 
-Well, I remember opkg crashes while installing emacs (many small files)
-and file system corruption as well. Both with kernel 2.6.26.
 
--- 
+Oh, looks like a return has been forgotten.
 
-________________________________________________________________________
-Stanislav Brabec
-http://www.penguin.cz/~utx/zaurus
+Does that patch fix your issue?
+
+Thanks.
+
+--EeQfGwPcQSOJBaQU
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: attachment; filename="reiserfs.diff"
+
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index ae35413..5b18f93 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -84,6 +84,8 @@ void reiserfs_evict_inode(struct inode *inode)
+ 	inode->i_blocks = 0;
+ 	reiserfs_write_unlock_once(inode->i_sb, depth);
+ 
++	return;
++
+ no_delete:
+ 	end_writeback(inode);
+ 	dquot_drop(inode);
+
+--EeQfGwPcQSOJBaQU--
 
