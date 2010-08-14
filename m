@@ -1,64 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab0HNLoC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 07:44:02 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51855 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755951Ab0HNLoA (ORCPT
+	id S934707Ab0HNLoh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 07:44:37 -0400
+Received: from tortuga.cyrius.com ([84.45.67.90]:52366 "EHLO
+	tortuga.cyrius.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951Ab0HNLog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 07:44:00 -0400
-Date: Sat, 14 Aug 2010 07:43:53 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Hugh Dickins <hughd@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Nigel Cunningham <nigel@tuxonice.net>, Mark Lord <kernel@teksavvy.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        pm list <linux-pm@lists.linux-foundation.org>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
- used!
-Message-ID: <20100814114353.GA7929@infradead.org>
-References: <4C58C528.4000606@tuxonice.net>
- <4C5960B0.7020003@teksavvy.com>
- <4C59DA16.4020500@tuxonice.net>
- <AANLkTik_PH-7T7OFtzaCtPbAHE6pqnYMUsjP25KtsRnR@mail.gmail.com>
- <4C5A59FC.1030304@tuxonice.net>
- <AANLkTi=NMHkKduZzsLiiYt3=w8++8epb5aGrqv7V3-vB@mail.gmail.com>
- <4C5B925A.5000409@tuxonice.net>
- <AANLkTinU24v6Mty54YL3gv3M5S+4jdN5vHD54KknchAG@mail.gmail.com>
- <20100813115424.GA24737@infradead.org>
- <AANLkTik5osZR12nZVVvJY7LimiUZtBdZcnDi4VYNXhwr@mail.gmail.com>
+	Sat, 14 Aug 2010 07:44:36 -0400
+Date: Sat, 14 Aug 2010 12:44:28 +0100
+From: Martin Michlmayr <tbm@cyrius.com>
+To: Mikael Pettersson <mikpe@it.uu.se>, Michal Marek <mmarek@suse.cz>
+Cc: Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] arm: R_ARM_REL32 relocation support
+Message-ID: <20100814114428.GA25336@jirafa.cyrius.com>
+References: <34780qy39a4uj093a4y>
+ <1280993763-15254-1-git-send-email-olof@lixom.net>
+ <19546.31437.994840.466509@pilspetsen.it.uu.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik5osZR12nZVVvJY7LimiUZtBdZcnDi4VYNXhwr@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <19546.31437.994840.466509@pilspetsen.it.uu.se>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 11:15:38AM -0700, Hugh Dickins wrote:
-> However, I am still not quite sure that we can already make that
-> change for 2.6.35 (-stable).  Can you reassure me on the question I
-> raise above: if we issue a discard to a device with cache, wait for
-> "completion", then issue a write into the area spanned by that
-> discard, can we be certain that the write to backing store will not be
-> reordered before the discard of backing store (unless the device is
-> just broken)?  Without a  REQ_HARDBARRIER in the 2.6.35 scheme?  It
-> seems a very reasonable assumption to me, but I'm learning not to
-> depend upon reasonable assumptions here.  (By the way, it doesn't
-> matter at all whether writes not spanned by the discard pass it or
-> not.)
+* Mikael Pettersson <mikpe@it.uu.se> [2010-08-05 10:48]:
+> Michal Marek's patch(*) to use -fno-dwarf2-cfi-asm already exists
+> and is IMO the correct solution in that it addresses the cause
+> of the problem rather than its symptoms.
+> 
+> (*) http://lkml.org/lkml/2010/7/26/154
 
-Neither the SCSI (SPC and SBC) make the cache part of the protocol
-except for the commands to commit them to non-volatile storage, so
-even when reordering the backing device write it must still not
-reorder them vs notified completion.  That's nothing specific to
-discard, e.g. when a write was notified as complete a new read must
-come from the cache even if it hasn't been commited to the backing
-device.  Now I can't guarantee that all cheap SSD firmware
-implementations gets thus right for TRIM, but if one is really
-that buggy we need to blacklist it.
+I cannot find Michal's patch in mainline or in RMK's patch tracker.
+Michal, did you submit your patch to
+http://www.arm.linux.org.uk/developer/patches/ ?
+-- 
+Martin Michlmayr
+http://www.cyrius.com/
