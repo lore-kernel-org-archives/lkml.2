@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757014Ab0HNCsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 22:48:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56632 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756922Ab0HNCsL (ORCPT
+	id S932516Ab0HNC4s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 22:56:48 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54720 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932468Ab0HNC4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 22:48:11 -0400
-Date: Fri, 13 Aug 2010 19:47:43 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 13 (ceph)
-Message-Id: <20100813194743.66738337.randy.dunlap@oracle.com>
-In-Reply-To: <20100813131347.1938f349.sfr@canb.auug.org.au>
-References: <20100813131347.1938f349.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 13 Aug 2010 22:56:47 -0400
+Message-ID: <4C6605DF.8080605@canonical.com>
+Date: Sat, 14 Aug 2010 10:56:31 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: David Woodhouse <dwmw2@infradead.org>
+CC: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ideapad-laptop: add new driver
+References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>	 <1281690893.23680.475.camel@localhost>  <4C650FFB.7090602@canonical.com> <1281692078.23680.487.camel@localhost>
+In-Reply-To: <1281692078.23680.487.camel@localhost>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010 13:13:47 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On 08/13/2010 05:34 PM, David Woodhouse wrote:
+> On Fri, 2010-08-13 at 17:27 +0800, Ike Panhc wrote:
+>> Yes, IIRC EC will send i8042 keycode when you booting with QS button, not
+>> with power button. atkbd.c reports unknown key after booting with QS button. 
 > 
-> As the merge window is open, please do not add 2.6.37 material to your
-> linux-next included trees until after 2.6.36-rc1.
+> That's interesting. I don't *ever* boot with the QS button; I get the
+> keycodes when I boot normally. I tried the QS button precisely once, but
+> only *after* I blew away the original contents of the hard drive with my
+> MeeGo installation, so it didn't boot.
 > 
-> Changes since 20100812:
+> Do you know how to restore it? Or do you have a copy of the 'lenovo-ec'
+> module that it apparently contains?
 > 
-> The ceph tree gained a conflict against Linus' tree.
+> I did keep the Windows restore partition, just in case I needed to go
+> back to it to get wireless working. But when I tried to recover, it told
+> me it didn't like my partition table -- so I fixed that and next time I
+> booted into the OS recovery, it just dumped me at a command prompt and
+> didn't even manage to start the graphical recovery tool.
+> 
+No, I received the ideapads without any OS preinstalled, and get the design
+spec with NDA. I asked and got the approve to send the driver to mainline
+kernel according to the spec.
 
-When CONFIG_NET is not enabled:
+Since your driver is pulled. I am happy to have another patch made against
+your driver and post again.
 
-ERROR: "kernel_sendmsg" [net/ceph/libceph.ko] undefined!
-ERROR: "sock_release" [net/ceph/libceph.ko] undefined!
-ERROR: "sock_create_kern" [net/ceph/libceph.ko] undefined!
-ERROR: "kernel_sendpage" [net/ceph/libceph.ko] undefined!
-ERROR: "in4_pton" [net/ceph/libceph.ko] undefined!
-ERROR: "kernel_recvmsg" [net/ceph/libceph.ko] undefined!
-ERROR: "in6_pton" [net/ceph/libceph.ko] undefined!
-
-so my earlier comment about CEPH_LIB depending on INET should take
-care of this one also.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
