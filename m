@@ -1,51 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab0HNHIR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 03:08:17 -0400
-Received: from web37602.mail.mud.yahoo.com ([209.191.87.85]:20557 "HELO
-	web37602.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751946Ab0HNHIQ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 03:08:16 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Ea4xcseqSMt/YtxARp6lue/zkLvYl50v/GGNsWCWHQsBFAM5Ck04sfpQYMZzlhTUj/F/NECBhzpPaSR2SMTpvGbioALiS1Re8GNngu87HJjeEWAtfuwd8LNQF5mMUTYNMxNNKktG3/2yqfKfyJOk/rCKA9/JUrnke8wS3rw7QiM=;
-Message-ID: <728075.56624.qm@web37602.mail.mud.yahoo.com>
-X-YMail-OSG: Lgkh.FcVM1n91V2iIp6GD_oeRCucltLYScVCAvecYWX.Txa
- 3ZoUGDyj4Cl2nqSv.WSK2f.3j9vFneHiQf4jquwxLdhvcViyhyuldquHLoNm
- .eDMjmbAt843atp4jtuf2oLby4SXGxjI3c..cTuSeuBWQz59mZ9tsRKPb8Us
- UIIetIlpiYVgGpnUwr2k5z4t5Gk0Ec_gKwJY5k6SoMTtmHend5nvQEoM3HYL
- jOlRZwvhmD0si_1eYS1_Hu8DL3rLxxIPTEXaRUahRcb1RMksc2cjEAWfYR.h
- QBdgneNiRu.iaxGTlRg--
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Sat, 14 Aug 2010 00:08:14 -0700 (PDT)
-From: Alex Dubov <oakad@yahoo.com>
-Subject: Re: [QUESTION] Need some explanations in regard to memory alignment of requests that a block device receives
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1281706071.4160.18.camel@maxim-laptop>
+	id S1752343Ab0HNHLO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 03:11:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:43630 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab0HNHLN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 03:11:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <AANLkTimMR6_zuA8BRy+ZcDQS0o7N5h4u9PikoqAhxisO@mail.gmail.com>
+References: <AANLkTimMR6_zuA8BRy+ZcDQS0o7N5h4u9PikoqAhxisO@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 14 Aug 2010 01:04:04 -0600
+X-Google-Sender-Auth: AFYZNEEGwctIeGDGAn4jmliObWY
+Message-ID: <AANLkTikg_wcz4OKZn14TwJh5qZiGZ_4sN-955fLgrRuz@mail.gmail.com>
+Subject: [git pull] spi tree
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        spi-devel-general@lists.sourceforge.net
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kevin Wells <kevin.wells@nxp.com>, Ernst Schwab <eschwab@online.de>,
+        Cory Maccarrone <darkstar6262@gmail.com>,
+        Brian Niebuhr <bniebuhr3@gmail.com>,
+        Anatolij Gustschin <agust@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> However I am opting in to allow to receive requests that
-> have many
-> sectors span several memory regions, and be in highmem).
-> The request is converted to scatterlist upon which I
-> operate.
-> (Untill this point I did the same think Alex does in
-> mspro_blk.c)
-> 
+Hi Linus,
 
-If you'll look at what is actually there you'll see that neither of your
-questions poses a real problem. But, of course, block layer is more
-conservative, for what I can tell.
+I haven't heard anything either way on my spi branch, so I'm assuming
+it just got lost in the shuffle.  Here is a resend of the spi tree
+pull request.
+
+Thanks,
+g.
 
 
+---------- Forwarded message ----------
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, Aug 3, 2010 at 1:01 AM
 
-      
+Hi Linus,
+
+Here are the spi driver changes queued up for 2.6.36.
+
+Cheers,
+g.
+
+The following changes since commit 9fe6206f400646a2322096b56c59891d530e8d51:
+ Linus Torvalds (1):
+       Linux 2.6.35
+
+are available in the git repository at:
+
+ git://git.secretlab.ca/git/linux-2.6 next-spi
+
+Anatolij Gustschin (1):
+     spi/mpc5121: change annotations for probe and remove functions
+
+Brian Niebuhr (1):
+     spi/bitbang: reinitialize transfer parameters for every message
+
+Cory Maccarrone (1):
+     SPI100k: Fix 8-bit and RX-only transfers
+
+Ernst Schwab (2):
+     spi/mmc_spi: SPI bus locking API, using mutex
+     spi/mmc_spi: mmc_spi adaptations for SPI bus locking API
+
+Grant Likely (1):
+     Merge commit 'v2.6.35-rc6' into spi/test
+
+Kevin Wells (1):
+     spi/amba_pl022: Fix probe and remove hook section annotations.
+
+Marek Szyprowski (2):
+     spi/bitbang: add support for SPI_MASTER_NO_{TX, RX} modes
+     spi/spi-gpio: add support for controllers without MISO or MOSI pin
+
+ drivers/mmc/host/mmc_spi.c     |   59 ++---------
+ drivers/spi/amba-pl022.c       |    6 +-
+ drivers/spi/mpc512x_psc_spi.c  |   16 ++--
+ drivers/spi/omap_spi_100k.c    |   23 ++--
+ drivers/spi/spi.c              |  225 ++++++++++++++++++++++++++++++++++------
+ drivers/spi/spi_bitbang.c      |    9 +-
+ drivers/spi/spi_bitbang_txrx.h |   16 ++-
+ drivers/spi/spi_butterfly.c    |    2 +-
+ drivers/spi/spi_gpio.c         |  109 +++++++++++++++----
+ drivers/spi/spi_lm70llp.c      |    2 +-
+ drivers/spi/spi_s3c24xx_gpio.c |    8 +-
+ drivers/spi/spi_sh_sci.c       |    8 +-
+ include/linux/spi/spi.h        |   12 ++
+ include/linux/spi/spi_gpio.h   |    5 +
+ 14 files changed, 353 insertions(+), 147 deletions(-)
+
+
+--
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
+
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
