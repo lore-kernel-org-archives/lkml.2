@@ -1,97 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756507Ab0HNAnc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 20:43:32 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52676 "EHLO mx1.suse.de"
+	id S1756539Ab0HNAoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 20:44:17 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52711 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752406Ab0HNAnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 20:43:31 -0400
-Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
- take three
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: david@lang.hm, arjan@infradead.org, peterz@infradead.org,
-        Brian Swetland <swetland@google.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-kernel@vger.kernel.org, galibert@pobox.com, florian@mickler.org,
-        tglx@linutronix.de, menage@google.com, paulmck@linux.vnet.ibm.com,
-        linux-pm@lists.linux-foundation.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, swmike@swm.pp.se
-In-Reply-To: <20100813190801.GB26950@thunk.org>
-References: <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
-	 <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
-	 <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	 <20100812174303.GD2524@linux.vnet.ibm.com>
-	 <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
-	 <20100813152254.GD2511@linux.vnet.ibm.com>
-	 <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
-	 <20100813155738.GA11507@isilmar-3.linta.de>
-	 <AANLkTikN2zKcLtFJ6EdBU=iqT78bZKt_rKQoPNBRXJHj@mail.gmail.com>
-	 <1281719489.8407.17.camel@mulgrave.site> <20100813190801.GB26950@thunk.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 13 Aug 2010 20:43:19 -0400
-Message-ID: <1281746599.16747.11.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1752406Ab0HNAoQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 20:44:16 -0400
+Date: Fri, 13 Aug 2010 17:11:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: Grant Coady <gcoady.lk@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [0/3] 2.6.27.52 stable review
+Message-ID: <20100814001158.GA2849@suse.de>
+References: <20100813214704.GA18960@kroah.com>
+ <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com>
+ <20100813230712.GA1703@suse.de>
+ <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 15:08 -0400, Ted Ts'o wrote: 
-> On Fri, Aug 13, 2010 at 01:11:29PM -0400, James Bottomley wrote:
-> > 
-> > The facts are that suspend blockers identifies a race within our suspend
-> > to ram system that permeates from top to bottom (that's from server to
-> > mobile).  The problem is that resume events are racy with respect to
-> > suspend and vice versa.  This manifests itself most annoyingly on my
-> > laptop in the "double suspend" case: where I suspend with a pending
-> > suspend event, my laptop will resume and then immediately re-suspend
-> > (leading me to kick myself and remind myself to check it stayed up
-> > before pushing unsuspend and walking away).  The other annoying case is
-> > that if I accidentally close the lid before presenting, I have to wait
-> > until the system is fully down before pressing resume.
+On Sat, Aug 14, 2010 at 09:47:08AM +1000, Grant Coady wrote:
+> Hi Greg,
 > 
-> This is all true, but it's also only one aspect of the problem.  I
-> agree with you that this is the part of the problem which affects
-> Linux at all scales, from Cloud servers in a data center that want to
-> suspend themselves when there's no work to do (and then fail to
-> respond to the WOL packet) to mobile platforms that are suspending
-> much more frequently.
+> I scraped the patches out of the messages and edited Makefile :)
 > 
-> However, it doesn't follow that this is the _only_ problem that the
-> Android folks might be interested in solving.  Opportunistic suspend
-> is a different part of the problem space, which is generally believed
-> by the Android developers as being far more efficient than a
-> user-space suspend manager.  Rafael has stated his complete
-> unwillingness to deal with this part of the problem.  OK, so that
-> probably means that for Android, it will have to be an out-of-tree
-> kernel patch.
-
-OK, so I tried desperately to avoid the question of whether
-opportunistic suspend is a good way of managing power.  However, it
-seems to me that it is in use by several systems (android, olpc, etc).
-I'll defer the question of whether it's better in user space or kernel
-space to Rafael's investigations  ...  but I will point out that the
-kernel space patch, once the suspend blockers issue is taken care of
-looks like a single patch to one file, so should be locally containable
-and should allow upstream to be useful as the driver base again.
-
-> The question, then, is whether a solution which addresses the only
-> part of the problem which Rafael is interested in dealing with at this
-> point, is sufficient such that (a) the kernel-level opportunistic
-> suspend can be done as an out-of-tree patch, while simultaneously (b)
-> allowing device drivers for Android devices can utilize Rafael's
-> interfaces to solve the race design bug currently found in our suspend
-> subsystem, while (c) requiring minimal changes to the Android
-> userspace, and (d) providing all of the statistics and debugging
-> functionality required by the Android userspace.
+> On Fri, 13 Aug 2010 16:07:12 -0700, you wrote:
 > 
-> If we can engineer a solution which meets (a), (b), (c), and (d)
-> above, then everyone will be happy.
+> >On Sat, Aug 14, 2010 at 08:36:34AM +1000, Grant Coady wrote:
+> >> On Fri, 13 Aug 2010 14:47:04 -0700, you wrote:
+> >> 
+> >> >NOTE!
+> >> >
+> >> >If I could get some people to please test this -rc release?  It contains
+> >> >a few core changes that I couldn't validate myself as I don't seem to
+> >> >have a machine that will even boot the .27 kernel anymore after my move.
+> 
+> Machine is running, but there's a lot of these in the dmesg:
+> 
+> WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
+> Modules linked in:
+> Pid: 320, comm: khelper Not tainted 2.6.27.52-rc1a #57
+>  [<c011b54f>] warn_on_slowpath+0x5f/0x90
+>  [<c0145a53>] __alloc_pages_internal+0x93/0x420
+>  [<c01456bd>] buffered_rmqueue+0x11d/0x210
+>  [<c015e09a>] allocate_slab+0x4a/0xd0
+>  [<c015e149>] setup_object+0x29/0x30
+>  [<c015e204>] new_slab+0xb4/0x130
+>  [<c015e6ec>] __slab_alloc+0xac/0x120
+>  [<c01529e7>] acct_stack_growth+0xe7/0xf0
+>  [<c0152afa>] expand_stack+0x7a/0x90
+>  [<c014fc61>] do_anonymous_page+0x121/0x130
+>  [<c0150268>] handle_mm_fault+0x1b8/0x1e0
+>  [<c014e724>] get_user_pages+0xe4/0x270
+>  [<c0166ac9>] get_arg_page+0x49/0xc0
+>  [<c0166e5b>] copy_strings+0xdb/0x180
+>  [<c0166f29>] copy_strings_kernel+0x29/0x40
+>  [<c0167dae>] do_execve+0xde/0x1d0
+>  [<c0101f1f>] sys_execve+0x2f/0x60
+>  [<c0103036>] syscall_call+0x7/0xb
+>  [<c011007b>] ioapic_register_intr+0x10b/0x110
+>  [<c0106bfc>] kernel_execve+0x1c/0x30
+>  [<c0128efc>] ____call_usermodehelper+0x5c/0xc0
+>  [<c0128ea0>] ____call_usermodehelper+0x0/0xc0
+>  [<c0103b1b>] kernel_thread_helper+0x7/0x1c
+>  =======================
+> ---[ end trace 62e879f3daf4be6a ]---
 
-That's my goal.
+I'm guessing that 2.6.27.51 didn't cause those warnings as well?
 
-James
+That's a warning that current->mm is null.  I don't know enough about
+the mm subsystem to say if this is normal or not, and I don't at first
+glance, see how this patch could have caused this to happen.
 
+Anyone else have an idea?
 
+thanks,
+
+greg k-h
