@@ -1,102 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932807Ab0HNHYz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 03:24:55 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:57434 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364Ab0HNHYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 03:24:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:organization:message-id:references
-         :in-reply-to:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=gpj3qIuu4tfH1GN9A8wYRSJqa1AQxln7E2T+H4zRbvpt3xOcdPPi8/dRZk/hQlGI8h
-         rLbQ4XTrNxsw2oSQdAtQzXiyJdKQy47ThNg1oya9bwRQAzqRpAMtZDAEg6ugU9c5UNBY
-         q5tytgGaFuPrcU9Mm8VapEoFFRnuk7MTqTlD0=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [0/3] 2.6.27.52 stable review
-Date: Sat, 14 Aug 2010 17:24:36 +1000
-Organization: scattered
-Message-ID: <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com>
-References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <20100814001158.GA2849@suse.de>
-In-Reply-To: <20100814001158.GA2849@suse.de>
-X-Mailer: Forte Agent 6.00/32.1186
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932885Ab0HNHg5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 03:36:57 -0400
+Received: from sh.osrg.net ([192.16.179.4]:33568 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab0HNHg5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 03:36:57 -0400
+Date: Sat, 14 Aug 2010 16:36:17 +0900
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Documentation: DMA-API-HOWTO.txt: rename
+ ARCH_KMALLOC_MINALIGN to ARCH_DMA_MINALIGN
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100814163504B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 14 Aug 2010 16:36:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010 17:11:58 -0700, you wrote:
+ARCH_KMALLOC_MINALIGN was renamed to ARCH_DMA_MINALIGN (the commit
+a6eb9fe105d5de0053b261148cee56c94b4720ca).
 
->On Sat, Aug 14, 2010 at 09:47:08AM +1000, Grant Coady wrote:
->> Hi Greg,
->> 
->> I scraped the patches out of the messages and edited Makefile :)
->> 
->> On Fri, 13 Aug 2010 16:07:12 -0700, you wrote:
->> 
->> >On Sat, Aug 14, 2010 at 08:36:34AM +1000, Grant Coady wrote:
->> >> On Fri, 13 Aug 2010 14:47:04 -0700, you wrote:
->> >> 
->> >> >NOTE!
->> >> >
->> >> >If I could get some people to please test this -rc release?  It contains
->> >> >a few core changes that I couldn't validate myself as I don't seem to
->> >> >have a machine that will even boot the .27 kernel anymore after my move.
->> 
->> Machine is running, but there's a lot of these in the dmesg:
->> 
->> WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
->> Modules linked in:
->> Pid: 320, comm: khelper Not tainted 2.6.27.52-rc1a #57
->>  [<c011b54f>] warn_on_slowpath+0x5f/0x90
->>  [<c0145a53>] __alloc_pages_internal+0x93/0x420
->>  [<c01456bd>] buffered_rmqueue+0x11d/0x210
->>  [<c015e09a>] allocate_slab+0x4a/0xd0
->>  [<c015e149>] setup_object+0x29/0x30
->>  [<c015e204>] new_slab+0xb4/0x130
->>  [<c015e6ec>] __slab_alloc+0xac/0x120
->>  [<c01529e7>] acct_stack_growth+0xe7/0xf0
->>  [<c0152afa>] expand_stack+0x7a/0x90
->>  [<c014fc61>] do_anonymous_page+0x121/0x130
->>  [<c0150268>] handle_mm_fault+0x1b8/0x1e0
->>  [<c014e724>] get_user_pages+0xe4/0x270
->>  [<c0166ac9>] get_arg_page+0x49/0xc0
->>  [<c0166e5b>] copy_strings+0xdb/0x180
->>  [<c0166f29>] copy_strings_kernel+0x29/0x40
->>  [<c0167dae>] do_execve+0xde/0x1d0
->>  [<c0101f1f>] sys_execve+0x2f/0x60
->>  [<c0103036>] syscall_call+0x7/0xb
->>  [<c011007b>] ioapic_register_intr+0x10b/0x110
->>  [<c0106bfc>] kernel_execve+0x1c/0x30
->>  [<c0128efc>] ____call_usermodehelper+0x5c/0xc0
->>  [<c0128ea0>] ____call_usermodehelper+0x0/0xc0
->>  [<c0103b1b>] kernel_thread_helper+0x7/0x1c
->>  =======================
->> ---[ end trace 62e879f3daf4be6a ]---
->
->I'm guessing that 2.6.27.51 didn't cause those warnings as well?
+ARCH_DMA_MINALIGN must be defined instead of ARCH_KMALLOC_MINALIGN to
+ensure that kmalloc'ed buffer is DMA-safe.
 
-Not in .51, the .51 dmesg is up now too:
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ Documentation/DMA-API-HOWTO.txt |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
- http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.51a.gz
+diff --git a/Documentation/DMA-API-HOWTO.txt b/Documentation/DMA-API-HOWTO.txt
+index 3c4e071..d568bc2 100644
+--- a/Documentation/DMA-API-HOWTO.txt
++++ b/Documentation/DMA-API-HOWTO.txt
+@@ -738,17 +738,17 @@ to "Closing".
+    CONFIG_NEED_SG_DMA_LENGTH if the architecture supports IOMMUs
+    (including software IOMMU).
+ 
+-2) ARCH_KMALLOC_MINALIGN
++2) ARCH_DMA_MINALIGN
+ 
+    Architectures must ensure that kmalloc'ed buffer is
+    DMA-safe. Drivers and subsystems depend on it. If an architecture
+    isn't fully DMA-coherent (i.e. hardware doesn't ensure that data in
+    the CPU cache is identical to data in main memory),
+-   ARCH_KMALLOC_MINALIGN must be set so that the memory allocator
++   ARCH_DMA_MINALIGN must be set so that the memory allocator
+    makes sure that kmalloc'ed buffer doesn't share a cache line with
+    the others. See arch/arm/include/asm/cache.h as an example.
+ 
+-   Note that ARCH_KMALLOC_MINALIGN is about DMA memory alignment
++   Note that ARCH_DMA_MINALIGN is about DMA memory alignment
+    constraints. You don't need to worry about the architecture data
+    alignment constraints (e.g. the alignment constraints about 64-bit
+    objects).
+-- 
+1.6.5
 
-
->
->That's a warning that current->mm is null.  I don't know enough about
->the mm subsystem to say if this is normal or not, and I don't at first
->glance, see how this patch could have caused this to happen.
->
->Anyone else have an idea?
->
->thanks,
->
->greg k-h
