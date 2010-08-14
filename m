@@ -1,58 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab0HNDEV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 23:04:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48827 "EHLO mx2.suse.de"
+	id S932583Ab0HNDEi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 23:04:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55118 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932475Ab0HNDEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 23:04:20 -0400
-Date: Fri, 13 Aug 2010 19:53:23 -0700
+	id S932475Ab0HNDEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 23:04:24 -0400
+Date: Fri, 13 Aug 2010 20:04:08 -0700
 From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Grant Coady <gcoady.lk@gmail.com>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [0/3] 2.6.27.52 stable review
-Message-ID: <20100814025323.GA4779@suse.de>
-References: <20100813214704.GA18960@kroah.com>
- <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com>
- <20100813230712.GA1703@suse.de>
- <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com>
- <20100814001158.GA2849@suse.de>
- <AANLkTin0Gb0q_jgJDROqBGsM4fa=LiAax-J0Q4FRyRGG@mail.gmail.com>
+To: David Cross <david.cross@cypress.com>
+Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org, nxz@cypress.com
+Subject: Re: EXPORT_SYMBOL(fat_get_block)
+Message-ID: <20100814030408.GB4779@suse.de>
+References: <20100813175402.GA15024@suse.de>
+ <1281724992.12189.16.camel@odc-laptop>
+ <20100813190128.GA1372@suse.de>
+ <1281727059.16672.20.camel@odc-laptop>
+ <20100813192826.GA5078@suse.de>
+ <1281731535.29175.17.camel@odc-laptop>
+ <20100813221749.GA19569@suse.de>
+ <1281741733.22119.20.camel@odc-laptop>
+ <20100814002514.GA3182@suse.de>
+ <1281748363.7882.15.camel@odc-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin0Gb0q_jgJDROqBGsM4fa=LiAax-J0Q4FRyRGG@mail.gmail.com>
+In-Reply-To: <1281748363.7882.15.camel@odc-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 05:51:56PM -0700, Linus Torvalds wrote:
-> On Fri, Aug 13, 2010 at 5:11 PM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > That's a warning that current->mm is null.  I don't know enough about
-> > the mm subsystem to say if this is normal or not, and I don't at first
-> > glance, see how this patch could have caused this to happen.
-> 
-> We call that whole "expand_stack()" through handle_mm_fault(), and
-> that's _not_ called just for the process itself. So "current->mm" is
-> sometimes simply the wrong thing to use - like when you access the VM
-> of another process (during fork for the argument setup of the new VM,
-> or during ptrace etc).
-> 
-> Which is why I think commit 05fa199d45c should fix it. It makes the
-> stack expansion thing use the right mm. Which it just _happened_ to do
-> before, because it was always called just from the faulting code where
-> current->mm happened to be the right mm.
-> 
-> But I really don't know if there might be other issues lurking too.
+On Fri, Aug 13, 2010 at 06:12:43PM -0700, David Cross wrote:
+> On Fri, 2010-08-13 at 17:25 -0700, Greg KH wrote:
+> > On Fri, Aug 13, 2010 at 04:22:13PM -0700, David Cross wrote:
+> > > On Fri, 2010-08-13 at 15:17 -0700, Greg KH wrote:
+> > > > On Fri, Aug 13, 2010 at 01:32:15PM -0700, David Cross wrote:
+> > > > > > 
+> > > > > > What exactly are the performance issues with doing this from userspace,
+> > > > > > vs. the FAT hack?
+> > > > > Usually it takes a lot longer. West Bridge can do MTP transfers at the
+> > > > > performance of the storage device.  Sending the file data through the
+> > > > > processor is typically much slower.
+> > > > 
+> > > > What is "slower" here?  Please, real numbers.
+> > > Sure, here are some of the numbers I have:
+> > > Cypress West Bridge   15
+> > > Blackberry Storm 2    4.6
+> > > Microsoft Zune        3.8
+> > > Nokia N97             2.1
+> > > SEMC W950	      1.1
+> > > SEMC W995             0.85	
+> > > Blackberry Storm      0.7
+> > 
+> > No, I mean numbers before and after with and without this "hack".
+> I can provide these, but it will take me some time to implement. I
+> will have to use the Zoom II platform to benchmark. Any issues with
+> this approach before I get started?
 
-Ok, I'll go add that commit, and I unpacked my older machine that runs
-the .27 kernel and will beat on it with that box tomorrow to see if
-anything else pops up.
+It's ok, you don't have to do it right now, I'm just curious as to how
+much speed difference you are seeing here.
+
+As it will be a few weeks before I can even get this into the -next
+tree, it's not of upmost importance at the moment.
+
+> > > > > This is similar to the applications I have worked
+> > > > > with. The driver is not attempting to replace either the protocol stack
+> > > > > or the use of gadgetfs. All that it is providing is a gadget peripheral
+> > > > > controller driver (that can be used with gadgetfs) along with the
+> > > > > ability to perform pre-allocation and allow for direct transfer.
+> > > > 
+> > > > It's that "pre-allocation" that is the issue.
+> > > Ack.
+> > > 
+> > > > > I re-checked this stack once again to make sure that it had not
+> > > > > fundamentally changed and it seems not to have. What it uses is a
+> > > > > storageserver abstraction to the file system. At the low level this is
+> > > > > still operating on files at the level of open(), read(), write(),
+> > > > > close(). There is no alloc() in the list that I can see. So, I agree
+> > > > > that there is a working stack. As you can tell, the driver is not
+> > > > > attempting to re-create or replace this working stack.  
+> > > > 
+> > > > To "preallocate" a file, just open it and then mmap it and write away,
+> > > > right?  Why can't userspace do that?
+> > > To do this from userspace in entirety, the CPU needs access to the data
+> > > in memory so that it can pass a pointer to the fwrite call. 
+> > 
+> > That's a stream, not mmap.  What's wrong with mmap?  That should provide
+> > what you are looking for here, right?
+> Maybe, if this works we can close the discussion, so far it has not.
+> We do use bmap once the file has been allocated, but does mmap really
+> create an empty file on disk with the correct state saved and without
+> content? 
+
+Well, if you zero out everything on a mmapped file and then close it, it
+should.  But you might just be creating a "sparse" file, so you need to
+be careful about that as well.
+
+What I mean to do about mmap is just that is the way your userspace
+program can write to the file, not as a stream.  That is much faster and
+causes less I/O to the device (well, it should.)  Does that make more
+sense?
+
+> Your question was: "What problem are you trying to solve?" My answer was
+> "performance". I am not sure how to respond to "why can't you slow down
+> the transfer?" or "who cares about performance?" without contrived user
+> scenarios. Syncing your phone takes longer than it needs to. One of the
+> purposes of this chip is that it provides one solution to the problem.
+> The software submitted to the community is our attempt to solve this in
+> a way that works nicely with Linux. I remain open to constructive
+> suggestions, but this argument is sounding increasingly circular in
+> nature.
+
+Sorry, I don't mean this to come off that way at all, my appologies.
+
+I'm just very curious as this is the first time something like this has
+been proposed that I know of, so generally either the design is wrong,
+or it is such a unique situation that no one has ever hit this before.
+
+So far, I'm leaning toward the "design is a bit incorrect" :)
+
+But again, let's take this one thing at a time.  Let's get the driver
+into the tree, with that one ioctl commented out.  We can then work on
+cleaning it all up and figuring out the logic of where it all goes in
+the tree, and what it looks like in the end after the refactoring.
+During that time, we will have plenty of time to discuss why the
+previous attempts ended up with zeros in the file.
+
+Sound good?
+
+> > > > > If so, do you agree with Christoph's feedback concerning the
+> > > > > implementation? Could I add hooks to other file systems and leave them
+> > > > > unpopulated?
+> > > > 
+> > > > ntfs is done by using a FUSE filesystem in userspace on a "raw" block
+> > > > device.  You can't put that type of support in the kernel here :)
+> > > Fair, but to support the removable media model, I don't really need to.
+> > > What if I put a check in the code to verify that the media is removable
+> > > and vfat compatible before executing the fat_get_block call?
+> > 
+> > You can't rely on that flag, sorry, it doesn't work with real-world
+> > devices.
+> > 
+> > And I have removable media right here, that shipped to me formatted as
+> > NTFS, so that is a valid model today.
+> Is it an SD Card? I have little interest in hooking my cell up to a USB
+> powered hard drive at the moment. 
+
+My cell phone hooks up to a USB powered hard drive at the moment :)
+It can also drive a monitor through the usb connection, you would be
+amazed what you can do with these things these days.
+
+> > > > Look at how filesystems work from userspace, they achieve _very_ fast
+> > > > speeds due to mmap and friends.  Heck, some people try to get the OS out
+> > > > of the way entirely by just using direct I/O, or taking to the raw block
+> > > > device.  Not by trying to allocate raw filesystem blocks from userspace,
+> > > > that way lies madness.
+> > > Well, it is not really the filesystem that necessarily bottlenecks the
+> > > performance. It is usually that in combination with the hardware data
+> > > path that this usage implies. If you want to sync a phone without a
+> > > sideloading accelerator, the data path taken is usually as follows:
+> > > 
+> > > 1) data received by USB peripheral, typically into fifos
+> > > 2) cpu gets interrupted, sees that data is there
+> > > 3) cpu sets up DMA transfer to SDRAM to cache data
+> > > 4) At some point CPU initiates DMA transfer from SDRAM to removable
+> > > media.
+> > 
+> > Wait, step 4 is a big jump.  Userspace should be reading that data, and
+> > then writing it back out to a file it opened, not this "dma directly to
+> > media" stuff.
+> My statement was that the hardware and software is convoluted and the
+> data path hits different memories multiple times. Your response seems to
+> be that I left out one of the memory copies to userspace. I think that
+> adds to my point, doesn't it?
+
+Possibly, if those memory copies take a lot of time.
+
+How are all of the other platforms that use Linux as this type of
+device, or even a usb-storage device (of which there are lots) able to
+hit the very fast transfer rates that I have seen so far without needing
+to do this type of preallocation?
+
+> > And yes, you can stream it if you want from userspace to the file if
+> > that's faster, but odds are mmap() will work best here.
+> Ok, but I don't want the data to hit userspace unless the file is read
+> back. Does using mmap support this scenario?
+
+Yes.
+
+> > > 5) depending on the peripheral implementation, data may be buffered
+> > > either in the peripheral (SD/MMC controller) or in the DMA engine
+> > > itself.
+> > 
+> > Yes, you don't know what is backing that filesystem, that's the big
+> > issue, just as you don't know what type of filesystem it is, from within
+> > the kernel.
+> Can't I pass this information into the driver using the ioctl call? If
+> the filesystem is not fat and not removable, this driver should likely
+> not be used, at least not for this purpose.
+
+No, the driver never knows this type of information.  And for good
+reason, you could have 4 different partitions on this block device, all
+different filesystems.  The block driver should never care about the
+filesystem underneath it.
 
 thanks,
 
