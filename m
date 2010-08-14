@@ -1,48 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934714Ab0HNKmN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 06:42:13 -0400
-Received: from psw.ro ([94.62.132.84]:39347 "EHLO psw.ro"
+	id S934710Ab0HNKnK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 06:43:10 -0400
+Received: from ns.penguin.cz ([84.21.108.25]:60982 "EHLO ns.penguin.cz"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753454Ab0HNKmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 06:42:08 -0400
-X-Greylist: delayed 404 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Aug 2010 06:42:08 EDT
-DomainKey-Signature: a=rsa-sha1; h=Received:DKIM-Signature:X-Virus-Scanned:Received:Received:Received:MIME-Version:Content-Type:Content-Transfer-Encoding:Date:From:To:Cc:Subject:Organization:In-Reply-To:References:Message-ID:X-Sender:User-Agent; b=YNW8zsf0DWYFGkqyzaKgUYd+PaCayTUZNS1aBuvXFIwO9RUhAlDvP2G+ChwWYeg/Ix2A3Z4JjziFUHTbdUensH+FesxhV3XWSvdO0nUthT8LSP6V54m0KlL5BQILbe69OiapiKjqGla3F6SaYj1W5M3cWqQu+WpInFkrvCoTfS8=; c=nofws; d=psw.ro; q=dns; s=mail
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+	id S934688Ab0HNKnI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 06:43:08 -0400
+Subject: Re: zaurus pata_pcmcia corrupted filesystem
+From: Stanislav Brabec <utx@penguin.cz>
+To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
+Cc: Cyril Hrubis <metan@ucw.cz>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>,
+        Tejun Heo <tj@kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
+        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>
+In-Reply-To: <20100814094353.GB926@boggieman.bredbandsbolaget.se>
+References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
+	 <20100814094353.GB926@boggieman.bredbandsbolaget.se>
+Content-Type: text/plain; charset="ISO-8859-2"
+Date: Sat, 14 Aug 2010 12:43:00 +0200
+Message-ID: <1281782580.6707.1.camel@utx.lan>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Date: Sat, 14 Aug 2010 13:35:16 +0300
-From: Arthur Titeica <arthur@psw.ro>
-To: Greg KH <gregkh@suse.de>
-Cc: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        <torvalds@linux-foundation.org>, <stable@kernel.org>, <lwn@lwn.net>
-Subject: Re: Linux 2.6.35.2
-Organization: PharmEc Software
-In-Reply-To: <20100813212313.GA22102@kroah.com>
-References: <20100813212313.GA22102@kroah.com>
-Message-ID: <a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
-User-Agent: Webmail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010 14:23:13 -0700, Greg KH <gregkh@suse.de> wrote:
-> I'm announcing the release of the 2.6.35.2 kernel.
+Kristoffer Ericson wrote: 
+> On Wed, Aug 11, 2010 at 04:44:11PM +0200, Cyril Hrubis wrote:
+> > Hi!
+> > Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
+> > interface, sources are here:
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlog;h=refs/heads/zaurus-haxing
+> > 
+> > Everythig seems to be fine at the first look but sometimes the filesystem gets
+> > unconsistent. Typical example is extracting tar archive with big number of
+> > files and directories (I used ltp-full archive from
+> > http://www.sf.net/projects/ltp/). After doing that, some files or directories
+> > are present in the filesystem, eg. you can see them in directory listing but
+> > open or fstat returns ENOENT.
+> > 
+> > Extracting to SD card seems to work without any problems.
+> > 
+> > Anybody has idea what went wrong?
 > 
-> All users of the 2.6.35 kernel series must upgrade.
-> 
+> What kind of number of files (in tar archive) are we talking about in round
+> figures? Does the files it affect differ in size (large fail, small doesnt)..?
+> Its hard to say without having more data (as always).
 
-I'm not sure this is the right mailing list but this is the first
-kernel that fails to boot for me (since 2.6.33.x).
+These mysterious failures were discussed several times before in
+zaurus-devel[1][2][3][4][5][6]. We suspected PCMCIA code, RAM errors or
+bad voltage.
 
-The laptop just restarts right after "Freeing unused kernel memory:
-628k freed"
+Typical reproducers:
 
-2.6.35.1 is fine with the same .config.
+git status on kernel tree (false result)
+copy files from CF to SD or USB (errors in files)
+gcc while using CF WLAN or CF Bluetooth (segfault)
 
-Anyone willing to help me to debug?
+It happened in all kernels at least since 2.6.26, but probably in all
+2.6 kernels.
+
+[1] http://lists.linuxtogo.org/pipermail/zaurus-devel/2010-June/000306.html
+[2] http://lists.linuxtogo.org/pipermail/zaurus-devel/2010-June/000305.html
+[3] http://lists.linuxtogo.org/pipermail/zaurus-devel/2010-April/000242.html
+[4] http://lists.linuxtogo.org/pipermail/zaurus-devel/2010-March/000217.html
+[5] http://lists.linuxtogo.org/pipermail/zaurus-devel/2010-March/000227.html
 
 -- 
-Arthur Titeica
+________________________________________________________________________
+Stanislav Brabec
+http://www.penguin.cz/~utx/zaurus
+
 
