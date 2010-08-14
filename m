@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab0HNICS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 04:02:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63216 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932895Ab0HNICO (ORCPT
+	id S932946Ab0HNIUx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 04:20:53 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:58350 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932664Ab0HNIUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 04:02:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:organization:message-id:references
-         :in-reply-to:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=FtLnus+XQLZESg8r9+r8BNBmtopx3ShlbLw5zw+BxM5N4ye0i0VnNI2F7to3I4RoHA
-         2vkNMlxpQyid3YF8PKe4noUFR3FH26KjYQ5AmzE0OQcsPFstLpId7ECKJIbznHxc9v//
-         YG8HTrgIDQUjXfX5ejHbd1FPbYJyX8HbnEyHI=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [0/3] 2.6.27.52 stable review
-Date: Sat, 14 Aug 2010 17:34:55 +1000
-Organization: scattered
-Message-ID: <h6hc66dkok3im9jpph1oj2m40ijju6c9la@4ax.com>
-References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <AANLkTimruyaAB-raY2ywqPQSR-h+yp7tME=eTKngcMQm@mail.gmail.com> <20100814004729.GA3695@suse.de>
-In-Reply-To: <20100814004729.GA3695@suse.de>
-X-Mailer: Forte Agent 6.00/32.1186
+	Sat, 14 Aug 2010 04:20:51 -0400
+Date: Sat, 14 Aug 2010 09:59:24 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Brian Swetland <swetland@google.com>, "Ted Ts'o" <tytso@mit.edu>,
+        Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, peterz@infradead.org, tglx@linutronix.de,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100814075923.GC27430@elf.ucw.cz>
+References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
+ <AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
+ <20100812125248.GA2763@thunk.org>
+ <AANLkTin4=qpDWEKLwes_af6mSCW+ED7v-fWzD34JywU1@mail.gmail.com>
+ <20100812182128.GC2763@thunk.org>
+ <AANLkTinZ_gViUjVmEbkmour3BC=PcchJDARs4GaCuQwO@mail.gmail.com>
+ <AANLkTimjfU2zu4reEVdOwWwtFHPQ33_Gna6xS2XHRG-h@mail.gmail.com>
+ <20100812125712.48b7fc26@virtuousgeek.org>
+ <AANLkTinbsXEk7YL31Q2GHHjeVRHGgpm0mpLzDBY1Ob4z@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinbsXEk7YL31Q2GHHjeVRHGgpm0mpLzDBY1Ob4z@mail.gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010 17:47:29 -0700, you wrote:
+Hi!
 
->On Fri, Aug 13, 2010 at 05:12:57PM -0700, Linus Torvalds wrote:
->> On Fri, Aug 13, 2010 at 4:47 PM, Grant Coady <gcoady.lk@gmail.com> wrote:
->> >
->> > Machine is running, but there's a lot of these in the dmesg:
->> >
->> > WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
->> 
->> That would seem to be because of the lack of commit 05fa199d45c in
->> 2.6.27. It got marked for stable, but probably never went so far back
->> as 2.6.27.
->
->Yup, I didn't include it there.  Grant, if you add that, does the
->warning go away?
+> >> Question though -- has every feature ever added to the kernel been a
+> >> feature that there's pre-existing usage of?  Seems like a chicken and
+> >> egg problem.  Also, some people seem to think there's value in being
+> >> able to build kernels "out of the box" that work with the Android
+> >> userspace -- given that there are a few devices out there that have
+> >> that userspace on 'em.
+> >
+> > We generally try to merge new features like this along with code that
+> > uses said feature, but there are always exceptions.  We've merged code
+> > one release or more before the new code gets used for example, which is
+> > fine IMO.  What we don't want to see is some new drop of code added and
+> > abandoned, but you already knew that.
+> 
+> If Android guys provided a bare minimal Debian system with suspend
+> blockers that people can take a look at and try, I think that would be
+> a good proof of concept. And a bare minimum to get the patches merged.
 
-I'm sorry, no idea at all how to cherry pick that, I don't know git :( 
+Yes, that would certainly help.
 
-Google brings up this thread but not that commit, point me at it and 
-I'll try it.  
+I guess this is the major point -- as suspend blockers seem very
+suitable for android, they don't seem suitable for anyone else...
 
-Grant.
-
->
->> That said, I do wonder if it is worth it maintaining a 2.6.27 that the
->> maintainer can't even boot on his machines any more.
->
->Yeah, I'm beginning to wonder about it as well.  I think it's expected
->lifespan is very near to the end.
->
->thanks,
->
->greg k-h
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
