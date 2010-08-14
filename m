@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab0HNAXp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 20:23:45 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:57597 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756416Ab0HNAXn (ORCPT
+	id S1756519Ab0HNAcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 20:32:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59888 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756471Ab0HNAcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 20:23:43 -0400
-Date: Fri, 13 Aug 2010 20:23:42 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: David Brownell <david-b@pacbell.net>
-cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv8 04/13] USB: gadget: mass_storage: moved strings handling
- code to composite
-In-Reply-To: <920296.5376.qm@web180304.mail.gq1.yahoo.com>
-Message-ID: <Pine.LNX.4.44L0.1008132019440.23591-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 13 Aug 2010 20:32:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=RnGs4jIkGZR42Mk/g1emxDlo6TvgjujNMt3URti/M7/zyYukd35TD3sOyogVBJyVqX
+         Wagc3D0Dollwx9k1BmzgN9Cv+LI46yaRLTrLtdCBPgZa0qMhPDUJfG8f9+bTO9dLXIIx
+         55k2e8sRHS1EMQoXNo430RiU9T206vZpggA9g=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        John Kacur <jkacur@redhat.com>, Hans Verkuil <hverkuil@xs4all.nl>
+Subject: [PATCH 1/2] v4l: Remove reference to bkl ioctl in compat ioctl handling
+Date: Sat, 14 Aug 2010 02:32:16 +0200
+Message-Id: <1281745937-6467-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010, David Brownell wrote:
+There are no more users of struct file_operations:ioctl. These
+can be safely removed.
 
-> --- On Fri, 8/13/10, Alan Stern <stern@rowland.harvard.edu> wrote:
-> . 
-> > ... based on all
-> > the preceding discussion, I now think the best
-> > approach may be _never
-> > to make up a fake serial number.  Use the module
-> > parameter, if any, and
-> > otherwise issue a warning and don't have
-> > a serial number string
-> > descriptor (even though that violates the spec).
-> 
-> 
-> Agreed, and that's what I had asked for.  I didn't
-> see code faking up a serial ... did I miss such?
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>
+---
+ drivers/media/video/v4l2-compat-ioctl32.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-That code has been present in g_file_storage since the beginning.  
-There were some patches earlier which moved the code to a different
-location.  I guess you missed it.  The current round of patches doesn't
-touch that code.
-
-> If so, let's see a new patch with no faking.
-
-An extra patch or two would be needed to remove the fake-serial
-generation.
-
-Alan Stern
+diff --git a/drivers/media/video/v4l2-compat-ioctl32.c b/drivers/media/video/v4l2-compat-ioctl32.c
+index d2f20c2..073f013 100644
+--- a/drivers/media/video/v4l2-compat-ioctl32.c
++++ b/drivers/media/video/v4l2-compat-ioctl32.c
+@@ -228,11 +228,6 @@ static long native_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 
+ 	if (file->f_op->unlocked_ioctl)
+ 		ret = file->f_op->unlocked_ioctl(file, cmd, arg);
+-	else if (file->f_op->ioctl) {
+-		lock_kernel();
+-		ret = file->f_op->ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+-		unlock_kernel();
+-	}
+ 
+ 	return ret;
+ }
+@@ -973,7 +968,7 @@ long v4l2_compat_ioctl32(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	long ret = -ENOIOCTLCMD;
+ 
+-	if (!file->f_op->ioctl && !file->f_op->unlocked_ioctl)
++	if (!file->f_op->unlocked_ioctl)
+ 		return ret;
+ 
+ 	switch (cmd) {
+-- 
+1.6.2.3
 
