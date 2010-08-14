@@ -1,58 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757024Ab0HNDTJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 23:19:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49006 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756496Ab0HNDTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 23:19:08 -0400
-Date: Sat, 14 Aug 2010 13:18:45 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Brian Swetland <swetland@google.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        "Ted Ts'o" <tytso@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
-        paulmck@linux.vnet.ibm.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        david@lang.hm, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org, pavel@ucw.cz,
-        florian@mickler.org, peterz@infradead.org, tglx@linutronix.de,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100814131845.58544209@notabene>
-In-Reply-To: <201008131707.03484.rjw@sisk.pl>
-References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	<201008130528.21887.rjw@sisk.pl>
-	<AANLkTinMmVdAVaCFXyDZpVRmZ9FCWYhtdeM=o4hdoZnT@mail.gmail.com>
-	<201008131707.03484.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932553Ab0HND3i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 23:29:38 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:58651 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756933Ab0HND3g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 23:29:36 -0400
+Date: Fri, 13 Aug 2010 20:29:51 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org, hch@lst.de,
+        akpm@linux-foundation.org, yehuda@hq.newdream.net
+Subject: Re: [PATCH 8/8] rbd: introduce rados block device (rbd), based on
+ libceph
+In-Reply-To: <20100813194410.9c608b38.randy.dunlap@oracle.com>
+Message-ID: <Pine.LNX.4.64.1008132015480.2022@cobra.newdream.net>
+References: <1281721240-26130-1-git-send-email-sage@newdream.net>
+ <1281721240-26130-9-git-send-email-sage@newdream.net>
+ <20100813194410.9c608b38.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010 17:07:02 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-
+On Fri, 13 Aug 2010, Randy Dunlap wrote:
+> On Fri, 13 Aug 2010 10:40:40 -0700 Sage Weil wrote:
+> 
+> > From: Yehuda Sadeh <yehuda@hq.newdream.net>
 > > 
-> > There is no absolute need to start the suspend process from within the
-> > kernel, but it makes the user space code much simpler for what we
-> > need.  
+> > The rados block device (rbd), based on osdblk, creates a block device
+> > that is backed by objects stored in the Ceph distributed object storage
+> > cluster.  Each device consists of a single metadata object and data
+> > striped over many data objects.
+> > 
+> > The rbd driver supports read-only snapshots.
+> > 
+> > Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
+> > Signed-off-by: Sage Weil <sage@newdream.net>
+> > ---
+> >  MAINTAINERS               |    9 +
+> >  drivers/block/Kconfig     |   13 +
+> >  drivers/block/Makefile    |    1 +
+> >  drivers/block/rbd.c       | 1844 +++++++++++++++++++++++++++++++++++++++++++++
+> >  drivers/block/rbd_types.h |   73 ++
+> >  5 files changed, 1940 insertions(+), 0 deletions(-)
+> >  create mode 100644 drivers/block/rbd.c
+> >  create mode 100644 drivers/block/rbd_types.h
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 5102922..cb34b1b 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -4694,6 +4694,15 @@ F:	fs/qnx4/
+> >  F:	include/linux/qnx4_fs.h
+> >  F:	include/linux/qnxtypes.h
+> >  
+> > +RADOS BLOCK DEVICE (RBD)
+> > +F:	include/linux/qnxtypes.h
+> > +M:	Yehuda Sadeh <yehuda@hq.newdream.net>
+> > +M:	Sage Weil <sage@newdream.net>
+> > +M:	ceph-devel@vger.kernel.org
+> > +S:	Supported
+> > +F:	drivers/block/rbd.c
+> > +F:	drivers/block/rbd_types.h
+> > +
+> >  RADEON FRAMEBUFFER DISPLAY DRIVER
+> >  M:	Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> >  L:	linux-fbdev@vger.kernel.org
+> > diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+> > index de27768..708104b 100644
+> > --- a/drivers/block/Kconfig
+> > +++ b/drivers/block/Kconfig
+> > @@ -488,4 +488,17 @@ config BLK_DEV_HD
+> >  
+> >  	  If unsure, say N.
+> >  
+> > +config BLK_DEV_RBD
+> > +	tristate "Rados block device (RBD)"
+> > +	select CEPH_LIB
+> > +	default n
+> > +	help
+> > +	  Say Y here if you want include the Rados block device, which stripes
+> > +	  a block device over objects stored in the Ceph distributed object
+> > +	  store.
+> > +
+> > +	  More information at http://ceph.newdream.net/.
+> > +
+> > +	  If unsure, say N.
+> > +
+> >  endif # BLK_DEV
 > 
-> I'm entirely aware of that.  Still, I think user space is the right place to
-> initiate system suspend.
+> In linux-next of 20100813, I get:
 > 
+> net/built-in.o: In function `read_partial_message_section':
+> messenger.c:(.text+0x6598b): undefined reference to `crc32c'
+> net/built-in.o: In function `read_partial_message_bio':
+> messenger.c:(.text+0x65a57): undefined reference to `crc32c'
+> net/built-in.o: In function `write_partial_msg_pages':
+> messenger.c:(.text+0x65e22): undefined reference to `crc32c'
+> net/built-in.o: In function `prepare_write_message':
+> messenger.c:(.text+0x66219): undefined reference to `crc32c'
+> messenger.c:(.text+0x66240): undefined reference to `crc32c'
+> net/built-in.o:messenger.c:(.text+0x66264): more undefined references to `crc32c' follow
+> 
+> when CONFIG_INET is not enabled.  It looks like BLK_DEV_RBD needs to depend on
+> INET and possibly on BLOCK (I sent a patch for depends on BLOCK on 2010-aug-04
+> due to other build errors).
 
-For what it's worth - I completely agree.
+I see the problem: BLK_DEV_RBD and CEPH_FS both have 'select CEPH_LIB' and 
+CEPH_LIB depends on INET and selects LIBCRC32C, but kconfig doesn't 
+propagate those backward dependencies for you.  It looks like CEPH_FS and 
+BLK_DEV_RBD should then depend on/select CEPH_LIB _and_ its dependencies.  
+Patching that (and the BLOCK dependency) up now...
 
-Clearly there is no a lot of unanimity on this, and so lots of room to
-experiment with different approaches.  It's best if we leave as much as
-possible of that experimentation in user-space - just have the kernel do what
-cannot be done elsewhere.
+Unless there is a better way to do it?
 
-NeilBrown
+Thanks!
+sage
+
+
+diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+index 708104b..4a6e1b7 100644
+--- a/drivers/block/Kconfig
++++ b/drivers/block/Kconfig
+@@ -490,7 +490,10 @@ config BLK_DEV_HD
+ 
+ config BLK_DEV_RBD
+ 	tristate "Rados block device (RBD)"
++	depends on INET && EXPERIMENTAL && BLOCK
+ 	select CEPH_LIB
++	select LIBCRC32C
++	select CRYPTO_AES
+ 	default n
+ 	help
+ 	  Say Y here if you want include the Rados block device, which stripes
+diff --git a/fs/ceph/Kconfig b/fs/ceph/Kconfig
+index 89f9718..73a7b31 100644
+--- a/fs/ceph/Kconfig
++++ b/fs/ceph/Kconfig
+@@ -1,9 +1,9 @@
+ config CEPH_FS
+         tristate "Ceph distributed file system (EXPERIMENTAL)"
+ 	depends on INET && EXPERIMENTAL
++	select CEPH_LIB
+ 	select LIBCRC32C
+ 	select CRYPTO_AES
+-	select CEPH_LIB
+ 	default n
+ 	help
+ 	  Choose Y or M here to include support for mounting the
