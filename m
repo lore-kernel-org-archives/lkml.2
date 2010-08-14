@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab0HNMnc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 08:43:32 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:34743 "EHLO
+	id S934718Ab0HNMpA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 08:45:00 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:34930 "EHLO
 	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756216Ab0HNMnb (ORCPT
+	with ESMTP id S1756151Ab0HNMo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 08:43:31 -0400
-Date: Sat, 14 Aug 2010 14:43:29 +0200
+	Sat, 14 Aug 2010 08:44:59 -0400
+Date: Sat, 14 Aug 2010 14:44:58 +0200
 From: Sam Ravnborg <sam@ravnborg.org>
 To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
         lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH]
-Message-ID: <20100814124329.GA28377@merkur.ravnborg.org>
+Subject: [PATCH] kconfig: fix segfault when detecting recursive dependency
+Message-ID: <20100814124458.GA28387@merkur.ravnborg.org>
+References: <20100814124329.GA28377@merkur.ravnborg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100814124329.GA28377@merkur.ravnborg.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -65,4 +67,3 @@ index e95718f..943712c 100644
  		if (sym_is_choice(sym) || sym_is_choice_value(sym)) {
 -- 
 1.6.0.6
-
