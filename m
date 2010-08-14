@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751702Ab0HNGgc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 02:36:32 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:56040 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887Ab0HNGgb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 02:36:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:content-type;
-        b=onJ5t6Nl8ibJdv9xdTAFLPv+fdwB0Nm2+0+tCua11eFxioVvwdPLGpOTunUDekcLBU
-         Teol9Ge9hVWqRKG/YBuk/gq1lt7l6OLAtZgC5nupmrziMe5yY5NS7zuHZIYlAXH4D6t3
-         UAk0lbkNRilNFDQTPoNpOnPnS6UWDso9iIWh4=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTi=YL_VKKDU8ok=OYotPhyQcGsVB2O-PU29+70YT@mail.gmail.com>
-References: <AANLkTi=YL_VKKDU8ok=OYotPhyQcGsVB2O-PU29+70YT@mail.gmail.com>
-Date: Sat, 14 Aug 2010 08:36:30 +0200
-Message-ID: <AANLkTikP3FHZ0f7umRRzXcT1ytfa9XfE41UHmQ98kO2h@mail.gmail.com>
-Subject: Re: Call traces w/ 2.6.35.2 (not w/ 2.6.35.1 plus 2.6.35.2-rc1)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751817Ab0HNGjj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 02:39:39 -0400
+Received: from sh.osrg.net ([192.16.179.4]:32889 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457Ab0HNGji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 02:39:38 -0400
+Date: Sat, 14 Aug 2010 15:39:31 +0900
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [PATCH] arch/tile: rename ARCH_KMALLOC_MINALIGN to
+ ARCH_DMA_MINALIGN
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201008140047.o7E0lTiQ006412@farm-0002.internal.tilera.com>
+References: <201008140047.o7E0lTiQ006412@farm-0002.internal.tilera.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100814153825L.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 14 Aug 2010 15:39:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hope this helps to give an overview what has changed:
+On Fri, 13 Aug 2010 20:43:39 -0400
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-$ grep "diff --git" patch-2.6.35.2 | sort > list.patch-2.6.35.2
-$ grep "diff --git" new.patch | sort > list.patch-2.6.35.1+patch-2.6.35.2-rc1
+> See commit a6eb9fe105d5de0053b261148cee56c94b4720ca.
+> 
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> ---
+>  arch/tile/include/asm/cache.h |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/tile/include/asm/cache.h b/arch/tile/include/asm/cache.h
+> index f610184..08a2815 100644
+> --- a/arch/tile/include/asm/cache.h
+> +++ b/arch/tile/include/asm/cache.h
+> @@ -27,11 +27,10 @@
+>  #define L2_CACHE_ALIGN(x)	(((x)+(L2_CACHE_BYTES-1)) & -L2_CACHE_BYTES)
+>  
+>  /*
+> - * TILE-Gx is fully coherents so we don't need to define
+> - * ARCH_KMALLOC_MINALIGN.
+> + * TILE-Gx is fully coherent so we don't need to define ARCH_DMA_MINALIGN.
+>   */
+>  #ifndef __tilegx__
+> -#define ARCH_KMALLOC_MINALIGN	L2_CACHE_BYTES
+> +#define ARCH_DMA_MINALIGN	L2_CACHE_BYTES
+>  #endif
 
-
-$ diff -Naur list.patch-2.6.35.2
-list.patch-2.6.35.1+patch-2.6.35.2-rc1 | grep ^+diff
-+diff --git a/arch/arm/plat-mxc/include/mach/gpio.h
-b/arch/arm/plat-mxc/include/mach/gpio.h
-+diff --git a/drivers/net/e1000e/netdev.c b/drivers/net/e1000e/netdev.c
-+diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
-+diff --git a/fs/block_dev.c b/fs/block_dev.c
-+diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-+diff --git a/Makefile b/Makefile
-
-$ diff -Naur list.patch-2.6.35.2
-list.patch-2.6.35.1+patch-2.6.35.2-rc1 | grep ^-diff
--diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
--diff --git a/mm/memory.c b/mm/memory.c
-
-$ ls -l list.patch-2.6.35.*
--rw-r--r-- 1 sd sd 9004 14. Aug 08:32 list.patch-2.6.35.1+patch-2.6.35.2-rc1
--rw-r--r-- 1 sd sd 8724 14. Aug 08:32 list.patch-2.6.35.2
-
-- Sedat -
-
-On Sat, Aug 14, 2010 at 8:20 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
-> Hi Greg,
->
-> looks like 2.6.35.2 misses some fixes from 2.6.35.2-rc1?
->
-> sd@tbox:~/src/linux-2.6/patches/upstream$ cat patch-2.6.35.1
-> patch-2.6.35.2-rc1 > new.patch
->
-> sd@tbox:~/src/linux-2.6/patches/upstream$ grep "diff --git" new.patch | wc -l
-> 132
->
-> sd@tbox:~/src/linux-2.6/patches/upstream$ grep "diff --git"
-> patch-2.6.35.2 | wc -l
-> 128
->
-> Unfortunately, a kernel patched w/ 2.6.35.2 causes Call traces here.
->
-> Attached are dmeg outputs for both kernels.
->
->
-> Kind Regards,
-> - Sedat -
->
+Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
