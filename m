@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757215Ab0HNNnx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 09:43:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42353 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934746Ab0HNNns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 09:43:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=CCMT7qj4ONCPUhAcfZ/zrtab0O4Q50F8RHstij4H9rj/e9XTi95weCjfMnY6fuFkA8
-         oCv64Zql6uVh/GbHIUDQ0xsTz2//C51JYLdcGZnz5+F/S2iKRf4Otn1jkq9L6bu+BagY
-         EfUGcGrHeyMHXFdWFRPJoQXkx8yBbygfgPut8=
-Subject: [PATCH] regulator: ab8500 - fix the logic to remove already
- registered regulators in error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Sundar R Iyer <sundar.iyer@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Aug 2010 21:44:04 +0800
-Message-ID: <1281793444.2974.5.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757238Ab0HNNpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 09:45:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:40240 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757093Ab0HNNpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 09:45:02 -0400
+Date: Sat, 14 Aug 2010 15:44:55 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>, Mike Frysinger <vapier.adi@gmail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [GIT PULL] core/hweight changes for v2.6.35
+Message-ID: <20100814134455.GA21218@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Mike Frysinger <vapier.adi@gmail.com>,
+	Chris Metcalf <cmetcalf@tilera.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-kernel@vger.kernel.org,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Ingo Molnar <mingo@elte.hu>
+References: <20100517212138.GA21629@elte.hu>
+ <AANLkTikvJna6vnc73RVhVAJZ8mERJoFk=V6Nwq-3HHWz@mail.gmail.com>
+ <4C65BF90.6000302@zytor.com>
+ <AANLkTikaHsbdM0XSaHH1iE9p8cYE=YFM3an=+xB-JKgZ@mail.gmail.com>
+ <4C65DF22.5090406@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4C65DF22.5090406@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, ab8500_regulator_info[0].regulator is not
-unregistered if the error happen at i > 0.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Fri, Aug 13, 2010 at 05:11:14PM -0700
 
-This patch fixes the resource leak and also improves the readability.
+> On 08/13/2010 02:59 PM, Mike Frysinger wrote:
+> > 
+> > but those targets still define CONFIG_GENERIC_HWEIGHT right ?  so at
+> > the least, we should be wrapping the prototypes in linux/bitops.h with
+> > that ...
+> > 
+> 
+> Yes, I guess they do.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I think this change is better ( in readability ) than simply change "while (i > 0)" to "while (i >= 0)".
+Actually, Mike's issue is valid, if I understand it correctly. From
+looking at <arch/blackfin/include/asm/bitops.h>, Blackfin doesn't need
+the generic software variants __sw_hweightXX at all, right?
 
- drivers/regulator/ab8500.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+In that case, <include/linux/bitops.h> is pulling in needlessly
+unresolved symbols for arches which have their hw versions of
+hweight and don't need sw variants. However, if you want to include
+<asm-generic/bitops/hweight.h> and benefit from the compile-time
+evaluation of the const hweight args, you're going to need to rename
+the hweightXX() functions in <arch/blackfin/include/asm/bitops.h> to
+__arch_hweightXX but that shouldn't be a problem I guess :).
 
-diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
-index dc3f1a4..775688e 100644
---- a/drivers/regulator/ab8500.c
-+++ b/drivers/regulator/ab8500.c
-@@ -368,11 +368,9 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
- 			dev_err(&pdev->dev, "failed to register regulator %s\n",
- 					info->desc.name);
- 			/* when we fail, un-register all earlier regulators */
--			i--;
--			while (i > 0) {
-+			while (--i >= 0) {
- 				info = &ab8500_regulator_info[i];
- 				regulator_unregister(info->regulator);
--				i--;
- 			}
- 			return err;
- 		}
+Let me give your patch from couple of mails ago a quick spin...
+
 -- 
-1.7.0.4
-
-
-
+Regards/Gruss,
+    Boris.
