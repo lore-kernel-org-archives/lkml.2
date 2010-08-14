@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934720Ab0HNLQF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 07:16:05 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46619 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934694Ab0HNLQD (ORCPT
+	id S1755664Ab0HNLVd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 07:21:33 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:53952 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753952Ab0HNLVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 07:16:03 -0400
-Subject: Re: [patch] regulator/ab8500: move dereference below the check for
- NULL
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Dan Carpenter <error27@gmail.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
-        Sundar R Iyer <sundar.iyer@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <64F33A1C-EB54-4DFF-85C7-6796CFF475BA@opensource.wolfsonmicro.com>
-References: <20100814090316.GX645@bicker>
-	 (sfid-20100814_100351_685395_0B6B8F07)  <64F33A1C-EB54-4DFF-85C7-6796CFF475BA@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Aug 2010 12:15:57 +0100
-Message-ID: <1281784557.3394.150.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Aug 2010 07:21:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=BwQMJN0c7iH6OKj0Rrbfhbc3nRG9H6EnPUmbGdPYooYzzZShwTBLEGWmJvWVXx7uPh
+         NMFil7qjsN6jdSvpp8H7Sgr6Mu9d4//WoswS/07t2K0uNivC3nV7JspJbcIgFbMGhrjS
+         /1ctZWvKmasJrKzxWRlBTkUdf+9PrgVPe3qak=
+MIME-Version: 1.0
+In-Reply-To: <a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
+References: <20100813212313.GA22102@kroah.com>
+	<a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
+Date: Sat, 14 Aug 2010 14:21:31 +0300
+X-Google-Sender-Auth: xamz6EKzThKSCuKaPkP720jyo8U
+Message-ID: <AANLkTi=YfKZkE6ee6rE9LvtAiQ6F0YaTHbN+O_dTGHKb@mail.gmail.com>
+Subject: Re: Linux 2.6.35.2
+From: Pekka Enberg <penberg@kernel.org>
+To: Arthur Titeica <arthur@psw.ro>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-14 at 10:36 +0100, Mark Brown wrote:
-> On 14 Aug 2010, at 10:03, Dan Carpenter wrote:
-> 
-> > I moved the dereference of "ab8500" below the check for NULL.
-> > 
-> > Signed-off-by: Dan Carpenter <error27@gmail.com>
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Sat, Aug 14, 2010 at 1:35 PM, Arthur Titeica <arthur@psw.ro> wrote:
+> On Fri, 13 Aug 2010 14:23:13 -0700, Greg KH <gregkh@suse.de> wrote:
+>> I'm announcing the release of the 2.6.35.2 kernel.
+>>
+>> All users of the 2.6.35 kernel series must upgrade.
+>>
+>
+> I'm not sure this is the right mailing list but this is the first
+> kernel that fails to boot for me (since 2.6.33.x).
+>
+> The laptop just restarts right after "Freeing unused kernel memory:
+> 628k freed"
+>
+> 2.6.35.1 is fine with the same .config.
+>
+> Anyone willing to help me to debug?
 
-Applied.
-
-Thanks
-
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+You could try 'git bisect' between v2.6.35.1 and v2.6.35.2 to narrow
+the problem down to a specific commit.
