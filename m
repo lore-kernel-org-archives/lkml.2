@@ -1,115 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934732Ab0HNOWT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 10:22:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45664 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756597Ab0HNOWS (ORCPT
+	id S1757288Ab0HNOYs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 10:24:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19579 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756597Ab0HNOYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 10:22:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=t2HaUuxOeqWXrotJWVPorPznvNWBHHzm2LUn2SXNcyQH1oWba0KIISiZ7P+xpeR4PY
-         B/jhZzxFmAAUArNBiUrnfAhc9nsZctty9ifGPUqrHTFcD0IEro0nRLDxtrLZDpdsqiy4
-         5tOcXj8PcAchRSZl5Secr3tVwO1A2daEolpuE=
-Date: Sat, 14 Aug 2010 16:22:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andrew Benton <b3nton@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: reiserfs bug?
-Message-ID: <20100814142212.GB5343@nowhere>
-References: <4C668D3F.9040900@gmail.com>
+	Sat, 14 Aug 2010 10:24:46 -0400
+Message-ID: <4C66A6E2.80307@oracle.com>
+Date: Sat, 14 Aug 2010 07:23:30 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="EeQfGwPcQSOJBaQU"
-Content-Disposition: inline
-In-Reply-To: <4C668D3F.9040900@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Sage Weil <sage@newdream.net>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org, hch@lst.de,
+        akpm@linux-foundation.org, yehuda@hq.newdream.net
+Subject: Re: [PATCH 8/8] rbd: introduce rados block device (rbd), based on
+ libceph
+References: <1281721240-26130-1-git-send-email-sage@newdream.net> <1281721240-26130-9-git-send-email-sage@newdream.net> <20100813194410.9c608b38.randy.dunlap@oracle.com> <Pine.LNX.4.64.1008132015480.2022@cobra.newdream.net>
+In-Reply-To: <Pine.LNX.4.64.1008132015480.2022@cobra.newdream.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---EeQfGwPcQSOJBaQU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Sat, Aug 14, 2010 at 01:34:07PM +0100, Andrew Benton wrote:
-> Hello World!
-> I've just recompiled my kernel (current Linus tree), rebooted into it, 
-> everything seems to work Ok. I wanted to change 1 option so I 
-> recompiled again. Right at the end of the build Xorg server died and on 
-> the screen was printed:
+On 08/13/10 20:29, Sage Weil wrote:
+> On Fri, 13 Aug 2010, Randy Dunlap wrote:
+>> On Fri, 13 Aug 2010 10:40:40 -0700 Sage Weil wrote:
+>>
+>>> From: Yehuda Sadeh <yehuda@hq.newdream.net>
+>>>
+>>> The rados block device (rbd), based on osdblk, creates a block device
+>>> that is backed by objects stored in the Ceph distributed object storage
+>>> cluster.  Each device consists of a single metadata object and data
+>>> striped over many data objects.
+>>>
+>>> The rbd driver supports read-only snapshots.
+>>>
+>>> Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
+>>> Signed-off-by: Sage Weil <sage@newdream.net>
+>>> ---
+>>>  MAINTAINERS               |    9 +
+>>>  drivers/block/Kconfig     |   13 +
+>>>  drivers/block/Makefile    |    1 +
+>>>  drivers/block/rbd.c       | 1844 +++++++++++++++++++++++++++++++++++++++++++++
+>>>  drivers/block/rbd_types.h |   73 ++
+>>>  5 files changed, 1940 insertions(+), 0 deletions(-)
+>>>  create mode 100644 drivers/block/rbd.c
+>>>  create mode 100644 drivers/block/rbd_types.h
+>>>
+>>> diff --git a/MAINTAINERS b/MAINTAINERS
+>>> index 5102922..cb34b1b 100644
+>>> --- a/MAINTAINERS
+>>> +++ b/MAINTAINERS
+>>> @@ -4694,6 +4694,15 @@ F:	fs/qnx4/
+>>>  F:	include/linux/qnx4_fs.h
+>>>  F:	include/linux/qnxtypes.h
+>>>  
+>>> +RADOS BLOCK DEVICE (RBD)
+>>> +F:	include/linux/qnxtypes.h
+>>> +M:	Yehuda Sadeh <yehuda@hq.newdream.net>
+>>> +M:	Sage Weil <sage@newdream.net>
+>>> +M:	ceph-devel@vger.kernel.org
+>>> +S:	Supported
+>>> +F:	drivers/block/rbd.c
+>>> +F:	drivers/block/rbd_types.h
+>>> +
+>>>  RADEON FRAMEBUFFER DISPLAY DRIVER
+>>>  M:	Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>  L:	linux-fbdev@vger.kernel.org
+>>> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+>>> index de27768..708104b 100644
+>>> --- a/drivers/block/Kconfig
+>>> +++ b/drivers/block/Kconfig
+>>> @@ -488,4 +488,17 @@ config BLK_DEV_HD
+>>>  
+>>>  	  If unsure, say N.
+>>>  
+>>> +config BLK_DEV_RBD
+>>> +	tristate "Rados block device (RBD)"
+>>> +	select CEPH_LIB
+>>> +	default n
+>>> +	help
+>>> +	  Say Y here if you want include the Rados block device, which stripes
+>>> +	  a block device over objects stored in the Ceph distributed object
+>>> +	  store.
+>>> +
+>>> +	  More information at http://ceph.newdream.net/.
+>>> +
+>>> +	  If unsure, say N.
+>>> +
+>>>  endif # BLK_DEV
+>>
+>> In linux-next of 20100813, I get:
+>>
+>> net/built-in.o: In function `read_partial_message_section':
+>> messenger.c:(.text+0x6598b): undefined reference to `crc32c'
+>> net/built-in.o: In function `read_partial_message_bio':
+>> messenger.c:(.text+0x65a57): undefined reference to `crc32c'
+>> net/built-in.o: In function `write_partial_msg_pages':
+>> messenger.c:(.text+0x65e22): undefined reference to `crc32c'
+>> net/built-in.o: In function `prepare_write_message':
+>> messenger.c:(.text+0x66219): undefined reference to `crc32c'
+>> messenger.c:(.text+0x66240): undefined reference to `crc32c'
+>> net/built-in.o:messenger.c:(.text+0x66264): more undefined references to `crc32c' follow
+>>
+>> when CONFIG_INET is not enabled.  It looks like BLK_DEV_RBD needs to depend on
+>> INET and possibly on BLOCK (I sent a patch for depends on BLOCK on 2010-aug-04
+>> due to other build errors).
 > 
-> ------------[ cut here ]------------
-> kernel BUG at /home/andy/save/src/linux-2.6/fs/inode.c:298!
-> invalid opcode: 0000 [#1] SMP 
-> last sysfs file: /sys/devices/virtual/vc/vcsa2/uevent
-> CPU 0 
-> Pid: 17243, comm: mv Not tainted 2.6.35+ #1 MS-7521/MS-7521
-> RIP: 0010:[<ffffffff810b325b>]  [<ffffffff810b325b>] end_writeback+0x5b/0x70
-> RSP: 0018:ffff880114d7dcf8  EFLAGS: 00010202
-> RAX: 0000000000000060 RBX: ffff88013fab00f8 RCX: 0000000000000000
-> RDX: 0000000000000000 RSI: 00000000ffffffff RDI: ffff88013fab00f8
-> RBP: 00000000ffffffff R08: 0000000000000f36 R09: 0000000000000f36
-> R10: 0000000000000bac R11: 0000000000000000 R12: ffff88013f9ac540
-> R13: 0000000000000000 R14: ffff88010fd31500 R15: ffff88010fd31440
-> FS:  00007f306e5be700(0000) GS:ffff880001a00000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 00007f306debb080 CR3: 000000013d730000 CR4: 00000000000406f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process mv (pid: 17243, threadinfo ffff880114d7c000, task ffff88013cf73430)
-> Stack:
->  ffff88013fab00f8 ffffffff810f57a7 ffff88013e608400 0000000000000000
-> <0> 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> <0> 0000000000000000 0000000000000000 ffff88010fd31500 ffff88013fab00f8
-> Call Trace:
->  [<ffffffff810f57a7>] ? reiserfs_evict_inode+0x47/0x130
->  [<ffffffff810b328a>] ? evict+0x1a/0xa0
->  [<ffffffff810b3f6c>] ? iput+0x19c/0x280
->  [<ffffffff810afdb7>] ? d_kill+0x47/0x80
->  [<ffffffff810b0dbf>] ? dput+0x9f/0x180
->  [<ffffffff810abb1b>] ? sys_renameat+0x21b/0x270
->  [<ffffffff81088449>] ? handle_mm_fault+0x1b9/0x940
->  [<ffffffff8102118f>] ? do_page_fault+0x1cf/0x320
->  [<ffffffff810021ab>] ? system_call_fastpath+0x16/0x1b
-> Code: 1d 48 8d bf d0 01 00 00 b9 02 00 00 00 48 c7 c2 70 2b 0b 81 be 07 00 00 00 e8 42 b0 49 00 48 c7 83 d0 01 00 00 60 00 00 00 5b c3 <0f> 0b 0f 0b 0f 0b 0f 0b 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 
-> RIP  [<ffffffff810b325b>] end_writeback+0x5b/0x70
->  RSP <ffff880114d7dcf8>
-> ---[ end trace fdd5f8a966d540a4 ]---
+> I see the problem: BLK_DEV_RBD and CEPH_FS both have 'select CEPH_LIB' and 
+> CEPH_LIB depends on INET and selects LIBCRC32C, but kconfig doesn't 
+> propagate those backward dependencies for you.  It looks like CEPH_FS and 
+> BLK_DEV_RBD should then depend on/select CEPH_LIB _and_ its dependencies.  
+> Patching that (and the BLOCK dependency) up now...
 > 
-> The Opps mentions reiserfs. The only reiserfs partition I have is /boot 
-> (grub won't boot from btrfs) and the script I use to recompile the 
-> kernel copies it into /boot when the new kernel is ready.
-> 
-> Andy
+> Unless there is a better way to do it?
 
-
-Oh, looks like a return has been forgotten.
-
-Does that patch fix your issue?
-
+Not currently, so that is what it needs.
 Thanks.
 
---EeQfGwPcQSOJBaQU
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="reiserfs.diff"
+> Thanks!
+> sage
+> 
+> 
+> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
+> index 708104b..4a6e1b7 100644
+> --- a/drivers/block/Kconfig
+> +++ b/drivers/block/Kconfig
+> @@ -490,7 +490,10 @@ config BLK_DEV_HD
+>  
+>  config BLK_DEV_RBD
+>  	tristate "Rados block device (RBD)"
+> +	depends on INET && EXPERIMENTAL && BLOCK
+>  	select CEPH_LIB
+> +	select LIBCRC32C
+> +	select CRYPTO_AES
+>  	default n
+>  	help
+>  	  Say Y here if you want include the Rados block device, which stripes
+> diff --git a/fs/ceph/Kconfig b/fs/ceph/Kconfig
+> index 89f9718..73a7b31 100644
+> --- a/fs/ceph/Kconfig
+> +++ b/fs/ceph/Kconfig
+> @@ -1,9 +1,9 @@
+>  config CEPH_FS
+>          tristate "Ceph distributed file system (EXPERIMENTAL)"
+>  	depends on INET && EXPERIMENTAL
+> +	select CEPH_LIB
+>  	select LIBCRC32C
+>  	select CRYPTO_AES
+> -	select CEPH_LIB
+>  	default n
+>  	help
+>  	  Choose Y or M here to include support for mounting the
 
-diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
-index ae35413..5b18f93 100644
---- a/fs/reiserfs/inode.c
-+++ b/fs/reiserfs/inode.c
-@@ -84,6 +84,8 @@ void reiserfs_evict_inode(struct inode *inode)
- 	inode->i_blocks = 0;
- 	reiserfs_write_unlock_once(inode->i_sb, depth);
- 
-+	return;
-+
- no_delete:
- 	end_writeback(inode);
- 	dquot_drop(inode);
 
---EeQfGwPcQSOJBaQU--
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
