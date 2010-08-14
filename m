@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788Ab0HNSGY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 14:06:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33736 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752228Ab0HNSGX (ORCPT
+	id S1757905Ab0HNSPs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 14:15:48 -0400
+Received: from n3-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.156]:33061 "HELO
+	n3-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753271Ab0HNSPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 14:06:23 -0400
+	Sat, 14 Aug 2010 14:15:46 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 395113.33137.bm@omp124.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=J3tSyTFym5T8Zv8Cya7WBCnyfkdXdEO4kabr/rk6JK8hLBzCKvMGSQHBcZ/YwbZHyc51ZkS2NXr0LXaArzhSQyZdKaIu1rmFwvxfKnhih5k2gW24nsRJ2teZQlTV1/mfxX3i0iD6V+LYuXxTiFV2MlA4/BplkdKkdVMrMnkuOX8=;
+Message-ID: <302795.95811.qm@web180309.mail.gq1.yahoo.com>
+X-YMail-OSG: KyrccZkVM1lnXAFVtwVuP_M4B6Syn6x2fUnnC.2TCUUFeYh
+ iWBwUHh.oO2SFrtgRLxnUQs6Xz0frnBcwoOzefU6uqwh6NJKUyKJQeOxw7aF
+ BGtHiJ2zk1_BESmLzThYWtxHMvkO.JOEBAWxUSpWs2tglbaJKHZfmn9SEWD.
+ exwrC8eQftGD4Bsrfd_nnE7Ogv_VKce6D.sUdKXnVoJ71rVxLHyrh8z51_TD
+ Nvk1bDWc6TTaiBpqqB2sWPITyce6W4dGdndRXLqLSG8laPSbLPIsFGnVwLco
+ N1O3c4qcWB7NjKJdEKERfFNo7kv9CZmg_5T4XGwwpXfiFPgGylZ8m8y6fAG_
+ m.nd6pvLwTn6tabsYvwA-
+X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
+Date: Sat, 14 Aug 2010 11:15:43 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+To: paulmck@linux.vnet.ibm.com, Arjan van de Ven <arjan@infradead.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, James.Bottomley@suse.de,
+        swmike@swm.pp.se, galibert@pobox.com, dipankar@in.ibm.com
+In-Reply-To: <20100814095351.6a996187@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20100812.161050.246523792.davem@davemloft.net>
-References: <20100812.161050.246523792.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 14 Aug 2010 11:05:54 -0700
-Message-ID: <AANLkTinGy+-ELbVx_2WJ1wOJCsz4Rez26Q2Baisws9+C@mail.gmail.com>
-Subject: Re: [GIT] Networking
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David,
- I completely screwed up locking in my VM guard page patch, so when I
-verified my fix for that I tried to enable all the lock debug crud I
-possibly could.
 
-And as a result, I got a locking error report, but it had nothing to
-do with the VM guard page any more (so hopefully I finally fixed my
-mindless code-drivel correctly. I'm a bit ashamed of myself).
 
-Anyway, the lock warning I do get seems to be networking-related, and
-is appended. Does this ring any bells? It could easily be something
-old: I turn on lock debugging only when I look for bugs (or when
-people point out bugs that I've created :^/ )
+--- On Sat, 8/14/10, Arjan van de Ven <arjan@infradead.org> wrote:
 
-The only thing that seems to be related that google can find is pretty
-recent too: a report from Valdis Kletnieks about this apparently
-happening on e1000e too (Subject "mmotm 2010-08-11 - lockdep whinges
-at e1000e driver ifconfig up"). So it does seem to be pretty recent.
 
-Hmm? Everything obviously still works, but judging by the lockdep
-report this might be a deadlock situation (lock taken in softirq _and_
-outside softirq without disabling bhs)
+> however I think you're making an assumption
+> that there is a real difference between a deep idle state and "off"....
+> 
+> For modern x86 hardware, that assumption isn't
+> really valid.
 
-                                    Linus
+For ARM processors it's not unrealistic.  THey
+tend to have idle states that place constraints on
+peripherals and clocks which allow peripherals to run independently of CPUs.
 
----
-  r8169 0000:01:00.0: eth0: link up
-  r8169 0000:01:00.0: eth0: link up
+I recall for example various processors that allow
+USB to continue operating in one or more idle states, if the right clocks are active (and RAM).
+Similarly with some other peripherals.  It may be
+desirable to have I/O active while CPUs are idle.
 
-  =================================
-  [ INFO: inconsistent lock state ]
-  2.6.35-07956-g92fa5bd9-dirty #7
-  ---------------------------------
-  inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-  dbus-daemon/2432 [HC0[0]:SC1[2]:HE1:SE0] takes:
-   (&(&lock->lock)->rlock){+.?...}, at: [<ffffffff814e9fd8>]
-ip6t_do_table+0x7f/0x3e7
-  {SOFTIRQ-ON-W} state was registered at:
-    [<ffffffff8105eb80>] __lock_acquire+0x756/0x1712
-    [<ffffffff8105fbbf>] lock_acquire+0x83/0x9d
-    [<ffffffff81505c77>] _raw_spin_lock+0x31/0x64
-    [<ffffffff814e943d>] get_counters+0xa4/0x139
-    [<ffffffff814e9509>] alloc_counters+0x37/0x42
-    [<ffffffff814eab47>] do_ip6t_get_ctl+0x107/0x35e
-    [<ffffffff81463241>] nf_sockopt+0x55/0x81
-    [<ffffffff81463280>] nf_getsockopt+0x13/0x15
-    [<ffffffff814d0cce>] ipv6_getsockopt+0x7f/0xb5
-    [<ffffffff814d7e29>] rawv6_getsockopt+0x3d/0x46
-    [<ffffffff81434fae>] sock_common_getsockopt+0xf/0x11
-    [<ffffffff814323ff>] sys_getsockopt+0x75/0x96
-    [<ffffffff81001eab>] system_call_fastpath+0x16/0x1b
-  irq event stamp: 21072
-  hardirqs last  enabled at (21072): [<ffffffff8103b5cf>]
-local_bh_enable+0xbd/0xc2
-  hardirqs last disabled at (21071): [<ffffffff8103b564>]
-local_bh_enable+0x52/0xc2
-  softirqs last  enabled at (20000): [<ffffffff814bd355>]
-unix_create1+0x164/0x17c
-  softirqs last disabled at (21037): [<ffffffff81002dcc>] call_softirq+0x1c/0x28
+Not all low power states map to x86/ACPI models;
+and Linux hasn't accomodated that reality well.
 
-  other info that might help us debug this:
-  3 locks held by dbus-daemon/2432:
-   #0:  (&idev->mc_ifc_timer){+.-...}, at: [<ffffffff810404f6>]
-run_timer_softirq+0x14e/0x28c
-   #1:  (rcu_read_lock){.+.+..}, at: [<ffffffff814dc9b2>] mld_sendpack+0x0/0x3bd
-   #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff81461ed5>] nf_hook_slow+0x0/0x10a
 
-  stack backtrace:
-  Pid: 2432, comm: dbus-daemon Not tainted 2.6.35-07956-g92fa5bd9-dirty #7
-  Call Trace:
-   <IRQ>  [<ffffffff8105bf16>] print_usage_bug+0x1a4/0x1b5
-   [<ffffffff8100c7d3>] ? save_stack_trace+0x2a/0x47
-   [<ffffffff8105cb6c>] ? check_usage_forwards+0x0/0xc6
-   [<ffffffff8105c211>] mark_lock+0x2ea/0x552
-   [<ffffffff8105eb07>] __lock_acquire+0x6dd/0x1712
-   [<ffffffff8105246e>] ? local_clock+0x2b/0x3c
-   [<ffffffff8105b2e8>] ? lock_release_holdtime+0x1c/0x123
-   [<ffffffff8105fbbf>] lock_acquire+0x83/0x9d
-   [<ffffffff814e9fd8>] ? ip6t_do_table+0x7f/0x3e7
-   [<ffffffff81505c77>] _raw_spin_lock+0x31/0x64
-   [<ffffffff814e9fd8>] ? ip6t_do_table+0x7f/0x3e7
-   [<ffffffff814e9fd8>] ip6t_do_table+0x7f/0x3e7
-   [<ffffffff814ebd87>] ip6table_filter_hook+0x17/0x1c
-   [<ffffffff81461e92>] nf_iterate+0x41/0x84
-   [<ffffffff814db3ba>] ? dst_output+0x0/0x58
-   [<ffffffff81461f63>] nf_hook_slow+0x8e/0x10a
-   [<ffffffff814db3ba>] ? dst_output+0x0/0x58
-   [<ffffffff814dcc00>] mld_sendpack+0x24e/0x3bd
-   [<ffffffff8105c4cb>] ? mark_held_locks+0x52/0x70
-   [<ffffffff814dd478>] mld_ifc_timer_expire+0x24f/0x288
-   [<ffffffff814dd229>] ? mld_ifc_timer_expire+0x0/0x288
-   [<ffffffff81040584>] run_timer_softirq+0x1dc/0x28c
-   [<ffffffff810404f6>] ? run_timer_softirq+0x14e/0x28c
-   [<ffffffff8103b6dc>] ? __do_softirq+0x69/0x13d
-   [<ffffffff8103b715>] __do_softirq+0xa2/0x13d
-   [<ffffffff810590eb>] ? tick_program_event+0x25/0x27
-   [<ffffffff81002dcc>] call_softirq+0x1c/0x28
-   [<ffffffff81004834>] do_softirq+0x38/0x80
-   [<ffffffff8103b2e0>] irq_exit+0x45/0x87
-   [<ffffffff8101a278>] smp_apic_timer_interrupt+0x88/0x96
-   [<ffffffff81002893>] apic_timer_interrupt+0x13/0x20
-   <EOI>
-  r8169: WARNING! Changing of MTU on this NIC may lead to frame
-reception errors!
+
