@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757346Ab0HNOb5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 10:31:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58208 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757271Ab0HNOb4 (ORCPT
+	id S1756737Ab0HNOfZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 10:35:25 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:38352 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756662Ab0HNOfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 10:31:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=xafkvMKfoHMNa2tLRpPZ92P7fd7y6iLjwJystHlCsvh4LT6at9Cvdi5pB0Z0JCuMEa
-         RdtyAdUt08nLVYo5eLUwuEqtWHJVX8P8hcRSmEgVw88VSdFFeg9jiq+ibbxkUtnpXc+3
-         GgeRcGnKPTpm0oXgdgPZJNd/FvDW1bowSdAjE=
-Subject: [PATCH] regulator: tps6507x - remove incorrect comments
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Anuj Aggarwal <anuj.aggarwal@ti.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Aug 2010 22:32:13 +0800
-Message-ID: <1281796333.3780.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 14 Aug 2010 10:35:24 -0400
+From: Sundar R IYER <sundar.iyer@stericsson.com>
+To: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Date: Sat, 14 Aug 2010 16:34:49 +0200
+Subject: RE: [PATCH] regulator: ab8500 - fix the logic to remove already
+ registered regulators in error path
+Thread-Topic: [PATCH] regulator: ab8500 - fix the logic to remove already
+ registered regulators in error path
+Thread-Index: Acs7trs05ECGMDW2QhuTNDUhYcT/6AABDp0Q
+Message-ID: <33A307AF30D7BF4F811B1568FE7A9B18188E2CA0@EXDCVYMBSTM006.EQ1STM.local>
+References: <1281793444.2974.5.camel@phoenix>
+In-Reply-To: <1281793444.2974.5.camel@phoenix>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7EEZTGg024438
 
-This driver is a platform driver, not a i2c driver.
-Thus remove incorrect tps6507x_remove comments.
+Thanx!
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/tps6507x-regulator.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+BTW, could you also include the AB3100 as well into this patch? I derived it from 
+the AB3100 implementation.
 
-diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
-index c239f42..020f587 100644
---- a/drivers/regulator/tps6507x-regulator.c
-+++ b/drivers/regulator/tps6507x-regulator.c
-@@ -626,12 +626,6 @@ fail:
- 	return error;
- }
- 
--/**
-- * tps6507x_remove - TPS6507x driver i2c remove handler
-- * @client: i2c driver client device structure
-- *
-- * Unregister TPS driver as an i2c client device driver
-- */
- static int __devexit tps6507x_pmic_remove(struct platform_device *pdev)
- {
- 	struct tps6507x_dev *tps6507x_dev = platform_get_drvdata(pdev);
--- 
-1.7.0.4
+Linus, any comments?
 
+Regards,
+Sundar
 
+>-----Original Message-----
+>From: Axel Lin [mailto:axel.lin@gmail.com]
+>Sent: Saturday, August 14, 2010 7:14 PM
+>To: linux-kernel
+>Cc: Liam Girdwood; Mark Brown; Sundar R IYER
+>Subject: [PATCH] regulator: ab8500 - fix the logic to remove already registered
+>regulators in error path
+>
+>In current implementation, ab8500_regulator_info[0].regulator is not
+>unregistered if the error happen at i > 0.
+>
+>This patch fixes the resource leak and also improves the readability.
+>
+>Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>---
+>I think this change is better ( in readability ) than simply change "while (i > 0)" to
+>"while (i >= 0)".
+>
+> drivers/regulator/ab8500.c |    4 +---
+> 1 files changed, 1 insertions(+), 3 deletions(-)
+>
+>diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+>index dc3f1a4..775688e 100644
+>--- a/drivers/regulator/ab8500.c
+>+++ b/drivers/regulator/ab8500.c
+>@@ -368,11 +368,9 @@ static __devinit int ab8500_regulator_probe(struct
+>platform_device *pdev)
+> 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+> 					info->desc.name);
+> 			/* when we fail, un-register all earlier regulators */
+>-			i--;
+>-			while (i > 0) {
+>+			while (--i >= 0) {
+> 				info = &ab8500_regulator_info[i];
+> 				regulator_unregister(info->regulator);
+>-				i--;
+> 			}
+> 			return err;
+> 		}
+>--
+>1.7.0.4
+>
+>
 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
