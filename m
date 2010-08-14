@@ -1,47 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0HNCFi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 22:05:38 -0400
-Received: from infernal.debian.net ([87.230.26.131]:39875 "EHLO
-	infernal.debian.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756816Ab0HNCFh (ORCPT
+	id S1756928Ab0HNCbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 22:31:08 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:30706 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756795Ab0HNCbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 22:05:37 -0400
-X-Greylist: delayed 2429 seconds by postgrey-1.27 at vger.kernel.org; Fri, 13 Aug 2010 22:05:37 EDT
-From: Andreas Bombe <aeb@debian.org>
-To: linux-kernel@vger.kernel.org
-Cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        Andreas Bombe <aeb@debian.org>
-Subject: [PATCH] staging/comedi das08_cs.c: Fix io_req_t conversion
-Date: Sat, 14 Aug 2010 03:24:22 +0200
-Message-Id: <1281749062-9907-1-git-send-email-aeb@debian.org>
-X-Mailer: git-send-email 1.7.1
+	Fri, 13 Aug 2010 22:31:06 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(z3cfcs329eqz146fK1432N98dN936eMzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L74EXH-01-4PU-02
+X-M-MSG: 
+Date: Sat, 14 Aug 2010 04:29:40 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100814022940.GE26154@erda.amd.com>
+References: <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100810204856.GA16571@redhat.com>
+ <20100811024451.GA26835@nowhere>
+ <20100811111046.GQ26154@erda.amd.com>
+ <20100813043746.GB9669@nowhere>
+ <20100813082230.GZ26154@erda.amd.com>
+ <20100814012804.GB5343@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100814012804.GB5343@nowhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 90abdc3b9 converted all PCMCIA users away from io_req_t. In
-das08_cs.c the converted IO lines mask setting was added but the old
-line using the now inexistent p_dev->io was not removed.
+On 13.08.10 21:28:07, Frederic Weisbecker wrote:
 
-Signed-off-by: Andreas Bombe <aeb@debian.org>
----
- drivers/staging/comedi/drivers/das08_cs.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> > We cannot assume that all cpus have the same behavior here. Imagine a
+> > cpu that handles 2 counters and *does not* trigger a back-to-back
+> > nmi. With flags only implemented, the next unknown nmi will be dropped
+> > anyway, no matter when it fires. We have to check the nmi sequence.
+> 
+> 
+> 
+> I'd expect it to be an ABI. NMIs can't nest, but if one triggers while
+> servicing another, it should trigger right after (once we "iret", which
+> reenables NMIs).
+> 
+> But I haven't checked intel or amd documentation about that.
 
-diff --git a/drivers/staging/comedi/drivers/das08_cs.c b/drivers/staging/comedi/drivers/das08_cs.c
-index c6aa52f..48d9fb1 100644
---- a/drivers/staging/comedi/drivers/das08_cs.c
-+++ b/drivers/staging/comedi/drivers/das08_cs.c
-@@ -222,7 +222,6 @@ static int das08_pcmcia_config_loop(struct pcmcia_device *p_dev,
- 		p_dev->resource[0]->flags &= ~IO_DATA_PATH_WIDTH;
- 		p_dev->resource[0]->flags |=
- 			pcmcia_io_cfg_data_width(io->flags);
--		p_dev->io.IOAddrLines = io->flags & CISTPL_IO_LINES_MASK;
- 		p_dev->resource[0]->start = io->win[0].base;
- 		p_dev->resource[0]->end = io->win[0].len;
- 		if (io->nwin > 1) {
+Yes, nmis are nested and if there is another source firing it will be
+retriggered. But the question is, if multiple counters trigger, does
+this mean multiple nmis are fired, esp. if all counters were served in
+the first run? This very much depends on the cpu implementation and it
+will be hard to find documentation about this detail.
+
+> > The next thing you have to be aware is, a registered nmi handler is
+> > not called with every nmi. If there was another nmi source and a
+> > handler with higher priority was returning a stop, when all other
+> > subsequent handlers are not called. Esp. 'unknown nmi' is called only
+> > in rare cases. So, a handler might not get noticed of an nmi. This
+> > means, if a handler gets called a 2nd time, it must not necessarily
+> > the next (2nd) nmi.
+> 
+> 
+> Yeah, in this case we can just clear the __ger_cpu_var(next_nmi_skip)
+> when another handler service the next NMI.
+
+Yes, this might work too. But then you end up at the same complexity.
+Even worse, you have to check and unset the flag with each perf nmi.
+If you store the nmi number, it will only be read in then 'unknown'
+nmi path again. And, you can't unset the flag for nmis by other
+sources what do not pass the perf nmi handler.
+
+So, overall, I don't see advantages in using a flag. The
+implementation of storing the nmi number is simple and straight
+forward with no or less impact on performance or memory usage.
+
+-Robert
+
 -- 
-1.7.1
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
