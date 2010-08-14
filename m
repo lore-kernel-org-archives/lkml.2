@@ -1,177 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933443Ab0HNIxd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 04:53:33 -0400
-Received: from mx0.vr-web.de ([195.200.35.198]:39825 "EHLO mx0.vr-web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932985Ab0HNIxc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 04:53:32 -0400
-From: Andreas <andihartmann@01019freenet.de>
-X-Newsgroups: linux.kernel
-Subject: Re: rt61pci - bad performance
-Date: Sat, 14 Aug 2010 10:55:17 +0200
-Organization: privat
-Message-ID: <4C6659F5.9080706@01019freenet.de>
-References: <ffaPE-58l-5@gated-at.bofh.it> <fgPe2-2X7-19@gated-at.bofh.it> <fgXXY-KJ-1@gated-at.bofh.it>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: abuse@arcor.de
-To: Helmut Schaa <helmut.schaa@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.3a6pre) Gecko/20100803 SeaMonkey/2.1a2
-In-Reply-To: <fgXXY-KJ-1@gated-at.bofh.it>
-To: linux-kernel@vger.kernel.org
-X-BitDefender-Scanner: Clean, Agent: BitDefender Courier 3.0.2 on
- vrwf103, sigver: 7.28621
-X-BitDefender-CF-Stamp: none
+	id S933514Ab0HNI5z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 04:57:55 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:50063 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932985Ab0HNI5y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 04:57:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CvaxVMepKjYN43Z0Y6sNQohE1e77Xsuk0tbV4GS8uUazvGsDjye+SCWtvOIDIxVwsP
+         JJO0VEEOMqfiiP7TooPzMlIqUeNBNeF0MffVF3Xn00oXmUiFdeSbHUQhMNj2Sy4gFdmn
+         hjYFlEBAP0h8enseTv0KgBDxTiNSfQ4EhsNNA=
+MIME-Version: 1.0
+In-Reply-To: <87r5i1h9lh.fsf@erwin.mina86.com>
+References: <1281691874-8154-1-git-send-email-dries.vanpuymbroeck@dekimo.com>
+	<AANLkTikk7T6v8zwzEQuZ7yDgf6AcdEfNJr7BG+z1O02n@mail.gmail.com>
+	<87sk2i45es.fsf@erwin.mina86.com>
+	<AANLkTin_o36qmavka+aJaDOBpNRGc=xxKdPdtWWUcVG8@mail.gmail.com>
+	<87r5i1h9lh.fsf@erwin.mina86.com>
+Date: Sat, 14 Aug 2010 16:57:53 +0800
+Message-ID: <AANLkTi=5+SEZ-=UCv8Oisgq==pyJpsgJ3tFKc0CdyXLw@mail.gmail.com>
+Subject: Re: [PATCH] USB: Gadget: g_multi: added INF file for gadget with
+ multiple configurations
+From: Xiaofan Chen <xiaofanc@gmail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: Dries Van Puymbroeck <dries.van.puymbroeck@gmail.com>,
+        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+        Dries Van Puymbroeck <dries.vanpuymbroeck@dekimo.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Helmut Schaa wrote:
-> Hi Andreas,
+On Sat, Aug 14, 2010 at 4:39 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
+> <http://msdn.microsoft.com/en-us/library/ff537109(v=VS.85).aspx>
+> specifies that for a device to be identified as composite it (among
+> other things) "must have a single configuration".  The page has also
+> a passage which seems to indicate that the INF is needed:
 >
-> Am Freitag 13 August 2010 schrieb Andrew Morton:
->> (cc's added)
->>
->> On Sun, 08 Aug 2010 11:49:49 +0200
->> Andreas<andihartmann@01019freenet.de>  wrote:
+>" If you want the generic parent driver to manage your device, but your
+> device does not have the characteristics necessary to ensure that the
+> system will generate a compatible ID of USB\COMPOSITE, you will have
+> to provide an INF file that loads the generic parent driver."
 >
-> [...]
+> Selecting of the configuration is also mentioned as a requirement, and
+> the next paragraph points to a web page you've cited:
 >
->>> wlan0     IEEE 802.11bg  ESSID:"--------"
->>>             Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
->>>             Bit Rate=1 Mb/s   Tx-Power=5 dBm
->>>             Retry  long limit:7   RTS thr:off   Fragment thr:off
->>>             Encryption key:off
->>>             Power Management:off
->>>             Link Quality=38/70  Signal level=-72 dBm
->>>             Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
->>>             Tx excessive retries:0  Invalid misc:0   Missed beacon:0
->>>
->>> The throughput is measured with ping -f -s 7000 and xosview -n.
->
-> This doesn't look like an appropriate way to measure the throughput. You
-> should use something like iperf [1] or netperf [2] for your measurements
-> to get more accurate results.
->
->>> If I'm using ndiswrapper with the windows driver, first of all, I can
->>> see additional information in iwconfig:
->>>
->>> wlan0     IEEE 802.11g  ESSID:"--------"
->>>             Mode:Managed  Frequency:2.412 GHz  Access Point: some AP
->>>             Bit Rate=54 Mb/s   Tx-Power:20 dBm   Sensitivity=-121 dBm
->>>             RTS thr=2347 B   Fragment thr=2346 B
->>>             Encryption key:some key   Security mode:restricted
->>>             Power Management:off
->>>             Link Quality:62/100  Signal level:-56 dBm  Noise level:-96 dBm
->>>             Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0
->>>             Tx excessive retries:0  Invalid misc:0   Missed beacon:0
->>>
->>>
->>> There is a switch for sensitivity (which is not supported with rt61pci)
->>> and the link quality compared with ndiswrapper is worse (38% to 62%).
->
-> I wouldn't trust the link quality values that much, the calculation in rt61pi
-> is most likely different from what the windows driver does. So it is not
-> really comparable.
+>" If your composite device has multiple configurations, the INF file you
+> provide must specify which configuration the generic parent should use
+> in the registry. The necessary registry keys are described in
+> Selecting the Configuration for a Composite USB Device."
 
-I detected the problem using tunneled ssh-x-sessions and during copying 
-of data. I'm not really interested in the link-quality - I just need a 
-high performance :-).
+Thanks. Now it is clear. The patch is correct after all.
 
->>> The following is remarkably too:
->>> ndiswrapper uses a Tx-Power of 20 dBm, rt61pci only 5 dBm. I don't know,
->>> why rt61pci uses 5 dBm. It's a hard limit and I can't set it on a value
->>> higher than 5 unless the driver is patched. Nevertheless, setting a
->>> higher value (of 20 dBm) by patch does not mean to get a better performance.
->
-> Could you elaborate please? Did you actually try to patch it or is this just
-> an assumption?
+Somehow I forgot the following blog entry again. This blog entry
+seems to be more clear than the MSDN entries.
+http://blogs.msdn.com/b/usbcoreblog/archive/2010/05/19/multi-config-usb-devices-and-windows.aspx
 
-see my other mail!
++++++++++++++++++
+The USBCCGP composite device driver has support for multiple device
+configurations, with a few caveats.
+http://msdn.microsoft.com/en-us/library/ff539242(VS.85).aspx
 
->>> Ndiswrapper shows an encryption key, rt61pci not. Does it mean, that
->>> rt61pci doesn't use hardware encryption?
->
-> hw crypto should be enabled by default in rt61pci, however, I don't know
-> if it is actually working ;)
+   1. USBCCGP will not load on a multi-config device by default because
+the hub driver doesn't create a "USB\COMPOSITE" PNP ID for a composite
+device if it has multiple configurations. However, you can write your own INF
+that matches a device-specific PNP ID to get USBCCGP to load as your
+device's function driver.
 
-How can I see if it's working?
+   2. To select a configuration other than index 0, you must set registry
+settings as specified in "Selecting the Configuration for a Composite
+USB Device".
+http://msdn.microsoft.com/en-us/library/ff538059(VS.85).aspx
 
->>> With ndiswrapper, the rt61pci-chip achieves a throughput of 2,6 MBytes/s
->>> - that's about 1 MByte/s more than rt61pci.
->>>
->>> I have to say, that the difference between rt61pci and ndiswrapper gets
->>> worse if the link quality is getting more badly. Or in other words:
->>> ndiswrapper handles bad connections better then rt61pci.
->>>
->>>
->>> Do you have any idea to get rt61pci working as fast as ndiswrapper?
->
-> Please run proper measurements first and post the results again.
+During enumeration, USBCCGP will first attempt to select the
+configuration whose descriptor is found at the specified "original" index. If
+the attempt fails, normally due to the configuration requiring more than
+100mA while the device's upstream hub has only bus power, then
+USBCCGP attempts to select the configuration found at the specified
+"alternate" index instead.
 
-I did some measurements with netperf (TCP_STREAM):
+   3. Drivers that are clients of USBCCGP cannot change the device's
+configuration value.
++++++++++++++++++
 
 
-ndiswrapper
-===========
 
-(OpenSuSE 11.2 2.6.31.13-21):
-download
-average        min        max
-20,88        19,02        22,19 MBit/s    (6 runs)
-
-upstream
-average        min        max
-21,46        18,84        22,26 MBits/s    (7 runs)
-
-
-OpenSuSE 11.3 (2.6.34-12-desktop)
-download
-average        min        max
-21,41        20,51        22,51 MBit/s    (16 runs)
-
-
-upstream
-average        min        max
-error
-
-
-rt61pci (patched - compat-wireless-2010-07-20)
-==============================================
-
-OpenSuSE 11.3 (2.6.34-12-desktop)
-download
-average        min        max
-15,54        12,4        17,19 MBit/s    (25 runs)
-
-upstream
-average        min        max
-13,54        12,1        14,04 MBits/s    (7 runs)
-
-
-rt61pci (original (unpatched) from OpenSuSE 11.3)
-==============================================
-
-download
-0,7 MBit/s
-
-upstream
-error (interrupted system call)
-
-
-If you compare ndiswrapper with rt61pci patched, there is a difference 
-of about 6 MBits/s. The unpatched version can't be used at all.
-
-Another point is the upstream issue with ndiswrapper with 
-2.6.34-kernels, which appears under some conditions (under "normal" 
-conditions, I didn't see this problem yet).
-
-Do you need some special tests? Please ask for them - I'll try to 
-provide them!
-
-
-Thanks for you help,
-kind regards,
-Andreas
+-- 
+Xiaofan
