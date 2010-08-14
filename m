@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab0HNV4B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 17:56:01 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34131 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756931Ab0HNVz7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 17:55:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=KOyfFd9AoB4XJ9bduHl4f2TMVXgSsVqRi1a0SfEHtqjodwF04SXq7UdLNe+rFE5FJt
-         559dipos9n71shKgYfVROe2nECkEd3uaSkvvlJXDTWkqeUqTYdTOqKBjY0cmUjkoArKi
-         PWuTnN1dT9mQmqAO/5D89Dy8j3DL8wTECnHs8=
+	id S1756971Ab0HNV52 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 17:57:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37647 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756731Ab0HNV51 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 17:57:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1008102119170.20140@ayla.of.borg>
-References: <alpine.DEB.2.00.1008102119170.20140@ayla.of.borg>
-Date: Sat, 14 Aug 2010 23:55:58 +0200
-X-Google-Sender-Auth: 7Ft4KYRICjUGM7Di66uuGRxYM34
-Message-ID: <AANLkTimyeZbxU68TB0N-+Fcug1Ec035OvOtbAYPbhQH2@mail.gmail.com>
-Subject: Re: [PATCH] staging: spectra needs <linux/slab.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <201008141547.08722.edt@aei.ca>
+References: <AANLkTimNborh0AtHkdnN-aCizDu4+S6ORmeoKzS_nEVH@mail.gmail.com>
+ <201008141427.03946.edt@aei.ca> <AANLkTingwMvoVm_J6cmm_K3=G9rCYwOrQ=-5vK_wzGcX@mail.gmail.com>
+ <201008141547.08722.edt@aei.ca>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 14 Aug 2010 14:56:58 -0700
+Message-ID: <AANLkTinP3Kh4Gjnkx2ycr34W6SVqLsBh7yMsGuoU7pAD@mail.gmail.com>
+Subject: Re: Linux 2.6.35.2
+To: Ed Tomlinson <edt@aei.ca>
+Cc: sedat.dilek@gmail.com, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org, arthur@psw.ro,
+        wylda@volny.cz
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/10 Geert Uytterhoeven <geert@linux-m68k.org>:
-> On one of my m68k test builds I get:
+On Sat, Aug 14, 2010 at 12:47 PM, Ed Tomlinson <edt@aei.ca> wrote:
+> On Saturday 14 August 2010 14:47:45 Linus Torvalds wrote:
+>>
+>> Just to verify: you have CONFIG_HIGHPTE enabled on a x86-32 kernel,
+>> right? I'd have expected this to not ever show up anywhere else, and
+>> I'm just verifying that there isn't anything else going on. I'm
+>> appending the commit message, the patch hasn't changed.
 >
-> drivers/staging/spectra/ffsport.c: In function ‘ioctl_read_page_data’:
-> drivers/staging/spectra/ffsport.c:196: error: implicit declaration of function ‘kmalloc’
-> drivers/staging/spectra/ffsport.c:196: warning: assignment makes pointer from integer without a cast
-> drivers/staging/spectra/ffsport.c:212: error: implicit declaration of function ‘kfree’
-> drivers/staging/spectra/ffsport.c: In function ‘ioctl_write_page_data’:
-> drivers/staging/spectra/ffsport.c:229: warning: assignment makes pointer from integer without a cast
-> drivers/staging/spectra/ffsport.c: In function ‘SBD_setup_device’:
-> drivers/staging/spectra/ffsport.c:633: warning: assignment makes pointer from integer without a cast
+> No. �I have a x86-64 based kernel (amd64).
 
-Still more errors:
+Hmm. On x86-64, pte_unmap() is a no-op. So moving it around should not
+matter one whit. We don't even have a debug mode to turn it into some
+kind of "check that we use it properly in an atomic region" which we
+_could_ do.
 
-        drivers/staging/spectra/ffsport.c: error: too many arguments to function
- ‘blk_queue_ordered’:  => 655
-        drivers/staging/spectra/ffsport.c: error: unknown field ‘locked_ioctl’ s
-pecified in initializer:  => 605
-        drivers/staging/spectra/ffsport.c: error: ‘REQ_LB_OP_FLUSH’ undeclared (
-first use in this function):  => 280, 301
-        drivers/staging/spectra/ffsport.c: error: ‘REQ_TYPE_LINUX_BLOCK’ undecla
-red (first use in this function):  => 278, 300
+Can you send me the messages you saw without that patch? There's
+something odd going on here. I don't like the fact that the patch
+apparently makes a difference for you. It shouldn't.
 
-Some of these have been reported by Randy in linux-next on ... July 8.
-The locked_ioctl one is a `new' one, though...
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+                     Linus
