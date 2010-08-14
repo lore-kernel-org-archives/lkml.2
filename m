@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab0HNNaq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 09:30:46 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50217 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756465Ab0HNNap (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 09:30:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=UPDPLZqCRWE/SIy9u3lszHzWpL24PIZRN5LP1jyxUHy7AUknXwzI8IPgp/6pCUgHwk
-         za/Xdh0xpaa8p4rJuZMIrXM6/Yn3D3f7GONsoEHTx4feD2cVdTSYwOqs7q3y9zm3puNy
-         wOPMLctDUuAIxPNQ5C2TKVOtwyuVFMmhabSWw=
-Subject: [PATCH] regulator: ab3100 - fix the logic to remove already
- registered regulators in error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Mattias Wallin <mattias.wallin@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Aug 2010 21:31:01 +0800
-Message-ID: <1281792661.2718.4.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757170Ab0HNNnT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 09:43:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40018 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756460Ab0HNNnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 09:43:18 -0400
+Date: Sat, 14 Aug 2010 06:39:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Arthur Titeica <arthur@psw.ro>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.35.2
+Message-ID: <20100814133942.GA17430@suse.de>
+References: <20100813212313.GA22102@kroah.com> <a00737cba20cb46512a2248e0477cc0b@linux.psw.ro> <AANLkTi=YfKZkE6ee6rE9LvtAiQ6F0YaTHbN+O_dTGHKb@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=YfKZkE6ee6rE9LvtAiQ6F0YaTHbN+O_dTGHKb@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, ab3100_regulators[0].rdev is not unregistered if
-the error happen at i > 0.
+On Sat, Aug 14, 2010 at 02:21:31PM +0300, Pekka Enberg wrote:
+> On Sat, Aug 14, 2010 at 1:35 PM, Arthur Titeica <arthur@psw.ro> wrote:
+> > On Fri, 13 Aug 2010 14:23:13 -0700, Greg KH <gregkh@suse.de> wrote:
+> >> I'm announcing the release of the 2.6.35.2 kernel.
+> >>
+> >> All users of the 2.6.35 kernel series must upgrade.
+> >>
+> >
+> > I'm not sure this is the right mailing list but this is the first
+> > kernel that fails to boot for me (since 2.6.33.x).
+> >
+> > The laptop just restarts right after "Freeing unused kernel memory:
+> > 628k freed"
+> >
+> > 2.6.35.1 is fine with the same .config.
+> >
+> > Anyone willing to help me to debug?
+> 
+> You could try 'git bisect' between v2.6.35.1 and v2.6.35.2 to narrow
+> the problem down to a specific commit.
 
-This patch fixes the resource leak and also improves the readability.
+Yes, if you could please do that, it would be most appreciated.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
-I think this change is better ( in readability ) than simply change "while (i > 0)" to "while (i >= 0)".
+thanks,
 
- drivers/regulator/ab3100.c |    5 +----
- 1 files changed, 1 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index 1179099..b349266 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -634,12 +634,9 @@ static int __devinit ab3100_regulators_probe(struct platform_device *pdev)
- 				"%s: failed to register regulator %s err %d\n",
- 				__func__, ab3100_regulator_desc[i].name,
- 				err);
--			i--;
- 			/* remove the already registered regulators */
--			while (i > 0) {
-+			while (--i >= 0)
- 				regulator_unregister(ab3100_regulators[i].rdev);
--				i--;
--			}
- 			return err;
- 		}
- 
--- 
-1.7.0.4
-
-
-
+greg k-h
