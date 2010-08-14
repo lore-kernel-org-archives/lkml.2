@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab0HNArx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 20:47:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61933 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752450Ab0HNArw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 20:47:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=E9OLbhC25T8JKOty8kW0ZIMMWPZ2jUNVVIAZ1dVRoPAHWVjli2wl99QB6mNN9TvNgR
-         SP0tTPnYJ1aA6Po9ZFldo2YE62pYLEIHLhlUWFRijKhRNWM2hvwNI2KW0kLn/tv+PG/r
-         D59xT9WhmWg1eeJ63zRLUQSFPThLsqzoEd+Dc=
-From: Frederic Weisbecker <fweisbec@gmail.com>
+	id S1756677Ab0HNAsE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 20:48:04 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52788 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753529Ab0HNAsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 20:48:02 -0400
+Date: Fri, 13 Aug 2010 17:47:29 -0700
+From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Joern Engel <joern@logfs.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] Bkl ioctl removal for 2.6.36
-Date: Sat, 14 Aug 2010 02:47:48 +0200
-Message-Id: <1281746868-6731-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+Cc: Grant Coady <gcoady.lk@gmail.com>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk
+Subject: Re: [0/3] 2.6.27.52 stable review
+Message-ID: <20100814004729.GA3695@suse.de>
+References: <20100813214704.GA18960@kroah.com>
+ <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com>
+ <20100813230712.GA1703@suse.de>
+ <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com>
+ <AANLkTimruyaAB-raY2ywqPQSR-h+yp7tME=eTKngcMQm@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimruyaAB-raY2ywqPQSR-h+yp7tME=eTKngcMQm@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Fri, Aug 13, 2010 at 05:12:57PM -0700, Linus Torvalds wrote:
+> On Fri, Aug 13, 2010 at 4:47 PM, Grant Coady <gcoady.lk@gmail.com> wrote:
+> >
+> > Machine is running, but there's a lot of these in the dmesg:
+> >
+> > WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
+> 
+> That would seem to be because of the lack of commit 05fa199d45c in
+> 2.6.27. It got marked for stable, but probably never went so far back
+> as 2.6.27.
 
-Please pull the bkl/ioctl branch that can be found at:
+Yup, I didn't include it there.  Grant, if you add that, does the
+warning go away?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	bkl/ioctl
+> That said, I do wonder if it is worth it maintaining a 2.6.27 that the
+> maintainer can't even boot on his machines any more.
 
-This removes struct file_operations:ioctl() as there are no more users
-of it.
+Yeah, I'm beginning to wonder about it as well.  I think it's expected
+lifespan is very near to the end.
 
-That branch is based on a very recent version of your tree and not
-2.6.35 because I needed every pending pushdowns to be upstream before
-applying the final removal (and test it with allyesconfig).
+thanks,
 
-Thanks,
-	Frederic
----
-
-Arnd Bergmann (2):
-      logfs: kill BKL
-      bkl: Remove locked .ioctl file operation
-
-Frederic Weisbecker (1):
-      v4l: Remove reference to bkl ioctl in compat ioctl handling
-
-
- Documentation/filesystems/Locking         |    8 +-------
- Documentation/filesystems/vfs.txt         |    6 +-----
- drivers/media/video/v4l2-compat-ioctl32.c |    7 +------
- fs/bad_inode.c                            |    7 -------
- fs/compat_ioctl.c                         |    3 +--
- fs/ioctl.c                                |   18 ++++--------------
- fs/logfs/dir.c                            |    2 +-
- fs/logfs/file.c                           |    6 +++---
- fs/logfs/logfs.h                          |    3 +--
- fs/proc/inode.c                           |   17 ++++-------------
- include/linux/fs.h                        |    5 ++---
- 11 files changed, 19 insertions(+), 63 deletions(-)
+greg k-h
