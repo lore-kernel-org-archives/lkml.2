@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934752Ab0HNNns (ORCPT <rfc822;w@1wt.eu>);
+	id S1757215Ab0HNNnx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 09:43:53 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42353 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934746Ab0HNNns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 14 Aug 2010 09:43:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40026 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757215Ab0HNNn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 09:43:28 -0400
-Date: Sat, 14 Aug 2010 06:43:43 -0700
-From: Greg KH <gregkh@suse.de>
-To: sedat.dilek@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Call traces w/ 2.6.35.2 (not w/ 2.6.35.1 plus 2.6.35.2-rc1)
-Message-ID: <20100814134343.GD17430@suse.de>
-References: <AANLkTi=YL_VKKDU8ok=OYotPhyQcGsVB2O-PU29+70YT@mail.gmail.com> <AANLkTikP3FHZ0f7umRRzXcT1ytfa9XfE41UHmQ98kO2h@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikP3FHZ0f7umRRzXcT1ytfa9XfE41UHmQ98kO2h@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=CCMT7qj4ONCPUhAcfZ/zrtab0O4Q50F8RHstij4H9rj/e9XTi95weCjfMnY6fuFkA8
+         oCv64Zql6uVh/GbHIUDQ0xsTz2//C51JYLdcGZnz5+F/S2iKRf4Otn1jkq9L6bu+BagY
+         EfUGcGrHeyMHXFdWFRPJoQXkx8yBbygfgPut8=
+Subject: [PATCH] regulator: ab8500 - fix the logic to remove already
+ registered regulators in error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Sundar R Iyer <sundar.iyer@stericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Aug 2010 21:44:04 +0800
+Message-ID: <1281793444.2974.5.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 08:36:30AM +0200, Sedat Dilek wrote:
-> Hope this helps to give an overview what has changed:
-> 
-> $ grep "diff --git" patch-2.6.35.2 | sort > list.patch-2.6.35.2
-> $ grep "diff --git" new.patch | sort > list.patch-2.6.35.1+patch-2.6.35.2-rc1
-> 
-> 
-> $ diff -Naur list.patch-2.6.35.2
-> list.patch-2.6.35.1+patch-2.6.35.2-rc1 | grep ^+diff
-> +diff --git a/arch/arm/plat-mxc/include/mach/gpio.h
-> b/arch/arm/plat-mxc/include/mach/gpio.h
-> +diff --git a/drivers/net/e1000e/netdev.c b/drivers/net/e1000e/netdev.c
-> +diff --git a/drivers/net/igb/igb_main.c b/drivers/net/igb/igb_main.c
-> +diff --git a/fs/block_dev.c b/fs/block_dev.c
-> +diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-> +diff --git a/Makefile b/Makefile
-> 
-> $ diff -Naur list.patch-2.6.35.2
-> list.patch-2.6.35.1+patch-2.6.35.2-rc1 | grep ^-diff
-> -diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> -diff --git a/mm/memory.c b/mm/memory.c
-> 
-> $ ls -l list.patch-2.6.35.*
-> -rw-r--r-- 1 sd sd 9004 14. Aug 08:32 list.patch-2.6.35.1+patch-2.6.35.2-rc1
-> -rw-r--r-- 1 sd sd 8724 14. Aug 08:32 list.patch-2.6.35.2
+In current implementation, ab8500_regulator_info[0].regulator is not
+unregistered if the error happen at i > 0.
 
-I still fail to understand what you are trying to show here at all.
+This patch fixes the resource leak and also improves the readability.
 
-confused,
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+I think this change is better ( in readability ) than simply change "while (i > 0)" to "while (i >= 0)".
 
-greg k-h
+ drivers/regulator/ab8500.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/regulator/ab8500.c b/drivers/regulator/ab8500.c
+index dc3f1a4..775688e 100644
+--- a/drivers/regulator/ab8500.c
++++ b/drivers/regulator/ab8500.c
+@@ -368,11 +368,9 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
+ 			dev_err(&pdev->dev, "failed to register regulator %s\n",
+ 					info->desc.name);
+ 			/* when we fail, un-register all earlier regulators */
+-			i--;
+-			while (i > 0) {
++			while (--i >= 0) {
+ 				info = &ab8500_regulator_info[i];
+ 				regulator_unregister(info->regulator);
+-				i--;
+ 			}
+ 			return err;
+ 		}
+-- 
+1.7.0.4
+
+
+
