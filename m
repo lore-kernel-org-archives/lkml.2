@@ -1,59 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934694Ab0HNO55 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 10:57:57 -0400
-Received: from smtp141.mail.ukl.yahoo.com ([77.238.184.72]:22512 "HELO
-	smtp141.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756702Ab0HNO54 (ORCPT
+	id S1757352Ab0HNO7l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 10:59:41 -0400
+Received: from smtp145.mail.ukl.yahoo.com ([77.238.184.76]:38040 "HELO
+	smtp145.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756702Ab0HNO7k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 10:57:56 -0400
-X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Aug 2010 10:57:56 EDT
+	Sat, 14 Aug 2010 10:59:40 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
   s=s1024; d=yahoo.de;
   h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
-  b=iF+ek8PBVkj51I0pMz8KPxPfvSAbARpcId/AUwyhSrYIeQP4aK8gZFvqwIOhvioApOzNVN2C7KAcmNGs0rHjjFHQ3gIazPupAOscvKN4ZU79tcMTsYQHa+iNi/h9P1F7Zu9BICfM7yEs3Y/PcEyL9y4TrC0+EOqhz8oO0D0+qcI=  ;
+  b=V0mJyi4Xegn2wWuTYiuFxiUFlF/LRBJxG3r1fvaKhQbNogpRpziLeMF+KNQ3N5OQ1mWFrbzz+gEdxKnfp1ZZgZOE+j3t684RFDSDy918X0PWEEQmUpdsfK39OUEf9Fqxdms9n+9mdmmJw6EaO/GcoQBRRZBx4tpuZ/DuASAGtKk=  ;
 X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
-X-YMail-OSG: 8JidJHYVM1lB5wVCemtbeHX8bAzoYTpG6KqfWom7j1HU.vP
- iQEfXKILfb_.3pPRmTbRXA3c_5nJePOne7rZrFe7Z852ohdmst_dTXJKvStn
- LSHhqkzcj7KePDZgF9tSGwTml9ascJ_NqtJjYBrS8QcgMhplhekBiDwPm0DK
- SJQ9eiC5oMDM.yWXCQaDpCUa0HXxozJXhJPnawwzyj7PTnTafg60LJonZdi.
- tC.8CuQW4oKzX4RZbjiBw1Du5ERmfp65_to2zuWiu3e8fB0o-
+X-YMail-OSG: NcN.X4MVM1kXKViGebb8zMMEcAZvPY0NvLNId8q.rhDk83o
+ yXaSx2bHlVX1XZOUUgAnHR094KDOV0hHMiS1jiXx4qFBxfMgrY4y0HxJa5jT
+ XMqmYJUY0IRFUc9DwfRHHazvMwEflJmgTkcUc72KR7wT8aW08RbPTsT4EMpt
+ HcFA3MuV.0V3NmFS_JyivNKkGRMgX3pV.kuQlixUgnuaNGJC8Ovh61SKEjz5
+ x3Lirgw6Calk5uicp2EM7NUQsLPPe.X9ixXoRwQBxCH671Rs5PwXtkInl4kL
+ ywSGdseHqpToTPZs1efL.1AMznzD3WsE.6HhZkv31nS3vUeY-
 X-Yahoo-Newman-Property: ymail-3
 From: Marek Lindner <lindner_marek@yahoo.de>
-To: Vasiliy Kulikov <segooon@gmail.com>
+To: Vasiliy Kulikov <segooon@gmail.com>,
+        Linus =?utf-8?q?L=C3=BCssing?= <linus.luessing@web.de>
 Subject: Re: batman-adv: design suggestions
-Date: Sat, 14 Aug 2010 16:50:56 +0200
+Date: Sat, 14 Aug 2010 16:59:13 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
-Cc: Sven Eckelmann <sven.eckelmann@gmx.de>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Andrew Lunn <andrew@lunn.ch>,
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, Andrew Lunn <andrew@lunn.ch>,
+        Sven Eckelmann <sven.eckelmann@gmx.de>,
         Simon Wunderlich <siwu@hrz.tu-chemnitz.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Linus =?iso-8859-1?q?L=FCssing?= <linus.luessing@web.de>
-References: <20100809203403.GA16183@albatros> <201008092254.39960.sven.eckelmann@gmx.de> <20100812124813.GB4881@albatros>
-In-Reply-To: <20100812124813.GB4881@albatros>
+        linux-kernel@vger.kernel.org
+References: <20100809203403.GA16183@albatros> <20100813181833.GA5632@albatros>
+In-Reply-To: <20100813181833.GA5632@albatros>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008141650.57375.lindner_marek@yahoo.de>
+Message-Id: <201008141659.14868.lindner_marek@yahoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 12 August 2010 14:48:13 Vasiliy Kulikov wrote:
-> Is there any (un)official documentation/RFC/whatever of batman-adv
-> protocol? I found only expired RFC of batman that is using UDP at
-> www.open-mesh.org.
+On Friday 13 August 2010 20:18:33 Vasiliy Kulikov wrote:
+> d) Why do you send icmp TTL exceeded for the icmp itself? E.g. in case
+> of loop or/and small default TTL you'll probably get a storm of icmps.
+> Exactly in this case IP silently drops TTL exceeded icmps ;)
 
-Yes, there is an unofficial one:
-http://gitorious.org/batman-adv-doc
+These layer2 icmp packets are not ordinary icmp packets. We needed to provide 
+a mechanism to make the network topology visible to debug tools like ping or 
+traceroute which normally "see" no more than one hop as they operate on 
+layer3. Hence, batman-adv does not send an icmp packet for each payload TTL 
+exceeded but for traceroute only. I recommend reviewing the traceroute code to 
+understand how this is supposed to work:
+http://www.open-mesh.org/browser/trunk/batctl/traceroute.c
 
-Note: This document is neither complete nor up to date. Writing proper 
-documentation for the routing protocol is on our long ToDo list. 
+I'd be interested to learn about a problematic scenario in which this 
+mechanism breaks.
 
-The UDP version is very similar to the kernel module since we used the user 
-space implementation to verify the concept.
-
-
-Cheers,
+Regards,
 Marek
