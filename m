@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933310Ab0HNIjQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 04:39:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:32931 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932739Ab0HNIjN (ORCPT
+	id S933421Ab0HNIwU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 04:52:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54322 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932985Ab0HNIwT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 04:39:13 -0400
+	Sat, 14 Aug 2010 04:52:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:references:x-face:face:x-url:x-pgp-fp
-         :x-pgp:date:in-reply-to:message-id:user-agent:mime-version
-         :content-type;
-        b=cvHtrWPZ4SBUNpwjg1CexL8jF6vUoULFIO3TbEtgjblDKpDC+hKdAxoUKd5/bOL0sm
-         n5if1gqsdz2bFS8PibzumRU2ogkkoCgrMyDn5mRpKduH8aaRF196viu+F3vBBqLhGWIG
-         s4v7UoBt05TP4/lWI8SlgA6qgVQsYEL7qUNYU=
-From: Michal Nazarewicz <mina86@mina86.com>
-To: Xiaofan Chen <xiaofanc@gmail.com>
-Cc: Dries Van Puymbroeck <dries.van.puymbroeck@gmail.com>,
-        linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        =?utf-8?Q?Micha?= =?utf-8?Q?=C5=82?= Nazarewicz 
-	<m.nazarewicz@samsung.com>,
-        Dries Van Puymbroeck <dries.vanpuymbroeck@dekimo.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: Gadget: g_multi: added INF file for gadget with multiple configurations
-References: <1281691874-8154-1-git-send-email-dries.vanpuymbroeck@dekimo.com>
-	<AANLkTikk7T6v8zwzEQuZ7yDgf6AcdEfNJr7BG+z1O02n@mail.gmail.com>
-	<87sk2i45es.fsf@erwin.mina86.com>
-	<AANLkTin_o36qmavka+aJaDOBpNRGc=xxKdPdtWWUcVG8@mail.gmail.com>
-X-Face: PbkBB1w#)bOqd`iCe"Ds{e+!C7`pkC9a|f)Qo^BMQvy\q5x3?vDQJeN(DS?|-^$uMti[3D*#^_Ts"pU$jBQLq~Ud6iNwAw_r_o_4]|JO?]}P_}Nc&"p#D(ZgUb4uCNPe7~a[DbPG0T~!&c.y$Ur,=N4RT>]dNpd;KFrfMCylc}gc??'U2j,!8%xdD
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAJFBMVEWbfGlUPDDHgE57V0jUupKjgIObY0PLrom9mH4dFRK4gmjPs41MxjOgAAACQElEQVQ4jW3TMWvbQBQHcBk1xE6WyALX1069oZBMlq+ouUwpEQQ6uRjttkWP4CmBgGM0BQLBdPFZYPsyFUo6uEtKDQ7oy/U96XR2Ux8ehH/89Z6enqxBcS7Lg81jmSuujrfCZcLI/TYYvbGj+jbgFpHJ/bqQAUISj8iLyu4LuFHJTosxsucO4jSDNE0Hq3hwK/ceQ5sx97b8LcUDsILfk+ovHkOIsMbBfg43VuQ5Ln9YAGCkUdKJoXR9EclFBhixy3EGVz1K6eEkhxCAkeMMnqoAhAKwhoUJkDrCqvbecaYINlFKSRS1i12VKH1XpUd4qxL876EkMcDvHj3s5RBajHHMlA5iK32e0C7VgG0RlzFPvoYHZLRmAC0BmNcBruhkE0KsMsbEc62ZwUJDxWUdMsMhVqovoT96i/DnX/ASvz/6hbCabELLk/6FF/8PNpPCGqcZTGFcBhhAaZZDbQPaAB3+KrWWy2XgbYDNIinkdWAFcCpraDE/knwe5DBqGmgzESl1p2E4MWAz0VUPgYYzmfWb9yS4vCvgsxJriNTHoIBz5YteBvg+VGISQWUqhMiByPIPpygeDBE6elD973xWwKkEiHZAHKjhuPsFnBuArrzxtakRcISv+XMIPl4aGBUJm8Emk7qBYU8IlgNEIpiJhk/No24jHwkKTFHDWfPniR4iw5vJaw2nzSjfq2zffcE/GDjRC2dn0J0XwPAbDL84TvaFCJEU4Oml9pRyEUhR3Cl2t01AoEjRbs0sYugp14/4X5n4pU4EHHnMAAAAAElFTkSuQmCC
-X-Url: http://mina86.com/
-X-PGP-FP: 9134 06FA 7AD8 D134 9D0C  C33F 532C CB00 B7C6 DF1E
-X-PGP: B7C6DF1E
-Date: Sat, 14 Aug 2010 10:39:06 +0200
-In-Reply-To: <AANLkTin_o36qmavka+aJaDOBpNRGc=xxKdPdtWWUcVG8@mail.gmail.com>
-	(Xiaofan Chen's message of "Sat, 14 Aug 2010 09:27:57 +0800")
-Message-ID: <87r5i1h9lh.fsf@erwin.mina86.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0 (Slckware Linux)
+        h=from:to:cc:subject:date:organization:message-id:references
+         :in-reply-to:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=f1SeAli6BHWgqupCSWTxnociRouLtfhNr9daycYPzMy8pmM0rEo2Z5iwyv9ENjyRz2
+         pGiWfNWnbLlKKKWObmdxQHVVe9s12rbsai34piA+8yZsrIVq/Pfj/TykAOJkibkgGvm/
+         k7mYRvXAXdpuOjucBVWkJjjoVMgiqm7tgCCaE=
+From: Grant Coady <gcoady.lk@gmail.com>
+To: Willy Tarreau <w@1wt.eu>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [0/3] 2.6.27.52 stable review
+Date: Sat, 14 Aug 2010 18:52:01 +1000
+Organization: scattered
+Message-ID: <88mc66l6fnh1i5mhqo3gqmdlti2vajesar@4ax.com>
+References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <AANLkTimruyaAB-raY2ywqPQSR-h+yp7tME=eTKngcMQm@mail.gmail.com> <20100814004729.GA3695@suse.de> <h6hc66dkok3im9jpph1oj2m40ijju6c9la@4ax.com> <20100814074333.GF21003@1wt.eu>
+In-Reply-To: <20100814074333.GF21003@1wt.eu>
+X-Mailer: Forte Agent 6.00/32.1186
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xiaofan Chen <xiaofanc@gmail.com> writes:
-> Basically I am just wondering if the following statement is true or not.
+On Sat, 14 Aug 2010 09:43:33 +0200, you wrote:
 
-> On Fri, Aug 13, 2010 at 5:31 PM, Dries Van Puymbroeck wrote:
->> When a mutlifunction gadget has more than 1 configuration, Windows does not
->> use its generic driver for multifunction USB devices.
+>On Sat, Aug 14, 2010 at 05:34:55PM +1000, Grant Coady wrote:
+>> On Fri, 13 Aug 2010 17:47:29 -0700, you wrote:
+>> 
+>> >On Fri, Aug 13, 2010 at 05:12:57PM -0700, Linus Torvalds wrote:
+>> >> On Fri, Aug 13, 2010 at 4:47 PM, Grant Coady <gcoady.lk@gmail.com> wrote:
+>> >> >
+>> >> > Machine is running, but there's a lot of these in the dmesg:
+>> >> >
+>> >> > WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
+>> >> 
+>> >> That would seem to be because of the lack of commit 05fa199d45c in
+>> >> 2.6.27. It got marked for stable, but probably never went so far back
+>> >> as 2.6.27.
+>> >
+>> >Yup, I didn't include it there.  Grant, if you add that, does the
+>> >warning go away?
+>> 
+>> I'm sorry, no idea at all how to cherry pick that, I don't know git :( 
+>> 
+>> Google brings up this thread but not that commit, point me at it and 
+>> I'll try it.  
+>
+>Simply apply this patch (even by hand) :
+>
+>   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff_plain;h=05fa199d45c
+>
+>It solved the warnings for me.
 
-> I am thinking the inf file is not necessary.
-> "When the system detects that a USB device is composite, it loads the
-> USB common class generic parent driver (usbccgp.sys)."
-> http://msdn.microsoft.com/en-us/library/ff538059%28VS.85%29.aspx
+Thanks Willy, got:
 
-<http://msdn.microsoft.com/en-us/library/ff537109(v=VS.85).aspx>
-specifies that for a device to be identified as composite it (among
-other things) "must have a single configuration".  The page has also
-a passage which seems to indicate that the INF is needed:
+grant@deltree:~/linux/linux-2.6.27.52-rc1b$ patch -p1 < ../patch-05fa199d45c
+patching file mm/mmap.c
+Hunk #1 succeeded at 1573 (offset -2 lines).
 
-> If you want the generic parent driver to manage your device, but your
-> device does not have the characteristics necessary to ensure that the
-> system will generate a compatible ID of USB\COMPOSITE, you will have
-> to provide an INF file that loads the generic parent driver.
+Compiling. . . 
 
-Selecting of the configuration is also mentioned as a requirement, and
-the next paragraph points to a web page you've cited:
+Yup, works for me :)
 
-> If your composite device has multiple configurations, the INF file you
-> provide must specify which configuration the generic parent should use
-> in the registry. The necessary registry keys are described in
-> Selecting the Configuration for a Composite USB Device.
+  http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.52-rc1b.gz
 
--- 
-Best regards,                                         _     _
- .o. | Liege of Serenly Enlightened Majesty of      o' \,=./ `o
- ..o | Computer Science,  Michal "mina86" Nazarewicz   (o o)
- ooo +--<mina86-tlen.pl>--<jid:mina86-jabber.org>--ooO--(_)--Ooo--
+Cheers,
+Grant.
