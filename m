@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934675Ab0HNJuO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 05:50:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52408 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934653Ab0HNJuL (ORCPT
+	id S934679Ab0HNJ5m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 05:57:42 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:56275 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934660Ab0HNJ5l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 05:50:11 -0400
-Subject: Re: [PATCH] ideapad-laptop: add new driver
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
-        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <4C6605DF.8080605@canonical.com>
-References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>
-	 <1281690893.23680.475.camel@localhost>  <4C650FFB.7090602@canonical.com>
-	 <1281692078.23680.487.camel@localhost>  <4C6605DF.8080605@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 14 Aug 2010 10:49:58 +0100
-Message-ID: <1281779398.25357.24.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 14 Aug 2010 05:57:41 -0400
+Date: Sat, 14 Aug 2010 15:27:34 +0530
+From: Sundar R IYER <sundar.iyer@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Dan Carpenter <error27@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Subject: Re: [patch] regulator/ab8500: move dereference below the check for
+ NULL
+Message-ID: <20100814095733.GA30094@bnru01.bnr.st.com>
+References: <20100814090316.GX645@bicker>
+ <64F33A1C-EB54-4DFF-85C7-6796CFF475BA@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <64F33A1C-EB54-4DFF-85C7-6796CFF475BA@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-08-14 at 10:56 +0800, Ike Panhc wrote:
-> No, I received the ideapads without any OS preinstalled, and get the
-> design spec with NDA. I asked and got the approve to send the driver
-> to mainline kernel according to the spec. 
+On Sat, Aug 14, 2010 at 11:36:13 +0200, Mark Brown wrote:
+> On 14 Aug 2010, at 10:03, Dan Carpenter wrote:
+> 
+> > I moved the dereference of "ab8500" below the check for NULL.
+> > 
+> > Signed-off-by: Dan Carpenter <error27@gmail.com>
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Cool. I'd like to have a copy of that spec. Please could you tell me who
-in Lenovo (presumably) I should contact?
+Thanx!
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Regards,
+Sundar
