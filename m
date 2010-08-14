@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755770Ab0HNVCy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 17:02:54 -0400
-Received: from 70.mail-out.ovh.net ([91.121.185.63]:34505 "HELO
-	70.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755540Ab0HNVCx (ORCPT
+	id S1756222Ab0HNV3E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 17:29:04 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:37373 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755411Ab0HNV3C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 17:02:53 -0400
-Message-ID: <4C670478.4040609@example.com>
-Date: Sat, 14 Aug 2010 23:02:48 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	Sat, 14 Aug 2010 17:29:02 -0400
+Date: Sat, 14 Aug 2010 23:29:00 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Michal Marek <mmarek@suse.cz>, linux-kbuild <linux-kbuild@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kconfig: fix savedefconfig with choice marked optional
+Message-ID: <20100814212900.GA29962@merkur.ravnborg.org>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioctl definition - has it changed recently?
-References: <4C67023D.6050603@example.com>
-In-Reply-To: <4C67023D.6050603@example.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 322851798786863384
-X-Ovh-Remote: 83.24.108.121 (doa121.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.08.2010 22:53, Piotr Hosowicz wrote:
-> Hello,
->
-> I build new kernels when they become available. Now I have a problem.
-> After I install new kernel I have to run NVidia setup script. Starting
-> from git15 it fails, see attached file. The error line is here:
->
-> /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c: At top level:
-> /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: error:
-> unknown field ‘ioctl’ specified in initializer
-> /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: warning:
-> initialization from incompatible pointer type
->
-> In git14 everything was OK, but now it is not, also with the Git synced
-> kernel. Has something changed from git14 times? I hope that it changed
-> in Linux because it will be fixed earlier than NVidia source.
->
-> My graphic card is 01:00.0 VGA compatible controller: nVidia Corporation
-> G96 [GeForce 9400 GT] (rev a1)
+>From db5b47421d4e9c2f3a35bc3aaa4a1423b767e00a Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Sat, 14 Aug 2010 23:22:16 +0200
+Subject: [PATCH] kconfig: fix savedefconfig with choice marked optional
 
+savedefconfig failed to save the correct minimal config
+when it encountered a choice marked optional.
 
-The latest driver is here:
+Consider following minimal configuration:
+$cat Kconfig
+choice
+	prompt "choice"
+	optional
 
-ftp://download.nvidia.com/XFree86/Linux-x86_64/256.44/
+config A
+	bool "a"
 
-To unpack execute it with --extract-only option.
+config B
+	bool "b"
 
-Regards,
+endchoice
 
-Piotr Hosowicz
+$cat .config | grep -v ^#
+CONFIG_A=y
 
+$conf --savedefconfig=defconfig Kconfig
+
+would before this fix result in an empty file, because
+kconfig would assume that CONFIG_A=y is a default value.
+But because the choice is optional the default is that
+both A and B are =n.
+
+Fix so we handle optional choices correct.
+
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+---
+ scripts/kconfig/confdata.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index c39327e..515253f 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -497,7 +497,9 @@ int conf_write_defconfig(const char *filename)
+ 			/*
+ 			 * If symbol is a choice value and equals to the
+ 			 * default for a choice - skip.
+-			 * But only if value is bool and equal to "y" .
++			 * But only if value is bool and equal to "y" and
++			 * choice is not "optional".
++			 * (If choice is "optional" then all values can be "n")
+ 			 */
+ 			if (sym_is_choice_value(sym)) {
+ 				struct symbol *cs;
+@@ -505,7 +507,7 @@ int conf_write_defconfig(const char *filename)
+ 
+ 				cs = prop_get_symbol(sym_get_choice_prop(sym));
+ 				ds = sym_choice_default(cs);
+-				if (sym == ds) {
++				if (!sym_is_optional(cs) && sym == ds) {
+ 					if ((sym->type == S_BOOLEAN) &&
+ 					    sym_get_tristate_value(sym) == yes)
+ 						goto next_menu;
 -- 
-Na przyjęciu chłopak pyta blondynkę:
-- Czy mogę cię prosić do walca?
-- Zgłupiałeś? To już nie miałeś czym przyjechać?
-NP: Peter Green Splinter Group - I Can't Help Myself
-NB: 2.6.35-git14
+1.6.0.6
+
