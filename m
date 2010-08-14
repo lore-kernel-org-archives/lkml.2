@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757606Ab0HNRLZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 13:11:25 -0400
-Received: from smtp149.mail.ukl.yahoo.com ([77.238.184.80]:31767 "HELO
-	smtp149.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757179Ab0HNRLY (ORCPT
+	id S1757633Ab0HNRPF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 13:15:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41813 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757179Ab0HNRPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 13:11:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.de;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
-  b=W/hm5akYOzNO7hI+BqR101WFKTA81JcXulE4bfxL5t7fX7ciyKVN1w2d2xG7VEDgEAQb4Rn3qvrlwigT+I4M7FZC2LqVszj09d6DWOWuU1az+HZGEXYCmYAmtDRilGxe10vaOt8xtUPs+IWm4OW1a0T5QYmGpSNLNiFMevMUIVg=  ;
-X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
-X-YMail-OSG: ddlNsgAVM1lTGsEXEE2VGJNHwxzVq6YVimXg5NXCIMrdgzz
- lg1kd3bnZbCcqHBf9o_iJl7qWNikzqX3a0YTM7mIDkicCNlT38om9qiM2qg4
- lp1G4Uz4jcufWV.qp8cAmYWg_qoeLalmjm60Dj3z1SiD_1xdnIo5IpOxEcNB
- 58WrfIyl2aKnphinSEIjThawu096Vh.eg7zNWqPdW7Yovqhzkz94d5OCMtvd
- U8r64D7ummA--
-X-Yahoo-Newman-Property: ymail-3
-From: Marek Lindner <lindner_marek@yahoo.de>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Subject: Re: batman-adv: design suggestions
-Date: Sat, 14 Aug 2010 19:10:57 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.32-5-amd64; KDE/4.4.5; x86_64; ; )
-Cc: Sven Eckelmann <sven.eckelmann@gmx.de>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Andrew Lunn <andrew@lunn.ch>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Linus =?iso-8859-1?q?L=FCssing?= <linus.luessing@web.de>
-References: <20100809203403.GA16183@albatros> <201008141650.57375.lindner_marek@yahoo.de> <20100814161915.GB3258@albatros>
-In-Reply-To: <20100814161915.GB3258@albatros>
+	Sat, 14 Aug 2010 13:15:03 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008141910.58879.lindner_marek@yahoo.de>
+In-Reply-To: <AANLkTimNborh0AtHkdnN-aCizDu4+S6ORmeoKzS_nEVH@mail.gmail.com>
+References: <AANLkTimNborh0AtHkdnN-aCizDu4+S6ORmeoKzS_nEVH@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 14 Aug 2010 10:14:24 -0700
+Message-ID: <AANLkTik0gSCA4YAH5VAfmW+a4d5R_nybgLiXa_koWn48@mail.gmail.com>
+Subject: Re: Linux 2.6.35.2
+To: sedat.dilek@gmail.com
+Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        penberg@kernel.org, arthur@psw.ro
+Content-Type: multipart/mixed; boundary=00504501477a55e8f9048dcbbc2a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 14 August 2010 18:19:15 Vasiliy Kulikov wrote:
-> > Note: This document is neither complete nor up to date. Writing proper
-> > documentation for the routing protocol is on our long ToDo list.
-> 
-> Do you plan to register it as RFC/IEEE/whatever when linux batman-adv
-> implementation is stabilized? Or you plan to improve it somehow? :)
+--00504501477a55e8f9048dcbbc2a
+Content-Type: text/plain; charset=ISO-8859-1
 
-As you could see we already made the first "registration" attempt when we wrote 
-the RFC draft. Unfortunately, we neither have the academic background nor the 
-lobby to push things through. But help / ideas / etc are welcome. We are still 
-very interested in seeing this happen.
+On Sat, Aug 14, 2010 at 5:37 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+>
+> root@tbox:~# grep "Aug 14 13:00:5" /var/log/syslog
+> Aug 14 13:00:53 tbox kernel: [ 1084.804086] BUG: scheduling while atomic: bash/3256/0x10000001
 
-We are constantly tweaking / improving the protocol which should not hinder 
-such a standardization. 
+Gaah. Locking problem. We really should have let this one simmer in
+-devel a bit longer before rushing it into -stable.
 
-Cheers,
-Marek
+Attached potential patch. Untested, but I forgot about the locking in
+the first version of the patch, and then the "trivial one-liner fix"
+missed the deeper problem.
+
+Greg - please don't use this patch yet. I'll test it. And wait for
+verification that it fixes other peoblems too.
+
+                    Linus
+
+--00504501477a55e8f9048dcbbc2a
+Content-Type: text/plain; charset=US-ASCII; name="diff.txt"
+Content-Disposition: attachment; filename="diff.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gcuq0yui0
+
+IG1tL21lbW9yeS5jIHwgICAxMyArKysrKystLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDYgaW5z
+ZXJ0aW9ucygrKSwgNyBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9tbS9tZW1vcnkuYyBiL21t
+L21lbW9yeS5jCmluZGV4IDliM2I3M2YuLmI2ZTVmZDIgMTAwNjQ0Ci0tLSBhL21tL21lbW9yeS5j
+CisrKyBiL21tL21lbW9yeS5jCkBAIC0yNzkyLDI0ICsyNzkyLDIzIEBAIHN0YXRpYyBpbnQgZG9f
+YW5vbnltb3VzX3BhZ2Uoc3RydWN0IG1tX3N0cnVjdCAqbW0sIHN0cnVjdCB2bV9hcmVhX3N0cnVj
+dCAqdm1hLAogCXNwaW5sb2NrX3QgKnB0bDsKIAlwdGVfdCBlbnRyeTsKIAotCWlmIChjaGVja19z
+dGFja19ndWFyZF9wYWdlKHZtYSwgYWRkcmVzcykgPCAwKSB7Ci0JCXB0ZV91bm1hcChwYWdlX3Rh
+YmxlKTsKKwlwdGVfdW5tYXAocGFnZV90YWJsZSk7CisKKwkvKiBDaGVjayBpZiB3ZSBuZWVkIHRv
+IGFkZCBhIGd1YXJkIHBhZ2UgdG8gdGhlIHN0YWNrICovCisJaWYgKGNoZWNrX3N0YWNrX2d1YXJk
+X3BhZ2Uodm1hLCBhZGRyZXNzKSA8IDApCiAJCXJldHVybiBWTV9GQVVMVF9TSUdCVVM7Ci0JfQog
+CisJLyogVXNlIHRoZSB6ZXJvLXBhZ2UgZm9yIHJlYWRzICovCiAJaWYgKCEoZmxhZ3MgJiBGQVVM
+VF9GTEFHX1dSSVRFKSkgewogCQllbnRyeSA9IHB0ZV9ta3NwZWNpYWwocGZuX3B0ZShteV96ZXJv
+X3BmbihhZGRyZXNzKSwKIAkJCQkJCXZtYS0+dm1fcGFnZV9wcm90KSk7Ci0JCXB0bCA9IHB0ZV9s
+b2NrcHRyKG1tLCBwbWQpOwotCQlzcGluX2xvY2socHRsKTsKKwkJcGFnZV90YWJsZSA9IHB0ZV9v
+ZmZzZXRfbWFwX2xvY2sobW0sIHBtZCwgYWRkcmVzcywgJnB0bCk7CiAJCWlmICghcHRlX25vbmUo
+KnBhZ2VfdGFibGUpKQogCQkJZ290byB1bmxvY2s7CiAJCWdvdG8gc2V0cHRlOwogCX0KIAogCS8q
+IEFsbG9jYXRlIG91ciBvd24gcHJpdmF0ZSBwYWdlLiAqLwotCXB0ZV91bm1hcChwYWdlX3RhYmxl
+KTsKLQogCWlmICh1bmxpa2VseShhbm9uX3ZtYV9wcmVwYXJlKHZtYSkpKQogCQlnb3RvIG9vbTsK
+IAlwYWdlID0gYWxsb2NfemVyb2VkX3VzZXJfaGlnaHBhZ2VfbW92YWJsZSh2bWEsIGFkZHJlc3Mp
+Owo=
+--00504501477a55e8f9048dcbbc2a--
