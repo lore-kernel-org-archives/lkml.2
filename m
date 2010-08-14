@@ -1,36 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab0HNQjQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 12:39:16 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:64672 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756836Ab0HNQjP (ORCPT
+	id S1757537Ab0HNQm4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 12:42:56 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33927 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757109Ab0HNQmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 12:39:15 -0400
+	Sat, 14 Aug 2010 12:42:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=vZleMJEl82oXnqgSLHSg/8/NzgVFxGPASq0Hwlh11QsYjrwz/LsugKqCLfPdHMV27K
-         YEOeAHYDDZBvgJ/ShptKUH6FWsDBzKV37PjumNdgNsNORb+NSAIh9Q/+aF20lf6LoEAv
-         RxAoUSoXEW7IkydKAySTNQEdYjjY3+7Mmj6l8=
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sat, 14 Aug 2010 18:39:14 +0200
-Message-ID: <AANLkTikMnW2PfMAQdJKtDGPYeqkev7aJiDMUp6CBznm4@mail.gmail.com>
-Subject: Re: 2.6.36-git: BUG in highmem_32.c:45 causing scheduling while atomic
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: bonbons@linux-vserver.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=qdft/k2pfdkRY0jT1JrWOEkHoKgL0KeY5lk9SyK5tn6dTaOKzBnbM/PtNxlNp3Lcds
+         MvmLtClCNy5aB61sJlDqiL2WFlFmMzrH6HKJxGaP6GqujKpl9hXkgbfMzUS+yTk+sjIl
+         gTDMcfQHJRkTDXa+rH/qNdYcMPo4QxR6VokcU=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org, jkosina@suse.cz,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/2]drivers/video/vesafb.c Fix a typo.
+Date: Sat, 14 Aug 2010 09:43:21 -0700
+Message-Id: <1281804202-27500-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks like another side-effect of BR #16588 to me?
+Not sure if this is a typo or not i.e. using a dictionary online 
+gives no results for "ressource", but doing a search for "ressource"
+I get a wikepedia entry. In any case if it is a typo, then heres 
+a patch to fix it, if not, then I'll add this patch to my
+NACK pile...
 
-Can you try the revert-patches attached to [1], re-compile and give feedback?
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-- Sedat -
+---
+ drivers/video/vesafb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=16588
+diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+index 090aa1a..6a069d0 100644
+--- a/drivers/video/vesafb.c
++++ b/drivers/video/vesafb.c
+@@ -253,7 +253,7 @@ static int __init vesafb_probe(struct platform_device *dev)
+ 	size_vmode = vesafb_defined.yres * vesafb_fix.line_length;
+ 
+ 	/*   size_total -- all video memory we have. Used for mtrr
+-	 *                 entries, ressource allocation and bounds
++	 *                 entries, resource allocation and bounds
+ 	 *                 checking. */
+ 	size_total = screen_info.lfb_size * 65536;
+ 	if (vram_total)
+-- 
+1.7.1.rc1.21.gf3bd6
+
