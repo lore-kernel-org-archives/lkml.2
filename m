@@ -1,210 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932583Ab0HNDEi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 23:04:38 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55118 "EHLO mx1.suse.de"
+	id S1757024Ab0HNDTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 23:19:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49006 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932475Ab0HNDEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 23:04:24 -0400
-Date: Fri, 13 Aug 2010 20:04:08 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Cross <david.cross@cypress.com>
-Cc: hirofumi@mail.parknet.co.jp, linux-kernel@vger.kernel.org, nxz@cypress.com
-Subject: Re: EXPORT_SYMBOL(fat_get_block)
-Message-ID: <20100814030408.GB4779@suse.de>
-References: <20100813175402.GA15024@suse.de>
- <1281724992.12189.16.camel@odc-laptop>
- <20100813190128.GA1372@suse.de>
- <1281727059.16672.20.camel@odc-laptop>
- <20100813192826.GA5078@suse.de>
- <1281731535.29175.17.camel@odc-laptop>
- <20100813221749.GA19569@suse.de>
- <1281741733.22119.20.camel@odc-laptop>
- <20100814002514.GA3182@suse.de>
- <1281748363.7882.15.camel@odc-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281748363.7882.15.camel@odc-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756496Ab0HNDTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 23:19:08 -0400
+Date: Sat, 14 Aug 2010 13:18:45 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Brian Swetland <swetland@google.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, Alan Stern <stern@rowland.harvard.edu>,
+        paulmck@linux.vnet.ibm.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        david@lang.hm, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, mjg59@srcf.ucam.org, pavel@ucw.cz,
+        florian@mickler.org, peterz@infradead.org, tglx@linutronix.de,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100814131845.58544209@notabene>
+In-Reply-To: <201008131707.03484.rjw@sisk.pl>
+References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	<201008130528.21887.rjw@sisk.pl>
+	<AANLkTinMmVdAVaCFXyDZpVRmZ9FCWYhtdeM=o4hdoZnT@mail.gmail.com>
+	<201008131707.03484.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 06:12:43PM -0700, David Cross wrote:
-> On Fri, 2010-08-13 at 17:25 -0700, Greg KH wrote:
-> > On Fri, Aug 13, 2010 at 04:22:13PM -0700, David Cross wrote:
-> > > On Fri, 2010-08-13 at 15:17 -0700, Greg KH wrote:
-> > > > On Fri, Aug 13, 2010 at 01:32:15PM -0700, David Cross wrote:
-> > > > > > 
-> > > > > > What exactly are the performance issues with doing this from userspace,
-> > > > > > vs. the FAT hack?
-> > > > > Usually it takes a lot longer. West Bridge can do MTP transfers at the
-> > > > > performance of the storage device.  Sending the file data through the
-> > > > > processor is typically much slower.
-> > > > 
-> > > > What is "slower" here?  Please, real numbers.
-> > > Sure, here are some of the numbers I have:
-> > > Cypress West Bridge   15
-> > > Blackberry Storm 2    4.6
-> > > Microsoft Zune        3.8
-> > > Nokia N97             2.1
-> > > SEMC W950	      1.1
-> > > SEMC W995             0.85	
-> > > Blackberry Storm      0.7
+On Fri, 13 Aug 2010 17:07:02 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+
 > > 
-> > No, I mean numbers before and after with and without this "hack".
-> I can provide these, but it will take me some time to implement. I
-> will have to use the Zoom II platform to benchmark. Any issues with
-> this approach before I get started?
+> > There is no absolute need to start the suspend process from within the
+> > kernel, but it makes the user space code much simpler for what we
+> > need.  
+> 
+> I'm entirely aware of that.  Still, I think user space is the right place to
+> initiate system suspend.
+> 
 
-It's ok, you don't have to do it right now, I'm just curious as to how
-much speed difference you are seeing here.
+For what it's worth - I completely agree.
 
-As it will be a few weeks before I can even get this into the -next
-tree, it's not of upmost importance at the moment.
+Clearly there is no a lot of unanimity on this, and so lots of room to
+experiment with different approaches.  It's best if we leave as much as
+possible of that experimentation in user-space - just have the kernel do what
+cannot be done elsewhere.
 
-> > > > > This is similar to the applications I have worked
-> > > > > with. The driver is not attempting to replace either the protocol stack
-> > > > > or the use of gadgetfs. All that it is providing is a gadget peripheral
-> > > > > controller driver (that can be used with gadgetfs) along with the
-> > > > > ability to perform pre-allocation and allow for direct transfer.
-> > > > 
-> > > > It's that "pre-allocation" that is the issue.
-> > > Ack.
-> > > 
-> > > > > I re-checked this stack once again to make sure that it had not
-> > > > > fundamentally changed and it seems not to have. What it uses is a
-> > > > > storageserver abstraction to the file system. At the low level this is
-> > > > > still operating on files at the level of open(), read(), write(),
-> > > > > close(). There is no alloc() in the list that I can see. So, I agree
-> > > > > that there is a working stack. As you can tell, the driver is not
-> > > > > attempting to re-create or replace this working stack.  
-> > > > 
-> > > > To "preallocate" a file, just open it and then mmap it and write away,
-> > > > right?  Why can't userspace do that?
-> > > To do this from userspace in entirety, the CPU needs access to the data
-> > > in memory so that it can pass a pointer to the fwrite call. 
-> > 
-> > That's a stream, not mmap.  What's wrong with mmap?  That should provide
-> > what you are looking for here, right?
-> Maybe, if this works we can close the discussion, so far it has not.
-> We do use bmap once the file has been allocated, but does mmap really
-> create an empty file on disk with the correct state saved and without
-> content? 
-
-Well, if you zero out everything on a mmapped file and then close it, it
-should.  But you might just be creating a "sparse" file, so you need to
-be careful about that as well.
-
-What I mean to do about mmap is just that is the way your userspace
-program can write to the file, not as a stream.  That is much faster and
-causes less I/O to the device (well, it should.)  Does that make more
-sense?
-
-> Your question was: "What problem are you trying to solve?" My answer was
-> "performance". I am not sure how to respond to "why can't you slow down
-> the transfer?" or "who cares about performance?" without contrived user
-> scenarios. Syncing your phone takes longer than it needs to. One of the
-> purposes of this chip is that it provides one solution to the problem.
-> The software submitted to the community is our attempt to solve this in
-> a way that works nicely with Linux. I remain open to constructive
-> suggestions, but this argument is sounding increasingly circular in
-> nature.
-
-Sorry, I don't mean this to come off that way at all, my appologies.
-
-I'm just very curious as this is the first time something like this has
-been proposed that I know of, so generally either the design is wrong,
-or it is such a unique situation that no one has ever hit this before.
-
-So far, I'm leaning toward the "design is a bit incorrect" :)
-
-But again, let's take this one thing at a time.  Let's get the driver
-into the tree, with that one ioctl commented out.  We can then work on
-cleaning it all up and figuring out the logic of where it all goes in
-the tree, and what it looks like in the end after the refactoring.
-During that time, we will have plenty of time to discuss why the
-previous attempts ended up with zeros in the file.
-
-Sound good?
-
-> > > > > If so, do you agree with Christoph's feedback concerning the
-> > > > > implementation? Could I add hooks to other file systems and leave them
-> > > > > unpopulated?
-> > > > 
-> > > > ntfs is done by using a FUSE filesystem in userspace on a "raw" block
-> > > > device.  You can't put that type of support in the kernel here :)
-> > > Fair, but to support the removable media model, I don't really need to.
-> > > What if I put a check in the code to verify that the media is removable
-> > > and vfat compatible before executing the fat_get_block call?
-> > 
-> > You can't rely on that flag, sorry, it doesn't work with real-world
-> > devices.
-> > 
-> > And I have removable media right here, that shipped to me formatted as
-> > NTFS, so that is a valid model today.
-> Is it an SD Card? I have little interest in hooking my cell up to a USB
-> powered hard drive at the moment. 
-
-My cell phone hooks up to a USB powered hard drive at the moment :)
-It can also drive a monitor through the usb connection, you would be
-amazed what you can do with these things these days.
-
-> > > > Look at how filesystems work from userspace, they achieve _very_ fast
-> > > > speeds due to mmap and friends.  Heck, some people try to get the OS out
-> > > > of the way entirely by just using direct I/O, or taking to the raw block
-> > > > device.  Not by trying to allocate raw filesystem blocks from userspace,
-> > > > that way lies madness.
-> > > Well, it is not really the filesystem that necessarily bottlenecks the
-> > > performance. It is usually that in combination with the hardware data
-> > > path that this usage implies. If you want to sync a phone without a
-> > > sideloading accelerator, the data path taken is usually as follows:
-> > > 
-> > > 1) data received by USB peripheral, typically into fifos
-> > > 2) cpu gets interrupted, sees that data is there
-> > > 3) cpu sets up DMA transfer to SDRAM to cache data
-> > > 4) At some point CPU initiates DMA transfer from SDRAM to removable
-> > > media.
-> > 
-> > Wait, step 4 is a big jump.  Userspace should be reading that data, and
-> > then writing it back out to a file it opened, not this "dma directly to
-> > media" stuff.
-> My statement was that the hardware and software is convoluted and the
-> data path hits different memories multiple times. Your response seems to
-> be that I left out one of the memory copies to userspace. I think that
-> adds to my point, doesn't it?
-
-Possibly, if those memory copies take a lot of time.
-
-How are all of the other platforms that use Linux as this type of
-device, or even a usb-storage device (of which there are lots) able to
-hit the very fast transfer rates that I have seen so far without needing
-to do this type of preallocation?
-
-> > And yes, you can stream it if you want from userspace to the file if
-> > that's faster, but odds are mmap() will work best here.
-> Ok, but I don't want the data to hit userspace unless the file is read
-> back. Does using mmap support this scenario?
-
-Yes.
-
-> > > 5) depending on the peripheral implementation, data may be buffered
-> > > either in the peripheral (SD/MMC controller) or in the DMA engine
-> > > itself.
-> > 
-> > Yes, you don't know what is backing that filesystem, that's the big
-> > issue, just as you don't know what type of filesystem it is, from within
-> > the kernel.
-> Can't I pass this information into the driver using the ioctl call? If
-> the filesystem is not fat and not removable, this driver should likely
-> not be used, at least not for this purpose.
-
-No, the driver never knows this type of information.  And for good
-reason, you could have 4 different partitions on this block device, all
-different filesystems.  The block driver should never care about the
-filesystem underneath it.
-
-thanks,
-
-greg k-h
+NeilBrown
