@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750971Ab0HNEQh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 00:16:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49487 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab0HNEQf (ORCPT
+	id S932721Ab0HNEiM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 00:38:12 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:62293 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932562Ab0HNEiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 00:16:35 -0400
+	Sat, 14 Aug 2010 00:38:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=cUxpoN/G8mxY6Fpb9nOC7raEIF312TuP7MAWWhmyJOp9Pvfvv38KMMmnWfr6tHZcj/
-         OlVZ9r/SXHSm34+MxPIJadVhpic91VDWebyLCg4T/1Zv7bhTvocDyF5GuT9NJhy5ch5d
-         neBJE9hXbgFFItSYyFvv8Wq9HpUt/BB00DG2M=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: Cyril Hrubis <metan@ucw.cz>
-Subject: Re: zaurus pata_pcmcia corrupted filesystem
-Date: Sat, 14 Aug 2010 06:16:03 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Robert Hancock <hancockrwd@gmail.com>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        Tejun Heo <tj@kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
-References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
-In-Reply-To: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=baP02DHbfefg5BInKVO47VZBlAXbqsMCaY+Br0aM1bVFxG4YrOui1f47f2nQGWTyP+
+         YtV686Jek4zKC/0K4Ohaq2hQVLA4x54WnDeuc0oh0pue0auW/jeDuk/2GfW8WxmjQLv8
+         QBnL1qYDabxJHj3IgdMMzqCmbSvbZDYDm/KYE=
+Subject: Re: [PATCH] perf trace: get rid of the hard-coded paths in the
+ report scripts
+From: Tom Zanussi <tzanussi@gmail.com>
+To: eranian@google.com
+Cc: linux-kernel@vger.kernel.org, acme@infradead.org, mingo@elte.hu,
+        acme@redhat.com, fweisbec@gmail.com, peterz@infradead.org
+In-Reply-To: <4c65046e.cae9d80a.0d93.4def@mx.google.com>
+References: <1281635958-21177-1-git-send-email-tzanussi@gmail.com>
+	 <4c65046e.cae9d80a.0d93.4def@mx.google.com>
+Content-Type: text/plain
+Date: Fri, 13 Aug 2010 23:38:06 -0500
+Message-Id: <1281760686.6598.53.camel@tropicana>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008140616.04034.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne St 11. srpna 2010 16:44:11 Cyril Hrubis napsal(a):
-> Hi!
-> Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
-> interface, sources are here:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlo
-> g;h=refs/heads/zaurus-haxing
-> 
-> Everythig seems to be fine at the first look but sometimes the filesystem
-> gets unconsistent. Typical example is extracting tar archive with big
-> number of files and directories (I used ltp-full archive from
-> http://www.sf.net/projects/ltp/). After doing that, some files or
-> directories are present in the filesystem, eg. you can see them in
-> directory listing but open or fstat returns ENOENT.
-> 
-> Extracting to SD card seems to work without any problems.
-> 
-> Anybody has idea what went wrong?
+Hi Stephane,
 
-I use the pcmcia on a few devices and was unable to replicate it (and I use git 
-and do some heavy compiling on them too). I'll do some further testing.
+On Fri, 2010-08-13 at 10:30 +0200, Stephane Eranian wrote:
+> Tom,
+> 
+> Here is version that works for me. Besides the stat() to access() change, I fixed
+> the pathname you were building, it was missing the language name. The way I solved
+> that is by leveraging the scripting_ops->name field, but for that I had to make sure
+> it would match the subdir name, i.e., all lower-case. I also add an error message
+> when the script is not found, so users understand what went wrong without turning
+> on any sort of debugging.
+> 
 
-Cyril, do you have the PCMCIA timing fix for PXA applied?
+Hmm, I'm not sure why the previous version didn't work for you, since
+that version changed all the scripts to the form:
+
+python/sctop.py
+
+which applied to the format string there, "%s/scripts/%s"
+
+gives
+
+..../scripts/python/sctop.py
+
+so it should have worked.
+
+With your version, I get:
+
+root@tropicana:~# perf trace sctop
+script python/sctop.py not found
+
+because the script names still have the form python/sctop.py but are
+applied to the new format string "%s/scripts/%s/%s" which gives:
+
+..../scripts/python/python/sctop.py
+
+After removing the python/ prefix from all the scripts, everything works
+fine:
+
+root@tropicana:~# perf trace sctop
+good output...
+
+root@tropicana:~# perf record -c 1 -e raw_syscalls:sys_enter -a -- sleep
+1
+[ perf record: Woken up 0 times to write data ]
+[ perf record: Captured and wrote 22.546 MB perf.data (~985061
+samples) ]
+root@tropicana:~# perf trace -g python
+generated Python script: perf-trace.py
+root@tropicana:~# perf trace -s perf-trace.py > out
+good output...
+
+Anyway, for all the reasons you stated and the fact that it gets rid of
+everything but the bare script name, I think your version is a nice
+improvement - I'll repost it along with the small script changes
+mentioned shortly.
+
+Tom
+
+
