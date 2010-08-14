@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab0HNQpP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 12:45:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59092 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757095Ab0HNQpN (ORCPT
+	id S934681Ab0HNQsd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 12:48:33 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57640 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757096Ab0HNQsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 12:45:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=oDvrDu4yhP8Zwfx924AiFQVUuMTZtViP5ukGGy3wxwgGhsjUANtSmjrFn6RN3LqUrl
-         UvLtRDs5ta9wnu/R3twE+VtJ339tqi6qfSSfvpHC9gOkoE/e0ih6Yai+8R1ucbTORp6j
-         sY8dwof6FGp6fDu8uZY2pISi9XjNkjPFuxvOM=
+	Sat, 14 Aug 2010 12:48:32 -0400
+Date: Sat, 14 Aug 2010 18:48:31 +0200
+From: Cyril Hrubis <metan@ucw.cz>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Robert Hancock <hancockrwd@gmail.com>,
+        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
+        Tejun Heo <tj@kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
+        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
+Subject: Re: zaurus pata_pcmcia corrupted filesystem
+Message-ID: <20100814164830.GA23802@atrey.karlin.mff.cuni.cz>
+References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz> <201008140616.04034.marek.vasut@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinJ04d2Bjuv2E4OOG=35TSHArEP6cHqGUQVUoy2@mail.gmail.com>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<AANLkTin2P5kcrC1SU-ANffSHyW8Ar4x4+qFuqVMFhYJE@mail.gmail.com>
-	<AANLkTin-dksybH0ANypheovXXubwd+SRCpurdVRU7-Z=@mail.gmail.com>
-	<1281726579.2810.10.camel@localhost.localdomain>
-	<AANLkTinJ04d2Bjuv2E4OOG=35TSHArEP6cHqGUQVUoy2@mail.gmail.com>
-Date: Sat, 14 Aug 2010 09:45:11 -0700
-Message-ID: <AANLkTinqHKvN_2rApcBe4+8gLSBbPJdCAAFy9GRO9Jj3@mail.gmail.com>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008140616.04034.marek.vasut@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 1:53 PM, Patrick J. LoPresti <lopresti@gmail.com> wrote:
->
-> Consider the following "revision 2" of my proposal:
->
+Hi!
+> > Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
+> > interface, sources are here:
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlo
+> > g;h=refs/heads/zaurus-haxing
+> > 
+> > Everythig seems to be fine at the first look but sometimes the filesystem
+> > gets unconsistent. Typical example is extracting tar archive with big
+> > number of files and directories (I used ltp-full archive from
+> > http://www.sf.net/projects/ltp/). After doing that, some files or
+> > directories are present in the filesystem, eg. you can see them in
+> > directory listing but open or fstat returns ENOENT.
+> > 
+> > Extracting to SD card seems to work without any problems.
+> > 
+> > Anybody has idea what went wrong?
+> 
+> I use the pcmcia on a few devices and was unable to replicate it (and I use git 
+> and do some heavy compiling on them too). I'll do some further testing.
+> 
+> Cyril, do you have the PCMCIA timing fix for PXA applied?
 
-In case I was not clear...
+Well git log says so:
 
-I am volunteering to implement this myself, but only if there is a
-realistic chance my patches will be accepted.
+...
+    pxa2xx/cpufreq: Fix PCMCIA frequency scaling
+    
+    The MCxx values must be based off memory clock, not CPU core clock.
+    
+    This also fixes the bug where on some machines the LCD went crazy while using
+    PCMCIA.
+    
+...
 
- - Pat
+
+At least it's your tree that I've been testing ;).
+
+-- 
+Cyril Hrubis
