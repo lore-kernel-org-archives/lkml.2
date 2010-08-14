@@ -1,71 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757238Ab0HNNpE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 09:45:04 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40240 "EHLO mail.skyhub.de"
+	id S934730Ab0HNNuF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 09:50:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33683 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757093Ab0HNNpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 09:45:02 -0400
-Date: Sat, 14 Aug 2010 15:44:55 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>, Mike Frysinger <vapier.adi@gmail.com>
-Cc: Chris Metcalf <cmetcalf@tilera.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [GIT PULL] core/hweight changes for v2.6.35
-Message-ID: <20100814134455.GA21218@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Mike Frysinger <vapier.adi@gmail.com>,
-	Chris Metcalf <cmetcalf@tilera.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-kernel@vger.kernel.org,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Ingo Molnar <mingo@elte.hu>
-References: <20100517212138.GA21629@elte.hu>
- <AANLkTikvJna6vnc73RVhVAJZ8mERJoFk=V6Nwq-3HHWz@mail.gmail.com>
- <4C65BF90.6000302@zytor.com>
- <AANLkTikaHsbdM0XSaHH1iE9p8cYE=YFM3an=+xB-JKgZ@mail.gmail.com>
- <4C65DF22.5090406@zytor.com>
+	id S1756404Ab0HNNuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 09:50:03 -0400
+Date: Sat, 14 Aug 2010 06:49:59 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+        Andreas Bombe <aeb@debian.org>, linux-kernel@vger.kernel.org,
+        devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging/comedi das08_cs.c: Fix io_req_t conversion
+Message-ID: <20100814134959.GA20390@suse.de>
+References: <1281749062-9907-1-git-send-email-aeb@debian.org> <20100814083212.GB11915@comet.dominikbrodowski.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C65DF22.5090406@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100814083212.GB11915@comet.dominikbrodowski.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, Aug 13, 2010 at 05:11:14PM -0700
-
-> On 08/13/2010 02:59 PM, Mike Frysinger wrote:
-> > 
-> > but those targets still define CONFIG_GENERIC_HWEIGHT right ?  so at
-> > the least, we should be wrapping the prototypes in linux/bitops.h with
-> > that ...
-> > 
+On Sat, Aug 14, 2010 at 10:32:12AM +0200, Dominik Brodowski wrote:
+> Thanks, Andreas.
 > 
-> Yes, I guess they do.
+> Greg, do you have other -staging stuff pending to push to Linus? If so,
+> could you take it? Otherwise, I'll queue it up for my bugfixes branch.
 
-Actually, Mike's issue is valid, if I understand it correctly. From
-looking at <arch/blackfin/include/asm/bitops.h>, Blackfin doesn't need
-the generic software variants __sw_hweightXX at all, right?
+Yes I do, I can take this, thanks.
 
-In that case, <include/linux/bitops.h> is pulling in needlessly
-unresolved symbols for arches which have their hw versions of
-hweight and don't need sw variants. However, if you want to include
-<asm-generic/bitops/hweight.h> and benefit from the compile-time
-evaluation of the const hweight args, you're going to need to rename
-the hweightXX() functions in <arch/blackfin/include/asm/bitops.h> to
-__arch_hweightXX but that shouldn't be a problem I guess :).
-
-Let me give your patch from couple of mails ago a quick spin...
-
--- 
-Regards/Gruss,
-    Boris.
+greg k-h
