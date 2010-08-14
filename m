@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755664Ab0HNLVd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 07:21:33 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53952 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753952Ab0HNLVc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 07:21:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BwQMJN0c7iH6OKj0Rrbfhbc3nRG9H6EnPUmbGdPYooYzzZShwTBLEGWmJvWVXx7uPh
-         NMFil7qjsN6jdSvpp8H7Sgr6Mu9d4//WoswS/07t2K0uNivC3nV7JspJbcIgFbMGhrjS
-         /1ctZWvKmasJrKzxWRlBTkUdf+9PrgVPe3qak=
+	id S1755944Ab0HNLaD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 07:30:03 -0400
+Received: from odpn1.odpn.net ([212.40.96.53]:50983 "EHLO odpn1.odpn.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754689Ab0HNLaC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 07:30:02 -0400
+X-Greylist: delayed 1097 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Aug 2010 07:30:02 EDT
+From: "Gabor Z. Papp" <gzp@papp.hu>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re:2.6.27.52 stable review
+References: <20100813214704.GA18960@kroah.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11)
+Date: Sat, 14 Aug 2010 13:11:43 +0200
+Message-ID: <x6r5i1o3dc@gzp>
 MIME-Version: 1.0
-In-Reply-To: <a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
-References: <20100813212313.GA22102@kroah.com>
-	<a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
-Date: Sat, 14 Aug 2010 14:21:31 +0300
-X-Google-Sender-Auth: xamz6EKzThKSCuKaPkP720jyo8U
-Message-ID: <AANLkTi=YfKZkE6ee6rE9LvtAiQ6F0YaTHbN+O_dTGHKb@mail.gmail.com>
-Subject: Re: Linux 2.6.35.2
-From: Pekka Enberg <penberg@kernel.org>
-To: Arthur Titeica <arthur@psw.ro>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="=-=-="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 1:35 PM, Arthur Titeica <arthur@psw.ro> wrote:
-> On Fri, 13 Aug 2010 14:23:13 -0700, Greg KH <gregkh@suse.de> wrote:
->> I'm announcing the release of the 2.6.35.2 kernel.
->>
->> All users of the 2.6.35 kernel series must upgrade.
->>
->
-> I'm not sure this is the right mailing list but this is the first
-> kernel that fails to boot for me (since 2.6.33.x).
->
-> The laptop just restarts right after "Freeing unused kernel memory:
-> 628k freed"
->
-> 2.6.35.1 is fine with the same .config.
->
-> Anyone willing to help me to debug?
+--=-=-=
 
-You could try 'git bisect' between v2.6.35.1 and v2.6.35.2 to narrow
-the problem down to a specific commit.
+* Greg KH <gregkh@suse.de>:
+
+| If I could get some people to please test this -rc release?
+
+BTW seems like 2.6.27 no more combatible with GNU Make 3.82:
+
+$ make oldconfig
+Makefile:443: *** mixed implicit and normal rules.  Stop.
+
+Same with line 1609.
+
+
+--=-=-=
+Content-Type: text/x-patch
+Content-Disposition: inline; filename=Makefile.diff
+
+--- Makefile.orig	2010-08-13 23:02:40.000000000 +0200
++++ Makefile	2010-08-14 13:10:00.650815242 +0200
+@@ -440,7 +440,11 @@
+ include $(srctree)/arch/$(SRCARCH)/Makefile
+ export KBUILD_DEFCONFIG
+ 
+-config %config: scripts_basic outputmakefile FORCE
++config: scripts_basic outputmakefile FORCE
++	$(Q)mkdir -p include/linux include/config
++	$(Q)$(MAKE) $(build)=scripts/kconfig $@
++
++%config: scripts_basic outputmakefile FORCE
+ 	$(Q)mkdir -p include/linux include/config
+ 	$(Q)$(MAKE) $(build)=scripts/kconfig $@
+ 
+@@ -1602,7 +1606,11 @@
+ 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
+ 
+ # Modules
+-/ %/: prepare scripts FORCE
++/: prepare scripts FORCE
++	$(cmd_crmodverdir)
++	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
++	$(build)=$(build-dir)
++%/: prepare scripts FORCE
+ 	$(cmd_crmodverdir)
+ 	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
+ 	$(build)=$(build-dir)
+
+--=-=-=--
