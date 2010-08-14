@@ -1,77 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab0HNAj4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 20:39:56 -0400
-Received: from king.tilera.com ([72.1.168.226]:19587 "EHLO king.tilera.com"
+	id S1756507Ab0HNAnc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 20:43:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52676 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008Ab0HNAj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 20:39:56 -0400
-Message-Id: <201008140039.o7E0dqTq005996@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 13 Aug 2010 20:32:41 -0400
-Subject: [PATCH] arch/tile: Rename the hweight() implementations to __arch_hweight().
-To: Borislav Petkov <petkovbb@googlemail.com>,
-        Mike Frysinger <vapier.adi@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <AANLkTikvJna6vnc73RVhVAJZ8mERJoFk=V6Nwq-3HHWz@mail.gmail.com>
-X-OriginalArrivalTime: 14 Aug 2010 00:39:55.0208 (UTC) FILETIME=[37077C80:01CB3B49]
+	id S1752406Ab0HNAnb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 20:43:31 -0400
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread,
+ take three
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: david@lang.hm, arjan@infradead.org, peterz@infradead.org,
+        Brian Swetland <swetland@google.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-kernel@vger.kernel.org, galibert@pobox.com, florian@mickler.org,
+        tglx@linutronix.de, menage@google.com, paulmck@linux.vnet.ibm.com,
+        linux-pm@lists.linux-foundation.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, swmike@swm.pp.se
+In-Reply-To: <20100813190801.GB26950@thunk.org>
+References: <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com>
+	 <E3F3D3E1-4DF7-47E3-895D-95F6BC22CCC4@mit.edu>
+	 <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+	 <20100812174303.GD2524@linux.vnet.ibm.com>
+	 <AANLkTim1U6QpRyfwYCq2uRA=7-a8ryfDrzv5VCqmHnyB@mail.gmail.com>
+	 <20100813152254.GD2511@linux.vnet.ibm.com>
+	 <AANLkTimdpgC2DBn1pS2OG35+_06-L6TZ9Q_nb+C6Yeqv@mail.gmail.com>
+	 <20100813155738.GA11507@isilmar-3.linta.de>
+	 <AANLkTikN2zKcLtFJ6EdBU=iqT78bZKt_rKQoPNBRXJHj@mail.gmail.com>
+	 <1281719489.8407.17.camel@mulgrave.site> <20100813190801.GB26950@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 13 Aug 2010 20:43:19 -0400
+Message-ID: <1281746599.16747.11.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See commit 1527bc8b928dd1399c3d3467dd47d9ede210978a.
+On Fri, 2010-08-13 at 15:08 -0400, Ted Ts'o wrote: 
+> On Fri, Aug 13, 2010 at 01:11:29PM -0400, James Bottomley wrote:
+> > 
+> > The facts are that suspend blockers identifies a race within our suspend
+> > to ram system that permeates from top to bottom (that's from server to
+> > mobile).  The problem is that resume events are racy with respect to
+> > suspend and vice versa.  This manifests itself most annoyingly on my
+> > laptop in the "double suspend" case: where I suspend with a pending
+> > suspend event, my laptop will resume and then immediately re-suspend
+> > (leading me to kick myself and remind myself to check it stayed up
+> > before pushing unsuspend and walking away).  The other annoying case is
+> > that if I accidentally close the lid before presenting, I have to wait
+> > until the system is fully down before pressing resume.
+> 
+> This is all true, but it's also only one aspect of the problem.  I
+> agree with you that this is the part of the problem which affects
+> Linux at all scales, from Cloud servers in a data center that want to
+> suspend themselves when there's no work to do (and then fail to
+> respond to the WOL packet) to mobile platforms that are suspending
+> much more frequently.
+> 
+> However, it doesn't follow that this is the _only_ problem that the
+> Android folks might be interested in solving.  Opportunistic suspend
+> is a different part of the problem space, which is generally believed
+> by the Android developers as being far more efficient than a
+> user-space suspend manager.  Rafael has stated his complete
+> unwillingness to deal with this part of the problem.  OK, so that
+> probably means that for Android, it will have to be an out-of-tree
+> kernel patch.
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
+OK, so I tried desperately to avoid the question of whether
+opportunistic suspend is a good way of managing power.  However, it
+seems to me that it is in use by several systems (android, olpc, etc).
+I'll defer the question of whether it's better in user space or kernel
+space to Rafael's investigations  ...  but I will point out that the
+kernel space patch, once the suspend blockers issue is taken care of
+looks like a single patch to one file, so should be locally containable
+and should allow upstream to be useful as the driver base again.
 
-Mike, thanks for the pointer to the hweight issue.  Since we are using
-__builtin_popcount() and the compiler can do constant propagation, etc.,
-with it at compile-time, this is less critical, but it seems like the
-easiest way to get the definitions of the HWEIGHT macros.
+> The question, then, is whether a solution which addresses the only
+> part of the problem which Rafael is interested in dealing with at this
+> point, is sufficient such that (a) the kernel-level opportunistic
+> suspend can be done as an out-of-tree patch, while simultaneously (b)
+> allowing device drivers for Android devices can utilize Rafael's
+> interfaces to solve the race design bug currently found in our suspend
+> subsystem, while (c) requiring minimal changes to the Android
+> userspace, and (d) providing all of the statistics and debugging
+> functionality required by the Android userspace.
+> 
+> If we can engineer a solution which meets (a), (b), (c), and (d)
+> above, then everyone will be happy.
 
- arch/tile/include/asm/bitops.h |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+That's my goal.
 
-diff --git a/arch/tile/include/asm/bitops.h b/arch/tile/include/asm/bitops.h
-index 84600f3..6832b4b 100644
---- a/arch/tile/include/asm/bitops.h
-+++ b/arch/tile/include/asm/bitops.h
-@@ -98,26 +98,27 @@ static inline int fls64(__u64 w)
- 	return (sizeof(__u64) * 8) - __builtin_clzll(w);
- }
- 
--static inline unsigned int hweight32(unsigned int w)
-+static inline unsigned int __arch_hweight32(unsigned int w)
- {
- 	return __builtin_popcount(w);
- }
- 
--static inline unsigned int hweight16(unsigned int w)
-+static inline unsigned int __arch_hweight16(unsigned int w)
- {
- 	return __builtin_popcount(w & 0xffff);
- }
- 
--static inline unsigned int hweight8(unsigned int w)
-+static inline unsigned int __arch_hweight8(unsigned int w)
- {
- 	return __builtin_popcount(w & 0xff);
- }
- 
--static inline unsigned long hweight64(__u64 w)
-+static inline unsigned long __arch_hweight64(__u64 w)
- {
- 	return __builtin_popcountll(w);
- }
- 
-+#include <asm-generic/bitops/const_hweight.h>
- #include <asm-generic/bitops/lock.h>
- #include <asm-generic/bitops/sched.h>
- #include <asm-generic/bitops/ext2-non-atomic.h>
--- 
-1.6.5.2
+James
+
 
