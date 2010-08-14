@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976Ab0HNCci (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 22:32:38 -0400
-Received: from xenotime.net ([72.52.115.56]:41589 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756795Ab0HNCcg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 22:32:36 -0400
-Date: Fri, 13 Aug 2010 19:32:33 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org, hch@lst.de,
-        akpm@linux-foundation.org, yehuda@hq.newdream.net
-Subject: Re: [PATCH 0/8] rados block device and ceph refactor
-Message-Id: <20100813193233.80f09131.rdunlap@xenotime.net>
-In-Reply-To: <Pine.LNX.4.64.1008131609270.5383@cobra.newdream.net>
-References: <1281721240-26130-1-git-send-email-sage@newdream.net>
-	<20100813153706.ee61c94e.rdunlap@xenotime.net>
-	<Pine.LNX.4.64.1008131609270.5383@cobra.newdream.net>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932479Ab0HNClA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 13 Aug 2010 22:41:00 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:12737 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932393Ab0HNCk6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 13 Aug 2010 22:40:58 -0400
+From: Vikas Chaudhary <vikas.chaudhary@qlogic.com>
+To: Dan Carpenter <error27@gmail.com>, Ravi Anand <ravi.anand@qlogic.com>
+CC: Dept_iscsi_driver <iscsi-driver@qlogic.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Karen Higgins <karen.higgins@qlogic.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
+Date: Fri, 13 Aug 2010 19:40:51 -0700
+Subject: RE: [patch] qla4xxx: initialize some variables for gcc
+Thread-Topic: [patch] qla4xxx: initialize some variables for gcc
+Thread-Index: Acs7KxeA9WQu3N2gQ9OLl/y8J4D4/QALU2eA
+Message-ID: <5E4F49720D0BAD499EE1F01232234BA87128F84727@AVEXMB1.qlogic.org>
+References: <20100813210350.GT645@bicker>
+In-Reply-To: <20100813210350.GT645@bicker>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7E2fYoM021687
 
-On Fri, 13 Aug 2010 16:11:55 -0700 (PDT) Sage Weil wrote:
+>-----Original Message-----
+>From: Dan Carpenter [mailto:error27@gmail.com]
+>Sent: Saturday, August 14, 2010 2:34 AM
+>To: Ravi Anand
+>Cc: Vikas Chaudhary; Dept_iscsi_driver; James E.J. Bottomley; Karen
+>Higgins; linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org; kernel-
+>janitors@vger.kernel.org
+>Subject: [patch] qla4xxx: initialize some variables for gcc
+>
+>Gcc complains because these variables aren't initialized.
+>
+>drivers/scsi/qla4xxx/ql4_nx.c: In function â€˜qla4_8xxx_get_flash_infoâ€™:
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: warning: â€˜fidâ€™ may be used
+>uninitialized in this function
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: note: â€˜fidâ€™ was declared here
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: warning: â€˜midâ€™ may be used
+>uninitialized in this function
+>drivers/scsi/qla4xxx/ql4_nx.c:1952: note: â€˜midâ€™ was declared here
+>
+>It's not a big deal.  We only print the uninitialized value on error
+>paths when debugging is enabled.  Still it's nice to clean it up and to
+>stop gcc from grumbling.
+>
+>Signed-off-by: Dan Carpenter <error27@gmail.com>
+>
+>diff --git a/drivers/scsi/qla4xxx/ql4_nx.c b/drivers/scsi/qla4xxx/ql4_nx.c
+>index 3e119ae..e443fa6 100644
+>--- a/drivers/scsi/qla4xxx/ql4_nx.c
+>+++ b/drivers/scsi/qla4xxx/ql4_nx.c
+>@@ -1949,7 +1949,8 @@ qla4_8xxx_get_fdt_info(struct scsi_qla_host *ha)
+> 	uint16_t cnt, chksum;
+> 	uint16_t *wptr;
+> 	struct qla_fdt_layout *fdt;
+>-	uint16_t mid, fid;
+>+	uint16_t mid = -1;
+>+	uint16_t fid = -1;
+> 	struct ql82xx_hw_data *hw = &ha->hw;
+>
+> 	hw->flash_conf_off = FARX_ACCESS_FLASH_CONF;
 
-> On Fri, 13 Aug 2010, Randy Dunlap wrote:
-> > On Fri, 13 Aug 2010 10:40:32 -0700 Sage Weil wrote:
-> > 
-> > > Hi,
-> > > 
-> > > The rados block device (rbd) implements a network block device backed by 
-> > > the Ceph distributed object store (think nbd/iSCSI, but distributed and 
-> > > fault tolerant).  At the suggestion of Christoph and James, this version 
-> > > of the patchset factors out the common Ceph bits (the network protocol, 
-> > > cluster membership, and object storage parts) into a libceph module 
-> > > (currently in net/ceph/ and include/linux/ceph/) that is shared by the 
-> > > file system component (fs/ceph) and rbd (drivers/block/rbd.c). The first 
-> > > few patches lay some groundwork, #7 moves does the ceph -> libceph+ceph 
-> > > split, and #8 adds the block device driver.
-> > 
-> > Hi,
-> > Did patch #7 make it to any mailing lists?
-> > I didn't receive it.
-> 
-> Sorry, I think vger ate it (it's 850KB).  You can see it here:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/sage/ceph-client.git;a=commit;h=a6da68196474aabcdcc2f5dab64c0b55ca5090b7
+I already submitted patch to fix this warning in following mail thread.
+http://marc.info/?l=linux-scsi&m=128152158403853&w=2
 
-Yes, vger has a limit of 400 KB on lkml and netdev.
-Other lists are probably less than that.
-
-David M. wrote on 13-AUG-2007:
-
-"The posting limit is 400K for linux-kernel, netdev, and one
-or two of the other lists."
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
