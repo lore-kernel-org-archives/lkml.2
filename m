@@ -1,78 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab0HNNEe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 09:04:34 -0400
-Received: from fieldses.org ([174.143.236.118]:51906 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756356Ab0HNNEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 09:04:33 -0400
-Date: Sat, 14 Aug 2010 09:02:35 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Neil Brown <neilb@suse.de>, Al Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd: fix NULL dereference in nfsd_statfs()
-Message-ID: <20100814130235.GA28304@fieldses.org>
-References: <s5h4oeywrde.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h4oeywrde.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757003Ab0HNNMW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 09:12:22 -0400
+Received: from mail1-relais-roc.national.inria.fr ([192.134.164.82]:58133 "EHLO
+	mail1-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753286Ab0HNNMV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 09:12:21 -0400
+X-Greylist: delayed 574 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Aug 2010 09:12:21 EDT
+X-IronPort-AV: E=Sophos;i="4.55,367,1278280800"; 
+   d="scan'208";a="65398672"
+Subject: [PATCH] missing inline keyword for static function in
+ linux/dmaengine.h
+From: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+To: linux-kernel@vger.kernel.org
+Cc: Dan Williams <dan.j.williams@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Andre Noll <maan@systemlinux.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Aug 2010 15:02:44 +0200
+Message-ID: <1281790964.3017.5.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 03:53:49PM +0200, Takashi Iwai wrote:
-> The commit ebabe9a9001af0af56c0c2780ca1576246e7a74b
->     pass a struct path to vfs_statfs
-> introduced the struct path initialization, and this seems to trigger
-> an Oops on my machine.
-> 
-> fh_dentry field may be NULL and set later in fh_verify(), thus the
-> initialization of path must be after fh_verify().
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Add a missing inline keyword for static function in linux/dmaengine.h to
+avoid duplicate symbol definitions.
 
-I'm travelling, but, looks good:
+Signed-off-by: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
 
-	Acked-by: J. Bruce Fields <bfields@redhat.com>
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 5204f01..57d2b76 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -477,7 +477,7 @@ static inline bool dma_dev_has_pq_continue(struct dma_device *dma)
+ 	return (dma->max_pq & DMA_HAS_PQ_CONTINUE) == DMA_HAS_PQ_CONTINUE;
+ }
+ 
+-static unsigned short dma_dev_to_maxpq(struct dma_device *dma)
++static inline unsigned short dma_dev_to_maxpq(struct dma_device *dma)
+ {
+ 	return dma->max_pq & ~DMA_HAS_PQ_CONTINUE;
+ }
 
---b.
 
-> ---
->  fs/nfsd/vfs.c |   14 ++++++++------
->  1 files changed, 8 insertions(+), 6 deletions(-)
-> 
-> diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-> index 96360a8..661a6cf 100644
-> --- a/fs/nfsd/vfs.c
-> +++ b/fs/nfsd/vfs.c
-> @@ -2033,15 +2033,17 @@ out:
->  __be32
->  nfsd_statfs(struct svc_rqst *rqstp, struct svc_fh *fhp, struct kstatfs *stat, int access)
->  {
-> -	struct path path = {
-> -		.mnt	= fhp->fh_export->ex_path.mnt,
-> -		.dentry	= fhp->fh_dentry,
-> -	};
->  	__be32 err;
->  
->  	err = fh_verify(rqstp, fhp, 0, NFSD_MAY_NOP | access);
-> -	if (!err && vfs_statfs(&path, stat))
-> -		err = nfserr_io;
-> +	if (!err) {
-> +		struct path path = {
-> +			.mnt	= fhp->fh_export->ex_path.mnt,
-> +			.dentry	= fhp->fh_dentry,
-> +		};
-> +		if (vfs_statfs(&path, stat))
-> +			err = nfserr_io;
-> +	}
->  	return err;
->  }
->  
-> -- 
-> 1.7.2.1
-> 
