@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab0HNPLD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 11:11:03 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:51850 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab0HNPLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 11:11:02 -0400
-Date: Sat, 14 Aug 2010 08:10:48 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
-        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
-        James.Bottomley@suse.de, arjan@infradead.org, swmike@swm.pp.se,
-        galibert@pobox.com, dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100814151048.GA2461@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100809181638.GI3026@linux.vnet.ibm.com>
- <AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
- <20100811222854.GJ2516@linux.vnet.ibm.com>
- <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
- <20100812010612.GL2516@linux.vnet.ibm.com>
- <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
- <20100812034435.GA7403@linux.vnet.ibm.com>
- <20100813115751.3bbbafbd@lxorguk.ukuu.org.uk>
- <20100813152912.GE2511@linux.vnet.ibm.com>
- <20100814073843.GA27430@elf.ucw.cz>
+	id S1756853Ab0HNPZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 11:25:59 -0400
+Received: from smarthost03.mail.zen.net.uk ([212.23.3.142]:57333 "EHLO
+	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751132Ab0HNPZ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 11:25:58 -0400
+Message-ID: <4C66B580.5060606@cyconix.com>
+Date: Sat, 14 Aug 2010 16:25:52 +0100
+From: Evan Lavelle <sa212+lkml@cyconix.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100814073843.GA27430@elf.ucw.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Driver: PCIe: 'pci_map_sg' returning invalid bus address?
+References: <4C5002AD.6070206@cyconix.com>
+In-Reply-To: <4C5002AD.6070206@cyconix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-Smarthost03-IP: [82.70.243.134]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 09:38:44AM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > > > Think in terms of an ARM laptop. What good is opportunistic suspend if
-> > > > > it's not going to help when the laptop is being used?
-> > > > 
-> > > > For when the laptop is not being used, presumably.
-> > > 
-> > > Or in time between keystrokes for most of the platform (backlight
-> > > excepted). The Intel MID x86 devices are at the point that suspend/resume
-> > > time on x86 is being hurt by the kernel rewriting smp alternatives as we
-> > > go from 2 processors live to 1 and back.
-> > 
-> > Given that you are talking about going from 2 processors to 1 and back,
-> > I would guess that you are not actually talking about suspend/resume,
-> > which is a system-wide thing rather than a CPU-by-CPU thing.  I am not
-> > sure whether you are using CPU hotplug or invoking SMP alternatives once
-> > all but one CPU is idle.
-> 
-> When entering system suspend, we disable non-boot-CPUs to simplify
-> locking. We reenable them when going out of suspend.
+Thanks guys. I had to get this working quickly so I just stuck with my 
+bounce buffer code. I'm not sure that it's technically a 'bounce 
+buffer'; it just so happens that 'pci_alloc_consistent' returns an 
+address in the low 32 bits. This may stop working if the user installs 
+more than 4Gig of memory but I can live with that for now. Performance 
+isn't great (~110Mbytes/s on 4-channel PCIe) but it's good enough.
 
-Thank you for the info, Pavel!
+It's disappointing that LDD didn't have anything to say about this; it's 
+pretty fundamental to DMA on x86_32 and PAE.
 
-So once you are down to one CPU, the last CPU shuts the system off,
-itself included?  Or does the last CPU "run" in a deep idle state
-throughout suspend?  (My guess is the former, and I am also curious
-whether the cache SRAMs are powered off, etc.  But figured I should ask
-rather than guessing.)
+Thanks -
 
-							Thanx, Paul
+Evan
