@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0HNPBD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 11:01:03 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:61742 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab0HNPBB (ORCPT
+	id S1754943Ab0HNPKi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 11:10:38 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37295 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342Ab0HNPKh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 11:01:01 -0400
+	Sat, 14 Aug 2010 11:10:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:organization:message-id:references
-         :in-reply-to:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=aqqFM2H7AmwfJVqxPJfxbkHGlDMZcpmrCmb/eGcuAFJVsTDPFPS3AHLleOJRQyqBTZ
-         in2cim1Csi8x2zHrKCQOgYKGdvXLc8gqdrW3plGw3e8xUes6IC0mir2qZh5MuTlMB6Sw
-         2OXF60bE5A/SzAueAYsIaOo2h8MdLvwyseqGM=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: "Gabor Z. Papp" <gzp@papp.hu>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.27.52 stable review
-Date: Sun, 15 Aug 2010 01:00:56 +1000
-Organization: scattered
-Message-ID: <brbd66deepdbvvsat5jvjqef9d5ct32ihk@4ax.com>
-References: <20100813214704.GA18960@kroah.com> <x6r5i1o3dc@gzp>
-In-Reply-To: <x6r5i1o3dc@gzp>
-X-Mailer: Forte Agent 6.00/32.1186
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=p1N9T9mkYs5fstiCFjp2qGjG3hdqYjfBmUK1yJ0DtGxGq0gIOojIRGQZkvsJeK93x8
+         3DSSAj3CBYosC7PpSX3u/KrLVyL/t3iAnirFSBhzLYx2D/iXW+GCmD6gmY6yOUe1EbES
+         8xb8Gm4OhSq4iYDix15F4/wSIiD0+uX7czO14=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <59961099b1fbdb3e827d3c9f9bed3532@linux.psw.ro>
+References: <20100813212313.GA22102@kroah.com>
+	<a00737cba20cb46512a2248e0477cc0b@linux.psw.ro>
+	<AANLkTi=YfKZkE6ee6rE9LvtAiQ6F0YaTHbN+O_dTGHKb@mail.gmail.com>
+	<20100814133942.GA17430@suse.de>
+	<59961099b1fbdb3e827d3c9f9bed3532@linux.psw.ro>
+Date: Sat, 14 Aug 2010 17:10:36 +0200
+Message-ID: <AANLkTimSuqd_5YG3b9aUDmTaQQskhQBbS2_aerBzjsHQ@mail.gmail.com>
+Subject: Re: Linux 2.6.35.2
+From: Bjarke Istrup Pedersen <gurligebis@gmail.com>
+To: Arthur Titeica <arthur@psw.ro>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Aug 2010 13:11:43 +0200, you wrote:
-
->* Greg KH <gregkh@suse.de>:
+2010/8/14 Arthur Titeica <arthur@psw.ro>:
+> On Sat, 14 Aug 2010 06:39:42 -0700, Greg KH <gregkh@suse.de> wrote:
+>> On Sat, Aug 14, 2010 at 02:21:31PM +0300, Pekka Enberg wrote:
+>>> On Sat, Aug 14, 2010 at 1:35 PM, Arthur Titeica <arthur@psw.ro> wrote:
+>>> > On Fri, 13 Aug 2010 14:23:13 -0700, Greg KH <gregkh@suse.de> wrote:
+>>> >> I'm announcing the release of the 2.6.35.2 kernel.
+>>> >>
+>>> >> All users of the 2.6.35 kernel series must upgrade.
+>>> >>
+>>> >
+>>> > I'm not sure this is the right mailing list but this is the first
+>>> > kernel that fails to boot for me (since 2.6.33.x).
+>>> >
+>>> > The laptop just restarts right after "Freeing unused kernel memory:
+>>> > 628k freed"
+>>> >
+>>> > 2.6.35.1 is fine with the same .config.
+>>> >
+>>> > Anyone willing to help me to debug?
+>>>
+>>> You could try 'git bisect' between v2.6.35.1 and v2.6.35.2 to narrow
+>>> the problem down to a specific commit.
+>>
+>> Yes, if you could please do that, it would be most appreciated.
+>>
+> I'm trying but I'm not even close to a dev and anything beyond 'git
+> pull' looks tricky.
 >
->| If I could get some people to please test this -rc release?
+> I've gotten so far:
 >
->BTW seems like 2.6.27 no more combatible with GNU Make 3.82:
+> $ git bisect start
+> $ git bisect bad
+> $ git bisect good v2.6.35.1
+> fatal: Needed a single revision
+> Bad rev input: v2.6.35.1
+> $ git bisect good v2.6.35
+> Bisecting: 3941 revisions left to test after this (roughly 12 steps)
+> [2192482ee5ce5d5d4a6cec0c351b2d3a744606eb] Merge branch 'for-rmk' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung into
+> devel-stable
 >
->$ make oldconfig
->Makefile:443: *** mixed implicit and normal rules.  Stop.
+> What next? ;)
 >
->Same with line 1609.
 
-I have:
-grant@deltree:~$ make --version
-GNU Make 3.81
-Copyright (C) 2006  Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.
-There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A
-PARTICULAR PURPOSE.
+Build your kernel, and see if it boots.
+If it boots, run: git bisect good
+If it doesn't boot, run: git bisect bad
 
-This program built for i486-slackware-linux-gnu
+Repeat the process until it is done (should be close to 12 times).
+When it is done, it will tell you which commit is the one that breaks booting.
 
-and 2.6.27 builds here just fine.
-
-Grant.
+>
+> --
+> Arthur Titeica
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
