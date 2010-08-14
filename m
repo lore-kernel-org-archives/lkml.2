@@ -1,154 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932553Ab0HND3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 13 Aug 2010 23:29:38 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:58651 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756933Ab0HND3g (ORCPT
+	id S1750971Ab0HNEQh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 00:16:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49487 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750764Ab0HNEQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 13 Aug 2010 23:29:36 -0400
-Date: Fri, 13 Aug 2010 20:29:51 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, ceph-devel@vger.kernel.org, hch@lst.de,
-        akpm@linux-foundation.org, yehuda@hq.newdream.net
-Subject: Re: [PATCH 8/8] rbd: introduce rados block device (rbd), based on
- libceph
-In-Reply-To: <20100813194410.9c608b38.randy.dunlap@oracle.com>
-Message-ID: <Pine.LNX.4.64.1008132015480.2022@cobra.newdream.net>
-References: <1281721240-26130-1-git-send-email-sage@newdream.net>
- <1281721240-26130-9-git-send-email-sage@newdream.net>
- <20100813194410.9c608b38.randy.dunlap@oracle.com>
+	Sat, 14 Aug 2010 00:16:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=cUxpoN/G8mxY6Fpb9nOC7raEIF312TuP7MAWWhmyJOp9Pvfvv38KMMmnWfr6tHZcj/
+         OlVZ9r/SXHSm34+MxPIJadVhpic91VDWebyLCg4T/1Zv7bhTvocDyF5GuT9NJhy5ch5d
+         neBJE9hXbgFFItSYyFvv8Wq9HpUt/BB00DG2M=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Cyril Hrubis <metan@ucw.cz>
+Subject: Re: zaurus pata_pcmcia corrupted filesystem
+Date: Sat, 14 Aug 2010 06:16:03 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        Robert Hancock <hancockrwd@gmail.com>,
+        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
+        Tejun Heo <tj@kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
+        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
+        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
+References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
+In-Reply-To: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008140616.04034.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010, Randy Dunlap wrote:
-> On Fri, 13 Aug 2010 10:40:40 -0700 Sage Weil wrote:
+Dne St 11. srpna 2010 16:44:11 Cyril Hrubis napsal(a):
+> Hi!
+> Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
+> interface, sources are here:
 > 
-> > From: Yehuda Sadeh <yehuda@hq.newdream.net>
-> > 
-> > The rados block device (rbd), based on osdblk, creates a block device
-> > that is backed by objects stored in the Ceph distributed object storage
-> > cluster.  Each device consists of a single metadata object and data
-> > striped over many data objects.
-> > 
-> > The rbd driver supports read-only snapshots.
-> > 
-> > Signed-off-by: Yehuda Sadeh <yehuda@hq.newdream.net>
-> > Signed-off-by: Sage Weil <sage@newdream.net>
-> > ---
-> >  MAINTAINERS               |    9 +
-> >  drivers/block/Kconfig     |   13 +
-> >  drivers/block/Makefile    |    1 +
-> >  drivers/block/rbd.c       | 1844 +++++++++++++++++++++++++++++++++++++++++++++
-> >  drivers/block/rbd_types.h |   73 ++
-> >  5 files changed, 1940 insertions(+), 0 deletions(-)
-> >  create mode 100644 drivers/block/rbd.c
-> >  create mode 100644 drivers/block/rbd_types.h
-> > 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index 5102922..cb34b1b 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -4694,6 +4694,15 @@ F:	fs/qnx4/
-> >  F:	include/linux/qnx4_fs.h
-> >  F:	include/linux/qnxtypes.h
-> >  
-> > +RADOS BLOCK DEVICE (RBD)
-> > +F:	include/linux/qnxtypes.h
-> > +M:	Yehuda Sadeh <yehuda@hq.newdream.net>
-> > +M:	Sage Weil <sage@newdream.net>
-> > +M:	ceph-devel@vger.kernel.org
-> > +S:	Supported
-> > +F:	drivers/block/rbd.c
-> > +F:	drivers/block/rbd_types.h
-> > +
-> >  RADEON FRAMEBUFFER DISPLAY DRIVER
-> >  M:	Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> >  L:	linux-fbdev@vger.kernel.org
-> > diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-> > index de27768..708104b 100644
-> > --- a/drivers/block/Kconfig
-> > +++ b/drivers/block/Kconfig
-> > @@ -488,4 +488,17 @@ config BLK_DEV_HD
-> >  
-> >  	  If unsure, say N.
-> >  
-> > +config BLK_DEV_RBD
-> > +	tristate "Rados block device (RBD)"
-> > +	select CEPH_LIB
-> > +	default n
-> > +	help
-> > +	  Say Y here if you want include the Rados block device, which stripes
-> > +	  a block device over objects stored in the Ceph distributed object
-> > +	  store.
-> > +
-> > +	  More information at http://ceph.newdream.net/.
-> > +
-> > +	  If unsure, say N.
-> > +
-> >  endif # BLK_DEV
+> http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlo
+> g;h=refs/heads/zaurus-haxing
 > 
-> In linux-next of 20100813, I get:
+> Everythig seems to be fine at the first look but sometimes the filesystem
+> gets unconsistent. Typical example is extracting tar archive with big
+> number of files and directories (I used ltp-full archive from
+> http://www.sf.net/projects/ltp/). After doing that, some files or
+> directories are present in the filesystem, eg. you can see them in
+> directory listing but open or fstat returns ENOENT.
 > 
-> net/built-in.o: In function `read_partial_message_section':
-> messenger.c:(.text+0x6598b): undefined reference to `crc32c'
-> net/built-in.o: In function `read_partial_message_bio':
-> messenger.c:(.text+0x65a57): undefined reference to `crc32c'
-> net/built-in.o: In function `write_partial_msg_pages':
-> messenger.c:(.text+0x65e22): undefined reference to `crc32c'
-> net/built-in.o: In function `prepare_write_message':
-> messenger.c:(.text+0x66219): undefined reference to `crc32c'
-> messenger.c:(.text+0x66240): undefined reference to `crc32c'
-> net/built-in.o:messenger.c:(.text+0x66264): more undefined references to `crc32c' follow
+> Extracting to SD card seems to work without any problems.
 > 
-> when CONFIG_INET is not enabled.  It looks like BLK_DEV_RBD needs to depend on
-> INET and possibly on BLOCK (I sent a patch for depends on BLOCK on 2010-aug-04
-> due to other build errors).
+> Anybody has idea what went wrong?
 
-I see the problem: BLK_DEV_RBD and CEPH_FS both have 'select CEPH_LIB' and 
-CEPH_LIB depends on INET and selects LIBCRC32C, but kconfig doesn't 
-propagate those backward dependencies for you.  It looks like CEPH_FS and 
-BLK_DEV_RBD should then depend on/select CEPH_LIB _and_ its dependencies.  
-Patching that (and the BLOCK dependency) up now...
+I use the pcmcia on a few devices and was unable to replicate it (and I use git 
+and do some heavy compiling on them too). I'll do some further testing.
 
-Unless there is a better way to do it?
-
-Thanks!
-sage
-
-
-diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-index 708104b..4a6e1b7 100644
---- a/drivers/block/Kconfig
-+++ b/drivers/block/Kconfig
-@@ -490,7 +490,10 @@ config BLK_DEV_HD
- 
- config BLK_DEV_RBD
- 	tristate "Rados block device (RBD)"
-+	depends on INET && EXPERIMENTAL && BLOCK
- 	select CEPH_LIB
-+	select LIBCRC32C
-+	select CRYPTO_AES
- 	default n
- 	help
- 	  Say Y here if you want include the Rados block device, which stripes
-diff --git a/fs/ceph/Kconfig b/fs/ceph/Kconfig
-index 89f9718..73a7b31 100644
---- a/fs/ceph/Kconfig
-+++ b/fs/ceph/Kconfig
-@@ -1,9 +1,9 @@
- config CEPH_FS
-         tristate "Ceph distributed file system (EXPERIMENTAL)"
- 	depends on INET && EXPERIMENTAL
-+	select CEPH_LIB
- 	select LIBCRC32C
- 	select CRYPTO_AES
--	select CEPH_LIB
- 	default n
- 	help
- 	  Choose Y or M here to include support for mounting the
+Cyril, do you have the PCMCIA timing fix for PXA applied?
