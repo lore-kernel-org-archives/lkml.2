@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934681Ab0HNQsd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 12:48:33 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57640 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757096Ab0HNQsc (ORCPT
+	id S1757563Ab0HNQxd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 12:53:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58907 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757096Ab0HNQxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 12:48:32 -0400
-Date: Sat, 14 Aug 2010 18:48:31 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Robert Hancock <hancockrwd@gmail.com>,
-        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        Tejun Heo <tj@kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org
-Subject: Re: zaurus pata_pcmcia corrupted filesystem
-Message-ID: <20100814164830.GA23802@atrey.karlin.mff.cuni.cz>
-References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz> <201008140616.04034.marek.vasut@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008140616.04034.marek.vasut@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 14 Aug 2010 12:53:32 -0400
+Date: Sat, 14 Aug 2010 09:53:51 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: paulmck@linux.vnet.ibm.com
+Cc: Pavel Machek <pavel@ucw.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        "Ted Ts'o" <tytso@mit.edu>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
+        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
+        James.Bottomley@suse.de, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100814095351.6a996187@infradead.org>
+In-Reply-To: <20100814151048.GA2461@linux.vnet.ibm.com>
+References: <20100809181638.GI3026@linux.vnet.ibm.com>
+	<AANLkTikwHaKpLdRdxmZj6JDJnsZ+o-jzbVcXhRW3Jmd9@mail.gmail.com>
+	<20100811222854.GJ2516@linux.vnet.ibm.com>
+	<AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
+	<20100812010612.GL2516@linux.vnet.ibm.com>
+	<AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
+	<20100812034435.GA7403@linux.vnet.ibm.com>
+	<20100813115751.3bbbafbd@lxorguk.ukuu.org.uk>
+	<20100813152912.GE2511@linux.vnet.ibm.com>
+	<20100814073843.GA27430@elf.ucw.cz>
+	<20100814151048.GA2461@linux.vnet.ibm.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
-> > interface, sources are here:
-> > 
-> > http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlo
-> > g;h=refs/heads/zaurus-haxing
-> > 
-> > Everythig seems to be fine at the first look but sometimes the filesystem
-> > gets unconsistent. Typical example is extracting tar archive with big
-> > number of files and directories (I used ltp-full archive from
-> > http://www.sf.net/projects/ltp/). After doing that, some files or
-> > directories are present in the filesystem, eg. you can see them in
-> > directory listing but open or fstat returns ENOENT.
-> > 
-> > Extracting to SD card seems to work without any problems.
-> > 
-> > Anybody has idea what went wrong?
+On Sat, 14 Aug 2010 08:10:48 -0700
+"Paul E. McKenney" <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> I use the pcmcia on a few devices and was unable to replicate it (and I use git 
-> and do some heavy compiling on them too). I'll do some further testing.
-> 
-> Cyril, do you have the PCMCIA timing fix for PXA applied?
+> So once you are down to one CPU, the last CPU shuts the system off,
+> itself included?  Or does the last CPU "run" in a deep idle state
+> throughout suspend?  (My guess is the former, and I am also curious
+> whether the cache SRAMs are powered off, etc.  But figured I should
+> ask rather than guessing.)
 
-Well git log says so:
+they tend to go "off".
 
-...
-    pxa2xx/cpufreq: Fix PCMCIA frequency scaling
-    
-    The MCxx values must be based off memory clock, not CPU core clock.
-    
-    This also fixes the bug where on some machines the LCD went crazy while using
-    PCMCIA.
-    
-...
+however I think you're making an assumption that there is a
+real difference between a deep idle state and "off"....
+
+For modern x86 hardware, that assumption isn't really valid.
+(other than a very very small sram that stores register content in the
+idle case)
 
 
-At least it's your tree that I've been testing ;).
 
 -- 
-Cyril Hrubis
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
