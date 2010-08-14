@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934659Ab0HNJle (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 05:41:34 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:50108 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753311Ab0HNJlc (ORCPT
+	id S934675Ab0HNJuO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 05:50:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52408 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934653Ab0HNJuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 05:41:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=grTuoznRihpWs2vZRGVAMen5aNNVwezf36QTpgUI5ZmAS/USg8DLZp7Dgv6e3aUJF5
-         YjKTPMqu2TLbF2C1OcGUl6EVtNGaAzYNMxx+iBz8De8t7LR4np1BWO3dAwMkpAMIVFYe
-         47Z+trhdGC3xTPcHmBcuOcAsPJ+pZacXCg5SE=
-Date: Sat, 14 Aug 2010 11:43:53 +0200
-From: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-To: Cyril Hrubis <metan@ucw.cz>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Robert Hancock <hancockrwd@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        utx@penguin.cz, zaurus-devel@www.linuxtogo.org,
-        Marek Vasut <marek.vasut@gmail.com>
-Subject: Re: zaurus pata_pcmcia corrupted filesystem
-Message-ID: <20100814094353.GB926@boggieman.bredbandsbolaget.se>
-Reply-To: Kristoffer Ericson <kristoffer.ericson@gmail.com>
-References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 14 Aug 2010 05:50:11 -0400
+Subject: Re: [PATCH] ideapad-laptop: add new driver
+From: David Woodhouse <dwmw2@infradead.org>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-acpi@vger.kernel.org,
+        Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alan Cox <alan@linux.intel.com>, Thomas Renninger <trenn@suse.de>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C6605DF.8080605@canonical.com>
+References: <1281672482-10909-1-git-send-email-ike.pan@canonical.com>
+	 <1281690893.23680.475.camel@localhost>  <4C650FFB.7090602@canonical.com>
+	 <1281692078.23680.487.camel@localhost>  <4C6605DF.8080605@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Aug 2010 10:49:58 +0100
+Message-ID: <1281779398.25357.24.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.6 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 04:44:11PM +0200, Cyril Hrubis wrote:
-> Hi!
-> Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
-> interface, sources are here:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlog;h=refs/heads/zaurus-haxing
-> 
-> Everythig seems to be fine at the first look but sometimes the filesystem gets
-> unconsistent. Typical example is extracting tar archive with big number of
-> files and directories (I used ltp-full archive from
-> http://www.sf.net/projects/ltp/). After doing that, some files or directories
-> are present in the filesystem, eg. you can see them in directory listing but
-> open or fstat returns ENOENT.
-> 
-> Extracting to SD card seems to work without any problems.
-> 
-> Anybody has idea what went wrong?
+On Sat, 2010-08-14 at 10:56 +0800, Ike Panhc wrote:
+> No, I received the ideapads without any OS preinstalled, and get the
+> design spec with NDA. I asked and got the approve to send the driver
+> to mainline kernel according to the spec. 
 
-What kind of number of files (in tar archive) are we talking about in round
-figures? Does the files it affect differ in size (large fail, small doesnt)..?
-Its hard to say without having more data (as always).
+Cool. I'd like to have a copy of that spec. Please could you tell me who
+in Lenovo (presumably) I should contact?
 
-> 
-> -- 
-> Cyril Hrubis
-> metan@ucw.cz
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
+
