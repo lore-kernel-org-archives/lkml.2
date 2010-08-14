@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab0HNLjk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 07:39:40 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:51651 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755951Ab0HNLjj (ORCPT
+	id S1756056Ab0HNLoC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 07:44:02 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51855 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755951Ab0HNLoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 07:39:39 -0400
-Date: Sat, 14 Aug 2010 13:39:38 +0200
-From: Cyril Hrubis <metan@ucw.cz>
-To: Stanislav Brabec <utx@penguin.cz>
-Cc: Kristoffer Ericson <kristoffer.ericson@gmail.com>,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        Robert Hancock <hancockrwd@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Jeff Garzik <jgarzik@pobox.com>, pavel@ucw.cz, rpurdie@rpsys.net,
-        lenz@cs.wisc.edu, arminlitzel@web.de, thommycheck@gmail.com,
-        dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
-        zaurus-devel@www.linuxtogo.org, Marek Vasut <marek.vasut@gmail.com>
-Subject: Re: zaurus pata_pcmcia corrupted filesystem
-Message-ID: <20100814113937.GB9346@atrey.karlin.mff.cuni.cz>
-References: <20100811144410.GA12029@atrey.karlin.mff.cuni.cz> <20100814094353.GB926@boggieman.bredbandsbolaget.se> <1281782580.6707.1.camel@utx.lan>
+	Sat, 14 Aug 2010 07:44:00 -0400
+Date: Sat, 14 Aug 2010 07:43:53 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Nigel Cunningham <nigel@tuxonice.net>, Mark Lord <kernel@teksavvy.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        pm list <linux-pm@lists.linux-foundation.org>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>
+Subject: Re: 2.6.35 Regression: Ages spent discarding blocks that weren't
+ used!
+Message-ID: <20100814114353.GA7929@infradead.org>
+References: <4C58C528.4000606@tuxonice.net>
+ <4C5960B0.7020003@teksavvy.com>
+ <4C59DA16.4020500@tuxonice.net>
+ <AANLkTik_PH-7T7OFtzaCtPbAHE6pqnYMUsjP25KtsRnR@mail.gmail.com>
+ <4C5A59FC.1030304@tuxonice.net>
+ <AANLkTi=NMHkKduZzsLiiYt3=w8++8epb5aGrqv7V3-vB@mail.gmail.com>
+ <4C5B925A.5000409@tuxonice.net>
+ <AANLkTinU24v6Mty54YL3gv3M5S+4jdN5vHD54KknchAG@mail.gmail.com>
+ <20100813115424.GA24737@infradead.org>
+ <AANLkTik5osZR12nZVVvJY7LimiUZtBdZcnDi4VYNXhwr@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281782580.6707.1.camel@utx.lan>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTik5osZR12nZVVvJY7LimiUZtBdZcnDi4VYNXhwr@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > > Marek Vasut ported deprecated zaurus pcmcia disk driver to the pata_pcmcia
-> > > interface, sources are here:
-> > > 
-> > > http://git.kernel.org/?p=linux/kernel/git/marex/pxa-linux-2.6.git;a=shortlog;h=refs/heads/zaurus-haxing
-> > > 
-> > > Everythig seems to be fine at the first look but sometimes the filesystem gets
-> > > unconsistent. Typical example is extracting tar archive with big number of
-> > > files and directories (I used ltp-full archive from
-> > > http://www.sf.net/projects/ltp/). After doing that, some files or directories
-> > > are present in the filesystem, eg. you can see them in directory listing but
-> > > open or fstat returns ENOENT.
-> > > 
-> > > Extracting to SD card seems to work without any problems.
-> > > 
-> > > Anybody has idea what went wrong?
-> > 
-> > What kind of number of files (in tar archive) are we talking about in round
-> > figures? Does the files it affect differ in size (large fail, small doesnt)..?
-> > Its hard to say without having more data (as always).
-> 
-> These mysterious failures were discussed several times before in
-> zaurus-devel[1][2][3][4][5][6]. We suspected PCMCIA code, RAM errors or
-> bad voltage.
-> 
-> Typical reproducers:
-> 
-> git status on kernel tree (false result)
-> copy files from CF to SD or USB (errors in files)
-> gcc while using CF WLAN or CF Bluetooth (segfault)
-> 
-> It happened in all kernels at least since 2.6.26, but probably in all
-> 2.6 kernels.
->
+On Fri, Aug 13, 2010 at 11:15:38AM -0700, Hugh Dickins wrote:
+> However, I am still not quite sure that we can already make that
+> change for 2.6.35 (-stable).  Can you reassure me on the question I
+> raise above: if we issue a discard to a device with cache, wait for
+> "completion", then issue a write into the area spanned by that
+> discard, can we be certain that the write to backing store will not be
+> reordered before the discard of backing store (unless the device is
+> just broken)?  Without a  REQ_HARDBARRIER in the 2.6.35 scheme?  It
+> seems a very reasonable assumption to me, but I'm learning not to
+> depend upon reasonable assumptions here.  (By the way, it doesn't
+> matter at all whether writes not spanned by the discard pass it or
+> not.)
 
-These seems to be different, at least it newer occured so often to me. Now
-installing debian packages often fails because it cannot remove temporary
-files, the filesystem worked reasonably good before.
-
-The usecase is to unpack archive with a lot rather small files somewhere deeper
-to the filesystem tree. Eg. installing gtk2-devel failed miserably when trying
-to move all the header files from *.h.dpkg-new to *.h, this works rather good
-with old driver.
-
--- 
-Cyril Hrubis
+Neither the SCSI (SPC and SBC) make the cache part of the protocol
+except for the commands to commit them to non-volatile storage, so
+even when reordering the backing device write it must still not
+reorder them vs notified completion.  That's nothing specific to
+discard, e.g. when a write was notified as complete a new read must
+come from the cache even if it hasn't been commited to the backing
+device.  Now I can't guarantee that all cheap SSD firmware
+implementations gets thus right for TRIM, but if one is really
+that buggy we need to blacklist it.
