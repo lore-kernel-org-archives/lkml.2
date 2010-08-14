@@ -1,44 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757291Ab0HNW6Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 18:58:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44324 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757216Ab0HNW6X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 18:58:23 -0400
-Message-ID: <4C671F8C.3090203@suse.cz>
-Date: Sun, 15 Aug 2010 00:58:20 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1757341Ab0HNXUI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 19:20:08 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:55459 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab0HNXUG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 19:20:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=GUYh6uuTtOKWjUE5FBL60yiGz8aNI5VTUdhBB8iWR9n7uioWxt4bPha9jYyEh1k9Kf
+         cUTycYlSTNIrCVSz5yZE9hTRqfPDthNzNyh+oISj0c7O/GDtiO/O2lWRxeojrl/PJb5f
+         Iqa44zsGV18QcmtGA8a4jhty5huuG94yOK68I=
+Date: Sun, 15 Aug 2010 01:19:33 +0200
+From: Victor van den Elzen <victor.vde@gmail.com>
+To: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Cc: Mario Limonciello <superm1@ubuntu.com>, Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH] platform/x86: move rfkill for Dell Mini 1012 to
+ compal-laptop
+Message-ID: <20100814231933.GA4404@archmini>
 MIME-Version: 1.0
-To: Martin Michlmayr <tbm@cyrius.com>
-Cc: Mikael Pettersson <mikpe@it.uu.se>, Olof Johansson <olof@lixom.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] arm: R_ARM_REL32 relocation support
-References: <34780qy39a4uj093a4y> <1280993763-15254-1-git-send-email-olof@lixom.net> <19546.31437.994840.466509@pilspetsen.it.uu.se> <20100814114428.GA25336@jirafa.cyrius.com> <4C671CDB.7070707@suse.cz>
-In-Reply-To: <4C671CDB.7070707@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 15.8.2010 00:46, Michal Marek napsal(a):
-> Dne 14.8.2010 13:44, Martin Michlmayr napsal(a):
->> * Mikael Pettersson <mikpe@it.uu.se> [2010-08-05 10:48]:
->>> Michal Marek's patch(*) to use -fno-dwarf2-cfi-asm already exists
->>> and is IMO the correct solution in that it addresses the cause
->>> of the problem rather than its symptoms.
->>>
->>> (*) http://lkml.org/lkml/2010/7/26/154
->>
->> I cannot find Michal's patch in mainline or in RMK's patch tracker.
->> Michal, did you submit your patch to
->> http://www.arm.linux.org.uk/developer/patches/ ?
-> 
-> No, I didn't. I didn't even know about this site. I'll do it in a minute.
+Like others in the Mini series, the Dell Mini 1012 does not support
+the smbios hook required by dell-laptop.
 
-http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=6328/1
+Signed-off-by: Victor van den Elzen <victor.vde@gmail.com>
+Cc: stable <stable@kernel.org>
+---
+ drivers/platform/x86/compal-laptop.c |    9 +++++++++
+ drivers/platform/x86/dell-laptop.c   |    7 +++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
-Michal
+diff --git a/drivers/platform/x86/compal-laptop.c b/drivers/platform/x86/compal-laptop.c
+index 71ff154..90111d7 100644
+--- a/drivers/platform/x86/compal-laptop.c
++++ b/drivers/platform/x86/compal-laptop.c
+@@ -259,6 +259,14 @@ static struct dmi_system_id __initdata compal_dmi_table[] = {
+ 		.callback = dmi_check_cb
+ 	},
+ 	{
++		.ident = "Dell Mini 1012",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
++		},
++		.callback = dmi_check_cb
++	},
++	{
+ 		.ident = "Dell Inspiron 11z",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+@@ -375,5 +383,6 @@ MODULE_ALIAS("dmi:*:rnIFT00:rvrIFT00:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron910:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1010:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1011:*");
++MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1012:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1110:*");
+ MODULE_ALIAS("dmi:*:svnDellInc.:pnInspiron1210:*");
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index 661e3ac..6110601 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -116,6 +116,13 @@ static struct dmi_system_id __devinitdata dell_blacklist[] = {
+ 		},
+ 	},
+ 	{
++		.ident = "Dell Mini 1012",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
++		},
++	},
++	{
+ 		.ident = "Dell Inspiron 11z",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
+--
+1.7.2.1
+
