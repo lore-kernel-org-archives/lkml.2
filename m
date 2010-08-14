@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325Ab0HNHmA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 03:42:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56015 "EHLO smtps.tip.net.au"
+	id S933393Ab0HNHnz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 03:43:55 -0400
+Received: from 1wt.eu ([62.212.114.60]:40950 "EHLO 1wt.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932895Ab0HNHl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 03:41:59 -0400
-Date: Sat, 14 Aug 2010 17:41:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: geert@linux-m68k.org, heiko.carstens@de.ibm.com, sachinp@in.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-arch@vger.kernel.org
-Subject: Re: Latest git build failure on s390 - dma_get_cache_alignment()
-Message-Id: <20100814174145.567cac3d.sfr@canb.auug.org.au>
-In-Reply-To: <20100814163804N.fujita.tomonori@lab.ntt.co.jp>
-References: <AANLkTinnLY4LZ-3xbKEJVR3Qjw5xghRZ6i=tWfw8hJHH@mail.gmail.com>
-	<20100813154056S.fujita.tomonori@lab.ntt.co.jp>
-	<20100813172752.4acd7089.sfr@canb.auug.org.au>
-	<20100814163804N.fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S932895Ab0HNHny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 03:43:54 -0400
+Date: Sat, 14 Aug 2010 09:43:33 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Grant Coady <gcoady.lk@gmail.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [Stable-review] [0/3] 2.6.27.52 stable review
+Message-ID: <20100814074333.GF21003@1wt.eu>
+References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <AANLkTimruyaAB-raY2ywqPQSR-h+yp7tME=eTKngcMQm@mail.gmail.com> <20100814004729.GA3695@suse.de> <h6hc66dkok3im9jpph1oj2m40ijju6c9la@4ax.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__14_Aug_2010_17_41_45_+1000_pEB0.AEAOzfaRHbl"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <h6hc66dkok3im9jpph1oj2m40ijju6c9la@4ax.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__14_Aug_2010_17_41_45_+1000_pEB0.AEAOzfaRHbl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Aug 14, 2010 at 05:34:55PM +1000, Grant Coady wrote:
+> On Fri, 13 Aug 2010 17:47:29 -0700, you wrote:
+> 
+> >On Fri, Aug 13, 2010 at 05:12:57PM -0700, Linus Torvalds wrote:
+> >> On Fri, Aug 13, 2010 at 4:47 PM, Grant Coady <gcoady.lk@gmail.com> wrote:
+> >> >
+> >> > Machine is running, but there's a lot of these in the dmesg:
+> >> >
+> >> > WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
+> >> 
+> >> That would seem to be because of the lack of commit 05fa199d45c in
+> >> 2.6.27. It got marked for stable, but probably never went so far back
+> >> as 2.6.27.
+> >
+> >Yup, I didn't include it there.  Grant, if you add that, does the
+> >warning go away?
+> 
+> I'm sorry, no idea at all how to cherry pick that, I don't know git :( 
+> 
+> Google brings up this thread but not that commit, point me at it and 
+> I'll try it.  
 
-Hi,
+Simply apply this patch (even by hand) :
 
-On Sat, 14 Aug 2010 16:39:15 +0900 FUJITA Tomonori <fujita.tomonori@lab.ntt=
-.co.jp> wrote:
->
-> > Even better would be to get most of the -mm tree into linux-next
-> > itself ... ;-)
->=20
-> Yeah, is there any way to push patches into both -mm and linux-next?
+   http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff_plain;h=05fa199d45c
 
--mm is based on linux-next so if something is in linux-next, it will be
-in -mm (next time -mm is released).
+It solved the warnings for me.
 
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Willy
 
---Signature=_Sat__14_Aug_2010_17_41_45_+1000_pEB0.AEAOzfaRHbl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMZki5AAoJEDMEi1NhKgbslnEH/0uTO9DFtJgvI1z3XkCpMVvA
-Fqxqd+ot8ooWLZwZrrp1COIl1CQSJwe68eg179GDQDE9hkukDZcKupBcjK3ZCZGq
-zZ38wdK5xbBzHk0Kyka91BX3j+bwsMhixKju3i0MqZp530kMHHOxD9fIcguJ4j3C
-0iMJR/DkWOAssnacbTT5W0A0fUQq3Cl4RjMchlEY2A+ltNGDi7z9hiOvgvfUnNcM
-+JrcKtcOG37HzsRBjt4rjUUqZEzuxHmA7kLKGngavepF9uEu3EanZs+ZUJKrckiM
-7AqUKXOVAVGWDPzqZhFdBS5JidxHKc3wMZ/w6YmKqBI8K0IMC+42hFDnogQclRA=
-=vLcx
------END PGP SIGNATURE-----
-
---Signature=_Sat__14_Aug_2010_17_41_45_+1000_pEB0.AEAOzfaRHbl--
