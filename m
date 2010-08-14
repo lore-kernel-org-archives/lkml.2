@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756955Ab0HNPk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 11:40:57 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45920 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab0HNPk4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 11:40:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=hritpw5+CjbJW/hSibvJeKB7YoElbY96sYR9ifTmHRfxsmYk2ua9rFOiYraxp6jFSx
-         zPauotAiOcSn7C+vKGsu8o61+6tmGVDRltOGBQW9d5lwwRda4XCTXXvnHhDg0jj0KOv5
-         dUuTOWGgpjrkgjTB7OP4gLDrILTrxV74+26VI=
+	id S1757296Ab0HNPyM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 11:54:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755994Ab0HNPyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 11:54:11 -0400
+Date: Sat, 14 Aug 2010 16:54:01 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, lvm-devel@redhat.com
+Subject: Re: [dm-devel] linux-2.6.35+ causes LVM to fail with "
+	device-mapper: version ioctl failed: Inappropriate ioctl for device"
+Message-ID: <20100814155401.GJ26032@agk-dp.fab.redhat.com>
+Mail-Followup-To: Jeff Chua <jeff.chua.linux@gmail.com>,
+	device-mapper development <dm-devel@redhat.com>,
+	lkml <linux-kernel@vger.kernel.org>, lvm-devel@redhat.com
+References: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20100814134254.GC17430@suse.de>
-References: <AANLkTi=YL_VKKDU8ok=OYotPhyQcGsVB2O-PU29+70YT@mail.gmail.com>
-	<20100814134254.GC17430@suse.de>
-Date: Sat, 14 Aug 2010 17:40:55 +0200
-Message-ID: <AANLkTi=+=2GEiC_WASfxC2u_xeTe4xdrZzLBs5Q1j3b7@mail.gmail.com>
-Subject: Re: Call traces w/ 2.6.35.2 (not w/ 2.6.35.1 plus 2.6.35.2-rc1)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, wylda@volny.cz
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 3:42 PM, Greg KH <gregkh@suse.de> wrote:
-> On Sat, Aug 14, 2010 at 08:20:26AM +0200, Sedat Dilek wrote:
->> Hi Greg,
->>
->> looks like 2.6.35.2 misses some fixes from 2.6.35.2-rc1?
->
-> Huh?  I don't understand what you are trying to show here at all.
->
->> sd@tbox:~/src/linux-2.6/patches/upstream$ cat patch-2.6.35.1
->> patch-2.6.35.2-rc1 > new.patch
->>
->> sd@tbox:~/src/linux-2.6/patches/upstream$ grep "diff --git" new.patch | wc -l
->> 132
->>
->> sd@tbox:~/src/linux-2.6/patches/upstream$ grep "diff --git"
->> patch-2.6.35.2 | wc -l
->> 128
->>
->> Unfortunately, a kernel patched w/ 2.6.35.2 causes Call traces here.
->
-> And these are also showing up on Linus's tree right now as well?  Have
-> you reported them?
->
+On Sat, Aug 14, 2010 at 02:01:47AM +0800, Jeff Chua wrote:
+> It seems one of these commits in
+> 8357422d4bf33bc2c35884d4016c3fc9efbbc1d2 is causing LVM2
+> (LVM2.2.02.72) to fail.
 
-Shall I open a separate BR for 2.6.35-gitX?
-I can confirm the problem occured in the first time in git12 (saw it
-in git14 and git15).
+Did you (partially) bisect that or are you just guessing?
+The only one there possibly relevant is 7e507eb6432afdd798d4c6dccf949b8c43ef151c.
 
-As I have currently a slow system, I won't do a bisect or X-times
-kernel-builds, sorry for that.
-Each build takes me around 2hrs.
+> Previously good logical volumes cannot be mounted anymore, and new one
+> cannot be created. All failed with the error ...
+> "device-mapper: version ioctl failed: Inappropriate ioctl for device"
 
-- Sedat -
+What distribution?  What version of udev package?
+'lvm version' output?
+Provide long listing of /dev/mapper and any dm/lvm devices in /dev.
+Add -vvvv to your lvm command for better clues.
+
+> Is there a new LVM2 for this new dm ioctl or the dm is not right?
+There's no new dm ioctl.
+ 
+Alasdair
+
