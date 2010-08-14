@@ -1,91 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735Ab0HNTPo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 15:15:44 -0400
-Received: from kroah.org ([198.145.64.141]:56883 "EHLO coco.kroah.org"
+	id S1752429Ab0HNT2J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 15:28:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47699 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750932Ab0HNTPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 15:15:42 -0400
-Date: Sat, 14 Aug 2010 12:12:24 -0700
-From: Greg KH <greg@kroah.com>
-To: Grant Coady <gcoady.lk@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [0/3] 2.6.27.52 stable review
-Message-ID: <20100814191224.GB5940@kroah.com>
-References: <20100813214704.GA18960@kroah.com>
- <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com>
- <20100813230712.GA1703@suse.de>
- <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com>
- <20100814001158.GA2849@suse.de>
- <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751620Ab0HNT2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 15:28:07 -0400
+Subject: [GIT PULL] final scsi updates for the 2.6.36 merge window
+ [possibly]
+From: James Bottomley <James.Bottomley@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 14 Aug 2010 15:28:01 -0400
+Message-ID: <1281814081.21641.11.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 05:24:36PM +1000, Grant Coady wrote:
-> On Fri, 13 Aug 2010 17:11:58 -0700, you wrote:
-> 
-> >On Sat, Aug 14, 2010 at 09:47:08AM +1000, Grant Coady wrote:
-> >> Hi Greg,
-> >> 
-> >> I scraped the patches out of the messages and edited Makefile :)
-> >> 
-> >> On Fri, 13 Aug 2010 16:07:12 -0700, you wrote:
-> >> 
-> >> >On Sat, Aug 14, 2010 at 08:36:34AM +1000, Grant Coady wrote:
-> >> >> On Fri, 13 Aug 2010 14:47:04 -0700, you wrote:
-> >> >> 
-> >> >> >NOTE!
-> >> >> >
-> >> >> >If I could get some people to please test this -rc release?  It contains
-> >> >> >a few core changes that I couldn't validate myself as I don't seem to
-> >> >> >have a machine that will even boot the .27 kernel anymore after my move.
-> >> 
-> >> Machine is running, but there's a lot of these in the dmesg:
-> >> 
-> >> WARNING: at include/linux/security.h:1826 acct_stack_growth+0xe7/0xf0()
-> >> Modules linked in:
-> >> Pid: 320, comm: khelper Not tainted 2.6.27.52-rc1a #57
-> >>  [<c011b54f>] warn_on_slowpath+0x5f/0x90
-> >>  [<c0145a53>] __alloc_pages_internal+0x93/0x420
-> >>  [<c01456bd>] buffered_rmqueue+0x11d/0x210
-> >>  [<c015e09a>] allocate_slab+0x4a/0xd0
-> >>  [<c015e149>] setup_object+0x29/0x30
-> >>  [<c015e204>] new_slab+0xb4/0x130
-> >>  [<c015e6ec>] __slab_alloc+0xac/0x120
-> >>  [<c01529e7>] acct_stack_growth+0xe7/0xf0
-> >>  [<c0152afa>] expand_stack+0x7a/0x90
-> >>  [<c014fc61>] do_anonymous_page+0x121/0x130
-> >>  [<c0150268>] handle_mm_fault+0x1b8/0x1e0
-> >>  [<c014e724>] get_user_pages+0xe4/0x270
-> >>  [<c0166ac9>] get_arg_page+0x49/0xc0
-> >>  [<c0166e5b>] copy_strings+0xdb/0x180
-> >>  [<c0166f29>] copy_strings_kernel+0x29/0x40
-> >>  [<c0167dae>] do_execve+0xde/0x1d0
-> >>  [<c0101f1f>] sys_execve+0x2f/0x60
-> >>  [<c0103036>] syscall_call+0x7/0xb
-> >>  [<c011007b>] ioapic_register_intr+0x10b/0x110
-> >>  [<c0106bfc>] kernel_execve+0x1c/0x30
-> >>  [<c0128efc>] ____call_usermodehelper+0x5c/0xc0
-> >>  [<c0128ea0>] ____call_usermodehelper+0x0/0xc0
-> >>  [<c0103b1b>] kernel_thread_helper+0x7/0x1c
-> >>  =======================
-> >> ---[ end trace 62e879f3daf4be6a ]---
-> >
-> >I'm guessing that 2.6.27.51 didn't cause those warnings as well?
-> 
-> Not in .51, the .51 dmesg is up now too:
-> 
->  http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.51a.gz
+So I have a few more fixes queued than this, but owing to server failure
+while I was away, I didn't get the rest into linux-next in time ... so
+unless the merge window elongates, that's it, I think.
 
-Thanks, can you try 2.6.52-rc2 now?  It should have the fix for this in
-it.
+Patches are available from:
 
-greg k-h
+master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-misc-2.6.git
+
+The short changelog is:
+
+Alan Stern (1):
+      remove fake "address-of" expression
+
+Brian King (3):
+      ibmvfc: Driver version 1.0.9
+      ibmvfc: Fix terminate_rport_io
+      ibmvfc: Fix rport add/delete race resulting in oops
+
+FUJITA Tomonori (1):
+      53c700: remove dma_is_consistent usage
+
+Hannes Reinecke (1):
+      Return NEEDS_RETRY for eh commands with status BUSY
+
+James Bottomley (1):
+      make error handling more robust in the face of reservations
+
+James Smart (3):
+      lpfc 8.3.16: Change LPFC driver version to 8.3.16
+      lpfc 8.3.16: FCoE Discovery and Failover Fixes
+      lpfc 8.3.16: SLI Additions, updates, and code cleanup
+
+Jayamohan Kallickal (3):
+      be2iscsi: Driver Version change to 2.0.549.0
+      be2iscsi: Increase max sector
+      be2iscsi: Add support for iscsi boot
+
+Joe Eykholt (1):
+      tgt: fix warning
+
+Julia Lawall (2):
+      drivers/message/fusion: Adjust confusing if indentation
+      pm8001: introduce missing kfree
+
+Lalit Chandivade (2):
+      qla4xxx: Added AER support for ISP82xx
+      qla4xxx: Stop firmware before doing init firmware.
+
+Mike Christie (2):
+      libfc: call fc_remote_port_chkready under the host lock.
+      iscsi boot: mv iscsi_boot_sysfs to drivers/scsi
+
+Nilesh Javali (1):
+      qla4xxx: Handle outstanding mbx cmds on hung f/w scenarios
+
+Randy Dunlap (1):
+      be2iscsi: select ISCSI_BOOT_SYSFS
+
+Vikas Chaudhary (6):
+      qla4xxx: fix compilation warning
+      qla4xxx: Update driver version to 5.02.00-k3
+      qla4xxx: updated mbx_sys_info struct to sync with FW 4.6.x
+      qla4xxx: clear AF_DPC_SCHEDULED flage when exit from do_dpc
+      qla4xxx: Use the correct request queue.
+      qla4xxx: set correct value in sess->recovery_tmo
+
+And the diffstat:
+
+ drivers/firmware/Kconfig            |    8 
+ drivers/firmware/Makefile           |    1 
+ drivers/firmware/iscsi_boot_sysfs.c |  481 ------------------------------------
+ drivers/message/fusion/mptbase.c    |    2 
+ drivers/scsi/53c700.c               |    3 
+ drivers/scsi/Kconfig                |    8 
+ drivers/scsi/Makefile               |    1 
+ drivers/scsi/be2iscsi/Kconfig       |    1 
+ drivers/scsi/be2iscsi/be_cmds.h     |  147 +++++++++--
+ drivers/scsi/be2iscsi/be_iscsi.c    |   76 +++--
+ drivers/scsi/be2iscsi/be_iscsi.h    |    2 
+ drivers/scsi/be2iscsi/be_main.c     |  311 +++++++++++++++++++++++
+ drivers/scsi/be2iscsi/be_main.h     |    7 
+ drivers/scsi/be2iscsi/be_mgmt.c     |   71 +++++
+ drivers/scsi/ibmvscsi/ibmvfc.c      |  380 +++++++++++++++-------------
+ drivers/scsi/ibmvscsi/ibmvfc.h      |    6 
+ drivers/scsi/iscsi_boot_sysfs.c     |  481 ++++++++++++++++++++++++++++++++++++
+ drivers/scsi/libfc/fc_fcp.c         |    4 
+ drivers/scsi/lpfc/lpfc.h            |    3 
+ drivers/scsi/lpfc/lpfc_attr.c       |   46 +++
+ drivers/scsi/lpfc/lpfc_bsg.c        |    9 
+ drivers/scsi/lpfc/lpfc_compat.h     |    3 
+ drivers/scsi/lpfc/lpfc_els.c        |   76 +++++
+ drivers/scsi/lpfc/lpfc_hbadisc.c    |   17 -
+ drivers/scsi/lpfc/lpfc_hw.h         |   32 +-
+ drivers/scsi/lpfc/lpfc_init.c       |  132 ++++++---
+ drivers/scsi/lpfc/lpfc_mbox.c       |    8 
+ drivers/scsi/lpfc/lpfc_scsi.c       |    8 
+ drivers/scsi/lpfc/lpfc_sli.c        |   36 +-
+ drivers/scsi/lpfc/lpfc_version.h    |    2 
+ drivers/scsi/pm8001/pm8001_hwi.c    |   13 
+ drivers/scsi/qla4xxx/ql4_def.h      |   36 ++
+ drivers/scsi/qla4xxx/ql4_fw.h       |   20 -
+ drivers/scsi/qla4xxx/ql4_glbl.h     |    2 
+ drivers/scsi/qla4xxx/ql4_init.c     |   14 -
+ drivers/scsi/qla4xxx/ql4_iocb.c     |    2 
+ drivers/scsi/qla4xxx/ql4_isr.c      |    3 
+ drivers/scsi/qla4xxx/ql4_mbx.c      |   48 +++
+ drivers/scsi/qla4xxx/ql4_nx.c       |   17 -
+ drivers/scsi/qla4xxx/ql4_os.c       |  315 +++++++++++++++++++++++
+ drivers/scsi/qla4xxx/ql4_version.h  |    2 
+ drivers/scsi/scsi_error.c           |   11 
+ drivers/scsi/scsi_priv.h            |    2 
+ drivers/scsi/scsi_sysfs.c           |    2 
+ drivers/scsi/scsi_tgt_lib.c         |    1 
+ 45 files changed, 1999 insertions(+), 851 deletions(-)
+
+James
+
+
