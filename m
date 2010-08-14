@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756981Ab0HNP2l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 11:28:41 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:63234 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274Ab0HNP2k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 11:28:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=nS2f+OWH7jjkU5MVhHftok7Nvur7TkAiosVxYRAeC9HeDCHebI2oZHiTX2QUNje1wz
-         KOITozTtWM0n/G2FAZeQ7u/aH/nfpFB/yDd7RfpS/VVYsjTnqXLh7LNfaN/y8ZwC6i8Z
-         6E1dEaBk5V54WKhkRadPbWRZsPqESTgjL+/RQ=
+	id S1756944Ab0HNPg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 11:36:29 -0400
+Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:51170 "EHLO
+	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751274Ab0HNPg2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 11:36:28 -0400
+X-Greylist: delayed 1626 seconds by postgrey-1.27 at vger.kernel.org; Sat, 14 Aug 2010 11:36:28 EDT
+Date: Sat, 14 Aug 2010 16:36:25 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com
+Subject: [PULL] Please pull bjdooks' for-linus/samsung-2636
+Message-ID: <20100814153625.GA31271@ben-laptop.fluff.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20100814134343.GD17430@suse.de>
-References: <AANLkTi=YL_VKKDU8ok=OYotPhyQcGsVB2O-PU29+70YT@mail.gmail.com>
-	<AANLkTikP3FHZ0f7umRRzXcT1ytfa9XfE41UHmQ98kO2h@mail.gmail.com>
-	<20100814134343.GD17430@suse.de>
-Date: Sat, 14 Aug 2010 17:28:39 +0200
-Message-ID: <AANLkTi=qDBpN-6Ro833nHXY5P5OcvFbBrjYW9A4ewREP@mail.gmail.com>
-Subject: Re: Call traces w/ 2.6.35.2 (not w/ 2.6.35.1 plus 2.6.35.2-rc1)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, wylda@volny.cz
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 3:43 PM, Greg KH <gregkh@suse.de> wrote:
-> On Sat, Aug 14, 2010 at 08:36:30AM +0200, Sedat Dilek wrote:
->> Hope this helps to give an overview what has changed:
-[...]
->
-> I still fail to understand what you are trying to show here at all.
->
-> confused,
->
-> greg k-h
->
+Hi, please pull
 
-I was trying to show you that the patches in .35.2-rc1 and .35.2 are
-not the same.
-Normally, the rcX patches become the final ones.
+The following changes since commit 45d7f32c7a43cbb9592886d38190e379e2eb2226:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../cmetcalf/linux-tile
 
-Unfortunately, I was too lazy to check the names of the patches and
-simply compared the files that have been modified (lines beginning
-with "diff --git a/file b/file").
+are available in the git repository at:
 
-In the meantime, Mr./Mrs.(?) "wylda" (sorry, don't know if first or
-last name) bisected the problem [1].
+  git://git.fluff.org/bjdooks/linux.git for-linus/samsung-2635
 
-The confusing part for me is why "fresh" upstream patches entered a
-2.6.35.y fix-series.
-I can't say if only i386 is concerned, but as
+Ben Dooks (3):
+      ARM: S3C64XX: Update consistent DMA size to 8MiB
+      ARM: SMDK6410: Make virtual screen twice depth of real
+      Merge branch 'for-2636/s3c64xx' into for-linus/samsung-2635
 
-mm: fix missing page table unmap for stack guard page failure case
-mm: keep a guard page below a grow-down stack segment
+Darius Augulis (3):
+      ARM: S3C64XX: Support for Real6410
+      ARM: mach-real6410: add dm9000 ethernet support for mach-real6410
+      ARM: mach-real6410: add sdhc device support
 
-are also upstream patches, I think the both cause problems for
-.35-gitX also [2].
+Kukjin Kim (1):
+      ARM: SAMSUNG: Fix on build warning about dependency in Kconfig
 
-- Sedat -
+Linus Walleij (1):
+      DMAENGINE: correct PL080 register header file
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=16588
-[2] https://bugzilla.kernel.org/show_bug.cgi?id=16588#c5
-[3] [1] http://lkml.org/lkml/2010/8/14/54
+Maurus Cuelenaere (3):
+      ARM: S3C64XX: Move SmartQ LCD control platform definition to shared file
+      ARM: S3C64XX: Set wifi and iNAND as permanently connected SD devices on SmartQ boards
+      ARM: S3C64XX: Add audio support to SmartQ
+
+Patrick Georgi (1):
+      ARM: S3C64XX: Framebuffer fix for SmartQ5
+
+ arch/arm/include/asm/hardware/pl080.h       |    4 +-
+ arch/arm/mach-s3c64xx/Kconfig               |    9 ++
+ arch/arm/mach-s3c64xx/Makefile              |    1 +
+ arch/arm/mach-s3c64xx/dma.c                 |    2 +-
+ arch/arm/mach-s3c64xx/include/mach/memory.h |    2 +
+ arch/arm/mach-s3c64xx/mach-real6410.c       |  152 +++++++++++++++++++++++++++
+ arch/arm/mach-s3c64xx/mach-smartq.c         |   40 +++++++-
+ arch/arm/mach-s3c64xx/mach-smartq5.c        |   36 +------
+ arch/arm/mach-s3c64xx/mach-smartq7.c        |   28 -----
+ arch/arm/mach-s3c64xx/mach-smdk6410.c       |    2 +
+ arch/arm/plat-samsung/Kconfig               |    2 +-
+ 11 files changed, 213 insertions(+), 65 deletions(-)
+ create mode 100644 arch/arm/mach-s3c64xx/mach-real6410.c
+
