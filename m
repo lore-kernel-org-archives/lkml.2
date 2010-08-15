@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754857Ab0HOFiN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 01:38:13 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59159
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753315Ab0HOFiM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 01:38:12 -0400
-Date: Sat, 14 Aug 2010 22:38:30 -0700 (PDT)
-Message-Id: <20100814.223830.200386282.davem@davemloft.net>
-To: herbert@gondor.hengli.com.au
-Cc: kronos.it@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [xfrm_user] BUG: sleeping function called from invalid context
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100813153658.GA27982@gondor.apana.org.au>
-References: <20100812125027.GA12982@nb-core2.darkstar.lan>
-	<20100813153658.GA27982@gondor.apana.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S932173Ab0HOFnQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 01:43:16 -0400
+Received: from sh.osrg.net ([192.16.179.4]:34468 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507Ab0HOFnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 01:43:15 -0400
+Date: Sun, 15 Aug 2010 14:42:51 +0900
+To: linux@arm.linux.org.uk
+Cc: fujita.tomonori@lab.ntt.co.jp, khc@pm.waw.pl, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org
+Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100814184605.GA1999@n2100.arm.linux.org.uk>
+References: <20100813215413.GA21607@n2100.arm.linux.org.uk>
+	<20100814181306U.fujita.tomonori@lab.ntt.co.jp>
+	<20100814184605.GA1999@n2100.arm.linux.org.uk>
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100815144122O.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 15 Aug 2010 14:42:53 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Fri, 13 Aug 2010 11:36:58 -0400
+On Sat, 14 Aug 2010 19:46:05 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 
-> Luca Tettamanti <kronos.it@gmail.com> wrote:
->>
->> xfrm_user_policy takes read_lock(&xfrm_km_lock) before calling
->> xfrm_compile_policy (via km->compile_policy), which in turn calls
->> xfrm_policy_alloc with GFP_KERNEL.
+> On Sat, Aug 14, 2010 at 06:30:37PM +0900, FUJITA Tomonori wrote:
+> > On Fri, 13 Aug 2010 22:54:13 +0100
+> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> > >  This means that when dmabounce comes to allocate the replacement
+> > > buffer, it gets a buffer which won't be accessible to the DMA
+> > > controller
+> > 
+> > Really? looks like dmabounce does nothing for coherent memory that
+> > dma_alloc_coherent() allocates.
+> > 
+> > The following very hacky patch works?
 > 
-> Thanks for discovering this bug, it only took 8 years :)
+> So what happens if you use a driver which uses dma_alloc_coherent()
+> directly?  Should the driver really be passed memory which is
+> inaccessible to the device because its outside the host bridge PCI
+> window?
 
-We stumble over one of these every so often don't we? :)
+I'm not sure what you mean.
 
-> 
-> xfrm: Use GFP_ATOMIC in xfrm_compile_policy
-> 
-> As xfrm_compile_policy runs within a read_lock, we cannot use
-> GFP_KERNEL for memory allocations.
-> 
-> Reported-by: Luca Tettamanti <kronos.it@gmail.com>
-> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+A driver which uses dma_alloc_coherent() directly should
+work. dma_alloc_coherent() allocates memory with GFP_DMA with that
+patch for dmabounce devices. So the driver gets the access-able
+memory.
 
-Applied, thanks Herbert.
+The memory that dma_alloc_coherent() returns should be always
+consistent. We can't bounce it. All we can do is returning a memory
+that a device (and its bus) can access to.
+
+Krzysztof, can you try the patch?
+
+
+> No, this is clearly wrong, so this patch doesn't fix anything.  It's
+> a bodge, nothing more.  The real solution is to have _both_ masks
+> both reduced down according to the host bridge, as we used to do.
+> 
+> So I suggest 6fee48c is reverted so that these platforms don't regress
+> for -rc1.
+
+Sorry, the original ARM code is wrong. dev->dma_mask and
+dev->coherent_dma_mask represent the driver of dma restriction. ARM
+tries to use them for both a driver and a bus so ARM needs a
+workaround that doesn't set the driver of dma restriction to
+dev->dma_mask and dev->coherent_dma_mask.
+
+The proper solution is having a separate dma mask for a bus. I think
+that POWERPC already does the similar. It has max_direct_dma_addr in
+struct dev_archdata, which represents the dma restriction of a bus.
+
