@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757669Ab0HOBPq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 21:15:46 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:46957 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab0HOBPp (ORCPT
+	id S1757674Ab0HOB2U (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 21:28:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54340 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756598Ab0HOB2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 21:15:45 -0400
-Date: Sun, 15 Aug 2010 03:15:42 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: sedat.dilek@gmail.com
-Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] kconfig: fix savedefconfig with choice marked optional
-Message-ID: <20100815011542.GA30094@merkur.ravnborg.org>
-References: <AANLkTimYDzCowvmKgSDp0BJjLHadvtDgCVJkZgdAt4u7@mail.gmail.com>
+	Sat, 14 Aug 2010 21:28:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:organization:message-id:references
+         :in-reply-to:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=YgmjmbP6jSwFDQFj51V8J4brEHzmH7EAkNaPco3Bd4zsn/RMrHiQS+SviDoAYNMPh7
+         mdQnWcrN/wSpOQlqXlQDQysg9UN3A+iIP41cVU7vTXGgP6wJZgAVHOxtsIQ4UsXkGt79
+         fnMG8YfWnutbzf2y4cjvfYbSd08GmEf7hv5Nk=
+From: Grant Coady <gcoady.lk@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
+Subject: Re: [stable] [0/3] 2.6.27.52 stable review
+Date: Sun, 15 Aug 2010 11:28:14 +1000
+Organization: scattered
+Message-ID: <djge66l8gdjqr1snlll9c0t04ha62htg6f@4ax.com>
+References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <20100814001158.GA2849@suse.de> <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com> <20100814191224.GB5940@kroah.com>
+In-Reply-To: <20100814191224.GB5940@kroah.com>
+X-Mailer: Forte Agent 6.00/32.1186
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimYDzCowvmKgSDp0BJjLHadvtDgCVJkZgdAt4u7@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 01:26:22AM +0200, Sedat Dilek wrote:
-> Recent kbuild/kconfig patches seem not to be in
-> <http://repo.or.cz/w/linux-kbuild.git>?
-> 
-> Looks like there is a new home:
-> 
-> -T:      git git://repo.or.cz/linux-kbuild.git for-next
-> -T:      git git://repo.or.cz/linux-kbuild.git for-linus
-> +T:      git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-> for-next
-> +T:      git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-> for-linus
+On Sat, 14 Aug 2010 12:12:24 -0700, you wrote:
 
-This is already fixed in upstream. You need to update
-your source repository.
+>Thanks, can you try 2.6.52-rc2 now?  It should have the fix for this in
+>it.
 
-See: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3631d9a2e503ec9c36b0599b2e45548e5c410516
+Yup, looks good here :)
 
-	Sam
+http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.52-rc2a.gz
+
+Grant.
