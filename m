@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751394Ab0HOFPT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 01:15:19 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33266 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab0HOFPS (ORCPT
+	id S1751610Ab0HOFTI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 01:19:08 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:55691 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0HOFTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 01:15:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=XlbOfUIRj+DvtbeYv0cgZ3xARbcHQTa10DHzY+n7TqlnivTaBup5oZDwRHt+53f5/5
-         UaImISpDcDZzKcUztgRSdUizur6vZzKves0+RwiG1t3WJcu/MOQDWcOkBF/xbkpQvit8
-         x4bjLHwvVZcM9dqOusbKkFFF+ftEOGz26IXH8=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinfgXOzbqgrRY4oCGXFtKtEyJO_rvQeeEEeEZz7@mail.gmail.com>
-References: <AANLkTinfgXOzbqgrRY4oCGXFtKtEyJO_rvQeeEEeEZz7@mail.gmail.com>
-Date: Sun, 15 Aug 2010 13:15:17 +0800
-Message-ID: <AANLkTimoD+-KzXVJhaKNZRvb=MkRgRUEQWnGNEwjvoRL@mail.gmail.com>
-Subject: [PATCH] mm: code improvement of check_stack_guard_page
-From: jovi zhang <bookjovi@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 15 Aug 2010 01:19:07 -0400
+Date: Sun, 15 Aug 2010 01:19:01 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [git pull request] idle patches for Linux-2.6.36.merge
+Message-id: <alpine.LFD.2.00.1008150117460.2294@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7F5FR0U026784
 
-little code improvement of check_stack_guard_page function.
-this commit is on top of commit "mm: keep a guard page below a
-grow-down stack segment" of linus.
+Hi Linus,
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 9b3b73f..643b112 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2768,13 +2768,15 @@ out_release:
-  */
- static inline int check_stack_guard_page(struct vm_area_struct *vma,
-unsigned long address)
- {
--       address &= PAGE_MASK;
--       if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
--               address -= PAGE_SIZE;
--               if (find_vma(vma->vm_mm, address) != vma)
--                       return -ENOMEM;
--
--               expand_stack(vma, address);
-+       if (vma->vm_flags & VM_GROWSDOWN) {
-+               address &= PAGE_MASK;
-+               if(address == vma->vm_start) {
-+                       address -= PAGE_SIZE;
-+                       if (unlikely(find_vma(vma->vm_mm, address) != vma))
-+                               return -ENOMEM;
-+
-+                       expand_stack(vma, address);
-+               }
-        }
-        return 0;
- }
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+please pull from: 
+
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
+
+This will update the files shown below.
+
+thanks!
+
+--
+Len Brown
+Intel Open Source Technology Center
+
+
+ps. individual patches are available on linux-pm@lists.linux-foundation.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.34/idle-release-2.6.34.diff.gz
+
+ drivers/idle/Kconfig      |    3 +--
+ drivers/idle/intel_idle.c |   45 ++-------------------------------------------
+ 2 files changed, 3 insertions(+), 45 deletions(-)
+
+through these commits:
+
+Arjan van de Ven (1):
+      intel_idle: recognize Lincroft Atom Processor
+
+Len Brown (4):
+      intel_idle: delete power_policy modparam, and choose substate functions
+      intel_idle: add support for Westmere-EX
+      intel_idle: disable module support
+      intel_idle: no longer EXPERIMENTAL
+
+with this log:
+
+commit 4725fd3ce970c27a1678fb0809bfc7c2f4ac3e4f
+Author: Arjan van de Ven <arjan@linux.intel.com>
+Date:   Wed Jul 21 23:42:25 2010 -0400
+
+    intel_idle: recognize Lincroft Atom Processor
+    
+    Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 5a5e28daea69652505ac07eb5fbda4d7f0534926
+Author: Len Brown <len.brown@intel.com>
+Date:   Sat Aug 14 14:44:08 2010 -0400
+
+    intel_idle: no longer EXPERIMENTAL
+    
+    This is a fully supported driver.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 6ce9cd8669fa1195fdc21643370e34523c7ac988
+Author: Len Brown <len.brown@intel.com>
+Date:   Sat Aug 14 14:40:36 2010 -0400
+
+    intel_idle: disable module support
+    
+    Right now the module capability is cauing more trouble
+    than it is worth.  At least one distro built intel_idle as a module
+    where it lost the init race with ACPI, making it useless.
+    
+    Make intel_idle bool so that if you select it, you will use it.
+    
+    We can restore module capability after cpuidle is enhanced
+    to handle run-time changing of idle drivers.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit ec67a2ba360d4874b1158e6e87fe1e859b0c9117
+Author: Len Brown <len.brown@intel.com>
+Date:   Mon Jul 26 23:40:19 2010 -0400
+
+    intel_idle: add support for Westmere-EX
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 0394c6676e3fa48587fbe4821390d3264672c530
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Jul 23 16:04:46 2010 -0400
+
+    intel_idle: delete power_policy modparam, and choose substate functions
+    
+    The idea behind power policy was that it would start off as a modparam,
+    and then hook into the new "global" in-kernel power vs energy tunable.
+    But that tunable isn't happening, so delete the hook here.
+    
+    With the policy hook gone, the sub-state choice functions
+    do not do anything useful, so delete them from the critical path.
+    
+    To handle sub-states in the future, we will advertise them
+    with dedicated cpuidle_state entries.  That is necessary
+    because some of the sub-states will have substantially different
+    properties than their peer sub-states.
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
