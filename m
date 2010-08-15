@@ -1,92 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab0HOUMI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 16:12:08 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:53752 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751472Ab0HOUMH (ORCPT
+	id S1751675Ab0HOUNs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 16:13:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49855 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751604Ab0HOUNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 16:12:07 -0400
-Date: Sun, 15 Aug 2010 22:12:05 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: lkml <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>
-Subject: scsi_netlink: fix userspace warnings in scsi_netlink.h
-Message-ID: <20100815201205.GB4571@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 15 Aug 2010 16:13:47 -0400
+Date: Sun, 15 Aug 2010 21:28:52 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Jon E <je_nfd@hotmail.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: Re: Problems with Recent Patches to IDE Driver
+Message-ID: <20100815212852.7c0e10ea@lxorguk.ukuu.org.uk>
+In-Reply-To: <SNT135-w1108C18559F0BF8F0A3242F3980@phx.gbl>
+References: <SNT135-w1108C18559F0BF8F0A3242F3980@phx.gbl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"make headers_check" gave following warning:
+> I've googled for some answers but it seems there are no suggested workarounds for these problems.  Perhaps someone reading this can offer some suggestions?
 
-CHECK   include/scsi (3 files)
-include/scsi/scsi_netlink.h:108: found __[us]{8,16,32,64} type without #include <linux/types.h>
+Perhaps you could start by posting your patches ?
 
-It has previously been discussed the value of fixing
-scsi headers because glibc had their own copies of scsi headers.
+Most distributions have pretty much dropped the old IDE driver for
+libata, which is actually better at supporting oddities so its probably
+best to go that way.
 
-But that does not matter at all as there may ibe other
-users of the exported headers and exported headers
-should be warning free.
-
-The following patch does two things:
-1) include linux/types.h as suggested in the warning
-2) replace all uses of uintxx_t with the kernel exportable variants
-
-uintxx_t belongs to the namespace of
-userspace - and not in the kernel.
-At least not in the exprted headers.
-
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
----
-diff --git a/include/scsi/scsi_netlink.h b/include/scsi/scsi_netlink.h
-index 58ce8fe..180ed38 100644
---- a/include/scsi/scsi_netlink.h
-+++ b/include/scsi/scsi_netlink.h
-@@ -23,6 +23,7 @@
- #define SCSI_NETLINK_H
- 
- #include <linux/netlink.h>
-+#include <linux/types.h>
- 
- 
- /*
-@@ -40,12 +41,12 @@
- 
- /* SCSI_TRANSPORT_MSG event message header */
- struct scsi_nl_hdr {
--	uint8_t version;
--	uint8_t transport;
--	uint16_t magic;
--	uint16_t msgtype;
--	uint16_t msglen;
--} __attribute__((aligned(sizeof(uint64_t))));
-+	__u8 version;
-+	__u8 transport;
-+	__u16 magic;
-+	__u16 msgtype;
-+	__u16 msglen;
-+} __attribute__((aligned(sizeof(__u64))));
- 
- /* scsi_nl_hdr->version value */
- #define SCSI_NL_VERSION				1
-@@ -89,10 +90,10 @@ struct scsi_nl_hdr {
-  */
- struct scsi_nl_host_vendor_msg {
- 	struct scsi_nl_hdr snlh;		/* must be 1st element ! */
--	uint64_t vendor_id;
--	uint16_t host_no;
--	uint16_t vmsg_datalen;
--} __attribute__((aligned(sizeof(uint64_t))));
-+	__u64 vendor_id;
-+	__u16 host_no;
-+	__u16 vmsg_datalen;
-+} __attribute__((aligned(sizeof(__u64))));
- 
- 
- /*
+Alan
