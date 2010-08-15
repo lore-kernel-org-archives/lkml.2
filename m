@@ -1,42 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758275Ab0HOPnB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 11:43:01 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43401 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758210Ab0HOPm7 (ORCPT
+	id S1758103Ab0HOPmt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 11:42:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37806 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754590Ab0HOPms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 11:42:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:content-type;
-        b=bK7VAZMq+I1dejtomSEfOou0NCp3s38VU2EFxFnKka1NUa8H4IDOx0GyGFYFUJRVqY
-         n69UxKv8sZWDNjcQr4YTqtFRKjet/dBp1FJnJxo1sauPDkqPmnL7tyrEiLgmiEOdNGZ+
-         lkqjWLTwiI9mOD+bV4gAgmGRyt2x1kFDRCNHg=
+	Sun, 15 Aug 2010 11:42:48 -0400
+Date: Sun, 15 Aug 2010 14:46:54 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+Subject: Re: [PATCH] regulator: ab3100 - fix the logic to remove already
+	registered regulators in error path
+Message-ID: <20100815134654.GA26969@opensource.wolfsonmicro.com>
+References: <1281792661.2718.4.camel@phoenix>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 15 Aug 2010 16:05:32 +0200
-Message-ID: <AANLkTimMkapKggRoUqpWULpOb4Cn56y8Zgjb2QP8NMf_@mail.gmail.com>
-Subject: LKML: New mais to list not displayed (2010/8/15)
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: webmaster@kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281792661.2718.4.camel@phoenix>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, Aug 14, 2010 at 09:31:01PM +0800, Axel Lin wrote:
+> In current implementation, ab3100_regulators[0].rdev is not unregistered if
+> the error happen at i > 0.
+> 
+> This patch fixes the resource leak and also improves the readability.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-I only wanted to report, that there are no new mails displayed on [1]
-since this one:
-
-[New] Panic on boot or immediate reboot after upgrading from 2.6.35 to
-2 ... "Artem S. Tashkinov"
-
-What's going on?
-
-
-Kind Regards,
-- Sedat -
-
-[1] http://lkml.org/lkml/2010/8/15/
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
