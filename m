@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab0HOQBM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 12:01:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44720 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758299Ab0HOQBK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 12:01:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=u1CnLlON2xxAg0nRGZSU1fAaj2IFt64M2crB3klerPQBbvdU2VJdFkHqSZNn+AZf9+
-         xi/0bcqUIMhObnpkokFil4ncz9T12dch/TAadDsScXbA36rrUYRzRIarbWYrtxdARLXB
-         SxH0oeeGOE0FPxc1rU3WLUL0mGggwyioc13Ow=
+	id S932456Ab0HOQC7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 12:02:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8005 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932163Ab0HOQC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 12:02:58 -0400
+Message-ID: <4C67D8A3.1080405@redhat.com>
+Date: Sun, 15 Aug 2010 15:08:03 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <20100815130336.GA24055@agk-dp.fab.redhat.com>
-References: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
-	<20100814155401.GJ26032@agk-dp.fab.redhat.com>
-	<AANLkTi=aJ7f5X9sMeA85KJxi+rzWhiZCZ2ZwriNEVFCT@mail.gmail.com>
-	<20100815130336.GA24055@agk-dp.fab.redhat.com>
-Date: Sun, 15 Aug 2010 22:13:47 +0800
-Message-ID: <AANLkTinUuphqozgrSMNnrKxJrPWFp77y2TzdEwtuMD42@mail.gmail.com>
-Subject: Re: [dm-devel] linux-2.6.35+ causes LVM to fail with " device-mapper:
- version ioctl failed: Inappropriate ioctl for device"
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>,
-        device-mapper development <dm-devel@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>, lvm-devel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Anjali Kulkarni <anjali@juniper.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: Freebsd image from Qemu hangs on booting in KVM
+References: <C8807265.2600D%anjali@juniper.net>
+In-Reply-To: <C8807265.2600D%anjali@juniper.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 9:03 PM, Alasdair G Kergon <agk@redhat.com> wrote:
->> Just a vanilla linux. No udev.
+  On 08/05/2010 11:51 PM, Anjali Kulkarni wrote:
+> Thanks Avi,
+> I am trying to reproduce this on another setup, and do not see the issue.
+> My understanding is to run KVM + Qemu, I only need to install KVM modules,
+> and Qemu does not need to be modified. Is that correct?
+> I see
 >
-> So likely a userspace problem where udev is now assumed to be present.
+> [root@ipg-virt01 anjali]# lsmod | grep kvm
+> kvm_intel              87016  0
+> kvm                   211496  1 kvm_intel
 >
->> > Provide long listing of /dev/mapper and any dm/lvm devices in /dev.
+> [root@ipg-virt01 anjali]# modprobe -l 'kvm*'
+> /lib/modules/2.6.18-164.el5/kernel/extra/kvm.ko
+> /lib/modules/2.6.18-164.el5/kernel/extra/kvm-amd.ko
+> /lib/modules/2.6.18-164.el5/kernel/extra/kvm-intel.ko
 >
-> You can do that by running:
->  ls -l /dev/mapper /dev/vg01
-> Also:
->  cat /proc/devices
+> And then I run Qemu, as I did, before installing KVM. It should just use
+> KVM? Is there any way I can check?
 
-253 device-mapper
+'info kvm' from the monitor
 
->  cat /proc/misc
+> Btw, when it hangs, I cannot even press any key, so not sure how I can get
+> those commands you suggest below..
 
-236 device-mapper <== was at 60 before the new kernel
+alt-ctrl-2
 
+-- 
+error compiling committee.c: too many arguments to function
 
-Got it! Sorry, it's me being _dumb_!!!
-
-With 2.6.35++, /dev/mapper/control has moved from 60 to 236!
-
-So I fix it by recreating the control file with "mknod
-/var/mapper/control c 10 253".
-
-I got this "internal error" when I activate/deactivate the volume
-group, but it seems ok. I could mount the volumes and so far it's all
-good.
-
-# vgchange -a n vg01
-  Internal error: Maps lock 14217216 < unlock 14221312
-  Internal error: Maps lock 14221312 < unlock 14225408
-  Internal error: Maps lock 14225408 < unlock 14229504
-  Internal error: Maps lock 14229504 < unlock 14233600
-  Internal error: Maps lock 14233600 < unlock 14237696
-  Internal error: Maps lock 14237696 < unlock 14241792
-  0 logical volume(s) in volume group "vg01" now active
-
-# vgchange -a y vg01
-  Internal error: Maps lock 14192640 < unlock 14196736
-  Internal error: Maps lock 14196736 < unlock 14200832
-  Internal error: Maps lock 14200832 < unlock 14204928
-  Internal error: Maps lock 14204928 < unlock 14209024
-  Internal error: Maps lock 14209024 < unlock 14213120
-  Internal error: Maps lock 14213120 < unlock 14217216
-  6 logical volume(s) in volume group "vg01" now active
-
-Hopefully those errors above means no harm.
-
-Thanks,
-Jeff
