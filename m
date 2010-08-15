@@ -1,65 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab0HOHOW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 03:14:22 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:36489 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932094Ab0HOHOU convert rfc822-to-8bit (ORCPT
+	id S932381Ab0HOHV7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 03:21:59 -0400
+Received: from mail-zbox20.bo3.lycos.com ([209.202.250.20]:36636 "EHLO
+	mailbox20.lycos.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932094Ab0HOHV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 03:14:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=HWhfm/sO9WucjpeFh3Z1/HTrBrSvxUInmx1QLKMUFX/LBxlWF+1O36KXtTiRdCBbTl
-         6FlSKdFDt1nJpifs21xx+nEa9y5TspC7/HwAr9NLxl+V0WBTmx6Zu+jWTVASPqjykr3P
-         P9q6dt5miyuinJYjiJcg28kSskpJbQGjJ7X24=
+	Sun, 15 Aug 2010 03:21:58 -0400
+X-Greylist: delayed 418 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Aug 2010 03:21:58 EDT
+Date: Sun, 15 Aug 2010 03:14:52 -0400 (EDT)
+From: "Artem S. Tashkinov" <t.artem@lycos.com>
+To: linux-kernel@vger.kernel.org
+Message-ID: <32093497.199921281856492123.JavaMail.root@mail-zbox20.bo3.lycos.com>
+In-Reply-To: <26525454.199901281856480444.JavaMail.root@mail-zbox20.bo3.lycos.com>
+Subject: Panic on boot or immediate reboot after upgrading from 2.6.35 to
+ 2.6.35.2
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <20100815011542.GA30094@merkur.ravnborg.org>
-References: <AANLkTimYDzCowvmKgSDp0BJjLHadvtDgCVJkZgdAt4u7@mail.gmail.com>
-	<20100815011542.GA30094@merkur.ravnborg.org>
-Date: Sun, 15 Aug 2010 09:07:00 +0200
-Message-ID: <AANLkTikCdd0jYfdhsOZE2mT8hqLfYop9qYRDCRo2TaaU@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: fix savedefconfig with choice marked optional
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Michal Marek <mmarek@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [94.51.207.128]
+X-Mailer: Zimbra 5.0 (ZimbraWebClient - FF3.0 (Linux)/5.0.18_GA_3028.CentOS5)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 3:15 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Sun, Aug 15, 2010 at 01:26:22AM +0200, Sedat Dilek wrote:
->> Recent kbuild/kconfig patches seem not to be in
->> <http://repo.or.cz/w/linux-kbuild.git>?
->>
->> Looks like there is a new home:
->>
->> -T:      git git://repo.or.cz/linux-kbuild.git for-next
->> -T:      git git://repo.or.cz/linux-kbuild.git for-linus
->> +T:      git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
->> for-next
->> +T:      git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
->> for-linus
->
-> This is already fixed in upstream. You need to update
-> your source repository.
->
-> See: http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=3631d9a2e503ec9c36b0599b2e45548e5c410516
->
+Hello,
 
-I am sorry, did not look into the patched src-dir:
+After I upgraded from 2.6.35 to 2.6.35.2 I can no longer boot into Linux, it immediately crashes or reboots when starting udev (so, one of the modules being loaded triggers this behaviour).
 
-$ grep kbuild debian/build/source_i386_none/MAINTAINERS | grep ^T
-T:      git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-for-next
-T:      git git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git
-rc-fixes
+I'm not able to write down the kernel panic messages because they span several screens, so I shot the entire boot sequence on video: http://www.mediafire.com/?lqs56e0dpku9sb4
 
-Thanks!
+Mind that I'm running this patch: 
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d1d6ca73ef548748e141747e7260798327d6a2c1 because otherwise i915 doesn't work at all.
 
-- Sedat -
+I reverted all i915 related patches, but then again 2.6.35.2 crashes or reboots, so i915 changes alone aren't responsible for this bug.
+
+Please, CC me when answering, because I'm not subscribed to LKML.
+
+Best wishes,
+
+Artem
+
