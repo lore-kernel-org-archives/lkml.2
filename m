@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932081Ab0HOFZr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 01:25:47 -0400
-Received: from smtpauth.tellcom.com.tr ([92.45.6.165]:24793 "EHLO
-	smtpout1.superonline.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751933Ab0HOFZq (ORCPT
+	id S1753863Ab0HOFaW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 01:30:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:47805 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752908Ab0HOFaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 01:25:46 -0400
-Message-ID: <4C677A49.4030904@superonline.com>
-Date: Sun, 15 Aug 2010 08:25:29 +0300
-From: "M. Vefa Bicakci" <bicave@superonline.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.8) Gecko/20100813 Icedove/3.1.2
+	Sun, 15 Aug 2010 01:30:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=lLUrs8AS/2sFpouwnFHFLnbojacfbnj0VDra2/Izaio1sOCIgEVkjkRRgAYyKnEAby
+         iJNPib/Phg/+N7cfmE+ULaXIdf0ne15Kl7Upn4kRYyPNAr/NQstz+1c9//1NBKQCSrNv
+         pSkyQOnQxDAEWKKfkkcNNga/AMQwNlGSLp2m0=
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
+Date: Sun, 15 Aug 2010 13:30:17 +0800
+Message-ID: <AANLkTikHHv8j4BOgA36Q16Fn1bh5XMgtzf5LWgY8xNjE@mail.gmail.com>
+Subject: [PATCH] mm: code improvement of check_stack_guard_page function
+From: jovi zhang <bookjovi@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-SMTP-Filter: SurGATE SMTP Filter Engine Release 2.1 ($Revision: 184 $) http://www.endersys.com
-X-SurGATE-Result: Clean (Content eval: 2.00 points)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7F5UTgr026833
 
-Hello all,
+little code improvement of check_stack_guard_page function.
+this commit is on top of commit "mm: keep a guard page below a
+grow-down stack segment" of linus.
 
-I am using Debian Sid on a Toshiba Satellite A100 laptop. After testing
-2.6.35 for a while, I noticed that sometimes my hibernation attempts
-would fail. I should say that I never had such a problem before 2.6.35.
-The hibernation process hangs with 2.6.35 after printing the following:
-
-=== 8< ===
-...
-Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-PM: Preallocating image memory...
-=== >8 ===
-
-After a short investigation, I found out that this only happens when my
-tmpfs filesystem on /tmp had a lot of data in it. When my tmpfs is empty,
-I have no problems.
-
-So I wrote a short script which fills up the tmpfs on /tmp and tries to
-hibernate, and I bisected the kernel using this script.
-
-The end result is that the following commit causes this regression:
-
-=== 8< ===
-commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date:   Fri Jun 4 14:15:05 2010 -0700
-
-    vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
-
-    ...
-=== >8 ===
-
-I have run 2.6.35-rc6, 2.6.35 and 2.6.35.1 with this commit reverted,
-and I am happy to say that I haven't experienced any problems for at
-least 17 days.
-
-It looks like this change was included with 2.6.35-rc1. I am sorry
-for not testing earlier.
-
-I am willing to do testing in case anyone would like me to try patches.
-
-Regards,
-
-M. Vefa Bicakci
+diff --git a/mm/memory.c b/mm/memory.c
+index 9b3b73f..643b112 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2768,13 +2768,15 @@ out_release:
+Â */
+static inline int check_stack_guard_page(struct vm_area_struct *vma,
+unsigned long address)
+{
+- Â  Â  Â  address &= PAGE_MASK;
+- Â  Â  Â  if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
+- Â  Â  Â  Â  Â  Â  Â  address -= PAGE_SIZE;
+- Â  Â  Â  Â  Â  Â  Â  if (find_vma(vma->vm_mm, address) != vma)
+- Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  return -ENOMEM;
+-
+- Â  Â  Â  Â  Â  Â  Â  expand_stack(vma, address);
++ Â  Â  Â  if (vma->vm_flags & VM_GROWSDOWN) {
++ Â  Â  Â  Â  Â  Â  Â  address &= PAGE_MASK;
++ Â  Â  Â  Â  Â  Â  Â  if(address == vma->vm_start) {
++ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  address -= PAGE_SIZE;
++ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  if (unlikely(find_vma(vma->vm_mm, address) != vma))
++ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  return -ENOMEM;
++
++ Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  expand_stack(vma, address);
++ Â  Â  Â  Â  Â  Â  Â  }
+Â  Â  Â  Â }
+Â  Â  Â  Â return 0;
+}
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
