@@ -1,137 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab0HOGGP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 02:06:15 -0400
-Received: from compulab.co.il ([67.18.134.219]:45582 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab0HOGGO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 02:06:14 -0400
-Message-ID: <4C6783C7.1030604@compulab.co.il>
-Date: Sun, 15 Aug 2010 09:05:59 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.1.9) Gecko/20100504 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1755209Ab0HOGIP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 02:08:15 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:38740 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750771Ab0HOGIO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 02:08:14 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX194/q8Sm4F4Sn9a5Gvqc29Z2Bx/O0PW+BVkR0d//j
+	2DuW9tYvXcyJ9E
+From: Sven Joachim <svenjoac@gmx.de>
+To: Greg KH <greg@kroah.com>
+Cc: Alok Kataria <akataria@vmware.com>, Greg KH <gregkh@suse.de>,
+        stable@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [stable] 2.6.34.4 build failure
+References: <87sk2h1yki.fsf@turtle.gmx.de> <20100814211043.GC7799@kroah.com>
+Date: Sun, 15 Aug 2010 08:08:10 +0200
+In-Reply-To: <20100814211043.GC7799@kroah.com> (Greg KH's message of "Sat, 14
+	Aug 2010 14:10:43 -0700")
+Message-ID: <87hbiwl86t.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.50 (gnu/linux)
 MIME-Version: 1.0
-To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v2] ARM: imx: fix build failure concerning otg/ulpi
-References: <4C65246E.1000906@ru.mvista.com> <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-Reply-To: <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/13/10 15:06, Uwe Kleine-König wrote:
-> The build failure was introduced by
+On 2010-08-14 23:10 +0200, Greg KH wrote:
+
+> On Sat, Aug 14, 2010 at 08:46:21AM +0200, Sven Joachim wrote:
+>> 2.6.34.4 failed to build here:
+>> 
+>> ,----
+>> |   CC      arch/x86/kernel/cpu/vmware.o
+>> | arch/x86/kernel/cpu/vmware.c: In function 'vmware_get_tsc_khz':
+>> | arch/x86/kernel/cpu/vmware.c:66: error: 'preset_lpj' undeclared (first use in this function)
+>> | arch/x86/kernel/cpu/vmware.c:66: error: (Each undeclared identifier is reported only once
+>> | arch/x86/kernel/cpu/vmware.c:66: error: for each function it appears in.)
+>> | arch/x86/kernel/cpu/vmware.c:68: error: 'HZ' undeclared (first use in this function)
+>> | make[3]: *** [arch/x86/kernel/cpu/vmware.o] Error 1
+>> | make[2]: *** [arch/x86/kernel/cpu] Error 2
+>> | make[1]: *** [arch/x86/kernel] Error 2
+>> | make: *** [arch/x86] Error 2
+>> `----
+>> 
+>> The .config file follows.
 >
-> 	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
->
-> Cc: Igor Grinberg <grinberg@compulab.co.il>
-> Cc: Mike Rapoport <mike@compulab.co.il>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
->   
+> If you add:
+> 	#include <linux/jiffies.h>
+> to that file, does it then build?
 
-I've based my patches on v2.6.35-rc6, so I could not patch
-those imx variants, sorry...
-But I did deal with mach-pca100.c, so I think moving it from
-mach-mx2 to mach-imx is what made it miss my patch.
+Yes, that does of course help.
 
-Anyway, this looks like the right addition.
+> Odd that this isn't showing up in the .35 kernel :(
 
-Thanks
+I just double-checked whether it was due to some configuration change
+that I made, but it wasn't.  Just running 'yes "" | make oldconfig'
+produced a configuration that builds with 2.6.35.2.
 
-> ---
->  arch/arm/mach-imx/mach-cpuimx27.c  |    4 ++--
->  arch/arm/mach-imx/mach-pca100.c    |    4 ++--
->  arch/arm/mach-mx25/mach-cpuimx25.c |    2 +-
->  arch/arm/mach-mx3/mach-cpuimx35.c  |    2 +-
->  4 files changed, 6 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
-> index 575ff1a..339150a 100644
-> --- a/arch/arm/mach-imx/mach-cpuimx27.c
-> +++ b/arch/arm/mach-imx/mach-cpuimx27.c
-> @@ -279,13 +279,13 @@ static void __init eukrea_cpuimx27_init(void)
->  #if defined(CONFIG_USB_ULPI)
->  	if (otg_mode_host) {
->  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
-> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
->  
->  		mxc_register_device(&mxc_otg_host, &otg_pdata);
->  	}
->  
->  	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
-> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
->  
->  	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
->  #endif
-> diff --git a/arch/arm/mach-imx/mach-pca100.c b/arch/arm/mach-imx/mach-pca100.c
-> index a389d11..23c9e1f 100644
-> --- a/arch/arm/mach-imx/mach-pca100.c
-> +++ b/arch/arm/mach-imx/mach-pca100.c
-> @@ -419,13 +419,13 @@ static void __init pca100_init(void)
->  #if defined(CONFIG_USB_ULPI)
->  	if (otg_mode_host) {
->  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
-> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
->  
->  		mxc_register_device(&mxc_otg_host, &otg_pdata);
->  	}
->  
->  	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
-> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
->  
->  	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
->  #endif
-> diff --git a/arch/arm/mach-mx25/mach-cpuimx25.c b/arch/arm/mach-mx25/mach-cpuimx25.c
-> index 56b2e26..a5f0174 100644
-> --- a/arch/arm/mach-mx25/mach-cpuimx25.c
-> +++ b/arch/arm/mach-mx25/mach-cpuimx25.c
-> @@ -138,7 +138,7 @@ static void __init eukrea_cpuimx25_init(void)
->  #if defined(CONFIG_USB_ULPI)
->  	if (otg_mode_host) {
->  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
-> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
->  
->  		mxc_register_device(&mxc_otg, &otg_pdata);
->  	}
-> diff --git a/arch/arm/mach-mx3/mach-cpuimx35.c b/arch/arm/mach-mx3/mach-cpuimx35.c
-> index 63f970f..9770a6a 100644
-> --- a/arch/arm/mach-mx3/mach-cpuimx35.c
-> +++ b/arch/arm/mach-mx3/mach-cpuimx35.c
-> @@ -192,7 +192,7 @@ static void __init mxc_board_init(void)
->  #if defined(CONFIG_USB_ULPI)
->  	if (otg_mode_host) {
->  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
-> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
-> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
->  
->  		mxc_register_device(&mxc_otg_host, &otg_pdata);
->  	}
->   
+Anyway, including <linux/jiffies.h> seems to be a reasonable precaution
+measure to me, but I'm just a layman.
 
--- 
 Regards,
-Igor.
-
+        Sven
