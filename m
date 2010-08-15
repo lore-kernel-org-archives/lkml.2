@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932963Ab0HOQlE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 12:41:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:44507 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932582Ab0HOQlC (ORCPT
+	id S932988Ab0HOQoR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 12:44:17 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:50376 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932582Ab0HOQoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 12:41:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=glg/YP/TNt80Gv2DSShetCb3NSxQX110BNOJhIxgsh6VgiS6ghecS7C7L50AezuvzN
-         Tqw3gA9Tsq6Hccx6AfPQpBmAXtS00aJdJwKSUO6ZfPMZV/yXFlmw8tDeGdrARdBgJmYb
-         ZK394ZQZyP89QV9ASWZbvJ36EJ2u9+dDUtrPs=
-Subject: Re: [GIT] Networking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100814.220945.232761341.davem@davemloft.net>
-References: <20100812.161050.246523792.davem@davemloft.net>
-	 <AANLkTinGy+-ELbVx_2WJ1wOJCsz4Rez26Q2Baisws9+C@mail.gmail.com>
-	 <20100814.220945.232761341.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 15 Aug 2010 12:55:22 +0200
-Message-ID: <1281869722.2942.20.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Sun, 15 Aug 2010 12:44:16 -0400
+Date: Sun, 15 Aug 2010 12:44:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100815164413.GA9990@Krystal>
+References: <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere> <20100714231117.GA22341@Krystal> <20100714233843.GD14533@nowhere> <20100715162631.GB30989@Krystal> <1280855904.1923.675.camel@laptop> <AANLkTinydcsYG6wj06bj0++EfiWUMQnZk=QvLQp=S8YB@mail.gmail.com> <1280903273.1923.682.camel@laptop> <1281537273.3058.14.camel@gandalf.stny.rr.com> <4C6816BD.8060101@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6816BD.8060101@redhat.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 12:37:39 up 204 days, 19:14,  3 users,  load average: 0.02, 0.03,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 14 août 2010 à 22:09 -0700, David Miller a écrit :
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Sat, 14 Aug 2010 11:05:54 -0700
-> 
-> > Anyway, the lock warning I do get seems to be networking-related, and
-> > is appended. Does this ring any bells? It could easily be something
-> > old: I turn on lock debugging only when I look for bugs (or when
-> > people point out bugs that I've created :^/ )
-> 
-> This is a false positive but I have no idea how we can annotate
-> this to not trigger in lockdep.
-> 
-> These are per-cpu locks for counter management.
-> 
-> The get_counters() code knows that the locks for other cpu's counters
-> can only be taken in software interrupt context of that other cpu.  So
-> it is legal to turn software interrupts back on when grabbing their
-> locks in base context.
-> 
-> CC:'ing Eric Dumazet since he put the code the way it is now :-)
-> Via commit 24b36f0193467fa727b85b4c004016a8dae999b9
-> ("netfilter: {ip,ip6,arp}_tables: dont block bottom half more than necessary")
+* Avi Kivity (avi@redhat.com) wrote:
+>  On 08/11/2010 05:34 PM, Steven Rostedt wrote:
+>>
+>> So, I want to allocate a 10Meg buffer. I need to make sure the kernel
+>> has 10megs of memory available. If the memory is quite fragmented, then
+>> too bad, I lose out.
+>
+> With memory compaction, the cpu churns for a while, then you have your  
+> buffer.  Of course there's still no guarantee, just a significantly  
+> higher probability of success.
 
-Hmm... thats right.
+The bigger the buffers, the lower the probabilities of success are. My users
+often allocate buffers as large as a few GB per cpu. Relying on compaction does
+not seem like a viable solution in this case.
 
-We have one lock per cpu, and only one cpu can possibly lock its
-associated lock under softirq. So the usual lockdep check, warning a
-lock is taken with BH enabled, while same lock was taken inside softirq
-handler is triggering a false positive here.
+>
+>> Oh wait, I could also use vmalloc. But then again, now I'm blasting
+>> valuable TLB entries for a tracing utility, thus making the tracer have
+>> a even bigger impact on the entire system.
+>
+> Most trace entries will occupy much less than a page, and are accessed  
+> sequentially, so I don't think this will have a large impact.
 
-I believe no existing lockdep annotation can instruct lockdep this use
-is OK, I guess we have following choice :
+You seem to underestimate the frequency at which trace events can be generated.
+E.g., by the time you run the scheduler once (which we can consider a very hot
+kernel path), some tracing modes will generate thousands of events, which will
+touch a very significant amount of TLB entries.
 
-1) Mask BH again, using xt_info_wrlock_lockdep(cpu) instead of
-xt_info_wrlock(cpu).
+Thanks,
 
-xt_info_wrlock_lockdep() being a variant, that disables BH in case
-CONFIG_PROVE_LOCKING=y
+Mathieu
 
-2) temporally switch off lockdep in get_counters(), using a
-lockdep_off()/lockdep_on() pair, and a comment why this is necessary.
-
-I'll provide a patch with either way, just tell me which one you
-prefer !
-
-Thanks
-
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
