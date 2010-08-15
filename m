@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757674Ab0HOB2U (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 21:28:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54340 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab0HOB2T (ORCPT
+	id S1757791Ab0HOBuw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 21:50:52 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:57272 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756876Ab0HOBuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 21:28:19 -0400
+	Sat, 14 Aug 2010 21:50:51 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:organization:message-id:references
-         :in-reply-to:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=YgmjmbP6jSwFDQFj51V8J4brEHzmH7EAkNaPco3Bd4zsn/RMrHiQS+SviDoAYNMPh7
-         mdQnWcrN/wSpOQlqXlQDQysg9UN3A+iIP41cVU7vTXGgP6wJZgAVHOxtsIQ4UsXkGt79
-         fnMG8YfWnutbzf2y4cjvfYbSd08GmEf7hv5Nk=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        stable-review@kernel.org, alan@lxorguk.ukuu.org.uk
-Subject: Re: [stable] [0/3] 2.6.27.52 stable review
-Date: Sun, 15 Aug 2010 11:28:14 +1000
-Organization: scattered
-Message-ID: <djge66l8gdjqr1snlll9c0t04ha62htg6f@4ax.com>
-References: <20100813214704.GA18960@kroah.com> <p5ib66db7ilijjesu4dd3b351dtmsk175f@4ax.com> <20100813230712.GA1703@suse.de> <t5mb661vmb2a33gev3tqki89410a0795kc@4ax.com> <20100814001158.GA2849@suse.de> <u2hc66pt2mnfqr0mhg0n76r5ucahg16dca@4ax.com> <20100814191224.GB5940@kroah.com>
-In-Reply-To: <20100814191224.GB5940@kroah.com>
-X-Mailer: Forte Agent 6.00/32.1186
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=tlVX0PbAwdK/iJ2YKtODoEtt1RjrU2UlX0lPJ7DNCpm4dw7nxvW6imeMFJ4jRtJjsL
+         uYhleL3lukm7jjPZ2P0vyjXGOILgdFo0wrsCsdXAx2ttsk/kXZxa47eZTvIHjIO0hc8Y
+         6A7LTcWe2a/jhmjFt8DXApLFqU5l2F1qxDB3A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTinJ04d2Bjuv2E4OOG=35TSHArEP6cHqGUQVUoy2@mail.gmail.com>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+	<AANLkTin2P5kcrC1SU-ANffSHyW8Ar4x4+qFuqVMFhYJE@mail.gmail.com>
+	<AANLkTin-dksybH0ANypheovXXubwd+SRCpurdVRU7-Z=@mail.gmail.com>
+	<1281726579.2810.10.camel@localhost.localdomain>
+	<AANLkTinJ04d2Bjuv2E4OOG=35TSHArEP6cHqGUQVUoy2@mail.gmail.com>
+Date: Sat, 14 Aug 2010 18:50:50 -0700
+Message-ID: <AANLkTimOoQKm3mcPN4VSekoUkxkdJH7Ga2ma_xryGVF6@mail.gmail.com>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+From: Bret Towe <magnade@gmail.com>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: john stultz <johnstul@us.ibm.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Aug 2010 12:12:24 -0700, you wrote:
+On Fri, Aug 13, 2010 at 1:53 PM, Patrick J. LoPresti <lopresti@gmail.com> wrote:
+> On Fri, Aug 13, 2010 at 12:09 PM, john stultz <johnstul@us.ibm.com> wrote:
+>>
+>> So other then "show some numbers", my only thought that might make the
+>> patch more attractive is that rather than a global change, or a static
+>> CONFIG_ option, would it maybe make more sense as a mount option?
+>
+> I really like this idea.
+>
+> Consider the following "revision 2" of my proposal:
+>
+> 1) Add a function pointer "current_fs_time" to struct super_block.
+>
+> 2) Replace all calls of the form:
+>
+>    current_fs_time(sb);
+>
+> with
+>
+>  sb->current_fs_time(sb);
+>
+>  3) Arrange for the default value to point to the current implementation.
+>
+> These first three could be one patch.  They change no functionality;
+> they just enable the next step.
+>
+> Finally:
+>
+>  4) Add a mount option to cause sb->current_fs_time(sb) to use the
+> hi-res implementation.
+>
+> Comments?
 
->Thanks, can you try 2.6.52-rc2 now?  It should have the fix for this in
->it.
+I'm not sure how nfs works but if this is a client side issue I don't
+see anything wrong
+with a CONFIG_ item but if its server side it might be better off as a
+procfs or sysfs tunable
+so reboots are not required to change the setting
 
-Yup, looks good here :)
-
-http://bugsplatter.id.au/kernel/boxen/deltree/dmesg-2.6.27.52-rc2a.gz
-
-Grant.
+performance wise why would there be any difference the same amount of
+bits are being set on the disk drive no?
