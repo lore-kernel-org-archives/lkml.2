@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293Ab0HOP4Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 11:56:16 -0400
-Received: from sh.osrg.net ([192.16.179.4]:43798 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757839Ab0HOP4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 11:56:14 -0400
-Date: Mon, 16 Aug 2010 00:55:42 +0900
-To: linux@arm.linux.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, khc@pm.waw.pl, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org
-Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100815082328.GA12222@n2100.arm.linux.org.uk>
-References: <20100814184605.GA1999@n2100.arm.linux.org.uk>
-	<20100815144122O.fujita.tomonori@lab.ntt.co.jp>
-	<20100815082328.GA12222@n2100.arm.linux.org.uk>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100816005427V.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 16 Aug 2010 00:55:44 +0900 (JST)
+	id S1758335Ab0HOP5J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 11:57:09 -0400
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:44853 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757839Ab0HOP5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 11:57:07 -0400
+Message-ID: <4C67D60D.9050903@example.com>
+Date: Sun, 15 Aug 2010 13:57:01 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+MIME-Version: 1.0
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ioctl definition - has it changed recently?
+References: <4C67023D.6050603@example.com> <4C670478.4040609@example.com> <20100814212007.GA26128@nuttenaction>
+In-Reply-To: <20100814212007.GA26128@nuttenaction>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 15424265774802694414
+X-Ovh-Remote: 83.24.76.41 (dmu41.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 15 Aug 2010 09:23:28 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+I resend, I dont know why it didn't appear on LKML. Thanks.
 
-> On Sun, Aug 15, 2010 at 02:42:51PM +0900, FUJITA Tomonori wrote:
-> > On Sat, 14 Aug 2010 19:46:05 +0100
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > 
-> > > On Sat, Aug 14, 2010 at 06:30:37PM +0900, FUJITA Tomonori wrote:
-> > > > On Fri, 13 Aug 2010 22:54:13 +0100
-> > > > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > > > >  This means that when dmabounce comes to allocate the replacement
-> > > > > buffer, it gets a buffer which won't be accessible to the DMA
-> > > > > controller
-> > > > 
-> > > > Really? looks like dmabounce does nothing for coherent memory that
-> > > > dma_alloc_coherent() allocates.
-> > > > 
-> > > > The following very hacky patch works?
-> > > 
-> > > So what happens if you use a driver which uses dma_alloc_coherent()
-> > > directly?  Should the driver really be passed memory which is
-> > > inaccessible to the device because its outside the host bridge PCI
-> > > window?
-> > 
-> > I'm not sure what you mean.
-> > 
-> > A driver which uses dma_alloc_coherent() directly should
-> > work. dma_alloc_coherent() allocates memory with GFP_DMA with that
-> > patch for dmabounce devices. So the driver gets the access-able
-> > memory.
-> > 
-> > The memory that dma_alloc_coherent() returns should be always
-> > consistent. We can't bounce it. All we can do is returning a memory
-> > that a device (and its bus) can access to.
-> > 
-> > Krzysztof, can you try the patch?
-> 
-> Why bother when we both agree that the patch is a dirty hack?
-> 
-> Come up with something cleaner first.
+Piotr Hosowicz
 
-Because this fix needs to go to stable trees too. A simple patch is
-better even if it's hacky.
+On 14.08.2010 23:20, Hagen Paul Pfeifer wrote:
+> * Piotr Hosowicz | 2010-08-14 23:02:48 [+0200]:
+>
+>> The latest driver is here:
+>>
+>> ftp://download.nvidia.com/XFree86/Linux-x86_64/256.44/
+>>
+>> To unpack execute it with --extract-only option.
+>
+> remove line 426 of kernel/nv.c:
+>
+>      .ioctl     = nv_kern_ioctl,
+>
+>
+> ... and try again. ;)
 
-For example, we can unify dma_needs_bounce functions in arm with a
-clean solution, I think. But dma_needs_bounce() was changed after
-2.6.35 so it would be difficult to backport a clean solution.
+Sorry, I was wrong when I wrote yesterday. I tried again and it works. 
+Thank you a lot. It will be my standard way to deal with this.
 
-btw, will we have more like this case? If so, I think that it's worth
-having a generic solution for this case instead of having the arch
-(arm and powerpc) specific solution.
+Cheers,
+
+Piotr Hosowicz
+
+-- 
+Skarga z 1983 roku: Zamiast 3 kg cukru ekspedientka sprzeda³a
+mi 3 kg mrówek faraona (podpis nieczytelny). Dopisek kierowni-
+czki: Klient by³ w stanie nietrze¼wym.
+NP: Peter Green Splinter Group - Big Change Is Gonna Come
+NB: 2.6.35-git16
