@@ -1,64 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335Ab0HOP5J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 11:57:09 -0400
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:44853 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757839Ab0HOP5H (ORCPT
+	id S1758384Ab0HOQBM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 12:01:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44720 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758299Ab0HOQBK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 11:57:07 -0400
-Message-ID: <4C67D60D.9050903@example.com>
-Date: Sun, 15 Aug 2010 13:57:01 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	Sun, 15 Aug 2010 12:01:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=u1CnLlON2xxAg0nRGZSU1fAaj2IFt64M2crB3klerPQBbvdU2VJdFkHqSZNn+AZf9+
+         xi/0bcqUIMhObnpkokFil4ncz9T12dch/TAadDsScXbA36rrUYRzRIarbWYrtxdARLXB
+         SxH0oeeGOE0FPxc1rU3WLUL0mGggwyioc13Ow=
 MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioctl definition - has it changed recently?
-References: <4C67023D.6050603@example.com> <4C670478.4040609@example.com> <20100814212007.GA26128@nuttenaction>
-In-Reply-To: <20100814212007.GA26128@nuttenaction>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 15424265774802694414
-X-Ovh-Remote: 83.24.76.41 (dmu41.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <20100815130336.GA24055@agk-dp.fab.redhat.com>
+References: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
+	<20100814155401.GJ26032@agk-dp.fab.redhat.com>
+	<AANLkTi=aJ7f5X9sMeA85KJxi+rzWhiZCZ2ZwriNEVFCT@mail.gmail.com>
+	<20100815130336.GA24055@agk-dp.fab.redhat.com>
+Date: Sun, 15 Aug 2010 22:13:47 +0800
+Message-ID: <AANLkTinUuphqozgrSMNnrKxJrPWFp77y2TzdEwtuMD42@mail.gmail.com>
+Subject: Re: [dm-devel] linux-2.6.35+ causes LVM to fail with " device-mapper:
+ version ioctl failed: Inappropriate ioctl for device"
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, lvm-devel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I resend, I dont know why it didn't appear on LKML. Thanks.
-
-Piotr Hosowicz
-
-On 14.08.2010 23:20, Hagen Paul Pfeifer wrote:
-> * Piotr Hosowicz | 2010-08-14 23:02:48 [+0200]:
+On Sun, Aug 15, 2010 at 9:03 PM, Alasdair G Kergon <agk@redhat.com> wrote:
+>> Just a vanilla linux. No udev.
 >
->> The latest driver is here:
->>
->> ftp://download.nvidia.com/XFree86/Linux-x86_64/256.44/
->>
->> To unpack execute it with --extract-only option.
+> So likely a userspace problem where udev is now assumed to be present.
 >
-> remove line 426 of kernel/nv.c:
+>> > Provide long listing of /dev/mapper and any dm/lvm devices in /dev.
 >
->      .ioctl     = nv_kern_ioctl,
->
->
-> ... and try again. ;)
+> You can do that by running:
+>  ls -l /dev/mapper /dev/vg01
+> Also:
+>  cat /proc/devices
 
-Sorry, I was wrong when I wrote yesterday. I tried again and it works. 
-Thank you a lot. It will be my standard way to deal with this.
+253 device-mapper
 
-Cheers,
+>  cat /proc/misc
 
-Piotr Hosowicz
+236 device-mapper <== was at 60 before the new kernel
 
--- 
-Skarga z 1983 roku: Zamiast 3 kg cukru ekspedientka sprzeda³a
-mi 3 kg mrówek faraona (podpis nieczytelny). Dopisek kierowni-
-czki: Klient by³ w stanie nietrze¼wym.
-NP: Peter Green Splinter Group - Big Change Is Gonna Come
-NB: 2.6.35-git16
+
+Got it! Sorry, it's me being _dumb_!!!
+
+With 2.6.35++, /dev/mapper/control has moved from 60 to 236!
+
+So I fix it by recreating the control file with "mknod
+/var/mapper/control c 10 253".
+
+I got this "internal error" when I activate/deactivate the volume
+group, but it seems ok. I could mount the volumes and so far it's all
+good.
+
+# vgchange -a n vg01
+  Internal error: Maps lock 14217216 < unlock 14221312
+  Internal error: Maps lock 14221312 < unlock 14225408
+  Internal error: Maps lock 14225408 < unlock 14229504
+  Internal error: Maps lock 14229504 < unlock 14233600
+  Internal error: Maps lock 14233600 < unlock 14237696
+  Internal error: Maps lock 14237696 < unlock 14241792
+  0 logical volume(s) in volume group "vg01" now active
+
+# vgchange -a y vg01
+  Internal error: Maps lock 14192640 < unlock 14196736
+  Internal error: Maps lock 14196736 < unlock 14200832
+  Internal error: Maps lock 14200832 < unlock 14204928
+  Internal error: Maps lock 14204928 < unlock 14209024
+  Internal error: Maps lock 14209024 < unlock 14213120
+  Internal error: Maps lock 14213120 < unlock 14217216
+  6 logical volume(s) in volume group "vg01" now active
+
+Hopefully those errors above means no harm.
+
+Thanks,
+Jeff
