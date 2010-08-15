@@ -1,45 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751225Ab0HOWLK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 18:11:10 -0400
-Received: from web110709.mail.gq1.yahoo.com ([67.195.13.216]:27838 "HELO
-	web110709.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751138Ab0HOWLJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 18:11:09 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Aug 2010 18:11:09 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=eybjBFY94Xo+qR83qdvKUF91eMd/UkeT+LlImnxTkSUtoE9IiFGO6TfvvqU3eWVDEz+KtwtEPeea0cf0/nMhSOKEpltLN4BTBdI3hXk02TZagJF8bhM0ReL5dqldB68fw8KFvNckn4i9MUViP2m7esRwir9gh7argjihjp1oeWo=;
-Message-ID: <78263.67481.qm@web110709.mail.gq1.yahoo.com>
-X-YMail-OSG: t5NDCU8VM1m0oJdOftVktLytmd0GyWQDxhiG4PXz3SuT7NZ
- XWMAE1JMf2D3tPCoRiaMorUOAp_EjitTLcZYlC2eQpGqIeYBhpybofeZwyT5
- mIgeSXFfaALQfIkCbAZoNVrnsyU10pbXeV4wl.V30jHZ8Kpf7.2PRq.Y6Y_D
- 0l6u8d_WaURvR2j8SmT4dXU5RTlngC8Xx5j.djghPnpGZM0BbcRVuaQ1LQv5
- SSylY3SD3uERGcf_1qgRI46DeD8wDjIqNF1dTJIjRPFuBWppeFcWVl9LCDic
- eQwGMxfAIiK3c1z6xcJeW9WpKFT.rmkBW6e8-
-X-Mailer: YahooMailClassic/11.3.2 YahooMailWebService/0.8.105.279950
-Date: Sun, 15 Aug 2010 15:04:29 -0700 (PDT)
-From: Brian Lindholm <lindhobe@yahoo.com>
-Subject: Re: [stable] 2.6.34.4 build failure
-To: linux-kernel@vger.kernel.org
+	id S1751335Ab0HOWVm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 18:21:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:59971 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab0HOWVl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 18:21:41 -0400
+Date: Sun, 15 Aug 2010 23:19:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Claudio Scordino <claudio@evidence.eu.com>,
+        Philippe De Muyter <phdm@macqel.be>,
+        Wolfram Sang <w.sang@pengutronix.de>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, hskinnemoen@atmel.com,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Rick Bronson <rick@efn.org>, John Nicholls <john@thinlinx.com>,
+        Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
+        Ryan Mallon <ryan@bluewatersys.com>, Bernhard Roth <br@pwrnet.de>,
+        Konrad Mattheis <mattheis@ukma.de>, Elektrolot <elektrolot@wp.pl>,
+        Prchal =?utf-8?B?SmnFmcOt?= <jiri.prchal@aksignal.cz>, gregkh@suse.de,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Documentation about RS485 serial communications
+Message-ID: <20100815221906.GA24153@n2100.arm.linux.org.uk>
+References: <20100408111310.524f7354@lxorguk.ukuu.org.uk> <4BBDD71D.1010700@evidence.eu.com> <4BFD1FB6.8050405@atmel.com> <4BFE2F38.8050200@evidence.eu.com> <4BFE41FD.2080804@atmel.com> <20100527102917.GB31253@pengutronix.de> <4C626CBF.9020609@evidence.eu.com> <20100811083214.21d2919e.randy.dunlap@oracle.com> <4C669120.8080707@evidence.eu.com> <4C686411.3060500@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C686411.3060500@oracle.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've also experienced this failure.  Seems to be a UP-vs-MP issue.
+On Sun, Aug 15, 2010 at 03:02:57PM -0700, Randy Dunlap wrote:
+> On 08/14/10 05:50, Claudio Scordino wrote:
+> > diff --git a/Documentation/serial/serial-rs485.txt b/Documentation/serial/serial-rs485.txt
+> > new file mode 100644
+> > index 0000000..93b029e
+> > --- /dev/null
+> > +++ b/Documentation/serial/serial-rs485.txt
+> > @@ -0,0 +1,126 @@
+> > +                        RS485 SERIAL COMMUNICATIONS
+> > +
+> > +1. INTRODUCTION
+> > +
+> > +   EIA-485, also known as TIA/EIA-485 or RS-485, is a standard defining the
+> > +   electrical characteristics of drivers and receivers for use in balanced
+> > +   digital multipoint systems.
+> > +   This standard is widely used for communications in industrial automation
+> > +   because it can be used effectively over long distances and in electrically
+> > +   noisy environments.
+> > +   Even though the data is transmitted over a 2-wire twisted pair bus, all
+> > +   EIA-485 transceivers interpret the voltage levels of the differential
+> > +   signals with respect to a third common voltage. Without this common
+> > +   reference, a set of transceivers may interpret the differential signals
+> > +   incorrectly.
+> > +   See [1] for more information.
 
-The build for my dual-core Athlon64-X2 complied just fine, but the build for my single-core Athlon64 barfed in much the same manner that Sven reported.  My two machines are configured highly similarly, with only the UP-vs-MP and a couple of drivers selected differently.
+There are devices on the market which are fully isolating RS485
+transceivers which just take the A/B connections, measuring the
+differential voltage, and provide you with the TXD/RXD TTL signals
+for your UART.
 
-I can provide .config files if this would help.
+Also note that [1] appears a little confused about the number of pins
+required for RS485 - it says two, and then lists three pins.  I don't
+think you can use this as being supportive of the requirement for three
+connections - and as there are these fully isolating transceivers...
 
-Brian
+> > +4. USAGE FROM USER-LEVEL
+> > +
+> > +   From user-level, RS485 configuration can be get/set using the previous
+> > +   ioctls. For instance, to set RS485 you can use the following code:
+> > +
+> > +	#include <linux/serial.h>
+> > +
+> > +	/* Driver-specific ioctls: */
+> > +	#define TIOCGRS485      0x542E
+> > +	#define TIOCSRS485      0x542F
+> > +
+> > +	/* Open your specific device (e.g., /dev/mydevice): */
+> > +	int fd = open ("/dev/mydevice", O_RDWR);
+> > +	struct serial_rs485 rs485conf;
+> > +
+> > +	/* Set RS485 mode: */
+> > +	rs485conf.flags |= SER_RS485_ENABLED;
+> > +
+> > +	/* Set rts delay before send, if needed: */
+> > +	rs485conf.flags |= SER_RS485_RTS_BEFORE_SEND;
+> > +	rs485conf.delay_rts_before_send = ...;
+> > +
+> > +	/* Set rts delay after send, if needed: */
+> > +	rs485conf.flags |= SER_RS485_RTS_AFTER_SEND;
+> > +	rs485conf.delay_rts_after_send = ...;
+> > +
+> > +	ioctl (fd, TIOCSRS485, &rs485conf);
 
+Example code really should do things right, such as check for error
+conditions - otherwise people will copy'n'paste this and assume that
+the ioctl never fails.
 
-
-
-      
+> > +
+> > +	/* Use read() and write() syscalls here... */
+> > +
+> > +	/* Close the device when finished: */
+> > +	close (fd);
+> > +
+> > +5. REFERENCES
+> > +
+> > + [1]	http://en.wikipedia.org/wiki/Rs485
+> > + [2]	include/linux/serial.h
