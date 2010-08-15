@@ -1,41 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932478Ab0HOQQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 12:16:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37546 "EHLO mx1.redhat.com"
+	id S932484Ab0HOQRs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 12:17:48 -0400
+Received: from king.tilera.com ([72.1.168.226]:36946 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932233Ab0HOQQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 12:16:53 -0400
-Message-ID: <4C67CA15.3020109@redhat.com>
-Date: Sun, 15 Aug 2010 14:05:57 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Xiaotian Feng <dfeng@redhat.com>, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Sheng Yang <sheng@linux.intel.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: [PATCH] kvm: fix poison overwritten caused by using wrong xstate
- size
-References: <AANLkTikx35Sp0GR4c_REYGcZV4bMgS+T-1cugen45d58@mail.gmail.com> <1281683951-19814-1-git-send-email-dfeng@redhat.com> <4C65B327.8020605@zytor.com>
-In-Reply-To: <4C65B327.8020605@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932245Ab0HOQRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 12:17:47 -0400
+Message-Id: <201008151617.o7FGHiUb004190@farm-0002.internal.tilera.com>
+From: Chris Metcalf <cmetcalf@tilera.com>
+Date: Sun, 15 Aug 2010 12:14:41 -0400
+Subject: [PATCH] arch/tile: export only COMMAND_LINE_SIZE to userspace.
+To: linux-kernel@vger.kernel.org
+Cc: Adrian Bunk <bunk@stusta.de>
+X-OriginalArrivalTime: 15 Aug 2010 16:17:46.0407 (UTC) FILETIME=[65B0CB70:01CB3C95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 08/14/2010 12:03 AM, H. Peter Anvin wrote:
-> Avi, do you want to take this one or should I?
+This fixes a failure in "make headers_check" for tile.
+I hadn't realized this file was exported to userspace by default.
 
-I will, thanks.
+Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+---
+ arch/tile/include/asm/setup.h |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
+diff --git a/arch/tile/include/asm/setup.h b/arch/tile/include/asm/setup.h
+index 823ddd4..7caf0f3 100644
+--- a/arch/tile/include/asm/setup.h
++++ b/arch/tile/include/asm/setup.h
+@@ -15,6 +15,10 @@
+ #ifndef _ASM_TILE_SETUP_H
+ #define _ASM_TILE_SETUP_H
+ 
++#define COMMAND_LINE_SIZE	2048
++
++#ifdef __KERNEL__
++
+ #include <linux/pfn.h>
+ #include <linux/init.h>
+ 
+@@ -23,10 +27,10 @@
+  */
+ #define MAXMEM_PFN	PFN_DOWN(MAXMEM)
+ 
+-#define COMMAND_LINE_SIZE	2048
+-
+ void early_panic(const char *fmt, ...);
+ void warn_early_printk(void);
+ void __init disable_early_printk(void);
+ 
++#endif /* __KERNEL__ */
++
+ #endif /* _ASM_TILE_SETUP_H */
 -- 
-error compiling committee.c: too many arguments to function
+1.6.5.2
 
