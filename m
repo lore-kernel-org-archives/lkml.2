@@ -1,78 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab0HOFnQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 01:43:16 -0400
-Received: from sh.osrg.net ([192.16.179.4]:34468 "EHLO sh.osrg.net"
+	id S932219Ab0HOGGP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 02:06:15 -0400
+Received: from compulab.co.il ([67.18.134.219]:45582 "EHLO compulab.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754507Ab0HOFnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 01:43:15 -0400
-Date: Sun, 15 Aug 2010 14:42:51 +0900
-To: linux@arm.linux.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, khc@pm.waw.pl, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arch@vger.kernel.org
-Subject: Re: ARM: 2.6.3[45] PCI regression (IXP4xx and PXA?)
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100814184605.GA1999@n2100.arm.linux.org.uk>
-References: <20100813215413.GA21607@n2100.arm.linux.org.uk>
-	<20100814181306U.fujita.tomonori@lab.ntt.co.jp>
-	<20100814184605.GA1999@n2100.arm.linux.org.uk>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100815144122O.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 15 Aug 2010 14:42:53 +0900 (JST)
+	id S932108Ab0HOGGO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 02:06:14 -0400
+Message-ID: <4C6783C7.1030604@compulab.co.il>
+Date: Sun, 15 Aug 2010 09:05:59 +0300
+From: Igor Grinberg <grinberg@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.1.9) Gecko/20100504 Lightning/1.0b1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH v2] ARM: imx: fix build failure concerning otg/ulpi
+References: <4C65246E.1000906@ru.mvista.com> <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de>
+In-Reply-To: <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Aug 2010 19:46:05 +0100
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+On 08/13/10 15:06, Uwe Kleine-König wrote:
+> The build failure was introduced by
+>
+> 	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
+>
+> Cc: Igor Grinberg <grinberg@compulab.co.il>
+> Cc: Mike Rapoport <mike@compulab.co.il>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>   
 
-> On Sat, Aug 14, 2010 at 06:30:37PM +0900, FUJITA Tomonori wrote:
-> > On Fri, 13 Aug 2010 22:54:13 +0100
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > >  This means that when dmabounce comes to allocate the replacement
-> > > buffer, it gets a buffer which won't be accessible to the DMA
-> > > controller
-> > 
-> > Really? looks like dmabounce does nothing for coherent memory that
-> > dma_alloc_coherent() allocates.
-> > 
-> > The following very hacky patch works?
-> 
-> So what happens if you use a driver which uses dma_alloc_coherent()
-> directly?  Should the driver really be passed memory which is
-> inaccessible to the device because its outside the host bridge PCI
-> window?
+I've based my patches on v2.6.35-rc6, so I could not patch
+those imx variants, sorry...
+But I did deal with mach-pca100.c, so I think moving it from
+mach-mx2 to mach-imx is what made it miss my patch.
 
-I'm not sure what you mean.
+Anyway, this looks like the right addition.
 
-A driver which uses dma_alloc_coherent() directly should
-work. dma_alloc_coherent() allocates memory with GFP_DMA with that
-patch for dmabounce devices. So the driver gets the access-able
-memory.
+Thanks
 
-The memory that dma_alloc_coherent() returns should be always
-consistent. We can't bounce it. All we can do is returning a memory
-that a device (and its bus) can access to.
+> ---
+>  arch/arm/mach-imx/mach-cpuimx27.c  |    4 ++--
+>  arch/arm/mach-imx/mach-pca100.c    |    4 ++--
+>  arch/arm/mach-mx25/mach-cpuimx25.c |    2 +-
+>  arch/arm/mach-mx3/mach-cpuimx35.c  |    2 +-
+>  4 files changed, 6 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/mach-imx/mach-cpuimx27.c b/arch/arm/mach-imx/mach-cpuimx27.c
+> index 575ff1a..339150a 100644
+> --- a/arch/arm/mach-imx/mach-cpuimx27.c
+> +++ b/arch/arm/mach-imx/mach-cpuimx27.c
+> @@ -279,13 +279,13 @@ static void __init eukrea_cpuimx27_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  		mxc_register_device(&mxc_otg_host, &otg_pdata);
+>  	}
+>  
+>  	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
+>  #endif
+> diff --git a/arch/arm/mach-imx/mach-pca100.c b/arch/arm/mach-imx/mach-pca100.c
+> index a389d11..23c9e1f 100644
+> --- a/arch/arm/mach-imx/mach-pca100.c
+> +++ b/arch/arm/mach-imx/mach-pca100.c
+> @@ -419,13 +419,13 @@ static void __init pca100_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  		mxc_register_device(&mxc_otg_host, &otg_pdata);
+>  	}
+>  
+>  	usbh2_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  	mxc_register_device(&mxc_usbh2, &usbh2_pdata);
+>  #endif
+> diff --git a/arch/arm/mach-mx25/mach-cpuimx25.c b/arch/arm/mach-mx25/mach-cpuimx25.c
+> index 56b2e26..a5f0174 100644
+> --- a/arch/arm/mach-mx25/mach-cpuimx25.c
+> +++ b/arch/arm/mach-mx25/mach-cpuimx25.c
+> @@ -138,7 +138,7 @@ static void __init eukrea_cpuimx25_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  		mxc_register_device(&mxc_otg, &otg_pdata);
+>  	}
+> diff --git a/arch/arm/mach-mx3/mach-cpuimx35.c b/arch/arm/mach-mx3/mach-cpuimx35.c
+> index 63f970f..9770a6a 100644
+> --- a/arch/arm/mach-mx3/mach-cpuimx35.c
+> +++ b/arch/arm/mach-mx3/mach-cpuimx35.c
+> @@ -192,7 +192,7 @@ static void __init mxc_board_init(void)
+>  #if defined(CONFIG_USB_ULPI)
+>  	if (otg_mode_host) {
+>  		otg_pdata.otg = otg_ulpi_create(&mxc_ulpi_access_ops,
+> -				USB_OTG_DRV_VBUS | USB_OTG_DRV_VBUS_EXT);
+> +				ULPI_OTG_DRVVBUS | ULPI_OTG_DRVVBUS_EXT);
+>  
+>  		mxc_register_device(&mxc_otg_host, &otg_pdata);
+>  	}
+>   
 
-Krzysztof, can you try the patch?
-
-
-> No, this is clearly wrong, so this patch doesn't fix anything.  It's
-> a bodge, nothing more.  The real solution is to have _both_ masks
-> both reduced down according to the host bridge, as we used to do.
-> 
-> So I suggest 6fee48c is reverted so that these platforms don't regress
-> for -rc1.
-
-Sorry, the original ARM code is wrong. dev->dma_mask and
-dev->coherent_dma_mask represent the driver of dma restriction. ARM
-tries to use them for both a driver and a bus so ARM needs a
-workaround that doesn't set the driver of dma restriction to
-dev->dma_mask and dev->coherent_dma_mask.
-
-The proper solution is having a separate dma mask for a bus. I think
-that POWERPC already does the similar. It has max_direct_dma_addr in
-struct dev_archdata, which represents the dma restriction of a bus.
+-- 
+Regards,
+Igor.
 
