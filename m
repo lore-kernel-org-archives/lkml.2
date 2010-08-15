@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757553Ab0HOPbY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 11:31:24 -0400
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:60077 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753107Ab0HOPbX (ORCPT
+	id S1757640Ab0HOPdG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 11:33:06 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59275 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107Ab0HOPdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 11:31:23 -0400
-Message-ID: <4C67A445.6030601@example.com>
-Date: Sun, 15 Aug 2010 10:24:37 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioctl definition - has it changed recently?
-References: <4C67023D.6050603@example.com> <4C670478.4040609@example.com> <20100814212007.GA26128@nuttenaction>
-In-Reply-To: <20100814212007.GA26128@nuttenaction>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 11837430147629150478
-X-Ovh-Remote: 83.24.76.41 (dmu41.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Sun, 15 Aug 2010 11:33:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=plCglyhxy0ffWI3N4COKLAutXRtYT+aRhm5oG3C5QZGdVSqJVfI0TLQjbJQDNsq1JH
+         kkjHhUgOnnX24agpEe/RoovNsjCLaDJB4Sx7822/C/nn3lrzLt9XxnGI+Dj5fm8VVVAT
+         1dHHkp6ufKn6iNgnhWbxFW64ue5+SnaC1gSoQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] init/main.c: remove __releases(kernel_lock) notations
+Date: Sun, 15 Aug 2010 19:25:59 +0900
+Message-Id: <1281867959-9843-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.08.2010 23:20, Hagen Paul Pfeifer wrote:
-> * Piotr Hosowicz | 2010-08-14 23:02:48 [+0200]:
->
->> The latest driver is here:
->>
->> ftp://download.nvidia.com/XFree86/Linux-x86_64/256.44/
->>
->> To unpack execute it with --extract-only option.
->
-> remove line 426 of kernel/nv.c:
->
->      .ioctl     = nv_kern_ioctl,
->
->
-> ... and try again. ;)
+commit 5e3d20a68f63fc5a310687d81956c3b96e488b84 removed BKL from the startup
+path so these notations should be removed also.
 
-Sorry, I was wrong when I wrote yesterday. I tried again and it works. 
-Thank you a lot. It will be my standard way to deal with this.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ init/main.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-Cheers,
-
-Piotr Hosowicz
-
+diff --git a/init/main.c b/init/main.c
+index 5a0be5c..96ed802 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -428,7 +428,6 @@ static void __init setup_command_line(char *command_line)
+ static __initdata DECLARE_COMPLETION(kthreadd_done);
+ 
+ static noinline void __init_refok rest_init(void)
+-	__releases(kernel_lock)
+ {
+ 	int pid;
+ 
+@@ -823,7 +822,6 @@ static void run_init_process(char *init_filename)
+  * makes it inline to init() and it becomes part of init.text section
+  */
+ static noinline int init_post(void)
+-	__releases(kernel_lock)
+ {
+ 	/* need to finish all async __init code before freeing the memory */
+ 	async_synchronize_full();
 -- 
-Skarga z 1983 roku: Zamiast 3 kg cukru ekspedientka sprzeda³a
-mi 3 kg mrówek faraona (podpis nieczytelny). Dopisek kierowni-
-czki: Klient by³ w stanie nietrze¼wym.
-NP: Peter Green Splinter Group - Big Change Is Gonna Come
-NB: 2.6.35-git16
+1.7.0.4
+
