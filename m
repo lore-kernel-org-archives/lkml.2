@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751251Ab0HOTS6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 15:18:58 -0400
-Received: from smtp-1.vancouver.ipapp.com ([216.152.192.190]:22386 "EHLO
-	smtp-1.vancouver.ipapp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750884Ab0HOTS5 (ORCPT
+	id S1751263Ab0HOTXh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 15:23:37 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:45998 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750933Ab0HOTXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 15:18:57 -0400
-X-Greylist: delayed 7427 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Aug 2010 15:18:57 EDT
-From: "Account Owner Support Team" <accountowner20@gmail.com>
-Subject: Dear Email Account Owner
-X-Mailer: Quality Web Email v3.1s
-X-Originating-IP: 41.220.68.1
-Date: Sun, 15 Aug 2010 05:02:16 -1200
-Message-id: <4c681d98.1cd.6076.25201@netscape.ca>
+	Sun, 15 Aug 2010 15:23:36 -0400
+Date: Sun, 15 Aug 2010 21:23:35 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: lkml <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>
+Subject: headers_check warnings in drm headers
+Message-ID: <20100815192335.GA3438@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-X-Country: CA
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Email Account Owner,
- 
-This message is from owner MAIL MANAGEMENT messaging Center
-to all New and Old owners. We are currently Upgrading our
-data base and e-mail account center to classic webmail. 
+When I ran "make headers_check" on upstream I got following
+set of warnings for the drm headers:
 
-We are deleting all unused email account to create more
-space for new accounts. Please verify to deactivate your
-account or keep your email account active.
-To prevent your account from closing your Data you will have
-to update It below so that we will know that it's a present
-used by the owner Account.
+usr/include/drm/drm_mode.h:85: found __[us]{8,16,32,64} type without #include <linux/types.h>
+usr/include/drm/i915_drm.h:120: found __[us]{8,16,32,64} type without #include <linux/types.h>
+usr/include/drm/mga_drm.h:260: found __[us]{8,16,32,64} type without #include <linux/types.h>
+usr/include/drm/radeon_drm.h:758: found __[us]{8,16,32,64} type without #include <linux/types.h>
+usr/include/drm/via_drm.h:117: found __[us]{8,16,32,64} type without #include <linux/types.h>
 
- CONFIRM YOUR EMAIL IDENTITY BELOW
- 
-Email Username: ...............@
-EMAIL Password: ................
-Date of Birth: .................
-Deactivate Account:..........  or
-Keep Account Active:..........
+When I looked through the files I noticed a few things:
 
-We apologies for the inconvenience that this will cause you
-during this period.
- 
-Warning!!! Email account owner that refuses to update his or
-her Account within Seven days of receiving this warning 
-will lose his or her account permanently.
-Thank you for your understanding,
-Email Management.
+1) Several files uses a mixture of native types and linux types.
+   For example "unsigned int" and "__u32" in the same file.
+2) drm.h contains:
+#if defined(__linux__)
+
+#include <linux/types.h>
+#include <asm/ioctl.h>
+typedef unsigned int drm_handle_t;
+
+#else /* One of the BSDs */
+
+#include <sys/ioccom.h>
+#include <sys/types.h>
+typedef int8_t   __s8;
+typedef uint8_t  __u8;
+typedef int16_t  __s16;
+typedef uint16_t __u16;
+typedef int32_t  __s32;
+typedef uint32_t __u32;
+typedef int64_t  __s64;
+typedef uint64_t __u64;
+typedef unsigned long drm_handle_t;
+
+#endif
+
+Why this when no-one else require this treatment?
+
+3) Lots of typedefs...
+
+All in all - too much to dig into without knowing
+the background for the current state.
+
+At a minimum please get the warnings fixed.
+
+	Sam
+
