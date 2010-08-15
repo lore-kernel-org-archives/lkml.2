@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758310Ab0HOPVu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 11:21:50 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:34268 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758282Ab0HOPVr (ORCPT
+	id S932422Ab0HOPWT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 11:22:19 -0400
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:45392 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932625Ab0HOPWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 11:21:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:content-type;
-        b=A5FyUvWsWyXtYuroXB21gqkezd43B9Y+pexY7MbWGDa+WWKB9c6dKVVIpRdOlZOlM7
-         LccbhU+ChmwiUsVoo2NU4fjqoz31Yg8W3QMoM56dT5HczgNjFe2p844QEoM5TJcncTF/
-         zOpxQ3kAkSI+tB0X7FfV1RkESyEe23bCKpmhQ=
+	Sun, 15 Aug 2010 11:22:10 -0400
+Message-ID: <4C67F809.3090000@example.com>
+Date: Sun, 15 Aug 2010 16:22:01 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <AANLkTikV2eVo6KM5dSqfDwAwT=bVxnuWSpBE7F+JQU+_@mail.gmail.com>
-References: <AANLkTikV2eVo6KM5dSqfDwAwT=bVxnuWSpBE7F+JQU+_@mail.gmail.com>
-Date: Sun, 15 Aug 2010 13:13:07 +0200
-Message-ID: <AANLkTinzB=y4ntchu9fDeJ7XCkG9OJanvQUbMqtdWUrR@mail.gmail.com>
-Subject: Re: [git pull request] ACPI patches for 2.6.36.merge
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: len.brown@intel.com, Linux ACPI <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0015175cd592ed909b048ddaccb6
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ioctl definition - has it changed recently?
+References: <4C67023D.6050603@example.com> <4C670478.4040609@example.com>
+In-Reply-To: <4C670478.4040609@example.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 17873379547465871640
+X-Ovh-Remote: 83.24.76.41 (dmu41.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0015175cd592ed909b048ddaccb6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, Aug 15, 2010 at 12:41 PM, Sedat Dilek
-<sedat.dilek@googlemail.com> wrote:
-> I pulled in release GIT-branch on top of 2.6.35-git16 (commit
-> 5d7cb157025b3b4852f38e6e5e97d06ef12c1d78)
+On 14.08.2010 23:02, Piotr Hosowicz wrote:
+> On 14.08.2010 22:53, Piotr Hosowicz wrote:
+>> Hello,
+>>
+>> I build new kernels when they become available. Now I have a problem.
+>> After I install new kernel I have to run NVidia setup script. Starting
+>> from git15 it fails, see attached file. The error line is here:
+>>
+>> /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c: At top level:
+>> /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: error:
+>> unknown field ‘ioctl’ specified in initializer
+>> /tmp/selfgz6622/NVIDIA-Linux-x86_64-256.35/kernel/nv.c:426: warning:
+>> initialization from incompatible pointer type
+>>
+>> In git14 everything was OK, but now it is not, also with the Git synced
+>> kernel. Has something changed from git14 times? I hope that it changed
+>> in Linux because it will be fixed earlier than NVidia source.
+>>
+>> My graphic card is 01:00.0 VGA compatible controller: nVidia Corporation
+>> G96 [GeForce 9400 GT] (rev a1)
 >
-> =C2=A0 $ git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.=
-6.git
-> release
 >
-> Unfortunately, the build breaks:
+> The latest driver is here:
 >
-> [ build.log ]
-> drivers/acpi/power.c: In function =E2=80=98acpi_power_off_device=E2=80=99=
-:
-> drivers/acpi/power.c:252: error: =E2=80=98ref=E2=80=99 undeclared (first =
-use in this function)
-> drivers/acpi/power.c:252: error: (Each undeclared identifier is
-> reported only once
-> drivers/acpi/power.c:252: error: for each function it appears in.)
-> make[5]: *** [drivers/acpi/power.o] Error 1
-> make[4]: *** [drivers/acpi] Error 2
-> make[3]: *** [drivers] Error 2
+> ftp://download.nvidia.com/XFree86/Linux-x86_64/256.44/
 >
+> To unpack execute it with --extract-only option.
 
-Attached patch is fixing the issue here.
+http://phosowicz.jogger.pl/2010/08/15/nvidia-graphics-in-fresh-kernels/
 
-- Sedat -
+Regards,
 
---0015175cd592ed909b048ddaccb6
-Content-Type: text/x-diff; charset=US-ASCII; 
-	name="ACPI-Fix-undeclared-ref-in-acpi_power_off_device.patch"
-Content-Disposition: attachment; 
-	filename="ACPI-Fix-undeclared-ref-in-acpi_power_off_device.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gcvsqbm00
+Piotr Hosowicz
 
-ZGlmZiAtcmR1cCBsaW51eC0yLjYub3JpZy9kcml2ZXJzL2FjcGkvcG93ZXIuYyBsaW51eC0yLjYv
-ZHJpdmVycy9hY3BpL3Bvd2VyLmMKLS0tIGxpbnV4LTIuNi5vcmlnL2RyaXZlcnMvYWNwaS9wb3dl
-ci5jCisrKyBsaW51eC0yLjYvZHJpdmVycy9hY3BpL3Bvd2VyLmMKQEAgLTI0Miw2ICsyNDIsNyBA
-QCBzdGF0aWMgaW50IGFjcGlfcG93ZXJfb2ZmX2RldmljZShhY3BpX2hhCiAJYWNwaV9zdGF0dXMg
-c3RhdHVzID0gQUVfT0s7CiAJc3RydWN0IGFjcGlfcG93ZXJfcmVzb3VyY2UgKnJlc291cmNlID0g
-TlVMTDsKIAlzdHJ1Y3QgbGlzdF9oZWFkICpub2RlLCAqbmV4dDsKKwlzdHJ1Y3QgYWNwaV9wb3dl
-cl9yZWZlcmVuY2UgKnJlZjsKIAogCXJlc3VsdCA9IGFjcGlfcG93ZXJfZ2V0X2NvbnRleHQoaGFu
-ZGxlLCAmcmVzb3VyY2UpOwogCWlmIChyZXN1bHQpCg==
---0015175cd592ed909b048ddaccb6--
+-- 
+TV: "Gruchała jest taka, że cieszy się z każdego pchnięcia."
+NP: Van Halen - Cabo Wabo/You Really Got Me
+NB: 2.6.35-git16
