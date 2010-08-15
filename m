@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab0HOU26 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 16:28:58 -0400
-Received: from king.tilera.com ([72.1.168.226]:38679 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751656Ab0HOU25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 16:28:57 -0400
-Date: Sun, 15 Aug 2010 16:28:55 -0400
-Message-Id: <201008152028.o7FKSt9s017638@farm-0002.internal.tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
+	id S1751845Ab0HOUav (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 16:30:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55038 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751664Ab0HOUat (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 16:30:49 -0400
+Date: Sun, 15 Aug 2010 13:30:15 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [GIT PULL] updates to Tilera's "tile" architecture for 2.6.36
-X-OriginalArrivalTime: 15 Aug 2010 20:28:56.0738 (UTC) FILETIME=[7C4ED020:01CB3CB8]
+Cc: sedat.dilek@gmail.com, Andi Kleen <ak@linux.intel.com>,
+        len.brown@intel.com, Linux ACPI <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull request] ACPI patches for 2.6.36.merge
+Message-Id: <20100815133015.883c7069.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=vngT_5XYz1=3P6GjExFNtCVCdBMhaz4Sc4oEk@mail.gmail.com>
+References: <AANLkTikV2eVo6KM5dSqfDwAwT=bVxnuWSpBE7F+JQU+_@mail.gmail.com>
+	<AANLkTi=vngT_5XYz1=3P6GjExFNtCVCdBMhaz4Sc4oEk@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, 15 Aug 2010 11:15:51 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Please pull from:
+> On Sun, Aug 15, 2010 at 3:41 AM, Sedat Dilek <sedat.dilek@googlemail.com> wrote:
+> > I pulled in release GIT-branch on top of 2.6.35-git16 (commit
+> > 5d7cb157025b3b4852f38e6e5e97d06ef12c1d78)
+> >
+> >   $ git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git
+> > release
+> >
+> > Unfortunately, the build breaks:
+> >
+> > [ build.log ]
+> > drivers/acpi/power.c: In function ‘acpi_power_off_device’:
+> > drivers/acpi/power.c:252: error: ‘ref’ undeclared (first use in this function)
+> 
+> What the heck is going on? That thing cannot have been tested AT ALL.
+> It comes from commit cfa806f05980 ("gcc-4.6: ACPI: fix unused but set
+> variables in ACPI"), and there is no way that code has ever been
+> compiled. There's no conditional compilation (except for not enabling
+> ACPI at all), and the declaration of 'ref' that the commit removes is
+> followed just a few lines later by the use.
+> 
+> So WTF?
+> 
+> I can merge this and fix it up, but I'm not going to. This thing
+> should never have been sent to me. It clearly had no testing at all. I
+> even looked at whether it could _possibly_ be some kind of odd "patch
+> applied with fuzz at the wrong place" issue, but that looks impossible
+> too (not to mention _still_ not being an excuse for not even trying to
+> compile the thing).
+> 
+> I understand when people don't notice compile errors that don't happen
+> for them (due to being architecture- or configuration-specific), but I
+> really don't see how that could _ever_ have been the case here.
+> 
+> I see Andrew in the sign-off chain, which surprises me. Maybe he just
+> passed on the patch blindly. But seriously, what the _hell_ is going
+> on here?
+> 
 
-git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git
-
-to get recent fixes for the "tile" architecture.  The changes in the tree
-represent some catch-up changes to sync up with commits from other folks
-(e.g. __arch_hweight, ARCH_DMA_MINALIGN, kunmap_atomic_notypecheck);
-some sync-up from the Tilera internal development tree; and a few cleanup
-changes that have been submitted to me by other folks.
-
-Almost all of this material is bug fixes.  There are a couple of minor
-enhancements due to the sync-up with our internal development, which is
-why I'm sending this pull request while the merge window is still open.
-In particular there is one change to the syscall return value ABI
-(returning errors in register r1) that I'd like to get into 2.6.36 so
-it will be compatible with the next release of our userspace.
-
-The only change outside of arch/tile is the fix to add the fanotify
-syscalls to include/asm-generic, which several folks have signed off on.
-
-Thanks!
-Chris Metcalf
-cmetcalf@tilera.com
-
- arch/tile/Makefile                  |   20 +++---
- arch/tile/configs/tile_defconfig    |    1 -
- arch/tile/include/arch/abi.h        |    4 +-
- arch/tile/include/asm/atomic_32.h   |   37 ----------
- arch/tile/include/asm/backtrace.h   |    4 +-
- arch/tile/include/asm/bitops.h      |    9 ++-
- arch/tile/include/asm/cache.h       |    5 +-
- arch/tile/include/asm/highmem.h     |    2 +-
- arch/tile/include/asm/page.h        |    6 ++-
- arch/tile/include/asm/scatterlist.h |   21 ------
- arch/tile/include/asm/setup.h       |    8 ++-
- arch/tile/include/asm/siginfo.h     |    4 +
- arch/tile/include/asm/uaccess.h     |    4 +-
- arch/tile/include/hv/hypervisor.h   |    8 +-
- arch/tile/kernel/backtrace.c        |  137 +++++++++++++++++++++++++----------
- arch/tile/kernel/compat_signal.c    |    4 +-
- arch/tile/kernel/intvec_32.S        |   14 +++-
- arch/tile/kernel/proc.c             |    1 -
- arch/tile/kernel/setup.c            |    4 +-
- arch/tile/kernel/stack.c            |    8 --
- arch/tile/kernel/time.c             |   33 +++++----
- arch/tile/kernel/traps.c            |    4 +-
- arch/tile/lib/Makefile              |    4 +-
- arch/tile/lib/exports.c             |   16 +++--
- arch/tile/lib/memcpy_32.S           |   20 +----
- arch/tile/lib/memset_32.c           |   25 -------
- arch/tile/mm/fault.c                |    8 ++
- arch/tile/mm/highmem.c              |    4 +-
- arch/tile/mm/homecache.c            |    3 +
- arch/tile/mm/pgtable.c              |    1 -
- include/asm-generic/unistd.h        |    6 ++-
- 31 files changed, 218 insertions(+), 207 deletions(-)
+I'd be suspecting that we have two patches both of which worked
+separately but which broke when combined.  Is there some other patch in
+that tree which adds a new reference to `ref' in acpi_power_seq_show()?
