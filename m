@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab0HODo6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 23:44:58 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59083 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757123Ab0HODo5 (ORCPT
+	id S1750785Ab0HOENY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 00:13:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62887 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750696Ab0HOENX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 23:44:57 -0400
+	Sun, 15 Aug 2010 00:13:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Tj8vRjM+d0/TBSvhTUffvhR7OyFLzUXo8XkmbeDmRr6yemPoBA3tIK+jSl5Me3enSQ
-         uKfPin2xAm7YPqHh1ZVn1PrurUXqMVWt+haHmAd/eb1cJwn5hog82WPXhflxGVGQTtb3
-         i29ywz856VuQWiLaJ2O2jhM1BV4dV5x2gmVZA=
-Date: Sat, 14 Aug 2010 23:44:53 -0400
-From: tmhikaru@gmail.com
-To: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [stable] 2.6.34.4 build failure
-Message-ID: <20100815034453.GA29703@roll>
-References: <87sk2h1yki.fsf@turtle.gmx.de> <20100814211043.GC7799@kroah.com>
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=x0CeafSLuAz5S/x94juZ+RgOF1ZaBTwILs6z7HrpXs+UnlVG/y5kclViNpNI80mE5M
+         fR+NIhYU+P1iz0cgv4W1ikqewyMzC8nmoVOLcYIyDzBbEWeqpVaMXUPKnYYxF6xCs4vw
+         miL1xWZfU9KmTZfL5FYUeVJKqAtcHqYAmta9g=
+Subject: [PATCH] kconfig: Fix variable name typo in streamline_config.pl.
+From: hiromu yagura <hiromu1996@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Toralf Foerster <toralf.foerster@gmx.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 15 Aug 2010 13:13:17 +0900
+Message-ID: <1281845597.11566.5.camel@camp10-laptop>
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="AhhlLboLdkugWU4S"
-Content-Disposition: inline
-In-Reply-To: <20100814211043.GC7799@kroah.com>
-User-Agent: Mutt/1.4.2.3i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+When I added "use strict;" to streamline_config.pl, I saw following
+warnings.
 
---AhhlLboLdkugWU4S
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Global symbol "%prompt" requires explicit package name at
+scripts/kconfig/streamline_config.pl line 183.
+> Global symbol "%prompt" requires explicit package name at
+scripts/kconfig/streamline_config.pl line 368.
 
-On Sat, Aug 14, 2010 at 02:10:43PM -0700, Greg KH wrote:
-> On Sat, Aug 14, 2010 at 08:46:21AM +0200, Sven Joachim wrote:
-> > 2.6.34.4 failed to build here:
-> >=20
-> > ,----
-> > |   CC      arch/x86/kernel/cpu/vmware.o
-> > | arch/x86/kernel/cpu/vmware.c: In function 'vmware_get_tsc_khz':
-> > | arch/x86/kernel/cpu/vmware.c:66: error: 'preset_lpj' undeclared (firs=
-t use in this function)
-> > | arch/x86/kernel/cpu/vmware.c:66: error: (Each undeclared identifier i=
-s reported only once
-> > | arch/x86/kernel/cpu/vmware.c:66: error: for each function it appears =
-in.)
-> > | arch/x86/kernel/cpu/vmware.c:68: error: 'HZ' undeclared (first use in=
- this function)
-> > | make[3]: *** [arch/x86/kernel/cpu/vmware.o] Error 1
-> > | make[2]: *** [arch/x86/kernel/cpu] Error 2
-> > | make[1]: *** [arch/x86/kernel] Error 2
-> > | make: *** [arch/x86] Error 2
-> > `----
-> >=20
-> > The .config file follows.
->=20
-> If you add:
-> 	#include <linux/jiffies.h>
-> to that file, does it then build?
->=20
-> Odd that this isn't showing up in the .35 kernel :(
->=20
-> thanks,
->=20
-> greg k-h
+Let's fix it.
+(Note: prompts[] is defined at line 123 but never used. This seems
+typo.)
 
-	I am having an identical build failure. Adding that include line
-indeed fixes it for me.
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Toralf Foerster <toralf.foerster@gmx.de>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
 
-	Tim McGrath
+Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
+---
+ scripts/kconfig/streamline_config.pl |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
---AhhlLboLdkugWU4S
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+diff --git a/scripts/kconfig/streamline_config.pl
+b/scripts/kconfig/streamline_config.pl
+index c70a27d..d74363f 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -178,7 +178,7 @@ sub read_kconfig {
+ 	# configs without prompts must be selected
+ 	} elsif ($state ne "NONE" && /^\s*tristate\s\S/) {
+ 	    # note if the config has a prompt
+-	    $prompt{$config} = 1;
++	    $prompts{$config} = 1;
+ 
+ 	# Check for if statements
+ 	} elsif (/^if\s+(.*\S)\s*$/) {
+@@ -363,7 +363,7 @@ while ($repeat) {
+ 	    parse_config_dep_select $depends{$config};
+ 	}
+ 
+-	if (defined($prompt{$config}) || !defined($selects{$config})) {
++	if (defined($prompts{$config}) || !defined($selects{$config})) {
+ 	    next;
+ 	}
+ 
+-- 
+1.7.0.4
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQEVAwUBTGditZEncCrqzVruAQLkfgf8DF/RIrrnZqAENBvEA4QESROicLTtvksv
-+QHmb3FFiej6tmxzG/o+R692OQUVPwf2ASNC/esX3y9ExXeaIMCGtYIsit54lA1v
-q8gYowSNiR0FVl4+4KVLtUeLN2vKg4V+yG5vBE5H9PZ0ShoLmLArHyaahRYt2aUl
-QXkld2vnQ4LmAZAFeH6stW4c54jn5DP0sA7GiEXn0eWq6D19e83tXGf9pyz3rQJq
-vDpiS9cOPY3DqIRI/KgYwVRu/NKNTtBoteJ+h4quttDpQigb9YPmq5YFRDNZnOcs
-vxnE9rfcOnFv1iex1/FqgKUPWaJwSy4O0jaKWluBe7x8DisnJmPlEg==
-=qh4G
------END PGP SIGNATURE-----
 
---AhhlLboLdkugWU4S--
