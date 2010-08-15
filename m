@@ -1,55 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab0HNXmP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 14 Aug 2010 19:42:15 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:53868 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757264Ab0HNXmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 14 Aug 2010 19:42:14 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 2.6.35.2
-Date: Sat, 14 Aug 2010 19:39:53 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35.2x-crc+; KDE/4.4.5; x86_64; ; )
-Cc: sedat.dilek@gmail.com, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, penberg@kernel.org, arthur@psw.ro,
-        wylda@volny.cz
-References: <AANLkTimNborh0AtHkdnN-aCizDu4+S6ORmeoKzS_nEVH@mail.gmail.com> <201008141547.08722.edt@aei.ca> <AANLkTinP3Kh4Gjnkx2ycr34W6SVqLsBh7yMsGuoU7pAD@mail.gmail.com>
-In-Reply-To: <AANLkTinP3Kh4Gjnkx2ycr34W6SVqLsBh7yMsGuoU7pAD@mail.gmail.com>
+	id S1757580Ab0HOABK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 14 Aug 2010 20:01:10 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:30295 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757521Ab0HOABG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 14 Aug 2010 20:01:06 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:date:message-id:subject:from:to:cc:
+	content-type:x-system-of-record;
+	b=QxuYxH4tJmBPVFmgwYMnwcXIkg6LWB2YoHVhggNUTF/XQKlt5EaZRrDonEFnvEB3A
+	dUmMWuCcz68IHOuokll1Q==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008141939.54277.edt@aei.ca>
+Date: Sat, 14 Aug 2010 17:00:59 -0700
+Message-ID: <AANLkTikSSmP5f1csa=xPTR=EqY4D5a=6t2oDVkZ7cA-v@mail.gmail.com>
+Subject: [PATCH] 2.6.35 libata support for > 512 byte sectors (e.g. 4K Native)
+From: Grant Grundler <grundler@google.com>
+To: Jeff Garzik <jgarzik@pobox.com>, Tejun Heo <tj@kernel.org>
+Cc: Linux IDE <linux-ide@vger.kernel.org>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        Gwendal Grignou <gwendal@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0016362835ce50d77a048dd169d9
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 14 August 2010 17:56:58 Linus Torvalds wrote:
-> On Sat, Aug 14, 2010 at 12:47 PM, Ed Tomlinson <edt@aei.ca> wrote:
-> > On Saturday 14 August 2010 14:47:45 Linus Torvalds wrote:
-> >>
-> >> Just to verify: you have CONFIG_HIGHPTE enabled on a x86-32 kernel,
-> >> right? I'd have expected this to not ever show up anywhere else, and
-> >> I'm just verifying that there isn't anything else going on. I'm
-> >> appending the commit message, the patch hasn't changed.
-> >
-> > No.  I have a x86-64 based kernel (amd64).
-> 
-> Hmm. On x86-64, pte_unmap() is a no-op. So moving it around should not
-> matter one whit. We don't even have a debug mode to turn it into some
-> kind of "check that we use it properly in an atomic region" which we
-> _could_ do.
-> 
-> Can you send me the messages you saw without that patch? There's
-> something odd going on here. I don't like the fact that the patch
-> apparently makes a difference for you. It shouldn't.
+--0016362835ce50d77a048dd169d9
+Content-Type: text/plain; charset=UTF-8
 
-Linus,
+Attached patch enables my x86 machine to recognize and talk to a
+"Native 4K" SATA device.
 
-Not to worry - looks like the problems here were due to a bad inode.
-I just did not hit it when restarting with the  patch added.  When I
-rebuilt the kernel without the patch it hit the fs/inode problem during
-boot.  A manual fsck seems to have fixed things.
+When I started working on this, I didn't know Matthew Wilcox had
+posted a similar patch 2 years ago:
+   http://git.kernel.org/?p=linux/kernel/git/willy/ata.git;a=shortlog;h=refs/heads/ata-large-sectors
 
-Ed Tomlinson
+Gwendal Grignou pointed me at the the above code and small portions of
+this patch include Matthew's work. That's why Mathew is first on the
+"Signed-off-by:". I've NOT included his use of a bitmap to determine
+512 vs Native for ATA command block size - just used a simple table.
+And bugs are almost certainly mine.
+
+Lastly, the patch has been tested with a native 4K 'Engineering
+Sample' drive provided by Hitachi GST.
+
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Signed-off-by: Grant Grundler <grundler@google.com>
+Reviewed-by: Gwendal Grignou <gwendal@google.com>
+
+-----
+
+Gwendal's review of this patch had him concerned about access to
+"dev->sdev->sector_size" may have risks (e.g. sdev goes away before
+dev does).  I didn't like adding additional fields to ata_dev that
+duplicate what scsi is doing and this seems to be working so far. But
+since I don't know how dev->sdev is protected/syncronized (despite how
+libata and scsi are joined at the hip), I hope someone else can
+comment on if my usage of dev->sdev->sector_size is a problem and why.
+
+I believe use of ata_id_logical_per_physical_sectors() was wrong. I've
+replaced it with ata_id_log2_per_physical_sector() and cleaned up how
+block size word and alignment are referenced. It's alot easier to read
+where those functions are used now.
+
+
+Here is the kernel output from hotplugging the SATA drive on my
+machine (using Marvell 7042 controller):
+
+[ 2468.301218] ata4: exception Emask 0x10 SAct 0x0 SErr 0x4010000
+action 0xe frozen
+[ 2468.301225] ata4: edma_err_cause=00000010 pp_flags=00000000, dev connect
+[ 2468.301240] ata4: SError: { PHYRdyChg DevExch }
+[ 2468.301257] ata4: hard resetting link
+[ 2471.701117] ata4: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+[ 2471.740390] ata4.00: HPA detected: current 9770670, native 78165360
+[ 2471.740399] ata4.00: ATA-7: Hitachi HTSxxxxxxxxxxxx, yyyyyyyy, max UDMA/100
+[ 2471.740402] ata4.00: 9770670 sectors, multi 0: LBA48 NCQ (depth 31/32)
+[ 2471.764465] ata4.00: configured for UDMA/100
+[ 2471.764501] ata4: EH complete
+[ 2471.764988] scsi 4:0:0:0: Direct-Access     ATA      Hitachi
+HTSxxxxxxxxxxxx PQ: 0 ANSI: 5
+[ 2471.782914] sd 4:0:0:0: [sdd] 9770670 4096-byte logical blocks:
+(40.0 GB/37.2 GiB)
+[ 2471.787093] sd 4:0:0:0: [sdd] Write Protect is off
+[ 2471.787120] sd 4:0:0:0: [sdd] Mode Sense: 00 3a 00 00
+[ 2471.788768] sd 4:0:0:0: [sdd] Write cache: enabled, read cache:
+enabled, doesn't support DPO or FUA
+[ 2471.792293] sd 4:0:0:0: [sdd] 9770670 4096-byte logical blocks:
+(40.0 GB/37.2 GiB)
+[ 2471.792834] sd 4:0:0:0: Attached scsi generic sg3 type 0
+[ 2471.799370]  sdd: unknown partition table
+[ 2471.845582] sd 4:0:0:0: [sdd] 9770670 4096-byte logical blocks:
+(40.0 GB/37.2 GiB)
+[ 2471.853763] sd 4:0:0:0: [sdd] Attached SCSI disk
+
+I was able to dd to/from the device and pull SMART data (not shown and
+probably not able to share.)
+
+If someone has "Advanced Format Developers Kit" SATA drives from
+idema.org, I'd appreciate any test reports.
+
+thanks
+grant
+
+[ patch NOT inlined because gmail will word-wrap and make a mess of
+it. Please use attached filed.]
+
+--0016362835ce50d77a048dd169d9
+Content-Type: application/octet-stream; 
+	name="2.6.35-libata_4k_block_support-01"
+Content-Disposition: attachment; 
+	filename="2.6.35-libata_4k_block_support-01"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gcv3162m0
+
+ZGlmZiAtLWdpdCBhL2RyaXZlcnMvYXRhL2xpYmF0YS1zY3NpLmMgYi9kcml2ZXJzL2F0YS9saWJh
+dGEtc2NzaS5jCmluZGV4IGE1NDI3M2QuLjE2ZDJiYmYgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYXRh
+L2xpYmF0YS1zY3NpLmMKKysrIGIvZHJpdmVycy9hdGEvbGliYXRhLXNjc2kuYwpAQCAtNTIsNyAr
+NTIsNiBAQAogCiAjaW5jbHVkZSAibGliYXRhLmgiCiAKLSNkZWZpbmUgU0VDVE9SX1NJWkUJCTUx
+MgogI2RlZmluZSBBVEFfU0NTSV9SQlVGX1NJWkUJNDA5NgogCiBzdGF0aWMgREVGSU5FX1NQSU5M
+T0NLKGF0YV9zY3NpX3JidWZfbG9jayk7CkBAIC01MTYsNyArNTE1LDcgQEAgaW50IGF0YV9jbWRf
+aW9jdGwoc3RydWN0IHNjc2lfZGV2aWNlICpzY3NpZGV2LCB2b2lkIF9fdXNlciAqYXJnKQogCW1l
+bXNldChzY3NpX2NtZCwgMCwgc2l6ZW9mKHNjc2lfY21kKSk7CiAKIAlpZiAoYXJnc1szXSkgewot
+CQlhcmdzaXplID0gU0VDVE9SX1NJWkUgKiBhcmdzWzNdOworCQlhcmdzaXplID0gQVRBX1NFQ1Rf
+U0laRSAqIGFyZ3NbM107CiAJCWFyZ2J1ZiA9IGttYWxsb2MoYXJnc2l6ZSwgR0ZQX0tFUk5FTCk7
+CiAJCWlmIChhcmdidWYgPT0gTlVMTCkgewogCQkJcmMgPSAtRU5PTUVNOwpAQCAtMTE1MCw4ICsx
+MTQ5LDkgQEAgc3RhdGljIGludCBhdGFfc2NzaV9kZXZfY29uZmlnKHN0cnVjdCBzY3NpX2Rldmlj
+ZSAqc2RldiwKIAkJYmxrX3F1ZXVlX2RtYV9kcmFpbihxLCBhdGFwaV9kcmFpbl9uZWVkZWQsIGJ1
+ZiwgQVRBUElfTUFYX0RSQUlOKTsKIAl9IGVsc2UgewogCQkvKiBBVEEgZGV2aWNlcyBtdXN0IGJl
+IHNlY3RvciBhbGlnbmVkICovCisJCXNkZXYtPnNlY3Rvcl9zaXplID0gYXRhX2lkX2xvZ2ljYWxf
+c2VjdG9yX3NpemUoZGV2LT5pZCk7CiAJCWJsa19xdWV1ZV91cGRhdGVfZG1hX2FsaWdubWVudChz
+ZGV2LT5yZXF1ZXN0X3F1ZXVlLAotCQkJCQkgICAgICAgQVRBX1NFQ1RfU0laRSAtIDEpOworCQkJ
+CQkgICAgICAgc2Rldi0+c2VjdG9yX3NpemUgLSAxKTsKIAkJc2Rldi0+bWFuYWdlX3N0YXJ0X3N0
+b3AgPSAxOwogCX0KIApAQCAtMTE2Niw2ICsxMTY2LDcgQEAgc3RhdGljIGludCBhdGFfc2NzaV9k
+ZXZfY29uZmlnKHN0cnVjdCBzY3NpX2RldmljZSAqc2RldiwKIAkJc2NzaV9hZGp1c3RfcXVldWVf
+ZGVwdGgoc2RldiwgTVNHX1NJTVBMRV9UQUcsIGRlcHRoKTsKIAl9CiAKKwlkZXYtPnNkZXYgPSBz
+ZGV2OwogCXJldHVybiAwOwogfQogCkBAIC0xNjk2LDcgKzE2OTcsNyBAQCBzdGF0aWMgdW5zaWdu
+ZWQgaW50IGF0YV9zY3NpX3J3X3hsYXQoc3RydWN0IGF0YV9xdWV1ZWRfY21kICpxYykKIAkJZ290
+byBub3RoaW5nX3RvX2RvOwogCiAJcWMtPmZsYWdzIHw9IEFUQV9RQ0ZMQUdfSU87Ci0JcWMtPm5i
+eXRlcyA9IG5fYmxvY2sgKiBBVEFfU0VDVF9TSVpFOworCXFjLT5uYnl0ZXMgPSBuX2Jsb2NrICog
+cWMtPmRldi0+c2Rldi0+c2VjdG9yX3NpemU7CiAKIAlyYyA9IGF0YV9idWlsZF9yd190ZigmcWMt
+PnRmLCBxYy0+ZGV2LCBibG9jaywgbl9ibG9jaywgdGZfZmxhZ3MsCiAJCQkgICAgIHFjLT50YWcp
+OwpAQCAtMjEyMyw3ICsyMTI0LDcgQEAgc3RhdGljIHVuc2lnbmVkIGludCBhdGFfc2NzaW9wX2lu
+cV84OShzdHJ1Y3QgYXRhX3Njc2lfYXJncyAqYXJncywgdTggKnJidWYpCiAKIHN0YXRpYyB1bnNp
+Z25lZCBpbnQgYXRhX3Njc2lvcF9pbnFfYjAoc3RydWN0IGF0YV9zY3NpX2FyZ3MgKmFyZ3MsIHU4
+ICpyYnVmKQogewotCXUzMiBtaW5faW9fc2VjdG9yczsKKwl1MTYgbWluX2lvX3NlY3RvcnM7CiAK
+IAlyYnVmWzFdID0gMHhiMDsKIAlyYnVmWzNdID0gMHgzYzsJCS8qIHJlcXVpcmVkIFZQRCBzaXpl
+IHdpdGggdW5tYXAgc3VwcG9ydCAqLwpAQCAtMjEzNSwxMCArMjEzNiw3IEBAIHN0YXRpYyB1bnNp
+Z25lZCBpbnQgYXRhX3Njc2lvcF9pbnFfYjAoc3RydWN0IGF0YV9zY3NpX2FyZ3MgKmFyZ3MsIHU4
+ICpyYnVmKQogCSAqIGxvZ2ljYWwgdGhhbiBwaHlzaWNhbCBzZWN0b3Igc2l6ZSB3ZSBuZWVkIHRv
+IGZpZ3VyZSBvdXQgd2hhdCB0aGUKIAkgKiBsYXR0ZXIgaXMuCiAJICovCi0JaWYgKGF0YV9pZF9o
+YXNfbGFyZ2VfbG9naWNhbF9zZWN0b3JzKGFyZ3MtPmlkKSkKLQkJbWluX2lvX3NlY3RvcnMgPSBh
+dGFfaWRfbG9naWNhbF9wZXJfcGh5c2ljYWxfc2VjdG9ycyhhcmdzLT5pZCk7Ci0JZWxzZQotCQlt
+aW5faW9fc2VjdG9ycyA9IDE7CisJbWluX2lvX3NlY3RvcnMgPSAxIDw8IGF0YV9pZF9sb2cyX3Bl
+cl9waHlzaWNhbF9zZWN0b3IoYXJncy0+aWQpOwogCXB1dF91bmFsaWduZWRfYmUxNihtaW5faW9f
+c2VjdG9ycywgJnJidWZbNl0pOwogCiAJLyoKQEAgLTIzOTcsMjEgKzIzOTUsMTMgQEAgc3RhdGlj
+IHVuc2lnbmVkIGludCBhdGFfc2NzaW9wX3JlYWRfY2FwKHN0cnVjdCBhdGFfc2NzaV9hcmdzICph
+cmdzLCB1OCAqcmJ1ZikKIHsKIAlzdHJ1Y3QgYXRhX2RldmljZSAqZGV2ID0gYXJncy0+ZGV2Owog
+CXU2NCBsYXN0X2xiYSA9IGRldi0+bl9zZWN0b3JzIC0gMTsgLyogTEJBIG9mIHRoZSBsYXN0IGJs
+b2NrICovCi0JdTggbG9nX3Blcl9waHlzID0gMDsKLQl1MTYgbG93ZXN0X2FsaWduZWQgPSAwOwot
+CXUxNiB3b3JkXzEwNiA9IGRldi0+aWRbMTA2XTsKLQl1MTYgd29yZF8yMDkgPSBkZXYtPmlkWzIw
+OV07Ci0KLQlpZiAoKHdvcmRfMTA2ICYgMHhjMDAwKSA9PSAweDQwMDApIHsKLQkJLyogTnVtYmVy
+IGFuZCBvZmZzZXQgb2YgbG9naWNhbCBzZWN0b3JzIHBlciBwaHlzaWNhbCBzZWN0b3IgKi8KLQkJ
+aWYgKHdvcmRfMTA2ICYgKDEgPDwgMTMpKQotCQkJbG9nX3Blcl9waHlzID0gd29yZF8xMDYgJiAw
+eGY7Ci0JCWlmICgod29yZF8yMDkgJiAweGMwMDApID09IDB4NDAwMCkgewotCQkJdTE2IGZpcnN0
+ID0gZGV2LT5pZFsyMDldICYgMHgzZmZmOwotCQkJaWYgKGZpcnN0ID4gMCkKLQkJCQlsb3dlc3Rf
+YWxpZ25lZCA9ICgxIDw8IGxvZ19wZXJfcGh5cykgLSBmaXJzdDsKLQkJfQotCX0KKwl1MzIgc2Vj
+dG9yX3NpemU7IC8qIHBoeXNpY2FsIHNlY3RvciBzaXplIGluIGJ5dGVzICovCisJdTggbG9nMl9w
+ZXJfcGh5czsKKwl1MTYgbG93ZXN0X2FsaWduZWQ7CisKKwlzZWN0b3Jfc2l6ZSA9IGF0YV9pZF9s
+b2dpY2FsX3NlY3Rvcl9zaXplKGRldi0+aWQpOworCWxvZzJfcGVyX3BoeXMgPSBhdGFfaWRfbG9n
+Ml9wZXJfcGh5c2ljYWxfc2VjdG9yKGRldi0+aWQpOworCWxvd2VzdF9hbGlnbmVkID0gYXRhX2lk
+X2xvZ2ljYWxfc2VjdG9yX29mZnNldChkZXYtPmlkLCBsb2cyX3Blcl9waHlzKTsKIAogCVZQUklO
+VEsoIkVOVEVSXG4iKTsKIApAQCAtMjQyNiw4ICsyNDE2LDEwIEBAIHN0YXRpYyB1bnNpZ25lZCBp
+bnQgYXRhX3Njc2lvcF9yZWFkX2NhcChzdHJ1Y3QgYXRhX3Njc2lfYXJncyAqYXJncywgdTggKnJi
+dWYpCiAJCXJidWZbM10gPSBsYXN0X2xiYTsKIAogCQkvKiBzZWN0b3Igc2l6ZSAqLwotCQlyYnVm
+WzZdID0gQVRBX1NFQ1RfU0laRSA+PiA4OwotCQlyYnVmWzddID0gQVRBX1NFQ1RfU0laRSAmIDB4
+ZmY7CisJCXJidWZbNF0gPSBzZWN0b3Jfc2l6ZSA+PiAoOCAqIDMpOworCQlyYnVmWzVdID0gc2Vj
+dG9yX3NpemUgPj4gKDggKiAyKTsKKwkJcmJ1Zls2XSA9IHNlY3Rvcl9zaXplID4+ICg4ICogMSk7
+CisJCXJidWZbN10gPSBzZWN0b3Jfc2l6ZTsKIAl9IGVsc2UgewogCQkvKiBzZWN0b3IgY291bnQs
+IDY0LWJpdCAqLwogCQlyYnVmWzBdID0gbGFzdF9sYmEgPj4gKDggKiA3KTsKQEAgLTI0NDAsMTEg
+KzI0MzIsMTMgQEAgc3RhdGljIHVuc2lnbmVkIGludCBhdGFfc2NzaW9wX3JlYWRfY2FwKHN0cnVj
+dCBhdGFfc2NzaV9hcmdzICphcmdzLCB1OCAqcmJ1ZikKIAkJcmJ1Zls3XSA9IGxhc3RfbGJhOwog
+CiAJCS8qIHNlY3RvciBzaXplICovCi0JCXJidWZbMTBdID0gQVRBX1NFQ1RfU0laRSA+PiA4Owot
+CQlyYnVmWzExXSA9IEFUQV9TRUNUX1NJWkUgJiAweGZmOworCQlyYnVmWyA4XSA9IHNlY3Rvcl9z
+aXplID4+ICg4ICogMyk7CisJCXJidWZbIDldID0gc2VjdG9yX3NpemUgPj4gKDggKiAyKTsKKwkJ
+cmJ1ZlsxMF0gPSBzZWN0b3Jfc2l6ZSA+PiAoOCAqIDEpOworCQlyYnVmWzExXSA9IHNlY3Rvcl9z
+aXplOwogCiAJCXJidWZbMTJdID0gMDsKLQkJcmJ1ZlsxM10gPSBsb2dfcGVyX3BoeXM7CisJCXJi
+dWZbMTNdID0gbG9nMl9wZXJfcGh5czsKIAkJcmJ1ZlsxNF0gPSAobG93ZXN0X2FsaWduZWQgPj4g
+OCkgJiAweDNmOwogCQlyYnVmWzE1XSA9IGxvd2VzdF9hbGlnbmVkOwogCkBAIC0yODg4LDkgKzI4
+ODIsOCBAQCBzdGF0aWMgdW5zaWduZWQgaW50IGF0YV9zY3NpX3Bhc3NfdGhydShzdHJ1Y3QgYXRh
+X3F1ZXVlZF9jbWQgKnFjKQogCXRmLT5kZXZpY2UgPSBkZXYtPmRldm5vID8KIAkJdGYtPmRldmlj
+ZSB8IEFUQV9ERVYxIDogdGYtPmRldmljZSAmIH5BVEFfREVWMTsKIAotCS8qIFJFQUQvV1JJVEUg
+TE9ORyB1c2UgYSBub24tc3RhbmRhcmQgc2VjdF9zaXplICovCi0JcWMtPnNlY3Rfc2l6ZSA9IEFU
+QV9TRUNUX1NJWkU7CiAJc3dpdGNoICh0Zi0+Y29tbWFuZCkgeworCS8qIFJFQUQvV1JJVEUgTE9O
+RyB1c2UgYSBub24tc3RhbmRhcmQgc2VjdF9zaXplICovCiAJY2FzZSBBVEFfQ01EX1JFQURfTE9O
+RzoKIAljYXNlIEFUQV9DTURfUkVBRF9MT05HX09OQ0U6CiAJY2FzZSBBVEFfQ01EX1dSSVRFX0xP
+Tkc6CkBAIC0yODk4LDYgKzI4OTEsNDUgQEAgc3RhdGljIHVuc2lnbmVkIGludCBhdGFfc2NzaV9w
+YXNzX3RocnUoc3RydWN0IGF0YV9xdWV1ZWRfY21kICpxYykKIAkJaWYgKHRmLT5wcm90b2NvbCAh
+PSBBVEFfUFJPVF9QSU8gfHwgdGYtPm5zZWN0ICE9IDEpCiAJCQlnb3RvIGludmFsaWRfZmxkOwog
+CQlxYy0+c2VjdF9zaXplID0gc2NzaV9idWZmbGVuKHNjbWQpOworCQlicmVhazsKKworCS8qIGNv
+bW1hbmRzIHVzaW5nIHJlcG9ydGVkIExvZ2ljYWwgQmxvY2sgc2l6ZSAoZS5nLiA1MTIgb3IgNEsp
+ICovCisJY2FzZSBBVEFfQ01EX0NGQV9XUklURV9ORToKKwljYXNlIEFUQV9DTURfQ0ZBX1RSQU5T
+X1NFQ1Q6CisJY2FzZSBBVEFfQ01EX0NGQV9XUklURV9NVUxUX05FOgorCS8qIFhYWDogY2FzZSBB
+VEFfQ01EX0NGQV9XUklURV9TRUNUT1JTX1dJVEhPVVRfRVJBU0U6ICovCisJY2FzZSBBVEFfQ01E
+X1JFQUQ6CisJY2FzZSBBVEFfQ01EX1JFQURfRVhUOgorCWNhc2UgQVRBX0NNRF9SRUFEX1FVRVVF
+RDoKKwkvKiBYWFg6IGNhc2UgQVRBX0NNRF9SRUFEX1FVRVVFRF9FWFQ6ICovCisJY2FzZSBBVEFf
+Q01EX0ZQRE1BX1JFQUQ6CisJY2FzZSBBVEFfQ01EX1JFQURfTVVMVEk6CisJY2FzZSBBVEFfQ01E
+X1JFQURfTVVMVElfRVhUOgorCWNhc2UgQVRBX0NNRF9QSU9fUkVBRDoKKwljYXNlIEFUQV9DTURf
+UElPX1JFQURfRVhUOgorCWNhc2UgQVRBX0NNRF9SRUFEX1NUUkVBTV9ETUFfRVhUOgorCWNhc2Ug
+QVRBX0NNRF9SRUFEX1NUUkVBTV9FWFQ6CisJY2FzZSBBVEFfQ01EX1ZFUklGWToKKwljYXNlIEFU
+QV9DTURfVkVSSUZZX0VYVDoKKwljYXNlIEFUQV9DTURfV1JJVEU6CisJY2FzZSBBVEFfQ01EX1dS
+SVRFX0VYVDoKKwljYXNlIEFUQV9DTURfV1JJVEVfRlVBX0VYVDoKKwljYXNlIEFUQV9DTURfV1JJ
+VEVfUVVFVUVEOgorCWNhc2UgQVRBX0NNRF9XUklURV9RVUVVRURfRlVBX0VYVDoKKwljYXNlIEFU
+QV9DTURfRlBETUFfV1JJVEU6CisJY2FzZSBBVEFfQ01EX1dSSVRFX01VTFRJOgorCWNhc2UgQVRB
+X0NNRF9XUklURV9NVUxUSV9FWFQ6CisJY2FzZSBBVEFfQ01EX1dSSVRFX01VTFRJX0ZVQV9FWFQ6
+CisJY2FzZSBBVEFfQ01EX1BJT19XUklURToKKwljYXNlIEFUQV9DTURfUElPX1dSSVRFX0VYVDoK
+KwljYXNlIEFUQV9DTURfV1JJVEVfU1RSRUFNX0RNQV9FWFQ6CisJY2FzZSBBVEFfQ01EX1dSSVRF
+X1NUUkVBTV9FWFQ6CisJCXFjLT5zZWN0X3NpemUgPSBkZXYtPnNkZXYtPnNlY3Rvcl9zaXplOwor
+CQlicmVhazsKKworCS8qIEV2ZXJ5dGhpbmcgZWxzZSB1c2VzIDUxMiBieXRlICJzZWN0b3JzIiAq
+LworCWRlZmF1bHQ6CisJCXFjLT5zZWN0X3NpemUgPSBBVEFfU0VDVF9TSVpFOwogCX0KIAogCS8q
+CkBAIC0zMzkzLDYgKzM0MjUsOCBAQCB2b2lkIGF0YV9zY3NpX3NjYW5faG9zdChzdHJ1Y3QgYXRh
+X3BvcnQgKmFwLCBpbnQgc3luYykKIAkJCWlmICghSVNfRVJSKHNkZXYpKSB7CiAJCQkJZGV2LT5z
+ZGV2ID0gc2RldjsKIAkJCQlzY3NpX2RldmljZV9wdXQoc2Rldik7CisJCQl9IGVsc2UgeworCQkJ
+CWRldi0+c2RldiA9IE5VTEw7CiAJCQl9CiAJCX0KIAl9CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xp
+bnV4L2F0YS5oIGIvaW5jbHVkZS9saW51eC9hdGEuaAppbmRleCBmZTZlNjgxLi4yNGE3NzI3IDEw
+MDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L2F0YS5oCisrKyBiL2luY2x1ZGUvbGludXgvYXRhLmgK
+QEAgLTg5LDYgKzg5LDcgQEAgZW51bSB7CiAJQVRBX0lEX1NQRwkJPSA5OCwKIAlBVEFfSURfTEJB
+X0NBUEFDSVRZXzIJPSAxMDAsCiAJQVRBX0lEX1NFQ1RPUl9TSVpFCT0gMTA2LAorCUFUQV9JRF9M
+T0dJQ0FMX1NFQ1RPUl9TSVpFCT0gMTE3LAkvKiBhbmQgMTE4ICovCiAJQVRBX0lEX0xBU1RfTFVO
+CQk9IDEyNiwKIAlBVEFfSURfRExGCQk9IDEyOCwKIAlBVEFfSURfQ1NGTwkJPSAxMjksCkBAIC02
+NDAsMTYgKzY0MSw1MSBAQCBzdGF0aWMgaW5saW5lIGludCBhdGFfaWRfZmx1c2hfZXh0X2VuYWJs
+ZWQoY29uc3QgdTE2ICppZCkKIAlyZXR1cm4gKGlkW0FUQV9JRF9DRlNfRU5BQkxFXzJdICYgMHgy
+NDAwKSA9PSAweDI0MDA7CiB9CiAKLXN0YXRpYyBpbmxpbmUgaW50IGF0YV9pZF9oYXNfbGFyZ2Vf
+bG9naWNhbF9zZWN0b3JzKGNvbnN0IHUxNiAqaWQpCisvKiBCVUc6IEJpZyBlbmRpYW4gc3lzdGVt
+cyBuZWVkIGFjY2Vzc2VzIHRvICJpZCIgd3JhcHBlZCB3aXRoIGxlMTZfdG9fY3B1KCkuCisgKi8K
+K3N0YXRpYyBpbmxpbmUgdTMyIGF0YV9pZF9sb2dpY2FsX3NlY3Rvcl9zaXplKGNvbnN0IHUxNiAq
+aWQpCiB7Ci0JaWYgKChpZFtBVEFfSURfU0VDVE9SX1NJWkVdICYgMHhjMDAwKSAhPSAweDQwMDAp
+Ci0JCXJldHVybiAwOwotCXJldHVybiBpZFtBVEFfSURfU0VDVE9SX1NJWkVdICYgKDEgPDwgMTMp
+OworCS8qIFQxMy8xNjk5LUQgUmV2aXNpb24gNmEsIFNlcCA2LCAyMDA4LiBQYWdlIDEyOC4KKwkg
+KiBJREVOVElGWSBERVZJQ0UgZGF0YSwgd29yZCAxMTctMTE4LgorCSAqIDB4ZDAwMCBpZ25vcmVz
+IGJpdCAxMyAobG9naWNhbDpwaHlzaWNhbCA+IDEpCisJICovCisJaWYgKChpZFtBVEFfSURfU0VD
+VE9SX1NJWkVdICYgMHhkMDAwKSA9PSAweDUwMDApCisJCXJldHVybiAoKChpZFtBVEFfSURfTE9H
+SUNBTF9TRUNUT1JfU0laRSsxXSA8PCAxNikKKwkJCSArIGlkW0FUQV9JRF9MT0dJQ0FMX1NFQ1RP
+Ul9TSVpFXSkgKiBzaXplb2YodTE2KSkgOworCXJldHVybiBBVEFfU0VDVF9TSVpFOwogfQogCi1z
+dGF0aWMgaW5saW5lIHUxNiBhdGFfaWRfbG9naWNhbF9wZXJfcGh5c2ljYWxfc2VjdG9ycyhjb25z
+dCB1MTYgKmlkKQorc3RhdGljIGlubGluZSB1OCBhdGFfaWRfbG9nMl9wZXJfcGh5c2ljYWxfc2Vj
+dG9yKGNvbnN0IHUxNiAqaWQpCiB7Ci0JcmV0dXJuIDEgPDwgKGlkW0FUQV9JRF9TRUNUT1JfU0la
+RV0gJiAweGYpOworCS8qIFQxMy8xNjk5LUQgUmV2aXNpb24gNmEsIFNlcCA2LCAyMDA4LiBQYWdl
+IDEyOC4KKwkgKiBJREVOVElGWSBERVZJQ0UgZGF0YSwgd29yZCAxMDYuCisJICogMHhlMDAwIGln
+bm9yZXMgYml0IDEyIChsb2dpY2FsIHNlY3RvciA+IDUxMiBieXRlcykKKwkgKi8KKwlpZiAoKGlk
+W0FUQV9JRF9TRUNUT1JfU0laRV0gJiAweGUwMDApID09IDB4NjAwMCkKKwkJcmV0dXJuIChpZFtB
+VEFfSURfU0VDVE9SX1NJWkVdICYgMHhmKTsKKwlyZXR1cm4gMDsKK30KKworLyogT2Zmc2V0IG9m
+IGxvZ2ljYWwgc2VjdG9ycyByZWxhdGl2ZSB0byBwaHlzaWNhbCBzZWN0b3JzLgorICoKKyAqIElm
+IGRldmljZSBoYXMgbW9yZSB0aGFuIG9uZSBsb2dpY2FsIHNlY3RvciBwZXIgcGh5c2ljYWwgc2Vj
+dG9yCisgKiAoYWthIDUxMiBieXRlIGVtdWxhdGlvbiksIHZlbmRvcnMgbWlnaHQgb2Zmc2V0IHRo
+ZSAic2VjdG9yIDAiIGFkZHJlc3MKKyAqIHNvIHNlY3RvciA2MyBpcyAibmF0dXJhbGx5IGFsaWdu
+ZWQiIC0gZS5nLiBGQVQgcGFydGl0aW9uIHRhYmxlLgorICogVGhpcyBhdm9pZHMgUmVhZC9Nb2Qv
+V3JpdGUgcGVuYWx0aWVzIHdoZW4gdXNpbmcgRkFUIHBhcnRpdGlvbiB0YWJsZQorICogYW5kIHVw
+ZGF0aW5nICJ3ZWxsIGFsaWduZWQiIChGUyBwZXJzcGVjdGl2ZSkgcGh5c2ljYWwgc2VjdG9ycyBv
+biBldmVyeQorICogdHJhbnNhY3Rpb24uCisgKi8KK3N0YXRpYyBpbmxpbmUgdTE2IGF0YV9pZF9s
+b2dpY2FsX3NlY3Rvcl9vZmZzZXQoY29uc3QgdTE2ICppZCwKKwkgdTggbG9nMl9wZXJfcGh5cykK
+K3sKKwl1MTYgd29yZF8yMDkgPSBpZFsyMDldOworCisJaWYgKChsb2cyX3Blcl9waHlzID4gMSkg
+JiYgKHdvcmRfMjA5ICYgMHhjMDAwKSA9PSAweDQwMDApIHsKKwkJdTE2IGZpcnN0ID0gd29yZF8y
+MDkgJiAweDNmZmY7CisJCWlmIChmaXJzdCA+IDApCisJCQlyZXR1cm4gKDEgPDwgbG9nMl9wZXJf
+cGh5cykgLSBmaXJzdDsKKwl9CisJcmV0dXJuIDA7CiB9CiAKIHN0YXRpYyBpbmxpbmUgaW50IGF0
+YV9pZF9oYXNfbGJhNDgoY29uc3QgdTE2ICppZCkK
+--0016362835ce50d77a048dd169d9--
