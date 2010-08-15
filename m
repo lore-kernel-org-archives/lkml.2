@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751263Ab0HOTXh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 15:23:37 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:45998 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab0HOTXg (ORCPT
+	id S1751462Ab0HOTv3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 15:51:29 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:52061 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751391Ab0HOTv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 15:23:36 -0400
-Date: Sun, 15 Aug 2010 21:23:35 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: lkml <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-Subject: headers_check warnings in drm headers
-Message-ID: <20100815192335.GA3438@merkur.ravnborg.org>
+	Sun, 15 Aug 2010 15:51:27 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: [PATCH] cyber2000fb: palette corruption at higher clocks
+Date: Sun, 15 Aug 2010 21:51:11 +0200
+User-Agent: KMail/1.9.10
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Length: 1648
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008152151.14175.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I ran "make headers_check" on upstream I got following
-set of warnings for the drm headers:
+Hello,
+I'm implementing EDID support for cyber2000fb and found a weird bug in
+cyber2000fb driver. My monitor EDID reports 1280x1024@75Hz as best mode. When
+this mode is set, console palette is not set properly - sometimes the
+background is white, sometimes yellow and text colors are also messed up.
+This does not happen at 1280x1024@60Hz.
 
-usr/include/drm/drm_mode.h:85: found __[us]{8,16,32,64} type without #include <linux/types.h>
-usr/include/drm/i915_drm.h:120: found __[us]{8,16,32,64} type without #include <linux/types.h>
-usr/include/drm/mga_drm.h:260: found __[us]{8,16,32,64} type without #include <linux/types.h>
-usr/include/drm/radeon_drm.h:758: found __[us]{8,16,32,64} type without #include <linux/types.h>
-usr/include/drm/via_drm.h:117: found __[us]{8,16,32,64} type without #include <linux/types.h>
+When I run "reset", it fixes the palette. But when I run it immediately after
+loading the driver (i.e. "modprobe cyber2000fb mode_option=1280x1024-8@75 &&
+reset"), it does not help. "sleep 0.6" needs to be added before "reset" to
+make it work.
 
-When I looked through the files I noticed a few things:
+It seems that the HW needs some time before setting the palette - maybe the
+PLL needs more time to lock at higher speeds? Does anyone have some HW docs
+to check this? This patch fixes the problem but without knowing what register
+to check for PLL lock(?), the delay might be excessive.
 
-1) Several files uses a mixture of native types and linux types.
-   For example "unsigned int" and "__u32" in the same file.
-2) drm.h contains:
-#if defined(__linux__)
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-#include <linux/types.h>
-#include <asm/ioctl.h>
-typedef unsigned int drm_handle_t;
+--- linux-2.6.35-rc3-/drivers/video/cyber2000fb.c	2010-08-15 21:13:39.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-08-15 21:25:20.000000000 +0200
+@@ -506,6 +506,9 @@ static void cyber2000fb_set_timing(struc
+ 	cyber2000_grphw(0xb9, 0x80, cfb);
+ 	cyber2000_grphw(0xb9, 0x00, cfb);
+ 
++	/* wait (for the PLL?) to avoid palette corruption at higher clocks */
++	msleep(1000);
++
+ 	cfb->ramdac_ctrl = hw->ramdac;
+ 	cyber2000fb_write_ramdac_ctrl(cfb);
+ 
 
-#else /* One of the BSDs */
 
-#include <sys/ioccom.h>
-#include <sys/types.h>
-typedef int8_t   __s8;
-typedef uint8_t  __u8;
-typedef int16_t  __s16;
-typedef uint16_t __u16;
-typedef int32_t  __s32;
-typedef uint32_t __u32;
-typedef int64_t  __s64;
-typedef uint64_t __u64;
-typedef unsigned long drm_handle_t;
 
-#endif
-
-Why this when no-one else require this treatment?
-
-3) Lots of typedefs...
-
-All in all - too much to dig into without knowing
-the background for the current state.
-
-At a minimum please get the warnings fixed.
-
-	Sam
-
+-- 
+Ondrej Zary
