@@ -1,50 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab0HPDbe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 23:31:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63812 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751551Ab0HPDbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 23:31:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=cMaobP9IKE7LehzovhzoTFZz/CYF+nqwMHak50F42PoBAvITEvAwuG3XpM00M3oGsr
-         APSFOhP9yIudZN6yHJ443AdEpwPzQ4FjYbhTO1hAcUE1jOW/CC2t5n3o2crvj4W58vdI
-         zucMPAAujmlsZFp2hnb7Ac/cV8DxNv2XzMQ2Q=
-Message-ID: <4C68B111.9090302@gmail.com>
-Date: Sun, 15 Aug 2010 21:31:29 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Evan Lavelle <sa212+lkml@cyconix.com>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Driver: PCIe: 'pci_map_sg' returning invalid bus address?
-References: <4C5002AD.6070206@cyconix.com> <4C66B580.5060606@cyconix.com>
-In-Reply-To: <4C66B580.5060606@cyconix.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750845Ab0HPEAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 00:00:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46266 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750735Ab0HPEAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 00:00:22 -0400
+Date: Mon, 16 Aug 2010 14:00:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chen Gong <gong.chen@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warning in Linus' tree
+Message-Id: <20100816140011.f899996d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__16_Aug_2010_14_00_11_+1000_ThbiMGUjPQemIghv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/14/2010 09:25 AM, Evan Lavelle wrote:
-> Thanks guys. I had to get this working quickly so I just stuck with my
-> bounce buffer code. I'm not sure that it's technically a 'bounce
-> buffer'; it just so happens that 'pci_alloc_consistent' returns an
-> address in the low 32 bits. This may stop working if the user installs
-> more than 4Gig of memory but I can live with that for now. Performance
+--Signature=_Mon__16_Aug_2010_14_00_11_+1000_ThbiMGUjPQemIghv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-That should be safe as far as x86-32 goes - pci_alloc_consistent will 
-return a low memory address which will be below 1GB.
+Hi all,
 
-> isn't great (~110Mbytes/s on 4-channel PCIe) but it's good enough.
->
-> It's disappointing that LDD didn't have anything to say about this; it's
-> pretty fundamental to DMA on x86_32 and PAE.
+After merging the slab tree, today's linux-next build (x86_64
+allmodconfig) produced these warnings:
 
-The situation kind of sucks with that combination, yes. The block and 
-network subsystems have their own workarounds but other drivers just 
-have to sort of hack something together.
+/scratch/sfr/next/drivers/hwmon/coretemp.c: In function 'coretemp_init':
+/scratch/sfr/next/drivers/hwmon/coretemp.c:521: warning: unused variable 'n'
+/scratch/sfr/next/drivers/hwmon/coretemp.c:521: warning: unused variable 'p'
+
+Introduced by commit 851b29cb3b196cb66452ec964ab5f66c9c9cd1ed ("hwmon:
+coretemp: enable coretemp device add operation failure").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__16_Aug_2010_14_00_11_+1000_ThbiMGUjPQemIghv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMaLfLAAoJEDMEi1NhKgbsnDMH/AjxqvyeF6YlAFAmm/apW/zz
+tLMLbmVOmhcOGvAZlZBteQb9y1XHCfOWUCzI6igtnaV7+WaU3xDVKxRDXaCmMep4
+nL4E8bCsFMfdavQFtXHNywr8DjJN8Z1lJdRpdV4Jm+3wV75cVI3C2+Ut8BrZi//v
+AJ5gdWFOs1bN0PFpNGAPuTBonTgglrukl1XUHiU8XTkb5l7kXb+LiVCYuPvuBp+K
+917z5LKCDjgjq/HCBHPGPyCJwxMM73elWlTRsH9ST7vAghl13Wzyr7QXItXwx6u+
+YO4UrTY9l42giyDaVJ0sLDaOVqRZ5fGiH2fN/AWc66p6zsg3CSX+MBj1KWgzRl8=
+=jJwY
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__16_Aug_2010_14_00_11_+1000_ThbiMGUjPQemIghv--
