@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab0HPQ0S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:26:18 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34747 "EHLO mgw2.diku.dk"
+	id S1754902Ab0HPQ0k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:26:40 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34752 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab0HPQ0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:26:16 -0400
-Date: Mon, 16 Aug 2010 18:26:13 +0200 (CEST)
+	id S1754829Ab0HPQ0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:26:38 -0400
+Date: Mon, 16 Aug 2010 18:26:36 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 6/16] drivers/media: Use available error codes
-Message-ID: <Pine.LNX.4.64.1008161825570.19313@ask.diku.dk>
+Subject: [PATCH 7/16] drivers/staging: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161826140.19313@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In each case, error codes are stored in rc, but the return value is always
-0.  Return rc instead.
+An error code is stored in a variable, but 0 is returned instead.  Use the
+variable instead of 0.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -50,36 +50,72 @@ if (...) { ...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-The changes change the semantics and are not tested.  In the second case,
-the function is used in only one place and the return value is igored.
+This changes the semantics and is not tested.
 
- drivers/media/dvb/frontends/drx397xD.c |    2 +-
- drivers/media/video/s2255drv.c         |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/lirc/lirc_sasem.c |    2 +-
+ drivers/staging/sep/sep_driver.c  |    4 ++--
+ drivers/staging/vt6655/iwctl.c    |    2 +-
+ drivers/staging/vt6656/iwctl.c    |    2 +-
+ 4 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/media/dvb/frontends/drx397xD.c b/drivers/media/dvb/frontends/drx397xD.c
-index f74cca6..a05007c 100644
---- a/drivers/media/dvb/frontends/drx397xD.c
-+++ b/drivers/media/dvb/frontends/drx397xD.c
-@@ -232,7 +232,7 @@ static int write_fw(struct drx397xD_state *s, enum blob_ix ix)
- exit_rc:
- 	read_unlock(&fw[s->chip_rev].lock);
+diff --git a/drivers/staging/lirc/lirc_sasem.c b/drivers/staging/lirc/lirc_sasem.c
+index 73166c3..856487e 100644
+--- a/drivers/staging/lirc/lirc_sasem.c
++++ b/drivers/staging/lirc/lirc_sasem.c
+@@ -512,7 +512,7 @@ exit:
+ 	mutex_unlock(&context->ctx_lock);
  
+ 	mutex_unlock(&disconnect_lock);
 -	return 0;
-+	return rc;
++	return retval;
  }
  
- /* Function is not endian safe, use the RD16 wrapper below */
-diff --git a/drivers/media/video/s2255drv.c b/drivers/media/video/s2255drv.c
-index 8ec7c9a..8f74341 100644
---- a/drivers/media/video/s2255drv.c
-+++ b/drivers/media/video/s2255drv.c
-@@ -600,7 +600,7 @@ static int s2255_got_frame(struct s2255_channel *channel, int jpgsize)
- 	dprintk(2, "%s: [buf/i] [%p/%d]\n", __func__, buf, buf->vb.i);
- unlock:
- 	spin_unlock_irqrestore(&dev->slock, flags);
+ /**
+diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
+index ecbde34..604965c 100644
+--- a/drivers/staging/sep/sep_driver.c
++++ b/drivers/staging/sep/sep_driver.c
+@@ -844,7 +844,7 @@ static int sep_lock_kernel_pages(struct sep_device *sep,
+ 	*page_array_ptr = 0;
+ end_function:
+ 	dbg("SEP Driver:<-------- sep_lock_kernel_pages end\n");
 -	return 0;
-+	return rc;
++	return error;
  }
  
- static const struct s2255_fmt *format_by_fourcc(int fourcc)
+ /*
+@@ -972,7 +972,7 @@ end_function_with_error1:
+ 	kfree(page_array);
+ end_function:
+ 	dbg("SEP Driver:<-------- sep_lock_user_pages end\n");
+-	return 0;
++	return error;
+ }
+ 
+ 
+diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
+index 4322761..4009c0b 100644
+--- a/drivers/staging/vt6655/iwctl.c
++++ b/drivers/staging/vt6655/iwctl.c
+@@ -1900,7 +1900,7 @@ int iwctl_siwgenie(struct net_device *dev,
+ 	}
+ 
+ 	out://not completely ...not necessary in wpa_supplicant 0.5.8
+-	return 0;
++	return ret;
+ }
+ 
+ int iwctl_giwgenie(struct net_device *dev,
+diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
+index 016b8e7..8fb6518 100644
+--- a/drivers/staging/vt6656/iwctl.c
++++ b/drivers/staging/vt6656/iwctl.c
+@@ -1726,7 +1726,7 @@ int iwctl_siwgenie(struct net_device *dev,
+ 	}
+ 
+ 	out://not completely ...not necessary in wpa_supplicant 0.5.8
+-	return 0;
++	return ret;
+ }
+ 
+ int iwctl_giwgenie(struct net_device *dev,
