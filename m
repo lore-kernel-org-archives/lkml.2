@@ -1,37 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab0HPVGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:06:47 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37606 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755747Ab0HPVGq (ORCPT
+	id S1756817Ab0HPVGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:06:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57516 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756757Ab0HPVGv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:06:46 -0400
-Date: Mon, 16 Aug 2010 22:06:34 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] cyber2000fb: avoid palette corruption at higher
-	clocks
-Message-ID: <20100816210634.GB10119@n2100.arm.linux.org.uk>
-References: <201008162209.56902.linux@rainbow-software.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008162209.56902.linux@rainbow-software.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 16 Aug 2010 17:06:51 -0400
+Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and
+ the implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Salman Qazi <sqazi@google.com>
+Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, adurbin@google.com
+In-Reply-To: <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
+References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
+	 <1281987236.1926.1895.camel@laptop>
+	 <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 16 Aug 2010 23:06:41 +0200
+Message-ID: <1281992801.1926.2019.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 10:09:54PM +0200, Ondrej Zary wrote:
-> When 1280x1024@75Hz mode is set, console palette is not set properly -
-> sometimes the background is white, sometimes yellow and text colors are also
-> messed up. This does not happen at 1280x1024@60Hz and below.
+(html damaged email alert)
 
-I'm not going to have much time to look at your patches, and I
-definitely want to test them on the NetWinder to make sure we
-don't regress the primary platform that this driver is supporting.
+On Mon, 2010-08-16 at 13:59 -0700, Salman Qazi wrote:
+> On Mon, Aug 16, 2010 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>         On Mon, 2010-08-16 at 11:30 -0700, Salman Qazi wrote:
+>         > For the delete case,
+>         > we no longer shrink the tree back to being just the root containing the
+>         > only remaining object.  For the insert case, we no longer store the
+>         > first object in the root, rather allocating a node structure for it.  The
+>         > reason that this works is that deleting (or inserting) intermediate nodes
+>         > does not make a difference to a reader holding a slot.
+>         
+>         
+>         Ah, I through that was what it did. So you basically increase the memory
+>         footprint for tiny files.. have you done any measurements on that?
+> 
 
-I should have more time to look at them in September.
+> You raise a valid concern.  I haven't.  What would you recommend as a
+> benchmark/metric to measure this?
+
+One thing you could try is something like the below on a freshly booted
+machine, once without and once with the patch:
+
+ cd /usr/src/linux-2.6
+ echo 1 > /proc/sys/vm/drop_caches
+ grep radix /proc/slabinfo
+ make bzImage
+ echo 1 > /proc/sys/vm/drop_caches
+ grep radix /proc/slabinfo
+
+
+
