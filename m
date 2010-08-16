@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469Ab0HPOXN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:23:13 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:47272 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754406Ab0HPOXL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:23:11 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>,
-        "Austria, Winston" <Winston.Austria@lsi.com>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Maharana, Parag" <Parag.Maharana@lsi.com>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>,
-        "Benz, Michael" <Michael.Benz@lsi.com>
-Date: Mon, 16 Aug 2010 08:22:59 -0600
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
- Enable Online Controller Reset Bit in register related functions
-Thread-Index: Acsw2E0UU5zHj3F8SMOoBE3QdnJBMAJWWdvQAMcYl8A=
-Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBE62B60@cosmail02.lsi.com>
-References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
-	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
-	 <1277046060.5242.18.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
-	 <1277063250.5242.25.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
-	 <1277066924.5242.41.camel@mulgrave.site>
-	 <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
- <1280598371.2801.11.camel@mulgrave.site> 
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1754331Ab0HPOY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:24:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38779 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751655Ab0HPOY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 10:24:27 -0400
+Message-ID: <4C694965.6040805@kernel.org>
+Date: Mon, 16 Aug 2010 16:21:25 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>
+CC: Christoph Hellwig <hch@lst.de>, Neil Brown <neilb@suse.de>
+Subject: [PATCH block#for-2.6.36-post] block: fix incorrect bio/request flag
+ conversion in md
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 Aug 2010 14:24:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7GENPPt001207
 
-James,
+Commit 74450be1 (block: unify flags for struct bio and struct request)
+incorrectly converted @do_sync in md raid1 and raid10 make_requst()
+functions.
 
-We submitted the patches on 8/11.  Do you get the chances to update those patches to main tree?
+@do_sync is now supposed to carry the actual flag bit and directly
+OR'd into bio->bi_rw but is still a bool and thus carries either 0 or
+1 instead of the actual flag bit.  This makes REQ_SYNC ignored on
+writes and flips the direction of READ_SYNCs to WRITEs.
 
-Thanks,
+Fix it by making @do_sync unsigned integers.
 
-Bo Yang
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Neil Brown <neilb@suse.de>
+---
+ drivers/md/raid1.c  |    2 +-
+ drivers/md/raid10.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
------Original Message-----
-From: Yang, Bo 
-Sent: Thursday, August 12, 2010 11:21 AM
-To: 'James Bottomley'
-Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Maharana, Parag; Daftardar, Jayant
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
+Index: block/drivers/md/raid1.c
+===================================================================
+--- block.orig/drivers/md/raid1.c
++++ block/drivers/md/raid1.c
+@@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev,
+ 	struct bio_list bl;
+ 	struct page **behind_pages = NULL;
+ 	const int rw = bio_data_dir(bio);
+-	const bool do_sync = (bio->bi_rw & REQ_SYNC);
++	const unsigned int do_sync = (bio->bi_rw & REQ_SYNC);
+ 	bool do_barriers;
+ 	mdk_rdev_t *blocked_rdev;
 
-James,
-
-Just let you know the new patches already submitted yesterday.  Please let me know after you updated those patches to the main tree.
-
-Regards,
-
-Bo Yang
-
------Original Message-----
-From: James Bottomley [mailto:James.Bottomley@suse.de] 
-Sent: Saturday, July 31, 2010 1:46 PM
-To: Yang, Bo
-Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Maharana, Parag; Daftardar, Jayant
-Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
-
-On Fri, 2010-07-30 at 12:53 -0600, Yang, Bo wrote:
-> Do you know when those patches (12 patches) will be pushed to upstream?
-
-Well, it looks like I lost the branch I was fixing all this up in
-somewhere.  I don't really have time to redo that work, so could you
-send the series correctly (that's the 8 OCR patches that don't
-individually compile as a single patch with a correct changelog plus the
-four others).
-
-Thanks,
-
-James
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Index: block/drivers/md/raid10.c
+===================================================================
+--- block.orig/drivers/md/raid10.c
++++ block/drivers/md/raid10.c
+@@ -799,7 +799,7 @@ static int make_request(mddev_t *mddev,
+ 	int i;
+ 	int chunk_sects = conf->chunk_mask + 1;
+ 	const int rw = bio_data_dir(bio);
+-	const bool do_sync = (bio->bi_rw & REQ_SYNC);
++	const unsigned int do_sync = (bio->bi_rw & REQ_SYNC);
+ 	struct bio_list bl;
+ 	unsigned long flags;
+ 	mdk_rdev_t *blocked_rdev;
