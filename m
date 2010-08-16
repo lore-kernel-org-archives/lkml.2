@@ -1,43 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab0HPOtV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:49:21 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:52803 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754310Ab0HPOtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:49:20 -0400
-Date: Mon, 16 Aug 2010 15:49:14 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] Notes from the Boston Linux Power Management
-	Mini-summit - August 9th, 2010
-Message-ID: <20100816144914.GB10354@sirena.org.uk>
-References: <alpine.LFD.2.00.1008150134180.7641@localhost.localdomain>
+	id S1754551Ab0HPOuU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:50:20 -0400
+Received: from snt0-omc2-s16.snt0.hotmail.com ([65.55.90.91]:60476 "EHLO
+	snt0-omc2-s16.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754262Ab0HPOuT convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 10:50:19 -0400
+Message-ID: <SNT135-w61C068A052AF30526B227CF39B0@phx.gbl>
+X-Originating-IP: [209.87.232.162]
+From: Jon E <je_nfd@hotmail.com>
+To: <alan@lxorguk.ukuu.org.uk>
+CC: <linux-kernel@vger.kernel.org>
+Subject: RE: Problems with Recent Patches to IDE Driver
+Date: Mon, 16 Aug 2010 10:50:19 -0400
+Importance: Normal
+In-Reply-To: <20100815212852.7c0e10ea@lxorguk.ukuu.org.uk>
+References: <SNT135-w1108C18559F0BF8F0A3242F3980@phx.gbl>,<20100815212852.7c0e10ea@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1008150134180.7641@localhost.localdomain>
-X-Cookie: Don't get to bragging.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+X-OriginalArrivalTime: 16 Aug 2010 14:50:18.0708 (UTC) FILETIME=[583B3940:01CB3D52]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 01:36:33AM -0400, Len Brown wrote:
 
-> A gap:
-> 
-> On OMAP, bus control is independent of CPU frequency control,
-> so cpufreq and cpuidle don't quite fit the bill.
-> 
-> Perhaps a "bus-idle" analogous to "cpu-idle" may be appropriate?
+----------------------------------------
+> Date: Sun, 15 Aug 2010 21:28:52 +0100
+> From: alan@lxorguk.ukuu.org.uk
+> To: je_nfd@hotmail.com
+> CC: linux-kernel@vger.kernel.org
+> Subject: Re: Problems with Recent Patches to IDE Driver
+>
+> > I've googled for some answers but it seems there are no suggested workarounds for these problems. Perhaps someone reading this can offer some suggestions?
+>
+> Perhaps you could start by posting your patches ?
+>
+> Most distributions have pretty much dropped the old IDE driver for
+> libata, which is actually better at supporting oddities so its probably
+> best to go that way.
 
-FWIW this applies to a bunch of other embedded processors too - OMAP
-isn't particularly unique here, though it's one of the furthest along in
-terms of exploting this in mainline Linux.
+Could you elaborate a bit please?  Are you suggesting that the old driver was better at "supporting oddities" or that the new driver model is (better)?
+ 
+I cannot post our code (not only because it's proprietary but it's also spread out amongst several files) but the snips I included in the original note illustrate the points of use.
+ 
+The board is  an addon board with an ide interface, a RF-in port and an optional smartcard interface.  It starts out initializing itself as a network device (using the RF inteface) and then attempts to pick up the ide device information so it can continue the init process (set up ports, etc).
+ 
+There's one thing I'm confused on, if I need to begin porting this to the new model.  Well, there's actually several things that confuse me, but I'll start with the basics.  Which base do I start with?  Looks to me (by reviewing the various *init routines in linux/drivers/ide, that I can choose: ide_pci, pci, platform, ioc4, ecard.  I think I can safely exclude ecard and ioc4, but that still leaves three from which to choose and I'm not how to determine how I need to proceed.
+ 
+Jon 		 	   		  
