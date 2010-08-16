@@ -1,121 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627Ab0HPK7v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 06:59:51 -0400
-Received: from reptilian.habets.pp.se ([193.151.93.131]:1492 "EHLO
-	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752925Ab0HPK7u (ORCPT
+	id S1751898Ab0HPLC6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 07:02:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38641 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750795Ab0HPLC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 06:59:50 -0400
-Date: Mon, 16 Aug 2010 12:59:44 +0200 (CEST)
-From: Thomas Habets <thomas@habets.pp.se>
-X-X-Sender: thompa@red.crap.retrofitta.se
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Thomas Habets <thomas@habets.pp.se>
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
- to reset
-In-Reply-To: <1281953960.2524.23.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
-References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se> <1281953960.2524.23.camel@edumazet-laptop>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	Mon, 16 Aug 2010 07:02:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=VAA5IZjtXEV0NQmNACakZKGNiL9G6DonUeqmeKDFR3slJQr1FSccnlRaVKVpbNX+B7
+         5MIpbwmpoUNtvTGD4y1LgR7UA0Ta075KQUiJu6fR2v7GRrUwhE4y9Kzfl8BRwB175P5a
+         l4qzE/OTR/dfpidcaES4KNNzJQSyp2v7dCndg=
+Date: Mon, 16 Aug 2010 15:02:53 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        Lin Ming <ming.m.lin@intel.com>
+Cc: =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [RFC -tip]
+Message-ID: <20100816110253.GD5805@lenovo>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Aug 2010, Eric Dumazet wrote:
->> $ ip -6 r sh
->> 2a00:800:752:1::5c:0/112 dev eth0  proto kernel  metric 256  mtu 1500
->> advmss 14 hoplimit 4294967295 unreachable
->
-> advmss 14 ? or is it a copy/paste error ?
-> unreachable ?
+Hi,
 
-Copy/paste error, sorry.
+please review the approach, I can't test it due to lack
+of hw (btw Ming, if you have some spare minutes -- mind to
+pass some event as RAW and see how it goes?).
 
-advmss 1440, and no "unreachable"
+It just unifdef perf_event_p4.h and export it to user space.
 
-Complete (correct) line:
+Any complains are welcome. I've considered a separate header
+file without #ifdef which would consists of definitions user
+space may need but in result it become more messy then a few
+#ifdefs in shared header.
 
-2a00:800:752:1::5c:0/112 dev eth0 proto kernel metric 256 mtu 1500 advmss 
-1440 hoplimit 4294967295
+	-- Cyrill
+---
+perf, x86: Export RAW events specification to user space
 
-> This route seems wrong.
+P4 RAW events are tricky and need special bits passed from
+userspace, we export RAW events specification so the user
+space libraries may use it.
 
-Did you mean the below?
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Lin Ming <ming.m.lin@intel.com>
+CC: Stephane Eranian <eranian@google.com>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Frédéric Weisbecker <fweisbec@gmail.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/include/asm/Kbuild          |    1 +
+ arch/x86/include/asm/perf_event_p4.h |   35 +++++++++++++++++++++++++++++++----
+ 2 files changed, 32 insertions(+), 4 deletions(-)
 
->> 2a00:800:1000:64::1 dev lo proto kernel  metric 256  error -101 mtu 
->> 16436 advmss 16376 hoplimit 4294967295
-
-Yes, that's where the "unreachable" belonged.
-
-unreachable 2a00:800:1000:64::1 dev lo proto kernel  metric 256  error 
--101 mtu 1500 advmss 1440 hoplimit 4294967295
-
-That's an additional address on the lo interface, seen here again:
-
->> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436
->>      inet6 2a00:800:1000:64::1/128 scope global
->>         valid_lft forever preferred_lft forever
->>      inet6 ::1/128 scope host
->>         valid_lft forever preferred_lft forever
-
-Am I not allowed to add addresses to lo? That I've deconfigured this 
-address and rebooted the box to check if this matters.
-
-> I am wondering if you have some lowlevel problem, say lost frames in an
-> otherwise idle link, maybe a full/half duplex mismatch ?
-
-But at first it works perfectly, and then it doesn't work at all. The link 
-is ~idle both before and after, and IPv4 is unaffected. When I run "ip ne 
-del ..." it *immediately* starts working again. From 100% packet loss to 
-0%.
-
-Duplex is full according to dmesg and ethtool (mii-tool says 1000BaseT-HD, 
-but I suppose mii-tool is not as reliable?).
-
-Cisco router also says "Full-duplex, 1000Mb/s", so there doesn't seem to 
-be a mismatch. No errors in "show int giX/Y" either.
-
-ethtool info right after reboot (when ipv6 is still working):
-$ sudo ethtool eth0
-Settings for eth0:
-         Supported ports: [ TP ]
-         Supported link modes:   10baseT/Half 10baseT/Full
-                                 100baseT/Half 100baseT/Full
-                                 1000baseT/Half 1000baseT/Full
-         Supports auto-negotiation: Yes
-         Advertised link modes:  10baseT/Half 10baseT/Full
-                                 100baseT/Half 100baseT/Full
-                                 1000baseT/Half 1000baseT/Full
-         Advertised auto-negotiation: Yes
-         Speed: 1000Mb/s
-         Duplex: Full
-         Port: Twisted Pair
-         PHYAD: 1
-         Transceiver: internal
-         Auto-negotiation: on
-         Supports Wake-on: g
-         Wake-on: g
-         Current message level: 0x000000ff (255)
-         Link detected: yes
-
-
-No errors show in "ethtool -S eth0 | grep -v ': 0$'" now that it's 
-working.
-
-I will re-check ethtool and Cisco router output for mismatches when it 
-breaks again to make sure that there's no change or errors counting up.
-
-
----------
-typedef struct me_s {
-   char name[]      = { "Thomas Habets" };
-   char email[]     = { "thomas@habets.pp.se" };
-   char kernel[]    = { "Linux" };
-   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
-   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
-   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
-} me_t;
+Index: linux-2.6.git/arch/x86/include/asm/Kbuild
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/Kbuild
++++ linux-2.6.git/arch/x86/include/asm/Kbuild
+@@ -24,3 +24,4 @@ unifdef-y += unistd_32.h
+ unifdef-y += unistd_64.h
+ unifdef-y += vm86.h
+ unifdef-y += vsyscall.h
++unifdef-y += perf_event_p4.h
+Index: linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/include/asm/perf_event_p4.h
++++ linux-2.6.git/arch/x86/include/asm/perf_event_p4.h
+@@ -5,6 +5,8 @@
+ #ifndef PERF_EVENT_P4_H
+ #define PERF_EVENT_P4_H
+ 
++#ifdef __KERNEL__
++
+ #include <linux/cpu.h>
+ #include <linux/bitops.h>
+ 
+@@ -92,10 +94,16 @@
+ #define P4_ESCR_EMASK_BIT(class, name)		class##__##name
+ 
+ /*
+- * config field is 64bit width and consists of
+- * HT << 63 | ESCR << 32 | CCCR
+- * where HT is HyperThreading bit (since ESCR
+- * has it reserved we may use it for own purpose)
++ * the config field is 64 bit width and has the following format
++ *
++ * Bits		Meaning
++ * -----	-------
++ *  0-6		Metric value from enum P4_PEBS_METRIC (optional)
++ *  7-11	Reserved
++ * 12-31	Bits 12-31 of CCCR register (Intel SDM Vol 3)
++ * 32-56	Bits  0-24 of ESCR register (Intel SDM Vol 3)
++ * 57-62	Event key from enum P4_EVENTS
++ *    63	We use it to track event migration between HT threads
+  *
+  * note that this is NOT the addresses of respective
+  * ESCR and CCCR but rather an only packed value should
+@@ -206,6 +214,21 @@ static inline u32 p4_default_escr_conf(i
+ 	return escr;
+ }
+ 
++#endif /* __KERNEL__ */
++
++/*
++ * RAW events specification
++ *
++ * Bits		Meaning
++ * -----	-------
++ *  0-6		Metric value from enum P4_PEBS_METRIC (if needed)
++ *  7-11	Reserved, set to 0
++ * 12-31	Bits 12-31 of CCCR register (Intel SDM Vol 3)
++ * 32-56	Bits  0-24 of ESCR register (Intel SDM Vol 3)
++ * 57-62	Event key from enum P4_EVENTS
++ *    63	Reserved, set to 0
++ */
++
+ /*
+  * This are the events which should be used in "Event Select"
+  * field of ESCR register, they are like unique keys which allow
+@@ -261,6 +284,8 @@ enum P4_EVENTS {
+ 	P4_EVENT_INSTR_COMPLETED,
+ };
+ 
++#ifdef __KERNEL__
++
+ #define P4_OPCODE(event)		event##_OPCODE
+ #define P4_OPCODE_ESEL(opcode)		((opcode & 0x00ff) >> 0)
+ #define P4_OPCODE_EVNT(opcode)		((opcode & 0xff00) >> 8)
+@@ -780,6 +805,8 @@ enum P4_ESCR_EMASKS {
+ 
+ #define p4_config_pebs_has(v, mask)	(p4_config_unpack_pebs(v) & (mask))
+ 
++#endif /* __KERNEL__ */
++
+ enum P4_PEBS_METRIC {
+ 	P4_PEBS_METRIC__none,
+ 
