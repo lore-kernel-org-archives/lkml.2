@@ -1,69 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196Ab0HPOKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:10:22 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:6322 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750965Ab0HPOKV (ORCPT
+	id S1754205Ab0HPONM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:13:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46430 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751981Ab0HPONK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:10:21 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7GE9Mxb015118
-Subject: Re: [PATCH] perf tools: Don't use brace expansion.
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100816124101.1829415C039@msa104.auone-net.jp>
-References: <20100816124101.1829415C039@msa104.auone-net.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 16:09:21 +0200
-Message-ID: <1281967761.17267.6.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Mon, 16 Aug 2010 10:13:10 -0400
+Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <877hjq4qh8.fsf@depni.sinp.msu.ru>
+Date: Mon, 16 Aug 2010 16:13:07 +0200
+Cc: Dieter Ries <mail@dieterries.net>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DE3C2C8A-BA4B-43A3-A40E-99302BECD0FF@suse.de>
+References: <1258373983-8693-1-git-send-email-avi@redhat.com> <1258373983-8693-24-git-send-email-avi@redhat.com> <4BA1504A.3090801@dieterries.net> <808FF008-53B9-4271-904C-117A24ADF18C@suse.de> <20100317224002.GA5156@Localhorst.asterix.local> <59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de> <20100318071131.GC24062@Localhorst.asterix.local> <4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de> <87ocddz4zy.fsf@depni.sinp.msu.ru> <122B6102-F892-4D2C-A85B-52F9BB0CB11E@suse.de> <877hjq4qh8.fsf@depni.sinp.msu.ru>
+To: Serge Belyshev <belyshev@depni.sinp.msu.ru>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 21:41 +0900, Kusanagi Kouichi wrote:
-> DASH doesn't support brace expansion.
+
+On 16.08.2010, at 15:49, Serge Belyshev wrote:
+
+> Alexander Graf <agraf@suse.de> writes:
 > 
-> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
-> ---
->  tools/perf/Makefile |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
+>> Hrm - try to use the following (probably whitespace broken and 100% untested) hacky patch:
+>> 
+>> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+>> index 56c9b6b..bde9ee3 100644
+>> --- a/arch/x86/kvm/svm.c
+>> +++ b/arch/x86/kvm/svm.c
+>> @@ -429,9 +429,11 @@ static int svm_hardware_enable(void *garbage)
+>>        struct desc_struct *gdt;
+>>        int me = raw_smp_processor_id();
+>> 
+>> +#if 0
+>>        rdmsrl(MSR_EFER, efer);
+>>        if (efer & EFER_SVME)
+>>                return -EBUSY;
+>> +#endif
+>> 
 > 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 41abb90..8fa851b 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -157,8 +157,10 @@ all::
->  #
->  # Define NO_DWARF if you do not want debug-info analysis feature at all.
->  
-> -$(shell sh -c 'mkdir -p $(OUTPUT)scripts/{perl,python}/Perf-Trace-Util/' 2> /dev/null)
-> -$(shell sh -c 'mkdir -p $(OUTPUT)util/{ui/browsers,scripting-engines}/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/perl/Perf-Trace-Util/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/python/Perf-Trace-Util/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)util/ui/browsers/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)util/scripting-engines/' 2> /dev/null)
->  $(shell sh -c 'mkdir $(OUTPUT)bench' 2> /dev/null)
->  
->  $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+> I tested a bit different hack keeping rdmsrl but removing the if() and
+> it works fine for me:
+> 
+> Index: linux/arch/x86/kvm/svm.c
+> ===================================================================
+> --- linux.orig/arch/x86/kvm/svm.c
+> +++ linux/arch/x86/kvm/svm.c
+> @@ -429,8 +429,7 @@ static int svm_hardware_enable(void *gar
+> 	int me = raw_smp_processor_id();
+> 
+> 	rdmsrl(MSR_EFER, efer);
+> -	if (efer & EFER_SVME)
+> -		return -EBUSY;
+> +	printk(KERN_DEBUG "svm_hardware_enable: efer %x on %d\n", efer, me);
 
-The other solution is to use standard-make features like in
-mkdir -p $(foreach d,ui/browsers scripting-engines,$(OUTPUT)util/$(d)/) 2> /dev/null
+Ouch, yes. Thanks for not taking my patch ;). The efer read is of course still mandatory.
 
-Is there actually a specific reason for the 
-$(shell sh -c '...')
-around?
-It looks superflous.
+> 
+> 	if (!has_svm()) {
+> 		printk(KERN_ERR "svm_hardware_enable: err EOPNOTSUPP on %d\n",
+> 
+> Here is an example of its output:
+> 
+> [231441.358111] svm_hardware_enable: efer 1d01 on 0
+> [231441.358117] svm_hardware_enable: efer d01 on 3
+> [231441.358124] svm_hardware_enable: efer d01 on 2
+> [231441.358135] svm_hardware_enable: efer d01 on 1
+> [231675.168967] svm_hardware_enable: efer d01 on 0
+> [231675.168972] svm_hardware_enable: efer d01 on 1
+> [231675.168983] svm_hardware_enable: efer d01 on 2
+> [231675.168995] svm_hardware_enable: efer d01 on 3
+> 
+> 
+> After reboot, the first kvm run always reports efer = 1d01 on the first cpu.
+> In all subsequent runs before reboot efer stays d01 on all cpus.
 
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
+Happy broken BIOS fun. Oh well, I guess you can live with the patched version and normal end-users will just update their BIOSes.
+
+
+Alex
 
