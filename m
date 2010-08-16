@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725Ab0HPHLn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 03:11:43 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:60905 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751339Ab0HPHLm (ORCPT
+	id S1752691Ab0HPHSD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 03:18:03 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58931 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751339Ab0HPHSB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 03:11:42 -0400
-Message-ID: <4C68E4A5.3050800@example.com>
-Date: Mon, 16 Aug 2010 09:11:33 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>
+	Mon, 16 Aug 2010 03:18:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: piotr@hosowicz.com
 Subject: Re: ioctl definition - has it changed recently?
-References: <4C67023D.6050603@example.com> <20100814210044.GA29375@merkur.ravnborg.org> <4C671455.4040908@example.com> <201008160858.42947.arnd@arndb.de>
-In-Reply-To: <201008160858.42947.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 16476419238117142788
-X-Ovh-Remote: 83.24.80.89 (dmy89.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Date: Mon, 16 Aug 2010 09:17:22 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.92; x86_64; ; )
+Cc: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>
+References: <4C67023D.6050603@example.com> <201008160858.42947.arnd@arndb.de> <4C68E4A5.3050800@example.com>
+In-Reply-To: <4C68E4A5.3050800@example.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008160917.23260.arnd@arndb.de>
+X-Provags-ID: V02:K0:jMYn8+nn7LWWcoNnWdtxrh2fHdDKNG6nbdYco/JEP3l
+ +xDpqucg/V8bKrcSGi6bnlgLOVche2fO0MMZSI9yGUWYVnNDS1
+ XuHeMr+mQ+jYuzYEMxpIq9IdGKeNadKbv4KxVAgaXMjzI/XA26
+ tW0pgFeeNCdnZsV7wqsX2+1ZXwMg2jnzDeuqKACpsSfHtrU0U9
+ JJ4hEr2TrJKWedISMMiLw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.08.2010 08:58, Arnd Bergmann wrote:
-> On Sunday 15 August 2010 00:10:29 Piotr Hosowicz wrote:
->> Yes, this was it. I made git pull and git revert and now I am up and
->> kicking. But how will I manage with it not by git but by kernel org
->> provioded files? And even if I used git all the time will I have to
->> revert it each time and what's the worse I will become more and more out
->> of sync because people will write their code as if I did not revert.
->
-> Just fix your driver code to no longer rely on the big kernel lock
+On Monday 16 August 2010 09:11:33 Piotr Hosowicz wrote:
+> > and then make it use the unlocked_ioctl operation.
+> 
+> This I do not know. Can You help me?
+> 
 
-Now I know how to do it.
+Just take a look at all the other patches that went into the
+kernel to do this for other drivers. You only really
+need to change the line with .ioctl=... to .unlocked_ioctl=
+and change the prototype of the referenced function to
 
-> and then make it use the unlocked_ioctl operation.
+static long foo_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
-This I do not know. Can You help me?
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-"[Oleksy] dotkn±³ naszych domów, naszych ¿on, naszych dzieci,
-naszych psów, naszych ¦WINEK MORSKICH, on po prostu wkroczy³
-swoim g³upim gadaniem w sferê prywatn±, która musi byæ chro-
-niona dla dobra ka¿dego z nas" - powiedzia³ Kwa¶niewski.
-NP: Patrick O'Hearn - Night Becomes Her
-NB: 2.6.35-git16
+	Arnd
