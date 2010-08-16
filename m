@@ -1,37 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942Ab0HPLwx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 07:52:53 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:37520 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab0HPLww convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:4:2>);
-	Mon, 16 Aug 2010 07:52:52 -0400
-Message-Id: <4C6942D102000078000100C9@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 16 Aug 2010 12:53:21 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Sam Ravnborg" <sam@ravnborg.org>, "Michal Marek" <mmarek@suse.cz>,
-        "linux-kbuild" <linux-kbuild@vger.kernel.org>
-Cc: "Andrew Benton" <b3nton@gmail.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] fixes for using make 3.82
-References: <4C6936120200007800010064@vpn.id2.novell.com>
- <20100816114131.GA7122@merkur.ravnborg.org>
-In-Reply-To: <20100816114131.GA7122@merkur.ravnborg.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751995Ab0HPMMz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:12:55 -0400
+Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:46256 "EHLO
+	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab0HPMMy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 08:12:54 -0400
+Message-ID: <4C692B42.9050407@neli.hopto.org>
+Date: Mon, 16 Aug 2010 14:12:50 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
+MIME-Version: 1.0
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 2/9] RapidIO,  powerpc/85xx: modify RIO port-write interrupt
+ handler
+References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-3-git-send-email-alexandre.bounine@idt.com>
+In-Reply-To: <1281712686-31308-3-git-send-email-alexandre.bounine@idt.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 16.08.10 at 13:41, Sam Ravnborg <sam@ravnborg.org> wrote:
-> Added: Michael Marek (kbuild maintainer) + linux-kbuild.
-> 
-> I assume this fixes firmware build reported by Andrew Benton (cc:ed).
+Alexandre Bounine wrote:
+> - Rearranged RIO port-write interrupt handling to perform message buffering
+> as soon as possible.
 
-Yes, it does (I had observed the same, which prompted the fix).
+I don't understand this comment: you still schedule work to read the 
+port-write queue; so how is this message buffering performed as soon as 
+possible?
 
-Jan
+> - Modified to disable port-write controller when clearing Transaction Error (TE)
+> bit.
+>  	/* Schedule deferred processing if PW was received */
+> -	if (ipwsr & RIO_IPWSR_QFI) {
+> +	if ((ipwmr & RIO_IPWMR_QFIE) && (ipwsr & RIO_IPWSR_QFI)) {
 
+Why check the QFIE bit also?
+
+> +pw_done:
+> +	if (epwisr & 0x80000000) {
+
+Magic value.
+
+Micha
