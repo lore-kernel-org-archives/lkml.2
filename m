@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752944Ab0HPIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:04:29 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21667 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab0HPIE1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:04:27 -0400
-Message-ID: <4C68F0BA.5050905@oracle.com>
-Date: Mon, 16 Aug 2010 16:03:06 +0800
-From: Tao Ma <tao.ma@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752961Ab0HPIGZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 04:06:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51070 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab0HPIGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 04:06:24 -0400
+Message-ID: <4C68F0D4.7030300@kernel.org>
+Date: Mon, 16 Aug 2010 10:03:32 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
+To: Tao Ma <tao.ma@oracle.com>
 CC: linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
 Subject: Re: [PATCH] CMWQ: Set workqueue name before we process one work.
-References: <1281944355-4379-1-git-send-email-tao.ma@oracle.com> <4C68EC76.70903@kernel.org>
-In-Reply-To: <4C68EC76.70903@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+References: <1281944355-4379-1-git-send-email-tao.ma@oracle.com> <4C68EC76.70903@kernel.org> <4C68F0BA.5050905@oracle.com>
+In-Reply-To: <4C68F0BA.5050905@oracle.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 Aug 2010 08:06:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-	Thanks for the quick response.
-On 08/16/2010 03:44 PM, Tejun Heo wrote:
-> On 08/16/2010 09:39 AM, Tao Ma wrote:
->> Now in CMWQ, workqueue threads are named as 'kworker/*'. So it is
->> a little boring to see in the 'top'(below) and actually it isn't
->> meaningful for the users.
->> 12606 root      20   0     0    0    0 S    2  0.0   0:03.22 kworker/u:0
->> 12607 root      20   0     0    0    0 S    1  0.0   0:03.69 kworker/u:4
->>
->> So this patch just try to set the proper workqueue name if it does
->> exist. Yes, workqueue now is a thread pool and the data may be not
->> accurate but I think it is better(below) than the 'kworker*' stuff.
->> And if there is something block the workqueue, we can find the caller
->> easily.
->> 12606 root      20   0     0    0    0 D    2  0.0   0:02.90 dlm_wq
->> 12607 root      20   0     0    0    0 D    0  0.0   0:03.21 ocfs2_wq
->>
->> What's more, in ocfs2, we sometimes want to print some debug info in
->> the system log and we use 'current->comm' to print the thread and this
->> change also does help.
->>
->> The only thing I am not clear is that do we need [gs]et_task_comm?
->> I guess not and this patch just try to use strlcpy without task_lock.
->>
->> Cc: Tejun Heo<tj@kernel.org>
->> Signed-off-by: Tao Ma<tao.ma@oracle.com>
->
-> I thought about the same thing but this doesn't provide any more
-> information than stack traces for debugging and for run time tracking
-> implementing tracing API (scheduled to be added in this devel cycle)
-> is the right approach.
-Do you have the link for this or it will show up in the mail list soon?
-> change program name.  It will confuse more than help.  So, unless
-> there are other reasons for doing this, I don't think I'm gonna take
-> this one.
-OK, let me find other ways ocfs2 can use to trace the real callers of 
-some functions in runtime.
+Hello,
 
-Regards,
-Tao
+On 08/16/2010 10:03 AM, Tao Ma wrote:
+>> I thought about the same thing but this doesn't provide any more
+>> information than stack traces for debugging and for run time tracking
+>> implementing tracing API (scheduled to be added in this devel cycle)
+>> is the right approach.
+>
+> Do you have the link for this or it will show up in the mail list soon?
+
+Oh, it's just on top of cmwq todo list.  fscache needs it too so it
+will definitely happen sooner than later.  I'll try to remember to cc
+eyou when I post patches.
+
+Thanks.
+
+-- 
+tejun
