@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab0HPNaV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 09:30:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54244 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855Ab0HPNaU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 09:30:20 -0400
-Subject: Re: [PATCH] perf tools: Don't use brace expansion.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
+	id S1754173Ab0HPNfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 09:35:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20161 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752908Ab0HPNfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 09:35:18 -0400
+Date: Mon, 16 Aug 2010 09:34:52 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         linux-kernel@vger.kernel.org
-In-Reply-To: <20100816124101.1829415C039@msa104.auone-net.jp>
-References: <20100816124101.1829415C039@msa104.auone-net.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 15:30:05 +0200
-Message-ID: <1281965405.1926.1387.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: Re: fix BUG: using smp_processor_id() in touch_nmi_watchdog and
+ touch_softlockup_watchdog
+Message-ID: <20100816133452.GS4879@redhat.com>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com>
+ <1281946970.1926.998.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281946970.1926.998.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 21:41 +0900, Kusanagi Kouichi wrote:
-> DASH doesn't support brace expansion.
-
-I really hate these second rate shells, but I guess we could do this on
-the grounds of POSIX sh not specifying the brace expansion.
-
-> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
-> ---
->  tools/perf/Makefile |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
+On Mon, Aug 16, 2010 at 10:22:50AM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-08-13 at 13:21 +0300, Sergey Senozhatsky wrote:
 > 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index 41abb90..8fa851b 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -157,8 +157,10 @@ all::
->  #
->  # Define NO_DWARF if you do not want debug-info analysis feature at all.
->  
-> -$(shell sh -c 'mkdir -p $(OUTPUT)scripts/{perl,python}/Perf-Trace-Util/' 2> /dev/null)
-> -$(shell sh -c 'mkdir -p $(OUTPUT)util/{ui/browsers,scripting-engines}/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/perl/Perf-Trace-Util/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/python/Perf-Trace-Util/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)util/ui/browsers/' 2> /dev/null)
-> +$(shell sh -c 'mkdir -p $(OUTPUT)util/scripting-engines/' 2> /dev/null)
->  $(shell sh -c 'mkdir $(OUTPUT)bench' 2> /dev/null)
->  
->  $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+> > [   67.703556] BUG: using smp_processor_id() in preemptible [00000000] code: s2disk/5139
+> > [   67.703563] caller is touch_nmi_watchdog+0x15/0x2c
+> > [   67.703566] Pid: 5139, comm: s2disk Not tainted 2.6.36-rc0-git12-07921-g60bf26a-dirty #116
+> > [   67.703568] Call Trace:
+> > [   67.703575]  [<ffffffff811f6bf1>] debug_smp_processor_id+0xc9/0xe4
+> > [   67.703578]  [<ffffffff81092766>] touch_nmi_watchdog+0x15/0x2c
+> > [   67.703584]  [<ffffffff81222950>] acpi_os_stall+0x34/0x40
+> > [   67.703589]  [<ffffffff812398d2>] acpi_ex_system_do_stall+0x34/0x38
+> 
+> Which could mean two things, either ACPI got funny on us, or Don's new
+> watchdog stuff has a hole in it.
 
+it could. :-)
 
+> 
+> 
+> > ---
+> > 
+> > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> > index 613bc1f..8822f1e 100644
+> > --- a/kernel/watchdog.c
+> > +++ b/kernel/watchdog.c
+> > @@ -116,13 +116,14 @@ static unsigned long get_sample_period(void)
+> >  static void __touch_watchdog(void)
+> >  {
+> >  	int this_cpu = smp_processor_id();
+> > -
+> > -	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+> > +	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
+> >  }
+> 
+> That change seems sensible enough..
+
+ok.
+
+> 
+> >  void touch_softlockup_watchdog(void)
+> >  {
+> > -	__get_cpu_var(watchdog_touch_ts) = 0;
+> > +	int this_cpu = get_cpu();
+> > +	per_cpu(watchdog_touch_ts, this_cpu) = 0;
+> > +	put_cpu();
+> >  }
+> >  EXPORT_SYMBOL(touch_softlockup_watchdog);
+> >  
+> > @@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
+> >  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+> >  void touch_nmi_watchdog(void)
+> >  {
+> > -	__get_cpu_var(watchdog_nmi_touch) = true;
+> > +	int this_cpu = get_cpu();
+> > +	per_cpu(watchdog_nmi_touch, this_cpu) = true;
+> > +	put_cpu();
+> >  	touch_softlockup_watchdog();
+> >  }
+> >  EXPORT_SYMBOL(touch_nmi_watchdog);
+> 
+> These other two really are about assumptions we make on the call sites,
+> which at the very least are violated by ACPI.
+> 
+> Don/Ingo, remember if we require touch_*_watchdog callers to have
+> preemption disabled? Or is the proposed patch sensible?
+
+I don't recall any requirement to have preemption disabled when using
+those functions.  It seems sensible to put it in the
+touch_{softlockup|nmi}_watchdog code.
+
+I assume the reason for having preemption disabled when using
+smp_processor_id() is that the code could migrate to another cpu when
+rescheduled?
+
+I don't see a problem with the patch, but my low level understanding of
+the __get_cpu_var vs. per_cpu isn't very strong.
+
+Cheers,
+Don
+
+> 
