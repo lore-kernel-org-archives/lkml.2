@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064Ab0HPNFd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 09:05:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33545 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908Ab0HPNFc (ORCPT
+	id S1754068Ab0HPNHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 09:07:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57884 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740Ab0HPNHK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 09:05:32 -0400
-Subject: Re: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-From: David Woodhouse <dwmw2@infradead.org>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Haojian Zhuang <hzhuang1@marvell.com>, Lei Wen <leiwen@marvell.com>,
-        Axel Lin <axel.lin@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-In-Reply-To: <AANLkTimjKThiuNPhVyOh-SL1e7Zwu2R8Sd2DXAFixpY+@mail.gmail.com>
-References: <AANLkTi=YSS0-Nf4MWOw30YDrCdrkmtzLhv7DXfsoJTjX@mail.gmail.com>
-	 <53612FE6B944314AAADB181E45A45B64133DDFC156@sc-vexch3.marvell.com>
-	 <AANLkTimh=dbUV75ZVXuhknt4FiMtximXLY8xoADfbe=q@mail.gmail.com>
-	 <25B60CDC2F704E4E9D88FFD52780CB4C0597FEB568@SC-VEXCH1.marvell.com>
-	 <AANLkTimjKThiuNPhVyOh-SL1e7Zwu2R8Sd2DXAFixpY+@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 14:05:19 +0100
-Message-ID: <1281963920.21549.81.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 16 Aug 2010 09:07:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=xbOq9aSXYNq8Xd45D5wvZubCYctUXvY+BnRlxMA3yfuuaSFvnljW8UwbYMP6bUd8kJ
+         rs2B9NiWhj6VY4Qv6fOQOIWHAsDsURCnPi70m/LolAOkqanbbB7a5icOE7vXKj6Xaw2U
+         HLXdqGUCe6VGx9C+xrHdUZwsmttzZG7kwaApo=
+MIME-Version: 1.0
+In-Reply-To: <1281946680-23497-1-git-send-email-mcree@orcon.net.nz>
+References: <1281946680-23497-1-git-send-email-mcree@orcon.net.nz>
+From: Matt Turner <mattst88@gmail.com>
+Date: Mon, 16 Aug 2010 09:06:49 -0400
+Message-ID: <AANLkTi=bbu2HSzZTc5_aBeS_emoXB0YO4KUSgwwTEnuH@mail.gmail.com>
+Subject: Re: [PATCH] alpha: Fix compile error due to typo in call of do_osf_statfs()
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: linux-kernel@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@lst.de>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 20:55 +0800, Eric Miao wrote:
-> On Mon, Aug 16, 2010 at 8:49 PM, Haojian Zhuang <hzhuang1@marvell.com> wrote:
-> > http://lists.infradead.org/pipermail/linux-mtd/2010-July/subject.html
-> >
-> > They're re-posted in July. Please search the subjects in that page. They're totally 29 patches.
-> >
-> > By the way, David, what's the result of review on these patches? We already posted for several times.
-> >
-> 
-> I've actually reviewed some of the patches and gave my Ack. For those
-> patches, I think they can be merged early.
+On Mon, Aug 16, 2010 at 4:18 AM, Michael Cree <mcree@orcon.net.nz> wrote:
+> Typo, i.e., missing comma in argument list of call of do_osf_statfs(),
+> was introduced by commit ebabe9a9001af0af56c0c2780ca1576246e7a74b.
 >
-> And overall, they look good. Yet 29 patch in a whole is still a bit too
-> much, would be good to see them logically be separated into several
-> patch series.
+> Signed-off-by: Michael Cree <mcree@orcon.net.nz>
+> ---
+>  arch/alpha/kernel/osf_sys.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/arch/alpha/kernel/osf_sys.c b/arch/alpha/kernel/osf_sys.c
+> index fb58150..5d1e6d6 100644
+> --- a/arch/alpha/kernel/osf_sys.c
+> +++ b/arch/alpha/kernel/osf_sys.c
+> @@ -252,7 +252,7 @@ SYSCALL_DEFINE3(osf_statfs, const char __user *, pathname,
+>
+>        retval = user_path(pathname, &path);
+>        if (!retval) {
+> -               retval = do_osf_statfs(&path buffer, bufsiz);
+> +               retval = do_osf_statfs(&path, buffer, bufsiz);
+>                path_put(&path);
+>        }
+>        return retval;
+> --
+> 1.7.1
 
-You had some criticism of patch #1 in the sequence, and some questions.
-
-I didn't look much harder than that, iirc... although looking back now
-it seems that the rest of your responses to the sequence were largely
-positive.
-
-Are you happy with the first patch, and if so shall I go ahead and
-import the whole sequence with your Acked-By:?
-
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Thanks Michael. Will apply.
