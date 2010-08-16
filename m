@@ -1,47 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753223Ab0HPMSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:18:41 -0400
-Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:47488 "EHLO
-	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab0HPMSk (ORCPT
+	id S1753142Ab0HPMUF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:20:05 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:42430 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750740Ab0HPMUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:18:40 -0400
-Message-ID: <4C692C9D.6040100@neli.hopto.org>
-Date: Mon, 16 Aug 2010 14:18:37 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
+	Mon, 16 Aug 2010 08:20:03 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: C.juCvEVM1k99g6bxJRaC0P7ZSJjxKS9Jgyefl824LU72az
+ 8LmW63x.dfal6GAkKiey4Daqk4GYILnOu4Towxsgul54UFU9Od.N7vHGgTbk
+ zpauZfra5A0yyv96v4TLS_IliwWOkx_oiOnxIZAbqGjh136UiddVgdWhnVlk
+ XFuUDBAWktr_N.VGDijsPI4SRO4awbR49UTyjitsLWKwrg_0jsql8IlJgUQC
+ VhwS90C8Sndase9qUVnvL_J5YTiYW
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 16 Aug 2010 07:19:58 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] Hugepage migration (v2)
+In-Reply-To: <20100816091935.GB3388@spritzera.linux.bs1.fc.nec.co.jp>
+Message-ID: <alpine.DEB.2.00.1008160707420.11420@router.home>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com> <alpine.DEB.2.00.1008110806070.673@router.home> <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp> <alpine.DEB.2.00.1008130744550.27542@router.home>
+ <20100816091935.GB3388@spritzera.linux.bs1.fc.nec.co.jp>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 4/9] RapidIO: Add relation links between RIO device structures
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-5-git-send-email-alexandre.bounine@idt.com>
-In-Reply-To: <1281712686-31308-5-git-send-email-alexandre.bounine@idt.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexandre Bounine wrote:
-> Create back and forward links between RIO devices. These links are intended for
-> use by error management and hot-plug extensions.
+On Mon, 16 Aug 2010, Naoya Horiguchi wrote:
 
-As RapidIO is a switched network, the concept of 'previous' and 'next' 
-devices is invalid. Perhaps it's just the way they were 
-discovered/enumerated, but that does not matter any more at runtime. Or 
-at least, should not matter.
+> In my understanding, in current code "other processors increasing refcount
+> during migration" can happen both in non-hugepage direct I/O and in hugepage
+> direct I/O in the similar way (i.e. get_user_pages_fast() from dio_refill_pages()).
+> So I think there is no specific problem to hugepage.
+> Or am I missing your point?
 
-> @@ -237,6 +241,7 @@ struct rio_switch {
->  	u16 hopcount;
->  	u16 destid;
->  	u8  inport;
-> +	u8  nports;
->  	u8 *route_table;
->  	u32 port_ok;
+With a single page there is the check of the refcount during migration
+after all the references have been removed (at that point the page is no
+longer mapped by any process and direct iO can no longer be
+initiated without a page fault.
 
-This can be extracted from the swpinfo field (which you removed in 
-another patch)?
+I see that you are running try_to_unmap() from unmap_and_move_huge_page().
 
-Micha
+I dont see a patch adding huge page support to try_to_unmap though. How
+does this work?
+
