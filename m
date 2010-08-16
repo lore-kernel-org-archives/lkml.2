@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0HPNYL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 09:24:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52477 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab0HPNYK convert rfc822-to-8bit (ORCPT
+	id S1754162Ab0HPNaV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 09:30:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:54244 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855Ab0HPNaU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 09:24:10 -0400
-Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <87ocddz4zy.fsf@depni.sinp.msu.ru>
-Date: Mon, 16 Aug 2010 15:24:08 +0200
-Cc: Dieter Ries <mail@dieterries.net>, Avi Kivity <avi@redhat.com>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+	Mon, 16 Aug 2010 09:30:20 -0400
+Subject: Re: [PATCH] perf tools: Don't use brace expansion.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100816124101.1829415C039@msa104.auone-net.jp>
+References: <20100816124101.1829415C039@msa104.auone-net.jp>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <122B6102-F892-4D2C-A85B-52F9BB0CB11E@suse.de>
-References: <1258373983-8693-1-git-send-email-avi@redhat.com> <1258373983-8693-24-git-send-email-avi@redhat.com> <4BA1504A.3090801@dieterries.net> <808FF008-53B9-4271-904C-117A24ADF18C@suse.de> <20100317224002.GA5156@Localhorst.asterix.local> <59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de> <20100318071131.GC24062@Localhorst.asterix.local> <4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de> <87ocddz4zy.fsf@depni.sinp.msu.ru>
-To: Serge Belyshev <belyshev@depni.sinp.msu.ru>
-X-Mailer: Apple Mail (2.1081)
+Date: Mon, 16 Aug 2010 15:30:05 +0200
+Message-ID: <1281965405.1926.1387.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-08-16 at 21:41 +0900, Kusanagi Kouichi wrote:
+> DASH doesn't support brace expansion.
 
-On 08.08.2010, at 14:02, Serge Belyshev wrote:
+I really hate these second rate shells, but I guess we could do this on
+the grounds of POSIX sh not specifying the brace expansion.
 
-> Hi! Since the above patch went in
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=10474ae8
-> I have exactly the same problem as Dieter.
+> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+> ---
+>  tools/perf/Makefile |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
 > 
->>>> If that's the case I'd say you have a broken BIOS or bootloader.
->>> 
->>> You are right, it seems to be always cpu0. I'll check my BIOS and flash
->>> a newer version if available.
->> 
->> Please do. If that doesn't help ping me again. I'll write up a quirk patch then.
->> 
-> 
-> My h/w is a bit different (cpu: 9850 B3, mb: GA-MA790FX-DQ6 bios F7b),
-> but I cannot use latest available BIOS (F7d) as it breaks my SAS controller.
-> 
-> So I guess I need the quirk patch.
-
-Hrm - try to use the following (probably whitespace broken and 100% untested) hacky patch:
-
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index 56c9b6b..bde9ee3 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -429,9 +429,11 @@ static int svm_hardware_enable(void *garbage)
-        struct desc_struct *gdt;
-        int me = raw_smp_processor_id();
- 
-+#if 0
-        rdmsrl(MSR_EFER, efer);
-        if (efer & EFER_SVME)
-                return -EBUSY;
-+#endif
- 
-        if (!has_svm()) {
-                printk(KERN_ERR "svm_hardware_enable: err EOPNOTSUPP on %d\n",
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 41abb90..8fa851b 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -157,8 +157,10 @@ all::
+>  #
+>  # Define NO_DWARF if you do not want debug-info analysis feature at all.
+>  
+> -$(shell sh -c 'mkdir -p $(OUTPUT)scripts/{perl,python}/Perf-Trace-Util/' 2> /dev/null)
+> -$(shell sh -c 'mkdir -p $(OUTPUT)util/{ui/browsers,scripting-engines}/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/perl/Perf-Trace-Util/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/python/Perf-Trace-Util/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)util/ui/browsers/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)util/scripting-engines/' 2> /dev/null)
+>  $(shell sh -c 'mkdir $(OUTPUT)bench' 2> /dev/null)
+>  
+>  $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
 
 
-Alex
