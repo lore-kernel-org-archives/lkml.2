@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753146Ab0HPIaI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:30:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52543 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab0HPIaH convert rfc822-to-8bit (ORCPT
+	id S1753202Ab0HPIcF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 04:32:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41745 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752893Ab0HPIcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:30:07 -0400
-Subject: Re: [PATCH/RFC 2/5] [PATCH] sched: pass sched_domain_level to
- sched_power_savings_store
-From: Peter Zijlstra <peterz@infradead.org>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Mike Galbraith <efault@gmx.de>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        linux-kernel@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-In-Reply-To: <20100812172622.349333778@de.ibm.com>
-References: <20100812172544.655648128@de.ibm.com>
-	 <20100812172622.349333778@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 10:29:57 +0200
-Message-ID: <1281947397.1926.1012.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 16 Aug 2010 04:32:03 -0400
+From: Michal Simek <monstr@monstr.eu>
+To: glikely@secretlab.ca
+Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>
+Subject: [PATCH] microblaze: Fix of/address: Merge all of the bus translation code
+Date: Mon, 16 Aug 2010 10:31:53 +0200
+Message-Id: <1281947514-25319-2-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
+In-Reply-To: <1281947514-25319-1-git-send-email-monstr@monstr.eu>
+References: <1281947514-25319-1-git-send-email-monstr@monstr.eu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-08-12 at 19:25 +0200, Heiko Carstens wrote:
-> Pass the corresponding sched domain level to sched_power_savings_store instead
-> of a yes/no flag which indicates if the level is SMT or MC.
-> This is needed to easily extend the function so it can be used for a third
-> level. 
+Commit dbbdee94734bf6f1db7af42008a53655e77cab8f removed
+of_irq_pci_swizzle but didn't use pci_swizzle_interrupt_pin
+instead.
 
-Ah, so the plan is to reduce the number of knobs, not create more.
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+---
+ arch/microblaze/kernel/prom_parse.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Sysadmins really aren't interested in having a powersavings knob per
-topology level.
+diff --git a/arch/microblaze/kernel/prom_parse.c b/arch/microblaze/kernel/prom_parse.c
+index d33ba17..99d9b61 100644
+--- a/arch/microblaze/kernel/prom_parse.c
++++ b/arch/microblaze/kernel/prom_parse.c
+@@ -73,7 +73,7 @@ int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq)
+ 		/* We can only get here if we hit a P2P bridge with no node,
+ 		 * let's do standard swizzling and try again
+ 		 */
+-		lspec = of_irq_pci_swizzle(PCI_SLOT(pdev->devfn), lspec);
++		lspec = pci_swizzle_interrupt_pin(pdev, lspec);
+ 		pdev = ppdev;
+ 	}
+ 
+-- 
+1.5.5.6
 
