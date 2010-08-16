@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab0HPUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 16:05:09 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58768 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0HPUFH convert rfc822-to-8bit (ORCPT
+	id S1755845Ab0HPUKM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 16:10:12 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:53641 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753573Ab0HPUKK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 16:05:07 -0400
-Subject: Re: [LOCKDEP BUG][2.6.36-rc1] xt_info_wrlock?
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Miller <davem@davemloft.net>
-Cc: rostedt@goodmis.org, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kaber@trash.net, mingo@elte.hu
-In-Reply-To: <20100816.124400.42792595.davem@davemloft.net>
-References: <1281978469.3268.55.camel@gandalf.stny.rr.com>
-	 <1281979893.2524.54.camel@edumazet-laptop>
-	 <1281981301.3268.110.camel@gandalf.stny.rr.com>
-	 <20100816.124400.42792595.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 22:04:56 +0200
-Message-ID: <1281989096.1926.1952.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 16 Aug 2010 16:10:10 -0400
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: [PATCH] [RFC] cyber2000fb: avoid palette corruption at higher clocks
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Content-Disposition: inline
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Mon, 16 Aug 2010 22:09:54 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008162209.56902.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 12:44 -0700, David Miller wrote:
-> He's only accessing the per-cpu counter locks of other cpus.
-> 
-> The per-cpu lock is only locally accessed by a cpu in software
-> interrupt context.
-> 
-> That is why his transformation is legal.
-> 
-> Lockdep simply hasn't been informed of this invariant and has
-> to assume the worst. 
+When 1280x1024@75Hz mode is set, console palette is not set properly -
+sometimes the background is white, sometimes yellow and text colors are also
+messed up. This does not happen at 1280x1024@60Hz and below.
 
-Something like the below will keep lockdep coverage, still going back to
-RCU sounds like the best option.
+It seems that the HW needs some time before setting the palette - maybe the
+PLL needs more time to lock at higher speeds. This patch fixes the problem but
+without knowing what register to check for PLL lock(?), the delay might be
+excessive.
 
----
- include/linux/netfilter/x_tables.h |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 
-diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
-index 24e5d01..a195feb 100644
---- a/include/linux/netfilter/x_tables.h
-+++ b/include/linux/netfilter/x_tables.h
-@@ -511,12 +511,21 @@ static inline void xt_info_rdunlock_bh(void)
-  */
- static inline void xt_info_wrlock(unsigned int cpu)
- {
-+#ifdef CONFIG_PROVE_LOCKING
-+	/*
-+	 * XXX foo
-+	 */
-+	local_bh_disable();
-+#endif
- 	spin_lock(&per_cpu(xt_info_locks, cpu).lock);
- }
+--- linux-2.6.35-rc3-/drivers/video/cyber2000fb.c	2010-08-15 21:13:39.000000000 +0200
++++ linux-2.6.35-rc3/drivers/video/cyber2000fb.c	2010-08-15 21:25:20.000000000 +0200
+@@ -506,6 +506,9 @@ static void cyber2000fb_set_timing(struc
+ 	cyber2000_grphw(0xb9, 0x80, cfb);
+ 	cyber2000_grphw(0xb9, 0x00, cfb);
  
- static inline void xt_info_wrunlock(unsigned int cpu)
- {
- 	spin_unlock(&per_cpu(xt_info_locks, cpu).lock);
-+#ifdef CONFIG_PROVE_LOCKING
-+	local_bh_enable();
-+#endif
- }
++	/* wait (for the PLL?) to avoid palette corruption at higher clocks */
++	msleep(1000);
++
+ 	cfb->ramdac_ctrl = hw->ramdac;
+ 	cyber2000fb_write_ramdac_ctrl(cfb);
  
- /*
 
+
+
+-- 
+Ondrej Zary
