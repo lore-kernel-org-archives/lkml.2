@@ -1,86 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756812Ab0HPVUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:20:03 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51228 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755313Ab0HPVUA convert rfc822-to-8bit (ORCPT
+	id S1756858Ab0HPVVz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:21:55 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:54737 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756548Ab0HPVVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:20:00 -0400
+	Mon, 16 Aug 2010 17:21:54 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C69ABE6.6030309@s5r6.in-berlin.de>
+Date: Mon, 16 Aug 2010 23:21:42 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-In-Reply-To: <df0c23b2-b602-4555-a363-795deb0cde28@email.android.com>
-References: <20100809120509.be36a4fa.sfr@canb.auug.org.au> <20100816122059.c3ee7f6a.sfr@canb.auug.org.au>
- <df0c23b2-b602-4555-a363-795deb0cde28@email.android.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 16 Aug 2010 15:19:40 -0600
-X-Google-Sender-Auth: 3jwVAE9fF2IF6tzgs9iESAYBVBA
-Message-ID: <AANLkTinNyf4TYpz0iSe2ArYk6X_AMVu1nKTuWFsHxaik@mail.gmail.com>
-Subject: Re: [PATCH] spi: update for of_device to platform_device replacement
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+To: linux1394-devel@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] firewire: sbp2: fix stall with "Unsolicited response"
+References: <tkrat.330c42bb8ceb6a7a@s5r6.in-berlin.de> <tkrat.d1f4cde2efe6d756@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.d1f4cde2efe6d756@s5r6.in-berlin.de>
+X-Enigmail-Version: 0.96.0
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 11:22 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
->
->
-> "Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
->
->>
->>Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
->
->>This patch now is needed in Linus' tree.  I will add it to my fixes tree
->>for today.  Linus, can you take this, please?
+Stefan Richter wrote:
+> The stalls happen during heavy or moderate disk traffic in periods that
+> are a multiple of 5 minutes, roughly twice per hour.  They are caused
+> by the target responding too late to an ORB_Pointer register write
+[and subsequent SCSI error handling.]
+> So let's just ignore RCODE_CANCELLED in the transaction callback and
+> wait for the target to complete the ORB nevertheless.
 
-Linus, I'm collecting a number of OF-related fixup patches anyway, so
-I'll pick this up into my tree, make sure I haven't broken anything,
-and send you a pull req this afternoon.
-
-Cheers,
-g.
-
->>
->>diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
->>index ea24c1e..2673a3d 100644
->>--- a/drivers/ata/sata_dwc_460ex.c
->>+++ b/drivers/ata/sata_dwc_460ex.c
->>@@ -1588,7 +1588,7 @@ static const struct ata_port_info sata_dwc_port_info[] = {
->>       },
->> };
->>
->>-static int sata_dwc_probe(struct of_device *ofdev,
->>+static int sata_dwc_probe(struct platform_device *ofdev,
->>                       const struct of_device_id *match)
->> {
->>       struct sata_dwc_device *hsdev;
->>@@ -1702,7 +1702,7 @@ error_out:
->>       return err;
->> }
->>
->>-static int sata_dwc_remove(struct of_device *ofdev)
->>+static int sata_dwc_remove(struct platform_device *ofdev)
->> {
->>       struct device *dev = &ofdev->dev;
->>       struct ata_host *host = dev_get_drvdata(dev);
->>--
->>1.7.1
->>
->>--
->>Cheers,
->>Stephen Rothwell                    sfr@canb.auug.org.au
->>http://www.canb.auug.org.au/~sfr/
->
-> --
-> Sent from my Android phone with K-9 Mail. Please excuse my brevity.
->
-
-
-
+PS:  This is not only about the stalls.  It is also to prevent memory
+corruption that may happen when the target writes to SCSI request
+buffers after they were unmapped and freed, although this does not
+appear likely to me.
 -- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Stefan Richter
+-=====-==-=- =--- =----
+http://arcgraph.de/sr/
