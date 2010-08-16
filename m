@@ -1,230 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752489Ab0HPCAQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 22:00:16 -0400
-Received: from blv-smtpout-01.boeing.com ([130.76.32.69]:43259 "EHLO
-	blv-smtpout-01.boeing.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752157Ab0HPCAO convert rfc822-to-8bit (ORCPT
+	id S1752235Ab0HPCJQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 22:09:16 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:44553 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab0HPCJP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 22:00:14 -0400
-X-Greylist: delayed 1254 seconds by postgrey-1.27 at vger.kernel.org; Sun, 15 Aug 2010 22:00:12 EDT
-From: "Moffett, Kyle D" <Kyle.D.Moffett@boeing.com>
-To: Patrick Pannuto <ppannuto@codeaurora.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "magnus.damm@gmail.com" <magnus.damm@gmail.com>,
-        "grant.likely@secretlab.ca" <grant.likely@secretlab.ca>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Eric Miao <eric.y.miao@gmail.com>,
-        Dmitry Torokhov <dtor@mail.ru>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Kyle D Moffett <kyle@moffetthome.net>
-Date: Sun, 15 Aug 2010 20:38:10 -0500
-Subject: Re: [PATCH 2/2] platform: Facilitate the creation of
- pseudo-platform buses
-Thread-Topic: [PATCH 2/2] platform: Facilitate the creation of
- pseudo-platform buses
-Thread-Index: Acs847ZNDcrwxKLyQDW5aAzTzqP2iA==
-Message-ID: <3F978429-F916-42E5-8B36-6AC02DAC8CA2@boeing.com>
-References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
- <1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
-In-Reply-To: <1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sun, 15 Aug 2010 22:09:15 -0400
+Date: Mon, 16 Aug 2010 11:07:37 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
+Message-ID: <20100816020737.GA19531@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.00.1008110806070.673@router.home>
+ <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+ <20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
+ <x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Aug 10, 2010, at 19:49, Patrick Pannuto wrote:
-> As SOCs become more popular, the desire to quickly define a simple,
-> but functional, bus type with only a few unique properties becomes
-> desirable. As they become more complicated, the ability to nest these
-> simple busses and otherwise orchestrate them to match the actual
-> topology also becomes desirable.
-> 
-> EXAMPLE USAGE
-> 
-> /arch/ARCH/MY_ARCH/my_bus.c:
-> 
-> 	#include <linux/device.h>
-> 	#include <linux/platform_device.h>
-> 
-> 	struct bus_type SOC_bus_type = {
-> 		.name = "SOC-bus-type",
-> 	};
-> 	EXPORT_SYMBOL_GPL(SOC_bus_type);
-> 
-> 	struct platform_device SOC_bus1 = {
-> 		.name	 = "SOC-bus1",
-> 		.id		= -1,
-> 		.dev.bus = &SOC_bus_type;
-> 	};
-> 	EXPORT_SYMBOL_GPL(SOC_bus1);
-> 
-> 	struct platform_device SOC_bus2 = {
-> 		.name	 = "SOC-bus2",
-> 		.id		= -2,
-> 		.dev.bus = &SOC_bus_type;
-> 	};
-> 	EXPORT_SYMBOL_GPL(SOC_bus2);
-> 
-> 	static int __init SOC_bus_init(void)
-> 	{
-> 		int error;
-> 
-> 		error = pseudo_platform_bus_register(&SOC_bus_type);
-> 		if (error)
-> 			return error;
-> 
-> 		error = platform_device_register(&SOC_bus1);
-> 		if (error)
-> 			goto fail_bus1;
-> 
-> 		error = platform_device_register(&SOC_bus2);
-> 		if (error)
-> 			goto fail_bus2;
-> 
-> 		return error;
-> 
-> 		/* platform_device_unregister(&SOC_bus2); */
-> fail_bus2:
-> 		platform_device_unregister(&SOC_bus1);
-> fail_bus1:
-> 		pseudo_platform_bus_unregister(&SOC_bus_type);
-> 
-> 		return error;
-> 	}
-> 
-> /drivers/my_driver.c:
-> 	static struct platform_driver my_driver = {
-> 		.driver = {
-> 			.name	= "my-driver",
-> 			.owner	= THIS_MODULE,
-> 			.bus	= &SOC_bus_type,
-> 		},
-> 	};
-> 
-> /somewhere/my_device.c:
-> 	static struct platform_device my_device = {
-> 		.name		= "my-device",
-> 		.id		= -1,
-> 		.dev.bus	= &my_bus_type,
-> 		.dev.parent	= &SOC_bus1.dev,
-> 	};
-> 
-> This will build a device tree that mirrors the actual system:
-> 
-> /sys/bus
-> |-- SOC-bus-type
-> |   |-- devices
-> |   |   |-- SOC_bus1 -> ../../../devices/SOC_bus1
-> |   |   |-- SOC_bus2 -> ../../../devices/SOC_bus2
-> |   |   |-- my-device -> ../../../devices/SOC_bus1/my-device
-> |   |-- drivers
-> |   |   |-- my-driver
-> 
-> /sys/devices
-> |-- SOC_bus1
-> |   |-- my-device
-> |-- SOC_bus2
-> 
-> Driver can drive any device on the SOC, which is logical, without
-> actually being registered on multiple /bus_types/, even though the
-> devices may be on different /physical buses/ (which are actually
-> just devices).
+Hi,
 
-Hmm...
+On Thu, Aug 12, 2010 at 09:42:21AM -0400, Jeff Moyer wrote:
+> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+> 
+> > Basically it is user's responsibility to take care of race condition
+> > related to direct I/O, but some events which are out of user's control
+> > (such as memory failure) can happen at any time. So we need to lock and
+> > set/clear PG_writeback flags in dierct I/O code to protect from data loss.
+> 
+> Did you do any performance testing of this?  If not, please do and
+> report back.  I'm betting users won't be pleased with the results.
 
-To me this seems like a really painful implementation of what the OpenFirmware-esque "Flattened Device Tree" does on many embedded systems.
+Here is the result of my direct I/O benchmarck, which mesures the time
+it takes to do direct I/O for 20000 pages on 2MB buffer for four types
+of I/O. Each I/O is issued for one page unit and each number below is
+the average of 25 runs.
 
-For example, to build an equivalent device tree using an OpenFirmware FDT file, I'd just use this:
+                                  with patchset          2.6.35-rc3
+   Buffer      I/O type        average(s)  STD(s)   average(s)  STD(s)   diff(s)
+  hugepage   Sequential Read      3.87      0.16       3.88      0.20    -0.01
+             Sequential Write     7.69      0.43       7.69      0.43     0.00
+             Random Read          5.93      1.58       6.49      1.45    -0.55
+             Random Write        13.50      0.28      13.41      0.30     0.09
+  anonymous  Sequential Read      3.88      0.21       3.89      0.23    -0.01
+             Sequential Write     7.86      0.39       7.80      0.34     0.05
+             Random Read          7.67      1.60       6.86      1.27     0.80
+             Random Write        13.50      0.25      13.52      0.31    -0.01
 
-/dts-v1/;
-/ {
-	#address-cells = <1>;
-	#size-cells = <1>;
-	[...snip...]
+>From this result, although fluctuation is relatively large for random read,
+differences between vanilla kernel and patched one are within the deviations and
+it seems that adding direct I/O lock makes little or no impact on performance.
 
-	soc-bus-1@fc000000 {
-		/* of_platform driver matches against this: */
-		compatible = "my-company-name,soc-bus-type";
+And I know the workload of this benchmark can be too simple,
+so please let me know if you think we have another workload to be looked into.
 
-		/* Define base address and size of the bus */
-		reg = <0xfc000000 0x01000000>;
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		/* 
-		 * Define logical memory mapping relative to the bus addr:
-		 * First field is the relative base address for children,
-		 * second field is the address in the parent's memory map,
-		 * third field is the size of the range.
-		 */
-		ranges = <0x0 0xfc000000 0x01000000>;
-
-		/* Now for sub-devices */
-		my-device@0x10000 {
-			compatible = "my-company-name,my-driver";
-			reg = <0x10000 0x100>; /* Address and size */
-		};
-	};
-
-	soc-bus-2@fd000000 {
-		/* of_platform driver matches against this: */
-		compatible = "my-company-name,soc-bus-type";
-
-		/* Define base address and size of the bus */
-		reg = <0xfd000000 0x01000000>;
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		/* 
-		 * Define logical memory mapping relative to the bus addr:
-		 * First field is the relative base address for children,
-		 * second field is the address in the parent's memory map,
-		 * third field is the size of the range.
-		 */
-		ranges = <0x0 0xfd000000 0x01000000>;
-	};
-};
-
-If you don't need to actually do anything special at the bus level, you can just:
-	static struct of_device_id soc_bus_ids[] = {
-		{ .compatible = "soc-bus-type", },
-		{},
-	};
-	of_platform_bus_probe(NULL, &soc_bus_ids, NULL);
-
-Any of_platform driver that matches something on one of those busses is automatically probed.  Alternatively, if you need special bus behavior:
-	static struct of_device_id soc_bus_ids[] = {
-		{ .compatible = "soc-bus-type", },
-		{},
-	};
-	static struct of_platform_driver soc_bus_type = {
-		.name = "soc-bus-type",
-		.match_table = &soc_bus_ids,
-		.owner = THIS_MODULE,
-		.probe = mybus_probe,
-		.remove = mybus_remove,
-		.suspend = mybus_suspend,
-		.resume = mybus_resume,
-		.shutdown = mybus_shutdown,
-	};
-
-Then your .probe function actually registers a new OF bus.
-
-The best part is... all devices registered as "of_platform" devices can be used to support many entirely different board models from the exact same kernel.
-
-Fully commented and with actual physical addresses in, my FDT example is comparable to your sample code.  Furthermore, all of the error handling is automatically done, a bunch of device drivers are already ported over, and all the kinks regarding interrupts, etc are already taken care of.  I highly recommend taking a look to see if you can use the very nice existing OF bus code to solve your problem instead of writing yet another half-hard-coded platform bus type.
-
-Cheers,
-Kyle Moffett
-
+Thanks,
+Naoya Horiguchi
