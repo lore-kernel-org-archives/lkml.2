@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902Ab0HPQ0k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:26:40 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34752 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754829Ab0HPQ0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:26:38 -0400
-Date: Mon, 16 Aug 2010 18:26:36 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 7/16] drivers/staging: Use available error codes
-Message-ID: <Pine.LNX.4.64.1008161826140.19313@ask.diku.dk>
+	id S1754965Ab0HPQ1O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:27:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:53516 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754872Ab0HPQ1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:27:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eNDTHQtAEQ5sSRZOVr9AShSniA95WYROEwx5NNG4YcqHmP0T0K7MJNc3HLMwdIMmJ3
+         XWx9c881CErUy666JVxMCv0WKH4KwQUEYLTMVaVwFMScGoVbpVMcUBJGgQDoG8wsUecQ
+         K0nz1HJV9iHZZ9ut/Hwkk066alV3RnECwXSGw=
+Date: Mon, 16 Aug 2010 20:27:06 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>, Don Zickus <dzickus@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2] perf, x86: try to handle unknown nmis with running
+	perfctrs
+Message-ID: <20100816162706.GH5805@lenovo>
+References: <20100804161046.GC5130@lenovo> <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo> <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo> <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com> <20100809194829.GB26154@erda.amd.com> <20100811220058.GT26154@erda.amd.com> <1281970116.1926.1495.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281970116.1926.1495.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Mon, Aug 16, 2010 at 04:48:36PM +0200, Peter Zijlstra wrote:
+...
+> > There is another case if there are two subsequent back-to-back nmis
+> > [3]. In this case we measure the time between the first and the
+> > 2nd. The 2nd is detected as back-to-back because the first handled
+> > more than one counter. The time between the 1st and the 2nd is used to
+> > calculate a range for which we assume a back-to-back nmi. Now, the 3rd
+> > nmi triggers, we measure again the time delta and compare it with the
+> > first delta from which we know it was a back-to-back nmi. If the 3rd
+> > nmi is within the range, it is also a back-to-back nmi and we drop it. 
+> 
+> I liked the one without funny timestamps in better, the whole timestamps
+> thing just feels too fragile.
+> 
 
-An error code is stored in a variable, but 0 is returned instead.  Use the
-variable instead of 0.
+Me too, the former Roberts patch (if I'm not missing something) looks good
+to me.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+>
+> Relying on handled > 1 to arm the back-to-back filter seems doable.
+> 
 
-// <smpl>
-@r@
-local idexpression x;
-constant C;
-@@
+It's doable _but_ I think there is nothing we can do, there is no
+way (at least I known of) to check if there is latched nmi from
+perf counters. We only can assume that if there multiple counters
+overflowed most probably the next unknown nmi has the same nature,
+ie it came from perf. Yes, we can loose real unknown nmi in this
+case but I think this is justified trade off. If an user need
+a precise counting of unknown nmis he should not arm perf events
+at all, if there an user with nmi button (guys where did you get this
+magic buttuns? i need one ;) he better to not arm perf events too
+otherwise he might have to click twice
 
-if (...) { ...
-  x = -C
-  ... when != x
-(
-  return <+...x...+>;
-|
-  return NULL;
-|
-  return;
-|
-* return ...;
-)
-}
-// </smpl>
+(and of course we should keep in mind Andi's proposal but it
+ is a next step I think).
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
-This changes the semantics and is not tested.
-
- drivers/staging/lirc/lirc_sasem.c |    2 +-
- drivers/staging/sep/sep_driver.c  |    4 ++--
- drivers/staging/vt6655/iwctl.c    |    2 +-
- drivers/staging/vt6656/iwctl.c    |    2 +-
- 4 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/staging/lirc/lirc_sasem.c b/drivers/staging/lirc/lirc_sasem.c
-index 73166c3..856487e 100644
---- a/drivers/staging/lirc/lirc_sasem.c
-+++ b/drivers/staging/lirc/lirc_sasem.c
-@@ -512,7 +512,7 @@ exit:
- 	mutex_unlock(&context->ctx_lock);
- 
- 	mutex_unlock(&disconnect_lock);
--	return 0;
-+	return retval;
- }
- 
- /**
-diff --git a/drivers/staging/sep/sep_driver.c b/drivers/staging/sep/sep_driver.c
-index ecbde34..604965c 100644
---- a/drivers/staging/sep/sep_driver.c
-+++ b/drivers/staging/sep/sep_driver.c
-@@ -844,7 +844,7 @@ static int sep_lock_kernel_pages(struct sep_device *sep,
- 	*page_array_ptr = 0;
- end_function:
- 	dbg("SEP Driver:<-------- sep_lock_kernel_pages end\n");
--	return 0;
-+	return error;
- }
- 
- /*
-@@ -972,7 +972,7 @@ end_function_with_error1:
- 	kfree(page_array);
- end_function:
- 	dbg("SEP Driver:<-------- sep_lock_user_pages end\n");
--	return 0;
-+	return error;
- }
- 
- 
-diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-index 4322761..4009c0b 100644
---- a/drivers/staging/vt6655/iwctl.c
-+++ b/drivers/staging/vt6655/iwctl.c
-@@ -1900,7 +1900,7 @@ int iwctl_siwgenie(struct net_device *dev,
- 	}
- 
- 	out://not completely ...not necessary in wpa_supplicant 0.5.8
--	return 0;
-+	return ret;
- }
- 
- int iwctl_giwgenie(struct net_device *dev,
-diff --git a/drivers/staging/vt6656/iwctl.c b/drivers/staging/vt6656/iwctl.c
-index 016b8e7..8fb6518 100644
---- a/drivers/staging/vt6656/iwctl.c
-+++ b/drivers/staging/vt6656/iwctl.c
-@@ -1726,7 +1726,7 @@ int iwctl_siwgenie(struct net_device *dev,
- 	}
- 
- 	out://not completely ...not necessary in wpa_supplicant 0.5.8
--	return 0;
-+	return ret;
- }
- 
- int iwctl_giwgenie(struct net_device *dev,
+> (Also, you didn't deal with the TSC going backwards..)
+> 
+	-- Cyrill
