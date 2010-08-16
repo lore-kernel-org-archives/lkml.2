@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab0HPUX4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 16:23:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56466 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842Ab0HPUXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 16:23:54 -0400
-Date: Mon, 16 Aug 2010 22:23:51 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>,
-        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
-        linux-driver@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 16/16] drivers/net/qlcnic: Use available error codes
-In-Reply-To: <20100816183540.GE645@bicker>
-Message-ID: <Pine.LNX.4.64.1008162222450.12526@ask.diku.dk>
-References: <Pine.LNX.4.64.1008161828520.19313@ask.diku.dk> <20100816183540.GE645@bicker>
+	id S1756643Ab0HPUYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 16:24:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:48157 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842Ab0HPUYV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 16:24:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=dz5YnFeXED4Wa+kAQlhKmqvVSP5uvG03y1tZkaAEzZy1NXg5l3Vifulb3jUwYgF9p
+	70CBqXCfTtLogSoLNOqCw==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4C699455.6020200@pobox.com>
+References: <AANLkTikSSmP5f1csa=xPTR=EqY4D5a=6t2oDVkZ7cA-v@mail.gmail.com>
+	<CAC4B8726E86A142B27A9E9A2F2F12470149041A4E@rrsmsx505.amr.corp.intel.com>
+	<AANLkTik4RNvaE5OrFq3NmZ+-9DKhAAaNQ3cdPg38zOr2@mail.gmail.com>
+	<4C699455.6020200@pobox.com>
+Date: Mon, 16 Aug 2010 13:24:09 -0700
+Message-ID: <AANLkTi=R4GQGVE5AvU9hdWXdtqZzaOswrGQA+cPgO58W@mail.gmail.com>
+Subject: Re: [PATCH] 2.6.35 libata support for > 512 byte sectors (e.g. 4K Native)
+From: Grant Grundler <grundler@google.com>
+To: Jeff Garzik <jgarzik@pobox.com>
+Cc: "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
+        Tejun Heo <tj@kernel.org>, Linux IDE <linux-ide@vger.kernel.org>,
+        Gwendal Grignou <gwendal@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Mon, Aug 16, 2010 at 12:41 PM, Jeff Garzik <jgarzik@pobox.com> wrote:
+...
+> The main question is whether the size of a DRQ block changes, when LBA
+> logical size changes?
 
-The error code is stored in the variable err, but it is the variable ret
-that is returned instead.  So store the error code in ret.  Err is then
-useless.
+Don't we already know that depends on the ATA command?
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> I need to review the ATA8 specs in this area, but I
+> would think some interfaces that return 512-byte pages for things like SMART
+> info would be unchanged.  How do the drives behave for PIO-Data-{In,Out}
+> commands that are not reading/writing user data, but rather drive metadata?
 
-// <smpl>
-@r@
-local idexpression x;
-constant C;
-@@
+SMART Info/Logs are meta data and as you noted unchanged.
 
-if (...) { ...
-  x = -C
-  ... when != x
-(
-  return <+...x...+>;
-|
-  return NULL;
-|
-  return;
-|
-* return ...;
-)
-}
-// </smpl>
+Two other meta-data PIO commands I can think of:
+o  FW update: I'm not going to risk bricking this drive to find that out.
+o Vendor specific selftest/diagnostic commands (I don't know if any
+exist - just a guess)
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+If someone from Hitachi cares to respond publicly regarding the
+behavior of this "Engineering Sample", that would be appreciated and
+helpful.  But feedback from any other vendor would be welcome/useful
+also.
 
----
-This changes the semantics and has not been tested.
-This version is based on a more recent version of the file than the 
-previous version.
+I suspect legacy tools might be needed to update firmware and those
+might continue to function if DRQ block size is still 512 byte.  I'd
+like to leave this hardcoded to ATA_SECT_SIZE until someone can
+demonstrate a need to change it. Ok?
 
- drivers/net/qlcnic/qlcnic_main.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/qlcnic/qlcnic_main.c b/drivers/net/qlcnic/qlcnic_main.c
-index bf6d87a..81d9d75 100644
---- a/drivers/net/qlcnic/qlcnic_main.c
-+++ b/drivers/net/qlcnic/qlcnic_main.c
-@@ -474,7 +474,7 @@ static int
- qlcnic_init_pci_info(struct qlcnic_adapter *adapter)
- {
- 	struct qlcnic_pci_info *pci_info;
--	int i, ret = 0, err;
-+	int i, ret = 0;
- 	u8 pfn;
- 
- 	pci_info = kcalloc(QLCNIC_MAX_PCI_FUNC, sizeof(*pci_info), GFP_KERNEL);
-@@ -484,14 +484,14 @@ qlcnic_init_pci_info(struct qlcnic_adapter *adapter)
- 	adapter->npars = kzalloc(sizeof(struct qlcnic_npar_info) *
- 				QLCNIC_MAX_PCI_FUNC, GFP_KERNEL);
- 	if (!adapter->npars) {
--		err = -ENOMEM;
-+		ret = -ENOMEM;
- 		goto err_pci_info;
- 	}
- 
- 	adapter->eswitch = kzalloc(sizeof(struct qlcnic_eswitch) *
- 				QLCNIC_NIU_MAX_XG_PORTS, GFP_KERNEL);
- 	if (!adapter->eswitch) {
--		err = -ENOMEM;
-+		ret = -ENOMEM;
- 		goto err_npars;
- 	}
- 
+thanks,
+grant
