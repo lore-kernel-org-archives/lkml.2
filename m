@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174Ab0HPT0z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:26:55 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57044 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756046Ab0HPT0y (ORCPT
+	id S1756217Ab0HPT1h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:27:37 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:43126 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756046Ab0HPT1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:26:54 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, stable@kernel.org
-Subject: [PATCH 2.6.36] mfd: Ignore non-GPIO IRQs when setting wm831x IRQ types
-Date: Mon, 16 Aug 2010 20:26:51 +0100
-Message-Id: <1281986811-2023-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	Mon, 16 Aug 2010 15:27:36 -0400
+Date: Mon, 16 Aug 2010 15:27:25 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.36-rc1: WARNING when loading ehci-hcd module
+Message-ID: <20100816192725.GA2404@elliptictech.com>
+Mail-Followup-To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+	linux-kernel@vger.kernel.org
+References: <20100816184515.GA3247@elliptictech.com>
+ <20100816190241.GA6785@arch.tripp.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816190241.GA6785@arch.tripp.de>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver was originally tested with an additional patch which
-made this unneeded but that patch had issuges and got lost on the
-way to mainline, causing problems when the errors are reported.
+On 2010-08-16 21:02 +0200, Markus Trippelsdorf wrote:
+> The problem is already fixed:
+> http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commitdiff;h=9c9e54a8df0be48aa359744f412377cc55c3b7d2
+> 
+> I guess the patch will reach mainline in the next days.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: stable@kernel.org
----
- drivers/mfd/wm831x-irq.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+Wonderful.  I cherry-picked this and things seem to be working now,
+thanks.
 
-diff --git a/drivers/mfd/wm831x-irq.c b/drivers/mfd/wm831x-irq.c
-index 7dabe4d..294183b 100644
---- a/drivers/mfd/wm831x-irq.c
-+++ b/drivers/mfd/wm831x-irq.c
-@@ -394,8 +394,13 @@ static int wm831x_irq_set_type(unsigned int irq, unsigned int type)
- 
- 	irq = irq - wm831x->irq_base;
- 
--	if (irq < WM831X_IRQ_GPIO_1 || irq > WM831X_IRQ_GPIO_11)
--		return -EINVAL;
-+	if (irq < WM831X_IRQ_GPIO_1 || irq > WM831X_IRQ_GPIO_11) {
-+		/* Ignore internal-only IRQs */
-+		if (irq >= 0 && irq < WM831X_NUM_IRQS)
-+			return 0;
-+		else
-+			return -EINVAL;
-+	}
- 
- 	switch (type) {
- 	case IRQ_TYPE_EDGE_BOTH:
 -- 
-1.7.1
-
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
