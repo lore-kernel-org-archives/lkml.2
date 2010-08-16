@@ -1,141 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0HPRge (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 13:36:34 -0400
-Received: from adelphi.physics.adelaide.edu.au ([129.127.102.1]:52053 "EHLO
-	adelphi.physics.adelaide.edu.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752725Ab0HPRgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 13:36:33 -0400
-X-Greylist: delayed 1266 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 13:36:32 EDT
-From: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
-Message-Id: <201008161711.o7GHBw0x007457@mercury.physics.adelaide.edu.au>
-Subject: Re: [PATCH 15/16] drivers/platform/x86: Use available error codes
-To: julia@diku.dk (Julia Lawall)
-Date: Tue, 17 Aug 2010 02:41:57 +0930 (CST)
-Cc: jwoithe@physics.adelaide.edu.au (Jonathan Woithe),
-        mjg@redhat.com (Matthew Garrett), platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1008161828350.19313@ask.diku.dk> from "Julia Lawall" at Aug 16, 2010 06:28:52 PM
-X-Mailer: ELM [version 2.5 PL6]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755443Ab0HPRgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 13:36:49 -0400
+Received: from mga01.intel.com ([192.55.52.88]:5649 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754790Ab0HPRgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 13:36:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,377,1278313200"; 
+   d="scan'208";a="597055463"
+Subject: Re: [patch 1/3] sched: init rt_avg stat whenever rq comes online
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chris@frostnet.net" <chris@frostnet.net>,
+        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
+        "mans@mansr.com" <mans@mansr.com>,
+        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "stephan.eicher@web.de" <stephan.eicher@web.de>,
+        "sxxe@gmx.de" <sxxe@gmx.de>,
+        "thomas@archlinux.org" <thomas@archlinux.org>,
+        "venki@google.com" <venki@google.com>,
+        "wonghow@gmail.com" <wonghow@gmail.com>,
+        "stable@kernel.org" <stable@kernel.org>
+In-Reply-To: <1281944854.1926.948.camel@laptop>
+References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
+	 <20100813193911.827207098@sbsiddha-MOBL3.sc.intel.com>
+	 <1281944854.1926.948.camel@laptop>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Mon, 16 Aug 2010 10:36:19 -0700
+Message-Id: <1281980179.2676.22.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've had a quick look at this and the idea behind it is sound.  While it
-does change the symantics as noted in the original post, the change is only
-in an error path and to my eye the error code should be returned in that
-case - as the code currently stands a 0 is returned even if ENOMEM has
-occurred.
+On Mon, 2010-08-16 at 00:47 -0700, Peter Zijlstra wrote:
+> On Fri, 2010-08-13 at 12:45 -0700, Suresh Siddha wrote:
+> > plain text document attachment (sched_reset_rt_avg_stat_online.patch)
+> > TSC's get reset after suspend/resume and this leads to a scenario of
+> > rq->clock (sched_clock_cpu()) less than rq->age_stamp. This leads
+> > to a big value returned by scale_rt_power() and the resulting big group
+> > power set by the update_group_power() is causing improper load balancing
+> > between busy and idle cpu's after suspend/resume.
+> 
+> ARGH, so i[357] westmere mobile stops TSC on some power state?
 
-It seems to me that error and result have been (wrongly) used interchangedly
-within these two functions (possibly be different authors).  I agree that
-one of them should be eliminated, and error seems the sensible choice.  So
-something like the following is probably in order.
+WSM has working TSC with constant rate across P/C/T-states. This issue
+is about suspend/resume (S-states).
 
-===
+> Why don't we sync it back to the other CPUs instead?
 
-An error code is stored in the variable error, but it is the variable result
-that is returned instead.  So store the error code in result and eliminate
-the unnecessary variable error.  Initial report and patch from Julia Lawall
-<julia@diku.dk>.
+All the cpu's entered suspend state and during resume it gets reset for
+all the CPU's.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> 
+> Or does it simply mark TSCs unstable and leaves it at that?
 
-// <smpl>
-@r@
-local idexpression x;
-constant C;
-@@
+TSCs are stable and in sync after resume aswell. If we want to do SW
+sync, we need to keep track of the time we spent in the suspend state
+and do a SW sync (during resume) that can potentially disturb the HW
+sync.
 
-if (...) { ...
-  x = -C
-  ... when != x
-(
-  return <+...x...+>;
-|
-  return NULL;
-|
-  return;
-|
-* return ...;
-)
-}
-// </smpl>
+> 
+> In any case, this needs to be fixed at the clock level, not like this.
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+If we have more such dependencies on TSC then we may need to address the
+issue at clock level aswell. Nevertheless, across cpu online/offline,
+current scheduler code is expecting TSC (sched_clock) to be going
+forward and not sure why we need to carry the rt_avg history across
+online/offline.
 
---- a/drivers/platform/x86/fujitsu-laptop.c	2010-03-16 02:39:39.000000000 +1030
-+++ b/drivers/platform/x86/fujitsu-laptop.c	2010-08-17 02:37:18.556779664 +0930
-@@ -655,7 +655,6 @@
- 	int result = 0;
- 	int state = 0;
- 	struct input_dev *input;
--	int error;
- 
- 	if (!device)
- 		return -EINVAL;
-@@ -667,7 +666,7 @@
- 
- 	fujitsu->input = input = input_allocate_device();
- 	if (!input) {
--		error = -ENOMEM;
-+		result = -ENOMEM;
- 		goto err_stop;
- 	}
- 
-@@ -684,8 +683,8 @@
- 	set_bit(KEY_BRIGHTNESSDOWN, input->keybit);
- 	set_bit(KEY_UNKNOWN, input->keybit);
- 
--	error = input_register_device(input);
--	if (error)
-+	result = input_register_device(input);
-+	if (result)
- 		goto err_free_input_dev;
- 
- 	result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
-@@ -810,7 +809,6 @@
- 	int result = 0;
- 	int state = 0;
- 	struct input_dev *input;
--	int error;
- 	int i;
- 
- 	if (!device)
-@@ -824,16 +822,16 @@
- 
- 	/* kfifo */
- 	spin_lock_init(&fujitsu_hotkey->fifo_lock);
--	error = kfifo_alloc(&fujitsu_hotkey->fifo, RINGBUFFERSIZE * sizeof(int),
-+	result = kfifo_alloc(&fujitsu_hotkey->fifo, RINGBUFFERSIZE * sizeof(int),
- 			GFP_KERNEL);
--	if (error) {
-+	if (result) {
- 		printk(KERN_ERR "kfifo_alloc failed\n");
- 		goto err_stop;
- 	}
- 
- 	fujitsu_hotkey->input = input = input_allocate_device();
- 	if (!input) {
--		error = -ENOMEM;
-+		result = -ENOMEM;
- 		goto err_free_fifo;
- 	}
- 
-@@ -853,8 +851,8 @@
- 	set_bit(fujitsu->keycode4, input->keybit);
- 	set_bit(KEY_UNKNOWN, input->keybit);
- 
--	error = input_register_device(input);
--	if (error)
-+	result = input_register_device(input);
-+	if (result)
- 		goto err_free_input_dev;
- 
- 	result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
+thanks,
+suresh
+
