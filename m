@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab0HPUsl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 16:48:41 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:55925 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646Ab0HPUsk (ORCPT
+	id S1756769Ab0HPUsz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 16:48:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53621 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756731Ab0HPUsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 16:48:40 -0400
+	Mon, 16 Aug 2010 16:48:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=qIRckOn+hCwHaUzxW9tBYEiT+LdAur9QnvRDMOgwrYV7QDHCWdvjSQO14RbO+bTOmy
-         p99/7LWcp44Q+vygMO6GjFGOA7c2ubTmSGYY5YoAY1L+hBBKUgM2+VCwTCOYl1zMzurP
-         G5sXSBnWbYXf6MVzzInbk6/q2Ja/e/Zy9X0to=
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=wE+CZdlHCR7wprLVBuf+ETgzaHGcdHQyjR5HFK9fGF/VSCoXqmUS/UAroLDq4wpB80
+         r4IuT6BtRsxDSC+5fZ34V0YJwgqMFNH4czadnk2WqvR9PqOlt6q5ALxa9LJ7gzWaijPq
+         T01K1vpKeiEIeeTZPLVVsINGimMIx1wFfeYrc=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -21,59 +22,173 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        David Miller <davem@davemloft.net>, Borislav Petkov <bp@amd64.org>
-Subject: [RFC PATCH 0/0 v3] callchain fixes and cleanups 
-Date: Mon, 16 Aug 2010 22:48:29 +0200
-Message-Id: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com>
+        David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>,
+        Will Deacon <will.deacon@arm.com>, Borislav Petkov <bp@amd64.org>
+Subject: [RFC PATCH 4/6] perf: Factorize callchain context handling
+Date: Mon, 16 Aug 2010 22:48:33 +0200
+Message-Id: <1281991715-10367-5-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com>
+References: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Store the kernel and user contexts from the generic layer instead
+of archs, this gathers some repetitive code.
 
-
-This set factorizes a lot of callchain code and fixes concurrent
-callchain buffers accesses.
-
-The previous set has revealed we can't decently use the per cpu
-allocation api for memory that can be accessed from NMI.
-Hence this temporary uses a manual per cpu allocation until that
-gets fixed up.
-
-Built-tested on PowerPc, Arm and SuperH (can someone point me to
-a ready to use sparc cross compiler, like those that can be found
-there for other archs: http://www.codesourcery.com/sgpp/lite_edition.html ?)
-
-And runtime tested on x86-64 withiut troubles.
-
-You can test it by pulling that branch:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	perf/callchains
-
-If you have no comments, I'll propose it to -tip in a few days.
-
-Thanks,
-	Frederic
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: David Miller <davem@davemloft.net>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Cc: Borislav Petkov <bp@amd64.org>
 ---
+ arch/arm/kernel/perf_event.c         |    2 --
+ arch/powerpc/kernel/perf_callchain.c |    3 ---
+ arch/sh/kernel/perf_callchain.c      |    1 -
+ arch/sparc/kernel/perf_event.c       |    3 ---
+ arch/x86/kernel/cpu/perf_event.c     |    2 --
+ kernel/perf_event.c                  |    5 ++++-
+ 6 files changed, 4 insertions(+), 12 deletions(-)
 
-Frederic Weisbecker (6):
-      perf: Drop unappropriate tests on arch callchains
-      perf: Generalize callchain_store()
-      perf: Generalize some arch callchain code
-      perf: Factorize callchain context handling
-      perf: Fix race in callchains
-      perf: Humanize the number of contexts
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index 0e3bbdb..64ca8c3 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -3049,7 +3049,6 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ {
+ 	struct frame_tail *tail;
+ 
+-	perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 
+ 	tail = (struct frame_tail *)regs->ARM_fp - 1;
+ 
+@@ -3076,7 +3075,6 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ {
+ 	struct stackframe fr;
+ 
+-	perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	fr.fp = regs->ARM_fp;
+ 	fr.sp = regs->ARM_sp;
+ 	fr.lr = regs->ARM_lr;
+diff --git a/arch/powerpc/kernel/perf_callchain.c b/arch/powerpc/kernel/perf_callchain.c
+index f7a85ed..d05ae42 100644
+--- a/arch/powerpc/kernel/perf_callchain.c
++++ b/arch/powerpc/kernel/perf_callchain.c
+@@ -57,7 +57,6 @@ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 
+ 	lr = regs->link;
+ 	sp = regs->gpr[1];
+-	perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	perf_callchain_store(entry, regs->nip);
+ 
+ 	if (!validate_sp(sp, current, STACK_FRAME_OVERHEAD))
+@@ -234,7 +233,6 @@ static void perf_callchain_user_64(struct perf_callchain_entry *entry,
+ 	next_ip = regs->nip;
+ 	lr = regs->link;
+ 	sp = regs->gpr[1];
+-	perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 	perf_callchain_store(entry, next_ip);
+ 
+ 	for (;;) {
+@@ -435,7 +433,6 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
+ 	next_ip = regs->nip;
+ 	lr = regs->link;
+ 	sp = regs->gpr[1];
+-	perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 	perf_callchain_store(entry, next_ip);
+ 
+ 	while (entry->nr < PERF_MAX_STACK_DEPTH) {
+diff --git a/arch/sh/kernel/perf_callchain.c b/arch/sh/kernel/perf_callchain.c
+index ef076a9..d5ca1ef 100644
+--- a/arch/sh/kernel/perf_callchain.c
++++ b/arch/sh/kernel/perf_callchain.c
+@@ -47,7 +47,6 @@ static const struct stacktrace_ops callchain_ops = {
+ void
+ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ {
+-	perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	perf_callchain_store(entry, regs->pc);
+ 
+ 	unwind_stack(NULL, regs, NULL, &callchain_ops, entry);
+diff --git a/arch/sparc/kernel/perf_event.c b/arch/sparc/kernel/perf_event.c
+index 460162d..4bc4029 100644
+--- a/arch/sparc/kernel/perf_event.c
++++ b/arch/sparc/kernel/perf_event.c
+@@ -1293,7 +1293,6 @@ void perf_callchain_kernel(struct perf_callchain_entry *entry,
+ 
+ 	stack_trace_flush();
+ 
+-	perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	perf_callchain_store(entry, regs->tpc);
+ 
+ 	ksp = regs->u_regs[UREG_I6];
+@@ -1337,7 +1336,6 @@ static void perf_callchain_user_64(struct perf_callchain_entry *entry,
+ {
+ 	unsigned long ufp;
+ 
+-	perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 	perf_callchain_store(entry, regs->tpc);
+ 
+ 	ufp = regs->u_regs[UREG_I6] + STACK_BIAS;
+@@ -1360,7 +1358,6 @@ static void perf_callchain_user_32(struct perf_callchain_entry *entry,
+ {
+ 	unsigned long ufp;
+ 
+-	perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 	perf_callchain_store(entry, regs->tpc);
+ 
+ 	ufp = regs->u_regs[UREG_I6] & 0xffffffffUL;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 39f8421..a3c9222 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1608,7 +1608,6 @@ static const struct stacktrace_ops backtrace_ops = {
+ void
+ perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ {
+-	perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 	perf_callchain_store(entry, regs->ip);
+ 
+ 	dump_trace(NULL, regs, NULL, regs->bp, &backtrace_ops, entry);
+@@ -1660,7 +1659,6 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
+ 
+ 	fp = (void __user *)regs->bp;
+ 
+-	perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 	perf_callchain_store(entry, regs->ip);
+ 
+ 	if (perf_callchain_user32(regs, entry))
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 02efde6..615d024 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2969,6 +2969,7 @@ static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 	entry->nr = 0;
+ 
+ 	if (!user_mode(regs)) {
++		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
+ 		perf_callchain_kernel(entry, regs);
+ 		if (current->mm)
+ 			regs = task_pt_regs(current);
+@@ -2976,8 +2977,10 @@ static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
+ 			regs = NULL;
+ 	}
+ 
+-	if (regs)
++	if (regs) {
++		perf_callchain_store(entry, PERF_CONTEXT_USER);
+ 		perf_callchain_user(entry, regs);
++	}
+ 
+ 	return entry;
+ }
+-- 
+1.6.2.3
 
-
- arch/arm/kernel/perf_event.c         |   62 +---------
- arch/powerpc/kernel/perf_callchain.c |   86 ++++---------
- arch/sh/kernel/perf_callchain.c      |   50 +-------
- arch/sparc/kernel/perf_event.c       |   69 ++++-------
- arch/x86/kernel/cpu/perf_event.c     |   82 +++----------
- include/linux/perf_event.h           |   30 ++++-
- kernel/perf_event.c                  |  226 +++++++++++++++++++++++++++++-----
- 7 files changed, 295 insertions(+), 310 deletions(-)
