@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab0HPTgB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:36:01 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63222 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356Ab0HPTf7 (ORCPT
+	id S932145Ab0HPTiO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:38:14 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:38489 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756379Ab0HPTiI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:35:59 -0400
+	Mon, 16 Aug 2010 15:38:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NVHcgSmiungchwRNyUNBLTjSUepdtW+wH6mOeM5YhXM56h67AIjbb5LxOLmd6SCpLH
-         UfJ4QDsaZy/45BaF/pacjw5oW+zB8/Dpoz5xcQDpc2f3MQ/1XgfB236Tbe2XP2ctS5UU
-         mJ3o2a+3IPinIuKjhEDy1zQ1F5QSZSJlEit1g=
-Subject: Re: [LOCKDEP BUG][2.6.36-rc1] xt_info_wrlock?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1281986177.1926.1858.camel@laptop>
-References: <1281978469.3268.55.camel@gandalf.stny.rr.com>
-	 <1281979893.2524.54.camel@edumazet-laptop>
-	 <1281981301.3268.110.camel@gandalf.stny.rr.com>
-	 <1281982566.3268.137.camel@gandalf.stny.rr.com>
-	 <1281983814.1926.1763.camel@laptop>
-	 <1281984528.2487.25.camel@edumazet-laptop>
-	 <1281986177.1926.1858.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 21:35:52 +0200
-Message-ID: <1281987352.2487.40.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=uNrkoncQZpgjnr5DTYAAxJ4k0GXsgQOlzxZEhXI0nWqaa3KJbCaqVdFHjHOiZoOjPv
+         Du8jgJe7aW80RYtR85BCknkyIqtHKhCIvcYU952XIhoEP5Ism4QapG0m1NKXTUujlWef
+         m7V9xys0gIy7dIQG7N+z358OEroT9QVS/v0nE=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+References: <cover.1281956490.git.richard.cochran@omicron.at>
+	<363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
+	<AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
+Date: Mon, 16 Aug 2010 12:38:06 -0700
+X-Google-Sender-Auth: wtqN5_mLFPzmobSvdYqxg22Jvvo
+Message-ID: <AANLkTikb3HxRSjfnDbDr3DbOJcAONahkdTiNAngoGGnk@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+From: john stultz <johnstul@us.ibm.com>
+To: Richard Cochran <richardcochran@gmail.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
+        Rodolfo Giometti <giometti@linux.it>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 16 ao√ªt 2010 √† 21:16 +0200, Peter Zijlstra a √©crit :
+On Mon, Aug 16, 2010 at 12:24 PM, john stultz <johnstul@us.ibm.com> wrote:
+> On Mon, Aug 16, 2010 at 4:17 AM, Richard Cochran
+> A few comments below....
+>
+>> +** PTP user space API
+>> +
+>> + † The class driver creates a character device for each registered PTP
+>> + † clock. User space programs may control the clock using standardized
+>> + † ioctls. A program may query, enable, configure, and disable the
+>> + † ancillary clock features. User space can receive time stamped
+>> + † events via blocking read() and poll(). One shot and periodic
+>> + † signals may be configured via an ioctl API with semantics similar
+>> + † to the POSIX timer_settime() system call.
+>
+> As I mentioned earlier, I'm not a huge fan of the char device
+> interface for abstracted PTP clocks.
+> If it was just the direct hardware access, similar to RTC, which user
+> apps then use as a timesource, I'd not have much of a problem. But as
+> I mentioned in an earlier private mail, the abstraction level concerns
+> me.
 
-> Adding lockdep_off() is just plain wrong, if you cannot describe the
-> locking there's a fair chance its wrong anyway.
-> 
+[snip]
 
-I see.
+> 2) As Arnd already mentioned, the chardev interface seems to duplicate
+> the clock_gettime/settime() and adjtimex() interfaces.
 
-I described the fine locking after Steven comment, adding a long
-Changelog.
+And maybe just to clarify, as I saw your response to Arnd, I'm not
+suggesting using PTP clocks as clocksources for the internal
+timekeeping core. Instead I'm trying to understand why PTP clocks need
+the equivalent of the existing posix clocks/timer interface. Why would
+only having a read-time interface not suffice?
 
-http://patchwork.ozlabs.org/patch/61827/
-
-If someone thinks this locking is buggy, please speak now ;)
-
-
-
+thanks
+-john
