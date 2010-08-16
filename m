@@ -1,179 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383Ab0HPRzF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 13:55:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51258 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335Ab0HPRzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 13:55:04 -0400
-X-Authority-Analysis: v=1.1 cv=FLDyhxrUEZZDQYGWQdnXfbzWjjll+fIPMqQTcKt1R7E= c=1 sm=0 a=KqZB06XCtXAA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=pGLkceISAAAA:8 a=voM4FWlXAAAA:8 a=YrBv7CB2XwzSDz_hpVwA:9 a=7OaXF1AR2eG7qhOCl3gA:7 a=_hX-Rvn7hlR29cs2l6eOt91TQkYA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [LOCKDEP BUG][2.6.36-rc1] xt_info_wrlock?
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <1281979893.2524.54.camel@edumazet-laptop>
-References: <1281978469.3268.55.camel@gandalf.stny.rr.com>
-	 <1281979893.2524.54.camel@edumazet-laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 16 Aug 2010 13:55:01 -0400
-Message-ID: <1281981301.3268.110.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 8bit
+	id S1755477Ab0HPRzR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 13:55:17 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:36929 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755435Ab0HPRzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 13:55:15 -0400
+Date: Mon, 16 Aug 2010 10:55:07 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/rcu 09/10] rcu: update obsolete
+	rcu_read_lock() comment.
+Message-ID: <20100816175507.GG2388@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100809221447.GA24358@linux.vnet.ibm.com>
+ <1281392111-25060-9-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100816144532.GA8320@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816144532.GA8320@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 19:31 +0200, Eric Dumazet wrote:
-> Le lundi 16 août 2010 à 13:07 -0400, Steven Rostedt a écrit :
-> > Hi, I hit this when booting 2.6.36-rc1:
+On Mon, Aug 16, 2010 at 10:45:32AM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > The comment says that blocking is illegal in rcu_read_lock()-style
+> > RCU read-side critical sections, which is no longer entirely true
+> > given preemptible RCU.  This commit provides a fix.
 > > 
-> > =================================
-> > [ INFO: inconsistent lock state ]
-> > 2.6.36-rc1 #2937
-> > ---------------------------------
-> > inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
-> > ifup-eth/3288 [HC0[0]:SC1[2]:HE1:SE0] takes:
-> >  (&(&lock->lock)->rlock){+.?...}, at: [<ffffffffa0166eef>] ip6t_do_table+0x8a/0x3f1 [ip6_tables]
-> > {SOFTIRQ-ON-W} state was registered at:
-> >   [<ffffffff8107b08e>] __lock_acquire+0x756/0x93c
-> >   [<ffffffff8107b374>] lock_acquire+0x100/0x12d
-> >   [<ffffffff813f4ec3>] _raw_spin_lock+0x40/0x73
-> >   [<ffffffffa01664b1>] get_counters+0xb2/0x168 [ip6_tables]
-> >   [<ffffffffa01665a3>] alloc_counters+0x3c/0x47 [ip6_tables]
-> >   [<ffffffffa0167a7b>] do_ip6t_get_ctl+0x10c/0x363 [ip6_tables]
-> >   [<ffffffff813863a2>] nf_sockopt+0x5a/0x86
-> >   [<ffffffff813863e6>] nf_getsockopt+0x18/0x1a
-> >   [<ffffffffa034c1ff>] ipv6_getsockopt+0x84/0xba [ipv6]
-> >   [<ffffffffa0353289>] rawv6_getsockopt+0x42/0x4b [ipv6]
-> >   [<ffffffff81355571>] sock_common_getsockopt+0x14/0x16
-> >   [<ffffffff813525bb>] sys_getsockopt+0x7a/0x9b
-> >   [<ffffffff8100ad32>] system_call_fastpath+0x16/0x1b
-> > irq event stamp: 40
-> > hardirqs last  enabled at (40): [<ffffffff813f5ad5>] _raw_spin_unlock_irqrestore+0x47/0x79
-> > hardirqs last disabled at (39): [<ffffffff813f5036>] _raw_spin_lock_irqsave+0x2b/0x92
-> > softirqs last  enabled at (0): [<ffffffff8104975a>] copy_process+0x40e/0x11ce
-> > softirqs last disabled at (9): [<ffffffff8100bc9c>] call_softirq+0x1c/0x30
+> > Suggested-by: David Miller <davem@davemloft.net>
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  include/linux/rcupdate.h |   15 ++++++++++++++-
+> >  1 files changed, 14 insertions(+), 1 deletions(-)
 > > 
-> > other info that might help us debug this:
-> > 3 locks held by ifup-eth/3288:
-> >  #0:  (&idev->mc_ifc_timer){+.-...}, at: [<ffffffff8105841c>] run_timer_softirq+0x1f5/0x3e6
-> >  #1:  (rcu_read_lock){.+.+..}, at: [<ffffffffa03578ca>] mld_sendpack+0x0/0x3ab [ipv6]
-> >  #2:  (rcu_read_lock){.+.+..}, at: [<ffffffff81384f83>] nf_hook_slow+0x0/0x119
-> > 
-> > stack backtrace:
-> > Pid: 3288, comm: ifup-eth Not tainted 2.6.36-rc1 #2937
-> > Call Trace:
-> >  <IRQ>  [<ffffffff81077ae6>] print_usage_bug+0x1a4/0x1b5
-> >  [<ffffffff810164fa>] ? save_stack_trace+0x2f/0x4c
-> >  [<ffffffff8106cd0c>] ? local_clock+0x40/0x59
-> >  [<ffffffff810786b6>] ? check_usage_forwards+0x0/0xcf
-> >  [<ffffffff81077de1>] mark_lock+0x2ea/0x51f
-> >  [<ffffffff8107b014>] __lock_acquire+0x6dc/0x93c
-> >  [<ffffffff8106cd0c>] ? local_clock+0x40/0x59
-> >  [<ffffffffa0166eef>] ? ip6t_do_table+0x8a/0x3f1 [ip6_tables]
-> >  [<ffffffff8107b374>] lock_acquire+0x100/0x12d
-> >  [<ffffffffa0166eef>] ? ip6t_do_table+0x8a/0x3f1 [ip6_tables]
-> >  [<ffffffff81011149>] ? sched_clock+0x9/0xd
-> >  [<ffffffff813f4ec3>] _raw_spin_lock+0x40/0x73
-> >  [<ffffffffa0166eef>] ? ip6t_do_table+0x8a/0x3f1 [ip6_tables]
-> >  [<ffffffffa0166eef>] ip6t_do_table+0x8a/0x3f1 [ip6_tables]
-> >  [<ffffffff810771db>] ? trace_hardirqs_off_caller+0x1f/0x9e
-> >  [<ffffffff81384f83>] ? nf_hook_slow+0x0/0x119
-> >  [<ffffffffa010601c>] ip6table_filter_hook+0x1c/0x20 [ip6table_filter]
-> >  [<ffffffff81384f40>] nf_iterate+0x46/0x89
-> >  [<ffffffffa035627b>] ? dst_output+0x0/0x5c [ipv6]
-> >  [<ffffffff8138501b>] nf_hook_slow+0x98/0x119
-> >  [<ffffffffa035627b>] ? dst_output+0x0/0x5c [ipv6]
-> >  [<ffffffffa0349557>] ? icmp6_dst_alloc+0x0/0x1b2 [ipv6]
-> >  [<ffffffffa0357b01>] mld_sendpack+0x237/0x3ab [ipv6]
-> >  [<ffffffff81051475>] ? local_bh_enable_ip+0xc7/0xeb
-> >  [<ffffffffa0358390>] mld_ifc_timer_expire+0x254/0x28d [ipv6]
-> >  [<ffffffff810584ed>] run_timer_softirq+0x2c6/0x3e6
-> >  [<ffffffff8105841c>] ? run_timer_softirq+0x1f5/0x3e6
-> >  [<ffffffffa035813c>] ? mld_ifc_timer_expire+0x0/0x28d [ipv6]
-> >  [<ffffffff8105169e>] ? __do_softirq+0x79/0x247
-> >  [<ffffffff81051763>] __do_softirq+0x13e/0x247
-> >  [<ffffffff8100bc9c>] call_softirq+0x1c/0x30
-> >  [<ffffffff8100d32f>] do_softirq+0x4b/0xa3
-> >  [<ffffffff8105120a>] irq_exit+0x4a/0x95
-> >  [<ffffffff813fc185>] smp_apic_timer_interrupt+0x8c/0x9a
-> >  [<ffffffff8100b753>] apic_timer_interrupt+0x13/0x20
-> >  <EOI>  [<ffffffff8102c72a>] ? native_flush_tlb_global+0x2b/0x32
-> >  [<ffffffff81031fec>] kernel_map_pages+0x12c/0x142
-> >  [<ffffffff810cc89a>] free_pages_prepare+0x14c/0x15d
-> >  [<ffffffff810cc9c8>] free_hot_cold_page+0x2d/0x165
-> >  [<ffffffff810ccb2b>] __free_pages+0x2b/0x34
-> >  [<ffffffff810ccb7d>] free_pages+0x49/0x4e
-> >  [<ffffffff81033871>] pgd_free+0x71/0x79
-> >  [<ffffffff81048b1b>] __mmdrop+0x27/0x54
-> >  [<ffffffff81042c62>] finish_task_switch+0xb4/0xe4
-> >  [<ffffffff81042bae>] ? finish_task_switch+0x0/0xe4
-> >  [<ffffffff810096e7>] ? __switch_to+0x1a9/0x297
-> >  [<ffffffff81042df3>] schedule_tail+0x30/0xa7
-> >  [<ffffffff8100ac33>] ret_from_fork+0x13/0x80
-> > 
-> > I noticed in net/ipv6/netfilter/ip6_tables.c in get_counters() as with
-> > other "get_counters()" functions do not block bottom halves anymore as
-> > to this commit:
-> > 
-> > commit 24b36f0193467fa727b85b4c004016a8dae999b9
-> > Author: Eric Dumazet <eric.dumazet@gmail.com>
-> > Date:   Mon Aug 2 16:49:01 2010 +0200
-> > 
-> >     netfilter: {ip,ip6,arp}_tables: dont block bottom half more than necessary
-> >     
-> >     We currently disable BH for the whole duration of get_counters()
-> > 
-> > Now we take xt_info_wrlock(cpu) lock out of BH disabling. And that lock
-> > even has the following comment:
-> > 
-> > /*
-> >  * The "writer" side needs to get exclusive access to the lock,
-> >  * regardless of readers.  This must be called with bottom half
-> >  * processing (and thus also preemption) disabled.
-> >  */
-> > static inline void xt_info_wrlock(unsigned int cpu)
-> > 
-> > 
-> > As lockdep has proven, this is not satisfied.
-> > 
-> > -- Steve
-> > 
+> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > index 24b8966..d7af96e 100644
+> > --- a/include/linux/rcupdate.h
+> > +++ b/include/linux/rcupdate.h
+> > @@ -458,7 +458,20 @@ extern int rcu_my_thread_group_empty(void);
+> >   * will be deferred until the outermost RCU read-side critical section
+> >   * completes.
+> >   *
+> > - * It is illegal to block while in an RCU read-side critical section.
+> > + * You can avoid reading and understanding the next paragraph by
+> > + * following this rule: don't put anything in an rcu_read_lock() RCU
+> > + * read-side critical section that would block in a !PREEMPT kernel.
+> > + * But if you want the full story, read on!
+> > + *
+> > + * In non-preemptible RCU implementations (TREE_RCU and TINY_RCU), it
+> > + * is illegal to block while in an RCU read-side critical section.  In
+> > + * preemptible RCU implementations (TREE_PREEMPT_RCU and TINY_PREEMPT_RCU)
+> > + * in CONFIG_PREEMPT kernel builds, RCU read-side critical sections may
+> > + * be preempted, but explicit blocking is illegal.  Finally, in preemptible
+> > + * RCU implementations in real-time (CONFIG_PREEMPT_RT) kernel builds,
+> > + * RCU read-side critical sections may be preempted and they may also
+> > + * block, but only when acquiring spinlocks that are subject to priority
+> > + * inheritance.
+> 
+> It might be good to add a note about locking chain dependency that is
+> created in the RT case, e.g., the lock we are sharing with another
+> context in preempt RT is subject to the same rules as the RCU C.S.. It
+> should never call synchronize_rcu(); this would cause a RCU+lock-induced
+> deadlock.
+> 
+> I must admit, however, that because calling synchronize_rcu() from
+> spinlocks is already forbidden, this is already implied.
+
+Thank you for looking this over!
+
+I am updating the srcu_read_lock() docbook comments to call out the
+potential for this problem, given that SRCU read-side critical sections
+can acquire mutexes, which can be held across both synchronize_srcu()
+and synchronize_srcu_expedited().
+
+Seem reasonable?
+
+							Thanx, Paul
+
+diff --git a/include/linux/srcu.h b/include/linux/srcu.h
+index 6f456a7..58971e8 100644
+--- a/include/linux/srcu.h
++++ b/include/linux/srcu.h
+@@ -139,7 +139,12 @@ static inline int srcu_read_lock_held(struct srcu_struct *sp)
+  * @sp: srcu_struct in which to register the new reader.
+  *
+  * Enter an SRCU read-side critical section.  Note that SRCU read-side
+- * critical sections may be nested.
++ * critical sections may be nested.  However, it is illegal to
++ * call anything that waits on an SRCU grace period for the same
++ * srcu_struct, whether directly or indirectly.  Please note that
++ * one way to indirectly wait on an SRCU grace period is to acquire
++ * a mutex that is held elsewhere while calling synchronize_srcu() or
++ * synchronize_srcu_expedited().
+  */
+ static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
+ {
+
+> Thanks,
+> 
+> Mathieu
+> 
+> >   */
+> >  static inline void rcu_read_lock(void)
+> >  {
+> > -- 
+> > 1.7.0.6
 > > 
 > 
-> 
-> This is a false positive, and a patch was sent yesterday
-> 
-> http://patchwork.ozlabs.org/patch/61750/
-> 
-
-I still do not see how this is a false positive. Per-cpu locks do not
-solve the issue.
-
-
-Please tell me what prevents an interrupt going off after we grab the
-xt_info_wrlock(cpu) in get_counters().
-
-IOW, what prevents this:
-
-	get_counters() {
-		xt_info_wrlock(cpu);
-
-		<interrupt> --> softirq
-
-			xt_info_rblock_bh();
-				/* which grabs the writer lock */
-			DEADLOCK!!
-
-
--- Steve
-
-
-
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
