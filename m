@@ -1,86 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754593Ab0HPPcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 11:32:18 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53836 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab0HPPcR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 11:32:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=WS+jG1HroUJm8loqBjBNEFnPXlcP8KMN0ddqBoiQtEM+n2AsFTyQ+34c2/OlvvW0lc
-         mLFpamOOhGKHH2if5zO735nskXrRgPrilKJwleTZvWfWKv2SjXtZE3SbR6gGO5xD0DWA
-         7F32fJxK0Z7cZb5PI7egHl0fe2Bk3Md/6IV6M=
-MIME-Version: 1.0
-In-Reply-To: <20100816142246.GA11907@agk-dp.fab.redhat.com>
-References: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
-	<20100814155401.GJ26032@agk-dp.fab.redhat.com>
-	<AANLkTi=aJ7f5X9sMeA85KJxi+rzWhiZCZ2ZwriNEVFCT@mail.gmail.com>
-	<20100815130336.GA24055@agk-dp.fab.redhat.com>
-	<AANLkTinUuphqozgrSMNnrKxJrPWFp77y2TzdEwtuMD42@mail.gmail.com>
-	<4C6943A0.9030708@redhat.com>
-	<20100816142246.GA11907@agk-dp.fab.redhat.com>
-Date: Mon, 16 Aug 2010 23:32:15 +0800
-Message-ID: <AANLkTik0naaXsicwLgLeBUA0u2+BQQbww-44Fs_cHXHH@mail.gmail.com>
-Subject: Re: [lvm-devel] [dm-devel] linux-2.6.35+ causes LVM to fail with "
- device-mapper: version ioctl failed: Inappropriate ioctl for device"
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Zdenek Kabelac <zkabelac@redhat.com>,
-        device-mapper development <dm-devel@redhat.com>,
+	id S1754590Ab0HPPgo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 11:36:44 -0400
+Received: from xenotime.net ([72.52.115.56]:39783 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751823Ab0HPPgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 11:36:43 -0400
+Date: Mon, 16 Aug 2010 08:36:37 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Ernst Schwab <eschwab@online.de>
+Cc: spi-devel-general@lists.sourceforge.net,
         lkml <linux-kernel@vger.kernel.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>, lvm-devel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: spi.h: missing kernel-doc notation, please fix
+Message-Id: <20100816083637.ca01e53e.rdunlap@xenotime.net>
+In-Reply-To: <20100816151011.68e6c722.eschwab@online.de>
+References: <20100815103156.37ae14cd.rdunlap@xenotime.net>
+	<20100816151011.68e6c722.eschwab@online.de>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 10:22 PM, Alasdair G Kergon <agk@redhat.com> wrote:
-> On Mon, Aug 16, 2010 at 03:56:48PM +0200, Zdenek Kabelac wrote:
->> Dne 15.8.2010 16:13, Jeff Chua napsal(a):
->> > With 2.6.35++, /dev/mapper/control has moved from 60 to 236!
->
-> The latest LVM package made an assumption that it would be set up
-> correctly by udev (or manually in your case).  We are updating
-> the userspace libdevmapper code to handle your circumstances
-> automatically.
+On Mon, 16 Aug 2010 15:10:11 +0200 Ernst Schwab wrote:
 
-It'll be nice if lvm returns a more meanful message like "ioctl
-failed. Check /proc/misc to ensure the device is mapped correctly."
+> Added comments in kernel-doc notation for previously added struct fields.
+> 
+> Signed-off-by: Ernst Schwab <eschwab@online.de>
 
-To take care of it automatically with udev, I'm doing this in rc.S
+Thanks.
 
-if [ -f /sys/devices/virtual/misc/device-mapper/dev ]
-then
-        NODE=$(</sys/devices/virtual/misc/device-mapper/dev)
-        rm -f /dev/mapper/control
-        mknod /dev/mapper/control c ${NODE/:/ }
-fi
+Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+
+> ---
+> On Sun, 15 Aug 2010 10:31:56 -0700
+> Randy Dunlap <rdunlap@xenotime.net> wrote:
+> 
+> > This patch in mainline:
+> > 
+> > commit cf32b71e981ca63e8f349d8585ca2a3583b556e0
+> > Author: Ernst Schwab <eschwab@online.de>
+> > Date:   Mon Jun 28 17:49:29 2010 -0700
+> > 
+> >    spi/mmc_spi: SPI bus locking API, using mutex
+> > 
+> > adds some struct fields but does not add kernel-doc notation for them.
+> > Please add that missing struct documentation.
+> 
+> diff a/include/linux/spi/spi.h b/include/linux/spi/spi.h
+> --- a/include/linux/spi/spi.h
+> +++ b/include/linux/spi/spi.h
+> @@ -213,6 +213,9 @@ static inline void spi_unregister_driver
+>   * @dma_alignment: SPI controller constraint on DMA buffers alignment.
+>   * @mode_bits: flags understood by this controller driver
+>   * @flags: other constraints relevant to this driver
+> + * @bus_lock_spinlock: spinlock for SPI bus locking 
+> + * @bus_lock_mutex: mutex for SPI bus locking 
+> + * @bus_lock_flag: indicates that the SPI bus is locked for exclusive use
+>   * @setup: updates the device mode and clocking records used by a
+>   *	device's SPI controller; protocol code may call this.  This
+>   *	must fail if an unrecognized or unsupported mode is requested.
 
 
->> > # vgchange -a n vg01
->> >   Internal error: Maps lock 14217216 < unlock 14221312
->> >   Internal error: Maps lock 14221312 < unlock 14225408
->> >   Internal error: Maps lock 14225408 < unlock 14229504
->> >   Internal error: Maps lock 14229504 < unlock 14233600
->> >   Internal error: Maps lock 14233600 < unlock 14237696
->> >   Internal error: Maps lock 14237696 < unlock 14241792
->> >   0 logical volume(s) in volume group "vg01" now active
->
->> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d7824370e26325c881b665350ce64fb0a4fde24a
->
-> For those interested, originally we used mlockall() but in non-C locales
-> on some distributions glibc is configured to map 80MB+ of locale data
-> into memory without offering any way to unmap it.  We don't need
-> that data locked and it increased the minimum memory required to install
-> a distribution as well as slowing down the LVM tools!  So we had to
-> write a customised version that tries to skip locking unnecessary pages
-> like those.
-
-I see that now it's fixed with that commit.
-
-Thanks,
-Jeff
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
