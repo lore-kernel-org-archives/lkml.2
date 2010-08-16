@@ -1,106 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665Ab0HPPox (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 11:44:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24085 "EHLO mx1.redhat.com"
+	id S1754648Ab0HPPow (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 11:44:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21049 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754616Ab0HPPov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754615Ab0HPPov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Aug 2010 11:44:51 -0400
-Date: Mon, 16 Aug 2010 12:43:44 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 3/3] KVM: MMU: prefetch ptes when intercepted guest #PF
-Message-ID: <20100816154343.GA10363@amt.cnet>
-References: <4C58DE49.1020705@cn.fujitsu.com>
- <4C58DF26.3060305@cn.fujitsu.com>
- <4C58DF89.4080404@cn.fujitsu.com>
- <20100805143850.GA1648@amt.cnet>
- <4C689653.2000400@cn.fujitsu.com>
+Date: Mon, 16 Aug 2010 11:44:43 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <jaxboe@fusionio.com>, unsik Kim <donari75@gmail.com>,
+        Martin Schwidefsky <mschwid2@linux.vnet.ibm.com>,
+        Heiko Carstens <heicars2@linux.vnet.ibm.com>
+Subject: Re: Switching block device elevators
+Message-ID: <20100816154443.GA9860@redhat.com>
+References: <4C6950B3.8020702@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C689653.2000400@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4C6950B3.8020702@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 09:37:23AM +0800, Xiao Guangrong wrote:
-> Hi Marcelo,
-> 
-> Thanks for your review and sorry for the delay reply.
-> 
-> Marcelo Tosatti wrote:
-> 
-> >> +static struct kvm_memory_slot *
-> >> +pte_prefetch_gfn_to_memslot(struct kvm_vcpu *vcpu, gfn_t gfn, bool no_dirty_log)
-> >> +{
-> >> +	struct kvm_memory_slot *slot;
-> >> +
-> >> +	slot = gfn_to_memslot(vcpu->kvm, gfn);
-> >> +	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
-> >> +	      (no_dirty_log && slot->dirty_bitmap))
-> >> +		slot = NULL;
-> > 
-> > Why is this no_dirty_log optimization worthwhile?
-> > 
-> 
-> We disable prefetch the writable pages since 'pte prefetch' will hurt slot's
-> dirty page tracking that it set the dirty_bitmap bit but the corresponding page
-> is not really accessed.
-> 
-> >> +
-> >> +	return slot;
-> >> +}
-> >> +
-> >> +static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
-> >> +				     bool no_dirty_log)
-> >> +{
-> >> +	struct kvm_memory_slot *slot;
-> >> +	unsigned long hva;
-> >> +
-> >> +	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, no_dirty_log);
-> >> +	if (!slot) {
-> >> +		get_page(bad_page);
-> >> +		return page_to_pfn(bad_page);
-> >> +	}
-> >> +
-> >> +	hva = gfn_to_hva_memslot(slot, gfn);
-> >> +
-> >> +	return hva_to_pfn_atomic(vcpu->kvm, hva);
-> >> +}
-> >> +
-> >> +static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
-> >> +				    struct kvm_mmu_page *sp,
-> >> +				    u64 *start, u64 *end)
-> >> +{
-> >> +	struct page *pages[PTE_PREFETCH_NUM];
-> >> +	struct kvm_memory_slot *slot;
-> >> +	unsigned hva, access = sp->role.access;
-> >> +	int i, ret, npages = end - start;
-> >> +	gfn_t gfn;
-> >> +
-> >> +	gfn = kvm_mmu_page_get_gfn(sp, start - sp->spt);
-> >> +	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, access & ACC_WRITE_MASK);
-> >> +	if (!slot || slot->npages - (gfn - slot->base_gfn) != npages)
-> >> +		return -1;
-> >> +
-> >> +	hva = gfn_to_hva_memslot(slot, gfn);
-> >> +	ret = __get_user_pages_fast(hva, npages, 1, pages);
-> >> +	if (ret <= 0)
-> >> +		return -1;
-> > 
-> > Better do one at a time with hva_to_pfn_atomic. Or, if you measure that
-> > its worthwhile, do on a separate patch (using a helper as discussed
-> > previously).
-> > 
-> 
-> Since it should disable 'prefetch' for the writable pages, so i'm not put these
-> operations into a common function and define it in kvm_main.c file.
-> 
-> Maybe we do better do these in a wrap function named pte_prefetch_gfn_to_pages()?
+On Mon, Aug 16 2010 at 10:52am -0400,
+Peter Oberparleiter <oberpar@linux.vnet.ibm.com> wrote:
 
-Yes, please have it as a common function in kvm_main.c.
+> After commit 1abec4fdbb142e3ccb6ce99832fae42129134a96, "block: make
+> blk_init_free_list and elevator_init idempotent", we're seeing
+> kernel panics in our s390 tape block device driver. The panic is
+> triggered because our driver tries to replace the default elevator
+> with a noop elevator by calling elevator_exit() directly followed by
+> elevator_init().
 
+Maybe we should look to export elevator_switch() -- rather than
+confining its use to the sysfs interface.
+
+> Since the commit, elevator_init() returns 0 if
+> request_queue->elevator is non-null, even though it does not install
+> a new elevator. As a result, the next access to the elevator finds a
+> pointer to the old one which was already freed and a panic is
+> triggered. Our current fix consists of setting the elevator pointer
+> to NULL after elevator_exit().
+
+elevator_exit() triggers a call, via kobj, to elevator_release() which
+doesn't have access to the request_queue to reset it.
+
+Unfortunately, commit 1abec4fdbb imposes that the elevator_exit() caller
+must take care to reset q->elevator to NULL -- like dasd_alloc_queue()
+does.
+
+Though I suppose we _could_ pass request_queue to elevator_exit.
+
+> There is at least one other driver where the problem currently
+> exists (drivers/block/mg_disk.c, author on cc) and another s390
+> driver where the problem was only accidentally fixed before 2.6.35.
+> I'm wondering if there's a better solution (apart from not forcing
+> an elevator) and would like to hear everyone's opinion on this
+> matter. How about declaring elevator_switch() non-static, for
+> example?
+
+Right, updating drivers/block/mg_disk.c and drivers/s390/block/dasd.c to
+use elevator_switch would work.
+
+Mike
