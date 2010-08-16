@@ -1,125 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939Ab0HPBQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 21:16:59 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27098 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751814Ab0HPBQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 21:16:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,373,1278313200"; 
-   d="scan'208";a="596806365"
-Date: Mon, 16 Aug 2010 09:16:55 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: "Siddha, Suresh B" <suresh.b.siddha@intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Hugh Dickins <hughd@google.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [patch]x86: avoid unnecessary tlb flush
-Message-ID: <20100816011655.GA362@sli10-desk.sh.intel.com>
-References: <1281065308.29094.5.camel@sli10-desk.sh.intel.com>
- <20100805221913.4da0f8be.akpm@linux-foundation.org>
- <1281660475.21194.1.camel@sli10-desk.sh.intel.com>
- <alpine.DEB.1.00.1008131222110.26182@tigran.mtv.corp.google.com>
- <4C65B449.4010905@zytor.com>
- <1281740437.2704.65.camel@sbsiddha-MOBL3.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281740437.2704.65.camel@sbsiddha-MOBL3.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751983Ab0HPBWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 21:22:25 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47026 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751891Ab0HPBWX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 21:22:23 -0400
+Date: Sun, 15 Aug 2010 18:21:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: sedat.dilek@gmail.com, Andi Kleen <ak@linux.intel.com>,
+        len.brown@intel.com, Linux ACPI <linux-acpi@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull request] ACPI patches for 2.6.36.merge
+Message-Id: <20100815182153.994179c1.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=Ok3NH3k5EF1Da2Z3xA7uahABRtH7pEdOEuZH2@mail.gmail.com>
+References: <AANLkTikV2eVo6KM5dSqfDwAwT=bVxnuWSpBE7F+JQU+_@mail.gmail.com>
+	<AANLkTi=vngT_5XYz1=3P6GjExFNtCVCdBMhaz4Sc4oEk@mail.gmail.com>
+	<20100815133015.883c7069.akpm@linux-foundation.org>
+	<AANLkTi=Ok3NH3k5EF1Da2Z3xA7uahABRtH7pEdOEuZH2@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 07:00:37AM +0800, Siddha, Suresh B wrote:
-> On Fri, 2010-08-13 at 14:08 -0700, H. Peter Anvin wrote:
-> > On 08/13/2010 12:29 PM, Hugh Dickins wrote:
-> > > 
-> > > Just added Andrea to the Cc list: he did that TLB flush in 1a44e149,
-> > > I'd feel more comfortable noop-ing it on x86 if you've convinced him.
-> > > 
-> > > Hugh
-> > 
-> > Andrea is probably on his way back from LinuxCon, but looking at the
-> > original patch it might be something that non-x86 architectures need,
-> > but which can be optimized specifically on x86, since x86 has explicit
-> > "no flush needed when going to more permissive" semantics.
+On Sun, 15 Aug 2010 14:04:09 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
+
+> On Sun, Aug 15, 2010 at 1:30 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> >
+> > I'd be suspecting that we have two patches both of which worked
+> > separately but which broke when combined.  Is there some other patch in
+> > that tree which adds a new reference to `ref' in acpi_power_seq_show()?
 > 
-> Yes. I don't see a problem with the proposed patch. This is the case of
-> parallel thread execution getting spurious write protection faults for
-> the same page for which the pte entry is already up to date and the
-> fault has already flushed the existing spurious TLB entry in the case of
-> x86.
+> The offending patch isn't about acpi_power_seq_show(), it's about
+> acpi_power_off_device().
+
+The patch I sent Len patched acpi_power_seq_show().
+
 > 
-> I prefer a better name for the new flush_tlb_nonprotect_page() to
-> reflect the above. something like tlb_fix_spurious_fault() or something?
-this name is better.
+> ...
+>
+> What does that say about the _rest_ of the patches?
 
+Not tested in combination?
 
-In x86, access and dirty bits are set automatically by CPU when CPU accesses
-memory. When we go into the code path of below flush_tlb_fix_spurious_fault(),
-we already set dirty bit for pte and don't need flush tlb. This might mean
-tlb entry in some CPUs hasn't dirty bit set, but this doesn't matter. When
-the CPUs do page write, they will automatically check the bit and no software
-involved. 
+> What does that say about (lack of) -next testing?
 
-On the other hand, flush tlb in below position is harmful. Test creates CPU
-number of threads, each thread writes to a same but random address in same vma
-range and we measure the total time. Under a 4 socket system, original time is
-1.96s, while with the patch, the time is 0.8s. Under a 2 socket system, there is
-20% time cut too. perf shows a lot of time are taking to send ipi/handle ipi for
-tlb flush.
+That code compiled OK in -mm which includes linux-next.  I assume that
+some last-minute merging broke things.
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-
----
- arch/x86/include/asm/pgtable.h |    2 ++
- include/asm-generic/pgtable.h  |    4 ++++
- mm/memory.c                    |    2 +-
- 3 files changed, 7 insertions(+), 1 deletion(-)
-
-Index: linux/arch/x86/include/asm/pgtable.h
-===================================================================
---- linux.orig/arch/x86/include/asm/pgtable.h	2010-08-16 09:00:02.000000000 +0800
-+++ linux/arch/x86/include/asm/pgtable.h	2010-08-16 09:03:41.000000000 +0800
-@@ -603,6 +603,8 @@ static inline void ptep_set_wrprotect(st
- 	pte_update(mm, addr, ptep);
- }
- 
-+#define flush_tlb_fix_spurious_fault(vma, address)
-+
- /*
-  * clone_pgd_range(pgd_t *dst, pgd_t *src, int count);
-  *
-Index: linux/include/asm-generic/pgtable.h
-===================================================================
---- linux.orig/include/asm-generic/pgtable.h	2010-08-16 09:00:02.000000000 +0800
-+++ linux/include/asm-generic/pgtable.h	2010-08-16 09:03:41.000000000 +0800
-@@ -129,6 +129,10 @@ static inline void ptep_set_wrprotect(st
- #define move_pte(pte, prot, old_addr, new_addr)	(pte)
- #endif
- 
-+#ifndef flush_tlb_fix_spurious_fault
-+#define flush_tlb_fix_spurious_fault(vma, address) flush_tlb_page(vma, address)
-+#endif
-+
- #ifndef pgprot_noncached
- #define pgprot_noncached(prot)	(prot)
- #endif
-Index: linux/mm/memory.c
-===================================================================
---- linux.orig/mm/memory.c	2010-08-16 09:03:08.000000000 +0800
-+++ linux/mm/memory.c	2010-08-16 09:03:41.000000000 +0800
-@@ -3140,7 +3140,7 @@ static inline int handle_pte_fault(struc
- 		 * with threads.
- 		 */
- 		if (flags & FAULT_FLAG_WRITE)
--			flush_tlb_page(vma, address);
-+			flush_tlb_fix_spurious_fault(vma, address);
- 	}
- unlock:
- 	pte_unmap_unlock(pte, ptl);
