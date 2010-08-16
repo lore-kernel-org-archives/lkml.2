@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754558Ab0HPOrv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:47:51 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:47987 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754539Ab0HPOru convert rfc822-to-8bit (ORCPT
+	id S1754533Ab0HPOsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:48:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47443 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754262Ab0HPOsv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:47:50 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+	Mon, 16 Aug 2010 10:48:51 -0400
+Subject: Re: [PATCH -v2] perf, x86: try to handle unknown nmis with running
+ perfctrs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100811220058.GT26154@erda.amd.com>
+References: <20100804151858.GB5130@lenovo>
+	 <20100804155002.GS3353@redhat.com> <20100804161046.GC5130@lenovo>
+	 <20100804162026.GU3353@redhat.com> <20100804163930.GE5130@lenovo>
+	 <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo>
+	 <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com>
+	 <20100809194829.GB26154@erda.amd.com> <20100811220058.GT26154@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 5/9] RapidIO: Add default handler for error_stopped state
-Date: Mon, 16 Aug 2010 07:47:18 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D5F71@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4C692D4D.1030401@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 5/9] RapidIO: Add default handler for error_stopped state
-thread-index: Acs9PTDlN7R3QHFvSWK4xhBF5h3sdgAFEDWA
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-6-git-send-email-alexandre.bounine@idt.com> <4C692D4D.1030401@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>,
-        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Date: Mon, 16 Aug 2010 16:48:36 +0200
+Message-ID: <1281970116.1926.1495.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen wrote:
+On Thu, 2010-08-12 at 00:00 +0200, Robert Richter wrote:
+> From 8bb831af56d118b85fc38e0ddc2e516f7504b9fb Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Thu, 5 Aug 2010 16:19:59 +0200
+> Subject: [PATCH] perf, x86: try to handle unknown nmis with running perfctrs
 > 
-> Alexandre Bounine wrote:
-> > +
-> > +	if (err_status & RIO_PORT_N_ERR_STS_PW_OUT_ES) {
-> > +		pr_debug("RIO_EM: servicing Output Error-Stopped
-state\n");
-> > +		/*
-> > +		 * Send a Link-Request/Input-Status control symbol
-> > +		 */
-> > +
-> > +		/* Read from link maintenance response register
-> > +		 * to clear valid bit */
-> > +		rio_mport_read_config_32(mport, destid, hopcount,
-> > +			rdev->phys_efptr + RIO_PORT_N_MNT_RSP_CSR(pnum),
-> > +			&regval);
-> > +		udelay(50);
+> When perfctrs are running it is valid to have unhandled nmis, two
+> events could trigger 'simultaneously' raising two back-to-back
+> NMIs. If the first NMI handles both, the latter will be empty and daze
+> the CPU.
 > 
-> Perhaps this whole part of operating the MNT_RSP registers (sending
-> link-request symbol is the only useful action IIRC?) can be put in a
-> separate function for readability.
+> The solution to avoid an 'unknown nmi' massage in this case was simply
+> to stop the nmi handler chain when perfctrs are runnning by stating
+> the nmi was handled. This has the drawback that a) we can not detect
+> unknown nmis anymore, and b) subsequent nmi handlers are not called.
 > 
-I was on the fence with this one. Now I have an extra vote in favor of a
-separate function ;)
-Will do.
- 
+> This patch addresses this. Now, we check this unknown NMI if it could
+> be a perfctr back-to-back NMI. Otherwise we pass it and let the kernel
+> handle the unknown nmi.
+> 
+> This is a debug log:
+
+> 
+> Deltas:
+> 
+
+> nmi #32346 1462095   <<<< 1st nmi (standard) handling 2 counters
+> nmi #32347 2046      <<<< 2nd nmi (back-to-back) handling one counter
+> nmi #32348 1773      <<<< 3rd nmi (back-to-back) handling no counter! [3]
+> 
+> For  back-to-back nmi detection there are the following rules:
+> 
+> The perfctr nmi handler was handling more than one counter and no
+> counter was handled in the subsequent nmi (see [1] and [2] above).
+> 
+> There is another case if there are two subsequent back-to-back nmis
+> [3]. In this case we measure the time between the first and the
+> 2nd. The 2nd is detected as back-to-back because the first handled
+> more than one counter. The time between the 1st and the 2nd is used to
+> calculate a range for which we assume a back-to-back nmi. Now, the 3rd
+> nmi triggers, we measure again the time delta and compare it with the
+> first delta from which we know it was a back-to-back nmi. If the 3rd
+> nmi is within the range, it is also a back-to-back nmi and we drop it. 
+
+I liked the one without funny timestamps in better, the whole timestamps
+thing just feels too fragile.
+
+Relying on handled > 1 to arm the back-to-back filter seems doable.
+
+(Also, you didn't deal with the TSC going backwards..)
