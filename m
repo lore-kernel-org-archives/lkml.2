@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755155Ab0HPQuU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:50:20 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:50411 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754821Ab0HPQuT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:50:19 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Johannes Stezenbach <js@sig21.net>
-Subject: Re: unable to mount a CD - iso9660 bug?
-Date: Mon, 16 Aug 2010 18:50:06 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fsdevel@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201008161438.57103.linux@rainbow-software.org> <20100816132151.GA11369@sig21.net> <201008161618.59511.linux@rainbow-software.org>
-In-Reply-To: <201008161618.59511.linux@rainbow-software.org>
+	id S1751556Ab0HPQxp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:53:45 -0400
+Received: from mail.tmr.com ([64.65.253.246]:55239 "EHLO partygirl.tmr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750845Ab0HPQxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:53:44 -0400
+Message-ID: <4C696CFD.7070003@tmr.com>
+Date: Mon, 16 Aug 2010 12:53:17 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Nikanth Karthikesan <knikanth@suse.de>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Wu Fengguang <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Per file dirty limit throttling
+References: <201008160949.51512.knikanth@suse.de>
+In-Reply-To: <201008160949.51512.knikanth@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008161850.08442.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 August 2010 16:18:57 Ondrej Zary wrote:
-> On Monday 16 August 2010, Johannes Stezenbach wrote:
-> > On Mon, Aug 16, 2010 at 02:38:54PM +0200, Ondrej Zary wrote:
-> > > I have a CD that came with Samsung printer that Linux cannot mount but
-> > > works fine in Windows. The CD is physically OK - "dd" made ISO image
-> > > without any problems. This ISO image is unmountable too. When I force
-> > > the filesystem to iso9660, it mounts but no files are visible:
-> >
-> > Maybe it's a multi-session disk where the first session is
-> > HFS with Apple software.  Try mounting with -t iso9660 -o session=1.
->
-> Still the same - no files. dmesg contains:
->
-> ISOFS: Invalid session number or type of track
-> ISOFS: Invalid session number
-> ISO 9660 Extensions: Microsoft Joliet Level 3
-> ISO 9660 Extensions: RRIP_1991A
+Nikanth Karthikesan wrote:
+> When the total dirty pages exceed vm_dirty_ratio, the dirtier is made to do
+> the writeback. But this dirtier may not be the one who took the system to this
+> state. Instead, if we can track the dirty count per-file, we could throttle
+> the dirtier of a file, when the file's dirty pages exceed a certain limit.
+> Even though this dirtier may not be the one who dirtied the other pages of
+> this file, it is fair to throttle this process, as it uses that file.
+> 
+I agree with your problem description, a single program which writes a single 
+large file can make an interactive system suck. Creating a 25+GB Blu-Ray image 
+will often saturate the buffer space. I played with per-fd limiting during 
+2.5.xx development and I had an app writing 5-10GB files. While I wanted to get 
+something to submit while the kernel was changing, I kept hitting cornet cases.
 
-Here's the compressed ISO file if anyone wants to examine it:
-http://www.rainbow-software.org/linux_files/samsung-bad.rar
+> This patch
+> 1. Adds dirty page accounting per-file.
+> 2. Exports the number of pages of this file in cache and no of pages dirty via
+> proc-fdinfo.
+> 3. Adds a new tunable, /proc/sys/vm/file_dirty_bytes. When a files dirty data
+> exceeds this limit, the writeback of that inode is done by the current
+> dirtier.
+> 
+I think you have this in the wrong place, can't it go in balance_dirty_pages?
+
+> This certainly will affect the throughput of certain heavy-dirtying workloads,
+> but should help for interactive systems.
+> 
+I found that the effect was about the same as forcing the application to use 
+O_DIRECT, and since it was our application I could do that. Not all 
+badly-behaved programs are open source, so that addressed my issue but not the 
+general case.
+
+I think you really need to track by process, not file, as you said "Even though 
+this dirtier may not be the one who dirtied the other pages of this file..." 
+that doesn't work, you block a process which is contributing minimally to the 
+problem while letting the real problem process continue. Ex: a log file, with 
+one process spewing error messages while others write a few lines/min. You have 
+to get it right, I think.
 
 -- 
-Ondrej Zary
+Bill Davidsen <davidsen@tmr.com>
+   "We have more to fear from the bungling of the incompetent than from
+the machinations of the wicked."  - from Slashdot
