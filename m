@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab0HPIsv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:48:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48831 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751420Ab0HPIsu convert rfc822-to-8bit (ORCPT
+	id S1752560Ab0HPJGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 05:06:52 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48361 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751250Ab0HPJGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:48:50 -0400
-Subject: Re: [PATCH/RFC 3/5] [PATCH] sched: add book scheduling domain
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>, Mike Galbraith <efault@gmx.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-In-Reply-To: <1281734572.2704.39.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <20100812172544.655648128@de.ibm.com>
-	 <20100812172623.140578409@de.ibm.com>
-	 <1281734572.2704.39.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 10:48:37 +0200
-Message-ID: <1281948517.1926.1049.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 16 Aug 2010 05:06:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lG9hCzxxOC5gRbSwncu3D8If2slPgBFpjbhVwUPxxSE7alsKbToZwfvLUqu87RR0JU
+         nPjGkFWnNvrLqjFXHY5jDQYD0bZjGgtuu3lTdTLHGQScKlpI/ExriZq6vCd86PWW8vGh
+         clPPvYwL6P5fGyJSAbXCqiWmBqTSdwbkFCwEg=
+Date: Mon, 16 Aug 2010 13:06:45 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] x86: Don't write io_apic ID if it is not changed
+Message-ID: <20100816090645.GA5805@lenovo>
+References: <4C66FEA9.3040303@kernel.org> <20100815082446.GA5629@lenovo> <20100815083057.GB5629@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100815083057.GB5629@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 14:22 -0700, Suresh Siddha wrote:
-> On Thu, 2010-08-12 at 10:25 -0700, Heiko Carstens wrote:
-> > From: Heiko Carstens <heiko.carstens@de.ibm.com>
+On Sun, Aug 15, 2010 at 12:30:57PM +0400, Cyrill Gorcunov wrote:
+> On Sun, Aug 15, 2010 at 12:24:46PM +0400, Cyrill Gorcunov wrote:
+> ...
+> > As far as I see, this was done by a purpose in former code. Consider the
+> > situation when mp_ioapics[apic_id].apicid >= get_physical_broadcast().
+> > By code flow (io_apic.c:2099) this set
 > > 
-> > On top of the SMT and MC scheduling domains this adds the BOOK scheduling
-> > domain. This is useful for machines that have a four level cache hierarchy
-> > and but do not fall into the NUMA category.
+> > 		if (mp_ioapics[apic_id].apicid >= get_physical_broadcast()) {
+> > 			printk(KERN_ERR "BIOS bug, IO-APIC#%d ID is %d in the MPC table!...\n",
+> > 				apic_id, mp_ioapics[apic_id].apicid);
+> > 			printk(KERN_ERR "... fixing up to %d. (tell your hw vendor)\n",
+> > 				reg_00.bits.ID);
+> > --->			mp_ioapics[apic_id].apicid = reg_00.bits.ID;
+> > 		}
 > > 
-> > Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+> > So with your patch we always hit "continue" without real changing of ID which
+> > is not correct.
+> > 
+> > But perhaps I miss something?
+> > 
+> > 	-- Cyrill
 > 
-> PeterZ had some ideas in cleaning up the sched domain setup to avoid
-> this maze of #ifdef's. I will let him comment on this.
+> False alarm Yinghai, of course there is no need to write same value back,
+> sorry for noise.
+> 
+> 	-- Cyrill
 
-http://lkml.org/lkml/2009/8/18/169
+Thinking a bit more I guess there might be a sence to write io-apic id
+unconditionally, io-apic id is not latched on reset but set to 0 (at least
+for old apics) so if we hit id match -- this will be once, but the same
+time we will have additional if() for every cycle iteration, not sure
+it worth it. Right?
 
-More information in this thread: http://lkml.org/lkml/2009/8/20/190
-
-
+	-- Cyrill
