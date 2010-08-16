@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754809Ab0HPQZF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:25:05 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34668 "EHLO mgw2.diku.dk"
+	id S1755059Ab0HPQZn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:25:43 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34721 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754654Ab0HPQZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:25:02 -0400
-Date: Mon, 16 Aug 2010 18:25:00 +0200 (CEST)
+	id S1754990Ab0HPQZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:25:41 -0400
+Date: Mon, 16 Aug 2010 18:25:39 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Steve Wise <swise@chelsio.com>, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        mjpeg-users@lists.sourceforge.net, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/16] drivers/infiniband/hw/cxgb4: Remove unnecessary error
- code assignment
-Message-ID: <Pine.LNX.4.64.1008161824420.19313@ask.diku.dk>
+Subject: [PATCH 4/16] drivers/media/video/zoran: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161825220.19313@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,9 +21,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-This code initializes ret to -ENOMEM, but actually ret is not used in the
-code starting at err7, and -ENOMEM is always returned in this case, so the
-initialization of ret is unnecessary.
+Error codes are stored in res, but the return value is always 0.  Return
+res instead.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -54,24 +51,21 @@ if (...) { ...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/infiniband/hw/cxgb4/qp.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+This changes the semantics and has not been tested.
 
-diff --git a/drivers/infiniband/hw/cxgb4/qp.c b/drivers/infiniband/hw/cxgb4/qp.c
-index 93f6e5b..73e00ed 100644
---- a/drivers/infiniband/hw/cxgb4/qp.c
-+++ b/drivers/infiniband/hw/cxgb4/qp.c
-@@ -130,11 +130,9 @@ static int create_qp(struct c4iw_rdev *rdev, struct t4_wq *wq,
- 	/* build fw_ri_res_wr */
- 	wr_len = sizeof *res_wr + 2 * sizeof *res;
+ drivers/media/video/zoran/zoran_driver.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/video/zoran/zoran_driver.c b/drivers/media/video/zoran/zoran_driver.c
+index 6f89d0a..c155ddf 100644
+--- a/drivers/media/video/zoran/zoran_driver.c
++++ b/drivers/media/video/zoran/zoran_driver.c
+@@ -3322,7 +3322,7 @@ zoran_mmap (struct file           *file,
+ mmap_unlock_and_return:
+ 	mutex_unlock(&zr->resource_lock);
  
--	skb = alloc_skb(wr_len, GFP_KERNEL);
--	if (!skb) {
--		ret = -ENOMEM;
-+	skb = alloc_skb(wr_len, GFP_KERNEL | __GFP_NOFAIL);
-+	if (!skb)
- 		goto err7;
--	}
- 	set_wr_txq(skb, CPL_PRIORITY_CONTROL, 0);
+-	return 0;
++	return res;
+ }
  
- 	res_wr = (struct fw_ri_res_wr *)__skb_put(skb, wr_len);
+ static const struct v4l2_ioctl_ops zoran_ioctl_ops = {
