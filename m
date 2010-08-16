@@ -1,141 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755567Ab0HPS3t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 14:29:49 -0400
-Received: from tomts43.bellnexxia.net ([209.226.175.110]:61106 "EHLO
-	tomts43-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751488Ab0HPS3s (ORCPT
+	id S1755595Ab0HPSa1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 14:30:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:52252 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755572Ab0HPSaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 14:29:48 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFkcaUxGGN19/2dsb2JhbACgRnK/HoU7BA
-Date: Mon, 16 Aug 2010 14:24:45 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/rcu 09/10] rcu: update obsolete
-	rcu_read_lock() comment.
-Message-ID: <20100816182445.GB30307@Krystal>
-References: <20100809221447.GA24358@linux.vnet.ibm.com> <1281392111-25060-9-git-send-email-paulmck@linux.vnet.ibm.com> <20100816144532.GA8320@Krystal> <20100816175507.GG2388@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 16 Aug 2010 14:30:25 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:in-reply-to:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=D+RaXAJg3JZAUqO/XygJaQNA9wQp9Y2QlK6dro8yNFFwz+cB/gn+QiiOTK5YnSklI
+	w07coHUfIoBSko/FdTCig==
+Subject: [PATCH] Fixed a mismatch between the users of radix_tree and the
+	implementation.
+In-Reply-To: <1281957914.1926.1249.camel@laptop>
+To: paulmck@us.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl
+From: Salman Qazi <sqazi@google.com>
+Cc: adurbin@google.com
+Date: Mon, 16 Aug 2010 11:30:07 -0700
+Message-ID: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20100816175507.GG2388@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 14:24:16 up 131 days,  4:15,  4 users,  load average: 0.01, 0.05,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Mon, Aug 16, 2010 at 10:45:32AM -0400, Mathieu Desnoyers wrote:
-> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > The comment says that blocking is illegal in rcu_read_lock()-style
-> > > RCU read-side critical sections, which is no longer entirely true
-> > > given preemptible RCU.  This commit provides a fix.
-> > > 
-> > > Suggested-by: David Miller <davem@davemloft.net>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > ---
-> > >  include/linux/rcupdate.h |   15 ++++++++++++++-
-> > >  1 files changed, 14 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > > index 24b8966..d7af96e 100644
-> > > --- a/include/linux/rcupdate.h
-> > > +++ b/include/linux/rcupdate.h
-> > > @@ -458,7 +458,20 @@ extern int rcu_my_thread_group_empty(void);
-> > >   * will be deferred until the outermost RCU read-side critical section
-> > >   * completes.
-> > >   *
-> > > - * It is illegal to block while in an RCU read-side critical section.
-> > > + * You can avoid reading and understanding the next paragraph by
-> > > + * following this rule: don't put anything in an rcu_read_lock() RCU
-> > > + * read-side critical section that would block in a !PREEMPT kernel.
-> > > + * But if you want the full story, read on!
-> > > + *
-> > > + * In non-preemptible RCU implementations (TREE_RCU and TINY_RCU), it
-> > > + * is illegal to block while in an RCU read-side critical section.  In
-> > > + * preemptible RCU implementations (TREE_PREEMPT_RCU and TINY_PREEMPT_RCU)
-> > > + * in CONFIG_PREEMPT kernel builds, RCU read-side critical sections may
-> > > + * be preempted, but explicit blocking is illegal.  Finally, in preemptible
-> > > + * RCU implementations in real-time (CONFIG_PREEMPT_RT) kernel builds,
-> > > + * RCU read-side critical sections may be preempted and they may also
-> > > + * block, but only when acquiring spinlocks that are subject to priority
-> > > + * inheritance.
-> > 
-> > It might be good to add a note about locking chain dependency that is
-> > created in the RT case, e.g., the lock we are sharing with another
-> > context in preempt RT is subject to the same rules as the RCU C.S.. It
-> > should never call synchronize_rcu(); this would cause a RCU+lock-induced
-> > deadlock.
-> > 
-> > I must admit, however, that because calling synchronize_rcu() from
-> > spinlocks is already forbidden, this is already implied.
-> 
-> Thank you for looking this over!
-> 
-> I am updating the srcu_read_lock() docbook comments to call out the
-> potential for this problem, given that SRCU read-side critical sections
-> can acquire mutexes, which can be held across both synchronize_srcu()
-> and synchronize_srcu_expedited().
-> 
-> Seem reasonable?
+Done.
 
-Yep, thanks!
+---
 
-Mathieu
+This matters for the lockless page cache, in particular find_get_pages implementation.
 
-> 
-> 							Thanx, Paul
-> 
-> diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-> index 6f456a7..58971e8 100644
-> --- a/include/linux/srcu.h
-> +++ b/include/linux/srcu.h
-> @@ -139,7 +139,12 @@ static inline int srcu_read_lock_held(struct srcu_struct *sp)
->   * @sp: srcu_struct in which to register the new reader.
->   *
->   * Enter an SRCU read-side critical section.  Note that SRCU read-side
-> - * critical sections may be nested.
-> + * critical sections may be nested.  However, it is illegal to
-> + * call anything that waits on an SRCU grace period for the same
-> + * srcu_struct, whether directly or indirectly.  Please note that
-> + * one way to indirectly wait on an SRCU grace period is to acquire
-> + * a mutex that is held elsewhere while calling synchronize_srcu() or
-> + * synchronize_srcu_expedited().
->   */
->  static inline int srcu_read_lock(struct srcu_struct *sp) __acquires(sp)
->  {
-> 
-> > Thanks,
-> > 
-> > Mathieu
-> > 
-> > >   */
-> > >  static inline void rcu_read_lock(void)
-> > >  {
-> > > -- 
-> > > 1.7.0.6
-> > > 
-> > 
-> > -- 
-> > Mathieu Desnoyers
-> > Operating System Efficiency R&D Consultant
-> > EfficiOS Inc.
-> > http://www.efficios.com
+In the following case, we get can get a deadlock:
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+    0.  The radix tree contains two items, one has the index 0.
+    1.  The reader (in this case find_get_pages) takes the rcu_read_lock.
+    2.  The reader acquires slot(s) for item(s) including the index 0 item.
+    3.  The non-zero index item is deleted, and as a consequence the other item
+        is moved to the root of the tree.  The place where it used to be is
+        queued for deletion after the readers finish.
+    4.  The reader looks at the index 0 slot, and finds that the page has 0 ref count
+    5.  The reader looks at it again, hoping that the item will either be freed
+        or the ref count will increase.  This never happens, as the slot it
+        is looking at will never be updated.  Also, this slot can never be reclaimed
+        because the reader is holding rcu_read_lock and is in an infinite loop.
+
+This can be reproduced with reliably by running dbench followed by compilebench under
+autotest.  I have not been able to construct a small targeted repro case.
+
+There is also a similar potential issue with insertion.  Storing the first
+element in the root and then moving it to a new slot on insertion of a
+second element would potentially lead to a similar problem.
+
+Both of these issues have been fixed in this change.  For the delete case,
+we no longer shrink the tree back to being just the root containing the
+only remaining object.  For the insert case, we no longer store the
+first object in the root, rather allocating a node structure for it.  The
+reason that this works is that deleting (or inserting) intermediate nodes
+does not make a difference to a reader holding a slot.  The problem only
+occurs when a leaf node is inserted or deleted.  By making these changes
+we avoid insertion and deletion of new leaf nodes for values already
+in the tree.
+
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ lib/radix-tree.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index e907858..035d5aa 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -252,11 +252,6 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+ 	while (index > radix_tree_maxindex(height))
+ 		height++;
+ 
+-	if (root->rnode == NULL) {
+-		root->height = height;
+-		goto out;
+-	}
+-
+ 	do {
+ 		unsigned int newheight;
+ 		if (!(node = radix_tree_node_alloc(root)))
+@@ -278,7 +273,7 @@ static int radix_tree_extend(struct radix_tree_root *root, unsigned long index)
+ 		rcu_assign_pointer(root->rnode, node);
+ 		root->height = newheight;
+ 	} while (height > root->height);
+-out:
++
+ 	return 0;
+ }
+ 
+@@ -1154,7 +1149,7 @@ EXPORT_SYMBOL(radix_tree_gang_lookup_tag_slot);
+ static inline void radix_tree_shrink(struct radix_tree_root *root)
+ {
+ 	/* try to shrink tree height */
+-	while (root->height > 0) {
++	while (root->height > 1) {
+ 		struct radix_tree_node *to_free = root->rnode;
+ 		void *newptr;
+ 
+
