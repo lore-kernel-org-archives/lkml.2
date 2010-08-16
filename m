@@ -1,82 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485Ab0HPObq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:31:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10788 "EHLO mx1.redhat.com"
+	id S1754379Ab0HPOeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:34:17 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:50167 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753262Ab0HPObp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:31:45 -0400
-Date: Mon, 16 Aug 2010 10:30:52 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org, fweisbec@gmail.com
-Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
- and touch_softlockup_watchdog
-Message-ID: <20100816143052.GV4879@redhat.com>
-References: <20100813102158.GA5434@swordfish.minsk.epam.com>
- <1281946970.1926.998.camel@laptop>
- <20100816133452.GS4879@redhat.com>
- <1281966418.1926.1421.camel@laptop>
- <20100816140829.GA5225@swordfish.minsk.epam.com>
+	id S1754233Ab0HPOeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 10:34:16 -0400
+Message-ID: <4C694C60.6030207@austin.ibm.com>
+Date: Mon, 16 Aug 2010 09:34:08 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100816140829.GA5225@swordfish.minsk.epam.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH 0/8] v5 De-couple sysfs memory directories from memory
+ sections
+References: <4C60407C.2080608@austin.ibm.com> <20100812120816.e97d8b9e.akpm@linux-foundation.org>
+In-Reply-To: <20100812120816.e97d8b9e.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cc'ing Frederic
+On 08/12/2010 02:08 PM, Andrew Morton wrote:
+> On Mon, 09 Aug 2010 12:53:00 -0500
+> Nathan Fontenot <nfont@austin.ibm.com> wrote:
+> 
+>> This set of patches de-couples the idea that there is a single
+>> directory in sysfs for each memory section.  The intent of the
+>> patches is to reduce the number of sysfs directories created to
+>> resolve a boot-time performance issue.  On very large systems
+>> boot time are getting very long (as seen on powerpc hardware)
+>> due to the enormous number of sysfs directories being created.
+>> On a system with 1 TB of memory we create ~63,000 directories.
+>> For even larger systems boot times are being measured in hours.
+> 
+> And those "hours" are mainly due to this problem, I assume.
 
-On Mon, Aug 16, 2010 at 05:08:29PM +0300, Sergey Senozhatsky wrote:
-> Fix: acpi_os_stall calls touch_nmi_watchdog and touch_softlockup_watchdog
-> with preemption enabled causing 'BUG: using smp_processor_id() in preemptible
-> code'.
->      
-> Patch also removes double smp_processor_id call (smp_processor_id itself and in
-> __get_cpu_var) in __touch_watchdog.
-> 
-> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
-Acked-by: Don Zickus <dzickus@redhat.com>
+Yes, those hours are spent creating the sysfs directories for each
+of the memory sections.
 
 > 
-> ---
+>> This set of patches allows for each directory created in sysfs
+>> to cover more than one memory section.  The default behavior for
+>> sysfs directory creation is the same, in that each directory
+>> represents a single memory section.  A new file 'end_phys_index'
+>> in each directory contains the physical_id of the last memory
+>> section covered by the directory so that users can easily
+>> determine the memory section range of a directory.
 > 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index 613bc1f..8822f1e 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -116,13 +116,14 @@ static unsigned long get_sample_period(void)
->  static void __touch_watchdog(void)
->  {
->  	int this_cpu = smp_processor_id();
-> -
-> -	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
-> +	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
->  }
->  
->  void touch_softlockup_watchdog(void)
->  {
-> -	__get_cpu_var(watchdog_touch_ts) = 0;
-> +	int this_cpu = get_cpu();
-> +	per_cpu(watchdog_touch_ts, this_cpu) = 0;
-> +	put_cpu();
->  }
->  EXPORT_SYMBOL(touch_softlockup_watchdog);
->  
-> @@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  void touch_nmi_watchdog(void)
->  {
-> -	__get_cpu_var(watchdog_nmi_touch) = true;
-> +	int this_cpu = get_cpu();
-> +	per_cpu(watchdog_nmi_touch, this_cpu) = true;
-> +	put_cpu();
->  	touch_softlockup_watchdog();
->  }
->  EXPORT_SYMBOL(touch_nmi_watchdog);
+> What you're proposing appears to be a non-back-compatible
+> userspace-visible change.  This is a big issue!
 > 
+> It's not an unresolvable issue, as this is a must-fix problem.  But you
+> should tell us what your proposal is to prevent breakage of existing
+> installations.  A Kconfig option would be good, but a boot-time kernel
+> command line option which selects the new format would be much better.
+
+This shouldn't break existing installations, unless an architecture chooses
+to do so.  With my patch only the powerpc/pseries arch is updated such that
+what is seen in userspace is different.
+
+The default behavior is maintained for all architectures unless they define
+their own version of memory_block_size_bytes().  The default definition of
+this routine (defined as __weak in Patch 5/8) sets the memory block size
+to the same size it currently is, and thus preserving the exisitng 1 sysfs
+directory per memory section.  The only change that will be seen is a new
+propery for memory section, end_phys_addr, which will have the same value
+as the existing 'phys_addr' property.
+
+> 
+> However you didn't mention this issue at all, and it's the most
+> important one.
+> 
+> 
+>> Updates for version 5 of the patchset include the following:
+>>
+>> Patch 4/8 Add mutex for add/remove of memory blocks
+>> - Define the mutex using DEFINE_MUTEX macro.
+>>
+>> Patch 8/8 Update memory-hotplug documentation
+>> - Add information concerning memory holes in phys_index..end_phys_index.
+> 
+> And you forgot to tell us how long those machines boot with the
+> patchset applied, which is the entire point of the patchset!
+
+Yes,  I am working on getting more time on our large systems to get
+performance numbers with this patch.  I'll post them when I get them.
+
+-Nathan
