@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab0HPWCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 18:02:33 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:42428 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751956Ab0HPWCc (ORCPT
+	id S1756389Ab0HPWJU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 18:09:20 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:57961 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756103Ab0HPWJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 18:02:32 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] [RFC] cyber2000fb: avoid palette corruption at higher clocks
-Date: Tue, 17 Aug 2010 00:02:18 +0200
-User-Agent: KMail/1.9.10
-Cc: linux-fbdev@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201008162209.56902.linux@rainbow-software.org> <20100816210634.GB10119@n2100.arm.linux.org.uk>
-In-Reply-To: <20100816210634.GB10119@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Mon, 16 Aug 2010 18:09:19 -0400
+Subject: Re: lockdep false positive? -- firewire-core transaction timer vs.
+ scsi-core host lock
+From: Johannes Berg <johannes@sipsolutions.net>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <1281994939.1926.2075.camel@laptop>
+References: <tkrat.1e48e021935dc8b7@s5r6.in-berlin.de>
+	 <1281994939.1926.2075.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 00:09:10 +0200
+Message-ID: <1281996550.3683.43.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008170002.21501.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 16 August 2010 23:06:34 Russell King - ARM Linux wrote:
-> On Mon, Aug 16, 2010 at 10:09:54PM +0200, Ondrej Zary wrote:
-> > When 1280x1024@75Hz mode is set, console palette is not set properly -
-> > sometimes the background is white, sometimes yellow and text colors are
-> > also messed up. This does not happen at 1280x1024@60Hz and below.
->
-> I'm not going to have much time to look at your patches, and I
-> definitely want to test them on the NetWinder to make sure we
-> don't regress the primary platform that this driver is supporting.
->
-> I should have more time to look at them in September.
+On Mon, 2010-08-16 at 23:42 +0200, Peter Zijlstra wrote:
 
-Thanks, I'll put the cards to sleep and take them out later.
+> Which means that it now worries the following can happen:
+> 
+> softirq:
+>   spin_lock(&t->split_timeout_timer);
+> 
+> IRQ:
+>   spin_lock(&(shost->host_lock)->rlock);
+>    spin_lock(&t->split_timeout_timer);
+> 
+> Now, the thing is that split_timeout_timer is a fake lock used to
+> annotate timers, its use is to connect lock chains from within the timer
+> callback to del_timer_sync() callers, to detect deadlocks.
+> 
+> Now, I can't seem to remember why del_timer_sync() explicitly disables
+> IRQs but call_timer_fn() does not, Johill, happen to remember?
 
--- 
-Ondrej Zary
+Err, sorry, no. I do remember that we had long discussions and initially
+I had wanted to disable the context checking for these fake locks
+completely. I think it was just the minimal thing needed not to make it
+warn always. Also, we can't do the same thing in call_timer_fn() since
+we need to hold it across fn()? Wouldn't it complain if we held that
+lock then while enabling IRQs again? Not sure.
+
+I don't fully understand the scenario above yet though. Why does it
+think we could ever take the fake lock in an IRQ to start with? That
+must not happen. Or is that just preemptive worrying?
+
+johannes
+
