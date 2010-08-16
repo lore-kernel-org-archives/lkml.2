@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756627Ab0HPUce (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 16:32:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52984 "EHLO mx1.redhat.com"
+	id S1756685Ab0HPUcx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 16:32:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33762 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842Ab0HPUcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 16:32:33 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-acpi@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH] acpi: Update battery information on notification 0x81
-Date: Mon, 16 Aug 2010 16:32:19 -0400
-Message-Id: <1281990739-17912-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.57.107
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1756664Ab0HPUcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 16:32:52 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree - try 37!
+Date: Mon, 16 Aug 2010 22:32:36 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <20100807000624.GA14819@infradead.org> <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
+In-Reply-To: <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008162232.36873.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A notification event 0x81 from an ACPI battery device requires us to
-re-read the battery information structure. Do so, and if the battery's
-reporting units have changed (as is the case on some Thinkpads) destroy
-and recreate the battery in order to populate the fields correctly.
+On Saturday 07 August 2010 21:15:14 Eric Paris wrote:
+> On Fri, 2010-08-06 at 20:06 -0400, Christoph Hellwig wrote:
+> > I'm also totally missing on any re-post of these patches or discussion
+> > of the changes during the last development window.
+> 
+> I just searched lkml an fsdevel where I usually send everything don't
+> see then.  I totally failed.
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/acpi/battery.c |   22 +++++++++++++++++-----
- 1 files changed, 17 insertions(+), 5 deletions(-)
+Oh yes.
 
-diff --git a/drivers/acpi/battery.c b/drivers/acpi/battery.c
-index dc58402..69638c4 100644
---- a/drivers/acpi/battery.c
-+++ b/drivers/acpi/battery.c
-@@ -562,9 +562,10 @@ static void acpi_battery_quirks(struct acpi_battery *battery)
- 	}
- }
- 
--static int acpi_battery_update(struct acpi_battery *battery)
-+static int acpi_battery_update(struct acpi_battery *battery, bool get_info)
- {
- 	int result, old_present = acpi_battery_present(battery);
-+	int old_power_unit = battery->power_unit;
- 	result = acpi_battery_get_status(battery);
- 	if (result)
- 		return result;
-@@ -587,6 +588,16 @@ static int acpi_battery_update(struct acpi_battery *battery)
- 	if (!battery->bat.dev)
- 		sysfs_add_battery(battery);
- #endif
-+	if (get_info) {
-+		acpi_battery_get_info(battery);
-+#ifdef CONFIG_ACPI_SYSFS_POWER
-+		if (old_power_unit != battery->power_unit) {
-+			/* The battery has changed its reporting units */
-+			sysfs_remove_battery(battery);
-+			sysfs_add_battery(battery);
-+		}
-+#endif
-+	}
- 	return acpi_battery_get_state(battery);
- }
- 
-@@ -762,7 +773,7 @@ static print_func acpi_print_funcs[ACPI_BATTERY_NUMFILES] = {
- static int acpi_battery_read(int fid, struct seq_file *seq)
- {
- 	struct acpi_battery *battery = seq->private;
--	int result = acpi_battery_update(battery);
-+	int result = acpi_battery_update(battery, false);
- 	return acpi_print_funcs[fid](seq, result);
- }
- 
-@@ -877,7 +888,8 @@ static void acpi_battery_notify(struct acpi_device *device, u32 event)
- #ifdef CONFIG_ACPI_SYSFS_POWER
- 	old = battery->bat.dev;
- #endif
--	acpi_battery_update(battery);
-+	acpi_battery_update(battery, (event == ACPI_BATTERY_NOTIFY_INFO ? true
-+				      : false));
- 	acpi_bus_generate_proc_event(device, event,
- 				     acpi_battery_present(battery));
- 	acpi_bus_generate_netlink_event(device->pnp.device_class,
-@@ -908,7 +920,7 @@ static int acpi_battery_add(struct acpi_device *device)
- 	if (ACPI_SUCCESS(acpi_get_handle(battery->device->handle,
- 			"_BIX", &handle)))
- 		set_bit(ACPI_BATTERY_XINFO_PRESENT, &battery->flags);
--	acpi_battery_update(battery);
-+	acpi_battery_update(battery, false);
- #ifdef CONFIG_ACPI_PROCFS_POWER
- 	result = acpi_battery_add_fs(device);
- #endif
-@@ -951,7 +963,7 @@ static int acpi_battery_resume(struct acpi_device *device)
- 		return -EINVAL;
- 	battery = acpi_driver_data(device);
- 	battery->update_time = 0;
--	acpi_battery_update(battery);
-+	acpi_battery_update(battery, true);
- 	return 0;
- }
- 
--- 
-1.7.2.1
+This introduces two new syscalls which will be impossible to fix up after the 
+fact, and those system calls are poorly documented: commits 2a3edf86 and 
+52c923dd document the initial versions (in the commit message!), but 
+subsequent commits then extend that interface.  The interface for replying to 
+events is not documented at all beyond the example code [1].  There is no 
+documentation in Documentation/filesystems/, either.
 
+	[1] http://people.redhat.com/~eparis/fanotify/
+
+
+Q: What happens when a process watching for FAN_OPEN_PERM or FAN_ACCESS_PERM 
+events exits or dies while events are in flight?  I can't see anything in the 
+code that would wake sleeping processes up when the fsnotify_group of the 
+listener is torn down.
+
+
+Q: What prevents the system from going out of memory when a listener decides 
+to stop reading events or simply can't keep up?  There doesn't seem to be a 
+limit on the queue depth.  Listeners currently need CAP_SYS_ADMIN, but somehow 
+limiting the queue depth and throttling when things start to go bad still 
+sounds like a reasonable thing to do, right?)
+
+
+Don't get me wrong, I really appreciate your work on this (this shows through 
+the patches I've committed), and what we have now is a lot better than what we 
+had before.
+
+
+Thanks,
+Andreas
