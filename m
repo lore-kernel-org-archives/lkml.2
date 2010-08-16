@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab0HPQyf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:54:35 -0400
-Received: from bluebox.CS.Princeton.EDU ([128.112.136.38]:52635 "EHLO
-	bluebox.CS.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0HPQyd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:54:33 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 12:54:33 EDT
-From: "=?utf-8?Q?=22S.=C3=87a=C4=9Flar_Onur=22?=" <caglar@CS.Princeton.EDU>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Subject: 2.6.27.52-rc2
-Date: Mon, 16 Aug 2010 12:38:56 -0400
-Message-Id: <A3F5ED84-2D61-4527-B914-3B66F645FA0E@cs.princeton.edu>
-Cc: gregkh@suse.de
-To: linux-kernel@vger.kernel.org, stable@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org
-Mime-Version: 1.0 (Apple Message framework v1081)
-X-Mailer: Apple Mail (2.1081)
-X-Proofpoint-Virus-Version: vendor=nai engine=5400 definitions=6075 signatures=637934
-X-Proofpoint-Spam-Reason: safe
+	id S1755266Ab0HPQzj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:55:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38164 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751500Ab0HPQzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:55:31 -0400
+From: Tejun Heo <tj@kernel.org>
+To: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com
+Subject: [RFC PATCHSET block#for-2.6.36-post] block: convert to REQ_FLUSH/FUA
+Date: Mon, 16 Aug 2010 18:51:58 +0200
+Message-Id: <1281977523-19335-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.7.1
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 Aug 2010 16:55:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-I'm started to get following with 2.6.27.52-rc2 [1]. Just to note, this kernel is linux-vserver enabled but same patchset works fine with 2.6.27.51
+This patchset contains five patches to convert block drivers
+implementing REQ_HARDBARRIER to support REQ_FLUSH/FUA.
 
-BUG: sleeping function called from invalid context at mm/rmap.c:90
-in_atomic():1, irqs_disabled():0
-Pid: 1, comm: swapper Not tainted 2.6.27.51-22.planetlab #1
- [<c0417c16>] __might_sleep+0x97/0x9e
- [<c0468576>] anon_vma_prepare+0x1d/0xa8
- [<c0464e32>] expand_stack+0x12/0x87
- [<c04624c7>] handle_mm_fault+0x193/0x86c
- [<c0476343>] ? do_sync_read+0xab/0xe9
- [<c0461781>] ? follow_page+0x53/0x1e8
- [<c0462da5>] get_user_pages+0x205/0x2f4
- [<c04797af>] get_arg_page+0x2d/0x80
- [<c04d8d95>] ? strnlen_user+0x2b/0x49
- [<c04798c7>] copy_strings+0xc5/0x160
- [<c047997e>] copy_strings_kernel+0x1c/0x2b
- [<c047ac97>] do_execve+0xf2/0x1d3
- [<c0402133>] sys_execve+0x29/0x51
- [<c040393f>] carry_on+0xd/0x11
- [<c04700d8>] ? shmem_zero_setup+0x32/0x48
- [<c040643f>] ? kernel_execve+0x17/0x1c
- [<c04011fe>] ? run_init_process+0x17/0x19
- [<c040126a>] ? init_post+0x6a/0xd0
- [<c0404513>] ? kernel_thread_helper+0x7/0x10
- =======================
-…
-BUG: sleeping function called from invalid context at mm/rmap.c:90
-in_atomic():1, irqs_disabled():0
-Pid: 362, comm: init Not tainted 2.6.27.51-22.planetlab #1
- [<c0417c16>] __might_sleep+0x97/0x9e
- [<c0468576>] anon_vma_prepare+0x1d/0xa8
- [<c0464e32>] expand_stack+0x12/0x87
- [<c04624c7>] handle_mm_fault+0x193/0x86c
- [<c0476343>] ? do_sync_read+0xab/0xe9
- [<c0461781>] ? follow_page+0x53/0x1e8
- [<c0462da5>] get_user_pages+0x205/0x2f4
- [<c04797af>] get_arg_page+0x2d/0x80
- [<c04d8d95>] ? strnlen_user+0x2b/0x49
- [<c04798c7>] copy_strings+0xc5/0x160
- [<c047997e>] copy_strings_kernel+0x1c/0x2b
- [<c047ac97>] do_execve+0xf2/0x1d3
- [<c0402133>] sys_execve+0x29/0x51
- [<c0403895>] sysenter_do_call+0x12/0x25
- [<c0610000>] ? i8042_probe+0x179/0x4f6
- =======================
-…
+  0001-block-loop-implement-REQ_FLUSH-FUA-support.patch
+  0002-virtio_blk-implement-REQ_FLUSH-FUA-support.patch
+  0003-lguest-replace-VIRTIO_F_BARRIER-support-with-VIRTIO_.patch
+  0004-md-implment-REQ_FLUSH-FUA-support.patch
+  0005-dm-implement-REQ_FLUSH-FUA-support.patch
 
+I'm fairly sure about conversions 0001-0003.  0004 should be okay
+although multipath wasn't tested.  0005, I'm not quite sure about.  It
+works fine for the tests I've done but there are many other targets
+and code paths that I didn't test.  So, please be careful with the
+last patch.  I think it would be best to route the last two through
+the respective md/dm trees after the core part is merged and pulled
+into those trees.
 
-[1] http://www.cs.princeton.edu/~caglar/dmesg-52-rc2
+The nice thing about the conversion is that in many cases it replaces
+postflush with FUA writes which can be handled by request queues lower
+in the chain.  For md/dm, this replaces an array wide cacheflush with
+FUA writes to only affected member devices.
 
-Best regards.
+After this patchset, the followings remain to be converted.
+
+* blktrace
+
+* scsi_error.c for some reason tests REQ_HARDBARRIER.  I think this
+  part can be dropped altogether but am not sure.
+
+* drbd and xen.  I have no idea.
+
+These patches are on top of
+
+  block#for-2.6.36-post (c047ab2dddeeafbd6f7c00e45a13a5c4da53ea0b)
++ block-replace-barrier-with-sequenced-flush patchset[1]
++ block-fix-incorrect-bio-request-flag-conversion-in-md patch[2]
+
+and available in the following git tree.
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua
+
+and contain the following changes.
+
+ Documentation/lguest/lguest.c   |   36 +++-----
+ drivers/block/loop.c            |   18 ++--
+ drivers/block/virtio_blk.c      |   26 ++---
+ drivers/md/dm-crypt.c           |    2 
+ drivers/md/dm-io.c              |   20 ----
+ drivers/md/dm-log.c             |    2 
+ drivers/md/dm-raid1.c           |    8 -
+ drivers/md/dm-region-hash.c     |   16 +--
+ drivers/md/dm-snap-persistent.c |    2 
+ drivers/md/dm-snap.c            |    6 -
+ drivers/md/dm-stripe.c          |    2 
+ drivers/md/dm.c                 |  180 ++++++++++++++++++++--------------------
+ drivers/md/linear.c             |    4 
+ drivers/md/md.c                 |  117 +++++---------------------
+ drivers/md/md.h                 |   23 +----
+ drivers/md/multipath.c          |    4 
+ drivers/md/raid0.c              |    4 
+ drivers/md/raid1.c              |  175 +++++++++++++-------------------------
+ drivers/md/raid1.h              |    2 
+ drivers/md/raid10.c             |    7 -
+ drivers/md/raid5.c              |   38 ++++----
+ drivers/md/raid5.h              |    1 
+ include/linux/virtio_blk.h      |    6 +
+ 23 files changed, 278 insertions(+), 421 deletions(-)
+
 --
-S.Çağlar Onur <caglar@cs.princeton.edu>
+tejun
 
+[1] http://thread.gmane.org/gmane.linux.kernel/1022363
+[2] http://thread.gmane.org/gmane.linux.kernel/1023435
