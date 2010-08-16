@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498Ab0HPOrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:47:33 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:60508 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753417Ab0HPOrc (ORCPT
+	id S1754558Ab0HPOrv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:47:51 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:47987 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754539Ab0HPOru convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:47:32 -0400
-Subject: [ANNOUNCE] LCOV-1.9 Release
-From: Subrata Modak <subrata@linux.vnet.ibm.com>
-Reply-To: subrata@linux.vnet.ibm.com
-To: ltp-list <ltp-list@lists.sf.net>,
-        ltp-coverage <ltp-coverage@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Peter 1 Oberparleiter <Peter.Oberparleiter@de.ibm.com>,
-        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-In-Reply-To: <OF8DB9D8BE.6083BC4D-ONC1257777.003EF281-C1257777.003F5F8C@de.ibm.com>
-References: <OF8DB9D8BE.6083BC4D-ONC1257777.003EF281-C1257777.003F5F8C@de.ibm.com>
-Content-Type: text/plain
-Organization: IBM
-Date: Mon, 16 Aug 2010 19:32:08 +0530
-Message-Id: <1281967328.5120.9.camel@subratamodak.linux.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.2) 
-Content-Transfer-Encoding: 7bit
+	Mon, 16 Aug 2010 10:47:50 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 5/9] RapidIO: Add default handler for error_stopped state
+Date: Mon, 16 Aug 2010 07:47:18 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D5F71@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4C692D4D.1030401@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 5/9] RapidIO: Add default handler for error_stopped state
+thread-index: Acs9PTDlN7R3QHFvSWK4xhBF5h3sdgAFEDWA
+References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-6-git-send-email-alexandre.bounine@idt.com> <4C692D4D.1030401@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@ozlabs.org>,
+        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear All,
-
-Peter has worked hard to release LCOV-1.9 for you. Please pick your
-copies directly from:
-
-https://sourceforge.net/projects/ltp/files/Coverage%
-20Analysis/LCOV-1.9/lcov-1.9.tar.gz/download,
-https://sourceforge.net/projects/ltp/files/Coverage%
-20Analysis/LCOV-1.9/lcov-1.9-1.src.rpm/download,
-https://sourceforge.net/projects/ltp/files/Coverage%
-20Analysis/LCOV-1.9/lcov-1.9-1.noarch.rpm/download
-
-or from:
-https://sourceforge.net/projects/ltp/files/,
-http://ltp.sourceforge.net/,
-
-Here's a quick summary of the new version:
-
-LCOV 1.9 includes:
-- bugfixes for several important issues (see CHANGES file for details)
-- improvement of list output
-
-Regards--
-Subrata
-
-
+Micha Nelissen wrote:
+> 
+> Alexandre Bounine wrote:
+> > +
+> > +	if (err_status & RIO_PORT_N_ERR_STS_PW_OUT_ES) {
+> > +		pr_debug("RIO_EM: servicing Output Error-Stopped
+state\n");
+> > +		/*
+> > +		 * Send a Link-Request/Input-Status control symbol
+> > +		 */
+> > +
+> > +		/* Read from link maintenance response register
+> > +		 * to clear valid bit */
+> > +		rio_mport_read_config_32(mport, destid, hopcount,
+> > +			rdev->phys_efptr + RIO_PORT_N_MNT_RSP_CSR(pnum),
+> > +			&regval);
+> > +		udelay(50);
+> 
+> Perhaps this whole part of operating the MNT_RSP registers (sending
+> link-request symbol is the only useful action IIRC?) can be put in a
+> separate function for readability.
+> 
+I was on the fence with this one. Now I have an extra vote in favor of a
+separate function ;)
+Will do.
+ 
