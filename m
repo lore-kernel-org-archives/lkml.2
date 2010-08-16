@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab0HPIWv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:22:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62211 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752893Ab0HPIWu (ORCPT
+	id S1753172Ab0HPIXE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 04:23:04 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40000 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab0HPIXD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:22:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=Cbgpz/8EjqvCHTo5RVKytU9fiyWagTvSI3sDCiffJZCSyi36WZ3+COEQE/bklajx4/
-         t9+at+++TZEYtj4KLE2CFvFGUBeUKHDY2S9SGPO3puh6hZyYpZwiuCNVu6SVumm/r2bD
-         rCsr0Lgz7jhQUKBByxVct+Gtx3GDzM6mO/tDQ=
-Subject: [PATCH] Kconfig: deleted a word which apeared twice
-From: Stephan Sperber <sperberstephan@googlemail.com>
-To: linux-kernel@vger.kernel.org
+	Mon, 16 Aug 2010 04:23:03 -0400
+Subject: Re: fix BUG: using smp_processor_id() in touch_nmi_watchdog and
+ touch_softlockup_watchdog
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>
+In-Reply-To: <20100813102158.GA5434@swordfish.minsk.epam.com>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 10:22:45 +0200
-Message-ID: <1281946965.1799.11.camel@monkey>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 16 Aug 2010 10:22:50 +0200
+Message-ID: <1281946970.1926.998.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Fri, 2010-08-13 at 13:21 +0300, Sergey Senozhatsky wrote:
 
-please be not too hard on me with this patch. it is my first one.
-at least give me input what needs to be better.
-thanks in advance
+> [   67.703556] BUG: using smp_processor_id() in preemptible [00000000] code: s2disk/5139
+> [   67.703563] caller is touch_nmi_watchdog+0x15/0x2c
+> [   67.703566] Pid: 5139, comm: s2disk Not tainted 2.6.36-rc0-git12-07921-g60bf26a-dirty #116
+> [   67.703568] Call Trace:
+> [   67.703575]  [<ffffffff811f6bf1>] debug_smp_processor_id+0xc9/0xe4
+> [   67.703578]  [<ffffffff81092766>] touch_nmi_watchdog+0x15/0x2c
+> [   67.703584]  [<ffffffff81222950>] acpi_os_stall+0x34/0x40
+> [   67.703589]  [<ffffffff812398d2>] acpi_ex_system_do_stall+0x34/0x38
 
-Stephan
-ps: i am not subscribed to the list
-
->From e81719fabd94594b342114c6060c21da72dc9257 Mon Sep 17 00:00:00 2001
-From: Stephan Sperber <sperberstephan@googlemail.com>
-Date: Wed, 14 Jul 2010 11:23:08 +0200
-Subject: [PATCH] Kconfig: deleted a word which apeared twice
-
-Deleted a word which apeared twice.
-
-Signed-off-by: Stephan Sperber <sperberstephan@googlemail.com>
----
- init/Kconfig |    2 +-
- usr/Kconfig  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/init/Kconfig b/init/Kconfig
-index 5cff9a9..5d78655 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -179,7 +179,7 @@ config KERNEL_LZO
- 	depends on HAVE_KERNEL_LZO
- 	help
- 	  Its compression ratio is the poorest among the 4. The kernel
--	  size is about about 10% bigger than gzip; however its speed
-+	  size is about 10% bigger than gzip; however its speed
- 	  (both compression and decompression) is the fastest.
- 
- endchoice
-diff --git a/usr/Kconfig b/usr/Kconfig
-index e2721f5..c2c7fe2 100644
---- a/usr/Kconfig
-+++ b/usr/Kconfig
-@@ -144,7 +144,7 @@ config INITRAMFS_COMPRESSION_LZO
- 	depends on RD_LZO
- 	help
- 	  Its compression ratio is the poorest among the four. The kernel
--	  size is about about 10% bigger than gzip; however its speed
-+	  size is about 10% bigger than gzip; however its speed
- 	  (both compression and decompression) is the fastest.
- 
- endchoice
--- 
-1.7.0.4
+Which could mean two things, either ACPI got funny on us, or Don's new
+watchdog stuff has a hole in it.
 
 
+> ---
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 613bc1f..8822f1e 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -116,13 +116,14 @@ static unsigned long get_sample_period(void)
+>  static void __touch_watchdog(void)
+>  {
+>  	int this_cpu = smp_processor_id();
+> -
+> -	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+> +	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
+>  }
+
+That change seems sensible enough..
+
+>  void touch_softlockup_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_touch_ts) = 0;
+> +	int this_cpu = get_cpu();
+> +	per_cpu(watchdog_touch_ts, this_cpu) = 0;
+> +	put_cpu();
+>  }
+>  EXPORT_SYMBOL(touch_softlockup_watchdog);
+>  
+> @@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  void touch_nmi_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_nmi_touch) = true;
+> +	int this_cpu = get_cpu();
+> +	per_cpu(watchdog_nmi_touch, this_cpu) = true;
+> +	put_cpu();
+>  	touch_softlockup_watchdog();
+>  }
+>  EXPORT_SYMBOL(touch_nmi_watchdog);
+
+These other two really are about assumptions we make on the call sites,
+which at the very least are violated by ACPI.
+
+Don/Ingo, remember if we require touch_*_watchdog callers to have
+preemption disabled? Or is the proposed patch sensible?
 
