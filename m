@@ -1,80 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab0HPHlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 03:41:47 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:51680 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752741Ab0HPHlq (ORCPT
+	id S1752829Ab0HPHmy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 03:42:54 -0400
+Received: from relay-2.mailobj.net ([195.234.90.137]:54565 "EHLO
+	relay-2.mailobj.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752769Ab0HPHmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 03:41:46 -0400
-From: Tao Ma <tao.ma@oracle.com>
+	Mon, 16 Aug 2010 03:42:53 -0400
+From: ydlydlydl@netcourrier.com
 To: linux-kernel@vger.kernel.org
-Cc: ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH] CMWQ: Set workqueue name before we process one work.
-Date: Mon, 16 Aug 2010 15:39:15 +0800
-Message-Id: <1281944355-4379-1-git-send-email-tao.ma@oracle.com>
-X-Mailer: git-send-email 1.7.0.4
+Date: Mon, 16 Aug 2010 09:39:25 +0200 (CEST)
+X-Priority: 3
+MIME-Version: 1.0
+X-Mailer: COMS/EA2.3.4
+Message-ID: <ea-mime-4c68eb2d-74be-4609b9ec@w-3.netcourrier.com>
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now in CMWQ, workqueue threads are named as 'kworker/*'. So it is
-a little boring to see in the 'top'(below) and actually it isn't
-meaningful for the users.
-12606 root      20   0     0    0    0 S    2  0.0   0:03.22 kworker/u:0
-12607 root      20   0     0    0    0 S    1  0.0   0:03.69 kworker/u:4
+Hello
 
-So this patch just try to set the proper workqueue name if it does
-exist. Yes, workqueue now is a thread pool and the data may be not
-accurate but I think it is better(below) than the 'kworker*' stuff.
-And if there is something block the workqueue, we can find the caller
-easily.
-12606 root      20   0     0    0    0 D    2  0.0   0:02.90 dlm_wq
-12607 root      20   0     0    0    0 D    0  0.0   0:03.21 ocfs2_wq
+Perhaps, Alan Stern could answer this question.
 
-What's more, in ocfs2, we sometimes want to print some debug info in
-the system log and we use 'current->comm' to print the thread and this
-change also does help.
+I just got some glasses with camera and here is my problem.
+When I plug this device with Windows all is fine: I can see the videos (the device acts as a storage device).
+When I plug it with Linux, I get a "USB disconnect, address n".
 
-The only thing I am not clear is that do we need [gs]et_task_comm?
-I guess not and this patch just try to use strlcpy without task_lock.
+I have already read Alan's answer "http://www.spinics.net/lists/linux-usb/msg29298.html" but without any success ("options usb-storage delay_use=different values").
 
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Tao Ma <tao.ma@oracle.com>
----
- kernel/workqueue.c |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+Any suggestion?
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2994a0e..69402f8 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1730,6 +1730,7 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
- 	work_func_t f = work->func;
- 	int work_color;
- 	struct worker *collision;
-+	char comm_saved[TASK_COMM_LEN];
- #ifdef CONFIG_LOCKDEP
- 	/*
- 	 * It is permissible to free the struct work_struct from
-@@ -1790,7 +1791,16 @@ static void process_one_work(struct worker *worker, struct work_struct *work)
- 	work_clear_pending(work);
- 	lock_map_acquire(&cwq->wq->lockdep_map);
- 	lock_map_acquire(&lockdep_map);
-+	if (cwq->wq->name) {
-+		strlcpy(comm_saved, worker->task->comm,
-+			sizeof(comm_saved));
-+		strlcpy(worker->task->comm, cwq->wq->name,
-+			sizeof(worker->task->comm));
-+	}
- 	f(work);
-+	if (cwq->wq->name)
-+		strlcpy(worker->task->comm, comm_saved,
-+			sizeof(worker->task->comm));
- 	lock_map_release(&lockdep_map);
- 	lock_map_release(&cwq->wq->lockdep_map);
- 
--- 
-1.7.1.GIT
+Thanks in advance.
+
+YDL
+
+
+"dmesg" output:
+usb 1-6: new high speed USB device using ehci_hcd and address 7
+usb 1-6: New USB device found, idVendor=0851, idProduct=1542
+usb 1-6: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+usb 1-6: Product: iMagic Product
+usb 1-6: Manufacturer: MagicPixel
+usb 1-6: SerialNumber: FW_Omega2
+scsi8 : usb-storage 1-6:1.0
+usb 1-6: USB disconnect, address 7
+
+
+"usbview" output for this device:
+iMagic Product
+Manufacturer: MagicPixel
+Serial Number: FW_Omega2
+Speed: 12Mb/s (full)
+USB Version:  2.00
+Device Class: 00(>ifc )
+Device Subclass: 00
+Device Protocol: 00
+Maximum Default Endpoint Size: 64
+Number of Configurations: 1
+Vendor Id: 0851
+Product Id: 1542
+Revision Number:  2.00
+
+Config Number: 1
+    Number of Interfaces: 1
+    Attributes: c0
+    MaxPower Needed:  32mA
+
+    Interface Number: 0
+        Name: usb-storage
+        Alternate Number: 0
+        Class: 08(stor.)
+        Sub Class: 06
+        Protocol: 50
+        Number of Endpoints: 2
+
+            Endpoint Address: 01
+            Direction: out
+            Attribute: 2
+            Type: Bulk
+            Max Packet Size: 64
+            Interval: 0ms
+
+            Endpoint Address: 82
+            Direction: in
+            Attribute: 2
+            Type: Bulk
+            Max Packet Size: 64
+            Interval: 0ms
+
+
+"uname -a" output:
+Linux localhost 2.6.33.5-server-2mnb #1 SMP Thu Jun 17 23:12:08 UTC 2010 i686 i686 i386 GNU/Linux
+
+
+"lsb_release -a":
+LSB Version:    lsb-4.0-ia32:lsb-4.0-noarch:*
+Distributor ID: MandrivaLinux
+Description:    Mandriva Linux 2010.1
+Release:        2010.1
+Codename:       Henry_Farman
+
+
 
