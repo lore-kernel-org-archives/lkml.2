@@ -1,128 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab0HPBlr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 21:41:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51752 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab0HPBlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 21:41:46 -0400
-Message-ID: <4C689653.2000400@cn.fujitsu.com>
-Date: Mon, 16 Aug 2010 09:37:23 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1752108Ab0HPBn6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 21:43:58 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:48158 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883Ab0HPBn5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 21:43:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=X9xg3N3RMoUjR3NJD8TNLlQ6i23oNrCVROcmgKVP8qrW2kRjCoUk75F5E3EL9l6uxR
+         LSr+Uh28S0d+rupwQ+i8TalxodKASkn0J2PrS1Y+/TWi4kVpvnpQSiVa0x54L9OEntO8
+         S++v/GsdbaJaeEaNSgck9cvaQ0y9hMlCeN9SY=
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v6 3/3] KVM: MMU: prefetch ptes when intercepted guest
- #PF
-References: <4C58DE49.1020705@cn.fujitsu.com> <4C58DF26.3060305@cn.fujitsu.com> <4C58DF89.4080404@cn.fujitsu.com> <20100805143850.GA1648@amt.cnet>
-In-Reply-To: <20100805143850.GA1648@amt.cnet>
+In-Reply-To: <F0CB3B1C601247indou.takao@jp.fujitsu.com>
+References: <F0CB3B1C601247indou.takao@jp.fujitsu.com>
+Date: Mon, 16 Aug 2010 09:43:56 +0800
+Message-ID: <AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>
+Subject: Re: [PATCH][EFI] Run EFI in physical mode
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, vgoyal@redhat.com, nhorman@tuxdriver.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marcelo,
+On Sat, Aug 14, 2010 at 3:18 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+> diff -Nurp linux-2.6.35.org/arch/x86/kernel/efi_64.c linux-2.6.35/arch/x86/kernel/efi_64.c
+> --- linux-2.6.35.org/arch/x86/kernel/efi_64.c   2010-08-01 18:11:14.000000000 -0400
+> +++ linux-2.6.35/arch/x86/kernel/efi_64.c       2010-08-13 14:39:25.819105004 -0400
+> @@ -39,7 +39,9 @@
+>  #include <asm/fixmap.h>
+>
+>  static pgd_t save_pgd __initdata;
+> -static unsigned long efi_flags __initdata;
+> +static unsigned long efi_flags;
+> +static pgd_t efi_pgd[PTRS_PER_PGD] __page_aligned_bss;
+> +static unsigned long save_cr3;
+>
+>  static void __init early_mapping_set_exec(unsigned long start,
+>                                          unsigned long end,
+> @@ -98,6 +100,19 @@ void __init efi_call_phys_epilog(void)
+>        early_runtime_code_mapping_set_exec(0);
+>  }
+>
+> +void efi_call_phys_prelog_in_physmode(void)
+> +{
+> +       local_irq_save(efi_flags);
+> +       save_cr3 = read_cr3();
+> +       write_cr3(virt_to_phys(efi_pgd));
+> +}
+> +
+> +void efi_call_phys_epilog_in_physmode(void)
+> +{
+> +       write_cr3(save_cr3);
+> +       local_irq_restore(efi_flags);
+> +}
 
-Thanks for your review and sorry for the delay reply.
+efi_flags and save_cr3 should be per-CPU, because they now will be
+used after SMP is enabled.
 
-Marcelo Tosatti wrote:
+efi_pgd should be dynamically allocated instead of statically
+allocated, because EFI may be not enabled on some platform.
 
->> +static struct kvm_memory_slot *
->> +pte_prefetch_gfn_to_memslot(struct kvm_vcpu *vcpu, gfn_t gfn, bool no_dirty_log)
->> +{
->> +	struct kvm_memory_slot *slot;
->> +
->> +	slot = gfn_to_memslot(vcpu->kvm, gfn);
->> +	if (!slot || slot->flags & KVM_MEMSLOT_INVALID ||
->> +	      (no_dirty_log && slot->dirty_bitmap))
->> +		slot = NULL;
-> 
-> Why is this no_dirty_log optimization worthwhile?
-> 
+And I think it is better to unify early physical mode with run-time
+physical mode. Just allocate the page table with early page allocator
+(lmb?).
 
-We disable prefetch the writable pages since 'pte prefetch' will hurt slot's
-dirty page tracking that it set the dirty_bitmap bit but the corresponding page
-is not really accessed.
-
->> +
->> +	return slot;
->> +}
->> +
->> +static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
->> +				     bool no_dirty_log)
->> +{
->> +	struct kvm_memory_slot *slot;
->> +	unsigned long hva;
->> +
->> +	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, no_dirty_log);
->> +	if (!slot) {
->> +		get_page(bad_page);
->> +		return page_to_pfn(bad_page);
->> +	}
->> +
->> +	hva = gfn_to_hva_memslot(slot, gfn);
->> +
->> +	return hva_to_pfn_atomic(vcpu->kvm, hva);
->> +}
->> +
->> +static int direct_pte_prefetch_many(struct kvm_vcpu *vcpu,
->> +				    struct kvm_mmu_page *sp,
->> +				    u64 *start, u64 *end)
->> +{
->> +	struct page *pages[PTE_PREFETCH_NUM];
->> +	struct kvm_memory_slot *slot;
->> +	unsigned hva, access = sp->role.access;
->> +	int i, ret, npages = end - start;
->> +	gfn_t gfn;
->> +
->> +	gfn = kvm_mmu_page_get_gfn(sp, start - sp->spt);
->> +	slot = pte_prefetch_gfn_to_memslot(vcpu, gfn, access & ACC_WRITE_MASK);
->> +	if (!slot || slot->npages - (gfn - slot->base_gfn) != npages)
->> +		return -1;
->> +
->> +	hva = gfn_to_hva_memslot(slot, gfn);
->> +	ret = __get_user_pages_fast(hva, npages, 1, pages);
->> +	if (ret <= 0)
->> +		return -1;
-> 
-> Better do one at a time with hva_to_pfn_atomic. Or, if you measure that
-> its worthwhile, do on a separate patch (using a helper as discussed
-> previously).
-> 
-
-Since it should disable 'prefetch' for the writable pages, so i'm not put these
-operations into a common function and define it in kvm_main.c file.
-
-Maybe we do better do these in a wrap function named pte_prefetch_gfn_to_pages()?
-
->> @@ -302,14 +303,87 @@ static void FNAME(update_pte)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
->>  static bool FNAME(gpte_changed)(struct kvm_vcpu *vcpu,
->>  				struct guest_walker *gw, int level)
->>  {
->> -	int r;
->>  	pt_element_t curr_pte;
->> -
->> -	r = kvm_read_guest_atomic(vcpu->kvm, gw->pte_gpa[level - 1],
->> +	gpa_t base_gpa, pte_gpa = gw->pte_gpa[level - 1];
->> +	u64 mask;
->> +	int r, index;
->> +
->> +	if (level == PT_PAGE_TABLE_LEVEL) {
->> +		mask = PTE_PREFETCH_NUM * sizeof(pt_element_t) - 1;
->> +		base_gpa = pte_gpa & ~mask;
->> +		index = (pte_gpa - base_gpa) / sizeof(pt_element_t);
->> +
->> +		r = kvm_read_guest_atomic(vcpu->kvm, base_gpa,
->> +				gw->prefetch_ptes, sizeof(gw->prefetch_ptes));
->> +		curr_pte = gw->prefetch_ptes[index];
-> 
-> This can slowdown a single non-prefetchable pte fault. Maybe its
-> irrelevant, but please have kvm_read_guest_atomic in the first patch and
-> then later optimize, its easier to review and bisectable.
-> 
-
-OK, i'll separate it.
-
+Best Regards,
+Huang Ying
