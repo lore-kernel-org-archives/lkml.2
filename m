@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab0HPF2p (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 01:28:45 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:38541 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981Ab0HPF2o convert rfc822-to-8bit (ORCPT
+	id S1752509Ab0HPF3l (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 01:29:41 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:57691 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010Ab0HPF3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 01:28:44 -0400
+	Mon, 16 Aug 2010 01:29:40 -0400
+Date: Mon, 16 Aug 2010 14:29:47 +0900
 From: Kukjin Kim <kgene.kim@samsung.com>
-To: "=?utf-8?Q?'Uwe_Kleine-K=C3=B6nig'?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        linux-kernel@vger.kernel.org
-Cc: "'Maxim Levitsky'" <maximlevitsky@gmail.com>,
-        "'David Brownell'" <david-b@pacbell.net>,
-        "'Alan Stern'" <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>
-References: <1276809814-28683-1-git-send-email-maximlevitsky@gmail.com>
- <1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de>
-In-reply-to: <1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de>
-Subject: RE: [PATCH] mmc: build fix: mmc_pm_notify is only available with
- CONFIG_PM=y
-Date: Mon, 16 Aug 2010 14:28:33 +0900
-Message-id: <003901cb3d03$ec038140$c40a83c0$%kim@samsung.com>
+Subject: RE: undefined reference to `mmc_pm_notify' when selected MMC	without
+ PM.
+In-reply-to: <20100816051721.GA17903@pengutronix.de>
+To: "=?ISO-8859-1?Q?'Uwe_Kleine-K=F6nig'?=" 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Maxim Levitsky'" <maximlevitsky@gmail.com>, ben-linux@fluff.org
+Message-id: <003a01cb3d04$0e0b5ba0$2a2212e0$%kim@samsung.com>
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 8BIT
 X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Acs6yWqDpJkkbk6iQ/2IwdLzSypqtwCOhAxw
+Content-type: text/plain; charset=ISO-8859-1
 Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acs9Al7OgwR6ua1dRW67FESg0sLkUgAAYEKg
+References: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com>
+ <20100816051721.GA17903@pengutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Uwe Kleine-Konig wrote:
 > 
-> This fixes a build breakage introduced by
+> Hello,
 > 
-> 	4c2ef25 (mmc: fix all hangs related to mmc/sd card insert/removal during
-> suspend/resume)
-> 
-> Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-> Cc: David Brownell <david-b@pacbell.net>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: linux-mmc@vger.kernel.org
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Hi :-)
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
-
-> ---
->  drivers/mmc/core/host.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> On Fri, Aug 13, 2010 at 08:33:40PM +0900, Kukjin Kim wrote:
+> > Kukjin Kim wrote:
+> > >
+> > > Hi,
+> > >
+> > > Following is build error when selected MMC without PM.
+> > >
+> > > drivers/built-in.o: In function `mmc_alloc_host':
+> > > drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
+> > > make[1]: *** [.tmp_vmlinux1] Error 1
+> > > make: *** [sub-make] Error 2
+> > >
+> > > That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
+> > > insert/removal during suspend/resume '
+> > > (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
+> > >
+> > > Below is temporary patch for avoiding build error.
+> > > But I'm not sure about this... :-(
+> > >
+> > > ---
+> > >
+> > > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> > > index 0efe631..d80cfdc 100644
+> > > --- a/drivers/mmc/core/host.c
+> > > +++ b/drivers/mmc/core/host.c
+> > > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct
+> device
+> > > *dev)
+> > >         init_waitqueue_head(&host->wq);
+> > >         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+> > >         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
+> > > mmc_host_deeper_disable);
+> > > +#ifdef CONFIG_PM
+> > >         host->pm_notify.notifier_call = mmc_pm_notify;
+> > > +#endif
+> > >
+> > >         /*
+> > >          * By default, hosts do not support SGIO or large requests.
+> > >
+> > > ---
+> >
+> > Kindly ignore this stuff because I found Uwe's same patch just now ;-)
+> > Sorry for bothering.
+> For those who care:
 > 
-> diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> index 0efe631..d80cfdc 100644
-> --- a/drivers/mmc/core/host.c
-> +++ b/drivers/mmc/core/host.c
-> @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
-> *dev)
->  	init_waitqueue_head(&host->wq);
->  	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
->  	INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
-> mmc_host_deeper_disable);
-> +#ifdef CONFIG_PM
->  	host->pm_notify.notifier_call = mmc_pm_notify;
-> +#endif
+> 	http://mid.gmane.org/1281691473-15481-1-git-send-email-u.kleine-
+> koenig@pengutronix.de
 > 
->  	/*
->  	 * By default, hosts do not support SGIO or large requests.
-> --
-> 1.7.1
+> Kgene, do you care to ack this change as it may prod akpm in taking the
+> fix a bit earlier?
 > 
+Sure, I did it.
 
 Thanks.
 
