@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab0HPVHr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:07:47 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34512 "EHLO
+	id S1756876Ab0HPVHp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:07:45 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34508 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756722Ab0HPVHm (ORCPT
+	with ESMTP id S1756691Ab0HPVHm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 16 Aug 2010 17:07:42 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 3/5] arm,kgdb: fix GDB_MAX_REGS no longer used
-Date: Mon, 16 Aug 2010 16:06:27 -0500
-Message-Id: <1281992789-2471-4-git-send-email-jason.wessel@windriver.com>
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 4/5] vt: fix regression warnings from KMS merge
+Date: Mon, 16 Aug 2010 16:06:28 -0500
+Message-Id: <1281992789-2471-5-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1281992789-2471-3-git-send-email-jason.wessel@windriver.com>
+In-Reply-To: <1281992789-2471-4-git-send-email-jason.wessel@windriver.com>
 References: <1281992789-2471-1-git-send-email-jason.wessel@windriver.com>
  <1281992789-2471-2-git-send-email-jason.wessel@windriver.com>
  <1281992789-2471-3-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 16 Aug 2010 21:06:37.0322 (UTC) FILETIME=[EA224EA0:01CB3D86]
+ <1281992789-2471-4-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 16 Aug 2010 21:06:38.0135 (UTC) FILETIME=[EA9E5C70:01CB3D86]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Miao <eric.y.miao@gmail.com>
+Fix the following new sparse warnings in vt.c introduced by the commit
+b45cfba4e9005d64d419718e7ff7f7cab44c1994 (vt,console,kdb: implement
+atomic console enter/leave functions):
 
-According to commit 22eeef4bb2a7fd225089c0044060ed1fbf091958
+drivers/char/vt.c:197:5: warning: symbol 'saved_fg_console' was not declared. Should it be static?
+drivers/char/vt.c:198:5: warning: symbol 'saved_last_console' was not declared. Should it be static?
+drivers/char/vt.c:199:5: warning: symbol 'saved_want_console' was not declared. Should it be static?
+drivers/char/vt.c:200:5: warning: symbol 'saved_vc_mode' was not declared. Should it be static?
 
-    kgdb,arm: Individual register get/set for arm
-
-It's now replaced by DBG_MAX_REG_NUM.
-
-Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
 Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
 ---
- arch/arm/kernel/kgdb.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/char/vt.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/kernel/kgdb.c b/arch/arm/kernel/kgdb.c
-index 778c2f7..d6e8b4d 100644
---- a/arch/arm/kernel/kgdb.c
-+++ b/arch/arm/kernel/kgdb.c
-@@ -79,7 +79,7 @@ sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *task)
- 		return;
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index c734f9b..3af1a22 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -194,10 +194,10 @@ static DECLARE_WORK(console_work, console_callback);
+ int fg_console;
+ int last_console;
+ int want_console = -1;
+-int saved_fg_console;
+-int saved_last_console;
+-int saved_want_console;
+-int saved_vc_mode;
++static int saved_fg_console;
++static int saved_last_console;
++static int saved_want_console;
++static int saved_vc_mode;
  
- 	/* Initialize to zero */
--	for (regno = 0; regno < GDB_MAX_REGS; regno++)
-+	for (regno = 0; regno < DBG_MAX_REG_NUM; regno++)
- 		gdb_regs[regno] = 0;
- 
- 	/* Otherwise, we have only some registers from switch_to() */
+ /*
+  * For each existing display, we have a pointer to console currently visible
 -- 
 1.6.3.3
 
