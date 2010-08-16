@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756853Ab0HPVJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:09:17 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61693 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755860Ab0HPVJP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:09:15 -0400
-Date: Mon, 16 Aug 2010 15:09:12 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ernst Schwab <eschwab@online.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        spi-devel-general@lists.sourceforge.net,
-        lkml <linux-kernel@vger.kernel.org>,
-        David Brownell <dbrownell@users.sourceforge.net>
-Subject: Re: spi.h: missing kernel-doc notation, please fix
-Message-ID: <20100816210912.GB17571@angua.secretlab.ca>
-References: <20100815103156.37ae14cd.rdunlap@xenotime.net>
- <20100816151011.68e6c722.eschwab@online.de>
+	id S932250Ab0HPVNK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:13:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:45802 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752372Ab0HPVNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 17:13:09 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [linux-pm] Attempted summary of suspend-blockers LKML thread, take three
+Date: Mon, 16 Aug 2010 23:11:27 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Ted Ts'o" <tytso@mit.edu>, david@lang.hm, arjan@infradead.org,
+        peterz@infradead.org, Brian Swetland <swetland@google.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-kernel@vger.kernel.org, galibert@pobox.com, florian@mickler.org,
+        tglx@linutronix.de, menage@google.com, paulmck@linux.vnet.ibm.com,
+        linux-pm@lists.linux-foundation.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, swmike@swm.pp.se
+References: <AANLkTi=RD=eM_gpc7FfRq0923sUbARmZ2+4-m+fLibYC@mail.gmail.com> <20100813190801.GB26950@thunk.org> <1281746599.16747.11.camel@mulgrave.site>
+In-Reply-To: <1281746599.16747.11.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100816151011.68e6c722.eschwab@online.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008162311.27584.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 03:10:11PM +0200, Ernst Schwab wrote:
-> Added comments in kernel-doc notation for previously added struct fields.
+On Saturday, August 14, 2010, James Bottomley wrote:
+> On Fri, 2010-08-13 at 15:08 -0400, Ted Ts'o wrote: 
+> > On Fri, Aug 13, 2010 at 01:11:29PM -0400, James Bottomley wrote:
+> > > 
+> > > The facts are that suspend blockers identifies a race within our suspend
+> > > to ram system that permeates from top to bottom (that's from server to
+> > > mobile).  The problem is that resume events are racy with respect to
+> > > suspend and vice versa.  This manifests itself most annoyingly on my
+> > > laptop in the "double suspend" case: where I suspend with a pending
+> > > suspend event, my laptop will resume and then immediately re-suspend
+> > > (leading me to kick myself and remind myself to check it stayed up
+> > > before pushing unsuspend and walking away).  The other annoying case is
+> > > that if I accidentally close the lid before presenting, I have to wait
+> > > until the system is fully down before pressing resume.
+> > 
+> > This is all true, but it's also only one aspect of the problem.  I
+> > agree with you that this is the part of the problem which affects
+> > Linux at all scales, from Cloud servers in a data center that want to
+> > suspend themselves when there's no work to do (and then fail to
+> > respond to the WOL packet) to mobile platforms that are suspending
+> > much more frequently.
+> > 
+> > However, it doesn't follow that this is the _only_ problem that the
+> > Android folks might be interested in solving.  Opportunistic suspend
+> > is a different part of the problem space, which is generally believed
+> > by the Android developers as being far more efficient than a
+> > user-space suspend manager.  Rafael has stated his complete
+> > unwillingness to deal with this part of the problem.  OK, so that
+> > probably means that for Android, it will have to be an out-of-tree
+> > kernel patch.
 > 
-> Signed-off-by: Ernst Schwab <eschwab@online.de>
+> OK, so I tried desperately to avoid the question of whether
+> opportunistic suspend is a good way of managing power.  However, it
+> seems to me that it is in use by several systems (android, olpc, etc).
+> I'll defer the question of whether it's better in user space or kernel
+> space to Rafael's investigations  ...  but I will point out that the
+> kernel space patch, once the suspend blockers issue is taken care of
+> looks like a single patch to one file, so should be locally containable
+> and should allow upstream to be useful as the driver base again.
+> 
+> > The question, then, is whether a solution which addresses the only
+> > part of the problem which Rafael is interested in dealing with at this
+> > point, is sufficient such that (a) the kernel-level opportunistic
+> > suspend can be done as an out-of-tree patch, while simultaneously (b)
+> > allowing device drivers for Android devices can utilize Rafael's
+> > interfaces to solve the race design bug currently found in our suspend
+> > subsystem, while (c) requiring minimal changes to the Android
+> > userspace, and (d) providing all of the statistics and debugging
+> > functionality required by the Android userspace.
+> > 
+> > If we can engineer a solution which meets (a), (b), (c), and (d)
+> > above, then everyone will be happy.
+> 
+> That's my goal.
 
-Applied, thanks.
+In fact, we (which means basically Alan Stern and me at this point) are working
+with Arve on this right now.
 
-> ---
-> On Sun, 15 Aug 2010 10:31:56 -0700
-> Randy Dunlap <rdunlap@xenotime.net> wrote:
-> 
-> > This patch in mainline:
-> > 
-> > commit cf32b71e981ca63e8f349d8585ca2a3583b556e0
-> > Author: Ernst Schwab <eschwab@online.de>
-> > Date:   Mon Jun 28 17:49:29 2010 -0700
-> > 
-> >    spi/mmc_spi: SPI bus locking API, using mutex
-> > 
-> > adds some struct fields but does not add kernel-doc notation for them.
-> > Please add that missing struct documentation.
-> 
-> diff a/include/linux/spi/spi.h b/include/linux/spi/spi.h
-> --- a/include/linux/spi/spi.h
-> +++ b/include/linux/spi/spi.h
-> @@ -213,6 +213,9 @@ static inline void spi_unregister_driver
->   * @dma_alignment: SPI controller constraint on DMA buffers alignment.
->   * @mode_bits: flags understood by this controller driver
->   * @flags: other constraints relevant to this driver
-> + * @bus_lock_spinlock: spinlock for SPI bus locking 
-> + * @bus_lock_mutex: mutex for SPI bus locking 
-> + * @bus_lock_flag: indicates that the SPI bus is locked for exclusive use
->   * @setup: updates the device mode and clocking records used by a
->   *	device's SPI controller; protocol code may call this.  This
->   *	must fail if an unrecognized or unsupported mode is requested.
+Thanks,
+Rafael
