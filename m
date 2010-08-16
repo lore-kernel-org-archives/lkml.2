@@ -1,52 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab0HPNrP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 09:47:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44814 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab0HPNrO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 09:47:14 -0400
-Subject: Re: fix BUG: using smp_processor_id() in touch_nmi_watchdog and
- touch_softlockup_watchdog
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100816133452.GS4879@redhat.com>
-References: <20100813102158.GA5434@swordfish.minsk.epam.com>
-	 <1281946970.1926.998.camel@laptop>  <20100816133452.GS4879@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 15:46:58 +0200
-Message-ID: <1281966418.1926.1421.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753216Ab0HPNto (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 09:49:44 -0400
+Received: from depni.sinp.msu.ru ([213.131.7.21]:53681 "EHLO depni.sinp.msu.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751313Ab0HPNtn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 09:49:43 -0400
+From: Serge Belyshev <belyshev@depni.sinp.msu.ru>
+To: Alexander Graf <agraf@suse.de>
+Cc: Dieter Ries <mail@dieterries.net>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
+References: <1258373983-8693-1-git-send-email-avi@redhat.com>
+	<1258373983-8693-24-git-send-email-avi@redhat.com>
+	<4BA1504A.3090801@dieterries.net>
+	<808FF008-53B9-4271-904C-117A24ADF18C@suse.de>
+	<20100317224002.GA5156@Localhorst.asterix.local>
+	<59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de>
+	<20100318071131.GC24062@Localhorst.asterix.local>
+	<4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de>
+	<87ocddz4zy.fsf@depni.sinp.msu.ru>
+	<122B6102-F892-4D2C-A85B-52F9BB0CB11E@suse.de>
+Date: Mon, 16 Aug 2010 13:49:39 +0000
+In-Reply-To: <122B6102-F892-4D2C-A85B-52F9BB0CB11E@suse.de> (Alexander Graf's
+	message of "Mon, 16 Aug 2010 15:24:08 +0200")
+Message-ID: <877hjq4qh8.fsf@depni.sinp.msu.ru>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 09:34 -0400, Don Zickus wrote:
-> > Don/Ingo, remember if we require touch_*_watchdog callers to have
-> > preemption disabled? Or is the proposed patch sensible?
-> 
-> I don't recall any requirement to have preemption disabled when using
-> those functions.  It seems sensible to put it in the
-> touch_{softlockup|nmi}_watchdog code.
+Alexander Graf <agraf@suse.de> writes:
 
-OK, in that case the patch looks sensible.
+> Hrm - try to use the following (probably whitespace broken and 100% untested) hacky patch:
+>
+> diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+> index 56c9b6b..bde9ee3 100644
+> --- a/arch/x86/kvm/svm.c
+> +++ b/arch/x86/kvm/svm.c
+> @@ -429,9 +429,11 @@ static int svm_hardware_enable(void *garbage)
+>         struct desc_struct *gdt;
+>         int me = raw_smp_processor_id();
+>  
+> +#if 0
+>         rdmsrl(MSR_EFER, efer);
+>         if (efer & EFER_SVME)
+>                 return -EBUSY;
+> +#endif
+>  
 
-> I assume the reason for having preemption disabled when using
-> smp_processor_id() is that the code could migrate to another cpu when
-> rescheduled?
+I tested a bit different hack keeping rdmsrl but removing the if() and
+it works fine for me:
 
-Right, if you can freely schedule, you can get migrated, which means you
-can get migrated between having determined the return value and using
-it, at which point the computed value is meaningless.
+Index: linux/arch/x86/kvm/svm.c
+===================================================================
+--- linux.orig/arch/x86/kvm/svm.c
++++ linux/arch/x86/kvm/svm.c
+@@ -429,8 +429,7 @@ static int svm_hardware_enable(void *gar
+ 	int me = raw_smp_processor_id();
+ 
+ 	rdmsrl(MSR_EFER, efer);
+-	if (efer & EFER_SVME)
+-		return -EBUSY;
++	printk(KERN_DEBUG "svm_hardware_enable: efer %x on %d\n", efer, me);
+ 
+ 	if (!has_svm()) {
+ 		printk(KERN_ERR "svm_hardware_enable: err EOPNOTSUPP on %d\n",
 
-> I don't see a problem with the patch, but my low level understanding of
-> the __get_cpu_var vs. per_cpu isn't very strong.
+Here is an example of its output:
 
-__get_cpu_var() gets you the value on the current cpu, per_cpu() takes a
-cpu argument.
+[231441.358111] svm_hardware_enable: efer 1d01 on 0
+[231441.358117] svm_hardware_enable: efer d01 on 3
+[231441.358124] svm_hardware_enable: efer d01 on 2
+[231441.358135] svm_hardware_enable: efer d01 on 1
+[231675.168967] svm_hardware_enable: efer d01 on 0
+[231675.168972] svm_hardware_enable: efer d01 on 1
+[231675.168983] svm_hardware_enable: efer d01 on 2
+[231675.168995] svm_hardware_enable: efer d01 on 3
+
+
+After reboot, the first kvm run always reports efer = 1d01 on the first cpu.
+In all subsequent runs before reboot efer stays d01 on all cpus.
