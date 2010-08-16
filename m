@@ -1,43 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab0HPFJx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 01:09:53 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39482 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab0HPFJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 01:09:52 -0400
-X-User-Agent: K-9 Mail for Android
-References: <F0CB3B1C601247indou.takao@jp.fujitsu.com> <AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com> <faf83501-1e53-459d-88ed-2ac5963a37f2@email.android.com> <AANLkTimtH41djAF5OxXCeVS8cHg_JCBd+wQ1iT1BUWgX@mail.gmail.com>
-In-Reply-To: <AANLkTimtH41djAF5OxXCeVS8cHg_JCBd+wQ1iT1BUWgX@mail.gmail.com>
+	id S1752384Ab0HPFRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 01:17:30 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36544 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab0HPFR2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 01:17:28 -0400
+Date: Mon, 16 Aug 2010 07:17:21 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Kukjin Kim <kgene.kim@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Maxim Levitsky'" <maximlevitsky@gmail.com>, ben-linux@fluff.org
+Subject: Re: undefined reference to `mmc_pm_notify' when selected MMC
+	without PM.
+Message-ID: <20100816051721.GA17903@pengutronix.de>
+References: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH][EFI] Run EFI in physical mode
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 15 Aug 2010 22:08:43 -0700
-To: huang ying <huang.ying.caritas@gmail.com>
-CC: Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, ebiederm@xmission.com, tglx@linutronix.de,
-        mingo@redhat.com, vgoyal@redhat.com, nhorman@tuxdriver.com
-Message-ID: <8f5e697c-e9ae-4453-aa7a-7086dd156cc9@email.android.com>
+In-Reply-To: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For the 1:1 map we probably should make all pages executable; other things need it too, but we shouldn't have it mapped in except when needed.
+Hello,
 
-"huang ying" <huang.ying.caritas@gmail.com> wrote:
+On Fri, Aug 13, 2010 at 08:33:40PM +0900, Kukjin Kim wrote:
+> Kukjin Kim wrote:
+> > 
+> > Hi,
+> > 
+> > Following is build error when selected MMC without PM.
+> > 
+> > drivers/built-in.o: In function `mmc_alloc_host':
+> > drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
+> > make[1]: *** [.tmp_vmlinux1] Error 1
+> > make: *** [sub-make] Error 2
+> > 
+> > That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
+> > insert/removal during suspend/resume '
+> > (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
+> > 
+> > Below is temporary patch for avoiding build error.
+> > But I'm not sure about this... :-(
+> > 
+> > ---
+> > 
+> > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> > index 0efe631..d80cfdc 100644
+> > --- a/drivers/mmc/core/host.c
+> > +++ b/drivers/mmc/core/host.c
+> > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
+> > *dev)
+> >         init_waitqueue_head(&host->wq);
+> >         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+> >         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
+> > mmc_host_deeper_disable);
+> > +#ifdef CONFIG_PM
+> >         host->pm_notify.notifier_call = mmc_pm_notify;
+> > +#endif
+> > 
+> >         /*
+> >          * By default, hosts do not support SGIO or large requests.
+> > 
+> > ---
+> 
+> Kindly ignore this stuff because I found Uwe's same patch just now ;-)
+> Sorry for bothering.
+For those who care:
 
->On Mon, Aug 16, 2010 at 11:27 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->> No, it should not be dynamic; rather we should unify all the users who need a 1:1 map and just keep that page table set around.
->
->Agree. One known issue of global 1:1 map is that we need to make at
->least part of page table PAGE_KERNEL_EXEC for EFI runtime code, and
->change_page_attr can not be used before page allocator is available.
->
->Best Regards,
->Huang Ying
+	http://mid.gmane.org/1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de
+
+Kgene, do you care to ack this change as it may prod akpm in taking the
+fix a bit earlier?
+
+Best regards
+Uwe
 
 -- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
