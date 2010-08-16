@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751956Ab0HPExo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 00:53:44 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50690 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab0HPExn (ORCPT
+	id S1752111Ab0HPE6y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 00:58:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:65503 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab0HPE6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 00:53:43 -0400
-Date: Mon, 16 Aug 2010 06:53:40 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Sergei Shtylyov <sshtylyov@mvista.com>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH v2] ARM: imx: fix build failure concerning otg/ulpi
-Message-ID: <20100816045340.GA17038@pengutronix.de>
-References: <4C65246E.1000906@ru.mvista.com> <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de> <4C6783C7.1030604@compulab.co.il>
+	Mon, 16 Aug 2010 00:58:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ihcNpSJXevZernqih8aaC1BmtQETIjQ9VqUHfWcMyZV7fMklv2sk/aYzZcPQcJ8FLF
+         /H7kJeDvAk1kAgfavVR+ndAkJK4+toC+y06s4SpnFPTtvmGiqYnGqF+aKKxcWQxNX2gQ
+         wNENPLRhrBGAMTpVjfhTsuwws16E4RVS+adNQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C6783C7.1030604@compulab.co.il>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <faf83501-1e53-459d-88ed-2ac5963a37f2@email.android.com>
+References: <F0CB3B1C601247indou.takao@jp.fujitsu.com>
+	<AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>
+	<faf83501-1e53-459d-88ed-2ac5963a37f2@email.android.com>
+Date: Mon, 16 Aug 2010 12:58:52 +0800
+Message-ID: <AANLkTimtH41djAF5OxXCeVS8cHg_JCBd+wQ1iT1BUWgX@mail.gmail.com>
+Subject: Re: [PATCH][EFI] Run EFI in physical mode
+From: huang ying <huang.ying.caritas@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
+        kexec@lists.infradead.org, ebiederm@xmission.com, tglx@linutronix.de,
+        mingo@redhat.com, vgoyal@redhat.com, nhorman@tuxdriver.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Igor,
+On Mon, Aug 16, 2010 at 11:27 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> No, it should not be dynamic; rather we should unify all the users who need a 1:1 map and just keep that page table set around.
 
-On Sun, Aug 15, 2010 at 09:05:59AM +0300, Igor Grinberg wrote:
-> On 08/13/10 15:06, Uwe Kleine-König wrote:
-> > The build failure was introduced by
-> >
-> > 	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
-> >
-> > Cc: Igor Grinberg <grinberg@compulab.co.il>
-> > Cc: Mike Rapoport <mike@compulab.co.il>
-> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> >   
-> 
-> I've based my patches on v2.6.35-rc6, so I could not patch
-> those imx variants, sorry...
-> But I did deal with mach-pca100.c, so I think moving it from
-> mach-mx2 to mach-imx is what made it miss my patch.
-> 
-> Anyway, this looks like the right addition.
-I assume this is an Ack?
+Agree. One known issue of global 1:1 map is that we need to make at
+least part of page table PAGE_KERNEL_EXEC for EFI runtime code, and
+change_page_attr can not be used before page allocator is available.
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Best Regards,
+Huang Ying
