@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab0HPNVv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 09:21:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54192 "EHLO mx1.redhat.com"
+	id S1754152Ab0HPNYL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 09:24:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52477 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752788Ab0HPNVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 09:21:50 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<alpine.DEB.2.00.1008110806070.673@router.home>
-	<20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
-	<20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
-	<x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
-	<20100816020737.GA19531@spritzera.linux.bs1.fc.nec.co.jp>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 16 Aug 2010 09:20:05 -0400
-In-Reply-To: <20100816020737.GA19531@spritzera.linux.bs1.fc.nec.co.jp> (Naoya
-	Horiguchi's message of "Mon, 16 Aug 2010 11:07:37 +0900")
-Message-ID: <x49aaomheyi.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
+	id S1752788Ab0HPNYK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 09:24:10 -0400
+Subject: Re: [PATCH 23/42] KVM: Activate Virtualization On Demand
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <87ocddz4zy.fsf@depni.sinp.msu.ru>
+Date: Mon, 16 Aug 2010 15:24:08 +0200
+Cc: Dieter Ries <mail@dieterries.net>, Avi Kivity <avi@redhat.com>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <122B6102-F892-4D2C-A85B-52F9BB0CB11E@suse.de>
+References: <1258373983-8693-1-git-send-email-avi@redhat.com> <1258373983-8693-24-git-send-email-avi@redhat.com> <4BA1504A.3090801@dieterries.net> <808FF008-53B9-4271-904C-117A24ADF18C@suse.de> <20100317224002.GA5156@Localhorst.asterix.local> <59B2FA1C-035D-41BC-8359-65BDE8D541FE@suse.de> <20100318071131.GC24062@Localhorst.asterix.local> <4DCA075C-F95E-4FEB-BECA-15D43E1DC1AB@suse.de> <87ocddz4zy.fsf@depni.sinp.msu.ru>
+To: Serge Belyshev <belyshev@depni.sinp.msu.ru>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-> Hi,
->
-> On Thu, Aug 12, 2010 at 09:42:21AM -0400, Jeff Moyer wrote:
->> Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
+On 08.08.2010, at 14:02, Serge Belyshev wrote:
+
+> Hi! Since the above patch went in
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=10474ae8
+> I have exactly the same problem as Dieter.
+> 
+>>>> If that's the case I'd say you have a broken BIOS or bootloader.
+>>> 
+>>> You are right, it seems to be always cpu0. I'll check my BIOS and flash
+>>> a newer version if available.
 >> 
->> > Basically it is user's responsibility to take care of race condition
->> > related to direct I/O, but some events which are out of user's control
->> > (such as memory failure) can happen at any time. So we need to lock and
->> > set/clear PG_writeback flags in dierct I/O code to protect from data loss.
+>> Please do. If that doesn't help ping me again. I'll write up a quirk patch then.
 >> 
->> Did you do any performance testing of this?  If not, please do and
->> report back.  I'm betting users won't be pleased with the results.
->
-> Here is the result of my direct I/O benchmarck, which mesures the time
-> it takes to do direct I/O for 20000 pages on 2MB buffer for four types
-> of I/O. Each I/O is issued for one page unit and each number below is
-> the average of 25 runs.
->
->                                   with patchset          2.6.35-rc3
->    Buffer      I/O type        average(s)  STD(s)   average(s)  STD(s)   diff(s)
->   hugepage   Sequential Read      3.87      0.16       3.88      0.20    -0.01
->              Sequential Write     7.69      0.43       7.69      0.43     0.00
->              Random Read          5.93      1.58       6.49      1.45    -0.55
->              Random Write        13.50      0.28      13.41      0.30     0.09
->   anonymous  Sequential Read      3.88      0.21       3.89      0.23    -0.01
->              Sequential Write     7.86      0.39       7.80      0.34     0.05
->              Random Read          7.67      1.60       6.86      1.27     0.80
->              Random Write        13.50      0.25      13.52      0.31    -0.01
->
-> From this result, although fluctuation is relatively large for random read,
-> differences between vanilla kernel and patched one are within the deviations and
-> it seems that adding direct I/O lock makes little or no impact on performance.
+> 
+> My h/w is a bit different (cpu: 9850 B3, mb: GA-MA790FX-DQ6 bios F7b),
+> but I cannot use latest available BIOS (F7d) as it breaks my SAS controller.
+> 
+> So I guess I need the quirk patch.
 
-First, thanks for doing the testing!
+Hrm - try to use the following (probably whitespace broken and 100% untested) hacky patch:
 
-> And I know the workload of this benchmark can be too simple, so please
-> let me know if you think we have another workload to be looked into.
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 56c9b6b..bde9ee3 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -429,9 +429,11 @@ static int svm_hardware_enable(void *garbage)
+        struct desc_struct *gdt;
+        int me = raw_smp_processor_id();
+ 
++#if 0
+        rdmsrl(MSR_EFER, efer);
+        if (efer & EFER_SVME)
+                return -EBUSY;
++#endif
+ 
+        if (!has_svm()) {
+                printk(KERN_ERR "svm_hardware_enable: err EOPNOTSUPP on %d\n",
 
-Well, as distasteful as this sounds, I think a benchmark that does I/O
-to partial pages would show the problem best.  And yes, this does happen
-in the real world.  ;-)  So, sequential 512 byte or 1k or 2k I/Os, or
-just misalign larger I/Os so that two sequential I/Os will hit the same
-page.
 
-I believe you can use fio to generate such a workload;  see iomem_align
-in the man page.  Something like the below *might* work.  If not, then
-simply changing the bs=4k to bs=2k and getting rid of iomem_align should
-show the problem.
-
-Cheers,
-Jeff
-
-[global]
-ioengine=libaio
-iodepth=32
-bs=4k
-direct=1
-size=2g
-overwrite=1
-
-[test1]
-rw=write
-iomem_align=2k
+Alex
