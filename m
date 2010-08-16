@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754552Ab0HPOyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:54:15 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:55485 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab0HPOyO (ORCPT
+	id S1754573Ab0HPOzJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:55:09 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4617 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754233Ab0HPOzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:54:14 -0400
-Message-ID: <4C6950B3.8020702@linux.vnet.ibm.com>
-Date: Mon, 16 Aug 2010 16:52:35 +0200
-From: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Mike Snitzer <snitzer@redhat.com>, Jens Axboe <jaxboe@fusionio.com>,
-        unsik Kim <donari75@gmail.com>,
-        Martin Schwidefsky <mschwid2@linux.vnet.ibm.com>,
-        Heiko Carstens <heicars2@linux.vnet.ibm.com>
-Subject: [RFC] Switching block device elevators
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 16 Aug 2010 10:55:07 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7GEscBr015693
+Subject: Re: [PATCH] perf tools: Don't use brace expansion.
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Kusanagi Kouichi <slash@ac.auone-net.jp>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1281969043.1926.1469.camel@laptop>
+References: <20100816124101.1829415C039@msa104.auone-net.jp>
+	 <1281967761.17267.6.camel@thorin>  <1281969043.1926.1469.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Aug 2010 16:54:38 +0200
+Message-ID: <1281970478.17267.12.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 1abec4fdbb142e3ccb6ce99832fae42129134a96, "block: make 
-blk_init_free_list and elevator_init idempotent", we're seeing kernel 
-panics in our s390 tape block device driver. The panic is triggered 
-because our driver tries to replace the default elevator with a noop 
-elevator by calling elevator_exit() directly followed by elevator_init().
+On Mon, 2010-08-16 at 16:30 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-08-16 at 16:09 +0200, Bernd Petrovitsch wrote:
+> 
+> > > -$(shell sh -c 'mkdir -p $(OUTPUT)scripts/{perl,python}/Perf-Trace-Util/' 2> /dev/null)
+> > > -$(shell sh -c 'mkdir -p $(OUTPUT)util/{ui/browsers,scripting-engines}/' 2> /dev/null)
+> 
+> > The other solution is to use standard-make features like in
+> > mkdir -p $(foreach d,ui/browsers scripting-engines,$(OUTPUT)util/$(d)/) 2> /dev/null
+> > 
+> > Is there actually a specific reason for the 
+> > $(shell sh -c '...')
+> > around?
+> > It looks superflous.
+> 
+> I think the reason is is that nobody who touched that file really knew
+> make all that well. Your version looks fine to me.
 
-Since the commit, elevator_init() returns 0 if request_queue->elevator 
-is non-null, even though it does not install a new elevator. As a 
-result, the next access to the elevator finds a pointer to the old one 
-which was already freed and a panic is triggered. Our current fix 
-consists of setting the elevator pointer to NULL after elevator_exit().
+Ah, the reason is that they are not part of a rule but on the top-level
+(and thus always executed).
 
-There is at least one other driver where the problem currently exists 
-(drivers/block/mg_disk.c, author on cc) and another s390 driver where 
-the problem was only accidentally fixed before 2.6.35. I'm wondering if 
-there's a better solution (apart from not forcing an elevator) and would 
-like to hear everyone's opinion on this matter. How about declaring 
-elevator_switch() non-static, for example?
-
-
-Regards,
-   Peter Oberparleiter
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
