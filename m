@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803Ab0HPLj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 07:39:29 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:2584 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751114Ab0HPLj1 (ORCPT
+	id S1753957Ab0HPLle (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 07:41:34 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:36919 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab0HPLld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 07:39:27 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7GBau64014102
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Felipe Contreras <felipe.contreras@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-        rjw@sisk.pl, peterz@infradead.org, tglx@linutronix.de,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-In-Reply-To: <20100814075000.GB27430@elf.ucw.cz>
-References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
-	 <AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
-	 <20100812125248.GA2763@thunk.org>  <20100814075000.GB27430@elf.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 13:36:56 +0200
-Message-ID: <1281958616.17267.2.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Mon, 16 Aug 2010 07:41:33 -0400
+Date: Mon, 16 Aug 2010 13:41:31 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Jan Beulich <JBeulich@novell.com>, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild <linux-kbuild@vger.kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Benton <b3nton@gmail.com>
+Subject: Re: [PATCH] fixes for using make 3.82
+Message-ID: <20100816114131.GA7122@merkur.ravnborg.org>
+References: <4C6936120200007800010064@vpn.id2.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6936120200007800010064@vpn.id2.novell.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sam, 2010-08-14 at 09:50 +0200, Pavel Machek wrote:
-> On Thu 2010-08-12 08:52:49, Ted Ts'o wrote:
-> > On Thu, Aug 12, 2010 at 03:28:01PM +0300, Felipe Contreras wrote:
-> > > 
-> > > The question is why are we adding a user-space API that:
-> > >  1) no user-space beside Android has expresses interest in implementing
-> > >  2) is dubious whether the benefits are worth the pain for non-Android
-> > > user-space
-> > >  3) will become less and less attractive as dynamic PM gets closer to
-> > > the sweet-spot, and then surpass it
-> > >  4) Android can keep in a separate tree until it's clear in the linux
-> > > community that it's useful (if it ever happens)
-> > 
-> > So, Felipe,
-> > 
-> > Do you believe you speak for all of LKML?
-[...]
-> And yes, for the record Felipe speaks for me pretty well.
+Added: Michael Marek (kbuild maintainer) + linux-kbuild.
 
-Not that I´m as "valuable" as the others quoted above: I have the same
-impression.
+I assume this fixes firmware build reported by Andrew Benton (cc:ed).
 
-> Normal path of merging stuff to the kernel is
+	Sam
+
+On Mon, Aug 16, 2010 at 11:58:58AM +0100, Jan Beulich wrote:
+> It doesn't like pattern and explicit rules to be on the same line,
+> and it seems to be more picky when matching file (or really directory)
+> names with different numbers of trailing slashes.
 > 
-> "Google develops it, then modifies it to address the review comments,
-> then it is merged, then it is deployed".
+> Signed-off-by: Jan Beulich <jbeulich@novell.com>
+
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 > 
-> Unfortunately what Google did here is:
+> ---
+>  firmware/Makefile  |    2 +-
+>  scripts/mkmakefile |    4 +++-
+>  2 files changed, 4 insertions(+), 2 deletions(-)
 > 
-> "Google develops it behind the closed door, then deploys it. When
-> asked for changes, Google expects someone else to create system
-> compatible with their existing solution, or else their patches being
-> merged."
-
-That basically sums it up as far as I see.
-
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+> --- linux-2.6.36-rc1/firmware/Makefile
+> +++ 2.6.36-rc1-make-3.82-fixes/firmware/Makefile
+> @@ -142,7 +142,7 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin
+>  fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
+>  
+>  # Directories which we _might_ need to create, so we have a rule for them.
+> -firmware-dirs := $(sort $(patsubst %,$(objtree)/$(obj)/%/,$(dir $(fw-external-y) $(fw-shipped-all))))
+> +firmware-dirs := $(sort $(addprefix $(objtree)/$(obj)/,$(dir $(fw-external-y) $(fw-shipped-all))))
+>  
+>  quiet_cmd_mkdir = MKDIR   $(patsubst $(objtree)/%,%,$@)
+>        cmd_mkdir = mkdir -p $@
+> --- linux-2.6.36-rc1/scripts/mkmakefile
+> +++ 2.6.36-rc1-make-3.82-fixes/scripts/mkmakefile
+> @@ -44,7 +44,9 @@ all:
+>  
+>  Makefile:;
+>  
+> -\$(all) %/: all
+> +\$(all): all
+>  	@:
+>  
+> +%/: all
+> +	@:
+>  EOF
+> 
+> 
