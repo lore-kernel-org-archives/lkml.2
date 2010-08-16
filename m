@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751556Ab0HPQxp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:53:45 -0400
-Received: from mail.tmr.com ([64.65.253.246]:55239 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab0HPQxo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:53:44 -0400
-Message-ID: <4C696CFD.7070003@tmr.com>
-Date: Mon, 16 Aug 2010 12:53:17 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
-MIME-Version: 1.0
-To: Nikanth Karthikesan <knikanth@suse.de>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Wu Fengguang <fengguang.wu@intel.com>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC][PATCH] Per file dirty limit throttling
-References: <201008160949.51512.knikanth@suse.de>
-In-Reply-To: <201008160949.51512.knikanth@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751987Ab0HPQyf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:54:35 -0400
+Received: from bluebox.CS.Princeton.EDU ([128.112.136.38]:52635 "EHLO
+	bluebox.CS.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929Ab0HPQyd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:54:33 -0400
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 12:54:33 EDT
+From: "=?utf-8?Q?=22S.=C3=87a=C4=9Flar_Onur=22?=" <caglar@CS.Princeton.EDU>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+Subject: 2.6.27.52-rc2
+Date: Mon, 16 Aug 2010 12:38:56 -0400
+Message-Id: <A3F5ED84-2D61-4527-B914-3B66F645FA0E@cs.princeton.edu>
+Cc: gregkh@suse.de
+To: linux-kernel@vger.kernel.org, stable@kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org
+Mime-Version: 1.0 (Apple Message framework v1081)
+X-Mailer: Apple Mail (2.1081)
+X-Proofpoint-Virus-Version: vendor=nai engine=5400 definitions=6075 signatures=637934
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nikanth Karthikesan wrote:
-> When the total dirty pages exceed vm_dirty_ratio, the dirtier is made to do
-> the writeback. But this dirtier may not be the one who took the system to this
-> state. Instead, if we can track the dirty count per-file, we could throttle
-> the dirtier of a file, when the file's dirty pages exceed a certain limit.
-> Even though this dirtier may not be the one who dirtied the other pages of
-> this file, it is fair to throttle this process, as it uses that file.
-> 
-I agree with your problem description, a single program which writes a single 
-large file can make an interactive system suck. Creating a 25+GB Blu-Ray image 
-will often saturate the buffer space. I played with per-fd limiting during 
-2.5.xx development and I had an app writing 5-10GB files. While I wanted to get 
-something to submit while the kernel was changing, I kept hitting cornet cases.
+Hi,
 
-> This patch
-> 1. Adds dirty page accounting per-file.
-> 2. Exports the number of pages of this file in cache and no of pages dirty via
-> proc-fdinfo.
-> 3. Adds a new tunable, /proc/sys/vm/file_dirty_bytes. When a files dirty data
-> exceeds this limit, the writeback of that inode is done by the current
-> dirtier.
-> 
-I think you have this in the wrong place, can't it go in balance_dirty_pages?
+I'm started to get following with 2.6.27.52-rc2 [1]. Just to note, this kernel is linux-vserver enabled but same patchset works fine with 2.6.27.51
 
-> This certainly will affect the throughput of certain heavy-dirtying workloads,
-> but should help for interactive systems.
-> 
-I found that the effect was about the same as forcing the application to use 
-O_DIRECT, and since it was our application I could do that. Not all 
-badly-behaved programs are open source, so that addressed my issue but not the 
-general case.
+BUG: sleeping function called from invalid context at mm/rmap.c:90
+in_atomic():1, irqs_disabled():0
+Pid: 1, comm: swapper Not tainted 2.6.27.51-22.planetlab #1
+ [<c0417c16>] __might_sleep+0x97/0x9e
+ [<c0468576>] anon_vma_prepare+0x1d/0xa8
+ [<c0464e32>] expand_stack+0x12/0x87
+ [<c04624c7>] handle_mm_fault+0x193/0x86c
+ [<c0476343>] ? do_sync_read+0xab/0xe9
+ [<c0461781>] ? follow_page+0x53/0x1e8
+ [<c0462da5>] get_user_pages+0x205/0x2f4
+ [<c04797af>] get_arg_page+0x2d/0x80
+ [<c04d8d95>] ? strnlen_user+0x2b/0x49
+ [<c04798c7>] copy_strings+0xc5/0x160
+ [<c047997e>] copy_strings_kernel+0x1c/0x2b
+ [<c047ac97>] do_execve+0xf2/0x1d3
+ [<c0402133>] sys_execve+0x29/0x51
+ [<c040393f>] carry_on+0xd/0x11
+ [<c04700d8>] ? shmem_zero_setup+0x32/0x48
+ [<c040643f>] ? kernel_execve+0x17/0x1c
+ [<c04011fe>] ? run_init_process+0x17/0x19
+ [<c040126a>] ? init_post+0x6a/0xd0
+ [<c0404513>] ? kernel_thread_helper+0x7/0x10
+ =======================
+…
+BUG: sleeping function called from invalid context at mm/rmap.c:90
+in_atomic():1, irqs_disabled():0
+Pid: 362, comm: init Not tainted 2.6.27.51-22.planetlab #1
+ [<c0417c16>] __might_sleep+0x97/0x9e
+ [<c0468576>] anon_vma_prepare+0x1d/0xa8
+ [<c0464e32>] expand_stack+0x12/0x87
+ [<c04624c7>] handle_mm_fault+0x193/0x86c
+ [<c0476343>] ? do_sync_read+0xab/0xe9
+ [<c0461781>] ? follow_page+0x53/0x1e8
+ [<c0462da5>] get_user_pages+0x205/0x2f4
+ [<c04797af>] get_arg_page+0x2d/0x80
+ [<c04d8d95>] ? strnlen_user+0x2b/0x49
+ [<c04798c7>] copy_strings+0xc5/0x160
+ [<c047997e>] copy_strings_kernel+0x1c/0x2b
+ [<c047ac97>] do_execve+0xf2/0x1d3
+ [<c0402133>] sys_execve+0x29/0x51
+ [<c0403895>] sysenter_do_call+0x12/0x25
+ [<c0610000>] ? i8042_probe+0x179/0x4f6
+ =======================
+…
 
-I think you really need to track by process, not file, as you said "Even though 
-this dirtier may not be the one who dirtied the other pages of this file..." 
-that doesn't work, you block a process which is contributing minimally to the 
-problem while letting the real problem process continue. Ex: a log file, with 
-one process spewing error messages while others write a few lines/min. You have 
-to get it right, I think.
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+[1] http://www.cs.princeton.edu/~caglar/dmesg-52-rc2
+
+Best regards.
+--
+S.Çağlar Onur <caglar@cs.princeton.edu>
+
