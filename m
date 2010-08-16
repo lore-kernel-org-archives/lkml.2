@@ -1,96 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754180Ab0HPODP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:03:15 -0400
-Received: from dakia3.marvell.com ([65.219.4.28]:36807 "EHLO
-	dakia3.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753305Ab0HPODO (ORCPT
+	id S1754177Ab0HPOHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:07:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57207 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753082Ab0HPOHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:03:14 -0400
-X-ASG-Debug-ID: 1281967393-6c3a12be0001-xx1T2L
-X-Barracuda-Envelope-From: leiwen@marvell.com
-From: Lei Wen <leiwen@marvell.com>
-X-Barracuda-BBL-IP: 10.93.76.133
-X-Barracuda-RBL-IP: 10.93.76.133
-To: Eric Miao <eric.y.miao@gmail.com>, David Woodhouse <dwmw2@infradead.org>
-CC: Haojian Zhuang <hzhuang1@marvell.com>, Axel Lin <axel.lin@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Date: Mon, 16 Aug 2010 07:03:11 -0700
-X-ASG-Orig-Subj: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Subject: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Thread-Topic: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Thread-Index: Acs9SrN/qt+bvrxLS0i9q5GHxhnxMAAADXfQ
-Message-ID: <53612FE6B944314AAADB181E45A45B64133DDFC162@sc-vexch3.marvell.com>
-In-Reply-To: <AANLkTikCO505BZfqQGsRAdLgMa9hBQZ8YS-hJy-1RGg1@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Mon, 16 Aug 2010 10:07:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GOOP2znLVp4HoXbbDIb//7saVs07lLMVNDzHcPPIU7zRbVJbqcdPrNNdVXafxhJUd5
+         LU1TP+PVAA2t6NX2oK0CHHV/Ovoy0DwRl7+WbHFr9Ce6YtcgxKrnMsmWFeXAWBAoc+gg
+         vxKRqeqq2RHnCWYKXMGTj9cU0mxXNmrLYUjaU=
+Date: Mon, 16 Aug 2010 22:06:49 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: fix BUG: using smp_processor_id() in touch_nmi_watchdog and
+ touch_softlockup_watchdog
+Message-ID: <20100816140649.GA1992@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com>
+ <1281946970.1926.998.camel@laptop>
+ <20100816133452.GS4879@redhat.com>
 MIME-Version: 1.0
-X-Barracuda-Connect: sc-owa01.marvell.com[10.93.76.21]
-X-Barracuda-Start-Time: 1281967393
-X-Barracuda-Encrypted: RC4-MD5
-X-Barracuda-URL: http://dakia3.marvell.com:80/cgi-mod/mark.cgi
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100816133452.GS4879@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7GE3Vml001062
 
-Eric,
-The first patch is a bit of fundamental. I'm afraid that modify it would bring changes to all latter patches in this series...
+On Mon, Aug 16, 2010 at 09:34:52AM -0400, Don Zickus wrote:
+> I don't recall any requirement to have preemption disabled when using
+> those functions.
 
-So I think I would repost another round of updating patch series and hope that would be merged. How do you think about this?
+Isn't that implicit? I mean the caller of touch_{softlockup|nmi}_watchdog
+will sticky to that cpu before it finish running.
+
+> It seems sensible to put it in the
+> touch_{softlockup|nmi}_watchdog code.
+
+I don't think so. Such as:
+
+	...
+      preempt_disable()                <===A
+      touch_{softlockup|nmi}_watchdog  <===B
+      preempt_enable()                 <===C
+        ...
+
+You just scroll A and C into B, but what will happen before preempt
+occur before A?
+
+> 
+> I assume the reason for having preemption disabled when using
+> smp_processor_id() is that the code could migrate to another cpu when
+> rescheduled?
+
+If the migration could happen, then we could touch the wrong cpu-data,
+and the detection on the original cpu will trigger anyway.
+
+> 
+> I don't see a problem with the patch, but my low level understanding of
+> the __get_cpu_var vs. per_cpu isn't very strong.
+
+Maybe we should use __raw_get_cpu_var() instead.
 
 Thanks,
-Lei
-
-
-
------Original Message-----
-From: Eric Miao [mailto:eric.y.miao@gmail.com] 
-Sent: 2010Äê8ÔÂ16ÈÕ 21:55
-To: David Woodhouse
-Cc: Haojian Zhuang; Lei Wen; Axel Lin; linux-kernel; linux-mtd@lists.infradead.org
-Subject: Re: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for samsung2GbX8
-
-On Mon, Aug 16, 2010 at 9:05 PM, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Mon, 2010-08-16 at 20:55 +0800, Eric Miao wrote:
->> On Mon, Aug 16, 2010 at 8:49 PM, Haojian Zhuang <hzhuang1@marvell.com> wrote:
->> > http://lists.infradead.org/pipermail/linux-mtd/2010-July/subject.html
->> >
->> > They're re-posted in July. Please search the subjects in that page. They're totally 29 patches.
->> >
->> > By the way, David, what's the result of review on these patches? We already posted for several times.
->> >
->>
->> I've actually reviewed some of the patches and gave my Ack. For those
->> patches, I think they can be merged early.
->>
->> And overall, they look good. Yet 29 patch in a whole is still a bit too
->> much, would be good to see them logically be separated into several
->> patch series.
->
-> You had some criticism of patch #1 in the sequence, and some questions.
->
-
-So they need to be addressed. Lei, could you please come up with
-an updated patch?
-
-> I didn't look much harder than that, iirc... although looking back now
-> it seems that the rest of your responses to the sequence were largely
-> positive.
->
-> Are you happy with the first patch, and if so shall I go ahead and
-> import the whole sequence with your Acked-By:?
->
-
-I'm generally OK, but still think it would be good to have another around
-of review before they can be merged.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Yong
