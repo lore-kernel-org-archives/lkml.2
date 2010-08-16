@@ -1,75 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932100Ab0HPUeA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 16:34:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:53721 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0HPUd6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 16:33:58 -0400
+	id S1756674Ab0HPUn3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 16:43:29 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:58989 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752689Ab0HPUn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 16:43:28 -0400
+Date: Mon, 16 Aug 2010 22:43:25 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 15/16] drivers/platform/x86: Use available error codes
+In-Reply-To: <201008161711.o7GHBw0x007457@mercury.physics.adelaide.edu.au>
+Message-ID: <Pine.LNX.4.64.1008162243120.12526@ask.diku.dk>
+References: <201008161711.o7GHBw0x007457@mercury.physics.adelaide.edu.au>
 MIME-Version: 1.0
-In-Reply-To: <1281947514-25319-2-git-send-email-monstr@monstr.eu>
-References: <1281947514-25319-1-git-send-email-monstr@monstr.eu> <1281947514-25319-2-git-send-email-monstr@monstr.eu>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 16 Aug 2010 14:33:38 -0600
-X-Google-Sender-Auth: 66GNn_pLcneR-d5yUmo3mXtJNgw
-Message-ID: <AANLkTi=ftyRxcxzerRjNPQyqeGjxW++BYk1UK7ajtjJo@mail.gmail.com>
-Subject: Re: [PATCH] microblaze: Fix of/address: Merge all of the bus
- translation code
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+Looks ok to me.  Thanks.
 
-Looks good, I'll pick it up.  Same of the of_node patch.
+julia
 
-On Mon, Aug 16, 2010 at 2:31 AM, Michal Simek <monstr@monstr.eu> wrote:
-> Commit dbbdee94734bf6f1db7af42008a53655e77cab8f removed
-> of_irq_pci_swizzle but didn't use pci_swizzle_interrupt_pin
-> instead.
+On Tue, 17 Aug 2010, Jonathan Woithe wrote:
 
-Note: when writing commit messages, be friendly to readers who don't
-immediately have access to a git tree.  It is good to quote the sha1
-id, but you should also quote the patch title like so:
-
-Commit "of/address: Merge all of the bus translation code" (sha1 id:
-dbbdee94734bf6f1db7af42008a53655e77cab8f) removed of_irq_pci_swizzle
-but didn't use pci_swizzle_interrupt_pin instead.
-
-No need to respin this patch, I'll fix it up.  just a comment for next time.
-
-Cheers,
-g.
-
-> ---
->  arch/microblaze/kernel/prom_parse.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/microblaze/kernel/prom_parse.c b/arch/microblaze/kernel/prom_parse.c
-> index d33ba17..99d9b61 100644
-> --- a/arch/microblaze/kernel/prom_parse.c
-> +++ b/arch/microblaze/kernel/prom_parse.c
-> @@ -73,7 +73,7 @@ int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq)
->                /* We can only get here if we hit a P2P bridge with no node,
->                 * let's do standard swizzling and try again
->                 */
-> -               lspec = of_irq_pci_swizzle(PCI_SLOT(pdev->devfn), lspec);
-> +               lspec = pci_swizzle_interrupt_pin(pdev, lspec);
->                pdev = ppdev;
->        }
->
+> I've had a quick look at this and the idea behind it is sound.  While it
+> does change the symantics as noted in the original post, the change is only
+> in an error path and to my eye the error code should be returned in that
+> case - as the code currently stands a 0 is returned even if ENOMEM has
+> occurred.
+> 
+> It seems to me that error and result have been (wrongly) used interchangedly
+> within these two functions (possibly be different authors).  I agree that
+> one of them should be eliminated, and error seems the sensible choice.  So
+> something like the following is probably in order.
+> 
+> ===
+> 
+> An error code is stored in the variable error, but it is the variable result
+> that is returned instead.  So store the error code in result and eliminate
+> the unnecessary variable error.  Initial report and patch from Julia Lawall
+> <julia@diku.dk>.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> local idexpression x;
+> constant C;
+> @@
+> 
+> if (...) { ...
+>   x = -C
+>   ... when != x
+> (
+>   return <+...x...+>;
+> |
+>   return NULL;
+> |
+>   return;
+> |
+> * return ...;
+> )
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> Signed-off-by: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>
+> 
+> --- a/drivers/platform/x86/fujitsu-laptop.c	2010-03-16 02:39:39.000000000 +1030
+> +++ b/drivers/platform/x86/fujitsu-laptop.c	2010-08-17 02:37:18.556779664 +0930
+> @@ -655,7 +655,6 @@
+>  	int result = 0;
+>  	int state = 0;
+>  	struct input_dev *input;
+> -	int error;
+>  
+>  	if (!device)
+>  		return -EINVAL;
+> @@ -667,7 +666,7 @@
+>  
+>  	fujitsu->input = input = input_allocate_device();
+>  	if (!input) {
+> -		error = -ENOMEM;
+> +		result = -ENOMEM;
+>  		goto err_stop;
+>  	}
+>  
+> @@ -684,8 +683,8 @@
+>  	set_bit(KEY_BRIGHTNESSDOWN, input->keybit);
+>  	set_bit(KEY_UNKNOWN, input->keybit);
+>  
+> -	error = input_register_device(input);
+> -	if (error)
+> +	result = input_register_device(input);
+> +	if (result)
+>  		goto err_free_input_dev;
+>  
+>  	result = acpi_bus_get_power(fujitsu->acpi_handle, &state);
+> @@ -810,7 +809,6 @@
+>  	int result = 0;
+>  	int state = 0;
+>  	struct input_dev *input;
+> -	int error;
+>  	int i;
+>  
+>  	if (!device)
+> @@ -824,16 +822,16 @@
+>  
+>  	/* kfifo */
+>  	spin_lock_init(&fujitsu_hotkey->fifo_lock);
+> -	error = kfifo_alloc(&fujitsu_hotkey->fifo, RINGBUFFERSIZE * sizeof(int),
+> +	result = kfifo_alloc(&fujitsu_hotkey->fifo, RINGBUFFERSIZE * sizeof(int),
+>  			GFP_KERNEL);
+> -	if (error) {
+> +	if (result) {
+>  		printk(KERN_ERR "kfifo_alloc failed\n");
+>  		goto err_stop;
+>  	}
+>  
+>  	fujitsu_hotkey->input = input = input_allocate_device();
+>  	if (!input) {
+> -		error = -ENOMEM;
+> +		result = -ENOMEM;
+>  		goto err_free_fifo;
+>  	}
+>  
+> @@ -853,8 +851,8 @@
+>  	set_bit(fujitsu->keycode4, input->keybit);
+>  	set_bit(KEY_UNKNOWN, input->keybit);
+>  
+> -	error = input_register_device(input);
+> -	if (error)
+> +	result = input_register_device(input);
+> +	if (result)
+>  		goto err_free_input_dev;
+>  
+>  	result = acpi_bus_get_power(fujitsu_hotkey->acpi_handle, &state);
 > --
-> 1.5.5.6
->
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
