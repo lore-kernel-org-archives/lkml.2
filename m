@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752Ab0HPHVQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 03:21:16 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59621 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610Ab0HPHVP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 03:21:15 -0400
-Date: Mon, 16 Aug 2010 09:21:07 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Jeff Moyer <jmoyer@redhat.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
-Message-ID: <20100816072107.GA29012@basil.fritz.box>
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.DEB.2.00.1008110806070.673@router.home>
- <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
- <20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
- <x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
- <20100816020737.GA19531@spritzera.linux.bs1.fc.nec.co.jp>
+	id S1752766Ab0HPH2b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 03:28:31 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:37632 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751339Ab0HPH2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 03:28:30 -0400
+Date: Mon, 16 Aug 2010 09:28:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH] x86: Don't write io_apic ID if it is not changed
+Message-ID: <20100816072805.GA22479@elte.hu>
+References: <4C66FEA9.3040303@kernel.org>
+ <m1hbiv6fcb.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100816020737.GA19531@spritzera.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <m1hbiv6fcb.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2916]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And I know the workload of this benchmark can be too simple,
-> so please let me know if you think we have another workload to be looked into.
 
-I would try it with some of the fio workfiles that use O_DIRECT,
-especially the parallel ones.  Perhaps people can share their favourite one.
+* Eric W. Biederman <ebiederm@xmission.com> wrote:
 
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> Yinghai Lu <yinghai@kernel.org> writes:
+> 
+> > For 32bit mptable path, setup_ids_from_mpc() always write io apic id
+> > register, even there is no change needed.
+> >
+> > So try to do that when they are different bewteen reading out and
+> > mptable
+> 
+> What is the advantage of not writing the value?
+
+Just guessing, but if other OSs dont do it we might surprise buggy hardware 
+[and trigger erratas in them], so this would be a standard 'dont touch the hw 
+unless necessary' defensive move.
+
+Similar bugs are not unprecedented.
+
+Thanks,
+
+	Ingo
