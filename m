@@ -1,86 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0HPRL0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 13:11:26 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:54114 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923Ab0HPRLZ convert rfc822-to-8bit (ORCPT
+	id S1754870Ab0HPRTb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 13:19:31 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:24195 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752023Ab0HPRTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 13:11:25 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Mon, 16 Aug 2010 13:19:30 -0400
+X-SpamScore: 6
+X-BigFish: VPS6(z3cfcs329eqz1432N98dN936eKzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L799B1-01-T0W-02
+X-M-MSG: 
+Date: Mon, 16 Aug 2010 19:16:10 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2] perf, x86: try to handle unknown nmis with running
+ perfctrs
+Message-ID: <20100816171610.GN26154@erda.amd.com>
+References: <20100804162026.GU3353@redhat.com>
+ <20100804163930.GE5130@lenovo>
+ <20100804184806.GL26154@erda.amd.com>
+ <20100804192634.GG5130@lenovo>
+ <20100806065203.GR26154@erda.amd.com>
+ <20100806142131.GA1874@redhat.com>
+ <20100809194829.GB26154@erda.amd.com>
+ <20100811220058.GT26154@erda.amd.com>
+ <1281970116.1926.1495.camel@laptop>
+ <20100816162706.GH5805@lenovo>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 6/9] RapidIO: Add switch-specific sysfs initialization callback
-Date: Mon, 16 Aug 2010 10:10:54 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D5FFC@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4C692E4C.4040300@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 6/9] RapidIO: Add switch-specific sysfs initialization callback
-thread-index: Acs9PcoYw1O9IiHvRY2yfO2NIXeZ3wAHN/JA
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-7-git-send-email-alexandre.bounine@idt.com> <4C692E4C.4040300@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>,
-        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100816162706.GH5805@lenovo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen wrote:
+On 16.08.10 12:27:06, Cyrill Gorcunov wrote:
+> On Mon, Aug 16, 2010 at 04:48:36PM +0200, Peter Zijlstra wrote:
+> > I liked the one without funny timestamps in better, the whole timestamps
+> > thing just feels too fragile.
+> > 
 > 
-> Alexandre Bounine wrote:
-> > -	if (!rdev->rswitch)
-> > -		goto out;
-> > -
+> Me too, the former Roberts patch (if I'm not missing something) looks good
+> to me.
 > 
-> Is it safe? All devices have a switch?
-
-Yes. Because end-points should not have the "routes" attribute at all
-(corrected by this patch).
-
-> 
-> > @@ -63,10 +59,11 @@ struct device_attribute rio_dev_attrs[] = {
-> >  	__ATTR_RO(asm_did),
-> >  	__ATTR_RO(asm_vid),
-> >  	__ATTR_RO(asm_rev),
-> > -	__ATTR_RO(routes),
-> >  	__ATTR_NULL,
-> >  };
 > >
-> > +static DEVICE_ATTR(routes, S_IRUGO, routes_show, NULL);
-> > +
-> 
-> This seems a separate change from the sw_sysfs? Why make it separate?
+> > Relying on handled > 1 to arm the back-to-back filter seems doable.
 
-I assume that your question was "Why do not make it separate?"
-Both changes are specific to switches, both address sysfs and both are
-not big enough to justify
-a separate patch.
-I agree that make separate patches would give more clarity, so would do
-better description.
-Because there are changes that should be made to other patches in this
-set, I will regenerate this patch with better description.
+Peter, I will rip out the timestamp code from the -v2 patch. My first
+patch does not deal with a 2-1-0 sequence, so it has false positives.
+We do not necessarily need the timestamps if back-to-back nmis are
+rare. Without using timestamps the statistically lost ratio for
+unknown nmis will be as the ratio for back-to-back nmis, with
+timestamps we could catch almost every unknown nmi. So if we encounter
+problems we could still implement timestamp code on top.
 
-> 
-> >   */
-> >  struct rio_switch {
-> > @@ -256,6 +257,7 @@ struct rio_switch {
-> >  			   u8 *sw_domain);
-> >  	int (*em_init) (struct rio_dev *dev);
-> >  	int (*em_handle) (struct rio_dev *dev, u8 swport);
-> > +	int (*sw_sysfs) (struct rio_dev *dev, int create);
-> >  	struct rio_dev *nextdev[0];
-> >  };
-> 
-> Why not make a sw_sysfs_create and sw_sysfs_remove? Is better for
-> readability. Now you call 'sw_sysfs(dev, 0)' or 'sw_sysfs(dev, 1)';
+> It's doable _but_ I think there is nothing we can do, there is no
+> way (at least I known of) to check if there is latched nmi from
+> perf counters. We only can assume that if there multiple counters
+> overflowed most probably the next unknown nmi has the same nature,
+> ie it came from perf.
 
-I just do not want to have an extra member here. Not every switch will
-require own sysfs attributes, but every switch will be presented by a
-data structure. Based on its intended use I do not see any problem here.
+As said, I think with timestamps we could be able to detect 100% of
+the unknown nmis. I guess we get now more than 90% with mutliple
+counters, and 100% with a single counter running. So, this is already
+more than a simple improvement.
+
+> Yes, we can loose real unknown nmi in this
+> case but I think this is justified trade off. If an user need
+> a precise counting of unknown nmis he should not arm perf events
+> at all, if there an user with nmi button (guys where did you get this
+> magic buttuns? i need one ;) he better to not arm perf events too
+> otherwise he might have to click twice
+> 
+> (and of course we should keep in mind Andi's proposal but it
+>  is a next step I think).
+
+Yes, this patch is the first step, now we can change the nmi handler
+priority. The perf handler must not have the lowest priority anymore.
+
+> > (Also, you didn't deal with the TSC going backwards..)
+
+Does this also happen in the case of a back-to-back nmi? I don't know
+the conditions for a backward running TSC. Maybe, if an nmi is
+retriggered the TSC wont be adjusted by a negative offset, I don't
+know...
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
