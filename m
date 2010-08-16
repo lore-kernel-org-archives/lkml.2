@@ -1,71 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab0HPJGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 05:06:52 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48361 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab0HPJGv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 05:06:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lG9hCzxxOC5gRbSwncu3D8If2slPgBFpjbhVwUPxxSE7alsKbToZwfvLUqu87RR0JU
-         nPjGkFWnNvrLqjFXHY5jDQYD0bZjGgtuu3lTdTLHGQScKlpI/ExriZq6vCd86PWW8vGh
-         clPPvYwL6P5fGyJSAbXCqiWmBqTSdwbkFCwEg=
-Date: Mon, 16 Aug 2010 13:06:45 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] x86: Don't write io_apic ID if it is not changed
-Message-ID: <20100816090645.GA5805@lenovo>
-References: <4C66FEA9.3040303@kernel.org> <20100815082446.GA5629@lenovo> <20100815083057.GB5629@lenovo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100815083057.GB5629@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752646Ab0HPJMI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 05:12:08 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19571 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250Ab0HPJMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 05:12:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,375,1278313200"; 
+   d="scan'208";a="648159656"
+Subject: [GIT PULL] dmaengine: one more driver for 2.6.36
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Aug 2010 02:14:32 -0700
+Message-ID: <1281950072.13679.17.camel@dwillia2-linux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 12:30:57PM +0400, Cyrill Gorcunov wrote:
-> On Sun, Aug 15, 2010 at 12:24:46PM +0400, Cyrill Gorcunov wrote:
-> ...
-> > As far as I see, this was done by a purpose in former code. Consider the
-> > situation when mp_ioapics[apic_id].apicid >= get_physical_broadcast().
-> > By code flow (io_apic.c:2099) this set
-> > 
-> > 		if (mp_ioapics[apic_id].apicid >= get_physical_broadcast()) {
-> > 			printk(KERN_ERR "BIOS bug, IO-APIC#%d ID is %d in the MPC table!...\n",
-> > 				apic_id, mp_ioapics[apic_id].apicid);
-> > 			printk(KERN_ERR "... fixing up to %d. (tell your hw vendor)\n",
-> > 				reg_00.bits.ID);
-> > --->			mp_ioapics[apic_id].apicid = reg_00.bits.ID;
-> > 		}
-> > 
-> > So with your patch we always hit "continue" without real changing of ID which
-> > is not correct.
-> > 
-> > But perhaps I miss something?
-> > 
-> > 	-- Cyrill
-> 
-> False alarm Yinghai, of course there is no need to write same value back,
-> sorry for noise.
-> 
-> 	-- Cyrill
+Hi Linus, please consider pulling from:
 
-Thinking a bit more I guess there might be a sence to write io-apic id
-unconditionally, io-apic id is not latched on reset but set to 0 (at least
-for old apics) so if we hit id match -- this will be once, but the same
-time we will have additional if() for every cycle iteration, not sure
-it worth it. Right?
+  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git next
 
-	-- Cyrill
+...to receive one more driver that was originally posted well in advance
+of this window.  I had some review comments that were duly resolved, but
+I did not handle this updated version in a timely manner.  I would
+prefer that this driver not wait for 2.6.37 as it was prepared in time
+for this window.  Two other fixlets are also included.
+
+None of this has seen a -next release, but the driver passes my build
+regression and the other two are obviously correct.
+
+Thanks,
+Dan
+
+Dan Carpenter (1):
+      dma/shdma: move dereference below the NULL check
+
+Linus Walleij (2):
+      DMAENGINE: correct PL080 register header file
+      DMAENGINE: driver for the ARM PL080/PL081 PrimeCells v4
+
+Mathieu Lacage (1):
+      missing inline keyword for static function in linux/dmaengine.h
+
+ arch/arm/include/asm/hardware/pl080.h |    4 +-
+ arch/arm/mach-s3c64xx/dma.c           |    2 +-
+ drivers/dma/Kconfig                   |    8 +
+ drivers/dma/Makefile                  |    1 +
+ drivers/dma/amba-pl08x.c              | 2025 +++++++++++++++++++++++++++++++++
+ drivers/dma/shdma.c                   |    3 +-
+ include/linux/amba/pl08x.h            |  184 +++
+ include/linux/dmaengine.h             |    2 +-
+ 8 files changed, 2225 insertions(+), 4 deletions(-)
+ create mode 100644 drivers/dma/amba-pl08x.c
+ create mode 100644 include/linux/amba/pl08x.h
+
+commit 23054a9ce8ac8f3d0d63b21818b73f30a1cd76dc
+Author: Linus Walleij <linus.walleij@stericsson.com>
+Date:   Mon Aug 9 12:48:02 2010 +0200
+
+    DMAENGINE: driver for the ARM PL080/PL081 PrimeCells v4
+    
+    This creates a DMAengine driver for the ARM PL080/PL081 PrimeCells
+    based on the implementation earlier submitted by Peter Pearse.
+    This is working like a charm for memcpy and slave DMA to the PL011
+    PrimeCell on the PB11MPCore.
+    
+    This DMA controller is used in mostly unmodified form in the ARM
+    RealView and Versatile platforms, in the ST-Ericsson Nomadik, and
+    in the ST SPEAr platform.
+    
+    It has been converted to use the header from the Samsung PL080
+    derivate instead of its own defintions. The Samsungs have a custom
+    driver in their mach-* folders though, atleast we can share the
+    register definitions.
+    
+    Cc: Peter Pearse <peter.pearse@arm.com>
+    Cc: Ben Dooks <ben-linux@fluff.org>
+    Cc: Kukjin Kim <kgene.kim@samsung.com>
+    Cc: Alessandro Rubini <rubini@unipv.it>
+    Acked-by: Viresh Kumar <viresh.kumar@st.com>
+    Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+
+commit 38f919e94ea408b89196c4e1ea3f9605ca9b5e8a
+Author: Linus Walleij <linus.walleij@stericsson.com>
+Date:   Mon Aug 9 12:47:52 2010 +0200
+
+    DMAENGINE: correct PL080 register header file
+    
+    This PL008 among all other variables named PL080 doesn't seem
+    right. Fix it. Also add some missing defined that I use in the
+    new PL08x driver.
+    
+    Acked-by: Ben Dooks <ben-linux@fluff.org>
+    Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+
+commit 63bf2c4968c4a0214b4c2f5575362799a036dc37
+Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+Date:   Sat Aug 14 15:02:44 2010 +0200
+
+    missing inline keyword for static function in linux/dmaengine.h
+    
+    Add a missing inline keyword for static function in linux/dmaengine.h to
+    avoid duplicate symbol definitions.
+    
+    Signed-off-by: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+
+commit f368c9bb381bea8628314c13c1e463c409dff84d
+Author: Dan Carpenter <error27@gmail.com>
+Date:   Sat Aug 14 11:01:45 2010 +0200
+
+    dma/shdma: move dereference below the NULL check
+    
+    "param" can be NULL here, so only dereference it after the check.
+    
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+
+
