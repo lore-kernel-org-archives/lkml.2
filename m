@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925Ab0HPTEP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:04:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37792 "EHLO mx1.redhat.com"
+	id S1755957Ab0HPTFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:05:31 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59046 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755775Ab0HPTEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:04:13 -0400
-Date: Mon, 16 Aug 2010 15:02:03 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        Tejun Heo <tj@kernle.org>
-Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
-Message-ID: <20100816190203.GA22299@redhat.com>
-References: <1281977523-19335-1-git-send-email-tj@kernel.org>
- <1281977523-19335-6-git-send-email-tj@kernel.org>
+	id S1755795Ab0HPTF3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 15:05:29 -0400
+Date: Mon, 16 Aug 2010 21:05:27 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>,
+        Anirban Chakraborty <anirban.chakraborty@qlogic.com>,
+        linux-driver@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 16/16] drivers/net/qlcnic: Use available error codes
+In-Reply-To: <20100816183540.GE645@bicker>
+Message-ID: <Pine.LNX.4.64.1008162105120.12526@ask.diku.dk>
+References: <Pine.LNX.4.64.1008161828520.19313@ask.diku.dk> <20100816183540.GE645@bicker>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281977523-19335-6-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16 2010 at 12:52pm -0400,
-Tejun Heo <tj@kernel.org> wrote:
+On Mon, 16 Aug 2010, Dan Carpenter wrote:
 
-> From: Tejun Heo <tj@kernle.org>
+> On Mon, Aug 16, 2010 at 06:29:13PM +0200, Julia Lawall wrote:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > The error code is stored in the variable err, but it is the variable ret
+> > that is returned instead.  So store the error code in ret.  Err is then
+> > useless.
 > 
-> This patch converts dm to support REQ_FLUSH/FUA instead of now
-> deprecated REQ_HARDBARRIER.
+> Could you redo this for the latest git?  (Sorry, I recently made the
+> problem slightly worse by adding another "err = -ENOMEM;")...
 
-What tree does this patch apply to?  I know it doesn't apply to
-v2.6.36-rc1, e.g.: http://git.kernel.org/linus/708e929513502fb0
+Sure.  I'll send it shortly.
 
-> For bio-based dm,
-...
-> * -EOPNOTSUPP retry logic dropped.
-
-That logic wasn't just about retries (at least not in the latest
-kernel).  With commit 708e929513502fb0 the -EOPNOTSUPP checking also
-serves to optimize the barrier+discard case (when discards aren't
-supported).
-
-> For request-based dm,
-> 
-> * Nothing much changes.  It just needs to handle FLUSH requests as
->   before.  It would be beneficial to advertise FUA capability so that
->   it can propagate FUA flags down to member request_queues instead of
->   sequencing it as WRITE + FLUSH at the top queue.
-
-Can you expand on that TODO a bit?  What is the mechanism to propagate
-FUA down to a DM device's members?  I'm only aware of propagating member
-devices' features up to the top-level DM device's request-queue (not the
-opposite).
-
-Are you saying that establishing the FUA capability on the top-level DM
-device's request_queue is sufficient?  If so then why not make the
-change?
-
-> Lightly tested linear, stripe, raid1, snap and crypt targets.  Please
-> proceed with caution as I'm not familiar with the code base.
-
-This is concerning... if we're to offer more comprehensive review I
-think we need more detail on what guided your changes rather than
-details of what the resulting changes are.
-
-Mike
+julia
