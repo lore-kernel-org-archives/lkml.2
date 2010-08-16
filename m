@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab0HPIre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:47:34 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:51506 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417Ab0HPIrc (ORCPT
+	id S1752918Ab0HPIsS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 04:48:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61776 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab0HPIsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:47:32 -0400
+	Mon, 16 Aug 2010 04:48:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=TGt0DxPpqv+iznPhstUhIucvnD5N7jfNEdSTDGC9JXTo7ALl7qkpgwnUT0+hslUNKh
-         69oLgTtlvJdGT3BL1+cKHNyR0bKnbT4FOjVutyHtsk7Hu3Qt1L09TlOlDRpf/CXDG9qt
-         JN9vAUc9DRwFVs7pvRrngTg/oAzayyIUkXc4s=
-MIME-Version: 1.0
-In-Reply-To: <1281790964.3017.5.camel@localhost.localdomain>
-References: <1281790964.3017.5.camel@localhost.localdomain>
-Date: Mon, 16 Aug 2010 01:47:31 -0700
-X-Google-Sender-Auth: gthcPVVBOBi5Sm_i3-YPkNmFPwQ
-Message-ID: <AANLkTinMEcZqX1wLFLJY1GNA1L9kppEwWB1Z883ZgZ+p@mail.gmail.com>
-Subject: Re: [PATCH] missing inline keyword for static function in linux/dmaengine.h
-From: Dan Williams <dan.j.williams@intel.com>
-To: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Andre Noll <maan@systemlinux.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=TFm9aen69aqs/cFexAiWNORf1ZKpbQORqDQNQfAUJcoARvnqJCvMv9+jKpYwsXLP6t
+         AYZmH7OseeA0Qohv9FHxtJoU+4rnU8NqmkNNQnkBjnH+TyuDruJDxO2qdxBqFVKoT1nB
+         JZQahQSUScqEDzhFJtF0EPOpnXGX/D0ywKolA=
+Subject: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for samsung2GbX8
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, Eric Miao <eric.y.miao@gmail.com>,
+        linux-mtd@lists.infradead.org
+Content-Type: text/plain
+Date: Mon, 16 Aug 2010 16:50:41 +0800
+Message-Id: <1281948641.29696.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 6:02 AM, Mathieu Lacage
-<mathieu.lacage@sophia.inria.fr> wrote:
-> Add a missing inline keyword for static function in linux/dmaengine.h to
-> avoid duplicate symbol definitions.
->
-> Signed-off-by: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+This patch adds timing settings for samsung2GbX8 and
+fixes the cmdset settings. samsung2GbX8 is large page.
 
-Applied, thanks.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mtd/nand/pxa3xx_nand.c |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
---
-Dan
+diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
+index 4d89f37..47c0442 100644
+--- a/drivers/mtd/nand/pxa3xx_nand.c
++++ b/drivers/mtd/nand/pxa3xx_nand.c
+@@ -227,9 +227,21 @@ static struct pxa3xx_nand_flash samsung512MbX16 = {
+ 	.chip_id	= 0x46ec,
+ };
+ 
++static struct pxa3xx_nand_timing samsung2GbX8_timing = {
++	.tCH	= 5,
++	.tCS	= 20,
++	.tWH	= 10,
++	.tWP	= 12,
++	.tRH	= 10,
++	.tRP	= 12,
++	.tR	= 25000,
++	.tWHR	= 60,
++	.tAR	= 10,
++};
++
+ static struct pxa3xx_nand_flash samsung2GbX8 = {
+-	.timing		= &samsung512MbX16_timing,
+-	.cmdset		= &smallpage_cmdset,
++	.timing		= &samsung2GbX8_timing,
++	.cmdset		= &largepage_cmdset,
+ 	.page_per_block	= 64,
+ 	.page_size	= 2048,
+ 	.flash_width	= 8,
+-- 
+1.7.2
+
+
+
