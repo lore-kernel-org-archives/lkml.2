@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755059Ab0HPQZn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:25:43 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34721 "EHLO mgw2.diku.dk"
+	id S1754868Ab0HPQZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:25:26 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34700 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754990Ab0HPQZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:25:41 -0400
-Date: Mon, 16 Aug 2010 18:25:39 +0200 (CEST)
+	id S1754838Ab0HPQZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:25:23 -0400
+Date: Mon, 16 Aug 2010 18:25:21 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        mjpeg-users@lists.sourceforge.net, linux-media@vger.kernel.org,
+To: Kalle Valo <kalle.valo@iki.fi>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/16] drivers/media/video/zoran: Use available error codes
-Message-ID: <Pine.LNX.4.64.1008161825220.19313@ask.diku.dk>
+Subject: [PATCH 3/16] drivers/net/wireless/wl12xx: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161825010.19313@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,8 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Error codes are stored in res, but the return value is always 0.  Return
-res instead.
+In each case, error codes are stored in ret, but the return value is always
+0.  Return ret instead.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -53,19 +54,33 @@ Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
 This changes the semantics and has not been tested.
 
- drivers/media/video/zoran/zoran_driver.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/wireless/wl12xx/wl1251_acx.c |    2 +-
+ drivers/net/wireless/wl12xx/wl1251_cmd.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/media/video/zoran/zoran_driver.c b/drivers/media/video/zoran/zoran_driver.c
-index 6f89d0a..c155ddf 100644
---- a/drivers/media/video/zoran/zoran_driver.c
-+++ b/drivers/media/video/zoran/zoran_driver.c
-@@ -3322,7 +3322,7 @@ zoran_mmap (struct file           *file,
- mmap_unlock_and_return:
- 	mutex_unlock(&zr->resource_lock);
+diff --git a/drivers/net/wireless/wl12xx/wl1251_acx.c b/drivers/net/wireless/wl12xx/wl1251_acx.c
+index 91891f9..2f8a2ba 100644
+--- a/drivers/net/wireless/wl12xx/wl1251_acx.c
++++ b/drivers/net/wireless/wl12xx/wl1251_acx.c
+@@ -380,7 +380,7 @@ int wl1251_acx_pd_threshold(struct wl1251 *wl)
  
+ out:
+ 	kfree(pd);
 -	return 0;
-+	return res;
++	return ret;
  }
  
- static const struct v4l2_ioctl_ops zoran_ioctl_ops = {
+ int wl1251_acx_slot(struct wl1251 *wl, enum acx_slot_type slot_time)
+diff --git a/drivers/net/wireless/wl12xx/wl1251_cmd.c b/drivers/net/wireless/wl12xx/wl1251_cmd.c
+index a37b30c..949b6a3 100644
+--- a/drivers/net/wireless/wl12xx/wl1251_cmd.c
++++ b/drivers/net/wireless/wl12xx/wl1251_cmd.c
+@@ -200,7 +200,7 @@ int wl1251_cmd_vbm(struct wl1251 *wl, u8 identity,
+ 
+ out:
+ 	kfree(vbm);
+-	return 0;
++	return ret;
+ }
+ 
+ int wl1251_cmd_data_path(struct wl1251 *wl, u8 channel, bool enable)
