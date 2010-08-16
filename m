@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752187Ab0HPD3n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 23:29:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43281 "EHLO mail.zytor.com"
+	id S1752299Ab0HPDad (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 23:30:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17278 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751675Ab0HPD3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 23:29:42 -0400
-X-User-Agent: K-9 Mail for Android
-References: <F0CB3B1C601247indou.takao@jp.fujitsu.com> <AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>
-In-Reply-To: <AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH][EFI] Run EFI in physical mode
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 15 Aug 2010 20:27:49 -0700
-To: huang ying <huang.ying.caritas@gmail.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        ebiederm@xmission.com, tglx@linutronix.de, mingo@redhat.com,
-        vgoyal@redhat.com, nhorman@tuxdriver.com
-Message-ID: <faf83501-1e53-459d-88ed-2ac5963a37f2@email.android.com>
+	id S1751812Ab0HPDac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 23:30:32 -0400
+Subject: Re: Intel graphics CPU usage - SDVO detect bogosity?
+From: Dave Airlie <airlied@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, Chris Wilson <chris@chris-wilson.co.uk>,
+        Zhao Yakui <yakui.zhao@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Adam Jackson <ajax@redhat.com>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+In-Reply-To: <AANLkTi=NFpeyo7Q31yMfqKSP2c-2OS2ccqa=Q9CQ8bpk@mail.gmail.com>
+References: <AANLkTi=NFpeyo7Q31yMfqKSP2c-2OS2ccqa=Q9CQ8bpk@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Aug 2010 13:30:08 +1000
+Message-ID: <1281929408.3530.1.camel@clockmaker-el6>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, it should not be dynamic; rather we should unify all the users who need a 1:1 map and just keep that page table set around.
+On Sun, 2010-08-15 at 19:32 -0700, Linus Torvalds wrote:
+> I started wondering why 'top' was showing an otherwise idle system as
+> having a load average of 0.5+, and worker threads constantly using the
+> CPU.
+> 
+> So I did a system-wide profile, and got the attached output (look at
+> it in a really wide terminal).
+> 
+> There seems to be something _seriously_ wrong with i915 SDVO detect.
+> This is on an Apple Mac Mini (hey, your favorite problem child!), and
+> apparently it spends 20% of its non-idle CPU time just doing udelay's
+> for the i2c SDVO connection detection.
+> 
+> That sounds a bit wrong, doesn't it?
 
-"huang ying" <huang.ying.caritas@gmail.com> wrote:
+At least we should replace mdelay with msleep in those functions.
 
->On Sat, Aug 14, 2010 at 3:18 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
->> diff -Nurp linux-2.6.35.org/arch/x86/kernel/efi_64.c linux-2.6.35/arch/x86/kernel/efi_64.c
->> --- linux-2.6.35.org/arch/x86/kernel/efi_64.c   2010-08-01 18:11:14.000000000 -0400
->> +++ linux-2.6.35/arch/x86/kernel/efi_64.c       2010-08-13 14:39:25.819105004 -0400
->> @@ -39,7 +39,9 @@
->>  #include <asm/fixmap.h>
->>
->>  static pgd_t save_pgd __initdata;
->> -static unsigned long efi_flags __initdata;
->> +static unsigned long efi_flags;
->> +static pgd_t efi_pgd[PTRS_PER_PGD] __page_aligned_bss;
->> +static unsigned long save_cr3;
->>
->>  static void __init early_mapping_set_exec(unsigned long start,
->>                                          unsigned long end,
->> @@ -98,6 +100,19 @@ void __init efi_call_phys_epilog(void)
->>        early_runtime_code_mapping_set_exec(0);
->>  }
->>
->> +void efi_call_phys_prelog_in_physmode(void)
->> +{
->> +       local_irq_save(efi_flags);
->> +       save_cr3 = read_cr3();
->> +       write_cr3(virt_to_phys(efi_pgd));
->> +}
->> +
->> +void efi_call_phys_epilog_in_physmode(void)
->> +{
->> +       write_cr3(save_cr3);
->> +       local_irq_restore(efi_flags);
->> +}
->
->efi_flags and save_cr3 should be per-CPU, because they now will be
->used after SMP is enabled.
->
->efi_pgd should be dynamically allocated instead of statically
->allocated, because EFI may be not enabled on some platform.
->
->And I think it is better to unify early physical mode with run-time
->physical mode. Just allocate the page table with early page allocator
->(lmb?).
->
->Best Regards,
->Huang Ying
->
+Can you get a boot with drm.debug=4?
 
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+I wonder are we picking up a bad SDVO, the insane code retries 50 times
+with a hard loop delay.
+
+Dave.
+
+
