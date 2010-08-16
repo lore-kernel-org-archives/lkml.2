@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab0HPQPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:15:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55365 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab0HPQPt (ORCPT
+	id S1754764Ab0HPQQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:16:25 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:37347 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab0HPQQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:15:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=YWEa12yBh2dtX8DbiVtJ8sSD6FF30XmqtHBu05k6oWcZEWSJknqhMa9fGc+g7ouXcq
-         jmSAVM5JmqTe+ZT913zySlwEUtdGs3XMnsLm8iyZhN5PGvHwXnNKkeE3QnErdRvVhIBN
-         8ZMQhRW7p7EARCL/xSGV85KBu66IGvHXhuuCM=
-Message-ID: <4C69645E.7090308@gmail.com>
-Date: Mon, 16 Aug 2010 09:16:30 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Mon, 16 Aug 2010 12:16:24 -0400
+Date: Mon, 16 Aug 2010 17:16:21 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: [GIT PULL] Minor platform driver updates
+Message-ID: <20100816161621.GA3702@srcf.ucam.org>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2]drivers/video/vesafb.c Fix a typo.
-References: <1281804202-27500-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1008161514050.1019@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1008161514050.1019@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2010 06:14 AM, Jiri Kosina wrote:
-> On Sat, 14 Aug 2010, Justin P. Mattock wrote:
->
->> ---
->>   drivers/video/vesafb.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
->> index 090aa1a..6a069d0 100644
->> --- a/drivers/video/vesafb.c
->> +++ b/drivers/video/vesafb.c
->> @@ -253,7 +253,7 @@ static int __init vesafb_probe(struct platform_device *dev)
->>   	size_vmode = vesafb_defined.yres * vesafb_fix.line_length;
->>
->>   	/*   size_total -- all video memory we have. Used for mtrr
->> -	 *                 entries, ressource allocation and bounds
->> +	 *                 entries, resource allocation and bounds
->>   	 *                 checking. */
->>   	size_total = screen_info.lfb_size * 65536;
->>   	if (vram_total)
->
-> Applied, thanks.
->
+Hi Linus,
 
-cool... there's another web address that I can send to you, but need to 
-look through and find the original e-mail first before...
+I know it's post RC1, but these are a couple of potential (if unlikely) 
+crash fixers, patches to enable rfkill control on a single model of Dell 
+and some Thinkpad updates that are effectively noops on current hardware 
+but improve support for machines that aren't out yet. Nothing 
+heartbreaking if it has to wait for .37.
 
-Justin P. Mattock
+The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+
+  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
+
+Dan Carpenter (1):
+      intel_ips: potential null dereference
+
+Henrique de Moraes Holschuh (4):
+      thinkpad-acpi: find ACPI video device by synthetic HID
+      thinkpad-acpi: untangle ACPI/vendor backlight selection
+      thinkpad-acpi: lock down size of hotkey keymap
+      thinkpad-acpi: add support for model-specific keymaps
+
+Jens Taprogge (1):
+      thinkpad-acpi: Add KEY_CAMERA (Fn-F6) for Lenovo keyboards
+
+Julia Lawall (1):
+      drivers/platform/x86: Adjust confusing if indentation
+
+Kulikov Vasiliy (1):
+      x86: intel_ips: do not use PCI resources before pci_enable_device()
+
+Victor van den Elzen (1):
+      platform/x86: move rfkill for Dell Mini 1012 to compal-laptop
+
+ Documentation/laptops/thinkpad-acpi.txt |    4 +
+ drivers/platform/x86/asus_acpi.c        |    6 +-
+ drivers/platform/x86/compal-laptop.c    |    9 ++
+ drivers/platform/x86/dell-laptop.c      |    7 ++
+ drivers/platform/x86/intel_ips.c        |   15 ++-
+ drivers/platform/x86/thinkpad_acpi.c    |  171 ++++++++++++++++---------------
+ 6 files changed, 121 insertions(+), 91 deletions(-)
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
