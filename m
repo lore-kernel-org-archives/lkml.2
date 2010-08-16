@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab0HPIBR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:01:17 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37329 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752764Ab0HPIBQ convert rfc822-to-8bit (ORCPT
+	id S1752944Ab0HPIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 04:04:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21667 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752764Ab0HPIE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:01:16 -0400
-Subject: Re: [patch 3/3] sched: move sched_avg_update() to update_cpu_load()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, chris@frostnet.net,
-        debian00@aliceadsl.fr, hpa@zytor.com, jonathan.protzenko@gmail.com,
-        mans@mansr.com, psastudio@mail.ru, rjw@sisk.pl, stephan.eicher@web.de,
-        sxxe@gmx.de, thomas@archlinux.org, venki@google.com, wonghow@gmail.com
-In-Reply-To: <20100813193911.999833492@sbsiddha-MOBL3.sc.intel.com>
-References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
-	 <20100813193911.999833492@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 10:00:34 +0200
-Message-ID: <1281945634.1926.968.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 16 Aug 2010 04:04:27 -0400
+Message-ID: <4C68F0BA.5050905@oracle.com>
+Date: Mon, 16 Aug 2010 16:03:06 +0800
+From: Tao Ma <tao.ma@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH] CMWQ: Set workqueue name before we process one work.
+References: <1281944355-4379-1-git-send-email-tao.ma@oracle.com> <4C68EC76.70903@kernel.org>
+In-Reply-To: <4C68EC76.70903@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 12:45 -0700, Suresh Siddha wrote:
-> plain text document attachment (move_sched_avg_update.patch)
-> Currently sched_avg_update() (which updates rt_avg stats in the rq) is getting
-> called from scale_rt_power() (in the load balance context) which doesn't take
-> rq->lock.
+Hi Tejun,
+	Thanks for the quick response.
+On 08/16/2010 03:44 PM, Tejun Heo wrote:
+> On 08/16/2010 09:39 AM, Tao Ma wrote:
+>> Now in CMWQ, workqueue threads are named as 'kworker/*'. So it is
+>> a little boring to see in the 'top'(below) and actually it isn't
+>> meaningful for the users.
+>> 12606 root      20   0     0    0    0 S    2  0.0   0:03.22 kworker/u:0
+>> 12607 root      20   0     0    0    0 S    1  0.0   0:03.69 kworker/u:4
+>>
+>> So this patch just try to set the proper workqueue name if it does
+>> exist. Yes, workqueue now is a thread pool and the data may be not
+>> accurate but I think it is better(below) than the 'kworker*' stuff.
+>> And if there is something block the workqueue, we can find the caller
+>> easily.
+>> 12606 root      20   0     0    0    0 D    2  0.0   0:02.90 dlm_wq
+>> 12607 root      20   0     0    0    0 D    0  0.0   0:03.21 ocfs2_wq
+>>
+>> What's more, in ocfs2, we sometimes want to print some debug info in
+>> the system log and we use 'current->comm' to print the thread and this
+>> change also does help.
+>>
+>> The only thing I am not clear is that do we need [gs]et_task_comm?
+>> I guess not and this patch just try to use strlcpy without task_lock.
+>>
+>> Cc: Tejun Heo<tj@kernel.org>
+>> Signed-off-by: Tao Ma<tao.ma@oracle.com>
+>
+> I thought about the same thing but this doesn't provide any more
+> information than stack traces for debugging and for run time tracking
+> implementing tracing API (scheduled to be added in this devel cycle)
+> is the right approach.
+Do you have the link for this or it will show up in the mail list soon?
+> change program name.  It will confuse more than help.  So, unless
+> there are other reasons for doing this, I don't think I'm gonna take
+> this one.
+OK, let me find other ways ocfs2 can use to trace the real callers of 
+some functions in runtime.
 
-Right, but I think it doesn't need to, as its never accessed cross CPU
-(except maybe for /proc/sched_debug, and who cares about that).
-
-The (other) odd case is NO_HZ idle balancing, but there the actual CPU
-won't be updating the fields, so the remote CPU doing NO_HZ idle
-balancing should be good to touch it.
-
-> Fix it by moving the sched_avg_update() to more appropriate update_cpu_load()
-> where the CFS load gets updated aswell.
-
-Right, except it breaks things a bit, at the very least you really need
-that update right before reading it, otherwise you can end up with >100%
-fractions, which are odd indeed ;-)
-
-
+Regards,
+Tao
