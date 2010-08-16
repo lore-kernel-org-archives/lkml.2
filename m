@@ -1,153 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab0HPVq3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:46:29 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:54946 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755875Ab0HPVq2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:46:28 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Mon, 16 Aug 2010 23:45:54 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH 1/16] drivers/firewire: Use available error codes
-To: Julia Lawall <julia@diku.dk>
-cc: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1008161824210.19313@ask.diku.dk>
-Message-ID: <tkrat.def6ac6a673ffb1b@s5r6.in-berlin.de>
-References: <Pine.LNX.4.64.1008161824210.19313@ask.diku.dk>
+	id S1756249Ab0HPV4A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:56:00 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57278 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755747Ab0HPVz7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 17:55:59 -0400
+Date: Mon, 16 Aug 2010 14:55:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
+Message-ID: <20100816215555.GL2388@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100809221447.GA24358@linux.vnet.ibm.com>
+ <1281392111-25060-8-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100816150737.GB8320@Krystal>
+ <20100816183355.GH2388@linux.vnet.ibm.com>
+ <20100816191947.GA970@Krystal>
+ <20100816213200.GK2388@linux.vnet.ibm.com>
+ <20100816214123.GA15663@Krystal>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816214123.GA15663@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: firewire: net: fix unicast reception RCODE in failure paths
+On Mon, Aug 16, 2010 at 05:41:23PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Mon, Aug 16, 2010 at 03:19:47PM -0400, Mathieu Desnoyers wrote:
+> > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > On Mon, Aug 16, 2010 at 11:07:37AM -0400, Mathieu Desnoyers wrote:
+> > > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > [...]
+> > > > > > +
+> > > > > > +/*
+> > > > > > + * Tiny-preemptible RCU implementation for rcu_read_unlock().
+> > > > > > + * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
+> > > > > > + * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
+> > > > > > + * invoke rcu_read_unlock_special() to clean up after a context switch
+> > > > > > + * in an RCU read-side critical section and other special cases.
+> > > > > > + */
+> > > > > > +void __rcu_read_unlock(void)
+> > > > > > +{
+> > > > > > +	struct task_struct *t = current;
+> > > > > > +
+> > > > > > +	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutiny.c */
+> > > > > > +	if (--t->rcu_read_lock_nesting == 0 &&
+> > > > > > +	    unlikely(t->rcu_read_unlock_special))
+> > > > 
+> > > > First, thank you for looking this over!!!
+> > > > 
+> > > > > Hrm I think we discussed this in a past life, but would the following
+> > > > > sequence be possible and correct ?
+> > > > > 
+> > > > > CPU 0
+> > > > > 
+> > > > > read t->rcu_read_unlock_special
+> > > > >   interrupt comes in, preempts. sets t->rcu_read_unlock_special
+> > > > >   <preempted>
+> > > > >   <scheduled back>
+> > > > >   iret
+> > > > > decrement and read t->rcu_read_lock_nesting
+> > > > > test both old "special" value (which we have locally on the stack) and
+> > > > > detect that rcu_read_lock_nesting is 0.
+> > > > > 
+> > > > > We actually missed a reschedule.
+> > > > > 
+> > > > > I think we might need a barrier() between the t->rcu_read_lock_nesting
+> > > > > and t->rcu_read_unlock_special reads.
+> > > > 
+> > > > You are correct -- I got too aggressive in eliminating synchronization.
+> > > > 
+> > > > Good catch!!!
+> > > > 
+> > > > I added an ACCESS_ONCE() to the second term of the "if" condition so
+> > > > that it now reads:
+> > > > 
+> > > > 	if (--t->rcu_read_lock_nesting == 0 &&
+> > > > 	    unlikely((ACCESS_ONCE(t->rcu_read_unlock_special)))
+> > > > 
+> > > > This prevents the compiler from reordering because the ACCESS_ONCE()
+> > > > prohibits accessing t->rcu_read_unlock_special unless the value of
+> > > > t->rcu_read_lock_nesting is known to be zero.
+> > > 
+> > > Hrm, --t->rcu_read_lock_nesting does not have any globally visible
+> > > side-effect, so the compiler is free to reorder the memory access across
+> > > the rcu_read_unlock_special access. I think we need the ACCESS_ONCE()
+> > > around the t->rcu_read_lock_nesting access too.
+> > 
+> > Indeed, it is free to reorder that access.  This has the effect of
+> > extending the scope of the RCU read-side critical section, which is
+> > harmless as long as it doesn't pull a lock or some such into it.
+> > 
+> 
+> So what happens if we get:
+> 
+> CPU 0
+> 
+> read t->rcu_read_lock_nesting
+> check if equals to 1
+> read t->rcu_read_unlock_special
+>   interrupt comes in, preempts. sets t->rcu_read_unlock_special
+>   <preempted>
+>   <scheduled back>
+>   iret
+> decrement t->rcu_read_lock_nesting
 
-The incoming request hander fwnet_receive_packet() expects subsequent
-datagram handling code to return non-zero on errors.  However, almost
-none of the failure paths did so.  Fix them all.
+Moving this down past the check of t->rcu_read_lock_special (which is
+now covered by ACCESS_ONCE()) would violate the C standard, as it would
+be equivalent to moving a volatile up past a sequence point.
 
-(This error reporting is used to send and RCODE_CONFLICT_ERROR to the
-sender node in such failure cases.  Two modes of failure exist:  Out of
-memory, or firewire-net is unaware of any peer node to which a fragment
-or an ARP packet belongs.  However, it is unclear whether a sender can
-actually make use of such information.  A Linux peer apparently can't.
-Maybe it should all be simplified to void functions.)
+							Thanx, Paul
 
-Reported-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/net.c |   28 +++++++++++++++-------------
- 1 file changed, 15 insertions(+), 13 deletions(-)
-
-Index: b/drivers/firewire/net.c
-===================================================================
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -579,7 +579,7 @@ static int fwnet_finish_incoming_packet(
- 		if (!peer) {
- 			fw_notify("No peer for ARP packet from %016llx\n",
- 				  (unsigned long long)peer_guid);
--			goto failed_proto;
-+			goto no_peer;
- 		}
- 
- 		/*
-@@ -656,7 +656,7 @@ static int fwnet_finish_incoming_packet(
- 
- 	return 0;
- 
-- failed_proto:
-+ no_peer:
- 	net->stats.rx_errors++;
- 	net->stats.rx_dropped++;
- 
-@@ -664,7 +664,7 @@ static int fwnet_finish_incoming_packet(
- 	if (netif_queue_stopped(net))
- 		netif_wake_queue(net);
- 
--	return 0;
-+	return -ENOENT;
- }
- 
- static int fwnet_incoming_packet(struct fwnet_device *dev, __be32 *buf, int len,
-@@ -701,7 +701,7 @@ static int fwnet_incoming_packet(struct 
- 			fw_error("out of memory\n");
- 			net->stats.rx_dropped++;
- 
--			return -1;
-+			return -ENOMEM;
- 		}
- 		skb_reserve(skb, (net->hard_header_len + 15) & ~15);
- 		memcpy(skb_put(skb, len), buf, len);
-@@ -726,8 +726,10 @@ static int fwnet_incoming_packet(struct 
- 	spin_lock_irqsave(&dev->lock, flags);
- 
- 	peer = fwnet_peer_find_by_node_id(dev, source_node_id, generation);
--	if (!peer)
--		goto bad_proto;
-+	if (!peer) {
-+		retval = -ENOENT;
-+		goto fail;
-+	}
- 
- 	pd = fwnet_pd_find(peer, datagram_label);
- 	if (pd == NULL) {
-@@ -741,7 +743,7 @@ static int fwnet_incoming_packet(struct 
- 				  dg_size, buf, fg_off, len);
- 		if (pd == NULL) {
- 			retval = -ENOMEM;
--			goto bad_proto;
-+			goto fail;
- 		}
- 		peer->pdg_size++;
- 	} else {
-@@ -755,9 +757,9 @@ static int fwnet_incoming_packet(struct 
- 			pd = fwnet_pd_new(net, peer, datagram_label,
- 					  dg_size, buf, fg_off, len);
- 			if (pd == NULL) {
--				retval = -ENOMEM;
- 				peer->pdg_size--;
--				goto bad_proto;
-+				retval = -ENOMEM;
-+				goto fail;
- 			}
- 		} else {
- 			if (!fwnet_pd_update(peer, pd, buf, fg_off, len)) {
-@@ -768,7 +770,8 @@ static int fwnet_incoming_packet(struct 
- 				 */
- 				fwnet_pd_delete(pd);
- 				peer->pdg_size--;
--				goto bad_proto;
-+				retval = -ENOMEM;
-+				goto fail;
- 			}
- 		}
- 	} /* new datagram or add to existing one */
-@@ -794,14 +797,13 @@ static int fwnet_incoming_packet(struct 
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
- 	return 0;
--
-- bad_proto:
-+ fail:
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
- 	if (netif_queue_stopped(net))
- 		netif_wake_queue(net);
- 
--	return 0;
-+	return retval;
- }
- 
- static void fwnet_receive_packet(struct fw_card *card, struct fw_request *r,
-
-
--- 
-Stefan Richter
--=====-==-=- =--- =----
-http://arcgraph.de/sr/
-
+> test rcu_read_unlock_special value (read prior to interrupt)
+>  -> fails to notice the preemption that came in after the
+>     rcu_read_unlock_special read.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> -- 
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
