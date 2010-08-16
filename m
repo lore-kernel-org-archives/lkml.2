@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab0HPVGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:06:52 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57516 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756757Ab0HPVGv convert rfc822-to-8bit (ORCPT
+	id S1756948Ab0HPVHs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:07:48 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34528 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756853Ab0HPVHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:06:51 -0400
-Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and
- the implementation.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Salman Qazi <sqazi@google.com>
-Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, adurbin@google.com
-In-Reply-To: <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
-References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
-	 <1281987236.1926.1895.camel@laptop>
-	 <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 23:06:41 +0200
-Message-ID: <1281992801.1926.2019.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 16 Aug 2010 17:07:44 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 5/5] vt,console,kdb: preserve console_blanked while in kdb
+Date: Mon, 16 Aug 2010 16:06:29 -0500
+Message-Id: <1281992789-2471-6-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1281992789-2471-5-git-send-email-jason.wessel@windriver.com>
+References: <1281992789-2471-1-git-send-email-jason.wessel@windriver.com>
+ <1281992789-2471-2-git-send-email-jason.wessel@windriver.com>
+ <1281992789-2471-3-git-send-email-jason.wessel@windriver.com>
+ <1281992789-2471-4-git-send-email-jason.wessel@windriver.com>
+ <1281992789-2471-5-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 16 Aug 2010 21:06:38.0932 (UTC) FILETIME=[EB17F940:01CB3D86]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(html damaged email alert)
+Commit b45cfba4e9005d64d419718e7ff7f7cab44c1994 (vt,console,kdb:
+implement atomic console enter/leave functions) introduced the ability
+to atomically change the console mode with kernel mode setting but did
+not preserve the state of the console_blanked variable.
 
-On Mon, 2010-08-16 at 13:59 -0700, Salman Qazi wrote:
-> On Mon, Aug 16, 2010 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->         On Mon, 2010-08-16 at 11:30 -0700, Salman Qazi wrote:
->         > For the delete case,
->         > we no longer shrink the tree back to being just the root containing the
->         > only remaining object.  For the insert case, we no longer store the
->         > first object in the root, rather allocating a node structure for it.  The
->         > reason that this works is that deleting (or inserting) intermediate nodes
->         > does not make a difference to a reader holding a slot.
->         
->         
->         Ah, I through that was what it did. So you basically increase the memory
->         footprint for tiny files.. have you done any measurements on that?
-> 
+The console_blanked variable must be restored when executing the
+con_debug_leave() or further kernel mode set changes (such as using
+chvt X) will fail to correctly set the state of console.
 
-> You raise a valid concern.  I haven't.  What would you recommend as a
-> benchmark/metric to measure this?
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Reviewed-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/char/vt.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-One thing you could try is something like the below on a freshly booted
-machine, once without and once with the patch:
-
- cd /usr/src/linux-2.6
- echo 1 > /proc/sys/vm/drop_caches
- grep radix /proc/slabinfo
- make bzImage
- echo 1 > /proc/sys/vm/drop_caches
- grep radix /proc/slabinfo
-
-
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index 3af1a22..50590c7 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -198,6 +198,7 @@ static int saved_fg_console;
+ static int saved_last_console;
+ static int saved_want_console;
+ static int saved_vc_mode;
++static int saved_console_blanked;
+ 
+ /*
+  * For each existing display, we have a pointer to console currently visible
+@@ -3449,6 +3450,7 @@ int con_debug_enter(struct vc_data *vc)
+ 	saved_last_console = last_console;
+ 	saved_want_console = want_console;
+ 	saved_vc_mode = vc->vc_mode;
++	saved_console_blanked = console_blanked;
+ 	vc->vc_mode = KD_TEXT;
+ 	console_blanked = 0;
+ 	if (vc->vc_sw->con_debug_enter)
+@@ -3492,6 +3494,7 @@ int con_debug_leave(void)
+ 	fg_console = saved_fg_console;
+ 	last_console = saved_last_console;
+ 	want_console = saved_want_console;
++	console_blanked = saved_console_blanked;
+ 	vc_cons[fg_console].d->vc_mode = saved_vc_mode;
+ 
+ 	vc = vc_cons[fg_console].d;
+-- 
+1.6.3.3
 
