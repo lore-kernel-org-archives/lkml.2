@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752384Ab0HPFRa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 01:17:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36544 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab0HPFR2 (ORCPT
+	id S1752390Ab0HPFWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 01:22:14 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54846 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab0HPFWN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 01:17:28 -0400
-Date: Mon, 16 Aug 2010 07:17:21 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Maxim Levitsky'" <maximlevitsky@gmail.com>, ben-linux@fluff.org
-Subject: Re: undefined reference to `mmc_pm_notify' when selected MMC
-	without PM.
-Message-ID: <20100816051721.GA17903@pengutronix.de>
-References: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com>
+	Mon, 16 Aug 2010 01:22:13 -0400
+X-User-Agent: K-9 Mail for Android
+References: <20100809120509.be36a4fa.sfr@canb.auug.org.au> <20100816122059.c3ee7f6a.sfr@canb.auug.org.au>
+In-Reply-To: <20100816122059.c3ee7f6a.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain;
+ charset=utf-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] spi: update for of_device to platform_device replacement
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 15 Aug 2010 23:22:36 -0600
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linus <torvalds@linux-foundation.org>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-ID: <df0c23b2-b602-4555-a363-795deb0cde28@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On Fri, Aug 13, 2010 at 08:33:40PM +0900, Kukjin Kim wrote:
-> Kukjin Kim wrote:
-> > 
-> > Hi,
-> > 
-> > Following is build error when selected MMC without PM.
-> > 
-> > drivers/built-in.o: In function `mmc_alloc_host':
-> > drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
-> > make[1]: *** [.tmp_vmlinux1] Error 1
-> > make: *** [sub-make] Error 2
-> > 
-> > That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
-> > insert/removal during suspend/resume '
-> > (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
-> > 
-> > Below is temporary patch for avoiding build error.
-> > But I'm not sure about this... :-(
-> > 
-> > ---
-> > 
-> > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> > index 0efe631..d80cfdc 100644
-> > --- a/drivers/mmc/core/host.c
-> > +++ b/drivers/mmc/core/host.c
-> > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
-> > *dev)
-> >         init_waitqueue_head(&host->wq);
-> >         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
-> >         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
-> > mmc_host_deeper_disable);
-> > +#ifdef CONFIG_PM
-> >         host->pm_notify.notifier_call = mmc_pm_notify;
-> > +#endif
-> > 
-> >         /*
-> >          * By default, hosts do not support SGIO or large requests.
-> > 
-> > ---
+
+"Stephen Rothwell" <sfr@canb.auug.org.au> wrote:
+
+>
+>Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+
+
+>---
+> drivers/ata/sata_dwc_460ex.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
+>
+>Hi Grant,
+>
+>On Mon, 9 Aug 2010 12:05:09 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>>
+>> I also added this merge fix patch (as suggest by you):
+>
+>This patch now is needed in Linus' tree.  I will add it to my fixes tree
+>for today.  Linus, can you take this, please?
+>
+>diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
+>index ea24c1e..2673a3d 100644
+>--- a/drivers/ata/sata_dwc_460ex.c
+>+++ b/drivers/ata/sata_dwc_460ex.c
+>@@ -1588,7 +1588,7 @@ static const struct ata_port_info sata_dwc_port_info[] = {
+> 	},
+> };
 > 
-> Kindly ignore this stuff because I found Uwe's same patch just now ;-)
-> Sorry for bothering.
-For those who care:
-
-	http://mid.gmane.org/1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de
-
-Kgene, do you care to ack this change as it may prod akpm in taking the
-fix a bit earlier?
-
-Best regards
-Uwe
+>-static int sata_dwc_probe(struct of_device *ofdev,
+>+static int sata_dwc_probe(struct platform_device *ofdev,
+> 			const struct of_device_id *match)
+> {
+> 	struct sata_dwc_device *hsdev;
+>@@ -1702,7 +1702,7 @@ error_out:
+> 	return err;
+> }
+> 
+>-static int sata_dwc_remove(struct of_device *ofdev)
+>+static int sata_dwc_remove(struct platform_device *ofdev)
+> {
+> 	struct device *dev = &ofdev->dev;
+> 	struct ata_host *host = dev_get_drvdata(dev);
+>-- 
+>1.7.1
+>
+>-- 
+>Cheers,
+>Stephen Rothwell                    sfr@canb.auug.org.au
+>http://www.canb.auug.org.au/~sfr/
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Sent from my Android phone with K-9 Mail. Please excuse my brevity.
