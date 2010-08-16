@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab0HPMem (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:34:42 -0400
-Received: from dakia3.marvell.com ([65.219.4.28]:57360 "EHLO
-	dakia3.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751779Ab0HPMel (ORCPT
+	id S1753750Ab0HPMfD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:35:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44733 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753597Ab0HPMfB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:34:41 -0400
-X-ASG-Debug-ID: 1281962081-6c37f8c10001-xx1T2L
-X-Barracuda-Envelope-From: leiwen@marvell.com
-From: Lei Wen <leiwen@marvell.com>
-X-Barracuda-BBL-IP: 10.93.76.133
-X-Barracuda-RBL-IP: 10.93.76.133
-To: Eric Miao <eric.y.miao@gmail.com>, Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Haojian Zhuang <hzhuang1@marvell.com>
-Date: Mon, 16 Aug 2010 05:34:38 -0700
-X-ASG-Orig-Subj: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Subject: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Thread-Topic: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Thread-Index: Acs9PbCVWEnfm5oJRymOjYwfOYnbigAAS4DQ
-Message-ID: <53612FE6B944314AAADB181E45A45B64133DDFC156@sc-vexch3.marvell.com>
-In-Reply-To: <AANLkTi=YSS0-Nf4MWOw30YDrCdrkmtzLhv7DXfsoJTjX@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 16 Aug 2010 08:35:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=F17+e1IrX2jCVtITnLAbz2qUH3eB3tFkZ2IFQdEiuHFxuDV/1SWRqyLfPivZuCc5bd
+         GklH3mR/LS2LLxltwgC9UJ+B5GgYGH2DAgCXT/VvcTN+xZ4zdv8Mx13tfBmpC4uVrXj9
+         xN8ILJd4vRQdJxLasMsDyTovHh8fTI3go1vNo=
 MIME-Version: 1.0
-X-Barracuda-Connect: sc-owa02.marvell.com[10.93.76.22]
-X-Barracuda-Start-Time: 1281962081
-X-Barracuda-Encrypted: RC4-MD5
-X-Barracuda-URL: http://dakia3.marvell.com:80/cgi-mod/mark.cgi
+In-Reply-To: <4C613627.1090907@suse.cz>
+References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
+	<20100621120613.86cad1a4.akpm@linux-foundation.org>
+	<4C1FC35C.8090201@suse.cz>
+	<AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>
+	<AANLkTinC6Sqs7W--=14nmJFDcTS4HQn0=ysn7VhYDDX6@mail.gmail.com>
+	<adaocdg3fng.fsf@roland-alpha.cisco.com>
+	<20100805222623.39A3240208@magilla.sf.frob.com>
+	<AANLkTikvRqTR6TjP9H4-_RHhax24YRPv9PCxn165RTWs@mail.gmail.com>
+	<4C613627.1090907@suse.cz>
+Date: Mon, 16 Aug 2010 22:35:00 +1000
+Message-ID: <AANLkTimncLdNZCcpcEi9M7-jCuw5FE+xDT7v5--ByfMn@mail.gmail.com>
+Subject: Re: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Yegor Yefremov <yegorslists@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, Roland Dreier <rdreier@cisco.com>,
+        Tiago Maluta <tiago.maluta@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7GCYrpA000445
 
-Hi Axel,
+This gives some errors on my ubuntu build for -rc1, reverting lets it
+build normally. Am I missing something?
 
-I suggest not merge your patch into mainline code. Since I have a large series of patch which reconstruct the nand flash definition, this fix would no longer be needed.
+ahendry@ubuntu:~/linux/linux-2.6$ make
+make: ngcc: Command not found
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CC      kernel/bounds.s
+/bin/sh: ngcc: not found
+make[1]: *** [kernel/bounds.s] Error 127
+make: *** [prepare0] Error 2
 
-Thanks,
-Lei
+.config has CONFIG_CROSS_COMPILE="n"
 
------Original Message-----
-From: Eric Miao [mailto:eric.y.miao@gmail.com] 
-Sent: 2010Âπ¥8Êúà16Êó• 20:22
-To: Axel Lin
-Cc: linux-kernel; David Woodhouse; linux-mtd@lists.infradead.org; Lei Wen; Haojian Zhuang
-Subject: Re: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for samsung2GbX8
-
-Cc'ed Lei and Haojian.
-
-On Mon, Aug 16, 2010 at 4:50 PM, Axel Lin <axel.lin@gmail.com> wrote:
-> This patch adds timing settings for samsung2GbX8 and
-> fixes the cmdset settings. samsung2GbX8 is large page.
+On Tue, Aug 10, 2010 at 9:21 PM, Michal Marek <mmarek@suse.cz> wrote:
+> On 10.8.2010 08:43, Yegor Yefremov wrote:
+>> On Fri, Aug 6, 2010 at 12:26 AM, Roland McGrath <roland@redhat.com> wrote:
+>>>> Yes, this make sense to me. †It's not clear to me why we ever needed
+>>>> the conditional assignment of an empty CROSS_COMPILE (that code predates
+>>>> the start of git history) [...]
+>>>
+>>> Perhaps someone used make --warn-undefined-variables.
+>>
+>> Are there any other comments or is the patch valid? Should I resend it
+>> as a new thread?
 >
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
-> ¬†drivers/mtd/nand/pxa3xx_nand.c | ¬† 16 ++++++++++++++--
-> ¬†1 files changed, 14 insertions(+), 2 deletions(-)
+> No problem at your side, the patch is fine and I applied it now.
 >
-> diff --git a/drivers/mtd/nand/pxa3xx_nand.c b/drivers/mtd/nand/pxa3xx_nand.c
-> index 4d89f37..47c0442 100644
-> --- a/drivers/mtd/nand/pxa3xx_nand.c
-> +++ b/drivers/mtd/nand/pxa3xx_nand.c
-> @@ -227,9 +227,21 @@ static struct pxa3xx_nand_flash samsung512MbX16 = {
-> ¬† ¬† ¬† ¬†.chip_id ¬† ¬† ¬† ¬†= 0x46ec,
-> ¬†};
->
-> +static struct pxa3xx_nand_timing samsung2GbX8_timing = {
-> + ¬† ¬† ¬† .tCH ¬† ¬†= 5,
-> + ¬† ¬† ¬† .tCS ¬† ¬†= 20,
-> + ¬† ¬† ¬† .tWH ¬† ¬†= 10,
-> + ¬† ¬† ¬† .tWP ¬† ¬†= 12,
-> + ¬† ¬† ¬† .tRH ¬† ¬†= 10,
-> + ¬† ¬† ¬† .tRP ¬† ¬†= 12,
-> + ¬† ¬† ¬† .tR ¬† ¬† = 25000,
-> + ¬† ¬† ¬† .tWHR ¬† = 60,
-> + ¬† ¬† ¬† .tAR ¬† ¬†= 10,
-> +};
-> +
-> ¬†static struct pxa3xx_nand_flash samsung2GbX8 = {
-> - ¬† ¬† ¬† .timing ¬† ¬† ¬† ¬† = &samsung512MbX16_timing,
-> - ¬† ¬† ¬† .cmdset ¬† ¬† ¬† ¬† = &smallpage_cmdset,
-> + ¬† ¬† ¬† .timing ¬† ¬† ¬† ¬† = &samsung2GbX8_timing,
-> + ¬† ¬† ¬† .cmdset ¬† ¬† ¬† ¬† = &largepage_cmdset,
-> ¬† ¬† ¬† ¬†.page_per_block = 64,
-> ¬† ¬† ¬† ¬†.page_size ¬† ¬† ¬†= 2048,
-> ¬† ¬† ¬† ¬†.flash_width ¬† ¬†= 8,
+> Michal
 > --
-> 1.7.2
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at †http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at †http://www.tux.org/lkml/
 >
->
->
->
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
