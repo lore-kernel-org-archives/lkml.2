@@ -1,94 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab0HPQgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:36:47 -0400
-Received: from mail.tmr.com ([64.65.253.246]:60776 "EHLO partygirl.tmr.com"
+	id S1755103Ab0HPQgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:36:46 -0400
+Received: from mx0.vr-web.de ([195.200.35.198]:35022 "EHLO mx0.vr-web.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754642Ab0HPQgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:36:42 -0400
-Message-ID: <4C6968D3.4040108@tmr.com>
-Date: Mon, 16 Aug 2010 12:35:31 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
+	id S1754989Ab0HPQgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:36:41 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 12:36:41 EDT
+Message-ID: <4C696858.5030908@01019freenet.de>
+Date: Mon, 16 Aug 2010 18:33:28 +0200
+From: Andreas <andihartmann@01019freenet.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.3a6pre) Gecko/20100803 SeaMonkey/2.1a2
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Shaohua Li <shaohua.li@intel.com>, Trond.Myklebust@netapp.com, rjw@sisk.pl,
-        linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: Re: nfs regression 2.6.35+
-References: <20100816070626.GA10503@sli10-desk.sh.intel.com>	<s5h39uedg3b.wl%tiwai@suse.de> <s5hfwyelu28.wl%tiwai@suse.de>
-In-Reply-To: <s5hfwyelu28.wl%tiwai@suse.de>
+To: Ivo Van Doorn <ivdoorn@gmail.com>,
+        Kernel-Mailingliste <linux-kernel@vger.kernel.org>,
+        users@rt2x00.serialmonkey.com,
+        Helmut Schaa <helmut.schaa@googlemail.com>
+Subject: Re: [rt2x00-users] rt61pci - bad performance
+References: <ffaPE-58l-5@gated-at.bofh.it> <fgXXY-KJ-1@gated-at.bofh.it> <4C6659F5.9080706@01019freenet.de> <201008160901.57487.helmut.schaa@googlemail.com> <AANLkTin-_QX+ioguFYX49VyJKie5qAZdm2aEpiCaoQ3O@mail.gmail.com>
+In-Reply-To: <AANLkTin-_QX+ioguFYX49VyJKie5qAZdm2aEpiCaoQ3O@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-BitDefender-Scanner: Clean, Agent: BitDefender Courier 3.0.2 on
+ vrwf103, sigver: 7.28621
+X-BitDefender-CF-Stamp: none
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Takashi Iwai wrote:
-> At Mon, 16 Aug 2010 12:09:12 +0200, Takashi Iwai wrote:
->> At Mon, 16 Aug 2010 15:06:26 +0800,
->> Shaohua Li wrote:
->>> NFS client runs latest git. At client side, use vim to edit a file located at
->>> NFS server. If I save the file, vim always reports 'E667: Fsync failed'. If I
->>> revert f7fa16506bf9b6323e862a61e14c20555152bb3, vim works. No kernel errors
->>> reported.
->> This hits me, too.  Reverting it cures the problem.
->> (BTW, the correct commit id of the affecting patch is
->>  af7fa16506bf9b6323e862a61e14c20555152bb3
->>  "NFS: Fix up the fsync code")
+Ivo Van Doorn wrote:
+>>>> hw crypto should be enabled by default in rt61pci, however, I don't know
+>>>> if it is actually working ;)
+>>>
+>>> How can I see if it's working?
 >>
->> Reproduced on 2.6.36-rc1.
+>> You can add a printk to rt61pci_fill_rxdone, something like:
 >>
->> Looking at strace output, 
+>> diff --git a/drivers/net/wireless/rt2x00/rt61pci.c b/drivers/net/wireless/rt2x00/rt61pci.c
+>> index e539c6c..aa1aafd 100644
+>> --- a/drivers/net/wireless/rt2x00/rt61pci.c
+>> +++ b/drivers/net/wireless/rt2x00/rt61pci.c
+>> @@ -2023,6 +2023,7 @@ static void rt61pci_fill_rxdone(struct queue_entry *entry,
+>>                         rxdesc->flags |= RX_FLAG_DECRYPTED;
+>>                 else if (rxdesc->cipher_status == RX_CRYPTO_FAIL_MIC)
+>>                         rxdesc->flags |= RX_FLAG_MMIC_ERROR;
+>> +               printk(KERN_INFO "rt61pci_fill_rxdone: %x\n", rxdesc->cipher_status);
+>>         }
 >>
->>   open("afo", O_WRONLY|O_CREAT|O_TRUNC, 0666) = 4
->>   write(4, "#!/bin\n", 7)                 = 7
->>   fsync(4)                                = 1
->>   stat("afo", {st_mode=S_IFREG|0644, st_size=7, ...}) = 0
->>   close(4)                                = 0
->>
->> So, fsync() returns 1 wrongly.
-> 
-> How about a band-aid fix below?
-> 
-Your band-aid sticks for me.
+>>         /*
+>
+> Actually check debugfs:
+>
+> /sys/kernel/debug/ieee80211/phy0/rt61pci/queue/crypto
+>
+> for the statistics for cryptography.
+>
+> Ivo
 
-> 
-> Takashi
-> 
-> 
-> From c75eab5ac47f5ce27a0d450423f8c46824f832f0 Mon Sep 17 00:00:00 2001
-> From: Takashi Iwai <tiwai@suse.de>
-> Date: Mon, 16 Aug 2010 12:25:19 +0200
-> Subject: [PATCH] NFS: fix fsync return code
-> 
-> With the commit af7fa16506bf9b6323e862a61e14c20555152bb3
->     NFS: Fix up the fsync code
-> fsync returns a postive number for success incorrectly because now it
-> calls nfs_commit_inode() which returns the number of pages.
-> 
-> This patch makes fsync simply ignore a positive return value.
-> 
-> Signed-off-by: Takashi Iwai <tiwai@suse.de>
-> ---
->  fs/nfs/file.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-> index 2d141a7..eb51bd6 100644
-> --- a/fs/nfs/file.c
-> +++ b/fs/nfs/file.c
-> @@ -323,7 +323,7 @@ nfs_file_fsync(struct file *file, int datasync)
->  	have_error |= test_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
->  	if (have_error)
->  		ret = xchg(&ctx->error, 0);
-> -	if (!ret)
-> +	if (!ret && status < 0)
->  		ret = status;
->  	return ret;
->  }
+Well, this path doesn't exist - even the crypto-file can't be found.
+
+lsmod | grep rt61
+rt61pci                19584  0
+rt2x00pci               5646  1 rt61pci
+rt2x00lib              31738  2 rt61pci,rt2x00pci
+eeprom_93cx6            1429  1 rt61pci
+crc_itu_t               1435  2 rt61pci,firewire_core
+
+notebook1:/sys/kernel/debug/ieee80211/phy0 # find -name crypto
+notebook1:/sys/kernel/debug/ieee80211/phy0 #
+
+notebook1:/sys/kernel/debug/ieee80211/phy0 # mount | grep debugfs
+debugfs on /sys/kernel/debug type debugfs (rw)
 
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+The debug message gave tons of:
+Aug 16 18:11:47 .... kernel: [ 3435.535149] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.536335] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.537049] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.537697] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.538595] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.543566] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.545187] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.546837] rt61pci_fill_rxdone: 0
+Aug 16 18:11:47 .... kernel: [ 3435.547031] rt61pci_fill_rxdone: 0
+
+
+
+Kind regards,
+Andreas
