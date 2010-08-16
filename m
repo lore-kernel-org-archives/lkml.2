@@ -1,56 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932213Ab0HPVFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:05:34 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:38489 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab0HPVFc convert rfc822-to-8bit (ORCPT
+	id S1756746Ab0HPVGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:06:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:37606 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755747Ab0HPVGq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:05:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=EDoij01/wD31Xb+8gjnyEfxBq8obhNzae0OyQ9tCT50M73/4CIfqxEmCAymVkmDEX
-	PC+yWAMLMD8QL6btffytw==
+	Mon, 16 Aug 2010 17:06:46 -0400
+Date: Mon, 16 Aug 2010 22:06:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: linux-fbdev@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] cyber2000fb: avoid palette corruption at higher
+	clocks
+Message-ID: <20100816210634.GB10119@n2100.arm.linux.org.uk>
+References: <201008162209.56902.linux@rainbow-software.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
-References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
-	<1281987236.1926.1895.camel@laptop>
-	<AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
-Date: Mon, 16 Aug 2010 14:05:28 -0700
-Message-ID: <AANLkTinDwPgqyUDcyjfe+DaTRta=ERfseUGMg9yvZ4gA@mail.gmail.com>
-Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and the implementation.
-From: Salman Qazi <sqazi@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, adurbin@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008162209.56902.linux@rainbow-software.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 1:59 PM, Salman Qazi <sqazi@google.com> wrote:
->
->
-> On Mon, Aug 16, 2010 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>
->> On Mon, 2010-08-16 at 11:30 -0700, Salman Qazi wrote:
->> > For the delete case,
->> > we no longer shrink the tree back to being just the root containing the
->> > only remaining object.  For the insert case, we no longer store the
->> > first object in the root, rather allocating a node structure for it.  The
->> > reason that this works is that deleting (or inserting) intermediate nodes
->> > does not make a difference to a reader holding a slot.
->>
->> Ah, I through that was what it did. So you basically increase the memory
->> footprint for tiny files.. have you done any measurements on that?
->
->
+On Mon, Aug 16, 2010 at 10:09:54PM +0200, Ondrej Zary wrote:
+> When 1280x1024@75Hz mode is set, console palette is not set properly -
+> sometimes the background is white, sometimes yellow and text colors are also
+> messed up. This does not happen at 1280x1024@60Hz and below.
 
+I'm not going to have much time to look at your patches, and I
+definitely want to test them on the NetWinder to make sure we
+don't regress the primary platform that this driver is supporting.
 
-You raise a valid concern.  I haven't.  What would you recommend as a
-benchmark/metric to measure this?
-(had to resend this. mail client had decided to switch to HTML mode,
-which LKML didn't like)
+I should have more time to look at them in September.
