@@ -1,43 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0HPQPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:15:06 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:43423 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab0HPQPE (ORCPT
+	id S1754759Ab0HPQPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:15:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55365 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab0HPQPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:15:04 -0400
-Date: Mon, 16 Aug 2010 09:14:33 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
-Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
-Message-ID: <20100816161433.GK2109@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <20100809210723.GA28171@infradead.org>
+	Mon, 16 Aug 2010 12:15:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YWEa12yBh2dtX8DbiVtJ8sSD6FF30XmqtHBu05k6oWcZEWSJknqhMa9fGc+g7ouXcq
+         jmSAVM5JmqTe+ZT913zySlwEUtdGs3XMnsLm8iyZhN5PGvHwXnNKkeE3QnErdRvVhIBN
+         8ZMQhRW7p7EARCL/xSGV85KBu66IGvHXhuuCM=
+Message-ID: <4C69645E.7090308@gmail.com>
+Date: Mon, 16 Aug 2010 09:16:30 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100809210723.GA28171@infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Jiri Kosina <jkosina@suse.cz>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2]drivers/video/vesafb.c Fix a typo.
+References: <1281804202-27500-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1008161514050.1019@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1008161514050.1019@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 09, 2010 at 05:07:23PM -0400, Christoph Hellwig wrote:
-> Can you try with the new barrier implementation in the
-> 
-> 	[PATCH, RFC] relaxed barriers
-> 
-> by making cache flushes just that and not complicated drain barrier
-> it should speed this case up a lot.
+On 08/16/2010 06:14 AM, Jiri Kosina wrote:
+> On Sat, 14 Aug 2010, Justin P. Mattock wrote:
+>
+>> ---
+>>   drivers/video/vesafb.c |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+>> index 090aa1a..6a069d0 100644
+>> --- a/drivers/video/vesafb.c
+>> +++ b/drivers/video/vesafb.c
+>> @@ -253,7 +253,7 @@ static int __init vesafb_probe(struct platform_device *dev)
+>>   	size_vmode = vesafb_defined.yres * vesafb_fix.line_length;
+>>
+>>   	/*   size_total -- all video memory we have. Used for mtrr
+>> -	 *                 entries, ressource allocation and bounds
+>> +	 *                 entries, resource allocation and bounds
+>>   	 *                 checking. */
+>>   	size_total = screen_info.lfb_size * 65536;
+>>   	if (vram_total)
+>
+> Applied, thanks.
+>
 
-Indeed it does!  The barrier count increases to about 21000, but I also see
-much higher throughput, about 830 transactions per second (versus 12000 and 760
-respectively before Tejun's patch).
+cool... there's another web address that I can send to you, but need to 
+look through and find the original e-mail first before...
 
---D
+Justin P. Mattock
