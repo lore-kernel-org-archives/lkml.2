@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756244Ab0HPTbo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:31:44 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37582 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab0HPTbm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:31:42 -0400
-Subject: Re: [patch 3/3] sched: move sched_avg_update() to update_cpu_load()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "chris@frostnet.net" <chris@frostnet.net>,
-        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
-        "mans@mansr.com" <mans@mansr.com>,
-        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
-        "stephan.eicher@web.de" <stephan.eicher@web.de>,
-        "sxxe@gmx.de" <sxxe@gmx.de>,
-        "thomas@archlinux.org" <thomas@archlinux.org>,
-        "venki@google.com" <venki@google.com>,
-        "wonghow@gmail.com" <wonghow@gmail.com>
-In-Reply-To: <1281980769.2676.33.camel@sbsiddha-MOBL3.sc.intel.com>
-References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
-	 <20100813193911.999833492@sbsiddha-MOBL3.sc.intel.com>
-	 <1281945634.1926.968.camel@laptop>
-	 <1281980769.2676.33.camel@sbsiddha-MOBL3.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 21:31:26 +0200
-Message-ID: <1281987086.1926.1890.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756296Ab0HPTbu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:31:50 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:38677 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756249Ab0HPTbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 15:31:48 -0400
+Date: Mon, 16 Aug 2010 20:31:01 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Joerg Reuter <jreuter@yaina.de>, "David S. Miller" <davem@davemloft.net>,
+        linux-hams@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 13/16] net/ax25: Use available error codes
+Message-ID: <20100816193100.GB10921@linux-mips.org>
+References: <Pine.LNX.4.64.1008161828030.19313@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1008161828030.19313@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 10:46 -0700, Suresh Siddha wrote:
+On Mon, Aug 16, 2010 at 06:28:19PM +0200, Julia Lawall wrote:
 
-> There is no guarantee that the original cpu won't be doing this in
-> parallel with nohz idle load balancing cpu.
-
-Hmm, true.. bugger.
-
-> > > Fix it by moving the sched_avg_update() to more appropriate update_cpu_load()
-> > > where the CFS load gets updated aswell.
-> > 
-> > Right, except it breaks things a bit, at the very least you really need
-> > that update right before reading it, otherwise you can end up with >100%
-> > fractions, which are odd indeed ;-)
+> Error codes are stored in err, but the return value is always 0.  Return
+> err instead.
 > 
-> with the patch, the update always happens before reading it. isn't it?
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
-> update now happens during the scheduler tick (or during nohz load
-> balancing tick). And the load balancer gets triggered with the tick.
-> So the update (at the tick) should happen before reading it (used by
-> load balancing triggered by the tick). Am I missing something?
+> // <smpl>
+> @r@
+> local idexpression x;
+> constant C;
+> @@
+> 
+> if (...) { ...
+>   x = -C
+>   ... when != x
+> (
+>   return <+...x...+>;
+> |
+>   return NULL;
+> |
+>   return;
+> |
+> * return ...;
+> )
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> This changes the semantics of the function and has not been tested.
 
-We run the load-balancer in softirq context, on -rt that's a task, and
-we could have ran other (more important) RT tasks between the hardirq
-and the softirq running, which would increase the rt_avg and could thus
-result in >100%.
+It restores the semantics to what they should be and used to be.  This
+probably happened during the introduction of proper refcounting and
+locking into the AX.25 stack.  Looks fine to me.
 
-But I think we can simply retain the sched_avg_update(rq) in
-sched_rt_avg_update(), that is ran with rq->lock held and should be
-enough to avoid that case.
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-We can retain the other bit of you patch, moving sched_avg_update() from
-scale_rt_power() to update_cpu_load(), since that is only concerned with
-lowering the average when there is no actual activity.
-
-
+  Ralf
