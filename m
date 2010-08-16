@@ -1,85 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab0HPHvV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 03:51:21 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38354 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752883Ab0HPHvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 03:51:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Xnr8XY9GY2g2rQGGVCDw/cftzrhyWr8sPyxxUpc2x1102FzZ/TuvbvwggFUtkCUbDG
-         ruohBZQS4vlelI2a0sufCV9AGtvoaeaBsZCJ7PBgvezq9kTlkEhj7wycOhkHBSLiiQSD
-         uj5yzjvP3R/GsEbegEV9mC6QhCtODk3ZFXbjM=
-Subject: Re: [PATCH] mmc: build fix: mmc_pm_notify is only available with
- CONFIG_PM=y
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, David Brownell <david-b@pacbell.net>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1281693667.4160.0.camel@maxim-laptop>
-References: <1276809814-28683-1-git-send-email-maximlevitsky@gmail.com>
-	 <1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de>
-	 <1281693667.4160.0.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 10:51:11 +0300
-Message-ID: <1281945071.3449.4.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1752825Ab0HPH64 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 03:58:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58223 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607Ab0HPH6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 03:58:55 -0400
+Message-ID: <4C68EF09.2010509@kernel.org>
+Date: Mon, 16 Aug 2010 09:55:53 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Xiaotian Feng <dfeng@redhat.com>
+CC: linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH] workqueue: free rescuer on destroy_workqueue
+References: <1281694939-4163-1-git-send-email-dfeng@redhat.com>
+In-Reply-To: <1281694939-4163-1-git-send-email-dfeng@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 Aug 2010 07:58:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 13:01 +0300, Maxim Levitsky wrote: 
-> On Fri, 2010-08-13 at 11:24 +0200, Uwe Kleine-König wrote: 
-> > This fixes a build breakage introduced by
-> > 
-> > 	4c2ef25 (mmc: fix all hangs related to mmc/sd card insert/removal during suspend/resume)
-> > 
-> > Cc: Maxim Levitsky <maximlevitsky@gmail.com>
-> > Cc: David Brownell <david-b@pacbell.net>
-> > Cc: Alan Stern <stern@rowland.harvard.edu>
-> > Cc: linux-mmc@vger.kernel.org
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> >  drivers/mmc/core/host.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> > index 0efe631..d80cfdc 100644
-> > --- a/drivers/mmc/core/host.c
-> > +++ b/drivers/mmc/core/host.c
-> > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
-> >  	init_waitqueue_head(&host->wq);
-> >  	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
-> >  	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
-> > +#ifdef CONFIG_PM
-> >  	host->pm_notify.notifier_call = mmc_pm_notify;
-> > +#endif
-> >  
-> >  	/*
-> >  	 * By default, hosts do not support SGIO or large requests.
+On 08/13/2010 12:22 PM, Xiaotian Feng wrote:
+> wq->rescuer is not freed when wq is destroyed, leads a memory leak
+> then. This patch also remove a redundant line.
 > 
-> Hi,
-> 
-> Sorry about that!
+> Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Oleg Nesterov <oleg@redhat.com>
 
+Applied to wq#for-linus.  Thanks.
 
-Hi folks,
-
-Sorry again for this bug.
->From now on I will test compilation rigorously. 
-
-If you need it,
-Acked-by: Maxim Levitsky <maximlevitsky@gmail.com>
-
-Best regards,
-Maxim Levitsky
-
+-- 
+tejun
