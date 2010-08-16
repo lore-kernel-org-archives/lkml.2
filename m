@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756700Ab0HPVE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:04:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61923 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750929Ab0HPVE1 (ORCPT
+	id S932213Ab0HPVFe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:05:34 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:38489 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752689Ab0HPVFc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:04:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=JXFVALmO91hb1rtzv2mcP9BXpJZQIMusB1qN2CPs1dJsUlpA4Wb9Df1ljX3XdVhgqR
-         yaiIa+ZHORwPPqutjtKVc23oWHpK7OY8bLHgBajAPcsux60YuxYpcqIFwCZ0Z9f3QBLJ
-         urpUrVB/cI4TKSzUA/jgfrScmIb7oZAadpgHA=
+	Mon, 16 Aug 2010 17:05:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=EDoij01/wD31Xb+8gjnyEfxBq8obhNzae0OyQ9tCT50M73/4CIfqxEmCAymVkmDEX
+	PC+yWAMLMD8QL6btffytw==
 MIME-Version: 1.0
-Date: Mon, 16 Aug 2010 21:04:25 +0000
-Message-ID: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com>
-Subject: BUG: nconfig doesn't preserve case in its menu display
-From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
-To: Linux is full of bugs <linux-kernel@vger.kernel.org>,
-        Nir Tzachar <nir.tzachar@gmail.com>, Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
+References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
+	<1281987236.1926.1895.camel@laptop>
+	<AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
+Date: Mon, 16 Aug 2010 14:05:28 -0700
+Message-ID: <AANLkTinDwPgqyUDcyjfe+DaTRta=ERfseUGMg9yvZ4gA@mail.gmail.com>
+Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and the implementation.
+From: Salman Qazi <sqazi@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, adurbin@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I do "make nconfig" and go to "General Setup" my "Local version -
-append to kernel release" entry appears as:
+On Mon, Aug 16, 2010 at 1:59 PM, Salman Qazi <sqazi@google.com> wrote:
+>
+>
+> On Mon, Aug 16, 2010 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>>
+>> On Mon, 2010-08-16 at 11:30 -0700, Salman Qazi wrote:
+>> > For the delete case,
+>> > we no longer shrink the tree back to being just the root containing the
+>> > only remaining object.  For the insert case, we no longer store the
+>> > first object in the root, rather allocating a node structure for it.  The
+>> > reason that this works is that deleting (or inserting) intermediate nodes
+>> > does not make a difference to a reader holding a slot.
+>>
+>> Ah, I through that was what it did. So you basically increase the memory
+>> footprint for tiny files.. have you done any measurements on that?
+>
+>
 
-    (-avar-akbar) Local version - append to kernel release
 
-When I use "make menuconfig" it's:
-
-    (-Avar-Akbar) Local version - append to kernel release
-
-And my .config agrees:
-
-    $ ack -n1 CONFIG_LOCALVERSION .config
-    CONFIG_LOCALVERSION="-Avar-Akbar"
-
-But when I edit the version string in both menuconfig and nconfig it
-retains the correct casing.
-
-I briefly searched through the nconfig code, but couldn't find
-anything pertinent to the localversion, so this is probably a more
-general issue.
+You raise a valid concern.  I haven't.  What would you recommend as a
+benchmark/metric to measure this?
+(had to resend this. mail client had decided to switch to HTML mode,
+which LKML didn't like)
