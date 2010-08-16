@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab0HPVHq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 17:07:46 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34509 "EHLO
+	id S1756825Ab0HPVHn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 17:07:43 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34501 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756697Ab0HPVHm (ORCPT
+	with ESMTP id S1755755Ab0HPVHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 17:07:42 -0400
+	Mon, 16 Aug 2010 17:07:41 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
-Subject: [GIT PULL] kgdb/kdb fixes for 2.6.36-rc1
-Date: Mon, 16 Aug 2010 16:06:24 -0500
-Message-Id: <1281992789-2471-1-git-send-email-jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+        Namhyung Kim <namhyung@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 2/5] kgdb: add missing __percpu markup in arch/x86/kernel/kgdb.c
+Date: Mon, 16 Aug 2010 16:06:26 -0500
+Message-Id: <1281992789-2471-3-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 16 Aug 2010 21:06:34.0963 (UTC) FILETIME=[E8BA5A30:01CB3D86]
+In-Reply-To: <1281992789-2471-2-git-send-email-jason.wessel@windriver.com>
+References: <1281992789-2471-1-git-send-email-jason.wessel@windriver.com>
+ <1281992789-2471-2-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 16 Aug 2010 21:06:36.0526 (UTC) FILETIME=[E9A8D8E0:01CB3D86]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, please pull the for_linus branch which contains:
-   * Fixes for compilation/warning errors since the kdb/kms merge
-   * 1 run time fix for atomic kms where console_blanked was not saved
+From: Namhyung Kim <namhyung@gmail.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_lin
-us
+breakinfo->pev is a pointer to percpu pointer but was missing __percpu markup.
+Add it.
 
-Thanks,
-Jason.
-
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
-The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
-  Linus Torvalds (1):
-        Linux 2.6.36-rc1
+ arch/x86/kernel/kgdb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-are available in the git repository at:
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index ef10940..852b819 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -194,7 +194,7 @@ static struct hw_breakpoint {
+ 	unsigned long		addr;
+ 	int			len;
+ 	int			type;
+-	struct perf_event	**pev;
++	struct perf_event	* __percpu *pev;
+ } breakinfo[HBP_NUM];
+ 
+ static unsigned long early_dr7;
+-- 
+1.6.3.3
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_lin
-us
-
-Eric Miao (1):
-      arm,kgdb: fix GDB_MAX_REGS no longer used
-
-Jason Wessel (3):
-      kdb: fix compile error without CONFIG_KALLSYMS
-      vt: fix regression warnings from KMS merge
-      vt,console,kdb: preserve console_blanked while in kdb
-
-Namhyung Kim (1):
-      kgdb: add missing __percpu markup in arch/x86/kernel/kgdb.c
-
- arch/arm/kernel/kgdb.c         |    2 +-
- arch/x86/kernel/kgdb.c         |    2 +-
- drivers/char/vt.c              |   11 +++++++----
- kernel/debug/kdb/kdb_private.h |    7 +++++++
- kernel/debug/kdb/kdb_support.c |    4 ++--
- 5 files changed, 18 insertions(+), 8 deletions(-)
