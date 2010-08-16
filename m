@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752575Ab0HPF35 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 01:29:57 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:39981 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752540Ab0HPF3z (ORCPT
+	id S1752555Ab0HPGJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 02:09:24 -0400
+Received: from compulab.co.il ([67.18.134.219]:52056 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab0HPGJW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 01:29:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:reply-to:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=VYweAEeRmECSFhl2svjZiyhp7nAOPo9Azf2DUDm0SizHMN7JYoJidWD+F9zGs4Kusn
-         jp2A72+tPKuNep0PIv0a0XyrPquZ0toz6XlLk/d1mQvqh4L5URD6SkcpIA7paZj9Gpgw
-         GQ5ce8TZWFZWTUbZhDHrRgyd50Bqj5JTFnquo=
-Message-ID: <4C68CCCD.5060303@gmail.com>
-Date: Mon, 16 Aug 2010 13:29:49 +0800
-From: "Mr. Teo En Ming (Zhang Enming) of Singapore" 
-	<space.time.universe@gmail.com>
-Reply-To: space.time.universe@gmail.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	Mon, 16 Aug 2010 02:09:22 -0400
+Message-ID: <4C68D607.3090202@compulab.co.il>
+Date: Mon, 16 Aug 2010 09:09:11 +0300
+From: Igor Grinberg <grinberg@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.1.9) Gecko/20100504 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Pasi_K=E4rkk=E4inen?= <pasik@iki.fi>
-CC: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "space.time.universe@gmail.com" <space.time.universe@gmail.com>,
-        "teoenming@hotmail.com" <teoenming@hotmail.com>,
-        zhang_enming@lavabit.com
-Subject: Re: [Xen-devel] Xen patches merged to upstream Linux 2.6.36,	plans
- for 2.6.37?
-References: <20100815160904.GM2804@reaktio.net>
-In-Reply-To: <20100815160904.GM2804@reaktio.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-usb@vger.kernel.org, Sergei Shtylyov <sshtylyov@mvista.com>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH v2] ARM: imx: fix build failure concerning otg/ulpi
+References: <4C65246E.1000906@ru.mvista.com> <1281701210-27776-1-git-send-email-u.kleine-koenig@pengutronix.de> <4C6783C7.1030604@compulab.co.il> <20100816045340.GA17038@pengutronix.de>
+In-Reply-To: <20100816045340.GA17038@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good news! Good news! Xen pv-ops dom0 is finally just starting to get 
-merged into upstream Linux...
+On 08/16/10 07:53, Uwe Kleine-König wrote:
+> Hello Igor,
+>
+> On Sun, Aug 15, 2010 at 09:05:59AM +0300, Igor Grinberg wrote:
+>   
+>> On 08/13/10 15:06, Uwe Kleine-König wrote:
+>>     
+>>> The build failure was introduced by
+>>>
+>>> 	13dd0c9 (USB: otg/ulpi: extend the generic ulpi driver.)
+>>>
+>>> Cc: Igor Grinberg <grinberg@compulab.co.il>
+>>> Cc: Mike Rapoport <mike@compulab.co.il>
+>>> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+>>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>>>   
+>>>       
+>> I've based my patches on v2.6.35-rc6, so I could not patch
+>> those imx variants, sorry...
+>> But I did deal with mach-pca100.c, so I think moving it from
+>> mach-mx2 to mach-imx is what made it miss my patch.
+>>
+>> Anyway, this looks like the right addition.
+>>     
+> I assume this is an Ack?
+>   
 
-Starting with Linux 2.6.36....
-
-Yours sincerely,
-
-Mr. Teo En Ming (Zhang Enming)
-Citizenship: Singapore Citizen/Singaporean
-Facebook account: Teo En Ming (Zhang Enming)
-Facebook link:http://www.facebook.com/profile.php?id=100000750083982
-Facebook photos:
-http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos  <http://www.facebook.com/profile.php?id=100000750083982#%21/profile.php?id=100000750083982&v=photos>
-Facebook videos:
-http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137  <http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137>
-Mobile Phone (Starhub pre-paid): +65-8369-2618
-Windows Live Messenger:teoenming at hotmail.com  <https://admin.fedoraproject.org/mailman/listinfo/users>
-Location: Bedok Reservoir Road, Singapore
-ZIP: 470103
-My Open Letter (Plea for Medical Help/Assistance) to World Leaders:-
-http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007693.html
-http://lists.fedoraproject.org/pipermail/users/2010-August/380213.html
-http://mythtv.org/pipermail/mythtv-users/2010-August/294733.html
+Acked-by: Igor Grinberg <grinberg@compulab.co.il>
 
 
+Greg,
 
-On 08/16/2010 12:09 AM, Pasi Kärkkäinen wrote:
-> Hello,
+Can you, please, add this as a fix (maybe urgent) for build failure?
+
+Thanks
+
+> Best regards
+> Uwe
 >
-> It looks like upstream linux-2.6.git contains at least the following
-> xen related new features for Linux 2.6.36:
->
-> - Xen-SWIOTLB support (required for Xen PCI passthru and dom0)
-> - Xen PV-on-HVM drivers
-> - Xen VBD online dynamic resize of guest disks (xvd*)
->
-> Congratulations!
->
-> What are the plans for 2.6.37 merge window? I believe at least:
-> - Xen PCI frontend
->
-> Others? I'm going to update the XenParavirtOps and XenKernelFeatures wiki pages..
->
-> -- Pasi
->
->
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
->
->    
+>   
+
+-- 
+Regards,
+Igor.
 
