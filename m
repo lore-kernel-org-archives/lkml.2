@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab0HPTNa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:13:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39732 "EHLO
+	id S1756020Ab0HPTQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:16:32 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39953 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755621Ab0HPTN3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755896Ab0HPTQb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:13:29 -0400
-Subject: Re: [PATCH -v2] perf, x86: try to handle unknown nmis with running
- perfctrs
+	Mon, 16 Aug 2010 15:16:31 -0400
+Subject: Re: [LOCKDEP BUG][2.6.36-rc1] xt_info_wrlock?
 From: Peter Zijlstra <peterz@infradead.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Robert Richter <robert.richter@amd.com>, Don Zickus <dzickus@redhat.com>,
-        Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, Yinghai Lu <yinghai@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100816190659.GI5805@lenovo>
-References: <20100804163930.GE5130@lenovo>
-	 <20100804184806.GL26154@erda.amd.com> <20100804192634.GG5130@lenovo>
-	 <20100806065203.GR26154@erda.amd.com> <20100806142131.GA1874@redhat.com>
-	 <20100809194829.GB26154@erda.amd.com> <20100811220058.GT26154@erda.amd.com>
-	 <1281970116.1926.1495.camel@laptop> <20100816162706.GH5805@lenovo>
-	 <20100816171610.GN26154@erda.amd.com>  <20100816190659.GI5805@lenovo>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1281984528.2487.25.camel@edumazet-laptop>
+References: <1281978469.3268.55.camel@gandalf.stny.rr.com>
+	 <1281979893.2524.54.camel@edumazet-laptop>
+	 <1281981301.3268.110.camel@gandalf.stny.rr.com>
+	 <1281982566.3268.137.camel@gandalf.stny.rr.com>
+	 <1281983814.1926.1763.camel@laptop>
+	 <1281984528.2487.25.camel@edumazet-laptop>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 21:13:16 +0200
-Message-ID: <1281985996.1926.1848.camel@laptop>
+Date: Mon, 16 Aug 2010 21:16:17 +0200
+Message-ID: <1281986177.1926.1858.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 23:06 +0400, Cyrill Gorcunov wrote:
-> I never heard of backward running tsc, though tsc is a strange beast.
+On Mon, 2010-08-16 at 20:48 +0200, Eric Dumazet wrote:
+> Le lundi 16 août 2010 à 20:36 +0200, Peter Zijlstra a écrit :
+> > On Mon, 2010-08-16 at 14:16 -0400, Steven Rostedt wrote:
+> > > @@ -729,8 +729,10 @@  static void get_counters(const struct
+> > > xt_table_info *t,
+> > >         local_bh_enable();
+> > >         /* Processing counters from other cpus, we can let bottom half
+> > > enabled,
+> > >          * (preemption is disabled)
+> > > +        * We must turn off lockdep to avoid a false positive.
+> > >          */
+> > >  
+> > > +       lockdep_off();
+> > >         for_each_possible_cpu(cpu) {
+> > > 
+> > nack!
 > 
-Its not supposed to happen, but then there's BIOS failure-add that frobs
-the TSC from SMIs and fun TSC artifacts around CPU frequency changes and
-people resetting TSC in S-states etc..
+> 
+> Interesting.
+> 
+> Care to elaborate ?
 
-In short, never trust the TSC to be even remotely sane.
+Adding lockdep_off() is just plain wrong, if you cannot describe the
+locking there's a fair chance its wrong anyway.
+
+As it stands there's only a single lockdep_off(), and that lives in NTFS
+it looks like it could be annotated differently, but then, who cares
+about NTFS anyway ;-)
+
+
