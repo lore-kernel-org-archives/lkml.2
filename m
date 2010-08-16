@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754315Ab0HPOW5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:22:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51009 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250Ab0HPOW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:22:56 -0400
-Date: Mon, 16 Aug 2010 15:22:46 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Zdenek Kabelac <zkabelac@redhat.com>
-Cc: device-mapper development <dm-devel@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jeff Chua <jeff.chua.linux@gmail.com>, lvm-devel@redhat.com
-Subject: Re: [lvm-devel] [dm-devel] linux-2.6.35+ causes LVM to fail with "
-	device-mapper: version ioctl failed: Inappropriate ioctl for device"
-Message-ID: <20100816142246.GA11907@agk-dp.fab.redhat.com>
-Mail-Followup-To: Zdenek Kabelac <zkabelac@redhat.com>,
-	device-mapper development <dm-devel@redhat.com>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Jeff Chua <jeff.chua.linux@gmail.com>, lvm-devel@redhat.com
-References: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com> <20100814155401.GJ26032@agk-dp.fab.redhat.com> <AANLkTi=aJ7f5X9sMeA85KJxi+rzWhiZCZ2ZwriNEVFCT@mail.gmail.com> <20100815130336.GA24055@agk-dp.fab.redhat.com> <AANLkTinUuphqozgrSMNnrKxJrPWFp77y2TzdEwtuMD42@mail.gmail.com> <4C6943A0.9030708@redhat.com>
+	id S1754469Ab0HPOXN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:23:13 -0400
+Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:47272 "EHLO
+	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754406Ab0HPOXL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 10:23:11 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: "Yang, Bo" <Bo.Yang@lsi.com>, James Bottomley <James.Bottomley@suse.de>,
+        "Austria, Winston" <Winston.Austria@lsi.com>
+CC: Yinghai Lu <yinghai@kernel.org>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Maharana, Parag" <Parag.Maharana@lsi.com>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>,
+        "Benz, Michael" <Michael.Benz@lsi.com>
+Date: Mon, 16 Aug 2010 08:22:59 -0600
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Topic: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I:
+ Enable Online Controller Reset Bit in register related functions
+Thread-Index: Acsw2E0UU5zHj3F8SMOoBE3QdnJBMAJWWdvQAMcYl8A=
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3DBE62B60@cosmail02.lsi.com>
+References: <4B6A08C587958942AA3002690DD4F8C3D0804533@cosmail02.lsi.com>
+	 <AANLkTikM_rCfKKUd9vokhBi_YWg5qIPRKsnfiQiluFwl@mail.gmail.com>
+	 <1277046060.5242.18.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CC@cosmail02.lsi.com>
+	 <1277063250.5242.25.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3D09275CE@cosmail02.lsi.com>
+	 <1277066924.5242.41.camel@mulgrave.site>
+	 <4B6A08C587958942AA3002690DD4F8C3DBCC8483@cosmail02.lsi.com>
+ <1280598371.2801.11.camel@mulgrave.site> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6943A0.9030708@redhat.com>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7GENPPt001207
 
-On Mon, Aug 16, 2010 at 03:56:48PM +0200, Zdenek Kabelac wrote:
-> Dne 15.8.2010 16:13, Jeff Chua napsal(a):
-> > With 2.6.35++, /dev/mapper/control has moved from 60 to 236!
+James,
 
-The latest LVM package made an assumption that it would be set up
-correctly by udev (or manually in your case).  We are updating
-the userspace libdevmapper code to handle your circumstances
-automatically.
+We submitted the patches on 8/11.  Do you get the chances to update those patches to main tree?
 
-> > # vgchange -a n vg01
-> >   Internal error: Maps lock 14217216 < unlock 14221312
-> >   Internal error: Maps lock 14221312 < unlock 14225408
-> >   Internal error: Maps lock 14225408 < unlock 14229504
-> >   Internal error: Maps lock 14229504 < unlock 14233600
-> >   Internal error: Maps lock 14233600 < unlock 14237696
-> >   Internal error: Maps lock 14237696 < unlock 14241792
-> >   0 logical volume(s) in volume group "vg01" now active
+Thanks,
 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=d7824370e26325c881b665350ce64fb0a4fde24a
+Bo Yang
 
-For those interested, originally we used mlockall() but in non-C locales
-on some distributions glibc is configured to map 80MB+ of locale data
-into memory without offering any way to unmap it.  We don't need
-that data locked and it increased the minimum memory required to install
-a distribution as well as slowing down the LVM tools!  So we had to
-write a customised version that tries to skip locking unnecessary pages
-like those.
- 
-Alasdair
+-----Original Message-----
+From: Yang, Bo 
+Sent: Thursday, August 12, 2010 11:21 AM
+To: 'James Bottomley'
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Maharana, Parag; Daftardar, Jayant
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
 
+James,
+
+Just let you know the new patches already submitted yesterday.  Please let me know after you updated those patches to the main tree.
+
+Regards,
+
+Bo Yang
+
+-----Original Message-----
+From: James Bottomley [mailto:James.Bottomley@suse.de] 
+Sent: Saturday, July 31, 2010 1:46 PM
+To: Yang, Bo
+Cc: Yinghai Lu; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Maharana, Parag; Daftardar, Jayant
+Subject: RE: [PATCH 1/12] scsi: megaraid_sas - Online Controller Reset - I: Enable Online Controller Reset Bit in register related functions
+
+On Fri, 2010-07-30 at 12:53 -0600, Yang, Bo wrote:
+> Do you know when those patches (12 patches) will be pushed to upstream?
+
+Well, it looks like I lost the branch I was fixing all this up in
+somewhere.  I don't really have time to redo that work, so could you
+send the series correctly (that's the 8 OCR patches that don't
+individually compile as a single patch with a correct changelog plus the
+four others).
+
+Thanks,
+
+James
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
