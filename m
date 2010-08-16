@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab0HPMZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:25:52 -0400
-Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:37816 "EHLO
-	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224Ab0HPMZv (ORCPT
+	id S1753442Ab0HPM1R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:27:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49821 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab0HPM1Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:25:51 -0400
-Message-ID: <4C692E4C.4040300@neli.hopto.org>
-Date: Mon, 16 Aug 2010 14:25:48 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
+	Mon, 16 Aug 2010 08:27:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=rG7tUlZjLivtrssV0vv0b0kn0jzkhyhTum5MCWVVY7vQCeh0Hbyn5fLhk0jvAh4RkR
+         wPsjXNtvEquHUKp0I1RuzEKSLMexGF0b1ZAcbxZPp/HW7BVTDxHmhu8Gl+n+QqD0GE0O
+         t91QpMqlsC0SzZ1PTl/vw8F8MIxocMWK8GYd0=
 MIME-Version: 1.0
-To: Alexandre Bounine <alexandre.bounine@idt.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 6/9] RapidIO: Add switch-specific sysfs initialization
- callback
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-7-git-send-email-alexandre.bounine@idt.com>
-In-Reply-To: <1281712686-31308-7-git-send-email-alexandre.bounine@idt.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <19561.10098.732048.877464@ipc1.ka-ro>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de>
+	<1281956870-12463-2-git-send-email-s.hauer@pengutronix.de>
+	<19561.10098.732048.877464@ipc1.ka-ro>
+Date: Mon, 16 Aug 2010 14:27:15 +0200
+Message-ID: <AANLkTi=otwukcL2RM3P=hdAgzY+QDv99abQh4QXtVuqo@mail.gmail.com>
+Subject: Re: [PATCH 1/3] dmaengine: add possibility for cyclic transfers
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Haavard Skinnemoen <haavard.skinnemoen@atmel.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexandre Bounine wrote:
-> -	if (!rdev->rswitch)
-> -		goto out;
-> -
+2010/8/16 Lothar Waﬂmann <LW@karo-electronics.de>:
 
-Is it safe? All devices have a switch?
+> Why not implement this feature using cyclic SG lists (created with
+> sg_chain())? This would give you endless DMA transfers without any
+> special DMA API extensions.
 
-> @@ -63,10 +59,11 @@ struct device_attribute rio_dev_attrs[] = {
->  	__ATTR_RO(asm_did),
->  	__ATTR_RO(asm_vid),
->  	__ATTR_RO(asm_rev),
-> -	__ATTR_RO(routes),
->  	__ATTR_NULL,
->  };
->  
-> +static DEVICE_ATTR(routes, S_IRUGO, routes_show, NULL);
-> +
+That would be elegant...
 
-This seems a separate change from the sw_sysfs? Why make it separate?
+The driver will have to detect that the sglist is chained like an
+ouroboros to program the DMAC apropriately, is is easy to
+detect if an sglist is chained onto itself?
 
->   */
->  struct rio_switch {
-> @@ -256,6 +257,7 @@ struct rio_switch {
->  			   u8 *sw_domain);
->  	int (*em_init) (struct rio_dev *dev);
->  	int (*em_handle) (struct rio_dev *dev, u8 swport);
-> +	int (*sw_sysfs) (struct rio_dev *dev, int create);
->  	struct rio_dev *nextdev[0];
->  };
-
-Why not make a sw_sysfs_create and sw_sysfs_remove? Is better for 
-readability. Now you call 'sw_sysfs(dev, 0)' or 'sw_sysfs(dev, 1)';
-
-Micha
+Yours,
+Linus Walleij
