@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab0HPMRw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:17:52 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:36358 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751723Ab0HPMRv (ORCPT
+	id S1753223Ab0HPMSl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:18:41 -0400
+Received: from edu-smtp-01.edutel.nl ([88.159.1.175]:47488 "EHLO
+	edu-smtp-01.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751779Ab0HPMSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:17:51 -0400
-Date: Mon, 16 Aug 2010 14:19:33 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] x86-32: Fix crashes with CPU hotplug on AMD
- machines
-Message-ID: <20100816121933.GA28147@aftab>
-References: <1280940316-7966-2-git-send-email-bp@amd64.org>
- <4C59F24B.1010702@zytor.com>
- <20100805074503.GI18307@amd.com>
- <4C5AC736.20903@zytor.com>
- <20100812144142.GY23755@8bytes.org>
- <4C64148D.5080305@zytor.com>
- <20100812170644.GZ23755@8bytes.org>
- <4C644507.9020606@zytor.com>
- <20100812190414.GA23755@8bytes.org>
- <20100813123543.GC9046@aftab>
+	Mon, 16 Aug 2010 08:18:40 -0400
+Message-ID: <4C692C9D.6040100@neli.hopto.org>
+Date: Mon, 16 Aug 2010 14:18:37 +0200
+From: Micha Nelissen <micha@neli.hopto.org>
+User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100813123543.GC9046@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Alexandre Bounine <alexandre.bounine@idt.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 4/9] RapidIO: Add relation links between RIO device structures
+References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-5-git-send-email-alexandre.bounine@idt.com>
+In-Reply-To: <1281712686-31308-5-git-send-email-alexandre.bounine@idt.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@amd64.org>
-Date: Fri, Aug 13, 2010 at 08:35:43AM -0400
+Alexandre Bounine wrote:
+> Create back and forward links between RIO devices. These links are intended for
+> use by error management and hot-plug extensions.
 
-> > > > The synchronization problem might be real. The cpu_init function uses
-> > > > per-cpu variables which might not be present in the early synced
-> > > > tramponline page table (iirc). The change to swapper_pg_dir and the
-> > > > global tlb flush should probably be moved to the very beginning of the
-> > > > start_secondary function.
-> > > > 
-> > > 
-> > > Are you going to submit an updated patch, then?
-> > 
-> > Yes, I will send it next week when I am back in office and gave it some
-> > testing.
-> 
-> currently testing...
+As RapidIO is a switched network, the concept of 'previous' and 'next' 
+devices is invalid. Perhaps it's just the way they were 
+discovered/enumerated, but that does not matter any more at runtime. Or 
+at least, should not matter.
 
-Updated versions survived almost 48h of uninterrupted hammering, I'm
-sending them as a reply to this message...
+> @@ -237,6 +241,7 @@ struct rio_switch {
+>  	u16 hopcount;
+>  	u16 destid;
+>  	u8  inport;
+> +	u8  nports;
+>  	u8 *route_table;
+>  	u32 port_ok;
 
--- 
-Regards/Gruss,
-Boris.
+This can be extracted from the swpinfo field (which you removed in 
+another patch)?
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Micha
