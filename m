@@ -1,92 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756222Ab0HPTbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:31:12 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35993 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756101Ab0HPTbL (ORCPT
+	id S1756244Ab0HPTbo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:31:44 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37582 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756101Ab0HPTbm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:31:11 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-From: Takao Indoh <indou.takao@jp.fujitsu.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, vgoyal@redhat.com,
-        nhorman@tuxdriver.com
-Subject: Re: [PATCH][EFI] Run EFI in physical mode
-Date: Mon, 16 Aug 2010 15:30:03 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Mailer: HidemaruMail 5.38 (WinNT,501)
-In-Reply-To: <m1iq3ep33n.fsf@fess.ebiederm.org>
-References: <F0CB3B1C601247indou.takao@jp.fujitsu.com> <m1iq3ep33n.fsf@fess.ebiederm.org>
-Message-Id: <F4CB3D796CF475indou.takao@jp.fujitsu.com>
-X-Antivirus: avast! (VPS 100816-1, 2010/08/16), Outbound message
-X-Antivirus-Status: Clean
+	Mon, 16 Aug 2010 15:31:42 -0400
+Subject: Re: [patch 3/3] sched: move sched_avg_update() to update_cpu_load()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chris@frostnet.net" <chris@frostnet.net>,
+        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
+        "mans@mansr.com" <mans@mansr.com>,
+        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "stephan.eicher@web.de" <stephan.eicher@web.de>,
+        "sxxe@gmx.de" <sxxe@gmx.de>,
+        "thomas@archlinux.org" <thomas@archlinux.org>,
+        "venki@google.com" <venki@google.com>,
+        "wonghow@gmail.com" <wonghow@gmail.com>
+In-Reply-To: <1281980769.2676.33.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
+	 <20100813193911.999833492@sbsiddha-MOBL3.sc.intel.com>
+	 <1281945634.1926.968.camel@laptop>
+	 <1281980769.2676.33.camel@sbsiddha-MOBL3.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 16 Aug 2010 21:31:26 +0200
+Message-ID: <1281987086.1926.1890.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 13 Aug 2010 15:19:56 -0700, "Eric W. Biederman" wrote:
+On Mon, 2010-08-16 at 10:46 -0700, Suresh Siddha wrote:
 
->Takao Indoh <indou.takao@jp.fujitsu.com> writes:
->
->> Hi all,
->>
->> The attached patch enables EFI to run in physical mode.
->>
->> Basically EFI is in physical mode at first and it's switched to virtual
->> mode after calling SetVirtualAddressMap. By applying this patch, you can
->> run EFI always in physical mode. And you can also specify "virtefi" as
->> kernel boot parameter to run EFI in virtual mode as before. Note that
->> this patch supports only x86_64.
->>
->> This is needed to run kexec/kdump in EFI-booted system. The following is
->> an original discussion. In this thread, I explained that kdump does not
->> work because EFI system table is modified by SetVirtualAddressMap. And
->> the idea to run EFI in physical mode was proposed. This patch implements
->> it.
->>
->> http://marc.info/?l=linux-kernel&m=128018221820234&w=2
->>> When the 1st kernel boots, EFI system table(efi_system_table_t) is
->>> modified by SetVirtualAddressMap, which is one of EFI runtime service.
->>> This runtime changes physical address in EFI system table to virtual
->>> address.
->>> 
->>> When the 2nd kernel boots, it also receives the same EFI system table,
->>> and the address included in it is already virtual address(1st kernel
->>> rewrote it).  But 2nd kernel does not know that, 2nd kernel thinks it is
->>> a physical address. This causes problems.
->>
->> Basic idea of this patch is to create EFI own pagetable. This pagetable
->> maps physical address of EFI runtime to the virtual address which is the
->> same value so that we can call it directly. For example, physical 
->> address 0x800000 is mapped to virtual address 0x800000. Before calling
->> EFI runtime, cr3 register is switched to this pagetable, and restored
->> when we come back from EFI.
->>
->> Any comments would be appreciated.
->>
->> Signed-off-by: Takao Indoh <indou.takao@jp.fujitsu.com>
->
->Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
->
->There is what appears to be unneeded redundancy (we need two
->implementations of physciall calls into efi?), but that is confined to
->the weird efi state.
->
->It is a shame you haven't done the little bit extra to get
->efi_pagetable_init working on x86_32.
+> There is no guarantee that the original cpu won't be doing this in
+> parallel with nohz idle load balancing cpu.
 
-Unfortunately I don't have a machine to test. The machine I'm using does 
-not support EFI on x86_32:-( I'd appreciate it if anyone try it...
+Hmm, true.. bugger.
 
-Thanks,
-Takao Indoh
+> > > Fix it by moving the sched_avg_update() to more appropriate update_cpu_load()
+> > > where the CFS load gets updated aswell.
+> > 
+> > Right, except it breaks things a bit, at the very least you really need
+> > that update right before reading it, otherwise you can end up with >100%
+> > fractions, which are odd indeed ;-)
+> 
+> with the patch, the update always happens before reading it. isn't it?
+> 
+> update now happens during the scheduler tick (or during nohz load
+> balancing tick). And the load balancer gets triggered with the tick.
+> So the update (at the tick) should happen before reading it (used by
+> load balancing triggered by the tick). Am I missing something?
 
->
->Overall this seems sane and confined to the x86 efi, and it looks
->like further improvements could easily be layered on top of this one.
->
->Eric
+We run the load-balancer in softirq context, on -rt that's a task, and
+we could have ran other (more important) RT tasks between the hardirq
+and the softirq running, which would increase the rt_avg and could thus
+result in >100%.
+
+But I think we can simply retain the sched_avg_update(rq) in
+sched_rt_avg_update(), that is ran with rq->lock held and should be
+enough to avoid that case.
+
+We can retain the other bit of you patch, moving sched_avg_update() from
+scale_rt_power() to update_cpu_load(), since that is only concerned with
+lowering the average when there is no actual activity.
+
+
