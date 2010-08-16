@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab0HPQNF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:13:05 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49925 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754474Ab0HPQND (ORCPT
+	id S1754726Ab0HPQPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:15:06 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:43423 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab0HPQPE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:13:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=mUc+erK3dCaerYmex1UAb+2qQbJIWSWk/9tZ3+S7QGZhAUeRc1Iz9tbyfdri07Lo56
-         KI+L45K1qVFYIHCtHMYajCpOWofVqOgn19zi+OIZ7HKwRK0psV1fby1f2xk2TMlwVUv/
-         290XGbr5Sqg22KE0WW3j7N1id1+LSluUbMBek=
-Message-ID: <4C6963B8.3020004@gmail.com>
-Date: Mon, 16 Aug 2010 09:13:44 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Mon, 16 Aug 2010 12:15:04 -0400
+Date: Mon, 16 Aug 2010 09:14:33 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>
+Subject: Re: [RFC v3] ext4: Combine barrier requests coming from fsync
+Message-ID: <20100816161433.GK2109@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100429235102.GC15607@tux1.beaverton.ibm.com> <1272934667.2544.3.camel@mingming-laptop> <4BE02C45.6010608@redhat.com> <1273002566.3755.10.camel@mingming-laptop> <20100629205102.GM15515@tux1.beaverton.ibm.com> <20100805164008.GH2901@thunk.org> <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <20100809210723.GA28171@infradead.org>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2]include/video/vga.h update web address.
-References: <1281804202-27500-1-git-send-email-justinmattock@gmail.com> <1281804202-27500-2-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1008161515210.1019@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1008161515210.1019@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100809210723.GA28171@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2010 06:15 AM, Jiri Kosina wrote:
-> On Sat, 14 Aug 2010, Justin P. Mattock wrote:
->
->> The below updates a broken web address to one(hopefully) thats
->> the new correct address.(if not let me know, and ill resend)
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   include/video/vga.h |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/include/video/vga.h b/include/video/vga.h
->> index b49a512..2b8691f 100644
->> --- a/include/video/vga.h
->> +++ b/include/video/vga.h
->> @@ -5,7 +5,7 @@
->>    *
->>    * Copyright history from vga16fb.c:
->>    *	Copyright 1999 Ben Pfaff and Petr Vandrovec
->> - *	Based on VGA info at http://www.goodnet.com/~tinara/FreeVGA/home.htm
->> + *	Based on VGA info at http://www.osdever.net/FreeVGA/home.htm
->>    *	Based on VESA framebuffer (c) 1998 Gerd Knorr
->>    *
->>    * This file is subject to the terms and conditions of the GNU General
->
-> Seems reasonable. Thanks,
->
+On Mon, Aug 09, 2010 at 05:07:23PM -0400, Christoph Hellwig wrote:
+> Can you try with the new barrier implementation in the
+> 
+> 	[PATCH, RFC] relaxed barriers
+> 
+> by making cache flushes just that and not complicated drain barrier
+> it should speed this case up a lot.
 
-alright..
+Indeed it does!  The barrier count increases to about 21000, but I also see
+much higher throughput, about 830 transactions per second (versus 12000 and 760
+respectively before Tejun's patch).
 
-Justin P. Mattock
+--D
