@@ -1,58 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868Ab0HPHvD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 03:51:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53316 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752769Ab0HPHvC convert rfc822-to-8bit (ORCPT
+	id S1752916Ab0HPHvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 03:51:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38354 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752883Ab0HPHvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 03:51:02 -0400
-Subject: Re: [patch 2/3] sched: fix minimum power returned by
- update_cpu_power()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, chris@frostnet.net,
-        debian00@aliceadsl.fr, hpa@zytor.com, jonathan.protzenko@gmail.com,
-        mans@mansr.com, psastudio@mail.ru, rjw@sisk.pl, stephan.eicher@web.de,
-        sxxe@gmx.de, thomas@archlinux.org, venki@google.com, wonghow@gmail.com
-In-Reply-To: <20100813193911.909546779@sbsiddha-MOBL3.sc.intel.com>
-References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
-	 <20100813193911.909546779@sbsiddha-MOBL3.sc.intel.com>
+	Mon, 16 Aug 2010 03:51:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Xnr8XY9GY2g2rQGGVCDw/cftzrhyWr8sPyxxUpc2x1102FzZ/TuvbvwggFUtkCUbDG
+         ruohBZQS4vlelI2a0sufCV9AGtvoaeaBsZCJ7PBgvezq9kTlkEhj7wycOhkHBSLiiQSD
+         uj5yzjvP3R/GsEbegEV9mC6QhCtODk3ZFXbjM=
+Subject: Re: [PATCH] mmc: build fix: mmc_pm_notify is only available with
+ CONFIG_PM=y
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, David Brownell <david-b@pacbell.net>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-mmc@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1281693667.4160.0.camel@maxim-laptop>
+References: <1276809814-28683-1-git-send-email-maximlevitsky@gmail.com>
+	 <1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	 <1281693667.4160.0.camel@maxim-laptop>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 16 Aug 2010 09:50:37 +0200
-Message-ID: <1281945037.1926.954.camel@laptop>
+Date: Mon, 16 Aug 2010 10:51:11 +0300
+Message-ID: <1281945071.3449.4.camel@maxim-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-08-13 at 12:45 -0700, Suresh Siddha wrote:
-> plain text document attachment (fix_update_cpu_power.patch)
-> Default cpu_power needs to be multiples of SCHED_LOAD_SCALE and not '1'.
-> Fix it.
+On Fri, 2010-08-13 at 13:01 +0300, Maxim Levitsky wrote: 
+> On Fri, 2010-08-13 at 11:24 +0200, Uwe Kleine-König wrote: 
+> > This fixes a build breakage introduced by
+> > 
+> > 	4c2ef25 (mmc: fix all hangs related to mmc/sd card insert/removal during suspend/resume)
+> > 
+> > Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+> > Cc: David Brownell <david-b@pacbell.net>
+> > Cc: Alan Stern <stern@rowland.harvard.edu>
+> > Cc: linux-mmc@vger.kernel.org
+> > Cc: Andrew Morton <akpm@linux-foundation.org>
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> >  drivers/mmc/core/host.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> > index 0efe631..d80cfdc 100644
+> > --- a/drivers/mmc/core/host.c
+> > +++ b/drivers/mmc/core/host.c
+> > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
+> >  	init_waitqueue_head(&host->wq);
+> >  	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+> >  	INIT_DELAYED_WORK_DEFERRABLE(&host->disable, mmc_host_deeper_disable);
+> > +#ifdef CONFIG_PM
+> >  	host->pm_notify.notifier_call = mmc_pm_notify;
+> > +#endif
+> >  
+> >  	/*
+> >  	 * By default, hosts do not support SGIO or large requests.
 > 
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> ---
->  kernel/sched_fair.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Hi,
 > 
-> Index: tree/kernel/sched_fair.c
-> ===================================================================
-> --- tree.orig/kernel/sched_fair.c
-> +++ tree/kernel/sched_fair.c
-> @@ -2309,7 +2309,7 @@ static void update_cpu_power(struct sche
->  	power >>= SCHED_LOAD_SHIFT;
->  
->  	if (!power)
-> -		power = 1;
-> +		power = SCHED_LOAD_SCALE;
->  
+> Sorry about that!
 
-                            smt_power   freq_power    rt_power
-power = SCHED_LOAD_SCALE * ---------- * ---------- * ----------
-                           LOAD_SCALE   LOAD_SCALE   LOAD_SCALE
 
-Which, in the above case ends up being 0, so how does resetting it back
-to LOAD_SCALE make sense?
+Hi folks,
+
+Sorry again for this bug.
+>From now on I will test compilation rigorously. 
+
+If you need it,
+Acked-by: Maxim Levitsky <maximlevitsky@gmail.com>
+
+Best regards,
+Maxim Levitsky
+
