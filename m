@@ -1,82 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754087Ab0HPOIt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:08:49 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59199 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab0HPOIs (ORCPT
+	id S1754196Ab0HPOKW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:10:22 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:6322 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750965Ab0HPOKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:08:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xcwd3/ufOBHtmExz5tDS0TwExXtxmZlXlQ5u0pCzWHn9nMqr89505njZZgSEvcyjVk
-         UpyS1NHoRFxtCHbraBfTom13Tfl9C4WX1KFQQ29IQNPIkh11rdsmY09t7B7dwtrz6StO
-         Xv/siPQx/IppYJfqjvXkh7RZoZOtGDBMHO+UM=
-Date: Mon, 16 Aug 2010 17:08:29 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog and
- touch_softlockup_watchdog
-Message-ID: <20100816140829.GA5225@swordfish.minsk.epam.com>
-References: <20100813102158.GA5434@swordfish.minsk.epam.com>
- <1281946970.1926.998.camel@laptop>
- <20100816133452.GS4879@redhat.com>
- <1281966418.1926.1421.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281966418.1926.1421.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 16 Aug 2010 10:10:21 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7GE9Mxb015118
+Subject: Re: [PATCH] perf tools: Don't use brace expansion.
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Kusanagi Kouichi <slash@ac.auone-net.jp>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100816124101.1829415C039@msa104.auone-net.jp>
+References: <20100816124101.1829415C039@msa104.auone-net.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Aug 2010 16:09:21 +0200
+Message-ID: <1281967761.17267.6.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-DCC-dcc1-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix: acpi_os_stall calls touch_nmi_watchdog and touch_softlockup_watchdog
-with preemption enabled causing 'BUG: using smp_processor_id() in preemptible
-code'.
-     
-Patch also removes double smp_processor_id call (smp_processor_id itself and in
-__get_cpu_var) in __touch_watchdog.
+On Mon, 2010-08-16 at 21:41 +0900, Kusanagi Kouichi wrote:
+> DASH doesn't support brace expansion.
+> 
+> Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
+> ---
+>  tools/perf/Makefile |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+> index 41abb90..8fa851b 100644
+> --- a/tools/perf/Makefile
+> +++ b/tools/perf/Makefile
+> @@ -157,8 +157,10 @@ all::
+>  #
+>  # Define NO_DWARF if you do not want debug-info analysis feature at all.
+>  
+> -$(shell sh -c 'mkdir -p $(OUTPUT)scripts/{perl,python}/Perf-Trace-Util/' 2> /dev/null)
+> -$(shell sh -c 'mkdir -p $(OUTPUT)util/{ui/browsers,scripting-engines}/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/perl/Perf-Trace-Util/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)scripts/python/Perf-Trace-Util/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)util/ui/browsers/' 2> /dev/null)
+> +$(shell sh -c 'mkdir -p $(OUTPUT)util/scripting-engines/' 2> /dev/null)
+>  $(shell sh -c 'mkdir $(OUTPUT)bench' 2> /dev/null)
+>  
+>  $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+The other solution is to use standard-make features like in
+mkdir -p $(foreach d,ui/browsers scripting-engines,$(OUTPUT)util/$(d)/) 2> /dev/null
 
----
+Is there actually a specific reason for the 
+$(shell sh -c '...')
+around?
+It looks superflous.
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 613bc1f..8822f1e 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -116,13 +116,14 @@ static unsigned long get_sample_period(void)
- static void __touch_watchdog(void)
- {
- 	int this_cpu = smp_processor_id();
--
--	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
-+	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
- }
- 
- void touch_softlockup_watchdog(void)
- {
--	__get_cpu_var(watchdog_touch_ts) = 0;
-+	int this_cpu = get_cpu();
-+	per_cpu(watchdog_touch_ts, this_cpu) = 0;
-+	put_cpu();
- }
- EXPORT_SYMBOL(touch_softlockup_watchdog);
- 
-@@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- void touch_nmi_watchdog(void)
- {
--	__get_cpu_var(watchdog_nmi_touch) = true;
-+	int this_cpu = get_cpu();
-+	per_cpu(watchdog_nmi_touch, this_cpu) = true;
-+	put_cpu();
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
