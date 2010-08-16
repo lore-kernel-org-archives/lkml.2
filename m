@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab0HPURh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 16:17:37 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46785 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754829Ab0HPURf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 16:17:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=uuoVe62YU05uw5XO1KXykhu/DpxtLHJ2L782K2SkdkG+utD8XlL6XYbqherEdl6fw1
-         ldjEjrc/4IYrKpGAGDm91k1pLD9ewqEXnbYG3RrAIz+U8CfGMmzPtmLhyI32/W7GCpeb
-         EXXsX0crDa8l2t4GKMsoSEQKxvqeP8LNK4xmU=
-Subject: Re: [LOCKDEP BUG][2.6.36-rc1] xt_info_wrlock?
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, netdev@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1281988895.1926.1945.camel@laptop>
-References: <1281978469.3268.55.camel@gandalf.stny.rr.com>
-	 <1281979893.2524.54.camel@edumazet-laptop>
-	 <1281981301.3268.110.camel@gandalf.stny.rr.com>
-	 <1281982566.3268.137.camel@gandalf.stny.rr.com>
-	 <1281983814.1926.1763.camel@laptop>
-	 <1281984528.2487.25.camel@edumazet-laptop>
-	 <1281986177.1926.1858.camel@laptop>
-	 <1281987352.2487.40.camel@edumazet-laptop>
-	 <1281988895.1926.1945.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 22:17:30 +0200
-Message-ID: <1281989850.2487.64.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1756460Ab0HPUVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 16:21:12 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:47976 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1754842Ab0HPUVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 16:21:11 -0400
+X-Authenticated: #1045983
+X-Provags-ID: V01U2FsdGVkX1/nRWUnbhvnvW/Fy45uoUet20kd74NSv1VIBTfJn+
+	WnpfXr4IBUMqPC
+Message-ID: <4C699DB1.3010905@gmx.de>
+Date: Mon, 16 Aug 2010 22:21:05 +0200
+From: Helge Deller <deller@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Manfred Spraul <manfred@colorfullife.com>
+Subject: Re: [PATCH][RFC] Fix up rss/swap usage of shm segments in /proc/pid/smaps
+References: <20100811201345.GA11304@p100.box> <20100812131005.e466a9fd.akpm@linux-foundation.org> <4C6468A9.7090503@gmx.de> <alpine.DEB.1.00.1008121522150.9966@tigran.mtv.corp.google.com> <20100813195252.GA2450@p100.box> <alpine.DEB.1.00.1008131455070.12356@tigran.mtv.corp.google.com>
+In-Reply-To: <alpine.DEB.1.00.1008131455070.12356@tigran.mtv.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 16 août 2010 à 22:01 +0200, Peter Zijlstra a écrit :
-> On Mon, 2010-08-16 at 21:35 +0200, Eric Dumazet wrote:
-> > Le lundi 16 août 2010 à 21:16 +0200, Peter Zijlstra a écrit :
-> > 
-> > > Adding lockdep_off() is just plain wrong, if you cannot describe the
-> > > locking there's a fair chance its wrong anyway.
-> > > 
-> > 
-> > I see.
-> > 
-> > I described the fine locking after Steven comment, adding a long
-> > Changelog.
-> > 
-> > http://patchwork.ozlabs.org/patch/61827/
-> > 
-> > If someone thinks this locking is buggy, please speak now ;)
-> 
-> Urgh,.. I think it might be correct, but wtf! Wasn't this originally RCU
-> code, why not go back to using RCU now that we have
-> synchronize_rcu_expedited()?
-> 
-> As to the original issue, why not keep that bh stuff disabled for
-> CONFIG_PROVE_LOCKING instead, that will at least let you keep lock
-> coverage, adding lockdep_off() will hide any cycles that would involve
-> this lock (even though its currently a leaf lock, you never know what
-> creative things the future brings).
-> 
-> This fancy open coded lock looks like utter fail for -rt though.. please
-> use RCU if at all possible.
-> 
-> 
+On 08/14/2010 12:45 AM, Hugh Dickins wrote:
+> On Fri, 13 Aug 2010, Helge Deller wrote:
+>>
+>> I tried quite hard to implement rss/swap accounting for shm segments inside
+>> smaps_pte_range() which is a callback function of walk_page_range() in
+>> show_smap().
+>
+> Sorry, I think the short answer will be that you should give up on this:
+> reasons below.
+>
+>>
+>> Given the fact that I'm no linux-mm expert, I might have overseen other
+>> possibilities, but my experiments inside smaps_pte_range() were not
+>> very successful:
+>>  From my tests, a swapped-out shm segment
+>> 	- fails on the "is_swap_pte()" test, and
+>> 	- succeeds on the "!pte_present()" test (since it's swapped
+>> 	  out).
+>
+> Yes.
+>
+>> So, here would it be possible to add such accounting for swap, but how
+>> can I then see that this pte is
+>> 	a) belonging to a shm segment?, and
+>> 	b) see if this page/pte was really swapped out and not just not
+>> yet written to at all?
+>
+> You would have to add a function in mm/shmem.c to do this: it would
+> need to check vma->vm_file to work out if this vma belongs to it,
+> and use shmem_swp_alloc() to check if the page there is on swap.  OTOH
+> I'm not sure if you could call it while holding page table lock or not.
+>
+>> As answers I found:
+>> 	a) (vma->vm_flags&  VM_MAYSHARE) is true for shm segments (is
+>> 		this check sufficient?)
+>
+> No, VM_MAYSHARE is set on many other kinds of mapping too; and is not
+> set on all mappings of shmem objects - there is no good reason to
+> include SysV shm segments here, yet omit other kinds of shmem object
+> (/dev/shm POSIX shared memory, shared-anonymous mappings, mappings of
+> tmpfs files).
+>
+>> 	b) no idea.
+>>
+>> But if I add this page to the mss.swap entry, all pages including such
+>> which haven't been touched yet at all are suddenly counted as
+>> swapped-out...?
+>>
+>> Any hints here would be great...
+>>
+>>
+>> As an alternative solution, I created the following patch.
+>> This one works nicely, but it's just a fix-up of the mss.resident and
+>> mss.swap values after walk_page_range() was called.
+>> It's mostly a copy of the shm_add_rss_swap() function from
+>> my previous patch (http://marc.info/?l=linux-mm&m=128171161101817&w=2).
+>> Do you think such a fix-up-afterwards-approach is acceptable at all?
+>> If yes, a new patch on top of my ipc/shm.c patch would be easy (and
+>> small).
+>
+> Not acceptable, I'm afraid.  Nothing wrong with a fix-up-afterwards
+> approach as such, but it's assuming that the vma covers the full extent
+> of the shmem object.  That is very often the case, but by no means
+> necessarily so (whereas it is always the case that one vma cannot cover
+> more than one object).  So you do have to count pageslot by pageslot.
+>
+> There are two reasons why I think you have to abandon this.  One is
+> that /proc/<pid>/smaps is reporting on the userspace mappings, saying
+> where swap is instanced in them.  Some of those mappings may be of
+> shmem objects, and some of those shmem objects may use swap backing
+> themselves, but that's different from the mapping using swap directly.
+>
+> One can argue about that distinction, but it is how all this is
+> designed, and blurring that distinction tends to get into trouble.
+> (It's reasonable to think of anonymous mappings as mappings of anon
+> objects, which just happen to find room for the swp_entry in the page
+> table: but then it's a happy accident that smaps can see them.)
+>
+> The second reason is that since 2.6.34, /proc/<pid>/status shows
+> VmSwap: we would not want a huge discrepancy between what it shows
+> in swap and what /proc/<pid>/smaps shows in swap, but nor would we
+> want to make /proc/<pid>/status scan through page tables enquiring
+> of shmem.
+>
+> All this stands in contrast to your /proc/sysvipc/shm patch, which
+> is rightly dealing with one class of shmem object, not via mappings
+> of those objects.
+>
+> There is a case for a "where has my swap gone" tool, which examines
+> the different kinds of object involved (anonymous mappings as well
+> as shmem objects), and shows them all somehow.  But that's a lot
+> more work than just extending an existing stats display.
 
-Please read history of why RCU failed in this context.
+Hugh, thanks for the good and comprehensive summary!
+Seems that I have to live with the /proc/sysvipc/shm overview then :-(
 
-I believe I did most of RCU conversions in kernel, you dont need to
-shout on me.
-
-And its a bit late in 2.6.36 to even think about it.
-
-I am happy that you volunteer for next RCU conversion, thanks Peter !
-
-In the mean time, we just are going to disable BH again, I'll post a
-patch.
-
-
+Thanks,
+Helge
