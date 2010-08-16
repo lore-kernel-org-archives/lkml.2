@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177Ab0HPD10 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 15 Aug 2010 23:27:26 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43208 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab0HPD1Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 15 Aug 2010 23:27:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=QCHtD86lHamp7kBzu351wnpacyNZ/MlPxaJCtgKuZL3HhzTbV76pGarAqwFbGqnzQs
-         FO4wAKCynlCgWYkMP2IV2I+kXZpSspjRhP9lhwqZidgzIyaYW8e3AlSkjvGEcCWRUJ4x
-         crLjyPoEM9Wysmi4q8HX/5/L6DhKpLmn2YzMY=
-Message-ID: <4C68B018.2030900@gmail.com>
-Date: Sun, 15 Aug 2010 21:27:20 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752187Ab0HPD3n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 15 Aug 2010 23:29:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43281 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751675Ab0HPD3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 15 Aug 2010 23:29:42 -0400
+X-User-Agent: K-9 Mail for Android
+References: <F0CB3B1C601247indou.takao@jp.fujitsu.com> <AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>
+In-Reply-To: <AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>
 MIME-Version: 1.0
-To: alto.tom@gmail.com
-CC: linux-kernel@vger.kernel.org
-Subject: Re: bios kernel HD swap
-References: <4c5b9d66.26f88e0a.321c.40a1@mx.google.com>
-In-Reply-To: <4c5b9d66.26f88e0a.321c.40a1@mx.google.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH][EFI] Run EFI in physical mode
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Sun, 15 Aug 2010 20:27:49 -0700
+To: huang ying <huang.ying.caritas@gmail.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, kexec@lists.infradead.org,
+        ebiederm@xmission.com, tglx@linutronix.de, mingo@redhat.com,
+        vgoyal@redhat.com, nhorman@tuxdriver.com
+Message-ID: <faf83501-1e53-459d-88ed-2ac5963a37f2@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/05/2010 11:28 PM, alto.tom@gmail.com wrote:
-> kernel swap the drivers passed by BIOS
->
-> Configuration:
-> 1 sata driver
-> 1 IDE driver primary
-> PC dell optiplex 280
-> boot loader LILO MBR
->
-> The problem:
-> Bios set sata as primary driver (/dav/sda), when the kernel start it maps
-> /dev/hda as dev/sda and move the sata into /dev/sdb the system fails
-> to boot if hda does not have OS, otherwise start the OS (linux) on hda
-> if present but it fails due to version compatibility.
->
-> Main OS is on the sata driver
->
-> Kernel effeted 2.6.33 (Slackware 13.1) and 2.6.35 (latest downloaded from web).
->
-> Kernel that work fine 2.6.24, 2.6.27, sata maps into /dev/sda , ide into /dev/hda.
->
-> Supected: libsata
+No, it should not be dynamic; rather we should unify all the users who need a 1:1 map and just keep that page table set around.
 
-Depending on the configuration the distribution has used it's likely 
-expected that ata_piix (which I assume is the driver in question) is 
-running that drive in current kernel versions. You likely need to update 
-your boot configuration to point to the correct device. (The kernel 
-device ordering is not related to what boot order you selected in the BIOS.)
+"huang ying" <huang.ying.caritas@gmail.com> wrote:
+
+>On Sat, Aug 14, 2010 at 3:18 AM, Takao Indoh <indou.takao@jp.fujitsu.com> wrote:
+>> diff -Nurp linux-2.6.35.org/arch/x86/kernel/efi_64.c linux-2.6.35/arch/x86/kernel/efi_64.c
+>> --- linux-2.6.35.org/arch/x86/kernel/efi_64.c   2010-08-01 18:11:14.000000000 -0400
+>> +++ linux-2.6.35/arch/x86/kernel/efi_64.c       2010-08-13 14:39:25.819105004 -0400
+>> @@ -39,7 +39,9 @@
+>>  #include <asm/fixmap.h>
+>>
+>>  static pgd_t save_pgd __initdata;
+>> -static unsigned long efi_flags __initdata;
+>> +static unsigned long efi_flags;
+>> +static pgd_t efi_pgd[PTRS_PER_PGD] __page_aligned_bss;
+>> +static unsigned long save_cr3;
+>>
+>>  static void __init early_mapping_set_exec(unsigned long start,
+>>                                          unsigned long end,
+>> @@ -98,6 +100,19 @@ void __init efi_call_phys_epilog(void)
+>>        early_runtime_code_mapping_set_exec(0);
+>>  }
+>>
+>> +void efi_call_phys_prelog_in_physmode(void)
+>> +{
+>> +       local_irq_save(efi_flags);
+>> +       save_cr3 = read_cr3();
+>> +       write_cr3(virt_to_phys(efi_pgd));
+>> +}
+>> +
+>> +void efi_call_phys_epilog_in_physmode(void)
+>> +{
+>> +       write_cr3(save_cr3);
+>> +       local_irq_restore(efi_flags);
+>> +}
+>
+>efi_flags and save_cr3 should be per-CPU, because they now will be
+>used after SMP is enabled.
+>
+>efi_pgd should be dynamically allocated instead of statically
+>allocated, because EFI may be not enabled on some platform.
+>
+>And I think it is better to unify early physical mode with run-time
+>physical mode. Just allocate the page table with early page allocator
+>(lmb?).
+>
+>Best Regards,
+>Huang Ying
+>
+
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
