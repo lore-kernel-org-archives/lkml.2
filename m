@@ -1,63 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753580Ab0HPX5m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 19:57:42 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33297 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752999Ab0HPX5l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 19:57:41 -0400
-Message-ID: <4C69CFC4.8020307@zytor.com>
-Date: Mon, 16 Aug 2010 16:54:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1753681Ab0HPX6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 19:58:46 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:37759 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752999Ab0HPX6o convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 19:58:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Smsbbv7mnrlc4KMumq6a5ULMWTlCrrlW6V8SsWfieCOftNlJQAjhddFqQDTAtfcb5S
+         3FY3zDntJGez3hpjbVwzQmvLkr3X+3tHATRpJW2sn4ccHUdRyUTm8+QOAWKdeVf4osfq
+         lVwzOEYokstVgl4hQrk2sVidu8Cvvj2Vxf8m4=
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: huang ying <huang.ying.caritas@gmail.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>, linux-kernel@vger.kernel.org,
-        kexec@lists.infradead.org, tglx@linutronix.de, mingo@redhat.com,
-        vgoyal@redhat.com, nhorman@tuxdriver.com
-Subject: Re: [PATCH][EFI] Run EFI in physical mode
-References: <F0CB3B1C601247indou.takao@jp.fujitsu.com>	<AANLkTimM0H0ryre3pXsXQ6c0e3=v_36-h0TsXzriMWXe@mail.gmail.com>	<faf83501-1e53-459d-88ed-2ac5963a37f2@email.android.com>	<AANLkTimtH41djAF5OxXCeVS8cHg_JCBd+wQ1iT1BUWgX@mail.gmail.com>	<8f5e697c-e9ae-4453-aa7a-7086dd156cc9@email.android.com> <m1ocd2i0u0.fsf@fess.ebiederm.org>
-In-Reply-To: <m1ocd2i0u0.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C6987B0.7030703@codeaurora.org>
+References: <1281484174-32174-1-git-send-email-ppannuto@codeaurora.org>
+	<1281484174-32174-3-git-send-email-ppannuto@codeaurora.org>
+	<AANLkTi=GduvsmkXpxsVoN7k3gPDjjRgqe0E_Z2YeEVS5@mail.gmail.com>
+	<4C6987B0.7030703@codeaurora.org>
+Date: Mon, 16 Aug 2010 23:58:42 +0000
+Message-ID: <AANLkTink7MB8JbSz1cguVLviqkF0OTt=gHMjUi3j0bfB@mail.gmail.com>
+Subject: Re: [PATCH 2/2] platform: Facilitate the creation of pseudo-platform buses
+From: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirqus@gmail.com>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, magnus.damm@gmail.com, gregkh@suse.de,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Eric Miao <eric.y.miao@gmail.com>,
+        Dmitry Torokhov <dtor@mail.ru>, netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2010 04:39 PM, Eric W. Biederman wrote:
-> 
-> "H. Peter Anvin" <hpa@zytor.com> writes:
->> "huang ying" <huang.ying.caritas@gmail.com> wrote:
+2010/8/16 Patrick Pannuto <ppannuto@codeaurora.org>:
+> On 08/13/2010 03:05 PM, Grant Likely wrote:
+>> On Tue, Aug 10, 2010 at 5:49 PM, Patrick Pannuto
+[...]
+>>> + * @bus: partially complete bus type to register
+>>> + *
+>>> + * This init will fill in any ommitted fields in @bus, however, it
+>>> + * also allocates memory and replaces the pm field in @bus, since
+>>> + * pm is const, but some of its pointers may need this one-time
+>>> + * initialziation overwrite.
+>>> + *
+>>> + * @bus's registered this way should be released with
+>>> + * pseudo_platform_bus_unregister
+>>> + */
+>>> +int pseudo_platform_bus_register(struct bus_type *bus)
+>>> +{
+>>> +       int error;
+>>> +       struct dev_pm_ops* heap_pm;
+>>> +       heap_pm = kmalloc(sizeof (*heap_pm), GFP_KERNEL);
+>>> +
+>>> +       if (!heap_pm)
+>>> +               return -ENOMEM;
+>>> +
+>>> +       if (!bus->dev_attrs)
+>>> +               bus->dev_attrs = platform_bus_type.dev_attrs;
+>>> +       if (!bus->match)
+>>> +               bus->match = platform_bus_type.match;
+>>> +       if (!bus->uevent)
+>>> +               bus->uevent = platform_bus_type.uevent;
+>>> +       if (!bus->pm)
+>>> +               memcpy(heap_pm, &platform_bus_type.pm, sizeof(*heap_pm));
+>>> +       else {
+>>> +               heap_pm->prepare = (bus->pm->prepare) ?
+>>> +                       bus->pm->prepare : platform_pm_prepare;
+>>> +               heap_pm->complete = (bus->pm->complete) ?
+>>> +                       bus->pm->complete : platform_pm_complete;
+[and so on ...]
+>>> +               heap_pm->runtime_idle = (bus->pm->runtime_idle) ?
+>>> +                       bus->pm->runtime_idle : platform_pm_runtime_idle;
+>>> +       }
+>>> +       bus->pm = heap_pm;
+>>> +
+>>> +       error = bus_register(bus);
+>>> +       if (error)
+>>> +               kfree(bus->pm);
+>>> +
+>>> +       return error;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(pseudo_platform_bus_register);
 >>
->>> On Mon, Aug 16, 2010 at 11:27 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>> No, it should not be dynamic; rather we should unify all the users
->>>> who need a 1:1 map and just keep that page table set around.
-> 
-> We still want to restore cr3 from the local task structure as soon
-> as is reasonable, as an identity mapped page table will have page 0
-> mapped and thus hide null pointer dereferences.
-> 
+>> Ick, this is a nasty list of conditional statements.  :-)  Instead it
+>> could have an unconditional initialize function which sets it up just
+>> like the platform bus without registering.  Then allow the
+>> foo_bus_type initialization code override the ones it cares about, and
+>> then register directly.
+>>
+> No, this won't work. (Unless, every pseudo_bus_type author did this same
+> kludge to work around const - better to do once IMHO)
 
-Absolutely!
+Actually you can do:
 
->>> Agree. One known issue of global 1:1 map is that we need to make at
->>> least part of page table PAGE_KERNEL_EXEC for EFI runtime code, and
->>> change_page_attr can not be used before page allocator is available.
-> 
->> For the 1:1 map we probably should make all pages executable; other
->> things need it too, but we shouldn't have it mapped in except when
->> needed.
-> 
-> We need to be careful in the setup of the global page table so that
-> we are in sync with the pat structure for the attributes pages
-> are mapped so that we don't map a page as cached and uncached
-> at the same time.  Otherwise we could accidentally get cache
-> corruption.  To do that would seem to mean change_page_attr
-> is relevant at least after we switch from our default set of
-> page permissions.
+const struct dev_pm_ops test = {
+    DEFAULT_PLATFORM_PM_OPS,
+    .prepare = my_func,
+    ...
+};
 
-Quite, which is yet another reason to have a common global page table
-for all the 1:1 users... right now this is all ad hoc.
+where:
 
-	-hpa
+#define DEFAULT_PLATFORM_PM_OPS \
+    .prepare = platform_pm_prepare, \
+    .complete = platform_pm_complete, \
+    ...
+
+In case of repeated field assignments, gcc uses the last value (as per
+http://gcc.gnu.org/onlinedocs/gcc/Designated-Inits.html).
+
+Best Regards,
+Micha³ Miros³aw
