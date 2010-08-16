@@ -1,76 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab0HPMtS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:49:18 -0400
-Received: from dakia3.marvell.com ([65.219.4.28]:58273 "EHLO
-	dakia3.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab0HPMtR (ORCPT
+	id S1754038Ab0HPMvF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:51:05 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:37815 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752788Ab0HPMvE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:49:17 -0400
-X-ASG-Debug-ID: 1281962956-6c3bfddf0001-xx1T2L
-X-Barracuda-Envelope-From: hzhuang1@marvell.com
-From: Haojian Zhuang <hzhuang1@marvell.com>
-X-Barracuda-BBL-IP: 10.93.76.137
-X-Barracuda-RBL-IP: 10.93.76.137
-To: Eric Miao <eric.y.miao@gmail.com>, Lei Wen <leiwen@marvell.com>
-CC: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Date: Mon, 16 Aug 2010 05:49:13 -0700
-X-ASG-Orig-Subj: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Subject: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Thread-Topic: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
- samsung2GbX8
-Thread-Index: Acs9QMJayf3QJNTPR6GHJHCWa2llQgAAGd5g
-Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C0597FEB568@SC-VEXCH1.marvell.com>
-References: <AANLkTi=YSS0-Nf4MWOw30YDrCdrkmtzLhv7DXfsoJTjX@mail.gmail.com>
- <53612FE6B944314AAADB181E45A45B64133DDFC156@sc-vexch3.marvell.com>
- <AANLkTimh=dbUV75ZVXuhknt4FiMtximXLY8xoADfbe=q@mail.gmail.com>
-In-Reply-To: <AANLkTimh=dbUV75ZVXuhknt4FiMtximXLY8xoADfbe=q@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 16 Aug 2010 08:51:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BFt/r1u21+bIAAWkfUYJeJpyaAAkwnmdBYEcUZyQpTBdOe4aXuxM4bv6uV1e7+dIpj
+         UTmkITjxxCXF7VBjWEiF9slHBXgFeWKwQXCTY3I7wcI8vH0U/3AOeCxCN3qH1okJ9n0/
+         Nfh081HLeVr8BOw3i83+OaOmT8YeizH4rpzIY=
 MIME-Version: 1.0
-X-Barracuda-Connect: sc-owa01.marvell.com[10.93.76.21]
-X-Barracuda-Start-Time: 1281962956
-X-Barracuda-Encrypted: RC4-MD5
-X-Barracuda-URL: http://dakia3.marvell.com:80/cgi-mod/mark.cgi
+In-Reply-To: <4C6931C4.4000505@suse.cz>
+References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>
+	<20100621120613.86cad1a4.akpm@linux-foundation.org>
+	<4C1FC35C.8090201@suse.cz>
+	<AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>
+	<AANLkTinC6Sqs7W--=14nmJFDcTS4HQn0=ysn7VhYDDX6@mail.gmail.com>
+	<adaocdg3fng.fsf@roland-alpha.cisco.com>
+	<20100805222623.39A3240208@magilla.sf.frob.com>
+	<AANLkTikvRqTR6TjP9H4-_RHhax24YRPv9PCxn165RTWs@mail.gmail.com>
+	<4C613627.1090907@suse.cz>
+	<AANLkTimncLdNZCcpcEi9M7-jCuw5FE+xDT7v5--ByfMn@mail.gmail.com>
+	<4C6931C4.4000505@suse.cz>
+Date: Mon, 16 Aug 2010 22:51:02 +1000
+Message-ID: <AANLkTik64kgnUvX896q2E3Xk8Hb9KAH73Run2pMdJ8mk@mail.gmail.com>
+Subject: Re: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Yegor Yefremov <yegorslists@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, Roland Dreier <rdreier@cisco.com>,
+        Tiago Maluta <tiago.maluta@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7GCnVea000572
 
-http://lists.infradead.org/pipermail/linux-mtd/2010-July/subject.html
+Thanks Michal, can see the problem now.
+Not sure how the "n" got there, i didn't set it manually.
+Was at 2.6.35-rc6 then updated to 2.6.36-rc1 taking the defaults for
+all the new config options that popped up.
 
-They're re-posted in July. Please search the subjects in that page. They're totally 29 patches.
-
-By the way, David, what's the result of review on these patches? We already posted for several times.
-
-Thanks
-Haojian
-
------Original Message-----
-From: Eric Miao [mailto:eric.y.miao@gmail.com] 
-Sent: 2010å¹´8æœˆ16æ—¥ 8:44 PM
-To: Lei Wen
-Cc: Axel Lin; linux-kernel; David Woodhouse; linux-mtd@lists.infradead.org; Haojian Zhuang
-Subject: Re: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for samsung2GbX8
-
-On Mon, Aug 16, 2010 at 8:34 PM, Lei Wen <leiwen@marvell.com> wrote:
-> Hi Axel,
+On Mon, Aug 16, 2010 at 10:40 PM, Michal Marek <mmarek@suse.cz> wrote:
+> Dne 16.8.2010 14:35, Andrew Hendry napsal(a):
+>> This gives some errors on my ubuntu build for -rc1, reverting lets it
+>> build normally. Am I missing something?
+>>
+>> ahendry@ubuntu:~/linux/linux-2.6$ make
+>> make: ngcc: Command not found
+>>   CHK     include/linux/version.h
+>>   CHK     include/generated/utsrelease.h
+>>   CC      kernel/bounds.s
+>> /bin/sh: ngcc: not found
+>> make[1]: *** [kernel/bounds.s] Error 127
+>> make: *** [prepare0] Error 2
+>>
+>> .config has CONFIG_CROSS_COMPILE="n"
 >
-> I suggest not merge your patch into mainline code. Since I have a large series of patch which reconstruct the nand flash definition, this fix would no longer be needed.
+> CONFIG_CROSS_COMPILE is a string option, leave it empty if you are not
+> cross compiling.
 >
-
-Lei, would you please point the URL of the patch series (possibly by
-searching linux-mtd archive or some other mailing list archive) so that
-Axel can have a reference and be involved?
-
-- eric
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Michal.
+>
