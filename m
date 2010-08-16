@@ -1,77 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab0HPXzX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 19:55:23 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60378 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753064Ab0HPXzV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 19:55:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=XIomrg1ltPl7WePr4OAhaAi91bOqwb61Zsq0V6nLLAp6KOgSXNawsT3Q7jSyN26SBq
-         1wt6vDTKdA8FnMMZ1NaG6Q3KR3etLGirAq2/4Zug5h5gUvE3yIznSLZECui4fMb5BaDf
-         OSPS1ruQu4FOONLO1vimX7C5jHF8bdn20nS0Y=
+	id S1753492Ab0HPX4o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 19:56:44 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33285 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752906Ab0HPX4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 19:56:44 -0400
+Message-ID: <4C69D02F.6090601@zytor.com>
+Date: Mon, 16 Aug 2010 16:56:31 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <4C67CC06.7070707@redhat.com>
-References: <4C591313.50402@cn.fujitsu.com>
-	<4C5A844C.60105@redhat.com>
-	<1281730204.30865.12.camel@nimitz>
-	<4C67CC06.7070707@redhat.com>
-Date: Mon, 16 Aug 2010 16:55:20 -0700
-X-Google-Sender-Auth: 7qH4EStFsSuihI-kfdB47cSCfrA
-Message-ID: <AANLkTikchCjPte9FoVdp_25xtXh=H8ddYsxfG-pGHEtG@mail.gmail.com>
-Subject: Re: [PATCH] kvm: make mmu_shrink() fit shrinker's requirement
-From: Tim Pepper <lnxninja@linux.vnet.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org
+To: akataria@vmware.com
+CC: the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        greg@kroah.com, ksrinivasan@novell.com,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Skip cpu_calibrate for kernel running under hypervisors.
+References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
+In-Reply-To: <1281986754.23253.32.camel@ank32.eng.vmware.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Aug 15, 2010 at 4:14 AM, Avi Kivity <avi@redhat.com> wrote:
->  On 08/13/2010 11:10 PM, Dave Hansen wrote:
->>
->> On Thu, 2010-08-05 at 12:28 +0300, Avi Kivity wrote:
->>>
->>> On 08/04/2010 10:13 AM, Lai Jiangshan wrote:
->>>>
->>>> mmu_shrink() should attempt to free @nr_to_scan entries.
->>>
->>> This conflicts with Dave's patchset.
->>>
->>> Dave, what's going on with those patches?  They're starting to smell.
->>
->> These seem to fix the original problem reporter's issue.  They were run
->> with 64 guests on a 32GB machine.  No stability problems popped up in
->> this testing, or since I last sent the patches to you.  The results from
->> both the test with only the first four patches and with the entire set
->> of nine looked pretty identical.
->>
->> That tells me that we should only push the first four for now:
->>
->>        abstract kvm x86 mmu->n_free_mmu_pages
->>        rename x86 kvm->arch.n_alloc_mmu_pages
->>        replace x86 kvm n_free_mmu_pages with n_used_mmu_pages
->>        create aggregate kvm_total_used_mmu_pages value
->
-> Well, patches 3 and 4 have unaddressed review comments. Please fix them up.
-> If you don't have the time, let me know and I'll do it instead.
+On 08/16/2010 12:25 PM, Alok Kataria wrote:
+> Hi, 
+> 
+> This is a trivial change to fix the cpu_khz value returned when running
+> on a virtualized environment. We have seen instances when the cpu_khz
+> value is off by couple of MHz's when running on VMware's platform on AMD
+> hardware.
+> 
+> --
+> Since the TSC frequency read from hypervisor is accurate for the guest, and
+> since the hypervisor will always clock the vcpu at the TSC frequency, there is
+> no need to calibrate it again. To avoid any calibration errors through
+> calibrate_cpu this patch skips calling calibrate_cpu for kernel running
+> under hypervisors.
+> 
 
-Dave's out on vacation now so it's probably best to assume he wont get
-those fixups done very quickly.  Marcelo's comment on patch 3 is
-simple.  The conversation regarding patch 4 back in June though
-doesn't read like it clearly concluded...I'd be happy to work
-something up, but if you've got strong preferences on which route to
-use for protecting the count maybe I should leave it to you?
+I'm somewhat reluctant to take this one, since it assumes all the
+hypervisors act the same.  This seems rather inherently wrong.  In fact,
+the whole statement is fishy as heck... instead of being dependent on
+AMD and so on, this should either be a function pointer or a CPU
+(mis)feature bit.
 
+Can we do this saner?
 
-Tim
+	-hpa
