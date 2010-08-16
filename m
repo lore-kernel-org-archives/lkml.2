@@ -1,93 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab0HPSpT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 14:45:19 -0400
-Received: from mail.elliptictech.com ([209.217.122.41]:42431 "EHLO
-	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752414Ab0HPSpR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 14:45:17 -0400
-Date: Mon, 16 Aug 2010 14:45:15 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.36-rc1: WARNING when loading ehci-hcd module
-Message-ID: <20100816184515.GA3247@elliptictech.com>
-Mail-Followup-To: linux-kernel@vger.kernel.org
+	id S1755789Ab0HPSpg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 14:45:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755746Ab0HPSpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 14:45:35 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Subject: Re: [PATCH 2/5] cfq-iosched: Do group share accounting in IOPS when slice_idle=0
+References: <1281566667-7821-1-git-send-email-vgoyal@redhat.com>
+	<1281566667-7821-3-git-send-email-vgoyal@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 16 Aug 2010 14:45:33 -0400
+In-Reply-To: <1281566667-7821-3-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Wed, 11 Aug 2010 18:44:24 -0400")
+Message-ID: <x49d3tiflbm.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After installing 2.6.36-rc1, I found a call trace in my dmesg after
-boot.  Traking it down a bit, it appears to happen when ehci-hcd is
-loaded.  The log after running 'modprobe ehci-hcd' appended to this
-mail.  This wasn't a problem in 2.6.35, but I don't have time to bisect
-right now.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Now, I see the warning about how ehci should be loaded before uhci.  I
-also see that this is apparently not a new message.  My configuration
-has uhci built-in but ehci as a module.  If this is not a supported
-configuration, probably some dependencies need to be fixed in the
-Kconfig.
+> o Implement another CFQ mode where we charge group in terms of number
+>   of requests dispatched instead of measuring the time. Measuring in terms
+>   of time is not possible when we are driving deeper queue depths and there
+>   are requests from multiple cfq queues in the request queue.
+>
+> o This mode currently gets activated if one sets slice_idle=0 and associated
+>   disk supports NCQ. Again the idea is that on an NCQ disk with idling disabled
+>   most of the queues will dispatch 1 or more requests and then cfq queue
+>   expiry happens and we don't have a way to measure time. So start providing
+>   fairness in terms of IOPS.
+>
+> o Currently IOPS mode works only with cfq group scheduling. CFQ is following
+>   different scheduling algorithms for queue and group scheduling. These IOPS
+>   stats are used only for group scheduling hence in non-croup mode nothing
+>   should change.
+>
+> o For CFQ group scheduling one can disable slice idling so that we don't idle
+>   on queue and drive deeper request queue depths (achieving better throughput),
+>   at the same time group idle is enabled so one should get service
+>   differentiation among groups.
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
 
-Other than the trace, there seems to be no problems related to ehci.
 
-ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
-Warning! ehci_hcd should always be loaded before uhci_hcd and ohci_hcd, not after
-ehci_hcd 0000:00:1a.7: PCI INT C -> GSI 18 (level, low) -> IRQ 18
-ehci_hcd 0000:00:1a.7: setting latency timer to 64
-ehci_hcd 0000:00:1a.7: EHCI Host Controller
-ehci_hcd 0000:00:1a.7: new USB bus registered, assigned bus number 7
-ehci_hcd 0000:00:1a.7: debug port 1
-ehci_hcd 0000:00:1a.7: cache line size of 32 is not supported
-ehci_hcd 0000:00:1a.7: irq 18, io mem 0xfe9f8000
-ehci_hcd 0000:00:1a.7: USB 2.0 started, EHCI 1.00
-hub 7-0:1.0: USB hub found
-hub 7-0:1.0: 6 ports detected
-ehci_hcd 0000:00:1d.7: PCI INT A -> GSI 23 (level, low) -> IRQ 23
-ehci_hcd 0000:00:1d.7: setting latency timer to 64
-ehci_hcd 0000:00:1d.7: EHCI Host Controller
-ehci_hcd 0000:00:1d.7: new USB bus registered, assigned bus number 8
-ehci_hcd 0000:00:1d.7: debug port 1
-ehci_hcd 0000:00:1d.7: cache line size of 32 is not supported
-ehci_hcd 0000:00:1d.7: irq 23, io mem 0xfe9f2000
-ehci_hcd 0000:00:1d.7: USB 2.0 started, EHCI 1.00
-hub 8-0:1.0: USB hub found
-hub 8-0:1.0: 6 ports detected
-usb 2-1: USB disconnect, address 2
-usb 2-2: USB disconnect, address 3
-------------[ cut here ]------------
-WARNING: at /scratch_space/linux-2.6/lib/kobject.c:595 kobject_put+0x2f/0x42()
-Hardware name: Aspire X3810
-kobject: '(null)' (ffff88013e02d898): is not initialized, yet kobject_put() is being called.
-Modules linked in: ehci_hcd nfs nfs_acl bridge stp llc autofs4 nfsd lockd sunrpc exportfs ipv6 iptable_filter iptable_nat nf_nat nf_conntrack_ipv4 nf_conntrack nf_defrag_ipv4 ip_tables x_tables snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss snd_hda_codec_intelhdmi snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm snd_timer snd soundcore snd_page_alloc ext2 evdev sr_mod cdrom loop tun acpi_cpufreq mperf e1000e
-Pid: 256, comm: khubd Not tainted 2.6.36-rc1-00001-g6041d49 #17
-Call Trace:
- [<ffffffff810329b8>] ? warn_slowpath_common+0x78/0x8c
- [<ffffffff81032a6b>] ? warn_slowpath_fmt+0x45/0x4a
- [<ffffffff812d389c>] ? notifier_call_chain+0x2e/0x5b
- [<ffffffff81132a70>] ? kobject_put+0x2f/0x42
- [<ffffffff8124e2a7>] ? usbhid_disconnect+0x2c/0x35
- [<ffffffff81222147>] ? usb_unbind_interface+0x45/0xc3
- [<ffffffff811f5e25>] ? __device_release_driver+0x65/0xb0
- [<ffffffff811f5f24>] ? device_release_driver+0x11/0x1a
- [<ffffffff811f532e>] ? bus_remove_device+0x9f/0xb4
- [<ffffffff811f39e4>] ? device_del+0x120/0x16a
- [<ffffffff812200e7>] ? usb_disable_device+0x6c/0xe0
- [<ffffffff8121bdb8>] ? usb_disconnect+0x77/0x109
- [<ffffffff8121c447>] ? hub_thread+0x428/0xd84
- [<ffffffff8104772f>] ? autoremove_wake_function+0x0/0x2a
- [<ffffffff8121c01f>] ? hub_thread+0x0/0xd84
- [<ffffffff8121c01f>] ? hub_thread+0x0/0xd84
- [<ffffffff8104733a>] ? kthread+0x7a/0x82
- [<ffffffff81003654>] ? kernel_thread_helper+0x4/0x10
- [<ffffffff810472c0>] ? kthread+0x0/0x82
- [<ffffffff81003650>] ? kernel_thread_helper+0x0/0x10
----[ end trace 1f9da30167172bba ]---
-
--- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+> ---
+>  block/cfq-iosched.c |   30 ++++++++++++++++++++++++------
+>  1 files changed, 24 insertions(+), 6 deletions(-)
+>
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 8830569..3fc6be1 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -378,6 +378,21 @@ CFQ_CFQQ_FNS(wait_busy);
+>  			&cfqg->service_trees[i][j]: NULL) \
+>  
+>  
+> +static inline bool iops_mode(struct cfq_data *cfqd)
+> +{
+> +	/*
+> +	 * If we are not idling on queues and it is a NCQ drive, parallel
+> +	 * execution of requests is on and measuring time is not possible
+> +	 * in most of the cases until and unless we drive shallower queue
+> +	 * depths and that becomes a performance bottleneck. In such cases
+> +	 * switch to start providing fairness in terms of number of IOs.
+> +	 */
+> +	if (!cfqd->cfq_slice_idle && cfqd->hw_tag)
+> +		return true;
+> +	else
+> +		return false;
+> +}
+> +
+>  static inline enum wl_prio_t cfqq_prio(struct cfq_queue *cfqq)
+>  {
+>  	if (cfq_class_idle(cfqq))
+> @@ -906,7 +921,6 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>  			slice_used = cfqq->allocated_slice;
+>  	}
+>  
+> -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
+>  	return slice_used;
+>  }
+>  
+> @@ -914,19 +928,21 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>  				struct cfq_queue *cfqq)
+>  {
+>  	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> -	unsigned int used_sl, charge_sl;
+> +	unsigned int used_sl, charge;
+>  	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
+>  			- cfqg->service_tree_idle.count;
+>  
+>  	BUG_ON(nr_sync < 0);
+> -	used_sl = charge_sl = cfq_cfqq_slice_usage(cfqq);
+> +	used_sl = charge = cfq_cfqq_slice_usage(cfqq);
+>  
+> -	if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+> -		charge_sl = cfqq->allocated_slice;
+> +	if (iops_mode(cfqd))
+> +		charge = cfqq->slice_dispatch;
+> +	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+> +		charge = cfqq->allocated_slice;
+>  
+>  	/* Can't update vdisktime while group is on service tree */
+>  	cfq_rb_erase(&cfqg->rb_node, st);
+> -	cfqg->vdisktime += cfq_scale_slice(charge_sl, cfqg);
+> +	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
+>  	__cfq_group_service_tree_add(st, cfqg);
+>  
+>  	/* This group is being expired. Save the context */
+> @@ -940,6 +956,8 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+>  
+>  	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+>  					st->min_vdisktime);
+> +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u",
+> +			used_sl, cfqq->slice_dispatch, charge, iops_mode(cfqd));
+>  	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+>  	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
+>  }
