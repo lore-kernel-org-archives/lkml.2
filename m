@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab0HPPHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 11:07:40 -0400
-Received: from tomts36.bellnexxia.net ([209.226.175.93]:55145 "EHLO
-	tomts36-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754411Ab0HPPHj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 11:07:39 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEANDvaExGGN19/2dsb2JhbACgQXK8Q4U7BA
-Date: Mon, 16 Aug 2010 11:07:37 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
-Message-ID: <20100816150737.GB8320@Krystal>
-References: <20100809221447.GA24358@linux.vnet.ibm.com> <1281392111-25060-8-git-send-email-paulmck@linux.vnet.ibm.com>
+	id S1754556Ab0HPPOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 11:14:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754233Ab0HPPOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 11:14:02 -0400
+Subject: Re: [Intel-gfx] Intel graphics CPU usage - SDVO detect bogosity?
+From: Adam Jackson <ajax@redhat.com>
+To: Andy Lutomirski <luto@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+In-Reply-To: <4C694ABF.6020505@mit.edu>
+References: <AANLkTi=NFpeyo7Q31yMfqKSP2c-2OS2ccqa=Q9CQ8bpk@mail.gmail.com>
+	 <4C68B92B.3080406@myrealbox.com>
+	 <AANLkTinfYBC0=DOzWaGD0DrGH8+M_rFRtuzHrM4yjRxx@mail.gmail.com>
+	 <4C694ABF.6020505@mit.edu>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-Ow1TJpG4i8vYcyQ0dZPW"
+Date: Mon, 16 Aug 2010 11:13:51 -0400
+Message-ID: <1281971631.17843.12721.camel@atropine>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <1281392111-25060-8-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 10:51:11 up 131 days, 42 min,  3 users,  load average: 0.24,
-	0.31, 0.21
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-[...]
-> +
-> +/*
-> + * Tiny-preemptible RCU implementation for rcu_read_unlock().
-> + * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
-> + * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
-> + * invoke rcu_read_unlock_special() to clean up after a context switch
-> + * in an RCU read-side critical section and other special cases.
-> + */
-> +void __rcu_read_unlock(void)
-> +{
-> +	struct task_struct *t = current;
-> +
-> +	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutiny.c */
-> +	if (--t->rcu_read_lock_nesting == 0 &&
-> +	    unlikely(t->rcu_read_unlock_special))
 
-Hrm I think we discussed this in a past life, but would the following
-sequence be possible and correct ?
+--=-Ow1TJpG4i8vYcyQ0dZPW
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-CPU 0
+On Mon, 2010-08-16 at 10:27 -0400, Andy Lutomirski wrote:
 
-read t->rcu_read_unlock_special
-  interrupt comes in, preempts. sets t->rcu_read_unlock_special
-  <preempted>
-  <scheduled back>
-  iret
-decrement and read t->rcu_read_lock_nesting
-test both old "special" value (which we have locally on the stack) and
-detect that rcu_read_lock_nesting is 0.
+> But that's really the problem, because intel_sdvo_dvi_init contains:
+>=20
+>          connector->polled =3D DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR=
+_POLL_DISCONNECT;
+>=20
+> I don't know if SDVO is supposed to send hotplug interrupts because
+> that section of the docs is incomplete.
 
-We actually missed a reschedule.
+SDVO can generate interrupts, although a particular SDVO output type
+might not.  (The G45 docs are missing this section, but the 965 docs are
+applicable.)  We don't have that turned on, of course, because that
+would be entirely too sensible.
 
-I think we might need a barrier() between the t->rcu_read_lock_nesting
-and t->rcu_read_unlock_special reads. We might need to audit
-TREE PREEMPT RCU for the same kind of behavior.
+You'd probably need to uncomment the #if 0'd intel_sdvo_set_hotplug() in
+intel_sdvo.c, and call that from the appropriate bit of
+intel_sdvo_init().  For pre-gen4 you'd probably also need to set
+SDVO_INTERRUPT_ENABLE in the appropriate SDVOx register, but in gen4+
+that bit is used for bpc selection.
 
-But I might be (again ?) missing something. I've got the feeling you
-already convinced me that this was OK for some reason, but I trip on
-this every time I read the code.
+Having done that you'd then need to wait the inevitable six months to
+find out which SDVO devices actually have functioning hotplug and which
+ones are just plain lying about it.
 
-[...]
+- ajax
 
-> +/*
-> + * Check for a task exiting while in a preemptible -RCU read-side
-> + * critical section, clean up if so.  No need to issue warnings,
-> + * as debug_check_no_locks_held() already does this if lockdep
-> + * is enabled.
-> + */
-> +void exit_rcu(void)
-> +{
-> +	struct task_struct *t = current;
-> +
-> +	if (t->rcu_read_lock_nesting == 0)
-> +		return;
-> +	t->rcu_read_lock_nesting = 1;
-> +	rcu_read_unlock();
-> +}
-> +
+--=-Ow1TJpG4i8vYcyQ0dZPW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-The interaction with preemption is unclear here. exit.c disables
-preemption around the call to exit_rcu(), but if, for some reason,
-rcu_read_unlock_special was set earlier by preemption, then the
-rcu_read_unlock() code might block and cause problems.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Maybe we should consider clearing rcu_read_unlock_special here ?
+iEYEABECAAYFAkxpVa8ACgkQW4otUKDs0NNXSACfRw7Psb6LQ4r8FA20NnGYS7wN
+2JwAoKHbz+uuUPUx5Lg2uwUheVOuysrW
+=2wLb
+-----END PGP SIGNATURE-----
 
-Thanks,
+--=-Ow1TJpG4i8vYcyQ0dZPW--
 
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
