@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755372Ab0HPRKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 13:10:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754989Ab0HPRKp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 13:10:45 -0400
-Message-ID: <4C697115.3020902@suse.cz>
-Date: Mon, 16 Aug 2010 19:10:45 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Stephan Sperber <sperberstephan@googlemail.com>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] Kconfig: deleted a word which apeared twice
-References: <1281946965.1799.11.camel@monkey>
-In-Reply-To: <1281946965.1799.11.camel@monkey>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1752766Ab0HPRKj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 13:10:39 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48724 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751120Ab0HPRKj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 13:10:39 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 1/1] perf annotate tui: Fix exit and RIGHT keys handling
+Date: Mon, 16 Aug 2010 14:10:31 -0300
+Message-Id: <1281978631-15200-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1281978631-15200-1-git-send-email-acme@infradead.org>
+References: <1281978631-15200-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 16.8.2010 10:22, Stephan Sperber napsal(a):
-> Hi all,
-> 
-> please be not too hard on me with this patch. it is my first one.
-> at least give me input what needs to be better.
-> thanks in advance
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Your patch is fine, let's just add trivial@kernel.org to Cc.
+As part of ongoing effort to reduce the coupling with libnewt, browsers
+are being changed to return the exit key.
 
-Michal
+The annotate browser is not returning it as expected by builtin-annotate
+when annotating multiple symbols (when 'perf annotate' is called without
+specifying a symbol name).
 
-> 
-> Stephan
-> ps: i am not subscribed to the list
-> 
->>From e81719fabd94594b342114c6060c21da72dc9257 Mon Sep 17 00:00:00 2001
-> From: Stephan Sperber <sperberstephan@googlemail.com>
-> Date: Wed, 14 Jul 2010 11:23:08 +0200
-> Subject: [PATCH] Kconfig: deleted a word which apeared twice
-> 
-> Deleted a word which apeared twice.
-> 
-> Signed-off-by: Stephan Sperber <sperberstephan@googlemail.com>
-> ---
->  init/Kconfig |    2 +-
->  usr/Kconfig  |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/init/Kconfig b/init/Kconfig
-> index 5cff9a9..5d78655 100644
-> --- a/init/Kconfig
-> +++ b/init/Kconfig
-> @@ -179,7 +179,7 @@ config KERNEL_LZO
->  	depends on HAVE_KERNEL_LZO
->  	help
->  	  Its compression ratio is the poorest among the 4. The kernel
-> -	  size is about about 10% bigger than gzip; however its speed
-> +	  size is about 10% bigger than gzip; however its speed
->  	  (both compression and decompression) is the fastest.
->  
->  endchoice
-> diff --git a/usr/Kconfig b/usr/Kconfig
-> index e2721f5..c2c7fe2 100644
-> --- a/usr/Kconfig
-> +++ b/usr/Kconfig
-> @@ -144,7 +144,7 @@ config INITRAMFS_COMPRESSION_LZO
->  	depends on RD_LZO
->  	help
->  	  Its compression ratio is the poorest among the four. The kernel
-> -	  size is about about 10% bigger than gzip; however its speed
-> +	  size is about 10% bigger than gzip; however its speed
->  	  (both compression and decompression) is the fastest.
->  
->  endchoice
+Fix it by returning the exit key and also adding the RIGHT key as a exit
+key so that going to the next symbol in the TUI can work again.
+
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/ui/browsers/annotate.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/tools/perf/util/ui/browsers/annotate.c b/tools/perf/util/ui/browsers/annotate.c
+index 55ff792..a90273e 100644
+--- a/tools/perf/util/ui/browsers/annotate.c
++++ b/tools/perf/util/ui/browsers/annotate.c
+@@ -146,6 +146,7 @@ static int annotate_browser__run(struct annotate_browser *self,
+ 		return -1;
+ 
+ 	newtFormAddHotKey(self->b.form, NEWT_KEY_LEFT);
++	newtFormAddHotKey(self->b.form, NEWT_KEY_RIGHT);
+ 
+ 	nd = self->curr_hot;
+ 	if (nd) {
+@@ -178,7 +179,7 @@ static int annotate_browser__run(struct annotate_browser *self,
+ 	}
+ out:
+ 	ui_browser__hide(&self->b);
+-	return 0;
++	return es->u.key;
+ }
+ 
+ int hist_entry__tui_annotate(struct hist_entry *self)
+-- 
+1.6.2.5
 
