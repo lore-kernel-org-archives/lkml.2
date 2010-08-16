@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab0HPQ1T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:27:19 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50766 "EHLO mgw2.diku.dk"
+	id S1755271Ab0HPQ2j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:28:39 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50913 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823Ab0HPQ1R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:27:17 -0400
-Date: Mon, 16 Aug 2010 18:27:14 +0200 (CEST)
+	id S1755250Ab0HPQ2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:28:36 -0400
+Date: Mon, 16 Aug 2010 18:28:34 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Howells <dhowells@redhat.com>, linux-cachefs@redhat.com,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 9/16] fs/fscache: Remove unnecessary error code assignment
-Message-ID: <Pine.LNX.4.64.1008161826580.19313@ask.diku.dk>
+To: Evgeniy Polyakov <johnpol@2ka.mipt.ru>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 14/16] drivers/w1/masters: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161828190.19313@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-In each case, the value of ret is not used.  If an error occurs, -ENOBUFS
-is returned explicitly.
+Error codes are stored in ret, but the return value is always 0.  Return
+ret instead.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -50,26 +50,21 @@ if (...) { ...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- fs/fscache/page.c |    2 --
- 1 file changed, 2 deletions(-)
+This changes the semantics of the function and has not been tested.
 
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 41c441c..33538ed 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -784,7 +784,6 @@ int __fscache_write_page(struct fscache_cookie *cookie,
- 	if (ret < 0)
- 		goto nomem_free;
+ drivers/w1/masters/omap_hdq.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/w1/masters/omap_hdq.c b/drivers/w1/masters/omap_hdq.c
+index 3a7e9ff..2a71e62 100644
+--- a/drivers/w1/masters/omap_hdq.c
++++ b/drivers/w1/masters/omap_hdq.c
+@@ -396,7 +396,7 @@ static int hdq_read_byte(struct hdq_data *hdq_data, u8 *val)
+ out:
+ 	mutex_unlock(&hdq_data->hdq_mutex);
+ rtn:
+-	return 0;
++	return ret;
  
--	ret = -ENOBUFS;
- 	spin_lock(&cookie->lock);
+ }
  
- 	if (hlist_empty(&cookie->backing_objects))
-@@ -854,7 +853,6 @@ submit_failed:
- 	radix_tree_delete(&cookie->stores, page->index);
- 	spin_unlock(&cookie->stores_lock);
- 	page_cache_release(page);
--	ret = -ENOBUFS;
- 	goto nobufs;
- 
- nobufs_unlock_obj:
