@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab0HPSN0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 14:13:26 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45846 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab0HPSNZ (ORCPT
+	id S1755541Ab0HPSQK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 14:16:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37232 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab0HPSQJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 14:13:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=lg6yPqv5o96+84Bf1dY9XXLezSwURK//zf+KoyMRQ+NORHIMGu1VOIqW4pFGI4l4H4
-         qb84YNqWz49TBZDZFuJFWhi2Bp9L24fzgWIJyMHVGCYD2P1XwXhn1O0NT8+DfZSILq1q
-         ZQ9iFCctjrnHtBqDI5vkrVTYe2wMvNZhyNbN0=
-Date: Mon, 16 Aug 2010 20:13:06 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
-        Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 15/16] drivers/platform/x86: Use available error codes
-Message-ID: <20100816181305.GD645@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Julia Lawall <julia@diku.dk>,
-	Jonathan Woithe <jwoithe@physics.adelaide.edu.au>,
-	Matthew Garrett <mjg@redhat.com>,
-	platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <Pine.LNX.4.64.1008161828350.19313@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1008161828350.19313@ask.diku.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 16 Aug 2010 14:16:09 -0400
+X-Authority-Analysis: v=1.1 cv=nbWoJD01ruQLYOYE44JZbYtzz81AmFDL3LnuPvZDHs8= c=1 sm=0 a=KqZB06XCtXAA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=6pJ3OuKiDP6GzGk1fnsA:9 a=06LPC770z9_6PaxmLhkA:7 a=xXLS7SVnb_ckx6pABZvW4PTD1roA:4 a=PUjeQqilurYA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.87.39
+Subject: Re: [LOCKDEP BUG][2.6.36-rc1] xt_info_wrlock?
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <1281981301.3268.110.camel@gandalf.stny.rr.com>
+References: <1281978469.3268.55.camel@gandalf.stny.rr.com>
+	 <1281979893.2524.54.camel@edumazet-laptop>
+	 <1281981301.3268.110.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 16 Aug 2010 14:16:06 -0400
+Message-ID: <1281982566.3268.137.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 06:28:52PM +0200, Julia Lawall wrote:
-> ---
-> This changes the semantics and has not been tested.  In each case, error is
-> also assigned to the result of a function call.  Perhpas that should be
-> changed to result as well, and error should be eliminated.
+On Mon, 2010-08-16 at 13:55 -0400, Steven Rostedt wrote:
+
+Re-looking at the code, I think I figured it out. But it should really
+be documented better.
+
+
+> 
+> Please tell me what prevents an interrupt going off after we grab the
+> xt_info_wrlock(cpu) in get_counters().
+> 
+> IOW, what prevents this:
+> 
+> 	get_counters() {
+
+I left out here:
+
+		for_each_possible_cpu(cpu) {
+			if (cpu == curcpu)
+				continue;
+
+which means that we are grabbing the lock for other CPUs, and that a
+softirq would not be a problem.
+
+> 		xt_info_wrlock(cpu);
+> 
+> 		<interrupt> --> softirq
+> 
+> 			xt_info_rblock_bh();
+> 				/* which grabs the writer lock */
+> 			DEADLOCK!!
 > 
 
-Yep.  That should be changed to result as well.
+Your patchwork patch has:
 
-regards,
-dan carpenter
+
+@@ -729,8 +729,10 @@  static void get_counters(const struct
+xt_table_info *t,
+ 	local_bh_enable();
+ 	/* Processing counters from other cpus, we can let bottom half enabled,
+ 	 * (preemption is disabled)
++	 * We must turn off lockdep to avoid a false positive.
+ 	 */
+ 
++	lockdep_off();
+ 	for_each_possible_cpu(cpu) {
+
+
+We need a better comment than that. Could that be changed to something like:
+
+	/*
+	 * lockdep tests if we grab a lock and can be preempted by 
+	 * a softirq and that softirq grabs the same lock causing a
+	 * deadlock.
+	 * This is a special case because this is a per-cpu lock,
+	 * and we are only grabbing the lock for other CPUs. A softirq
+	 * will only takes its local CPU lock thus, if we are preempted
+	 * by a softirq, then it will grab the current CPU lock which
+	 * we do not take here.
+	 *
+	 * Simply disable lockdep here until it can handle this situation.
+	 */
+
+Thanks,
+
+-- Steve
+
 
 
