@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab0HPQQZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:16:25 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37347 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab0HPQQY (ORCPT
+	id S1754733Ab0HPQS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:18:56 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35702 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754474Ab0HPQSz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:16:24 -0400
-Date: Mon, 16 Aug 2010 17:16:21 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: [GIT PULL] Minor platform driver updates
-Message-ID: <20100816161621.GA3702@srcf.ucam.org>
+	Mon, 16 Aug 2010 12:18:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=HtxBGuoHCe1aXUQITYqajlfVvvdZphokLcN42CWurwQrngb71AC85Cz8tkXhsJ62pa
+         VYz2MMCgM/omO9SE6c7qpdeFVSTFZctDum+OI9t4Z26aTMp/2css6O1qTeaJv9oxz/A9
+         es5apPG6M7IyXGUXtpRCPWsC/H743YbOB0CZc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20100816155516.GD11907@agk-dp.fab.redhat.com>
+References: <AANLkTime9NS3Bk-8ZpovRNy9iEGJxwYw=-aZ38JoRa_3@mail.gmail.com>
+	<20100814155401.GJ26032@agk-dp.fab.redhat.com>
+	<AANLkTi=aJ7f5X9sMeA85KJxi+rzWhiZCZ2ZwriNEVFCT@mail.gmail.com>
+	<20100815130336.GA24055@agk-dp.fab.redhat.com>
+	<AANLkTinUuphqozgrSMNnrKxJrPWFp77y2TzdEwtuMD42@mail.gmail.com>
+	<4C6943A0.9030708@redhat.com>
+	<20100816142246.GA11907@agk-dp.fab.redhat.com>
+	<AANLkTik0naaXsicwLgLeBUA0u2+BQQbww-44Fs_cHXHH@mail.gmail.com>
+	<20100816155516.GD11907@agk-dp.fab.redhat.com>
+Date: Tue, 17 Aug 2010 00:10:48 +0800
+Message-ID: <AANLkTi=rm97rBs+Umvp7dNc_i5uzg6vhhVx=9BZH1AW4@mail.gmail.com>
+Subject: Re: [dm-devel] [lvm-devel] linux-2.6.35+ causes LVM to fail with "
+ device-mapper: version ioctl failed: Inappropriate ioctl for device"
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>,
+        Zdenek Kabelac <zkabelac@redhat.com>,
+        device-mapper development <dm-devel@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>, lvm-devel@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Mon, Aug 16, 2010 at 11:55 PM, Alasdair G Kergon <agk@redhat.com> wrote:
+> On Mon, Aug 16, 2010 at 11:32:15PM +0800, Jeff Chua wrote:
+>> It'll be nice if lvm returns a more meanful message like "ioctl
+>> failed. Check /proc/misc to ensure the device is mapped correctly."
+>
+> No need - LVM should be quite capable of detecting/dealing with the problem.
 
-I know it's post RC1, but these are a couple of potential (if unlikely) 
-crash fixers, patches to enable rfkill control on a single model of Dell 
-and some Thinkpad updates that are effectively noops on current hardware 
-but improve support for machines that aren't out yet. Nothing 
-heartbreaking if it has to wait for .37.
+Ok, cool.
 
-The following changes since commit da5cabf80e2433131bf0ed8993abc0f7ea618c73:
+>> To take care of it automatically with udev, I'm doing this in rc.S
+>> if [ -f /sys/devices/virtual/misc/device-mapper/dev ]
+>> then
+>>         NODE=$(</sys/devices/virtual/misc/device-mapper/dev)
+>>         rm -f /dev/mapper/control
+>>         mknod /dev/mapper/control c ${NODE/:/ }
+>
+> The whole point of this change was to trigger the loading of dm-mod
+> automatically for people using it as a module, based on using a known
+> major/minor number instead of a dynamic one only known after the module
+> has been loaded.  That needs to happen regardless of whether someone is
+> using udev or not.
+>
+> This can all be fixed easily enough in userspace.
 
-  Linux 2.6.36-rc1 (2010-08-15 17:41:37 -0700)
+I'm not using module. It's all built-in to the kernel. Hopefully this
+would be taken care of as well. That's why I had it in rc.S just
+before the lvm filesystems are mounted.
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
-
-Dan Carpenter (1):
-      intel_ips: potential null dereference
-
-Henrique de Moraes Holschuh (4):
-      thinkpad-acpi: find ACPI video device by synthetic HID
-      thinkpad-acpi: untangle ACPI/vendor backlight selection
-      thinkpad-acpi: lock down size of hotkey keymap
-      thinkpad-acpi: add support for model-specific keymaps
-
-Jens Taprogge (1):
-      thinkpad-acpi: Add KEY_CAMERA (Fn-F6) for Lenovo keyboards
-
-Julia Lawall (1):
-      drivers/platform/x86: Adjust confusing if indentation
-
-Kulikov Vasiliy (1):
-      x86: intel_ips: do not use PCI resources before pci_enable_device()
-
-Victor van den Elzen (1):
-      platform/x86: move rfkill for Dell Mini 1012 to compal-laptop
-
- Documentation/laptops/thinkpad-acpi.txt |    4 +
- drivers/platform/x86/asus_acpi.c        |    6 +-
- drivers/platform/x86/compal-laptop.c    |    9 ++
- drivers/platform/x86/dell-laptop.c      |    7 ++
- drivers/platform/x86/intel_ips.c        |   15 ++-
- drivers/platform/x86/thinkpad_acpi.c    |  171 ++++++++++++++++---------------
- 6 files changed, 121 insertions(+), 91 deletions(-)
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Jeff.
