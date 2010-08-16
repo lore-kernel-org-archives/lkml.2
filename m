@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756774Ab0HPWqC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 18:46:02 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44068 "EHLO mx1.redhat.com"
+	id S1756756Ab0HPWsB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 18:48:01 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:50485 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756457Ab0HPWqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 18:46:00 -0400
-Subject: Re: headers_check warnings in drm headers
-From: Dave Airlie <airlied@redhat.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>
-In-Reply-To: <20100815192335.GA3438@merkur.ravnborg.org>
-References: <20100815192335.GA3438@merkur.ravnborg.org>
+	id S1756103Ab0HPWsA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 18:48:00 -0400
+X-IronPort-AV: E=Sophos;i="4.55,378,1278313200"; 
+   d="scan'208";a="430101690"
+Subject: Re: nfs regression 2.6.35+
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: linux-kernel@vger.kernel.org, rjw@sisk.pl
+In-Reply-To: <20100816070626.GA10503@sli10-desk.sh.intel.com>
+References: <20100816070626.GA10503@sli10-desk.sh.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 08:45:50 +1000
-Message-ID: <1281998750.3530.6.camel@clockmaker-el6>
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Mon, 16 Aug 2010 18:47:34 -0400
+Message-ID: <1281998854.3577.84.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+X-OriginalArrivalTime: 16 Aug 2010 22:47:44.0331 (UTC) FILETIME=[0A5A69B0:01CB3D95]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-08-15 at 21:23 +0200, Sam Ravnborg wrote:
-> When I ran "make headers_check" on upstream I got following
-> set of warnings for the drm headers:
+On Mon, 2010-08-16 at 15:06 +0800, Shaohua Li wrote:
+> NFS client runs latest git. At client side, use vim to edit a file located at
+> NFS server. If I save the file, vim always reports 'E667: Fsync failed'. If I
+> revert f7fa16506bf9b6323e862a61e14c20555152bb3, vim works. No kernel errors
+> reported.
 > 
-> usr/include/drm/drm_mode.h:85: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> usr/include/drm/i915_drm.h:120: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> usr/include/drm/mga_drm.h:260: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> usr/include/drm/radeon_drm.h:758: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> usr/include/drm/via_drm.h:117: found __[us]{8,16,32,64} type without #include <linux/types.h>
-> 
-> When I looked through the files I noticed a few things:
-> 
-> 1) Several files uses a mixture of native types and linux types.
->    For example "unsigned int" and "__u32" in the same file.
-> 2) drm.h contains:
-> #if defined(__linux__)
-> 
-> #include <linux/types.h>
-> #include <asm/ioctl.h>
-> typedef unsigned int drm_handle_t;
-> 
-> #else /* One of the BSDs */
-> 
-> #include <sys/ioccom.h>
-> #include <sys/types.h>
-> typedef int8_t   __s8;
-> typedef uint8_t  __u8;
-> typedef int16_t  __s16;
-> typedef uint16_t __u16;
-> typedef int32_t  __s32;
-> typedef uint32_t __u32;
-> typedef int64_t  __s64;
-> typedef uint64_t __u64;
-> typedef unsigned long drm_handle_t;
-> 
-> #endif
-> 
-> Why this when no-one else require this treatment?
-> 
-> 3) Lots of typedefs...
-> 
-> All in all - too much to dig into without knowing
-> the background for the current state.
-> 
-> At a minimum please get the warnings fixed.
+> Thanks,
+> Shaohua
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-At a minimum please fix the checker to work.
+There is already a fix for this in the linux-next tree and in the
+'bugfixes' branch of
+git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git: see commit
+0702099bd86c33c2dcdbd3963433a61f3f503901 (NFS: fix the return value of
+nfs_file_fsync()).
 
-It doesn't recurse, all of the .h files include drm.h, which includes
-linux/types.h, this is how its meant to work. If the checker does
-recurse then doesn't define __linux__ then fix that. This isn't a bug in
-the drm header files.
+I haven't pushed it to Linus yet due to excessive travel this past week.
+Will do so soon.
 
-We copy these files as is into a userspace that is shared with FreeBSD,
-the ifdef is the minimum down from about 10 ifdefs 2-3 years ago
-concession we've made.
+Cheers
+  Trond
 
-Dave.
+----------------------------------------------------------------------------------------
+commit 0702099bd86c33c2dcdbd3963433a61f3f503901
+Author: J. R. Okajima <hooanon05@yahoo.co.jp>
+Date:   Wed Aug 11 13:10:16 2010 -0400
+
+    NFS: fix the return value of nfs_file_fsync()
+    
+    By the commit af7fa16 2010-08-03 NFS: Fix up the fsync code
+    close(2) became returning the non-zero value even if it went well.
+    nfs_file_fsync() should return 0 when "status" is positive.
+    
+    Signed-off-by: J. R. Okajima <hooanon05@yahoo.co.jp>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 2d141a7..eb51bd6 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -323,7 +323,7 @@ nfs_file_fsync(struct file *file, int datasync)
+ 	have_error |= test_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+ 	if (have_error)
+ 		ret = xchg(&ctx->error, 0);
+-	if (!ret)
++	if (!ret && status < 0)
+ 		ret = status;
+ 	return ret;
+ }
 
