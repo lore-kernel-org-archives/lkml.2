@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0HPSCo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 14:02:44 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:56380 "EHLO mxout1.idt.com"
+	id S1755492Ab0HPSHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 14:07:09 -0400
+Received: from fieldses.org ([174.143.236.118]:57364 "EHLO fieldses.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750845Ab0HPSCn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 14:02:43 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	id S1750845Ab0HPSHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 14:07:07 -0400
+Date: Mon, 16 Aug 2010 14:04:50 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Jeremy Allison <jra@samba.org>
+Cc: Jan Engelhardt <jengelh@medozas.de>, Jeff Layton <jlayton@redhat.com>,
+        Neil Brown <neilb@suse.de>, utz lehmann <lkml123@s2y4n2c.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-fsde@jasper.es
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended file stats available [ver #6]
+Message-ID: <20100816180450.GA7764@fieldses.org>
+References: <20100801092529.5e6ba0e0@corrin.poochiereds.net>
+ <20100805235218.GB31233@jeremy-laptop>
+ <20100806133836.49757af9@notabene>
+ <20100808121208.GA7329@jeremy-laptop>
+ <20100808085301.24f53e5a@tlielax.poochiereds.net>
+ <20100808130501.GA9851@jeremy-laptop>
+ <20100813125432.GB8945@fieldses.org>
+ <20100813175410.GA8202@samba1>
+ <alpine.LSU.2.01.1008132104290.12206@obet.zrqbmnf.qr>
+ <20100813191900.GB8202@samba1>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 7/9] RapidIO: Add handling for PW message from a lost device
-Date: Mon, 16 Aug 2010 11:02:21 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6040@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4C692F31.2020705@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 7/9] RapidIO: Add handling for PW message from a lost device
-thread-index: Acs9PlINawYNAz2XS5OKBmmSvYUxogAKuIuA
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-8-git-send-email-alexandre.bounine@idt.com> <4C692F31.2020705@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>,
-        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100813191900.GB8202@samba1>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen wrote:
+On Fri, Aug 13, 2010 at 12:19:00PM -0700, Jeremy Allison wrote:
+> On Fri, Aug 13, 2010 at 09:06:28PM +0200, Jan Engelhardt wrote:
+> > 
+> > On Friday 2010-08-13 19:54, Jeremy Allison wrote:
+> > >On Fri, Aug 13, 2010 at 08:54:32AM -0400, J. Bruce Fields wrote:
+> > >> On Sun, Aug 08, 2010 at 06:05:01AM -0700, Jeremy Allison wrote:
+> > >> > We don't need to ape Windows in everything.
+> > >> > The coming ACL disaster will show that (we will go from an ACL
+> > >> > model that is slightly too complex to use, to one that is impossibly
+> > >> > complex to use :-).
+> > >> 
+> > >> Care to elaborate?
+> > >
+> > >POSIX ACLs -> RichACLs (NT-style). Not criticising Andreas here,
+> > >people are asking for this. But Windows ACLs are a nightmare
+> > >beyond human comprehension :-). In the "too complex to be
+> > >usable" camp.
+> > 
+> > Well, for one, ACLs in NT can be recursive IIRC. You can't say that of Linux
+> > ACLs - instead you have to setfacl -R and setfacl -Rd to give one user access
+> > to a directory and all its subdirs including future new inodes.
 > 
-> Alexandre Bounine wrote:
-> > Add check if PW message source device is accessible and change PW
-message
-> > handler to recover if PW message source device is not available
-anymore (power
-> > down or link disconnect).
-> 
-> I am not quite sure what the point is of this patch. What do you need
-to
-> recover from?
+> You do realize that Windows does exactly the same thing under
+> the covers, right ? Watch SMB or SMB2 traffic between a client
+> and Windows server when someone changes an ACL sometime :-).
 
->From failed maintenance read. In the previous version PW handler had
-troubles if maintenance
-read request fails. Now I am trying to detect lost or remover devices as
-soon as I see broken link.
+Yeah.  There's some explanation here:
 
-> 
-> > To avoid possible loss of notification, the PW message handler scans
-the route
-> > back from the source device to identify end of the broken link.
-> 
-> Do you mean if port-writes are dropped? Then they did not reach you in
-> the first place. If a link in between is broken, the associated switch
-> will 'complain' and send port-writes, no?
+	http://tools.ietf.org/search/rfc5661#section-6.4.3.2
 
-Situation that I am trying to resolve is mostly applicable to larger
-systems that have multiple complex boards (or chassis/domains) connected
-together. Power down sequence on the board (chassis) combined with
-switch hierarchy may allow switch to send PW message to the host before
-its power is off. This will create an orphaned PW message. 
-At the same time there is no guarantee that PW message from the
-associated switch will reach the host.
-That "real" PW message may be dropped by the controller (85xx is good
-example). Everything depends on number of PW messages directed to the
-host/controller. I am trying to use the first available notification to
-service device removal. If the "real" PW message is received it should
-be processed without any further action. 
+What NT-style ACLs provide is a few bits that help a setfacl-like
+application decide how to propagate the change.  But it's still up to
+the application to do the recursive traversal.
 
-Alex.
-
+--b.
