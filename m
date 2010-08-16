@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab0HPOY2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 10:24:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38779 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751655Ab0HPOY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 10:24:27 -0400
-Message-ID: <4C694965.6040805@kernel.org>
-Date: Mon, 16 Aug 2010 16:21:25 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1754398Ab0HPO0Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 10:26:24 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:6909 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab0HPO0V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 10:26:21 -0400
+Subject: [PATCH] cciss: fix botched tag masking for scsi tape commands
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
+Date: Mon, 16 Aug 2010 09:32:16 -0500
+Message-ID: <20100816143216.9826.15970.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>, lkml <linux-kernel@vger.kernel.org>
-CC: Christoph Hellwig <hch@lst.de>, Neil Brown <neilb@suse.de>
-Subject: [PATCH block#for-2.6.36-post] block: fix incorrect bio/request flag
- conversion in md
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 16 Aug 2010 14:24:19 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 74450be1 (block: unify flags for struct bio and struct request)
-incorrectly converted @do_sync in md raid1 and raid10 make_requst()
-functions.
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-@do_sync is now supposed to carry the actual flag bit and directly
-OR'd into bio->bi_rw but is still a bool and thus carries either 0 or
-1 instead of the actual flag bit.  This makes REQ_SYNC ignored on
-writes and flips the direction of READ_SYNCs to WRITEs.
+In process_non_indexed_cmd() we were only masking off the
+low two bits when comparing tags vs. busaddr, and not taking
+into account the fact that in "performant" mode, three bits of
+block fetch table indexes were stuffed into the tag, and
+needed to be masked out for the comparison to work.  This
+resulted in spurious "bad tag" messages, and command
+completions getting ignored for any scsi tape i/o and any i/o
+coming through CCISS_BIG_PASSTHRU which required more than
+one scatter gather entry (fewer than two worked because in
+such cases the 3 bits we failed to mask off happened to be
+zero anyway.)
 
-Fix it by making @do_sync unsigned integers.
+I also noticed we were repeatedly masking the bits off the tag
+in a loop when doing it once at the top of the loop would have
+sufficed, so I fixed that as well.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>
-Cc: Neil Brown <neilb@suse.de>
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/md/raid1.c  |    2 +-
- drivers/md/raid10.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/cciss.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-Index: block/drivers/md/raid1.c
-===================================================================
---- block.orig/drivers/md/raid1.c
-+++ block/drivers/md/raid1.c
-@@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev,
- 	struct bio_list bl;
- 	struct page **behind_pages = NULL;
- 	const int rw = bio_data_dir(bio);
--	const bool do_sync = (bio->bi_rw & REQ_SYNC);
-+	const unsigned int do_sync = (bio->bi_rw & REQ_SYNC);
- 	bool do_barriers;
- 	mdk_rdev_t *blocked_rdev;
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index fdf1b79..39083e6 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -3179,10 +3179,13 @@ static inline u32 cciss_tag_to_index(u32 tag)
+ 	return tag >> DIRECT_LOOKUP_SHIFT;
+ }
+ 
+-static inline u32 cciss_tag_discard_error_bits(u32 tag)
++static inline u32 cciss_tag_discard_error_bits(ctlr_info_t *h, u32 tag)
+ {
+-#define CCISS_ERROR_BITS 0x03
+-	return tag & ~CCISS_ERROR_BITS;
++#define CCISS_PERF_ERROR_BITS ((1 << DIRECT_LOOKUP_SHIFT) - 1)
++#define CCISS_SIMPLE_ERROR_BITS 0x03
++	if (likely(h->transMethod == CFGTBL_Trans_Performant))
++		return tag & ~CCISS_PERF_ERROR_BITS;
++	return tag & ~CCISS_SIMPLE_ERROR_BITS;
+ }
+ 
+ static inline void cciss_mark_tag_indexed(u32 *tag)
+@@ -3443,15 +3446,13 @@ static inline u32 process_indexed_cmd(ctlr_info_t *h, u32 raw_tag)
+ /* process completion of a non-indexed command */
+ static inline u32 process_nonindexed_cmd(ctlr_info_t *h, u32 raw_tag)
+ {
+-	u32 tag;
+ 	CommandList_struct *c = NULL;
+ 	struct hlist_node *tmp;
+ 	__u32 busaddr_masked, tag_masked;
+ 
+-	tag = cciss_tag_discard_error_bits(raw_tag);
++	tag_masked = cciss_tag_discard_error_bits(h, raw_tag);
+ 	hlist_for_each_entry(c, tmp, &h->cmpQ, list) {
+-		busaddr_masked = cciss_tag_discard_error_bits(c->busaddr);
+-		tag_masked = cciss_tag_discard_error_bits(tag);
++		busaddr_masked = cciss_tag_discard_error_bits(h, c->busaddr);
+ 		if (busaddr_masked == tag_masked) {
+ 			finish_cmd(h, c, raw_tag);
+ 			return next_command(h);
 
-Index: block/drivers/md/raid10.c
-===================================================================
---- block.orig/drivers/md/raid10.c
-+++ block/drivers/md/raid10.c
-@@ -799,7 +799,7 @@ static int make_request(mddev_t *mddev,
- 	int i;
- 	int chunk_sects = conf->chunk_mask + 1;
- 	const int rw = bio_data_dir(bio);
--	const bool do_sync = (bio->bi_rw & REQ_SYNC);
-+	const unsigned int do_sync = (bio->bi_rw & REQ_SYNC);
- 	struct bio_list bl;
- 	unsigned long flags;
- 	mdk_rdev_t *blocked_rdev;
