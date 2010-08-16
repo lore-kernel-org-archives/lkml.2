@@ -1,73 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab0HPMkW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:40:22 -0400
-Received: from msa102.auone-net.jp ([61.117.18.162]:47409 "EHLO
-	msa102.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750740Ab0HPMkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:40:21 -0400
-X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 08:40:21 EDT
-Date: Mon, 16 Aug 2010 21:40:13 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf tools: Fix build error on read only source.
+	id S1753990Ab0HPMkl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:40:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50945 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752263Ab0HPMkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 08:40:40 -0400
+Message-ID: <4C6931C4.4000505@suse.cz>
+Date: Mon, 16 Aug 2010 14:40:36 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Message-Id: <20100816124017.BE24D6AC03A@msa102.auone-net.jp>
+To: Andrew Hendry <andrew.hendry@gmail.com>
+Cc: Yegor Yefremov <yegorslists@googlemail.com>,
+        Roland McGrath <roland@redhat.com>, Roland Dreier <rdreier@cisco.com>,
+        Tiago Maluta <tiago.maluta@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] Fix CONFIG_CROSS_COMPILE issue in .config
+References: <AANLkTim2mi0wbJJl17OkbCJbRt-s5phR4sumn5GsJKUp@mail.gmail.com>	<20100621120613.86cad1a4.akpm@linux-foundation.org>	<4C1FC35C.8090201@suse.cz>	<AANLkTil2-YNAa-jyOYD4cNtbJQ1XQJ6-v3iJ6wxpz7br@mail.gmail.com>	<AANLkTinC6Sqs7W--=14nmJFDcTS4HQn0=ysn7VhYDDX6@mail.gmail.com>	<adaocdg3fng.fsf@roland-alpha.cisco.com>	<20100805222623.39A3240208@magilla.sf.frob.com>	<AANLkTikvRqTR6TjP9H4-_RHhax24YRPv9PCxn165RTWs@mail.gmail.com>	<4C613627.1090907@suse.cz> <AANLkTimncLdNZCcpcEi9M7-jCuw5FE+xDT7v5--ByfMn@mail.gmail.com>
+In-Reply-To: <AANLkTimncLdNZCcpcEi9M7-jCuw5FE+xDT7v5--ByfMn@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- tools/perf/Makefile          |    8 ++++----
- tools/perf/feature-tests.mak |    6 ++----
- 2 files changed, 6 insertions(+), 8 deletions(-)
+Dne 16.8.2010 14:35, Andrew Hendry napsal(a):
+> This gives some errors on my ubuntu build for -rc1, reverting lets it
+> build normally. Am I missing something?
+> 
+> ahendry@ubuntu:~/linux/linux-2.6$ make
+> make: ngcc: Command not found
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CC      kernel/bounds.s
+> /bin/sh: ngcc: not found
+> make[1]: *** [kernel/bounds.s] Error 127
+> make: *** [prepare0] Error 2
+> 
+> .config has CONFIG_CROSS_COMPILE="n"
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 41abb90..31b528f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -935,15 +935,15 @@ $(OUTPUT)common-cmds.h: $(wildcard Documentation/perf-*.txt)
- 	$(QUIET_GEN). util/generate-cmdlist.sh > $@+ && mv $@+ $@
- 
- $(patsubst %.sh,%,$(SCRIPT_SH)) : % : %.sh
--	$(QUIET_GEN)$(RM) $@ $@+ && \
-+	$(QUIET_GEN)$(RM) $(OUTPUT)$@ $(OUTPUT)$@+ && \
- 	sed -e '1s|#!.*/sh|#!$(SHELL_PATH_SQ)|' \
- 	    -e 's|@SHELL_PATH@|$(SHELL_PATH_SQ)|' \
- 	    -e 's|@@PERL@@|$(PERL_PATH_SQ)|g' \
- 	    -e 's/@@PERF_VERSION@@/$(PERF_VERSION)/g' \
- 	    -e 's/@@NO_CURL@@/$(NO_CURL)/g' \
--	    $@.sh >$@+ && \
--	chmod +x $@+ && \
--	mv $@+ $(OUTPUT)$@
-+	    $@.sh > $(OUTPUT)$@+ && \
-+	chmod +x $(OUTPUT)$@+ && \
-+	mv $(OUTPUT)$@+ $(OUTPUT)$@
- 
- configure: configure.ac
- 	$(QUIET_GEN)$(RM) $@ $<+ && \
-diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-index ddb68e6..cd75798 100644
---- a/tools/perf/feature-tests.mak
-+++ b/tools/perf/feature-tests.mak
-@@ -113,7 +113,5 @@ endef
- # try-cc
- # Usage: option = $(call try-cc, source-to-build, cc-options)
- try-cc = $(shell sh -c						  \
--	'TMP="$(TMPOUT).$$$$";			 		  \
--	 echo "$(1)" |						  \
--	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
--	 rm -f "$$TMP"')
-+	'echo "$(1)" |						  \
-+	 $(CC) -x c - $(2) -o /dev/null > /dev/null 2>&1 && echo y')
--- 
-1.7.1
+CONFIG_CROSS_COMPILE is a string option, leave it empty if you are not
+cross compiling.
 
+Michal.
