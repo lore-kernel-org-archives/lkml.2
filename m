@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973Ab0HPMqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 08:46:08 -0400
-Received: from msa106.auone-net.jp ([61.117.18.166]:33029 "EHLO
-	msa106.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab0HPMqH (ORCPT
+	id S1753887Ab0HPMtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 08:49:18 -0400
+Received: from dakia3.marvell.com ([65.219.4.28]:58273 "EHLO
+	dakia3.marvell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870Ab0HPMtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 08:46:07 -0400
-X-Greylist: delayed 951 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 08:46:06 EDT
-Date: Mon, 16 Aug 2010 21:30:11 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Andy Walls <awalls@md.metrocast.net>, Steven Toth <stoth@kernellabs.com>,
-        Douglas Schilling Landgraf <dougsland@redhat.com>,
-        "David T. L. Wong" <davidtlwong@gmail.com>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] cx23885: Use enum for board type definitions.
+	Mon, 16 Aug 2010 08:49:17 -0400
+X-ASG-Debug-ID: 1281962956-6c3bfddf0001-xx1T2L
+X-Barracuda-Envelope-From: hzhuang1@marvell.com
+From: Haojian Zhuang <hzhuang1@marvell.com>
+X-Barracuda-BBL-IP: 10.93.76.137
+X-Barracuda-RBL-IP: 10.93.76.137
+To: Eric Miao <eric.y.miao@gmail.com>, Lei Wen <leiwen@marvell.com>
+CC: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
+Date: Mon, 16 Aug 2010 05:49:13 -0700
+X-ASG-Orig-Subj: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
+ samsung2GbX8
+Subject: RE: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
+ samsung2GbX8
+Thread-Topic: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for
+ samsung2GbX8
+Thread-Index: Acs9QMJayf3QJNTPR6GHJHCWa2llQgAAGd5g
+Message-ID: <25B60CDC2F704E4E9D88FFD52780CB4C0597FEB568@SC-VEXCH1.marvell.com>
+References: <AANLkTi=YSS0-Nf4MWOw30YDrCdrkmtzLhv7DXfsoJTjX@mail.gmail.com>
+ <53612FE6B944314AAADB181E45A45B64133DDFC156@sc-vexch3.marvell.com>
+ <AANLkTimh=dbUV75ZVXuhknt4FiMtximXLY8xoADfbe=q@mail.gmail.com>
+In-Reply-To: <AANLkTimh=dbUV75ZVXuhknt4FiMtximXLY8xoADfbe=q@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Message-Id: <20100816123012.9C5FC62C03A@msa106.auone-net.jp>
+X-Barracuda-Connect: sc-owa01.marvell.com[10.93.76.21]
+X-Barracuda-Start-Time: 1281962956
+X-Barracuda-Encrypted: RC4-MD5
+X-Barracuda-URL: http://dakia3.marvell.com:80/cgi-mod/mark.cgi
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7GCnVea000572
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- drivers/media/video/cx23885/cx23885.h |   62 +++++++++++++++++----------------
- 1 files changed, 32 insertions(+), 30 deletions(-)
+http://lists.infradead.org/pipermail/linux-mtd/2010-July/subject.html
 
-diff --git a/drivers/media/video/cx23885/cx23885.h b/drivers/media/video/cx23885/cx23885.h
-index ed94b17..55dc282 100644
---- a/drivers/media/video/cx23885/cx23885.h
-+++ b/drivers/media/video/cx23885/cx23885.h
-@@ -54,36 +54,38 @@
- 
- #define BUFFER_TIMEOUT     (HZ)  /* 0.5 seconds */
- 
--#define CX23885_BOARD_NOAUTO               UNSET
--#define CX23885_BOARD_UNKNOWN                  0
--#define CX23885_BOARD_HAUPPAUGE_HVR1800lp      1
--#define CX23885_BOARD_HAUPPAUGE_HVR1800        2
--#define CX23885_BOARD_HAUPPAUGE_HVR1250        3
--#define CX23885_BOARD_DVICO_FUSIONHDTV_5_EXP   4
--#define CX23885_BOARD_HAUPPAUGE_HVR1500Q       5
--#define CX23885_BOARD_HAUPPAUGE_HVR1500        6
--#define CX23885_BOARD_HAUPPAUGE_HVR1200        7
--#define CX23885_BOARD_HAUPPAUGE_HVR1700        8
--#define CX23885_BOARD_HAUPPAUGE_HVR1400        9
--#define CX23885_BOARD_DVICO_FUSIONHDTV_7_DUAL_EXP 10
--#define CX23885_BOARD_DVICO_FUSIONHDTV_DVB_T_DUAL_EXP 11
--#define CX23885_BOARD_LEADTEK_WINFAST_PXDVR3200_H 12
--#define CX23885_BOARD_COMPRO_VIDEOMATE_E650F   13
--#define CX23885_BOARD_TBS_6920                 14
--#define CX23885_BOARD_TEVII_S470               15
--#define CX23885_BOARD_DVBWORLD_2005            16
--#define CX23885_BOARD_NETUP_DUAL_DVBS2_CI      17
--#define CX23885_BOARD_HAUPPAUGE_HVR1270        18
--#define CX23885_BOARD_HAUPPAUGE_HVR1275        19
--#define CX23885_BOARD_HAUPPAUGE_HVR1255        20
--#define CX23885_BOARD_HAUPPAUGE_HVR1210        21
--#define CX23885_BOARD_MYGICA_X8506             22
--#define CX23885_BOARD_MAGICPRO_PROHDTVE2       23
--#define CX23885_BOARD_HAUPPAUGE_HVR1850        24
--#define CX23885_BOARD_COMPRO_VIDEOMATE_E800    25
--#define CX23885_BOARD_HAUPPAUGE_HVR1290        26
--#define CX23885_BOARD_MYGICA_X8558PRO          27
--#define CX23885_BOARD_LEADTEK_WINFAST_PXTV1200 28
-+enum {
-+	CX23885_BOARD_NOAUTO = UNSET,
-+	CX23885_BOARD_UNKNOWN = 0,
-+	CX23885_BOARD_HAUPPAUGE_HVR1800lp,
-+	CX23885_BOARD_HAUPPAUGE_HVR1800,
-+	CX23885_BOARD_HAUPPAUGE_HVR1250,
-+	CX23885_BOARD_DVICO_FUSIONHDTV_5_EXP,
-+	CX23885_BOARD_HAUPPAUGE_HVR1500Q,
-+	CX23885_BOARD_HAUPPAUGE_HVR1500,
-+	CX23885_BOARD_HAUPPAUGE_HVR1200,
-+	CX23885_BOARD_HAUPPAUGE_HVR1700,
-+	CX23885_BOARD_HAUPPAUGE_HVR1400,
-+	CX23885_BOARD_DVICO_FUSIONHDTV_7_DUAL_EXP,
-+	CX23885_BOARD_DVICO_FUSIONHDTV_DVB_T_DUAL_EXP,
-+	CX23885_BOARD_LEADTEK_WINFAST_PXDVR3200_H,
-+	CX23885_BOARD_COMPRO_VIDEOMATE_E650F,
-+	CX23885_BOARD_TBS_6920,
-+	CX23885_BOARD_TEVII_S470,
-+	CX23885_BOARD_DVBWORLD_2005,
-+	CX23885_BOARD_NETUP_DUAL_DVBS2_CI,
-+	CX23885_BOARD_HAUPPAUGE_HVR1270,
-+	CX23885_BOARD_HAUPPAUGE_HVR1275,
-+	CX23885_BOARD_HAUPPAUGE_HVR1255,
-+	CX23885_BOARD_HAUPPAUGE_HVR1210,
-+	CX23885_BOARD_MYGICA_X8506,
-+	CX23885_BOARD_MAGICPRO_PROHDTVE2,
-+	CX23885_BOARD_HAUPPAUGE_HVR1850,
-+	CX23885_BOARD_COMPRO_VIDEOMATE_E800,
-+	CX23885_BOARD_HAUPPAUGE_HVR1290,
-+	CX23885_BOARD_MYGICA_X8558PRO,
-+	CX23885_BOARD_LEADTEK_WINFAST_PXTV1200
-+};
- 
- #define GPIO_0 0x00000001
- #define GPIO_1 0x00000002
--- 
-1.7.1
+They're re-posted in July. Please search the subjects in that page. They're totally 29 patches.
 
+By the way, David, what's the result of review on these patches? We already posted for several times.
+
+Thanks
+Haojian
+
+-----Original Message-----
+From: Eric Miao [mailto:eric.y.miao@gmail.com] 
+Sent: 2010Âπ¥8Êúà16Êó• 8:44 PM
+To: Lei Wen
+Cc: Axel Lin; linux-kernel; David Woodhouse; linux-mtd@lists.infradead.org; Haojian Zhuang
+Subject: Re: [PATCH] [MTD] [NAND] pxa3xx: fix timing and cmdset for samsung2GbX8
+
+On Mon, Aug 16, 2010 at 8:34 PM, Lei Wen <leiwen@marvell.com> wrote:
+> Hi Axel,
+>
+> I suggest not merge your patch into mainline code. Since I have a large series of patch which reconstruct the nand flash definition, this fix would no longer be needed.
+>
+
+Lei, would you please point the URL of the patch series (possibly by
+searching linux-mtd archive or some other mailing list archive) so that
+Axel can have a reference and be involved?
+
+- eric
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
