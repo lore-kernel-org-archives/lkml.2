@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177Ab0HPQ0D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:26:03 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:34742 "EHLO mgw2.diku.dk"
+	id S1754886Ab0HPQ0S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:26:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34747 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755136Ab0HPQZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:25:59 -0400
-Date: Mon, 16 Aug 2010 18:25:57 +0200 (CEST)
+	id S1754722Ab0HPQ0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:26:16 -0400
+Date: Mon, 16 Aug 2010 18:26:13 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/16] fs/btrfs: Use available error codes
-Message-ID: <Pine.LNX.4.64.1008161825390.19313@ask.diku.dk>
+Subject: [PATCH 6/16] drivers/media: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161825570.19313@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Error codes are stored in ret, but the return value is always 0.  Return
-ret instead.
+In each case, error codes are stored in rc, but the return value is always
+0.  Return rc instead.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -50,21 +50,36 @@ if (...) { ...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This changes the semantics and has not been tested.
+The changes change the semantics and are not tested.  In the second case,
+the function is used in only one place and the return value is igored.
 
- fs/btrfs/ioctl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb/frontends/drx397xD.c |    2 +-
+ drivers/media/video/s2255drv.c         |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 9254b3d..bc7e9c5 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -212,7 +212,7 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
- 	mnt_drop_write(file->f_path.mnt);
-  out_unlock:
- 	mutex_unlock(&inode->i_mutex);
+diff --git a/drivers/media/dvb/frontends/drx397xD.c b/drivers/media/dvb/frontends/drx397xD.c
+index f74cca6..a05007c 100644
+--- a/drivers/media/dvb/frontends/drx397xD.c
++++ b/drivers/media/dvb/frontends/drx397xD.c
+@@ -232,7 +232,7 @@ static int write_fw(struct drx397xD_state *s, enum blob_ix ix)
+ exit_rc:
+ 	read_unlock(&fw[s->chip_rev].lock);
+ 
 -	return 0;
-+	return ret;
++	return rc;
  }
  
- static int btrfs_ioctl_getversion(struct file *file, int __user *arg)
+ /* Function is not endian safe, use the RD16 wrapper below */
+diff --git a/drivers/media/video/s2255drv.c b/drivers/media/video/s2255drv.c
+index 8ec7c9a..8f74341 100644
+--- a/drivers/media/video/s2255drv.c
++++ b/drivers/media/video/s2255drv.c
+@@ -600,7 +600,7 @@ static int s2255_got_frame(struct s2255_channel *channel, int jpgsize)
+ 	dprintk(2, "%s: [buf/i] [%p/%d]\n", __func__, buf, buf->vb.i);
+ unlock:
+ 	spin_unlock_irqrestore(&dev->slock, flags);
+-	return 0;
++	return rc;
+ }
+ 
+ static const struct s2255_fmt *format_by_fourcc(int fourcc)
