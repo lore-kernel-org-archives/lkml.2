@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752565Ab0HPKmt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 06:42:49 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47060 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751516Ab0HPKmq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 06:42:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=noifD7MZ+pcck0vohphwsrcyQhRDnj4qHcyeIm6EX6C7kxoykvAJdo+CEF193bI3pg
-         OX9F79HAvWJ698+0hMpmZlTzsDTrtaoKTvTHQnKUQPd5RWBWp72ltphqLhj4736pKKcl
-         AMTUUuiEVlgLn3TAo+tD2bjAH3eKZqbi+S4Xo=
-Subject: Re: [GIT] Networking
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jarek Poplawski <jarkao2@gmail.com>
-Cc: David Miller <davem@davemloft.net>, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Patrick McHardy <kaber@trash.net>
-In-Reply-To: <20100816095325.GA8547@ff.dom.local>
-References: <20100816095325.GA8547@ff.dom.local>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 16 Aug 2010 12:42:41 +0200
-Message-ID: <1281955361.2524.35.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1752505Ab0HPKoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 06:44:04 -0400
+Received: from ozlabs.org ([203.10.76.45]:55117 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750795Ab0HPKoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 06:44:03 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Jon Masters <jcm@jonmasters.org>
+Subject: Re: [PATCH] modules: don't call depmod when overriding external module install path
+Date: Mon, 16 Aug 2010 20:13:45 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+References: <1281945814-9720-1-git-send-email-jcm@jonmasters.org>
+In-Reply-To: <1281945814-9720-1-git-send-email-jcm@jonmasters.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008162013.46252.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 16 août 2010 à 09:53 +0000, Jarek Poplawski a écrit :
-> Eric Dumazet wrote:
-> > Le dimanche 15 aou^t 2010 a` 12:55 +0200, Eric Dumazet a écrit :
-> ...
-> > [PATCH] netfilter: {ip,ip6,arp}_tables: avoid lockdep false positive
-> > 
-> > After commit 24b36f019 (netfilter: {ip,ip6,arp}_tables: dont block
-> > bottom half more than necessary), lockdep can raise a warning
-> > because we attempt to lock a spinlock with BH enabled, while
-> > the same lock is usually locked by another cpu in a softirq context.
+On Mon, 16 Aug 2010 05:33:34 pm Jon Masters wrote:
+> Recent kernels include an additional call to depmod during the installation
+> of external kernel modules as a convenience, in order to ensure that those
+> modules are picked up by the module loading tools/initramfs scripts, etc.
+> Although this call is potentially of some value, it should not be made
+> when explicitly setting INSTALL_MOD_PATH to a different location. This
+> avoids creating extraneous modules.* files that will never be used.
 > 
-> Btw, could you remind us how get_counters() are serialized (I guess
-> you can't have them on 2 cpus at the same time)?
+> Signed-off-by: Jon Masters <jcm@jonmasters.org>
+
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+
+I leave the Makefile stuff to the kbuild people...
+
+> ---
+>  Makefile |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 > 
+> diff --git a/Makefile b/Makefile
+> index f3bdff8..2b904f2 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -1325,7 +1325,9 @@ _emodinst_:
+>  
+>  PHONY += _emodinst_post
+>  _emodinst_post: _emodinst_
+> +ifeq ($(INSTALL_MOD_PATH),)
+>  	$(call cmd,depmod)
+> +endif
+>  
+>  clean-dirs := $(addprefix _clean_,$(KBUILD_EXTMOD))
 
-get_counters() is serialized by the xt_find_table_lock() done from
-get_entries(). This use a mutex to guard against changes.
-
-You are right that if we ever allow two concurrent "iptables -nvL"
-operations in the future (using a read lock on a rwlock instead of a
-mutex), then we must disable BH even for summing data from the other
-cpus.
-
-Thanks
-
-
+Thanks,
+Rusty.
