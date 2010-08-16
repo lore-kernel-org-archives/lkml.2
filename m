@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183Ab0HPQ1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:27:52 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50803 "EHLO mgw2.diku.dk"
+	id S1755208Ab0HPQ2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:28:08 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:50861 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755115Ab0HPQ1t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:27:49 -0400
-Date: Mon, 16 Aug 2010 18:27:47 +0200 (CEST)
+	id S1754722Ab0HPQ2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:28:05 -0400
+Date: Mon, 16 Aug 2010 18:28:03 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Antoine Jacquet <royale@zerezo.com>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
+To: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
         linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 11/16] drivers/media/video: Use available error codes
-Message-ID: <Pine.LNX.4.64.1008161827310.19313@ask.diku.dk>
+Subject: [PATCH 12/16] drivers/platform/x86: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161827470.19313@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Error codes are stored in rc, but the return value is always 0.  Return rc
-instead.
+An error code is stored in ret, but the return value is always 0.  Return
+ret instead.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -52,23 +50,21 @@ if (...) { ...
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
-This changes the semantics of the function, but currently its return value
-is ignored.  Alternatively, the function could be converted to return
-nothing.
+This changes the semantics of the function and has not been tested.
 
- drivers/media/video/zr364xx.c |    2 +-
+ drivers/platform/x86/dell-laptop.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/media/video/zr364xx.c b/drivers/media/video/zr364xx.c
-index a82b5bd..616c61f 100644
---- a/drivers/media/video/zr364xx.c
-+++ b/drivers/media/video/zr364xx.c
-@@ -572,7 +572,7 @@ static int zr364xx_got_frame(struct zr364xx_camera *cam, int jpgsize)
- 	DBG("wakeup [buf/i] [%p/%d]\n", buf, buf->vb.i);
- unlock:
- 	spin_unlock_irqrestore(&cam->slock, flags);
+diff --git a/drivers/platform/x86/dell-laptop.c b/drivers/platform/x86/dell-laptop.c
+index b41ed5c..d4d6c9d 100644
+--- a/drivers/platform/x86/dell-laptop.c
++++ b/drivers/platform/x86/dell-laptop.c
+@@ -441,7 +441,7 @@ static int dell_send_intensity(struct backlight_device *bd)
+ 
+ out:
+ 	release_buffer();
 -	return 0;
-+	return rc;
++	return ret;
  }
  
- /* this function moves the usb stream read pipe data
+ static int dell_get_intensity(struct backlight_device *bd)
