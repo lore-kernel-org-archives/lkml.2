@@ -1,59 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab0HPWJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 18:09:20 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:57961 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103Ab0HPWJT (ORCPT
+	id S1756525Ab0HPWMN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 18:12:13 -0400
+Received: from tomts10.bellnexxia.net ([209.226.175.54]:33531 "EHLO
+	tomts10-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756357Ab0HPWML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 18:09:19 -0400
-Subject: Re: lockdep false positive? -- firewire-core transaction timer vs.
- scsi-core host lock
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <1281994939.1926.2075.camel@laptop>
-References: <tkrat.1e48e021935dc8b7@s5r6.in-berlin.de>
-	 <1281994939.1926.2075.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 00:09:10 +0200
-Message-ID: <1281996550.3683.43.camel@jlt3.sipsolutions.net>
+	Mon, 16 Aug 2010 18:12:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAHRSaUxGGN19/2dsb2JhbACgSnLBDYU7BA
+Date: Mon, 16 Aug 2010 18:07:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
+Message-ID: <20100816220705.GA18650@Krystal>
+References: <20100809221447.GA24358@linux.vnet.ibm.com> <1281392111-25060-8-git-send-email-paulmck@linux.vnet.ibm.com> <20100816150737.GB8320@Krystal> <20100816183355.GH2388@linux.vnet.ibm.com> <20100816191947.GA970@Krystal> <20100816213200.GK2388@linux.vnet.ibm.com> <20100816214123.GA15663@Krystal> <20100816215555.GL2388@linux.vnet.ibm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100816215555.GL2388@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 18:01:45 up 131 days,  7:53,  4 users,  load average: 0.18, 0.11,
+	0.04
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 23:42 +0200, Peter Zijlstra wrote:
-
-> Which means that it now worries the following can happen:
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Mon, Aug 16, 2010 at 05:41:23PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > On Mon, Aug 16, 2010 at 03:19:47PM -0400, Mathieu Desnoyers wrote:
+> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > On Mon, Aug 16, 2010 at 11:07:37AM -0400, Mathieu Desnoyers wrote:
+> > > > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > > [...]
+> > > > > > > +
+> > > > > > > +/*
+> > > > > > > + * Tiny-preemptible RCU implementation for rcu_read_unlock().
+> > > > > > > + * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
+> > > > > > > + * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
+> > > > > > > + * invoke rcu_read_unlock_special() to clean up after a context switch
+> > > > > > > + * in an RCU read-side critical section and other special cases.
+> > > > > > > + */
+> > > > > > > +void __rcu_read_unlock(void)
+> > > > > > > +{
+> > > > > > > +	struct task_struct *t = current;
+> > > > > > > +
+> > > > > > > +	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutiny.c */
+> > > > > > > +	if (--t->rcu_read_lock_nesting == 0 &&
+> > > > > > > +	    unlikely(t->rcu_read_unlock_special))
+> > > > > 
+> > > > > First, thank you for looking this over!!!
+> > > > > 
+> > > > > > Hrm I think we discussed this in a past life, but would the following
+> > > > > > sequence be possible and correct ?
+> > > > > > 
+> > > > > > CPU 0
+> > > > > > 
+> > > > > > read t->rcu_read_unlock_special
+> > > > > >   interrupt comes in, preempts. sets t->rcu_read_unlock_special
+> > > > > >   <preempted>
+> > > > > >   <scheduled back>
+> > > > > >   iret
+> > > > > > decrement and read t->rcu_read_lock_nesting
+> > > > > > test both old "special" value (which we have locally on the stack) and
+> > > > > > detect that rcu_read_lock_nesting is 0.
+> > > > > > 
+> > > > > > We actually missed a reschedule.
+> > > > > > 
+> > > > > > I think we might need a barrier() between the t->rcu_read_lock_nesting
+> > > > > > and t->rcu_read_unlock_special reads.
+> > > > > 
+> > > > > You are correct -- I got too aggressive in eliminating synchronization.
+> > > > > 
+> > > > > Good catch!!!
+> > > > > 
+> > > > > I added an ACCESS_ONCE() to the second term of the "if" condition so
+> > > > > that it now reads:
+> > > > > 
+> > > > > 	if (--t->rcu_read_lock_nesting == 0 &&
+> > > > > 	    unlikely((ACCESS_ONCE(t->rcu_read_unlock_special)))
+> > > > > 
+> > > > > This prevents the compiler from reordering because the ACCESS_ONCE()
+> > > > > prohibits accessing t->rcu_read_unlock_special unless the value of
+> > > > > t->rcu_read_lock_nesting is known to be zero.
+> > > > 
+> > > > Hrm, --t->rcu_read_lock_nesting does not have any globally visible
+> > > > side-effect, so the compiler is free to reorder the memory access across
+> > > > the rcu_read_unlock_special access. I think we need the ACCESS_ONCE()
+> > > > around the t->rcu_read_lock_nesting access too.
+> > > 
+> > > Indeed, it is free to reorder that access.  This has the effect of
+> > > extending the scope of the RCU read-side critical section, which is
+> > > harmless as long as it doesn't pull a lock or some such into it.
+> > > 
+> > 
+> > So what happens if we get:
+> > 
+> > CPU 0
+> > 
+> > read t->rcu_read_lock_nesting
+> > check if equals to 1
+> > read t->rcu_read_unlock_special
+> >   interrupt comes in, preempts. sets t->rcu_read_unlock_special
+> >   <preempted>
+> >   <scheduled back>
+> >   iret
+> > decrement t->rcu_read_lock_nesting
 > 
-> softirq:
->   spin_lock(&t->split_timeout_timer);
+> Moving this down past the check of t->rcu_read_lock_special (which is
+> now covered by ACCESS_ONCE()) would violate the C standard, as it would
+> be equivalent to moving a volatile up past a sequence point.
+
+Hrm, I'm not quite convinced yet. I am not concerned about gcc moving
+the volatile access prior to the sequence point (as you say, this is
+forbidden by the C standard), but rather that:
+
+--(t->rcu_read_lock_nesting)
+
+could be split in two distinct operations:
+
+read t->rcu_read_lock_nesting
+decrement t->rcu_read_lock_nesting
+
+Note that in order to know the result required to pass the sequence
+point "&&" (the test), we only need to perform the read, not the
+decrement. AFAIU, gcc would be in its rights to move the
+t->rcu_read_lock_nesting update after the volatile access.
+
+Thanks,
+
+Mathieu
+
 > 
-> IRQ:
->   spin_lock(&(shost->host_lock)->rlock);
->    spin_lock(&t->split_timeout_timer);
+> 							Thanx, Paul
 > 
-> Now, the thing is that split_timeout_timer is a fake lock used to
-> annotate timers, its use is to connect lock chains from within the timer
-> callback to del_timer_sync() callers, to detect deadlocks.
-> 
-> Now, I can't seem to remember why del_timer_sync() explicitly disables
-> IRQs but call_timer_fn() does not, Johill, happen to remember?
+> > test rcu_read_unlock_special value (read prior to interrupt)
+> >  -> fails to notice the preemption that came in after the
+> >     rcu_read_unlock_special read.
+> > 
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> > -- 
+> > Mathieu Desnoyers
+> > Operating System Efficiency R&D Consultant
+> > EfficiOS Inc.
+> > http://www.efficios.com
 
-Err, sorry, no. I do remember that we had long discussions and initially
-I had wanted to disable the context checking for these fake locks
-completely. I think it was just the minimal thing needed not to make it
-warn always. Also, we can't do the same thing in call_timer_fn() since
-we need to hold it across fn()? Wouldn't it complain if we held that
-lock then while enabling IRQs again? Not sure.
-
-I don't fully understand the scenario above yet though. Why does it
-think we could ever take the fake lock in an IRQ to start with? That
-must not happen. Or is that just preemptive worrying?
-
-johannes
-
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
