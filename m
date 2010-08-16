@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756093Ab0HPTXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 15:23:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41725 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691Ab0HPTXe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 15:23:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:message-id:content-type:content-transfer-encoding;
-        b=pocgPq5WRdjm/kiGQx6r2p5bMON6QgjmgmskKg+uSkUm9QYLCpxxe/pnW7rLNqEBbc
-         u1WvoVS6i1FT7MNx7BZM7A8TnIOxiWDPsvU9aGzodK7D4442/1YERGfkgaqWwnLwDPBN
-         sfebCXFh2gGzoIzBvNwv1sBZhj4in8PdHLP0Y=
-From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-To: Dan Carpenter <error27@gmail.com>
-Subject: Re: [patch] pata_winbond: fix module init
-Date: Mon, 16 Aug 2010 21:23:03 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33-0.1-desktop; KDE/4.3.5; x86_64; ; )
-Cc: Jeff Garzik <jgarzik@pobox.com>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk
-References: <20100803152549.GQ26313@bicker>
-In-Reply-To: <20100803152549.GQ26313@bicker>
+	id S1756119Ab0HPTYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 15:24:48 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:55798 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab0HPTYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 15:24:46 -0400
+Date: Mon, 16 Aug 2010 20:23:50 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-hams@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 8/16] net/ax25: Use available error codes
+Message-ID: <20100816192350.GA10921@linux-mips.org>
+References: <Pine.LNX.4.64.1008161826390.19313@ask.diku.dk>
 MIME-Version: 1.0
-Message-Id: <201008162123.03208.bzolnier@gmail.com>
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1008161826390.19313@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 16, 2010 at 06:26:57PM +0200, Julia Lawall wrote:
 
-Hi Dan,
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Error codes are stored in err, but the return value is always 0.  Return
+> err instead.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r@
+> local idexpression x;
+> constant C;
+> @@
+> 
+> if (...) { ...
+>   x = -C
+>   ... when != x
+> (
+>   return <+...x...+>;
+> |
+>   return NULL;
+> |
+>   return;
+> |
+> * return ...;
+> )
+> }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> This changes the semantics and has not been tested.
 
-On Tuesday 03 August 2010 05:27:47 pm Dan Carpenter wrote:
-> winbond_init_one() returns 0 on success and an error code on failure.
-> In the original code, we always just released the regions and return
-> -ENODEV.  This was introduce in 2006 by 7e45b0e5f6f6 "[PATCH] libata:
-> Winbond support".
+It restores the semantics to what they should be and used to be.  This
+probably happened during the introduction of proper refcounting and
+locking into the AX.25 stack.  Looks fine to me.
 
-You might like to pick up
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-	http://patchwork.ozlabs.org/patch/39358/
-
-instead..
-
-Thanks.
---
-Bartlomiej Zolnierkiewicz
+  Ralf
