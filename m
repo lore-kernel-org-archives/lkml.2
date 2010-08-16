@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab0HPQUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 12:20:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:60289 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754652Ab0HPQUQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 12:20:16 -0400
-Message-ID: <4C69653E.6050808@vlnb.net>
-Date: Mon, 16 Aug 2010 20:20:14 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1754783Ab0HPQYq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 12:24:46 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:34655 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754693Ab0HPQYo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 12:24:44 -0400
+Date: Mon, 16 Aug 2010 18:24:41 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/16] drivers/firewire: Use available error codes
+Message-ID: <Pine.LNX.4.64.1008161824210.19313@ask.diku.dk>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: scst-devel <scst-devel@lists.sourceforge.net>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Fwd: Re: [Scst-devel] linuxcon 2010...
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:4Wd6H6RsTL8RPe2Rrx0/ugd91jvat1M5kNAmiJ3tq4I
- A3E6pFPdLmG88HH+FpTePj5QvxxrBDvaBLPNvcRLNsu5jPH472
- MeVuTN4iR568ZsVAweNIMYv9Aj6hxp0/xTCxqCqHA+RdHnKfLD
- L162wn44ghsgxAoXAO46sN5aHlL+/KYkrvGnks0vn0QvCA7hhg
- aBTt//dBH/XNeXUowkhKg==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello James,
+From: Julia Lawall <julia@diku.dk>
 
-Could you comment rumors that decision about future Linux SCSI target 
-subsystem is done as well as other related rumors:
+Error codes are stored in retval, but the return value is always 0.  Return
+retval in the error case instead.
 
-1. What don't you like in the transition path for users from STGT to 
-SCST, which I proposed:
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-  - The only people which would be affected by replacing of STGT by SCST
-would be users of ibmvstgt. Other STGT users would not notice it at all. 
-Thus, we should update ibmvstgt for SCST. If ibmvstgt updated for SCST, 
-the update for its users would be just writing of a simple scstadmin's 
-config file.
+// <smpl>
+@r@
+local idexpression x;
+constant C;
+@@
 
-  - STGT doesn't have backend drivers, which SCST doesn't have, so
-there's nothing to worry here. At max, AIO support should be added to 
-fileio_tgt.
+if (...) { ...
+  x = -C
+  ... when != x
+(
+  return <+...x...+>;
+|
+  return NULL;
+|
+  return;
+|
+* return ...;
+)
+}
+// </smpl>
 
-  - STGT user space targets can use SCST backend via scst_local module.
-Scst_local module is ready and work very well.
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-The result would be very clear without any obsolete mess.
+---
+This changes the semantics of the code and has not been tested.
+Furthermore, there is another call, to fwnet_pd_update, where there is a
+goto to bad_proto (the label associated with the second block of code), and
+that does not set retval.  Perhaps a value should be chosen in that case.
+Or perhaps retval should just be dropped, if it is not going to be used.
 
-2. Don't you like something in the sysfs interface SCST has?
+ drivers/firewire/net.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-3. I have heard you said "Vlad wasn't comfortable in handing up the 
-control to the maintainers ... (this is how kernel.org works)." I have 
-no idea what you meant. I have never been asked about anything like 
-that, so I couldn't say anyhow that I'm not comfortable with anything. 
-Could you clarify that?
-
-4. Have you changed your opinion that a driver level multipath is 
-forbidden in Linux and now you think that an iSCSI target with MC/S 
-support is acceptable?
-
-Thanks,
-Vlad
-
+diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
+index da17d40..8d91484 100644
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -681,7 +681,7 @@ static int fwnet_incoming_packet(struct fwnet_device *dev, __be32 *buf, int len,
+ 	int fg_off;
+ 	int dg_size;
+ 	u16 datagram_label;
+-	int retval;
++	int retval = 0;
+ 	u16 ether_type;
+ 
+ 	hdr.w0 = be32_to_cpu(buf[0]);
+@@ -801,7 +801,7 @@ static int fwnet_incoming_packet(struct fwnet_device *dev, __be32 *buf, int len,
+ 	if (netif_queue_stopped(net))
+ 		netif_wake_queue(net);
+ 
+-	return 0;
++	return retval;
+ }
+ 
+ static void fwnet_receive_packet(struct fw_card *card, struct fw_request *r,
