@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753243Ab0HPIcR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 04:32:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57857 "EHLO
+	id S1753271Ab0HPIcf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 04:32:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41745 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753163Ab0HPIcE (ORCPT
+	with ESMTP id S1753042Ab0HPIcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 04:32:04 -0400
+	Mon, 16 Aug 2010 04:32:33 -0400
+Message-ID: <4C68F79E.4010801@monstr.eu>
+Date: Mon, 16 Aug 2010 10:32:30 +0200
 From: Michal Simek <monstr@monstr.eu>
-To: glikely@secretlab.ca
-Cc: linux-kernel@vger.kernel.org, Michal Simek <monstr@monstr.eu>
-Subject: [PATCH] microblaze: Fix of: eliminate of_device->node and dev_archdata->{of,prom}_node
-Date: Mon, 16 Aug 2010 10:31:54 +0200
-Message-Id: <1281947514-25319-3-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
-In-Reply-To: <1281947514-25319-2-git-send-email-monstr@monstr.eu>
-References: <1281947514-25319-1-git-send-email-monstr@monstr.eu>
- <1281947514-25319-2-git-send-email-monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au
+Subject: Re: [PATCH] microblaze: use asm-generic/pci-dma-compat.h
+References: <20100814161713P.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100814161713P.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 58f9b0b02414062eaff46716bc04b47d7e79add5 should
-contain this fix too.
+FUJITA Tomonori wrote:
+> Use asm-generic/pci-dma-compat.h instead of the homegrown
+> pci_set_dma_mask and pci_set_consistent_dma_mask.
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
----
- arch/microblaze/pci/pci-common.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Applied.
 
-diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 62f403b..466d410 100644
---- a/arch/microblaze/pci/pci-common.c
-+++ b/arch/microblaze/pci/pci-common.c
-@@ -1062,7 +1062,7 @@ void __devinit pcibios_setup_bus_devices(struct pci_bus *bus)
- 		struct dev_archdata *sd = &dev->dev.archdata;
- 
- 		/* Setup OF node pointer in archdata */
--		sd->of_node = pci_device_to_OF_node(dev);
-+		dev->dev.of_node = pci_device_to_OF_node(dev);
- 
- 		/* Fixup NUMA node as it may not be setup yet by the generic
- 		 * code and is needed by the DMA init
+Thanks,
+Michal
+
 -- 
-1.5.5.6
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
