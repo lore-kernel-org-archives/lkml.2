@@ -1,90 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0HPWQa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 18:16:30 -0400
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:49757 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356Ab0HPWQ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 18:16:29 -0400
-X-Greylist: delayed 1529 seconds by postgrey-1.27 at vger.kernel.org; Mon, 16 Aug 2010 18:16:28 EDT
-Date: Mon, 16 Aug 2010 23:50:56 +0200
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-To: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Subject: 2.6.35.2: NFS related Oops
-Message-ID: <20100816215056.GA5376@os.inf.tu-dresden.de>
+	id S1756731Ab0HPWYI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 18:24:08 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:60844 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756457Ab0HPWYG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 18:24:06 -0400
+Date: Mon, 16 Aug 2010 15:24:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
+Message-ID: <20100816222402.GM2388@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100809221447.GA24358@linux.vnet.ibm.com>
+ <1281392111-25060-8-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100816150737.GB8320@Krystal>
+ <20100816183355.GH2388@linux.vnet.ibm.com>
+ <20100816191947.GA970@Krystal>
+ <20100816213200.GK2388@linux.vnet.ibm.com>
+ <20100816214123.GA15663@Krystal>
+ <20100816215555.GL2388@linux.vnet.ibm.com>
+ <20100816220705.GA18650@Krystal>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20100816220705.GA18650@Krystal>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Aug 16, 2010 at 06:07:05PM -0400, Mathieu Desnoyers wrote:
+> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > On Mon, Aug 16, 2010 at 05:41:23PM -0400, Mathieu Desnoyers wrote:
+> > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > On Mon, Aug 16, 2010 at 03:19:47PM -0400, Mathieu Desnoyers wrote:
+> > > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > > On Mon, Aug 16, 2010 at 11:07:37AM -0400, Mathieu Desnoyers wrote:
+> > > > > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > > > [...]
+> > > > > > > > +
+> > > > > > > > +/*
+> > > > > > > > + * Tiny-preemptible RCU implementation for rcu_read_unlock().
+> > > > > > > > + * Decrement ->rcu_read_lock_nesting.  If the result is zero (outermost
+> > > > > > > > + * rcu_read_unlock()) and ->rcu_read_unlock_special is non-zero, then
+> > > > > > > > + * invoke rcu_read_unlock_special() to clean up after a context switch
+> > > > > > > > + * in an RCU read-side critical section and other special cases.
+> > > > > > > > + */
+> > > > > > > > +void __rcu_read_unlock(void)
+> > > > > > > > +{
+> > > > > > > > +	struct task_struct *t = current;
+> > > > > > > > +
+> > > > > > > > +	barrier();  /* needed if we ever invoke rcu_read_unlock in rcutiny.c */
+> > > > > > > > +	if (--t->rcu_read_lock_nesting == 0 &&
+> > > > > > > > +	    unlikely(t->rcu_read_unlock_special))
+> > > > > > 
+> > > > > > First, thank you for looking this over!!!
+> > > > > > 
+> > > > > > > Hrm I think we discussed this in a past life, but would the following
+> > > > > > > sequence be possible and correct ?
+> > > > > > > 
+> > > > > > > CPU 0
+> > > > > > > 
+> > > > > > > read t->rcu_read_unlock_special
+> > > > > > >   interrupt comes in, preempts. sets t->rcu_read_unlock_special
+> > > > > > >   <preempted>
+> > > > > > >   <scheduled back>
+> > > > > > >   iret
+> > > > > > > decrement and read t->rcu_read_lock_nesting
+> > > > > > > test both old "special" value (which we have locally on the stack) and
+> > > > > > > detect that rcu_read_lock_nesting is 0.
+> > > > > > > 
+> > > > > > > We actually missed a reschedule.
+> > > > > > > 
+> > > > > > > I think we might need a barrier() between the t->rcu_read_lock_nesting
+> > > > > > > and t->rcu_read_unlock_special reads.
+> > > > > > 
+> > > > > > You are correct -- I got too aggressive in eliminating synchronization.
+> > > > > > 
+> > > > > > Good catch!!!
+> > > > > > 
+> > > > > > I added an ACCESS_ONCE() to the second term of the "if" condition so
+> > > > > > that it now reads:
+> > > > > > 
+> > > > > > 	if (--t->rcu_read_lock_nesting == 0 &&
+> > > > > > 	    unlikely((ACCESS_ONCE(t->rcu_read_unlock_special)))
+> > > > > > 
+> > > > > > This prevents the compiler from reordering because the ACCESS_ONCE()
+> > > > > > prohibits accessing t->rcu_read_unlock_special unless the value of
+> > > > > > t->rcu_read_lock_nesting is known to be zero.
+> > > > > 
+> > > > > Hrm, --t->rcu_read_lock_nesting does not have any globally visible
+> > > > > side-effect, so the compiler is free to reorder the memory access across
+> > > > > the rcu_read_unlock_special access. I think we need the ACCESS_ONCE()
+> > > > > around the t->rcu_read_lock_nesting access too.
+> > > > 
+> > > > Indeed, it is free to reorder that access.  This has the effect of
+> > > > extending the scope of the RCU read-side critical section, which is
+> > > > harmless as long as it doesn't pull a lock or some such into it.
+> > > > 
+> > > 
+> > > So what happens if we get:
+> > > 
+> > > CPU 0
+> > > 
+> > > read t->rcu_read_lock_nesting
+> > > check if equals to 1
+> > > read t->rcu_read_unlock_special
+> > >   interrupt comes in, preempts. sets t->rcu_read_unlock_special
+> > >   <preempted>
+> > >   <scheduled back>
+> > >   iret
+> > > decrement t->rcu_read_lock_nesting
+> > 
+> > Moving this down past the check of t->rcu_read_lock_special (which is
+> > now covered by ACCESS_ONCE()) would violate the C standard, as it would
+> > be equivalent to moving a volatile up past a sequence point.
+> 
+> Hrm, I'm not quite convinced yet. I am not concerned about gcc moving
+> the volatile access prior to the sequence point (as you say, this is
+> forbidden by the C standard), but rather that:
+> 
+> --(t->rcu_read_lock_nesting)
+> 
+> could be split in two distinct operations:
+> 
+> read t->rcu_read_lock_nesting
+> decrement t->rcu_read_lock_nesting
+> 
+> Note that in order to know the result required to pass the sequence
+> point "&&" (the test), we only need to perform the read, not the
+> decrement. AFAIU, gcc would be in its rights to move the
+> t->rcu_read_lock_nesting update after the volatile access.
 
-with 2.6.35.2 I'm getting this reproducible Oops:
+I will run this by some compiler experts.
 
-[  110.825396] BUG: unable to handle kernel NULL pointer dereference at (null)
-[  110.828638] IP: [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638] PGD be89f067 PUD bf18f067 PMD 0
-[  110.828638] Oops: 0000 [#1] SMP
-[  110.828638] last sysfs file: /sys/class/net/lo/operstate
-[  110.828638] CPU 2
-[  110.828638] Modules linked in: rtc_cmos rtc_core rtc_lib amd64_edac_mod i2c_amd756 edac_core i2c_core dm_mirror dm_region_hash dm_log dm_snapshot sg sr_mod usb_storage ohci_hcd mptspi tg3 mptscsih mptbase usbcore nls_base [last unloaded: scsi_wait_scan] 
-[  110.828638] 
-[  110.828638] Pid: 11264, comm: setchecksum Not tainted 2.6.35.2 #1
-[  110.828638] RIP: 0010:[<ffffffff811247b7>]  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638] RSP: 0000:ffff88003bf5b878  EFLAGS: 00010296
-[  110.828638] RAX: ffff8800bddb48a8 RBX: ffff88003bf5bb18 RCX: 0000000000000000
-[  110.828638] RDX: ffff8800be258800 RSI: 0000000000000000 RDI: ffff88003bf5b9f8
-[  110.828638] RBP: 0000000000000000 R08: ffff8800bddb48a8 R09: 0000000000000004
-[  110.828638] R10: 0000000000000003 R11: ffff8800be779000 R12: ffff8800be258800
-[  110.828638] R13: ffff88003bf5b9f8 R14: ffff88003bf5bb20 R15: ffff8800be258800
-[  110.828638] FS:  0000000000000000(0000) GS:ffff880041e00000(0063) knlGS:00000000556bd6b0
-[  110.828638] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[  110.828638] CR2: 0000000000000000 CR3: 00000000be8ef000 CR4: 00000000000006e0
-[  110.828638] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  110.828638] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[  110.828638] Process setchecksum (pid: 11264, threadinfo ffff88003bf5a000, task ffff88003f232210)
-[  110.828638] Stack:
-[  110.828638]  0000000000000000 ffff8800bfbcf920 0000000000000000 0000000000000ffe
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-[  110.828638] Call Trace:
-[  110.828638]  [<ffffffff81124c1f>] ? nfs4_xdr_enc_setattr+0x90/0xb4
-[  110.828638]  [<ffffffff81371161>] ? call_transmit+0x1c3/0x24a
-[  110.828638]  [<ffffffff813774d9>] ? __rpc_execute+0x78/0x22a
-[  110.828638]  [<ffffffff81371a91>] ? rpc_run_task+0x21/0x2b
-[  110.828638]  [<ffffffff81371b7e>] ? rpc_call_sync+0x3d/0x5d
-[  110.828638]  [<ffffffff8111e284>] ? _nfs4_do_setattr+0x11b/0x147
-[  110.828638]  [<ffffffff81109466>] ? nfs_init_locked+0x0/0x32
-[  110.828638]  [<ffffffff810ac521>] ? ifind+0x4e/0x90
-[  110.828638]  [<ffffffff8111e2fb>] ? nfs4_do_setattr+0x4b/0x6e
-[  110.828638]  [<ffffffff8111e634>] ? nfs4_do_open+0x291/0x3a6
-[  110.828638]  [<ffffffff8111ed81>] ? nfs4_open_revalidate+0x63/0x14a
-[  110.828638]  [<ffffffff811056c4>] ? nfs_open_revalidate+0xd7/0x161
-[  110.828638]  [<ffffffff810a2de4>] ? do_lookup+0x1a4/0x201
-[  110.828638]  [<ffffffff810a4733>] ? link_path_walk+0x6a/0x9d5
-[  110.828638]  [<ffffffff810a42b6>] ? do_last+0x17b/0x58e
-[  110.828638]  [<ffffffff810a5fbe>] ? do_filp_open+0x1bd/0x56e
-[  110.828638]  [<ffffffff811cd5e0>] ? _atomic_dec_and_lock+0x30/0x48
-[  110.828638]  [<ffffffff810a9b1b>] ? dput+0x37/0x152
-[  110.828638]  [<ffffffff810ae063>] ? alloc_fd+0x69/0x10a
-[  110.828638]  [<ffffffff81099f39>] ? do_sys_open+0x56/0x100
-[  110.828638]  [<ffffffff81027a22>] ? ia32_sysret+0x0/0x5
-[  110.828638] Code: 83 f1 01 e8 f5 ca ff ff 48 83 c4 50 5b 5d 41 5c c3 41 57 41 56 41 55 49 89 fd 41 54 49 89 d4 55 48 89 f5 53 48 81 ec 18 01 00 00 <8b> 06 89 c2 83 e2 08 83 fa 01 19 db 83 e3 f8 83 c3 18 a8 01 8d
-[  110.828638] RIP  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638]  RSP <ffff88003bf5b878>
-[  110.828638] CR2: 0000000000000000
-[  112.840396] ---[ end trace 95282e83fd77358f ]---
-
-
-Looks like arg->iap in encode_setattr() in nfs4xdr.c is 0.
-
-
-
-Adam
--- 
-Adam                 adam@os.inf.tu-dresden.de
-  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+							Thanx, Paul
