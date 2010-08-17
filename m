@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757771Ab0HQP0P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 11:26:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37238 "EHLO hera.kernel.org"
+	id S1757633Ab0HQP2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 11:28:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36882 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab0HQP0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 11:26:13 -0400
-Message-ID: <4C6AA923.4040302@kernel.org>
-Date: Tue, 17 Aug 2010 17:22:11 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Grant Grundler <grundler@google.com>
-CC: Jeff Garzik <jgarzik@pobox.com>,
-        "Wilcox, Matthew R" <matthew.r.wilcox@intel.com>,
-        Linux IDE <linux-ide@vger.kernel.org>,
-        Gwendal Grignou <gwendal@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] 2.6.35 libata support for > 512 byte sectors (e.g. 4K
- Native)
-References: <AANLkTikSSmP5f1csa=xPTR=EqY4D5a=6t2oDVkZ7cA-v@mail.gmail.com>	<CAC4B8726E86A142B27A9E9A2F2F12470149041A4E@rrsmsx505.amr.corp.intel.com>	<AANLkTik4RNvaE5OrFq3NmZ+-9DKhAAaNQ3cdPg38zOr2@mail.gmail.com>	<4C699455.6020200@pobox.com> <AANLkTi=R4GQGVE5AvU9hdWXdtqZzaOswrGQA+cPgO58W@mail.gmail.com>
-In-Reply-To: <AANLkTi=R4GQGVE5AvU9hdWXdtqZzaOswrGQA+cPgO58W@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
+	id S1753730Ab0HQP2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 11:28:30 -0400
+Subject: Re: [GIT PULL] notification tree - try 37!
+From: Eric Paris <eparis@redhat.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Andreas Gruenbacher <agruen@suse.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+In-Reply-To: <201008171155.21479.tvrtko.ursulin@sophos.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
+	 <201008171201.10142.agruen@suse.de>
+	 <201008171112.42097.tvrtko.ursulin@sophos.com>
+	 <201008171155.21479.tvrtko.ursulin@sophos.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 11:27:49 -0400
+Message-ID: <1282058869.21419.134.camel@acb20005.ipt.aol.com>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 15:25:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, 2010-08-17 at 11:55 +0100, Tvrtko Ursulin wrote:
+> On Tuesday 17 Aug 2010 11:12:41 Tvrtko Ursulin wrote:
+> > On Tuesday 17 Aug 2010 11:01:09 Andreas Gruenbacher wrote:
+> > > I'm quite sure that both of these issues have been discussed already.
+> >
+> > Ok, I obviosuly missed it. Do you have a pointer perhaps?
+> 
+> I have found the thread. It has been discussed but I do not find it had a
+> clear outcome. At the end Eric has proposed the heartbeat/in-progress option
+> (which IMHO can only work together with a timeout) to which no-one objected. I
+> did not find other arguments against such functionality solid.
 
-On 08/16/2010 10:24 PM, Grant Grundler wrote:
-> I suspect legacy tools might be needed to update firmware and those
-> might continue to function if DRQ block size is still 512 byte.  I'd
-> like to leave this hardcoded to ATA_SECT_SIZE until someone can
-> demonstrate a need to change it. Ok?
+You'll notice that anything anyone I respected objected to, even if I
+didn't agree, I dropped or replaced.  I had such code.  We can bring it
+back.  But the objection was: 'what's the point?"  They believed that
+everyone would just do it in a library and end up in the 'block forever'
+situation we have today.
 
-I agree it'll be best to leave it 512bytes.  We'll just cause more
-confusion by overriding the sector size there.  Another possible
-approach would be simply failing the ioctl if logical sector size
-isn't 512 byte.  The ioctl should probably be deprecated one day
-anyway.
+-Eric
 
-Thanks.
-
--- 
-tejun
