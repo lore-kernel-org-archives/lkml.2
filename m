@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab0HQOJN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 10:09:13 -0400
-Received: from reptilian.habets.pp.se ([193.151.93.131]:4759 "EHLO
-	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab0HQOJL (ORCPT
+	id S1757361Ab0HQOKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 10:10:21 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:52323 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab0HQOKT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 10:09:11 -0400
-Date: Tue, 17 Aug 2010 16:09:02 +0200 (CEST)
-From: Thomas Habets <thomas@habets.pp.se>
-X-X-Sender: thompa@red.crap.retrofitta.se
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Thomas Habets <thomas@habets.pp.se>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
- to reset
-In-Reply-To: <1282050920.2448.47.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
-References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se>  <1281953960.2524.23.camel@edumazet-laptop>  <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>  <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se> 
- <1282024802.2487.687.camel@edumazet-laptop>  <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se> <1282050920.2448.47.camel@edumazet-laptop>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	Tue, 17 Aug 2010 10:10:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sP+iVot+v+hLwHyvfUhWOo7kU3b8/CSRpSnP/0bWJQVXMxvpOnzVlImwKMRL6orxbq
+         hP4LEOvoBIz3EdW3oycvq4hyYEENeXJTmBtB2yXezP/fAE5Ayr2Th8BNa+JGW6KQ/doc
+         6/MTZ7Ya7VFMvyJqJlg4WjBCNVaxxmV4/2yi4=
+Date: Tue, 17 Aug 2010 18:10:13 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC -tip]
+Message-ID: <20100817141013.GA5879@lenovo>
+References: <20100816110253.GD5805@lenovo> <1282036441.11858.14.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282036441.11858.14.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010, Eric Dumazet wrote:
-> Can you try : "ifconfig eth0 allmulti"
+On Tue, Aug 17, 2010 at 05:14:01PM +0800, Lin Ming wrote:
+> On Mon, 2010-08-16 at 19:02 +0800, Cyrill Gorcunov wrote:
+> > Hi,
+> > 
+> > please review the approach, I can't test it due to lack
+> > of hw (btw Ming, if you have some spare minutes -- mind to
+> > pass some event as RAW and see how it goes?).
+> 
+> #raw event for cpu cycles
+> perf top -e r3000020c0403c000
+> 
+> #raw event for cache-misses
+> perf top -e r120e00030803e000
+> 
 
-That didn't help. "ifconfig eth0" and "ip l" shows that allmulti is now 
-set, but no other difference. Can't ping router, and router gets no answer 
-when pinging ff02::1. No message in dmesg saying allmulti isn't supported 
-or anything like that either.
+Ming, I had something different in mind, I'll prepare the case
+to be tested. Will notify you. Thanks!
 
-> If you let a "tcpdump" running with -p option, do you receive the packet
-> sent to ethernet dest 33:33:ff:5c:00:02 ?
+> I tried some raw events and it works.
+> 
+> > Index: linux-2.6.git/arch/x86/include/asm/Kbuild
+> > =====================================================================
+> > --- linux-2.6.git.orig/arch/x86/include/asm/Kbuild
+> > +++ linux-2.6.git/arch/x86/include/asm/Kbuild
+> > @@ -24,3 +24,4 @@ unifdef-y += unistd_32.h
+> >  unifdef-y += unistd_64.h
+> >  unifdef-y += vm86.h
+> >  unifdef-y += vsyscall.h
+> > +unifdef-y += perf_event_p4.h
+> 
+> +header-y += perf_event_p4.h
+> 
+> Need to update this to header-y.
 
-No. Commented tcpdump output below.
 
-> If you can see it with tcpdump, then NIC gave the frame to us.
+Yeah, thanks for catching this!
 
-Seems to be invisible unless I or tcpdump set promisc mode. But when 
-promisc mode is set I can immediately see the 33:33:ff:5c:00:02 packet 
-(ND solicitation) and I see that Linux is answering it.
+> 
+> Thanks,
+> Lin Ming
+> 
+...
 
-Here's a tcpdump from the Linux host. It's slightliy trimmed to fit in
-an email, but the full dump is at http://www.habets.pp.se/tmp/ipv6.pcap
-
-$ sudo tcpdump -pnli eth0 -s0 -w ipv6.pcap ip6
-[...]
-
-$ tcpdump -nlr ipv6.pcap
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
-
-[ here I run "clear ipv6 neighbors" on the Cisco router ]
-
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-[ ... more repeated echo requests, no reply ... ]
-
-[ here i run "ip l set promisc on eth0" ]
-
-2a00:800:752:1::5c:1 > ff02::1:ff5c:2: ICMP6, neighbor solicitation, who 
-has 2a00:800:752:1::5c:2
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6,neighbor advertisement,
-tgt is 2a00:800:752:1::5c:2
-2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
-
-[ here I run "clear ipv6 neigbors" again ]
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
-
----------
-typedef struct me_s {
-   char name[]      = { "Thomas Habets" };
-   char email[]     = { "thomas@habets.pp.se" };
-   char kernel[]    = { "Linux" };
-   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
-   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
-   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
-} me_t;
+	-- Cyrill
