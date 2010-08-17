@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab0HQJ3J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 05:29:09 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:20848 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757059Ab0HQJ3H (ORCPT
+	id S1757500Ab0HQJ3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 05:29:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42677 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757227Ab0HQJ3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 05:29:07 -0400
-Date: Tue, 17 Aug 2010 12:29:33 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: "ext hvaibhav@ti.com" <hvaibhav@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "byron.bbradley@gmail.com" <byron.bbradley@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/3] RTC:s35390a: Add Periodic interrupt support
-Message-ID: <20100817092933.GF19211@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <hvaibhav@ti.com>
- <1282034921-22167-3-git-send-email-hvaibhav@ti.com>
+	Tue, 17 Aug 2010 05:29:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=fVU2OBBWsp7TuwT8G4KlAeyN3OBvXUZT6lgUd9LuviEUqLGVafTRW+e7R8hS+ZeWNj
+         VnqDPRMk/KGoibxPkHlLv1s88tW7/shnGehOan1ESWQ2FhEz+MXNeyJtBmCPAnob0/cS
+         TFMBaBQfV9oF68LN6/AISSUJd7e+GYMZrIpo0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1282034921-22167-3-git-send-email-hvaibhav@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 17 Aug 2010 09:28:13.0483 (UTC) FILETIME=[83E9A7B0:01CB3DEE]
-X-Nokia-AV: Clean
+In-Reply-To: <AANLkTik2VDPSZvMzQ8rv38jBDKmRaM9-TL9nhqxj_VSQ@mail.gmail.com>
+References: <AANLkTik2VDPSZvMzQ8rv38jBDKmRaM9-TL9nhqxj_VSQ@mail.gmail.com>
+Date: Tue, 17 Aug 2010 13:29:38 +0400
+Message-ID: <AANLkTimC=VDH=m9SoDK3BGzk7eCKRj6dEVzU230_kFPH@mail.gmail.com>
+Subject: Re: bug LINUX_VERSION_CODE undefined
+From: Sergey Naumov <sknaumov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 10:48:40AM +0200, ext hvaibhav@ti.com wrote:
->From: Vaibhav Hiremath <hvaibhav@ti.com>
+Hello. This is my first message to this list so please be patient.
 
-description ??
+I have encountered compilation error due to
+#define LINUX_VERSION_CODE
+in include/linux/version.h
 
->Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
+This happens because $(VERSION) variable in the main Makefile has a
+value of 2.6.35.2 instead of 2,
+so "expr" utility fails to generate LINUX_VERSION_CODE value with an
+error "non-numeric argument" or smth.
 
--- 
-balbi
+I have found only one link (
+http://www.spinics.net/lists/linux-kbuild/msg03230.html ) to this
+issue in the Internet,
+but there is no response to it, so I decided to post this message.
 
-DefectiveByDesign.org
+Please subscribe me personally to answers to this post.
+
+Sergey Naumov.
