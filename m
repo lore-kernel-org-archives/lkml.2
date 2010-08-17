@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752099Ab0HQTVG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:21:06 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:56630 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750730Ab0HQTU7 convert rfc822-to-8bit (ORCPT
+	id S1752062Ab0HQTY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:24:26 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56045 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750797Ab0HQTYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:20:59 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: linux-fsdevel@vger.kernel.org
-Subject: Re: unable to mount a CD - iso9660 bug?
-Date: Tue, 17 Aug 2010 21:20:43 +0200
-User-Agent: KMail/1.9.10
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        Johannes Stezenbach <js@sig21.net>, "A. C. Censi" <accensi@gmail.com>,
-        Tao Ma <tao.ma@oracle.com>, 7eggert@gmx.de
-References: <201008161438.57103.linux@rainbow-software.org> <201008171208.42512.linux@rainbow-software.org> <AANLkTim0OzEF9D4cScHO4osX8DBN=O5a=4Y6gDfRV8=w@mail.gmail.com>
-In-Reply-To: <AANLkTim0OzEF9D4cScHO4osX8DBN=O5a=4Y6gDfRV8=w@mail.gmail.com>
-MIME-Version: 1.0
-Content-Disposition: inline
-X-Length: 3752
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201008172120.48174.linux@rainbow-software.org>
+	Tue, 17 Aug 2010 15:24:20 -0400
+Date: Tue, 17 Aug 2010 20:39:41 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100817203941.729830b7@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+	<87aaolwar8.fsf@basil.nowhere.org>
+	<20100817174134.GA23176@fieldses.org>
+	<20100817182920.GD18161@basil.fritz.box>
+	<20100817190447.GA28049@fieldses.org>
+	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 August 2010 13:50:39 A. C. Censi wrote:
-> On Tue, Aug 17, 2010 at 7:08 AM, Ondrej Zary <linux@rainbow-software.org> 
-wrote:
-> > On Tuesday 17 August 2010, Tao Ma wrote:
-> >> Hi Ondrej
-> >>
-> >> On 08/17/2010 12:50 AM, Ondrej Zary wrote:
-> >> > On Monday 16 August 2010 16:18:57 Ondrej Zary wrote:
-> >> >> On Monday 16 August 2010, Johannes Stezenbach wrote:
-> >> >>> On Mon, Aug 16, 2010 at 02:38:54PM +0200, Ondrej Zary wrote:
-> >> >>>> I have a CD that came with Samsung printer that Linux cannot mount
-> >> >>>> but works fine in Windows. The CD is physically OK - "dd" made ISO
-> >> >>>> image without any problems. This ISO image is unmountable too. When
-> >> >>>> I force the filesystem to iso9660, it mounts but no files are
-> >> >>>> visible:
-> >> >>>
-> >> >>> Maybe it's a multi-session disk where the first session is
-> >> >>> HFS with Apple software.  Try mounting with -t iso9660 -o session=1.
-> >> >>
-> >> >> Still the same - no files. dmesg contains:
-> >> >>
-> >> >> ISOFS: Invalid session number or type of track
-> >> >> ISOFS: Invalid session number
-> >> >> ISO 9660 Extensions: Microsoft Joliet Level 3
-> >> >> ISO 9660 Extensions: RRIP_1991A
-> >> >
-> >> > Here's the compressed ISO file if anyone wants to examine it:
-> >> > http://www.rainbow-software.org/linux_files/samsung-bad.rar
-> >>
-> >> what is your kernel version? I can mount it successfully in my el5 box
-> >> with kernel 2.6.35+.
-> >
-> > I have 2.6.35. Also tried it on another two machines with Debian Squeeze
-> > 2.6.32 and Lenny 2.6.26 with the same result (no files visible when
-> > mounted).
-> >
-> >
-> > --
-> > Ondrej Zary
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-fsdevel"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> Try -unide mount option.
->
-> If it does not work, try what is described in the last posts of this
-> thread: http://www.pubbs.net/200910/kernel/12764-iso9660-mount-problem.html
+> The problem with "increment mtime by a nanosecond when necessary" is
+> that timestamps can wind up out of order.  As in:
 
-Thanks. As Bodo Eggert said, "-o norock" helps.
+Surely that depends on your implementation ?
 
-In fact, I've hit two "bugs":
-1. blkid is unable to recognize HFS+ISO9660 CD. Just tracked it down and fixed 
-only to find that it was aleady fixed:
-http://git.kernel.org/?p=utils/util-linux-ng/util-linux-ng.git;a=commitdiff;h=791a2fd67c118c3f07141e4cc95532fe908015a9
+> 1) Do a bunch of operations on file A
+> 2) Do one operation on file B
+> 
+> Imagine each operation on A incrementing its timestamp by a nanosecond
+> "just because".  If all of these operations happen in less than 4 ms,
+> you can wind up with the timestamp on B being EARLIER than the
+> timestamp on A.  That is a big no-no (think "make" or anything else
+> relying on timestamps for relative times).
 
-2. some kernel feature - when Rock Ridge is present on iso9660, it's preferred 
-over Joliet. The CD contains both but seems that only Joliet has files 
-inside? When it's mounted with "-o nojoliet,norock", it's empty too. Can we 
-detect this case and avoid it somehow (switch to Joliet?)
 
--- 
-Ondrej Zary
+[time resolution bits of data][value incremented value for that time]
+
+
+	if (time_now == time_last)
+		return { time_last , ++ct };
+	else {
+		ct = 0;
+		time_last = time_now
+		return { time_last , 0 };
+	}
+
+providing it is done with the same 'ct' across the fs and you can't do
+enough ops/second to wrap the nanosecs - which should be fine for now,
+your ordering is still safe is it not ?
+
+> If you can prove that the last modification on B happens after the
+> last modification on A, then it is very bad for the mtime on B to be
+> earlier than the mtime on A.  I guarantee that will break things in
+> the real world.
+
+Alan
