@@ -1,75 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757272Ab0HQQxA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:53:00 -0400
-Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:11642 "EHLO
-	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755552Ab0HQQw6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:52:58 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AgUFAJdaakzCTtAn/2dsb2JhbACTJ40XccFBhTcEiWc
-Date: Tue, 17 Aug 2010 18:52:39 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] m68knommu: whitespace cleanup in 68328/entry.S
-Message-ID: <20100817165239.GA16734@frolo.macqel>
+	id S1757566Ab0HQQzP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:55:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44208 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754750Ab0HQQzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:55:10 -0400
+Message-ID: <4C6ABE12.40705@kernel.org>
+Date: Tue, 17 Aug 2010 18:51:30 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-09)
+To: Mike Snitzer <snitzer@redhat.com>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
+Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org> <20100817140734.GA30768@redhat.com>
+In-Reply-To: <20100817140734.GA30768@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 16:54:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-m68knommu: whitespace cleanup in 68328/entry.S
+Hello,
 
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
----
-diff --git a/arch/m68knommu/platform/68328/entry.S b/arch/m68knommu/platform/68328/entry.S
---- a/arch/m68knommu/platform/68328/entry.S
-+++ b/arch/m68knommu/platform/68328/entry.S
-@@ -43,7 +43,7 @@ badsys:
- 	jra	ret_from_exception
- 
- do_trace:
--	movel	#-ENOSYS,%sp@(PT_OFF_D0)	/* needed for strace*/
-+	movel	#-ENOSYS,%sp@(PT_OFF_D0) /* needed for strace*/
- 	subql	#4,%sp
- 	SAVE_SWITCH_STACK
- 	jbsr	syscall_trace
-@@ -57,7 +57,7 @@ do_trace:
- 	lea	sys_call_table, %a0
- 	jbsr	%a0@(%d1)
- 
--1:	movel	%d0,%sp@(PT_OFF_D0)		/* save the return value */
-+1:	movel	%d0,%sp@(PT_OFF_D0)	/* save the return value */
- 	subql	#4,%sp			/* dummy return address */
- 	SAVE_SWITCH_STACK
- 	jbsr	syscall_trace
-@@ -71,9 +71,9 @@ ENTRY(system_call)
- 	SAVE_ALL
- 
- 	/* save top of frame*/
--	pea     %sp@
--	jbsr    set_esp0
--	addql   #4,%sp
-+	pea	%sp@
-+	jbsr	set_esp0
-+	addql	#4,%sp
- 
- 	movel	%sp@(PT_OFF_ORIG_D0),%d0
- 
-@@ -88,10 +88,10 @@ ENTRY(system_call)
- 	lea	sys_call_table,%a0
- 	movel	%a0@(%d0), %a0
- 	jbsr	%a0@
--	movel	%d0,%sp@(PT_OFF_D0)		/* save the return value*/
-+	movel	%d0,%sp@(PT_OFF_D0)	/* save the return value*/
- 
- ret_from_exception:
--	btst	#5,%sp@(PT_OFF_SR)		/* check if returning to kernel*/
-+	btst	#5,%sp@(PT_OFF_SR)	/* check if returning to kernel*/
- 	jeq	Luser_return		/* if so, skip resched, signals*/
- 
- Lkernel_return:
+On 08/17/2010 04:07 PM, Mike Snitzer wrote:
+>> With the patch applied, there's no second flush.  Those requests would
+>> now be REQ_FLUSH + REQ_DISCARD.  The first can't be avoided anyway and
+>> there won't be the second flush to begin with, so I don't think this
+>> worsens anything.
+> 
+> Makes sense, but your patches still need to be refreshed against the
+> latest (2.6.36-rc1) upstream code.  Numerous changes went in to DM
+> recently.
+
+Sure thing.  The block part isn't fixed yet and so the RFC tag.  Once
+the block layer part is settled, it probably should be pulled into
+dm/md and other trees and conversions should happen there.
+
+>> Yeap, I want you to be concerned. :-) This was the first time I looked
+>> at the dm code and there are many different disjoint code paths and I
+>> couldn't fully follow or test all of them, so it definitely needs a
+>> careful review from someone who understands the whole thing.
+> 
+> You'll need Mikulas (bio-based) and NEC (request-based, Kiyoshi and
+> Jun'ichi) to give it serious review.
+
+Oh, you already cc'd them.  Great.  Hello, guys, the original thread
+is
+
+  http://thread.gmane.org/gmane.linux.raid/29100
+
+> NOTE: NEC has already given some preliminary feedback to hch in the
+> "[PATCH, RFC 2/2] dm: support REQ_FLUSH directly" thread:
+> https://www.redhat.com/archives/dm-devel/2010-August/msg00026.html
+> https://www.redhat.com/archives/dm-devel/2010-August/msg00033.html
+
+Hmmm... I think both issues don't exist in this incarnation of
+conversion although I'm fairly sure there will be other issues.  :-)
+
+>>     A related question: Is dm_wait_for_completion() used in
+>>     process_flush() safe against starvation under continuous influx of
+>>     other commands?
+>
+> As for your specific dm_wait_for_completion() concern -- I'll defer to
+> Mikulas.  But I'll add: we haven't had any reported starvation issues
+> with DM's existing barrier support.  DM uses a mempool for its clones,
+> so it should naturally throttle (without starvation) when memory gets
+> low.
+
+I see but single pending flush and steady write streams w/o saturating
+the mempool would be able to stall dm_wait_for_completeion(), no?  Eh
+well, it's a separate issue, I guess.
+
+>>   * Guarantee that REQ_FLUSH w/ data never reaches targets (this in
+>>     part is to put it in alignment with request based dm).
+> 
+> bio-based DM already split the barrier out from the data (in
+> process_barrier).  You've renamed process_barrier to process_flush and
+> added the REQ_FLUSH logic like I'd expect.
+
+Yeah and threw in WARN_ON() there to make sure REQ_FLUSH + data bios
+don't slip through for whatever reason.
+
+>> * For request based dm:
+>>
+>>   * The sequencing is done by the block layer for the top level
+>>     request_queue, so the only things request based dm needs to make
+>>     sure is 1. handling empty REQ_FLUSH correctly (block layer will
+>>     only send down empty REQ_FLUSHes) and 2. propagate REQ_FUA bit to
+>>     member devices.
+> 
+> OK, so seems 1 is done, 2 is still TODO.  Looking at your tree it seems
+> 2 would be as simple as using the following in
+
+Oh, I was talking about the other way around.  Passing REQ_FUA in
+bio->bi_rw down to member request_queues.  Sometimes while
+constructing clone / split bios, the bit is lost (e.g. md raid5).
+
+> dm_init_request_based_queue (on the most current upstream dm.c):
+> blk_queue_flush(q, REQ_FLUSH | REQ_FUA);
+> (your current patch only sets REQ_FLUSH in alloc_dev).
+
+Yeah, but for that direction, just adding REQ_FUA to blk_queue_flush()
+should be enough.  I'll add it.
+
+Thanks.
+
+-- 
+tejun
