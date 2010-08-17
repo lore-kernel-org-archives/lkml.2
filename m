@@ -1,64 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751387Ab0HQV3v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 17:29:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55907 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750789Ab0HQV3r (ORCPT
+	id S1751182Ab0HQVlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 17:41:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54057 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab0HQVl1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 17:29:47 -0400
+	Tue, 17 Aug 2010 17:41:27 -0400
+Message-ID: <4C6B017C.8030404@oracle.com>
+Date: Tue, 17 Aug 2010 14:39:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik9qUf_F0NDoW2SBjWGHk2=ZdvkLrCORu3gGa2o@mail.gmail.com>
-References: <20100816.211218.189709876.davem@davemloft.net>
- <AANLkTikDXoRMRL0y_Y_7qVS=9LOw_yLS9MuUgq2dTCZf@mail.gmail.com>
- <AANLkTi=ZdrtWSYE0BEXJ-YDoxjta3h7RMR7Y8Z6Hu-Hc@mail.gmail.com>
- <AANLkTinO5yip7agVO3Lq3YLjDYmkB9MP14xjt3TusMfW@mail.gmail.com> <AANLkTik9qUf_F0NDoW2SBjWGHk2=ZdvkLrCORu3gGa2o@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Aug 2010 14:28:49 -0700
-Message-ID: <AANLkTikcaVKnJxC18tUcJRTQwAukYhPdWMgGGrNaVjM_@mail.gmail.com>
-Subject: Re: tasks getting stuck on mmap_sem?
-To: Tony Luck <tony.luck@intel.com>
-Cc: David Miller <davem@davemloft.net>, Michel Lespinasse <walken@google.com>,
-        David Howells <dhowells@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for August 9 (nfs)
+References: <20100809132314.789e13f3.sfr@canb.auug.org.au>	 <20100809100856.b03a9bc1.randy.dunlap@oracle.com>	 <20100812091842.6a3b84b9.randy.dunlap@oracle.com>	 <1281634268.14329.18.camel@heimdal.trondhjem.org>	 <4C643136.5090808@oracle.com> <1282080208.12506.7.camel@heimdal.trondhjem.org>
+In-Reply-To: <1282080208.12506.7.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh, and it strikes me when looking at the sparc rwsem-const.h that it
-has some unsigned constants in it. I think
+On 08/17/10 14:23, Trond Myklebust wrote:
+> On Thu, 2010-08-12 at 10:36 -0700, Randy Dunlap wrote:
+>> On 08/12/10 10:31, Trond Myklebust wrote:
+>>> On Thu, 2010-08-12 at 09:18 -0700, Randy Dunlap wrote:
+>>>> On Mon, 9 Aug 2010 10:08:56 -0700 Randy Dunlap wrote:
+>>>>
+>>>> ping??
+>>>
+>>> Hi Randy,
+>>>
+>>> I'm sorry. A heavy travel schedule is affecting my response time at the
+>>> moment. I'll try to take care of this by Tuesday (when I get back home)
+>>> if not before.
+>>
+>> No problem.  Just wanted to make sure that it's not lost.
+> 
+> Hi Randy,
+> 
+> How about the following fix?
 
-  #define RWSEM_WAITING_BIAS              0xffff0000
+Thanks, this fixes the build error.
 
-is actually unsigned, because it's a hex constant that doesn't fit in
-a signed int. So it's of type 'unsigned int' if I recall the C type
-rules right.
-
-(That's one of the really _subtle_ C type rules: hex constants
-actually act differently from decimal constants).
-
-So now RWSEM_ACTIVE_WRITE_BIAS is unsigned too.
-
-The x86 constants are all explicitly signed.
-
-Btw, Michel sent out an email saying:
-
-  FYI, I just verified that RWSEM_WAITING_BIAS is defined as signed on
-  all architectures except for ia64. So, this would be consistent with
-  the issue being observed only on ia64.
-
-but I think he missed that subtlety of the C type system. Other architectures do
-
-  #define RWSEM_WAITING_BIAS             (-0x00010000)
-
-which is indeed signed, but Sparc is unsigned despite the lack of a "u".
-
-Of course, maybe I only _think_ I know all the C typing rules. I might
-be full of sh*t. It happens..I didn't actually look them up.
-
-             Linus
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
 
-                  Linus
+> Cheers
+>   Trond
+> 
+> ------------------------------------------------------------------------------------
+> Subject: [PATCH] NFS: Fix the selection of security flavours in Kconfig
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> 
+> Randy Dunlap reports:
+> 
+> ERROR: "svc_gss_principal" [fs/nfs/nfs.ko] undefined!
+> 
+> 
+> because in fs/nfs/Kconfig, NFS_V4 selects RPCSEC_GSS_KRB5
+> and/or in fs/nfsd/Kconfig, NFSD_V4 selects RPCSEC_GSS_KRB5.
+> 
+> RPCSEC_GSS_KRB5 does 5 selects, but none of these is enforced/followed
+> by the fs/nfs[d]/Kconfig configs:
+> 
+> 	select SUNRPC_GSS
+> 	select CRYPTO
+> 	select CRYPTO_MD5
+> 	select CRYPTO_DES
+> 	select CRYPTO_CBC
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: J. Bruce Fields <bfields@fieldses.org>
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+> 
+>  fs/nfs/Kconfig     |    1 -
+>  fs/nfsd/Kconfig    |    1 -
+>  net/sunrpc/Kconfig |    9 +++++----
+>  3 files changed, 5 insertions(+), 6 deletions(-)
+> 
+> 
+> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+> index cc1bb33..2ddc384 100644
+> --- a/fs/nfs/Kconfig
+> +++ b/fs/nfs/Kconfig
+> @@ -63,7 +63,6 @@ config NFS_V3_ACL
+>  config NFS_V4
+>  	bool "NFS client support for NFS version 4"
+>  	depends on NFS_FS
+> -	select RPCSEC_GSS_KRB5
+>  	help
+>  	  This option enables support for version 4 of the NFS protocol
+>  	  (RFC 3530) in the kernel's NFS client.
+> diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
+> index 503b9da..95932f5 100644
+> --- a/fs/nfsd/Kconfig
+> +++ b/fs/nfsd/Kconfig
+> @@ -69,7 +69,6 @@ config NFSD_V4
+>  	depends on NFSD && PROC_FS && EXPERIMENTAL
+>  	select NFSD_V3
+>  	select FS_POSIX_ACL
+> -	select RPCSEC_GSS_KRB5
+>  	help
+>  	  This option enables support in your system's NFS server for
+>  	  version 4 of the NFS protocol (RFC 3530).
+> diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
+> index 443c161..3376d76 100644
+> --- a/net/sunrpc/Kconfig
+> +++ b/net/sunrpc/Kconfig
+> @@ -18,10 +18,11 @@ config SUNRPC_XPRT_RDMA
+>  	  If unsure, say N.
+>  
+>  config RPCSEC_GSS_KRB5
+> -	tristate "Secure RPC: Kerberos V mechanism (EXPERIMENTAL)"
+> -	depends on SUNRPC && EXPERIMENTAL
+> +	tristate
+> +	depends on SUNRPC && CRYPTO
+> +	prompt "Secure RPC: Kerberos V mechanism" if !(NFS_V4 || NFSD_V4)
+> +	default y
+>  	select SUNRPC_GSS
+> -	select CRYPTO
+>  	select CRYPTO_MD5
+>  	select CRYPTO_DES
+>  	select CRYPTO_CBC
+> @@ -34,7 +35,7 @@ config RPCSEC_GSS_KRB5
+>  	  available from http://linux-nfs.org/.  In addition, user-space
+>  	  Kerberos support should be installed.
+>  
+> -	  If unsure, say N.
+> +	  If unsure, say Y.
+>  
+>  config RPCSEC_GSS_SPKM3
+>  	tristate "Secure RPC: SPKM3 mechanism (EXPERIMENTAL)"
+> 
+> 
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
