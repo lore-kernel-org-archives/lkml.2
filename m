@@ -1,70 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751954Ab0HQTJo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:09:44 -0400
-Received: from mail-vw0-f66.google.com ([209.85.212.66]:52789 "EHLO
-	mail-vw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751002Ab0HQTJk convert rfc822-to-8bit (ORCPT
+	id S1751806Ab0HQTQN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:16:13 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58496 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751133Ab0HQTQE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:09:40 -0400
+	Tue, 17 Aug 2010 15:16:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=JbnfKZeWikz/NVAXE6pECFdQT2qJCIsRTSrxUr2pvTtO+EbBAue4j4t6+B+cz6OwWY
-         SDoFQTbXfTfsybhil9rYbDTxMyYfZBCKIXXHahPqy89enu1lpYn/V+3mVOyKiKFoMwHH
-         TnAJ1ZJMY+8fQdycTWHOXhEWKZ91/4WJmFECA=
-MIME-Version: 1.0
-In-Reply-To: <20100817184544.GA9486@liondog.tnic>
-References: <20100817021252.GA17647@foursquare.net>
-	<20100817053456.GA32714@liondog.tnic>
-	<20100817062801.GA24978@foursquare.net>
-	<20100817063159.GC32714@liondog.tnic>
-	<20100817155333.GA17624@foursquare.net>
-	<20100817162052.GA12785@a1.tnic>
-	<AANLkTi=WWmOc4UVUxp_5w43zbZhP5nBfcv6oMCYNyuKE@mail.gmail.com>
-	<20100817184544.GA9486@liondog.tnic>
-Date: Tue, 17 Aug 2010 22:09:38 +0300
-Message-ID: <AANLkTinHur0Rbnm5DFmsfM1fxFC_WQ9LxOHKsM=iKADb@mail.gmail.com>
-Subject: Re: compiler warnings in 2.6.35.2
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: Borislav Petkov <bp@alien8.de>, Anca Emanuel <anca.emanuel@gmail.com>,
-        Chris Frey <cdfrey@foursquare.net>, linux-kernel@vger.kernel.org,
-        hpa@zytor.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DXemRzTtLKLybWdu0G8PZBGwtgMmJyUZNzL6gBjZXYnSeV9/UFPcb07DyFCLm+XDpu
+         q1+7xAzQBJD50F5wq0yJDWHWhh706qNO1FtDrizuCyuCm1FMpYQivBF8+w0JVcOpyxL9
+         vmzVyaghYDBU6eUm+DGK8fu3e+Y0tRa4XA4ZY=
+From: Gorskin Ilya <revent82@gmail.com>
+To: gregkh@suse.de, mchehab@redhat.com, Palash.Bandyopadhyay@conexant.com,
+        olimpiu.pascariu@gmail.com, julia@diku.dk
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Gorskin Ilya <revent82@gmail.com>, Ilya Gorskin <Revent82@gmail.com>
+Subject: [PATCH 2/2] Staging: cx25821: clenup warnings found by checkpatch.pl tool in cx25821-audio-upstream.c and cx25821-audio.h.
+Date: Wed, 18 Aug 2010 01:15:52 +0600
+Message-Id: <1282072552-16105-1-git-send-email-revent82@gmail.com>
+X-Mailer: git-send-email 1.7.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 9:45 PM, Borislav Petkov <bp@alien8.de> wrote:
-> From: Anca Emanuel <anca.emanuel@gmail.com>
-> Date: Tue, Aug 17, 2010 at 08:15:21PM +0300
->
->> On Tue, Aug 17, 2010 at 7:20 PM, Borislav Petkov <bp@alien8.de> wrote:
->> > So why do you want to stay with 3.x anyway?
->>
->> Read this: http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.36-rc1-maverick/BUILD.LOG
->> Search for warnings.
->> I tried to complile myself (using ubuntu 10.10 with latest updates),
->> but failed at some staging driver. After uncheked the staging drivers,
->> still failure.
->> I'm using kernel 2.6.36-rc1 from
->> http://kernel.ubuntu.com/~kernel-ppa/mainline/v2.6.36-rc1-maverick/
->
-> Can you please elaborate a bit more, what are you trying to show here?
->
-> --
-> Regards/Gruss,
->    Boris.
->
+This is a patch to the cx25821-audio-upstream.c and cx25821-audio.h
+that fixes up a warnings found by checkpatch.pl tool.
 
-Steps to reproduce:
-1. Install Ubuntu 10.04, and upgrade to 10.10
-2. Use this tutorial to compile the kernel:
-https://wiki.ubuntu.com/KernelTeam/GitKernelBuild
+Signed-off-by: Ilya Gorskin <Revent82@gmail.com>
+---
+ drivers/staging/cx25821/cx25821-audio-upstream.c |   15 +++++++--------
+ drivers/staging/cx25821/cx25821-audio.h          |   16 ++++++++++------
+ 2 files changed, 17 insertions(+), 14 deletions(-)
 
-There is a lot of compiler warnings, and this problem is not new.
-I think that is enough for this moment.
+diff --git a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+index cdff49f..27087db 100644
+--- a/drivers/staging/cx25821/cx25821-audio-upstream.c
++++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+@@ -40,8 +40,7 @@ MODULE_AUTHOR("Hiep Huynh <hiep.huynh@conexant.com>");
+ MODULE_LICENSE("GPL");
+ 
+ static int _intr_msk =
+-    FLD_AUD_SRC_RISCI1 | FLD_AUD_SRC_OF | FLD_AUD_SRC_SYNC |
+-    FLD_AUD_SRC_OPC_ERR;
++FLD_AUD_SRC_RISCI1 | FLD_AUD_SRC_OF | FLD_AUD_SRC_SYNC | FLD_AUD_SRC_OPC_ERR;
+ 
+ int cx25821_sram_channel_setup_upstream_audio(struct cx25821_dev *dev,
+ 					      struct sram_channel *ch,
+@@ -506,7 +505,7 @@ int cx25821_audio_upstream_irq(struct cx25821_dev *dev, int chan_num,
+ {
+ 	int i = 0;
+ 	u32 int_msk_tmp;
+-       struct sram_channel *channel = dev->channels[chan_num].sram_channels;
++	struct sram_channel *channel = dev->channels[chan_num].sram_channels;
+ 	dma_addr_t risc_phys_jump_addr;
+ 	__le32 *rp;
+ 
+@@ -608,8 +607,8 @@ static irqreturn_t cx25821_upstream_irq_audio(int irq, void *dev_id)
+ 	if (!dev)
+ 		return -1;
+ 
+-       sram_ch = dev->channels[dev->_audio_upstream_channel_select].
+-				       sram_channels;
++	sram_ch = dev->channels[dev->_audio_upstream_channel_select].
++					sram_channels;
+ 
+ 	msk_stat = cx_read(sram_ch->int_mstat);
+ 	audio_status = cx_read(sram_ch->int_stat);
+@@ -733,7 +732,7 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 	}
+ 
+ 	dev->_audio_upstream_channel_select = channel_select;
+-       sram_ch = dev->channels[channel_select].sram_channels;
++	sram_ch = dev->channels[channel_select].sram_channels;
+ 
+ 	/* Work queue */
+ 	INIT_WORK(&dev->_audio_work_entry, cx25821_audioups_handler);
+@@ -764,9 +763,9 @@ int cx25821_audio_upstream_init(struct cx25821_dev *dev, int channel_select)
+ 		       str_length + 1);
+ 
+ 		/* Default if filename is empty string */
+-		if (strcmp(dev->input_audiofilename, "") == 0) {
++		if (strcmp(dev->input_audiofilename, "") == 0)
+ 			dev->_audiofilename = "/root/audioGOOD.wav";
+-		}
++
+ 	} else {
+ 		str_length = strlen(_defaultAudioName);
+ 		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+diff --git a/drivers/staging/cx25821/cx25821-audio.h b/drivers/staging/cx25821/cx25821-audio.h
+index 434b2a3..aa5725b 100644
+--- a/drivers/staging/cx25821/cx25821-audio.h
++++ b/drivers/staging/cx25821/cx25821-audio.h
+@@ -31,18 +31,21 @@
+ #define NUMBER_OF_PROGRAMS  8
+ 
+ /*
+-  Max size of the RISC program for a buffer. - worst case is 2 writes per line
+-  Space is also added for the 4 no-op instructions added on the end.
++* Max size of the RISC program for a buffer. - worst case is 2 writes per line
++* Space is also added for the 4 no-op instructions added on the end.
+ */
+ #ifndef USE_RISC_NOOP
+-#define MAX_BUFFER_PROGRAM_SIZE     \
+-    (2*LINES_PER_BUFFER*RISC_WRITE_INSTRUCTION_SIZE + RISC_WRITECR_INSTRUCTION_SIZE*4)
++#define MAX_BUFFER_PROGRAM_SIZE		\
++(2*LINES_PER_BUFFER*RISC_WRITE_INSTRUCTION_SIZE +	\
++			RISC_WRITECR_INSTRUCTION_SIZE*4)
++
+ #endif
+ 
+ /* MAE 12 July 2005 Try to use NOOP RISC instruction instead */
+ #ifdef USE_RISC_NOOP
+ #define MAX_BUFFER_PROGRAM_SIZE     \
+-    (2*LINES_PER_BUFFER*RISC_WRITE_INSTRUCTION_SIZE + RISC_NOOP_INSTRUCTION_SIZE*4)
++(2*LINES_PER_BUFFER*RISC_WRITE_INSTRUCTION_SIZE + RISC_NOOP_INSTRUCTION_SIZE*4l)
++
+ #endif
+ 
+ /* Sizes of various instructions in bytes.  Used when adding instructions. */
+@@ -53,6 +56,7 @@
+ #define RISC_WRITECR_INSTRUCTION_SIZE  16
+ #define RISC_NOOP_INSTRUCTION_SIZE 4
+ 
+-#define MAX_AUDIO_DMA_BUFFER_SIZE (MAX_BUFFER_PROGRAM_SIZE * NUMBER_OF_PROGRAMS + RISC_SYNC_INSTRUCTION_SIZE)
++#define MAX_AUDIO_DMA_BUFFER_SIZE	\
++(MAX_BUFFER_PROGRAM_SIZE * NUMBER_OF_PROGRAMS + RISC_SYNC_INSTRUCTION_SIZE)
+ 
+ #endif
+-- 
+1.7.2.1
 
-( If you can boot from it please show how did you do it )
