@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab0HQNvP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:51:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14717 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750738Ab0HQNvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:51:14 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Subject: Re: [PATCH 5/5] cfq-iosched: Documentation help for new tunables
-References: <1281566667-7821-1-git-send-email-vgoyal@redhat.com>
-	<1281566667-7821-6-git-send-email-vgoyal@redhat.com>
-	<x494oeufkm2.fsf@segfault.boston.devel.redhat.com>
-	<20100817125005.GB3495@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 17 Aug 2010 09:51:11 -0400
-In-Reply-To: <20100817125005.GB3495@redhat.com> (Vivek Goyal's message of
-	"Tue, 17 Aug 2010 08:50:05 -0400")
-Message-ID: <x49y6c5tkj4.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756774Ab0HQNvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:51:38 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:36075 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751052Ab0HQNvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 09:51:37 -0400
+Message-ID: <4C6A93E4.8000500@example.com>
+Date: Tue, 17 Aug 2010 15:51:32 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Sam Ravnborg <sam@ravnborg.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ioctl definition - has it changed recently?
+References: <4C67023D.6050603@example.com> <4C68EFE8.20202@example.com> <4C6A8A73.1070003@example.com> <201008171518.14032.arnd@arndb.de>
+In-Reply-To: <201008171518.14032.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 10657205568582873348
+X-Ovh-Remote: 83.24.75.141 (dmt141.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
-
->> I'm not sure we need documentation of this tunable twice.  Why not just
->> give guidance on when it should be set to 0 in the next section
->> (group_idle) and refer to cfq-iosched.txt?
+On 17.08.2010 15:18, Arnd Bergmann wrote:
+> On Tuesday 17 August 2010, Piotr Hosowicz wrote:
+>>>> Just take a look at all the other patches that went into the
+>>>> kernel to do this for other drivers.
+>>
+>> I do not know how to find them. :-(
 >
-> I have put one line saying for more details look at cfq-iosched.txt. I
-> have still retained the slice_idle entry because at the end of the day
-> this is the tunable I expect people to modify and not group_idle. Also
-> notice that these are two different files (cfq-iosched.txt and
-> blkio-controller.txt).
+> git log -p -S"unlocked_ioctl"
 
-Yeah, I know it's in two places, and that means updating two places with
-changes.  However, I doubt we'll have to update this often, so I'm not
-going to argue.
+Thanks a lot.
 
-Acked-by: Jeff Moyer <jmoyer@redhat.com>
+>>> It seems different. How to change it? Now it works, I built it without
+>>> your remarks, exactly how I described on my blog:
+>>>
+>>> http://phosowicz.jogger.pl/2010/08/15/nvidia-graphics-in-fresh-kernels/
+>>
+>> Ok, as I wrote the prototypes differ. What should I do with the inode
+>> parameter?
+>
+> It's normally not needed.
 
-Cheers,
-Jeff
+It seems so because the implementation nowwhere refers to the inode 
+parameter. But I guess it won't be OK to just remove this parameter from 
+the declaraion and the implemetation because some other NVidia code may 
+refer to this parameter, pass it and so on. Potentially scrambling 
+(spoiling) the parameter stack.
+
+Regards,
+
+Piotr Hosowicz
+
+> If you do need it, use file->f_path.dentry->d_inode.
+
+Ok, as I said - it is nowhere used. So this is not a problem.
+
+Regards,
+
+Piotr Hosowicz
+
+-- 
+Na przyjêciu ch³opak pyta blondynkê:
+- Czy mogê ciê prosiæ do walca?
+- Zg³upia³e¶? To ju¿ nie mia³e¶ czym przyjechaæ?
+NP:  -
+NB: 2.6.36-rc1
