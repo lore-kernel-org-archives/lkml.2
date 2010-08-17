@@ -1,66 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab0HQDwA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 23:52:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:38493 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab0HQDv6 convert rfc822-to-8bit (ORCPT
+	id S1756379Ab0HQD4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 23:56:53 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33473
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755731Ab0HQD4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 23:51:58 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Hiroshi.DOYO@nokia.com" <Hiroshi.DOYO@nokia.com>,
-        "Kanigeri, Hari" <h-kanigeri2@ti.com>
-Date: Mon, 16 Aug 2010 22:51:53 -0500
-Subject: [PATCH] iommu: fix end address of vm area comparation in
- alloc_iovm_area
-Thread-Topic: [PATCH] iommu: fix end address of vm area comparation in
- alloc_iovm_area
-Thread-Index: AQHLPb89dO8xxwhi9kWHPF9veuQYsw==
-Message-ID: <496565EC904933469F292DDA3F1663E602CA4D8949@dlee06.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 16 Aug 2010 23:56:51 -0400
+Date: Mon, 16 Aug 2010 20:57:09 -0700 (PDT)
+Message-Id: <20100816.205709.71100683.davem@davemloft.net>
+To: khc@pm.waw.pl
+Cc: julia@diku.dk, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 1/42] drivers/net/wan: Adjust confusing if indentation
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <m37hk21tv2.fsf@intrepid.localdomain>
+References: <Pine.LNX.4.64.1008052216400.31692@ask.diku.dk>
+	<m37hk21tv2.fsf@intrepid.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=euc-kr
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From cc48c0adaee97c8385a356aefa5b64a51818b4fd Mon Sep 17 00:00:00 2001
-From: Fernando Guzman Lugo <x0095840@ti.com>
-Date: Mon, 16 Aug 2010 22:28:24 -0500
-Subject: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
+From: Krzysztof Halasa <khc@pm.waw.pl>
+Date: Sat, 07 Aug 2010 14:37:37 +0200
 
-End address of the vm area is “start + bytes -1”,
-not “start + byte”. This patch fixes that issue by doing
-an inclusive comparison with tmp->da_start. This issue
-was preventing allocate an area of size exactly the same
-than the free area. I did no change the value of da_end
-of each vm area because it is used to get area size in
-several places.
+> Julia Lawall <julia@diku.dk> writes:
+> 
+>>  drivers/net/wan/c101.c      |    2 +-
+>>  drivers/net/wan/n2.c        |    2 +-
+>>  drivers/net/wan/pci200syn.c |    2 +-
+> 
+> Fully Acked-by: Krzysztof Ha©©asa <khc@pm.waw.pl>
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- arch/arm/plat-omap/iovmm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Please don't use non-standard commit tags like this "Fully Acked-by:"
+thing, otherwise automated tools won't notice and pick them up
+properly.
 
-diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index b8bcad5..8745d4e 100644
---- a/arch/arm/plat-omap/iovmm.c
-+++ b/arch/arm/plat-omap/iovmm.c
-@@ -295,7 +295,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
- 	prev_end = 0;
- 	list_for_each_entry(tmp, &obj->mmap, list) {
- 
--		if ((prev_end <= start) && (start + bytes < tmp->da_start))
-+		if ((prev_end <= start) && (start + bytes <= tmp->da_start))
- 			goto found;
- 
- 		if (flags & IOVMF_DA_ANON)
--- 
-1.7.0.4
+Thanks.
