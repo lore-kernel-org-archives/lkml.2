@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab0HQRnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:43:46 -0400
-Received: from fieldses.org ([174.143.236.118]:32983 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754480Ab0HQRnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:43:39 -0400
-Date: Tue, 17 Aug 2010 13:41:34 -0400
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Patrick J. LoPresti" <lopresti@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100817174134.GA23176@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
- <87aaolwar8.fsf@basil.nowhere.org>
+	id S1756314Ab0HQRr4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:47:56 -0400
+Received: from lvps87-230-0-242.dedicated.hosteurope.de ([87.230.0.242]:32778
+	"EHLO lvps87-230-0-242.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754819Ab0HQRrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 13:47:49 -0400
+Date: Tue, 17 Aug 2010 19:47:04 +0200
+From: Michael Guntsche <mike@it-loops.com>
+To: Brian Norris <norris@broadcom.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
+Message-ID: <20100817174704.GA1322@gibson.comsick.at>
+References: <20100817113644.GA31317@gibson.comsick.at>
+ <4C6AC037.7070205@broadcom.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <87aaolwar8.fsf@basil.nowhere.org>
+In-Reply-To: <4C6AC037.7070205@broadcom.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 04:54:03PM +0200, Andi Kleen wrote:
-> "Patrick J. LoPresti" <lopresti@gmail.com> writes:
-> 
-> >
-> > 1) Anybody who cares about file system performance is already using
-> > "noatime" or "relatime", which mitigates the hit greatly.
-> 
-> Consider mtime.
-> 
-> > If the above patch is too slow for some architectures, how about
-> > making it a configuration option?  Call it "CONFIG_1980S_FILE_TICK",
-> > have it default to YES on the architectures that care and NO on
-> > anything remotely modern and sane.
-> >
-> > OK that's my proposal.  Bash away.
-> 
-> I suspect it will be a performance disaster on x86 for VFS intensive
-> applications on capable file systems. VFS is very performance
-> critical. These checks lurk on unexpected places too, e.g. on /dev
-> access.
-> 
-> Even TSC is much slower than just reading the variable.
-> 
-> Also you should check if the file system granuality 
-> even supports it, it's completely wasted on a ext3 for example.
+On 17 Aug 10 10:00, Brian Norris wrote:
+> One of the following two cases is likely the problem:
+> (1) Your chip is supposed to use offset 0, not 5, for the BBM (i.e.,
+> NAND_LARGE_BADBLOCK_POS, not NAND_SMALL_BADBLOCK_POS), and so your
+> ecclayout should not be leaving byte 0 in the "oobfree" array (a
+> design flaw since you first began using this chip)
 
-Agreed, ext3's probably a lost cause here.
+First, I am just an end user so I have no access to the datasheets etc. I
+just got the code from the board manufactrurer (2.6.27) and forward
+port it to recent kernels.
 
-> Maybe as a optional sysctl, default to off.
+The reason I am using a specific layout is because the bootloader on
+this board expects it this way. It formats it this way in the beginning
+and I cannot change that. 
 
-OK, so that leaves us with the race, even on newer filesystems:
 
-	1. File is modified, mtime updated
-	2. Client fetches mtime to revalidate cache
-	3. File is modified again, mtime updated
-	4. Client fetches new mtime to revalidate cache
+> Could you send the full NAND ID string (8 bytes, not
+If you can tell me where I can find that I'll be more than happy to send
+it to you. But as I said I think the reason for this is this special
+bootloader.
 
-If step 3 doesn't change the mtime, then step 4 (no matter how much
-later it is performed) will return the wrong result, and client
-applications will see stale data.
+Please tell me, if you need more informations.
 
-If we want to avoid that race, every modification of file data must
-result in the mtime being updated to something different from the last
-mtime seen by the client.
 
-(A slight window between data modification and mtime update may be OK,
-as long as the update happens eventually, and before the change is
-committed to disk--close-to-open semantics mean that NFS clients can
-live with not seeing changes until data is written to disk.)
-
-Possible responses:
-
-	- Tell everyone to use NFSv4 (and make sure we have
-	  changeattr/i_version working correctly).
-	- Use a finer-grained time source.  (I believe you when you say
-	  the TSC is too slow, but maybe we should run some tests to
-	  make sure.)
-	- Increment mtime by a nanosecond when necessary.  
-	- ?
-
---b.
+Kind regards,
+Michael
