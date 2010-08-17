@@ -1,71 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab0HQRHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:07:19 -0400
-Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:6140 "EHLO
-	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757321Ab0HQRHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:07:17 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAOldakzCTtAn/2dsb2JhbACgPnHBS4U3BIln
-Date: Tue, 17 Aug 2010 18:58:29 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: linux-kernel@vger.kernel.org, uclinux-dev@uclinux.org
-Subject: [PATCH] m68knommu : Fix strace support for 68328/68360
-Message-ID: <20100817165829.GA17086@frolo.macqel>
-MIME-Version: 1.0
+	id S1757949Ab0HQRKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:10:21 -0400
+Received: from verein.lst.de ([213.95.11.210]:55039 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab0HQRKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 13:10:19 -0400
+Date: Tue, 17 Aug 2010 19:08:57 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
+        chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 08/11] block: rename barrier/ordered to flush
+Message-ID: <20100817170857.GA15297@lst.de>
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <1281616891-5691-9-git-send-email-tj@kernel.org> <20100817132646.GA3577@lst.de> <4C6AB79B.2040303@kernel.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-09)
+In-Reply-To: <4C6AB79B.2040303@kernel.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-m68knommu : Fix strace support for 68328/68360
+On Tue, Aug 17, 2010 at 06:23:55PM +0200, Tejun Heo wrote:
+> Yeap, agreed.  I couldn't really understand why the the sequence
+> needed to be atomic for ide in the first place so just left it alone.
+> Do you understand why it tried to be atomic?
 
-strace enabled is marked using the `flags' field of the `thread_info' struct.
-68360 version of entry.S did test a wrong bit in a wrong structure
-(task_struct).
-68328 version of entry.S did test the right bit in the right structure,
-but wrongly, because the `flags' field is 32 bit wide, while the used
-assembler insn (btst) only accesses a 8 bit byte in memory.
+I think initial drafs of the barrier specification talked about atomic
+sequences.  Except for that I can't think of any reason.
 
-Fix both using code already used in the coldfire version of entry.S
-
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
----
-diff --git a/arch/m68knommu/platform/68328/entry.S b/arch/m68knommu/platform/68328/entry.S
-index 9d80d2c..74229f7 100644
---- a/arch/m68knommu/platform/68328/entry.S
-+++ b/arch/m68knommu/platform/68328/entry.S
-@@ -80,7 +80,7 @@ ENTRY(system_call)
- 	movel	%sp,%d1			/* get thread_info pointer */
- 	andl	#-THREAD_SIZE,%d1
- 	movel	%d1,%a2
--	btst    #TIF_SYSCALL_TRACE,%a2@(TI_FLAGS)
-+	btst	#(TIF_SYSCALL_TRACE%8),%a2@(TI_FLAGS+(31-TIF_SYSCALL_TRACE)/8)
- 	jne	do_trace
- 	cmpl	#NR_syscalls,%d0
- 	jcc	badsys
-diff --git a/arch/m68knommu/platform/68360/entry.S b/arch/m68knommu/platform/68360/entry.S
-index 6d3460a..d5ad408 100644
---- a/arch/m68knommu/platform/68360/entry.S
-+++ b/arch/m68knommu/platform/68360/entry.S
-@@ -71,7 +71,12 @@ ENTRY(system_call)
- 	jbsr	set_esp0
- 	addql	#4,%sp
- 
--	btst	#PF_TRACESYS_BIT,%a2@(TASK_FLAGS+PF_TRACESYS_OFF)
-+	movel	%sp@(PT_OFF_ORIG_D0),%d0
-+
-+	movel	%sp,%d1			/* get thread_info pointer */
-+	andl	#-THREAD_SIZE,%d1
-+	movel	%d1,%a2
-+	btst	#(TIF_SYSCALL_TRACE%8),%a2@(TI_FLAGS+(31-TIF_SYSCALL_TRACE)/8)
- 	jne	do_trace
- 	cmpl	#NR_syscalls,%d0
- 	jcc	badsys
--- 
-Philippe De Muyter  phdm at macqel dot be  Tel +32 27029044
-Macq Electronique SA  rue de l'Aeronef 2  B-1140 Bruxelles  Fax +32 27029077
