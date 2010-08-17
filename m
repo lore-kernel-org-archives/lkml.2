@@ -1,121 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab0HQJY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 05:24:29 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:48905 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756891Ab0HQJY2 (ORCPT
+	id S1757443Ab0HQJ03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 05:26:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:50613 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341Ab0HQJ00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 05:24:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=PrLJ2BNdJvSxaON2MHk/ulSwAkn/DRR0zuewdp31AjaJ85YFEzACn4eCIq+R5xcG97
-         MPLRMMzkLguv+2wkiD+cyvnfLHWGDV6y+bpjQKoLA6MMyHqcwjDPPe0XorpSk27et7ZL
-         gWA6FmVJ2ls0s8Fj7O3Y0noqw1GEY/+MKd82Q=
-Date: Tue, 17 Aug 2010 12:24:07 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
- and touch_softlockup_watchdog
-Message-ID: <20100817092407.GB12022@swordfish.minsk.epam.com>
-References: <20100813102158.GA5434@swordfish.minsk.epam.com>
- <1281946970.1926.998.camel@laptop>
- <20100816133452.GS4879@redhat.com>
- <1281966418.1926.1421.camel@laptop>
- <20100816140829.GA5225@swordfish.minsk.epam.com>
- <20100817025954.GA12366@nowhere>
- <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
- <20100817083945.GA12022@swordfish.minsk.epam.com>
- <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
+	Tue, 17 Aug 2010 05:26:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Richard Cochran <richardcochran@gmail.com>
+Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
+Date: Tue, 17 Aug 2010 09:25:55 +0000
+User-Agent: KMail/1.13.5 (Linux/2.6.35-8-generic; KDE/4.4.92; x86_64; ; )
+Cc: linuxppc-dev@lists.ozlabs.org, Rodolfo Giometti <giometti@linux.it>,
+        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Krzysztof Halasa <khc@pm.waw.pl>
+References: <cover.1281956490.git.richard.cochran@omicron.at> <201008162159.39734.arnd@arndb.de> <20100817083216.GA3330@riccoc20.at.omicron.at>
+In-Reply-To: <20100817083216.GA3330@riccoc20.at.omicron.at>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0ntfKIWw70PvrIHh"
-Content-Disposition: inline
-In-Reply-To: <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008170925.55592.arnd@arndb.de>
+X-Provags-ID: V02:K0:SQv1ct0GXdRf17MFXQZHVgYdOqRCKuv6uboRqEVOz3G
+ GkaLeiGTJUVYJJXvbB+kELbooLa/Xo4Nl4VkwtGlZE9rh/fNd9
+ jLoi0dd+VOg4EcXB20MM7RWiXmRQi+5ig1ZuF/cSNJ1L706AER
+ Gfi5wJDrAvvvyDeIxxO9dLEzMhjNir5njWVOqPYMN//8jfChqn
+ +YwZh3MPU7dXTfCxidTEw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday 17 August 2010, Richard Cochran wrote:
+> > Why did you not want to add syscalls? Adding ioctls instead of syscalls
+> > does not make the interface better, just less visible.
+> 
+> I bet that, had I posted patch set with new syscalls, someone would
+> have said, "You are adding new syscalls. Can't you just use a char
+> device instead!"
 
---0ntfKIWw70PvrIHh
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Very possible, but after considering both options, I think we would
+still end up with the same conclusion.
+ 
+> If you add syscalls and introduce CLOCK_PTP, then you add it to
+> everyone's kernel, even those people who never heard of PTP. A char
+> device has the advantage that can it be simply ignored.
 
-On (08/17/10 17:05), Yong Zhang wrote:
-> >> Why not use __raw_get_cpu_var() instead?
-> >> You know adding preempt protection in touch_softlockup_watchdog()
-> >> just suppress the warning. Am I missing something?
-> >>
-> >
-> > Sorry, my low level understanding of the __raw_get_cpu_var isn't very s=
-trong.
-> > I assume it uses current_thread_info()->cpu in some cases (right?) or
-> > percpu_from_op.
->=20
-> The difference is __raw_get_cpu_var() is using raw_smp_processor_id().
->=20
-> >
-> >
-> > Should it be
-> > acpi_os_stall
-> > =A0 =A0 =A0 =A0preepmt_disable
-> > =A0 =A0 =A0 =A0touch_nmi_watchdog
-> > =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0touch_softlockup_watchdog
-> > =A0 =A0 =A0 =A0preempt_enable
->=20
-> Actually I don't think this is helpful for the whole function. Because
-> if acpi_os_stall()
-> migrate(I don't know if it could) to another CPU just before
-> preepmt_disable(), we'll
-> be on the wrong way. Adding preempt protection is just smoothing the warn=
-ing.
->
+It's a matter of perspective whether you consider this an advantage
+or disadvantage. I would expect that since you are trying to get support
+for PTP into the kernel, you'd be happy for people to know about it and
+use your code ;-).
 
-OK. Suppose (I don't know if it could) migration has happen=20
+> Also, a syscall has got to have the right form from the very beginning.
+> If the next generation of PTP hardware looks very different, then it is not
+> that much of a crime to change an ioctl interface, provided it has
+> versioning.
 
-acpi_os_stall
-	__migration__
-	touch_nmi_watchdog
+No, that's just a myth. The rules for ABI stability are pretty much the
+same. We try hard to avoid ever changing an existing ABI, for both
+syscalls and ioctl. In either case, if you get it wrong, you have to support
+the old interface and create a new syscall or ioctl command.
+As mentioned, versioning does not solve this, it just adds another
+indirection (which we try to avoid).
 
-How calling raw_smp_processor_id() (which is current_thread_info()->cpu)
-vs. preepmt_disable - smp_processor_id() will give us different CPUs?
-=20
-> So I prefer using __raw_get_cpu_var() as what we have been done before.
->=20
+One difference is that more people take a look at your code when you suggest
+a new syscall, so the chances of getting it right in the first upstream
+version are higher.
+Another difference is that we generally use ioctl for devices that can
+be enumerated, while syscalls are for system services that are not tied to
+a specific device. This argument works both ways for PTP IMHO: On the one
+hand you want to have a reliable clock that you can use without knowing
+where it comes from, on the other you might have multiple PTP sources that
+you need to differentiate.
 
-Hm...
-
-26e09c6eee14f4827b55137ba0eedc4e77cd50ab
-
- static void __touch_watchdog(void)
- {
--       int this_cpu =3D raw_smp_processor_id();
-+       int this_cpu =3D smp_processor_id();
-
-
-	Sergey
-
---0ntfKIWw70PvrIHh
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iJwEAQECAAYFAkxqVTcACgkQfKHnntdSXjR6mwP+NpjyeRRIl8fc+qcvwRXSouwz
-kOdWultVL12Y4kTMEnIUz2JWMGVNjQBszlPSJ7vnZ3WNtiIK5IiurukhBNHBnCxF
-u6e3LdZny10nXClPYE2ICzJDHpKc9Wl8otFmABr4c2kPjKmg9repuij3S8szEvEV
-s62671dlnYazEqTwA8s=
-=Si8t
------END PGP SIGNATURE-----
-
---0ntfKIWw70PvrIHh--
+	Arnd
