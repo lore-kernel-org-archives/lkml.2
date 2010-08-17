@@ -1,86 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760401Ab0HQSwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:52:37 -0400
-Received: from reptilian.habets.pp.se ([193.151.93.131]:2729 "EHLO
-	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932977Ab0HQSwf (ORCPT
+	id S1758838Ab0HQSyo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:54:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2667 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab0HQSyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:52:35 -0400
-Date: Tue, 17 Aug 2010 20:52:27 +0200 (CEST)
-From: Thomas Habets <thomas@habets.pp.se>
-X-X-Sender: thompa@red.crap.retrofitta.se
-To: Matt Carlson <mcarlson@broadcom.com>
-cc: Thomas Habets <thomas@habets.pp.se>, Eric Dumazet <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
- to reset
-In-Reply-To: <20100817183112.GA4351@mcarlson.broadcom.com>
-Message-ID: <alpine.DEB.1.10.1008172035520.21857@red.crap.retrofitta.se>
-References: <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se> <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se> <1282024802.2487.687.camel@edumazet-laptop> <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se>
- <1282050920.2448.47.camel@edumazet-laptop> <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se> <1282055659.2448.58.camel@edumazet-laptop> <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se> <20100817171115.GA4134@mcarlson.broadcom.com>
- <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se> <20100817183112.GA4351@mcarlson.broadcom.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	Tue, 17 Aug 2010 14:54:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=pJzm+W+tJQUaTn7MjCsQK+w2WvO0yx9oE0M8ob0XvsV9RE1ie1DlUSJcBHivR+8km
+	g72y9YVeTBts+aDRR1ChA==
+Date: Tue, 17 Aug 2010 11:54:35 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux-foundation.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [S+Q3 00/23] SLUB: The Unified slab allocator (V3)
+In-Reply-To: <alpine.DEB.2.00.1008171346530.13665@router.home>
+Message-ID: <alpine.DEB.2.00.1008171153490.21770@chino.kir.corp.google.com>
+References: <20100804024514.139976032@linux.com> <alpine.DEB.2.00.1008032138160.20049@chino.kir.corp.google.com> <alpine.DEB.2.00.1008041115500.11084@router.home> <alpine.DEB.2.00.1008050136340.30889@chino.kir.corp.google.com> <alpine.DEB.2.00.1008051231400.6787@router.home>
+ <alpine.DEB.2.00.1008151627450.27137@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171217440.11915@router.home> <alpine.DEB.2.00.1008171052500.6486@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171346530.13665@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010, Matt Carlson wrote:
-> Thanks.  I put the question out to the firmware developer.  While we
-> wait, can you keep Eric's patch in place and give me the results along
-> with the output of 'ethtool -d eth0 | grep 0x047' after the problem
-> happens?
+On Tue, 17 Aug 2010, Christoph Lameter wrote:
 
-Sure.
+> > I didn't know if that was a debugging patch for me or if you wanted to
+> > push that as part of your series, I'm not sure if you actually need to
+> > move it to kmem_cache_init() now that slub_state is protected by
+> > slub_lock.  I'm not sure if we want to allocate DMA objects between
+> > kmem_cache_init() and kmem_cache_init_late().
+> 
+> Drivers may allocate dma buffers during initialization.
+> 
 
-I think the problem occurs shortly after booting, or is triggered by it 
-Linux getting a neighbor table entry for the router. The reason it took a 
-while for everything to actually stop working is that the router was 
-caching and presumably updating its neighbors cache when it saw traffic.
-
-That is, maybe it only works if the router sets up its neigbor table 
-first, and not otherwise.
-
-The problem is there now. Last output in the kernel log about this is:
-
-$ dmesg | egrep 'eth0|^add mc|^filters='
-[...]
-add mc_addr(ha->addr=33:33:00:00:00:01)
-add mc_addr(ha->addr=01:00:5e:00:00:01)
-add mc_addr(ha->addr=33:33:ff:5c:00:02)
-add mc_addr(ha->addr=33:33:ff:a3:44:24)
-filters=80020001 00000000 00000000 40000000
-
-$ sudo ethtool -d eth0 | grep 0x047
-0x0470	0x80020001
-0x0474	0x00000000
-0x0478	0x00000000
-0x047c	0x40000000
-
-> Eric's patch shows the hash registers at the time they are programmed.
-> I'm interested to see if the values change (by firmware) after the
-> failure.
-
-Look the same.
-
-But a strange thing is that if I delete the ipv6 neighbor on the Linux 
-box (ip ne del 2a00:800:752:1::5c:1 dev eth0) it suddenly answers a ND 
-solicitation. I tried it just now and it "wakes it up".
-
-Nothing was written to the kernel log when I ran this command, and the 
-ethtools -d output is the same afterwards as it was before. So unless 
-there's another code path that changes the registers when I do "ip ne 
-del" it may still be something else.
-
----------
-typedef struct me_s {
-   char name[]      = { "Thomas Habets" };
-   char email[]     = { "thomas@habets.pp.se" };
-   char kernel[]    = { "Linux" };
-   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
-   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
-   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
-} me_t;
+Ok, I moved the DMA cache creation from kmem_cache_init_late() to 
+kmem_cache_init().  Note: the kasprintf() will need to use GFP_NOWAIT and 
+not GFP_KERNEL now.
