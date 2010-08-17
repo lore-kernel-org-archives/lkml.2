@@ -1,64 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758172Ab0HQSSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:18:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:32786 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758130Ab0HQSSv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:18:51 -0400
-Date: Tue, 17 Aug 2010 15:18:35 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build error on read only source.
-Message-ID: <20100817181835.GA21083@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Bad-Reply: 'Re:' in Subject but no References or In-Reply-To headers
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1758130Ab0HQSVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:21:24 -0400
+Received: from mail.perches.com ([173.55.12.10]:1130 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758095Ab0HQSVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 14:21:19 -0400
+Subject: Re: [PATCH] fs.h: introduce functions to get/set file->private_data
+From: Joe Perches <joe@perches.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Christoph Hellwig <hch@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "matthew@wil.cx" <matthew@wil.cx>
+In-Reply-To: <20100817175851.GA11463@merkur.ravnborg.org>
+References: <201008161137.53187.hartleys@visionengravers.com>
+	 <20100816231753.GA16546@infradead.org>
+	 <0D753D10438DA54287A00B0270842697643E50D82E@AUSP01VMBX24.collaborationhost.net>
+	 <1282002601.6518.116.camel@Joe-Laptop> <20100817010355.GG21182@thunk.org>
+	 <20100817085428.GA25330@infradead.org>
+	 <1282065973.24541.106.camel@Joe-Laptop>
+	 <20100817175851.GA11463@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 11:21:17 -0700
+Message-ID: <1282069277.14975.21.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Aug 17, 2010 at 11:17:54AM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Tue, Aug 17, 2010 at 11:08:40PM +0900, Kusanagi Kouichi escreveu:
-> > --- a/tools/perf/feature-tests.mak
-> > +++ b/tools/perf/feature-tests.mak
-> > @@ -113,7 +113,7 @@ endef
-> >  # try-cc
-> >  # Usage: option = $(call try-cc, source-to-build, cc-options)
-> >  try-cc = $(shell sh -c						  \
-> > -	'TMP="$(TMPOUT).$$$$";			 		  \
-> > +	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
-> >  	 echo "$(1)" |						  \
-> >  	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
-> >  	 rm -f "$$TMP"')
-> 
-> Much better! Will test and merge, thanks!
+On Tue, 2010-08-17 at 19:58 +0200, Sam Ravnborg wrote:
+> On Tue, Aug 17, 2010 at 10:26:13AM -0700, Joe Perches wrote:
+> > On Tue, 2010-08-17 at 04:54 -0400, Christoph Hellwig wrote:
+> > > On Mon, Aug 16, 2010 at 09:03:55PM -0400, Ted Ts'o wrote:
+> > > > And spatch could also be used to rename private_data to f_private_data
+> > > > if people really cared....
+> > > Agreed, that's much better than adding useless accessors.
+> > Against Linus' current, it's ~850KB.
+> > Anyone really want it?
+> a cleanup patch is far more convinient.
+> It takes minimum effort to create and test, and if you can
+> get ack from Ted and/or Christoph there is a good chance Linus
+> would take it right before/after -rc1.
+> You obviously need to convince him that the patch has
+> seen decent build testing.
 
-Still has issues:
+I don't have the passel of cross compilers,
+so someone else would need to do that.
 
-[acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf/
-[acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -s -j9 -C tools/perf install
-PERF_VERSION = 2.6.36.rc1.2.g19bad
-    * new build flags or prefix
-[acme@emilia linux-2.6-tip]$ patch -p1 < Kouichi.patch 
-patching file tools/perf/Makefile
-patching file tools/perf/feature-tests.mak
-[acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf/
-[acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -s -j9 -C tools/perf install
-Makefile:503: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
-Makefile:534: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static.  Stop.
-[acme@emilia linux-2.6-tip]$
+I compiled it 32 bit x86 allyesconfig only.
 
-Can you please investigate?
 
-Thanks,
-
-- Arnaldo
