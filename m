@@ -1,80 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0HQAT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 20:19:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44425 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753254Ab0HQATz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 20:19:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=f1CYgRY6bzusyAyllN1w+1ouWKQQaAvIAOGzh2FVv+aU+zB5KXA+owFOmF2RZFwRov
-         LIotbBLsXesLOIrvvGdRFYozWuo5Cdm9/1wYVSPMp/4naGGiqOtVmgxGD2uYF+vbWgTa
-         8nwjqtCqS7F1jA0p9PQd2P10HNGZUEfDYLPDM=
+	id S1753881Ab0HQAVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 20:21:12 -0400
+Received: from thunk.org ([69.25.196.29]:36619 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753628Ab0HQAVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 20:21:10 -0400
+Date: Mon, 16 Aug 2010 20:20:32 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: Pavel Machek <pavel@ucw.cz>, Felipe Contreras <felipe.contreras@gmail.com>,
+        Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+        Brian Swetland <swetland@google.com>,
+        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+        rjw@sisk.pl, peterz@infradead.org, tglx@linutronix.de,
+        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+        dipankar@in.ibm.com
+Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
+Message-ID: <20100817002032.GD21182@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Jesse Barnes <jbarnes@virtuousgeek.org>,
+	Pavel Machek <pavel@ucw.cz>,
+	Felipe Contreras <felipe.contreras@gmail.com>,
+	Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
+	Brian Swetland <swetland@google.com>,
+	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+	arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
+	rjw@sisk.pl, peterz@infradead.org, tglx@linutronix.de,
+	menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
+	arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
+	dipankar@in.ibm.com
+References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
+ <Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
+ <AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
+ <20100812125248.GA2763@thunk.org>
+ <20100814075000.GB27430@elf.ucw.cz>
+ <20100816081655.3e9e29f7@virtuousgeek.org>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Mon, 16 Aug 2010 17:19:34 -0700
-Message-ID: <AANLkTimueu1RYQ4MAB1ErdW6y+=A5Nd310zDd05_myaC@mail.gmail.com>
-Subject: Compat-wireless for 2.6.36-rc1 release
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816081655.3e9e29f7@virtuousgeek.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus released 2.6.36-rc1 over the weekend. We've been following the
-next kernel's development cycle through the master branch of both
-compat-wireless.git and compat.git. I just created the branch for each
-of those git trees for the 2.6.36.y release and put up the first
-tarball for testing purposes:
+On Mon, Aug 16, 2010 at 08:16:55AM -0700, Jesse Barnes wrote:
+> Fortunately in this case the problem doesn't seem to be fatal.  We've
+> already established that the userland API portion of suspend blockers
+> could be implemented in userspace with a bit more work, given that the
+> kernel problems with suspend/resume and events are addressed.
+> Hopefully Google is already developing a prototype userspace
+> implementation to make sure it's workable; being able to build stock
+> upstream kernels for my Droid and its Android userspace sure would be
+> nice.
 
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.36/compat-wireless-2.6.36-rc1-1.tar.bz2
+You know, you don't have to wait for the Android engineers to do this
+work.  You (or others who want to be able to use stock upstream kernel
+with Android devices) could just as easily try to do the "bit more
+work" yourselves --- that is, do the open souce thing and scratch
+one's own itch.
 
-Note that the extra -1 here accounts for the fact that we can have bug
-fixes within compat-wireless.git and/or comat.git during one extra
-version of the kernel or even during one rc release.You can find the
-ChangeLog of what went in to this kernel by reading this:
+After all, Rafael is saying he's refusing to accept patches (or
+implement) in-kernel oppunsitic suspend for upstream unless it's
+proven to him that a userspace implementation isn't sufficient.  It
+might be just as fair for the Android userspace upstream to refuse to
+accept (or engineer) userspace changes unless it is proven that the
+userspace version of opporunistic suspend is just as good as the
+in-kernel version which is successfully been deployed in millions and
+millions of shipping units today...
 
-http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.36/ChangeLog-2.6.36-rc1-wireless
+Speaking personally, it's not clear to me how waking up a userspace
+suspend daemon and waiting for it to get scheduled will result in
+better power savings than simply handling it in the kernel, but as
+soon as someone is willing to do the work, we can find out for sure
+who is right.
 
-Please report any issues, remember this is a stable kernel so if there
-is a bug it should be reported ASAP.
+					- Ted
 
-compat-wireless code metrics
-
-    494638 - Total upstream lines of code being pulled
-      1699 - backport code changes
-      1460 - backport code additions
-       239 - backport code deletions
-      5979 - backport from compat module
-      7678 - total backport code
-    1.5522 - % of code consists of backport work
-
-Base tree: linux-2.6-allstable.git
-Base tree version: v2.6.36-rc1
-compat-wireless release: compat-wireless-v2.6.36-rc1
-
-If you have a bug fix for compat-wireless.git which also applies down
-to the linux-2.6.36.y branch or a patch for compat.git that applies to
-its respective linux-2.6.36.y branch please indicate it on the patch
-you send. You can do so by marking the patch with this on the commit
-log:
-
-Applies-to: linux-2.6.35.y
-
-for example if the fix was also required for the 2.6.35.y branch. You
-can specify branch ranges as well.
-
-Applies-to: linux-2.6.32.y-linux-2.6.35.y
-
-I'll send out a full ChangeLog of the compat-wireless.git and
-compat.git contributions for this release once we bake the final
-2.6.36 release along with Linus.
-
-This goes compile and load tested with ath9k using a 3x3 AR9003 card on 2.6.32.
-
-  Luis
