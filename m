@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab0HQQUp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:20:45 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:38127 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754223Ab0HQQUn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:20:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TqvEszKed2uVm2EP5UrcsLZH1t6wAMQvB6ndY2GU4hbknmFPElCb0XATEd6cjFpOPS
-         Nf3s9apKwX98z7PUTgII4bX1tEuq7I7SMdwxgLN27xCkCakJotKsRB9B7O+2r8zJFAre
-         wXdOnQrKh6nC1yxTzKFmYznzr0sDptrJjswhY=
+	id S1757922Ab0HQQU5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:20:57 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57329 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757911Ab0HQQUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:20:55 -0400
+Date: Tue, 17 Aug 2010 18:20:52 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Chris Frey <cdfrey@foursquare.net>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: compiler warnings in 2.6.35.2
+Message-ID: <20100817162052.GA12785@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Chris Frey <cdfrey@foursquare.net>, linux-kernel@vger.kernel.org,
+	hpa@zytor.com
+References: <20100817021252.GA17647@foursquare.net>
+ <20100817053456.GA32714@liondog.tnic>
+ <20100817062801.GA24978@foursquare.net>
+ <20100817063159.GC32714@liondog.tnic>
+ <20100817155333.GA17624@foursquare.net>
 MIME-Version: 1.0
-In-Reply-To: <20100817153908.GA16155@frolo.macqel>
-References: <20100817151142.GA11940@frolo.macqel>
-	<AANLkTim3FQ4eOJ2xJR5Kv4PWDbh=tDL0+-NzOaX+dhXo@mail.gmail.com>
-	<20100817153908.GA16155@frolo.macqel>
-Date: Tue, 17 Aug 2010 18:20:42 +0200
-X-Google-Sender-Auth: 6-FYSFmDeMw0Zh6PcCE_UV2KV_I
-Message-ID: <AANLkTim4w-ZTxPUmUYEf-YC+kR9BuUdrDibpzKEE6u7p@mail.gmail.com>
-Subject: Re: [uClinux-dev] [PATCH] m68knommu : Fix strace support for 68328/68360
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: uClinux development list <uclinux-dev@uclinux.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100817155333.GA17624@foursquare.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 17:39, Philippe De Muyter <phdm@macqel.be> wrote:
-> On Tue, Aug 17, 2010 at 11:14:32AM -0400, Mike Frysinger wrote:
->>
->> unless i'm missing something, you're only changing whitespace here.
->
-> That's true,
->
->> and these account for more than half the patch.  please keep
->> whitespace changes separate from real changes.
->
-> but that makes comparing the resulting files 68328/entry.S and 68360/entry.S
-> easier.
+From: Chris Frey <cdfrey@foursquare.net>
+Date: Tue, Aug 17, 2010 at 11:53:33AM -0400
 
-Hence please create two patches:
-  - The first one to fix up the whitespace,
-  - The second one to fix the bugs.
+> > > > >   CC      mm/swap.o
+> > > > > In file included from include/linux/kobject.h:21,
+> > > > >                  from include/linux/sched.h:91,
+> > > > >                  from mm/swap.c:17:
+> > > > > include/linux/sysfs.h:183: warning: parameter has incomplete type
+> > > > > /home/cdfrey/kernel/git/linux/arch/x86/include/asm/cpufeature.h: In function `__static_cpu_has':
+> > > > > /home/cdfrey/kernel/git/linux/arch/x86/include/asm/cpufeature.h:315: warning: asm operand 1 probably doesn't match constraints
+> > > > 
+> > > > Which compiler version are you using?
+> > > 
+> > > GCC 3.3
+> > 
+> > Any chance to upgrade to a 4.x version?
+> 
+> I could, but Documentation/Changes says gcc 3.2 is the minimum, so I hoped
+> 3.3 would be sufficient.
 
-Gr{oetje,eeting}s,
+This is actually something we're looking to change now:
+http://lkml.indiana.edu/hypermail/linux/kernel/1005.2/01239.html
 
-                        Geert
+@hpa: there are some gcc3.x users left, obviously.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> As for the first warning, doesn't it just need include/linux/kobject.h
+> to be included for the enum type?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+This is a gcc 3.x problem AFAIK.
+
+> As for the second warning, I'm not sure I even understand it.
+
+Ditto.
+
+So why do you want to stay with 3.x anyway?
+
+-- 
+Regards/Gruss,
+Boris.
