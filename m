@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986Ab0HQEgk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:36:40 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:50088 "EHLO tango.tkos.co.il"
+	id S1752387Ab0HQEod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:44:33 -0400
+Received: from core.signal11.us ([64.251.29.136]:56304 "EHLO core.signal11.us"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751321Ab0HQEgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 00:36:39 -0400
-Date: Tue, 17 Aug 2010 07:36:12 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/3] dmaengine: Add Freescale i.MX SDMA support
-Message-ID: <20100817043612.GA9631@jasper.tkos.co.il>
-References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de>
- <1281956870-12463-4-git-send-email-s.hauer@pengutronix.de>
- <AANLkTi=pO-ZJ33FrL=4bVRYa2o9HA0_h5tBYG7wdMuwz@mail.gmail.com>
- <20100816141540.GQ27749@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100816141540.GQ27749@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751940Ab0HQEob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 00:44:31 -0400
+From: Alan Ott <alan@signal11.us>
+To: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Ott <alan@signal11.us>,
+        Marcel Holtmann <marcel@holtmann.org>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Alan Ott <alan@signal11.us>
+Subject: [PATCH 1/1] usbhid: Set Report ID properly for Output reports on the Control endpoint.
+Date: Tue, 17 Aug 2010 00:44:04 -0400
+Message-Id: <1282020244-25786-1-git-send-email-alan@signal11.us>
+X-Mailer: git-send-email 1.7.0.4
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Tue Aug 17 00:44:31 2010
+X-DSPAM-Confidence: 0.9899
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4c6a13af22841183026203
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+When I made commit 29129a98e6fc89, I didn't account for *buf not being
+the report ID anymore, as buf is incremented.
 
-On Mon, Aug 16, 2010 at 04:15:40PM +0200, Sascha Hauer wrote:
-> On Mon, Aug 16, 2010 at 02:21:06PM +0200, Linus Walleij wrote:
-> > 2010/8/16 Sascha Hauer <s.hauer@pengutronix.de>:
-> > > The SDMA engine is a scatter/gather DMA engine which is implemented
-> > > as a seperate coprocessor. SDMA needs its own firmware which is
-> > > requested using the standard request_firmware mechanism. The firmware
-> > > has different entry points for each peripheral type, so drivers
-> > > have to pass the peripheral type to the DMA engine which in turn
-> > > picks the correct firmware entry point from a table contained in
-> > > the firmware image itself.
-> > 
-> > Quite fun, if the spec for the microcode is open this opens up
-> > for dynamic firmware generation for specific DMA jobs does it
-> > not?
-> 
-> Unfortunately the specs are not open, so we are sticked to the binary
-> microcode from Freescale. I'm pretty sure though that the SDMA engine
-> could do at least a device_prep_dma_xor operation.
+This applies to 2.6.35 and newer.
 
-Chapter 38 in the i.MX25 Reference Manual seems to include almost everything 
-there is to know about the SDMA. Isn't this enough for writing custom SDMA 
-microcodes?
+Signed-off-by: Alan Ott <alan@signal11.us>
+---
+ drivers/hid/usbhid/hid-core.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-baruch
-
+diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+index b729c02..ffd6899 100644
+--- a/drivers/hid/usbhid/hid-core.c
++++ b/drivers/hid/usbhid/hid-core.c
+@@ -828,6 +828,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+ 		}
+ 	} else {
+ 		int skipped_report_id = 0;
++		int report_id = buf[0];
+ 		if (buf[0] == 0x0) {
+ 			/* Don't send the Report ID */
+ 			buf++;
+@@ -837,7 +838,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+ 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+ 			HID_REQ_SET_REPORT,
+ 			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+-			((report_type + 1) << 8) | *buf,
++			((report_type + 1) << 8) | report_id,
+ 			interface->desc.bInterfaceNumber, buf, count,
+ 			USB_CTRL_SET_TIMEOUT);
+ 		/* count also the report id, if this was a numbered report. */
 -- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+1.7.0.4
+
+
