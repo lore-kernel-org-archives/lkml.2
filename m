@@ -1,74 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757799Ab0HQRAD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:00:03 -0400
-Received: from verein.lst.de ([213.95.11.210]:44510 "EHLO verein.lst.de"
+	id S1757817Ab0HQRBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:01:25 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:4027 "EHLO mms1.broadcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757584Ab0HQRAA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:00:00 -0400
-Date: Tue, 17 Aug 2010 18:59:29 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Christoph Hellwig <hch@lst.de>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
-Message-ID: <20100817165929.GB13800@lst.de>
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6ABBCB.9030306@kernel.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0.001 () BAYES_50
+	id S1757510Ab0HQRBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 13:01:24 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4C6AC037.7070205@broadcom.com>
+Date: Tue, 17 Aug 2010 10:00:39 -0700
+From: "Brian Norris" <norris@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
+ Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Michael Guntsche" <mike@it-loops.com>
+cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brian Norris" <norris@broadcom.com>
+Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
+References: <20100817113644.GA31317@gibson.comsick.at>
+In-Reply-To: <20100817113644.GA31317@gibson.comsick.at>
+X-WSS-ID: 60741FD237O64684144-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 06:41:47PM +0200, Tejun Heo wrote:
-> > What other trees do you mean?
-> 
-> I was mostly thinking about dm/md, drdb and stuff, but you're talking
-> about filesystem conversion patches being routed through block tree,
-> right?
+Hello,
 
-I think we really need all the conversions in one tree, block layer,
-remapping drivers and filesystems.
+On 08/17/2010 01:52 AM, Michael Guntsche wrote:
+ > The only thing that might be special with the nand driver that is being
+ > used is that a different oob layout is being used.
+ >
+ > static struct nand_ecclayout rbppc_nand_oob_16 = {
+ >    .eccbytes = 6,
+ >    .eccpos = { 8, 9, 10, 13, 14, 15 },
+ >    .oobavail = 9,
+ >    .oobfree = { { 0, 4 }, { 6, 2 }, { 11, 2 }, { 4, 1 } }
+ > };
 
-Btw, I've done the conversion for all filesystems and I'm running tests
-over them now.  Expect the series late today or tomorrow.
+On 08/17/2010 04:36 AM, Michael Guntsche wrote:
+> I added this to the nand driver itself.
+>
+> static uint8_t scan_ff_pattern[] = { 0xff, 0xff };
+> static struct nand_bbt_descr rbppc_nand_smallpage = {
+>    .options = NAND_BBT_SCAN2NDPAGE,
+>    .offs = NAND_SMALL_BADBLOCK_POS,
+>    .len = 1,
+>    .pattern = scan_ff_pattern
+> };
+>
+> and the driver is working again. But shouldn't this be supported by the stock level code as well?
 
-> I might just resequence it to finish this part of discussion but what
-> does that really buy us?  It's not really gonna help bisection.
-> Bisection won't be able to tell anything in higher resolution than
-> "the new implementation doesn't work".  If you show me how it would
-> actually help, I'll happily reshuffle the patches.
+Why yes, it should! Somebody (probably me) goofed. Your nand_ecclayout 
+is conflicting with the kernel's choice of bad block position. Recent 
+changes must have affected which position is chosen automatically by the 
+kernel.
 
-It's not bisecting to find bugs in the barrier conversion.  We can't
-easily bisect it down anyway.  The problem is when we try to bisect
-other problems and get into the middle of the series barriers suddenly
-are gone.  Which is not very helpful for things like data integrity
-problems in filesystems.
+One of the following two cases is likely the problem:
+(1) Your chip is supposed to use offset 0, not 5, for the BBM (i.e., 
+NAND_LARGE_BADBLOCK_POS, not NAND_SMALL_BADBLOCK_POS), and so your 
+ecclayout should not be leaving byte 0 in the "oobfree" array (a design 
+flaw since you first began using this chip)
+(2) I made the commit that you mentioned 
+(c7b28e25cb9beb943aead770ff14551b55fa8c79) too restrictive in allowing 
+chips to use NAND_SMALL_BADBLOCK_POS.
 
-> >> I wasn't sure about that part.  You removed store_flush_error(), but
-> >> DM_ENDIO_REQUEUE should still have higher priority than other
-> >> failures, no?
-> > 
-> > Which priority?
-> 
-> IIUC, when any of flushes get DM_ENDIO_REQUEUE (which tells the dm
-> core layer to retry the whole bio later), it trumps all other failures
-> and the bio is retried later.  That was why DM_ENDIO_REQUEUE was
-> prioritized over other error codes, which actually is sort of
-> incorrect in that once a FLUSH fails, it _MUST_ be reported to upper
-> layers as FLUSH failure implies data already lost.  So,
-> DM_ENDIO_REQUEUE actually should have lower priority than other
-> failures.  But, then again, the error codes still need to be
-> prioritized.
+Option 2 is likely the case, and in fact, I realized a stupid mistake I 
+made in refactoring the detection here.
 
-I think that's something we better leave to the DM team.
+I have been studying data from hundreds of flash chips to find where the 
+factory-determined markers should be stored. Unfortunately, I can't 
+cover all of them, and so your Hynix chip is likely one that was 
+overlooked. Could you send the full NAND ID string (8 bytes, not just 
+the manufacturer and chip ID), an exact part number for the flash, and a 
+datasheet? Any one of those could help (the datasheet being the most 
+important), but whatever you can provide is helpful. More data on your 
+chip would allow me to determine the problem for sure; I will send a 
+patch ASAP once I get your information.
+
+Sorry for the trouble!
+
+On another note, it may be intelligent to have the kernel-specific 
+systems check for such a conflict between bad-block markers and ECC 
+layout. If a position needed by the bad-block marker is listed in 
+"oobfree" or "eccpos" then we have a problem. Sound like a good idea 
+anybody? If so, what would be the best approach:
+* print an error and quit detection
+* try to modify the ecclayout, bbm info or both
+* try to modify, and fall-back to error message and quit if necessary
+
+Thanks,
+Brian
 
