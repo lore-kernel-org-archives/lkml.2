@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755268Ab0HQFuM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 01:50:12 -0400
-Received: from mgw-sa02.nokia.com ([147.243.1.48]:59136 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286Ab0HQFuK (ORCPT
+	id S1754477Ab0HQFvx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 01:51:53 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:12730 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750976Ab0HQFvw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 01:50:10 -0400
-Subject: Re: [PATCH 10/16] drivers/net/wireless/wl12xx: Use available error
- codes
-From: Luciano Coelho <luciano.coelho@nokia.com>
-To: ext Julia Lawall <julia@diku.dk>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-In-Reply-To: <Pine.LNX.4.64.1008161827140.19313@ask.diku.dk>
-References: <Pine.LNX.4.64.1008161827140.19313@ask.diku.dk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 08:42:21 +0300
-Message-ID: <1282023741.1773.9.camel@powerslave>
+	Tue, 17 Aug 2010 01:51:52 -0400
+Subject: Re: [Patch] Skip cpu_calibrate for kernel running under
+	hypervisors.
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C69D02F.6090601@zytor.com>
+References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
+	 <4C69D02F.6090601@zytor.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Mon, 16 Aug 2010 22:51:51 -0700
+Message-Id: <1282024311.20786.2.camel@ank32.eng.vmware.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 18:27 +0200, ext Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Error codes are stored in ret, but the return value is always 0.  Return
-> ret instead.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r@
-> local idexpression x;
-> constant C;
-> @@
-> 
-> if (...) { ...
->   x = -C
->   ... when != x
-> (
->   return <+...x...+>;
-> |
->   return NULL;
-> |
->   return;
-> |
-> * return ...;
-> )
-> }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
+Thanks for taking a look.
 
+On Mon, 2010-08-16 at 16:56 -0700, H. Peter Anvin wrote: 
+> On 08/16/2010 12:25 PM, Alok Kataria wrote:
+> > Hi, 
+> > 
+> > This is a trivial change to fix the cpu_khz value returned when running
+> > on a virtualized environment. We have seen instances when the cpu_khz
+> > value is off by couple of MHz's when running on VMware's platform on AMD
+> > hardware.
+> > 
+> > --
+> > Since the TSC frequency read from hypervisor is accurate for the guest, and
+> > since the hypervisor will always clock the vcpu at the TSC frequency, there is
+> > no need to calibrate it again. To avoid any calibration errors through
+> > calibrate_cpu this patch skips calling calibrate_cpu for kernel running
+> > under hypervisors.
+> > 
+> 
+> I'm somewhat reluctant to take this one, since it assumes all the
+> hypervisors act the same.  This seems rather inherently wrong.  In fact,
+> the whole statement is fishy as heck... instead of being dependent on
+> AMD and so on, 
 
-This was indeed a bug.  Thanks!
+The check about being on AMD is something that was already there. 
 
-Acked-by: Luciano Coelho <luciano.coelho@nokia.com>
+> this should either be a function pointer or a CPU
+> (mis)feature bit.
 
--- 
-Cheers,
-Luca.
+In any case, I agree that my previous patch did assume all hypervisors
+to be same, which might be wrong. How about using the
+X86_FEATURE_TSC_RELIABLE bit for this too ? i.e. Skip cpu_calibrate call
+if TSC_RELIABLE bit is set. As of now that bit is set for vmware only. 
+
+Something like the below.
+
+Signed-off-by: Alok N Kataria <akataria@vmware.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+
+Index: linux-x86-tree.git/arch/x86/kernel/tsc.c
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/kernel/tsc.c	2010-08-03 12:21:20.000000000 -0700
++++ linux-x86-tree.git/arch/x86/kernel/tsc.c	2010-08-16 21:59:32.000000000 -0700
+@@ -927,7 +927,8 @@ void __init tsc_init(void)
+ 	}
+ 
+ 	if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
+-			(boot_cpu_data.x86_vendor == X86_VENDOR_AMD))
++	    (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) &&
++	    !(cpu_has(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE)))
+ 		cpu_khz = calibrate_cpu();
+ 
+ 	printk("Detected %lu.%03lu MHz processor.\n",
+
 
