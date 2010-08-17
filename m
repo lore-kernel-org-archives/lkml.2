@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752625Ab0HQMlH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 08:41:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54238 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab0HQMlF (ORCPT
+	id S1752387Ab0HQMpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 08:45:11 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:39257 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750961Ab0HQMpJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 08:41:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=CkKFL4X9AZ84zVw4ptlt8yaFeLpBZrIj+pzYsyrRbsu/93g4oVe1mW1ksnNoSuZA7T
-         EHc5EetFMFe0vMWprVyJaAadzfOtYC3SU4cc0pp+xbyTk2keaZDtMiSkwAFRf2QyQfnh
-         tZv/Od+Pb4jp1qrGJBXMhNl9EtrLCgrN8H6aE=
-Subject: [PATCH v2] hwmon: (ads7871) Fix ads7871_probe error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jean Delvare <khali@linux-fr.org>, Paul Thomas <pthomas8589@gmail.com>,
-        lm-sensors@lm-sensors.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 20:41:24 +0800
-Message-ID: <1282048884.2626.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Aug 2010 08:45:09 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 7/9] RapidIO: Add handling for PW message from a lost device
+Date: Tue, 17 Aug 2010 05:44:25 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D61BF@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4C6A38A4.6070505@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 7/9] RapidIO: Add handling for PW message from a lost device
+thread-index: Acs93I4p0jLYclOcSOykSob+r9M3pQAKuRjg
+References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-8-git-send-email-alexandre.bounine@idt.com> <4C692F31.2020705@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6040@CORPEXCH1.na.ads.idt.com> <4C6A38A4.6070505@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@ozlabs.org>,
+        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves hwmon_device_register() to the end of ads7871_probe().
-So we can make sure the device exists and is properly initialized
-before the device is exposed to user-space.
-
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/hwmon/ads7871.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
-index b300a20..45f5829 100644
---- a/drivers/hwmon/ads7871.c
-+++ b/drivers/hwmon/ads7871.c
-@@ -176,12 +176,6 @@ static int __devinit ads7871_probe(struct spi_device *spi)
- 	if (status < 0)
- 		goto error_free;
- 
--	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
--	if (IS_ERR(pdata->hwmon_dev)) {
--		err = PTR_ERR(pdata->hwmon_dev);
--		goto error_remove;
--	}
--
- 	spi_set_drvdata(spi, pdata);
- 
- 	/* Configure the SPI bus */
-@@ -204,6 +198,12 @@ static int __devinit ads7871_probe(struct spi_device *spi)
- 		goto error_remove;
- 	}
- 
-+	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
-+	if (IS_ERR(pdata->hwmon_dev)) {
-+		err = PTR_ERR(pdata->hwmon_dev);
-+		goto error_remove;
-+	}
-+
- 	return 0;
- 
- error_remove:
--- 
-1.7.0.4
-
-
-
+Micha Nelissen wrote:
+> 
+> Perhaps an idea is to use the repeated port-write sending feature so
+> that dropped port-writes are not a problem anymore.
+> 
+Unfortunately, this feature is not defined by RIO spec. This is
+proprietary function, so we 
+cannot rely on it. Yes, this is nice feature of Tsi57x switches and may
+be used if you have 
+a closed system - just enable it in em_init. The RIO spec part 8 is
+quite open about port-write generation and we cannot expect the same
+behavior from different devices.    
