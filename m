@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759371Ab0HQSuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:50:20 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:1352 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759472Ab0HQSuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:50:12 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4C6AD9C2.1070705@broadcom.com>
-Date: Tue, 17 Aug 2010 11:49:38 -0700
-From: "Brian Norris" <norris@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
- Gecko/20100713 Thunderbird/3.0.6
+	id S1759578Ab0HQSuj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:50:39 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:34766 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751585Ab0HQSud (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 14:50:33 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: zxU4PP8VM1k.GYv63nQY7e_sZo3Vks8X8QM0X4zSA7hANTv
+ 3FyFniwcSncvYaEUoZtkLiTsTljgqxLaGUPYzAt6sL8JWCZCbDOZZYGYGr6_
+ 2mK96NwOgdmPPoVdw2kXFTd1hYnfgpBaR0t9APQVAn9hCy53yKFMAqqNdEOG
+ 6dmlrs6xYgEKXyTmEjk49maQWjTBafmngOy6r9y_5PwFMVC7zKFNU5bWFptl
+ L
+X-Yahoo-Newman-Property: ymail-3
+Date: Tue, 17 Aug 2010 13:50:29 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>
+Subject: Re: [S+Q3 20/23] slub: Shared cache to exploit cross cpu caching
+ abilities.
+In-Reply-To: <alpine.DEB.2.00.1008171137030.6486@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1008171348220.13665@router.home>
+References: <20100804024514.139976032@linux.com> <20100804024535.338543724@linux.com> <alpine.DEB.2.00.1008162246500.26781@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171234130.12188@router.home>
+ <alpine.DEB.2.00.1008171137030.6486@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Michael Guntsche" <mike@it-loops.com>
-cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
-References: <20100817113644.GA31317@gibson.comsick.at>
- <4C6AC037.7070205@broadcom.com>
- <20100817174704.GA1322@gibson.comsick.at>
-In-Reply-To: <20100817174704.GA1322@gibson.comsick.at>
-X-WSS-ID: 6074065D37O64825084-09-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 17 Aug 2010, David Rientjes wrote:
 
-On 08/17/2010 10:47 AM, Michael Guntsche wrote:
-> First, I am just an end user so I have no access to the datasheets etc. I
-> just got the code from the board manufactrurer (2.6.27) and forward
-> port it to recent kernels.
+> On Tue, 17 Aug 2010, Christoph Lameter wrote:
+>
+> > > This explodes on the memset() in slab_alloc() because of __GFP_ZERO on my
+> > > system:
+> >
+> > Well that seems to be because __kmalloc_node returned invalid address. Run
+> > with full debugging please?
+> >
+>
+> Lots of data, so I trimmed it down to something reasonable by eliminating
+> reports that were very similar.  (It also looks like some metadata is
+> getting displayed incorrectly such as negative pid's and 10-digit cpu
+> numbers.)
 
-I see. No problem. We'll work with what you can do:
+Well yes I guess that is the result of large scale corruption that is
+reaching into the debug fields of the object.
 
-If you can simply find the NAND chip part number (it would be printed on 
-the chip itself), that will be helpful.
+> [   15.752467]
+> [   15.752467] INFO: 0xffff880c7e5f3ec0-0xffff880c7e5f3ec7. First byte 0x30 instead of 0xbb
+> [   15.752467] INFO: Allocated in 0xffff88087e4f11e0 age=131909211166235 cpu=2119111312 pid=-30712
+> [   15.752467] INFO: Freed in 0xffff88087e4f13f0 age=131909211165707 cpu=2119111840 pid=-30712
+> [   15.752467] INFO: Slab 0xffffea002bba4d28 objects=51 new=3 fp=0x0007000000000000 flags=0xa00000000000080
+> [   15.752467] INFO: Object 0xffff880c7e5f3eb0 @offset=3760
+> [   15.752467]
+> [   15.752467] Bytes b4 0xffff880c7e5f3ea0:  18 00 00 00 7e 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a ....~...ZZZZZZZZ
+> [   15.752467]   Object 0xffff880c7e5f3eb0:  d0 0f 4f 7e 08 88 ff ff 80 10 4f 7e 08 88 ff ff .O~....O~..
+> [   15.752467]  Redzone 0xffff880c7e5f3ec0:  30 11 4f 7e 08 88 ff ff                         0.O~..
+> [   15.752467]  Padding 0xffff880c7e5f3ef8:  00 16 4f 7e 08 88 ff ff                         ..O~..
 
-Also, there are a few things you can do under a working kernel (e.g., 
-2.6.35?).
-
-First, have you ever used any of the mtdutils? In particular, running 
-the command "mtdinfo -a" and sending the output is helpful if you have 
-the utility installed on your board.
-
-Second, since you are doing the forward-porting, I assume you can do a 
-little bit of coding/patching. To print the whole ID string, you can add 
-a simple "printk" line to the code in "drivers/mtd/nand/nand_base.c". 
-For example, on the 2.6.35 kernel, you can just apply the patch below. 
-Then, on boot, the ID string will print (or at least show up in "dmesg" 
-or "syslog"). That info can help a little.
-
-> The reason I am using a specific layout is because the bootloader on
-> this board expects it this way. It formats it this way in the beginning
-> and I cannot change that.
-
-Well, if the new commit that broke your board is getting the block 
-marker *correct* according to the factory specifications, then this 
-particular problem is your setup's problem; perhaps there could be a 
-workaround, like I mentioned about checking for these kind of conflicts. 
-However, I'm still hypothesizing that I simply got the detection wrong, 
-and so my fix will solve your problem.
-
-Thanks,
-Brian
-
----
-  drivers/mtd/nand/nand_base.c |    4 +++-
-  1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index 4a7b864..d2d1fab 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2809,8 +2809,10 @@ static struct nand_flash_dev 
-*nand_get_flash_type(struct mtd_info *mtd,
-
-  	/* Read entire ID string */
-
--	for (i = 0; i < 8; i++)
-+	for (i = 0; i < 8; i++) {
-  		id_data[i] = chip->read_byte(mtd);
-+		printk(KERN_INFO "ID byte %i: %#x\n", i, id_data[i]);
-+	}
-
-  	if (id_data[0] != *maf_id || id_data[1] != dev_id) {
-  		printk(KERN_INFO "%s: second ID read did not match "
--- 
-1.7.0.4
+16 bytes allocated and a pointer array much larger than that is used.
 
