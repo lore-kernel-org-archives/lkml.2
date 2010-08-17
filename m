@@ -1,110 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0HQBjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 21:39:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40757 "EHLO mga02.intel.com"
+	id S1754331Ab0HQBwN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 21:52:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57495 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752657Ab0HQBjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 21:39:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,379,1278313200"; 
-   d="scan'208";a="648398121"
-Subject: Re: [PATCH 4/4] [Patch-next] ACPI, APEI, HEST Fix the unsuitable
- usage of platform_data.
-From: Huang Ying <ying.huang@intel.com>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andi Kleen <andi@firstfloor.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C69DEA5.1020902@np.css.fujitsu.com>
-References: <4C69DEA5.1020902@np.css.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 09:39:48 +0800
-Message-ID: <1282009188.2744.1498.camel@yhuang-dev>
+	id S1753216Ab0HQBwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 21:52:11 -0400
+Date: Tue, 17 Aug 2010 11:52:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dcbw@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
+        libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: linux-next: manual merge of the wireless tree with Linus' tree
+Message-Id: <20100817115203.e8a76e44.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 08:58 +0800, Jin Dongming wrote:
-> platform_data in hest_parse_ghes() is used for saving the address of entry
-> information of erst_tab. When the device is failed to be added, platform_data
-> will be freed by platform_device_put(). But the value saved in platform_data
-> should not be freed here. If it is done, it will make system panic.
+--Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Good catch. Thanks.
+Hi John,
 
-> So I think platform_data should save the address of allocated memory
-> which saves entry information of erst_tab.
-> 
-> This patch fixed it and I confirmed it on x86_64 next-tree.
-> 
-> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-> ---
->  drivers/acpi/apei/ghes.c |    2 +-
->  drivers/acpi/apei/hest.c |   19 ++++++++++++++-----
->  2 files changed, 15 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/acpi/apei/ghes.c b/drivers/acpi/apei/ghes.c
-> index 385a605..b35c622 100644
-> --- a/drivers/acpi/apei/ghes.c
-> +++ b/drivers/acpi/apei/ghes.c
-> @@ -302,7 +302,7 @@ static int __devinit ghes_probe(struct platform_device *ghes_dev)
->  	struct ghes *ghes = NULL;
->  	int rc = -EINVAL;
->  
-> -	generic = ghes_dev->dev.platform_data;
-> +	generic = *(struct acpi_hest_generic **)(ghes_dev->dev.platform_data);
->  	if (!generic->enabled)
->  		return -ENODEV;
->  
-> diff --git a/drivers/acpi/apei/hest.c b/drivers/acpi/apei/hest.c
-> index 343168d..5a65e2a 100644
-> --- a/drivers/acpi/apei/hest.c
-> +++ b/drivers/acpi/apei/hest.c
-> @@ -137,20 +137,29 @@ static int hest_parse_ghes_count(struct acpi_hest_header *hest_hdr, void *data)
->  
->  static int hest_parse_ghes(struct acpi_hest_header *hest_hdr, void *data)
->  {
-> -	struct acpi_hest_generic *generic;
-> +	void **platform_data;
->  	struct platform_device *ghes_dev;
->  	struct ghes_arr *ghes_arr = data;
->  	int rc;
->  
->  	if (hest_hdr->type != ACPI_HEST_TYPE_GENERIC_ERROR)
->  		return 0;
-> -	generic = (struct acpi_hest_generic *)hest_hdr;
-> -	if (!generic->enabled)
-> +
-> +	platform_data = kmalloc(sizeof(void *), GFP_KERNEL);
-> +	if (!platform_data)
-> +		return -ENOMEM;
-> +
-> +	*platform_data = hest_hdr;
-> +	if (!((struct acpi_hest_generic *)*platform_data)->enabled)
->  		return 0;
-> +
->  	ghes_dev = platform_device_alloc("GHES", hest_hdr->source_id);
-> -	if (!ghes_dev)
-> +	if (!ghes_dev) {
-> +		kfree(platform_data);
->  		return -ENOMEM;
-> -	ghes_dev->dev.platform_data = generic;
-> +	}
-> +
-> +	ghes_dev->dev.platform_data = platform_data;
->  	rc = platform_device_add(ghes_dev);
->  	if (rc)
->  		goto err;
+Today's linux-next merge of the wireless tree got a conflict in
+drivers/net/wireless/libertas/if_sdio.c between commit
+886275ce41a9751117367fb387ed171049eb6148 ("param: lock if_sdio's
+lbs_helper_name and lbs_fw_name against sysfs changes") from Linus' tree
+and commit 3d32a58b87cd251b50842f93b87d5458061c0cfc ("libertas: [sdio]
+use common firmware request helper and new firmware locations") from the
+wireless tree.
 
-Why not use platform_device_add_data?
+OK, I can't quite figure out what is going on here.  The latter commit
+removes that code that was modified by the former, so I effectively
+reverted the former commit (by using this file from the wireless tree)
+since the "helper" and "firmware" fields of struct if_sdio_card don't
+seem to be used anywhere anymore.  Can they be removed as well?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Best Regards,
-Huang Ying
+--Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMaetDAAoJEDMEi1NhKgbsRhQIAIB8A2VzaoVXsUqtHjO40sNk
+k2TMIrioH6v5PvgR6KW1Cwy/ZHhDfksv/ksJ11Jwj46oBqGh25MpIrPUUTMMwGMs
+byZAMzPV/BZ6zpFOvBxbL/HN8Cy4QEfkNa1NkwWIvBSJwtQoWZT1Vo/mDShJgTBr
+g6+3ul31pUdoWnIl8Pm+etG8nb7MWWkRoGyss7b5P7VwWch6qXNE2jsNHBQDyBlr
+qMMJw+SVOr2v/QnQHa6l70hbj42VuzAFv0Pz9SsBhzs6khi+mfwrJdWK2+M4DJUc
+mOsm3McJ5+4DhiHp1JbnlXyXNQDrDemXSc0MbRct4JMRb6pzkR7C9vWl/Q8apW8=
+=dvps
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC--
