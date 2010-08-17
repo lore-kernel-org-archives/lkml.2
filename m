@@ -1,188 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab0HQIFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:05:49 -0400
-Received: from mgw-sa02.nokia.com ([147.243.1.48]:52448 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752693Ab0HQIFp (ORCPT
+	id S1753908Ab0HQIJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:09:17 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:3988 "EHLO
+	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751333Ab0HQIJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:05:45 -0400
-Subject: Wakelocks Rebooted - Power management for embedded devices
-From: Igor Stoppa <igor.stoppa@nokia.com>
-To: Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 11:40:35 +0300
-Message-ID: <1282034436.13642.1115.camel@vimes.research.nokia.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 17 Aug 2010 04:09:14 -0400
+X-SpamScore: -17
+X-BigFish: VPS-17(zz9370J98dNzz1202hzz15d4Rz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L7ADTR-01-6XX-02
+X-M-MSG: 
+From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Organization: AMD OSRC
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
+Date: Tue, 17 Aug 2010 09:51:25 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.31-22-generic; KDE/4.4.2; x86_64; ; )
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
+        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C52DF50.80009@kernel.org> <4C5AE1E2.6070601@gmail.com>
+In-Reply-To: <4C5AE1E2.6070601@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
+Message-ID: <201008170951.26073.stephan.diestelhorst@amd.com>
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-as discussed during the power management mini-summit in Boston 1ast week
-at linuxcon [1] I'd like to reboot the discussion about power management
-on embedded linux devices - mostly focusing on handhelds.
+Hi Tejun,
 
-The previous discussion was focused on getting a certain implementation
-integrated and has certainly been useful to rise the overall level of
-awareness about battery-constrained systems.
+On Thursday 05 August 2010 18:08:02 Tejun Heo wrote:
+> Can you please try the following patch and see whether the problem
+> goes away?
 
-Many people have commented about how it should have started and evolved,
-so I'll try to follow those words of wisdom :-)
+I've finally managed to get this to compile and test. (Hit a bug with
+Debian's make-kpkg and other nuisances...)
 
+The problem is still there. On some resumes I get the dreadful dead
+disk again:
 
+end_request: I/O error , dev sda sector ...
+sd 0:0:0:0: [sda] Unhandled error code
+sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
+sd 0:0:0:0: [sda] CDB: Read(10): 28 00 0e a4 77 a8 0 00 08 00
+(many of those)
 
-High level goals:
------------------
+Can't access /var/log/messages right now, due to broken I/O. Will try
+to trigger it again and check for the qc timeout messages..
 
-1) Preserve power and performance behavior over time
-Iow the system should not age, even after installing random apps with
-different level of power friendliness.
+Stephan
 
-2) Easy development of pm-friendly apps (different from pm-aware)
-Most simple apps are anyway active only when visible on the screen.
-(I am assuming that, given the specific device implementation, the vast
-majority of apps will be written from scratch, rather than ported, to
-better integrate with the rest of the system.)
+-- 
+Stephan Diestelhorst, AMD Operating System Research Center
+stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
 
-3) Easy identification of problematic apps (those that do not conform to
-the desired behavior on a certain platform/configuration)
-
-
-Implementation requirements:
-----------------------------
-
-a) Keep separate policies from mechanisms to ensure cross platform
-portability of high level policies
-      eg: screen on
-		high level constraint: max latency in UI
-		low level constraint:  min frequency 
-
-        the former is portable, the latter is not
-
-b) Avoid introducing platform-specific knowledge / dependency in generic
-applications, eg. knowledge about "suspend".
-This doesn't exclude explicit management of context save/restore, but
-the application should not concern itself with the way a certain
-platform implements power saving.
-
-
-
-Problems/Gaps identified so far:
---------------------------------
-
-I will not replicate Paul McKenney's effort to summarize all the
-discussion on suspend blockers (btw thanks for the great work!), however
-something received less attention than it deserved imo: runtime tracing
-of system hogs.
-
-How to make the system to idle and how to make sure it stays there can
-be implemented in different ways, but in any case it is necessary to
-track the usage of system resources.
-
-I)  Present solutions seem to focus mostly on the CPU/SoC, while it
-would be better if the whole system was accountable for power
-consumption - meaning that CPU wakeups are accounted, but also other
-power sinks (eg. 3G radio) are accounted ad well.
-
-II) Even when analyzing the SoC, rather than other discrete components,
-there is the problem that the same IP block might have different power
-impact on the system, depending on the way it is wired in a specific SoC
-(clock distribution, power rails, etc) and its activity should be
-weighted in a system specific way, without introducing such notion in
-the driver itself.
-
-This seems to converge in the discussion initiated by Paul Walmsley and
-Kevin Hilman [1] wrt "omap bus" approach where the bus structures could,
-amongst other information, also store the correlation between device
-state and power consumption.
-
-III) A common way to address device states and states transitions vs
-time seems to be missing.
-This would allow to expose runtime statistics (through relay-fs, for
-example) of residence in a certain state - similarly to what powertop
-does for x86 processors.
-
-IV) Also performance modes might benefit from being exposed in a
-consistent way which doesn't stop at active/inactive, but can express
-also the device specific states.
-examples: 
-* touch screen sampling rate affects both accuracy and power consumption
-* HW audio codec where different ifle states have different latencies
-
-
-Some Thoughts:
---------------
-
-* The suspend-based approach doesn't seem to fit our design/approach,
-but otoh if we make it easy enough for developers to improve/fix their
-code when dealing with runtime idle, by exposing causes for not hitting
-low power states, the number of power unfriendly apps will just dwindle
-down.
-Typically such fixes have also significant impact on performance, so
-they are not desirable just from a use-time pov.
-
-* Introducing a mechanism to prevent power unfriendly apps from ruining
-the overall system performance/use-time seems tp be the way to go (this
-might have both an automatic mode and a user-interactive mode), so long
-as the user can express what he wants and gets it (which might depend on
-what is considered to be paramount in a specific situation)
-
-* In practice it seems unlikely that the applications to be made
-available by 3rd parties will be ported existing legacy PC code, but
-rather new apps that will be written and targeted to mobile devices.
-
-Yes, there are plenty of examples that contradict my statement, however
-observing the population of a typical app-store, most of the
-applications are relatively simple and specifically designed to look
-nice on a mobile screen.
-And even for ported apps, if there are no platform specific APIs (like
-suspend blockers), bugfixes can be contributed back to the upstream
-project.
-
-* Most of the requirements described in the Android discussion can
-actually be handled in userspace because they involve some slowly
-evolving phenomenon (typically mode transitions, such as screen on/off)
-with no strict time constraint.
-We roughly share the same needs/constraints.
-
-* I see lots of potential overlapping wrt tracking/controlling the state
-of the system, iow defining the kernel interfaces, while the userspace
-implementation could significantly depend on the philosophy followed by
-the system integrator.
-
-* the same interfaces could be shared also with other tools currently
-used for more static analysis, like powertop, timechart, etc [2]
-
-* MeeGo/Maemo already have a user space policy manager (currently used
-for audio routing and cgroup policies) that could be leveraged also for
-this sort of power policies.
-Raphael was also thinking about a userspace policy manager and albeit
-I'm not familiar with Android, I believe it must have something similar
-for dealing with bytecode-based apps and their constraints (feedback
-from people with better knowledge would be appreciated).
-
-* I wasn't able to locate a complete list of Android goals/requirements;
-having such information - coming straight from the source - would
-improve the chances of mutual understanding.
-
-* I would welcome people from silicon companies to participate in the
-discussion, since they have the best understanding of the real impact of
-a certain power saving implementation on the SoC performance.
-
-
-
-cheers, igor
-
-
-[1]
-https://lists.linux-foundation.org/pipermail/linux-pm/2010-August/028229.html
-
-[2]
-http://blog.fenrus.org/
-
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
