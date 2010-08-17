@@ -1,48 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758838Ab0HQSyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:54:44 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:2667 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab0HQSyl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:54:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=pJzm+W+tJQUaTn7MjCsQK+w2WvO0yx9oE0M8ob0XvsV9RE1ie1DlUSJcBHivR+8km
-	g72y9YVeTBts+aDRR1ChA==
-Date: Tue, 17 Aug 2010 11:54:35 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux-foundation.org>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [S+Q3 00/23] SLUB: The Unified slab allocator (V3)
-In-Reply-To: <alpine.DEB.2.00.1008171346530.13665@router.home>
-Message-ID: <alpine.DEB.2.00.1008171153490.21770@chino.kir.corp.google.com>
-References: <20100804024514.139976032@linux.com> <alpine.DEB.2.00.1008032138160.20049@chino.kir.corp.google.com> <alpine.DEB.2.00.1008041115500.11084@router.home> <alpine.DEB.2.00.1008050136340.30889@chino.kir.corp.google.com> <alpine.DEB.2.00.1008051231400.6787@router.home>
- <alpine.DEB.2.00.1008151627450.27137@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171217440.11915@router.home> <alpine.DEB.2.00.1008171052500.6486@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171346530.13665@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1762809Ab0HQS4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:56:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:34833 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932650Ab0HQS4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 14:56:39 -0400
+Date: Tue, 17 Aug 2010 20:56:34 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Alok Kataria <akataria@vmware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "borislav.petkov@amd.com" <borislav.petkov@amd.com>
+Subject: Re: [Patch] Skip cpu_calibrate for kernel running under
+ hypervisors.
+Message-ID: <20100817185634.GA10597@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Alok Kataria <akataria@vmware.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+	"greg@kroah.com" <greg@kroah.com>,
+	"ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	"borislav.petkov@amd.com" <borislav.petkov@amd.com>
+References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
+ <4C69D02F.6090601@zytor.com>
+ <1282024311.20786.2.camel@ank32.eng.vmware.com>
+ <4C6A2C98.4060605@zytor.com>
+ <20100817070520.GD32714@liondog.tnic>
+ <1282063532.4388.8.camel@ank32.eng.vmware.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1282063532.4388.8.camel@ank32.eng.vmware.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010, Christoph Lameter wrote:
+From: Alok Kataria <akataria@vmware.com>
+Date: Tue, Aug 17, 2010 at 09:45:32AM -0700
 
-> > I didn't know if that was a debugging patch for me or if you wanted to
-> > push that as part of your series, I'm not sure if you actually need to
-> > move it to kmem_cache_init() now that slub_state is protected by
-> > slub_lock.  I'm not sure if we want to allocate DMA objects between
-> > kmem_cache_init() and kmem_cache_init_late().
-> 
-> Drivers may allocate dma buffers during initialization.
-> 
+Hi Alok,
 
-Ok, I moved the DMA cache creation from kmem_cache_init_late() to 
-kmem_cache_init().  Note: the kasprintf() will need to use GFP_NOWAIT and 
-not GFP_KERNEL now.
+> > > I know it was... and calibrate_cpu() seems to be an AMD-specific
+> > > function, but that's rather crappy.  I'm thinking that perhaps we should
+> > > make it an x86_init function, then the AMD CPU detection can install it
+> > > and the vmware hypervisor detection can uninstall it.
+> > 
+> > Btw, can we revisit this AMD-specific issue? IIUC, Alok you're seeing
+> > a mismatch between the calibrated TSC value and the cpu frequency even
+> > on cpus which have the CONSTANT_TSC bit set, i.e. their TSC is counting
+> > with P0 frequency. Can you please elaborate more on what systems you're
+> > seeing this (cpu family, chipset, etc)?
+> 
+> We have seen these issues when running inside a Virtual Machine on
+> VMware's platform. Please look at the vmware_set_cpu_features function,
+> it relies on the hypervisor to provide a constant/reliable TSC. Though
+> still when running the kernel on virtual cpus, as compared to
+> running on physical cpus, the timing characteristics are different,
+> since virtual cpus have to time share physical cpus with each other,
+> which may result in errors during calibration. As a result its better to
+> get these values directly from the hypervisor rather than trying to
+> calibrate them.
+
+Thanks for clarifying this. I kinda stumbled over "AMD hardware" in your
+previous email but now its perfectly clear.
+
+> And just to clarify, we have never seen this on a physical machine.
+
+Anyway, your patch got me looking into the code and currently we do
+calibrate_cpu() on all AMD systems with invariant TSC. However, machines
+starting with F10h revB have a setting in MSRC001_0015[24] which, when
+set, denotes that the TSC counts with P0 frequency and thus equals the
+core frequency. So for those machines we won't need to calibrate the cpu
+frequency. I'm figuring out some additional details internally and will
+be sending a fix soon.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
