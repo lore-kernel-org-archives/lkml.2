@@ -1,33 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab0HQHZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 03:25:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2003 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751536Ab0HQHZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 03:25:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,381,1278313200"; 
-   d="scan'208";a="648465328"
-Subject: [PATCH] kfifo, Add parenthesis for macro parameter reference
-From: Huang Ying <ying.huang@intel.com>
-To: Stefani Seibold <stefani@seibold.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 15:25:13 +0800
-Message-ID: <1282029913.2744.1511.camel@yhuang-dev>
+	id S1752829Ab0HQHbB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 03:31:01 -0400
+Received: from www84.your-server.de ([213.133.104.84]:59219 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab0HQHbA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 03:31:00 -0400
+Subject: Re: [PATCH] kfifo, Add parenthesis for macro parameter reference
+From: Stefani Seibold <stefani@seibold.net>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282029913.2744.1511.camel@yhuang-dev>
+References: <1282029913.2744.1511.camel@yhuang-dev>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 17 Aug 2010 09:31:01 +0200
+Message-ID: <1282030261.13570.1.camel@wall-e.seibold.net>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+
 
 Some macro parameter references inside typeof() operator are not enclosed
 with parenthesis. It should be safer to add them.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
+Acked-by: Stefani Seibold <stefani@seibold.net>
 ---
  include/linux/kfifo.h |   58 +++++++++++++++++++++++++-------------------------
  1 file changed, 29 insertions(+), 29 deletions(-)
@@ -253,5 +256,7 @@ Signed-off-by: Huang Ying <ying.huang@intel.com>
  	unsigned long __n = (n); \
  	const size_t __recsize = sizeof(*__tmp->rectype); \
  	struct __kfifo *__kfifo = &__tmp->kfifo; \
+
+
 
 
