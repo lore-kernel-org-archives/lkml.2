@@ -1,185 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189Ab0HQP7q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 11:59:46 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49204 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750961Ab0HQP7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 11:59:43 -0400
-Date: Tue, 17 Aug 2010 10:59:39 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: mingo@elte.hu, tglx@linutronix.de, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-Message-ID: <20100817155939.GA4354@sgi.com>
-References: <20100722152220.GA18290@sgi.com>
-MIME-Version: 1.0
+	id S1757436Ab0HQQAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:00:38 -0400
+Received: from tomts20.bellnexxia.net ([209.226.175.74]:36913 "EHLO
+	tomts20-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750961Ab0HQQAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:00:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAFZPakxGGN19/2dsb2JhbACgPXLBD4U3BIRj
+Date: Tue, 17 Aug 2010 11:55:21 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
+        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+        eric.dumazet@gmail.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
+Message-ID: <20100817155521.GA17849@Krystal>
+References: <20100816150737.GB8320@Krystal> <20100816183355.GH2388@linux.vnet.ibm.com> <20100816191947.GA970@Krystal> <20100816213200.GK2388@linux.vnet.ibm.com> <20100816214123.GA15663@Krystal> <20100816215555.GL2388@linux.vnet.ibm.com> <20100816220705.GA18650@Krystal> <1282051639.3268.1335.camel@gandalf.stny.rr.com> <20100817141638.GA5722@Krystal> <1282056878.3268.1437.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100722152220.GA18290@sgi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1282056878.3268.1437.camel@gandalf.stny.rr.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 11:36:11 up 132 days,  1:27,  4 users,  load average: 0.00, 0.03,
+	0.06
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 10:22:20AM -0500, Jack Steiner wrote:
-> I'd like feedback on the following performance problem &
-> suggestions for a proper solution.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> On Tue, 2010-08-17 at 10:16 -0400, Mathieu Desnoyers wrote:
+> > * Steven Rostedt (rostedt@goodmis.org) wrote:
+> 
+> > > If we are this concerned, what about just doing:
+> > > 
+> > > 	--t->rcu_read_lock_nesting;
+> > >         if (ACCESS_ONCE(t->rcu_read_lock_nesting) == 0 &&
+> > >              unlikely((ACCESS_ONCE(t->rcu_read_unlock_special)))
+> > 
+> > I'd be concerned by the fact that there is no strong ordering guarantee
+> > that the non-volatile --t->rcu_read_lock_nesting is done before
+> > ACCESS_ONCE(t->rcu_read_unlock_special).
+> > 
+> > My concern is that the compiler might be allowed to turn your code into:
+> > 
+> >         if (ACCESS_ONCE(t->rcu_read_lock_nesting) == 1 &&
+> >              unlikely((ACCESS_ONCE(t->rcu_read_unlock_special))) {
+> >  		--t->rcu_read_lock_nesting;
+> > 		do_something();
+> > 	} else
+> > 	 	--t->rcu_read_lock_nesting;
+> 
+> 
+> That just seems to break all sorts of rules.
 
-I did some more digging & found something I should have seen earlier.
-On EFI-enabled systems (like UV), the ACPI tables are already mapped as
-WB memory. This is done in the EFI function efi_enter_virtual_mode().
+Is there a rule stating that a non-volatile access is ensured to be in
+issued in program order wrt other accesses to that same variable ?
 
-The E820_ACPI & E820_NVS regions will be mapped as WB memory if the BIOS
-sets the WB attribute in the EFI memmap entry for the chunk of memory.
+The stardard discourages compilers to do any kind of optimization when
+volatile is detected on a variable
+(http://gcc.gnu.org/onlinedocs/gcc/Volatiles.html), but that's a very
+weak guarantee I would not like to rely on.
 
-The ACPI code in acpi_os_map_memory() is not currently aware of the EFI mapping
-& currently maps the memory as UC. This seems like a bug.
+The only strong guarantee it provides is:
+"The minimum either standard specifies is that at a sequence point all
+previous accesses to volatile objects have stabilized and no subsequent
+accesses have occurred."
 
-In order to prevent attribute aliasing, I think the ACPI mapping needs to
-be consistent with the EFI mapping.  Otherwise, we will have the OS
-referencing the memory as UC at the same time BIOS is referencing it as WB.
+So the question here is: given that the "--t->rcu_read_lock_nesting"
+access is not marked volatile, but the following
+"ACCESS_ONCE(t->rcu_read_lock_nesting)" read is volatile, should we
+consider than "--t->rcu_read_lock_nesting" apply to a volatile object or
+not ?
 
+This is the kind of grey zone I dislike.
+
+> 
+> > 
+> > So whether or not this could be done by the compiler depending on the
+> > various definitions of volatile, I strongly recommend against using
+> > volatile accesses to provide compiler ordering guarantees. It is bad in
+> > terms of code documentation (we don't document _what_ is ordered) and it
+> > is also bad because the volatile ordering guarantees seems to be
+> > very easy to misinterpret.
+> 
+> Yes, volatile does not guarantee ordering of other accesses, but it
+> should at least guarantee ordering of access to the thing that is
+> volatile.
+> 
+> 	b++;
+> 	a++;
+> 	c = ACCESS_ONCE(a);
+> 
+> 'b++' can be moved to anywhere. But I'm pretty sure the compiler is not
+> allowed to move the 'a++' after the ACCESS_ONCE(a) because it is the
+> thing that is volatile.
+
+AFAIU, the standard only requires ordering between volatile "objects".
+So when we cast non-volatile objects to volatile, I assume the
+non-volatile accesses apply only to the non-volatile version of the
+object. So volatile ordering guarantees would not apply to "a".
+
+> We are telling the compiler that 'a' can change
+> outside our scope, which to me is the same as doing:
+> 
+> 	a++;
+> 	c = some_global_function(&a);
+> 
+> Where, the compiler does not know the result of 'a' and can not move the
+> 'a++'.
+
+The code here is different: calling an external function is equivalent
+to put a full compiler memory barrier ("memory" clobber). Volatile is
+quite different from that; the compiler is only told to keep ordering
+between volatile accesses, and to try not to optimize the volatile
+access per se.
 
 > 
 > 
-> Large SGI UV systems (3072p, 5TB) take a long time to boot. A significant
-> part of the boot time is scanning ACPI tables. ACPI tables on UV systems
-> are located in RAM memory that is physically attached to node 0.
+> Maybe I'm wrong, and need to verify this with a compiler expert. But
+> what's the use of volatile if it can't protect the ordering of what is
+> volatile from itself.
+
+I'm concerned about the fact that volatile seems to have been initially
+designed to apply to a variable declaration (object) rather than a
+specific access through a cast. So I really wonder if the non-volatile
+object accesses has the same guarantees as the accesses performed on its
+volatile cast version.
+
 > 
-> User programs (ex., acpidump) read the ACPI tables by mapping them thru
-> /dev/mem.  Although mmap tries to map the tables as CACHED, there are
-> existing kernel UNCACHED mapping that conflict and the tables end up as
-> being mapped UNCACHED.  (See the call to track_pfn_vma_new() in
-> remap_pfn_range()).
+> > 
+> > ACCESS_ONCE() should be only that: a macro that tells the access should
+> > be performed only once. Why are we suddenly presuming it should have any
+> > ordering semantic ?
 > 
-> Much of the access is to small fields (bytes (checksums), shorts, etc).
-> Late in boot, there is significant scanning of the ACPI tables that take
-> place from nodes other than zero. Since the tables are not cached, each
-> reference accesses physical memory that is attached to remote nodes. These
-> memory requests must cross the numalink interconnect which adds several
-> hundred nsec to each access. This slows the boot process.  Access from
-> node 0, although faster, is still very slow.
+> Only ordering with the variable that is volatile. It has no ordering to
+> any other variable.
+
+This is not quite correct. Volatile orders with respect to _all_ other
+volatile accesses.
+
+What I am pointing out here is that the macro name "ACCESS_ONCE()" does
+not convey any ordering semantic, and should not.
+
 > 
+> > 
+> > It should be totally valid to create arch-specific ACCESS_ONCE() macros
+> > that only perform the "read once", without the ordering guarantees
+> > provided by the current ACCESS_ONCE() "volatile" implementation. The
+> > following code is only for unsigned long, but you get the idea: there is
+> > no volatile at all, and I ensure that "val" is only read once by using
+> > the "+m" (val) constraint, telling the compiler (falsely) that the
+> > assembler is modifying the value (it therefore has a side-effect), so
+> > gcc won't be tempted to re-issue the assembly statement.
+> > 
+> > static inline unsigned long arch_access_once(unsigned long val)
+> > {
+> > 	unsigned long ret;
+> > 
+> > #if (__BITS_PER_LONG == 32)
+> > 	asm ("movl %1,%0": "=r" (ret), "+m" (val));
+> > #else
+> > 	asm ("movq %1,%0": "=r" (ret), "+m" (val));
+> > #endif
+> > }
 > 
-> 
-> The following experimental patch changes the kernel mapping for ACPI tables
-> to CACHED. This eliminates the page attibute conflict & allows users to map
-> the tables CACHEABLE. This significantly speeds up boot:
-> 
-> 	38 minutes without the patch
-> 	27 minutes with the patch
-> 		~30% improvement
-> 
-> Time to run ACPIDUMP on a large system:
-> 	527 seconds without the patch
-> 	  8 seconds with the patch
-> 
-> 
-> I don't know if the patch in it's current form is the correct solution. I'm
-> interested in feedback on how this should be solved. I expect there
-> are issues on other platforms so for now, the patch uses x86_platform_ops
-> to change mappings only on UV platforms (I'm paranoid :-).
-> 
-> I also need to experiment with early_ioremap'ing of the ACPI tables. I suspect
-> this is also mapped UNCACHED. There may be additional improvements if this
-> could be mapped CACHED. However, the potential performance gain is much
-> less since these references all occur from node 0.
-> 
-> 
-> 
-> Signed-off-by: Jack Steiner <steiner@sgi.com>
-> 
-> 
-> ---
->  arch/x86/include/asm/x86_init.h    |    2 ++
->  arch/x86/kernel/apic/x2apic_uv_x.c |    6 ++++++
->  arch/x86/kernel/x86_init.c         |    3 +++
->  drivers/acpi/osl.c                 |   12 +++++++++---
->  4 files changed, 20 insertions(+), 3 deletions(-)
-> 
-> Index: linux/arch/x86/include/asm/x86_init.h
-> ===================================================================
-> --- linux.orig/arch/x86/include/asm/x86_init.h	2010-07-21 16:53:30.226241589 -0500
-> +++ linux/arch/x86/include/asm/x86_init.h	2010-07-21 16:57:46.614872338 -0500
-> @@ -113,6 +113,7 @@ struct x86_cpuinit_ops {
+> Heck, this is too much micro optimization. We could just be safe and do
+> the:
+>  	--t->rcu_read_lock_nesting;
+> 	barrier();
+>          if (ACCESS_ONCE(t->rcu_read_lock_nesting) == 0 &&
+>               unlikely((ACCESS_ONCE(t->rcu_read_unlock_special)))
 >  
->  /**
->   * struct x86_platform_ops - platform specific runtime functions
-> + * @is_wb_acpi_tables		E820 ACPI table are in WB memory
->   * @is_untracked_pat_range	exclude from PAT logic
->   * @calibrate_tsc:		calibrate TSC
->   * @get_wallclock:		get time from HW clock like RTC etc.
-> @@ -120,6 +121,7 @@ struct x86_cpuinit_ops {
->   * @nmi_init			enable NMI on cpus
->   */
->  struct x86_platform_ops {
-> +	int (*is_wb_acpi_tables)(void);
->  	int (*is_untracked_pat_range)(u64 start, u64 end);
->  	unsigned long (*calibrate_tsc)(void);
->  	unsigned long (*get_wallclock)(void);
-> Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-> ===================================================================
-> --- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c	2010-07-21 16:53:30.226241589 -0500
-> +++ linux/arch/x86/kernel/apic/x2apic_uv_x.c	2010-07-21 16:54:46.358866486 -0500
-> @@ -58,6 +58,11 @@ static int uv_is_untracked_pat_range(u64
->  	return is_ISA_range(start, end) || is_GRU_range(start, end);
->  }
->  
-> +static int uv_is_wb_acpi_tables(void)
-> +{
-> +	return 1;
-> +}
-> +
->  static int early_get_nodeid(void)
->  {
->  	union uvh_node_id_u node_id;
-> @@ -81,6 +86,7 @@ static int __init uv_acpi_madt_oem_check
->  		nodeid = early_get_nodeid();
->  		x86_platform.is_untracked_pat_range =  uv_is_untracked_pat_range;
->  		x86_platform.nmi_init = uv_nmi_init;
-> +		x86_platform.is_wb_acpi_tables = uv_is_wb_acpi_tables;
->  		if (!strcmp(oem_table_id, "UVL"))
->  			uv_system_type = UV_LEGACY_APIC;
->  		else if (!strcmp(oem_table_id, "UVX"))
-> Index: linux/arch/x86/kernel/x86_init.c
-> ===================================================================
-> --- linux.orig/arch/x86/kernel/x86_init.c	2010-07-21 16:53:30.226241589 -0500
-> +++ linux/arch/x86/kernel/x86_init.c	2010-07-21 16:58:17.106240870 -0500
-> @@ -71,7 +71,10 @@ struct x86_cpuinit_ops x86_cpuinit __cpu
->  
->  static void default_nmi_init(void) { };
->  
-> +static int default_wb_acpi_tables(void) {return 0;}
-> +
->  struct x86_platform_ops x86_platform = {
-> +	.is_wb_acpi_tables		= default_wb_acpi_tables,
->  	.is_untracked_pat_range		= default_is_untracked_pat_range,
->  	.calibrate_tsc			= native_calibrate_tsc,
->  	.get_wallclock			= mach_get_cmos_time,
-> Index: linux/drivers/acpi/osl.c
-> ===================================================================
-> --- linux.orig/drivers/acpi/osl.c	2010-07-21 16:53:30.226241589 -0500
-> +++ linux/drivers/acpi/osl.c	2010-07-21 17:58:20.370414172 -0500
-> @@ -293,12 +293,18 @@ acpi_os_map_memory(acpi_physical_address
->  		printk(KERN_ERR PREFIX "Cannot map memory that high\n");
->  		return NULL;
->  	}
-> -	if (acpi_gbl_permanent_mmap)
-> +	if (acpi_gbl_permanent_mmap) {
->  		/*
->  		* ioremap checks to ensure this is in reserved space
->  		*/
-> -		return ioremap((unsigned long)phys, size);
-> -	else
-> +		if (x86_platform.is_wb_acpi_tables() &&
-> +				(e820_all_mapped(phys, phys + size, E820_RAM) ||
-> +				e820_all_mapped(phys, phys + size, E820_ACPI) ||
-> +				e820_all_mapped(phys, phys + size, E820_NVS)))
-> +			return ioremap_cache((unsigned long)phys, size);
-> +		else
-> +			return ioremap((unsigned long)phys, size);
-> +	} else
->  		return __acpi_map_table((unsigned long)phys, size);
->  }
->  EXPORT_SYMBOL_GPL(acpi_os_map_memory);
+> And be done with it.
+
+Then we could go for the simpler:
+
+  	--t->rcu_read_lock_nesting;
+ 	barrier();
+        if (t->rcu_read_lock_nesting == 0 &&
+             unlikely((t->rcu_read_unlock_special))
+
+Which puts a constraint across all memory accesses. I'd be fine with
+that if you are afraid of too much micro-optimization (e.g. my
+barrier2(a, b) proposal).
+
+Thanks,
+
+Mathieu
+
+
+> 
+> -- Steve
+> 
+> 
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
