@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab0HQNPC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:15:02 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61869 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754406Ab0HQNPA convert rfc822-to-8bit (ORCPT
+	id S1756817Ab0HQNPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:15:31 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:56080 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754406Ab0HQNPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:15:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=am1ek9Z3FXSAKzlQpAI/CrIDmrBZ+LBeonB1c/EbDfyVTr/9S/qIupKBsH2xB3sQib
-         vHd4bTTKQv7frx2Gh5dvFmW4PNfC1/wpp6ZWBMHxhRmpsNxIfvgPSwxi6hOMGJC/TkbM
-         j/uBAOwHL8RC9HZZ7zpODfTZnfJsxm4EIbguM=
+	Tue, 17 Aug 2010 09:15:30 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] init/do_mounts.c: replace sys_mount() to do_mount()
+Date: Tue, 17 Aug 2010 15:15:26 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1282048643-2475-1-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1282048643-2475-1-git-send-email-namhyung@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100810033536.GA31363@ZenIV.linux.org.uk>
-References: <20100810033536.GA31363@ZenIV.linux.org.uk>
-Date: Tue, 17 Aug 2010 16:14:58 +0300
-Message-ID: <AANLkTimh30b=Dfv41zQ9Q+rmkmVCP8X7oOtt6VQyw9ap@mail.gmail.com>
-Subject: Re: [git pull] vfs series, part 1
-From: Jouni Malinen <jkmalinen@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Nick Piggin <npiggin@suse.de>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Jouni Malinen <j@w1.fi>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008171515.26175.arnd@arndb.de>
+X-Provags-ID: V02:K0:28v/CL1L8OOFGx5OmWzNpb2yT5Hz4i4bGsIK+YjxKKp
+ 28H+QfXyPzg1XbH8bZOtZV1bsI/VakY7rc9D8IN9hHgWOZ3YNP
+ jh9vRrOKid6IRAxBTFywkvuNgPjWRdXX5fRzsms1qfsWbhqKsp
+ zAXErXlow1KoLdN4Y5Cx0YwgQVawBS+iBiCMDeLJYqrdfS5ga5
+ ZzArB2xiwR5ZHFcrs9gPw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 10, 2010 at 6:35 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->        Assorted work from the last cycle; among other things, there's
-> a filesystem API change (->evict_inode() series), a lot of truncate
-> rework stuff (mostly by Chris) and a bunch of fixes.
+On Tuesday 17 August 2010, Namhyung Kim wrote:
+>  static int __init do_mount_root(char *name, char *fs, int flags, void *data)
+>  {
+> -       int err = sys_mount(name, "/root", fs, flags, data);
+> +       int err;
+> +       unsigned long data_page = 0;
+> +
+> +       if (data) {
+> +               /* data should be in a page */
+> +               data_page = __get_free_page(GFP_KERNEL);
+> +               if (!data_page)
+> +                       return -ENOMEM;
+> +               strlcpy((char *) data_page, data, PAGE_SIZE);
+> +       }
+> +
+> +       err = do_mount(name, "/root", fs, flags, (void *) data_page);
+> +
+> +       if (data_page)
+> +               free_page(data_page);
 
-Linux 2.6.36-rc1 seemed to break my UML hostfs setup or well, make it
-behave in very odd ways.. No matter what directory I'm trying to read
-from hostfs in UML, the root directory seems to be returned. I have
-hostfs mounted in UML into /mnt/host and "ls /mnt/host" and "ls
-/mnt/host/etc" show the same directory. Actually, any unknown
-directory like "/mnt/host/does-not-exist" shows the same root
-directory.. Obviously something is going quite wrong in mapping the
-path name to directory entry.
+AFAICT there is no need for the copy at all here. The reason that sys_mount
+copies to a separate page is that it gets passed an arbitrary-length user
+input.
 
- Based on a quick git bisect, the main part of the issue seems to be
-caused or at least triggered by a change in this set:
-
->      hostfs: fix races in dentry_name() and inode_name()
-
-e9193059b1b3733695d5b80e667778311695aa73 is the first bad commit
-commit e9193059b1b3733695d5b80e667778311695aa73
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Sun Jun 6 23:16:34 2010 -0400
-
-    hostfs: fix races in dentry_name() and inode_name()
-
-    calculating size, then doing allocation, then filling the
-    path is a Bad Idea(tm), since the ancestors can be renamed,
-    leading to buffer overrun.
-
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-
-In addition, reverting just that commit allows hostfs to be used with
-2.6.36-rc1. Though, there seems to be some additional issues with
-symlinks, so there could be something else related to this change that
-is actually causing the problems. The other issues result in memory
-allocation failing when reading symlinks:
-
-# ls /mnt/host/
-ls: cannot read symbolic link /mnt/host/vmlinuz: Cannot allocate memory
-ls: cannot read symbolic link /mnt/host/vmlinuz.old: Cannot allocate memory
-
-(this is not only limited to ls; "ln -s p.patch a.patch; cat a.patch"
-results in same from cat)
-
-Other than that, hostfs seems to be working, though.
-
-Any idea what caused this regression and how to fix it properly? I can
-work around this by reverting the patch pointed out by git bisect, but
-surely that is not the proper fix for the issues.
-
-- Jouni
+	Arnd
