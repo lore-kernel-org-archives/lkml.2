@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600Ab0HQW3H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 18:29:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48653 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab0HQW3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 18:29:03 -0400
-Date: Tue, 17 Aug 2010 18:28:47 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 23/39] fallthru: ext2 fallthru support
-Message-ID: <20100817222847.GJ5556@shell>
-References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-24-git-send-email-vaurora@redhat.com> <E1Ojufy-0004Df-PA@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
+	id S1751641Ab0HQWai (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 18:30:38 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:64610 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab0HQWad (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 18:30:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FUUnZoGXEoIz2GVv2TzwE9BH+ZnhikIXc23feKsabbfQSqP4bngrRmOHT1Y8M0DzPV
+         zOWMZaFYTorHMC4hARdegUuMtbub+J1Fc5TRJ2p+/rGGC8xNKs+dhMmIaq0mr7Q3Jm4+
+         pz2Ea4cdfphDwe+e3JSAQNq7ZJo1d/m4el2UY=
+Date: Wed, 18 Aug 2010 00:30:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Marin Mitov <mitov@issp.bas.bg>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Benton <b3nton@gmail.com>
+Subject: Re: [BUG][reiserfs] page fault during kernel boot
+Message-ID: <20100817223026.GB5461@nowhere>
+References: <201008171125.25956.mitov@issp.bas.bg>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1Ojufy-0004Df-PA@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <201008171125.25956.mitov@issp.bas.bg>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 03:52:02PM +0200, Miklos Szeredi wrote:
-> On Sun,  8 Aug 2010, Valerie Aurora wrote:
-> > Add support for fallthru directory entries to ext2.
+On Tue, Aug 17, 2010 at 11:25:25AM +0300, Marin Mitov wrote:
+> Hi all,
 > 
-> This still doesn't work correctly, only now after unmounting/mounting
-> the top layer the directory appears empty:
+> The function: reiserfs_evict_inode() ends with:
+> 
+> <snip>
+> out:
+> 	end_writeback(inode);	/* note this must go after the journal_end to prevent deadlock */
+> 	dquot_drop(inode);
+> 	inode->i_blocks = 0;
+> 	reiserfs_write_unlock_once(inode->i_sb, depth);
+> 
+> no_delete:
+> 	end_writeback(inode);
+> 	dquot_drop(inode);
+> }
+> <snip>
+> 
+> When goto out path is taken,
+> 
+> end_writeback(inode);
+> dquot_drop(inode);
+> 
+> are executed twice, leading to page fault (in my case) during the kernel boot.
+> 
+> Add return; before no_delete label (but I am not quite sure that this is correct :-).
+> 
+> Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
 
-Thanks, I will look into this.
 
--VAL
+In fact the sam patch has been submitted and applied to the vfs tree already:
 
-> uml:~# mount -oloop -r ext3.img /mnt/img/
-> uml:~# losetup /dev/loop2  ovl.img  
-> uml:~# /host/store/git/e2fsprogs/misc/mke2fs -O whiteout,fallthru /dev/loop2
-> mke2fs 1.41.12 (17-May-2010)
-> Filesystem label=
-> OS type: Linux
-> Block size=1024 (log=0)
-> Fragment size=1024 (log=0)
-> Stride=0 blocks, Stripe width=0 blocks
-> 1280 inodes, 10240 blocks
-> 512 blocks (5.00%) reserved for the super user
-> First data block=1
-> Maximum filesystem blocks=10485760
-> 2 block groups
-> 8192 blocks per group, 8192 fragments per group
-> 640 inodes per group
-> Superblock backups stored on blocks: 
->         8193
-> 
-> Allocating group tables: done                            
-> Writing inode tables: done                            
-> Writing superblocks and filesystem accounting information: done
-> 
-> This filesystem will be automatically checked every 24 mounts or
-> 180 days, whichever comes first.  Use tune2fs -c or -i to override.
-> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> uml:~# "ls" /mnt/img
-> lost+found  union
-> uml:~# "ls" /mnt/img/union
-> 1  2  3
-> uml:~# umount /mnt/img
-> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> uml:~# ls -l /mnt/img/
-> total 13
-> drwx------ 2 root root 12288 Aug 13 13:42 lost+found
-> drwxr-xr-x 2 root root  1024 Aug 13 13:42 union
-> uml:~# ls -la /mnt/img/union/
-> total 2
-> drwxr-xr-x 2 root root 1024 Aug 13 13:42 .
-> drwxr-xr-x 4 root root 1024 Aug 13 13:42 ..
-> uml:~# grep /mnt/img /proc/self/mountinfo 
-> 21 12 7:0 / /mnt/img ro,relatime - ext3 /dev/loop0 ro,errors=continue,barrier=0,data=writeback
-> 22 21 7:2 / /mnt/img rw,relatime,union - ext2 /dev/loop2 rw,errors=continue
-> 
-> Thanks,
-> Miklos
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+http://lkml.org/lkml/2010/8/11/98
+
+The patch will probably reach mainline soon.
+
+Thanks.
+
