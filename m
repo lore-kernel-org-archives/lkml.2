@@ -1,144 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751971Ab0HQFm2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 01:42:28 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56831 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab0HQFm0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 01:42:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gKuvd736FOcgDHj1fdcD7oqnweM51tFgeXzGbyfNbA3KbBgcLU+ZrTfABbDAnszJ8Z
-         +MafngOwOBw40giiT1GPc1FUtSKY/NVZKeMh2BE57vMzm4f6L6CQx5Vs7WOiHapSzfwF
-         4sCNVKWTgcMlC26Nvn9jZKkeluKJufbzPkMm4=
-Date: Tue, 17 Aug 2010 13:46:40 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kbuild@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: fix warnings in fgets/fwrite usage
-Message-ID: <20100817054640.GD5095@cr0.nay.redhat.com>
-References: <1281592579-343-1-git-send-email-vapier@gentoo.org>
+	id S1754647Ab0HQFs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 01:48:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54594 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751637Ab0HQFs0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 01:48:26 -0400
+Message-ID: <4C6A23C2.9020606@cn.fujitsu.com>
+Date: Tue, 17 Aug 2010 13:53:06 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1281592579-343-1-git-send-email-vapier@gentoo.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] tracing: Simplify seqfile code for format file
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Aug 12, 2010 at 01:56:19AM -0400, Mike Frysinger wrote:
->Add some helper functions that abort on failure, and change the fwrite
->and fget calls to use those.  This should kill off all the ugly gcc
->warnings that some distros emit about ignoring return values due to
->usage of warn_unused_result attributes.
->
->Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+We don't have to use the trick that marks a pointer's LSB to
+distinguish event fields from common fields.
 
-Looks good to me,
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ kernel/trace/trace_events.c |   55 ++++++++++++++-----------------------------
+ 1 files changed, 18 insertions(+), 37 deletions(-)
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 4c758f1..398c0e8 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -600,21 +600,29 @@ out:
+ 
+ enum {
+ 	FORMAT_HEADER		= 1,
+-	FORMAT_PRINTFMT		= 2,
++	FORMAT_FIELD_SEPERATOR	= 2,
++	FORMAT_PRINTFMT		= 3,
+ };
+ 
+ static void *f_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+ 	struct ftrace_event_call *call = m->private;
+ 	struct ftrace_event_field *field;
+-	struct list_head *head;
++	struct list_head *common_head = &ftrace_common_fields;
++	struct list_head *head = trace_get_fields(call);
+ 
+ 	(*pos)++;
+ 
+ 	switch ((unsigned long)v) {
+ 	case FORMAT_HEADER:
+-		head = &ftrace_common_fields;
++		if (unlikely(list_empty(common_head)))
++			return NULL;
++
++		field = list_entry(common_head->prev,
++				   struct ftrace_event_field, link);
++		return field;
+ 
++	case FORMAT_FIELD_SEPERATOR:
+ 		if (unlikely(list_empty(head)))
+ 			return NULL;
+ 
+@@ -626,31 +634,10 @@ static void *f_next(struct seq_file *m, void *v, loff_t *pos)
+ 		return NULL;
+ 	}
+ 
+-	head = trace_get_fields(call);
+-
+-	/*
+-	 * To separate common fields from event fields, the
+-	 * LSB is set on the first event field. Clear it in case.
+-	 */
+-	v = (void *)((unsigned long)v & ~1L);
+-
+ 	field = v;
+-	/*
+-	 * If this is a common field, and at the end of the list, then
+-	 * continue with main list.
+-	 */
+-	if (field->link.prev == &ftrace_common_fields) {
+-		if (unlikely(list_empty(head)))
+-			return NULL;
+-		field = list_entry(head->prev, struct ftrace_event_field, link);
+-		/* Set the LSB to notify f_show to print an extra newline */
+-		field = (struct ftrace_event_field *)
+-			((unsigned long)field | 1);
+-		return field;
+-	}
+-
+-	/* If we are done tell f_show to print the format */
+-	if (field->link.prev == head)
++	if (field->link.prev == common_head)
++		return (void *)FORMAT_FIELD_SEPERATOR;
++	else if (field->link.prev == head)
+ 		return (void *)FORMAT_PRINTFMT;
+ 
+ 	field = list_entry(field->link.prev, struct ftrace_event_field, link);
+@@ -688,22 +675,16 @@ static int f_show(struct seq_file *m, void *v)
+ 		seq_printf(m, "format:\n");
+ 		return 0;
+ 
++	case FORMAT_FIELD_SEPERATOR:
++		seq_putc(m, '\n');
++		return 0;
++
+ 	case FORMAT_PRINTFMT:
+ 		seq_printf(m, "\nprint fmt: %s\n",
+ 			   call->print_fmt);
+ 		return 0;
+ 	}
+ 
+-	/*
+-	 * To separate common fields from event fields, the
+-	 * LSB is set on the first event field. Clear it and
+-	 * print a newline if it is set.
+-	 */
+-	if ((unsigned long)v & 1) {
+-		seq_putc(m, '\n');
+-		v = (void *)((unsigned long)v & ~1L);
+-	}
+-
+ 	field = v;
+ 
+ 	/*
+-- 
+1.6.3
 
-
->---
-> scripts/kconfig/conf.c     |    4 ++--
-> scripts/kconfig/confdata.c |    2 +-
-> scripts/kconfig/expr.c     |    2 +-
-> scripts/kconfig/lkc.h      |   24 ++++++++++++++++++++++++
-> 4 files changed, 28 insertions(+), 4 deletions(-)
->
->diff --git a/scripts/kconfig/conf.c b/scripts/kconfig/conf.c
->index 274f271..b382a39 100644
->--- a/scripts/kconfig/conf.c
->+++ b/scripts/kconfig/conf.c
->@@ -108,7 +108,7 @@ static int conf_askvalue(struct symbol *sym, const char *def)
-> 		check_stdin();
-> 	case oldaskconfig:
-> 		fflush(stdout);
->-		fgets(line, 128, stdin);
->+		xfgets(line, 128, stdin);
-> 		return 1;
-> 	default:
-> 		break;
->@@ -306,7 +306,7 @@ static int conf_choice(struct menu *menu)
-> 			check_stdin();
-> 		case oldaskconfig:
-> 			fflush(stdout);
->-			fgets(line, 128, stdin);
->+			xfgets(line, 128, stdin);
-> 			strip(line);
-> 			if (line[0] == '?') {
-> 				print_help(menu);
->diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
->index f81f263..7d9f271 100644
->--- a/scripts/kconfig/confdata.c
->+++ b/scripts/kconfig/confdata.c
->@@ -412,7 +412,7 @@ static void conf_write_string(bool headerfile, const char *name,
-> 	while (1) {
-> 		l = strcspn(str, "\"\\");
-> 		if (l) {
->-			fwrite(str, l, 1, out);
->+			xfwrite(str, l, 1, out);
-> 			str += l;
-> 		}
-> 		if (!*str)
->diff --git a/scripts/kconfig/expr.c b/scripts/kconfig/expr.c
->index 8f18e37..330e7c0 100644
->--- a/scripts/kconfig/expr.c
->+++ b/scripts/kconfig/expr.c
->@@ -1087,7 +1087,7 @@ void expr_print(struct expr *e, void (*fn)(void *, struct symbol *, const char *
-> 
-> static void expr_print_file_helper(void *data, struct symbol *sym, const char *str)
-> {
->-	fwrite(str, strlen(str), 1, data);
->+	xfwrite(str, strlen(str), 1, data);
-> }
-> 
-> void expr_fprint(struct expr *e, FILE *out)
->diff --git a/scripts/kconfig/lkc.h b/scripts/kconfig/lkc.h
->index 76db065..a3bd66a 100644
->--- a/scripts/kconfig/lkc.h
->+++ b/scripts/kconfig/lkc.h
->@@ -169,6 +169,30 @@ static inline bool sym_has_value(struct symbol *sym)
-> 	return sym->flags & SYMBOL_DEF_USER ? true : false;
-> }
-> 
->+#define internal_error(fmt, args...) \
->+do { \
->+	fprintf(stderr, "%s:%s:%i: %s: " fmt "\n", __FILE__, \
->+		__func__, __LINE__, _("internal error"), ## args); \
->+	exit(1); \
->+} while (0)
->+
->+#define xfwrite(ptr, size, nmemb, stream) \
->+({ \
->+	size_t _nmemb = (nmemb); \
->+	size_t ret = fwrite(ptr, size, _nmemb, stream); \
->+	if (ret != _nmemb) \
->+		internal_error("%s", _("fwrite() came up short")); \
->+	ret; \
->+})
->+
->+#define xfgets(s, size, stream) \
->+({ \
->+	char *ret = fgets(s, size, stream); \
->+	if (ret == NULL) \
->+		internal_error("%s", _("fgets() came up short")); \
->+	ret; \
->+})
->+
-> #ifdef __cplusplus
-> }
-> #endif
->-- 
->1.7.2
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
