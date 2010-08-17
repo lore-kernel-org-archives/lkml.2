@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757408Ab0HQIte (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:49:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40132
+	id S1757430Ab0HQIuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:50:22 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36314
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757274Ab0HQIta (ORCPT
+	by vger.kernel.org with ESMTP id S1757304Ab0HQItN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:49:30 -0400
-Date: Tue, 17 Aug 2010 01:49:48 -0700 (PDT)
-Message-Id: <20100817.014948.28794999.davem@davemloft.net>
+	Tue, 17 Aug 2010 04:49:13 -0400
+Date: Tue, 17 Aug 2010 01:49:31 -0700 (PDT)
+Message-Id: <20100817.014931.48526582.davem@davemloft.net>
 To: julia@diku.dk
-Cc: chas@cmf.nrl.navy.mil, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+Cc: florian@openwrt.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 28/42] drivers/atm: Adjust confusing if indentation
+Subject: Re: [PATCH 38/42] drivers/net: Adjust confusing if indentation
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <Pine.LNX.4.64.1008052225070.31692@ask.diku.dk>
-References: <Pine.LNX.4.64.1008052225070.31692@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1008052228120.31692@ask.diku.dk>
+References: <Pine.LNX.4.64.1008052228120.31692@ask.diku.dk>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
