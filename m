@@ -1,35 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751479Ab0HQVBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 17:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37691 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025Ab0HQVBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 17:01:51 -0400
-Message-ID: <4C6AF8B9.3010000@redhat.com>
-Date: Tue, 17 Aug 2010 17:01:45 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.1
+	id S1751508Ab0HQVDS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 17:03:18 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57801 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751025Ab0HQVDN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 17:03:13 -0400
+Date: Tue, 17 Aug 2010 22:03:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Bobby Crabtree <bobbyc@codeaurora.org>
+Cc: lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: regulator voltage aggregation
+Message-ID: <20100817210312.GD5755@opensource.wolfsonmicro.com>
+References: <4C6ACF92.7050506@codeaurora.org> <20100817181557.GA5755@opensource.wolfsonmicro.com> <4C6AE40D.7090206@codeaurora.org> <20100817195008.GC5755@opensource.wolfsonmicro.com> <4C6AF4B4.4060004@codeaurora.org>
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>
-CC: Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] transparent hugepage sysfs meminfo
-References: <20100803135615.GG6071@random.random> <alpine.DEB.2.00.1008171343570.972@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1008171343570.972@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6AF4B4.4060004@codeaurora.org>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2010 04:56 PM, David Rientjes wrote:
-> Add hugepage statistics to per-node sysfs meminfo
->
-> Cc: Rik van Riel<riel@redhat.com>
-> Signed-off-by: David Rientjes<rientjes@google.com>
+On Tue, Aug 17, 2010 at 01:44:36PM -0700, Bobby Crabtree wrote:
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+> Only remaining question I have is if the aggregation of
+> multiple consumer constraints should be the default (and only)
+> behavior. Or should we introduce a new flag to the
+> regulator_constraints structure that tells the core to aggregate
+> consumer voltages constraints?
 
--- 
-All rights reversed
+I'd say make it the only behaviour - if there is only one consumer it
+decays into the same behaviour as we have currently, and since voltage
+changes need to be explicitly enabled by the machine constraints it
+should not affect any existing machines.
+
+One thing to take account of is an attempt to set a constraint which
+can't be accomodated by the other enabled devices, or enable a device
+which has constraints outside the currently allowed range.
