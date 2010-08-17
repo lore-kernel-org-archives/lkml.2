@@ -1,122 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757566Ab0HQQzP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:55:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44208 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754750Ab0HQQzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:55:10 -0400
-Message-ID: <4C6ABE12.40705@kernel.org>
-Date: Tue, 17 Aug 2010 18:51:30 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org> <20100817140734.GA30768@redhat.com>
-In-Reply-To: <20100817140734.GA30768@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 16:54:42 +0000 (UTC)
+	id S1757655Ab0HQQ6e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:58:34 -0400
+Received: from santostefano.inria.fr ([193.51.192.151]:60985 "HELO
+	santostefano.inria.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755088Ab0HQQ6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:58:33 -0400
+X-Greylist: delayed 1941 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Aug 2010 12:58:32 EDT
+Subject: Re: Usage of checkpatch.pl for other projects
+From: Sylvestre Ledru <sylvestre.ledru@scilab.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daniel Walker <dwalker@fifo99.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100817160123.GL6193@shadowen.org>
+References: <1269337074.12129.4674.camel@korcula.inria.fr>
+	 <20100817160123.GL6193@shadowen.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 18:16:20 +0200
+Message-ID: <1282061780.13818.3009.camel@zlarin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 08/17/2010 04:07 PM, Mike Snitzer wrote:
->> With the patch applied, there's no second flush.  Those requests would
->> now be REQ_FLUSH + REQ_DISCARD.  The first can't be avoided anyway and
->> there won't be the second flush to begin with, so I don't think this
->> worsens anything.
+Le mardi 17 août 2010 à 17:01 +0100, Andy Whitcroft a écrit :
+> On Tue, Mar 23, 2010 at 10:37:54AM +0100, Sylvestre Ledru wrote:
+> > Hello,
+> > 
+> > I saw the very interesting presentation of Greg at the last FOSDEM where
+> > he explained how to write a patch of the kernel. 
+> > 
+> > During his presentation, he presented the script checkpatch.pl which
+> > checks the coding style of a patch / file. 
+> > 
+> > For a while, I have been looking for such script which can check the
+> > compliance of a source code against a coding policy.
+> > 
+> > Obviously, the coding style of my project is not exactly the same as he
+> > Kernel one. 
+> > 
+> > Therefor, I would like to know if there is any plan of making a
+> > dedicated project of this piece of software to allow usage of it for
+> > other projects.
+> > If it is not the case, is it possible to contribute to change the
+> > behavior of the policy check (of course, disable by default for kernel
+> > hackers) ?
 > 
-> Makes sense, but your patches still need to be refreshed against the
-> latest (2.6.36-rc1) upstream code.  Numerous changes went in to DM
-> recently.
+> An interesting question.  Cirtianly most of its behaviour is kernel
+> centric.  The source kinda lives outside the kernel with its tests
+Is there a dedicated website for this project ?
 
-Sure thing.  The block part isn't fixed yet and so the RFC tag.  Once
-the block layer part is settled, it probably should be pulled into
-dm/md and other trees and conversions should happen there.
+> so could be consumed by other projects (though we do keep a copy in the
+> kernel tree too).  If changes could be conditional on the project I
+> could see it being possible.  What sort of differences are you thinking
+> about.
+At first, mainly basic things like space or not before a brace, if a
+brace should be on the same line as the if or not, etc. This kind of
+basic things.
 
->> Yeap, I want you to be concerned. :-) This was the first time I looked
->> at the dm code and there are many different disjoint code paths and I
->> couldn't fully follow or test all of them, so it definitely needs a
->> careful review from someone who understands the whole thing.
-> 
-> You'll need Mikulas (bio-based) and NEC (request-based, Kiyoshi and
-> Jun'ichi) to give it serious review.
-
-Oh, you already cc'd them.  Great.  Hello, guys, the original thread
-is
-
-  http://thread.gmane.org/gmane.linux.raid/29100
-
-> NOTE: NEC has already given some preliminary feedback to hch in the
-> "[PATCH, RFC 2/2] dm: support REQ_FLUSH directly" thread:
-> https://www.redhat.com/archives/dm-devel/2010-August/msg00026.html
-> https://www.redhat.com/archives/dm-devel/2010-August/msg00033.html
-
-Hmmm... I think both issues don't exist in this incarnation of
-conversion although I'm fairly sure there will be other issues.  :-)
-
->>     A related question: Is dm_wait_for_completion() used in
->>     process_flush() safe against starvation under continuous influx of
->>     other commands?
->
-> As for your specific dm_wait_for_completion() concern -- I'll defer to
-> Mikulas.  But I'll add: we haven't had any reported starvation issues
-> with DM's existing barrier support.  DM uses a mempool for its clones,
-> so it should naturally throttle (without starvation) when memory gets
-> low.
-
-I see but single pending flush and steady write streams w/o saturating
-the mempool would be able to stall dm_wait_for_completeion(), no?  Eh
-well, it's a separate issue, I guess.
-
->>   * Guarantee that REQ_FLUSH w/ data never reaches targets (this in
->>     part is to put it in alignment with request based dm).
-> 
-> bio-based DM already split the barrier out from the data (in
-> process_barrier).  You've renamed process_barrier to process_flush and
-> added the REQ_FLUSH logic like I'd expect.
-
-Yeah and threw in WARN_ON() there to make sure REQ_FLUSH + data bios
-don't slip through for whatever reason.
-
->> * For request based dm:
->>
->>   * The sequencing is done by the block layer for the top level
->>     request_queue, so the only things request based dm needs to make
->>     sure is 1. handling empty REQ_FLUSH correctly (block layer will
->>     only send down empty REQ_FLUSHes) and 2. propagate REQ_FUA bit to
->>     member devices.
-> 
-> OK, so seems 1 is done, 2 is still TODO.  Looking at your tree it seems
-> 2 would be as simple as using the following in
-
-Oh, I was talking about the other way around.  Passing REQ_FUA in
-bio->bi_rw down to member request_queues.  Sometimes while
-constructing clone / split bios, the bit is lost (e.g. md raid5).
-
-> dm_init_request_based_queue (on the most current upstream dm.c):
-> blk_queue_flush(q, REQ_FLUSH | REQ_FUA);
-> (your current patch only sets REQ_FLUSH in alloc_dev).
-
-Yeah, but for that direction, just adding REQ_FUA to blk_queue_flush()
-should be enough.  I'll add it.
-
-Thanks.
+Sylvestre
 
 -- 
-tejun
+-------------------------
+Sylvestre Ledru
+-------------------------
+The Scilab Consortium
+Digiteo
+Domaine de Voluceau
+Rocquencourt - B.P. 105
+78153 Le Chesnay Cedex
+France
+
