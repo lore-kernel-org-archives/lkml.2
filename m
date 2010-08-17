@@ -1,84 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753546Ab0HQHqU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 03:46:20 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36883 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751940Ab0HQHqS convert rfc822-to-8bit (ORCPT
+	id S1753187Ab0HQHtS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 03:49:18 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:52680 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab0HQHtR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 03:46:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Udm+WWNYF/n6g23YWRhDvbITuhEmH/dzU0PaRYnufKR2yKhyNqPDuiK2IZgSH0DjHx
-         vuY4N6g7+WQECXiVLmXmwJUmKd9qfpXns3ixpIZ6XVnjEn4p6Fqf+MHIqhVvKllmcanm
-         UvsOylglgwJUsdZIQWzZ93krC7uYZ7j5susBc=
+	Tue, 17 Aug 2010 03:49:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikj2kqifwYo1c47+9knVejny1bR=Oe5yOkAchCk@mail.gmail.com>
-References: <20100812162218.GA21286@core.coreip.homeip.net>
-	<AANLkTikj2kqifwYo1c47+9knVejny1bR=Oe5yOkAchCk@mail.gmail.com>
-Date: Tue, 17 Aug 2010 09:46:17 +0200
-X-Google-Sender-Auth: -yfKwA92ajUX13uEgdzi2-hQf_g
-Message-ID: <AANLkTinGcY1mRm0pArB9we8M5o3Pc4DLWsk_ndOQC5GS@mail.gmail.com>
-Subject: Re: [PATCH] Input: fix faulty XXinput_* calls
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Daniel Mack <daniel@caiaq.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4C6A3E2D.3050601@monstr.eu>
+References: <20100817055754.20330.73078.stgit@angua> <4C6A3E2D.3050601@monstr.eu>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 17 Aug 2010 01:48:56 -0600
+X-Google-Sender-Auth: Rhy8i4XLaZ5HMtZgnWIE0BFm-NQ
+Message-ID: <AANLkTi=o+9mQeFWCvxkQNCZxvvfpkeXT9gEzvxZHhq_5@mail.gmail.com>
+Subject: Re: [PATCH] of: Fix missing includes
+To: monstr@monstr.eu
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 23:52, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> On Thu, Aug 12, 2010 at 18:22, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
->> From: Daniel Mack <daniel@caiaq.de>
+On Tue, Aug 17, 2010 at 1:45 AM, Michal Simek <monstr@monstr.eu> wrote:
+> Grant Likely wrote:
 >>
->> They've been introduced by 987a6c02 ("Input: switch to input_abs_*()
->> access functions") and they appear to be some kind of debug left-over.
+>> This patch fixes missing includes from a number of .c files because
+>> the code (wrongfully) depended on prom.h including them. �The include
+>> of linux/of_address.h was removed in microblaze prom.h in commit
+>> "of/address: Clean up function declarations" (sha1 id 22ae782f8), but
+>> not fixed in some users. �This patch fixes them up.
 >>
->> [Dmitry Torokhov: these are my fault - I added XX prefixes in places where
->>  I wanted to do additional review of the code but failed to actually do
->>  that in these particular instances.]
->>
->> Signed-off-by: Daniel Mack <daniel@caiaq.de>
->> Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 >> ---
 >>
->>  drivers/input/joystick/amijoy.c  |    2 +-
+>> Hi Michal, here's my patch that fixes the microblaze include issues. �I've
+>> got it in my merge-devicetree branch which I'll be asking Linus to pull on
+>> tommorrow after it has been through cross-arch build testing (unless I
+>> hear
+>> otherwise from you).
 >
-> Thanks, amijoy.c compiles now.
->
-> But hil_kbd.c still doesn't compile:
->
->> diff --git a/drivers/input/keyboard/hil_kbd.c b/drivers/input/keyboard/hil_kbd.c
->> index ddd5afd..dcc86b9 100644
->> --- a/drivers/input/keyboard/hil_kbd.c
->> +++ b/drivers/input/keyboard/hil_kbd.c
->> @@ -235,7 +235,7 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
->>                        if (val < input_abs_min(dev, ABS_X + i))
->>                                input_abs_set_min(dev, ABS_X + i, val);
->>                        if (val > input_abs_max(dev, ABS_X + i))
->
-> error: implicit declaration of function ‘input_abs_max’.
->
-> And indeed, input_abs_max() does not exist, while hil_kbd.c has 4 callers.
+> Tested-by: Michal Simek <monstr@monstr.eu>
 
-Ping? What should these input_abs_max() calls be?
+Thanks.
 
-Gr{oetje,eeting}s,
+> Miohal
 
-                        Geert
+Who is Miohal, and why is he at your keyboard?  :-D
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+g.
