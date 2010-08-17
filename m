@@ -1,180 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab0HQWnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 18:43:17 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:61653 "EHLO mx2.netapp.com"
+	id S1751792Ab0HQWxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 18:53:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59508 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750752Ab0HQWnI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 18:43:08 -0400
-X-IronPort-AV: E=Sophos;i="4.56,224,1280732400"; 
-   d="scan'208";a="430739830"
-Subject: Re: 2.6.35.2: NFS related Oops
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Cc: Bian Naimeng <biannm@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, stable@kernel.org
-In-Reply-To: <20100817171454.GB11366@os.inf.tu-dresden.de>
-References: <20100816215056.GA5376@os.inf.tu-dresden.de>
-	 <4C6A5FF1.3070209@cn.fujitsu.com>
-	 <20100817171454.GB11366@os.inf.tu-dresden.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Tue, 17 Aug 2010 18:43:05 -0400
-Message-ID: <1282084985.18385.24.camel@heimdal.trondhjem.org>
+	id S1751230Ab0HQWxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 18:53:43 -0400
+Date: Wed, 18 Aug 2010 08:53:33 +1000
+From: Neil Brown <neilb@suse.de>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+Message-ID: <20100818085333.02fa54d4@notabene>
+In-Reply-To: <20100817204430.GE5556@shell>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com>
+	<1281282776-5447-15-git-send-email-vaurora@redhat.com>
+	<20100810085641.2b9a714c@notabene>
+	<20100817204430.GE5556@shell>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 17 Aug 2010 22:43:07.0880 (UTC) FILETIME=[8FFD1680:01CB3E5D]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 19:14 +0200, Adam Lackorzynski wrote:
-> On Tue Aug 17, 2010 at 18:09:53 +0800, Bian Naimeng wrote:
-> >   Please try to apply the followed patch.
+On Tue, 17 Aug 2010 16:44:30 -0400
+Valerie Aurora <vaurora@redhat.com> wrote:
+
+> On Tue, Aug 10, 2010 at 08:56:41AM +1000, Neil Brown wrote:
+> > On Sun,  8 Aug 2010 11:52:31 -0400
+> > Valerie Aurora <vaurora@redhat.com> wrote:
+> > 
+> > 
+> > > +A union mount layers one read-write file system over one or more
+> > > +read-only file systems, with all writes going to the writable file
+> > > +system.  The namespace of both file systems appears as a combined
+> > > +whole to userland, with files and directories on the writable file
+> > > +system covering up any files or directories with matching pathnames on
+> > > +the read-only file system.  The read-write file system is the
+> > > +"topmost" or "upper" file system and the read-only file systems are
+> > > +the "lower" file systems.  A few use cases:
+> > > +
+> > > +- Root file system on CD with writes saved to hard drive (LiveCD)
+> > > +- Multiple virtual machines with the same starting root file system
+> > > +- Cluster with NFS mounted root on clients
+> > > +
+> > > +Most if not all of these problems could be solved with a COW block
+> > > +device or a clustered file system (include NFS mounts).  However, for
+> > > +some use cases, sharing is more efficient and better performing if
+> > > +done at the file system namespace level.  COW block devices only
+> > > +increase their divergence as time goes on, and a fully coherent
+> > > +writable file system is unnecessary synchronization overhead if no
+> > > +other client needs to see the writes.
+> > 
+> > Thanks for including lots of documentation!
+> > Given how intrusive this patch set is, I would really like the see the
+> > justification above fleshed out a bit more.
+> > 
+> > What would be particularly valuable would be real-life use cases where
+> > someone has put this to work and found that it genuinely meets a need.
+> > I realise there can be a bit of a chicken/egg issue there, but if you do have
+> > anything it would be good to include it.
 > 
-> Thanks, this fixes the Oops. Patch is required for both 2.6.35 and
-> 2.6.36 trees.
+> I felt the way you did until I talked to several users who explained
+> to me why none of the existing solutions worked well for their use
+> case.  The real-life use cases are those where people are currently
+> using unionfs and aufs, which include many live CDs, Linux appliances,
+> and at least three national lab computer clusters.  The best argument
+> for their need for a union file system is that they are using unionfs
+> and aufs despite the pain of using out-of-mainline code and (according
+> to the users I have spoken to) frequent crashes.  Union mounts is
+> intended as an in-mainline replacement for the existing users of
+> unionfs and aufs.
+
+You present a good argument that "something must be done", but it gives no
+pointers to what that something should be.
+I don't suppose it is possible to get that explanation you mention is writing?
+
 > 
->  
-> ----
->  
-> We we open a positive file just with O_EXCL but no O_CREAT, may cause kernel crash.
+> I'm not sure this needs to be in Documentation/ - at the point it is
+> merged into mainline, we will have already agreed on whether it is
+> necessary. :)
+
+However, until it is merged in to mainline it would be good to keep the
+justification of this change well documented so you don't have to repeat the
+same argument to every bozo who pops up and thinks they know better.
+Ultimately the git commit log (or even an lwn.net article) could well be a
+better place to store this rather than Documenation/, but I think there is
+still value in it being written.
+
+
 > 
-> Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
->  
-> ---
->  fs/nfs/dir.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->  
-> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-> index 29539ce..1a672dd 100644
-> --- a/fs/nfs/dir.c
-> +++ b/fs/nfs/dir.c
-> @@ -1100,7 +1100,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
->  		goto no_open_dput;
->  	openflags = nd->intent.open.flags;
->  	/* We cannot do exclusive creation on a positive dentry */
-> -	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
-> +	if (openflags & O_EXCL)
->  		goto no_open_dput;
->  	/* We can't create new files, or truncate existing ones here */
->  	openflags &= ~(O_CREAT|O_TRUNC);
-> -- 
+> > > +Non-features
+> > > +------------
+> > > +
+> > > +Features we do not currently plan to support in union mounts:
+> > > +
+> > > +Online upgrade: E.g., installing software on a file system NFS
+> > > +exported to clients while the clients are still up and running.
+> > > +Allowing the read-only bottom layer of a union mount to change
+> > > +invalidates our locking strategy.
+> > 
+> > I wonder if the restriction is not more serious than this.
+> > Given the prevalence of "copy-up", particularly of directories, I would think
+> > that even off-line upgrade would not be supported.
+> > If the upgrade adds a file in a directory that has already been read (and
+> > hence copied-up), or changes a file that has been chmodded, then the upgrade
+> > will not be completely visible, which sounds dangerous.
+> > 
+> > Don't you have to require (or strongly recommend) that the underlying
+> > filesystem remain unchanged while the on-top filesystem exists, not just
+> > while it is mounted ??
+> 
+> It is true, you have to know what you are doing and carefully groom
+> both file systems if you want to change the lower file system and get
+> the effect you intended.  Just updating the lower file system and
+> slapping the overlay back on will probably not accomplish what you
+> want.
+> 
+> But frankly, this is an impossible problem to solve generically at the
+> file system level. 
 
-Nope. The problem is the recent switch to LOOKUP_EXCL as the authority
-for whether or not we're doing an exclusive create.
+Absolutely right - no argument about that.
+I just think that should be explicit in the documentation.
+Right after the "Online upgrade" paragraph:
 
-Does the following patch work?
-
-Cheers
-  Trond
------------------------------------------------------------------------------------------------
-NFS: Fix an Oops in the NFSv4 atomic open code
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-Adam Lackorzynski reports:
-
-with 2.6.35.2 I'm getting this reproducible Oops:
-
-[  110.825396] BUG: unable to handle kernel NULL pointer dereference at
-(null)
-[  110.828638] IP: [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638] PGD be89f067 PUD bf18f067 PMD 0
-[  110.828638] Oops: 0000 [#1] SMP
-[  110.828638] last sysfs file: /sys/class/net/lo/operstate
-[  110.828638] CPU 2
-[  110.828638] Modules linked in: rtc_cmos rtc_core rtc_lib amd64_edac_mod
-i2c_amd756 edac_core i2c_core dm_mirror dm_region_hash dm_log dm_snapshot
-sg sr_mod usb_storage ohci_hcd mptspi tg3 mptscsih mptbase usbcore nls_base
-[last unloaded: scsi_wait_scan] 
-[  110.828638] 
-[  110.828638] Pid: 11264, comm: setchecksum Not tainted 2.6.35.2 #1
-[  110.828638] RIP: 0010:[<ffffffff811247b7>]  [<ffffffff811247b7>]
-encode_attrs+0x1a/0x2a4
-[  110.828638] RSP: 0000:ffff88003bf5b878  EFLAGS: 00010296
-[  110.828638] RAX: ffff8800bddb48a8 RBX: ffff88003bf5bb18 RCX:
-0000000000000000
-[  110.828638] RDX: ffff8800be258800 RSI: 0000000000000000 RDI:
-ffff88003bf5b9f8
-[  110.828638] RBP: 0000000000000000 R08: ffff8800bddb48a8 R09:
-0000000000000004
-[  110.828638] R10: 0000000000000003 R11: ffff8800be779000 R12:
-ffff8800be258800
-[  110.828638] R13: ffff88003bf5b9f8 R14: ffff88003bf5bb20 R15:
-ffff8800be258800
-[  110.828638] FS:  0000000000000000(0000) GS:ffff880041e00000(0063)
-knlGS:00000000556bd6b0
-[  110.828638] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[  110.828638] CR2: 0000000000000000 CR3: 00000000be8ef000 CR4:
-00000000000006e0
-[  110.828638] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[  110.828638] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[  110.828638] Process setchecksum (pid: 11264, threadinfo
-ffff88003bf5a000, task ffff88003f232210)
-[  110.828638] Stack:
-[  110.828638]  0000000000000000 ffff8800bfbcf920 0000000000000000
-0000000000000ffe
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000
-0000000000000000
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000
-0000000000000000
-[  110.828638] Call Trace:
-[  110.828638]  [<ffffffff81124c1f>] ? nfs4_xdr_enc_setattr+0x90/0xb4
-[  110.828638]  [<ffffffff81371161>] ? call_transmit+0x1c3/0x24a
-[  110.828638]  [<ffffffff813774d9>] ? __rpc_execute+0x78/0x22a
-[  110.828638]  [<ffffffff81371a91>] ? rpc_run_task+0x21/0x2b
-[  110.828638]  [<ffffffff81371b7e>] ? rpc_call_sync+0x3d/0x5d
-[  110.828638]  [<ffffffff8111e284>] ? _nfs4_do_setattr+0x11b/0x147
-[  110.828638]  [<ffffffff81109466>] ? nfs_init_locked+0x0/0x32
-[  110.828638]  [<ffffffff810ac521>] ? ifind+0x4e/0x90
-[  110.828638]  [<ffffffff8111e2fb>] ? nfs4_do_setattr+0x4b/0x6e
-[  110.828638]  [<ffffffff8111e634>] ? nfs4_do_open+0x291/0x3a6
-[  110.828638]  [<ffffffff8111ed81>] ? nfs4_open_revalidate+0x63/0x14a
-[  110.828638]  [<ffffffff811056c4>] ? nfs_open_revalidate+0xd7/0x161
-[  110.828638]  [<ffffffff810a2de4>] ? do_lookup+0x1a4/0x201
-[  110.828638]  [<ffffffff810a4733>] ? link_path_walk+0x6a/0x9d5
-[  110.828638]  [<ffffffff810a42b6>] ? do_last+0x17b/0x58e
-[  110.828638]  [<ffffffff810a5fbe>] ? do_filp_open+0x1bd/0x56e
-[  110.828638]  [<ffffffff811cd5e0>] ? _atomic_dec_and_lock+0x30/0x48
-[  110.828638]  [<ffffffff810a9b1b>] ? dput+0x37/0x152
-[  110.828638]  [<ffffffff810ae063>] ? alloc_fd+0x69/0x10a
-[  110.828638]  [<ffffffff81099f39>] ? do_sys_open+0x56/0x100
-[  110.828638]  [<ffffffff81027a22>] ? ia32_sysret+0x0/0x5
-[  110.828638] Code: 83 f1 01 e8 f5 ca ff ff 48 83 c4 50 5b 5d 41 5c c3 41
-57 41 56 41 55 49 89 fd 41 54 49 89 d4 55 48 89 f5 53 48 81 ec 18 01 00 00
-<8b> 06 89 c2 83 e2 08 83 fa 01 19 db 83 e3 f8 83 c3 18 a8 01 8d
-[  110.828638] RIP  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638]  RSP <ffff88003bf5b878>
-[  110.828638] CR2: 0000000000000000
-[  112.840396] ---[ end trace 95282e83fd77358f ]---
-
-It looks as if Al Viro's commit 3516586a424ea5727be089da6541cbd5644f0497
-(make O_EXCL in nd->intent.flags visible in nd->flags) missed a case.
-
-Cc: stable@kernel.org
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
-
- fs/nfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  Even off-line upgrade - e.g. installing software on an exported filesystem
+  and the remounting that on client and union-mounting a pre-existing over
+  lay on top of it - is significantly non-trivial and would require
+  significant extra management software to created a working solution.
+ (or something like that, but more that just one long sentence).
 
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index bd91b27..275efac 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1107,7 +1107,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
- 		goto no_open_dput;
- 	openflags = nd->intent.open.flags;
- 	/* We cannot do exclusive creation on a positive dentry */
--	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
-+	if (nd->flags & LOOKUP_EXCL)
- 		goto no_open_dput;
- 	/* We can't create new files, or truncate existing ones here */
- 	openflags &= ~(O_CREAT|O_TRUNC);
+> 
+> > As a counter-position for you or others to write cogent arguments against,
+> > and to then include those arguments in the justification section,  I would
+> > like to present my preferred approach, which is essentially that the problem
+> > is better solved at the block layer or the distro layer.
+> 
+> I personally like the block layer solution better and would be
+> happiest if all unionfs and aufs users switched to it and no one
+> needed union mounts. :) This is one case where the author is not in
+> love with the solution.  I'm not going to argue for the need for it
+> beyond noting the existing unionfs and aufs user base.
+
+That may be enough justification to work on this as a research project, but I
+don't think it is enough justification to merge it into mainline.
+
+Just because aufs might be the best available solution to a particular problem
+doesn't mean that making a better aufs (aka VFS union mounts) will be the best
+possible solution.  That can only be determine if the key needs, and the
+problems with all available solutions, are publicly known.
+
+Thanks,
+NeilBrown
 
