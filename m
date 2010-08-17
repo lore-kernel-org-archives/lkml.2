@@ -1,73 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab0HQCln (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 22:41:43 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:43001 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744Ab0HQClm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 22:41:42 -0400
-Date: Tue, 17 Aug 2010 11:37:19 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/9] Hugepage migration (v2)
-Message-ID: <20100817023719.GC12736@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.DEB.2.00.1008110806070.673@router.home>
- <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
- <alpine.DEB.2.00.1008130744550.27542@router.home>
- <20100816091935.GB3388@spritzera.linux.bs1.fc.nec.co.jp>
- <alpine.DEB.2.00.1008160707420.11420@router.home>
+	id S1755104Ab0HQClr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 22:41:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57102 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754995Ab0HQClo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 22:41:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,379,1278313200"; 
+   d="scan'208";a="648410365"
+Date: Tue, 17 Aug 2010 10:41:40 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Nikanth Karthikesan <knikanth@suse.de>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>,
+        Peter Staubach <staubach@redhat.com>
+Subject: Re: [RFC][PATCH] Per file dirty limit throttling
+Message-ID: <20100817024140.GB13916@localhost>
+References: <201008160949.51512.knikanth@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008160707420.11420@router.home>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <201008160949.51512.knikanth@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 07:19:58AM -0500, Christoph Lameter wrote:
-> On Mon, 16 Aug 2010, Naoya Horiguchi wrote:
-> 
-> > In my understanding, in current code "other processors increasing refcount
-> > during migration" can happen both in non-hugepage direct I/O and in hugepage
-> > direct I/O in the similar way (i.e. get_user_pages_fast() from dio_refill_pages()).
-> > So I think there is no specific problem to hugepage.
-> > Or am I missing your point?
-> 
-> With a single page there is the check of the refcount during migration
-> after all the references have been removed (at that point the page is no
-> longer mapped by any process and direct iO can no longer be
-> initiated without a page fault.
+On Mon, Aug 16, 2010 at 12:19:50PM +0800, Nikanth Karthikesan wrote:
+> When the total dirty pages exceed vm_dirty_ratio, the dirtier is made to do
+> the writeback. But this dirtier may not be the one who took the system to this
+> state. Instead, if we can track the dirty count per-file, we could throttle
+> the dirtier of a file, when the file's dirty pages exceed a certain limit.
+> Even though this dirtier may not be the one who dirtied the other pages of
+> this file, it is fair to throttle this process, as it uses that file.
 
-The same checking mechanism works for hugeapge.
+Nikanth, there's a more elegant solution in upstream kernel.
+See the comment for task_dirty_limit() in commit 1babe1838.
 
-> 
-> I see that you are running try_to_unmap() from unmap_and_move_huge_page().
-
-Yes, that's right.
-
-> 
-> I dont see a patch adding huge page support to try_to_unmap though. How
-> does this work?
-
-I previously posted "hugetlb, rmap: add reverse mapping for hugepage" patch
-which enables try_to_unmap() to work on hugepage by enabling to handle
-anon_vma and mapcount for hugepage. For details refer to the following commit:
-
-  commit 0fe6e20b9c4c53b3e97096ee73a0857f60aad43f
-  Author: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-  Date:   Fri May 28 09:29:16 2010 +0900
-  hugetlb, rmap: add reverse mapping for hugepage
-
-(Current "Hugepage migration" patchset is based on 2.6.35-rc3.
-So I'll rebase it onto the latest release in the next post.)
+NFS may want to limit per-file dirty pages, to prevent long stall time
+inside the nfs_getattr()->filemap_write_and_wait() calls (and problems
+like that). Peter Staubach has similar ideas on it.
 
 Thanks,
-Naoya Horiguchi
+Fengguang
