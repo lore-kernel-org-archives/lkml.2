@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab0HQXj7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 19:39:59 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40813
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750912Ab0HQXjz (ORCPT
+	id S1751603Ab0HQXqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 19:46:55 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:54234 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179Ab0HQXqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 19:39:55 -0400
-Date: Tue, 17 Aug 2010 16:40:13 -0700 (PDT)
-Message-Id: <20100817.164013.193700583.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: tony.luck@intel.com, walken@google.com, dhowells@redhat.com,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: tasks getting stuck on mmap_sem?
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikcaVKnJxC18tUcJRTQwAukYhPdWMgGGrNaVjM_@mail.gmail.com>
-References: <AANLkTinO5yip7agVO3Lq3YLjDYmkB9MP14xjt3TusMfW@mail.gmail.com>
-	<AANLkTik9qUf_F0NDoW2SBjWGHk2=ZdvkLrCORu3gGa2o@mail.gmail.com>
-	<AANLkTikcaVKnJxC18tUcJRTQwAukYhPdWMgGGrNaVjM_@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Tue, 17 Aug 2010 19:46:49 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C6B1F63.9050703@np.css.fujitsu.com>
+Date: Wed, 18 Aug 2010 08:46:43 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        LKLM <linux-kernel@vger.kernel.org>, ACPI <linux-acpi@vger.kernel.org>
+Subject: [PATCH 1/2] [Patch-next -v2] ACPI, APEI Fix the return value(==NULL)
+ of acpi_pre_map().
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Aug 2010 14:28:49 -0700
+acpi_pre_map() is used for remapping the physical address of I/O, so
+it should be return NULL or remapped virtual address. The problem is
+that when (paddr - pg_off) equals 0, no matter whether I/O remapping is
+successful or not, the function returns NULL.
 
-> Oh, and it strikes me when looking at the sparc rwsem-const.h that it
-> has some unsigned constants in it. I think
-> 
->   #define RWSEM_WAITING_BIAS              0xffff0000
-> 
-> is actually unsigned, because it's a hex constant that doesn't fit in
-> a signed int. So it's of type 'unsigned int' if I recall the C type
-> rules right.
+In acpi_pre_map(), after the physical address is remapped sucessfully,
+it will check whether the physical address has been added into acpi_iomaps
+list again.
+   - If the physical address has beed added into acpi_iomaps, the virtual
+     address will be saved in vaddr.
+   - Otherwise, NULL be saved in vaddr.
 
-You were right all along, of course.  Nice spotting.
+So if the physical address is the first time to be remapped, vaddr will be
+NULL always.
 
-Something was messed up with my testing methodology last night such
-that I didn't test the revert of the lib/rwsem.c changes properly.
-Those actually did in fact introduce the problem.
+In many cases, (paddr - pg_off) may not equal 0. So the function could work
+well. In our machine, (paddr - pg_off) equals 0, so the return value of
+acpi_pre_map() is NULL.
 
-And fixing these sparc rwsem values to be signed constants fixes the bug.
+This patch fixed it and I confirmed it on x86_64 next-tree.
 
-Thanks guys.
+Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+---
+ drivers/acpi/atomicio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 8f8bd73..1bc2614 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -133,7 +133,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 
+ 	spin_lock_irqsave(&acpi_iomaps_lock, flags);
+ 	vaddr = __acpi_try_ioremap(paddr, size);
+-	if (vaddr) {
++	if (unlikely(vaddr)) {
+ 		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+ 		iounmap(map->vaddr);
+ 		kfree(map);
+@@ -142,7 +142,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
+ 	list_add_tail_rcu(&map->list, &acpi_iomaps);
+ 	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+ 
+-	return vaddr + (paddr - pg_off);
++	return map->vaddr + (paddr - pg_off);
+ err_unmap:
+ 	iounmap(vaddr);
+ 	return NULL;
+-- 
+1.7.1.1
+
