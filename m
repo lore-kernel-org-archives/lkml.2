@@ -1,79 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868Ab0HQCho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 22:37:44 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46250 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648Ab0HQChn (ORCPT
+	id S1754902Ab0HQCkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 22:40:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49915 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754744Ab0HQCkf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 22:37:43 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Subject: Re: [Bisected Regression in 2.6.35] A full tmpfs filesystem causes hibernationto hang
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C677A49.4030904@superonline.com>
-References: <4C677A49.4030904@superonline.com>
-Message-Id: <20100817113401.5F77.A69D9226@jp.fujitsu.com>
+	Mon, 16 Aug 2010 22:40:35 -0400
+Message-ID: <4C69F7B9.2000103@cn.fujitsu.com>
+Date: Tue, 17 Aug 2010 10:45:13 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 17 Aug 2010 11:37:36 +0900 (JST)
+To: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
+CC: Linux is full of bugs <linux-kernel@vger.kernel.org>,
+        Nir Tzachar <nir.tzachar@gmail.com>, Michal Marek <mmarek@suse.cz>
+Subject: Re: BUG: nconfig doesn't preserve case in its menu display
+References: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com>
+In-Reply-To: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello all,
+于 2010年08月17日 05:04, Ævar Arnfjörð Bjarmason 写道:
+> When I do "make nconfig" and go to "General Setup" my "Local version -
+> append to kernel release" entry appears as:
 > 
-> I am using Debian Sid on a Toshiba Satellite A100 laptop. After testing
-> 2.6.35 for a while, I noticed that sometimes my hibernation attempts
-> would fail. I should say that I never had such a problem before 2.6.35.
-> The hibernation process hangs with 2.6.35 after printing the following:
+>     (-avar-akbar) Local version - append to kernel release
 > 
-> === 8< ===
-> ...
-> Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> PM: Preallocating image memory...
-> === >8 ===
+> When I use "make menuconfig" it's:
 > 
-> After a short investigation, I found out that this only happens when my
-> tmpfs filesystem on /tmp had a lot of data in it. When my tmpfs is empty,
-> I have no problems.
+>     (-Avar-Akbar) Local version - append to kernel release
 > 
-> So I wrote a short script which fills up the tmpfs on /tmp and tries to
-> hibernate, and I bisected the kernel using this script.
+> And my .config agrees:
 > 
-> The end result is that the following commit causes this regression:
+>     $ ack -n1 CONFIG_LOCALVERSION .config
+>     CONFIG_LOCALVERSION="-Avar-Akbar"
 > 
-> === 8< ===
-> commit bb21c7ce18eff8e6e7877ca1d06c6db719376e3c
-> Author: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date:   Fri Jun 4 14:15:05 2010 -0700
+> But when I edit the version string in both menuconfig and nconfig it
+> retains the correct casing.
 > 
->     vmscan: fix do_try_to_free_pages() return value when priority==0 reclaim failure
-> 
->     ...
-> === >8 ===
-> 
-> I have run 2.6.35-rc6, 2.6.35 and 2.6.35.1 with this commit reverted,
-> and I am happy to say that I haven't experienced any problems for at
-> least 17 days.
-> 
-> It looks like this change was included with 2.6.35-rc1. I am sorry
-> for not testing earlier.
-> 
-> I am willing to do testing in case anyone would like me to try patches.
+> I briefly searched through the nconfig code, but couldn't find
+> anything pertinent to the localversion, so this is probably a more
+> general issue.
 
-Wow.
+The bug is in make_hot(). Here is the fix:
 
-I'm very surprised this report because 1) the above commit changed
-do_try_to_free_pages() return value 2) but current hibernation code is
-ignoring this return value. Hmm... I have to investigate this very
-interesting issue.
+=======================
 
-Thanks this report, and please give me a bit time.
+From: LiZefan <lizf@lizf.localdomain>
+Date: Tue, 17 Aug 2010 10:35:36 +0800
+Subject: [PATCH] nconfig: remember where to start searcing hot key
 
+make_hot() skips '[...]', '<...>' and '(...)', but forgets to remember
+where it starts to find the hot key, and then it makes all the letters
+before the hot key lower case.
+
+As a result, it shows:
+
+    (-avar-akbar) Local version - append to kernel release
+...
+<m> Kernel .config support
+
+When it should be:
+
+    (-Avar-Akbar) Local version - append to kernel release
+...
+<M> Kernel .config support
+
+Reported-by: Ævar Arnfjörð Bjarmason <avarab@gmail.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+---
+ scripts/kconfig/nconf.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/kconfig/nconf.c b/scripts/kconfig/nconf.c
+index 2ba71bc..ba5eade 100644
+--- a/scripts/kconfig/nconf.c
++++ b/scripts/kconfig/nconf.c
+@@ -522,6 +522,7 @@ static int is_hot(int index)
+ static int make_hot(char *dest, int len, const char *org, int index)
+ {
+ 	int position = -1;
++	int start;
+ 	int i;
+ 	int tmp;
+ 	int c;
+@@ -549,6 +550,7 @@ static int make_hot(char *dest, int len, const char *org, int index)
+ 	}
+ 	if (i == org_len)
+ 		return -1;
++	start = ++i;
+ 	for (; i < org_len; i++) {
+ 		if (canbhot(org[i]) && org[i-1] != '<' && org[i-1] != '(') {
+ 			position = i;
+@@ -569,7 +571,7 @@ static int make_hot(char *dest, int len, const char *org, int index)
+ 	   */
+ 	/* make org[position] uppercase, and all leading letter small case */
+ 	strncpy(dest, org, len);
+-	for (i = 0; i < position; i++)
++	for (i = start; i < position; i++)
+ 		dest[i] = tolower(dest[i]);
+ 	dest[position] = toupper(dest[position]);
+ 	k_menu_items[index].is_hot = 1;
+-- 
+1.6.3
 
 
