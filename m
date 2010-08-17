@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289Ab0HQTrM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:47:12 -0400
-Received: from fieldses.org ([174.143.236.118]:40212 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab0HQTrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:47:08 -0400
-Date: Tue, 17 Aug 2010 15:45:04 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100817194504.GF26609@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
- <87aaolwar8.fsf@basil.nowhere.org>
- <20100817174134.GA23176@fieldses.org>
- <20100817182920.GD18161@basil.fritz.box>
- <20100817190447.GA28049@fieldses.org>
- <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
- <20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
- <AANLkTi=BB-zVFyCLgC+RWai9FFecaOad=pUC2=XFnY3J@mail.gmail.com>
+	id S1752235Ab0HQTt7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:49:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32584 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311Ab0HQTty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 15:49:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=K6kZg82TvboyMLhVaEs1BCP+ogVS2lFi/5D0HskxrCBkPnw3WeuvJzDJ+TRkL/i9J
+	Fi/cSb+Mea2uvrhch97/g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=BB-zVFyCLgC+RWai9FFecaOad=pUC2=XFnY3J@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1282060094.1926.3038.camel@laptop>
+References: <1281957914.1926.1249.camel@laptop>
+	<20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
+	<20100817152352.GA10785@amd>
+	<1282060094.1926.3038.camel@laptop>
+Date: Tue, 17 Aug 2010 12:49:51 -0700
+Message-ID: <AANLkTinodHja9Dth1-p5B2Y5P9UkUKw8YnwRZ+E+Rxr-@mail.gmail.com>
+Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and the implementation.
+From: Salman Qazi <sqazi@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nick Piggin <npiggin@kernel.dk>, paulmck@us.ibm.com,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        adurbin@google.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 12:43:10PM -0700, Patrick J. LoPresti wrote:
-> On Tue, Aug 17, 2010 at 12:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> >> Is there any objection to the mount option I am proposing?
-> >
-> > I have none. I doubt I'd use it as it would be too expensive on system
-> > performance for some of my boxes, while having an incrementing value is
-> > cheap.
-> >
-> > I don't see the two as conflicting - in fact the bits you need to do the
-> > mount option are the bits you also need to do the counter version as
-> > well. One fixes ordering at no real cost, the other adds high res
-> > timestamps, both are useful.
-> 
-> A mount option could also allow a choice of timestamp resolutions:
-> 
-> Traditional (i.e., fast)
-> Alan Cox NFS hack (a tad slower but should fix NFS)
-> High-res time (slowest but most accurate)
-> 
-> I will work on a patch this week (weekend at the latest).
+On Tue, Aug 17, 2010 at 8:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-08-18 at 01:23 +1000, Nick Piggin wrote:
+>> How about something like this?
+>
+> Ah, very nice indeed. Looks like it will indeed close the hole.
+>
+> Thanks Nick!
+>
 
-I kind of hate to have mount options that are required for nfs exports
-to work correctly; it soon makes things too complicated for users to
-realiably get right, so distributions end up setting them, and then we
-all end up taking the performance tradeoff anyway.
-
-But a mount-option-based version may at least be useful for further
-experiments.
-
---b.
+I like Nick's patch in principle.  I will try it out to verify that it
+fixes the problem (although, reading it, I am fairly certain that it
+does).
