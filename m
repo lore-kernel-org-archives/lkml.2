@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab0HQQGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:06:43 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:59872 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334Ab0HQQGm (ORCPT
+	id S1757397Ab0HQQKU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:10:20 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:1637 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750961Ab0HQQKR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:06:42 -0400
-X-Authority-Analysis: v=1.1 cv=nbWoJD01ruQLYOYE44JZbYtzz81AmFDL3LnuPvZDHs8= c=1 sm=0 a=ApKsrK4jzPIA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=USDaeMPFjngXFri8BmkA:9 a=XTRqaNffMP-zUc5cnE8A:7 a=tRGaIE3CJ6yWQdMUcSI05x6VKTMA:4 a=PUjeQqilurYA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com, Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <1282061090.3268.1514.camel@gandalf.stny.rr.com>
-References: <20100816150737.GB8320@Krystal>
-	 <20100816183355.GH2388@linux.vnet.ibm.com> <20100816191947.GA970@Krystal>
-	 <20100816213200.GK2388@linux.vnet.ibm.com> <20100816214123.GA15663@Krystal>
-	 <20100816215555.GL2388@linux.vnet.ibm.com> <20100816220705.GA18650@Krystal>
-	 <1282051639.3268.1335.camel@gandalf.stny.rr.com>
-	 <20100817141638.GA5722@Krystal>
-	 <1282056878.3268.1437.camel@gandalf.stny.rr.com>
-	 <20100817155521.GA17849@Krystal>
-	 <1282061090.3268.1514.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 17 Aug 2010 12:06:39 -0400
-Message-ID: <1282061199.3268.1519.camel@gandalf.stny.rr.com>
+	Tue, 17 Aug 2010 12:10:17 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7HG9nQg026964
+Subject: Re: [PATCH] perf tools: Don't use brace expansion.
+From: Bernd Petrovitsch <bernd@sysprog.at>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Kusanagi Kouichi <slash@ac.auone-net.jp>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100817154237.GG13095@ghostprotocols.net>
+References: <20100816124101.1829415C039@msa104.auone-net.jp>
+	 <1281967761.17267.6.camel@thorin> <1281969043.1926.1469.camel@laptop>
+	 <1281970478.17267.12.camel@thorin>
+	 <20100816152914.GC13095@ghostprotocols.net>
+	 <1281973427.17267.16.camel@thorin>
+	 <20100816155022.GD13095@ghostprotocols.net>
+	 <1282046280.5822.4.camel@thorin>
+	 <20100817154237.GG13095@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 18:09:49 +0200
+Message-ID: <1282061389.5822.22.camel@thorin>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-DCC-HP_X86_64_4CPU-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 12:04 -0400, Steven Rostedt wrote:
-
-> > Then we could go for the simpler:
-> > 
-> >   	--t->rcu_read_lock_nesting;
-> >  	barrier();
-> >         if (t->rcu_read_lock_nesting == 0 &&
-> >              unlikely((t->rcu_read_unlock_special))
+On Die, 2010-08-17 at 12:42 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Aug 17, 2010 at 01:58:00PM +0200, Bernd Petrovitsch escreveu:
+[...]
+> > The following patch below at the end works for me. Alas, it is against
+> > vanilla main line.
 > 
-> Yeah, that's what I meant, I was too lazy to remove the ACCESS_ONCE()
-> from the cut and paste I did.
+> Adding $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h there, to have it look:
+>
+> +# we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
+> +# we depend the various files onto their directories.
+> +$(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h: $(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS)))
+
+Hmm, that adds that $(OUTPUT)PERF-VERSION-FILE and
+$(OUTPUT)common-cmds.h (also) depends on the subdirectories of the other
+objects (and thus it works always because at least one of them is a
+subdirectory of $(OUTPUT)).
+To be 110% anal, it should look like e.g.
++$(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h: $(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS)) $(OUTPUT))
+
+or actually all targets.
+
+> +# In the second step, we make a rule to actually create these directories
+> +$(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS))):
+> +       mkdir -p $@ 2>/dev/null
+> +
+
+BTW there is no automatic variable or other make-construct to refer in
+the dependencies on the own target. Therefore the copy-paste-the-
+variables solution.
+
+Perhaps an additional variable reduces clutter (and eases maintenance)?
+
++# we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
++# we depend the various files onto their directories.
++DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
++$(DIRECTORY_DEPS): $(sort $(dir $(DIRECTORY_DEPS)))
++# In the second step, we make a rule to actually create these directories
++$(sort $(dir $(DIRECTORY_DEPS))):
++       mkdir -p $@ 2>/dev/null
++
+
+That should guarantee that all directories from the targets are created.
+
+> As it was failing when I did:
 > 
-> > 
-> > Which puts a constraint across all memory accesses. I'd be fine with
-> > that if you are afraid of too much micro-optimization (e.g. my
-> > barrier2(a, b) proposal).
+> rm -rf ~/build/perf
+> make -C tools/perf O=~/build/perf
 > 
-> Not afraid, but just too much code for a simple solution.
+> With that it retains the existing functionality,
 
-IOW,
+Ah, I `mkdir`ed the output directory explicitly before the `make` (and
+after the `rm -rf`).
 
-I think just pulling out the '--' and adding the barrier() is the proper
-solution here. Compiler barriers are rather cheap.
 
-Can we all agree on this solution?
+BTW which is the preferred tree to base patches on (for the "perf"
+subsystem)?
 
--- Steve
-
+	Bernd
+-- 
+mobile: +43 664 4416156              http://www.sysprog.at/
+    Linux Software Development, Consulting and Services
 
