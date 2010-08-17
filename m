@@ -1,87 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753881Ab0HQAVM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 20:21:12 -0400
-Received: from thunk.org ([69.25.196.29]:36619 "EHLO thunker.thunk.org"
+	id S1753931Ab0HQAWo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 20:22:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:1099 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753628Ab0HQAVK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 20:21:10 -0400
-Date: Mon, 16 Aug 2010 20:20:32 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Felipe Contreras <felipe.contreras@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-        rjw@sisk.pl, peterz@infradead.org, tglx@linutronix.de,
-        menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-        arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100817002032.GD21182@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Felipe Contreras <felipe.contreras@gmail.com>,
-	Alan Stern <stern@rowland.harvard.edu>, paulmck@linux.vnet.ibm.com,
-	Alan Cox <alan@lxorguk.ukuu.org.uk>, david@lang.hm,
-	Brian Swetland <swetland@google.com>,
-	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-	arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-	rjw@sisk.pl, peterz@infradead.org, tglx@linutronix.de,
-	menage@google.com, david-b@pacbell.net, James.Bottomley@suse.de,
-	arjan@infradead.org, swmike@swm.pp.se, galibert@pobox.com,
-	dipankar@in.ibm.com
-References: <AANLkTikcoWfmL-XfYbFeYdVtU9GC6_LtVSSB2H6GcedA@mail.gmail.com>
- <Pine.LNX.4.44L0.1008120733130.21006-100000@netrider.rowland.org>
- <AANLkTinMwt27wuDUh32F36wpoC54Syzp1_nK9UCxYmEK@mail.gmail.com>
- <20100812125248.GA2763@thunk.org>
- <20100814075000.GB27430@elf.ucw.cz>
- <20100816081655.3e9e29f7@virtuousgeek.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100816081655.3e9e29f7@virtuousgeek.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1753453Ab0HQAWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 20:22:42 -0400
+Subject: RE: [PATCH v2 1/3] libcxgbi: common library for cxgb3i and cxgb4i
+From: Joe Perches <joe@perches.com>
+To: Karen Xie <kxie@chelsio.com>
+Cc: open-iscsi@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Rakesh Ranjan <rakesh@chelsio.com>,
+        James.Bottomley@HansenPartnership.com, michaelc@cs.wisc.edu
+In-Reply-To: <8A71B368A89016469F72CD08050AD334084A2C95@maui.asicdesigners.com>
+References: <201008130257.o7D2vLVx001282@localhost.localdomain>
+	 <1281669700.15486.71.camel@Joe-Laptop>
+	 <8A71B368A89016469F72CD08050AD33408403F41@maui.asicdesigners.com>
+	 <1281977297.6518.68.camel@Joe-Laptop>
+	 <8A71B368A89016469F72CD08050AD334084A2C95@maui.asicdesigners.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 16 Aug 2010 17:22:37 -0700
+Message-ID: <1282004557.24541.2.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 08:16:55AM -0700, Jesse Barnes wrote:
-> Fortunately in this case the problem doesn't seem to be fatal.  We've
-> already established that the userland API portion of suspend blockers
-> could be implemented in userspace with a bit more work, given that the
-> kernel problems with suspend/resume and events are addressed.
-> Hopefully Google is already developing a prototype userspace
-> implementation to make sure it's workable; being able to build stock
-> upstream kernels for my Droid and its Android userspace sure would be
-> nice.
+On Mon, 2010-08-16 at 17:02 -0700, Karen Xie wrote:
+> Thanks, Joe.
+> 
+> I will update the patch with your suggestion. BTW, I probably won't use
+> pr_<level> just to avoid any confusion since they are already defined in
+> kernel.h. I know I can undef them, but rather not to.
 
-You know, you don't have to wait for the Android engineers to do this
-work.  You (or others who want to be able to use stock upstream kernel
-with Android devices) could just as easily try to do the "bit more
-work" yourselves --- that is, do the open souce thing and scratch
-one's own itch.
+Hi Karen.
 
-After all, Rafael is saying he's refusing to accept patches (or
-implement) in-kernel oppunsitic suspend for upstream unless it's
-proven to him that a userspace implementation isn't sufficient.  It
-might be just as fair for the Android userspace upstream to refuse to
-accept (or engineer) userspace changes unless it is proven that the
-userspace version of opporunistic suspend is just as good as the
-in-kernel version which is successfully been deployed in millions and
-millions of shipping units today...
+The point is to use pr_<level> precisely because it is
+defined in kernel.h and they are standard kernel functions
+commonly used in the rest of the kernel source.
 
-Speaking personally, it's not clear to me how waking up a userspace
-suspend daemon and waiting for it to get scheduled will result in
-better power savings than simply handling it in the kernel, but as
-soon as someone is willing to do the work, we can find out for sure
-who is right.
+There's no need to undef it any more than there is to
+#undef printk or use a #define printf printk
 
-					- Ted
+cheers, Joe
 
