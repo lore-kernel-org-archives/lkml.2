@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab0HQRsX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:48:23 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:51435 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754819Ab0HQRsT convert rfc822-to-8bit (ORCPT
+	id S1758064Ab0HQRtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:49:07 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:26128 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab0HQRtD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:48:19 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 17 Aug 2010 13:49:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=hJbulRg30Xw5QyY7K6Kt296T5Z9pqF6FOI8wBWkTW58xE7ie5luDTfEEo3TJT9Hip
+	4wP9M/Jtibgf7BTNdeHsg==
+Date: Tue, 17 Aug 2010 10:48:54 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jan Kara <jack@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 4/6] jbd: remove dependency on __GFP_NOFAIL
+In-Reply-To: <20100817095103.GA3557@quack.suse.cz>
+Message-ID: <alpine.DEB.2.00.1008171046330.6486@chino.kir.corp.google.com>
+References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com> <alpine.DEB.2.00.1008161956190.17924@chino.kir.corp.google.com> <20100817095103.GA3557@quack.suse.cz>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 4/9] RapidIO: Add relation links between RIO device structures
-Date: Tue, 17 Aug 2010 10:47:59 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6317@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4C6A3573.3070403@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 4/9] RapidIO: Add relation links between RIO device structures
-thread-index: Acs92rSS3Qbbj9fcR7CSVOVTCQFcpgAVr3pA
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-5-git-send-email-alexandre.bounine@idt.com> <4C692C9D.6040100@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011D5F1F@CORPEXCH1.na.ads.idt.com> <4C6A3573.3070403@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>,
-        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen wrote:
-> 
-> I agree it's desirable to have this information. Notes:
-> 1) is rio_dev->prev used anywhere? (maybe I missed it)
+On Tue, 17 Aug 2010, Jan Kara wrote:
 
-It is used to scan route back when servicing an orphaned PW message.
-I also see its future use when invalidating route(s) in case of device
-removal.
-  
-> 2) is the nextdev[port] list complete? I mean are all connected
-switches
-> in the list? My guess is that multiply connected switches are
-enumerated
-> only once therefore only appear in the nextdev if only one switch,
-> instead of all
-> 3) it would be nice to have all switch connections information.
+> > Removes the dependency on __GFP_NOFAIL by looping indefinitely in the
+> > caller.
+> > 
+> > The error handling when kzalloc() returns NULL in start_this_handle()
+> > was removed since it was unreachable.
+>   Thanks! I've added the patch to my tree. Since rc1 is over, I think this
+> is a material for the next merge window, right?
 
-Good catch. I will address this.
-
-> In case ever the network is rerouted, this information will become
-> useful; instead of having a tree representation of the network only.
-
-I consider proposed implementation as transitional until enumeration
-logic is reworked.
-It already is an attempt to move towards a tree representation. Making
-switch support 
-available was given higher priority compared to other things needed for
-RIO subsystem.  
-
-Alex.
-
-
+Yes, we still need to switch over GFP_KERNEL callers and remove the flag 
+completely, so there's no hurry for this to go into 2.6.36.
