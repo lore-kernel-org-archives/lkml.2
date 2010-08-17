@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345Ab0HQXYg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 19:24:36 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:33747 "EHLO smtp.polymtl.ca"
+	id S1752381Ab0HQXYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 19:24:44 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:58379 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab0HQXXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 19:23:25 -0400
-Message-Id: <20100817232154.653762966@efficios.com>
+	id S1751960Ab0HQXXW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 19:23:22 -0400
+Message-Id: <20100817232153.951360273@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 17 Aug 2010 19:16:37 -0400
+Date: Tue, 17 Aug 2010 19:16:34 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: ltt-dev@lists.casi.polymtl.ca,
@@ -26,41 +26,380 @@ Cc: ltt-dev@lists.casi.polymtl.ca,
         Tom Zanussi <tzanussi@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [RFC PATCH 18/20] Ring buffer record iterator
+Subject: [RFC PATCH 15/20] Ring buffer library - VFS operations (v2)
 References: <20100817231619.277457797@efficios.com>
-Content-Disposition: inline; filename=ring-buffer-record-iterator.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Tue, 17 Aug 2010 23:21:55 +0000
+Content-Disposition: inline; filename=ring-buffer-vfs.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Tue, 17 Aug 2010 23:21:54 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements per-cpu-local iterator and channel-wide iterator. Implements a read()
-file operation based on these iterators. These iterators or the read() file
-operation can be used by ring buffer clients.
+File operation supports for ring buffer reader. splice() and mmap().
 
-The channel-wide iterator implements timestamp-ordered fusion merge of per-cpu
-channels using a priority heap.
+Changelog since v1:
+* Add snapshot-related ioctl
+* Improved compat ioctl support (with unsigned long type).
 
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
- include/linux/ringbuffer/iterator.h   |   70 ++
- lib/ringbuffer/Makefile               |    1 
- lib/ringbuffer/ring_buffer_iterator.c |  796 ++++++++++++++++++++++++++++++++++
- 3 files changed, 867 insertions(+)
+ Documentation/ioctl/ioctl-number.txt |    2 
+ include/linux/ringbuffer/vfs.h       |   85 +++++++++
+ lib/ringbuffer/Makefile              |    3 
+ lib/ringbuffer/ring_buffer_mmap.c    |  115 ++++++++++++
+ lib/ringbuffer/ring_buffer_splice.c  |  190 ++++++++++++++++++++
+ lib/ringbuffer/ring_buffer_vfs.c     |  324 +++++++++++++++++++++++++++++++++++
+ 6 files changed, 719 insertions(+)
 
-Index: linux.trees.git/lib/ringbuffer/ring_buffer_iterator.c
+Index: linux.trees.git/lib/ringbuffer/Makefile
+===================================================================
+--- linux.trees.git.orig/lib/ringbuffer/Makefile	2010-08-17 17:05:50.000000000 -0400
++++ linux.trees.git/lib/ringbuffer/Makefile	2010-08-17 17:16:47.000000000 -0400
+@@ -1,2 +1,5 @@
+ obj-y += ring_buffer_backend.o
+ obj-y += ring_buffer_frontend.o
++obj-y += ring_buffer_vfs.o
++obj-y += ring_buffer_splice.o
++obj-y += ring_buffer_mmap.o
+Index: linux.trees.git/lib/ringbuffer/ring_buffer_splice.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux.trees.git/lib/ringbuffer/ring_buffer_iterator.c	2010-08-17 12:53:17.000000000 -0400
-@@ -0,0 +1,796 @@
++++ linux.trees.git/lib/ringbuffer/ring_buffer_splice.c	2010-08-17 17:05:50.000000000 -0400
+@@ -0,0 +1,190 @@
 +/*
-+ * ring_buffer_iterator.c
++ * ring_buffer_splice.c
 + *
-+ * (C) Copyright 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ * Copyright (C) 2002-2005 - Tom Zanussi <zanussi@us.ibm.com>, IBM Corp
++ * Copyright (C) 1999-2005 - Karim Yaghmour <karim@opersys.com>
++ * Copyright (C) 2008-2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 + *
-+ * Ring buffer and channel iterators. Get each event of a channel in order. Uses
-+ * a prio heap for per-cpu buffers, giving a O(log(NR_CPUS)) algorithmic
-+ * complexity for the "get next event" operation.
++ * Re-using content from kernel/relay.c.
++ *
++ * This file is released under the GPL v2.
++ */
++
++#include <linux/module.h>
++#include <linux/fs.h>
++
++#include <linux/ringbuffer/backend.h>
++#include <linux/ringbuffer/frontend.h>
++#include <linux/ringbuffer/vfs.h>
++
++#if 0
++#define printk_dbg(fmt, args...) printk(fmt, args)
++#else
++#define printk_dbg(fmt, args...)
++#endif
++
++loff_t ring_buffer_no_llseek(struct file *file, loff_t offset, int origin)
++{
++	return -ESPIPE;
++}
++
++/*
++ * Release pages from the buffer so splice pipe_to_file can move them.
++ * Called after the pipe has been populated with buffer pages.
++ */
++static void ring_buffer_pipe_buf_release(struct pipe_inode_info *pipe,
++					 struct pipe_buffer *pbuf)
++{
++	__free_page(pbuf->page);
++}
++
++static const struct pipe_buf_operations ring_buffer_pipe_buf_ops = {
++	.can_merge = 0,
++	.map = generic_pipe_buf_map,
++	.unmap = generic_pipe_buf_unmap,
++	.confirm = generic_pipe_buf_confirm,
++	.release = ring_buffer_pipe_buf_release,
++	.steal = generic_pipe_buf_steal,
++	.get = generic_pipe_buf_get,
++};
++
++/*
++ * Page release operation after splice pipe_to_file ends.
++ */
++static void ring_buffer_page_release(struct splice_pipe_desc *spd,
++				     unsigned int i)
++{
++	__free_page(spd->pages[i]);
++}
++
++/*
++ *	subbuf_splice_actor - splice up to one subbuf's worth of data
++ */
++static int subbuf_splice_actor(struct file *in,
++			       loff_t *ppos,
++			       struct pipe_inode_info *pipe,
++			       size_t len,
++			       unsigned int flags)
++{
++	struct ring_buffer *buf = in->private_data;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
++	unsigned int poff, subbuf_pages, nr_pages;
++	struct page *pages[PIPE_DEF_BUFFERS];
++	struct partial_page partial[PIPE_DEF_BUFFERS];
++	struct splice_pipe_desc spd = {
++		.pages = pages,
++		.nr_pages = 0,
++		.partial = partial,
++		.flags = flags,
++		.ops = &ring_buffer_pipe_buf_ops,
++		.spd_release = ring_buffer_page_release,
++	};
++	unsigned long consumed_old, consumed_idx, roffset;
++	unsigned long bytes_avail;
++
++	/*
++	 * Check that a GET_SUBBUF ioctl has been done before.
++	 */
++	WARN_ON(atomic_long_read(&buf->active_readers) != 1);
++	consumed_old = ring_buffer_get_consumed(config, buf);
++	consumed_old += *ppos;
++	consumed_idx = subbuf_index(consumed_old, chan);
++
++	/*
++	 * Adjust read len, if longer than what is available.
++	 * Max read size is 1 subbuffer due to get_subbuf/put_subbuf for
++	 * protection.
++	 */
++	bytes_avail = chan->backend.subbuf_size;
++	WARN_ON(bytes_avail > chan->backend.buf_size);
++	len = min_t(size_t, len, bytes_avail);
++	subbuf_pages = bytes_avail >> PAGE_SHIFT;
++	nr_pages = min_t(unsigned int, subbuf_pages, PIPE_DEF_BUFFERS);
++	roffset = consumed_old & PAGE_MASK;
++	poff = consumed_old & ~PAGE_MASK;
++	printk_dbg(KERN_DEBUG "SPLICE actor len %zu pos %zd write_pos %ld\n",
++		   len, (ssize_t)*ppos, ring_buffer_get_offset(config, buf));
++
++	for (; spd.nr_pages < nr_pages; spd.nr_pages++) {
++		unsigned int this_len;
++		struct page **page, *new_page;
++		void **virt;
++
++		if (!len)
++			break;
++		printk_dbg(KERN_DEBUG "SPLICE actor loop len %zu roffset %ld\n",
++			   len, roffset);
++
++		/*
++		 * We have to replace the page we are moving into the splice
++		 * pipe.
++		 */
++		new_page = alloc_pages_node(cpu_to_node(max(buf->backend.cpu,
++							    0)),
++					    GFP_KERNEL | __GFP_ZERO, 0);
++		if (!new_page)
++			break;
++
++		this_len = PAGE_SIZE - poff;
++		page = ring_buffer_read_get_page(&buf->backend, roffset, &virt);
++		spd.pages[spd.nr_pages] = *page;
++		*page = new_page;
++		*virt = page_address(new_page);
++		spd.partial[spd.nr_pages].offset = poff;
++		spd.partial[spd.nr_pages].len = this_len;
++
++		poff = 0;
++		roffset += PAGE_SIZE;
++		len -= this_len;
++	}
++
++	if (!spd.nr_pages)
++		return 0;
++
++	return splice_to_pipe(pipe, &spd);
++}
++
++ssize_t ring_buffer_splice_read(struct file *in, loff_t *ppos,
++				struct pipe_inode_info *pipe, size_t len,
++				unsigned int flags)
++{
++	struct ring_buffer *buf = in->private_data;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
++	ssize_t spliced;
++	int ret;
++
++	if (config->output != RING_BUFFER_SPLICE)
++		return -EINVAL;
++
++	ret = 0;
++	spliced = 0;
++
++	printk_dbg(KERN_DEBUG "SPLICE read len %zu pos %zd\n", len,
++		   (ssize_t)*ppos);
++	while (len && !spliced) {
++		ret = subbuf_splice_actor(in, ppos, pipe, len, flags);
++		printk_dbg(KERN_DEBUG "SPLICE read loop ret %d\n", ret);
++		if (ret < 0)
++			break;
++		else if (!ret) {
++			if (flags & SPLICE_F_NONBLOCK)
++				ret = -EAGAIN;
++			break;
++		}
++
++		*ppos += ret;
++		if (ret > len)
++			len = 0;
++		else
++			len -= ret;
++		spliced += ret;
++	}
++
++	if (spliced)
++		return spliced;
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(ring_buffer_splice_read);
+Index: linux.trees.git/Documentation/ioctl/ioctl-number.txt
+===================================================================
+--- linux.trees.git.orig/Documentation/ioctl/ioctl-number.txt	2010-08-17 17:05:37.000000000 -0400
++++ linux.trees.git/Documentation/ioctl/ioctl-number.txt	2010-08-17 17:05:50.000000000 -0400
+@@ -321,4 +321,6 @@ Code  Seq#(hex)	Include File		Comments
+ 					<mailto:thomas@winischhofer.net>
+ 0xF4	00-1F	video/mbxfb.h		mbxfb
+ 					<mailto:raph@8d.com>
++0xF6	00-3F	lib/ringbuffer/ring_buffer_vfs.h	Ring Buffer Library
++					<mailto:mathieu.desnoyers@efficios.com>
+ 0xFD	all	linux/dm-ioctl.h
+Index: linux.trees.git/lib/ringbuffer/ring_buffer_mmap.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/lib/ringbuffer/ring_buffer_mmap.c	2010-08-17 17:05:50.000000000 -0400
+@@ -0,0 +1,115 @@
++/*
++ * ring_buffer_mmap.c
++ *
++ * Copyright (C) 2002-2005 - Tom Zanussi <zanussi@us.ibm.com>, IBM Corp
++ * Copyright (C) 1999-2005 - Karim Yaghmour <karim@opersys.com>
++ * Copyright (C) 2008-2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ *
++ * Re-using content from kernel/relay.c.
++ *
++ * This file is released under the GPL v2.
++ */
++
++#include <linux/module.h>
++#include <linux/mm.h>
++
++#include <linux/ringbuffer/backend.h>
++#include <linux/ringbuffer/frontend.h>
++#include <linux/ringbuffer/vfs.h>
++
++/*
++ * fault() vm_op implementation for ring buffer file mapping.
++ */
++static int ring_buffer_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct ring_buffer *buf = vma->vm_private_data;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
++	pgoff_t pgoff = vmf->pgoff;
++	struct page **page;
++	void **virt;
++	unsigned long offset, sb_bindex;
++
++	if (!buf)
++		return VM_FAULT_OOM;
++
++	/*
++	 * Verify that faults are only done on the range of pages owned by the
++	 * reader.
++	 */
++	offset = pgoff << PAGE_SHIFT;
++	sb_bindex = subbuffer_id_get_index(config, buf->backend.buf_rsb.id);
++	if (!(offset >= buf->backend.array[sb_bindex]->mmap_offset
++	      && offset < buf->backend.array[sb_bindex]->mmap_offset +
++			  buf->backend.chan->backend.subbuf_size))
++		return VM_FAULT_SIGBUS;
++	/*
++	 * ring_buffer_read_get_page() gets the page in the current reader's
++	 * pages.
++	 */
++	page = ring_buffer_read_get_page(&buf->backend, offset, &virt);
++	if (!*page)
++		return VM_FAULT_SIGBUS;
++	get_page(*page);
++	vmf->page = *page;
++
++	return 0;
++}
++
++/*
++ * vm_ops for relay file mappings.
++ */
++static const struct vm_operations_struct ring_buffer_mmap_ops = {
++	.fault = ring_buffer_fault,
++};
++
++/**
++ *	ring_buffer_mmap_buf: - mmap channel buffer to process address space
++ *	@buf: ring buffer to map
++ *	@vma: vm_area_struct describing memory to be mapped
++ *
++ *	Returns 0 if ok, negative on error
++ *
++ *	Caller should already have grabbed mmap_sem.
++ */
++static int ring_buffer_mmap_buf(struct ring_buffer *buf,
++				struct vm_area_struct *vma)
++{
++	unsigned long length = vma->vm_end - vma->vm_start;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
++	unsigned long mmap_buf_len;
++
++	if (config->output != RING_BUFFER_MMAP)
++		return -EINVAL;
++
++	if (!buf)
++		return -EBADF;
++
++	mmap_buf_len = chan->backend.buf_size;
++	if (chan->backend.extra_reader_sb)
++		mmap_buf_len += chan->backend.subbuf_size;
++
++	if (length != mmap_buf_len)
++		return -EINVAL;
++
++	vma->vm_ops = &ring_buffer_mmap_ops;
++	vma->vm_flags |= VM_DONTEXPAND;
++	vma->vm_private_data = buf;
++
++	return 0;
++}
++
++/**
++ *	relay_file_mmap - mmap file op for relay files
++ *	@filp: the file
++ *	@vma: the vma describing what to map
++ *
++ *	Calls upon relay_mmap_buf() to map the file into user space.
++ */
++int ring_buffer_mmap(struct file *filp, struct vm_area_struct *vma)
++{
++	struct ring_buffer *buf = filp->private_data;
++	return ring_buffer_mmap_buf(buf, vma);
++}
++EXPORT_SYMBOL_GPL(ring_buffer_mmap);
+Index: linux.trees.git/include/linux/ringbuffer/vfs.h
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/include/linux/ringbuffer/vfs.h	2010-08-17 17:16:33.000000000 -0400
+@@ -0,0 +1,85 @@
++#ifndef _LINUX_RING_BUFFER_VFS_H
++#define _LINUX_RING_BUFFER_VFS_H
++
++/*
++ * linux/ringbuffer/vfs.h
++ *
++ * (C) Copyright 2005-2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ *
++ * Wait-free ring buffer VFS file operations.
 + *
 + * Author:
 + *	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
@@ -68,871 +407,402 @@ Index: linux.trees.git/lib/ringbuffer/ring_buffer_iterator.c
 + * Dual LGPL v2.1/GPL v2 license.
 + */
 +
-+#include <linux/ringbuffer/iterator.h>
-+#include <linux/jiffies.h>
++#include <linux/fs.h>
++#include <linux/poll.h>
++
++/* VFS API */
++
++extern const struct file_operations ring_buffer_file_operations;
++
++/*
++ * Internal file operations.
++ */
++
++int ring_buffer_open(struct inode *inode, struct file *file);
++int ring_buffer_release(struct inode *inode, struct file *file);
++unsigned int ring_buffer_poll(struct file *filp, poll_table *wait);
++ssize_t ring_buffer_splice_read(struct file *in, loff_t *ppos,
++				struct pipe_inode_info *pipe, size_t len,
++				unsigned int flags);
++int ring_buffer_mmap(struct file *filp, struct vm_area_struct *vma);
++
++/* Ring Buffer ioctl() and ioctl numbers */
++long ring_buffer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
++#ifdef CONFIG_COMPAT
++long ring_buffer_compat_ioctl(struct file *filp, unsigned int cmd,
++			      unsigned long arg);
++#endif
++
++/*
++ * Use RING_BUFFER_GET_NEXT_SUBBUF / RING_BUFFER_PUT_NEXT_SUBBUF to read and
++ * consume sub-buffers sequentially.
++ *
++ * Reading sub-buffers without consuming them can be performed with:
++ *
++ * RING_BUFFER_SNAPSHOT
++ * RING_BUFFER_SNAPSHOT_GET_CONSUMED
++ * RING_BUFFER_SNAPSHOT_GET_PRODUCED
++ *
++ * to get the offset range to consume, and then by passing each sub-buffer
++ * offset to RING_BUFFER_GET_SUBBUF, read the sub-buffer, and then release it
++ * with RING_BUFFER_PUT_SUBBUF.
++ *
++ * Note that the "snapshot" API can be used to read the sub-buffer in reverse
++ * order, which is useful for flight recorder snapshots.
++ */
++
++/* Get a snapshot of the current ring buffer producer and consumer positions */
++#define RING_BUFFER_SNAPSHOT			_IO(0xF6, 0x00)
++/* Get the consumer position (iteration start) */
++#define RING_BUFFER_SNAPSHOT_GET_CONSUMED	_IOR(0xF6, 0x01, unsigned long)
++/* Get the producer position (iteration end) */
++#define RING_BUFFER_SNAPSHOT_GET_PRODUCED	_IOR(0xF6, 0x02, unsigned long)
++/* Get exclusive read access to the specified sub-buffer position */
++#define RING_BUFFER_GET_SUBBUF			_IOW(0xF6, 0x03, unsigned long)
++/* Release exclusive sub-buffer access */
++#define RING_BUFFER_PUT_SUBBUF			_IO(0xF6, 0x04)
++
++/* Get exclusive read access to the next sub-buffer that can be read. */
++#define RING_BUFFER_GET_NEXT_SUBBUF		_IO(0xF6, 0x05)
++/* Release exclusive sub-buffer access, move consumer forward. */
++#define RING_BUFFER_PUT_NEXT_SUBBUF		_IO(0xF6, 0x06)
++/* returns the size of the current sub-buffer. */
++#define RING_BUFFER_GET_SUBBUF_SIZE		_IOR(0xF6, 0x07, unsigned long)
++/* returns the maximum size for sub-buffers. */
++#define RING_BUFFER_GET_MAX_SUBBUF_SIZE		_IOR(0xF6, 0x08, unsigned long)
++/* returns the length to mmap. */
++#define RING_BUFFER_GET_MMAP_LEN		_IOR(0xF6, 0x09, unsigned long)
++/* returns the offset of the subbuffer belonging to the mmap reader. */
++#define RING_BUFFER_GET_MMAP_READ_OFFSET	_IOR(0xF6, 0x0A, unsigned long)
++
++#endif /* _LINUX_RING_BUFFER_VFS_H */
+Index: linux.trees.git/lib/ringbuffer/ring_buffer_vfs.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/lib/ringbuffer/ring_buffer_vfs.c	2010-08-17 17:16:12.000000000 -0400
+@@ -0,0 +1,324 @@
++/*
++ * ring_buffer_vfs.c
++ *
++ * Copyright (C) 2009-2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ *
++ * Ring Buffer VFS file operations.
++ *
++ * Dual LGPL v2.1/GPL v2 license.
++ */
++
 +#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/compat.h>
 +
-+/*
-+ * Safety factor taking into account internal kernel interrupt latency.
-+ * Assuming 250ms worse-case latency.
-+ */
-+#define MAX_SYSTEM_LATENCY	250
++#include <linux/ringbuffer/backend.h>
++#include <linux/ringbuffer/frontend.h>
++#include <linux/ringbuffer/vfs.h>
 +
-+/*
-+ * Maximum delta expected between trace clocks. At most 1 jiffy delta.
-+ */
-+#define MAX_CLOCK_DELTA		(jiffies_to_usecs(1) * 1000)
-+
-+/**
-+ * ring_buffer_get_next_record - Get the next record in a buffer.
-+ * @chan: channel
-+ * @buf: buffer
-+ *
-+ * Returns the size of the event read, -EAGAIN if buffer is empty, -ENODATA if
-+ * buffer is empty and finalized. The buffer must already be opened for reading.
-+ */
-+ssize_t ring_buffer_get_next_record(struct channel *chan,
-+				    struct ring_buffer *buf)
++static int compat_put_ulong(unsigned long arg, compat_ulong_t val)
 +{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	struct ring_buffer_iter *iter = &buf->iter;
-+	int ret;
-+
-+restart:
-+	switch (iter->state) {
-+	case ITER_GET_SUBBUF:
-+		ret = ring_buffer_get_next_subbuf(buf);
-+		if (ret && !ACCESS_ONCE(buf->finalized)
-+		    && config->alloc == RING_BUFFER_ALLOC_GLOBAL) {
-+			/*
-+			 * Use "pull" scheme for global buffers. The reader
-+			 * itself flushes the buffer to "pull" data not visible
-+			 * to readers yet. Flush current subbuffer and re-try.
-+			 *
-+			 * Per-CPU buffers rather use a "push" scheme because
-+			 * the IPI needed to flush all CPU's buffers is too
-+			 * costly. In the "push" scheme, the reader waits for
-+			 * the writer periodic deferrable timer to flush the
-+			 * buffers (keeping track of a quiescent state
-+			 * timestamp). Therefore, the writer "pushes" data out
-+			 * of the buffers rather than letting the reader "pull"
-+			 * data from the buffer.
-+			 */
-+			ring_buffer_switch_slow(buf, SWITCH_ACTIVE);
-+			ret = ring_buffer_get_next_subbuf(buf);
-+		}
-+		if (ret)
-+			return ret;
-+		iter->consumed = buf->cons_snapshot;
-+		iter->data_size = ring_buffer_get_read_data_size(config, buf);
-+		iter->read_offset = iter->consumed;
-+		/* skip header */
-+		iter->read_offset += config->cb.subbuffer_header_size();
-+		iter->state = ITER_TEST_RECORD;
-+		goto restart;
-+	case ITER_TEST_RECORD:
-+		if (iter->read_offset - iter->consumed >= iter->data_size) {
-+			iter->state = ITER_PUT_SUBBUF;
-+		} else {
-+			CHAN_WARN_ON(chan, !config->cb.record_get);
-+			config->cb.record_get(config, chan, buf,
-+					      iter->read_offset,
-+					      &iter->header_len,
-+					      &iter->payload_len,
-+					      &iter->timestamp);
-+			iter->read_offset += iter->header_len;
-+			subbuffer_consume_record(config, &buf->backend);
-+			iter->state = ITER_NEXT_RECORD;
-+			return iter->payload_len;
-+		}
-+		goto restart;
-+	case ITER_NEXT_RECORD:
-+		iter->read_offset += iter->payload_len;
-+		iter->state = ITER_TEST_RECORD;
-+		goto restart;
-+	case ITER_PUT_SUBBUF:
-+		ring_buffer_put_next_subbuf(buf);
-+		iter->state = ITER_GET_SUBBUF;
-+		goto restart;
-+	default:
-+		CHAN_WARN_ON(chan, 1);	/* Should not happen */
-+		return -EPERM;
-+	}
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_get_next_record);
-+
-+static int buf_is_higher(void *a, void *b)
-+{
-+	struct ring_buffer *bufa = a;
-+	struct ring_buffer *bufb = b;
-+
-+	/* Consider lowest timestamps to be at the top of the heap */
-+	return (bufa->iter.timestamp < bufb->iter.timestamp);
++	return put_user(val, (compat_ulong_t __user *)compat_ptr(arg));
 +}
 +
-+static
-+void ring_buffer_get_empty_buf_records(const struct ring_buffer_config *config,
-+				       struct channel *chan)
++static int put_ulong(unsigned long arg, unsigned long val)
 +{
-+	struct ptr_heap *heap = &chan->iter.heap;
-+	struct ring_buffer *buf, *tmp;
-+	ssize_t len;
-+
-+	list_for_each_entry_safe(buf, tmp, &chan->iter.empty_head,
-+				 iter.empty_node) {
-+		len = ring_buffer_get_next_record(chan, buf);
-+
-+		/*
-+		 * Deal with -EAGAIN and -ENODATA.
-+		 * len >= 0 means record contains data.
-+		 * -EBUSY should never happen, because we support only one
-+		 * reader.
-+		 */
-+		switch (len) {
-+		case -EAGAIN:
-+			/* Keep node in empty list */
-+			break;
-+		case -ENODATA:
-+			/*
-+			 * Buffer is finalized. Don't add to list of empty
-+			 * buffer, because it has no more data to provide, ever.
-+			 */
-+			list_del(&buf->iter.empty_node);
-+			break;
-+		case -EBUSY:
-+			CHAN_WARN_ON(chan, 1);
-+			break;
-+		default:
-+			/*
-+			 * Insert buffer into the heap, remove from empty buffer
-+			 * list. The heap should never overflow.
-+			 */
-+			CHAN_WARN_ON(chan, len < 0);
-+			list_del(&buf->iter.empty_node);
-+			CHAN_WARN_ON(chan, heap_insert(heap, buf) != NULL);
-+		}
-+	}
-+}
-+
-+static
-+void ring_buffer_wait_for_qs(const struct ring_buffer_config *config,
-+			     struct channel *chan)
-+{
-+	u64 timestamp_qs;
-+	unsigned long wait_msecs;
-+
-+	/*
-+	 * No need to wait if no empty buffers are present.
-+	 */
-+	if (list_empty(&chan->iter.empty_head))
-+		return;
-+
-+	timestamp_qs = config->cb.ring_buffer_clock_read(chan);
-+	/*
-+	 * We need to consider previously empty buffers.
-+	 * Do a get next buf record on each of them. Add them to
-+	 * the heap if they have data. If at least one of them
-+	 * don't have data, we need to wait for
-+	 * switch_timer_interval + MAX_SYSTEM_LATENCY (so we are sure the
-+	 * buffers have been switched either by the timer or idle entry) and
-+	 * check them again, adding them if they have data.
-+	 */
-+	ring_buffer_get_empty_buf_records(config, chan);
-+
-+	/*
-+	 * No need to wait if no empty buffers are present.
-+	 */
-+	if (list_empty(&chan->iter.empty_head))
-+		return;
-+
-+	/*
-+	 * We need to wait for the buffer switch timer to run. If the
-+	 * CPU is idle, idle entry performed the switch.
-+	 * TODO: we could optimize further by skipping the sleep if all
-+	 * empty buffers belong to idle or offline cpus.
-+	 */
-+	wait_msecs = jiffies_to_msecs(chan->switch_timer_interval);
-+	wait_msecs += MAX_SYSTEM_LATENCY;
-+	msleep(wait_msecs);
-+	ring_buffer_get_empty_buf_records(config, chan);
-+	/*
-+	 * Any buffer still in the empty list here cannot possibly
-+	 * contain an event with a timestamp prior to "timestamp_qs".
-+	 * The new quiescent state timestamp is the one we grabbed
-+	 * before waiting for buffer data.  It is therefore safe to
-+	 * ignore empty buffers up to last_qs timestamp for fusion
-+	 * merge.
-+	 */
-+	chan->iter.last_qs = timestamp_qs;
++	return put_user(val, (unsigned long __user *)arg);
 +}
 +
 +/**
-+ * channel_get_next_record - Get the next record in a channel.
-+ * @chan: channel
-+ * @ret_buf: the buffer in which the event is located (output)
++ *	ring_buffer_open - ring buffer open file operation
++ *	@inode: opened inode
++ *	@file: opened file
 + *
-+ * Returns the size of new current event, -EAGAIN if all buffers are empty,
-+ * -ENODATA if all buffers are empty and finalized. The channel must already be
-+ * opened for reading.
++ *	Open implementation. Makes sure only one open instance of a buffer is
++ *	done at a given moment.
 + */
-+
-+ssize_t channel_get_next_record(struct channel *chan,
-+				struct ring_buffer **ret_buf)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	struct ring_buffer *buf;
-+	struct ptr_heap *heap;
-+	ssize_t len;
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_GLOBAL) {
-+		*ret_buf = channel_get_ring_buffer(config, chan, 0);
-+		return ring_buffer_get_next_record(chan, *ret_buf);
-+	}
-+
-+	heap = &chan->iter.heap;
-+
-+	/*
-+	 * get next record for topmost buffer.
-+	 */
-+	buf = heap_maximum(heap);
-+	if (buf) {
-+		len = ring_buffer_get_next_record(chan, buf);
-+		/*
-+		 * Deal with -EAGAIN and -ENODATA.
-+		 * len >= 0 means record contains data.
-+		 */
-+		switch (len) {
-+		case -EAGAIN:
-+			buf->iter.timestamp = 0;
-+			list_add(&buf->iter.empty_node, &chan->iter.empty_head);
-+			/* Remove topmost buffer from the heap */
-+			CHAN_WARN_ON(chan, heap_remove(heap) != buf);
-+			break;
-+		case -ENODATA:
-+			/*
-+			 * Buffer is finalized. Remove buffer from heap and
-+			 * don't add to list of empty buffer, because it has no
-+			 * more data to provide, ever.
-+			 */
-+			CHAN_WARN_ON(chan, heap_remove(heap) != buf);
-+			break;
-+		case -EBUSY:
-+			CHAN_WARN_ON(chan, 1);
-+			break;
-+		default:
-+			/*
-+			 * Reinsert buffer into the heap. Note that heap can be
-+			 * partially empty, so we need to use
-+			 * heap_replace_max().
-+			 */
-+			CHAN_WARN_ON(chan, len < 0);
-+			CHAN_WARN_ON(chan, heap_replace_max(heap, buf) != buf);
-+			break;
-+		}
-+	}
-+
-+	buf = heap_maximum(heap);
-+	if (!buf || buf->iter.timestamp > chan->iter.last_qs) {
-+		/*
-+		 * Deal with buffers previously showing no data.
-+		 * Add buffers containing data to the heap, update
-+		 * last_qs.
-+		 */
-+		ring_buffer_wait_for_qs(config, chan);
-+	}
-+
-+	*ret_buf = buf = heap_maximum(heap);
-+	if (buf) {
-+		/*
-+		 * If this warning triggers, you probably need to check your
-+		 * system interrupt latency. Typical causes: too many printk()
-+		 * output going to a serial console with interrupts off.
-+		 * Allow for MAX_CLOCK_DELTA ns timestamp delta going backward.
-+		 * Observed on SMP KVM setups with trace_clock().
-+		 */
-+		if (chan->iter.last_timestamp
-+		    > (buf->iter.timestamp + MAX_CLOCK_DELTA)) {
-+			printk(KERN_WARNING "ring_buffer: timestamps going "
-+			       "backward. Last time %llu ns, cpu %d, "
-+			       "current time %llu ns, cpu %d, "
-+			       "delta %llu ns.\n",
-+			       chan->iter.last_timestamp, chan->iter.last_cpu,
-+			       buf->iter.timestamp, buf->backend.cpu,
-+			       chan->iter.last_timestamp - buf->iter.timestamp);
-+			CHAN_WARN_ON(chan, 1);
-+		}
-+		chan->iter.last_timestamp = buf->iter.timestamp;
-+		chan->iter.last_cpu = buf->backend.cpu;
-+		return buf->iter.payload_len;
-+	} else {
-+		/* Heap is empty */
-+		if (list_empty(&chan->iter.empty_head))
-+			return -ENODATA;	/* All buffers finalized */
-+		else
-+			return -EAGAIN;		/* Temporarily empty */
-+	}
-+}
-+EXPORT_SYMBOL_GPL(channel_get_next_record);
-+
-+static
-+void ring_buffer_iterator_init(struct channel *chan, struct ring_buffer *buf)
-+{
-+	if (buf->iter.allocated)
-+		return;
-+
-+	buf->iter.allocated = 1;
-+	if (chan->iter.read_open && !buf->iter.read_open) {
-+		CHAN_WARN_ON(chan, ring_buffer_open_read(buf) != 0);
-+		buf->iter.read_open = 1;
-+	}
-+
-+	/* Add to list of buffers without any current record */
-+	if (chan->backend.config->alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		list_add(&buf->iter.empty_node, &chan->iter.empty_head);
-+}
-+
-+#ifdef CONFIG_HOTPLUG_CPU
-+static
-+int __cpuinit channel_iterator_cpu_hotplug(struct notifier_block *nb,
-+					   unsigned long action,
-+					   void *hcpu)
-+{
-+	unsigned int cpu = (unsigned long)hcpu;
-+	struct channel *chan = container_of(nb, struct channel,
-+					    hp_iter_notifier);
-+	struct ring_buffer *buf = per_cpu_ptr(chan->backend.buf, cpu);
-+	const struct ring_buffer_config *config = chan->backend.config;
-+
-+	if (!chan->hp_iter_enable)
-+		return NOTIFY_DONE;
-+
-+	CHAN_WARN_ON(chan, config->alloc == RING_BUFFER_ALLOC_GLOBAL);
-+
-+	switch (action) {
-+	case CPU_DOWN_FAILED:
-+	case CPU_DOWN_FAILED_FROZEN:
-+	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
-+		ring_buffer_iterator_init(chan, buf);
-+		return NOTIFY_OK;
-+	default:
-+		return NOTIFY_DONE;
-+	}
-+}
-+#endif
-+
-+int channel_iterator_init(struct channel *chan)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	struct ring_buffer *buf;
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_PER_CPU) {
-+		int cpu, ret;
-+
-+		INIT_LIST_HEAD(&chan->iter.empty_head);
-+		ret = heap_init(&chan->iter.heap,
-+				num_possible_cpus()
-+				* sizeof(struct ring_buffer *),
-+				GFP_KERNEL, buf_is_higher);
-+		if (ret)
-+			return ret;
-+		/*
-+		 * In case of non-hotplug cpu, if the ring-buffer is allocated
-+		 * in early initcall, it will not be notified of secondary cpus.
-+		 * In that off case, we need to allocate for all possible cpus.
-+		 */
-+#ifdef CONFIG_HOTPLUG_CPU
-+		chan->hp_iter_notifier.notifier_call =
-+			channel_iterator_cpu_hotplug;
-+		chan->hp_iter_notifier.priority = 10;
-+		register_cpu_notifier(&chan->hp_iter_notifier);
-+		get_online_cpus();
-+		for_each_online_cpu(cpu) {
-+			buf = per_cpu_ptr(chan->backend.buf, cpu);
-+			ring_buffer_iterator_init(chan, buf);
-+		}
-+		chan->hp_iter_enable = 1;
-+		put_online_cpus();
-+#else
-+		for_each_possible_cpu(cpu) {
-+			buf = per_cpu_ptr(chan->backend.buf, cpu);
-+			ring_buffer_iterator_init(chan, buf);
-+		}
-+#endif
-+	} else {
-+		buf = channel_get_ring_buffer(config, chan, 0);
-+		ring_buffer_iterator_init(chan, buf);
-+	}
-+	return 0;
-+}
-+
-+void channel_iterator_unregister_notifiers(struct channel *chan)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_PER_CPU) {
-+		chan->hp_iter_enable = 0;
-+		unregister_cpu_notifier(&chan->hp_iter_notifier);
-+	}
-+}
-+
-+void channel_iterator_free(struct channel *chan)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		heap_free(&chan->iter.heap);
-+}
-+
-+int ring_buffer_iterator_open(struct ring_buffer *buf)
-+{
-+	struct channel *chan = buf->backend.chan;
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	CHAN_WARN_ON(chan, config->output != RING_BUFFER_ITERATOR);
-+	return ring_buffer_open_read(buf);
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_iterator_open);
-+
-+/*
-+ * Note: Iterators must not be mixed with other types of outputs, because an
-+ * iterator can leave the buffer in "GET" state, which is not consistent with
-+ * other types of output (mmap, splice, raw data read).
-+ */
-+void ring_buffer_iterator_release(struct ring_buffer *buf)
-+{
-+	ring_buffer_release_read(buf);
-+}
-+EXPORT_SYMBOL_GPL(ring_buffer_iterator_release);
-+
-+int channel_iterator_open(struct channel *chan)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	struct ring_buffer *buf;
-+	int ret = 0, cpu;
-+
-+	CHAN_WARN_ON(chan, config->output != RING_BUFFER_ITERATOR);
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_PER_CPU) {
-+		get_online_cpus();
-+		/* Allow CPU hotplug to keep track of opened reader */
-+		chan->iter.read_open = 1;
-+		for_each_channel_cpu(cpu, chan) {
-+			buf = channel_get_ring_buffer(config, chan, cpu);
-+			ret = ring_buffer_iterator_open(buf);
-+			if (ret)
-+				goto error;
-+			buf->iter.read_open = 1;
-+		}
-+		put_online_cpus();
-+	} else {
-+		buf = channel_get_ring_buffer(config, chan, 0);
-+		ret = ring_buffer_iterator_open(buf);
-+	}
-+	return ret;
-+error:
-+	/* Error should always happen on CPU 0, hence no close is required. */
-+	CHAN_WARN_ON(chan, cpu != 0);
-+	put_online_cpus();
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(channel_iterator_open);
-+
-+void channel_iterator_release(struct channel *chan)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	struct ring_buffer *buf;
-+	int cpu;
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_PER_CPU) {
-+		get_online_cpus();
-+		for_each_channel_cpu(cpu, chan) {
-+			buf = channel_get_ring_buffer(config, chan, cpu);
-+			if (buf->iter.read_open) {
-+				ring_buffer_iterator_release(buf);
-+				buf->iter.read_open = 0;
-+			}
-+		}
-+		chan->iter.read_open = 0;
-+		put_online_cpus();
-+	} else {
-+		buf = channel_get_ring_buffer(config, chan, 0);
-+		ring_buffer_iterator_release(buf);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(channel_iterator_release);
-+
-+void ring_buffer_iterator_reset(struct ring_buffer *buf)
-+{
-+	struct channel *chan = buf->backend.chan;
-+
-+	if (buf->iter.state != ITER_GET_SUBBUF)
-+		ring_buffer_put_next_subbuf(buf);
-+	buf->iter.state = ITER_GET_SUBBUF;
-+	/* Remove from heap (if present). */
-+	if (heap_cherrypick(&chan->iter.heap, buf))
-+		list_add(&buf->iter.empty_node, &chan->iter.empty_head);
-+	buf->iter.timestamp = 0;
-+	buf->iter.header_len = 0;
-+	buf->iter.payload_len = 0;
-+	buf->iter.consumed = 0;
-+	buf->iter.read_offset = 0;
-+	buf->iter.data_size = 0;
-+	/* Don't reset allocated and read_open */
-+}
-+
-+void channel_iterator_reset(struct channel *chan)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	struct ring_buffer *buf;
-+	int cpu;
-+
-+	/* Empty heap, put into empty_head */
-+	while ((buf = heap_remove(&chan->iter.heap)) != NULL)
-+		list_add(&buf->iter.empty_node, &chan->iter.empty_head);
-+
-+	for_each_channel_cpu(cpu, chan) {
-+		buf = channel_get_ring_buffer(config, chan, cpu);
-+		ring_buffer_iterator_reset(buf);
-+	}
-+	/* Don't reset read_open */
-+	chan->iter.last_qs = 0;
-+	chan->iter.last_timestamp = 0;
-+	chan->iter.last_cpu = 0;
-+	chan->iter.len_left = 0;
-+}
-+
-+/*
-+ * Ring buffer payload extraction read() implementation.
-+ */
-+static
-+ssize_t channel_ring_buffer_file_read(struct file *filp,
-+				      char __user *user_buf,
-+				      size_t count,
-+				      loff_t *ppos,
-+				      struct channel *chan,
-+				      struct ring_buffer *buf,
-+				      int fusionmerge)
-+{
-+	const struct ring_buffer_config *config = chan->backend.config;
-+	size_t read_count = 0, read_offset;
-+	ssize_t len;
-+
-+	might_sleep();
-+	if (!access_ok(VERIFY_WRITE, user_buf, count))
-+		return -EFAULT;
-+
-+	/* Finish copy of previous record */
-+	if (*ppos != 0) {
-+		if (read_count < count) {
-+			len = chan->iter.len_left;
-+			read_offset = *ppos;
-+			if (config->alloc == RING_BUFFER_ALLOC_PER_CPU
-+			    && fusionmerge)
-+				buf = heap_maximum(&chan->iter.heap);
-+			CHAN_WARN_ON(chan, !buf);
-+			goto skip_get_next;
-+		}
-+	}
-+
-+	while (read_count < count) {
-+		size_t copy_len, space_left;
-+
-+		if (fusionmerge)
-+			len = channel_get_next_record(chan, &buf);
-+		else
-+			len = ring_buffer_get_next_record(chan, buf);
-+len_test:
-+		if (len < 0) {
-+			/*
-+			 * Check if buffer is finalized (end of file).
-+			 */
-+			if (len == -ENODATA) {
-+				/* A 0 read_count will tell about end of file */
-+				goto nodata;
-+			}
-+			if (filp->f_flags & O_NONBLOCK) {
-+				if (!read_count)
-+					read_count = -EAGAIN;
-+				goto nodata;
-+			} else {
-+				int error;
-+
-+				/*
-+				 * No data available at the moment, return what
-+				 * we got.
-+				 */
-+				if (read_count)
-+					goto nodata;
-+
-+				/*
-+				 * Wait for returned len to be >= 0 or -ENODATA.
-+				 */
-+				if (fusionmerge)
-+					error = wait_event_interruptible(
-+					  chan->read_wait,
-+					  ((len = channel_get_next_record(chan,
-+						&buf)), len != -EAGAIN));
-+				else
-+					error = wait_event_interruptible(
-+					  buf->read_wait,
-+					  ((len = ring_buffer_get_next_record(
-+						  chan, buf)), len != -EAGAIN));
-+				CHAN_WARN_ON(chan, len == -EBUSY);
-+				if (error) {
-+					read_count = error;
-+					goto nodata;
-+				}
-+				CHAN_WARN_ON(chan, len < 0 && len != -ENODATA);
-+				goto len_test;
-+			}
-+		}
-+		read_offset = buf->iter.read_offset;
-+skip_get_next:
-+		space_left = count - read_count;
-+		if (len <= space_left) {
-+			copy_len = len;
-+			chan->iter.len_left = 0;
-+			*ppos = 0;
-+		} else {
-+			copy_len = space_left;
-+			chan->iter.len_left = len - copy_len;
-+			*ppos = read_offset + copy_len;
-+		}
-+		if (__ring_buffer_copy_to_user(&buf->backend, read_offset,
-+					       &user_buf[read_count],
-+					       copy_len)) {
-+			/*
-+			 * Leave the len_left and ppos values at their current
-+			 * state, as we currently have a valid event to read.
-+			 */
-+			return -EFAULT;
-+		}
-+		read_count += copy_len;
-+	};
-+	return read_count;
-+
-+nodata:
-+	*ppos = 0;
-+	chan->iter.len_left = 0;
-+	return read_count;
-+}
-+
-+/**
-+ * ring_buffer_sp_file_read - Read buffer record payload.
-+ * @filp: file structure pointer.
-+ * @buffer: user buffer to read data into.
-+ * @count: number of bytes to read.
-+ * @ppos: file read position.
-+ *
-+ * Returns a negative value on error, or the number of bytes read on success.
-+ * ppos is used to save the position _within the current record_ between calls
-+ * to read().
-+ */
-+static
-+ssize_t ring_buffer_file_read(struct file *filp,
-+			      char __user *user_buf,
-+			      size_t count,
-+			      loff_t *ppos)
-+{
-+	struct inode *inode = filp->f_dentry->d_inode;
-+	struct ring_buffer *buf = inode->i_private;
-+	struct channel *chan = buf->backend.chan;
-+
-+	return channel_ring_buffer_file_read(filp, user_buf, count, ppos,
-+					     chan, buf, 0);
-+}
-+
-+/**
-+ * channel_file_read - Read channel record payload.
-+ * @filp: file structure pointer.
-+ * @buffer: user buffer to read data into.
-+ * @count: number of bytes to read.
-+ * @ppos: file read position.
-+ *
-+ * Returns a negative value on error, or the number of bytes read on success.
-+ * ppos is used to save the position _within the current record_ between calls
-+ * to read().
-+ */
-+static
-+ssize_t channel_file_read(struct file *filp,
-+			  char __user *user_buf,
-+			  size_t count,
-+			  loff_t *ppos)
-+{
-+	struct inode *inode = filp->f_dentry->d_inode;
-+	struct channel *chan = inode->i_private;
-+	const struct ring_buffer_config *config = chan->backend.config;
-+
-+	if (config->alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		return channel_ring_buffer_file_read(filp, user_buf, count,
-+						     ppos, chan, NULL, 1);
-+	else {
-+		struct ring_buffer *buf =
-+			channel_get_ring_buffer(config, chan, 0);
-+		return channel_ring_buffer_file_read(filp, user_buf, count,
-+						     ppos, chan, buf, 0);
-+	}
-+}
-+
-+static
-+int ring_buffer_file_open(struct inode *inode, struct file *file)
++int ring_buffer_open(struct inode *inode, struct file *file)
 +{
 +	struct ring_buffer *buf = inode->i_private;
 +	int ret;
 +
-+	ret = ring_buffer_iterator_open(buf);
++	ret = ring_buffer_open_read(buf);
 +	if (ret)
 +		return ret;
 +
 +	file->private_data = buf;
 +	ret = nonseekable_open(inode, file);
 +	if (ret)
-+		goto release_iter;
++		goto release_read;
 +	return 0;
 +
-+release_iter:
-+	ring_buffer_iterator_release(buf);
++release_read:
++	ring_buffer_release_read(buf);
 +	return ret;
 +}
 +
-+static
-+int ring_buffer_file_release(struct inode *inode, struct file *file)
++/**
++ *	ring_buffer_release - ring buffer release file operation
++ *	@inode: opened inode
++ *	@file: opened file
++ *
++ *	Release implementation.
++ */
++int ring_buffer_release(struct inode *inode, struct file *file)
 +{
 +	struct ring_buffer *buf = inode->i_private;
 +
-+	ring_buffer_iterator_release(buf);
++	ring_buffer_release_read(buf);
++
 +	return 0;
 +}
-+
-+static
-+int channel_file_open(struct inode *inode, struct file *file)
-+{
-+	struct channel *chan = inode->i_private;
-+	int ret;
-+
-+	ret = channel_iterator_open(chan);
-+	if (ret)
-+		return ret;
-+
-+	file->private_data = chan;
-+	ret = nonseekable_open(inode, file);
-+	if (ret)
-+		goto release_iter;
-+	return 0;
-+
-+release_iter:
-+	channel_iterator_release(chan);
-+	return ret;
-+}
-+
-+static
-+int channel_file_release(struct inode *inode, struct file *file)
-+{
-+	struct channel *chan = inode->i_private;
-+
-+	channel_iterator_release(chan);
-+	return 0;
-+}
-+
-+const struct file_operations channel_payload_file_operations = {
-+	.open = channel_file_open,
-+	.release = channel_file_release,
-+	.read = channel_file_read,
-+	.llseek = ring_buffer_no_llseek,
-+};
-+EXPORT_SYMBOL_GPL(channel_payload_file_operations);
-+
-+const struct file_operations ring_buffer_payload_file_operations = {
-+	.open = ring_buffer_file_open,
-+	.release = ring_buffer_file_release,
-+	.read = ring_buffer_file_read,
-+	.llseek = ring_buffer_no_llseek,
-+};
-+EXPORT_SYMBOL_GPL(ring_buffer_payload_file_operations);
-Index: linux.trees.git/include/linux/ringbuffer/iterator.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux.trees.git/include/linux/ringbuffer/iterator.h	2010-08-16 16:09:23.000000000 -0400
-@@ -0,0 +1,70 @@
-+#ifndef _LINUX_RING_BUFFER_ITERATOR_H
-+#define _LINUX_RING_BUFFER_ITERATOR_H
-+
-+/*
-+ * linux/ringbuffer/iterator.h
-+ *
-+ * (C) Copyright 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-+ *
-+ * Ring buffer and channel iterators.
-+ *
-+ * Author:
-+ *	Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-+ *
-+ * Dual LGPL v2.1/GPL v2 license.
-+ */
-+
-+#include <linux/ringbuffer/backend.h>
-+#include <linux/ringbuffer/frontend.h>
-+
-+/*
-+ * ring_buffer_get_next_record advances the buffer read position to the next
-+ * record. It returns either the size of the next record, -EAGAIN if there is
-+ * currently no data available, or -ENODATA if no data is available and buffer
-+ * is finalized.
-+ */
-+extern ssize_t ring_buffer_get_next_record(struct channel *chan,
-+					   struct ring_buffer *buf);
-+
-+/*
-+ * channel_get_next_record advances the buffer read position to the next record.
-+ * It returns either the size of the next record, -EAGAIN if there is currently
-+ * no data available, or -ENODATA if no data is available and buffer is
-+ * finalized.
-+ * Returns the current buffer in ret_buf.
-+ */
-+extern ssize_t channel_get_next_record(struct channel *chan,
-+				       struct ring_buffer **ret_buf);
 +
 +/**
-+ * read_current_record - copy the buffer current record into dest.
-+ * @buf: ring buffer
-+ * @dest: destination where the record should be copied
++ *	ring_buffer_poll - ring buffer poll file operation
++ *	@filp: the file
++ *	@wait: poll table
 + *
-+ * dest should be large enough to contain the record. Returns the number of
-+ * bytes copied.
++ *	Poll implementation.
 + */
-+static inline size_t read_current_record(struct ring_buffer *buf, void *dest)
++unsigned int ring_buffer_poll(struct file *filp, poll_table *wait)
 +{
-+	return ring_buffer_read(&buf->backend, buf->iter.read_offset,
-+				dest, buf->iter.payload_len);
++	unsigned int mask = 0;
++	struct inode *inode = filp->f_dentry->d_inode;
++	struct ring_buffer *buf = inode->i_private;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
++	int finalized;
++
++	if (filp->f_mode & FMODE_READ) {
++		poll_wait_set_exclusive(wait);
++		poll_wait(filp, &buf->read_wait, wait);
++
++		finalized = ring_buffer_is_finalized(config, buf);
++		/*
++		 * ring_buffer_is_finalized() contains a smp_rmb() ordering
++		 * finalized load before offsets loads.
++		 */
++
++		WARN_ON(atomic_long_read(&buf->active_readers) != 1);
++retry:
++		if (subbuf_trunc(ring_buffer_get_offset(config, buf), chan)
++		  - subbuf_trunc(ring_buffer_get_consumed(config, buf), chan)
++		  == 0) {
++			if (finalized)
++				return POLLHUP;
++			else {
++				/*
++				 * The memory barriers
++				 * __wait_event()/wake_up_interruptible() take
++				 * care of "raw_spin_is_locked" memory ordering.
++				 */
++				if (raw_spin_is_locked(&buf->raw_idle_spinlock))
++					goto retry;
++				else
++					return 0;
++			}
++		} else {
++			if (subbuf_trunc(ring_buffer_get_offset(config, buf),
++					 chan)
++			  - subbuf_trunc(ring_buffer_get_consumed(config, buf),
++					 chan)
++			  >= chan->backend.buf_size)
++				return POLLPRI | POLLRDBAND;
++			else
++				return POLLIN | POLLRDNORM;
++		}
++	}
++	return mask;
 +}
 +
-+extern int ring_buffer_iterator_open(struct ring_buffer *buf);
-+extern void ring_buffer_iterator_release(struct ring_buffer *buf);
-+extern int channel_iterator_open(struct channel *chan);
-+extern void channel_iterator_release(struct channel *chan);
-+
-+extern const struct file_operations channel_payload_file_operations;
-+extern const struct file_operations ring_buffer_payload_file_operations;
-+
-+/*
-+ * Used internally.
++/**
++ *	ring_buffer_ioctl - control ring buffer reader synchronization
++ *
++ *	@filp: the file
++ *	@cmd: the command
++ *	@arg: command arg
++ *
++ *	This ioctl implements commands necessary for producer/consumer
++ *	and flight recorder reader interaction :
++ *	RING_BUFFER_GET_NEXT_SUBBUF
++ *		Get the next sub-buffer that can be read. It never blocks.
++ *	RING_BUFFER_PUT_NEXT_SUBBUF
++ *		Release the currently read sub-buffer.
++ *	RING_BUFFER_GET_SUBBUF_SIZE
++ *		returns the size of the current sub-buffer.
++ *	RING_BUFFER_GET_MAX_SUBBUF_SIZE
++ *		returns the maximum size for sub-buffers.
++ *	RING_BUFFER_GET_NUM_SUBBUF
++ *		returns the number of reader-visible sub-buffers in the per cpu
++ *              channel (for mmap).
++ *      RING_BUFFER_GET_MMAP_READ_OFFSET
++ *              returns the offset of the subbuffer belonging to the reader.
++ *              Should only be used for mmap clients.
 + */
-+int channel_iterator_init(struct channel *chan);
-+void channel_iterator_unregister_notifiers(struct channel *chan);
-+void channel_iterator_free(struct channel *chan);
-+void channel_iterator_reset(struct channel *chan);
-+void ring_buffer_iterator_reset(struct ring_buffer *buf);
++long ring_buffer_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	struct inode *inode = filp->f_dentry->d_inode;
++	struct ring_buffer *buf = inode->i_private;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
 +
-+#endif /* _LINUX_RING_BUFFER_ITERATOR_H */
-Index: linux.trees.git/lib/ringbuffer/Makefile
-===================================================================
---- linux.trees.git.orig/lib/ringbuffer/Makefile	2010-08-16 16:09:23.000000000 -0400
-+++ linux.trees.git/lib/ringbuffer/Makefile	2010-08-17 16:09:46.000000000 -0400
-@@ -1,5 +1,6 @@
- obj-y += ring_buffer_backend.o
- obj-y += ring_buffer_frontend.o
-+obj-y += ring_buffer_iterator.o
- obj-y += ring_buffer_vfs.o
- obj-y += ring_buffer_splice.o
- obj-y += ring_buffer_mmap.o
++	switch (cmd) {
++	case RING_BUFFER_SNAPSHOT:
++		return ring_buffer_snapshot(buf, &buf->cons_snapshot,
++					    &buf->prod_snapshot);
++	case RING_BUFFER_SNAPSHOT_GET_CONSUMED:
++		return put_ulong(buf->cons_snapshot, arg);
++	case RING_BUFFER_SNAPSHOT_GET_PRODUCED:
++		return put_ulong(buf->prod_snapshot, arg);
++	case RING_BUFFER_GET_SUBBUF:
++	{
++		unsigned long uconsume;
++		long ret;
++
++		ret = get_user(uconsume, (unsigned long __user *) arg);
++		if (ret)
++			return ret; /* will return -EFAULT */
++		return ring_buffer_get_subbuf(buf, uconsume);
++	}
++	case RING_BUFFER_PUT_SUBBUF:
++		ring_buffer_put_subbuf(buf);
++		return 0;
++
++	case RING_BUFFER_GET_NEXT_SUBBUF:
++		return ring_buffer_get_next_subbuf(buf);
++	case RING_BUFFER_PUT_NEXT_SUBBUF:
++		ring_buffer_put_next_subbuf(buf);
++		return 0;
++	case RING_BUFFER_GET_SUBBUF_SIZE:
++		return put_ulong(ring_buffer_get_read_data_size(config, buf),
++				 arg);
++	case RING_BUFFER_GET_MAX_SUBBUF_SIZE:
++		return put_ulong(chan->backend.subbuf_size, arg);
++	case RING_BUFFER_GET_MMAP_LEN:
++	{
++		unsigned long mmap_buf_len;
++
++		if (config->output != RING_BUFFER_MMAP)
++			return -EINVAL;
++		mmap_buf_len = chan->backend.buf_size;
++		if (chan->backend.extra_reader_sb)
++			mmap_buf_len += chan->backend.subbuf_size;
++		if (mmap_buf_len > INT_MAX)
++			return -EFBIG;
++		return put_ulong(mmap_buf_len, arg);
++	}
++	case RING_BUFFER_GET_MMAP_READ_OFFSET:
++	{
++		unsigned long sb_bindex;
++
++		if (config->output != RING_BUFFER_MMAP)
++			return -EINVAL;
++		sb_bindex = subbuffer_id_get_index(config,
++						   buf->backend.buf_rsb.id);
++		return put_ulong(buf->backend.array[sb_bindex]->mmap_offset,
++				 arg);
++	}
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++
++#ifdef CONFIG_COMPAT
++long ring_buffer_compat_ioctl(struct file *filp, unsigned int cmd,
++			      unsigned long arg)
++{
++	struct inode *inode = filp->f_dentry->d_inode;
++	struct ring_buffer *buf = inode->i_private;
++	struct channel *chan = buf->backend.chan;
++	const struct ring_buffer_config *config = chan->backend.config;
++
++	switch (cmd) {
++	case RING_BUFFER_SNAPSHOT:
++		return ring_buffer_snapshot(buf, &buf->cons_snapshot,
++					    &buf->prod_snapshot);
++	case RING_BUFFER_SNAPSHOT_GET_CONSUMED:
++		return compat_put_ulong(buf->cons_snapshot, arg);
++	case RING_BUFFER_SNAPSHOT_GET_PRODUCED:
++		return compat_put_ulong(buf->prod_snapshot, arg);
++	case RING_BUFFER_GET_SUBBUF:
++	{
++		__u32 uconsume;
++		unsigned long consume;
++		long ret;
++
++		ret = get_user(uconsume, (__u32 __user *) arg);
++		if (ret)
++			return ret; /* will return -EFAULT */
++		consume = buf->cons_snapshot;
++		consume &= ~0xFFFFFFFFL;
++		consume |= uconsume;
++		return ring_buffer_get_subbuf(buf, consume);
++	}
++	case RING_BUFFER_PUT_SUBBUF:
++		ring_buffer_put_subbuf(buf);
++		return 0;
++
++	case RING_BUFFER_GET_NEXT_SUBBUF:
++		return ring_buffer_get_next_subbuf(buf);
++	case RING_BUFFER_PUT_NEXT_SUBBUF:
++		ring_buffer_put_next_subbuf(buf);
++		return 0;
++	case RING_BUFFER_GET_SUBBUF_SIZE:
++	{
++		unsigned long data_size;
++
++		data_size = ring_buffer_get_read_data_size(config, buf);
++		if (data_size > UINT_MAX)
++			return -EFBIG;
++		return put_ulong(data_size, arg);
++	}
++	case RING_BUFFER_GET_MAX_SUBBUF_SIZE:
++		if (chan->backend.subbuf_size > UINT_MAX)
++			return -EFBIG;
++		return put_ulong(chan->backend.subbuf_size, arg);
++	case RING_BUFFER_GET_MMAP_LEN:
++	{
++		unsigned long mmap_buf_len;
++
++		if (config->output != RING_BUFFER_MMAP)
++			return -EINVAL;
++		mmap_buf_len = chan->backend.buf_size;
++		if (chan->backend.extra_reader_sb)
++			mmap_buf_len += chan->backend.subbuf_size;
++		if (mmap_buf_len > UINT_MAX)
++			return -EFBIG;
++		return put_ulong(mmap_buf_len, arg);
++	}
++	case RING_BUFFER_GET_MMAP_READ_OFFSET:
++	{
++		unsigned long sb_bindex, read_offset;
++
++		if (config->output != RING_BUFFER_MMAP)
++			return -EINVAL;
++		sb_bindex = subbuffer_id_get_index(config,
++						   buf->backend.buf_rsb.id);
++		read_offset = buf->backend.array[sb_bindex]->mmap_offset;
++		if (read_offset > UINT_MAX)
++			return -EINVAL;
++		return put_ulong(read_offset, arg);
++	}
++	default:
++		return -ENOIOCTLCMD;
++	}
++}
++#endif
++
++const struct file_operations ring_buffer_file_operations = {
++	.open = ring_buffer_open,
++	.release = ring_buffer_release,
++	.poll = ring_buffer_poll,
++	.splice_read = ring_buffer_splice_read,
++	.mmap = ring_buffer_mmap,
++	.unlocked_ioctl = ring_buffer_ioctl,
++	.llseek = ring_buffer_no_llseek,
++#ifdef CONFIG_COMPAT
++	.compat_ioctl = ring_buffer_compat_ioctl,
++#endif
++};
++EXPORT_SYMBOL_GPL(ring_buffer_file_operations);
++
++MODULE_LICENSE("GPL and additional rights");
++MODULE_AUTHOR("Mathieu Desnoyers");
++MODULE_DESCRIPTION("Ring Buffer Library VFS");
 
