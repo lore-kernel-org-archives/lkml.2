@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab0HQOKV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 10:10:21 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:52323 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab0HQOKT (ORCPT
+	id S1757498Ab0HQOKe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 10:10:34 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:53911 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757459Ab0HQOKc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 10:10:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sP+iVot+v+hLwHyvfUhWOo7kU3b8/CSRpSnP/0bWJQVXMxvpOnzVlImwKMRL6orxbq
-         hP4LEOvoBIz3EdW3oycvq4hyYEENeXJTmBtB2yXezP/fAE5Ayr2Th8BNa+JGW6KQ/doc
-         6/MTZ7Ya7VFMvyJqJlg4WjBCNVaxxmV4/2yi4=
-Date: Tue, 17 Aug 2010 18:10:13 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC -tip]
-Message-ID: <20100817141013.GA5879@lenovo>
-References: <20100816110253.GD5805@lenovo> <1282036441.11858.14.camel@minggr.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282036441.11858.14.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 17 Aug 2010 10:10:32 -0400
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Alexander Shishkin <virtuoso@slind.org>
+Subject: [PATCH] cramfs: only unlock new inodes
+Date: Tue, 17 Aug 2010 17:08:35 +0300
+Message-Id: <1282054115-8322-1-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.2.rc1.1.gb2842
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 05:14:01PM +0800, Lin Ming wrote:
-> On Mon, 2010-08-16 at 19:02 +0800, Cyrill Gorcunov wrote:
-> > Hi,
-> > 
-> > please review the approach, I can't test it due to lack
-> > of hw (btw Ming, if you have some spare minutes -- mind to
-> > pass some event as RAW and see how it goes?).
-> 
-> #raw event for cpu cycles
-> perf top -e r3000020c0403c000
-> 
-> #raw event for cache-misses
-> perf top -e r120e00030803e000
-> 
+Commit 77b8a75f5bb introduced a warning at fs/inode.c:692 unlock_new_inode(),
+caused by unlock_new_inode() being called on existing inodes as well.
 
-Ming, I had something different in mind, I'll prepare the case
-to be tested. Will notify you. Thanks!
+This patch changes setup_inode() to only call unlock_new_inode() for I_NEW
+inodes.
 
-> I tried some raw events and it works.
-> 
-> > Index: linux-2.6.git/arch/x86/include/asm/Kbuild
-> > =====================================================================
-> > --- linux-2.6.git.orig/arch/x86/include/asm/Kbuild
-> > +++ linux-2.6.git/arch/x86/include/asm/Kbuild
-> > @@ -24,3 +24,4 @@ unifdef-y += unistd_32.h
-> >  unifdef-y += unistd_64.h
-> >  unifdef-y += vm86.h
-> >  unifdef-y += vsyscall.h
-> > +unifdef-y += perf_event_p4.h
-> 
-> +header-y += perf_event_p4.h
-> 
-> Need to update this to header-y.
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+---
+ fs/cramfs/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/fs/cramfs/inode.c b/fs/cramfs/inode.c
+index a53b130..1e7a330 100644
+--- a/fs/cramfs/inode.c
++++ b/fs/cramfs/inode.c
+@@ -80,7 +80,7 @@ static struct inode *get_cramfs_inode(struct super_block *sb,
+ 		}
+ 	} else {
+ 		inode = iget_locked(sb, CRAMINO(cramfs_inode));
+-		if (inode) {
++		if (inode && (inode->i_state & I_NEW)) {
+ 			setup_inode(inode, cramfs_inode);
+ 			unlock_new_inode(inode);
+ 		}
+-- 
+1.7.1
 
-Yeah, thanks for catching this!
-
-> 
-> Thanks,
-> Lin Ming
-> 
-...
-
-	-- Cyrill
