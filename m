@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab0HQVo2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 17:44:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64410 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746Ab0HQVoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 17:44:23 -0400
-Date: Tue, 17 Aug 2010 17:44:04 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 19/39] union-mount: Implement union lookup
-Message-ID: <20100817214404.GH5556@shell>
-References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-20-git-send-email-vaurora@redhat.com> <E1Ojud6-0004Br-D6@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Ojud6-0004Br-D6@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+	id S1751334Ab0HQVrP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 17:47:15 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:56871 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751057Ab0HQVrJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 17:47:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=XpYch/9weeTPrmmmbj00CctdfuSSfyiILXw/FnCwx3OKCYfBNHqLPWI4BipM1iux/
+	hi5OANWU/S9ANepx7sZ1g==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikcaVKnJxC18tUcJRTQwAukYhPdWMgGGrNaVjM_@mail.gmail.com>
+References: <20100816.211218.189709876.davem@davemloft.net>
+	<AANLkTikDXoRMRL0y_Y_7qVS=9LOw_yLS9MuUgq2dTCZf@mail.gmail.com>
+	<AANLkTi=ZdrtWSYE0BEXJ-YDoxjta3h7RMR7Y8Z6Hu-Hc@mail.gmail.com>
+	<AANLkTinO5yip7agVO3Lq3YLjDYmkB9MP14xjt3TusMfW@mail.gmail.com>
+	<AANLkTik9qUf_F0NDoW2SBjWGHk2=ZdvkLrCORu3gGa2o@mail.gmail.com>
+	<AANLkTikcaVKnJxC18tUcJRTQwAukYhPdWMgGGrNaVjM_@mail.gmail.com>
+Date: Tue, 17 Aug 2010 14:47:05 -0700
+Message-ID: <AANLkTimLqc02xNun0QR5ZgP497mm8ZC5ZfpCUx2AGz4Y@mail.gmail.com>
+Subject: Re: tasks getting stuck on mmap_sem?
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tony Luck <tony.luck@intel.com>, David Miller <davem@davemloft.net>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 03:49:04PM +0200, Miklos Szeredi wrote:
-> On Sun,  8 Aug 2010, Valerie Aurora wrote:
-> > Implement unioned directories, whiteouts, and fallthrus in pathname
-> > lookup routines.  do_lookup() and lookup_hash() call lookup_union()
-> > after looking up the dentry from the top-level file system.
-> > lookup_union() is centered around __lookup_hash(), which does cached
-> > and/or real lookups and revalidates each dentry in the union stack.
-> > 
-> > XXX - implement negative union cache entries
-> > 
-> > XXX - handle different permissions on directories
-> 
-> If process doing the lookup doesn't have write permission on the top
-> level directory then the lookup will fail.  This is not intended, is
-> it?
+On Tue, Aug 17, 2010 at 2:28 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Oh, and it strikes me when looking at the sparc rwsem-const.h that it
+> has some unsigned constants in it. I think
+>
+>  #define RWSEM_WAITING_BIAS              0xffff0000
+>
+> is actually unsigned, because it's a hex constant that doesn't fit in
+> a signed int. So it's of type 'unsigned int' if I recall the C type
+> rules right.
 
-Does it fail?  I'm not checking permissions before calling
-->fallthru().  But I can't test this because the code doesn't set the
-owner of the copied up directory correctly. :)
+Eeeek, this totally escaped me when I had a quick look at constant
+signed-ness across architectures. This is definitely a problem.
 
-Don't bother doing any permission testing on this version - it's known
-buggy and I will fix it in the next release.
+> #define RWSEM_WAITING_BIAS             (-0x00010000)
 
-Thanks,
+David, do you still see failures with v2.6.36-rc1 plus that one line fix ?
 
--VAL
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
