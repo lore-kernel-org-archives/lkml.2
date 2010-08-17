@@ -1,106 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619Ab0HQFfi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 01:35:38 -0400
-Received: from reptilian.habets.pp.se ([193.151.93.131]:3446 "EHLO
-	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab0HQFfh (ORCPT
+	id S1755552Ab0HQFjG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 01:39:06 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46834 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753594Ab0HQFjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 01:35:37 -0400
-Date: Tue, 17 Aug 2010 07:35:28 +0200 (CEST)
-From: Thomas Habets <thomas@habets.pp.se>
-X-X-Sender: thompa@red.crap.retrofitta.se
-To: Thomas Habets <thomas@habets.pp.se>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
- to reset
-In-Reply-To: <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
-Message-ID: <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se>
-References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se> <1281953960.2524.23.camel@edumazet-laptop> <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	Tue, 17 Aug 2010 01:39:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MqPZeQhg1SZ6PkrsJD9MQ51FYBPd/Wx9k8pf71LD3FslTqI26oCJcAJB2+yNwCPff+
+         mw7lzjxi0OVbc0CyH8cyoKIsr8+sz2Y3NyWNaPX4BCQySZ/V+zM8KgIKyNUUgL2Sv880
+         qSgiU3rFntBKICmo/PrX1CmfDv2TE/UALHbK8=
+Date: Tue, 17 Aug 2010 13:43:18 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: hiromu yagura <hiromu1996@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
+        Toralf Foerster <toralf.foerster@gmx.de>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Subject: Re: [PATCH] kconfig: Fix variable name typo in
+ streamline_config.pl.
+Message-ID: <20100817054318.GC5095@cr0.nay.redhat.com>
+References: <1281845597.11566.5.camel@camp10-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281845597.11566.5.camel@camp10-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 16 Aug 2010, Thomas Habets wrote:
-> Am I not allowed to add addresses to lo? That I've deconfigured this address 
-> and rebooted the box to check if this matters.
-
-It didn't help.
-
-> I will re-check ethtool and Cisco router output for mismatches when it breaks 
-> again to make sure that there's no change or errors counting up.
-
-IPv6 is currently not working and it's still 1000 Full on both sides 
-("show int GiX/Y" and "ethtool eth0").
-No errors in "ethtool -S eth0" or "show int GiX/Y".
-
-"ethtool eth0" output is the same as yesterday.
-
-Here's the addresses and routing table as they are now, and have been 
-since reboot:
-
-$ ip -6 a
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436
-     inet6 ::1/128 scope host
-        valid_lft forever preferred_lft forever
-2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qlen 1000
-     inet6 2a00:800:752:1::5c:2/112 scope global
-        valid_lft forever preferred_lft forever
-     inet6 fe80::224:81ff:fea3:4424/64 scope link
-        valid_lft forever preferred_lft forever
+On Sun, Aug 15, 2010 at 01:13:17PM +0900, hiromu yagura wrote:
+>When I added "use strict;" to streamline_config.pl, I saw following
+>warnings.
+>
+>> Global symbol "%prompt" requires explicit package name at
+>scripts/kconfig/streamline_config.pl line 183.
+>> Global symbol "%prompt" requires explicit package name at
+>scripts/kconfig/streamline_config.pl line 368.
+>
+>Let's fix it.
+>(Note: prompts[] is defined at line 123 but never used. This seems
+>typo.)
+>
+>Cc: Steven Rostedt <rostedt@goodmis.org>
+>Cc: Toralf Foerster <toralf.foerster@gmx.de>
+>Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+>
+>Signed-off-by: Hiromu Yakura <hiromu1996@gmail.com>
 
 
-$ ip -6 r sh
-2a00:800:752:1::5c:0/112 dev eth0  proto kernel  metric 256  mtu 1500
-advmss 1440 hoplimit 4294967295
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-fe80::/64 dev eth0  proto kernel  metric 256  mtu 1500 advmss 1440
-hoplimit 4294967295
+BTW, I think we should add "use strict;" too.
 
-default via 2a00:800:752:1::5c:1 dev eth0  metric 1024  mtu 1500 advmss
-1440 hoplimit 4294967295
-
-$ ip -6 ne sh
-2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router STALE
-
-[try ping6 again, no reply]
-
-$ ip -6 ne sh
-2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router DELAY
-
-[try ping6 again, no reply]
-
-$ ip -6 ne sh
-2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router REACHABLE
-
-[try ping6 again, no reply]
-
-Configured network with /etc/network/interfaces:
-
-auto lo
-iface lo inet loopback
-
-allow-hotplug eth0
-iface eth0 inet static
- 	address x.x.x.x
- 	netmask 255.255.255.252
- 	broadcast x.x.x.x
- 	gateway x.x.x.x
- 	up ip a a 2a00:800:752:1::5c:2/112 dev eth0
- 	up ip r a default via 2a00:800:752:1::5c:1
- 	dns-nameservers x.x.x.x
- 	dns-search xxxx.net
-
----------
-typedef struct me_s {
-   char name[]      = { "Thomas Habets" };
-   char email[]     = { "thomas@habets.pp.se" };
-   char kernel[]    = { "Linux" };
-   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
-   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
-   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
-} me_t;
+>---
+> scripts/kconfig/streamline_config.pl |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
+>
+>diff --git a/scripts/kconfig/streamline_config.pl
+>b/scripts/kconfig/streamline_config.pl
+>index c70a27d..d74363f 100644
+>--- a/scripts/kconfig/streamline_config.pl
+>+++ b/scripts/kconfig/streamline_config.pl
+>@@ -178,7 +178,7 @@ sub read_kconfig {
+> 	# configs without prompts must be selected
+> 	} elsif ($state ne "NONE" && /^\s*tristate\s\S/) {
+> 	    # note if the config has a prompt
+>-	    $prompt{$config} = 1;
+>+	    $prompts{$config} = 1;
+> 
+> 	# Check for if statements
+> 	} elsif (/^if\s+(.*\S)\s*$/) {
+>@@ -363,7 +363,7 @@ while ($repeat) {
+> 	    parse_config_dep_select $depends{$config};
+> 	}
+> 
+>-	if (defined($prompt{$config}) || !defined($selects{$config})) {
+>+	if (defined($prompts{$config}) || !defined($selects{$config})) {
+> 	    next;
+> 	}
+> 
+>-- 
+>1.7.0.4
+>
+>
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
