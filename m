@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756314Ab0HQRr4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:47:56 -0400
-Received: from lvps87-230-0-242.dedicated.hosteurope.de ([87.230.0.242]:32778
-	"EHLO lvps87-230-0-242.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754819Ab0HQRrt (ORCPT
+	id S1758053Ab0HQRsX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:48:23 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:51435 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754819Ab0HQRsT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:47:49 -0400
-Date: Tue, 17 Aug 2010 19:47:04 +0200
-From: Michael Guntsche <mike@it-loops.com>
-To: Brian Norris <norris@broadcom.com>
-Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
-Message-ID: <20100817174704.GA1322@gibson.comsick.at>
-References: <20100817113644.GA31317@gibson.comsick.at>
- <4C6AC037.7070205@broadcom.com>
+	Tue, 17 Aug 2010 13:48:19 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6AC037.7070205@broadcom.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 4/9] RapidIO: Add relation links between RIO device structures
+Date: Tue, 17 Aug 2010 10:47:59 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6317@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4C6A3573.3070403@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 4/9] RapidIO: Add relation links between RIO device structures
+thread-index: Acs92rSS3Qbbj9fcR7CSVOVTCQFcpgAVr3pA
+References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-5-git-send-email-alexandre.bounine@idt.com> <4C692C9D.6040100@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011D5F1F@CORPEXCH1.na.ads.idt.com> <4C6A3573.3070403@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@ozlabs.org>,
+        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 Aug 10 10:00, Brian Norris wrote:
-> One of the following two cases is likely the problem:
-> (1) Your chip is supposed to use offset 0, not 5, for the BBM (i.e.,
-> NAND_LARGE_BADBLOCK_POS, not NAND_SMALL_BADBLOCK_POS), and so your
-> ecclayout should not be leaving byte 0 in the "oobfree" array (a
-> design flaw since you first began using this chip)
+Micha Nelissen wrote:
+> 
+> I agree it's desirable to have this information. Notes:
+> 1) is rio_dev->prev used anywhere? (maybe I missed it)
 
-First, I am just an end user so I have no access to the datasheets etc. I
-just got the code from the board manufactrurer (2.6.27) and forward
-port it to recent kernels.
+It is used to scan route back when servicing an orphaned PW message.
+I also see its future use when invalidating route(s) in case of device
+removal.
+  
+> 2) is the nextdev[port] list complete? I mean are all connected
+switches
+> in the list? My guess is that multiply connected switches are
+enumerated
+> only once therefore only appear in the nextdev if only one switch,
+> instead of all
+> 3) it would be nice to have all switch connections information.
 
-The reason I am using a specific layout is because the bootloader on
-this board expects it this way. It formats it this way in the beginning
-and I cannot change that. 
+Good catch. I will address this.
+
+> In case ever the network is rerouted, this information will become
+> useful; instead of having a tree representation of the network only.
+
+I consider proposed implementation as transitional until enumeration
+logic is reworked.
+It already is an attempt to move towards a tree representation. Making
+switch support 
+available was given higher priority compared to other things needed for
+RIO subsystem.  
+
+Alex.
 
 
-> Could you send the full NAND ID string (8 bytes, not
-If you can tell me where I can find that I'll be more than happy to send
-it to you. But as I said I think the reason for this is this special
-bootloader.
-
-Please tell me, if you need more informations.
-
-
-Kind regards,
-Michael
