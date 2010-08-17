@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab0HQKI4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 06:08:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37575 "EHLO
+	id S1757512Ab0HQKJq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 06:09:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51464 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755934Ab0HQKIw (ORCPT
+	with ESMTP id S1753492Ab0HQKJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 06:08:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=iuCPxEgLo7tPKVpKM1YxKaOTSJ6IaJgXmiV10P1ErkF/+1Xu9BHGq4sTh0FUmGSynP
-         N7MFhvXc0EM3CVyOLQHdwLGjkY1c8Ewt7LdCLxOVmv+b8gFpT7RdJ8x9HctRVTyX7c5q
-         rJJs5NImgxHw1aY90dxBxPhwkAAmYYbCV8k+Q=
+	Tue, 17 Aug 2010 06:09:45 -0400
+Message-ID: <4C6A5FE5.2090206@monstr.eu>
+Date: Tue, 17 Aug 2010 12:09:41 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimC=VDH=m9SoDK3BGzk7eCKRj6dEVzU230_kFPH@mail.gmail.com>
-References: <AANLkTik2VDPSZvMzQ8rv38jBDKmRaM9-TL9nhqxj_VSQ@mail.gmail.com>
-	<AANLkTimC=VDH=m9SoDK3BGzk7eCKRj6dEVzU230_kFPH@mail.gmail.com>
-Date: Tue, 17 Aug 2010 14:08:51 +0400
-Message-ID: <AANLkTikJzEM2BjZVBBbK9gt1dyvv0CK0==s3hxq4ywy4@mail.gmail.com>
-Subject: Re: bug LINUX_VERSION_CODE undefined
-From: Sergey Naumov <sknaumov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] serial: 8250pci: Recast inb return value
+References: <1282031947-16483-1-git-send-email-monstr@monstr.eu>	<1282031947-16483-2-git-send-email-monstr@monstr.eu> <20100817110435.45e6ed8b@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100817110435.45e6ed8b@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some update.
+Alan Cox wrote:
+> On Tue, 17 Aug 2010 09:59:07 +0200
+> Michal Simek <monstr@monstr.eu> wrote:
+> 
+>> inb returns u8 that's why is necessary to do recast.
+> 
+> ret is an int, inb returns a u8, neither are pointers and the cast
+> required is implict and defined by the spec.
 
-It seems that build script (and makefiles) uses it's own VERSION variable.
-In the last standalone makefile where
-> make uImage
-executes, I have tried to
-> override VERSION :=
-> export VERSION
-and execute make as
-> VERSION= make uImage
-but the only thing that helps is to prepend "override" keyword to
-VERSION initialization in the main linux Makefile:
+ok. I am using gcc 4.1.2 which is likely the reason why I see that warnings.
 
-override VERSION = 2
+Michal
 
-2010/8/17 Sergey Naumov <sknaumov@gmail.com>:
-> Hello. This is my first message to this list so please be patient.
->
-> I have encountered compilation error due to
-> #define LINUX_VERSION_CODE
-> in include/linux/version.h
->
-> This happens because $(VERSION) variable in the main Makefile has a
-> value of 2.6.35.2 instead of 2,
-> so "expr" utility fails to generate LINUX_VERSION_CODE value with an
-> error "non-numeric argument" or smth.
->
-> I have found only one link (
-> http://www.spinics.net/lists/linux-kbuild/msg03230.html ) to this
-> issue in the Internet,
-> but there is no response to it, so I decided to post this message.
->
-> Please subscribe me personally to answers to this post.
->
-> Sergey Naumov.
->
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
