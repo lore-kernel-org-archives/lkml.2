@@ -1,131 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab0HQIwb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:52:31 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57022 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757089Ab0HQIsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:48:54 -0400
-From: hvaibhav@ti.com
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, byron.bbradley@gmail.com,
-        linux-omap@vger.kernel.org, Vaibhav Hiremath <hvaibhav@ti.com>
-Subject: [PATCH 2/3] RTC:s35390a: Add Periodic interrupt support
-Date: Tue, 17 Aug 2010 14:18:40 +0530
-Message-Id: <1282034921-22167-3-git-send-email-hvaibhav@ti.com>
-X-Mailer: git-send-email 1.6.2.4
-In-Reply-To: <hvaibhav@ti.com>
-References: <hvaibhav@ti.com>
+	id S932239Ab0HQIv6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:51:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32797 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932194Ab0HQIv4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 04:51:56 -0400
+Subject: Re: [patch 1/3] sched: init rt_avg stat whenever rq comes online
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "chris@frostnet.net" <chris@frostnet.net>,
+        "debian00@aliceadsl.fr" <debian00@aliceadsl.fr>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jonathan.protzenko@gmail.com" <jonathan.protzenko@gmail.com>,
+        "mans@mansr.com" <mans@mansr.com>,
+        "psastudio@mail.ru" <psastudio@mail.ru>, "rjw@sisk.pl" <rjw@sisk.pl>,
+        "stephan.eicher@web.de" <stephan.eicher@web.de>,
+        "sxxe@gmx.de" <sxxe@gmx.de>,
+        "thomas@archlinux.org" <thomas@archlinux.org>,
+        "venki@google.com" <venki@google.com>,
+        "wonghow@gmail.com" <wonghow@gmail.com>,
+        "stable@kernel.org" <stable@kernel.org>, tglx <tglx@linutronix.de>
+In-Reply-To: <1281986708.1926.1877.camel@laptop>
+References: <20100813190539.410550989@sbsiddha-MOBL3.sc.intel.com>
+	 <20100813193911.827207098@sbsiddha-MOBL3.sc.intel.com>
+	 <1281944854.1926.948.camel@laptop>
+	 <1281980179.2676.22.camel@sbsiddha-MOBL3.sc.intel.com>
+	 <1281986708.1926.1877.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 17 Aug 2010 10:51:25 +0200
+Message-ID: <1282035085.1926.2164.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vaibhav Hiremath <hvaibhav@ti.com>
+On Mon, 2010-08-16 at 21:25 +0200, Peter Zijlstra wrote:
+> You can use something like:
+> 
+> suspend:
+>  __get_cpu_var(cyc2ns_suspend) = sched_clock();
+> 
+> resume:
+>  for_each_possible_cpu(i)
+>    per_cpu(cyc2ns_offset, i) += per_cpu(cyc2ns_suspend);
+> 
+> or something like that to keep sched_clock() stable, which is exactly
+> what most (all?) its users expect when we report the TSC is usable. 
 
+That's actually broken, you only want a single offset, otherwise we
+de-sync the TSC, which is bad.
 
-Signed-off-by: Vaibhav Hiremath <hvaibhav@ti.com>
----
- drivers/rtc/rtc-s35390a.c |   66 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 65 insertions(+), 1 deletions(-)
+So simply store the sched_clock() value at suspend time on the single
+CPU that is still running, then on resume make sure sched_clock()
+continues there by adding that stamp to all CPU offsets.
 
-diff --git a/drivers/rtc/rtc-s35390a.c b/drivers/rtc/rtc-s35390a.c
-index 3d34fc5..d456b70 100644
---- a/drivers/rtc/rtc-s35390a.c
-+++ b/drivers/rtc/rtc-s35390a.c
-@@ -332,6 +332,65 @@ static int s35390a_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alm)
- 	return s35390a_read_alarm(to_i2c_client(dev), alm);
- }
- 
-+static int s35390a_freq_irq_enable(struct i2c_client *client, unsigned enabled)
-+{
-+	struct s35390a *s35390a = i2c_get_clientdata(client);
-+	char buf[1];
-+	int err;
-+
-+	err = s35390a_get_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf));
-+	if (err) {
-+		dev_err(&client->dev, "%s: failed to read STS2 reg\n",
-+								__func__);
-+		return err;
-+	}
-+
-+	/* This chip returns the bits of each byte in reverse order */
-+	buf[0] = bitrev8(buf[0]);
-+
-+	buf[0] &= ~S35390A_INT1_MODE_MASK;
-+	if (enabled)
-+		buf[0] |= S35390A_INT1_MODE_FREQ;
-+	else
-+		buf[0] |= S35390A_INT1_MODE_NOINTR;
-+
-+	/* This chip expects the bits of each byte in reverse order */
-+	buf[0] = bitrev8(buf[0]);
-+
-+	err = s35390a_set_reg(s35390a, S35390A_CMD_STATUS2, buf, sizeof(buf));
-+	if (err) {
-+		dev_err(&client->dev, "%s: failed to set STS2 reg\n", __func__);
-+		return err;
-+	}
-+
-+	if (enabled) {
-+		buf[0] = s35390a->rtc->irq_freq;
-+		buf[0] = bitrev8(buf[0]);
-+		err = s35390a_set_reg(s35390a, S35390A_CMD_INT1_REG1, buf,
-+								sizeof(buf));
-+	}
-+
-+	return err;
-+}
-+
-+static int s35390a_rtc_freq_irq_enable(struct device *dev, int enabled)
-+{
-+	return s35390a_freq_irq_enable(to_i2c_client(dev), enabled);
-+}
-+
-+static int s35390a_set_irq_freq(struct i2c_client *client, int freq)
-+{
-+	if (!is_power_of_2(freq) || (freq > 16))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int s35390a_rtc_set_irq_freq(struct device *dev, int freq)
-+{
-+	return s35390a_set_irq_freq(to_i2c_client(dev), freq);
-+}
-+
- static void s35390a_work(struct work_struct *work)
- {
- 	struct s35390a *s35390a;
-@@ -354,6 +413,8 @@ static void s35390a_work(struct work_struct *work)
- 	if (buf[0] & BIT(2)) {
- 		rtc_update_irq(s35390a->rtc, 1, RTC_IRQF | RTC_AF);
- 		s35390a_alarm_irq_enable(client, 0);
-+	} else if (buf[0] & BIT(0)) {
-+		rtc_update_irq(s35390a->rtc, 1, RTC_IRQF | RTC_PF);
- 	}
- 
- 	enable_irq(client->irq);
-@@ -382,7 +443,8 @@ static const struct rtc_class_ops s35390a_rtc_ops = {
- 	.alarm_irq_enable	= s35390a_rtc_alarm_irq_enable,
- 	.set_alarm		= s35390a_rtc_set_alarm,
- 	.read_alarm		= s35390a_rtc_read_alarm,
--
-+	.irq_set_freq		= s35390a_rtc_set_irq_freq,
-+	.irq_set_state		= s35390a_rtc_freq_irq_enable,
- };
- 
- static struct i2c_driver s35390a_driver;
-@@ -465,6 +527,8 @@ static int s35390a_probe(struct i2c_client *client,
- 		err = PTR_ERR(s35390a->rtc);
- 		goto exit_intr;
- 	}
-+	s35390a->rtc->irq_freq = 0;
-+	s35390a->rtc->max_user_freq = 16;
- 
- 	return 0;
- 
--- 
-1.6.2.4
 
