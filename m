@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932219Ab0HQRNy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:13:54 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:60662 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750855Ab0HQRNw (ORCPT
+	id S932294Ab0HQROF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:14:05 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:24568 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932255Ab0HQROB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:13:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Ap2QYS5CeGZ2DtgLYvAeX1Wr53vcpE6BtObUhzK5sds1MwqaAhIrRvfgt/FCPKqQ+4
-         6kmTBeju28jNC4OV431RHyHz/7/K154vITwBLi1dpmXCAZPIPe5hd31fWLYwyhuOtgVQ
-         w0skSq27TKjnYlTw+shoqCRMhA3cvK/xlYqGI=
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
- to reset
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Thomas Habets <thomas@habets.pp.se>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>
-In-Reply-To: <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se>
-References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se>
-	 <1281953960.2524.23.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
-	 <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se>
-	 <1282024802.2487.687.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se>
-	 <1282050920.2448.47.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
-	 <1282055659.2448.58.camel@edumazet-laptop>
-	 <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 19:13:47 +0200
-Message-ID: <1282065227.2448.116.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Tue, 17 Aug 2010 13:14:01 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=ycAbO7DtjP4A:10 a=VphdPIyG4kEA:10 a=dnsDqYgvY1eI8xxSV9Tekg==:17
+ a=XZjFkfzufRU34aLV278A:9 a=7nlJcrArERUdgt-k3d7gnUdspEoA:4
+ a=swgA7G9SNX3-Z-BJ:21 a=6h4h_qrny7eEAm3z:21
+From: Graeme Smecher <graeme.smecher@mail.mcgill.ca>
+To: grant.likely@secretlab.ca, linux-kernel@vger.kernel.org
+Cc: Graeme Smecher <graeme.smecher@mail.mcgill.ca>
+Subject: [PATCH] Include missing headers for of_address_to_resource() in MTD and SysACE drivers
+Date: Tue, 17 Aug 2010 10:13:44 -0700
+Message-Id: <1282065224-28673-1-git-send-email-graeme.smecher@mail.mcgill.ca>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mardi 17 août 2010 à 17:58 +0200, Thomas Habets a écrit :
+The drivers for Xilinx' SystemACE and physically mapped MTDs were missing
+prototypes for of_address_to_resource(). This patch adds the necessary
+headers.
 
-> If you expected more bits set in "filters" with allmulti than without it, 
-> that doesn't seem to be the case.
+signed-off-by: Graeme Smecher <graeme.smecher@mail.mcgill.ca>
+---
+ drivers/block/xsysace.c       |    1 +
+ drivers/mtd/maps/physmap_of.c |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-
-Nope, the patch displays mc list and filters bits only if not
-promiscuous and not allmulti (normal ethernet mode)
-
-If promiscuous -> a special PROMISC bit is selected on NIC (no display)
-If allmulti -> all 128 bits are set (but not displayed in my patch)
-
-I wanted to make sure the correct list of mc addrs is handled on your
-machine. It seems to be the case, so there might be a hardware problem
-with the multicast rx on this particular NIC
-
-
+diff --git a/drivers/block/xsysace.c b/drivers/block/xsysace.c
+index 2982b3e..fa71ba5 100644
+--- a/drivers/block/xsysace.c
++++ b/drivers/block/xsysace.c
+@@ -96,6 +96,7 @@
+ #if defined(CONFIG_OF)
+ #include <linux/of_device.h>
+ #include <linux/of_platform.h>
++#include <linux/of_address.h>
+ #endif
+ 
+ MODULE_AUTHOR("Grant Likely <grant.likely@secretlab.ca>");
+diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
+index 00af55d..07b13e8 100644
+--- a/drivers/mtd/maps/physmap_of.c
++++ b/drivers/mtd/maps/physmap_of.c
+@@ -23,6 +23,7 @@
+ #include <linux/mtd/concat.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/of_address.h>
+ #include <linux/slab.h>
+ 
+ struct of_flash_list {
+-- 
+1.7.1
 
