@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756605Ab0HQIcA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:32:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41567 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754690Ab0HQIb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:31:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=c/58410ySrjufUn758bzS2QbYw+2DnLAbdbTd0NctcXRQsqv6kOPm15mHMIdmRy9F/
-         493oSGzyLqEWO0LbVjLyCaI2FbEsYOh8LcWsPHH9LKZOqp6iF26sAFJ52wzubLjzD0RL
-         ypN9tYCEr4YwPoU0VXzuYT71kuECivKjCLEmU=
-Date: Tue, 17 Aug 2010 10:32:16 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linuxppc-dev@lists.ozlabs.org, Rodolfo Giometti <giometti@linux.it>,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100817083216.GA3330@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <201008161626.24083.arnd@arndb.de>
- <20100816190003.GB4166@riccoc20.at.omicron.at>
- <201008162159.39734.arnd@arndb.de>
+	id S1756656Ab0HQIdh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:33:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52371 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754009Ab0HQIdg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 04:33:36 -0400
+Message-ID: <4C6A4A58.2030904@cn.fujitsu.com>
+Date: Tue, 17 Aug 2010 16:37:44 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008162159.39734.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
+References: <20100817073725.GO10429@dastard>
+In-Reply-To: <20100817073725.GO10429@dastard>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 09:59:39PM +0200, Arnd Bergmann wrote:
-> Why does it matter how long it takes to read the clock? I wasn't thinking
-> of replacing the system clock with this, just exposing the additional
-> clock as a new clockid_t value that can be accessed using the existing
-> syscalls.
+On 08/17/2010 03:37 PM, Dave Chinner wrote:
+> Tracing folks,
+> 
+> I've got a machine stuck with a cpu spinning in a tight loop (the
+> new writeback/sync livelock avoidance code is, well, livelocking),
+> and I was trying to find out what triggered by using the writeback
+> trace events. Unfortunately, I can't dump the trace events because
+> it gets stuck here:
 
-Okay, now I see. You are suggesting this:
+> 
+> Given that the trace events are there mainly for debugging, this
+> seems like a bit of an oversight - hanging a CPU in a tight loop is
+> not an uncommon event during code development....
+> 
 
-      clock_gettime(CLOCK_PTP, &ts);
-      clock_settime(CLOCK_PTP, &ts);
+You can try 'cat trace_pipe', if I did not miss you meaning.
 
-I like this. If there is agreement about it, I am happy to implement
-the PTP stuff that way.
-
-> Why did you not want to add syscalls? Adding ioctls instead of syscalls
-> does not make the interface better, just less visible.
-
-I bet that, had I posted patch set with new syscalls, someone would
-have said, "You are adding new syscalls. Can't you just use a char
-device instead!"
-
-If you add syscalls and introduce CLOCK_PTP, then you add it to
-everyone's kernel, even those people who never heard of PTP. A char
-device has the advantage that can it be simply ignored. Also, a
-syscall has got to have the right form from the very beginning. If the
-next generation of PTP hardware looks very different, then it is not
-that much of a crime to change an ioctl interface, provided it has
-versioning.
-
-Richard
+Lai
 
