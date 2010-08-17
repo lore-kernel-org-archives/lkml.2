@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755604Ab0HQC76 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 22:59:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:34752 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765Ab0HQC74 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 22:59:56 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: manual merge of the wireless tree with Linus' tree
-Date: Tue, 17 Aug 2010 12:29:44 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
-        libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-References: <20100817115203.e8a76e44.sfr@canb.auug.org.au>
-In-Reply-To: <20100817115203.e8a76e44.sfr@canb.auug.org.au>
+	id S1755912Ab0HQDAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 23:00:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:37511 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754765Ab0HQDAB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 23:00:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qHvssriCyHSeHuiTBWQBY3HRs3WYrBXe2V7qLJdKfb3CpDnWk2GTEVMttoWaAZyBw5
+         stCAfrI6sB0UgsVNBz/BzGl5XwROAWFtHJwbaXuoAOpoISUhkxHThXM4UBgYBQ7FDSDd
+         s1b5Ggt4tQhquuFpi9lk1nscYyYF/vwJRdXpU=
+Date: Tue, 17 Aug 2010 04:59:56 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+	and touch_softlockup_watchdog
+Message-ID: <20100817025954.GA12366@nowhere>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com> <1281946970.1926.998.camel@laptop> <20100816133452.GS4879@redhat.com> <1281966418.1926.1421.camel@laptop> <20100816140829.GA5225@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008171229.46175.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816140829.GA5225@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010 11:22:03 am Stephen Rothwell wrote:
-> Hi John,
+On Mon, Aug 16, 2010 at 05:08:29PM +0300, Sergey Senozhatsky wrote:
+>  void touch_softlockup_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_touch_ts) = 0;
+> +	int this_cpu = get_cpu();
+> +	per_cpu(watchdog_touch_ts, this_cpu) = 0;
+> +	put_cpu();
+>  }
+
+
+
+If preemption is disabled and you deal with the current cpu,
+then please use __get_cpu_var, it makes the code more
+readable:
+
+
+void touch_softlockup_watchdog(void)
+{
+	preempt_disable();
+	__get_cpu_var(watchdog_touch_ts) = 0;
+	preempt_enable();
+}
+
+
+Same below.
+
+Thanks.
+
+
+>  EXPORT_SYMBOL(touch_softlockup_watchdog);
+>  
+> @@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  void touch_nmi_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_nmi_touch) = true;
+> +	int this_cpu = get_cpu();
+> +	per_cpu(watchdog_nmi_touch, this_cpu) = true;
+> +	put_cpu();
+>  	touch_softlockup_watchdog();
+>  }
+>  EXPORT_SYMBOL(touch_nmi_watchdog);
 > 
-> Today's linux-next merge of the wireless tree got a conflict in
-> drivers/net/wireless/libertas/if_sdio.c between commit
-> 886275ce41a9751117367fb387ed171049eb6148 ("param: lock if_sdio's
-> lbs_helper_name and lbs_fw_name against sysfs changes") from Linus' tree
-> and commit 3d32a58b87cd251b50842f93b87d5458061c0cfc ("libertas: [sdio]
-> use common firmware request helper and new firmware locations") from the
-> wireless tree.
-> 
-> OK, I can't quite figure out what is going on here.  The latter commit
-> removes that code that was modified by the former, so I effectively
-> reverted the former commit (by using this file from the wireless tree)
-> since the "helper" and "firmware" fields of struct if_sdio_card don't
-> seem to be used anywhere anymore.  Can they be removed as well?
-
-I'm looking at the wireless tree now.
-
-You can drop the commit as you have done.  But it leaves three problematic
-writable charp parameters in the libertas/ directory which now need lifetime
-management.
-
-ie. kparam_block_sysfs_write()/unblock around them, and probably they need
-to be copied.
-
-Cheers,
-Rusty.
-
-
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
