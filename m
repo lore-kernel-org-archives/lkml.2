@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab0HQSVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:21:24 -0400
-Received: from mail.perches.com ([173.55.12.10]:1130 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758095Ab0HQSVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:21:19 -0400
-Subject: Re: [PATCH] fs.h: introduce functions to get/set file->private_data
-From: Joe Perches <joe@perches.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Christoph Hellwig <hch@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "matthew@wil.cx" <matthew@wil.cx>
-In-Reply-To: <20100817175851.GA11463@merkur.ravnborg.org>
-References: <201008161137.53187.hartleys@visionengravers.com>
-	 <20100816231753.GA16546@infradead.org>
-	 <0D753D10438DA54287A00B0270842697643E50D82E@AUSP01VMBX24.collaborationhost.net>
-	 <1282002601.6518.116.camel@Joe-Laptop> <20100817010355.GG21182@thunk.org>
-	 <20100817085428.GA25330@infradead.org>
-	 <1282065973.24541.106.camel@Joe-Laptop>
-	 <20100817175851.GA11463@merkur.ravnborg.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 11:21:17 -0700
-Message-ID: <1282069277.14975.21.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1758243Ab0HQSWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:22:54 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42498 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758230Ab0HQSWw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 14:22:52 -0400
+Date: Tue, 17 Aug 2010 19:22:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Bobby Crabtree <bobbyc@codeaurora.org>, lrg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: regulator voltage aggregation
+Message-ID: <20100817182250.GB5755@opensource.wolfsonmicro.com>
+References: <4C6ACF92.7050506@codeaurora.org> <20100817192806.09744719@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817192806.09744719@lxorguk.ukuu.org.uk>
+X-Cookie: You should go home.
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 19:58 +0200, Sam Ravnborg wrote:
-> On Tue, Aug 17, 2010 at 10:26:13AM -0700, Joe Perches wrote:
-> > On Tue, 2010-08-17 at 04:54 -0400, Christoph Hellwig wrote:
-> > > On Mon, Aug 16, 2010 at 09:03:55PM -0400, Ted Ts'o wrote:
-> > > > And spatch could also be used to rename private_data to f_private_data
-> > > > if people really cared....
-> > > Agreed, that's much better than adding useless accessors.
-> > Against Linus' current, it's ~850KB.
-> > Anyone really want it?
-> a cleanup patch is far more convinient.
-> It takes minimum effort to create and test, and if you can
-> get ack from Ted and/or Christoph there is a good chance Linus
-> would take it right before/after -rc1.
-> You obviously need to convince him that the patch has
-> seen decent build testing.
+On Tue, Aug 17, 2010 at 07:28:06PM +0100, Alan Cox wrote:
+> O> int regulator_set_optimum_voltage(struct regulator *regulator,
+> >                 int min_uV, int max_uV);
 
-I don't have the passel of cross compilers,
-so someone else would need to do that.
+> Pedantic hat on - how can it be optimum if its a range ? (and an
+> adjective but that is really pedantic) ;))
 
-I compiled it 32 bit x86 allyesconfig only.
+> Surely it's not the optimal value, it's the range at which it works at
+> all you are defining (between off, and escaping smoke).
 
+> set_voltage_range() sounds rather more natural to me.
 
+The regulator API always specifies voltages in ranges, picking the
+lowest possible voltage from the range.
+
+One reason for this is that it allows us to finesse the mismatches
+between the fixed steps that regulators offer and the requirements of
+consumers - we don't needlessly fail to set a voltage due to a few
+milivolts difference that the consumer doesn't care about.  The other
+reason is that it maps very well onto a lot of applications which do
+have fairly wide acceptable ranges.  For things like DVFS lowering the
+frequency will typically reduce the minimum voltage required by the
+device but will not affect the maximum voltage it can tolerate so we
+allow the driver to specify the full range it can operate at and then
+deliver the maximum power saving we can within the constraints of the
+system.
