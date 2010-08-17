@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971Ab0HQRPF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:15:05 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:43793 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903Ab0HQRPB (ORCPT
+	id S1758007Ab0HQRPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:15:16 -0400
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:56771 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab0HQRPC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:15:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6077"; a="51320723"
-Message-ID: <4C6AC393.8000109@codeaurora.org>
-Date: Tue, 17 Aug 2010 13:14:59 -0400
-From: Neil Leeder <nleeder@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Tue, 17 Aug 2010 13:15:02 -0400
+Date: Tue, 17 Aug 2010 19:14:54 +0200
+From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+To: Bian Naimeng <biannm@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        Trond Myklebust <Trond.Myklebust@netapp.com>, stable@kernel.org
+Subject: Re: 2.6.35.2: NFS related Oops
+Message-ID: <20100817171454.GB11366@os.inf.tu-dresden.de>
+References: <20100816215056.GA5376@os.inf.tu-dresden.de>
+ <4C6A5FF1.3070209@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Stepan Moskovchenko <stepanm@codeaurora.org>, linux-input@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Horace Fu <horace.fu@quantatw.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Trilok Soni <tsoni@codeaurora.org>
-Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
-References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <20100813024912.GA2661@core.coreip.homeip.net> <4C65BF99.9030601@codeaurora.org> <201008131754.49488.dmitry.torokhov@gmail.com>
-In-Reply-To: <201008131754.49488.dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4C6A5FF1.3070209@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 8/13/2010 8:54 PM, Dmitry Torokhov wrote:
-> Also it is not a simple coincidence that to enable device you send 0xf4
-> to it (which is PSMOUSE_CMD_ENABLE - standard PS/2 command). This tends
-> to suggest that interface is not actually hidden and that the device
-> (touchpad) could be replaced with other kinds of devices.
->
-> Anyway, please try the driver (you  may need to hardcode the IRQ trigger
-> type for now) and see if psmouse is able to talk to the touchpad. If it
-> is then serio is the proper solution.
 
-Dmitri,
-I fixed one line in the wpce775x_serio driver which looked like a typo - 
-hope I got that right:
+On Tue Aug 17, 2010 at 18:09:53 +0800, Bian Naimeng wrote:
+>   Please try to apply the followed patch.
 
-	for (i = 0; i < count; i++)
--		serio_interrupt(ps2if->serio, ps2if->data_in[1], 0);
-+		serio_interrupt(ps2if->serio, ps2if->data_in[i], 0);
-	}
+Thanks, this fixes the Oops. Patch is required for both 2.6.35 and
+2.6.36 trees.
 
-I tried running with psmouse but it didn't work. The touchpad was never 
-detected as a synaptics touchpad. I looked at the dataflow from the 
-device and it wasn't responding to the commands that synaptics_detect() 
-was sending it. It eventually showed up as an unknown logitech mouse. I 
-can see data being passed through the serio driver but the logitech 
-driver can't process it.
+ 
+----
+ 
+We we open a positive file just with O_EXCL but no O_CREAT, may cause kernel crash.
 
---
-Neil
+Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
+ 
+---
+ fs/nfs/dir.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+ 
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index 29539ce..1a672dd 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1100,7 +1100,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
+ 		goto no_open_dput;
+ 	openflags = nd->intent.open.flags;
+ 	/* We cannot do exclusive creation on a positive dentry */
+-	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
++	if (openflags & O_EXCL)
+ 		goto no_open_dput;
+ 	/* We can't create new files, or truncate existing ones here */
+ 	openflags &= ~(O_CREAT|O_TRUNC);
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.0
+
+
+
+Adam
+-- 
+Adam                 adam@os.inf.tu-dresden.de
+  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
