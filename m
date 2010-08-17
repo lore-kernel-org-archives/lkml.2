@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab0HQEwE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:52:04 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44688 "EHLO arroyo.ext.ti.com"
+	id S1754463Ab0HQExl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:53:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:58002 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751799Ab0HQEwC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 00:52:02 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "Kanigeri, Hari" <h-kanigeri2@ti.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>
-Date: Mon, 16 Aug 2010 23:48:14 -0500
-Subject: RE: [PATCH] iommu: fix end address of vm area comparation in
- alloc_iovm_area
-Thread-Topic: [PATCH] iommu: fix end address of vm area comparation in
- alloc_iovm_area
-Thread-Index: AQHLPb89dO8xxwhi9kWHPF9veuQYs5LlE0+g
-Message-ID: <496565EC904933469F292DDA3F1663E602CA4D894C@dlee06.ent.ti.com>
-References: <496565EC904933469F292DDA3F1663E602CA4D8949@dlee06.ent.ti.com>
-In-Reply-To: <496565EC904933469F292DDA3F1663E602CA4D8949@dlee06.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1753426Ab0HQExj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 00:53:39 -0400
+Date: Tue, 17 Aug 2010 13:46:34 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>,
+        David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>,
+        Will Deacon <will.deacon@arm.com>, Borislav Petkov <bp@amd64.org>
+Subject: Re: [RFC PATCH 3/6] perf: Generalize some arch callchain code
+Message-ID: <20100817034634.GB24726@drongo>
+References: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com>
+ <1281991715-10367-4-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281991715-10367-4-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Aug 16, 2010 at 10:48:32PM +0200, Frederic Weisbecker wrote:
 
-There was a mistake with Hiroshi email. Looping in Hiroshi
+> - Most archs use one callchain buffer per cpu, except x86 that needs
+>   to deal with NMIs. Provide a default perf_callchain_buffer()
+>   implementation that x86 overrides.
+> 
+> - Centralize all the kernel/user regs handling and invoke new arch
+>   handlers from there: perf_callchain_user() / perf_callchain_kernel()
+>   That avoid all the user_mode(), current->mm checks and so...
+> 
+> - Invert some parameters in perf_callchain_*() helpers: entry to the
+>   left, regs to the right, following the traditional (src, dst).
 
-Sorry for the noise.
+I think you mean (dst, src), don't you?
 
-Regards,
-Fernando.
-________________________________________
-From: linux-omap-owner@vger.kernel.org [linux-omap-owner@vger.kernel.org] On Behalf Of Guzman Lugo, Fernando [fernando.lugo@ti.com]
-Sent: Monday, August 16, 2010 10:51 PM
-To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
-Cc: Hiroshi.DOYO@nokia.com; Kanigeri, Hari
-Subject: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
+Apart from that, the patch looks OK, so
 
->From cc48c0adaee97c8385a356aefa5b64a51818b4fd Mon Sep 17 00:00:00 2001
-From: Fernando Guzman Lugo <x0095840@ti.com>
-Date: Mon, 16 Aug 2010 22:28:24 -0500
-Subject: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
+Acked-by: Paul Mackerras <paulus@samba.org>
 
-End address of the vm area is “start + bytes -1”,
-not “start + byte”. This patch fixes that issue by doing
-an inclusive comparison with tmp->da_start. This issue
-was preventing allocate an area of size exactly the same
-than the free area. I did no change the value of da_end
-of each vm area because it is used to get area size in
-several places.
-
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- arch/arm/plat-omap/iovmm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index b8bcad5..8745d4e 100644
---- a/arch/arm/plat-omap/iovmm.c
-+++ b/arch/arm/plat-omap/iovmm.c
-@@ -295,7 +295,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
-        prev_end = 0;
-        list_for_each_entry(tmp, &obj->mmap, list) {
-
--               if ((prev_end <= start) && (start + bytes < tmp->da_start))
-+               if ((prev_end <= start) && (start + bytes <= tmp->da_start))
-                        goto found;
-
-                if (flags & IOVMF_DA_ANON)
---
-1.7.0.4
---
-To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Paul.
