@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751796Ab0HQNmc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:42:32 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:54997 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab0HQNmb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:42:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH] init/do_mounts.c: replace sys_mount() to do_mount()
-Date: Tue, 17 Aug 2010 15:41:46 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-References: <1282048643-2475-1-git-send-email-namhyung@gmail.com> <201008171515.26175.arnd@arndb.de> <1282051520.1635.7.camel@leonhard>
-In-Reply-To: <1282051520.1635.7.camel@leonhard>
+	id S1752298Ab0HQNrk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:47:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25729 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837Ab0HQNri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 09:47:38 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [RFC] [PATCH 2/4] dio: add page locking for direct I/O
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<alpine.DEB.2.00.1008110806070.673@router.home>
+	<20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+	<20100812075941.GD6112@spritzera.linux.bs1.fc.nec.co.jp>
+	<x49aaos3q2q.fsf@segfault.boston.devel.redhat.com>
+	<20100816020737.GA19531@spritzera.linux.bs1.fc.nec.co.jp>
+	<x49aaomheyi.fsf@segfault.boston.devel.redhat.com>
+	<20100817081753.GA28762@spritzera.linux.bs1.fc.nec.co.jp>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 17 Aug 2010 09:46:56 -0400
+In-Reply-To: <20100817081753.GA28762@spritzera.linux.bs1.fc.nec.co.jp> (Naoya
+	Horiguchi's message of "Tue, 17 Aug 2010 17:17:53 +0900")
+Message-ID: <x4939uduzan.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201008171541.47078.arnd@arndb.de>
-X-Provags-ID: V02:K0:SuUjMR+x4Dl+gDizkawrz6P+IfuSgkc23c/R0Ob5PpG
- Qawe5AVHsPX9drJEulWbyNN0cGJO06rpzE9sNiPBDFhohiySf6
- Pq/delZ2EL3CjQgS7ubypJYt+WMEjRBcMtVlPrBUw41R3IipF8
- g2/Ywd8gdhIqlwa8EScFuLrokgQUTCP6o6GmuHooP+waTcmosL
- 7ISbsDEkv+MiYXrO3vryg==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 August 2010, Namhyung Kim wrote:
-> 2010-08-17 (화), 15:15 +0200, Arnd Bergmann:
-> > AFAICT there is no need for the copy at all here. The reason that sys_mount
-> > copies to a separate page is that it gets passed an arbitrary-length user
-> > input.
-> 
-> Right. But make sure to user options never exceed a page, do_mount() has
-> following code:
-> 
->         if (data_page)
->                 ((char *)data_page)[PAGE_SIZE - 1] = 0;
+Naoya Horiguchi <n-horiguchi@ah.jp.nec.com> writes:
 
-Hmm, how very unexpected...
+> BTW, from the discussion with Christoph I noticed my misunderstanding
+> about the necessity of additional page locking. It would seem that
+> without page locking there is no danger of racing between direct I/O and
+> page migration. So I retract this additional locking patch-set.
 
-Maybe you can fix that as well in the same patch and move this safeguard
-into the copy_mount_options() function? I guess ideally we'd even mark
-the arguments to do_mount() as pointers to const, but that might create
-an excessive amount of churn.
+OK, great!  ;-)
 
-	Arnd
+Cheers,
+Jeff
