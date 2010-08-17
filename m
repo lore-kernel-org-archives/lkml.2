@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734Ab0HQLwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 07:52:54 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:54423 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755981Ab0HQLwx (ORCPT
+	id S1756563Ab0HQL5Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 07:57:16 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60427 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751144Ab0HQL5O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 07:52:53 -0400
-Date: Tue, 17 Aug 2010 21:52:43 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
-Message-ID: <20100817115243.GE7362@dastard>
-References: <20100817073725.GO10429@dastard>
- <4C6A4A58.2030904@cn.fujitsu.com>
+	Tue, 17 Aug 2010 07:57:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=R5VS8gvBQ8wnayuDuyVC8fJeCU0oWJk5f3+PSk22eN2D9N+xo5Fax+WFhecveO8qtQ
+         nenBZd3eJysw1H2ZGm4Si3AWsaZYSV+i9XSUJFvuY9/GmcBiJ5SRjoBotlrFLnCDSC84
+         Gr8/GAPXnxoChfOUSIlGpAZ7yAoT37gdzkGXg=
+Date: Tue, 17 Aug 2010 13:54:57 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: jack_wang@usish.com
+Cc: lindar_liu@usish.com, "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Jiri Kosina <jkosina@suse.cz>, Julia Lawall <julia@diku.dk>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] scsi/pm8001: handle allocation failures
+Message-ID: <20100817115334.GG645@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>, jack_wang@usish.com,
+	lindar_liu@usish.com,
+	"James E.J. Bottomley" <James.Bottomley@suse.de>,
+	Jiri Kosina <jkosina@suse.cz>, Julia Lawall <julia@diku.dk>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C6A4A58.2030904@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 04:37:44PM +0800, Lai Jiangshan wrote:
-> On 08/17/2010 03:37 PM, Dave Chinner wrote:
-> > Tracing folks,
-> > 
-> > I've got a machine stuck with a cpu spinning in a tight loop (the
-> > new writeback/sync livelock avoidance code is, well, livelocking),
-> > and I was trying to find out what triggered by using the writeback
-> > trace events. Unfortunately, I can't dump the trace events because
-> > it gets stuck here:
-> 
-> > 
-> > Given that the trace events are there mainly for debugging, this
-> > seems like a bit of an oversight - hanging a CPU in a tight loop is
-> > not an uncommon event during code development....
-> > 
-> 
-> You can try 'cat trace_pipe', if I did not miss you meaning.
+Return -ENOMEM if the allocations fail.
 
-I'll try it, but I'm really after the static event list which is why
-I'm using the trace file rather than trace_pipe. I want the history,
-not new events as they happen. 
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
+index 9793aa6..d8db013 100644
+--- a/drivers/scsi/pm8001/pm8001_hwi.c
++++ b/drivers/scsi/pm8001/pm8001_hwi.c
+@@ -4194,6 +4194,8 @@ static int pm8001_chip_get_nvmd_req(struct pm8001_hba_info *pm8001_ha,
+ 
+ 	nvmd_type = ioctl_payload->minor_function;
+ 	fw_control_context = kzalloc(sizeof(struct fw_control_ex), GFP_KERNEL);
++	if (!fw_control_context)
++		return -ENOMEM;
+ 	fw_control_context->usrAddr = (u8 *)&ioctl_payload->func_specific[0];
+ 	fw_control_context->len = ioctl_payload->length;
+ 	circularQ = &pm8001_ha->inbnd_q_tbl[0];
+@@ -4272,6 +4274,8 @@ static int pm8001_chip_set_nvmd_req(struct pm8001_hba_info *pm8001_ha,
+ 
+ 	nvmd_type = ioctl_payload->minor_function;
+ 	fw_control_context = kzalloc(sizeof(struct fw_control_ex), GFP_KERNEL);
++	if (!fw_control_context)
++		return -ENOMEM;
+ 	circularQ = &pm8001_ha->inbnd_q_tbl[0];
+ 	memcpy(pm8001_ha->memoryMap.region[NVMD].virt_ptr,
+ 		ioctl_payload->func_specific,
+@@ -4381,6 +4385,8 @@ pm8001_chip_fw_flash_update_req(struct pm8001_hba_info *pm8001_ha,
+ 	struct pm8001_ioctl_payload *ioctl_payload = payload;
+ 
+ 	fw_control_context = kzalloc(sizeof(struct fw_control_ex), GFP_KERNEL);
++	if (!fw_control_context)
++		return -ENOMEM;
+ 	fw_control = (struct fw_control_info *)&ioctl_payload->func_specific[0];
+ 	if (fw_control->len != 0) {
+ 		if (pm8001_mem_alloc(pm8001_ha->pdev,
