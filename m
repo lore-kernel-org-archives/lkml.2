@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab0HQC6R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 22:58:17 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:27177 "EHLO
+	id S1755293Ab0HQC57 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 22:57:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:10752 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755766Ab0HQC6N (ORCPT
+	with ESMTP id S1755021Ab0HQC54 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 22:58:13 -0400
+	Mon, 16 Aug 2010 22:57:56 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
 	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=did/c5nhJPGK5V1EznquGK58/d3WSaZA+LP9F1ajnG9Q9GR0cb0n17nA9Z+YK9zD9
-	P6Uub0hprgjjg7/CMBDqA==
-Date: Mon, 16 Aug 2010 19:58:07 -0700 (PDT)
+	b=UrrAnOimQefuCdNoNNcMaFwewJAcfNK/Km8MZsk11d6fQGiQhk9PLZDIENOu8Qsib
+	1LGH0xVmGymgadqf5BzmA==
+Date: Mon, 16 Aug 2010 19:57:51 -0700 (PDT)
 From: David Rientjes <rientjes@google.com>
 X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-cc: reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 6/6] reiserfs: remove dependency on __GFP_NOFAIL
+To: Neil Brown <neilb@suse.de>, Alasdair G Kergon <agk@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-raid@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch 1/6] md: remove dependency on __GFP_NOFAIL
 In-Reply-To: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
-Message-ID: <alpine.DEB.2.00.1008161957170.17924@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1008161954310.17924@chino.kir.corp.google.com>
 References: <alpine.DEB.2.00.1008161953430.17924@chino.kir.corp.google.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
@@ -35,23 +35,24 @@ caller.
 
 Signed-off-by: David Rientjes <rientjes@google.com>
 ---
- fs/reiserfs/journal.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/md/dm-region-hash.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
---- a/fs/reiserfs/journal.c
-+++ b/fs/reiserfs/journal.c
-@@ -2593,8 +2593,11 @@ static int journal_read(struct super_block *sb)
- static struct reiserfs_journal_list *alloc_journal_list(struct super_block *s)
- {
- 	struct reiserfs_journal_list *jl;
--	jl = kzalloc(sizeof(struct reiserfs_journal_list),
--		     GFP_NOFS | __GFP_NOFAIL);
-+
-+	do {
+diff --git a/drivers/md/dm-region-hash.c b/drivers/md/dm-region-hash.c
+--- a/drivers/md/dm-region-hash.c
++++ b/drivers/md/dm-region-hash.c
+@@ -289,8 +289,12 @@ static struct dm_region *__rh_alloc(struct dm_region_hash *rh, region_t region)
+ 	struct dm_region *reg, *nreg;
+ 
+ 	nreg = mempool_alloc(rh->region_pool, GFP_ATOMIC);
+-	if (unlikely(!nreg))
+-		nreg = kmalloc(sizeof(*nreg), GFP_NOIO | __GFP_NOFAIL);
++	if (unlikely(!nreg)) {
 +		/* FIXME: this may potentially loop forever */
-+		jl = kzalloc(sizeof(struct reiserfs_journal_list), GFP_NOFS);
-+	} while (!jl);
- 	INIT_LIST_HEAD(&jl->j_list);
- 	INIT_LIST_HEAD(&jl->j_working_list);
- 	INIT_LIST_HEAD(&jl->j_tail_bh_list);
++		do {
++			nreg = kmalloc(sizeof(*nreg), GFP_NOIO);
++		} while (!nreg);
++	}
+ 
+ 	nreg->state = rh->log->type->in_sync(rh->log, region, 1) ?
+ 		      DM_RH_CLEAN : DM_RH_NOSYNC;
