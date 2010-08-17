@@ -1,74 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab0HQL5Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 07:57:16 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:60427 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751144Ab0HQL5O (ORCPT
+	id S1756981Ab0HQL7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 07:59:01 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3927 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754187Ab0HQL67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 07:57:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=R5VS8gvBQ8wnayuDuyVC8fJeCU0oWJk5f3+PSk22eN2D9N+xo5Fax+WFhecveO8qtQ
-         nenBZd3eJysw1H2ZGm4Si3AWsaZYSV+i9XSUJFvuY9/GmcBiJ5SRjoBotlrFLnCDSC84
-         Gr8/GAPXnxoChfOUSIlGpAZ7yAoT37gdzkGXg=
-Date: Tue, 17 Aug 2010 13:54:57 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: jack_wang@usish.com
-Cc: lindar_liu@usish.com, "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Jiri Kosina <jkosina@suse.cz>, Julia Lawall <julia@diku.dk>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] scsi/pm8001: handle allocation failures
-Message-ID: <20100817115334.GG645@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>, jack_wang@usish.com,
-	lindar_liu@usish.com,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	Jiri Kosina <jkosina@suse.cz>, Julia Lawall <julia@diku.dk>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 17 Aug 2010 07:58:59 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o7HBw0FT025457
+Subject: Re: [PATCH] perf tools: Don't use brace expansion.
+From: Bernd Petrovitsch <bernd@sysprog.at>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Kusanagi Kouichi <slash@ac.auone-net.jp>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100816155022.GD13095@ghostprotocols.net>
+References: <20100816124101.1829415C039@msa104.auone-net.jp>
+	 <1281967761.17267.6.camel@thorin> <1281969043.1926.1469.camel@laptop>
+	 <1281970478.17267.12.camel@thorin>
+	 <20100816152914.GC13095@ghostprotocols.net>
+	 <1281973427.17267.16.camel@thorin>
+	 <20100816155022.GD13095@ghostprotocols.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 13:58:00 +0200
+Message-ID: <1282046280.5822.4.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-DCC-HP_X86_64_4CPU-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Return -ENOMEM if the allocations fail.
+On Mon, 2010-08-16 at 12:50 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Mon, Aug 16, 2010 at 05:43:47PM +0200, Bernd Petrovitsch escreveu:
+> > On Mon, 2010-08-16 at 12:29 -0300, Arnaldo Carvalho de Melo wrote:
+> > > More seriously, so there is a reason for that to be like that and you're
+> > > not aware of any other shorter or more convenient way of achieving that
+> 
+> > One (obvious) alternative is to have rules triggering on the
+> > non-existence of these directories.
+> 
+> Can you provide those please?
+[...]
+> Right, not enough, what those mkdir calls were added for was exactly for
+> a different usecase:
+> 
+> make -C tools/perf -O=~/build/perf/
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Thanks.
 
-diff --git a/drivers/scsi/pm8001/pm8001_hwi.c b/drivers/scsi/pm8001/pm8001_hwi.c
-index 9793aa6..d8db013 100644
---- a/drivers/scsi/pm8001/pm8001_hwi.c
-+++ b/drivers/scsi/pm8001/pm8001_hwi.c
-@@ -4194,6 +4194,8 @@ static int pm8001_chip_get_nvmd_req(struct pm8001_hba_info *pm8001_ha,
+The following patch below at the end works for me. Alas, it is against
+vanilla main line.
+----  snip  ----
+Replace the global $(shell ...) lines quite at the top creating the output
+directories with real rules.
+
+Signed-of-by: Bernd Petrovitsch <bernd@sysprog.at>
+---
+ tools/perf/Makefile |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 230a0f7..c039fbc 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -157,10 +157,6 @@ all::
+ #
+ # Define NO_DWARF if you do not want debug-info analysis feature at all.
  
- 	nvmd_type = ioctl_payload->minor_function;
- 	fw_control_context = kzalloc(sizeof(struct fw_control_ex), GFP_KERNEL);
-+	if (!fw_control_context)
-+		return -ENOMEM;
- 	fw_control_context->usrAddr = (u8 *)&ioctl_payload->func_specific[0];
- 	fw_control_context->len = ioctl_payload->length;
- 	circularQ = &pm8001_ha->inbnd_q_tbl[0];
-@@ -4272,6 +4274,8 @@ static int pm8001_chip_set_nvmd_req(struct pm8001_hba_info *pm8001_ha,
+-$(shell sh -c 'mkdir -p $(OUTPUT)scripts/{perl,python}/Perf-Trace-Util/' 2> /dev/null)
+-$(shell sh -c 'mkdir -p $(OUTPUT)util/{ui/browsers,scripting-engines}/' 2> /dev/null)
+-$(shell sh -c 'mkdir $(OUTPUT)bench' 2> /dev/null)
+-
+ $(OUTPUT)PERF-VERSION-FILE: .FORCE-PERF-VERSION-FILE
+ 	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
+ -include $(OUTPUT)PERF-VERSION-FILE
+@@ -186,8 +182,6 @@ ifeq ($(ARCH),x86_64)
+         ARCH := x86
+ endif
  
- 	nvmd_type = ioctl_payload->minor_function;
- 	fw_control_context = kzalloc(sizeof(struct fw_control_ex), GFP_KERNEL);
-+	if (!fw_control_context)
-+		return -ENOMEM;
- 	circularQ = &pm8001_ha->inbnd_q_tbl[0];
- 	memcpy(pm8001_ha->memoryMap.region[NVMD].virt_ptr,
- 		ioctl_payload->func_specific,
-@@ -4381,6 +4385,8 @@ pm8001_chip_fw_flash_update_req(struct pm8001_hba_info *pm8001_ha,
- 	struct pm8001_ioctl_payload *ioctl_payload = payload;
+-$(shell sh -c 'mkdir -p $(OUTPUT)arch/$(ARCH)/util/' 2> /dev/null)
+-
+ # CFLAGS and LDFLAGS are for the users to override from the command line.
  
- 	fw_control_context = kzalloc(sizeof(struct fw_control_ex), GFP_KERNEL);
-+	if (!fw_control_context)
-+		return -ENOMEM;
- 	fw_control = (struct fw_control_info *)&ioctl_payload->func_specific[0];
- 	if (fw_control->len != 0) {
- 		if (pm8001_mem_alloc(pm8001_ha->pdev,
+ #
+@@ -1012,6 +1006,13 @@ $(LIB_OBJS) $(BUILTIN_OBJS): $(LIB_H)
+ $(patsubst perf-%$X,%.o,$(PROGRAMS)): $(LIB_H) $(wildcard */*.h)
+ builtin-revert.o wt-status.o: wt-status.h
+ 
++# we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
++# we depend the various files onto their directories.
++$(LIB_OBJS) $(BUILTIN_OBJS): $(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS)))
++# In the second step, we make a rule to actually create these directories
++$(sort $(dir $(LIB_OBJS) $(BUILTIN_OBJS))):
++	mkdir -p $@ 2>/dev/null
++
+ $(LIB_FILE): $(LIB_OBJS)
+ 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIB_OBJS)
+----  snip  ----
+
+	Bernd
+-- 
+mobile: +43 664 4416156              http://www.sysprog.at/
+    Linux Software Development, Consulting and Services
+
