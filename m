@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641Ab0HQWai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 18:30:38 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64610 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab0HQWad (ORCPT
+	id S1751681Ab0HQWby (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 18:31:54 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:55512 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751179Ab0HQWbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 18:30:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FUUnZoGXEoIz2GVv2TzwE9BH+ZnhikIXc23feKsabbfQSqP4bngrRmOHT1Y8M0DzPV
-         zOWMZaFYTorHMC4hARdegUuMtbub+J1Fc5TRJ2p+/rGGC8xNKs+dhMmIaq0mr7Q3Jm4+
-         pz2Ea4cdfphDwe+e3JSAQNq7ZJo1d/m4el2UY=
-Date: Wed, 18 Aug 2010 00:30:28 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Marin Mitov <mitov@issp.bas.bg>
-Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Benton <b3nton@gmail.com>
-Subject: Re: [BUG][reiserfs] page fault during kernel boot
-Message-ID: <20100817223026.GB5461@nowhere>
-References: <201008171125.25956.mitov@issp.bas.bg>
+	Tue, 17 Aug 2010 18:31:46 -0400
+Date: Tue, 17 Aug 2010 18:31:45 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
+        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org
+Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
+Message-ID: <20100817223145.GC4641@Krystal>
+References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201008171125.25956.mitov@issp.bas.bg>
+In-Reply-To: <4C6B097E.7060505@gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 18:30:53 up 207 days,  1:07,  3 users,  load average: 0.08, 0.04,
+	0.00
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 11:25:25AM +0300, Marin Mitov wrote:
-> Hi all,
+* Jiri Slaby (jirislaby@gmail.com) wrote:
+> On 08/18/2010 12:09 AM, Mathieu Desnoyers wrote:
+> > This is with these changes applied:
 > 
-> The function: reiserfs_evict_inode() ends with:
-> 
-> <snip>
-> out:
-> 	end_writeback(inode);	/* note this must go after the journal_end to prevent deadlock */
-> 	dquot_drop(inode);
-> 	inode->i_blocks = 0;
-> 	reiserfs_write_unlock_once(inode->i_sb, depth);
-> 
-> no_delete:
-> 	end_writeback(inode);
-> 	dquot_drop(inode);
-> }
-> <snip>
-> 
-> When goto out path is taken,
-> 
-> end_writeback(inode);
-> dquot_drop(inode);
-> 
-> are executed twice, leading to page fault (in my case) during the kernel boot.
-> 
-> Add return; before no_delete label (but I am not quite sure that this is correct :-).
-> 
-> Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+> Hi, these are very wrong. Please use ones from:
+> http://lkml.org/lkml/2010/8/12/98
 
+Yep, my system boot fine now.
 
-In fact the sam patch has been submitted and applied to the vfs tree already:
+Any plans to fast-track these fixes to mainline ?
 
-http://lkml.org/lkml/2010/8/11/98
+Thanks,
 
-The patch will probably reach mainline soon.
+Mathieu
 
-Thanks.
+> 
+> (there are three of them)
+> 
+> > --- linux.trees.git.orig/drivers/md/raid1.c	2010-08-17 17:40:52.000000000 -0400
+> > +++ linux.trees.git/drivers/md/raid1.c	2010-08-17 17:42:59.000000000 -0400
+> > @@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev,
+> >  	struct bio_list bl;
+> >  	struct page **behind_pages = NULL;
+> >  	const int rw = bio_data_dir(bio);
+> > -	const bool do_sync = (bio->bi_rw & REQ_SYNC);
+> > +	const bool do_sync = (bio->bi_rw & REQ_SYNC) != 0;
+> >  	bool do_barriers;
+> >  	mdk_rdev_t *blocked_rdev;
+> >  
+> ...
+> 
+> regards,
+> -- 
+> js
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
