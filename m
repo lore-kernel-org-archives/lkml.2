@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751472Ab0HQWYL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 18:24:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:51157 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182Ab0HQWYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 18:24:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=kXuUlIQS56PWn7UedlHme++k66P+xrjtDQ/f/2ISCQHdEo4JOX2+meeqrfmYD4Scb
-	Nn0JnamH6UScwlk4Mb4tw==
-Date: Tue, 17 Aug 2010 15:23:56 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-cc: tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc1] List corruption when using initrd.
-In-Reply-To: <201008170751.o7H7pmAl038739@www262.sakura.ne.jp>
-Message-ID: <alpine.LSU.2.00.1008171523270.2106@sister.anvils>
-References: <201008170517.o7H5HbCT002910@www262.sakura.ne.jp> <201008170751.o7H7pmAl038739@www262.sakura.ne.jp>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1751523Ab0HQW17 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 18:27:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323Ab0HQW1x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 18:27:53 -0400
+Date: Tue, 17 Aug 2010 18:27:32 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, Jan Kara <jack@suse.cz>,
+        Andreas Gruenbacher <agruen@suse.de>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100817222731.GI5556@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-15-git-send-email-vaurora@redhat.com> <E1OgfCU-0000ko-Lu@pomaz-ex.szeredi.hu> <20100804230421.GC29353@shell> <E1OgyOZ-000321-Fp@pomaz-ex.szeredi.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1OgyOZ-000321-Fp@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010, Tetsuo Handa wrote:
-> Tetsuo Handa wrote:
-> > I get list_add corruption message when booting with initrd on Debian Sarge.
+On Thu, Aug 05, 2010 at 01:13:55PM +0200, Miklos Szeredi wrote:
+> On Wed, 4 Aug 2010, Valerie Aurora wrote:
+> > > Another idea is to use an internal inode and make all fallthroughs be
+> > > hard links to that.
+> > > 
+> > > I think the same would work for whiteouts as well.  I don't like the
+> > > fact that whiteouts are invisible even when not mounted as part of a
+> > > union.
+> > 
+> > I don't know if this helps, but I just wrote support for removing ext2
+> > whiteouts and fallthrus using tune2fs and e2fsck.  I think this does
+> > what people want from a "visible" whiteout feature without adding more
+> > complexity to the VFS.  It also takes away all consideration of race
+> > conditions and dentry conversion that happens with online removal of
+> > whiteouts and fallthrus.
+> > 
+> > What are your thoughts on what a visible whiteout/fallthru would look
+> > like?
 > 
-> Bisection completed.
+> Best would be if it didn't need any modification to filesystems.  All
+> this having to upgrade util-linux, e2fsprogs, having incompatible
+> filesystem features is a pain for users (just been through that).
 > 
-> commit 7e496299d4d2ad8083effed6c5a18313a919edc6
-> tmpfs: make tmpfs scalable with percpu_counter for used blocks
+> What we already have in most filesystems:
+> 
+>  - extended attributes, e.g. use the system.union.* namespace and
+>    denote whiteouts and falltroughs with such an attribute
 
-Thanks for reporting and bisecting.  Certainly there's a bug in shmem
-(that we ought to have caught long before it reached 36-rc1: sorry),
-and it is probably the cause of your crashes; but it's possible there's
-a similar bug elsewhere too, something else messing up the percpu_counters
-list - so please check if the patch below really does fix it for you.
+Jan Kara helped convince me this might be better than fs-specific
+fallthrus and whiteouts.  See my email on get_unlinked_inode().
 
-I notice your dmesg also showed fs/inode.c:692 unlock_new_inode()
-warnings from get_cramfs_inode(): those would be unrelated, and
-probably from Al Viro's recent changes in cramfs/inode.c - Cc'ed.
+>  - hard links to make sure a separate inode is not necessary for each
+>    whiteout/fallthrough entry
 
-Thanks,
-Hugh
+The problem with hard links is that you run into hard link limits.  I
+don't think we can do hard links for whiteouts and fallthrus.  Each
+whiteout or fallthru will cost an inode if we implement them as
+extended attributes.  This cost has to be balanced against the cost of
+implementing them as dentries, which is mainly code complexity in
+individual file systems.
 
+>  - some way for the user to easily identify such files when not
+>    mounted as part of a union e.g. make it a symlink pointing to
+>    "(deleted)" or whatever
 
-[PATCH] shmem: put_super must percpu_counter_destroy
+Perhaps we can simply not interpret the whiteout/fallthru extended
+attributes when the file system is not unioned and let userland
+operate on them via getxattr()/setxattr().
 
-list_add() corruption messages reported from shmem_fill_super()'s recently
-introduced percpu_counter_init(): shmem_put_super() needs to remember to
-percpu_counter_destroy().  And also check error from percpu_counter_init().
+> Later the extended attributes can also be used for other things like
+> e.g. chmod()/chown() only copying up metadata, not data, and
+> indicating that data is still found on the lower layers.
 
-Reported-and-bisected-by: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Signed-off-by: Hugh Dickins <hughd@google.com>
----
+It would certainly be more extensible than in-dentry flags.
 
- mm/shmem.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
---- 2.6.36-rc1/mm/shmem.c	2010-08-16 00:18:01.000000000 -0700
-+++ linux/mm/shmem.c	2010-08-17 14:42:56.000000000 -0700
-@@ -2325,7 +2325,10 @@ static int shmem_show_options(struct seq
- 
- static void shmem_put_super(struct super_block *sb)
- {
--	kfree(sb->s_fs_info);
-+	struct shmem_sb_info *sbinfo = SHMEM_SB(sb);
-+
-+	percpu_counter_destroy(&sbinfo->used_blocks);
-+	kfree(sbinfo);
- 	sb->s_fs_info = NULL;
- }
- 
-@@ -2367,7 +2370,8 @@ int shmem_fill_super(struct super_block
- #endif
- 
- 	spin_lock_init(&sbinfo->stat_lock);
--	percpu_counter_init(&sbinfo->used_blocks, 0);
-+	if (percpu_counter_init(&sbinfo->used_blocks, 0))
-+		goto failed;
- 	sbinfo->free_inodes = sbinfo->max_inodes;
- 
- 	sb->s_maxbytes = SHMEM_MAX_BYTES;
+-VAL
