@@ -1,73 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757440Ab0HQOIt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 10:08:49 -0400
-Received: from msa106.auone-net.jp ([61.117.18.166]:34284 "EHLO
-	msa106.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635Ab0HQOIs (ORCPT
+	id S1757481Ab0HQOJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 10:09:13 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:4759 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab0HQOJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 10:08:48 -0400
-Date: Tue, 17 Aug 2010 23:08:40 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf tools: Fix build error on read only source.
-References: <20100816124017.BE24D6AC03A@msa102.auone-net.jp>
- <20100816152410.GA13095@ghostprotocols.net>
+	Tue, 17 Aug 2010 10:09:11 -0400
+Date: Tue, 17 Aug 2010 16:09:02 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Thomas Habets <thomas@habets.pp.se>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <1282050920.2448.47.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
+References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se>  <1281953960.2524.23.camel@edumazet-laptop>  <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>  <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se> 
+ <1282024802.2487.687.camel@edumazet-laptop>  <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se> <1282050920.2448.47.camel@edumazet-laptop>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100816152410.GA13095@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Message-Id: <20100817140841.0859362C03A@msa106.auone-net.jp>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- tools/perf/Makefile          |    8 ++++----
- tools/perf/feature-tests.mak |    2 +-
- 2 files changed, 5 insertions(+), 5 deletions(-)
+On Tue, 17 Aug 2010, Eric Dumazet wrote:
+> Can you try : "ifconfig eth0 allmulti"
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 41abb90..31b528f 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -935,15 +935,15 @@ $(OUTPUT)common-cmds.h: $(wildcard Documentation/perf-*.txt)
- 	$(QUIET_GEN). util/generate-cmdlist.sh > $@+ && mv $@+ $@
- 
- $(patsubst %.sh,%,$(SCRIPT_SH)) : % : %.sh
--	$(QUIET_GEN)$(RM) $@ $@+ && \
-+	$(QUIET_GEN)$(RM) $(OUTPUT)$@ $(OUTPUT)$@+ && \
- 	sed -e '1s|#!.*/sh|#!$(SHELL_PATH_SQ)|' \
- 	    -e 's|@SHELL_PATH@|$(SHELL_PATH_SQ)|' \
- 	    -e 's|@@PERL@@|$(PERL_PATH_SQ)|g' \
- 	    -e 's/@@PERF_VERSION@@/$(PERF_VERSION)/g' \
- 	    -e 's/@@NO_CURL@@/$(NO_CURL)/g' \
--	    $@.sh >$@+ && \
--	chmod +x $@+ && \
--	mv $@+ $(OUTPUT)$@
-+	    $@.sh > $(OUTPUT)$@+ && \
-+	chmod +x $(OUTPUT)$@+ && \
-+	mv $(OUTPUT)$@+ $(OUTPUT)$@
- 
- configure: configure.ac
- 	$(QUIET_GEN)$(RM) $@ $<+ && \
-diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-index ddb68e6..7a7b608 100644
---- a/tools/perf/feature-tests.mak
-+++ b/tools/perf/feature-tests.mak
-@@ -113,7 +113,7 @@ endef
- # try-cc
- # Usage: option = $(call try-cc, source-to-build, cc-options)
- try-cc = $(shell sh -c						  \
--	'TMP="$(TMPOUT).$$$$";			 		  \
-+	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
- 	 echo "$(1)" |						  \
- 	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
- 	 rm -f "$$TMP"')
--- 
-1.7.1
+That didn't help. "ifconfig eth0" and "ip l" shows that allmulti is now 
+set, but no other difference. Can't ping router, and router gets no answer 
+when pinging ff02::1. No message in dmesg saying allmulti isn't supported 
+or anything like that either.
 
+> If you let a "tcpdump" running with -p option, do you receive the packet
+> sent to ethernet dest 33:33:ff:5c:00:02 ?
+
+No. Commented tcpdump output below.
+
+> If you can see it with tcpdump, then NIC gave the frame to us.
+
+Seems to be invisible unless I or tcpdump set promisc mode. But when 
+promisc mode is set I can immediately see the 33:33:ff:5c:00:02 packet 
+(ND solicitation) and I see that Linux is answering it.
+
+Here's a tcpdump from the Linux host. It's slightliy trimmed to fit in
+an email, but the full dump is at http://www.habets.pp.se/tmp/ipv6.pcap
+
+$ sudo tcpdump -pnli eth0 -s0 -w ipv6.pcap ip6
+[...]
+
+$ tcpdump -nlr ipv6.pcap
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
+
+[ here I run "clear ipv6 neighbors" on the Cisco router ]
+
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+[ ... more repeated echo requests, no reply ... ]
+
+[ here i run "ip l set promisc on eth0" ]
+
+2a00:800:752:1::5c:1 > ff02::1:ff5c:2: ICMP6, neighbor solicitation, who 
+has 2a00:800:752:1::5c:2
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6,neighbor advertisement,
+tgt is 2a00:800:752:1::5c:2
+2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:1 > 2a00:800:752:1::5c:2: ICMP6, echo reply
+
+[ here I run "clear ipv6 neigbors" again ]
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+2a00:800:752:1::5c:2 > 2a00:800:752:1::5c:1: ICMP6, echo request
+
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
