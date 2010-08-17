@@ -1,47 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab0HQBQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 21:16:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:49650 "EHLO ozlabs.org"
+	id S1753492Ab0HQBYt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 21:24:49 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48508 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751422Ab0HQBQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 21:16:56 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 2/5] virtio_blk: implement REQ_FLUSH/FUA support
-Date: Tue, 17 Aug 2010 10:46:51 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, mst@redhat.com, Tejun Heo <tj@kernle.org>
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-3-git-send-email-tj@kernel.org>
-In-Reply-To: <1281977523-19335-3-git-send-email-tj@kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008171046.53220.rusty@rustcorp.com.au>
+	id S1752341Ab0HQBYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 21:24:47 -0400
+Date: Tue, 17 Aug 2010 11:24:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>
+Subject: linux-next: build warnings in Linus' tree
+Message-Id: <20100817112439.18f9d958.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__17_Aug_2010_11_24_39_+1000_rWgcAkuVN0b13g=0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010 02:22:00 am Tejun Heo wrote:
-> From: Tejun Heo <tj@kernle.org>
-> 
-> Remove now unused REQ_HARDBARRIER support and implement REQ_FLUSH/FUA
-> support instead.  A new feature flag VIRTIO_BLK_F_FUA is added to
-> indicate the support for FUA.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
+--Signature=_Tue__17_Aug_2010_11_24_39_+1000_rWgcAkuVN0b13g=0
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Hi all,
 
-And also for the lguest-specific patch.
+Today's linux-next build (x86_64 allmodconfig) produced these warnings:
 
-Thanks!
-Rusty.
+drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:152: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_p=
+aram' from incompatible pointer type
+include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, stru=
+ct kernel_param *)' but argument is of type 'int (*)(const char *, const st=
+ruct kernel_param *)'
+
+Introduced by commit 1c8fce27e275fd7c6b75bc6455745f02d3903ee6 ("ACPI:
+introduce drivers/acpi/sysfs.c") interacting with commit
+9bbb9e5a33109b2832e2e63dcc7a132924ab374b ("param: use ops in struct
+kernel_param, rather than get and set fns directly").
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__17_Aug_2010_11_24_39_+1000_rWgcAkuVN0b13g=0
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMaeTXAAoJEDMEi1NhKgbsXtEH/2kZK+pdSL5c+sL/gbpEaAgS
+Qc1m/1KMfQiOQ1Pihw3rFz8v0UyrFQNGnKCoSP4Aa8ECCmTUPx+6T4i2m27/BP4s
+ychU3P+4SxTQVlhnJaeXeCpIPlex1mYQMm9BSYqQf5Bp5HOjjtOLkBCZGEkcJSoN
+thn3QAFpst/zzmK2YfZ+wAGuIQ5WXfmdPAg5YMyM9G5q8cjHx42uYCt31ewlY2ZJ
+3yShEmHSRQpyyn2YFWZkXY4hF4AaZv007YBFIHej2JUvbf9t8+nnppRrRRNMzOTR
+Rpevornx9XSFrydCf7xLmoFbLpMR74JVJcHy5POqJH3DPSicg2WKUfWmzEE571c=
+=ldsk
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__17_Aug_2010_11_24_39_+1000_rWgcAkuVN0b13g=0--
