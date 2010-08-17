@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab0HQS3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:29:33 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:44152 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933111Ab0HQS31 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:29:27 -0400
-Date: Tue, 17 Aug 2010 20:29:20 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100817182920.GD18161@basil.fritz.box>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
- <87aaolwar8.fsf@basil.nowhere.org>
- <20100817174134.GA23176@fieldses.org>
+	id S933269Ab0HQSbc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:31:32 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:2072 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933241Ab0HQSbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 14:31:23 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Date: Tue, 17 Aug 2010 11:31:12 -0700
+From: "Matt Carlson" <mcarlson@broadcom.com>
+To: "Thomas Habets" <thomas@habets.pp.se>
+cc: "Matthew Carlson" <mcarlson@broadcom.com>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>, "Michael Chan" <mchan@broadcom.com>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del
+ command to reset
+Message-ID: <20100817183112.GA4351@mcarlson.broadcom.com>
+References: <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
+ <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se>
+ <1282024802.2487.687.camel@edumazet-laptop>
+ <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se>
+ <1282050920.2448.47.camel@edumazet-laptop>
+ <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
+ <1282055659.2448.58.camel@edumazet-laptop>
+ <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se>
+ <20100817171115.GA4134@mcarlson.broadcom.com>
+ <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100817174134.GA23176@fieldses.org>
+In-Reply-To: <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-WSS-ID: 60740AFE3KC80399727-01-01
+Content-Type: text/plain;
+ charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> OK, so that leaves us with the race, even on newer filesystems:
+On Tue, Aug 17, 2010 at 10:29:54AM -0700, Thomas Habets wrote:
+> On Tue, 17 Aug 2010, Matt Carlson wrote:
+> >>> But if problem remains even with "ifconfig eth0 allmulti" I suspect a
+> >>> NIC firmware problem. (allmulti set to 1 all the 128 bits of filters)
+> > Thomas, can you give me the output of 'ethtool -i eth0'?
 > 
-> 	1. File is modified, mtime updated
-> 	2. Client fetches mtime to revalidate cache
-> 	3. File is modified again, mtime updated
-> 	4. Client fetches new mtime to revalidate cache
+> $ sudo ethtool -i eth0
+> driver: tg3
+> version: 3.110
+> firmware-version: 5715-v3.28, UMP 1.15
+> bus-info: 0000:03:04.0
 
-You'll always have a race window with time, the only way around
-that would be a version number.
-> 	- Tell everyone to use NFSv4 (and make sure we have
-> 	  changeattr/i_version working correctly).
-> 	- Use a finer-grained time source.  (I believe you when you say
-> 	  the TSC is too slow, but maybe we should run some tests to
-> 	  make sure.)
+Thanks.  I put the question out to the firmware developer.  While we
+wait, can you keep Eric's patch in place and give me the results along
+with the output of 'ethtool -d eth0 | grep 0x047' after the problem
+happens?
 
-It depends on the CPU too.
+Eric's patch shows the hash registers at the time they are programmed.
+I'm interested to see if the values change (by firmware) after the
+failure.
 
-> 	- Increment mtime by a nanosecond when necessary.  
-
-You cannot be more precise than the backing file system: this causes
-non monotonity when the inodes are flushed (has happened in the past)
-
--Andi
