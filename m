@@ -1,45 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab0HQMpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 08:45:11 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:39257 "EHLO mxout1.idt.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750961Ab0HQMpJ convert rfc822-to-8bit (ORCPT
+	id S1752841Ab0HQMss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 08:48:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64377 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab0HQMsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 08:45:09 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 17 Aug 2010 08:48:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MX02MPetqeXAZACJrLZfyeGgIhJedTPdB+ms/6CSdiCcWVwCW9Fmpnv7I61Yf1Yyg/
+         gvKN2KdN992pi2CjeO5929+LG8qXOiaPEW0wbix42JGcKPvvYQBU4xOeuIkSU0ZmxvGu
+         7/56fxuT/nNg2mxTf7b84MrBQVoQiAV+Q2O9s=
+Date: Tue, 17 Aug 2010 20:48:39 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+ and touch_softlockup_watchdog
+Message-ID: <20100817124839.GA2838@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20100816133452.GS4879@redhat.com>
+ <1281966418.1926.1421.camel@laptop>
+ <20100816140829.GA5225@swordfish.minsk.epam.com>
+ <20100817025954.GA12366@nowhere>
+ <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
+ <20100817083945.GA12022@swordfish.minsk.epam.com>
+ <AANLkTik-4S_=L5FLhMfommf5Umd0xO+h4QP9uoxwrgFE@mail.gmail.com>
+ <20100817092407.GB12022@swordfish.minsk.epam.com>
+ <AANLkTikjR1nC3DYdvSw=FEmAVZ98=ju2RNq-MF1L7U3u@mail.gmail.com>
+ <20100817102819.GC12022@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 7/9] RapidIO: Add handling for PW message from a lost device
-Date: Tue, 17 Aug 2010 05:44:25 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D61BF@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4C6A38A4.6070505@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH 7/9] RapidIO: Add handling for PW message from a lost device
-thread-index: Acs93I4p0jLYclOcSOykSob+r9M3pQAKuRjg
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-8-git-send-email-alexandre.bounine@idt.com> <4C692F31.2020705@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6040@CORPEXCH1.na.ads.idt.com> <4C6A38A4.6070505@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@ozlabs.org>,
-        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100817102819.GC12022@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Micha Nelissen wrote:
+On Tue, Aug 17, 2010 at 01:28:19PM +0300, Sergey Senozhatsky wrote:
+> > So preempt_disable() is redundant here.
+> >
 > 
-> Perhaps an idea is to use the repeated port-write sending feature so
-> that dropped port-writes are not a problem anymore.
+> Shouldn't we be for sure not preepmtible when calling __raw_get_cpu_var?
+
+IMHO, it's the caller's responsibility.
+
 > 
-Unfortunately, this feature is not defined by RIO spec. This is
-proprietary function, so we 
-cannot rely on it. Yes, this is nice feature of Tsi57x switches and may
-be used if you have 
-a closed system - just enable it in em_init. The RIO spec part 8 is
-quite open about port-write generation and we cannot expect the same
-behavior from different devices.    
+> preempt_disable is reduntant here because current_thread_info()->cpu is 
+> atomic and we just don't want preempt_(enable|disable) overhead?
+
+Yep.
+
+Thanks,
+Yong
