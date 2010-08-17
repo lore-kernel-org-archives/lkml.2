@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305Ab0HQHxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 03:53:51 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:54387 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab0HQHxu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 03:53:50 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+I5oT47Bq1jzqeE03LJuzb
-Date: Tue, 17 Aug 2010 10:53:47 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Jarkko Nikula <jhnikula@gmail.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the omap
- tree
-Message-ID: <20100817075346.GE12184@atomide.com>
-References: <20100817122145.f399e543.sfr@canb.auug.org.au>
- <20100817061558.GD12184@atomide.com>
- <20100817093445.ade1b4a4.jhnikula@gmail.com>
+	id S1754078Ab0HQHzT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 03:55:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47074 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab0HQHzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 03:55:17 -0400
+Date: Tue, 17 Aug 2010 07:54:47 GMT
+From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        arjan@linux.intel.com, tglx@linutronix.de, randy.dunlap@oracle.com,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        arjan@linux.intel.com, tglx@linutronix.de, randy.dunlap@oracle.com,
+        mingo@elte.hu
+In-Reply-To: <20100812123121.a7c99cde.randy.dunlap@oracle.com>
+References: <20100812123121.a7c99cde.randy.dunlap@oracle.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] latencytop: Fix kconfig dependency warnings
+Message-ID: <tip-625fdcaa6d2a3db6a922bbd833450424e906111c@git.kernel.org>
+Git-Commit-ID: 625fdcaa6d2a3db6a922bbd833450424e906111c
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100817093445.ade1b4a4.jhnikula@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 07:54:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jarkko Nikula <jhnikula@gmail.com> [100817 09:27]:
-> On Tue, 17 Aug 2010 09:15:59 +0300
-> Tony Lindgren <tony@atomide.com> wrote:
-> 
-> > * Stephen Rothwell <sfr@canb.auug.org.au> [100817 05:14]:
-> > > Hi all,
-> > > 
-> > > Today's linux-next merge of the sound-asoc tree got a conflict in
-> > > arch/arm/mach-omap2/board-n8x0.c between commits
-> > > 1c37553eb1778802f0e7b6730df36542752e801e ("omap: n8x0: Cleanup i2c1 and
-> > > menelaus registration") and 69be0f6f4b8e3be992ab6a333a3a82e043784c52
-> > > ("omap: n8x0: Register i2c2 and add board info with tlv320aic3xfor N810")
-> > > from the omap tree and commit f0fba2ad1b6b53d5360125c41953b7afcd6deff0
-> > > ("ASoC: multi-component - ASoC Multi-Component Support") from the
-> > > sound-asoc tree.
-> > > 
-> > > I couldn't figure this out, so I effectively reverted the part of the
-> > > latter commit affecting that file.  Is there no way that the latter
-> > > commit can be broken up into smaller self contained pieces?
-> > 
-> > Let's let Jarkko and Liam to queue these along with the other
-> > ASoC patches, I'll drop them from omap for-next.
-> > 
-> > Jarkko, can you please rebase them?
-> > 
-> I think it's easier if you keep them in l-o for-next and I send a
-> patch to ASoC multi-component removing board-n8x0.c changes.
-> 
-> That way the N810 audio is usable in linux-omap before m-c merge and m-c
-> patch touch less board files.
+Commit-ID:  625fdcaa6d2a3db6a922bbd833450424e906111c
+Gitweb:     http://git.kernel.org/tip/625fdcaa6d2a3db6a922bbd833450424e906111c
+Author:     Randy Dunlap <randy.dunlap@oracle.com>
+AuthorDate: Thu, 12 Aug 2010 12:31:21 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 17 Aug 2010 09:09:03 +0200
 
-OK sounds good to me.
+latencytop: Fix kconfig dependency warnings
 
-Thanks,
+warning: (LATENCYTOP && HAVE_LATENCYTOP_SUPPORT) selects
+SCHED_DEBUG which has unmet direct dependencies (DEBUG_KERNEL &&
+PROC_FS) warning: (LATENCYTOP && HAVE_LATENCYTOP_SUPPORT) selects
+SCHEDSTATS which has unmet direct dependencies (DEBUG_KERNEL && PROC_FS)
 
-Tony
+Add depends on STACKTRACE_SUPPORT for 'select STACKTRACE'.
+Add depends on PROC_FS since that is where the output goes.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+LKML-Reference: <20100812123121.a7c99cde.randy.dunlap@oracle.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ lib/Kconfig.debug |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 9e06b7f..1b4afd2 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -994,13 +994,16 @@ config FAULT_INJECTION_STACKTRACE_FILTER
+ 
+ config LATENCYTOP
+ 	bool "Latency measuring infrastructure"
++	depends on HAVE_LATENCYTOP_SUPPORT
++	depends on DEBUG_KERNEL
++	depends on STACKTRACE_SUPPORT
++	depends on PROC_FS
+ 	select FRAME_POINTER if !MIPS && !PPC && !S390 && !MICROBLAZE
+ 	select KALLSYMS
+ 	select KALLSYMS_ALL
+ 	select STACKTRACE
+ 	select SCHEDSTATS
+ 	select SCHED_DEBUG
+-	depends on HAVE_LATENCYTOP_SUPPORT
+ 	help
+ 	  Enable this option if you want to use the LatencyTOP tool
+ 	  to find out which userspace is blocking on what kernel operations.
