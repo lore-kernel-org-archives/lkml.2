@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755889Ab0HQFfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 01:35:48 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:54639 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755730Ab0HQFfq (ORCPT
+	id S1755619Ab0HQFfi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 01:35:38 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:3446 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754647Ab0HQFfh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 01:35:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=R1879md/8BNKRCwIUegIelzkmC0dtXXUzJj7b0ykEfZxMA7fT060rlc9L/djwBya4m
-         s2SYvitKyX1CFwY+aoBd3XHXKSkvRetx3jz7ruJxJkMgcYJjzuhM7vv3U/YLqBQKxE5V
-         z8y+Kk6tv/Qg1LyypgDmcw1DbI659mSUSBYYI=
-Date: Tue, 17 Aug 2010 13:40:00 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: =?utf-8?B?w4Z2YXIgQXJuZmrDtnLDsA==?= Bjarmason <avar@v.nix.is>
-Cc: torvalds@linux-foundation.org,
-        David Woodhouse <dwmw2@tylersburg.infradead.org>,
-        Linux is full of bugs <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] .gitignore: Ignore generated files in lib/raid6
-Message-ID: <20100817054000.GB5095@cr0.nay.redhat.com>
-References: <1282019131-30813-1-git-send-email-avar@v.nix.is>
+	Tue, 17 Aug 2010 01:35:37 -0400
+Date: Tue, 17 Aug 2010 07:35:28 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Thomas Habets <thomas@habets.pp.se>
+cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
+Message-ID: <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se>
+References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se> <1281953960.2524.23.camel@edumazet-laptop> <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1282019131-30813-1-git-send-email-avar@v.nix.is>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 04:25:31AM +0000, Ævar Arnfjörð Bjarmason wrote:
->The Makefile in lib/raid6 will generate these files, and the clean
->target will remove them, but they weren't being ignored by git.
->
->Signed-off-by: Ævar Arnfjörð Bjarmason <avar@v.nix.is>
+On Mon, 16 Aug 2010, Thomas Habets wrote:
+> Am I not allowed to add addresses to lo? That I've deconfigured this address 
+> and rebooted the box to check if this matters.
 
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+It didn't help.
 
-Thanks!
+> I will re-check ethtool and Cisco router output for mismatches when it breaks 
+> again to make sure that there's no change or errors counting up.
 
->---
-> lib/raid6/.gitignore |   16 ++++++++++++++++
-> 1 files changed, 16 insertions(+), 0 deletions(-)
-> create mode 100644 lib/raid6/.gitignore
->
->diff --git a/lib/raid6/.gitignore b/lib/raid6/.gitignore
->new file mode 100644
->index 0000000..ce56377
->--- /dev/null
->+++ b/lib/raid6/.gitignore
->@@ -0,0 +1,16 @@
->+#
->+# Generated files
->+#
->+
->+altivec1.c
->+altivec2.c
->+altivec4.c
->+altivec8.c
->+int1.c
->+int16.c
->+int2.c
->+int32.c
->+int4.c
->+int8.c
->+mktables
->+tables.c
->-- 
->1.7.2.1.389.gc3d0b
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
->Please read the FAQ at  http://www.tux.org/lkml/
+IPv6 is currently not working and it's still 1000 Full on both sides 
+("show int GiX/Y" and "ethtool eth0").
+No errors in "ethtool -S eth0" or "show int GiX/Y".
+
+"ethtool eth0" output is the same as yesterday.
+
+Here's the addresses and routing table as they are now, and have been 
+since reboot:
+
+$ ip -6 a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 16436
+     inet6 ::1/128 scope host
+        valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qlen 1000
+     inet6 2a00:800:752:1::5c:2/112 scope global
+        valid_lft forever preferred_lft forever
+     inet6 fe80::224:81ff:fea3:4424/64 scope link
+        valid_lft forever preferred_lft forever
+
+
+$ ip -6 r sh
+2a00:800:752:1::5c:0/112 dev eth0  proto kernel  metric 256  mtu 1500
+advmss 1440 hoplimit 4294967295
+
+fe80::/64 dev eth0  proto kernel  metric 256  mtu 1500 advmss 1440
+hoplimit 4294967295
+
+default via 2a00:800:752:1::5c:1 dev eth0  metric 1024  mtu 1500 advmss
+1440 hoplimit 4294967295
+
+$ ip -6 ne sh
+2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router STALE
+
+[try ping6 again, no reply]
+
+$ ip -6 ne sh
+2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router DELAY
+
+[try ping6 again, no reply]
+
+$ ip -6 ne sh
+2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router REACHABLE
+
+[try ping6 again, no reply]
+
+Configured network with /etc/network/interfaces:
+
+auto lo
+iface lo inet loopback
+
+allow-hotplug eth0
+iface eth0 inet static
+ 	address x.x.x.x
+ 	netmask 255.255.255.252
+ 	broadcast x.x.x.x
+ 	gateway x.x.x.x
+ 	up ip a a 2a00:800:752:1::5c:2/112 dev eth0
+ 	up ip r a default via 2a00:800:752:1::5c:1
+ 	dns-nameservers x.x.x.x
+ 	dns-search xxxx.net
+
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
