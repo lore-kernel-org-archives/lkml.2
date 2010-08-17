@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab0HQFVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 01:21:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48754 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab0HQFVl convert rfc822-to-8bit (ORCPT
+	id S1753211Ab0HQFWL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 01:22:11 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:4499 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab0HQFWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 01:21:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=FgDzkVxik+EtlxMqFT8/Ev3oPx6ryPAPzkeIaUjvcNm7GZbF2x3kZkLuqBcyJktzgG
-         vZUQhfArTaMswvoaHBdRyg/jhSejh6yIideYV94cDF6ENtEbYln8zJCddAEi7UGDVmsI
-         1uZjllnurM9Wgnhr4Lp9qrvKhuwEkrQgH9XaM=
+	Tue, 17 Aug 2010 01:22:09 -0400
+Message-ID: <4C6A1C7C.7070004@chelsio.com>
+Date: Mon, 16 Aug 2010 22:22:04 -0700
+From: Dimitris Michailidis <dm@chelsio.com>
+Organization: Chelsio Communications
+User-Agent: Thunderbird 1.5.0.12 (X11/20070530)
 MIME-Version: 1.0
-In-Reply-To: <4C6A1A2B.9080004@cn.fujitsu.com>
-References: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com>
-	<4C69F7B9.2000103@cn.fujitsu.com>
-	<AANLkTi==O7cKcM19iO=7XoZo3PndPBDctPy08NrbYSxx@mail.gmail.com>
-	<4C6A1A2B.9080004@cn.fujitsu.com>
-Date: Tue, 17 Aug 2010 05:21:39 +0000
-Message-ID: <AANLkTinPq+=XvG283cQC2S4qRtvvqAaKVqdA4dDy1NVN@mail.gmail.com>
-Subject: Re: BUG: nconfig doesn't preserve case in its menu display
-From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Linux is full of bugs <linux-kernel@vger.kernel.org>,
-        Nir Tzachar <nir.tzachar@gmail.com>, Michal Marek <mmarek@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: tasks getting stuck on mmap_sem?
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 05:12, Li Zefan <lizf@cn.fujitsu.com> wrote:
+David Miller wrote:
+> I just started seeing this with current GIT, is it related
+> to the page table locking shuffle of a few days ago?
+> 
+> [21029.265646] INFO: task git:16643 blocked for more than 120 seconds.
+> [21029.267054] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [21029.268412] git           D 000000000072f804     0 16643  16273 0x210001101000080
+> [21029.269809] Call Trace:
+> [21029.271062]  [000000000072f778] rwsem_down_failed_common+0x90/0xb8
+> [21029.272390]  [000000000072f804] __down_read+0x30/0x40
+> [21029.273689]  [0000000000731148] do_sparc64_fault+0x238/0x788
+> [21029.274996]  [00000000004079e8] sparc64_realfault_common+0x10/0x20
+> [21029.276347] INFO: task git:16644 blocked for more than 120 seconds.
+> [21029.277655] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> [21029.278993] git           D 000000000072f874     0 16644  16273 0x210041101000080
+> [21029.280348] Call Trace:
+> [21029.281542]  [000000000072f778] rwsem_down_failed_common+0x90/0xb8
+> [21029.282818]  [000000000072f874] __down_write+0x34/0x44
+> [21029.284057]  [00000000004d9c44] SyS_mmap_pgoff+0xc8/0x118
+> [21029.285293]  [0000000000406154] linux_sparc_syscall32+0x34/0x40
+>  ...
+> 
+> etc.  it's a set of git threads computing deltas for a remote pull
+> request to the machine.
 
-> Oops, I made a mistake. Try this one:
-
-Thanks, that works.
-
-Tested-by: Ævar Arnfjörð Bjarmason <avarab@gmail.com>
+This may be similar to the problems IA-64 had last week as a result of the 
+rwsem changes, eg see commit 01d69a82e1d3c938da16bf55aab000672243aa24.  I 
+see arch/sparc/include/asm/atomic_64.h uses ints with atomic64_t, which was 
+a problem for IA-64.  Just guessing.
