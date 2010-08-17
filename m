@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730Ab0HQTuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:50:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35788 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752535Ab0HQTuK (ORCPT
+	id S1751659Ab0HQT7I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:59:08 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48417 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab0HQT7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:50:10 -0400
-Date: Tue, 17 Aug 2010 20:50:08 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Bobby Crabtree <bobbyc@codeaurora.org>
-Cc: lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: regulator voltage aggregation
-Message-ID: <20100817195008.GC5755@opensource.wolfsonmicro.com>
-References: <4C6ACF92.7050506@codeaurora.org> <20100817181557.GA5755@opensource.wolfsonmicro.com> <4C6AE40D.7090206@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6AE40D.7090206@codeaurora.org>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	Tue, 17 Aug 2010 15:59:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AKQwJp3o0iRpx5CAKBfQWN+LiQ5hzGc8gKuyGf3LnoepFln7Y4gbuRNzPviKSseIVR
+         nFkmuBFoypI0MCggOOhZFbkIu7/1OtDTX7woe1YHAnWdNQtRg+n0E7nF9qbFVbwhssqz
+         wMt97PwtoFmR2LuujkGC8HWOedIJERrKNAUJQ=
+From: wellsk40@gmail.com
+To: rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: RTC: LPC32xx: Introduce RTC driver for the LPC32xx (v4)
+Date: Tue, 17 Aug 2010 13:00:33 -0700
+Message-Id: <1282075234-18644-1-git-send-email-wellsk40@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 12:33:33PM -0700, Bobby Crabtree wrote:
-> Mark Brown wrote:
+This patch set adds support for the LPC32xx built-in RTC. This is
+a persistent RTC with alarm on it's own power domain and a
+dedicated oscillator. UIE emulation is used for *_UIE_* ioctls.
 
-> > It's unlikely that the highest voltage would ever be the best choice...
+The patch can be pulled from:
+	git://git.lpclinux.com/linux-2.6-lpc rtc-lpc32xx_v4
 
-> We do need the highest voltage. Let's say we have two consumers
-> (A and B). Both require 1.3V for "normal" operations. Then let's
-> say that consumer A can save power by reducing the voltage to 1.1V
-> (but it doesn't require 1.1V). If the core were to immediately apply
-> 1.1V, then the 1.3V requirement of consumer B would not be satisfied.
+v4 includes updates from the initial review of the RTC driver
+and updates from v2 and v3
 
-That's not the highest voltage, that's the minimum voltage that
-satisfies all the requests that the consumers have made.  The consumer
-which requires 1.1V will have requested 1.1V up to, say, 3.3V.  The
-consumer that requested 1.3V will have requested, say, 1.3-1.8V and
-let's say the machine constraints will allow at least these ranges.
-1.3V is the lowest voltage that hits all the constraints, but it's still
-lower than any of the maxima.  When you've got multiple things
-specifying a voltage constraint you need to apply the most restrictive
-combination of constraints but it still makes sense to pick the minimum
-voltage we can deliver from the range that's left after doing that.
+Changes since v3:
+	Some RTC macros renamed (and shrunk)
+	Fixed RTC key load logic that would cause RTC clock
+		to clear to 0 on poweroff or reset if key
+		wasn't set elsewhere
+	Fixed else case for RTC key check (key present) to
+		clear MATCH0 instead on ONSW_MATCH0
 
-> > This was actually a feature of the regulator API when originally
-> > proposed, it got dropped for ease of review but there's some remanants
-> > of this in the code so it shouldn't be hard to resurrect.  Whenever a
-> > voltage was set the code stored the range on the consumer then iterated
-> > over all consumers applying their ranges plus the machine constraints
-> > rather than just using the immediate value.
+Changes since v2:
+	RTC register macros now prefixed with LPC32XX_
+	Changed alarm_enable type to unsigned char to match
+		the type in the struct rtc_wkalrm (enable)
+	Set pending flag to correct state in read-alarm
+		function
+	Change the alarm read failure message to a warning
+	Regardless of the state of the alarm enable flag
+		passed into set_alarm, the alarm fire value
+		is updated. Previously, this was only updated
+		when the alarm enable flag was set
+	Added braces for else clauses with a single statement
+		if the previous if clause had them
+	Cleared platform data pointer in rtc structure on
+		error and remove
 
-> I noticed some of the remnants. But I'm not sure I follow what you
-> are saying. What range would the core actually propagate to the
-> driver? The minimum min_uV and the maximum max_uV? We need the core
-> to propagate the maximum min_uV and the maximum max_uV.
+Changes since v1:
+	Fixed spaces/tabbing in lpc32xx entry in Kconfig/Makefile
+	Remove improper enable for rtc->alarm_enabled
+	Removed typecast on rtc structure in irq handler
+	Switch to resource managed (devm_) variants of kzalloc
+		and other functions in probe. Updated remove
+		based on these changes.
+	Disabled alarm on probe instead of keeping current register
+		settings. No changes for suspend.
+	Allowed driver to continue operation without wakeup or
+		alarm irq if the rtc irq request failed.
+	Relocated module_init and _exit macros to just after it's
+		associated function
+	Passed a NULL pointer to .driver.pm in platform driver
+		structure instead of a list of NULL functions.
+	Added MODULE_ALIAS
 
-No, it'd be the maximum min_uV and the minimum max_uV - this is already
-happening when the constraints from the machine are applied, it'd just
-be applying a wider set of constraints.  In principle all we need to do
-is remember the voltage constraints that individual consumers set and
-then iterate over all the enabled consumers when one of them changes its
-range (or is enabled/disabled) instead of just taking the immediate
-values from the consumer.
