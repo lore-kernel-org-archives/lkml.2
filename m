@@ -1,73 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0HQGLa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 02:11:30 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48265 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab0HQGL2 convert rfc822-to-8bit (ORCPT
+	id S1753131Ab0HQGPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 02:15:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48848 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab0HQGPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 02:11:28 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Kanigeri, Hari" <h-kanigeri2@ti.com>
-Date: Tue, 17 Aug 2010 01:08:04 -0500
-Subject: RE: [PATCH] iommu: fix end address of vm area comparation in
- alloc_iovm_area
-Thread-Topic: [PATCH] iommu: fix end address of vm area comparation in
- alloc_iovm_area
-Thread-Index: Acs9zNfIUn3La5qRReiyq57pfrLOyQABbakq
-Message-ID: <496565EC904933469F292DDA3F1663E602CA4D894D@dlee06.ent.ti.com>
-References: <496565EC904933469F292DDA3F1663E602CA4D8949@dlee06.ent.ti.com>
-	<496565EC904933469F292DDA3F1663E602CA4D894C@dlee06.ent.ti.com>,<20100817.082706.39158708.Hiroshi.DOYU@nokia.com>
-In-Reply-To: <20100817.082706.39158708.Hiroshi.DOYU@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	Tue, 17 Aug 2010 02:15:37 -0400
+Message-ID: <4C6A28F6.4090701@monstr.eu>
+Date: Tue, 17 Aug 2010 08:15:18 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] of/microblaze: fix includes so that asm/prom.h doesn't
+ need linux/of*.h
+References: <20100817060051.20467.10072.stgit@angua>
+In-Reply-To: <20100817060051.20467.10072.stgit@angua>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Grant Likely wrote:
+> asm/prom.h has some nasty include ordering issues because a number of
+> files assume that linux/of_* is included by prom.h.  This patch fixes
+> the Microblaze occurrences.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> 
+> Hi Michal,
+> 
+> And here is my patch that fixes all the include issues so the remaining lines
+> can be removed from prom.h.  I'll add this one to my test-devicetree branch
+> along with similar patches to fix powerpc and sparc, and probably merge it
+> in 2.6.37.
 
->From: Hiroshi DOYU [Hiroshi.DOYU@nokia.com]
->Sent: Tuesday, August 17, 2010 12:27 AM
->To: Guzman Lugo, Fernando
->Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; Kanigeri, Hari
->Subject: Re: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
->
->From: "ext Guzman Lugo, Fernando" <fernando.lugo@ti.com>
->Subject: RE: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
->Date: Tue, 17 Aug 2010 06:48:14 +0200
->
->> From: linux-omap-owner@vger.kernel.org [linux-omap-owner@vger.kernel.org] On Behalf Of Guzman Lugo, Fernando [fernando.lugo@ti.com]
->> Sent: Monday, August 16, 2010 10:51 PM
->> To: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org
->> Cc: Hiroshi.DOYO@nokia.com; Kanigeri, Hari
->> Subject: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
->>
->> From cc48c0adaee97c8385a356aefa5b64a51818b4fd Mon Sep 17 00:00:00 2001
->> From: Fernando Guzman Lugo <x0095840@ti.com>
->> Date: Mon, 16 Aug 2010 22:28:24 -0500
->> Subject: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
->>
->> End address of the vm area is “start + bytes -1”,
->> not “start + byte”. This patch fixes that issue by doing
->> an inclusive comparison with tmp->da_start. This issue
->> was preventing allocate an area of size exactly the same
->> than the free area. I did no change the value of da_end
->> of each vm area because it is used to get area size in
->> several places.
->
->Ok for me. Is this patch against the latest?
+That's bad because I don't want to keep pci broken till 2.6.37 
+especially in case that I know that is broken.
 
-not it isn't, but I don't think it could have issues applying. However I will resend it, base against the latest and include you ack.
+If this is the right fix for my issue and you want to merge it in 2.6.37 
+then I prefer to use my patch which simple add one header to prom.h and 
+then this patch fix it in general in 2.6.37.
 
-Regards,
-Fernando.
+What do you think?
 
+Michal
+
+
+
+> 
+> Cheers,
+> g.
+>  arch/microblaze/include/asm/prom.h  |    9 ---------
+>  arch/microblaze/kernel/prom.c       |    3 ++-
+>  arch/microblaze/kernel/prom_parse.c |    3 ++-
+>  arch/microblaze/kernel/setup.c      |    3 ++-
+>  arch/microblaze/pci/pci-common.c    |    1 +
+>  drivers/net/xilinx_emaclite.c       |    1 +
+>  drivers/serial/of_serial.c          |    1 +
+>  drivers/serial/uartlite.c           |    1 +
+>  8 files changed, 10 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/microblaze/include/asm/prom.h b/arch/microblaze/include/asm/prom.h
+> index 101fa09..59c7932 100644
+> --- a/arch/microblaze/include/asm/prom.h
+> +++ b/arch/microblaze/include/asm/prom.h
+> @@ -83,13 +83,4 @@ extern int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq);
+>  
+>  #endif /* __ASSEMBLY__ */
+>  #endif /* __KERNEL__ */
+> -
+> -/* These includes are put at the bottom because they may contain things
+> - * that are overridden by this file.  Ideally they shouldn't be included
+> - * by this file, but there are a bunch of .c files that currently depend
+> - * on it.  Eventually they will be cleaned up. */
+> -#include <linux/of_fdt.h>
+> -#include <linux/of_irq.h>
+> -#include <linux/platform_device.h>
+> -
+>  #endif /* _ASM_MICROBLAZE_PROM_H */
+> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+> index 427b13b..cca32f3 100644
+> --- a/arch/microblaze/kernel/prom.c
+> +++ b/arch/microblaze/kernel/prom.c
+> @@ -24,6 +24,8 @@
+>  #include <linux/stringify.h>
+>  #include <linux/delay.h>
+>  #include <linux/initrd.h>
+> +#include <linux/of.h>
+> +#include <linux/of_fdt.h>
+>  #include <linux/bitops.h>
+>  #include <linux/module.h>
+>  #include <linux/kexec.h>
+> @@ -31,7 +33,6 @@
+>  #include <linux/irq.h>
+>  #include <linux/memblock.h>
+>  
+> -#include <asm/prom.h>
+>  #include <asm/page.h>
+>  #include <asm/processor.h>
+>  #include <asm/irq.h>
+> diff --git a/arch/microblaze/kernel/prom_parse.c b/arch/microblaze/kernel/prom_parse.c
+> index 99d9b61..004a276 100644
+> --- a/arch/microblaze/kernel/prom_parse.c
+> +++ b/arch/microblaze/kernel/prom_parse.c
+> @@ -6,8 +6,9 @@
+>  #include <linux/module.h>
+>  #include <linux/ioport.h>
+>  #include <linux/etherdevice.h>
+> +#include <linux/of.h>
+>  #include <linux/of_address.h>
+> -#include <asm/prom.h>
+> +#include <linux/of_irq.h>
+>  #include <asm/pci-bridge.h>
+>  
+>  #ifdef CONFIG_PCI
+> diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
+> index f5f7688..47c8331 100644
+> --- a/arch/microblaze/kernel/setup.c
+> +++ b/arch/microblaze/kernel/setup.c
+> @@ -24,6 +24,8 @@
+>  #include <linux/param.h>
+>  #include <linux/pci.h>
+>  #include <linux/cache.h>
+> +#include <linux/of.h>
+> +#include <linux/of_fdt.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/dma-mapping.h>
+>  #include <asm/cacheflush.h>
+> @@ -31,7 +33,6 @@
+>  #include <asm/cpuinfo.h>
+>  
+>  #include <asm/system.h>
+> -#include <asm/prom.h>
+>  #include <asm/pgtable.h>
+>  
+>  DEFINE_PER_CPU(unsigned int, KSP);	/* Saved kernel stack pointer */
+> diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+> index 55ef532..2e3c60a 100644
+> --- a/arch/microblaze/pci/pci-common.c
+> +++ b/arch/microblaze/pci/pci-common.c
+> @@ -29,6 +29,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  
+>  #include <asm/processor.h>
+>  #include <asm/io.h>
+> diff --git a/drivers/net/xilinx_emaclite.c b/drivers/net/xilinx_emaclite.c
+> index ecbbb68..68a4498 100644
+> --- a/drivers/net/xilinx_emaclite.c
+> +++ b/drivers/net/xilinx_emaclite.c
+> @@ -22,6 +22,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/of_address.h>
+>  #include <linux/of_device.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/of_mdio.h>
+>  #include <linux/phy.h>
+> diff --git a/drivers/serial/of_serial.c b/drivers/serial/of_serial.c
+> index 2af8fd1..387858e 100644
+> --- a/drivers/serial/of_serial.c
+> +++ b/drivers/serial/of_serial.c
+> @@ -15,6 +15,7 @@
+>  #include <linux/serial_core.h>
+>  #include <linux/serial_8250.h>
+>  #include <linux/of_address.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  #include <linux/nwpserial.h>
+>  
+> diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
+> index 9b03d7b..95e5c27 100644
+> --- a/drivers/serial/uartlite.c
+> +++ b/drivers/serial/uartlite.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/of.h>
+>  #include <linux/of_address.h>
+>  #include <linux/of_device.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/of_platform.h>
+>  
+>  /* Match table for of_platform binding */
+> 
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
