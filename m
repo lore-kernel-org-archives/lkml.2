@@ -1,151 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442Ab0HQJja (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 05:39:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36065 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753475Ab0HQJj2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 05:39:28 -0400
-Message-ID: <4C6A5780.2090100@kernel.org>
-Date: Tue, 17 Aug 2010 11:33:52 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1757471Ab0HQJkQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 05:40:16 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52777 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757227Ab0HQJkO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 05:40:14 -0400
+Date: Tue, 17 Aug 2010 11:40:08 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] Hugepage migration (v2)
+Message-ID: <20100817094007.GA18161@basil.fritz.box>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.00.1008110806070.673@router.home>
+ <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+ <alpine.DEB.2.00.1008130744550.27542@router.home>
+ <20100816091935.GB3388@spritzera.linux.bs1.fc.nec.co.jp>
+ <alpine.DEB.2.00.1008160707420.11420@router.home>
+ <20100817023719.GC12736@spritzera.linux.bs1.fc.nec.co.jp>
+ <20100817081817.GA28969@spritzera.linux.bs1.fc.nec.co.jp>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        Tejun Heo <tj@kernle.org>
-Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com>
-In-Reply-To: <20100816190203.GA22299@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 09:36:59 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817081817.GA28969@spritzera.linux.bs1.fc.nec.co.jp>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> When get_user_pages_fast() is called before try_to_unmap(),
+> direct I/O code increments refcount on the target page.
+> Because this refcount is not associated to the mapping,
+> migration code will find remaining refcounts after try_to_unmap()
+> unmaps all mappings. Then refcount check decides migration to fail,
+> so direct I/O is continued safely.
 
-On 08/16/2010 09:02 PM, Mike Snitzer wrote:
-> On Mon, Aug 16 2010 at 12:52pm -0400,
-> Tejun Heo <tj@kernel.org> wrote:
-> 
->> From: Tejun Heo <tj@kernle.org>
->>
->> This patch converts dm to support REQ_FLUSH/FUA instead of now
->> deprecated REQ_HARDBARRIER.
-> 
-> What tree does this patch apply to?  I know it doesn't apply to
-> v2.6.36-rc1, e.g.: http://git.kernel.org/linus/708e929513502fb0
+This would imply that direct IO can make migration fail arbitarily.
+Also not good. Should we add some retries, at least for the soft offline
+case?
 
-(from the head message)
-These patches are on top of
-
-  block#for-2.6.36-post (c047ab2dddeeafbd6f7c00e45a13a5c4da53ea0b)
-+ block-replace-barrier-with-sequenced-flush patchset[1]
-+ block-fix-incorrect-bio-request-flag-conversion-in-md patch[2]
-
-and available in the following git tree.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git flush-fua
-
-[1] http://thread.gmane.org/gmane.linux.kernel/1022363
-[2] http://thread.gmane.org/gmane.linux.kernel/1023435
-
-Probably fetching the git tree is the easist way to review?
-
->> For bio-based dm,
->> * -EOPNOTSUPP retry logic dropped.
->
-> That logic wasn't just about retries (at least not in the latest
-> kernel).  With commit 708e929513502fb0 the -EOPNOTSUPP checking also
-> serves to optimize the barrier+discard case (when discards aren't
-> supported).
-
-With the patch applied, there's no second flush.  Those requests would
-now be REQ_FLUSH + REQ_DISCARD.  The first can't be avoided anyway and
-there won't be the second flush to begin with, so I don't think this
-worsens anything.
-
->> * Nothing much changes.  It just needs to handle FLUSH requests as
->>   before.  It would be beneficial to advertise FUA capability so that
->>   it can propagate FUA flags down to member request_queues instead of
->>   sequencing it as WRITE + FLUSH at the top queue.
-> 
-> Can you expand on that TODO a bit?  What is the mechanism to propagate
-> FUA down to a DM device's members?  I'm only aware of propagating member
-> devices' features up to the top-level DM device's request-queue (not the
-> opposite).
-> 
-> Are you saying that establishing the FUA capability on the top-level DM
-> device's request_queue is sufficient?  If so then why not make the
-> change?
-
-Yeah, I think it would be enough to always advertise FLUSH|FUA if the
-member devices support FLUSH (regardless of FUA support).  The reason
-why I didn't do it was, umm, laziness, I suppose.
-
->> Lightly tested linear, stripe, raid1, snap and crypt targets.  Please
->> proceed with caution as I'm not familiar with the code base.
-> 
-> This is concerning...
-
-Yeap, I want you to be concerned. :-) This was the first time I looked
-at the dm code and there are many different disjoint code paths and I
-couldn't fully follow or test all of them, so it definitely needs a
-careful review from someone who understands the whole thing.
-
-> if we're to offer more comprehensive review I think we need more
-> detail on what guided your changes rather than details of what the
-> resulting changes are.
-
-I'll try to explain it.  If you have any further questions, please let
-me know.
-
-* For common part (dm-io, dm-log):
-
-  * Empty REQ_HARDBARRIER is converted to empty REQ_FLUSH.
-
-  * REQ_HARDBARRIER w/ data is converted either to data + REQ_FLUSH +
-    REQ_FUA or data + REQ_FUA.  The former is the safe equivalent
-    conversion but there could be cases where ther latter is enough.
-
-* For bio based dm:
-
-  * Unlike REQ_HARDBARRIER, REQ_FLUSH/FUA doesn't have any ordering
-    requirements.  Remove assumptions of ordering and/or draining.
-
-    A related question: Is dm_wait_for_completion() used in
-    process_flush() safe against starvation under continuous influx of
-    other commands?
-
-  * As REQ_FLUSH/FUA doesn't require any ordering of requests before
-    or after it, on array devices, the latter part - REQ_FUA - can be
-    handled like other writes.  ie. REQ_FLUSH needs to be broadcasted
-    to all devices but once that is complete the data/REQ_FUA bio can
-    be sent to only the affected devices.  This needs some care as
-    there are bio cloning/splitting code paths where REQ_FUA bit isn't
-    preserved.
-
-  * Guarantee that REQ_FLUSH w/ data never reaches targets (this in
-    part is to put it in alignment with request based dm).
-
-* For request based dm:
-
-  * The sequencing is done by the block layer for the top level
-    request_queue, so the only things request based dm needs to make
-    sure is 1. handling empty REQ_FLUSH correctly (block layer will
-    only send down empty REQ_FLUSHes) and 2. propagate REQ_FUA bit to
-    member devices.
-
-Thanks.
+-Andi
 
 -- 
-tejun
+ak@linux.intel.com -- Speaking for myself only.
