@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757700Ab0HQPZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 11:25:28 -0400
-Received: from THUNK.ORG ([69.25.196.29]:56432 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757634Ab0HQPZV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 11:25:21 -0400
-Date: Tue, 17 Aug 2010 11:25:01 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, Pavel Machek <pavel@ucw.cz>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
-        Brian Swetland <swetland@google.com>,
-        linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-        rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
-        tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
-        James.Bottomley@suse.de, swmike@swm.pp.se, galibert@pobox.com,
-        dipankar@in.ibm.com
-Subject: Re: Attempted summary of suspend-blockers LKML thread, take three
-Message-ID: <20100817152501.GH21182@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Arjan van de Ven <arjan@infradead.org>, paulmck@linux.vnet.ibm.com,
-	Pavel Machek <pavel@ucw.cz>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-	Felipe Contreras <felipe.contreras@gmail.com>, david@lang.hm,
-	Brian Swetland <swetland@google.com>,
-	linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-	arve@android.com, mjg59@srcf.ucam.org, florian@mickler.org,
-	rjw@sisk.pl, stern@rowland.harvard.edu, peterz@infradead.org,
-	tglx@linutronix.de, menage@google.com, david-b@pacbell.net,
-	James.Bottomley@suse.de, swmike@swm.pp.se, galibert@pobox.com,
-	dipankar@in.ibm.com
-References: <20100811222854.GJ2516@linux.vnet.ibm.com>
- <AANLkTimahmGikeai8QnAxCy45deT00-6T7h-eA-NqL4G@mail.gmail.com>
- <20100812010612.GL2516@linux.vnet.ibm.com>
- <AANLkTinVV1NVHFPeO0p_e2pCtNwTNB932q9tbu9MMD3_@mail.gmail.com>
- <20100812034435.GA7403@linux.vnet.ibm.com>
- <20100813115751.3bbbafbd@lxorguk.ukuu.org.uk>
- <20100813152912.GE2511@linux.vnet.ibm.com>
- <20100814073843.GA27430@elf.ucw.cz>
- <20100814151048.GA2461@linux.vnet.ibm.com>
- <20100814095351.6a996187@infradead.org>
+	id S1757743Ab0HQPZv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 11:25:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44646 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757707Ab0HQPZt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 11:25:49 -0400
+Date: Tue, 17 Aug 2010 16:25:27 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: David Howells <dhowells@redhat.com>
+Cc: ralf@linux-mips.org, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Make do_execve() take a const filename pointer
+Message-ID: <20100817152526.GC6681@flint.arm.linux.org.uk>
+Mail-Followup-To: David Howells <dhowells@redhat.com>, ralf@linux-mips.org,
+	linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100817140737.29854.22899.stgit@warthog.procyon.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100814095351.6a996187@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <20100817140737.29854.22899.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Aug 14, 2010 at 09:53:51AM -0700, Arjan van de Ven wrote:
-> however I think you're making an assumption that there is a
-> real difference between a deep idle state and "off"....
+On Tue, Aug 17, 2010 at 03:07:37PM +0100, David Howells wrote:
+> Make do_execve() take a const filename pointer so that kernel_execve() compiles
+> correctly on ARM:
 > 
-> For modern x86 hardware, that assumption isn't really valid.
-> (other than a very very small sram that stores register content in the
-> idle case)
+> arch/arm/kernel/sys_arm.c:88: warning: passing argument 1 of 'do_execve' discards qualifiers from pointer target type
+> 
+> This also requires the argv and envp arguments to be consted twice, once for
+> the pointer array and once for the strings the array points to.  This is
+> because do_execve() passes a pointer to the filename (now const) to
+> copy_strings_kernel().  A simpler alternative would be to cast the filename
+> pointer in do_execve() when it's passed to copy_strings_kernel().
+> 
+> do_execve() may not change any of the strings it is passed as part of the argv
+> or envp lists as they are some of them in .rodata, so marking these strings as
+> const should be fine.
+> 
+> Further kernel_execve() and sys_execve() need to be changed to match.
+> 
+> This has been test built on x86_64, frv, arm and mips.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Tested-by: Ralf Baechle <ralf@linux-mips.org>
 
-This is more of CPU statement than a chipset or laptop/device-wide
-statement, correct?
+David,
 
-If "hardware" applies to the entire laptop, how "modern" is "modern"?
+Thanks for sorting this.
 
-						- Ted
+Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
