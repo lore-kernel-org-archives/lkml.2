@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab0HQEod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:44:33 -0400
-Received: from core.signal11.us ([64.251.29.136]:56304 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751940Ab0HQEob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752959Ab0HQEoy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:44:54 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50743 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799Ab0HQEob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Aug 2010 00:44:31 -0400
-From: Alan Ott <alan@signal11.us>
-To: Jiri Kosina <jkosina@suse.cz>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Ott <alan@signal11.us>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-usb@vger.kernel.org,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Alan Ott <alan@signal11.us>
-Subject: [PATCH 1/1] usbhid: Set Report ID properly for Output reports on the Control endpoint.
-Date: Tue, 17 Aug 2010 00:44:04 -0400
-Message-Id: <1282020244-25786-1-git-send-email-alan@signal11.us>
-X-Mailer: git-send-email 1.7.0.4
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Tue Aug 17 00:44:31 2010
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4c6a13af22841183026203
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C6A139D.20507@np.css.fujitsu.com>
+Date: Tue, 17 Aug 2010 13:44:13 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>,
+        Lu Yinghai <yinghai@kernel.org>
+Subject: Re: [PATCH 1/4] [Patch-next] ACPI, APEI, ERST Fix the wrong checking
+ of Serialization Header's length
+References: <4C69DDB5.6060103@np.css.fujitsu.com>	 <1282008836.2744.1490.camel@yhuang-dev>	 <4C69F094.1040607@np.css.fujitsu.com> <1282015344.2744.1500.camel@yhuang-dev>
+In-Reply-To: <1282015344.2744.1500.camel@yhuang-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I made commit 29129a98e6fc89, I didn't account for *buf not being
-the report ID anymore, as buf is incremented.
+(2010/08/17 12:22), Huang Ying wrote:
+> On Tue, 2010-08-17 at 10:14 +0800, Jin Dongming wrote:
+>>> I don't think it is necessary to change the header definition, and
+>>> seri_header is not a good name for me.
+>> Why I added this structure here is that I don't want to do following checking.
+>> For example,
+>> 	if (header_length != 0x0c) {
+>> 		...
+>> 	}
+> 
+> This can be:
+> 
+>  static int erst_check_table(struct acpi_table_erst *erst_tab)
+>  {
+> -       if (erst_tab->header_length != sizeof(struct acpi_table_erst))
+> +       if (erst_tab->header_length !=
+> +           (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
+> 
+> like Yinghai has been done.
+> 
+Yes. It looks good. And I am sorry I am unaware of Yinghai' patch. 
 
-This applies to 2.6.35 and newer.
+> Best Regards,
+> Huang Ying
+> 
+> 
 
-Signed-off-by: Alan Ott <alan@signal11.us>
----
- drivers/hid/usbhid/hid-core.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Best Regards,
+Jin Dongming
 
-diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-index b729c02..ffd6899 100644
---- a/drivers/hid/usbhid/hid-core.c
-+++ b/drivers/hid/usbhid/hid-core.c
-@@ -828,6 +828,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
- 		}
- 	} else {
- 		int skipped_report_id = 0;
-+		int report_id = buf[0];
- 		if (buf[0] == 0x0) {
- 			/* Don't send the Report ID */
- 			buf++;
-@@ -837,7 +838,7 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
- 		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
- 			HID_REQ_SET_REPORT,
- 			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
--			((report_type + 1) << 8) | *buf,
-+			((report_type + 1) << 8) | report_id,
- 			interface->desc.bInterfaceNumber, buf, count,
- 			USB_CTRL_SET_TIMEOUT);
- 		/* count also the report id, if this was a numbered report. */
--- 
-1.7.0.4
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
 
 
