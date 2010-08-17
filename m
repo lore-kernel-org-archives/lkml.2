@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab0HQTnT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:43:19 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36069 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab0HQTnM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:43:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nR0hGiRQ+1lvwLa5xZONtlhGbHCNfKqfFVYE522tm9yCOAshDyp/eipgpEmowIN56f
-         sKrHy1aGZahBZlm+NTDtNqgO9KmJwqLoNtipejuk49O8y+E0GQx4DV+ulOXQqyj1/r6b
-         PAHtmYiO+IYk3b6ZZLKHPvKYfFqH3Qp0/vUBU=
-MIME-Version: 1.0
-In-Reply-To: <20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<87aaolwar8.fsf@basil.nowhere.org>
-	<20100817174134.GA23176@fieldses.org>
-	<20100817182920.GD18161@basil.fritz.box>
-	<20100817190447.GA28049@fieldses.org>
-	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
-	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
-	<AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
-	<20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
-Date: Tue, 17 Aug 2010 12:43:10 -0700
-Message-ID: <AANLkTi=BB-zVFyCLgC+RWai9FFecaOad=pUC2=XFnY3J@mail.gmail.com>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Andi Kleen <andi@firstfloor.org>,
+	id S1752289Ab0HQTrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:47:12 -0400
+Received: from fieldses.org ([174.143.236.118]:40212 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751197Ab0HQTrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 15:47:08 -0400
+Date: Tue, 17 Aug 2010 15:45:04 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
         linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100817194504.GF26609@fieldses.org>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+ <87aaolwar8.fsf@basil.nowhere.org>
+ <20100817174134.GA23176@fieldses.org>
+ <20100817182920.GD18161@basil.fritz.box>
+ <20100817190447.GA28049@fieldses.org>
+ <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+ <20100817203941.729830b7@lxorguk.ukuu.org.uk>
+ <AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
+ <20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
+ <AANLkTi=BB-zVFyCLgC+RWai9FFecaOad=pUC2=XFnY3J@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=BB-zVFyCLgC+RWai9FFecaOad=pUC2=XFnY3J@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 12:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Is there any objection to the mount option I am proposing?
->
-> I have none. I doubt I'd use it as it would be too expensive on system
-> performance for some of my boxes, while having an incrementing value is
-> cheap.
->
-> I don't see the two as conflicting - in fact the bits you need to do the
-> mount option are the bits you also need to do the counter version as
-> well. One fixes ordering at no real cost, the other adds high res
-> timestamps, both are useful.
+On Tue, Aug 17, 2010 at 12:43:10PM -0700, Patrick J. LoPresti wrote:
+> On Tue, Aug 17, 2010 at 12:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> >>Â Is there any objection to the mount option I am proposing?
+> >
+> > I have none. I doubt I'd use it as it would be too expensive on system
+> > performance for some of my boxes, while having an incrementing value is
+> > cheap.
+> >
+> > I don't see the two as conflicting - in fact the bits you need to do the
+> > mount option are the bits you also need to do the counter version as
+> > well. One fixes ordering at no real cost, the other adds high res
+> > timestamps, both are useful.
+> 
+> A mount option could also allow a choice of timestamp resolutions:
+> 
+> Traditional (i.e., fast)
+> Alan Cox NFS hack (a tad slower but should fix NFS)
+> High-res time (slowest but most accurate)
+> 
+> I will work on a patch this week (weekend at the latest).
 
-A mount option could also allow a choice of timestamp resolutions:
+I kind of hate to have mount options that are required for nfs exports
+to work correctly; it soon makes things too complicated for users to
+realiably get right, so distributions end up setting them, and then we
+all end up taking the performance tradeoff anyway.
 
-Traditional (i.e., fast)
-Alan Cox NFS hack (a tad slower but should fix NFS)
-High-res time (slowest but most accurate)
+But a mount-option-based version may at least be useful for further
+experiments.
 
-I will work on a patch this week (weekend at the latest).
-
-Thanks, Alan.
-
- - Pat
+--b.
