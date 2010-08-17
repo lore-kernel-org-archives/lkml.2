@@ -1,35 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854Ab0HQHwH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 03:52:07 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:56958 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752337Ab0HQHwF (ORCPT
+	id S1754477Ab0HQHw0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 03:52:26 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38018 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754087Ab0HQHwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 03:52:05 -0400
-Message-Id: <201008170751.o7H7pmAl038739@www262.sakura.ne.jp>
-Subject: Re: [2.6.36-rc1] List corruption when using initrd.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: tim.c.chen@linux.intel.com, hughd@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+	Tue, 17 Aug 2010 03:52:24 -0400
+Message-ID: <4C6A3FB5.5060804@monstr.eu>
+Date: Tue, 17 Aug 2010 09:52:21 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] of: Fix missing includes
+References: <20100817055754.20330.73078.stgit@angua> <4C6A3E2D.3050601@monstr.eu> <AANLkTi=o+9mQeFWCvxkQNCZxvvfpkeXT9gEzvxZHhq_5@mail.gmail.com>
+In-Reply-To: <AANLkTi=o+9mQeFWCvxkQNCZxvvfpkeXT9gEzvxZHhq_5@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 17 Aug 2010 16:51:47 +0900
-References: <201008170517.o7H5HbCT002910@www262.sakura.ne.jp>
-In-Reply-To: <201008170517.o7H5HbCT002910@www262.sakura.ne.jp>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 17082010 #3879376, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> I get list_add corruption message when booting with initrd on Debian Sarge.
+Grant Likely wrote:
+> On Tue, Aug 17, 2010 at 1:45 AM, Michal Simek <monstr@monstr.eu> wrote:
+>> Grant Likely wrote:
+>>> This patch fixes missing includes from a number of .c files because
+>>> the code (wrongfully) depended on prom.h including them.  The include
+>>> of linux/of_address.h was removed in microblaze prom.h in commit
+>>> "of/address: Clean up function declarations" (sha1 id 22ae782f8), but
+>>> not fixed in some users.  This patch fixes them up.
+>>>
+>>> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+>>> ---
+>>>
+>>> Hi Michal, here's my patch that fixes the microblaze include issues.  I've
+>>> got it in my merge-devicetree branch which I'll be asking Linus to pull on
+>>> tommorrow after it has been through cross-arch build testing (unless I
+>>> hear
+>>> otherwise from you).
+>> Tested-by: Michal Simek <monstr@monstr.eu>
+> 
+> Thanks.
+> 
+>> Miohal
+> 
+> Who is Miohal, and why is he at your keyboard?  :-D
 
-Bisection completed.
+I tried to use my new nickname but it seems you don't like it that's why 
+I will use only my given name. :-)
 
-commit 7e496299d4d2ad8083effed6c5a18313a919edc6
-tmpfs: make tmpfs scalable with percpu_counter for used blocks
+Cheers,
+Michal
 
-Regards.
+
+
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
