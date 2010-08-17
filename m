@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529Ab0HQQcr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:32:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:1118 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750713Ab0HQQcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:32:45 -0400
-Subject: Re: Usage of checkpatch.pl for other projects
-From: Joe Perches <joe@perches.com>
-To: Sylvestre Ledru <sylvestre.ledru@scilab.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Daniel Walker <dwalker@fifo99.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1282061780.13818.3009.camel@zlarin>
-References: <1269337074.12129.4674.camel@korcula.inria.fr>
-	 <20100817160123.GL6193@shadowen.org>  <1282061780.13818.3009.camel@zlarin>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 09:32:42 -0700
-Message-ID: <1282062762.24541.98.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 8bit
+	id S1754005Ab0HQQgC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:36:02 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61603 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0HQQf7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:35:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=ujOXKDNzsLGQ8LY4SBXQ3FRnMZ0Op0hbyrIZSDYLQm2/34chU5Mp1h7vN6PrSta8mr
+         /x5mYyoYTNs4jwaOOPcdp2M4jDCEP9oPq8nIh25KzifGFiZeQMi+jxJ6jccSvH320zrt
+         O4BQQ8XMunBtKD6WNWPGW4IcvpbShmG0FdXss=
+MIME-Version: 1.0
+In-Reply-To: <20100817152833.GA15475@frolo.macqel>
+References: <20100817152833.GA15475@frolo.macqel>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Tue, 17 Aug 2010 12:35:34 -0400
+Message-ID: <AANLkTinZYWKJdryBraQTBGhowZbMMy6Z6K9yoevUagN4@mail.gmail.com>
+Subject: Re: [PATCH] m68k{nommu}/blackfin : remove old assembler-only flags
+ bit definitions.
+To: Philippe De Muyter <phdm@macqel.be>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 18:16 +0200, Sylvestre Ledru wrote:
-> Le mardi 17 août 2010 à 17:01 +0100, Andy Whitcroft a écrit :
-> > What sort of differences are you thinking about.
-> At first, mainly basic things like space or not before a brace, if a
-> brace should be on the same line as the if or not, etc. This kind of
-> basic things.
+On Tue, Aug 17, 2010 at 11:28, Philippe De Muyter wrote:
+> Long ago, PT_TRACESYS_OFF and friends were introduced as hard defines
+> to avoid straight constants in assembler parts of linux m68k.
+> They are not used anymore, and were not updated to follow changes
+> in linux kernel.  Remove them.  When similar constants are needed,
+> they are now generated using asm-offsets.c.
+>
+> --- a/arch/blackfin/include/asm/entry.h
+> +++ b/arch/blackfin/include/asm/entry.h
+> @@ -15,14 +15,6 @@
+>  #define        LFLUSH_I_AND_D  0x00000808
+>  #define        LSIGTRAP        5
+>
+> -/* process bits for task_struct.flags */
+> -#define        PF_TRACESYS_OFF 3
+> -#define        PF_TRACESYS_BIT 5
+> -#define        PF_PTRACED_OFF  3
+> -#define        PF_PTRACED_BIT  4
+> -#define        PF_DTRACE_OFF   1
+> -#define        PF_DTRACE_BIT   5
+> -
 
-It might be better to use a script that uses
-a combination of patch, indent with some
-project specific options and diff to highlight
-how a proposed patch might vary from project
-coding standards.
+looks like it has always been dead code on the Blackfin side having
+originated from the m68k port.
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 
+we can split the changeset to m68k & blackfin, or just let the m68k
+guys run the thing through their tree.  i'm ok with it either way ...
+i promise not to introduce conflicts into the blackfin file in the
+mean time ;).
+-mike
