@@ -1,68 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab0HQBwN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 21:52:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57495 "EHLO smtps.tip.net.au"
+	id S1754441Ab0HQBy4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 21:54:56 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10129 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216Ab0HQBwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 21:52:11 -0400
-Date: Tue, 17 Aug 2010 11:52:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dan Williams <dcbw@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: manual merge of the wireless tree with Linus' tree
-Message-Id: <20100817115203.e8a76e44.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC"
+	id S1752509Ab0HQByz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 21:54:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,379,1278313200"; 
+   d="scan'208";a="597199282"
+Date: Tue, 17 Aug 2010 09:37:34 +0800
+From: Yong Wang <yong.y.wang@linux.intel.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>
+Subject: One question about 8250 UART driver
+Message-ID: <20100817013734.GA28407@ywang-moblin2.bj.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi all,
 
-Hi John,
+We have a PCI based UART controller that is compatible with the existing
+8250 serial driver in most aspects. However, one exception is that our
+UART controller can take advantage of the onboard DMA contoller to
+achieve higher throughput. Could you please share your insights about
+what is the proper way to add such DMA support into existing 8250 driver?
 
-Today's linux-next merge of the wireless tree got a conflict in
-drivers/net/wireless/libertas/if_sdio.c between commit
-886275ce41a9751117367fb387ed171049eb6148 ("param: lock if_sdio's
-lbs_helper_name and lbs_fw_name against sysfs changes") from Linus' tree
-and commit 3d32a58b87cd251b50842f93b87d5458061c0cfc ("libertas: [sdio]
-use common firmware request helper and new firmware locations") from the
-wireless tree.
+Thanks
+-Yong
 
-OK, I can't quite figure out what is going on here.  The latter commit
-removes that code that was modified by the former, so I effectively
-reverted the former commit (by using this file from the wireless tree)
-since the "helper" and "firmware" fields of struct if_sdio_card don't
-seem to be used anywhere anymore.  Can they be removed as well?
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMaetDAAoJEDMEi1NhKgbsRhQIAIB8A2VzaoVXsUqtHjO40sNk
-k2TMIrioH6v5PvgR6KW1Cwy/ZHhDfksv/ksJ11Jwj46oBqGh25MpIrPUUTMMwGMs
-byZAMzPV/BZ6zpFOvBxbL/HN8Cy4QEfkNa1NkwWIvBSJwtQoWZT1Vo/mDShJgTBr
-g6+3ul31pUdoWnIl8Pm+etG8nb7MWWkRoGyss7b5P7VwWch6qXNE2jsNHBQDyBlr
-qMMJw+SVOr2v/QnQHa6l70hbj42VuzAFv0Pz9SsBhzs6khi+mfwrJdWK2+M4DJUc
-mOsm3McJ5+4DhiHp1JbnlXyXNQDrDemXSc0MbRct4JMRb6pzkR7C9vWl/Q8apW8=
-=dvps
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Aug_2010_11_52_03_+1000_f9fD2nJTg4H4nnlC--
