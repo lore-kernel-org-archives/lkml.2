@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0HQFvx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 01:51:53 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:12730 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750976Ab0HQFvw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752585Ab0HQFvw (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 17 Aug 2010 01:51:52 -0400
-Subject: Re: [Patch] Skip cpu_calibrate for kernel running under
-	hypervisors.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C69D02F.6090601@zytor.com>
-References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
-	 <4C69D02F.6090601@zytor.com>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Mon, 16 Aug 2010 22:51:51 -0700
-Message-Id: <1282024311.20786.2.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44032 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891Ab0HQFvv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 01:51:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ak0h6cbk5aXAxSbJHNdwcXpQDSkQGX81m+ys7Ce3ewMQStKXqe8ji6NTYGe4lnEAuf
+         5F9urMJz6RMDrYn3LPPXDrW8CtF6OLRGHMckGV368+atrlsfoXPtbNHmSKEpxLbn7hDP
+         F+srsOQ6aQ7EvcBNiBkJRyhwFXPAuqhthazew=
+Date: Tue, 17 Aug 2010 13:56:05 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] init/main.c: add __force markup when casts to a __user
+ pointer
+Message-ID: <20100817055605.GE5095@cr0.nay.redhat.com>
+References: <1281865998-7784-1-git-send-email-namhyung@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281865998-7784-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for taking a look.
+On Sun, Aug 15, 2010 at 06:53:18PM +0900, Namhyung Kim wrote:
+>add __force markup when casts to a __user address space pointer. This removes
+>following sparse warnings:
+>
+> init/main.c:900:23: warning: cast adds address space to expression (<asn:1>)
+> init/main.c:913:25: warning: cast adds address space to expression (<asn:1>)
+>
+>Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
-On Mon, 2010-08-16 at 16:56 -0700, H. Peter Anvin wrote: 
-> On 08/16/2010 12:25 PM, Alok Kataria wrote:
-> > Hi, 
-> > 
-> > This is a trivial change to fix the cpu_khz value returned when running
-> > on a virtualized environment. We have seen instances when the cpu_khz
-> > value is off by couple of MHz's when running on VMware's platform on AMD
-> > hardware.
-> > 
-> > --
-> > Since the TSC frequency read from hypervisor is accurate for the guest, and
-> > since the hypervisor will always clock the vcpu at the TSC frequency, there is
-> > no need to calibrate it again. To avoid any calibration errors through
-> > calibrate_cpu this patch skips calling calibrate_cpu for kernel running
-> > under hypervisors.
-> > 
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks!
+
+>---
+> init/main.c |    4 ++--
+> 1 files changed, 2 insertions(+), 2 deletions(-)
+>
+>diff --git a/init/main.c b/init/main.c
+>index b06b8f2..5a0be5c 100644
+>--- a/init/main.c
+>+++ b/init/main.c
+>@@ -897,7 +897,7 @@ static int __init kernel_init(void * unused)
+> 	do_basic_setup();
 > 
-> I'm somewhat reluctant to take this one, since it assumes all the
-> hypervisors act the same.  This seems rather inherently wrong.  In fact,
-> the whole statement is fishy as heck... instead of being dependent on
-> AMD and so on, 
-
-The check about being on AMD is something that was already there. 
-
-> this should either be a function pointer or a CPU
-> (mis)feature bit.
-
-In any case, I agree that my previous patch did assume all hypervisors
-to be same, which might be wrong. How about using the
-X86_FEATURE_TSC_RELIABLE bit for this too ? i.e. Skip cpu_calibrate call
-if TSC_RELIABLE bit is set. As of now that bit is set for vmware only. 
-
-Something like the below.
-
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
-Cc: H. Peter Anvin <hpa@zytor.com>
-
-Index: linux-x86-tree.git/arch/x86/kernel/tsc.c
-===================================================================
---- linux-x86-tree.git.orig/arch/x86/kernel/tsc.c	2010-08-03 12:21:20.000000000 -0700
-+++ linux-x86-tree.git/arch/x86/kernel/tsc.c	2010-08-16 21:59:32.000000000 -0700
-@@ -927,7 +927,8 @@ void __init tsc_init(void)
- 	}
- 
- 	if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
--			(boot_cpu_data.x86_vendor == X86_VENDOR_AMD))
-+	    (boot_cpu_data.x86_vendor == X86_VENDOR_AMD) &&
-+	    !(cpu_has(&boot_cpu_data, X86_FEATURE_TSC_RELIABLE)))
- 		cpu_khz = calibrate_cpu();
- 
- 	printk("Detected %lu.%03lu MHz processor.\n",
-
-
+> 	/* Open the /dev/console on the rootfs, this should never fail */
+>-	if (sys_open((const char __user *) "/dev/console", O_RDWR, 0) < 0)
+>+	if (sys_open((const char __user __force *) "/dev/console", O_RDWR, 0) < 0)
+> 		printk(KERN_WARNING "Warning: unable to open an initial console.\n");
+> 
+> 	(void) sys_dup(0);
+>@@ -910,7 +910,7 @@ static int __init kernel_init(void * unused)
+> 	if (!ramdisk_execute_command)
+> 		ramdisk_execute_command = "/init";
+> 
+>-	if (sys_access((const char __user *) ramdisk_execute_command, 0) != 0) {
+>+	if (sys_access((const char __user __force *) ramdisk_execute_command, 0) != 0) {
+> 		ramdisk_execute_command = NULL;
+> 		prepare_namespace();
+> 	}
+>-- 
+>1.7.0.4
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
