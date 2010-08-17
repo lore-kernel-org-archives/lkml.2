@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab0HQH4e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 03:56:34 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54100 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692Ab0HQH4d (ORCPT
+	id S1754441Ab0HQH7N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 03:59:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36166 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab0HQH7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 03:56:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=thMqsotLPGddp5l0ws9Wv1kPuwEuOofrBFSG5lI50EEEvzmjeIJwkqP3pcKDLNEeTv
-         KeFOHNRsK2gB503i5nW6tuMH/icdjqqViHTRMLrgKnS2DcH1RkSGFBuYi6zzesYRhOk+
-         03zeZWCuyI5RV34L6aiJxaZxZroEo0lTTVyLI=
-Date: Tue, 17 Aug 2010 10:56:12 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog and
- touch_softlockup_watchdog (v2)
-Message-ID: <20100817075612.GA5346@swordfish.minsk.epam.com>
-References: <20100813102158.GA5434@swordfish.minsk.epam.com>
- <1281946970.1926.998.camel@laptop>
- <20100816133452.GS4879@redhat.com>
- <1281966418.1926.1421.camel@laptop>
- <20100816140829.GA5225@swordfish.minsk.epam.com>
- <20100817025954.GA12366@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100817025954.GA12366@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 17 Aug 2010 03:59:12 -0400
+From: Michal Simek <monstr@monstr.eu>
+To: michal.simek@petalogix.com
+Cc: Michal Simek <monstr@monstr.eu>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] serial: 8250: Initialize pointer to irq_info
+Date: Tue, 17 Aug 2010 09:59:06 +0200
+Message-Id: <1282031947-16483-1-git-send-email-monstr@monstr.eu>
+X-Mailer: git-send-email 1.5.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix: acpi_os_stall calls touch_nmi_watchdog and touch_softlockup_watchdog
-with preemption enabled causing 'BUG: using smp_processor_id() in preemptible 
-code'.
+Initialize "i" irq_info pointer in serial_unlink_irq_chain.
 
-Patch also removes double smp_processor_id call (smp_processor_id itself and
-in __get_cpu_var) in __touch_watchdog.
+Compilation warning:
+  CC      drivers/serial/8250.o
+drivers/serial/8250.c: In function 'serial8250_shutdown':
+drivers/serial/8250.c:1701: warning: 'i' may be used uninitialized in this function
 
-Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-
+Signed-off-by: Michal Simek <monstr@monstr.eu>
+CC: Greg Kroah-Hartman <gregkh@suse.de>
+CC: Alan Cox <alan@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Ralf Baechle <ralf@linux-mips.org>
+CC: Manuel Lauss <manuel.lauss@googlemail.com>
+CC: linux-serial@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
 ---
+ drivers/serial/8250.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 613bc1f..cb4f4d4 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -116,13 +116,14 @@ static unsigned long get_sample_period(void)
- static void __touch_watchdog(void)
- {
- 	int this_cpu = smp_processor_id();
--
--	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
-+	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
- }
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 24110f6..6c847d3 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -1698,7 +1698,7 @@ static int serial_link_irq_chain(struct uart_8250_port *up)
  
- void touch_softlockup_watchdog(void)
+ static void serial_unlink_irq_chain(struct uart_8250_port *up)
  {
-+	preempt_disable();
- 	__get_cpu_var(watchdog_touch_ts) = 0;
-+	preempt_enable();
- }
- EXPORT_SYMBOL(touch_softlockup_watchdog);
+-	struct irq_info *i;
++	struct irq_info *i = NULL;
+ 	struct hlist_node *n;
+ 	struct hlist_head *h;
  
-@@ -142,7 +143,10 @@ void touch_all_softlockup_watchdogs(void)
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
- void touch_nmi_watchdog(void)
- {
-+	preempt_disable();
- 	__get_cpu_var(watchdog_nmi_touch) = true;
-+	preempt_enable();
-+
- 	touch_softlockup_watchdog();
- }
- EXPORT_SYMBOL(touch_nmi_watchdog);
+-- 
+1.5.5.6
 
