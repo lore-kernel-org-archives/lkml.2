@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab0HQRjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:39:25 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62199 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751669Ab0HQRjT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:39:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=mUacrnkwda/c5RxQehPO0S4b/VuofzS36nl8mW4EgwfPJ/egCs7suQz1v+IoTh0hFn
-         SAO84HVduPmJBPpRKhbcwGwIC2Fi8t1b97Yymfn8umOR8P+YQUou0fOVNEHLyyog3ncJ
-         Aqv2HiahumLKDL9sACA8UFlGbNiplCtDcZX6w=
-Message-ID: <4C6AC942.9000205@pobox.com>
-Date: Tue, 17 Aug 2010 13:39:14 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
+	id S1758039Ab0HQRnq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:43:46 -0400
+Received: from fieldses.org ([174.143.236.118]:32983 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754480Ab0HQRnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 13:43:39 -0400
+Date: Tue, 17 Aug 2010 13:41:34 -0400
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Patrick J. LoPresti" <lopresti@gmail.com>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100817174134.GA23176@fieldses.org>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+ <87aaolwar8.fsf@basil.nowhere.org>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Dan Carpenter <error27@gmail.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [patch] pata_winbond: fix module init
-References: <20100803152549.GQ26313@bicker> <201008162123.03208.bzolnier@gmail.com> <20100817062830.GF645@bicker> <20100817110733.1c57aedd@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100817110733.1c57aedd@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87aaolwar8.fsf@basil.nowhere.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2010 06:07 AM, Alan Cox wrote:
-> On Tue, 17 Aug 2010 08:29:40 +0200
-> Dan Carpenter<error27@gmail.com>  wrote:
->
->> On Mon, Aug 16, 2010 at 09:23:03PM +0200, Bartlomiej Zolnierkiewicz wrote:
->>>
->>> Hi Dan,
->>>
->>> On Tuesday 03 August 2010 05:27:47 pm Dan Carpenter wrote:
->>>> winbond_init_one() returns 0 on success and an error code on failure.
->>>> In the original code, we always just released the regions and return
->>>> -ENODEV.  This was introduce in 2006 by 7e45b0e5f6f6 "[PATCH] libata:
->>>> Winbond support".
->>>
->>> You might like to pick up
->>>
->>> 	http://patchwork.ozlabs.org/patch/39358/
->>>
->>> instead..
->>>
->>
->> I don't have the hardware, but yes, probably it's better to replace this
->> driver since it has never been able to load.
->
-> It was obsoleted into pata_legacy before it was ever finalised -
-> unfortunately I could then not get Jeff to delete it.
+On Tue, Aug 17, 2010 at 04:54:03PM +0200, Andi Kleen wrote:
+> "Patrick J. LoPresti" <lopresti@gmail.com> writes:
+> 
+> >
+> > 1) Anybody who cares about file system performance is already using
+> > "noatime" or "relatime", which mitigates the hit greatly.
+> 
+> Consider mtime.
+> 
+> > If the above patch is too slow for some architectures, how about
+> > making it a configuration option?  Call it "CONFIG_1980S_FILE_TICK",
+> > have it default to YES on the architectures that care and NO on
+> > anything remotely modern and sane.
+> >
+> > OK that's my proposal.  Bash away.
+> 
+> I suspect it will be a performance disaster on x86 for VFS intensive
+> applications on capable file systems. VFS is very performance
+> critical. These checks lurk on unexpected places too, e.g. on /dev
+> access.
+> 
+> Even TSC is much slower than just reading the variable.
+> 
+> Also you should check if the file system granuality 
+> even supports it, it's completely wasted on a ext3 for example.
 
-Easy enough to delete now...
+Agreed, ext3's probably a lost cause here.
 
+> Maybe as a optional sysctl, default to off.
 
+OK, so that leaves us with the race, even on newer filesystems:
+
+	1. File is modified, mtime updated
+	2. Client fetches mtime to revalidate cache
+	3. File is modified again, mtime updated
+	4. Client fetches new mtime to revalidate cache
+
+If step 3 doesn't change the mtime, then step 4 (no matter how much
+later it is performed) will return the wrong result, and client
+applications will see stale data.
+
+If we want to avoid that race, every modification of file data must
+result in the mtime being updated to something different from the last
+mtime seen by the client.
+
+(A slight window between data modification and mtime update may be OK,
+as long as the update happens eventually, and before the change is
+committed to disk--close-to-open semantics mean that NFS clients can
+live with not seeing changes until data is written to disk.)
+
+Possible responses:
+
+	- Tell everyone to use NFSv4 (and make sure we have
+	  changeattr/i_version working correctly).
+	- Use a finer-grained time source.  (I believe you when you say
+	  the TSC is too slow, but maybe we should run some tests to
+	  make sure.)
+	- Increment mtime by a nanosecond when necessary.  
+	- ?
+
+--b.
