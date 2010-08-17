@@ -1,90 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab0HQQpY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:45:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47778 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab0HQQpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:45:22 -0400
-Message-ID: <4C6ABBCB.9030306@kernel.org>
-Date: Tue, 17 Aug 2010 18:41:47 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de>
-In-Reply-To: <20100817131915.GB2963@lst.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757632Ab0HQQpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:45:38 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:48564 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757530Ab0HQQpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:45:33 -0400
+Subject: Re: [Patch] Skip cpu_calibrate for kernel running under
+	hypervisors.
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "borislav.petkov@amd.com" <borislav.petkov@amd.com>
+In-Reply-To: <20100817070520.GD32714@liondog.tnic>
+References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
+	 <4C69D02F.6090601@zytor.com>
+	 <1282024311.20786.2.camel@ank32.eng.vmware.com>
+	 <4C6A2C98.4060605@zytor.com>  <20100817070520.GD32714@liondog.tnic>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Tue, 17 Aug 2010 09:45:32 -0700
+Message-Id: <1282063532.4388.8.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 16:44:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Borislav,
 
-On 08/17/2010 03:19 PM, Christoph Hellwig wrote:
-> On Tue, Aug 17, 2010 at 11:59:38AM +0200, Tejun Heo wrote:
->> I'm not against restructuring the patchset if it makes more sense but
->> it just feels like it would be a bit pointless effort (and one which
->> would require much tighter coordination among different trees) at this
->> point.  Am I missing something?
+On Tue, 2010-08-17 at 00:05 -0700, Borislav Petkov wrote:
+> From: "H. Peter Anvin" <hpa@zytor.com>
+> Date: Mon, Aug 16, 2010 at 11:30:48PM -0700
 > 
-> What other trees do you mean?
-
-I was mostly thinking about dm/md, drdb and stuff, but you're talking
-about filesystem conversion patches being routed through block tree,
-right?
-
-> The conversions of the 8 filesystems that actually support barriers
-> need to go through this tree anyway if we want to be able to test
-> it.  Also the changes in the filesystem are absolutely minimal -
-> it's basically just s/WRITE_BARRIER/WRITE_FUA_FLUSH/ after my
-> initial patch kill BH_Orderd, and removing about 10 lines of code in
-> reiserfs.
-
-I might just resequence it to finish this part of discussion but what
-does that really buy us?  It's not really gonna help bisection.
-Bisection won't be able to tell anything in higher resolution than
-"the new implementation doesn't work".  If you show me how it would
-actually help, I'll happily reshuffle the patches.
-
->> I wasn't sure about that part.  You removed store_flush_error(), but
->> DM_ENDIO_REQUEUE should still have higher priority than other
->> failures, no?
+> > On 08/16/2010 10:51 PM, Alok Kataria wrote:
+> > >>
+> > >> I'm somewhat reluctant to take this one, since it assumes all the
+> > >> hypervisors act the same.  This seems rather inherently wrong.  In fact,
+> > >> the whole statement is fishy as heck... instead of being dependent on
+> > >> AMD and so on, 
+> > > 
+> > > The check about being on AMD is something that was already there. 
+> > > 
+> > 
+> > I know it was... and calibrate_cpu() seems to be an AMD-specific
+> > function, but that's rather crappy.  I'm thinking that perhaps we should
+> > make it an x86_init function, then the AMD CPU detection can install it
+> > and the vmware hypervisor detection can uninstall it.
 > 
-> Which priority?
+> Btw, can we revisit this AMD-specific issue? IIUC, Alok you're seeing
+> a mismatch between the calibrated TSC value and the cpu frequency even
+> on cpus which have the CONSTANT_TSC bit set, i.e. their TSC is counting
+> with P0 frequency. Can you please elaborate more on what systems you're
+> seeing this (cpu family, chipset, etc)?
 
-IIUC, when any of flushes get DM_ENDIO_REQUEUE (which tells the dm
-core layer to retry the whole bio later), it trumps all other failures
-and the bio is retried later.  That was why DM_ENDIO_REQUEUE was
-prioritized over other error codes, which actually is sort of
-incorrect in that once a FLUSH fails, it _MUST_ be reported to upper
-layers as FLUSH failure implies data already lost.  So,
-DM_ENDIO_REQUEUE actually should have lower priority than other
-failures.  But, then again, the error codes still need to be
-prioritized.
+We have seen these issues when running inside a Virtual Machine on
+VMware's platform. Please look at the vmware_set_cpu_features function,
+it relies on the hypervisor to provide a constant/reliable TSC. Though
+still when running the kernel on virtual cpus, as compared to
+running on physical cpus, the timing characteristics are different,
+since virtual cpus have to time share physical cpus with each other,
+which may result in errors during calibration. As a result its better to
+get these values directly from the hypervisor rather than trying to
+calibrate them.
 
->> But how do you make sure REQ_FLUSHes for preflush finish before
->> starting the write?
+And just to clarify, we have never seen this on a physical machine.
+
+Thanks,
+Alok
+
+
 > 
-> Hmm, okay.  I see how the special flush_bio makes the waiting easier,
-> let's see if Mike or other in the DM team have a better idea.
+> Thanks.
+> 
 
-Yeah, it would be better if it can be sequenced w/o using a work but
-let's leave it for later.
-
-Thanks.
-
--- 
-tejun
