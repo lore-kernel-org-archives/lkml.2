@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0HQNLZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:11:25 -0400
-Received: from 68.mail-out.ovh.net ([91.121.185.69]:60002 "HELO
-	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751985Ab0HQNLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:11:24 -0400
-Message-ID: <4C6A8A73.1070003@example.com>
-Date: Tue, 17 Aug 2010 15:11:15 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
-MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: Arnd Bergmann <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: ioctl definition - has it changed recently?
-References: <4C67023D.6050603@example.com> <201008160858.42947.arnd@arndb.de> <4C68E4A5.3050800@example.com> <201008160917.23260.arnd@arndb.de> <4C68EFE8.20202@example.com>
-In-Reply-To: <4C68EFE8.20202@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 9976880551610052978
-X-Ovh-Remote: 83.24.75.141 (dmt141.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	id S1755003Ab0HQNNw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:13:52 -0400
+Received: from verein.lst.de ([213.95.11.210]:38332 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752380Ab0HQNNu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 09:13:50 -0400
+Date: Tue, 17 Aug 2010 15:13:09 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Mike Snitzer <snitzer@redhat.com>, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-raid@vger.kernel.org, hch@lst.de, James.Bottomley@suse.de,
+        tytso@mit.edu, chris.mason@oracle.com, swhiteho@redhat.com,
+        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
+        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
+        rusty@rustcorp.com.au, mst@redhat.com, Tejun Heo <tj@kernle.org>
+Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
+Message-ID: <20100817131309.GA2963@lst.de>
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6A5780.2090100@kernel.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.08.2010 09:59, Piotr Hosowicz wrote:
-> On 16.08.2010 09:17, Arnd Bergmann wrote:
->> On Monday 16 August 2010 09:11:33 Piotr Hosowicz wrote:
->>>> and then make it use the unlocked_ioctl operation.
->>>
->>> This I do not know. Can You help me?
->>>
->>
->> Just take a look at all the other patches that went into the
->> kernel to do this for other drivers.
+On Tue, Aug 17, 2010 at 11:33:52AM +0200, Tejun Heo wrote:
+> > That logic wasn't just about retries (at least not in the latest
+> > kernel).  With commit 708e929513502fb0 the -EOPNOTSUPP checking also
+> > serves to optimize the barrier+discard case (when discards aren't
+> > supported).
+> 
+> With the patch applied, there's no second flush.  Those requests would
+> now be REQ_FLUSH + REQ_DISCARD.  The first can't be avoided anyway and
+> there won't be the second flush to begin with, so I don't think this
+> worsens anything.
 
-I do not know how to find them. :-(
+In fact the pre-flush is completely superflous for discards, but that's a
+separate discussion and should not be changed as part of this patchset but
+rather explicitly.
 
- > You only really
->> need to change the line with .ioctl=... to .unlocked_ioctl=
-
-Ok, this is simple.
-
->> and change the prototype of the referenced function to
->>
->> static long foo_ioctl(struct file *file, unsigned int cmd, unsigned
->> long arg)
->
-> int nv_kern_ioctl(struct inode *, struct file *, unsigned int, unsigned
-> long);
->
-> It seems different. How to change it? Now it works, I built it without
-> your remarks, exactly how I described on my blog:
->
-> http://phosowicz.jogger.pl/2010/08/15/nvidia-graphics-in-fresh-kernels/
-
-Ok, as I wrote the prototypes differ. What should I do with the inode 
-parameter?
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-- Za moich czasów to w sklepach by³ tylko ocet i denaturat!
-- Tato, przestañ, ¿e w ca³ym Tesco by³ tylko ocet i denaturat!
-NP:  -
-NB: 2.6.36-rc1
