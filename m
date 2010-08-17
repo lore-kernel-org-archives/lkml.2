@@ -1,147 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182Ab0HQVlb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 17:41:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54057 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750746Ab0HQVl1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 17:41:27 -0400
-Message-ID: <4C6B017C.8030404@oracle.com>
-Date: Tue, 17 Aug 2010 14:39:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1751236Ab0HQVmu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 17:42:50 -0400
+Received: from mms3.broadcom.com ([216.31.210.19]:3534 "EHLO MMS3.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746Ab0HQVmr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 17:42:47 -0400
+X-Server-Uuid: B55A25B1-5D7D-41F8-BC53-C57E7AD3C201
+Message-ID: <4C6B024A.7040505@broadcom.com>
+Date: Tue, 17 Aug 2010 14:42:34 -0700
+From: "Brian Norris" <norris@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
+ Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-CC: "J. Bruce Fields" <bfields@fieldses.org>, linux-nfs@vger.kernel.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for August 9 (nfs)
-References: <20100809132314.789e13f3.sfr@canb.auug.org.au>	 <20100809100856.b03a9bc1.randy.dunlap@oracle.com>	 <20100812091842.6a3b84b9.randy.dunlap@oracle.com>	 <1281634268.14329.18.camel@heimdal.trondhjem.org>	 <4C643136.5090808@oracle.com> <1282080208.12506.7.camel@heimdal.trondhjem.org>
-In-Reply-To: <1282080208.12506.7.camel@heimdal.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Michael Guntsche" <mike@it-loops.com>
+cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
+References: <20100817113644.GA31317@gibson.comsick.at>
+ <4C6AC037.7070205@broadcom.com>
+ <20100817174704.GA1322@gibson.comsick.at>
+ <4C6AD9C2.1070705@broadcom.com>
+ <20100817200559.GA4542@gibson.comsick.at>
+In-Reply-To: <20100817200559.GA4542@gibson.comsick.at>
+X-WSS-ID: 6075DDC63KC80625448-01-01
+Content-Type: text/plain;
+ charset=iso-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/10 14:23, Trond Myklebust wrote:
-> On Thu, 2010-08-12 at 10:36 -0700, Randy Dunlap wrote:
->> On 08/12/10 10:31, Trond Myklebust wrote:
->>> On Thu, 2010-08-12 at 09:18 -0700, Randy Dunlap wrote:
->>>> On Mon, 9 Aug 2010 10:08:56 -0700 Randy Dunlap wrote:
->>>>
->>>> ping??
->>>
->>> Hi Randy,
->>>
->>> I'm sorry. A heavy travel schedule is affecting my response time at the
->>> moment. I'll try to take care of this by Tuesday (when I get back home)
->>> if not before.
->>
->> No problem.  Just wanted to make sure that it's not lost.
-> 
-> Hi Randy,
-> 
-> How about the following fix?
+On 08/17/2010 01:05 PM, Michael Guntsche wrote:
+> On 17 Aug 10 11:49, Brian Norris wrote:
+>> First, have you ever used any of the mtdutils? In particular,
+>> running the command "mtdinfo -a" and sending the output is helpful
+>> if you have the utility installed on your board.
+> hmm mtdinfo tries to open /sys/class/mtd/mtd0/dev which das not exist
+> the device is working ok as block device on the other hand so let's try
+> the next thing.
 
-Thanks, this fixes the build error.
+I'm not an expert on the workings of mtdutils, so I don't know
+why your device does not have the necessary sysfs entries. Perhaps
+weird hardware features or a strange, incorrect driver (I can't work
+on your board specific driver for you). I suppose it's OK to ignore
+this problem for the moment.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-
-> Cheers
->   Trond
+> Output booting with a patched .36-rc1
 > 
-> ------------------------------------------------------------------------------------
-> Subject: [PATCH] NFS: Fix the selection of security flavours in Kconfig
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> [    0.279217] rbppc_nand_probe: MikroTik RouterBOARD 600 series NAND driver, version 0.0.2
+> [    0.287535] ID byte 0: 0xad
+> [    0.290373] ID byte 1: 0x76
+> [    0.293185] ID byte 2: 0xad
+> [    0.295985] ID byte 3: 0x76
+> [    0.298798] ID byte 4: 0xad
+> [    0.301610] ID byte 5: 0x76
+> [    0.304423] ID byte 6: 0xad
+> [    0.307223] ID byte 7: 0x76
+> [    0.310046] NAND device: Manufacturer ID: 0xad, Chip ID: 0x76 (Hynix NAND 64MiB 3,3V 8-bit)
 > 
-> Randy Dunlap reports:
-> 
-> ERROR: "svc_gss_principal" [fs/nfs/nfs.ko] undefined!
-> 
-> 
-> because in fs/nfs/Kconfig, NFS_V4 selects RPCSEC_GSS_KRB5
-> and/or in fs/nfsd/Kconfig, NFSD_V4 selects RPCSEC_GSS_KRB5.
-> 
-> RPCSEC_GSS_KRB5 does 5 selects, but none of these is enforced/followed
-> by the fs/nfs[d]/Kconfig configs:
-> 
-> 	select SUNRPC_GSS
-> 	select CRYPTO
-> 	select CRYPTO_MD5
-> 	select CRYPTO_DES
-> 	select CRYPTO_CBC
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: J. Bruce Fields <bfields@fieldses.org>
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
-> 
->  fs/nfs/Kconfig     |    1 -
->  fs/nfsd/Kconfig    |    1 -
->  net/sunrpc/Kconfig |    9 +++++----
->  3 files changed, 5 insertions(+), 6 deletions(-)
-> 
-> 
-> diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
-> index cc1bb33..2ddc384 100644
-> --- a/fs/nfs/Kconfig
-> +++ b/fs/nfs/Kconfig
-> @@ -63,7 +63,6 @@ config NFS_V3_ACL
->  config NFS_V4
->  	bool "NFS client support for NFS version 4"
->  	depends on NFS_FS
-> -	select RPCSEC_GSS_KRB5
->  	help
->  	  This option enables support for version 4 of the NFS protocol
->  	  (RFC 3530) in the kernel's NFS client.
-> diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
-> index 503b9da..95932f5 100644
-> --- a/fs/nfsd/Kconfig
-> +++ b/fs/nfsd/Kconfig
-> @@ -69,7 +69,6 @@ config NFSD_V4
->  	depends on NFSD && PROC_FS && EXPERIMENTAL
->  	select NFSD_V3
->  	select FS_POSIX_ACL
-> -	select RPCSEC_GSS_KRB5
->  	help
->  	  This option enables support in your system's NFS server for
->  	  version 4 of the NFS protocol (RFC 3530).
-> diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
-> index 443c161..3376d76 100644
-> --- a/net/sunrpc/Kconfig
-> +++ b/net/sunrpc/Kconfig
-> @@ -18,10 +18,11 @@ config SUNRPC_XPRT_RDMA
->  	  If unsure, say N.
->  
->  config RPCSEC_GSS_KRB5
-> -	tristate "Secure RPC: Kerberos V mechanism (EXPERIMENTAL)"
-> -	depends on SUNRPC && EXPERIMENTAL
-> +	tristate
-> +	depends on SUNRPC && CRYPTO
-> +	prompt "Secure RPC: Kerberos V mechanism" if !(NFS_V4 || NFSD_V4)
-> +	default y
->  	select SUNRPC_GSS
-> -	select CRYPTO
->  	select CRYPTO_MD5
->  	select CRYPTO_DES
->  	select CRYPTO_CBC
-> @@ -34,7 +35,7 @@ config RPCSEC_GSS_KRB5
->  	  available from http://linux-nfs.org/.  In addition, user-space
->  	  Kerberos support should be installed.
->  
-> -	  If unsure, say N.
-> +	  If unsure, say Y.
->  
->  config RPCSEC_GSS_SPKM3
->  	tristate "Secure RPC: SPKM3 mechanism (EXPERIMENTAL)"
-> 
+> Hope this helps...
 > 
 
+Honestly, that doesn't really help :) I guess the device is old
+enough it does not have an extended ID. In that case, I will need
+the part number to be able to diagnose for sure. Can you find the
+physical chip on the board and give me whatever labeling is on it?
 
+In place of that, though, you can just try this patch on 2.6.36-rc1.
+I believe it should satisfy the intention of my previous (faulty)
+commit while reverting the regression behavior. If this works OK, I
+will submit it to be included in the mainline kernel.
+
+Thanks for taking the time to debug this.
+
+Brian
+
+---
+ drivers/mtd/nand/nand_base.c |   10 +++-------
+ 1 files changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index a3c7473..a22ed7b 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2934,14 +2934,10 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
+ 		chip->chip_shift = ffs((unsigned)(chip->chipsize >> 32)) + 32 - 1;
+ 
+ 	/* Set the bad block position */
+-	if (!(busw & NAND_BUSWIDTH_16) && (*maf_id == NAND_MFR_STMICRO ||
+-				(*maf_id == NAND_MFR_SAMSUNG &&
+-				 mtd->writesize == 512) ||
+-				*maf_id == NAND_MFR_AMD))
+-		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
+-	else
++	if (mtd->writesize > 512 || (busw & NAND_BUSWIDTH_16))
+ 		chip->badblockpos = NAND_LARGE_BADBLOCK_POS;
+-
++	else
++		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
+ 
+ 	/* Get chip options, preserve non chip based options */
+ 	chip->options &= ~NAND_CHIPOPTIONS_MSK;
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.0.4
+
