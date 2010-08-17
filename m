@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0HQGrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 02:47:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54041 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755590Ab0HQGrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 02:47:05 -0400
-Message-ID: <4C6A2FC2.9050908@suse.cz>
-Date: Tue, 17 Aug 2010 08:44:18 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1756296Ab0HQGrl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 02:47:41 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58816 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755970Ab0HQGrk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 02:47:40 -0400
+Date: Tue, 17 Aug 2010 08:47:34 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] dmaengine: Add Freescale i.MX SDMA support
+Message-ID: <20100817064734.GS27749@pengutronix.de>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de> <1281956870-12463-4-git-send-email-s.hauer@pengutronix.de> <AANLkTi=pO-ZJ33FrL=4bVRYa2o9HA0_h5tBYG7wdMuwz@mail.gmail.com> <20100816141540.GQ27749@pengutronix.de> <20100817043612.GA9631@jasper.tkos.co.il>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-kbuild@vger.kernel.org,
-        Roman Zippel <zippel@linux-m68k.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: fix warnings in fgets/fwrite usage
-References: <1281592579-343-1-git-send-email-vapier@gentoo.org> <20100817054640.GD5095@cr0.nay.redhat.com>
-In-Reply-To: <20100817054640.GD5095@cr0.nay.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817043612.GA9631@jasper.tkos.co.il>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:46:39 up 44 days, 21:57, 25 users,  load average: 0.38, 0.25,
+	0.16
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.8.2010 07:46, Américo Wang wrote:
-> On Thu, Aug 12, 2010 at 01:56:19AM -0400, Mike Frysinger wrote:
->> Add some helper functions that abort on failure, and change the fwrite
->> and fget calls to use those.  This should kill off all the ugly gcc
->> warnings that some distros emit about ignoring return values due to
->> usage of warn_unused_result attributes.
->>
->> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+On Tue, Aug 17, 2010 at 07:36:12AM +0300, Baruch Siach wrote:
+> Hi Sascha,
 > 
-> Looks good to me,
+> On Mon, Aug 16, 2010 at 04:15:40PM +0200, Sascha Hauer wrote:
+> > On Mon, Aug 16, 2010 at 02:21:06PM +0200, Linus Walleij wrote:
+> > > 2010/8/16 Sascha Hauer <s.hauer@pengutronix.de>:
+> > > > The SDMA engine is a scatter/gather DMA engine which is implemented
+> > > > as a seperate coprocessor. SDMA needs its own firmware which is
+> > > > requested using the standard request_firmware mechanism. The firmware
+> > > > has different entry points for each peripheral type, so drivers
+> > > > have to pass the peripheral type to the DMA engine which in turn
+> > > > picks the correct firmware entry point from a table contained in
+> > > > the firmware image itself.
+> > > 
+> > > Quite fun, if the spec for the microcode is open this opens up
+> > > for dynamic firmware generation for specific DMA jobs does it
+> > > not?
+> > 
+> > Unfortunately the specs are not open, so we are sticked to the binary
+> > microcode from Freescale. I'm pretty sure though that the SDMA engine
+> > could do at least a device_prep_dma_xor operation.
 > 
-> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+> Chapter 38 in the i.MX25 Reference Manual seems to include almost everything 
+> there is to know about the SDMA. Isn't this enough for writing custom SDMA 
+> microcodes?
 
-I already merged similar patches by Jean Sacren, see commits bf5e327 and
-4418a2b in kbuild-2.6.git.
+Unfortunately not, the assembler is missing.
 
-Michal
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
