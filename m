@@ -1,107 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751057Ab0HQEEH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:04:07 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:50482 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750702Ab0HQEEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 00:04:04 -0400
-Date: Mon, 16 Aug 2010 21:03:53 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: Andreas Gruenbacher <agruen@suse.de>,
-        Christoph Hellwig <hch@infradead.org>,
-        Matt Helsley <matthltc@us.ibm.com>, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        akpm@linux-foundation.org, Michael Kerrisk <michael.kerrisk@gmail.com>,
-        Serge Hallyn <serge@hallyn.com>,
-        Biederman Eric Biederman <ebiederm@xmission.com>,
-        Containers <containers@lists.linux-foundation.org>
-Subject: Re: [GIT PULL] notification tree - try 37!
-Message-ID: <20100817040353.GD3648@count0.beaverton.ibm.com>
-References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
- <20100807000624.GA14819@infradead.org>
- <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
- <201008162232.36873.agruen@suse.de>
- <1282016387.21419.113.camel@acb20005.ipt.aol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282016387.21419.113.camel@acb20005.ipt.aol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751221Ab0HQEMA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:12:00 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49149
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750945Ab0HQEL7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 00:11:59 -0400
+Date: Mon, 16 Aug 2010 21:12:18 -0700 (PDT)
+Message-Id: <20100816.211218.189709876.davem@davemloft.net>
+To: linux-kernel@vger.kernel.org
+CC: torvalds@linux-foundation.org
+Subject: tasks getting stuck on mmap_sem?
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 11:39:47PM -0400, Eric Paris wrote:
-> On Mon, 2010-08-16 at 22:32 +0200, Andreas Gruenbacher wrote:
-> > On Saturday 07 August 2010 21:15:14 Eric Paris wrote:
-> > > On Fri, 2010-08-06 at 20:06 -0400, Christoph Hellwig wrote:
-> > > > I'm also totally missing on any re-post of these patches or discussion
-> > > > of the changes during the last development window.
-> > > 
-> > > I just searched lkml an fsdevel where I usually send everything don't
-> > > see then.  I totally failed.
-> > 
-> > Oh yes.
-> > 
-> > This introduces two new syscalls which will be impossible to fix up after the 
-> > fact, and those system calls are poorly documented: commits 2a3edf86 and 
-> > 52c923dd document the initial versions (in the commit message!), but 
-> > subsequent commits then extend that interface.  The interface for replying to 
-> > events is not documented at all beyond the example code [1].  There is no 
-> > documentation in Documentation/filesystems/, either.
-> > 
-> > 	[1] http://people.redhat.com/~eparis/fanotify/
-> 
-> I'll work on documentation.  Although it should be pointed out that the
-> interface was sent to list many times with lots of discussion and
-> feedback.  The only patches that didn't make the list were the last
-> couple which changed internal notification semantics (and fscked with
-> fput() but that patch, which caused problems, was specifically pointed
-> out in this thread and reverted).
-> 
-> > Q: What happens when a process watching for FAN_OPEN_PERM or FAN_ACCESS_PERM 
-> > events exits or dies while events are in flight?  I can't see anything in the 
-> > code that would wake sleeping processes up when the fsnotify_group of the 
-> > listener is torn down.
-> 
-> We can get stuck.  There was code which cleaned that up, but it got
-> accidentally removed long ago when, upon review on list, I was told to
-> remove all timeout code.  It's easy enough to fix up.  I'll post a patch
-> this week.
-> 
-> > Q: What prevents the system from going out of memory when a listener decides 
-> > to stop reading events or simply can't keep up?  There doesn't seem to be a 
-> > limit on the queue depth.  Listeners currently need CAP_SYS_ADMIN, but somehow 
-> > limiting the queue depth and throttling when things start to go bad still 
-> > sounds like a reasonable thing to do, right?)
-> 
-> It's an interesting question and obviously one that I've thought about.
-> You remember when we talked previously I said the hardest part left was
-> allowing non-root users to use the interface.  It gets especially
-> difficult when thinking about perm-events.  I was specifically told not
-> to timeout or drop those.  But when dealing with non-root users using
-> perm events?   As for pure notification we can do something like inotify
-> does quite easily.
-> 
-> I'm not certain exactly what the best semantics are for non trusted
-> users, so I didn't push any patches that way.  Suggestions welcome   :)
 
-Hi Eric,
+I just started seeing this with current GIT, is it related
+to the page table locking shuffle of a few days ago?
 
-Sorry I haven't had a chance to look at the perm events. I think
-user namespace and containers folks might be interested in them for
-non-root users though.
+[21029.265646] INFO: task git:16643 blocked for more than 120 seconds.
+[21029.267054] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[21029.268412] git           D 000000000072f804     0 16643  16273 0x210001101000080
+[21029.269809] Call Trace:
+[21029.271062]  [000000000072f778] rwsem_down_failed_common+0x90/0xb8
+[21029.272390]  [000000000072f804] __down_read+0x30/0x40
+[21029.273689]  [0000000000731148] do_sparc64_fault+0x238/0x788
+[21029.274996]  [00000000004079e8] sparc64_realfault_common+0x10/0x20
+[21029.276347] INFO: task git:16644 blocked for more than 120 seconds.
+[21029.277655] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[21029.278993] git           D 000000000072f874     0 16644  16273 0x210041101000080
+[21029.280348] Call Trace:
+[21029.281542]  [000000000072f778] rwsem_down_failed_common+0x90/0xb8
+[21029.282818]  [000000000072f874] __down_write+0x34/0x44
+[21029.284057]  [00000000004d9c44] SyS_mmap_pgoff+0xc8/0x118
+[21029.285293]  [0000000000406154] linux_sparc_syscall32+0x34/0x40
+ ...
 
-[Adding userns/containers folks to Cc]
-
-I'm guessing non-trusted users can be restricted to only get perm events
-on stuff they already own. Plus make perm events by non-trusted users
-unreliable yet failsafe -- return EACESS/EPERM when we have to timeout or
-drop the events if I understand the issues correctly. Those rules plus user
-namespaces would still be quite useful I think. Do they seem reasonable to
-implement? Am I forgetting anything important?
-
-Cheers,
-	-Matt Helsley
+etc.  it's a set of git threads computing deltas for a remote pull
+request to the machine.
