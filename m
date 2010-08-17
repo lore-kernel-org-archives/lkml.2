@@ -1,131 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755046Ab0HQCnM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 22:43:12 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58643 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab0HQCnL (ORCPT
+	id S1755310Ab0HQCnV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 22:43:21 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64998 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755200Ab0HQCnU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 22:43:11 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
-Message-ID: <4C69F758.5030300@np.css.fujitsu.com>
-Date: Tue, 17 Aug 2010 11:43:36 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+	Mon, 16 Aug 2010 22:43:20 -0400
+Message-ID: <4C69F860.9050209@cn.fujitsu.com>
+Date: Tue, 17 Aug 2010 10:48:00 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andi Kleen <andi@firstfloor.org>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] [Patch-next] ACPI, APEI Fix the return value(==NULL)
- of acpi_pre_map always.
-References: <4C69DE57.9070608@np.css.fujitsu.com> <1282009063.2744.1495.camel@yhuang-dev>
-In-Reply-To: <1282009063.2744.1495.camel@yhuang-dev>
+To: Li Zefan <lizf@cn.fujitsu.com>
+CC: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>,
+        Linux is full of bugs <linux-kernel@vger.kernel.org>,
+        Nir Tzachar <nir.tzachar@gmail.com>, Michal Marek <mmarek@suse.cz>
+Subject: Re: BUG: nconfig doesn't preserve case in its menu display
+References: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com> <4C69F7B9.2000103@cn.fujitsu.com>
+In-Reply-To: <4C69F7B9.2000103@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/08/17 10:37), Huang Ying wrote:
-> On Tue, 2010-08-17 at 08:56 +0800, Jin Dongming wrote:
->> acpi_pre_map() is used for remapping the physical address of I/O, so
->> it should be return NULL or remapped virtual address. The problem
->> is whether I/O remapping is successful or not, the function returns
->> NULL always.
-> 
-> No. NULL is returned for error path only. Please check the code again.
-
-There three places used the local variable vaddr in acpi_pre_map() in next-tree.
-   1. 115         vaddr = __acpi_try_ioremap(paddr, size);
-   2. 122         vaddr = ioremap(pg_off, pg_sz);
-   3. 135         vaddr = __acpi_try_ioremap(paddr, size);
-
-Let's think about the following statement.
-   Assumption: the physical address has never been remapped.
-   Step:
-       1. vaddr == NULL
-          Because the physical address is not registered in the acpi_iomaps,
-          it should be returned NULL from __acpi_try_ioremap().
-
-       2. vaddr == the virtual address of the physical address.
-          Here if ioremap is successful, the value of vaddr should be 
-          the virtual address returned from ioremap().
-
-       3. vaddr == NULL                <== IMPORTANT
-          Here it is because the physical address has not been registered
-          in the acpi_iomaps yet, it still return NULL from __acpi_try_ioremap().
-          So it is why vaddr == NULL, even if the physical address has never
-          been remapped.
-
-    Result: vaddr == NULL.
-
-And if the vaddr is not NULL, it could not be added into acpi_iomaps.
-Codes in acpi_pre_map() is like following.
-
-134         spin_lock_irqsave(&acpi_iomaps_lock, flags);
-135         vaddr = __acpi_try_ioremap(paddr, size);           <== the 3rd step
-136         if (vaddr) {
-137                 spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
-138                 iounmap(map->vaddr);
-139                 kfree(map);
-140                 return vaddr;
-141         }
-142         list_add_tail_rcu(&map->list, &acpi_iomaps);      <== add into acpi_iomaps.
-143         spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
-
-> 
->> In acpi_pre_map(), after the physical address is remapped sucessfully,
->> it will check whether the physical address has been added into acpi_iomaps
->> list again. If the physical address has beed added into acpi_iomaps,
->> the virtual address will be saved in vaddr. Otherwise, NULL be saved in
->> vaddr.
+Li Zefan wrote:
+> 于 2010年08月17日 05:04, Ævar Arnfjörð Bjarmason 写道:
+>> When I do "make nconfig" and go to "General Setup" my "Local version -
+>> append to kernel release" entry appears as:
 >>
->> So if the physical address has never been remapped, the return value of
->> acpi_pre_map will be NULL always.
+>>     (-avar-akbar) Local version - append to kernel release
 >>
->> This patch fixed it and I confirmed it on x86_64 next-tree.
+>> When I use "make menuconfig" it's:
 >>
->> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
->> ---
->>  drivers/acpi/atomicio.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>     (-Avar-Akbar) Local version - append to kernel release
 >>
->> diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
->> index 8f8bd73..1bc2614 100644
->> --- a/drivers/acpi/atomicio.c
->> +++ b/drivers/acpi/atomicio.c
->> @@ -133,7 +133,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
->>  
->>  	spin_lock_irqsave(&acpi_iomaps_lock, flags);
->>  	vaddr = __acpi_try_ioremap(paddr, size);
->> -	if (vaddr) {
->> +	if (unlikely(vaddr)) {
+>> And my .config agrees:
+>>
+>>     $ ack -n1 CONFIG_LOCALVERSION .config
+>>     CONFIG_LOCALVERSION="-Avar-Akbar"
+>>
+>> But when I edit the version string in both menuconfig and nconfig it
+>> retains the correct casing.
+>>
+>> I briefly searched through the nconfig code, but couldn't find
+>> anything pertinent to the localversion, so this is probably a more
+>> general issue.
 > 
-> pre_map is not performance critical, so "unlikely" here helps little.
+> The bug is in make_hot(). Here is the fix:
 > 
->>  		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
->>  		iounmap(map->vaddr);
->>  		kfree(map);
->> @@ -142,7 +142,7 @@ static void __iomem *acpi_pre_map(phys_addr_t paddr,
->>  	list_add_tail_rcu(&map->list, &acpi_iomaps);
->>  	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
->>  
->> -	return vaddr + (paddr - pg_off);
->> +	return map->vaddr + (paddr - pg_off);
->>  err_unmap:
->>  	iounmap(vaddr);
->>  	return NULL;
+> =======================
 > 
-> When will vaddr != map->vaddr?
-> 
-> Best Regards,
-> Huang Ying
-> 
-> 
-> 
-> 
+> From: LiZefan <lizf@lizf.localdomain>
 
+Change it to:
 
+From: Li Zefan <lizf@cn.fujitsu.com>
