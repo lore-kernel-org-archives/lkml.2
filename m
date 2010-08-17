@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab0HQOtX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 10:49:23 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:48923 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752380Ab0HQOtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 10:49:18 -0400
-Date: Tue, 17 Aug 2010 09:49:17 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: mingo@elte.hu, tglx@linutronix.de, lenb@kernel.org,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-Message-ID: <20100817144917.GD14091@sgi.com>
-References: <20100722152220.GA18290@sgi.com> <20100724001449.GA9618@khazad-dum.debian.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100724001449.GA9618@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1757579Ab0HQOu7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 10:50:59 -0400
+Received: from defer-dn03.ocn.ad.jp ([125.170.100.156]:53518 "EHLO
+	defer-dn03.ocn.ad.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380Ab0HQOuy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 10:50:54 -0400
+X-Greylist: delayed 2629 seconds by postgrey-1.27 at vger.kernel.org; Tue, 17 Aug 2010 10:50:54 EDT
+Date: Tue, 17 Aug 2010 23:05:31 +0900 (JST)
+Message-Id: <20100817.230531.95061739.anemo@mba.ocn.ne.jp>
+To: mcuos.com@gmail.com
+Cc: geert@linux-m68k.org, akpm@linux-foundation.org, a.zummo@towertech.it,
+        linux-kernel@vger.kernel.org
+Subject: Re: rtc/m41t80: use rtc_valid_tm() to check returned tm
+From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+In-Reply-To: <AANLkTimbtkvrE0Lhk4vcq-4N3Sr8T84zD7-pkSotO66L@mail.gmail.com>
+References: <201008111659.o7BGxn4g029524@hera.kernel.org>
+	<AANLkTin7+UPYJ5tsyrbUhxcEfbHLMVJQOSrV1_3zQ0V3@mail.gmail.com>
+	<AANLkTimbtkvrE0Lhk4vcq-4N3Sr8T84zD7-pkSotO66L@mail.gmail.com>
+X-Fingerprint: 6ACA 1623 39BD 9A94 9B1A  B746 CA77 FE94 2874 D52F
+X-Pgp-Public-Key: http://wwwkeys.pgp.net/pks/lookup?op=get&search=0x2874D52F
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7HEp3oN008983
 
-On Fri, Jul 23, 2010 at 09:14:50PM -0300, Henrique de Moraes Holschuh wrote:
-> On Thu, 22 Jul 2010, Jack Steiner wrote:
-> > Large SGI UV systems (3072p, 5TB) take a long time to boot. A significant
-> > part of the boot time is scanning ACPI tables. ACPI tables on UV systems
-> > are located in RAM memory that is physically attached to node 0.
-> > 
-> > User programs (ex., acpidump) read the ACPI tables by mapping them thru
-> > /dev/mem.  Although mmap tries to map the tables as CACHED, there are
-> > existing kernel UNCACHED mapping that conflict and the tables end up as
-> > being mapped UNCACHED.  (See the call to track_pfn_vma_new() in
-> > remap_pfn_range()).
+On Fri, 13 Aug 2010 09:43:38 +0800, Wan ZongShun <mcuos.com@gmail.com> wrote:
+> 2010/8/13 Geert Uytterhoeven <geert@linux-m68k.org>:
+> >> - Â  Â  Â  return 0;
+> >> + Â  Â  Â  return rtc_valid_tm(t);
+> >
+> > warning: passing argument 1 of â€˜rtc_valid_tmâ€™ from incompatible pointer type
+> >
+> > `t' is of type `struct rtc_wkalrm *', not `struct rtc_time *'.
+> > Probably the intention was:
+> >
+> > Â  Â  Â  Â return rtc_valid_tm(&t->time);
 > 
-> Well, as it was raised in this thread, ACPI tables are likely to be near RAM
-> regions used for IPC with the firmware or SMBIOS, and we have no idea of the
-> kind of crap that could happen if we enable caching on those areas.
-
-I'm certainly not suggesting that ALL platforms map ACPI tables as WB. That
-would be a disaster. Only platforms where BIOS specifically reports that
-that tables are in WB memory should be mapped as MB.
-
-
+> Okay, thank you point this warning.
 > 
-> OTOH, we *know* of systems that force us to copy the ACPI tables to regular
-> RAM, otherwise, the utterly broken BIOS corrupts the ACPI tables after the
-> kernel has loaded.
+> Andrew ,
 > 
-> Couldn't we simply always copy all tables to regular RAM and mark THAT as
-> cacheable (since there will be no IPC regions in it)?  For the tables that
-> are only used once, we can free the RAM later.
+> Could you please fix this warning directly for me?
+> 'return rtc_valid_tm(t)' should be insteaded by 'return
+> rtc_valid_tm(&t->time);'.
 
-I'm really out of the area of the kernel that I understand   :-)
+No, t->time does not contain complete date/time.  It just holds some
+alarm settings and -1 for some fields.
 
-What are the implications of copying the ACPI tables to another location?
-Does BIOS ever make changes to their tables that would make it necessary
-to update the OS copy?
+So rtc_valid_tm(&t->time) will always returns -EINVAL.
+The correct fix would be just reverting rtc_valid_tm here.
 
-While copying tables might sound attractive, it seems like there is a
-ripple effect.  For example, acpidump does the following:
+------------------------------------------------------
+From: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+Subject: [PATCH] rtc: m41t80: do not use rtc_valid_tm in m41t80_rtc_read_alarm
 
-        - opens /sys/firmware/efi/systable
-        - reads the physical address of the ACPI20 table
-                (strace)
-                open("/sys/firmware/efi/systab", O_RDONLY) = 3
-                read(3, "MPS=0x0\nACPI20=0x78d76014\nACPI=0"..., 4096) = 83
-                (contents)
-                ACPI20=0x78d76014
-                SMBIOS=0x78c33000
+The commit b485fe5ea ("rtc/m41t80: use rtc_valid_tm() to check
+returned tm") added rtc_valid_tm to m41t80_rtc_read_alarm() but it was
+wrong while the t->time does not contain complete date/time.
 
-        - opens /dev/mem
-                (strace)
-                open("/dev/mem", O_RDONLY) = 4
-                mmap(NULL, 396, PROT_READ, MAP_PRIVATE, 4, 0x78d76000)
+This patch also fix a warning:
+warning: passing argument 1 of â€˜rtc_valid_tmâ€™ from incompatible pointer type
 
-        - mmaps the physical address of the ACPI20 table
-        - reads the table
+Signed-off-by: Atsushi Nemoto <anemo@mba.ocn.ne.jp>
+---
+ drivers/rtc/rtc-m41t80.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-If the ACPI tables are copied to a different location, I don't see a
-clean/simple way to make this work.
-
-It seems like the best approach would to provide platform specific hooks
-in ACPI to map the tables as WB in the first place - IF the platform supports it.
-
-
---- jack
+diff --git a/drivers/rtc/rtc-m41t80.c b/drivers/rtc/rtc-m41t80.c
+index 66377f3..d60557c 100644
+--- a/drivers/rtc/rtc-m41t80.c
++++ b/drivers/rtc/rtc-m41t80.c
+@@ -364,7 +364,7 @@ static int m41t80_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *t)
+ 	t->time.tm_isdst = -1;
+ 	t->enabled = !!(reg[M41T80_REG_ALARM_MON] & M41T80_ALMON_AFE);
+ 	t->pending = !!(reg[M41T80_REG_FLAGS] & M41T80_FLAGS_AF);
+-	return rtc_valid_tm(t);
++	return 0;
+ }
+ 
+ static struct rtc_class_ops m41t80_rtc_ops = {
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
