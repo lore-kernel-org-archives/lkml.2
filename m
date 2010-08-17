@@ -1,38 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411Ab0HQHWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 03:22:20 -0400
-Received: from edu-smtp-02.edutel.nl ([88.159.1.176]:58284 "EHLO
-	edu-smtp-02.edutel.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab0HQHWT (ORCPT
+	id S1753107Ab0HQHWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 03:22:45 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38413
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752692Ab0HQHWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 03:22:19 -0400
-Message-ID: <4C6A38A4.6070505@neli.hopto.org>
-Date: Tue, 17 Aug 2010 09:22:12 +0200
-From: Micha Nelissen <micha@neli.hopto.org>
-User-Agent: Thunderbird 2.0.0.5 (Windows/20070716)
-MIME-Version: 1.0
-To: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 7/9] RapidIO: Add handling for PW message from a lost
- device
-References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-8-git-send-email-alexandre.bounine@idt.com> <4C692F31.2020705@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6040@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D6040@CORPEXCH1.na.ads.idt.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 17 Aug 2010 03:22:44 -0400
+Date: Tue, 17 Aug 2010 00:23:02 -0700 (PDT)
+Message-Id: <20100817.002302.193698894.davem@davemloft.net>
+To: dm@chelsio.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: tasks getting stuck on mmap_sem?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C6A1C7C.7070004@chelsio.com>
+References: <4C6A1C7C.7070004@chelsio.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bounine, Alexandre wrote:
-> That "real" PW message may be dropped by the controller (85xx is good
-> example). Everything depends on number of PW messages directed to the
-> host/controller. I am trying to use the first available notification to
-> service device removal. If the "real" PW message is received it should
-> be processed without any further action. 
+From: Dimitris Michailidis <dm@chelsio.com>
+Date: Mon, 16 Aug 2010 22:22:04 -0700
 
-Perhaps an idea is to use the repeated port-write sending feature so 
-that dropped port-writes are not a problem anymore.
+> This may be similar to the problems IA-64 had last week as a result of
+> the rwsem changes, eg see commit
+> 01d69a82e1d3c938da16bf55aab000672243aa24.  I see
+> arch/sparc/include/asm/atomic_64.h uses ints with atomic64_t, which
+> was a problem for IA-64.  Just guessing.
 
-Micha
+Well, the return types for the atomic64 routines were wrong and I
+fixed that.
+
+But our rwsem implementation on sparc64 uses a 32-bit counter so that
+couldn't be the issue.  And indeed I still get the problem of tasks
+being stuck on rwsems even after the atomic64 return types are fixed.
+
+But I bet that rwsem commit 424acaaeb3a3932d64a9b4bd59df6cf72c22d8f3
+introduced some kind of problem in another manner.  I'll try to dig
+some more.
+
