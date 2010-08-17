@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757076Ab0HQMMq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 08:12:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48936 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab0HQMMo (ORCPT
+	id S1757228Ab0HQMNq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 08:13:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:35695 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751971Ab0HQMNo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 08:12:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=ZjziOmq6bdgCBpWP9n04S++IlJs9pC6+/6Ery8iTNgDMTdQNzPc0Oz2tq/QuyN8aAJ
-         NUL49GAcJiVfp5woXb6nEzEwJtXmKBgS9BueqY5eBo1qJgLDjrJO9Pz6lw3ogvg31YW2
-         /qri1FtUTmwlSiSG48+TBPzZVjLTAEM1sarYc=
-Message-ID: <4C6A7BFD.1070604@gmail.com>
-Date: Tue, 17 Aug 2010 14:09:33 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend
- to RAM
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201008171319.25080.rjw@sisk.pl> <4C6A7281.3030804@gmail.com> <201008171410.21382.stephan.diestelhorst@amd.com>
-In-Reply-To: <201008171410.21382.stephan.diestelhorst@amd.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Aug 2010 08:13:44 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] mfd: Move PCF50633 IRQ protoypes where the definitions can see them
+Date: Tue, 17 Aug 2010 13:13:36 +0100
+Message-Id: <1282047217-9875-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Fixed warnings about unprototyped global functions.
 
-On 08/17/2010 02:10 PM, Stephan Diestelhorst wrote:
-> If you want me to test anything... let me know. Since I do not know
-> much about the ATA code, I do not know what to change where. (A simple
-> grep for sd_suspend in drivers/ata didn't turn up anything.)
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/pcf50633-core.c       |    7 -------
+ include/linux/mfd/pcf50633/core.h |    7 +++++++
+ 2 files changed, 7 insertions(+), 7 deletions(-)
 
-Oh, sure, the following should be enough.  Thanks.
-
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 8802e48..892ccc7 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -2456,6 +2456,8 @@ static int sd_suspend(struct device *dev, pm_message_t mesg)
- 	struct scsi_disk *sdkp = scsi_disk_get_from_dev(dev);
- 	int ret = 0;
-
-+	return 0;
+diff --git a/drivers/mfd/pcf50633-core.c b/drivers/mfd/pcf50633-core.c
+index 23e5855..6d4233f 100644
+--- a/drivers/mfd/pcf50633-core.c
++++ b/drivers/mfd/pcf50633-core.c
+@@ -25,13 +25,6 @@
+ 
+ #include <linux/mfd/pcf50633/core.h>
+ 
+-int pcf50633_irq_init(struct pcf50633 *pcf, int irq);
+-void pcf50633_irq_free(struct pcf50633 *pcf);
+-#ifdef CONFIG_PM
+-int pcf50633_irq_suspend(struct pcf50633 *pcf);
+-int pcf50633_irq_resume(struct pcf50633 *pcf);
+-#endif
+-
+ static int __pcf50633_read(struct pcf50633 *pcf, u8 reg, int num, u8 *data)
+ {
+ 	int ret;
+diff --git a/include/linux/mfd/pcf50633/core.h b/include/linux/mfd/pcf50633/core.h
+index ad411a7..50d4a04 100644
+--- a/include/linux/mfd/pcf50633/core.h
++++ b/include/linux/mfd/pcf50633/core.h
+@@ -227,4 +227,11 @@ static inline struct pcf50633 *dev_to_pcf50633(struct device *dev)
+ 	return dev_get_drvdata(dev);
+ }
+ 
++int pcf50633_irq_init(struct pcf50633 *pcf, int irq);
++void pcf50633_irq_free(struct pcf50633 *pcf);
++#ifdef CONFIG_PM
++int pcf50633_irq_suspend(struct pcf50633 *pcf);
++int pcf50633_irq_resume(struct pcf50633 *pcf);
++#endif
 +
- 	if (!sdkp)
- 		return 0;	/* this can happen */
-
+ #endif
 -- 
-tejun
+1.7.1
+
