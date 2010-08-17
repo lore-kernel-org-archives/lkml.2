@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab0HQRPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:15:16 -0400
-Received: from os.inf.tu-dresden.de ([141.76.48.99]:56771 "EHLO
-	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab0HQRPC (ORCPT
+	id S1757987Ab0HQRQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:16:34 -0400
+Received: from mxout1.idt.com ([157.165.5.25]:49943 "EHLO mxout1.idt.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753941Ab0HQRQc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:15:02 -0400
-Date: Tue, 17 Aug 2010 19:14:54 +0200
-From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-To: Bian Naimeng <biannm@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>, stable@kernel.org
-Subject: Re: 2.6.35.2: NFS related Oops
-Message-ID: <20100817171454.GB11366@os.inf.tu-dresden.de>
-References: <20100816215056.GA5376@os.inf.tu-dresden.de>
- <4C6A5FF1.3070209@cn.fujitsu.com>
+	Tue, 17 Aug 2010 13:16:32 -0400
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <4C6A5FF1.3070209@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH 2/9] RapidIO,  powerpc/85xx: modify RIO port-write interrupt handler
+Date: Tue, 17 Aug 2010 10:16:08 -0700
+Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E552011D62E8@CORPEXCH1.na.ads.idt.com>
+In-Reply-To: <4C6A3665.7030207@neli.hopto.org>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+thread-topic: [PATCH 2/9] RapidIO,  powerpc/85xx: modify RIO port-write interrupt handler
+thread-index: Acs92zH3f/a5jFI4QyCBPxct/xQ59gAVFZfQ
+References: <1281712686-31308-1-git-send-email-alexandre.bounine@idt.com> <1281712686-31308-3-git-send-email-alexandre.bounine@idt.com> <4C692B42.9050407@neli.hopto.org> <0CE8B6BE3C4AD74AB97D9D29BD24E552011D5F94@CORPEXCH1.na.ads.idt.com> <4C6A3665.7030207@neli.hopto.org>
+From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
+To: "Micha Nelissen" <micha@neli.hopto.org>
+Cc: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
+        <linuxppc-dev@ozlabs.org>,
+        "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Micha Nelissen wrote:
+> 
+> Primarily due to the single entry queue, the order of checking is
+> probably insignificant? :-)
 
-On Tue Aug 17, 2010 at 18:09:53 +0800, Bian Naimeng wrote:
->   Please try to apply the followed patch.
+Help sometimes only but gives a feeling that I did all that is possible
+;) 
 
-Thanks, this fixes the Oops. Patch is required for both 2.6.35 and
-2.6.36 trees.
-
- 
-----
- 
-We we open a positive file just with O_EXCL but no O_CREAT, may cause kernel crash.
-
-Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
- 
----
- fs/nfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
- 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 29539ce..1a672dd 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1100,7 +1100,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
- 		goto no_open_dput;
- 	openflags = nd->intent.open.flags;
- 	/* We cannot do exclusive creation on a positive dentry */
--	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
-+	if (openflags & O_EXCL)
- 		goto no_open_dput;
- 	/* We can't create new files, or truncate existing ones here */
- 	openflags &= ~(O_CREAT|O_TRUNC);
--- 
-1.7.0
-
-
-
-Adam
--- 
-Adam                 adam@os.inf.tu-dresden.de
-  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
+> Anyway, I don't mind changing the order.
+> 
+> Micha
