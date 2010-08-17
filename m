@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab0HQSG3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:06:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:35525 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755059Ab0HQSG2 (ORCPT
+	id S1758104Ab0HQSL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:11:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49140 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752816Ab0HQSLZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:06:28 -0400
+	Tue, 17 Aug 2010 14:11:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=references:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
-        b=mImzPQkGadjXvZW/j65Mwq7QcXA2fFq2kQrZVo6ogvSH8HGJ7Ot8kraJynSbbNnAWk
-         Px0YiOlV3yOUTefNBmhUCE307ChVTecatXULYkhcvK1M+yuxikfXItSbjRPRdjpisbDJ
-         XaSkqwdPQgrtAwmeYBIGGuPQpYTd8h/7m28x8=
-References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <20100813024912.GA2661@core.coreip.homeip.net> <4C65BF99.9030601@codeaurora.org> <201008131754.49488.dmitry.torokhov@gmail.com> <4C6AC393.8000109@codeaurora.org>
-Message-Id: <BC741E3E-377E-45BF-80E1-A60F4E0FDFC9@gmail.com>
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Neil Leeder <nleeder@codeaurora.org>
-In-Reply-To: <4C6AC393.8000109@codeaurora.org>
-Content-Type: text/plain;
-	charset=us-ascii;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 7bit
-X-Mailer: iPhone Mail (7E18)
-Mime-Version: 1.0 (iPhone Mail 7E18)
-Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
-Date: Tue, 17 Aug 2010 11:05:48 -0700
-Cc: Stepan Moskovchenko <stepanm@codeaurora.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Horace Fu <horace.fu@quantatw.com>,
-        Mandeep Singh Baines <msb@chromium.org>,
-        Trilok Soni <tsoni@codeaurora.org>
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=miPR2+EMcUh6aAEb0QAWMrj7drsdZuohHVwmzDnY59+GZJV+TQpF8m+UKufdd3elwL
+         z4q0yCEatt11JqHAKF6r4Zddd8Okg1aAsAbAaXOkigkWbC55AR3Fu4cDy3yhU3yABG42
+         VM08Rw6IOhP1mZb2al9s2SOmIjI9tQxFwXyYQ=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Sander Eikelenboom <linux@eikelenboom.it>
+Subject: Re: [2.6.35] usb 2.0 em28xx  kernel panic general protection fault: 0000 [#1] SMP          RIP: 0010:[<ffffffffa004fbc5>]  [<ffffffffa004fbc5>] em28xx_isoc_copy_vbi+0x62e/0x812 [em28xx]
+Date: Tue, 17 Aug 2010 20:11:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35; KDE/4.4.5; i686; ; )
+Cc: mchehab@infradead.org, mrechberger@gmail.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-usb@vger.kernel.org
+References: <61936849.20100811001257@eikelenboom.it>
+In-Reply-To: <61936849.20100811001257@eikelenboom.it>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201008172011.20095.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+https://bugzilla.kernel.org/show_bug.cgi?id=16614On środa, 11 sierpnia 2010 o 
+00:12:57 Sander Eikelenboom wrote:
+> Hi,
+> 
+> While trying to test try and report about some other bugs,  i ran into this
+> kernel panic when trying to grab video from my usb 2.0 em28xx videgrabber
+> connected to a usb 2.0 port. Complete serial log attachted.
+> 
 
-On Aug 17, 2010, at 10:14 AM, Neil Leeder <nleeder@codeaurora.org>  
-wrote:
-
-> On 8/13/2010 8:54 PM, Dmitry Torokhov wrote:
->> Also it is not a simple coincidence that to enable device you send  
->> 0xf4
->> to it (which is PSMOUSE_CMD_ENABLE - standard PS/2 command). This  
->> tends
->> to suggest that interface is not actually hidden and that the device
->> (touchpad) could be replaced with other kinds of devices.
->>
->> Anyway, please try the driver (you  may need to hardcode the IRQ  
->> trigger
->> type for now) and see if psmouse is able to talk to the touchpad.  
->> If it
->> is then serio is the proper solution.
->
-> Dmitri,
-> I fixed one line in the wpce775x_serio driver which looked like a  
-> typo - hope I got that right:
->
->    for (i = 0; i < count; i++)
-> -        serio_interrupt(ps2if->serio, ps2if->data_in[1], 0);
-> +        serio_interrupt(ps2if->serio, ps2if->data_in[i], 0);
->    }
->
-
-Yep, that was a typo.
-
-> I tried running with psmouse but it didn't work. The touchpad was  
-> never detected as a synaptics touchpad. I looked at the dataflow  
-> from the device and it wasn't responding to the commands that  
-> synaptics_detect() was sending it. It eventually showed up as an  
-> unknown logitech mouse.
-
-
-That suggests that the device responds to at least basic PS/2 queries.
-
-> I can see data being passed through the serio driver but the  
-> logitech driver can't process it.
->
-
-What about loading psmouse module with proto=bare?
-
-Could you also dump the data received from touchpad during probing?
-
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16614
+for your bug report, please add your address to the CC list in there, thanks!
 
 -- 
-Dmitry
-
+Maciej Rutecki
+http://www.maciek.unixy.pl
