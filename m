@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752670Ab0HQEp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:45:28 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:56876 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751943Ab0HQEp1 convert rfc822-to-8bit (ORCPT
+	id S1752508Ab0HQErQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:47:16 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:50854 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab0HQErP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 00:45:27 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=L25Yohkpr9hUQOos2FUg1qdQpUmysyZeELlLlpdNS0X7v8OaSfbX9GDS/Bnmmo1xX
-	wJqRtRFy2yzb3TXcAcFPg==
+	Tue, 17 Aug 2010 00:47:15 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C6A146C.5030807@np.css.fujitsu.com>
+Date: Tue, 17 Aug 2010 13:47:40 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikDHG7Xo2hrrwxp1DYgGNbV6BXipY+p_Uo50498@mail.gmail.com>
-References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
-	<1281987236.1926.1895.camel@laptop>
-	<AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
-	<1281992801.1926.2019.camel@laptop>
-	<AANLkTikDHG7Xo2hrrwxp1DYgGNbV6BXipY+p_Uo50498@mail.gmail.com>
-Date: Mon, 16 Aug 2010 21:45:23 -0700
-Message-ID: <AANLkTimk_16nz2BWB42yHAAseaEJP-DBdondBO5oznrQ@mail.gmail.com>
-Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and the implementation.
-From: Salman Qazi <sqazi@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, adurbin@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Huang Ying <ying.huang@intel.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/4] [Patch-next] ACPI, APEI Fix the return value(==NULL)
+ of acpi_pre_map always.
+References: <4C69DE57.9070608@np.css.fujitsu.com>	 <1282009063.2744.1495.camel@yhuang-dev>	 <4C69F758.5030300@np.css.fujitsu.com> <1282018540.2744.1505.camel@yhuang-dev>
+In-Reply-To: <1282018540.2744.1505.camel@yhuang-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 9:35 PM, Salman Qazi <sqazi@google.com> wrote:
-> On Mon, Aug 16, 2010 at 2:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->> (html damaged email alert)
->>
->> On Mon, 2010-08-16 at 13:59 -0700, Salman Qazi wrote:
->>> On Mon, Aug 16, 2010 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>>         On Mon, 2010-08-16 at 11:30 -0700, Salman Qazi wrote:
->>>         > For the delete case,
->>>         > we no longer shrink the tree back to being just the root containing the
->>>         > only remaining object.  For the insert case, we no longer store the
->>>         > first object in the root, rather allocating a node structure for it.  The
->>>         > reason that this works is that deleting (or inserting) intermediate nodes
->>>         > does not make a difference to a reader holding a slot.
+(2010/08/17 13:15), Huang Ying wrote:
+> On Tue, 2010-08-17 at 10:43 +0800, Jin Dongming wrote:
+>> (2010/08/17 10:37), Huang Ying wrote:
+>>> On Tue, 2010-08-17 at 08:56 +0800, Jin Dongming wrote:
+>>>> acpi_pre_map() is used for remapping the physical address of I/O, so
+>>>> it should be return NULL or remapped virtual address. The problem
+>>>> is whether I/O remapping is successful or not, the function returns
+>>>> NULL always.
 >>>
->>>
->>>         Ah, I through that was what it did. So you basically increase the memory
->>>         footprint for tiny files.. have you done any measurements on that?
->>>
+>>> No. NULL is returned for error path only. Please check the code again.
 >>
->>> You raise a valid concern.  I haven't.  What would you recommend as a
->>> benchmark/metric to measure this?
+>> There three places used the local variable vaddr in acpi_pre_map() in next-tree.
+>>    1. 115         vaddr = __acpi_try_ioremap(paddr, size);
+>>    2. 122         vaddr = ioremap(pg_off, pg_sz);
+>>    3. 135         vaddr = __acpi_try_ioremap(paddr, size);
 >>
->> One thing you could try is something like the below on a freshly booted
->> machine, once without and once with the patch:
+>> Let's think about the following statement.
+>>    Assumption: the physical address has never been remapped.
+>>    Step:
+>>        1. vaddr == NULL
+>>           Because the physical address is not registered in the acpi_iomaps,
+>>           it should be returned NULL from __acpi_try_ioremap().
 >>
->>  cd /usr/src/linux-2.6
->>  echo 1 > /proc/sys/vm/drop_caches
->>  grep radix /proc/slabinfo
->>  make bzImage
->>  echo 1 > /proc/sys/vm/drop_caches
->>  grep radix /proc/slabinfo
+>>        2. vaddr == the virtual address of the physical address.
+>>           Here if ioremap is successful, the value of vaddr should be 
+>>           the virtual address returned from ioremap().
 >>
+>>        3. vaddr == NULL                <== IMPORTANT
+>>           Here it is because the physical address has not been registered
+>>           in the acpi_iomaps yet, it still return NULL from __acpi_try_ioremap().
+>>           So it is why vaddr == NULL, even if the physical address has never
+>>           been remapped.
 >>
+>>     Result: vaddr == NULL.
+> 
+> return vaddr + (paddr - pg_off), is not NULL for common cases.
+> 
+>> And if the vaddr is not NULL, it could not be added into acpi_iomaps.
+>> Codes in acpi_pre_map() is like following.
 >>
->>
->
-> Here's what I see:
->
-> Without the patch:
->
-> Before:
-> radix_tree_node      468   1400    568   28    4 : tunables    0    0
->  0 : slabdata     50     50      0
->
-> After:
-> radix_tree_node     1886   3192    568   28    4 : tunables    0    0
->  0 : slabdata    114    114      0
->
-> With the patch:
->
-> Before:
->
-> radix_tree_node      495   1176    568   28    4 : tunables    0    0
->  0 : slabdata     42     42      0
->
-> After:
->
-> radix_tree_node     3173   7336    568   28    4 : tunables    0    0
->  0 : slabdata    262    262      0
->
->
-> So, not particularly good news :(.
->
+>> 134         spin_lock_irqsave(&acpi_iomaps_lock, flags);
+>> 135         vaddr = __acpi_try_ioremap(paddr, size);           <== the 3rd step
+>> 136         if (vaddr) {
+>> 137                 spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+>> 138                 iounmap(map->vaddr);
+>> 139                 kfree(map);
+>> 140                 return vaddr;
+>> 141         }
+>> 142         list_add_tail_rcu(&map->list, &acpi_iomaps);      <== add into acpi_iomaps.
+>> 143         spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
+> 
+> Oops, this is a bug, and your patch really fix it. But I think you
+> should change the patch description. NULL is not returned in almost all
+> cases. Because (paddr - pg_off) is not zero in common cases.
+> 
+> Best Regards,
+> Huang Ying
+> 
+OK. I will modify the description of this patch and resend it.
 
-But considering that the kernel locks up, and we are still talking
-about < 5MB after a kernel compile, should we really be all that
-concerned?  If so, what are the alternatives that should be considered
-for fixing this lock up?
+Best Regards,
+Jin Dongming
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+
