@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab0HQOpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 10:45:17 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:55124 "EHLO relay.sgi.com"
+	id S932094Ab0HQOtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 10:49:23 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:48923 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1757321Ab0HQOpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 10:45:11 -0400
-Date: Tue, 17 Aug 2010 09:45:09 -0500
+	id S1752380Ab0HQOtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 10:49:18 -0400
+Date: Tue, 17 Aug 2010 09:49:17 -0500
 From: Jack Steiner <steiner@sgi.com>
-To: ykzhao <yakui.zhao@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Cc: mingo@elte.hu, tglx@linutronix.de, lenb@kernel.org,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
 Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-Message-ID: <20100817144509.GC14091@sgi.com>
-References: <20100722152220.GA18290@sgi.com> <1279849573.13929.28.camel@localhost.localdomain> <20100723072301.GC23461@elte.hu> <1279895165.13929.61.camel@localhost.localdomain>
+Message-ID: <20100817144917.GD14091@sgi.com>
+References: <20100722152220.GA18290@sgi.com> <20100724001449.GA9618@khazad-dum.debian.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279895165.13929.61.camel@localhost.localdomain>
+In-Reply-To: <20100724001449.GA9618@khazad-dum.debian.net>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 10:26:05PM +0800, ykzhao wrote:
-> On Fri, 2010-07-23 at 15:23 +0800, Ingo Molnar wrote:
-> > * ykzhao <yakui.zhao@intel.com> wrote:
+On Fri, Jul 23, 2010 at 09:14:50PM -0300, Henrique de Moraes Holschuh wrote:
+> On Thu, 22 Jul 2010, Jack Steiner wrote:
+> > Large SGI UV systems (3072p, 5TB) take a long time to boot. A significant
+> > part of the boot time is scanning ACPI tables. ACPI tables on UV systems
+> > are located in RAM memory that is physically attached to node 0.
 > > 
-> > > From the above description maybe the E820_ACPI region can be mapped as 
-> > > cached. But this still depends on the BIOS. If the some shared data resides 
-> > > in the E820_ACPI region on some BIOS, maybe we can't map the E820_ACPI 
-> > > region as cached again.
-> > 
-> > I dont think we can do this safely unless some other OS (Windows) does it as 
-> > well. (the reason is that if some BIOS messes this up then it will cause nasty 
-> > bugs/problems only on Linux.)
-> > 
+> > User programs (ex., acpidump) read the ACPI tables by mapping them thru
+> > /dev/mem.  Although mmap tries to map the tables as CACHED, there are
+> > existing kernel UNCACHED mapping that conflict and the tables end up as
+> > being mapped UNCACHED.  (See the call to track_pfn_vma_new() in
+> > remap_pfn_range()).
 > 
-> Yes. We can't map the corresponding ACPI region as cached under the
-> following case:
->     >No E820_ACPI region is reported by BIOS. In such case the ACPI
-> table resides in the NVS region     
-> 
-> But if the BIOS can follow the spec and report the separated
-> E820_ACPI/E820_NVS region, maybe we can give a try to map the E820_ACPI
-> region as cached type. For example: the server machine.(The spec
-> describes the E820_ACPI region as reclaimed memory, which means that it
-> can be managed by OS after ACPI table is loaded).
+> Well, as it was raised in this thread, ACPI tables are likely to be near RAM
+> regions used for IPC with the firmware or SMBIOS, and we have no idea of the
+> kind of crap that could happen if we enable caching on those areas.
 
-This would work for the problem I'm trying to solve. On our platform, the
-majority of the ACPI tables are in E820_ACPI regions. Mapping as cached
-solves most of the performance. However, even the E820_NVS regions are
-mapped as WB by BIOS on our platform. What is the advantage of having the
-OS map this as UC as long as this mapping option is a platform specific?
+I'm certainly not suggesting that ALL platforms map ACPI tables as WB. That
+would be a disaster. Only platforms where BIOS specifically reports that
+that tables are in WB memory should be mapped as MB.
 
 
 > 
-> Can we add a boot option to control whether the E820_ACPI region can be
-> mapped as cached type?
-
-In general, I don't like boot options for thing like this. They are prone
-to misuse.  Mapping as WB really is not an option - it is a platform-specific
-attribute & should be controlled by the OS or BIOS and transparant to the user.
-
-In the patch I posted, I had the mapping controlled by platform specific
-code. I originally had it as a x86_platform callout but other schemes may
-be more appropriate.
-
-Would it be better to add an acpi function that is called directly from the
-UV initialization code. The new acpi function would set a flag that controls
-the mapping done later by acpi_os_map_memory()?
-
-
+> OTOH, we *know* of systems that force us to copy the ACPI tables to regular
+> RAM, otherwise, the utterly broken BIOS corrupts the ACPI tables after the
+> kernel has loaded.
 > 
-> > But the benefits of caching are very clear and well measured by Jack, so we 
-> > want the feature. What we can do is to add an exception for 'known good' hw 
-> > vendors - i.e. something quite close to Jack's RFC patch, but implemented a 
-> > bit more cleanly:
-> > 
-> > Exposing x86_platform and e820 details to generic ACPI code isnt particularly 
-> > clean - there should be an ACPI accessor function for that or so: a new 
-> > acpi_table_can_be_cached(table) function or so.
-> 
-> Agree. The function of acpi_os_map_memory will also be used on IA64
-> platform. It seems more reasonable to use a wrapper function to check
-> whether the corresponding region can be mapped as cached type. 
-> > 
-> > In fact since __acpi_map_table(addr,size) is defined by architectures already, 
-> > this could be done purely within x86 code.
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
+> Couldn't we simply always copy all tables to regular RAM and mark THAT as
+> cacheable (since there will be no IPC regions in it)?  For the tables that
+> are only used once, we can free the RAM later.
+
+I'm really out of the area of the kernel that I understand   :-)
+
+What are the implications of copying the ACPI tables to another location?
+Does BIOS ever make changes to their tables that would make it necessary
+to update the OS copy?
+
+While copying tables might sound attractive, it seems like there is a
+ripple effect.  For example, acpidump does the following:
+
+        - opens /sys/firmware/efi/systable
+        - reads the physical address of the ACPI20 table
+                (strace)
+                open("/sys/firmware/efi/systab", O_RDONLY) = 3
+                read(3, "MPS=0x0\nACPI20=0x78d76014\nACPI=0"..., 4096) = 83
+                (contents)
+                ACPI20=0x78d76014
+                SMBIOS=0x78c33000
+
+        - opens /dev/mem
+                (strace)
+                open("/dev/mem", O_RDONLY) = 4
+                mmap(NULL, 396, PROT_READ, MAP_PRIVATE, 4, 0x78d76000)
+
+        - mmaps the physical address of the ACPI20 table
+        - reads the table
+
+If the ACPI tables are copied to a different location, I don't see a
+clean/simple way to make this work.
+
+It seems like the best approach would to provide platform specific hooks
+in ACPI to map the tables as WB in the first place - IF the platform supports it.
+
+
+--- jack
