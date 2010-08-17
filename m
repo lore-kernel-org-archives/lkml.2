@@ -1,76 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab0HQLH6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 07:07:58 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:2465 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750945Ab0HQLH5 (ORCPT
+	id S1755392Ab0HQLIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 07:08:48 -0400
+Received: from reptilian.habets.pp.se ([193.151.93.131]:4637 "EHLO
+	reptilian.habets.pp.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937Ab0HQLIr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 07:07:57 -0400
-Date: Tue, 17 Aug 2010 13:07:47 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Paul Thomas <pthomas8589@gmail.com>, lm-sensors@lm-sensors.org
-Subject: Re: [PATCH] hwmon: (ads7871) Fix ads7871_probe error path
-Message-ID: <20100817130747.3ee0efb9@hyperion.delvare>
-In-Reply-To: <1281922277.26991.3.camel@mola>
-References: <1281922277.26991.3.camel@mola>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Aug 2010 07:08:47 -0400
+Date: Tue, 17 Aug 2010 13:08:41 +0200 (CEST)
+From: Thomas Habets <thomas@habets.pp.se>
+X-X-Sender: thompa@red.crap.retrofitta.se
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Thomas Habets <thomas@habets.pp.se>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del command
+ to reset
+In-Reply-To: <1282024802.2487.687.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se>
+References: <alpine.DEB.1.10.1008131952470.19570@red.crap.retrofitta.se>  <1281953960.2524.23.camel@edumazet-laptop>  <alpine.DEB.1.10.1008161224510.13728@red.crap.retrofitta.se>  <alpine.DEB.1.10.1008170719180.21857@red.crap.retrofitta.se>
+ <1282024802.2487.687.camel@edumazet-laptop>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
 
-On Mon, 16 Aug 2010 09:31:17 +0800, Axel Lin wrote:
-> We need to call hwmon_device_unregister() if an error is detected after
-> sucessfully register hwmon device.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/hwmon/ads7871.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
-> index b300a20..303db92 100644
-> --- a/drivers/hwmon/ads7871.c
-> +++ b/drivers/hwmon/ads7871.c
-> @@ -201,11 +201,13 @@ static int __devinit ads7871_probe(struct spi_device *spi)
->  	we need to make sure we really have a chip*/
->  	if (val != ret) {
->  		err = -ENODEV;
-> -		goto error_remove;
-> +		goto error_unregister;
->  	}
->  
->  	return 0;
->  
-> +error_unregister:
-> +	hwmon_device_unregister(pdata->hwmon_dev);
->  error_remove:
->  	sysfs_remove_group(&spi->dev.kobj, &ads7871_group);
->  error_free:
+Aha! New development:
 
-The bug is real, but I don't think the fix is correct. You should never
-have to unregister the hwmon device in the error path, because you
-should ensure the hardware is there and working _before_ you register
-the hwmon device.
+The Cisco router can't discover the address of the Linux box because Linux 
+doesn't seem to be listening to ff02::1 (all-nodes).
 
-User-space could watch for hwmon devices being added or removed, and
-you don't want to trigger such events for a device which isn't going to
-work.
+-----------
+cisco#ping ff02::1
+Output Interface: GigabitEthernet1/2
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to FF02::1, timeout is 2 seconds:
+Packet sent with a source address of 
+FE80::222:55FF:FE17:4B80%GigabitEthernet1/2
 
-So I would suggest reworking the order in which things are done,
-leaving hwmon_device_register() at the end of the function. This won't
-only fix the error path, this will also close a race window, as for the
-moment, the device is exposed to user-space _before_ it it properly
-initialized, which is wrong.
+Request 0 timed out
+Request 1 timed out
+Request 2 timed out
+Request 3 timed out
+Request 4 timed out
+Success rate is 0 percent (0/5)
+0 multicast replies and 0 errors.
+------------
 
-Please send an updated patch and I'll be happy to apply it.
+If i set promisc mode on the interface (tcpdump without -p or "ip link set 
+promisc on eth0") it starts working (both normal ping and the above ping 
+from the Cisco to ff02::1). It continues working until I guess the 
+neighbor table on the cisco times out (leaving it overnight seems to 
+be enough idle time) or I manually do a "clear ipv6 neig".
 
--- 
-Jean Delvare
+So great news! I can reproduce it at will with no waiting time! Right 
+after rebooting the Linux box I run "clear ipv6 neighbors" and Linux can 
+no longer ping the router. Tested reproducing it immediately after reboot.
+
+The Linux box itself can ping ff02::1%eth0 with no problem, and gets 
+replies from the fe80:: link-local of itself and the Cisco router.
+
+So could this be that for some reason the NIC isn't listening 
+multicast MAC address 33:33:ff:5c:00:02 ?
+
+Is there a way to see the list of addresses that get past the NIC? Or can 
+this perhaps be filtered after the NIC, but before tcpdump -p?
+
+Since this now looks like a NIC thing, here's some info about eth0:
+
+$ dmesg | grep eth0
+[...]
+tg3 0000:03:04.0: eth0: Tigon3 [partno(N/A) rev 9003] (PCIX:133MHz:64-bit) 
+MAC address 00:24:81:a3:44:24
+tg3 0000:03:04.0: eth0: attached PHY is 5714 (10/100/1000Base-T Ethernet) 
+(WireSpeed[1])
+tg3 0000:03:04.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[1] TSOcap[1]
+tg3 0000:03:04.0: eth0: dma_rwctrl[76148000] dma_mask[40-bit]
+[...]
+
+$ sudo lspci -v -s 03:04.0
+03:04.0 Ethernet controller: Broadcom Corporation NetXtreme BCM5715 
+Gigabit Ethernet (rev a3)
+Subsystem: Hewlett-Packard Company NC326i PCIe Dual Port Gigabit Server 
+Adapter
+Flags: bus master, 66MHz, medium devsel, latency 64, IRQ 47
+Memory at fdff0000 (64-bit, non-prefetchable) [size=64K]
+Memory at fdfe0000 (64-bit, non-prefetchable) [size=64K]
+Expansion ROM at <ignored> [disabled]
+Capabilities: [40] PCI-X non-bridge device
+Capabilities: [48] Power Management version 2
+Capabilities: [50] Vital Product Data <?>
+Capabilities: [58] Message Signalled Interrupts: Mask- 64bit+ Queue=0/3 
+Enable+
+Kernel driver in use: tg3
+Kernel modules: tg3
+
+$ sudo ifconfig eth0
+eth0      Link encap:Ethernet  HWaddr 00:24:81:a3:44:24
+           inet addr:x.x.x.x  Bcast:x.x.x.x 
+Mask:255.255.255.252
+           inet6 addr: 2a00:800:752:1::5c:2/112 Scope:Global
+           inet6 addr: fe80::224:81ff:fea3:4424/64 Scope:Link
+           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+           RX packets:928 errors:0 dropped:0 overruns:0 frame:0
+           TX packets:834 errors:0 dropped:0 overruns:0 carrier:0
+           collisions:0 txqueuelen:1000
+           RX bytes:142281 (138.9 KiB)  TX bytes:154616 (150.9 KiB)
+           Interrupt:16
+
+I have doublechecked iptables, ip6tables and arptables, and they are 
+either not compiled in the kernel or they are empty ACCEPT lists.
+
+I have answered your questions below even if they may no longer be 
+applicable.
+
+
+On Tue, 17 Aug 2010, Eric Dumazet wrote:
+>> $ ip -6 ne sh
+>> 2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router STALE
+>>
+>> [try ping6 again, no reply]
+>>
+>> $ ip -6 ne sh
+>> 2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router DELAY
+>>
+>> [try ping6 again, no reply]
+>>
+>> $ ip -6 ne sh
+>> 2a00:800:752:1::5c:1 dev eth0 lladdr 00:22:55:17:4b:80 router REACHABLE
+>>
+> This seems a bit different than previous mail. Apparently discovery now
+> works ?
+
+I didn't post the "ip -6 ne sh" immediately after ping attempt last time. 
+I'm not sure this changed since last time.
+
+But the tcpdump output from last time seems to indicate that ND did work 
+then, at least in one direction, even if solicitation came from link-local 
+address and not the global address. The solicitation was answered, after 
+all (as seen in the tcpdump in in the original mail).
+
+> Could you have a tcpdump on both sides ?
+
+Not easily. The other end is a Cisco and a bit inconvenient to get to. I'm 
+going there tomorrow night, so I can hook up a cable and do a monitor 
+port then if needed.
+
+---------
+typedef struct me_s {
+   char name[]      = { "Thomas Habets" };
+   char email[]     = { "thomas@habets.pp.se" };
+   char kernel[]    = { "Linux" };
+   char *pgpKey[]   = { "http://www.habets.pp.se/pubkey.txt" };
+   char pgp[] = { "A8A3 D1DD 4AE0 8467 7FDE  0945 286A E90A AD48 E854" };
+   char coolcmd[]   = { "echo '. ./_&. ./_'>_;. ./_" };
+} me_t;
