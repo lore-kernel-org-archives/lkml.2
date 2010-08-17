@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab0HQWby (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 18:31:54 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:55512 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751179Ab0HQWbq (ORCPT
+	id S1751659Ab0HQWk4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 18:40:56 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:49356 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750752Ab0HQWkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 18:31:46 -0400
-Date: Tue, 17 Aug 2010 18:31:45 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
-        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org
-Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
-Message-ID: <20100817223145.GC4641@Krystal>
-References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>
+	Tue, 17 Aug 2010 18:40:52 -0400
+Date: Wed, 18 Aug 2010 08:40:48 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
+Message-ID: <20100817224048.GF7362@dastard>
+References: <20100817073725.GO10429@dastard>
+ <4C6A4A58.2030904@cn.fujitsu.com>
+ <20100817115243.GE7362@dastard>
+ <1282050158.3268.1303.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C6B097E.7060505@gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:30:53 up 207 days,  1:07,  3 users,  load average: 0.08, 0.04,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1282050158.3268.1303.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jiri Slaby (jirislaby@gmail.com) wrote:
-> On 08/18/2010 12:09 AM, Mathieu Desnoyers wrote:
-> > This is with these changes applied:
+On Tue, Aug 17, 2010 at 09:02:38AM -0400, Steven Rostedt wrote:
+> On Tue, 2010-08-17 at 21:52 +1000, Dave Chinner wrote:
+> > On Tue, Aug 17, 2010 at 04:37:44PM +0800, Lai Jiangshan wrote:
+> > > On 08/17/2010 03:37 PM, Dave Chinner wrote:
+> > > > Tracing folks,
+> > > > 
+> > > > I've got a machine stuck with a cpu spinning in a tight loop (the
+> > > > new writeback/sync livelock avoidance code is, well, livelocking),
+> > > > and I was trying to find out what triggered by using the writeback
+> > > > trace events. Unfortunately, I can't dump the trace events because
+> > > > it gets stuck here:
+> > > 
+> > > > 
+> > > > Given that the trace events are there mainly for debugging, this
+> > > > seems like a bit of an oversight - hanging a CPU in a tight loop is
+> > > > not an uncommon event during code development....
+> > > > 
+> > > 
+> > > You can try 'cat trace_pipe', if I did not miss you meaning.
+> > 
+> > I'll try it, but I'm really after the static event list which is why
+> > I'm using the trace file rather than trace_pipe. I want the history,
+> > not new events as they happen. 
 > 
-> Hi, these are very wrong. Please use ones from:
-> http://lkml.org/lkml/2010/8/12/98
+> When the systems locks up, I assume you want to see why? The trace_pipe
+> should show that without locking the system.
 
-Yep, my system boot fine now.
+Exactly.
 
-Any plans to fast-track these fixes to mainline ?
+> You could also try downloading trace-cmd and running the tracer with
+> that. That will save all traces to a file while running the trace.
 
-Thanks,
+I don't have tens of GB available to store all the traces that an
+xfstests test run generates. In general, I don't need the traces,
+either, and when  I do the problem is usually in the current ring
+buffer, which is why I typically dump the events after the fact.
 
-Mathieu
+If the trace file cannot be made to handle this type of use
+robustly, then perhaps it should be removed...
 
-> 
-> (there are three of them)
-> 
-> > --- linux.trees.git.orig/drivers/md/raid1.c	2010-08-17 17:40:52.000000000 -0400
-> > +++ linux.trees.git/drivers/md/raid1.c	2010-08-17 17:42:59.000000000 -0400
-> > @@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev,
-> >  	struct bio_list bl;
-> >  	struct page **behind_pages = NULL;
-> >  	const int rw = bio_data_dir(bio);
-> > -	const bool do_sync = (bio->bi_rw & REQ_SYNC);
-> > +	const bool do_sync = (bio->bi_rw & REQ_SYNC) != 0;
-> >  	bool do_barriers;
-> >  	mdk_rdev_t *blocked_rdev;
-> >  
-> ...
-> 
-> regards,
-> -- 
-> js
+Cheers,
 
+Dave.
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Dave Chinner
+david@fromorbit.com
