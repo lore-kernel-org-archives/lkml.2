@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754477Ab0HQGQF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 02:16:05 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64814 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0HQGQD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 02:16:03 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18kd8VapMGQR2ceV4Fd61I2
-Date: Tue, 17 Aug 2010 09:15:59 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jarkko Nikula <jhnikula@gmail.com>,
-        linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the sound-asoc tree with the omap
- tree
-Message-ID: <20100817061558.GD12184@atomide.com>
-References: <20100817122145.f399e543.sfr@canb.auug.org.au>
+	id S1754205Ab0HQGZm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 02:25:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45391 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751637Ab0HQGZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 02:25:41 -0400
+Message-ID: <4C6A2ABD.1090002@suse.cz>
+Date: Tue, 17 Aug 2010 08:22:53 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100817122145.f399e543.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>,
+        Linux is full of bugs <linux-kernel@vger.kernel.org>,
+        Nir Tzachar <nir.tzachar@gmail.com>
+Subject: Re: BUG: nconfig doesn't preserve case in its menu display
+References: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com> <4C69F7B9.2000103@cn.fujitsu.com>
+In-Reply-To: <4C69F7B9.2000103@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [100817 05:14]:
-> Hi all,
+On 17.8.2010 04:45, Li Zefan wrote:
+> 于 2010年08月17日 05:04, Ævar Arnfjörð Bjarmason 写道:
+>> When I do "make nconfig" and go to "General Setup" my "Local version -
+>> append to kernel release" entry appears as:
+>>
+>>     (-avar-akbar) Local version - append to kernel release
+>>
+>> When I use "make menuconfig" it's:
+>>
+>>     (-Avar-Akbar) Local version - append to kernel release
+>>
+>> And my .config agrees:
+>>
+>>     $ ack -n1 CONFIG_LOCALVERSION .config
+>>     CONFIG_LOCALVERSION="-Avar-Akbar"
+>>
+>> But when I edit the version string in both menuconfig and nconfig it
+>> retains the correct casing.
+>>
+>> I briefly searched through the nconfig code, but couldn't find
+>> anything pertinent to the localversion, so this is probably a more
+>> general issue.
 > 
-> Today's linux-next merge of the sound-asoc tree got a conflict in
-> arch/arm/mach-omap2/board-n8x0.c between commits
-> 1c37553eb1778802f0e7b6730df36542752e801e ("omap: n8x0: Cleanup i2c1 and
-> menelaus registration") and 69be0f6f4b8e3be992ab6a333a3a82e043784c52
-> ("omap: n8x0: Register i2c2 and add board info with tlv320aic3xfor N810")
-> from the omap tree and commit f0fba2ad1b6b53d5360125c41953b7afcd6deff0
-> ("ASoC: multi-component - ASoC Multi-Component Support") from the
-> sound-asoc tree.
-> 
-> I couldn't figure this out, so I effectively reverted the part of the
-> latter commit affecting that file.  Is there no way that the latter
-> commit can be broken up into smaller self contained pieces?
+> The bug is in make_hot(). Here is the fix:
 
-Let's let Jarkko and Liam to queue these along with the other
-ASoC patches, I'll drop them from omap for-next.
+Nir removed the hotkeys feature in completely, can you try if the
+problem persists in the for-next branch of
+git://git.kernel.org/pub/scm/linux/kernel/git/mmarek/kbuild-2.6.git ?
+The commit is a72f3e2.
 
-Jarkko, can you please rebase them?
-
-Regards,
-
-Tony
+Michal
