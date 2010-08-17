@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab0HQNCk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:02:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33164 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752411Ab0HQNCk (ORCPT
+	id S1754605Ab0HQNLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:11:25 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:60002 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751985Ab0HQNLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:02:40 -0400
-X-Authority-Analysis: v=1.1 cv=nbWoJD01ruQLYOYE44JZbYtzz81AmFDL3LnuPvZDHs8= c=1 sm=0 a=ToTR1L1PYWcA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=llhKIf-NW9iPoSPSSYkA:9 a=qI9Aod0nABEAgdZeD4BOvWhGycQA:4 a=PUjeQqilurYA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100817115243.GE7362@dastard>
-References: <20100817073725.GO10429@dastard>
-	 <4C6A4A58.2030904@cn.fujitsu.com>  <20100817115243.GE7362@dastard>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 17 Aug 2010 09:02:38 -0400
-Message-ID: <1282050158.3268.1303.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Aug 2010 09:11:24 -0400
+Message-ID: <4C6A8A73.1070003@example.com>
+Date: Tue, 17 Aug 2010 15:11:15 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+MIME-Version: 1.0
+To: piotr@hosowicz.com
+CC: Arnd Bergmann <arnd@arndb.de>, Sam Ravnborg <sam@ravnborg.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: ioctl definition - has it changed recently?
+References: <4C67023D.6050603@example.com> <201008160858.42947.arnd@arndb.de> <4C68E4A5.3050800@example.com> <201008160917.23260.arnd@arndb.de> <4C68EFE8.20202@example.com>
+In-Reply-To: <4C68EFE8.20202@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 9976880551610052978
+X-Ovh-Remote: 83.24.75.141 (dmt141.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 21:52 +1000, Dave Chinner wrote:
-> On Tue, Aug 17, 2010 at 04:37:44PM +0800, Lai Jiangshan wrote:
-> > On 08/17/2010 03:37 PM, Dave Chinner wrote:
-> > > Tracing folks,
-> > > 
-> > > I've got a machine stuck with a cpu spinning in a tight loop (the
-> > > new writeback/sync livelock avoidance code is, well, livelocking),
-> > > and I was trying to find out what triggered by using the writeback
-> > > trace events. Unfortunately, I can't dump the trace events because
-> > > it gets stuck here:
-> > 
-> > > 
-> > > Given that the trace events are there mainly for debugging, this
-> > > seems like a bit of an oversight - hanging a CPU in a tight loop is
-> > > not an uncommon event during code development....
-> > > 
-> > 
-> > You can try 'cat trace_pipe', if I did not miss you meaning.
-> 
-> I'll try it, but I'm really after the static event list which is why
-> I'm using the trace file rather than trace_pipe. I want the history,
-> not new events as they happen. 
+On 16.08.2010 09:59, Piotr Hosowicz wrote:
+> On 16.08.2010 09:17, Arnd Bergmann wrote:
+>> On Monday 16 August 2010 09:11:33 Piotr Hosowicz wrote:
+>>>> and then make it use the unlocked_ioctl operation.
+>>>
+>>> This I do not know. Can You help me?
+>>>
+>>
+>> Just take a look at all the other patches that went into the
+>> kernel to do this for other drivers.
 
-When the systems locks up, I assume you want to see why? The trace_pipe
-should show that without locking the system.
+I do not know how to find them. :-(
 
-You could also try downloading trace-cmd and running the tracer with
-that. That will save all traces to a file while running the trace.
+ > You only really
+>> need to change the line with .ioctl=... to .unlocked_ioctl=
 
--- Steve
+Ok, this is simple.
 
+>> and change the prototype of the referenced function to
+>>
+>> static long foo_ioctl(struct file *file, unsigned int cmd, unsigned
+>> long arg)
+>
+> int nv_kern_ioctl(struct inode *, struct file *, unsigned int, unsigned
+> long);
+>
+> It seems different. How to change it? Now it works, I built it without
+> your remarks, exactly how I described on my blog:
+>
+> http://phosowicz.jogger.pl/2010/08/15/nvidia-graphics-in-fresh-kernels/
 
+Ok, as I wrote the prototypes differ. What should I do with the inode 
+parameter?
+
+Regards,
+
+Piotr Hosowicz
+
+-- 
+- Za moich czasów to w sklepach by³ tylko ocet i denaturat!
+- Tato, przestañ, ¿e w ca³ym Tesco by³ tylko ocet i denaturat!
+NP:  -
+NB: 2.6.36-rc1
