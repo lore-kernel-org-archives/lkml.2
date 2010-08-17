@@ -1,80 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756924Ab0HQImT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:42:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35069 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab0HQImR (ORCPT
+	id S1756945Ab0HQInD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:43:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47866 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752583Ab0HQInB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:42:17 -0400
-From: Michal Simek <monstr@monstr.eu>
-To: gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH] serial: Add CONSOLE_POLL support for uartlite
-Date: Tue, 17 Aug 2010 10:42:05 +0200
-Message-Id: <1282034525-19207-2-git-send-email-monstr@monstr.eu>
-X-Mailer: git-send-email 1.5.5.1
-In-Reply-To: <1282034525-19207-1-git-send-email-monstr@monstr.eu>
-References: <1282034525-19207-1-git-send-email-monstr@monstr.eu>
+	Tue, 17 Aug 2010 04:43:01 -0400
+Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and
+ the implementation.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Salman Qazi <sqazi@google.com>
+Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, adurbin@google.com,
+        Nick Piggin <npiggin@gmail.com>
+In-Reply-To: <AANLkTimk_16nz2BWB42yHAAseaEJP-DBdondBO5oznrQ@mail.gmail.com>
+References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
+	 <1281987236.1926.1895.camel@laptop>
+	 <AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
+	 <1281992801.1926.2019.camel@laptop>
+	 <AANLkTikDHG7Xo2hrrwxp1DYgGNbV6BXipY+p_Uo50498@mail.gmail.com>
+	 <AANLkTimk_16nz2BWB42yHAAseaEJP-DBdondBO5oznrQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 17 Aug 2010 10:42:51 +0200
+Message-ID: <1282034571.1926.2143.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONSOLE_POLL support for uartlite enables
-KGDB debugging over serial line.
+On Mon, 2010-08-16 at 21:45 -0700, Salman Qazi wrote:
+> But considering that the kernel locks up, and we are still talking
+> about < 5MB after a kernel compile, should we really be all that
+> concerned?  If so, what are the alternatives that should be considered
+> for fixing this lock up? 
 
-Signed-off-by: Michal Simek <monstr@monstr.eu>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- drivers/serial/uartlite.c |   26 +++++++++++++++++++++++++-
- 1 files changed, 25 insertions(+), 1 deletions(-)
+No bright ideas atm, but yeah, that indirect pointer vs rcu slot lookup
+is funky. Lets go with your patch for now.
 
-diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
-index 9b03d7b..c0fae0d 100644
---- a/drivers/serial/uartlite.c
-+++ b/drivers/serial/uartlite.c
-@@ -322,6 +322,26 @@ static int ulite_verify_port(struct uart_port *port, struct serial_struct *ser)
- 	return -EINVAL;
- }
- 
-+#ifdef CONFIG_CONSOLE_POLL
-+static int ulite_get_poll_char(struct uart_port *port)
-+{
-+	while (!(ioread32be(port->membase + ULITE_STATUS)
-+						& ULITE_STATUS_RXVALID))
-+		return NO_POLL_CHAR;
-+
-+	return ioread32be(port->membase + ULITE_RX);
-+}
-+
-+static void ulite_put_poll_char(struct uart_port *port, unsigned char ch)
-+{
-+	while (ioread32be(port->membase + ULITE_STATUS) & ULITE_STATUS_TXFULL)
-+		cpu_relax();
-+
-+	/* write char to device */
-+	iowrite32be(ch, port->membase + ULITE_TX);
-+}
-+#endif
-+
- static struct uart_ops ulite_ops = {
- 	.tx_empty	= ulite_tx_empty,
- 	.set_mctrl	= ulite_set_mctrl,
-@@ -338,7 +358,11 @@ static struct uart_ops ulite_ops = {
- 	.release_port	= ulite_release_port,
- 	.request_port	= ulite_request_port,
- 	.config_port	= ulite_config_port,
--	.verify_port	= ulite_verify_port
-+	.verify_port	= ulite_verify_port,
-+#ifdef CONFIG_CONSOLE_POLL
-+	.poll_get_char	= ulite_get_poll_char,
-+	.poll_put_char	= ulite_put_poll_char,
-+#endif
- };
- 
- /* ---------------------------------------------------------------------
--- 
-1.5.5.6
-
+Maybe Nick has a bright idea?
