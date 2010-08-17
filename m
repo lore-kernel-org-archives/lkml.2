@@ -1,87 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab0HQVIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 17:08:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728Ab0HQVIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 17:08:47 -0400
-Date: Tue, 17 Aug 2010 17:08:32 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        tytso@mit.edu, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 23/39] fallthru: ext2 fallthru support
-Message-ID: <20100817210832.GG5556@shell>
-References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-24-git-send-email-vaurora@redhat.com> <E1Ojufy-0004Df-PA@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1Ojufy-0004Df-PA@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+	id S1750962Ab0HQVOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 17:14:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51850 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750705Ab0HQVOE convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 17:14:04 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinO5yip7agVO3Lq3YLjDYmkB9MP14xjt3TusMfW@mail.gmail.com>
+References: <20100816.211218.189709876.davem@davemloft.net>
+ <AANLkTikDXoRMRL0y_Y_7qVS=9LOw_yLS9MuUgq2dTCZf@mail.gmail.com>
+ <AANLkTi=ZdrtWSYE0BEXJ-YDoxjta3h7RMR7Y8Z6Hu-Hc@mail.gmail.com> <AANLkTinO5yip7agVO3Lq3YLjDYmkB9MP14xjt3TusMfW@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 17 Aug 2010 14:08:33 -0700
+Message-ID: <AANLkTik9qUf_F0NDoW2SBjWGHk2=ZdvkLrCORu3gGa2o@mail.gmail.com>
+Subject: Re: tasks getting stuck on mmap_sem?
+To: Tony Luck <tony.luck@intel.com>
+Cc: David Miller <davem@davemloft.net>, Michel Lespinasse <walken@google.com>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 03:52:02PM +0200, Miklos Szeredi wrote:
-> On Sun,  8 Aug 2010, Valerie Aurora wrote:
-> > Add support for fallthru directory entries to ext2.
-> 
-> This still doesn't work correctly, only now after unmounting/mounting
-> the top layer the directory appears empty:
+On Tue, Aug 17, 2010 at 1:46 PM, Tony Luck <tony.luck@intel.com> wrote:
+>
+> Setting up for "git pull" would have been messy - but "git grep" is
+> multi-threaded in newer versions of git. So I've set a loop to keep
+> running "git grep" over and over.  Load average is above 7, so
+> there must be some threading going on, even though I only see
+> one "git" process in "top(1)".  Seems to be running fine so far.
 
-Thanks, I will look into this.
+I'm not sure how page-fault intensive that 'git grep' thing is - I
+think it does mainly open/read/close on the files and probably doesn't
+take that many faults once malloc() has created the main heap. In
+contrast, the delta compute code (that david hit) is probably going to
+do a lot more page faults due to being way more data-intensive (many
+more mmap/munmap calls - it's how git tends to like to map git
+objects).
 
--VAL
+So a more fault-intensive - and still threaded and all local - git
+load is likely to do something like
 
-> uml:~# mount -oloop -r ext3.img /mnt/img/
-> uml:~# losetup /dev/loop2  ovl.img  
-> uml:~# /host/store/git/e2fsprogs/misc/mke2fs -O whiteout,fallthru /dev/loop2
-> mke2fs 1.41.12 (17-May-2010)
-> Filesystem label=
-> OS type: Linux
-> Block size=1024 (log=0)
-> Fragment size=1024 (log=0)
-> Stride=0 blocks, Stripe width=0 blocks
-> 1280 inodes, 10240 blocks
-> 512 blocks (5.00%) reserved for the super user
-> First data block=1
-> Maximum filesystem blocks=10485760
-> 2 block groups
-> 8192 blocks per group, 8192 fragments per group
-> 640 inodes per group
-> Superblock backups stored on blocks: 
->         8193
-> 
-> Allocating group tables: done                            
-> Writing inode tables: done                            
-> Writing superblocks and filesystem accounting information: done
-> 
-> This filesystem will be automatically checked every 24 mounts or
-> 180 days, whichever comes first.  Use tune2fs -c or -i to override.
-> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> uml:~# "ls" /mnt/img
-> lost+found  union
-> uml:~# "ls" /mnt/img/union
-> 1  2  3
-> uml:~# umount /mnt/img
-> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
-> uml:~# ls -l /mnt/img/
-> total 13
-> drwx------ 2 root root 12288 Aug 13 13:42 lost+found
-> drwxr-xr-x 2 root root  1024 Aug 13 13:42 union
-> uml:~# ls -la /mnt/img/union/
-> total 2
-> drwxr-xr-x 2 root root 1024 Aug 13 13:42 .
-> drwxr-xr-x 4 root root 1024 Aug 13 13:42 ..
-> uml:~# grep /mnt/img /proc/self/mountinfo 
-> 21 12 7:0 / /mnt/img ro,relatime - ext3 /dev/loop0 ro,errors=continue,barrier=0,data=writeback
-> 22 21 7:2 / /mnt/img rw,relatime,union - ext2 /dev/loop2 rw,errors=continue
-> 
-> Thanks,
-> Miklos
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+   git repack -adf
+
+and do it on something smaller than the whole kernel (git itself is
+probably a good test-case, and probably isn't that far off from a
+medium-sized kernel "pull" request).
+
+                 Linus
