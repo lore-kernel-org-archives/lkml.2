@@ -1,67 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753908Ab0HQIJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:09:17 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:3988 "EHLO
-	VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751333Ab0HQIJO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:09:14 -0400
-X-SpamScore: -17
-X-BigFish: VPS-17(zz9370J98dNzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L7ADTR-01-6XX-02
-X-M-MSG: 
-From: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
-Organization: AMD OSRC
-To: Tejun Heo <htejun@gmail.com>
-Subject: Re: [PATCH] SATA / AHCI: Do not play with the link PM during suspend to RAM
-Date: Tue, 17 Aug 2010 09:51:25 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.31-22-generic; KDE/4.4.2; x86_64; ; )
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-pm@lists.osdl.org" <linux-pm@lists.osdl.org>,
-        Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <4C52DF50.80009@kernel.org> <4C5AE1E2.6070601@gmail.com>
-In-Reply-To: <4C5AE1E2.6070601@gmail.com>
+	id S1754563Ab0HQIKK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:10:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56218 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751333Ab0HQIKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 04:10:08 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree - try 37!
+Date: Tue, 17 Aug 2010 10:09:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <201008162232.36873.agruen@suse.de> <1282016387.21419.113.camel@acb20005.ipt.aol.com>
+In-Reply-To: <1282016387.21419.113.camel@acb20005.ipt.aol.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-2"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <201008170951.26073.stephan.diestelhorst@amd.com>
-X-Reverse-DNS: unknown
+Message-Id: <201008171009.51737.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+On Tuesday 17 August 2010 05:39:47 Eric Paris wrote:
+> On Mon, 2010-08-16 at 22:32 +0200, Andreas Gruenbacher wrote:
+> > Q: What happens when a process watching for FAN_OPEN_PERM or
+> > FAN_ACCESS_PERM events exits or dies while events are in flight?  I
+> > can't see anything in the code that would wake sleeping processes up
+> > when the fsnotify_group of the listener is torn down.
+> 
+> We can get stuck.  There was code which cleaned that up, but it got
+> accidentally removed long ago when, upon review on list, I was told to
+> remove all timeout code.  It's easy enough to fix up.  I'll post a patch
+> this week.
 
-On Thursday 05 August 2010 18:08:02 Tejun Heo wrote:
-> Can you please try the following patch and see whether the problem
-> goes away?
+This needs to be fixed then.  Not such a big deal, but it shows that the tree 
+wasn't ready for being merged yet and needs further review.
 
-I've finally managed to get this to compile and test. (Hit a bug with
-Debian's make-kpkg and other nuisances...)
+> > Q: What prevents the system from going out of memory when a listener
+> > decides to stop reading events or simply can't keep up?  There doesn't
+> > seem to be a limit on the queue depth.  Listeners currently need
+> > CAP_SYS_ADMIN, but somehow limiting the queue depth and throttling when
+> > things start to go bad still sounds like a reasonable thing to do,
+> > right?
+> 
+> It's an interesting question and obviously one that I've thought about.
+> You remember when we talked previously I said the hardest part left was
+> allowing non-root users to use the interface.  It gets especially
+> difficult when thinking about perm-events.  I was specifically told not
+> to timeout or drop those.  But when dealing with non-root users using
+> perm events?   As for pure notification we can do something like inotify
+> does quite easily.
+> 
+> I'm not certain exactly what the best semantics are for non trusted
+> users, so I didn't push any patches that way.  Suggestions welcome   :)
 
-The problem is still there. On some resumes I get the dreadful dead
-disk again:
+The system will happily go OOM for trusted users and non-perm events if the 
+listener doesn't keep up, so some throttling, dropping, or both needs to 
+happen for non-perm events.  This is the critical case.  Doing what inotify 
+does (queue an overflow event and drop further events) seems to make sense 
+here.
 
-end_request: I/O error , dev sda sector ...
-sd 0:0:0:0: [sda] Unhandled error code
-sd 0:0:0:0: [sda] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-sd 0:0:0:0: [sda] CDB: Read(10): 28 00 0e a4 77 a8 0 00 08 00
-(many of those)
+The situation with perm-events is less severe because the number of 
+outstanding perm events is bounded by the number of running processes.  This 
+may be enough of a limit.
 
-Can't access /var/log/messages right now, due to broken I/O. Will try
-to trigger it again and check for the qc timeout messages..
+I don't think we need to worry about perm-events for untrusted users.  We can 
+start supporting some kinds of non-perm-events for untrusted users later; this 
+won't change the existing interface.
 
-Stephan
-
--- 
-Stephan Diestelhorst, AMD Operating System Research Center
-stephan.diestelhorst@amd.com, Tel. +49 (0)351 448 356 719
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Thanks,
+Andreas
