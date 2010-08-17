@@ -1,122 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab0HQOiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 10:38:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61139 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752760Ab0HQOiR (ORCPT
+	id S1757518Ab0HQOjD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 10:39:03 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:42764 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751955Ab0HQOi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 10:38:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=affAzkGlWpGY67anObMmoABIYnujnly1B+t7r1voyWCuRkxeVPKPWvwO3h5wHuEA8i
-         z6/LrQD/TW+MIYe4v1ZxQDJ2VDFvgHwMV2OSYr7sFrJtDF3bWV4pXiux7EFNaf1njuW4
-         8RqCqIs3NBA5EWx+AF/BWk3V1x+XyduYo+umA=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] init: replace sys_mount() to do_mount()
-Date: Tue, 17 Aug 2010 23:38:09 +0900
-Message-Id: <1282055889-6135-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <201008171541.47078.arnd@arndb.de>
-References: <201008171541.47078.arnd@arndb.de>
+	Tue, 17 Aug 2010 10:38:57 -0400
+Date: Tue, 17 Aug 2010 16:38:51 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Input: fix faulty XXinput_* calls
+Message-ID: <20100817143851.GW10432@buzzloop.caiaq.de>
+References: <20100812162218.GA21286@core.coreip.homeip.net>
+ <AANLkTikj2kqifwYo1c47+9knVejny1bR=Oe5yOkAchCk@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikj2kqifwYo1c47+9knVejny1bR=Oe5yOkAchCk@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sys_mount() just copies all (string) arguments from user space to kernel
-and calls do_mount(). In this case we have all args in kernel already so
-there is no need to call sys_mount(). One thing we should take care is
-'data' have to be in a page unless it is NULL. Do it manually.
+On Sat, Aug 14, 2010 at 11:52:13PM +0200, Geert Uytterhoeven wrote:
+> On Thu, Aug 12, 2010 at 18:22, Dmitry Torokhov
+> <dmitry.torokhov@gmail.com> wrote:
+> > From: Daniel Mack <daniel@caiaq.de>
+> >
+> > They've been introduced by 987a6c02 ("Input: switch to input_abs_*()
+> > access functions") and they appear to be some kind of debug left-over.
+> >
+> > [Dmitry Torokhov: these are my fault - I added XX prefixes in places where
+> >  I wanted to do additional review of the code but failed to actually do
+> >  that in these particular instances.]
+> >
+> > Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> > ---
+> >
+> >  drivers/input/joystick/amijoy.c  |    2 +-
+> 
+> Thanks, amijoy.c compiles now.
+> 
+> But hil_kbd.c still doesn't compile:
+> 
+> > diff --git a/drivers/input/keyboard/hil_kbd.c b/drivers/input/keyboard/hil_kbd.c
+> > index ddd5afd..dcc86b9 100644
+> > --- a/drivers/input/keyboard/hil_kbd.c
+> > +++ b/drivers/input/keyboard/hil_kbd.c
+> > @@ -235,7 +235,7 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
+> >                        if (val < input_abs_min(dev, ABS_X + i))
+> >                                input_abs_set_min(dev, ABS_X + i, val);
+> >                        if (val > input_abs_max(dev, ABS_X + i))
+> 
+> error: implicit declaration of function ‘input_abs_max’.
+> 
+> And indeed, input_abs_max() does not exist, while hil_kbd.c has 4 callers.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Sorry about that. hil_kbd wasn't built on my system with an
+allmodconfig, as I just got to know. Below is a fix for this unfortunate
+trouble.
+
+Thanks,
+Daniel
+
+
+>From d3ff4d85516d5361aad42e9edddf9b4a99bc3daf Mon Sep 17 00:00:00 2001
+From: Daniel Mack <daniel@caiaq.de>
+Date: Tue, 17 Aug 2010 16:33:45 +0200
+Subject: [PATCH] input: fix input_abs_get_max call sites
+
+This is another search-and-replace mistake which I didn't notice as
+hil_kbd.c was not built by "make allmodconfig" on my system. Sorry
+for the trouble caused.
+
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Dmitry Torokhov <dtor@mail.ru>
 ---
+ drivers/input/keyboard/hil_kbd.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-I found 3 more calls in init/do_mounts_initrd.c and merged them. Please
-apply this instead.
-
-2010-08-17 (Tue), 15:41 +0200, Arnd Bergmann:
-> Maybe you can fix that as well in the same patch and move this safeguard
-> into the copy_mount_options() function? I guess ideally we'd even mark
-> the arguments to do_mount() as pointers to const, but that might create
-> an excessive amount of churn.
-
-Arnd, thanks for reviewing and the suggestion but I think that should be
-in a different patch (set).
-
- init/do_mounts.c        |   18 ++++++++++++++++--
- init/do_mounts_initrd.c |    6 +++---
- 2 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 02e3ca4..8eabff6 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -217,7 +217,21 @@ static void __init get_fs_names(char *page)
-
- static int __init do_mount_root(char *name, char *fs, int flags, void *data)
- {
--	int err = sys_mount(name, "/root", fs, flags, data);
-+	int err;
-+	unsigned long data_page = 0;
-+
-+	if (data) {
-+		/* data should be in a page */
-+		data_page = __get_free_page(GFP_KERNEL);
-+		if (!data_page)
-+			return -ENOMEM;
-+		strlcpy((char *) data_page, data, PAGE_SIZE);
-+	}
-+
-+	err = do_mount(name, "/root", fs, flags, (void *) data_page);
-+
-+	if (data_page)
-+		free_page(data_page);
- 	if (err)
- 		return err;
-
-@@ -417,6 +431,6 @@ void __init prepare_namespace(void)
- 	mount_root();
- out:
- 	devtmpfs_mount("dev");
--	sys_mount(".", "/", NULL, MS_MOVE, NULL);
-+	do_mount(".", "/", NULL, MS_MOVE, NULL);
- 	sys_chroot(".");
- }
-diff --git a/init/do_mounts_initrd.c b/init/do_mounts_initrd.c
-index 2b10853..8355501 100644
---- a/init/do_mounts_initrd.c
-+++ b/init/do_mounts_initrd.c
-@@ -48,7 +48,7 @@ static void __init handle_initrd(void)
- 	old_fd = sys_open("/old", 0, 0);
- 	/* move initrd over / and chdir/chroot in initrd root */
- 	sys_chdir("/root");
--	sys_mount(".", "/", NULL, MS_MOVE, NULL);
-+	do_mount(".", "/", NULL, MS_MOVE, NULL);
- 	sys_chroot(".");
-
- 	/*
-@@ -66,7 +66,7 @@ static void __init handle_initrd(void)
-
- 	/* move initrd to rootfs' /old */
- 	sys_fchdir(old_fd);
--	sys_mount("/", ".", NULL, MS_MOVE, NULL);
-+	do_mount("/", ".", NULL, MS_MOVE, NULL);
- 	/* switch root and cwd back to / of rootfs */
- 	sys_fchdir(root_fd);
- 	sys_chroot(".");
-@@ -82,7 +82,7 @@ static void __init handle_initrd(void)
- 	mount_root();
-
- 	printk(KERN_NOTICE "Trying to move old root to /initrd ... ");
--	error = sys_mount("/old", "/root/initrd", NULL, MS_MOVE, NULL);
-+	error = do_mount("/old", "/root/initrd", NULL, MS_MOVE, NULL);
- 	if (!error)
- 		printk("okay\n");
- 	else {
---
-1.7.0.4
+diff --git a/drivers/input/keyboard/hil_kbd.c b/drivers/input/keyboard/hil_kbd.c
+index dcc86b9..1ed0e97 100644
+--- a/drivers/input/keyboard/hil_kbd.c
++++ b/drivers/input/keyboard/hil_kbd.c
+@@ -234,11 +234,11 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
+ #ifdef TABLET_AUTOADJUST
+ 			if (val < input_abs_min(dev, ABS_X + i))
+ 				input_abs_set_min(dev, ABS_X + i, val);
+-			if (val > input_abs_max(dev, ABS_X + i))
++			if (val > input_abs_get_max(dev, ABS_X + i))
+ 				input_abs_set_max(dev, ABS_X + i, val);
+ #endif
+ 			if (i % 3)
+-				val = input_abs_max(dev, ABS_X + i) - val;
++				val = input_abs_get_max(dev, ABS_X + i) - val;
+ 			input_report_abs(dev, ABS_X + i, val);
+ 		} else {
+ 			val = (int) (((int8_t) lo) | ((int8_t) hi << 8));
+@@ -388,11 +388,11 @@ static void hil_dev_pointer_setup(struct hil_dev *ptr)
+ 
+ #ifdef TABLET_AUTOADJUST
+ 		for (i = 0; i < ABS_MAX; i++) {
+-			int diff = input_abs_max(input_dev, ABS_X + i) / 10;
++			int diff = input_abs_get_max(input_dev, ABS_X + i) / 10;
+ 			input_abs_set_min(input_dev, ABS_X + i,
+ 				input_abs_min(input_dev, ABS_X + i) + diff)
+ 			input_abs_set_max(input_dev, ABS_X + i,
+-				input_abs_max(input_dev, ABS_X + i) - diff)
++				input_abs_get_max(input_dev, ABS_X + i) - diff)
+ 		}
+ #endif
+ 
+-- 
+1.7.1
 
