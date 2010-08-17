@@ -1,38 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757446Ab0HQQtr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:49:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48292 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753129Ab0HQQtq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:49:46 -0400
-Message-ID: <4C6ABDA4.2030409@zytor.com>
-Date: Tue, 17 Aug 2010 09:49:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1757272Ab0HQQxA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:53:00 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:11642 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755552Ab0HQQw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:52:58 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AgUFAJdaakzCTtAn/2dsb2JhbACTJ40XccFBhTcEiWc
+Date: Tue, 17 Aug 2010 18:52:39 +0200
+From: Philippe De Muyter <phdm@macqel.be>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] m68knommu: whitespace cleanup in 68328/entry.S
+Message-ID: <20100817165239.GA16734@frolo.macqel>
 MIME-Version: 1.0
-To: akataria@vmware.com
-CC: the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch] Skip cpu_calibrate for kernel running	under	hypervisors.
-References: <1281986754.23253.32.camel@ank32.eng.vmware.com>	 <4C69D02F.6090601@zytor.com>	 <1282024311.20786.2.camel@ank32.eng.vmware.com>	 <4C6A2C98.4060605@zytor.com> <1282063710.4388.11.camel@ank32.eng.vmware.com>
-In-Reply-To: <1282063710.4388.11.camel@ank32.eng.vmware.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-09)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/17/2010 09:48 AM, Alok Kataria wrote:
->
-> I am planning to add a calibrate_apic function ptr in x86_platform_ops,
-> for getting the APIC frequency too directly from the hypervisor. If you
-> want I can add this calibrate_cpu function ptr too or is the patch below
-> okay for now ?
->
+m68knommu: whitespace cleanup in 68328/entry.S
 
-That would be good.
-
-	-hpa
+Signed-off-by: Philippe De Muyter <phdm@macqel.be>
+---
+diff --git a/arch/m68knommu/platform/68328/entry.S b/arch/m68knommu/platform/68328/entry.S
+--- a/arch/m68knommu/platform/68328/entry.S
++++ b/arch/m68knommu/platform/68328/entry.S
+@@ -43,7 +43,7 @@ badsys:
+ 	jra	ret_from_exception
+ 
+ do_trace:
+-	movel	#-ENOSYS,%sp@(PT_OFF_D0)	/* needed for strace*/
++	movel	#-ENOSYS,%sp@(PT_OFF_D0) /* needed for strace*/
+ 	subql	#4,%sp
+ 	SAVE_SWITCH_STACK
+ 	jbsr	syscall_trace
+@@ -57,7 +57,7 @@ do_trace:
+ 	lea	sys_call_table, %a0
+ 	jbsr	%a0@(%d1)
+ 
+-1:	movel	%d0,%sp@(PT_OFF_D0)		/* save the return value */
++1:	movel	%d0,%sp@(PT_OFF_D0)	/* save the return value */
+ 	subql	#4,%sp			/* dummy return address */
+ 	SAVE_SWITCH_STACK
+ 	jbsr	syscall_trace
+@@ -71,9 +71,9 @@ ENTRY(system_call)
+ 	SAVE_ALL
+ 
+ 	/* save top of frame*/
+-	pea     %sp@
+-	jbsr    set_esp0
+-	addql   #4,%sp
++	pea	%sp@
++	jbsr	set_esp0
++	addql	#4,%sp
+ 
+ 	movel	%sp@(PT_OFF_ORIG_D0),%d0
+ 
+@@ -88,10 +88,10 @@ ENTRY(system_call)
+ 	lea	sys_call_table,%a0
+ 	movel	%a0@(%d0), %a0
+ 	jbsr	%a0@
+-	movel	%d0,%sp@(PT_OFF_D0)		/* save the return value*/
++	movel	%d0,%sp@(PT_OFF_D0)	/* save the return value*/
+ 
+ ret_from_exception:
+-	btst	#5,%sp@(PT_OFF_SR)		/* check if returning to kernel*/
++	btst	#5,%sp@(PT_OFF_SR)	/* check if returning to kernel*/
+ 	jeq	Luser_return		/* if so, skip resched, signals*/
+ 
+ Lkernel_return:
