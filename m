@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab0HQNZG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:25:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39020 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752901Ab0HQNZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:25:05 -0400
-Date: Tue, 17 Aug 2010 06:07:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: meego-dev@meego.com, LKML <linux-kernel@vger.kernel.org>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>,
-        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>,
-        arjan@linux.intel.com, "Wang, Qi" <qi.wang@intel.com>
-Subject: Re: [MeeGo-Dev][PATCH] Topcliff: Update PCH_IEEE1588 driver to
- 2.6.35
-Message-ID: <20100817130740.GA24564@suse.de>
-References: <4C612AA4.5040100@dsn.okisemi.com>
- <20100810171343.GE21220@suse.de>
- <002601cb3926$edaf24d0$66f8800a@maildom.okisemi.com>
- <20100811151510.GB9180@suse.de>
- <D5AB6E638E5A3E4B8F4406B113A5A19A28EA26B2@shsmsx501.ccr.corp.intel.com>
- <20100812020027.GA14121@suse.de>
- <D5AB6E638E5A3E4B8F4406B113A5A19A28EA272F@shsmsx501.ccr.corp.intel.com>
- <001001cb3ddb$9929d9a0$66f8800a@maildom.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <001001cb3ddb$9929d9a0$66f8800a@maildom.okisemi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756943Ab0HQNZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:25:28 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38036 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0HQNZ0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 09:25:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=AHnjmuRm9AWgEr0dDGkZcUy0bvRyHyTXCP+bmQbU/XKunOV0x6giWEiGfzvU4GXDug
+         LB2pCYD2zjYz9SIWbV0gGHUT7UqM/uH/GIP/CFVtu0Qw9MpMW4ZpDDKzsNJafl00wYxH
+         TzCgiZOZlLpVChjjhYmTu6ygFpIzNwq3hDBKI=
+Subject: Re: [PATCH] init/do_mounts.c: replace sys_mount() to do_mount()
+From: Namhyung Kim <namhyung@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+In-Reply-To: <201008171515.26175.arnd@arndb.de>
+References: <1282048643-2475-1-git-send-email-namhyung@gmail.com>
+	 <201008171515.26175.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 22:25:20 +0900
+Message-ID: <1282051520.1635.7.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 04:12:45PM +0900, Masayuki Ohtake wrote:
-> > > > > On Wed, Aug 11, 2010 at 04:29:25PM +0900, Masayuki Ohtake wrote:
-> > > > > > Hi Greg,
-> > > > > >
-> > > > > > > Do they all have to be ioctls?  What exactly are they doing?
-> > > > > > I think using ioctl is common for this patch.
-> > > > >
-> > > > > "Common" is not ok, right?
-> > > > >
-> > > > > > Do you think that using ioctl is NOT appropriate for this patch?
-> > > > >
-> > > > > Yes.
-> > > > >
-> > > > > > Let me know your intension in more detail.
-> > > > >
-> > > > > Please express yours.  Why do you feel you need these to be ioctls?
-> > > > > What exactly are they doing?  Where is the documentation for them all?
-> > >
-> > > You forgot to answer this.
-> > Ohtake-san,
-> >
-> > Please answer this question asap.
+2010-08-17 (화), 15:15 +0200, Arnd Bergmann:
+> AFAICT there is no need for the copy at all here. The reason that sys_mount
+> copies to a separate page is that it gets passed an arbitrary-length user
+> input.
 > 
-> Intel Topcliff IEEE1588 device driver API is developed according to Intel
-> Tolapai 1588 device driver.
-> Both APIs are the same.
+> 	Arnd
 
-That _still_ did not answer the questions.  Please answer them.
+Right. But make sure to user options never exceed a page, do_mount() has
+following code:
 
-greg k-h
+	if (data_page)
+		((char *)data_page)[PAGE_SIZE - 1] = 0;
+
+
+-- 
+Regards,
+Namhyung Kim
+
+
