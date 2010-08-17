@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab0HQN1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:27:24 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:52287 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757058Ab0HQN1W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:27:22 -0400
-X-Authority-Analysis: v=1.1 cv=nbWoJD01ruQLYOYE44JZbYtzz81AmFDL3LnuPvZDHs8= c=1 sm=0 a=ApKsrK4jzPIA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=PrqykDpG06oujDh4OCEA:9 a=AuIVs7ItiKjp6KBH9U9FhuP_zrEA:4 a=PUjeQqilurYA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org, josh@joshtriplett.org,
-        dvhltc@us.ibm.com, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-        eric.dumazet@gmail.com
-In-Reply-To: <20100816220705.GA18650@Krystal>
-References: <20100809221447.GA24358@linux.vnet.ibm.com>
-	 <1281392111-25060-8-git-send-email-paulmck@linux.vnet.ibm.com>
-	 <20100816150737.GB8320@Krystal> <20100816183355.GH2388@linux.vnet.ibm.com>
-	 <20100816191947.GA970@Krystal> <20100816213200.GK2388@linux.vnet.ibm.com>
-	 <20100816214123.GA15663@Krystal> <20100816215555.GL2388@linux.vnet.ibm.com>
-	 <20100816220705.GA18650@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 17 Aug 2010 09:27:19 -0400
-Message-ID: <1282051639.3268.1335.camel@gandalf.stny.rr.com>
+	id S1757150Ab0HQN3m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:29:42 -0400
+Received: from sh.osrg.net ([192.16.179.4]:44032 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755536Ab0HQN3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 09:29:41 -0400
+Date: Tue, 17 Aug 2010 22:29:19 +0900 (JST)
+Message-Id: <20100817.222919.78028650.ryusuke@osrg.net>
+To: Matthew Garrett <mjg@redhat.com>, Pierre Ducroquet <pinaraf@pinaraf.info>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] 2.6.36-rc1 compile breakage in toshiba_acpi driver
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+In-Reply-To: <20100817.185725.260189930.ryusuke@osrg.net>
+References: <20100817.185725.260189930.ryusuke@osrg.net>
+X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 17 Aug 2010 22:29:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-08-16 at 18:07 -0400, Mathieu Desnoyers wrote:
+On Tue, 17 Aug 2010 18:57:25 +0900 (JST), Ryusuke Konishi wrote:
+> Hi,
+> 
+> I got the following error during compiling 2.6.36-rc1.
+> 
+> > ERROR: "led_classdev_register" [drivers/platform/x86/toshiba_acpi.ko] undefined!
+> > ERROR: "led_classdev_unregister" [drivers/platform/x86/toshiba_acpi.ko] undefined!
+> > make[1]: *** [__modpost] Error 1
+> > make: *** [modules] Error 2
+> 
+> Is anyone looking at this issue ?
 
-> > Moving this down past the check of t->rcu_read_lock_special (which is
-> > now covered by ACCESS_ONCE()) would violate the C standard, as it would
-> > be equivalent to moving a volatile up past a sequence point.
-> 
-> Hrm, I'm not quite convinced yet. I am not concerned about gcc moving
-> the volatile access prior to the sequence point (as you say, this is
-> forbidden by the C standard), but rather that:
-> 
-> --(t->rcu_read_lock_nesting)
-> 
-> could be split in two distinct operations:
-> 
-> read t->rcu_read_lock_nesting
-> decrement t->rcu_read_lock_nesting
-> 
-> Note that in order to know the result required to pass the sequence
-> point "&&" (the test), we only need to perform the read, not the
-> decrement. AFAIU, gcc would be in its rights to move the
-> t->rcu_read_lock_nesting update after the volatile access.
-> 
+This turns out to be a Kconfig dependency problem introduced by commit
+6c3f6e6c ("toshiba-acpi: Add support for Toshiba Illumination.")
 
-If we are this concerned, what about just doing:
+The following patch fixes it.
 
-	--t->rcu_read_lock_nesting;
-        if (ACCESS_ONCE(t->rcu_read_lock_nesting) == 0 &&
-             unlikely((ACCESS_ONCE(t->rcu_read_unlock_special)))
+Ryusuke Konishi
 
--- Steve
+---
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
+toshiba-acpi: fix build error due to missing Kconfig dependency
+
+The commit 6c3f6e6c ("toshiba-acpi: Add support for Toshiba
+Illumination.") introduced dependency on NEW_LEDS and LEDS_CLASS, so
+it should be added to the Kconfig file.
+
+> ERROR: "led_classdev_register" [drivers/platform/x86/toshiba_acpi.ko] undefined!
+> ERROR: "led_classdev_unregister" [drivers/platform/x86/toshiba_acpi.ko] undefined!
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: Pierre Ducroquet <pinaraf@pinaraf.info>
+Cc: platform-driver-x86@vger.kernel.org
+Cc: Matthew Garrett <mjg@redhat.com>
+---
+ drivers/platform/x86/Kconfig |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 044f430..5c3f044 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -490,6 +490,8 @@ config ACPI_TOSHIBA
+ 	depends on RFKILL || RFKILL = n
+ 	select INPUT_POLLDEV
+ 	select BACKLIGHT_CLASS_DEVICE
++	select NEW_LEDS
++	select LEDS_CLASS
+ 	---help---
+ 	  This driver adds support for access to certain system settings
+ 	  on "legacy free" Toshiba laptops.  These laptops can be recognized by
+-- 
+1.6.6.2
 
