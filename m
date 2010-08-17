@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757150Ab0HQN3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 09:29:42 -0400
-Received: from sh.osrg.net ([192.16.179.4]:44032 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755536Ab0HQN3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 09:29:41 -0400
-Date: Tue, 17 Aug 2010 22:29:19 +0900 (JST)
-Message-Id: <20100817.222919.78028650.ryusuke@osrg.net>
-To: Matthew Garrett <mjg@redhat.com>, Pierre Ducroquet <pinaraf@pinaraf.info>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 2.6.36-rc1 compile breakage in toshiba_acpi driver
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-In-Reply-To: <20100817.185725.260189930.ryusuke@osrg.net>
-References: <20100817.185725.260189930.ryusuke@osrg.net>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 17 Aug 2010 22:29:20 +0900 (JST)
+	id S1751796Ab0HQNmc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 09:42:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54997 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751105Ab0HQNmb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 09:42:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Subject: Re: [PATCH] init/do_mounts.c: replace sys_mount() to do_mount()
+Date: Tue, 17 Aug 2010 15:41:46 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+References: <1282048643-2475-1-git-send-email-namhyung@gmail.com> <201008171515.26175.arnd@arndb.de> <1282051520.1635.7.camel@leonhard>
+In-Reply-To: <1282051520.1635.7.camel@leonhard>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201008171541.47078.arnd@arndb.de>
+X-Provags-ID: V02:K0:SuUjMR+x4Dl+gDizkawrz6P+IfuSgkc23c/R0Ob5PpG
+ Qawe5AVHsPX9drJEulWbyNN0cGJO06rpzE9sNiPBDFhohiySf6
+ Pq/delZ2EL3CjQgS7ubypJYt+WMEjRBcMtVlPrBUw41R3IipF8
+ g2/Ywd8gdhIqlwa8EScFuLrokgQUTCP6o6GmuHooP+waTcmosL
+ 7ISbsDEkv+MiYXrO3vryg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010 18:57:25 +0900 (JST), Ryusuke Konishi wrote:
-> Hi,
+On Tuesday 17 August 2010, Namhyung Kim wrote:
+> 2010-08-17 (화), 15:15 +0200, Arnd Bergmann:
+> > AFAICT there is no need for the copy at all here. The reason that sys_mount
+> > copies to a separate page is that it gets passed an arbitrary-length user
+> > input.
 > 
-> I got the following error during compiling 2.6.36-rc1.
+> Right. But make sure to user options never exceed a page, do_mount() has
+> following code:
 > 
-> > ERROR: "led_classdev_register" [drivers/platform/x86/toshiba_acpi.ko] undefined!
-> > ERROR: "led_classdev_unregister" [drivers/platform/x86/toshiba_acpi.ko] undefined!
-> > make[1]: *** [__modpost] Error 1
-> > make: *** [modules] Error 2
-> 
-> Is anyone looking at this issue ?
+>         if (data_page)
+>                 ((char *)data_page)[PAGE_SIZE - 1] = 0;
 
-This turns out to be a Kconfig dependency problem introduced by commit
-6c3f6e6c ("toshiba-acpi: Add support for Toshiba Illumination.")
+Hmm, how very unexpected...
 
-The following patch fixes it.
+Maybe you can fix that as well in the same patch and move this safeguard
+into the copy_mount_options() function? I guess ideally we'd even mark
+the arguments to do_mount() as pointers to const, but that might create
+an excessive amount of churn.
 
-Ryusuke Konishi
-
----
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-
-toshiba-acpi: fix build error due to missing Kconfig dependency
-
-The commit 6c3f6e6c ("toshiba-acpi: Add support for Toshiba
-Illumination.") introduced dependency on NEW_LEDS and LEDS_CLASS, so
-it should be added to the Kconfig file.
-
-> ERROR: "led_classdev_register" [drivers/platform/x86/toshiba_acpi.ko] undefined!
-> ERROR: "led_classdev_unregister" [drivers/platform/x86/toshiba_acpi.ko] undefined!
-> make[1]: *** [__modpost] Error 1
-> make: *** [modules] Error 2
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Pierre Ducroquet <pinaraf@pinaraf.info>
-Cc: platform-driver-x86@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>
----
- drivers/platform/x86/Kconfig |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 044f430..5c3f044 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -490,6 +490,8 @@ config ACPI_TOSHIBA
- 	depends on RFKILL || RFKILL = n
- 	select INPUT_POLLDEV
- 	select BACKLIGHT_CLASS_DEVICE
-+	select NEW_LEDS
-+	select LEDS_CLASS
- 	---help---
- 	  This driver adds support for access to certain system settings
- 	  on "legacy free" Toshiba laptops.  These laptops can be recognized by
--- 
-1.6.6.2
-
+	Arnd
