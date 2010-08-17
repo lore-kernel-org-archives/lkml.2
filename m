@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab0HQIxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 04:53:09 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49474 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756871Ab0HQIxE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 04:53:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ftcs0d3EJA/CiO0hELDJYO+cpEERsZDkNSf0jehRQLmpXkBpU2LpB6Y+SHul2/Pw9P
-         hihtBVcQhCQTQcNsCYKStLUki+iqzg6r/X51bJh5WdqQ2BZ8vf5+w8RBjv/Day3mUov0
-         nXwknmIw10i7ZvXmB0Mu89cXWUtRvMYujPdrw=
-Date: Tue, 17 Aug 2010 10:53:24 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100817085324.GB3330@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
- <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756853Ab0HQIyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 04:54:01 -0400
+Received: from mga11.intel.com ([192.55.52.93]:54923 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751730Ab0HQIx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 04:53:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,381,1278313200"; 
+   d="scan'208";a="828875708"
+Date: Tue, 17 Aug 2010 09:16:22 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Yong Wang <yong.y.wang@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
+        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>,
+        "Khor, Andrew Chih Howe" <andrew.chih.howe.khor@intel.com>
+Subject: Re: One question about 8250 UART driver
+Message-ID: <20100817091622.5aa3dcf2@linux.intel.com>
+In-Reply-To: <20100817013734.GA28407@ywang-moblin2.bj.intel.com>
+References: <20100817013734.GA28407@ywang-moblin2.bj.intel.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 12:24:48PM -0700, john stultz wrote:
-> 3) I'm not sure I see the benefit of being able to have multiple
-> frequency corrected time domains.  In other words, what benefit would
-> you get from adjusting a PTP clock's frequency instead of just
-> adjusting the system's time freq? Having the PTP time as a reference
-> to correct the system time seems reasonable, but I'm not sure I see
-> why userland would want to adjust the PTP clock's freq.
+On Tue, 17 Aug 2010 09:37:34 +0800
+Yong Wang <yong.y.wang@linux.intel.com> wrote:
 
-For PTP enabled hardware, the timestamp on the network packet comes
-from from the PTP clock, not from the system time.
+> Hi all,
+> 
+> We have a PCI based UART controller that is compatible with the
+> existing 8250 serial driver in most aspects. However, one exception
+> is that our UART controller can take advantage of the onboard DMA
+> contoller to achieve higher throughput. Could you please share your
+> insights about what is the proper way to add such DMA support into
+> existing 8250 driver?
 
-Of course, you can always just leave the PTP clock alone, figure the
-needed correction, and apply it whenever needed. But this has some
-disadvantages. First of all, the (one and only) open source PTPd does
-not do it that way. Also, only one program (the PTPd or equivalent)
-will know the correct time. Other programs will not be able to ask the
-operating system for time services. Instead, they would need to use
-IPC to the PTPd.
+I'd say the same as I said to the other folks who asked this - create a
+new driver. All the DMA based 8250 devices have differing DMA engines
+and it'll become unmanagable in the existing driver.
 
-The PTP protocol (and some PTP hardware) offers a "one step" method,
-where the timestamps are inserted by the hardware on the fly. Here you
-really do need the PTP clock to be correctly adjusted.
+Once we can see which bits of the existing code are useful for the DMA
+8250-style devices we can then create an 8250-lib.c which contains the
+bits that are useful to 8250 and to non standard 8250-like devices.
 
-All of the PTP hardware that I am familiar with provides a clock
-adjustment method, so it simpler and cleaner just to use this facility
-to tune the PTP clock.
-
-Richard
+Alan
