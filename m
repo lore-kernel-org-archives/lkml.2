@@ -1,229 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759439Ab0HQSuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:50:06 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:56292 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759359Ab0HQStn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:49:43 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq0GAE51akx5Ld90/2dsb2JhbACUI4wbcsEqhTcEiWc
-Message-Id: <20100817184121.846929931@kernel.dk>
-User-Agent: quilt/0.48-1
-Date: Wed, 18 Aug 2010 04:37:37 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [patch 08/10] lglock: introduce special lglock and brlock spin locks
-References: <20100817183729.613117146@kernel.dk>
-Content-Disposition: inline; filename=kernel-introduce-brlock.patch
+	id S1759371Ab0HQSuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:50:20 -0400
+Received: from mms1.broadcom.com ([216.31.210.17]:1352 "EHLO mms1.broadcom.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759472Ab0HQSuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 14:50:12 -0400
+X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
+Message-ID: <4C6AD9C2.1070705@broadcom.com>
+Date: Tue, 17 Aug 2010 11:49:38 -0700
+From: "Brian Norris" <norris@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
+ Gecko/20100713 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "Michael Guntsche" <mike@it-loops.com>
+cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
+References: <20100817113644.GA31317@gibson.comsick.at>
+ <4C6AC037.7070205@broadcom.com>
+ <20100817174704.GA1322@gibson.comsick.at>
+In-Reply-To: <20100817174704.GA1322@gibson.comsick.at>
+X-WSS-ID: 6074065D37O64825084-09-01
+Content-Type: text/plain;
+ charset=iso-8859-1;
+ format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lglock: introduce special lglock and brlock spin locks
+Hi,
 
-This patch introduces "local-global" locks (lglocks). These can be used to:
+On 08/17/2010 10:47 AM, Michael Guntsche wrote:
+> First, I am just an end user so I have no access to the datasheets etc. I
+> just got the code from the board manufactrurer (2.6.27) and forward
+> port it to recent kernels.
 
-- Provide fast exclusive access to per-CPU data, with exclusive access to
-  another CPU's data allowed but possibly subject to contention, and to provide
-  very slow exclusive access to all per-CPU data.
-- Or to provide very fast and scalable read serialisation, and to provide
-  very slow exclusive serialisation of data (not necessarily per-CPU data).
+I see. No problem. We'll work with what you can do:
 
-Brlocks are also implemented as a short-hand notation for the latter use
-case.
+If you can simply find the NAND chip part number (it would be printed on 
+the chip itself), that will be helpful.
 
-Thanks to Paul for local/global naming convention.
+Also, there are a few things you can do under a working kernel (e.g., 
+2.6.35?).
 
-Cc: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Nick Piggin <npiggin@kernel.dk>
+First, have you ever used any of the mtdutils? In particular, running 
+the command "mtdinfo -a" and sending the output is helpful if you have 
+the utility installed on your board.
+
+Second, since you are doing the forward-porting, I assume you can do a 
+little bit of coding/patching. To print the whole ID string, you can add 
+a simple "printk" line to the code in "drivers/mtd/nand/nand_base.c". 
+For example, on the 2.6.35 kernel, you can just apply the patch below. 
+Then, on boot, the ID string will print (or at least show up in "dmesg" 
+or "syslog"). That info can help a little.
+
+> The reason I am using a specific layout is because the bootloader on
+> this board expects it this way. It formats it this way in the beginning
+> and I cannot change that.
+
+Well, if the new commit that broke your board is getting the block 
+marker *correct* according to the factory specifications, then this 
+particular problem is your setup's problem; perhaps there could be a 
+workaround, like I mentioned about checking for these kind of conflicts. 
+However, I'm still hypothesizing that I simply got the detection wrong, 
+and so my fix will solve your problem.
+
+Thanks,
+Brian
 
 ---
- include/linux/lglock.h |  172 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 172 insertions(+)
+  drivers/mtd/nand/nand_base.c |    4 +++-
+  1 files changed, 3 insertions(+), 1 deletions(-)
 
-Index: linux-2.6/include/linux/lglock.h
-===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux-2.6/include/linux/lglock.h	2010-08-18 04:04:29.000000000 +1000
-@@ -0,0 +1,172 @@
-+/*
-+ * Specialised local-global spinlock. Can only be declared as global variables
-+ * to avoid overhead and keep things simple (and we don't want to start using
-+ * these inside dynamically allocated structures).
-+ *
-+ * "local/global locks" (lglocks) can be used to:
-+ *
-+ * - Provide fast exclusive access to per-CPU data, with exclusive access to
-+ *   another CPU's data allowed but possibly subject to contention, and to
-+ *   provide very slow exclusive access to all per-CPU data.
-+ * - Or to provide very fast and scalable read serialisation, and to provide
-+ *   very slow exclusive serialisation of data (not necessarily per-CPU data).
-+ *
-+ * Brlocks are also implemented as a short-hand notation for the latter use
-+ * case.
-+ *
-+ * Copyright 2009, 2010, Nick Piggin, Novell Inc.
-+ */
-+#ifndef __LINUX_LGLOCK_H
-+#define __LINUX_LGLOCK_H
-+
-+#include <linux/spinlock.h>
-+#include <linux/lockdep.h>
-+#include <linux/percpu.h>
-+
-+/* can make br locks by using local lock for read side, global lock for write */
-+#define br_lock_init(name)	name##_lock_init()
-+#define br_read_lock(name)	name##_local_lock()
-+#define br_read_unlock(name)	name##_local_unlock()
-+#define br_write_lock(name)	name##_global_lock_online()
-+#define br_write_unlock(name)	name##_global_unlock_online()
-+
-+#define DECLARE_BRLOCK(name)	DECLARE_LGLOCK(name)
-+#define DEFINE_BRLOCK(name)	DEFINE_LGLOCK(name)
-+
-+
-+#define lg_lock_init(name)	name##_lock_init()
-+#define lg_local_lock(name)	name##_local_lock()
-+#define lg_local_unlock(name)	name##_local_unlock()
-+#define lg_local_lock_cpu(name, cpu)	name##_local_lock_cpu(cpu)
-+#define lg_local_unlock_cpu(name, cpu)	name##_local_unlock_cpu(cpu)
-+#define lg_global_lock(name)	name##_global_lock()
-+#define lg_global_unlock(name)	name##_global_unlock()
-+#define lg_global_lock_online(name) name##_global_lock_online()
-+#define lg_global_unlock_online(name) name##_global_unlock_online()
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+#define LOCKDEP_INIT_MAP lockdep_init_map
-+
-+#define DEFINE_LGLOCK_LOCKDEP(name)					\
-+ struct lock_class_key name##_lock_key;					\
-+ struct lockdep_map name##_lock_dep_map;				\
-+ EXPORT_SYMBOL(name##_lock_dep_map)
-+
-+#else
-+#define LOCKDEP_INIT_MAP(a, b, c, d)
-+
-+#define DEFINE_LGLOCK_LOCKDEP(name)
-+#endif
-+
-+
-+#define DECLARE_LGLOCK(name)						\
-+ extern void name##_lock_init(void);					\
-+ extern void name##_local_lock(void);					\
-+ extern void name##_local_unlock(void);					\
-+ extern void name##_local_lock_cpu(int cpu);				\
-+ extern void name##_local_unlock_cpu(int cpu);				\
-+ extern void name##_global_lock(void);					\
-+ extern void name##_global_unlock(void);				\
-+ extern void name##_global_lock_online(void);				\
-+ extern void name##_global_unlock_online(void);				\
-+
-+#define DEFINE_LGLOCK(name)						\
-+									\
-+ DEFINE_PER_CPU(arch_spinlock_t, name##_lock);				\
-+ DEFINE_LGLOCK_LOCKDEP(name);						\
-+									\
-+ void name##_lock_init(void) {						\
-+	int i;								\
-+	LOCKDEP_INIT_MAP(&name##_lock_dep_map, #name, &name##_lock_key, 0); \
-+	for_each_possible_cpu(i) {					\
-+		arch_spinlock_t *lock;					\
-+		lock = &per_cpu(name##_lock, i);			\
-+		*lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;	\
-+	}								\
-+ }									\
-+ EXPORT_SYMBOL(name##_lock_init);					\
-+									\
-+ void name##_local_lock(void) {						\
-+	arch_spinlock_t *lock;						\
-+	preempt_disable();						\
-+	rwlock_acquire_read(&name##_lock_dep_map, 0, 0, _THIS_IP_);	\
-+	lock = &__get_cpu_var(name##_lock);				\
-+	arch_spin_lock(lock);						\
-+ }									\
-+ EXPORT_SYMBOL(name##_local_lock);					\
-+									\
-+ void name##_local_unlock(void) {					\
-+	arch_spinlock_t *lock;						\
-+	rwlock_release(&name##_lock_dep_map, 1, _THIS_IP_);		\
-+	lock = &__get_cpu_var(name##_lock);				\
-+	arch_spin_unlock(lock);						\
-+	preempt_enable();						\
-+ }									\
-+ EXPORT_SYMBOL(name##_local_unlock);					\
-+									\
-+ void name##_local_lock_cpu(int cpu) {					\
-+	arch_spinlock_t *lock;						\
-+	preempt_disable();						\
-+	rwlock_acquire_read(&name##_lock_dep_map, 0, 0, _THIS_IP_);	\
-+	lock = &per_cpu(name##_lock, cpu);				\
-+	arch_spin_lock(lock);						\
-+ }									\
-+ EXPORT_SYMBOL(name##_local_lock_cpu);					\
-+									\
-+ void name##_local_unlock_cpu(int cpu) {				\
-+	arch_spinlock_t *lock;						\
-+	rwlock_release(&name##_lock_dep_map, 1, _THIS_IP_);		\
-+	lock = &per_cpu(name##_lock, cpu);				\
-+	arch_spin_unlock(lock);						\
-+	preempt_enable();						\
-+ }									\
-+ EXPORT_SYMBOL(name##_local_unlock_cpu);				\
-+									\
-+ void name##_global_lock_online(void) {					\
-+	int i;								\
-+	preempt_disable();						\
-+	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
-+	for_each_online_cpu(i) {					\
-+		arch_spinlock_t *lock;					\
-+		lock = &per_cpu(name##_lock, i);			\
-+		arch_spin_lock(lock);					\
-+	}								\
-+ }									\
-+ EXPORT_SYMBOL(name##_global_lock_online);				\
-+									\
-+ void name##_global_unlock_online(void) {				\
-+	int i;								\
-+	rwlock_release(&name##_lock_dep_map, 1, _RET_IP_);		\
-+	for_each_online_cpu(i) {					\
-+		arch_spinlock_t *lock;					\
-+		lock = &per_cpu(name##_lock, i);			\
-+		arch_spin_unlock(lock);					\
-+	}								\
-+	preempt_enable();						\
-+ }									\
-+ EXPORT_SYMBOL(name##_global_unlock_online);				\
-+									\
-+ void name##_global_lock(void) {					\
-+	int i;								\
-+	preempt_disable();						\
-+	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
-+	for_each_online_cpu(i) {					\
-+		arch_spinlock_t *lock;					\
-+		lock = &per_cpu(name##_lock, i);			\
-+		arch_spin_lock(lock);					\
-+	}								\
-+ }									\
-+ EXPORT_SYMBOL(name##_global_lock);					\
-+									\
-+ void name##_global_unlock(void) {					\
-+	int i;								\
-+	rwlock_release(&name##_lock_dep_map, 1, _RET_IP_);		\
-+	for_each_online_cpu(i) {					\
-+		arch_spinlock_t *lock;					\
-+		lock = &per_cpu(name##_lock, i);			\
-+		arch_spin_unlock(lock);					\
-+	}								\
-+	preempt_enable();						\
-+ }									\
-+ EXPORT_SYMBOL(name##_global_unlock);
-+#endif
+diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
+index 4a7b864..d2d1fab 100644
+--- a/drivers/mtd/nand/nand_base.c
++++ b/drivers/mtd/nand/nand_base.c
+@@ -2809,8 +2809,10 @@ static struct nand_flash_dev 
+*nand_get_flash_type(struct mtd_info *mtd,
 
+  	/* Read entire ID string */
+
+-	for (i = 0; i < 8; i++)
++	for (i = 0; i < 8; i++) {
+  		id_data[i] = chip->read_byte(mtd);
++		printk(KERN_INFO "ID byte %i: %#x\n", i, id_data[i]);
++	}
+
+  	if (id_data[0] != *maf_id || id_data[1] != dev_id) {
+  		printk(KERN_INFO "%s: second ID read did not match "
+-- 
+1.7.0.4
 
