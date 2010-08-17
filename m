@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab0HQPYO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 11:24:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27447 "EHLO mx1.redhat.com"
+	id S1757203Ab0HQPZP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 11:25:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18613 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396Ab0HQPYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 11:24:13 -0400
-Message-ID: <4C6AA995.6040008@redhat.com>
-Date: Tue, 17 Aug 2010 17:24:05 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
-        Dustin Kirkland <kirkland@canonical.com>
-CC: ecryptfs-devel@lists.launchpad.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] ecryptfs: properly mark init functions
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753860Ab0HQPZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 11:25:13 -0400
+Subject: Re: [GIT PULL] notification tree - try 37!
+From: Eric Paris <eparis@redhat.com>
+To: Andreas Gruenbacher <agruen@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+In-Reply-To: <201008171038.50456.agruen@suse.de>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
+	 <201008162232.36873.agruen@suse.de>
+	 <1282016387.21419.113.camel@acb20005.ipt.aol.com>
+	 <201008171038.50456.agruen@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 11:24:28 -0400
+Message-ID: <1282058668.21419.131.camel@acb20005.ipt.aol.com>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-08-17 at 10:38 +0200, Andreas Gruenbacher wrote:
+> On Tuesday 17 August 2010 05:39:47 Eric Paris wrote:
+> > On Mon, 2010-08-16 at 22:32 +0200, Andreas Gruenbacher wrote:
+> > > On Saturday 07 August 2010 21:15:14 Eric Paris wrote:
+> > > > On Fri, 2010-08-06 at 20:06 -0400, Christoph Hellwig wrote:
+> > > > > I'm also totally missing on any re-post of these patches or
+> > > > > discussion of the changes during the last development window.
+> > > > 
+> > > > I just searched lkml an fsdevel where I usually send everything don't
+> > > > see then.  I totally failed.
+> > > 
+> > > Oh yes.
+> > > 
+> > > This introduces two new syscalls which will be impossible to fix up after
+> > > the fact, and those system calls are poorly documented: commits 2a3edf86
+> > > and 52c923dd document the initial versions (in the commit message!), but
+> > > subsequent commits then extend that interface.  The interface for
+> > > replying to events is not documented at all beyond the example code [1].
+> > >  There is no documentation in Documentation/filesystems/, either.
+> > > 
+> > > 	[1] http://people.redhat.com/~eparis/fanotify/
+> 
+> Oh ... this example doesn't actually build; both syscall prototypes are wrong.  
+> What have you been testing this with?
 
-Some ecryptfs init functions are not prefixed by __init and thus not
-freed after initialization. This patch saved about 1kB in ecryptfs
-module.
+I updated that code, I didn't realize just how out of date it got.
 
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- crypto.c    |    2 +-
- kthread.c   |    2 +-
- messaging.c |    2 +-
- miscdev.c   |    2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+> > I'll work on documentation.  Although it should be pointed out that the
+> > interface was sent to list many times with lots of discussion and
+> > feedback.
+> 
+> One of the wonky remaining bits is the way how files are reopened with 
+> dentry_open() with the f_flags passed to fanotify_init().  The open can fail, 
+> in which case the user is left with an error condition but with no indication 
+> as to which object the error happened for.  What the heck?
 
-diff --git a/fs/ecryptfs/crypto.c b/fs/ecryptfs/crypto.c
-index a2e3b56..13ff48b 100644
---- a/fs/ecryptfs/crypto.c
-+++ b/fs/ecryptfs/crypto.c
-@@ -1793,7 +1793,7 @@ struct kmem_cache *ecryptfs_key_tfm_cache;
- static struct list_head key_tfm_list;
- struct mutex key_tfm_list_mutex;
- 
--int ecryptfs_init_crypto(void)
-+int __init ecryptfs_init_crypto(void)
- {
- 	mutex_init(&key_tfm_list_mutex);
- 	INIT_LIST_HEAD(&key_tfm_list);
-diff --git a/fs/ecryptfs/kthread.c b/fs/ecryptfs/kthread.c
-index d8c3a37..0851ab6 100644
---- a/fs/ecryptfs/kthread.c
-+++ b/fs/ecryptfs/kthread.c
-@@ -86,7 +86,7 @@ out:
- 	return 0;
- }
- 
--int ecryptfs_init_kthread(void)
-+int __init ecryptfs_init_kthread(void)
- {
- 	int rc = 0;
- 
-diff --git a/fs/ecryptfs/messaging.c b/fs/ecryptfs/messaging.c
-index bcb68c0..ab22480 100644
---- a/fs/ecryptfs/messaging.c
-+++ b/fs/ecryptfs/messaging.c
-@@ -473,7 +473,7 @@ sleep:
- 	return rc;
- }
- 
--int ecryptfs_init_messaging(void)
-+int __init ecryptfs_init_messaging(void)
- {
- 	int i;
- 	int rc = 0;
-diff --git a/fs/ecryptfs/miscdev.c b/fs/ecryptfs/miscdev.c
-index 3745f61..00208c3 100644
---- a/fs/ecryptfs/miscdev.c
-+++ b/fs/ecryptfs/miscdev.c
-@@ -500,7 +500,7 @@ static struct miscdevice ecryptfs_miscdev = {
-  *
-  * Returns zero on success; non-zero otherwise
-  */
--int ecryptfs_init_ecryptfs_miscdev(void)
-+int __init ecryptfs_init_ecryptfs_miscdev(void)
- {
- 	int rc;
- 
+What else can be done?  When notification is based on an open fd and you
+can't give them an open fd, there's nothing left....
+
