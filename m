@@ -1,98 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757817Ab0HQRBZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 13:01:25 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4027 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757510Ab0HQRBY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 13:01:24 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Message-ID: <4C6AC037.7070205@broadcom.com>
-Date: Tue, 17 Aug 2010 10:00:39 -0700
-From: "Brian Norris" <norris@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11)
- Gecko/20100713 Thunderbird/3.0.6
+	id S1757915Ab0HQRB6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 13:01:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:43189 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757510Ab0HQRB4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 13:01:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type:content-transfer-encoding;
+        b=Dg+uFCiqpbDomlrzG2FcjsrfpUKglaHsVkjoplkplpdwc6QIPyA+X6zMBXAmSf4nAr
+         BMft1i8JvuRie6Lsn/RxpZ+U+BxrQ4AlehtEU/JOo6RwxYmnP3thWg98ZFIP9GswcVb+
+         WG7tHq1UHAUBWXTwhMs4PvPHcpNITQ19xRAVM=
 MIME-Version: 1.0
-To: "Michael Guntsche" <mike@it-loops.com>
-cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brian Norris" <norris@broadcom.com>
-Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
-References: <20100817113644.GA31317@gibson.comsick.at>
-In-Reply-To: <20100817113644.GA31317@gibson.comsick.at>
-X-WSS-ID: 60741FD237O64684144-01-01
-Content-Type: text/plain;
- charset=iso-8859-1;
- format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: trapdoor6@gmail.com
+Date: Tue, 17 Aug 2010 18:01:54 +0100
+Message-ID: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
+Subject: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
+From: trapDoor <trapdoor6@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: arnd@arndb.de, trapDoor <trapdoor6@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
+The merge window is closed so it's time to hunt for bugs. I've got
+one, please find details below.
+-----------------------
 
-On 08/17/2010 01:52 AM, Michael Guntsche wrote:
- > The only thing that might be special with the nand driver that is being
- > used is that a different oob layout is being used.
- >
- > static struct nand_ecclayout rbppc_nand_oob_16 = {
- >    .eccbytes = 6,
- >    .eccpos = { 8, 9, 10, 13, 14, 15 },
- >    .oobavail = 9,
- >    .oobfree = { { 0, 4 }, { 6, 2 }, { 11, 2 }, { 4, 1 } }
- > };
+Working kernels: from 2.6.35 - to 2.6.35.2
+Non working kernels: from (at least) 2.6.35-git2 - to 2.6.36-rc1
+-----------------------
 
-On 08/17/2010 04:36 AM, Michael Guntsche wrote:
-> I added this to the nand driver itself.
->
-> static uint8_t scan_ff_pattern[] = { 0xff, 0xff };
-> static struct nand_bbt_descr rbppc_nand_smallpage = {
->    .options = NAND_BBT_SCAN2NDPAGE,
->    .offs = NAND_SMALL_BADBLOCK_POS,
->    .len = 1,
->    .pattern = scan_ff_pattern
-> };
->
-> and the driver is working again. But shouldn't this be supported by the stock level code as well?
+Description of the problem(s):
 
-Why yes, it should! Somebody (probably me) goofed. Your nand_ecclayout 
-is conflicting with the kernel's choice of bad block position. Recent 
-changes must have affected which position is chosen automatically by the 
-kernel.
+1. First of all I confirm that the problem is consistent: suspend
+works well every time on the 'good' kernels and it newer works (with
+the symptoms) on any of the 'bad' kernels. I've tested it several
+times on a couple of 'good' and 'bad' kernels to make sure it's not
+some random issue.
 
-One of the following two cases is likely the problem:
-(1) Your chip is supposed to use offset 0, not 5, for the BBM (i.e., 
-NAND_LARGE_BADBLOCK_POS, not NAND_SMALL_BADBLOCK_POS), and so your 
-ecclayout should not be leaving byte 0 in the "oobfree" array (a design 
-flaw since you first began using this chip)
-(2) I made the commit that you mentioned 
-(c7b28e25cb9beb943aead770ff14551b55fa8c79) too restrictive in allowing 
-chips to use NAND_SMALL_BADBLOCK_POS.
+2. On a bad kernel, this is what happens when I try to switch to suspend mode:
+- screen goes blank ['No signal detected !'] - that's OK :)
+- either the CPU fan or PSU fan or both are still running and they
+won't stop (left it for about 30 min. once)
+- the power light is on and still, where in suspend mode it should
+blink - that won't change either
+- pressing the power button obviously doesn't wake the system up; need
+to hard reboot
 
-Option 2 is likely the case, and in fact, I realized a stupid mistake I 
-made in refactoring the detection here.
+3. Now, when booting again, after an unsuccessful suspend and hard
+reboot, something happens to my network card (and it doesn't matter
+what is the next kernel I boot from - it can be any 'good' or 'bad'
+one):
+- in Gnome, the gnome-panel network indicator shows my connection as
+disabled (wired eth0 - the only one I use); enabling it doesn't bring
+my network up
 
-I have been studying data from hundreds of flash chips to find where the 
-factory-determined markers should be stored. Unfortunately, I can't 
-cover all of them, and so your Hynix chip is likely one that was 
-overlooked. Could you send the full NAND ID string (8 bytes, not just 
-the manufacturer and chip ID), an exact part number for the flash, and a 
-datasheet? Any one of those could help (the datasheet being the most 
-important), but whatever you can provide is helpful. More data on your 
-chip would allow me to determine the problem for sure; I will send a 
-patch ASAP once I get your information.
+4. After re-booting from any of the 'good' or 'bad' kernels my network
+connection is working again.
+-----------------------
 
-Sorry for the trouble!
+Bisecting turned up the following commit. Reverting it in 2.6.36-rc1
+results in a system that works.
 
-On another note, it may be intelligent to have the kernel-specific 
-systems check for such a conflict between bad-block markers and ECC 
-layout. If a position needed by the bad-block marker is listed in 
-"oobfree" or "eccpos" then we have a problem. Sound like a good idea 
-anybody? If so, what would be the best approach:
-* print an error and quit detection
-* try to modify the ecclayout, bbm info or both
-* try to modify, and fall-back to error message and quit if necessary
+commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
+Author: Arnd Bergmann <arnd@arndb.de>
+Date:   Sun Jul 11 15:34:05 2010 +0200
 
-Thanks,
-Brian
+    HID: hiddev: use usb_find_interface, get rid of BKL
 
+    This removes the private hiddev_table in the usbhid
+    driver and changes it to use usb_find_interface
+    instead.
+
+    The advantage is that we can avoid the race between
+    usb_register_dev and usb_open and no longer need the
+    big kernel lock.
+
+    This doesn't introduce race condition -- the intf pointer could be
+    invalidated only in hiddev_disconnect() through usb_deregister_dev(),
+    but that will block on minor_rwsem and not actually remove the device
+    until usb_open().
+-----------------------
+
+Despite mentioned issues with network (occurring every time after
+unsuccessful suspend > hard restart) the bisecting turned up a commit
+which isn't rather related to network. But I can confirm that
+reverting only this one commit in 2.6.36-rc1
+[da5cabf80e2433131bf0ed8993abc0f7ea618c73] fixes the whole problem -
+suspend works OK and I have no issues with my network after waking the
+system up, neither after re-booting from the same or any other kernel.
+
+Please let me know what further details should I provide. Any logs,
+hardware specifications? I've also made a brief log recording the
+bisect if anyone would need it.
+
+--
+Regards
+Tomasz B. aka trapDoor
