@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab0HQDHd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 23:07:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33742 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750910Ab0HQDHb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 23:07:31 -0400
-Date: Tue, 17 Aug 2010 13:07:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dan Williams <dcbw@redhat.com>,
-        libertas-dev@lists.infradead.org, netdev@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: Re: linux-next: manual merge of the wireless tree with Linus' tree
-Message-Id: <20100817130722.cd8c11b0.sfr@canb.auug.org.au>
-In-Reply-To: <201008171229.46175.rusty@rustcorp.com.au>
-References: <20100817115203.e8a76e44.sfr@canb.auug.org.au>
-	<201008171229.46175.rusty@rustcorp.com.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__17_Aug_2010_13_07_22_+1000_mvQO/kDifi5bPJbC"
+	id S1755485Ab0HQDRI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 23:17:08 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:53450 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754619Ab0HQDRH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 23:17:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=szsib2vrStwoUdRdlgoSbyLODnYWnbXp0bPzMdaFWFlrBO4ifSMDbjpcl6XKabV1sw
+         6aeO1v4EATwu7KjqKWAy1kTi8/cb0VY+bKRz8Pkiv8LQJEWWJM92M8bz6oFSYx3mdhG8
+         BKoSLx7bp+46WWbHxSokwijyMwLCCSpws2MCg=
+MIME-Version: 1.0
+In-Reply-To: <20100817025954.GA12366@nowhere>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com>
+	<1281946970.1926.998.camel@laptop>
+	<20100816133452.GS4879@redhat.com>
+	<1281966418.1926.1421.camel@laptop>
+	<20100816140829.GA5225@swordfish.minsk.epam.com>
+	<20100817025954.GA12366@nowhere>
+Date: Tue, 17 Aug 2010 11:16:29 +0800
+Message-ID: <AANLkTikdng247Fct0ANXiitC3ja98_ee3-fUVDGraEwo@mail.gmail.com>
+Subject: Re: [PATCH] fix BUG using smp_processor_id() in touch_nmi_watchdog
+ and touch_softlockup_watchdog
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Don Zickus <dzickus@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__17_Aug_2010_13_07_22_+1000_mvQO/kDifi5bPJbC
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Rusty,
-
-On Tue, 17 Aug 2010 12:29:44 +0930 Rusty Russell <rusty@rustcorp.com.au> wr=
-ote:
+On Tue, Aug 17, 2010 at 10:59 AM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> If preemption is disabled and you deal with the current cpu,
+> then please use __get_cpu_var, it makes the code more
+> readable:
 >
-> You can drop the commit as you have done.  But it leaves three problematic
-> writable charp parameters in the libertas/ directory which now need lifet=
-ime
-> management.
->=20
-> ie. kparam_block_sysfs_write()/unblock around them, and probably they need
-> to be copied.
+>
+> void touch_softlockup_watchdog(void)
+> {
+>        preempt_disable();
+>        __(watchdog_touch_ts) = 0;
+>        preempt_enable();
+> }
 
-I figured that there was something needed, but I could not figure out where.
+Why not use __raw_get_cpu_var() instead?
+You know adding preempt protection in touch_softlockup_watchdog()
+just suppress the warning. Am I missing something?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__17_Aug_2010_13_07_22_+1000_mvQO/kDifi5bPJbC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMafzqAAoJEDMEi1NhKgbsz/MH/2+KQG759Xe65MYG3jf9hdPY
-J1Vwya4UMshfWxmUVL9Ivji8wy6XLKM0nTv2z0MuAvOspBoMb7X0UxwMfBMnIClh
-XK2f2S2ZKMYjLuulK7qF9Jjy/vkxsQtbjqZSEndrFzBKYtq0kkFJv/KYwpZC9oaU
-q6aOW269HkbwLdl1EMjLqKikRvc7ymzxtWPq6vihnWxDCeQyepHv2TFe7AUSOoGl
-aaLWJ3EB/nBVJQfvKEcySGjNskkSTViiGN5tMV7sqxetc9pEVpO2o76ZCoyWxhBl
-ZxSoIGkYunezJH3Xd4baokWza0Y8TK7dUEUqV8PaQ1pVnlEfVustlhPY7BWfnz4=
-=x2fH
------END PGP SIGNATURE-----
-
---Signature=_Tue__17_Aug_2010_13_07_22_+1000_mvQO/kDifi5bPJbC--
+Thanks,
+Yong
