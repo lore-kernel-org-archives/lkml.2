@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757416Ab0HQPFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 11:05:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35062 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757187Ab0HQPFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 11:05:20 -0400
-Date: Tue, 17 Aug 2010 07:54:03 -0700
-From: Greg KH <gregkh@suse.de>
-To: Nelson Zhang <nxz@cypress.com>
-Cc: "'David Cross'" <david.cross@cypress.com>, hirofumi@mail.parknet.co.jp,
-        linux-kernel@vger.kernel.org
-Subject: Re: EXPORT_SYMBOL(fat_get_block)
-Message-ID: <20100817145403.GA28926@suse.de>
-References: <20100813190128.GA1372@suse.de>
- <1281727059.16672.20.camel@odc-laptop>
- <20100813192826.GA5078@suse.de>
- <1281731535.29175.17.camel@odc-laptop>
- <20100813221749.GA19569@suse.de>
- <1281741733.22119.20.camel@odc-laptop>
- <20100814002514.GA3182@suse.de>
- <1281748363.7882.15.camel@odc-laptop>
- <20100814030408.GB4779@suse.de>
- <ABE41F255A574632903665A7D1F90907@mis.cypress.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ABE41F255A574632903665A7D1F90907@mis.cypress.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757600Ab0HQPFt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 11:05:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55397 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508Ab0HQPFr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 11:05:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qiGLEvYbqFJ9QFKNPcpEVdjAd70JwlOgX2JJLnFm17/DfXIIllbhZOuw/1VHN79qna
+         XXF9RTkQowPsThLka4ZncGil/qs2J6P6EYogh+iTYMi35DM6T7W8zC/RYbTrq80K3DHY
+         fdpG48KCgUA8UVhXk7GwuVuDKeSNxAecgHGj0=
+Subject: Re: [PATCH] MIPS: remove RELOC_HIDE on __pa_symbol
+From: Namhyung Kim <namhyung@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: David Daney <david.s.daney@gmail.com>, linux-kernel@vger.kernel.org,
+        David Daney <ddaney@caviumnetworks.com>, linux-mips@linux-mips.org
+In-Reply-To: <20100817150035.GC17861@linux-mips.org>
+References: <1281297456-2711-1-git-send-email-namhyung@gmail.com>
+	 <4C5F8ED8.90301@gmail.com> <20100809122147.GA23053@linux-mips.org>
+	 <1281409628.1670.11.camel@leonhard> <20100817150035.GC17861@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 00:05:35 +0900
+Message-ID: <1282057535.1635.10.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 06:57:54AM +0800, Nelson Zhang wrote:
-> Hi David, Greg,
+2010-08-17 (화), 16:00 +0100, Ralf Baechle:
+> On Tue, Aug 10, 2010 at 12:07:08PM +0900, Namhyung Kim wrote:
 > 
-> What I have done so far is following:
+> > I've sent basically same patch to x86 folks [1] and they said there is a
+> > possiblility of miscompilation on gcc 3. I am not sure the same goes
+> > here on mips but it might be safer to keep it. Sorry for the noise ;-(
+> > 
+> > [1] http://lkml.org/lkml/2010/8/8/138
 > 
-> 1. Open a file 
-> 2. Seek to the end of file
-
-That just created a "sparse file"
-
-> What I have not done is:
+> So in a distant future when GCC 3.x will finally be retired we will be
+> able to apply this patch, sigh.  I'll drop your patch for the time being
+> and add a comment to the code.
 > 
-> 3. mmap the whole file. 
+> Thanks!
 > 
-> Without #3, the file is not allocated until I write to the file.
+>   Ralf
 
-That is by design.
+FYI, the exact version introduced -f[no-]strict-overlow was gcc 4.2.
 
-> I think we can try to use mmap to allocate the file but we still need
-> a function that can get file block info once the file is allocated.
+-- 
+Regards,
+Namhyung Kim
 
-No, why would you want the file block info?
 
-Just treat it as a file, using mmap() and all the other userspace
-goodness that we have to get data to a file very quickly.  You don't
-need to preallocate the file from userspace, or anything else like that.
-
-I suggest looking at some documentation on how to use the Unix file apis
-properly to implement this better.
-
-thanks,
-
-greg k-h
