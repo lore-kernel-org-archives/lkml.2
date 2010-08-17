@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab0HQBJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 21:09:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:47886 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754064Ab0HQBJS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 21:09:18 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6076"; a="51114078"
-Message-ID: <4C69E13D.3020809@codeaurora.org>
-Date: Mon, 16 Aug 2010 18:09:17 -0700
-From: Bryan Huntsman <bryanh@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754173Ab0HQBQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 21:16:58 -0400
+Received: from ozlabs.org ([203.10.76.45]:49650 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751422Ab0HQBQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 16 Aug 2010 21:16:56 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 2/5] virtio_blk: implement REQ_FLUSH/FUA support
+Date: Tue, 17 Aug 2010 10:46:51 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de, neilb@suse.de, mst@redhat.com, Tejun Heo <tj@kernle.org>
+References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-3-git-send-email-tj@kernel.org>
+In-Reply-To: <1281977523-19335-3-git-send-email-tj@kernel.org>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Len Brown <lenb@kernel.org>,
-        Linux Power Management List <linux-pm@lists.osdl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [linux-pm] Notes from the Boston Linux Power	Management	Mini-summit
- - August 9th, 2010
-References: <alpine.LFD.2.00.1008150134180.7641@localhost.localdomain> <20100816144914.GB10354@sirena.org.uk>
-In-Reply-To: <20100816144914.GB10354@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201008171046.53220.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Sun, Aug 15, 2010 at 01:36:33AM -0400, Len Brown wrote:
+On Tue, 17 Aug 2010 02:22:00 am Tejun Heo wrote:
+> From: Tejun Heo <tj@kernle.org>
 > 
->> A gap:
->>
->> On OMAP, bus control is independent of CPU frequency control,
->> so cpufreq and cpuidle don't quite fit the bill.
->>
->> Perhaps a "bus-idle" analogous to "cpu-idle" may be appropriate?
+> Remove now unused REQ_HARDBARRIER support and implement REQ_FLUSH/FUA
+> support instead.  A new feature flag VIRTIO_BLK_F_FUA is added to
+> indicate the support for FUA.
 > 
-> FWIW this applies to a bunch of other embedded processors too - OMAP
-> isn't particularly unique here, though it's one of the furthest along in
-> terms of exploting this in mainline Linux.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
 
-This capability would benefit MSM as well.  We're looking into a 
-soc-specific implementation using Pat Pannuto's "pseudo" platform bus 
-extensions (discussed here http://lkml.org/lkml/2010/8/10/389).  After 
-we have something working, I would be curious to see if some common 
-functionality could be extracted into a more generic mechanism.
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 
-- Bryan
+And also for the lguest-specific patch.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks!
+Rusty.
