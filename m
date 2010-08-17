@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab0HQGAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 02:00:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38992 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753136Ab0HQGAR (ORCPT
+	id S1753211Ab0HQGCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 02:02:41 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38052 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371Ab0HQGCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 02:00:17 -0400
-Subject: [PATCH] of: Fix missing includes
+	Tue, 17 Aug 2010 02:02:40 -0400
+Subject: [RFC PATCH] of/microblaze: fix includes so that asm/prom.h doesn't
+	need linux/of*.h
 To: linux-kernel@vger.kernel.org
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: Michal Simek <monstr@monstr.eu>
-Date: Tue, 17 Aug 2010 00:00:14 -0600
-Message-ID: <20100817055754.20330.73078.stgit@angua>
+Date: Tue, 17 Aug 2010 00:02:37 -0600
+Message-ID: <20100817060051.20467.10072.stgit@angua>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -21,85 +22,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes missing includes from a number of .c files because
-the code (wrongfully) depended on prom.h including them.  The include
-of linux/of_address.h was removed in microblaze prom.h in commit
-"of/address: Clean up function declarations" (sha1 id 22ae782f8), but
-not fixed in some users.  This patch fixes them up.
+asm/prom.h has some nasty include ordering issues because a number of
+files assume that linux/of_* is included by prom.h.  This patch fixes
+the Microblaze occurrences.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
 
-Hi Michal, here's my patch that fixes the microblaze include issues.  I've
-got it in my merge-devicetree branch which I'll be asking Linus to pull on
-tommorrow after it has been through cross-arch build testing (unless I hear
-otherwise from you).
+Hi Michal,
+
+And here is my patch that fixes all the include issues so the remaining lines
+can be removed from prom.h.  I'll add this one to my test-devicetree branch
+along with similar patches to fix powerpc and sparc, and probably merge it
+in 2.6.37.
 
 Cheers,
 g.
+ arch/microblaze/include/asm/prom.h  |    9 ---------
+ arch/microblaze/kernel/prom.c       |    3 ++-
+ arch/microblaze/kernel/prom_parse.c |    3 ++-
+ arch/microblaze/kernel/setup.c      |    3 ++-
+ arch/microblaze/pci/pci-common.c    |    1 +
+ drivers/net/xilinx_emaclite.c       |    1 +
+ drivers/serial/of_serial.c          |    1 +
+ drivers/serial/uartlite.c           |    1 +
+ 8 files changed, 10 insertions(+), 12 deletions(-)
 
- arch/microblaze/pci/pci-common.c           |    3 ++-
- arch/microblaze/pci/xilinx_pci.c           |    1 +
- drivers/char/xilinx_hwicap/xilinx_hwicap.c |    1 +
- drivers/serial/of_serial.c                 |    3 +--
- 4 files changed, 5 insertions(+), 3 deletions(-)
-
+diff --git a/arch/microblaze/include/asm/prom.h b/arch/microblaze/include/asm/prom.h
+index 101fa09..59c7932 100644
+--- a/arch/microblaze/include/asm/prom.h
++++ b/arch/microblaze/include/asm/prom.h
+@@ -83,13 +83,4 @@ extern int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq);
+ 
+ #endif /* __ASSEMBLY__ */
+ #endif /* __KERNEL__ */
+-
+-/* These includes are put at the bottom because they may contain things
+- * that are overridden by this file.  Ideally they shouldn't be included
+- * by this file, but there are a bunch of .c files that currently depend
+- * on it.  Eventually they will be cleaned up. */
+-#include <linux/of_fdt.h>
+-#include <linux/of_irq.h>
+-#include <linux/platform_device.h>
+-
+ #endif /* _ASM_MICROBLAZE_PROM_H */
+diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
+index 427b13b..cca32f3 100644
+--- a/arch/microblaze/kernel/prom.c
++++ b/arch/microblaze/kernel/prom.c
+@@ -24,6 +24,8 @@
+ #include <linux/stringify.h>
+ #include <linux/delay.h>
+ #include <linux/initrd.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
+ #include <linux/bitops.h>
+ #include <linux/module.h>
+ #include <linux/kexec.h>
+@@ -31,7 +33,6 @@
+ #include <linux/irq.h>
+ #include <linux/memblock.h>
+ 
+-#include <asm/prom.h>
+ #include <asm/page.h>
+ #include <asm/processor.h>
+ #include <asm/irq.h>
+diff --git a/arch/microblaze/kernel/prom_parse.c b/arch/microblaze/kernel/prom_parse.c
+index 99d9b61..004a276 100644
+--- a/arch/microblaze/kernel/prom_parse.c
++++ b/arch/microblaze/kernel/prom_parse.c
+@@ -6,8 +6,9 @@
+ #include <linux/module.h>
+ #include <linux/ioport.h>
+ #include <linux/etherdevice.h>
++#include <linux/of.h>
+ #include <linux/of_address.h>
+-#include <asm/prom.h>
++#include <linux/of_irq.h>
+ #include <asm/pci-bridge.h>
+ 
+ #ifdef CONFIG_PCI
+diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
+index f5f7688..47c8331 100644
+--- a/arch/microblaze/kernel/setup.c
++++ b/arch/microblaze/kernel/setup.c
+@@ -24,6 +24,8 @@
+ #include <linux/param.h>
+ #include <linux/pci.h>
+ #include <linux/cache.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
+ #include <linux/of_platform.h>
+ #include <linux/dma-mapping.h>
+ #include <asm/cacheflush.h>
+@@ -31,7 +33,6 @@
+ #include <asm/cpuinfo.h>
+ 
+ #include <asm/system.h>
+-#include <asm/prom.h>
+ #include <asm/pgtable.h>
+ 
+ DEFINE_PER_CPU(unsigned int, KSP);	/* Saved kernel stack pointer */
 diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-index 6ca8531..55ef532 100644
+index 55ef532..2e3c60a 100644
 --- a/arch/microblaze/pci/pci-common.c
 +++ b/arch/microblaze/pci/pci-common.c
-@@ -27,10 +27,11 @@
- #include <linux/irq.h>
- #include <linux/vmalloc.h>
+@@ -29,6 +29,7 @@
  #include <linux/slab.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
  
  #include <asm/processor.h>
  #include <asm/io.h>
--#include <asm/prom.h>
- #include <asm/pci-bridge.h>
- #include <asm/byteorder.h>
- 
-diff --git a/arch/microblaze/pci/xilinx_pci.c b/arch/microblaze/pci/xilinx_pci.c
-index 7869a41..0687a42 100644
---- a/arch/microblaze/pci/xilinx_pci.c
-+++ b/arch/microblaze/pci/xilinx_pci.c
-@@ -16,6 +16,7 @@
- 
- #include <linux/ioport.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include <linux/pci.h>
- #include <asm/io.h>
- 
-diff --git a/drivers/char/xilinx_hwicap/xilinx_hwicap.c b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-index 0ed763c..b663d57 100644
---- a/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-+++ b/drivers/char/xilinx_hwicap/xilinx_hwicap.c
-@@ -94,6 +94,7 @@
- 
- #ifdef CONFIG_OF
- /* For open firmware. */
-+#include <linux/of_address.h>
+diff --git a/drivers/net/xilinx_emaclite.c b/drivers/net/xilinx_emaclite.c
+index ecbbb68..68a4498 100644
+--- a/drivers/net/xilinx_emaclite.c
++++ b/drivers/net/xilinx_emaclite.c
+@@ -22,6 +22,7 @@
+ #include <linux/slab.h>
+ #include <linux/of_address.h>
  #include <linux/of_device.h>
++#include <linux/of_irq.h>
  #include <linux/of_platform.h>
- #endif
+ #include <linux/of_mdio.h>
+ #include <linux/phy.h>
 diff --git a/drivers/serial/of_serial.c b/drivers/serial/of_serial.c
-index 659a695..2af8fd1 100644
+index 2af8fd1..387858e 100644
 --- a/drivers/serial/of_serial.c
 +++ b/drivers/serial/of_serial.c
-@@ -14,11 +14,10 @@
- #include <linux/slab.h>
+@@ -15,6 +15,7 @@
  #include <linux/serial_core.h>
  #include <linux/serial_8250.h>
-+#include <linux/of_address.h>
+ #include <linux/of_address.h>
++#include <linux/of_irq.h>
  #include <linux/of_platform.h>
  #include <linux/nwpserial.h>
  
--#include <asm/prom.h>
--
- struct of_serial_info {
- 	int type;
- 	int line;
+diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
+index 9b03d7b..95e5c27 100644
+--- a/drivers/serial/uartlite.c
++++ b/drivers/serial/uartlite.c
+@@ -23,6 +23,7 @@
+ #include <linux/of.h>
+ #include <linux/of_address.h>
+ #include <linux/of_device.h>
++#include <linux/of_irq.h>
+ #include <linux/of_platform.h>
+ 
+ /* Match table for of_platform binding */
 
