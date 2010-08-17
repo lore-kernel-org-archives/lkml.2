@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab0HQKIs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 06:08:48 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:35436 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755617Ab0HQKIr (ORCPT
+	id S1757526Ab0HQKI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 06:08:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37575 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755934Ab0HQKIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 06:08:47 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Tao Ma <tao.ma@oracle.com>
-Subject: Re: unable to mount a CD - iso9660 bug?
-Date: Tue, 17 Aug 2010 12:08:40 +0200
-User-Agent: KMail/1.9.10
-Cc: Johannes Stezenbach <js@sig21.net>, linux-fsdevel@vger.kernel.org,
-        Kernel development list <linux-kernel@vger.kernel.org>
-References: <201008161438.57103.linux@rainbow-software.org> <201008161850.08442.linux@rainbow-software.org> <4C6A511F.5090407@oracle.com>
-In-Reply-To: <4C6A511F.5090407@oracle.com>
+	Tue, 17 Aug 2010 06:08:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=iuCPxEgLo7tPKVpKM1YxKaOTSJ6IaJgXmiV10P1ErkF/+1Xu9BHGq4sTh0FUmGSynP
+         N7MFhvXc0EM3CVyOLQHdwLGjkY1c8Ewt7LdCLxOVmv+b8gFpT7RdJ8x9HctRVTyX7c5q
+         rJJs5NImgxHw1aY90dxBxPhwkAAmYYbCV8k+Q=
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201008171208.42512.linux@rainbow-software.org>
+In-Reply-To: <AANLkTimC=VDH=m9SoDK3BGzk7eCKRj6dEVzU230_kFPH@mail.gmail.com>
+References: <AANLkTik2VDPSZvMzQ8rv38jBDKmRaM9-TL9nhqxj_VSQ@mail.gmail.com>
+	<AANLkTimC=VDH=m9SoDK3BGzk7eCKRj6dEVzU230_kFPH@mail.gmail.com>
+Date: Tue, 17 Aug 2010 14:08:51 +0400
+Message-ID: <AANLkTikJzEM2BjZVBBbK9gt1dyvv0CK0==s3hxq4ywy4@mail.gmail.com>
+Subject: Re: bug LINUX_VERSION_CODE undefined
+From: Sergey Naumov <sknaumov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 17 August 2010, Tao Ma wrote:
-> Hi Ondrej
+Some update.
+
+It seems that build script (and makefiles) uses it's own VERSION variable.
+In the last standalone makefile where
+> make uImage
+executes, I have tried to
+> override VERSION :=
+> export VERSION
+and execute make as
+> VERSION= make uImage
+but the only thing that helps is to prepend "override" keyword to
+VERSION initialization in the main linux Makefile:
+
+override VERSION = 2
+
+2010/8/17 Sergey Naumov <sknaumov@gmail.com>:
+> Hello. This is my first message to this list so please be patient.
 >
-> On 08/17/2010 12:50 AM, Ondrej Zary wrote:
-> > On Monday 16 August 2010 16:18:57 Ondrej Zary wrote:
-> >> On Monday 16 August 2010, Johannes Stezenbach wrote:
-> >>> On Mon, Aug 16, 2010 at 02:38:54PM +0200, Ondrej Zary wrote:
-> >>>> I have a CD that came with Samsung printer that Linux cannot mount but
-> >>>> works fine in Windows. The CD is physically OK - "dd" made ISO image
-> >>>> without any problems. This ISO image is unmountable too. When I force
-> >>>> the filesystem to iso9660, it mounts but no files are visible:
-> >>>
-> >>> Maybe it's a multi-session disk where the first session is
-> >>> HFS with Apple software.  Try mounting with -t iso9660 -o session=1.
-> >>
-> >> Still the same - no files. dmesg contains:
-> >>
-> >> ISOFS: Invalid session number or type of track
-> >> ISOFS: Invalid session number
-> >> ISO 9660 Extensions: Microsoft Joliet Level 3
-> >> ISO 9660 Extensions: RRIP_1991A
-> >
-> > Here's the compressed ISO file if anyone wants to examine it:
-> > http://www.rainbow-software.org/linux_files/samsung-bad.rar
+> I have encountered compilation error due to
+> #define LINUX_VERSION_CODE
+> in include/linux/version.h
 >
-> what is your kernel version? I can mount it successfully in my el5 box
-> with kernel 2.6.35+.
-
-I have 2.6.35. Also tried it on another two machines with Debian Squeeze 
-2.6.32 and Lenny 2.6.26 with the same result (no files visible when mounted).
-
-
--- 
-Ondrej Zary
+> This happens because $(VERSION) variable in the main Makefile has a
+> value of 2.6.35.2 instead of 2,
+> so "expr" utility fails to generate LINUX_VERSION_CODE value with an
+> error "non-numeric argument" or smth.
+>
+> I have found only one link (
+> http://www.spinics.net/lists/linux-kbuild/msg03230.html ) to this
+> issue in the Internet,
+> but there is no response to it, so I decided to post this message.
+>
+> Please subscribe me personally to answers to this post.
+>
+> Sergey Naumov.
+>
