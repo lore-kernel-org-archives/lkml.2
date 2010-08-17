@@ -1,36 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750886Ab0HQUI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 16:08:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48973 "EHLO ogre.sisk.pl"
+	id S1751030Ab0HQUaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 16:30:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47376 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750751Ab0HQUIY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 16:08:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: kernel list <linux-kernel@vger.kernel.org>
-Subject: 2.6.36-rc1: Doesn't boot on an AMD-based machine
-Date: Tue, 17 Aug 2010 22:06:14 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
+	id S1750853Ab0HQUav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 16:30:51 -0400
+Subject: Re: Fwd: Re: [Scst-devel] linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: scst-devel <scst-devel@lists.sourceforge.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C69653E.6050808@vlnb.net>
+References: <4C69653E.6050808@vlnb.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 15:30:40 -0500
+Message-ID: <1282077040.16098.47.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008172206.14349.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-08-16 at 20:20 +0400, Vladislav Bolkhovitin wrote:
+> Hello James,
+> 
+> Could you comment rumors that decision about future Linux SCSI target 
+> subsystem is done as well as other related rumors:
 
-The subject says it all, the last message printed is:
+If this is related to LSF, the notes on the I/O track are here:
 
-CPU0: AMD Athlon(tm) X2 Dual Core Processor L310 stepping 02
+http://lwn.net/Articles/400491/
 
-so I guess the AMD C1E detection is broken.
+> 1. What don't you like in the transition path for users from STGT to 
+> SCST, which I proposed:
+> 
+>   - The only people which would be affected by replacing of STGT by SCST
+> would be users of ibmvstgt. Other STGT users would not notice it at all. 
+> Thus, we should update ibmvstgt for SCST. If ibmvstgt updated for SCST, 
+> the update for its users would be just writing of a simple scstadmin's 
+> config file.
+> 
+>   - STGT doesn't have backend drivers, which SCST doesn't have, so
+> there's nothing to worry here. At max, AIO support should be added to 
+> fileio_tgt.
+> 
+>   - STGT user space targets can use SCST backend via scst_local module.
+> Scst_local module is ready and work very well.
+> 
+> The result would be very clear without any obsolete mess.
 
-I'm going to identify the offending commit.
+So does that get us up to being a drop in replacement?  I think you're
+saying that even with all of this, at least the VSCSI part will need
+updating, so the answer seems to be "no".
 
-Thanks,
-Rafael
+> 2. Don't you like something in the sysfs interface SCST has?
+
+I don't think so ... from a cursory glance it looks functional.
+
+> 3. I have heard you said "Vlad wasn't comfortable in handing up the 
+> control to the maintainers ... (this is how kernel.org works)." I have 
+> no idea what you meant. I have never been asked about anything like 
+> that, so I couldn't say anyhow that I'm not comfortable with anything. 
+> Could you clarify that?
+> 
+> 4. Have you changed your opinion that a driver level multipath is 
+> forbidden in Linux and now you think that an iSCSI target with MC/S 
+> support is acceptable?
+
+no; I still think MCS is a pointless duplication of multipath that only
+works for iSCSI.
+
+James
+
+
