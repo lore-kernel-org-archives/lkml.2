@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab0HQSWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 14:22:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42498 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758230Ab0HQSWw (ORCPT
+	id S1758169Ab0HQSY0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 14:24:26 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55279 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758264Ab0HQSYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 14:22:52 -0400
-Date: Tue, 17 Aug 2010 19:22:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Bobby Crabtree <bobbyc@codeaurora.org>, lrg@slimlogic.co.uk,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: regulator voltage aggregation
-Message-ID: <20100817182250.GB5755@opensource.wolfsonmicro.com>
-References: <4C6ACF92.7050506@codeaurora.org> <20100817192806.09744719@lxorguk.ukuu.org.uk>
+	Tue, 17 Aug 2010 14:24:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=I8uGuPbbdb60tYkrbzx6ErG5mqD7k92eKVXkyG5jW1XwuPaS2fgGBYs+/af4TgVxvq
+         4nc2fxk2JTG4q/xUxKCFRsLGNXtRcUkzhtADUHppLbs/I2yLb8/Kfd0mBhrgokAUKxKj
+         Q56jg2bhJU7VGoEs3LpVHia1/St0Ypdmj8ZT4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100817192806.09744719@lxorguk.ukuu.org.uk>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTikDXoRMRL0y_Y_7qVS=9LOw_yLS9MuUgq2dTCZf@mail.gmail.com>
+References: <20100816.211218.189709876.davem@davemloft.net>
+	<AANLkTikDXoRMRL0y_Y_7qVS=9LOw_yLS9MuUgq2dTCZf@mail.gmail.com>
+Date: Tue, 17 Aug 2010 11:24:19 -0700
+X-Google-Sender-Auth: S8Ycd2uYHrijlddEvPGMtXbpFlA
+Message-ID: <AANLkTi=ZdrtWSYE0BEXJ-YDoxjta3h7RMR7Y8Z6Hu-Hc@mail.gmail.com>
+Subject: Re: tasks getting stuck on mmap_sem?
+From: Tony Luck <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>, Michel Lespinasse <walken@google.com>,
+        David Howells <dhowells@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 07:28:06PM +0100, Alan Cox wrote:
-> O> int regulator_set_optimum_voltage(struct regulator *regulator,
-> >                 int min_uV, int max_uV);
+On Tue, Aug 17, 2010 at 9:14 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> No. Looks like the rwsem changes broke sparc too. ia64 had some problems too.
 
-> Pedantic hat on - how can it be optimum if its a range ? (and an
-> adjective but that is really pedantic) ;))
+I did have some similar mmap_sem issues - but the combination of
+fixing the types
+of the RWSEM_* defines to be unsigned, and the return value of
+ia64_atomic64_add()
+to be "long" rather than "int" looks to have cleared up the problems I
+was seeing. I
+could generally see the hung processes in less than 10 consecutive
+kernel builds, but
+ran a few thousand builds over the weekend with no issues.
 
-> Surely it's not the optimal value, it's the range at which it works at
-> all you are defining (between off, and escaping smoke).
+If git is multi-threaded, it may be hitting some different code path
+... but it isn't trivial
+for me to try this out (my systems are on an isolated lab network segment).
 
-> set_voltage_range() sounds rather more natural to me.
-
-The regulator API always specifies voltages in ranges, picking the
-lowest possible voltage from the range.
-
-One reason for this is that it allows us to finesse the mismatches
-between the fixed steps that regulators offer and the requirements of
-consumers - we don't needlessly fail to set a voltage due to a few
-milivolts difference that the consumer doesn't care about.  The other
-reason is that it maps very well onto a lot of applications which do
-have fairly wide acceptable ranges.  For things like DVFS lowering the
-frequency will typically reduce the minimum voltage required by the
-device but will not affect the maximum voltage it can tolerate so we
-allow the driver to specify the full range it can operate at and then
-deliver the maximum power saving we can within the constraints of the
-system.
+-Tony
