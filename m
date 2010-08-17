@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751423Ab0HQTdk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:33:40 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:26712 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab0HQTde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:33:34 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6077"; a="51337302"
-Message-ID: <4C6AE40D.7090206@codeaurora.org>
-Date: Tue, 17 Aug 2010 12:33:33 -0700
-From: Bobby Crabtree <bobbyc@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1751604Ab0HQTeH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:34:07 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34310 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab0HQTeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 15:34:03 -0400
+Date: Tue, 17 Aug 2010 12:33:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
+        niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH tip/core/rcu 08/10] rcu: Add a TINY_PREEMPT_RCU
+Message-ID: <20100817193358.GG2364@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100816214123.GA15663@Krystal>
+ <20100816215555.GL2388@linux.vnet.ibm.com>
+ <20100816220705.GA18650@Krystal>
+ <1282051639.3268.1335.camel@gandalf.stny.rr.com>
+ <20100817141638.GA5722@Krystal>
+ <1282056878.3268.1437.camel@gandalf.stny.rr.com>
+ <20100817155521.GA17849@Krystal>
+ <1282061090.3268.1514.camel@gandalf.stny.rr.com>
+ <1282061199.3268.1519.camel@gandalf.stny.rr.com>
+ <20100817162525.GA21945@Krystal>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: regulator voltage aggregation
-References: <4C6ACF92.7050506@codeaurora.org> <20100817181557.GA5755@opensource.wolfsonmicro.com>
-In-Reply-To: <20100817181557.GA5755@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100817162525.GA21945@Krystal>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Tue, Aug 17, 2010 at 11:06:10AM -0700, Bobby Crabtree wrote:
->> I'm looking to upstream a new feature in which the regulator core
->> aggregates voltage requests from multiple consumers and applies the best
->> fitting voltage (e.g. max voltage) to a shared supply. The core would
+On Tue, Aug 17, 2010 at 12:25:25PM -0400, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > On Tue, 2010-08-17 at 12:04 -0400, Steven Rostedt wrote:
+> > 
+> > > > Then we could go for the simpler:
+> > > > 
+> > > >   	--t->rcu_read_lock_nesting;
+> > > >  	barrier();
+> > > >         if (t->rcu_read_lock_nesting == 0 &&
+> > > >              unlikely((t->rcu_read_unlock_special))
+> > > 
+> > > Yeah, that's what I meant, I was too lazy to remove the ACCESS_ONCE()
+> > > from the cut and paste I did.
+> > > 
+> > > > 
+> > > > Which puts a constraint across all memory accesses. I'd be fine with
+> > > > that if you are afraid of too much micro-optimization (e.g. my
+> > > > barrier2(a, b) proposal).
+> > > 
+> > > Not afraid, but just too much code for a simple solution.
+> > 
+> > IOW,
+> > 
+> > I think just pulling out the '--' and adding the barrier() is the proper
+> > solution here. Compiler barriers are rather cheap.
+> > 
+> > Can we all agree on this solution?
 > 
-> It's unlikely that the highest voltage would ever be the best choice...
-> 
-We do need the highest voltage. Let's say we have two consumers
-(A and B). Both require 1.3V for "normal" operations. Then let's
-say that consumer A can save power by reducing the voltage to 1.1V
-(but it doesn't require 1.1V). If the core were to immediately apply
-1.1V, then the 1.3V requirement of consumer B would not be satisfied.
+> Given that we already have a barrier() at the beginning of
+> rcu_read_unlock(), adding a second one will not have much more global
+> optimisation impact than what is already there. I'm personally fine with
+> this solution. Let's see what others have to say about this.
 
->> recompute the best fitting voltage when a consumer requests a voltage
->> change or requests to enable/disable the regulator (similar logic to
->> DRMS).
-> 
->> The reason we need this feature is for power savings. It would allow two
->> or more consumers to "vote" on a voltage that's lower than the normal
->> operating voltage.
-> 
-> This was actually a feature of the regulator API when originally
-> proposed, it got dropped for ease of review but there's some remanants
-> of this in the code so it shouldn't be hard to resurrect.  Whenever a
-> voltage was set the code stored the range on the consumer then iterated
-> over all consumers applying their ranges plus the machine constraints
-> rather than just using the immediate value.
-> 
-I noticed some of the remnants. But I'm not sure I follow what you
-are saying. What range would the core actually propagate to the
-driver? The minimum min_uV and the maximum max_uV? We need the core
-to propagate the maximum min_uV and the maximum max_uV.
+Thank you both for the optimization work -- the read-side primitives do
+need to be fast.  And the barrier() approach generates decent code, on
+some systems better than the original.  So the second barrier wins.  ;-)
 
->> 1. Introduce a new API:
-> 
->> int regulator_set_optimum_voltage(struct regulator *regulator,
->>                 int min_uV, int max_uV);
-> 
-> Why would you want to do this?  This is just the same arguments as the
-> standard regulator_set_voltage() call and if we're ever setting anything
-> other than the optimal voltage we probably ought to just stop doing
-> that.
-> 
-"Optimum" was a bad choice of words. Seems that a new API isn't
-preferred, so let's scrap this option.
-
+							Thanx, Paul
