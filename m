@@ -1,95 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751714Ab0HQEfb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:35:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:43173 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab0HQEfQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 00:35:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=Qsq87GUL6W5ruqCV7ZMd81iFsZqMSmY13hWJ0V/xsp9RUBaMMWLRiR597iyG9Rn4h
-	huRTAyk7Qcxr3/LE68Zvg==
+	id S1751986Ab0HQEgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:36:40 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:50088 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751321Ab0HQEgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 00:36:39 -0400
+Date: Tue, 17 Aug 2010 07:36:12 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] dmaengine: Add Freescale i.MX SDMA support
+Message-ID: <20100817043612.GA9631@jasper.tkos.co.il>
+References: <1281956870-12463-1-git-send-email-s.hauer@pengutronix.de>
+ <1281956870-12463-4-git-send-email-s.hauer@pengutronix.de>
+ <AANLkTi=pO-ZJ33FrL=4bVRYa2o9HA0_h5tBYG7wdMuwz@mail.gmail.com>
+ <20100816141540.GQ27749@pengutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <1281992801.1926.2019.camel@laptop>
-References: <20100816182834.3541.42317.stgit@bumblebee1.mtv.corp.google.com>
-	<1281987236.1926.1895.camel@laptop>
-	<AANLkTindpUo5tPiXVp6wXjOAqczrJvYegrOMBqSjr4_t@mail.gmail.com>
-	<1281992801.1926.2019.camel@laptop>
-Date: Mon, 16 Aug 2010 21:35:09 -0700
-Message-ID: <AANLkTikDHG7Xo2hrrwxp1DYgGNbV6BXipY+p_Uo50498@mail.gmail.com>
-Subject: Re: [PATCH] Fixed a mismatch between the users of radix_tree and the implementation.
-From: Salman Qazi <sqazi@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@us.ibm.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, adurbin@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100816141540.GQ27749@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 2:06 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> (html damaged email alert)
->
-> On Mon, 2010-08-16 at 13:59 -0700, Salman Qazi wrote:
->> On Mon, Aug 16, 2010 at 12:33 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->>         On Mon, 2010-08-16 at 11:30 -0700, Salman Qazi wrote:
->>         > For the delete case,
->>         > we no longer shrink the tree back to being just the root containing the
->>         > only remaining object.  For the insert case, we no longer store the
->>         > first object in the root, rather allocating a node structure for it.  The
->>         > reason that this works is that deleting (or inserting) intermediate nodes
->>         > does not make a difference to a reader holding a slot.
->>
->>
->>         Ah, I through that was what it did. So you basically increase the memory
->>         footprint for tiny files.. have you done any measurements on that?
->>
->
->> You raise a valid concern.  I haven't.  What would you recommend as a
->> benchmark/metric to measure this?
->
-> One thing you could try is something like the below on a freshly booted
-> machine, once without and once with the patch:
->
->  cd /usr/src/linux-2.6
->  echo 1 > /proc/sys/vm/drop_caches
->  grep radix /proc/slabinfo
->  make bzImage
->  echo 1 > /proc/sys/vm/drop_caches
->  grep radix /proc/slabinfo
->
->
->
->
+Hi Sascha,
 
-Here's what I see:
+On Mon, Aug 16, 2010 at 04:15:40PM +0200, Sascha Hauer wrote:
+> On Mon, Aug 16, 2010 at 02:21:06PM +0200, Linus Walleij wrote:
+> > 2010/8/16 Sascha Hauer <s.hauer@pengutronix.de>:
+> > > The SDMA engine is a scatter/gather DMA engine which is implemented
+> > > as a seperate coprocessor. SDMA needs its own firmware which is
+> > > requested using the standard request_firmware mechanism. The firmware
+> > > has different entry points for each peripheral type, so drivers
+> > > have to pass the peripheral type to the DMA engine which in turn
+> > > picks the correct firmware entry point from a table contained in
+> > > the firmware image itself.
+> > 
+> > Quite fun, if the spec for the microcode is open this opens up
+> > for dynamic firmware generation for specific DMA jobs does it
+> > not?
+> 
+> Unfortunately the specs are not open, so we are sticked to the binary
+> microcode from Freescale. I'm pretty sure though that the SDMA engine
+> could do at least a device_prep_dma_xor operation.
 
-Without the patch:
+Chapter 38 in the i.MX25 Reference Manual seems to include almost everything 
+there is to know about the SDMA. Isn't this enough for writing custom SDMA 
+microcodes?
 
-Before:
-radix_tree_node      468   1400    568   28    4 : tunables    0    0
-  0 : slabdata     50     50      0
+baruch
 
-After:
-radix_tree_node     1886   3192    568   28    4 : tunables    0    0
-  0 : slabdata    114    114      0
-
-With the patch:
-
-Before:
-
-radix_tree_node      495   1176    568   28    4 : tunables    0    0
-  0 : slabdata     42     42      0
-
-After:
-
-radix_tree_node     3173   7336    568   28    4 : tunables    0    0
-  0 : slabdata    262    262      0
-
-
-So, not particularly good news :(.
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
