@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab0HQTjT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 15:39:19 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:35009 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751316Ab0HQTjO (ORCPT
+	id S1752184Ab0HQTnT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 15:43:19 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:36069 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562Ab0HQTnM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 15:39:14 -0400
-Date: Tue, 17 Aug 2010 20:54:41 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
+	Tue, 17 Aug 2010 15:43:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nR0hGiRQ+1lvwLa5xZONtlhGbHCNfKqfFVYE522tm9yCOAshDyp/eipgpEmowIN56f
+         sKrHy1aGZahBZlm+NTDtNqgO9KmJwqLoNtipejuk49O8y+E0GQx4DV+ulOXQqyj1/r6b
+         PAHtmYiO+IYk3b6ZZLKHPvKYfFqH3Qp0/vUBU=
+MIME-Version: 1.0
+In-Reply-To: <20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
 References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
 	<87aaolwar8.fsf@basil.nowhere.org>
 	<20100817174134.GA23176@fieldses.org>
@@ -24,27 +24,41 @@ References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
 	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
 	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
 	<AANLkTi=sOW0Cgci+xX6rRmz+B-is0xb8DoKD350bFJN1@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	<20100817205441.200ab9a4@lxorguk.ukuu.org.uk>
+Date: Tue, 17 Aug 2010 12:43:10 -0700
+Message-ID: <AANLkTi=BB-zVFyCLgC+RWai9FFecaOad=pUC2=XFnY3J@mail.gmail.com>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, Andi Kleen <andi@firstfloor.org>,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I am having trouble seeing why this is a better idea than a simple
-> mount option to obtain decent resolution timestamps.  (Not that we
-> can't have both...)  Is there any objection to the mount option I am
-> proposing?
+On Tue, Aug 17, 2010 at 12:54 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>> Is there any objection to the mount option I am proposing?
+>
+> I have none. I doubt I'd use it as it would be too expensive on system
+> performance for some of my boxes, while having an incrementing value is
+> cheap.
+>
+> I don't see the two as conflicting - in fact the bits you need to do the
+> mount option are the bits you also need to do the counter version as
+> well. One fixes ordering at no real cost, the other adds high res
+> timestamps, both are useful.
 
-I have none. I doubt I'd use it as it would be too expensive on system
-performance for some of my boxes, while having an incrementing value is
-cheap.
+A mount option could also allow a choice of timestamp resolutions:
 
-I don't see the two as conflicting - in fact the bits you need to do the
-mount option are the bits you also need to do the counter version as
-well. One fixes ordering at no real cost, the other adds high res
-timestamps, both are useful.
+Traditional (i.e., fast)
+Alan Cox NFS hack (a tad slower but should fix NFS)
+High-res time (slowest but most accurate)
 
-Alan
+I will work on a patch this week (weekend at the latest).
+
+Thanks, Alan.
+
+ - Pat
