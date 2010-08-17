@@ -1,49 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab0HQQmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 12:42:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52126 "EHLO bear.ext.ti.com"
+	id S1757421Ab0HQQpY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 12:45:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47778 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0HQQm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 12:42:29 -0400
-From: Fernando Guzman Lugo <x0095840@ti.com>
-To: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Cc: <Hiroshi.DOYU@nokia.com>, <h-kanigeri2@ti.com>,
-        Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCH] iommu: fix end address of vm area comparation in alloc_iovm_area
-Date: Tue, 17 Aug 2010 11:56:01 -0500
-Message-Id: <1282064161-21056-1-git-send-email-x0095840@ti.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753129Ab0HQQpW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 12:45:22 -0400
+Message-ID: <4C6ABBCB.9030306@kernel.org>
+Date: Tue, 17 Aug 2010 18:41:47 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@lst.de>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de>
+In-Reply-To: <20100817131915.GB2963@lst.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 16:44:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-End address of the vm area is .start + bytes -1., not start + byte.
-This patch fixes that issue by doing an inclusive comparison with
-tmp->da_start. This issue was preventing allocate an area of size
-exactly the same than the free area. I did no change the value of
-da_end of each vm area because it is used to get area size in
-several places.
+Hi,
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-Acked-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
----
- arch/arm/plat-omap/iovmm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On 08/17/2010 03:19 PM, Christoph Hellwig wrote:
+> On Tue, Aug 17, 2010 at 11:59:38AM +0200, Tejun Heo wrote:
+>> I'm not against restructuring the patchset if it makes more sense but
+>> it just feels like it would be a bit pointless effort (and one which
+>> would require much tighter coordination among different trees) at this
+>> point.  Am I missing something?
+> 
+> What other trees do you mean?
 
-diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index 8ce0de2..24ca9c4 100644
---- a/arch/arm/plat-omap/iovmm.c
-+++ b/arch/arm/plat-omap/iovmm.c
-@@ -292,7 +292,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
- 		if (prev_end >= start)
- 			break;
- 
--		if (start + bytes < tmp->da_start)
-+		if (start + bytes <= tmp->da_start)
- 			goto found;
- 
- 		if (flags & IOVMF_DA_ANON)
+I was mostly thinking about dm/md, drdb and stuff, but you're talking
+about filesystem conversion patches being routed through block tree,
+right?
+
+> The conversions of the 8 filesystems that actually support barriers
+> need to go through this tree anyway if we want to be able to test
+> it.  Also the changes in the filesystem are absolutely minimal -
+> it's basically just s/WRITE_BARRIER/WRITE_FUA_FLUSH/ after my
+> initial patch kill BH_Orderd, and removing about 10 lines of code in
+> reiserfs.
+
+I might just resequence it to finish this part of discussion but what
+does that really buy us?  It's not really gonna help bisection.
+Bisection won't be able to tell anything in higher resolution than
+"the new implementation doesn't work".  If you show me how it would
+actually help, I'll happily reshuffle the patches.
+
+>> I wasn't sure about that part.  You removed store_flush_error(), but
+>> DM_ENDIO_REQUEUE should still have higher priority than other
+>> failures, no?
+> 
+> Which priority?
+
+IIUC, when any of flushes get DM_ENDIO_REQUEUE (which tells the dm
+core layer to retry the whole bio later), it trumps all other failures
+and the bio is retried later.  That was why DM_ENDIO_REQUEUE was
+prioritized over other error codes, which actually is sort of
+incorrect in that once a FLUSH fails, it _MUST_ be reported to upper
+layers as FLUSH failure implies data already lost.  So,
+DM_ENDIO_REQUEUE actually should have lower priority than other
+failures.  But, then again, the error codes still need to be
+prioritized.
+
+>> But how do you make sure REQ_FLUSHes for preflush finish before
+>> starting the write?
+> 
+> Hmm, okay.  I see how the special flush_bio makes the waiting easier,
+> let's see if Mike or other in the DM team have a better idea.
+
+Yeah, it would be better if it can be sequenced w/o using a work but
+let's leave it for later.
+
+Thanks.
+
 -- 
-1.6.3.3
-
+tejun
