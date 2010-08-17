@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755310Ab0HQCnV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 16 Aug 2010 22:43:21 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64998 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755200Ab0HQCnU convert rfc822-to-8bit (ORCPT
+	id S1755127Ab0HQCr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 16 Aug 2010 22:47:57 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40741 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab0HQCrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 16 Aug 2010 22:43:20 -0400
-Message-ID: <4C69F860.9050209@cn.fujitsu.com>
-Date: Tue, 17 Aug 2010 10:48:00 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	Mon, 16 Aug 2010 22:47:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=q7TJ5EPZZkrYwaHVCAKIPtaK8p3xyGY6GPyb1Sw4VP4Lrq87O/Bu93Ua2/Ys7TqDbz
+         pwhKx1fWL3U+YOT1R8TqEpM8xIgx4kd/oap44Wu48nCXs3In0wthJWdsbuqmUPNGtqbn
+         mFDs5t9OEroPabq5bqenwm+b+KCretUEmSs5E=
+Date: Tue, 17 Aug 2010 10:51:44 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Jon Masters <jcm@jonmasters.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] modules: don't call depmod when overriding external
+ module install path
+Message-ID: <20100817025144.GA5095@cr0.nay.redhat.com>
+References: <1281945814-9720-1-git-send-email-jcm@jonmasters.org>
+ <201008162013.46252.rusty@rustcorp.com.au>
 MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>,
-        Linux is full of bugs <linux-kernel@vger.kernel.org>,
-        Nir Tzachar <nir.tzachar@gmail.com>, Michal Marek <mmarek@suse.cz>
-Subject: Re: BUG: nconfig doesn't preserve case in its menu display
-References: <AANLkTimDmwmC3xDJVXB1LXJzMJTuamCswVeC5v42zU-Q@mail.gmail.com> <4C69F7B9.2000103@cn.fujitsu.com>
-In-Reply-To: <4C69F7B9.2000103@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201008162013.46252.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Li Zefan wrote:
-> 于 2010年08月17日 05:04, Ævar Arnfjörð Bjarmason 写道:
->> When I do "make nconfig" and go to "General Setup" my "Local version -
->> append to kernel release" entry appears as:
->>
->>     (-avar-akbar) Local version - append to kernel release
->>
->> When I use "make menuconfig" it's:
->>
->>     (-Avar-Akbar) Local version - append to kernel release
->>
->> And my .config agrees:
->>
->>     $ ack -n1 CONFIG_LOCALVERSION .config
->>     CONFIG_LOCALVERSION="-Avar-Akbar"
->>
->> But when I edit the version string in both menuconfig and nconfig it
->> retains the correct casing.
->>
->> I briefly searched through the nconfig code, but couldn't find
->> anything pertinent to the localversion, so this is probably a more
->> general issue.
-> 
-> The bug is in make_hot(). Here is the fix:
-> 
-> =======================
-> 
-> From: LiZefan <lizf@lizf.localdomain>
+On Mon, Aug 16, 2010 at 08:13:45PM +0930, Rusty Russell wrote:
+>On Mon, 16 Aug 2010 05:33:34 pm Jon Masters wrote:
+>> Recent kernels include an additional call to depmod during the installation
+>> of external kernel modules as a convenience, in order to ensure that those
+>> modules are picked up by the module loading tools/initramfs scripts, etc.
+>> Although this call is potentially of some value, it should not be made
+>> when explicitly setting INSTALL_MOD_PATH to a different location. This
+>> avoids creating extraneous modules.* files that will never be used.
+>> 
+>> Signed-off-by: Jon Masters <jcm@jonmasters.org>
+>
+>Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+>
+>I leave the Makefile stuff to the kbuild people...
+>
 
-Change it to:
+Looks good for me,
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
