@@ -1,125 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0HQKL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 06:11:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51946 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab0HQKL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 06:11:28 -0400
-Message-ID: <4C6A5FF1.3070209@cn.fujitsu.com>
-Date: Tue, 17 Aug 2010 18:09:53 +0800
-From: Bian Naimeng <biannm@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
+	id S1757386Ab0HQKMv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 06:12:51 -0400
+Received: from mx2.sophos.com ([195.166.81.53]:52358 "EHLO mx2.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753000Ab0HQKMt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 06:12:49 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Andreas Gruenbacher <agruen@suse.de>
+Subject: Re: [GIT PULL] notification tree - try 37!
+Date: Tue, 17 Aug 2010 11:12:41 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Matt Helsley <matthltc@us.ibm.com>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <201008171045.26155.tvrtko.ursulin@sophos.com> <201008171201.10142.agruen@suse.de>
+In-Reply-To: <201008171201.10142.agruen@suse.de>
 MIME-Version: 1.0
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-CC: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: Re: 2.6.35.2: NFS related Oops
-References: <20100816215056.GA5376@os.inf.tu-dresden.de>
-In-Reply-To: <20100816215056.GA5376@os.inf.tu-dresden.de>
-Content-Type: text/plain; charset=Shift_JIS
-Content-Transfer-Encoding: 7bit
+Message-ID: <201008171112.42097.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 17/08/2010 11:12:42,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 17/08/2010 11:12:47,
+	Serialize complete at 17/08/2010 11:12:47
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi,
-> 
-> with 2.6.35.2 I'm getting this reproducible Oops:
-> 
+On Tuesday 17 Aug 2010 11:01:09 Andreas Gruenbacher wrote:
+> On Tuesday 17 August 2010 11:45:25 Tvrtko Ursulin wrote:
+> > Why no timeouts? It sounds like a feasible way to work around listeners
+> > which have stopped working. (Timeout and -ETIME for example to be clear,
+> > not allowing access).
+>
+> From the kernel's point of view, there is no way to guess how long those
+> timeouts should be.  Watching for progress can be implemented in user space
+> though.
 
-  Please try to apply the followed patch.
+That is why I said the timeout can be configurable. But I agree (and raise you
+double :) that not only the kernel can not guess how long the timeout should
+be, but the application can not know as well. One possible way to let fanotify
+know that listeners is making progress is via some sort of a heartbeat
+message.  Then application can set the timeout as a fail safe and perm events
+can take as long as needed and we still prevent clogging the system.
 
-  ----
+How would you create a robust solution purely from userspace? With the current
+interface?
 
-   We we open a positive file just with O_EXCL but no O_CREAT, may cause kernel crash.
+> Setting errno to ETIME as a result of trying to access a file is likely to
+> break some applications which are not prepared to receive this error
+> condition; we cannot do that.
 
-  Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
+Why you think EPERM will be handled better?
 
----
- fs/nfs/dir.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> I'm quite sure that both of these issues have been discussed already.
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 29539ce..1a672dd 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1100,7 +1100,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
- 		goto no_open_dput;
- 	openflags = nd->intent.open.flags;
- 	/* We cannot do exclusive creation on a positive dentry */
--	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
-+	if (openflags & O_EXCL)
- 		goto no_open_dput;
- 	/* We can't create new files, or truncate existing ones here */
- 	openflags &= ~(O_CREAT|O_TRUNC);
--- 
-1.7.0
+Ok, I obviosuly missed it. Do you have a pointer perhaps?
 
+Tvrtko
 
-
-> [  110.825396] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [  110.828638] IP: [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-> [  110.828638] PGD be89f067 PUD bf18f067 PMD 0
-> [  110.828638] Oops: 0000 [#1] SMP
-> [  110.828638] last sysfs file: /sys/class/net/lo/operstate
-> [  110.828638] CPU 2
-> [  110.828638] Modules linked in: rtc_cmos rtc_core rtc_lib amd64_edac_mod i2c_amd756 edac_core i2c_core dm_mirror dm_region_hash dm_log dm_snapshot sg sr_mod usb_storage ohci_hcd mptspi tg3 mptscsih mptbase usbcore nls_base [last unloaded: scsi_wait_scan] 
-> [  110.828638] 
-> [  110.828638] Pid: 11264, comm: setchecksum Not tainted 2.6.35.2 #1
-> [  110.828638] RIP: 0010:[<ffffffff811247b7>]  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-> [  110.828638] RSP: 0000:ffff88003bf5b878  EFLAGS: 00010296
-> [  110.828638] RAX: ffff8800bddb48a8 RBX: ffff88003bf5bb18 RCX: 0000000000000000
-> [  110.828638] RDX: ffff8800be258800 RSI: 0000000000000000 RDI: ffff88003bf5b9f8
-> [  110.828638] RBP: 0000000000000000 R08: ffff8800bddb48a8 R09: 0000000000000004
-> [  110.828638] R10: 0000000000000003 R11: ffff8800be779000 R12: ffff8800be258800
-> [  110.828638] R13: ffff88003bf5b9f8 R14: ffff88003bf5bb20 R15: ffff8800be258800
-> [  110.828638] FS:  0000000000000000(0000) GS:ffff880041e00000(0063) knlGS:00000000556bd6b0
-> [  110.828638] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-> [  110.828638] CR2: 0000000000000000 CR3: 00000000be8ef000 CR4: 00000000000006e0
-> [  110.828638] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [  110.828638] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [  110.828638] Process setchecksum (pid: 11264, threadinfo ffff88003bf5a000, task ffff88003f232210)
-> [  110.828638] Stack:
-> [  110.828638]  0000000000000000 ffff8800bfbcf920 0000000000000000 0000000000000ffe
-> [  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> [  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000 0000000000000000
-> [  110.828638] Call Trace:
-> [  110.828638]  [<ffffffff81124c1f>] ? nfs4_xdr_enc_setattr+0x90/0xb4
-> [  110.828638]  [<ffffffff81371161>] ? call_transmit+0x1c3/0x24a
-> [  110.828638]  [<ffffffff813774d9>] ? __rpc_execute+0x78/0x22a
-> [  110.828638]  [<ffffffff81371a91>] ? rpc_run_task+0x21/0x2b
-> [  110.828638]  [<ffffffff81371b7e>] ? rpc_call_sync+0x3d/0x5d
-> [  110.828638]  [<ffffffff8111e284>] ? _nfs4_do_setattr+0x11b/0x147
-> [  110.828638]  [<ffffffff81109466>] ? nfs_init_locked+0x0/0x32
-> [  110.828638]  [<ffffffff810ac521>] ? ifind+0x4e/0x90
-> [  110.828638]  [<ffffffff8111e2fb>] ? nfs4_do_setattr+0x4b/0x6e
-> [  110.828638]  [<ffffffff8111e634>] ? nfs4_do_open+0x291/0x3a6
-> [  110.828638]  [<ffffffff8111ed81>] ? nfs4_open_revalidate+0x63/0x14a
-> [  110.828638]  [<ffffffff811056c4>] ? nfs_open_revalidate+0xd7/0x161
-> [  110.828638]  [<ffffffff810a2de4>] ? do_lookup+0x1a4/0x201
-> [  110.828638]  [<ffffffff810a4733>] ? link_path_walk+0x6a/0x9d5
-> [  110.828638]  [<ffffffff810a42b6>] ? do_last+0x17b/0x58e
-> [  110.828638]  [<ffffffff810a5fbe>] ? do_filp_open+0x1bd/0x56e
-> [  110.828638]  [<ffffffff811cd5e0>] ? _atomic_dec_and_lock+0x30/0x48
-> [  110.828638]  [<ffffffff810a9b1b>] ? dput+0x37/0x152
-> [  110.828638]  [<ffffffff810ae063>] ? alloc_fd+0x69/0x10a
-> [  110.828638]  [<ffffffff81099f39>] ? do_sys_open+0x56/0x100
-> [  110.828638]  [<ffffffff81027a22>] ? ia32_sysret+0x0/0x5
-> [  110.828638] Code: 83 f1 01 e8 f5 ca ff ff 48 83 c4 50 5b 5d 41 5c c3 41 57 41 56 41 55 49 89 fd 41 54 49 89 d4 55 48 89 f5 53 48 81 ec 18 01 00 00 <8b> 06 89 c2 83 e2 08 83 fa 01 19 db 83 e3 f8 83 c3 18 a8 01 8d
-> [  110.828638] RIP  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-> [  110.828638]  RSP <ffff88003bf5b878>
-> [  110.828638] CR2: 0000000000000000
-> [  112.840396] ---[ end trace 95282e83fd77358f ]---
-> 
-> 
-> Looks like arg->iap in encode_setattr() in nfs4xdr.c is 0.
-> 
-> 
-> 
-> Adam
-
--- 
-Regards
-Bian Naimeng
-
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
