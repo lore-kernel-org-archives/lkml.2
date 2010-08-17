@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab0HQPwh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 11:52:37 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48868 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab0HQPwg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 11:52:36 -0400
-Message-ID: <4C6AB00D.8020901@zytor.com>
-Date: Tue, 17 Aug 2010 08:51:41 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: ykzhao <yakui.zhao@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Jack Steiner <steiner@sgi.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC] - Mapping ACPI tables as CACHED
-References: <20100722152220.GA18290@sgi.com>	 <1279849573.13929.28.camel@localhost.localdomain>	 <20100723072301.GC23461@elte.hu> <1279895165.13929.61.camel@localhost.localdomain>
-In-Reply-To: <1279895165.13929.61.camel@localhost.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757288Ab0HQPxs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 11:53:48 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:44240 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753025Ab0HQPxr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 11:53:47 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Tue, 17 Aug 2010 11:53:33 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Borislav Petkov <bp@alien8.de>, linux-kernel@vger.kernel.org
+Subject: Re: compiler warnings in 2.6.35.2
+Message-ID: <20100817155333.GA17624@foursquare.net>
+References: <20100817021252.GA17647@foursquare.net> <20100817053456.GA32714@liondog.tnic> <20100817062801.GA24978@foursquare.net> <20100817063159.GC32714@liondog.tnic>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817063159.GC32714@liondog.tnic>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 07:26 AM, ykzhao wrote:
->
-> Yes. We can't map the corresponding ACPI region as cached under the
-> following case:
->      >No E820_ACPI region is reported by BIOS. In such case the ACPI
-> table resides in the NVS region
->
+On Tue, Aug 17, 2010 at 08:31:59AM +0200, Borislav Petkov wrote:
+> From: Chris Frey <cdfrey@foursquare.net>
+> Date: Tue, Aug 17, 2010 at 02:28:01AM -0400
+> 
+> > > >   CC      mm/swap.o
+> > > > In file included from include/linux/kobject.h:21,
+> > > >                  from include/linux/sched.h:91,
+> > > >                  from mm/swap.c:17:
+> > > > include/linux/sysfs.h:183: warning: parameter has incomplete type
+> > > > /home/cdfrey/kernel/git/linux/arch/x86/include/asm/cpufeature.h: In function `__static_cpu_has':
+> > > > /home/cdfrey/kernel/git/linux/arch/x86/include/asm/cpufeature.h:315: warning: asm operand 1 probably doesn't match constraints
+> > > 
+> > > Which compiler version are you using?
+> > 
+> > GCC 3.3
+> 
+> Any chance to upgrade to a 4.x version?
 
-Why could we not map the NVS region as cached?  That doesn't seem to 
-make sense.  In practice, at least, on all BIOSes I've seen the NVS 
-region is just another hunk of RAM.
+I could, but Documentation/Changes says gcc 3.2 is the minimum, so I hoped
+3.3 would be sufficient.
 
-Sample from a real system:
+As for the first warning, doesn't it just need include/linux/kobject.h
+to be included for the enum type?
 
-  BIOS-e820: 000000007d6b0000 - 000000007d6cc000 (ACPI data)
-  BIOS-e820: 000000007d6cc000 - 000000007d700000 (ACPI NVS)
+As for the second warning, I'm not sure I even understand it.
 
-Both are clearly RAM.
+- Chris
 
-If you're not talking about the e820 NVS region, that might be a 
-different thing, but for the ROM region in the legacy area, the fixed 
-MTRRs are often set up to allow caching, and we should be able to map 
-them cacheable, e.g. on this system:
-
-   00000-9FFFF write-back
-   A0000-BFFFF uncachable
-   C0000-CFFFF write-protect
-   D0000-DFFFF uncachable
-   E0000-FFFFF write-protect
-
-Clearly cacheable.
-
-	-hpa
