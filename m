@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751673Ab0HQXHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 19:07:18 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34123 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554Ab0HQXHO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 19:07:14 -0400
-X-Authority-Analysis: v=1.1 cv=mWMe3HXt1P3ELXxrmMgI9QKdSRnwjSxQbBh3ay0KAh4= c=1 sm=0 a=ToTR1L1PYWcA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=oIecyIgh3kb4mvnnsTQA:9 a=JgZuFtUTj-2NDhElnGUA:7 a=ct0Cr_XzCwuKr2GSFiKUk189bQcA:4 a=PUjeQqilurYA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100817224048.GF7362@dastard>
-References: <20100817073725.GO10429@dastard>
-	 <4C6A4A58.2030904@cn.fujitsu.com> <20100817115243.GE7362@dastard>
-	 <1282050158.3268.1303.camel@gandalf.stny.rr.com>
-	 <20100817224048.GF7362@dastard>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 17 Aug 2010 19:07:11 -0400
-Message-ID: <1282086431.3268.1975.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1751897Ab0HQXWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 19:22:50 -0400
+Received: from smtp.polymtl.ca ([132.207.4.11]:41132 "EHLO smtp.polymtl.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751669Ab0HQXWq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 19:22:46 -0400
+Message-Id: <20100817232152.095944489@efficios.com>
+User-Agent: quilt/0.48-1
+Date: Tue, 17 Aug 2010 19:16:27 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: ltt-dev@lists.casi.polymtl.ca,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [RFC PATCH 08/20] Add inline memcpy
+References: <20100817231619.277457797@efficios.com>
+Content-Disposition: inline; filename=inline-memcpy.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Tue, 17 Aug 2010 23:21:52 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 08:40 +1000, Dave Chinner wrote:
+Support __HAVE_ARCH_INLINE_MEMCPY. Start with a fall-back to memcpy().
 
-> > When the systems locks up, I assume you want to see why? The trace_pipe
-> > should show that without locking the system.
-> 
-> Exactly.
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+ include/linux/string.h |    3 +++
+ 1 file changed, 3 insertions(+)
 
-So it did work?
-
-> 
-> > You could also try downloading trace-cmd and running the tracer with
-> > that. That will save all traces to a file while running the trace.
-> 
-> I don't have tens of GB available to store all the traces that an
-> xfstests test run generates. In general, I don't need the traces,
-> either, and when  I do the problem is usually in the current ring
-> buffer, which is why I typically dump the events after the fact.
-
-Note, you can also use: trace-cmd extract
-
-which will extract the data from the ring buffer after the fact.
-
-The resulting file ("trace.dat" by default) would allow you to read it
-via kernelshark, or use the trace-cmd filters on it as well.
-
-> 
-> If the trace file cannot be made to handle this type of use
-> robustly, then perhaps it should be removed...
-
-You mean because it uses synchronize_sched() it should be removed? Seems
-that it was another kernel bug that caused the issue.
-
-I find the trace file nice to use, to look at a file over and over
-again. I could just cat trace_pipe into another file and look at that
-too I suppose. But I don't find this reason as rational to remove it.
-
--- Steve
-
+Index: linux.trees.git/include/linux/string.h
+===================================================================
+--- linux.trees.git.orig/include/linux/string.h	2010-06-21 18:23:20.000000000 -0400
++++ linux.trees.git/include/linux/string.h	2010-06-21 18:26:10.000000000 -0400
+@@ -102,6 +102,9 @@ extern void * memset(void *,int,__kernel
+ #ifndef __HAVE_ARCH_MEMCPY
+ extern void * memcpy(void *,const void *,__kernel_size_t);
+ #endif
++#ifndef __HAVE_ARCH_INLINE_MEMCPY
++#define inline_memcpy memcpy
++#endif
+ #ifndef __HAVE_ARCH_MEMMOVE
+ extern void * memmove(void *,const void *,__kernel_size_t);
+ #endif
 
