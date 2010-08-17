@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750856Ab0HQVGk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 17:06:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9140 "EHLO mx1.redhat.com"
+	id S1751433Ab0HQVIw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 17:08:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48494 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab0HQVGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 17:06:35 -0400
-Date: Tue, 17 Aug 2010 17:06:10 -0400
+	id S1750728Ab0HQVIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 17:08:47 -0400
+Date: Tue, 17 Aug 2010 17:08:32 -0400
 From: Valerie Aurora <vaurora@redhat.com>
-To: "J. R. Okajima" <hooanon05@yahoo.co.jp>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Union mounts and file locks (was Re: [PATCH 14/39] union-mount: Union mounts documentation)
-Message-ID: <20100817210610.GF5556@shell>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, jblunck@suse.de, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        tytso@mit.edu, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 23/39] fallthru: ext2 fallthru support
+Message-ID: <20100817210832.GG5556@shell>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-24-git-send-email-vaurora@redhat.com> <E1Ojufy-0004Df-PA@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <E1Ojufy-0004Df-PA@pomaz-ex.szeredi.hu>
 User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 10:51:52AM +0900, J. R. Okajima wrote:
+On Fri, Aug 13, 2010 at 03:52:02PM +0200, Miklos Szeredi wrote:
+> On Sun,  8 Aug 2010, Valerie Aurora wrote:
+> > Add support for fallthru directory entries to ext2.
 > 
-> Also here is my concern about UnionMount. All these issues have been
-> reported before.
-> - for users, the inode number may change silently. eg. copy-up.
-> - link(2) may break by copy-up.
-> - read(2) may get an obsoleted filedata (fstat(2) too).
-> - fcntl(F_SETLK) may be broken by copy-up.
-> - unnecessary copy-up may happen, for example mmap(MAP_PRIVATE) after
->   open(O_RDWR).
+> This still doesn't work correctly, only now after unmounting/mounting
+> the top layer the directory appears empty:
 
-You forgot fchmod()/fchown()/fsetxattr()/utimensat() failing on
-O_RDONLY file descriptors. :)
-
-These are all known limitations of union mounts, with the exception of
-fcntl(F_SETLK).  Several people asked about this at the LSF workshop
-and I said I'd look into it.
-
-The short version is that in-kernel file copyup will affect locks the
-same way as a concurrent rename() over the target.  If an application
-opens a file read-only and gets a lock on it, and another application
-(or the same one) opens the file read-write and takes a lock on it,
-the first lock will be on the read-only file on the lower layer, and
-the second lock will be on the file copied up to the top layer.  This
-isn't what you want, obviously.
-
-Union mounts behaves this way with locks for the same reason as
-fchmod(), etc. on O_RDONLY file descriptors fails.  In-kernel copyup
-only happens before a file descriptor is open.  Once it is open, it is
-very difficult to switch the open file with the newly copied up file
-("very difficult" meaning "Al Viro refuses to even discuss it").
-fcntl() is called on an open file descriptor, so the decision to
-copyup or not has already been made, based on the mode given to
-open().
-
-However, fcntl(F_SETLK) on a file opened read-write will behave
-exactly as expected.  The question is how many applications call
-fcntl(F_SETLK) on a read-only file descriptor as the first lock
-operation on a file?  Of those applications, how many could easily be
-rewritten to open that file descriptor with write permissions?
+Thanks, I will look into this.
 
 -VAL
+
+> uml:~# mount -oloop -r ext3.img /mnt/img/
+> uml:~# losetup /dev/loop2  ovl.img  
+> uml:~# /host/store/git/e2fsprogs/misc/mke2fs -O whiteout,fallthru /dev/loop2
+> mke2fs 1.41.12 (17-May-2010)
+> Filesystem label=
+> OS type: Linux
+> Block size=1024 (log=0)
+> Fragment size=1024 (log=0)
+> Stride=0 blocks, Stripe width=0 blocks
+> 1280 inodes, 10240 blocks
+> 512 blocks (5.00%) reserved for the super user
+> First data block=1
+> Maximum filesystem blocks=10485760
+> 2 block groups
+> 8192 blocks per group, 8192 fragments per group
+> 640 inodes per group
+> Superblock backups stored on blocks: 
+>         8193
+> 
+> Allocating group tables: done                            
+> Writing inode tables: done                            
+> Writing superblocks and filesystem accounting information: done
+> 
+> This filesystem will be automatically checked every 24 mounts or
+> 180 days, whichever comes first.  Use tune2fs -c or -i to override.
+> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> uml:~# "ls" /mnt/img
+> lost+found  union
+> uml:~# "ls" /mnt/img/union
+> 1  2  3
+> uml:~# umount /mnt/img
+> uml:~# mmount -b 8 -t ext2 /dev/loop2 /mnt/img/
+> uml:~# ls -l /mnt/img/
+> total 13
+> drwx------ 2 root root 12288 Aug 13 13:42 lost+found
+> drwxr-xr-x 2 root root  1024 Aug 13 13:42 union
+> uml:~# ls -la /mnt/img/union/
+> total 2
+> drwxr-xr-x 2 root root 1024 Aug 13 13:42 .
+> drwxr-xr-x 4 root root 1024 Aug 13 13:42 ..
+> uml:~# grep /mnt/img /proc/self/mountinfo 
+> 21 12 7:0 / /mnt/img ro,relatime - ext3 /dev/loop0 ro,errors=continue,barrier=0,data=writeback
+> 22 21 7:2 / /mnt/img rw,relatime,union - ext2 /dev/loop2 rw,errors=continue
+> 
+> Thanks,
+> Miklos
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
