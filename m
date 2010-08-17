@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab0HQMha (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 08:37:30 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36386 "EHLO
+	id S1752625Ab0HQMlH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 08:41:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54238 "EHLO
 	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab0HQMh3 (ORCPT
+	with ESMTP id S1751971Ab0HQMlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 08:37:29 -0400
+	Tue, 17 Aug 2010 08:41:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=sH9NpumIcYNuY22kL9NIINMHkLiGUgUOtYTrp7QDDhO6y8y/Wp8lmLC+xZ0TvD4ael
-         hRPlgIFP02Xv1Xc2xK+6sBMcdT5gtadMB/fXEwlzJRhCgexNJZjofdZWPpsGly5hC4wg
-         lJ0Cka4sSHaJFFLgUkgxXjaVeS+FG0gSRoSt4=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
-Subject: [PATCH] init/do_mounts.c: replace sys_mount() to do_mount()
-Date: Tue, 17 Aug 2010 21:37:23 +0900
-Message-Id: <1282048643-2475-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=CkKFL4X9AZ84zVw4ptlt8yaFeLpBZrIj+pzYsyrRbsu/93g4oVe1mW1ksnNoSuZA7T
+         EHc5EetFMFe0vMWprVyJaAadzfOtYC3SU4cc0pp+xbyTk2keaZDtMiSkwAFRf2QyQfnh
+         tZv/Od+Pb4jp1qrGJBXMhNl9EtrLCgrN8H6aE=
+Subject: [PATCH v2] hwmon: (ads7871) Fix ads7871_probe error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jean Delvare <khali@linux-fr.org>, Paul Thomas <pthomas8589@gmail.com>,
+        lm-sensors@lm-sensors.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 20:41:24 +0800
+Message-ID: <1282048884.2626.2.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sys_mount() just copies all (string) arguments from user space to kernel
-and calls do_mount(). In this case we have all args in kernel already so
-there is no need to call sys_mount(). One thing we should take care is
-'data' have to be in a page unless it is NULL. Do it manually.
+This patch moves hwmon_device_register() to the end of ads7871_probe().
+So we can make sure the device exists and is properly initialized
+before the device is exposed to user-space.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- init/do_mounts.c |   18 ++++++++++++++++--
- 1 files changed, 16 insertions(+), 2 deletions(-)
+ drivers/hwmon/ads7871.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 02e3ca4..8eabff6 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -217,7 +217,21 @@ static void __init get_fs_names(char *page)
+diff --git a/drivers/hwmon/ads7871.c b/drivers/hwmon/ads7871.c
+index b300a20..45f5829 100644
+--- a/drivers/hwmon/ads7871.c
++++ b/drivers/hwmon/ads7871.c
+@@ -176,12 +176,6 @@ static int __devinit ads7871_probe(struct spi_device *spi)
+ 	if (status < 0)
+ 		goto error_free;
  
- static int __init do_mount_root(char *name, char *fs, int flags, void *data)
- {
--	int err = sys_mount(name, "/root", fs, flags, data);
-+	int err;
-+	unsigned long data_page = 0;
-+
-+	if (data) {
-+		/* data should be in a page */
-+		data_page = __get_free_page(GFP_KERNEL);
-+		if (!data_page)
-+			return -ENOMEM;
-+		strlcpy((char *) data_page, data, PAGE_SIZE);
+-	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
+-	if (IS_ERR(pdata->hwmon_dev)) {
+-		err = PTR_ERR(pdata->hwmon_dev);
+-		goto error_remove;
+-	}
+-
+ 	spi_set_drvdata(spi, pdata);
+ 
+ 	/* Configure the SPI bus */
+@@ -204,6 +198,12 @@ static int __devinit ads7871_probe(struct spi_device *spi)
+ 		goto error_remove;
+ 	}
+ 
++	pdata->hwmon_dev = hwmon_device_register(&spi->dev);
++	if (IS_ERR(pdata->hwmon_dev)) {
++		err = PTR_ERR(pdata->hwmon_dev);
++		goto error_remove;
 +	}
 +
-+	err = do_mount(name, "/root", fs, flags, (void *) data_page);
-+
-+	if (data_page)
-+		free_page(data_page);
- 	if (err)
- 		return err;
+ 	return 0;
  
-@@ -417,6 +431,6 @@ void __init prepare_namespace(void)
- 	mount_root();
- out:
- 	devtmpfs_mount("dev");
--	sys_mount(".", "/", NULL, MS_MOVE, NULL);
-+	do_mount(".", "/", NULL, MS_MOVE, NULL);
- 	sys_chroot(".");
- }
+ error_remove:
 -- 
 1.7.0.4
+
+
 
