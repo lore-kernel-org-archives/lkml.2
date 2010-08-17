@@ -1,199 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131Ab0HQGPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 02:15:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48848 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906Ab0HQGPh (ORCPT
+	id S1754477Ab0HQGQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 02:16:05 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64814 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906Ab0HQGQD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 02:15:37 -0400
-Message-ID: <4C6A28F6.4090701@monstr.eu>
-Date: Tue, 17 Aug 2010 08:15:18 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Tue, 17 Aug 2010 02:16:03 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18kd8VapMGQR2ceV4Fd61I2
+Date: Tue, 17 Aug 2010 09:15:59 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jarkko Nikula <jhnikula@gmail.com>,
+        linux-omap@vger.kernel.org
+Subject: Re: linux-next: manual merge of the sound-asoc tree with the omap
+ tree
+Message-ID: <20100817061558.GD12184@atomide.com>
+References: <20100817122145.f399e543.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] of/microblaze: fix includes so that asm/prom.h doesn't
- need linux/of*.h
-References: <20100817060051.20467.10072.stgit@angua>
-In-Reply-To: <20100817060051.20467.10072.stgit@angua>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817122145.f399e543.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> asm/prom.h has some nasty include ordering issues because a number of
-> files assume that linux/of_* is included by prom.h.  This patch fixes
-> the Microblaze occurrences.
+* Stephen Rothwell <sfr@canb.auug.org.au> [100817 05:14]:
+> Hi all,
 > 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
-> ---
+> Today's linux-next merge of the sound-asoc tree got a conflict in
+> arch/arm/mach-omap2/board-n8x0.c between commits
+> 1c37553eb1778802f0e7b6730df36542752e801e ("omap: n8x0: Cleanup i2c1 and
+> menelaus registration") and 69be0f6f4b8e3be992ab6a333a3a82e043784c52
+> ("omap: n8x0: Register i2c2 and add board info with tlv320aic3xfor N810")
+> from the omap tree and commit f0fba2ad1b6b53d5360125c41953b7afcd6deff0
+> ("ASoC: multi-component - ASoC Multi-Component Support") from the
+> sound-asoc tree.
 > 
-> Hi Michal,
-> 
-> And here is my patch that fixes all the include issues so the remaining lines
-> can be removed from prom.h.  I'll add this one to my test-devicetree branch
-> along with similar patches to fix powerpc and sparc, and probably merge it
-> in 2.6.37.
+> I couldn't figure this out, so I effectively reverted the part of the
+> latter commit affecting that file.  Is there no way that the latter
+> commit can be broken up into smaller self contained pieces?
 
-That's bad because I don't want to keep pci broken till 2.6.37 
-especially in case that I know that is broken.
+Let's let Jarkko and Liam to queue these along with the other
+ASoC patches, I'll drop them from omap for-next.
 
-If this is the right fix for my issue and you want to merge it in 2.6.37 
-then I prefer to use my patch which simple add one header to prom.h and 
-then this patch fix it in general in 2.6.37.
+Jarkko, can you please rebase them?
 
-What do you think?
+Regards,
 
-Michal
-
-
-
-> 
-> Cheers,
-> g.
->  arch/microblaze/include/asm/prom.h  |    9 ---------
->  arch/microblaze/kernel/prom.c       |    3 ++-
->  arch/microblaze/kernel/prom_parse.c |    3 ++-
->  arch/microblaze/kernel/setup.c      |    3 ++-
->  arch/microblaze/pci/pci-common.c    |    1 +
->  drivers/net/xilinx_emaclite.c       |    1 +
->  drivers/serial/of_serial.c          |    1 +
->  drivers/serial/uartlite.c           |    1 +
->  8 files changed, 10 insertions(+), 12 deletions(-)
-> 
-> diff --git a/arch/microblaze/include/asm/prom.h b/arch/microblaze/include/asm/prom.h
-> index 101fa09..59c7932 100644
-> --- a/arch/microblaze/include/asm/prom.h
-> +++ b/arch/microblaze/include/asm/prom.h
-> @@ -83,13 +83,4 @@ extern int of_irq_map_pci(struct pci_dev *pdev, struct of_irq *out_irq);
->  
->  #endif /* __ASSEMBLY__ */
->  #endif /* __KERNEL__ */
-> -
-> -/* These includes are put at the bottom because they may contain things
-> - * that are overridden by this file.  Ideally they shouldn't be included
-> - * by this file, but there are a bunch of .c files that currently depend
-> - * on it.  Eventually they will be cleaned up. */
-> -#include <linux/of_fdt.h>
-> -#include <linux/of_irq.h>
-> -#include <linux/platform_device.h>
-> -
->  #endif /* _ASM_MICROBLAZE_PROM_H */
-> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/prom.c
-> index 427b13b..cca32f3 100644
-> --- a/arch/microblaze/kernel/prom.c
-> +++ b/arch/microblaze/kernel/prom.c
-> @@ -24,6 +24,8 @@
->  #include <linux/stringify.h>
->  #include <linux/delay.h>
->  #include <linux/initrd.h>
-> +#include <linux/of.h>
-> +#include <linux/of_fdt.h>
->  #include <linux/bitops.h>
->  #include <linux/module.h>
->  #include <linux/kexec.h>
-> @@ -31,7 +33,6 @@
->  #include <linux/irq.h>
->  #include <linux/memblock.h>
->  
-> -#include <asm/prom.h>
->  #include <asm/page.h>
->  #include <asm/processor.h>
->  #include <asm/irq.h>
-> diff --git a/arch/microblaze/kernel/prom_parse.c b/arch/microblaze/kernel/prom_parse.c
-> index 99d9b61..004a276 100644
-> --- a/arch/microblaze/kernel/prom_parse.c
-> +++ b/arch/microblaze/kernel/prom_parse.c
-> @@ -6,8 +6,9 @@
->  #include <linux/module.h>
->  #include <linux/ioport.h>
->  #include <linux/etherdevice.h>
-> +#include <linux/of.h>
->  #include <linux/of_address.h>
-> -#include <asm/prom.h>
-> +#include <linux/of_irq.h>
->  #include <asm/pci-bridge.h>
->  
->  #ifdef CONFIG_PCI
-> diff --git a/arch/microblaze/kernel/setup.c b/arch/microblaze/kernel/setup.c
-> index f5f7688..47c8331 100644
-> --- a/arch/microblaze/kernel/setup.c
-> +++ b/arch/microblaze/kernel/setup.c
-> @@ -24,6 +24,8 @@
->  #include <linux/param.h>
->  #include <linux/pci.h>
->  #include <linux/cache.h>
-> +#include <linux/of.h>
-> +#include <linux/of_fdt.h>
->  #include <linux/of_platform.h>
->  #include <linux/dma-mapping.h>
->  #include <asm/cacheflush.h>
-> @@ -31,7 +33,6 @@
->  #include <asm/cpuinfo.h>
->  
->  #include <asm/system.h>
-> -#include <asm/prom.h>
->  #include <asm/pgtable.h>
->  
->  DEFINE_PER_CPU(unsigned int, KSP);	/* Saved kernel stack pointer */
-> diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
-> index 55ef532..2e3c60a 100644
-> --- a/arch/microblaze/pci/pci-common.c
-> +++ b/arch/microblaze/pci/pci-common.c
-> @@ -29,6 +29,7 @@
->  #include <linux/slab.h>
->  #include <linux/of.h>
->  #include <linux/of_address.h>
-> +#include <linux/of_irq.h>
->  
->  #include <asm/processor.h>
->  #include <asm/io.h>
-> diff --git a/drivers/net/xilinx_emaclite.c b/drivers/net/xilinx_emaclite.c
-> index ecbbb68..68a4498 100644
-> --- a/drivers/net/xilinx_emaclite.c
-> +++ b/drivers/net/xilinx_emaclite.c
-> @@ -22,6 +22,7 @@
->  #include <linux/slab.h>
->  #include <linux/of_address.h>
->  #include <linux/of_device.h>
-> +#include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/of_mdio.h>
->  #include <linux/phy.h>
-> diff --git a/drivers/serial/of_serial.c b/drivers/serial/of_serial.c
-> index 2af8fd1..387858e 100644
-> --- a/drivers/serial/of_serial.c
-> +++ b/drivers/serial/of_serial.c
-> @@ -15,6 +15,7 @@
->  #include <linux/serial_core.h>
->  #include <linux/serial_8250.h>
->  #include <linux/of_address.h>
-> +#include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  #include <linux/nwpserial.h>
->  
-> diff --git a/drivers/serial/uartlite.c b/drivers/serial/uartlite.c
-> index 9b03d7b..95e5c27 100644
-> --- a/drivers/serial/uartlite.c
-> +++ b/drivers/serial/uartlite.c
-> @@ -23,6 +23,7 @@
->  #include <linux/of.h>
->  #include <linux/of_address.h>
->  #include <linux/of_device.h>
-> +#include <linux/of_irq.h>
->  #include <linux/of_platform.h>
->  
->  /* Match table for of_platform binding */
-> 
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Tony
