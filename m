@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754463Ab0HQExl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 00:53:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:58002 "EHLO ozlabs.org"
+	id S1753498Ab0HQExi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 00:53:38 -0400
+Received: from ozlabs.org ([203.10.76.45]:57988 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753426Ab0HQExj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 00:53:39 -0400
-Date: Tue, 17 Aug 2010 13:46:34 +1000
+	id S1751799Ab0HQExh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 00:53:37 -0400
+Date: Tue, 17 Aug 2010 14:53:31 +1000
 From: Paul Mackerras <paulus@samba.org>
 To: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>,
-        David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>,
-        Will Deacon <will.deacon@arm.com>, Borislav Petkov <bp@amd64.org>
-Subject: Re: [RFC PATCH 3/6] perf: Generalize some arch callchain code
-Message-ID: <20100817034634.GB24726@drongo>
-References: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com>
- <1281991715-10367-4-git-send-regression-fweisbec@gmail.com>
+        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        David Miller <davem@davemloft.net>, Borislav Petkov <bp@amd64.org>
+Subject: Re: [RFC PATCH 5/6 v4] perf: Fix race in callchains
+Message-ID: <20100817045331.GE24726@drongo>
+References: <1281991715-10367-6-git-send-regression-fweisbec@gmail.com>
+ <1282008846-11833-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1281991715-10367-4-git-send-regression-fweisbec@gmail.com>
+In-Reply-To: <1282008846-11833-1-git-send-regression-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Aug 16, 2010 at 10:48:32PM +0200, Frederic Weisbecker wrote:
+On Tue, Aug 17, 2010 at 03:34:06AM +0200, Frederic Weisbecker wrote:
 
-> - Most archs use one callchain buffer per cpu, except x86 that needs
->   to deal with NMIs. Provide a default perf_callchain_buffer()
->   implementation that x86 overrides.
+> Now that software events don't have interrupt disabled anymore in
+> the event path, callchains can nest on any context. So seperating
+> nmi and others contexts in two buffers has become racy.
 > 
-> - Centralize all the kernel/user regs handling and invoke new arch
->   handlers from there: perf_callchain_user() / perf_callchain_kernel()
->   That avoid all the user_mode(), current->mm checks and so...
+> Fix this by providing one buffer per nesting level. Given the size
+> of the callchain entries (2040 bytes * 4), we now need to allocate
+> them dynamically.
 > 
-> - Invert some parameters in perf_callchain_*() helpers: entry to the
->   left, regs to the right, following the traditional (src, dst).
+> v2: Fixed put_callchain_entry call after recursion.
+>     Fix the type of the recursion, it must be an array.
+> 
+> v3: Use a manual pr cpu allocation (temporary solution until NMIs
+>     can safely access vmalloc'ed memory).
 
-I think you mean (dst, src), don't you?
+It would be nice to make these allocations node-local.
 
-Apart from that, the patch looks OK, so
-
-Acked-by: Paul Mackerras <paulus@samba.org>
+Also, I see that we're allocating 4 buffers per cpu on powerpc when we
+strictly only need 3, but I don't suppose that really matters.
 
 Paul.
