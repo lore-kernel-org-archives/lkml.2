@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756784Ab0HQLhq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 07:37:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16633 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752583Ab0HQLhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 07:37:45 -0400
-Subject: Re: selinux build error -
- =?UTF-8?Q?=E2=80=98FILE=5F=5FAUDIT=5FACCESS=E2=80=99?= undeclared
-From: Eric Paris <eparis@redhat.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: "Stephen D. Smalley" <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282032919.11858.8.camel@minggr.sh.intel.com>
-References: <1282032919.11858.8.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 07:37:30 -0400
-Message-ID: <1282045050.21419.119.camel@acb20005.ipt.aol.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1756734Ab0HQLwy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 07:52:54 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:54423 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755981Ab0HQLwx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 07:52:53 -0400
+Date: Tue, 17 Aug 2010 21:52:43 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
+Message-ID: <20100817115243.GE7362@dastard>
+References: <20100817073725.GO10429@dastard>
+ <4C6A4A58.2030904@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6A4A58.2030904@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 16:15 +0800, Lin Ming wrote:
-> Current -tip(a3b97ee) tree build error.
-> My config attached.
+On Tue, Aug 17, 2010 at 04:37:44PM +0800, Lai Jiangshan wrote:
+> On 08/17/2010 03:37 PM, Dave Chinner wrote:
+> > Tracing folks,
+> > 
+> > I've got a machine stuck with a cpu spinning in a tight loop (the
+> > new writeback/sync livelock avoidance code is, well, livelocking),
+> > and I was trying to find out what triggered by using the writeback
+> > trace events. Unfortunately, I can't dump the trace events because
+> > it gets stuck here:
 > 
-> linux-2.6/security/selinux/hooks.c: In function ‘selinux_inode_permission’:
-> linux-2.6/security/selinux/hooks.c:2647:38: error: ‘FILE__AUDIT_ACCESS’ undeclared (first use in this function)
+> > 
+> > Given that the trace events are there mainly for debugging, this
+> > seems like a bit of an oversight - hanging a CPU in a tight loop is
+> > not an uncommon event during code development....
+> > 
 > 
-> It was introduced by below commit.
-> 
-> commit b782e0a68d17894d9a618ffea55b33639faa6bb4
-> Author: Eric Paris <eparis@redhat.com>
-> Date:   Fri Jul 23 11:44:03 2010 -0400
-> 
->     SELinux: special dontaudit for access checks
-> 
-> Lin Ming
+> You can try 'cat trace_pipe', if I did not miss you meaning.
 
-did you build with O= ?
+I'll try it, but I'm really after the static event list which is why
+I'm using the trace file rather than trace_pipe. I want the history,
+not new events as they happen. 
 
-Fixed in a7a387cc596278af1516c534b50cc0bee171129d but you have to run
-make clean.  If you want to fix it up by hand run:
+Cheers,
 
-find . -name av_pernmissions.h | xargs rm
-
-Your builds will work find after that.
-
--Eric
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
