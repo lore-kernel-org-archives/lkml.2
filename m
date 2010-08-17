@@ -1,258 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab0HQKDL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 06:03:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36530 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751566Ab0HQKDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 06:03:08 -0400
-Message-ID: <4C6A5D8A.4010205@kernel.org>
-Date: Tue, 17 Aug 2010 11:59:38 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1757508Ab0HQKD2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 06:03:28 -0400
+Received: from mail-in-16.arcor-online.net ([151.189.21.56]:32964 "EHLO
+	mail-in-16.arcor-online.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755856Ab0HQKD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 06:03:26 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-08.arcor-online.net 560E420549E
+Message-Id: <E1OlJ0p-0001Cu-Jh@be1.7eggert.dyndns.org>
+From: Bodo Eggert <7eggert@web.de>
+Subject: Re: unable to mount a CD - iso9660 bug?
+To: Ondrej Zary <linux@rainbow-software.org>, linux-fsdevel@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Johannes Stezenbach <js@sig21.net>
+Reply-To: 7eggert@gmx.de
+Date: Tue, 17 Aug 2010 12:03:19 +0200
+References: <fi78T-3mn-25@gated-at.bofh.it> <fi8y0-60P-37@gated-at.bofh.it> <fi8HD-6ey-7@gated-at.bofh.it> <fibcu-1Ty-21@gated-at.bofh.it>
+User-Agent: KNode/0.10.4
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de>
-In-Reply-To: <20100814103654.GA13292@lst.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 17 Aug 2010 10:02:45 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Christoph.
+Ondrej Zary <linux@rainbow-software.org> wrote:
+>> > On Mon, Aug 16, 2010 at 02:38:54PM +0200, Ondrej Zary wrote:
 
-On 08/14/2010 12:36 PM, Christoph Hellwig wrote:
-> On Fri, Aug 13, 2010 at 04:51:17PM +0200, Tejun Heo wrote:
->> Do you want to change the whole thing in a single commit?  That would
->> be a pretty big invasive patch touching multiple subsystems.
-> 
-> We can just stop draining in the block layer in the first patch, then
-> stop doing the stuff in md/dm/etc in the following and then do the
-> final renaming patches.  It would still be less patches then now, but
-> keep things working through the whole transition, which would really
-> help biseting any problems.
+>> > > I have a CD that came with Samsung printer that Linux cannot mount but
+>> > > works fine in Windows. The CD is physically OK - "dd" made ISO image
+>> > > without any problems. This ISO image is unmountable too. When I force
+>> > > the filesystem to iso9660, it mounts but no files are visible:
 
-I'm not really convinced that would help much.  If bisecting can point
-to the conversion as the culprit for whatever kind of failure,
-wouldn't that be enough?  No matter what we do the conversion will be
-a single step thing.  If we make the filesystems enforce the ordering
-first and then relax ordering in the block layer, bisection would
-still just point at the later patch.  The same goes for md/dm, the
-best we can find out would be whether the conversion is correct or not
-anyway.
+> Here's the compressed ISO file if anyone wants to examine it:
+> http://www.rainbow-software.org/linux_files/samsung-bad.rar
 
-I'm not against restructuring the patchset if it makes more sense but
-it just feels like it would be a bit pointless effort (and one which
-would require much tighter coordination among different trees) at this
-point.  Am I missing something?
+If you use -onorock, the files are visible.
 
->> +			if (req->cmd_flags & REQ_FUA)
->> +				vbr->out_hdr.type |= VIRTIO_BLK_T_FUA;
-> 
-> I'd suggest not adding FUA support to virtio yet.  Just using the flush
-> feature gives you a fully working barrier implementation.
-> 
-> Eventually we might want to add a flag in the block queue to send
-> REQ_FLUSH|REQ_FUA request through to virtio directly so that we can
-> avoid separate pre- and post flushes, but I really want to benchmark if
-> it makes an impact on real life setups first.
-
-I wrote this in the other mail but I think it would make difference if
-the backend storag is md/dm especially if it's shared by multiple VMs.
-It cuts down on one array wide cache flush.
-
->> Index: block/drivers/md/linear.c
->> ===================================================================
->> --- block.orig/drivers/md/linear.c
->> +++ block/drivers/md/linear.c
->> @@ -294,8 +294,8 @@ static int linear_make_request (mddev_t
->>  	dev_info_t *tmp_dev;
->>  	sector_t start_sector;
->>
->> -	if (unlikely(bio->bi_rw & REQ_HARDBARRIER)) {
->> -		md_barrier_request(mddev, bio);
->> +	if (unlikely(bio->bi_rw & REQ_FLUSH)) {
->> +		md_flush_request(mddev, bio);
-> 
-> We only need the special md_flush_request handling for
-> empty REQ_FLUSH requests.  REQ_WRITE | REQ_FLUSH just need the
-> flag propagated to the underlying devices.
-
-Hmm, not really, the WRITE should happen after all the data in cache
-are committed to NV media, meaning that empty FLUSH should already
-have finished by the time the WRITE starts.
-
->> +static void md_end_flush(struct bio *bio, int err)
->>  {
->>  	mdk_rdev_t *rdev = bio->bi_private;
->>  	mddev_t *mddev = rdev->mddev;
->>
->>  	rdev_dec_pending(rdev, mddev);
->>
->>  	if (atomic_dec_and_test(&mddev->flush_pending)) {
->> +		/* The pre-request flush has finished */
->> +		schedule_work(&mddev->flush_work);
-> 
-> Once we only handle empty barriers here we can directly call bio_endio
-> instead of first scheduling a work queue.Once we only handle empty
-> barriers here we can directly call bio_endio and the super wakeup
-> instead of first scheduling a work queue.
-
-Yeap, right.  That would be a nice optimization.
-
->>  	while ((bio = bio_list_pop(writes))) {
->> -		if (unlikely(bio_empty_barrier(bio))) {
->> +		if ((bio->bi_rw & REQ_FLUSH) && !bio_has_data(bio)) {
-> 
-> I kept bio_empty_barrier as bio_empty_flush, which actually is a quite
-> useful macro for the bio based drivers.
-
-Hmm... maybe.  The reason why I removed bio_empty_flush() was that
-except for the front-most sequencer (block layer for all the request
-based ones and the front-most make_request for bio based ones), it
-doesn't make sense to see REQ_FLUSH + data bios.  They should be
-sequenced at the front-most stage anyway, so I didn't have much use
-for them.  Those code paths couldn't deal with REQ_FLUSH + data bios
-anyway.
-
->> @@ -621,7 +621,7 @@ static void dec_pending(struct dm_io *io
->>  			 */
->>  			spin_lock_irqsave(&md->deferred_lock, flags);
->>  			if (__noflush_suspending(md)) {
->> -				if (!(io->bio->bi_rw & REQ_HARDBARRIER))
->> +				if (!(io->bio->bi_rw & REQ_FLUSH))
-> 
-> I suspect we don't actually need to special case flushes here anymore.
-
-Oh, I'm not sure about this part at all.  I'll ask Mike.
-
->> @@ -633,14 +633,14 @@ static void dec_pending(struct dm_io *io
->>  		io_error = io->error;
->>  		bio = io->bio;
->>
->> -		if (bio->bi_rw & REQ_HARDBARRIER) {
->> +		if (bio->bi_rw & REQ_FLUSH) {
->>  			/*
->> -			 * There can be just one barrier request so we use
->> +			 * There can be just one flush request so we use
->>  			 * a per-device variable for error reporting.
->>  			 * Note that you can't touch the bio after end_io_acct
->>  			 */
->> -			if (!md->barrier_error && io_error != -EOPNOTSUPP)
->> -				md->barrier_error = io_error;
->> +			if (!md->flush_error)
->> +				md->flush_error = io_error;
-> 
-> And we certainly do not need any special casing here.  See my patch.
-
-I wasn't sure about that part.  You removed store_flush_error(), but
-DM_ENDIO_REQUEUE should still have higher priority than other
-failures, no?
-
->>  {
->>  	int rw = rq_data_dir(clone);
->>  	int run_queue = 1;
->> -	bool is_barrier = clone->cmd_flags & REQ_HARDBARRIER;
->> +	bool is_flush = clone->cmd_flags & REQ_FLUSH;
->>  	struct dm_rq_target_io *tio = clone->end_io_data;
->>  	struct mapped_device *md = tio->md;
->>  	struct request *rq = tio->orig;
->>
->> -	if (rq->cmd_type == REQ_TYPE_BLOCK_PC && !is_barrier) {
->> +	if (rq->cmd_type == REQ_TYPE_BLOCK_PC && !is_flush) {
-> 
-> We never send flush requests as REQ_TYPE_BLOCK_PC anymore, so no need
-> for the second half of this conditional.
-
-I see.
-
->> +	if (!is_flush)
->> +		blk_end_request_all(rq, error);
->> +	else {
->>  		if (unlikely(error))
->> -			store_barrier_error(md, error);
->> +			store_flush_error(md, error);
->>  		run_queue = 0;
->> -	} else
->> -		blk_end_request_all(rq, error);
->> +	}
-> 
-> Flush requests can now be completed normally.
-
-The same question as before.  I think we still need to prioritize
-DM_ENDIO_REQUEUE failures.
-
->> @@ -1417,11 +1419,11 @@ static int _dm_request(struct request_qu
->>  	part_stat_unlock();
->>
->>  	/*
->> -	 * If we're suspended or the thread is processing barriers
->> +	 * If we're suspended or the thread is processing flushes
->>  	 * we have to queue this io for later.
->>  	 */
->>  	if (unlikely(test_bit(DMF_QUEUE_IO_TO_THREAD, &md->flags)) ||
->> -	    unlikely(bio->bi_rw & REQ_HARDBARRIER)) {
->> +	    (bio->bi_rw & REQ_FLUSH)) {
->>  		up_read(&md->io_lock);
-> 
-> AFAICS this is only needed for the old barrier code, no need for this
-> for pure flushes.
-
-I'll ask Mike.
-
->> @@ -1464,10 +1466,7 @@ static int dm_request(struct request_que
->>
->>  static bool dm_rq_is_flush_request(struct request *rq)
->>  {
->> -	if (rq->cmd_flags & REQ_FLUSH)
->> -		return true;
->> -	else
->> -		return false;
->> +	return rq->cmd_flags & REQ_FLUSH;
->>  }
-> 
-> It's probably worth just killing this wrapper.
-
-Yeah, probably.  It was an accidental edit to begin with and I left
-this part out in the new patch.
-
->> +static void process_flush(struct mapped_device *md, struct bio *bio)
->>  {
->> +	md->flush_error = 0;
->> +
->> +	/* handle REQ_FLUSH */
->>  	dm_wait_for_completion(md, TASK_UNINTERRUPTIBLE);
->>
->> -	bio_init(&md->barrier_bio);
->> -	md->barrier_bio.bi_bdev = md->bdev;
->> -	md->barrier_bio.bi_rw = WRITE_BARRIER;
->> -	__split_and_process_bio(md, &md->barrier_bio);
->> +	bio_init(&md->flush_bio);
->> +	md->flush_bio.bi_bdev = md->bdev;
->> +	md->flush_bio.bi_rw = WRITE_FLUSH;
->> +	__split_and_process_bio(md, &md->flush_bio);
-> 
-> There's not need to use a separate flush_bio here.
-> __split_and_process_bio does the right thing for empty REQ_FLUSH
-> requests.  See my patch for how to do this differenty.  And yeah,
-> my version has been tested.
-
-But how do you make sure REQ_FLUSHes for preflush finish before
-starting the write?
-
-Thanks.
-
--- 
-tejun
