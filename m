@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277Ab0HRUFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:05:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36423 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985Ab0HRUFF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:05:05 -0400
-Message-ID: <4C6C3CBA.8090504@zytor.com>
-Date: Wed, 18 Aug 2010 13:04:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1753962Ab0HRUKD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:10:03 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51824 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab0HRUJ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 16:09:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wjUV28TQugOFYpki+8IeOc+n2ZiM848Nfj4zKJiXP0j+nxOerxsRQx3akSpPGeFJX7
+         o70nluMYf+AzPgf8iFBSw5lfItdGS6U+L2ioSCa0Tblom0M+dZpcP7AVzgL0Q56G917/
+         hZnJ5bPbLiyGkpvS1v260w/OPp0m9mPvL5WXY=
+Date: Wed, 18 Aug 2010 22:00:57 +0200
+From: Richard Zidlicky <rz@linux-m68k.org>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35.2 regression, does not boot, sleeping function called
+	from invalid context
+Message-ID: <20100818200057.GA4132@linux-m68k.org>
+References: <20100817145305.GA7342@linux-m68k.org> <20100818133459.GA6663@kroah.com> <20100818140335.GB18303@linux-m68k.org> <20100818143927.GA1202@kroah.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2 2/2] x86, cpu hotplug: Fix cpu bringup concurrency
- issue
-References: <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812170644.GZ23755@8bytes.org> <4C644507.9020606@zytor.com> <20100812190414.GA23755@8bytes.org> <20100813123543.GC9046@aftab> <20100816121933.GA28147@aftab> <20100816123959.GC28147@aftab> <4C6C2E85.9050401@zytor.com> <20100818192858.GC12842@aftab>
-In-Reply-To: <20100818192858.GC12842@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100818143927.GA1202@kroah.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2010 12:28 PM, Borislav Petkov wrote:
->>
->> warning: (X86) selects ARCH_CPU_PROBE_RELEASE which has unmet direct
->> dependencies (HOTPLUG_CPU)
-> 
-> well I got 
-> 
-> +config ARCH_CPU_PROBE_RELEASE
-> +       def_bool y
-> +       depends on HOTPLUG_CPU
-> 
-> but I guess ARCH_CPU_PROBE_RELEASE gets selected still. Why isn't that
-> "depends on" forcing it, I guess select is stronger.
-> 
->> ... and build failure when compiling without CONFIG_HOTPLUG_CPU.
-> 
-> This hunk fixes the !CONFIG_HOTPLUG_CPU build here but I should've
-> caught it earlier, shame on me. Sorry for the inconvenience, can you
-> please drop this second patch for now, I'll send you a revised version
-> tomorrow.
-> 
+On Wed, Aug 18, 2010 at 07:39:27AM -0700, Greg KH wrote:
+> On Wed, Aug 18, 2010 at 04:03:35PM +0200, Richard Zidlicky wrote:
+> > On Wed, Aug 18, 2010 at 06:34:59AM -0700, Greg KH wrote:
 
-I would prefer to not continue to have a piece of Kconfig code which
-warns, so I'll hold off on this until I have your revised patch.
+> 
+> Yes, they are in Linus's tree, commits:
+> 	d7824370e26325c881b665350ce64fb0a4fde24a
+> and
+> 	11ac552477e32835cb6970bf0a70c210807f5673
 
-	-hpa
+great, that works. 
 
+Unfortunately no improvemenet with the hibernation problem that is there since
+2.6.35?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Richard
