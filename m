@@ -1,137 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab0HRX3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 19:29:42 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:56685 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751030Ab0HRX3i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 19:29:38 -0400
-Date: Thu, 19 Aug 2010 09:29:17 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        npiggin@kernel.dk, a.p.zijlstra@chello.nl
-Subject: Re: [bug] radix_tree_gang_lookup_tag_slot() looping endlessly
-Message-ID: <20100818232917.GN7362@dastard>
-References: <20100818135651.GK7362@dastard>
- <20100818173708.GB15010@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818173708.GB15010@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751681Ab0HRXio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 19:38:44 -0400
+Received: from mail.perches.com ([173.55.12.10]:1186 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030Ab0HRXin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 19:38:43 -0400
+Subject: Re: add memset checks to checkpatch.pl
+From: Joe Perches <joe@perches.com>
+To: Dave Jones <davej@redhat.com>
+Cc: apw@canonical.com, Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100818221721.GA2667@redhat.com>
+References: <20100818204016.GA29640@redhat.com>
+	 <1282167133.6724.165.camel@Joe-Laptop> <20100818214818.GA31094@redhat.com>
+	 <1282168679.6724.174.camel@Joe-Laptop>  <20100818221721.GA2667@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 16:38:41 -0700
+Message-ID: <1282174721.6724.202.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 07:37:09PM +0200, Jan Kara wrote:
->   Hi,
+On Wed, 2010-08-18 at 18:17 -0400, Dave Jones wrote:
+> On Wed, Aug 18, 2010 at 02:57:59PM -0700, Joe Perches wrote:
+>  > > I'm all for improving my shoddy perl where possible, but this doesn't seem to actually
+>  > > catch any of the test cases I wrote.  (it's also missing a } )
+>  > I intend never to be a perl monk.
+>  > I notice the missing { before the elsif after I sent it.
+>  > Oh well.
+>  > I just typed it in the emailer, so it's not tested at all.
+>  > Also it's missing a $ after 1 in the second $memset_size test.
+> still didn't catch anything for me.
+>  > What are your test cases anyway?
 > 
-> On Wed 18-08-10 23:56:51, Dave Chinner wrote:
-> > I'm seeing a livelock with the new writeback sync livelock avoidance
-> > code. The problem is that the radix tree lookup via
-> > pagevec_lookup_tag()->find_get_pages_tag() is getting stuck in
-> > radix_tree_gang_lookup_tag_slot() and never exitting.
->   Is this pagevec_lookup_tag() from write_cache_pages() which was called
-> for fsync() or so? 
+> memset(foo, 0, 10);
+> memset(foo, 10, 0);
+> memset(foo, 1, 10);
+> memset(foo, 10, 1);
+> 
+>  > Likely $Lval isn't matching things like
+>  > sizeof(*foo) so this isn't checked:
+>  > 
+>  > 	memset(foo, bar, sizeof(*foo));
+> 
+> I chose to just ignore any non integer arguments to keep things simple.
 
-Called from a direct IO doing a cache flush-invalidate call
-across the range the direct IO spans.
+This seems to work.
 
-fsstress      R  running task        0  2514   2513 0x00000008
- ffff88007da5fa98 ffffffff8110c0d5 ffff88007da5fc28 ffff880078f0c418
- ffff88007da5fbc8 ffffffff8110ae7b ffff88007da5fb08 0000000000000297
- ffffffffffffffff 0000000100000000 ffff88007da5fb20 00000002810d79ae
-Call Trace:
- [<ffffffff8110c0d5>] ? pagevec_lookup_tag+0x25/0x40
- [<ffffffff8110ae7b>] write_cache_pages+0x10b/0x490
- [<ffffffff81109d30>] ? __writepage+0x0/0x50
- [<ffffffff813fc1fe>] ? do_raw_spin_unlock+0x5e/0xb0
- [<ffffffff8110c7dc>] ? release_pages+0x20c/0x270
- [<ffffffff813fc2a4>] ? do_raw_spin_lock+0x54/0x160
- [<ffffffff813f0ca2>] ? radix_tree_gang_lookup_slot+0x72/0xb0
- [<ffffffff8110b227>] generic_writepages+0x27/0x30
- [<ffffffff8130fc5d>] xfs_vm_writepages+0x5d/0x80
- [<ffffffff8110b254>] do_writepages+0x24/0x40
- [<ffffffff8110237b>] __filemap_fdatawrite_range+0x5b/0x60
- [<ffffffff811023da>] filemap_write_and_wait_range+0x5a/0x80
- [<ffffffff81103117>] generic_file_aio_read+0x417/0x6d0
- [<ffffffff81315f7c>] xfs_file_aio_read+0x15c/0x310
- [<ffffffff811456da>] do_sync_read+0xda/0x120
- [<ffffffff813c36ff>] ? security_file_permission+0x6f/0x80
- [<ffffffff81145a25>] vfs_read+0xc5/0x180
- [<ffffffff81146151>] sys_read+0x51/0x80
- [<ffffffff81036032>] system_call_fastpath+0x16/0x1b
+I think $FuncArg is not great though.
 
->From the writeback tracing, it shows it stuck like with his writeback control:
+Because $FuncArg uses $match_balanced_parens, the
+match list args are unexpected.
 
-fsstress-2514  [001] 950360.214327: wbc_writepage: bdi 253:0: towrt=9223372036854775807 skip=0 mode=1 kupd=0 bgrd=0 reclm=0 cyclic=0 more=0 older=0x0 start=0x79000 end=0x7fffffffffffffff
-fsstress-2514  [001] 950360.214348: wbc_writepage: bdi 253:0: towrt=9223372036854775806 skip=0 mode=1 kupd=0 bgrd=0 reclm=0 cyclic=0 more=0 older=0x0 start=0x79000 end=0x7fffffffffffffff
+$2, $4, and $6 are the args of any memset argument
+that uses style func(args)
 
+ie: memset(addr(foo), val(bar), sizeof(*foo))
 
-> > The reproducer I'm running is xfstests 013 on 2.6.35-rc1 with some
-> > pending XFS changes available here:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git for-oss
-> > 
-> > It's 100% reproducable, and a regression against 2.6.35 patched wth exactly
-> > the same extra XFS commits as the above branch.
->   Hmm, what HW config do you have?
+Andy, what do you think?
 
-It's a VM started with:
+Not-signed-off-by: Joe Perches
 
-$ cat /vm-images/vm-2/run-vm-2.sh 
-#!/bin/sh
-sudo /usr/bin/kvm \
-        -kvm-shadow-memory 16 \
-        -no-fd-bootchk \
-        -localtime \
-        -boot c \
-        -serial pty \
-        -nographic \
-        -alt-grab \
-        -smp 2 -m 2048 \
-        -hda /vm-images/vm-2/root.img \
-        -drive file=/vm-images/vm-2/vm-2-test.img,if=virtio,cache=none \
-        -drive file=/vm-images/vm-2/vm-2-scratch.img,if=virtio,cache=none \
-        -net nic,vlan=0,macaddr=00:e4:b6:63:63:6e,model=virtio \
-        -net tap,vlan=0,script=/vm-images/qemu-ifup,downscript=no \
-        -kernel /vm-images/vm-2/vmlinuz \
-        -append "console=ttyS0,115200 root=/dev/sda1"
+---
+ scripts/checkpatch.pl |   18 ++++++++++++++++++
+ 1 files changed, 18 insertions(+), 0 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 2039acd..af7a4f9 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -172,6 +172,10 @@ our $Operators	= qr{
+ 			&&|\|\||,|\^|\+\+|--|&|\||\+|-|\*|\/|%
+ 		  }x;
+ 
++our $match_balanced_parens = qr/(\((?:[^\(\)]++|(?-1))*\))/;
++our $Function	= qr{(?:$Ident\s*$match_balanced_parens)};
++our $FuncArg	= qr{(?:$Lval|$Constant|$Function)};
++
+ our $NonptrType;
+ our $Type;
+ our $Declare;
+@@ -2655,6 +2659,20 @@ sub process {
+ 			WARN("sizeof(& should be avoided\n" . $herecurr);
+ 		}
+ 
++# Check for misused memsets
++
++		if ($line =~ /^\+.*\bmemset\s*\(\s*($FuncArg)\s*,\s*($FuncArg)\s*,\s*($FuncArg)\s*\)/) {
++			my $memset_addr = $1;
++			my $memset_val = $3;
++			my $memset_size = $5;
++
++			if ($memset_size =~ /^(0x|)0$/i) {
++				ERROR("memset uses second argument as constant byte value, not third.\n" . $herecurr);
++			} elsif ($memset_size =~ /^(0x|)1$/i) {
++				WARN("single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . $herecurr);
++			}
++		}
++
+ # check for new externs in .c files.
+ 		if ($realfile =~ /\.c$/ && defined $stat &&
+ 		    $stat =~ /^.\s*(?:extern\s+)?$Type\s+($Ident)(\s*)\(/s)
 
 
-> I didn't hit the livelock and I've been
-> running xfstests several times with the livelock avoidance patch.
-
-Christoph hasn't seen it either.
-
-> Hmm,
-> looking at the code maybe what you describe could happen if we remove the
-> page from page cache but leave a dangling tag in the radix tree... But
-> remove_from_page_cache() is called with tree_lock held and it removes all
-> tags from the index we just remove so it shouldn't really happen.
-
-This might be a stupid question, but here goes anyway. I know the
-slot contents are protected on lookup by rcu_read_lock() and
-rcu_dereference_raw(), but what protects the tags on read? AFAICT,
-they are being looked up without any locking, memory barriers, etc
-w.r.t. deletion. i.e. I cannot see how a tag lookup is prevented
-from racing with the propagation of a tag removal back up the tree
-(which is done under the tree lock). What am I missing?
-
-> Could
-> you dump more info about the inode this happens on? Like the i_size, the
-> index we stall at... Thanks.
-
->From the writeback tracing I know that the index is different for
-every stall, and given that it is fsstress producing the hang I'd
-guess the inode is different every time, too. I'll try to get more
-data on this later today.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
