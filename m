@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754124Ab0HRU03 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:26:29 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:50232 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab0HRU02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:26:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:date:message-id:subject:from:to:cc:
-	content-type:x-system-of-record;
-	b=FszuI1kRTf40S832AyKYUzhF2sDj4Q05VNiHwUgpmFEDVbO2/7oBEffgJLO2gtUC8
-	PEMRq6puWjTGB7PDYEV/g==
-MIME-Version: 1.0
-Date: Wed, 18 Aug 2010 22:26:24 +0200
-Message-ID: <AANLkTimdnYjDsr4GYgw=M74hH0hzyRDeb7WqfiE8-BT1@mail.gmail.com>
-Subject: [BUG] perf_events: NMI watchdog event cannot be throttled
-From: Stephane Eranian <eranian@google.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@elte.hu,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Mackerras <paulus@samba.org>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        eranian@gmail.com, perfmon2-devel@lists.sf.net
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	id S1754010Ab0HRU23 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:28:29 -0400
+Received: from kroah.org ([198.145.64.141]:42249 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750963Ab0HRU21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 16:28:27 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 18 13:27:12 2010
+Message-Id: <20100818202712.153696838@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 18 Aug 2010 13:25:20 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [patch 1/3] mm: fix page table unmap for stack guard page properly
+In-Reply-To: <20100818202723.GA547@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-I ran into some issue  with the NMI watchdog not firing in a deadlock
-situation. After some debugging I found the source of the problem.
+------------------
 
-The NMI watchdog is currently subject, like any other events, to interrupt
-throttling. The heart of the problem is that if you are deadlocked on a CPU
-with interrupts masked, the timer interrupt won't fire, therefore the
-hwc->interrupts
-field won't be reset. Then, depending on the max sampling rate, you
-could eventually
-fail the max interrupt rate test in __pfm_overflow_handler() and
-perf_events would
-throttle, i.e., stop, the NMI watchdog event before the 5s delay to panic.
-Thus, you would never get the panic. I ran into this problem myself.
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-This is a serious issue because perf_events must ensure the watchdog can
-always fire, regardless of the interrupt masking situation.
+commit 11ac552477e32835cb6970bf0a70c210807f5673 upstream.
 
-Look like one way of solving the problem would be to mark the NMI watchdog
-event as immune to throttling. The event being internal to the kernel we could
-trust the event setup from perf_event_create_kernel_counter().
+We do in fact need to unmap the page table _before_ doing the whole
+stack guard page logic, because if it is needed (mainly 32-bit x86 with
+PAE and CONFIG_HIGHPTE, but other architectures may use it too) then it
+will do a kmap_atomic/kunmap_atomic.
+
+And those kmaps will create an atomic region that we cannot do
+allocations in.  However, the whole stack expand code will need to do
+anon_vma_prepare() and vma_lock_anon_vma() and they cannot do that in an
+atomic region.
+
+Now, a better model might actually be to do the anon_vma_prepare() when
+_creating_ a VM_GROWSDOWN segment, and not have to worry about any of
+this at page fault time.  But in the meantime, this is the
+straightforward fix for the issue.
+
+See https://bugzilla.kernel.org/show_bug.cgi?id=16588 for details.
+
+Reported-by: Wylda <wylda@volny.cz>
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Reported-by: Mike Pagano <mpagano@gentoo.org>
+Reported-by: François Valenduc <francois.valenduc@tvcablenet.be>
+Tested-by: Ed Tomlinson <edt@aei.ca>
+Cc: Pekka Enberg <penberg@kernel.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ mm/memory.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2783,24 +2783,23 @@ static int do_anonymous_page(struct mm_s
+ 	spinlock_t *ptl;
+ 	pte_t entry;
+ 
+-	if (check_stack_guard_page(vma, address) < 0) {
+-		pte_unmap(page_table);
++	pte_unmap(page_table);
++
++	/* Check if we need to add a guard page to the stack */
++	if (check_stack_guard_page(vma, address) < 0)
+ 		return VM_FAULT_SIGBUS;
+-	}
+ 
++	/* Use the zero-page for reads */
+ 	if (!(flags & FAULT_FLAG_WRITE)) {
+ 		entry = pte_mkspecial(pfn_pte(my_zero_pfn(address),
+ 						vma->vm_page_prot));
+-		ptl = pte_lockptr(mm, pmd);
+-		spin_lock(ptl);
++		page_table = pte_offset_map_lock(mm, pmd, address, &ptl);
+ 		if (!pte_none(*page_table))
+ 			goto unlock;
+ 		goto setpte;
+ 	}
+ 
+ 	/* Allocate our own private page. */
+-	pte_unmap(page_table);
+-
+ 	if (unlikely(anon_vma_prepare(vma)))
+ 		goto oom;
+ 	page = alloc_zeroed_user_highpage_movable(vma, address);
+
+
