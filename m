@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753301Ab0HRNjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:39:43 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59083 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab0HRNjl convert rfc822-to-8bit (ORCPT
+	id S1753327Ab0HRNj4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:39:56 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:50054 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab0HRNjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:39:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Pd0/xVEy/W979535yzZgl2LkAE2+L+Isjqutv+Gz851O4rqYQzzZzKBfiVFnWN/ltc
-         AIxsE13wwfGoQG4VJlwvhNw8gEJvrGWOSmcHrMoFVj4d1v4eJVNbfwPFOpklpOvMIu81
-         30rqIPHFFkdZrpGLAd14Trct7xMdNILVO2Ar0=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTi=vCb8rQu3KPcCv7cP94ovQ_ZFrs7aBjGYtPQmy@mail.gmail.com>
-References: <1281095419-15600-1-git-send-email-linus.walleij@stericsson.com>
-	<20100817044834.GA27060@angua.secretlab.ca>
-	<AANLkTi=vCb8rQu3KPcCv7cP94ovQ_ZFrs7aBjGYtPQmy@mail.gmail.com>
-Date: Wed, 18 Aug 2010 15:39:40 +0200
-Message-ID: <AANLkTinmYR_N2jv1q7rNR1FWvemXbemkhJBL=_f9eFP0@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ARM: add PrimeCell generic DMA to PL022 v9
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Aug 2010 09:39:54 -0400
+To: viro@ZenIV.linux.org.uk
+CC: jkmalinen@gmail.com, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-reply-to: <E1OlimD-0006YS-3T@pomaz-ex.szeredi.hu> (message from Miklos
+	Szeredi on Wed, 18 Aug 2010 15:33:57 +0200)
+Subject: Re: [PATCH] uml: fix hostfs lookup
+References: <E1OlimD-0006YS-3T@pomaz-ex.szeredi.hu>
+Message-Id: <E1Olirt-0006aI-DV@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 18 Aug 2010 15:39:49 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/18 Grant Likely <grant.likely@secretlab.ca>:
+Oops, sorry.  Off-by-one bug crept in there.
 
-> This patch causes the following build error and warnings.  The
-> warnings are simple init annotation mismatches.  I haven't dug into
-> the error, but I suspect the driver needs to depend on or select
-> another config symbol.  I'm dropping it from my tree.
+Updated patch follows.
 
-I'm unable to reproduce this problem in Torvalds' tree and
--next. I'm using the realview, U8500 and U300 defconfigs with and
-without the DMAengine, no difference, totally silent.
+Thanks,
+Miklos
 
-What kind of configuration are you building this on?
+----
+Subject: uml: fix hostfs lookup
 
-Yours
-Linus Walleij
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+commit e9193059 (hostfs: fix races in dentry_name() and inode_name())
+broke hostfs lookup.
+
+The cause of the bug was that strncpy() zero fills the whole buffer.
+
+Replace strncpy() with memcpy() and replace open coded memory move
+with memmove().
+
+Reported-by: Jouni Malinen <jkmalinen@gmail.com>
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+---
+ fs/hostfs/hostfs_kern.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
+
+Index: linux-2.6/fs/hostfs/hostfs_kern.c
+===================================================================
+--- linux-2.6.orig/fs/hostfs/hostfs_kern.c	2010-08-18 15:09:07.000000000 +0200
++++ linux-2.6/fs/hostfs/hostfs_kern.c	2010-08-18 15:36:34.000000000 +0200
+@@ -100,20 +100,12 @@ static char *__dentry_name(struct dentry
+ 
+ 	root = dentry->d_sb->s_fs_info;
+ 	len = strlen(root);
+-	if (IS_ERR(p)) {
++	if (IS_ERR(p) || len > p - name) {
+ 		__putname(name);
+ 		return NULL;
+ 	}
+-	strncpy(name, root, PATH_MAX);
+-	if (len > p - name) {
+-		__putname(name);
+-		return NULL;
+-	}
+-	if (p > name + len) {
+-		char *s = name + len;
+-		while ((*s++ = *p++) != '\0')
+-			;
+-	}
++	memcpy(name, root, len);
++	memmove(name + len, p, PATH_MAX - (p - name));
+ 	return name;
+ }
+ 
