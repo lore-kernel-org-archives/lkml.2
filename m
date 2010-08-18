@@ -1,155 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab0HRKbl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 06:31:41 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53926 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab0HRKbj (ORCPT
+	id S1752696Ab0HRKft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 06:35:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48659 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192Ab0HRKfq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 06:31:39 -0400
-Date: Wed, 18 Aug 2010 12:31:37 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [RFC] gpio/stmpe: add bitmask to block requests to unavailable
- GPIOs
-Message-ID: <20100818103137.GB3528@pengutronix.de>
-References: <1281971684-16505-1-git-send-email-w.sang@pengutronix.de>
- <20100818100950.GA19706@bnru01.bnr.st.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="CdrF4e02JqNVZeln"
-Content-Disposition: inline
-In-Reply-To: <20100818100950.GA19706@bnru01.bnr.st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 18 Aug 2010 06:35:46 -0400
+Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control
+ rf/camera power
+From: David Woodhouse <dwmw2@infradead.org>
+To: Ike Panhc <ike.pan@canonical.com>
+Cc: "platform-driver-x86@vger.kernel.org" 
+	<platform-driver-x86@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
+References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 11:35:19 +0100
+Message-ID: <1282127719.2747.211.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.31.6 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-08-18 at 09:36 +0100, Ike Panhc wrote:
+> 
+> Once the rfkill of a laptop is set to block, it is no way to unblock with Linux
+> without driver. Thanks for David Woodhouse wrote the first driver solving this.
+> 
+> But the \_SB_.GECN and \_SB_.DECN are only available on Lenovo ideapad S10-3.
+> Using EC command to control rf/camera power is better because I believe every
+> ideapads which has VPC2004 device in its DSDT has this common method.
+> 
+> This driver is tested and work fine on Lenovo ideapad B550 and ideapad S10-3.
 
---CdrF4e02JqNVZeln
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Works for me too (on S10-3); thanks.
 
-On Wed, Aug 18, 2010 at 03:39:50PM +0530, Rabin VINCENT wrote:
-> On Mon, Aug 16, 2010 at 17:14:44 +0200, Wolfram Sang wrote:
-> > GPIOs on these controller are multi-functional. If you decided to use
-> > some of them e.g. as input channels for the ADC, you surely don't want
-> > those pins to be reassigned as simple GPIOs (which may be triggered even
-> > from userspace via 'export'). Same for the touchscreen controller pins.
-> > Since knowledge about the hardware is needed to decide which GPIOs to
-> > reserve, let this bitmask be inside platform_data and provide some
-> > defines to assist potential users.
->=20
-> Could this be done without the platform data, say something like the
-> below?  (Though this does assume that nobody tries to request GPIOs
-> before the STMPE subdrivers reserve their pins.)
->=20
+It all looks good, although should we have a delay or a schedule or at
+least a cpu_relax() in the read_ec_data() and write_ec_cmd() loops?
+Those loops should be using time_before() too, rather than open-coding
+the comparison.
 
-While I'd also like to skip the additional platform_data entry, your
-last comment is in deed a drawback. Also, when thinking of a generic
-solution (ADC comes to my mind), you can't make an assumption which pins
-will have the alternate function as you can do with the touchscreen
-driver. If a pin is an ADC-input channel or a GPIO, that is board
-design.
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-Regards,
-
-   Wolfram
-
-> diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchsc=
-reen/stmpe-ts.c
-> index 656148e..d1595f9 100644
-> --- a/drivers/input/touchscreen/stmpe-ts.c
-> +++ b/drivers/input/touchscreen/stmpe-ts.c
-> @@ -179,6 +179,12 @@ static int __devinit stmpe_init_hw(struct stmpe_touc=
-h *ts)
->  		return ret;
->  	}
-> =20
-> +	ret =3D stmpe_set_altfunc(stmpe, 0xf0, STMPE_BLOCK_TOUCHSCREEN);
-> +	if (ret) {
-> +		dev_err(dev, "Could not enable alternate function for pins\n");
-> +		return ret;
-> +	}
-> +
->  	adc_ctrl1 =3D SAMPLE_TIME(ts->sample_time) | MOD_12B(ts->mod_12b) |
->  		REF_SEL(ts->ref_sel);
->  	adc_ctrl1_mask =3D SAMPLE_TIME(0xff) | MOD_12B(0xff) | REF_SEL(0xff);
-> diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-> index 0754c5e9..4f748fa 100644
-> --- a/drivers/mfd/stmpe.c
-> +++ b/drivers/mfd/stmpe.c
-> @@ -253,6 +253,12 @@ int stmpe_set_altfunc(struct stmpe *stmpe, u32 pins,=
- enum stmpe_block block)
-> =20
->  	mutex_lock(&stmpe->lock);
-> =20
-> +	if (block =3D=3D STMPE_BLOCK_GPIO && (pins & stmpe->af_pins)) {
-> +		dev_dbg(stmpe->dev, "not allowing change of AF pins to GPIO\n");
-> +		ret =3D -EBUSY;
-> +		goto out;
-> +	}
-> +
->  	ret =3D __stmpe_enable(stmpe, STMPE_BLOCK_GPIO);
->  	if (ret < 0)
->  		goto out;
-> @@ -274,6 +280,11 @@ int stmpe_set_altfunc(struct stmpe *stmpe, u32 pins,=
- enum stmpe_block block)
->  		pins &=3D ~(1 << pin);
->  	}
-> =20
-> +	if (block =3D=3D STMPE_BLOCK_GPIO)
-> +		stmpe->af_pins &=3D ~pins;
-> +	else
-> +		stmpe->af_pins |=3D pins;
-> +
->  	ret =3D __stmpe_block_write(stmpe, regaddr, numregs, regs);
-> =20
->  out:
-> diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-> index 39ca758..ba5a847 100644
-> --- a/include/linux/mfd/stmpe.h
-> +++ b/include/linux/mfd/stmpe.h
-> @@ -64,6 +64,7 @@ struct stmpe_variant_info;
->   * @num_gpios: number of gpios, differs for variants
->   * @ier: cache of IER registers for bus_lock
->   * @oldier: cache of IER registers for bus_lock
-> + * @af_pins: mask of pins set in alternate function mode
->   * @pdata: platform data
->   */
->  struct stmpe {
-> @@ -79,6 +80,7 @@ struct stmpe {
->  	int num_gpios;
->  	u8 ier[2];
->  	u8 oldier[2];
-> +	u32 af_pins;
->  	struct stmpe_platform_data *pdata;
->  };
-> =20
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---CdrF4e02JqNVZeln
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkxrtokACgkQD27XaX1/VRtcegCgxLe5RfT4AOTjLDb0uMITP4rz
-krEAn1wcWgwcV6vQYEXsP43P/ALskCe3
-=iZVF
------END PGP SIGNATURE-----
-
---CdrF4e02JqNVZeln--
