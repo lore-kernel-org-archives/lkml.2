@@ -1,97 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0HROrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:47:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:48348 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab0HROq6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:46:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fIZCq/rdRCBYU07ugt/7EsfubSwId7A4iFBVHHgR1CjhMQpI/01rAp4ANkT+ZRagN5
-         0HFpiEFyga5iKMkBw6EYpAOXOdcN00wCByjGlk3R4TiIvjX5Q5XFo84+qqAqIj6QgxkT
-         b4SIW7ZJ0fk0tpXpM34qIkNNuG5t0flZ4pGls=
+	id S1753620Ab0HROsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:48:18 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37020 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753148Ab0HROsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 10:48:17 -0400
+Date: Wed, 18 Aug 2010 20:18:09 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nikanth Karthikesan <knikanth@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Bill Davidsen <davidsen@tmr.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Per file dirty limit throttling
+Message-ID: <20100818144809.GF28417@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <201008160949.51512.knikanth@suse.de>
+ <201008171039.23701.knikanth@suse.de>
+ <1282033475.1926.2093.camel@laptop>
+ <201008181452.05047.knikanth@suse.de>
+ <1282125536.1926.3675.camel@laptop>
+ <20100818140856.GE28417@balbir.in.ibm.com>
+ <1282141518.1926.4048.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20100818155359.66b9ddb6@notabene>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<87aaolwar8.fsf@basil.nowhere.org>
-	<20100817174134.GA23176@fieldses.org>
-	<20100817182920.GD18161@basil.fritz.box>
-	<20100817190447.GA28049@fieldses.org>
-	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
-	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
-	<20100817192937.GD26609@fieldses.org>
-	<20100818155359.66b9ddb6@notabene>
-Date: Wed, 18 Aug 2010 07:46:57 -0700
-Message-ID: <AANLkTim9qTjB15Hr+Te8UzgUpZWj41JMXLWf_gJrthc3@mail.gmail.com>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: Neil Brown <neilb@suse.de>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1282141518.1926.4048.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 10:53 PM, Neil Brown <neilb@suse.de> wrote:
->
-> I imagine something like this:
->  - Create a global struct timespec which is protected by a seqlock
->   Call it current_nfsd_time or similar.
->  - file_update_time reads this and uses it if it is newer than
->   current_fs_time.
->  - nfsd updates it whenever it reads an mtime out of an inode that matches
->   current_fs_time to the granularity of 1/HZ.
+* Peter Zijlstra <peterz@infradead.org> [2010-08-18 16:25:18]:
 
-I think nfsd can simply update current_nfsd_time whenever the mtime it
-reads from an inode is >= current_nfsd_time.  (The invariant you need
-to maintain is that whenever nfsd reads an mtime, any timestamps
-produced after that have a later time.  So just code it that way
-directly.)
+> On Wed, 2010-08-18 at 19:38 +0530, Balbir Singh wrote:
+> 
+> > There is an ongoing effort to look at per-cgroup dirty limits and I
+> > honestly think it would be nice to do it at that level first. We need
+> > it there as a part of the overall I/O controller. As a specialized
+> > need it could handle your case as well. 
+> 
+> Well, it would be good to isolate that to the cgroup code. Also from
+> what I understood, the plan was to simply mark dirty inodes with a
+> cgroup and use that from writeout_inodes() to write out inodes
+> specifically used by that cgroup.
+> 
+> That is, on top of what Andrea Righi already proposed, which would
+> provide the actual per cgroup dirty limit (although the per-bdi
+> proportions applied to a cgroup limit aren't strictly correct, but that
+> seems to be something you'll have to live with, a per-bdi-per-cgroup
+> proportion would simply be accounting insanity).
+> 
+> That is a totally different thing than what was proposed.
 
->   If the current value is before current_kernel_time, it
->   is set to current_kernel_time, otherwise tv_nsec is incremented -
->   unless that increases
->   beyond jiffies_to_usec(1)*1000 beyond current_kernel_time.
->  - the global 'struct timespec' is zeroed whenever system time is set
->   backwards.
+Understood, I was indirectly trying to get Nikanth to look at cgroups
+since he was interested in the dirtier (as in task).
 
-I believe this works.
 
-> [[You could probably make ext3 work reasonably well by adding a mount option
->  which:
->    - advertises s_time_gran as 1
->    - when storing: rounds timestamps up to the next second if tv_nsec != 0
->    - when loading, setting the timestamp to the current time if the stored
->      number matches current_kernel_time().tv_sec+1
->  You would get occasional forward jumps in mtime, but usually when you
->  aren't looking, and at least you would not get real changes that are not
->  reflected in mtime
-> ]]
-
-But I do not believe this works.
-
-1) Modify file A
-2) Modify file B
-3) File A experiences one of those "occasional forward jumps in mtime"
-(inode evicted + read back within 1 second)
-4) mtimes on A and B are now out of order -- very bad
-
-As Bruce mentioned, ext3 is a lost cause.
-
-Regardless of any of this, however, the first step is to provide a
-mount option to select the timestamp algorithm...  Because it is still
-absurd that I cannot have accurate timestamps on my files here in the
-21st century.
-
-Once that is done, the rest is just providing the alternative
-implementations and choosing defaults.
-
- - Pat
+-- 
+	Three Cheers,
+	Balbir
