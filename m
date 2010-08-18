@@ -1,118 +1,443 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786Ab0HRMuw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 08:50:52 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:48130 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744Ab0HRMut (ORCPT
+	id S1752780Ab0HRNBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:01:37 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:56361 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751334Ab0HRNBd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 08:50:49 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 18 Aug 2010 14:50:25 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: lockdep false positive? -- firewire-core transaction timer vs.
- scsi-core host lock
-To: Clemens Ladisch <clemens@ladisch.de>
-cc: Peter Zijlstra <peterz@infradead.org>, Yong Zhang <yong.zhang0@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <4C6BA757.7050108@ladisch.de>
-Message-ID: <tkrat.2aa42a952e4df4b1@s5r6.in-berlin.de>
-References: <tkrat.1e48e021935dc8b7@s5r6.in-berlin.de> 
- <20100817143509.GC2838@zhy> <4C6AB76C.9060809@s5r6.in-berlin.de> 
- <4C6B8562.1070902@ladisch.de> <1282121942.1926.3552.camel@laptop>
- <4C6BA757.7050108@ladisch.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	Wed, 18 Aug 2010 09:01:33 -0400
+From: "Krogerus Heikki (EXT-Teleca/Helsinki)" 
+	<ext-heikki.krogerus@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org, dwmw2@infradead.org, cbou@mail.ru,
+        felipe.balbi@nokia.com, ameya.palande@nokia.com,
+        markus.lehtonen@nokia.com, roger.quadros@nokia.com
+Subject: [PATCH] power_supply: add isp1704 charger detection driver
+Date: Wed, 18 Aug 2010 16:01:05 +0300
+Message-Id: <1282136465-1748-1-git-send-email-ext-heikki.krogerus@nokia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clemens Ladisch wrote:
-> firewire: core: do not use del_timer_sync() in interrupt context
-> 
-> Because we might be in interrupt context, replace del_timer_sync() with
-> del_timer().
+From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
 
-OK.  And thanks for the pointers into the locking guide.
+NXP ISP1704 is Battery Charging Specification 1.0 compliant USB
+transceiver. This adds a power supply driver for ISP1704 and
+ISP1707 USB transceivers.
 
-> If the timer is already running, we know that it will
-> clean up the transaction, so we do not need to do any further processing
-> in the normal transaction handler.
-> 
-> Many thanks to Yong Zhang for diagnosing this.
-> 
-> Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-> ---
->  drivers/firewire/core-transaction.c |    9 ++++++---
->  1 file changed, 6 insertions(+), 3 deletions(-)
-> 
-> --- a/drivers/firewire/core-transaction.c
-> +++ b/drivers/firewire/core-transaction.c
-> @@ -81,6 +81,8 @@ static int close_transaction(struct fw_transaction *transaction,
->  	spin_lock_irqsave(&card->lock, flags);
->  	list_for_each_entry(t, &card->transaction_list, link) {
->  		if (t == transaction) {
-> +			if (!del_timer(&t->split_timeout_timer))
-> +				goto timed_out;
+Signed-off-by: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
+---
+ drivers/power/Kconfig           |    7 +
+ drivers/power/Makefile          |    1 +
+ drivers/power/isp1704_charger.c |  371 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 379 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/isp1704_charger.c
 
-+			if (!del_timer(&t->split_timeout_timer)) {
-+				spin_unlock_irqrestore(&card->lock, flags);
-+				goto timed_out;
-+			}
-
->  			list_del_init(&t->link);
->  			card->tlabel_mask &= ~(1ULL << t->tlabel);
->  			break;
-> @@ -89,11 +91,11 @@ static int close_transaction(struct fw_transaction *transaction,
->  	spin_unlock_irqrestore(&card->lock, flags);
->  
->  	if (&t->link != &card->transaction_list) {
-> -		del_timer_sync(&t->split_timeout_timer);
->  		t->callback(card, rcode, NULL, 0, t->callback_data);
->  		return 0;
->  	}
->  
-> +timed_out:
->  	return -ENOENT;
->  }
->  
-> @@ -921,6 +923,8 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
->  	spin_lock_irqsave(&card->lock, flags);
->  	list_for_each_entry(t, &card->transaction_list, link) {
->  		if (t->node_id == source && t->tlabel == tlabel) {
-> +			if (!del_timer(&t->split_timeout_timer))
-> +				goto timed_out;
-
-Ditto.
-
->  			list_del_init(&t->link);
->  			card->tlabel_mask &= ~(1ULL << t->tlabel);
->  			break;
-> @@ -929,6 +933,7 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
->  	spin_unlock_irqrestore(&card->lock, flags);
->  
->  	if (&t->link == &card->transaction_list) {
-> +timed_out:
->  		fw_notify("Unsolicited response (source %x, tlabel %x)\n",
->  			  source, tlabel);
->  		return;
-> @@ -963,8 +968,6 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
->  		break;
->  	}
->  
-> -	del_timer_sync(&t->split_timeout_timer);
-> -
->  	/*
->  	 * The response handler may be executed while the request handler
->  	 * is still pending.  Cancel the request handler.
-
-Shall I commit with the added spin_unlocks?  Or do you prefer to send an update?
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 0734356..d55fc29 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -166,4 +166,11 @@ config BATTERY_INTEL_MID
+ 	  Say Y here to enable the battery driver on Intel MID
+ 	  platforms.
+ 
++config CHARGER_ISP1704
++	tristate "ISP1704 USB Charger Detection"
++	select NOP_USB_XCEIV if ! MACH_NOKIA_RX51
++	help
++	  Say Y to enable support for USB Charger Detection with
++	  ISP1707/ISP1704 USB transceivers.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 10143aa..c73d381 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -37,3 +37,4 @@ obj-$(CONFIG_BATTERY_S3C_ADC)	+= s3c_adc_battery.o
+ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
+ obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+ obj-$(CONFIG_BATTERY_INTEL_MID)	+= intel_mid_battery.o
++obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
+diff --git a/drivers/power/isp1704_charger.c b/drivers/power/isp1704_charger.c
+new file mode 100644
+index 0000000..821ad29
+--- /dev/null
++++ b/drivers/power/isp1704_charger.c
+@@ -0,0 +1,371 @@
++/*
++ * isp1704_charger.c - ISP1704 USB Charger Detection driver
++ *
++ * Copyright (C) 2010 Nokia Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/device.h>
++#include <linux/sysfs.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/delay.h>
++
++#include <linux/usb/otg.h>
++#include <linux/usb/ulpi.h>
++#include <linux/usb/ch9.h>
++#include <linux/usb/gadget.h>
++
++/* Vendor specific Power Control register */
++#define ISP1704_PWR_CTRL		0x3d
++#define ISP1704_PWR_CTRL_SWCTRL		(1 << 0)
++#define ISP1704_PWR_CTRL_DET_COMP	(1 << 1)
++#define ISP1704_PWR_CTRL_BVALID_RISE	(1 << 2)
++#define ISP1704_PWR_CTRL_BVALID_FALL	(1 << 3)
++#define ISP1704_PWR_CTRL_DP_WKPU_EN	(1 << 4)
++#define ISP1704_PWR_CTRL_VDAT_DET	(1 << 5)
++#define ISP1704_PWR_CTRL_DPVSRC_EN	(1 << 6)
++#define ISP1704_PWR_CTRL_HWDETECT	(1 << 7)
++
++#define NXP_VENDOR_ID			0x04cc
++
++static u16 isp170x_id[] = {
++	0x1704,
++	0x1707,
++};
++
++struct isp1704_charger {
++	struct device		*dev;
++	struct power_supply	psy;
++	struct otg_transceiver	*otg;
++	struct notifier_block	nb;
++	struct work_struct	work;
++
++	char			model[7];
++	unsigned		present:1;
++};
++
++/*
++ * ISP1704 detects PS/2 adapters as charger. To make sure the detected charger
++ * is actually a dedicated charger, the following steps need to be taken.
++ */
++static inline int isp1704_charger_verify(struct isp1704_charger *isp)
++{
++	u8 r, ret = 0;
++
++	/* Reset the transceiver */
++	r = otg_io_read(isp->otg, ULPI_FUNC_CTRL);
++	r |= ULPI_FUNC_CTRL_RESET;
++	otg_io_write(isp->otg, ULPI_FUNC_CTRL, r);
++	usleep_range(1000, 2000);
++
++	/* Set normal mode */
++	r &= ~(ULPI_FUNC_CTRL_RESET | ULPI_FUNC_CTRL_OPMODE_MASK);
++	otg_io_write(isp->otg, ULPI_FUNC_CTRL, r);
++
++	/* Clear the DP and DM pull-down bits */
++	r = ULPI_OTG_CTRL_DP_PULLDOWN | ULPI_OTG_CTRL_DM_PULLDOWN;
++	otg_io_write(isp->otg, ULPI_CLR(ULPI_OTG_CTRL), r);
++
++	/* Enable strong pull-up on DP (1.5K) and reset */
++	r = ULPI_FUNC_CTRL_TERMSELECT | ULPI_FUNC_CTRL_RESET;
++	otg_io_write(isp->otg, ULPI_SET(ULPI_FUNC_CTRL), r);
++	usleep_range(1000, 2000);
++
++	/* Read the line state */
++	if (otg_io_read(isp->otg, ULPI_DEBUG)) {
++		/* Is it a charger or PS/2 connection */
++
++		/* Enable weak pull-up resistor on DP */
++		otg_io_write(isp->otg, ULPI_SET(ISP1704_PWR_CTRL),
++				ISP1704_PWR_CTRL_DP_WKPU_EN);
++
++		/* Disable strong pull-up on DP (1.5K) */
++		otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
++				ULPI_FUNC_CTRL_TERMSELECT);
++
++		/* Enable weak pull-down resistor on DM */
++		otg_io_write(isp->otg, ULPI_SET(ULPI_OTG_CTRL),
++				ULPI_OTG_CTRL_DM_PULLDOWN);
++
++		/* It's a charger if the line states are clear */
++		if (!(otg_io_read(isp->otg, ULPI_DEBUG)))
++			ret = 1;
++
++		/* Disable weak pull-up resistor on DP */
++		otg_io_write(isp->otg, ULPI_CLR(ISP1704_PWR_CTRL),
++				ISP1704_PWR_CTRL_DP_WKPU_EN);
++	} else {
++		ret = 1;
++
++		/* Disable strong pull-up on DP (1.5K) */
++		otg_io_write(isp->otg, ULPI_CLR(ULPI_FUNC_CTRL),
++				ULPI_FUNC_CTRL_TERMSELECT);
++	}
++
++	return ret;
++}
++
++static inline int isp1704_charger_detect(struct isp1704_charger *isp)
++{
++	unsigned long	timeout;
++	u8		r;
++	int		vdat;
++
++	/* set SW control bit in PWR_CTRL register */
++	otg_io_write(isp->otg, ISP1704_PWR_CTRL,
++			ISP1704_PWR_CTRL_SWCTRL);
++
++	/* enable manual charger detection */
++	r = (ISP1704_PWR_CTRL_SWCTRL | ISP1704_PWR_CTRL_DPVSRC_EN);
++	otg_io_write(isp->otg, ULPI_SET(ISP1704_PWR_CTRL), r);
++	usleep_range(1000, 2000);
++
++	timeout = jiffies + msecs_to_jiffies(300);
++	while (!time_after(jiffies, timeout)) {
++		/* Check if there is a charger */
++		vdat = !!(otg_io_read(isp->otg, ISP1704_PWR_CTRL)
++				& ISP1704_PWR_CTRL_VDAT_DET);
++		if (vdat)
++			break;
++	}
++	return vdat;
++}
++
++static void isp1704_charger_work(struct work_struct *data)
++{
++	struct isp1704_charger	*isp =
++		container_of(data, struct isp1704_charger, work);
++
++	/* FIXME Only supporting dedicated chargers even though isp1704 can
++	 * detect HUB and HOST chargers. If the device has already been
++	 * enumerated, the detection will break the connection.
++	 */
++	if (isp->otg->state != OTG_STATE_B_IDLE)
++		return;
++
++	/* disable data pullups */
++	if (isp->otg->gadget)
++		usb_gadget_disconnect(isp->otg->gadget);
++
++	/* detect charger */
++	if (isp1704_charger_detect(isp))
++		isp->present = isp1704_charger_verify(isp);
++
++	/* enable data pullups */
++	if (isp->otg->gadget)
++		usb_gadget_connect(isp->otg->gadget);
++
++	if (isp->present)
++		power_supply_changed(&isp->psy);
++}
++
++static int isp1707_notifier_call(struct notifier_block *nb,
++		unsigned long event, void *unused)
++{
++	struct isp1704_charger *isp =
++		container_of(nb, struct isp1704_charger, nb);
++
++	switch (event) {
++	case USB_EVENT_VBUS:
++		schedule_work(&isp->work);
++		break;
++	case USB_EVENT_NONE:
++		isp->present = 0;
++		power_supply_changed(&isp->psy);
++		break;
++	default:
++		return NOTIFY_DONE;
++	}
++
++	return NOTIFY_OK;
++}
++
++static int isp1704_charger_get_property(struct power_supply *psy,
++				enum power_supply_property psp,
++				union power_supply_propval *val)
++{
++	struct isp1704_charger *isp =
++		container_of(psy, struct isp1704_charger, psy);
++
++	switch (psp) {
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = isp->present;
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = isp->model;
++		break;
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		val->strval = "NXP";
++		break;
++	default:
++		return -EINVAL;
++	}
++	return 0;
++}
++
++static enum power_supply_property power_props[] = {
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++	POWER_SUPPLY_PROP_MANUFACTURER,
++};
++
++static inline int isp1704_test_ulpi(struct isp1704_charger *isp)
++{
++	int			vendor, product, i;
++	int			ret = -ENODEV;
++
++	/* Test ULPI interface */
++	ret = otg_io_write(isp->otg, ULPI_SCRATCH, 0xaa);
++	if (ret < 0)
++		return ret;
++	ret = otg_io_read(isp->otg, ULPI_SCRATCH);
++	if (ret < 0)
++		return ret;
++	if (ret != 0xaa)
++		return -ENODEV;
++	/* Verify the product and vendor id matches */
++	vendor = otg_io_read(isp->otg, ULPI_VENDOR_ID_LOW);
++	vendor |= otg_io_read(isp->otg, ULPI_VENDOR_ID_HIGH) << 8;
++	if (vendor != NXP_VENDOR_ID)
++		return -ENODEV;
++	for (i = 0; i < ARRAY_SIZE(isp170x_id); i++) {
++		product = otg_io_read(isp->otg, ULPI_PRODUCT_ID_LOW);
++		product |= otg_io_read(isp->otg, ULPI_PRODUCT_ID_HIGH) << 8;
++		if (product == isp170x_id[i]) {
++			sprintf(isp->model, "isp%x", product);
++			return product;
++		}
++	}
++
++	dev_err(isp->dev, "product id %x not matching known ids", product);
++
++	return -ENODEV;
++}
++
++static int __devinit isp1704_charger_probe(struct platform_device *pdev)
++{
++	struct isp1704_charger	*isp;
++	int			ret = -ENODEV;
++
++	isp = kzalloc(sizeof *isp, GFP_KERNEL);
++	if (!isp)
++		return -ENOMEM;
++
++	isp->otg = otg_get_transceiver();
++	if (!isp->otg) {
++		kfree(isp);
++		return ret;
++	}
++
++	ret = isp1704_test_ulpi(isp);
++	if (ret < 0)
++		goto fail;
++
++	isp->dev = &pdev->dev;
++	platform_set_drvdata(pdev, isp);
++
++	isp->psy.name		= "isp1704";
++	isp->psy.type		= POWER_SUPPLY_TYPE_USB;
++	isp->psy.properties	= power_props;
++	isp->psy.num_properties	= ARRAY_SIZE(power_props);
++	isp->psy.get_property	= isp1704_charger_get_property;
++
++	ret = power_supply_register(isp->dev, &isp->psy);
++	if (ret)
++		goto fail;
++
++	/* REVISIT: using work in order to allow the otg notifications to be
++	 * made atomically in the future.
++	 */
++	INIT_WORK(&isp->work, isp1704_charger_work);
++
++	isp->nb.notifier_call = isp1707_notifier_call;
++	ret = otg_register_notifier(isp->otg, &isp->nb);
++	if (ret)
++		goto fail2;
++
++	dev_info(isp->dev, "registered with product id %s\n", isp->model);
++
++	return 0;
++fail2:
++	power_supply_unregister(&isp->psy);
++fail:
++	otg_put_transceiver(isp->otg);
++	kfree(isp);
++
++	dev_err(&pdev->dev, "failed to register isp1704 with error %d\n", ret);
++
++	return ret;
++}
++
++static int __devexit isp1704_charger_remove(struct platform_device *pdev)
++{
++	struct isp1704_charger *isp = platform_get_drvdata(pdev);
++
++	otg_unregister_notifier(isp->otg, &isp->nb);
++	power_supply_unregister(&isp->psy);
++	otg_put_transceiver(isp->otg);
++	kfree(isp);
++
++	return 0;
++}
++
++static struct platform_driver isp1704_charger_driver = {
++	.driver = {
++		.name = "isp1704_charger",
++	},
++	.probe = isp1704_charger_probe,
++	.remove = __devexit_p(isp1704_charger_remove),
++};
++
++static struct platform_device *isp1704_device;
++
++static int __init isp1704_charger_init(void)
++{
++	int ret = 0;
++
++	ret = platform_driver_register(&isp1704_charger_driver);
++	if (ret)
++		return ret;
++
++	isp1704_device = platform_device_register_simple("isp1704_charger",
++							0, NULL, 0);
++	if (IS_ERR(isp1704_device)) {
++		platform_driver_unregister(&isp1704_charger_driver);
++		ret = PTR_ERR(isp1704_device);
++	}
++
++	return ret;
++}
++module_init(isp1704_charger_init);
++
++static void __exit isp1704_charger_exit(void)
++{
++	platform_device_unregister(isp1704_device);
++	platform_driver_unregister(&isp1704_charger_driver);
++}
++module_exit(isp1704_charger_exit);
++
++MODULE_ALIAS("platform:isp1704-charger");
++MODULE_AUTHOR("Nokia Corporation");
++MODULE_DESCRIPTION("ISP170x USB Charger driver");
++MODULE_LICENSE("GPL");
 -- 
-Stefan Richter
--=====-==-=- =--- =--=-
-http://arcgraph.de/sr/
+1.7.0.4
 
