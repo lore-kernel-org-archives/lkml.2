@@ -1,69 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381Ab0HREo3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 00:44:29 -0400
-Received: from dsl78-143-211-26.in-addr.fast.co.uk ([78.143.211.26]:53451 "EHLO
-	ben-laptop" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750740Ab0HREo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 00:44:26 -0400
-Date: Sat, 14 Aug 2010 16:09:18 +0100
-From: Ben Dooks <ben@trinity.fluff.org>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-i2c@vger.kernel.org
-Subject: [PULL] Pull request for bjdooks' for-linus/i2c-2636 tree
-Message-ID: <20100814150918.GA29606@ben-laptop.fluff.org>
+	id S1751222Ab0HREvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 00:51:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39307 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750828Ab0HREvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 00:51:07 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Matt Mackall <mpm@selenic.com>
+Subject: Re: [PATCH] Export mlock information via smaps
+Date: Wed, 18 Aug 2010 10:23:41 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+References: <201008171039.31070.knikanth@suse.de> <1282062336.10679.226.camel@calx>
+In-Reply-To: <1282062336.10679.226.camel@calx>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008181023.41378.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following tree:
+On Tuesday 17 August 2010 21:55:36 Matt Mackall wrote:
+> On Tue, 2010-08-17 at 10:39 +0530, Nikanth Karthikesan wrote:
+> > Currently there is no way to find whether a process has locked its pages
+> > in memory or not. And which of the memory regions are locked in memory.
+> >
+> > Add a new field to perms field 'l' to export this information. The
+> > information exported via maps file is not changed.
+> 
+> I'm worried that your new 'l' flag will fatally surprise some naive
+> parser of this file.
+> 
 
-The following changes since commit 45d7f32c7a43cbb9592886d38190e379e2eb2226:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../cmetcalf/linux-tile
+So how to proceed? Create another "ssmaps" file or something? :) Or is the
+following patch any better? Even the "Yes"/"No" could be changed to "0 kB" or
+"x kB", if it would make it better.
 
-are available in the git repository at:
+Thanks
+Nikanth
 
-  git://git.fluff.org/bjdooks/linux.git for-linus/i2c-2636
+Currently there is no way to find whether a process has locked its pages in
+memory or not. And which of the memory regions are locked in memory.
 
-Ben Dooks (4):
-      Merge branch 'davinci-i2c' of git://git.kernel.org/.../khilman/linux-davinci into for-2636/i2c/davinci
-      Merge branch 'for-2636/i2c/pxa' into next-i2c
-      Merge branch 'for-2636/i2c/nxp' into next-i2c
-      Merge branch 'for-2636/i2c/nuc' into next-i2c
+Add a new field "Locked" to export this information via smaps file.
 
-Chaithrika U S (4):
-      i2c: davinci: misc. cleanups: remove MOD_REG_BIT and IO_ADDRESS usage
-      i2c: davinci: Add helper functions for power management
-      i2c: davinci: Add suspend/resume support
-      i2c: davinci: Add cpufreq support
+Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
 
-Dirk Behme (1):
-      i2c: davinci: Fix smbus Oops with AIC33 usage
+---
 
-Kevin Wells (1):
-      i2c: Enable NXP LPC support in Kconfig
-
-Marc Kleine-Budde (1):
-      i2c-pxa: fix compiler warning, due to missing const
-
-Philby John (1):
-      i2c: davinci: bus recovery procedure to clear the bus
-
-Wan ZongShun (1):
-      i2c/nuc900: add i2c driver support for nuc900
-
- arch/arm/mach-w90x900/include/mach/i2c.h |    9 +
- drivers/i2c/busses/Kconfig               |   11 +-
- drivers/i2c/busses/Makefile              |    1 +
- drivers/i2c/busses/i2c-davinci.c         |  314 +++++++++++---
- drivers/i2c/busses/i2c-nuc900.c          |  709 ++++++++++++++++++++++++++++++
- drivers/i2c/busses/i2c-pxa.c             |    2 +-
- 6 files changed, 980 insertions(+), 66 deletions(-)
- create mode 100644 arch/arm/mach-w90x900/include/mach/i2c.h
- create mode 100644 drivers/i2c/busses/i2c-nuc900.c
-
+diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
+index a6aca87..6eafd26 100644
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -373,6 +373,7 @@ Referenced:          892 kB
+ Swap:                  0 kB
+ KernelPageSize:        4 kB
+ MMUPageSize:           4 kB
++Locked:         No
+ 
+ The first  of these lines shows  the same information  as is displayed for the
+ mapping in /proc/PID/maps.  The remaining lines show  the size of the mapping,
+@@ -397,6 +398,8 @@ To clear the bits for the file mapped pages associated with the process
+     > echo 3 > /proc/PID/clear_refs
+ Any other value written to /proc/PID/clear_refs will have no effect.
+ 
++The "Locked" indicates whether the mapping is locked in memory or not.
++
+ 
+ 1.2 Kernel data
+ ---------------
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index aea1d3f..7bafbcf 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -405,7 +405,8 @@ static int show_smap(struct seq_file *m, void *v)
+ 		   "Referenced:     %8lu kB\n"
+ 		   "Swap:           %8lu kB\n"
+ 		   "KernelPageSize: %8lu kB\n"
+-		   "MMUPageSize:    %8lu kB\n",
++		   "MMUPageSize:    %8lu kB\n"
++		   "Locked:         %s\n",
+ 		   (vma->vm_end - vma->vm_start) >> 10,
+ 		   mss.resident >> 10,
+ 		   (unsigned long)(mss.pss >> (10 + PSS_SHIFT)),
+@@ -416,7 +417,8 @@ static int show_smap(struct seq_file *m, void *v)
+ 		   mss.referenced >> 10,
+ 		   mss.swap >> 10,
+ 		   vma_kernel_pagesize(vma) >> 10,
+-		   vma_mmu_pagesize(vma) >> 10);
++		   vma_mmu_pagesize(vma) >> 10,
++		   (vma->vm_flags & VM_LOCKED) ? "Yes" : "No");
+ 
+ 	if (m->count < m->size)  /* vma is copied successfully */
+ 		m->version = (vma != get_gate_vma(task)) ? vma->vm_start : 0;
