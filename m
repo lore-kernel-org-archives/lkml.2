@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab0HRSqo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 14:46:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37913 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753332Ab0HRSqn (ORCPT
+	id S1753545Ab0HRSyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 14:54:00 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51090 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332Ab0HRSx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 14:46:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=naD5dIt2HZIquEzevQCPIRronYV5iCkTGjX9YUcc+7z3FDpYsDBnva9lI14Zr20kjI
-         eebnsGMQJca0STaJqlekgROgOggFoAHjrS2XgA4MMV0KNAtq233c2MRzvvqe+Y/YWd0z
-         2h2f8e2BBRZG2Md+ZKpClFd+FGq8lKAJzckYA=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-kernel@vger.kernel.org,
-        linux-fbdev@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        airlied@linux.ie
-Subject: [REGRESSION] [2.6.36-rc1] [DRM INTEL] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, expect flickering: entries required = 36, available = 28.
-Date: Wed, 18 Aug 2010 20:46:37 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35; KDE/4.4.5; i686; ; )
+	Wed, 18 Aug 2010 14:53:58 -0400
+Date: Wed, 18 Aug 2010 20:53:54 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, "J. Bruce Fields" <bfields@fieldses.org>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100818185354.GB6567@basil.fritz.box>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+ <87aaolwar8.fsf@basil.nowhere.org>
+ <20100817174134.GA23176@fieldses.org>
+ <20100817182920.GD18161@basil.fritz.box>
+ <1282155658.13405.36.camel@localhost>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008182046.37732.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282155658.13405.36.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last known good: 2.6.35
-Failing kernel: 2.6.36-rc1
+On Wed, Aug 18, 2010 at 07:20:58PM +0100, David Woodhouse wrote:
+> On Tue, 2010-08-17 at 20:29 +0200, Andi Kleen wrote:
+> > 
+> > >       - Increment mtime by a nanosecond when necessary.  
+> > 
+> > You cannot be more precise than the backing file system: this causes
+> > non monotonity when the inodes are flushed (has happened in the past)
+> 
+> Um, can't you? You can't *store* timestamps which are more precise, but
+> they can be in cache can't they?
 
-During boot kernel display this message:
-[    0.831906] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, 
-expect flickering: entries required = 36, available = 28.
-[    0.895058] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, 
-expect flickering: entries required = 36, available = 28.
-[    0.895066] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, 
-expect flickering: entries required = 36, available = 28.
-[    0.895287] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, 
-expect flickering: entries required = 36, available = 28.
-[    0.916426] [drm:intel_calculate_wm] *ERROR* Insufficient FIFO for plane, 
-expect flickering: entries required = 36, available = 28.
+No you can't. The initial implementation did that and it broke someone's
+make. After that the VFS was fixed to never be precise than the backing
+file system.
 
-
-Systems seems work OK, but in 2.6.35 I don't have this message. On another 
-system with 2.6.36-rc1 kernel I have the same message.
-
-lspci:
-http://unixy.pl/maciek/download/kernel/2.6.36-rc1/zlom/lspci.txt
-.config:
-http://unixy.pl/maciek/download/kernel/2.6.36-rc1/zlom/config-2.6.36-rc1
-dmesg:
-http://unixy.pl/maciek/download/kernel/2.6.36-rc1/zlom/dmesg-2.6.36-rc1.txt
-
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+-Andi
