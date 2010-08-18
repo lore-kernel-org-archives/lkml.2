@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab0HRGi2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 02:38:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40365 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab0HRGiW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 02:38:22 -0400
-Date: Wed, 18 Aug 2010 08:38:12 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Kukjin Kim <kgene.kim@samsung.com>,
-        "'Maxim Levitsky'" <maximlevitsky@gmail.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ben-linux@fluff.org, "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: undefined reference to `mmc_pm_notify' when selected MMC
-	without PM.
-Message-ID: <20100818063812.GC16956@pengutronix.de>
-References: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com> <20100816051721.GA17903@pengutronix.de> <20100816081239.c5ae02ef.randy.dunlap@oracle.com>
+	id S1752034Ab0HRGis (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 02:38:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34827 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992Ab0HRGin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 02:38:43 -0400
+Message-ID: <4C6B7F4A.2040807@kernel.org>
+Date: Wed, 18 Aug 2010 08:35:54 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100816081239.c5ae02ef.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Christoph Hellwig <hch@lst.de>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de>
+In-Reply-To: <20100817165929.GB13800@lst.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 Aug 2010 06:36:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Randy,
+Hello,
 
-On Mon, Aug 16, 2010 at 08:12:39AM -0700, Randy Dunlap wrote:
-> On Mon, 16 Aug 2010 07:17:21 +0200 Uwe Kleine-König wrote:
+On 08/17/2010 06:59 PM, Christoph Hellwig wrote:
+> I think we really need all the conversions in one tree, block layer,
+> remapping drivers and filesystems.
+
+I don't know.  If filesystem changes are really trivial maybe, but
+md/dm changes seem a bit too invasive to go through the block tree.
+
+> Btw, I've done the conversion for all filesystems and I'm running tests
+> over them now.  Expect the series late today or tomorrow.
+
+Cool. :-)
+
+>> I might just resequence it to finish this part of discussion but what
+>> does that really buy us?  It's not really gonna help bisection.
+>> Bisection won't be able to tell anything in higher resolution than
+>> "the new implementation doesn't work".  If you show me how it would
+>> actually help, I'll happily reshuffle the patches.
 > 
-> > Hello,
-> > 
-> > On Fri, Aug 13, 2010 at 08:33:40PM +0900, Kukjin Kim wrote:
-> > > Kukjin Kim wrote:
-> > > > 
-> > > > Hi,
-> > > > 
-> > > > Following is build error when selected MMC without PM.
-> > > > 
-> > > > drivers/built-in.o: In function `mmc_alloc_host':
-> > > > drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
-> > > > make[1]: *** [.tmp_vmlinux1] Error 1
-> > > > make: *** [sub-make] Error 2
-> > > > 
-> > > > That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
-> > > > insert/removal during suspend/resume '
-> > > > (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
-> > > > 
-> > > > Below is temporary patch for avoiding build error.
-> > > > But I'm not sure about this... :-(
-> > > > 
-> > > > ---
-> > > > 
-> > > > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
-> > > > index 0efe631..d80cfdc 100644
-> > > > --- a/drivers/mmc/core/host.c
-> > > > +++ b/drivers/mmc/core/host.c
-> > > > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
-> > > > *dev)
-> > > >         init_waitqueue_head(&host->wq);
-> > > >         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
-> > > >         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
-> > > > mmc_host_deeper_disable);
-> > > > +#ifdef CONFIG_PM
-> > > >         host->pm_notify.notifier_call = mmc_pm_notify;
-> > > > +#endif
-> > > > 
-> > > >         /*
-> > > >          * By default, hosts do not support SGIO or large requests.
-> > > > 
-> > > > ---
-> > > 
-> > > Kindly ignore this stuff because I found Uwe's same patch just now ;-)
-> > > Sorry for bothering.
-> > For those who care:
-> > 
-> > 	http://mid.gmane.org/1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de
-> > 
-> > Kgene, do you care to ack this change as it may prod akpm in taking the
-> > fix a bit earlier?
+> It's not bisecting to find bugs in the barrier conversion.  We can't
+> easily bisect it down anyway.  The problem is when we try to bisect
+> other problems and get into the middle of the series barriers suddenly
+> are gone.  Which is not very helpful for things like data integrity
+> problems in filesystems.
+
+Ah, okay, hmmm.... alright, I'll resequence the patches.  If the
+filesystem changes can be put into a single tree somehow, we can keep
+things mostly working at least for direct devices.
+
+>> IIUC, when any of flushes get DM_ENDIO_REQUEUE (which tells the dm
+>> core layer to retry the whole bio later), it trumps all other failures
+>> and the bio is retried later.  That was why DM_ENDIO_REQUEUE was
+>> prioritized over other error codes, which actually is sort of
+>> incorrect in that once a FLUSH fails, it _MUST_ be reported to upper
+>> layers as FLUSH failure implies data already lost.  So,
+>> DM_ENDIO_REQUEUE actually should have lower priority than other
+>> failures.  But, then again, the error codes still need to be
+>> prioritized.
 > 
-> or this one from earlier:
-> http://lkml.org/lkml/2010/8/12/207
+> I think that's something we better leave to the DM team.
 
-If I found your patch on gmane I could answer it with an Ack, on lkml
-and kerneltrap (where I found it) I don't get the Message-Id header.
+Sure, but we shouldn't be ripping out the code to do that.
 
-Best regards
-Uwe
+Thanks.
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+tejun
