@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab0HRUKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:10:03 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51824 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab0HRUJ7 (ORCPT
+	id S1754026Ab0HRUKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:10:22 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:15701 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753748Ab0HRUKO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:09:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wjUV28TQugOFYpki+8IeOc+n2ZiM848Nfj4zKJiXP0j+nxOerxsRQx3akSpPGeFJX7
-         o70nluMYf+AzPgf8iFBSw5lfItdGS6U+L2ioSCa0Tblom0M+dZpcP7AVzgL0Q56G917/
-         hZnJ5bPbLiyGkpvS1v260w/OPp0m9mPvL5WXY=
-Date: Wed, 18 Aug 2010 22:00:57 +0200
-From: Richard Zidlicky <rz@linux-m68k.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35.2 regression, does not boot, sleeping function called
-	from invalid context
-Message-ID: <20100818200057.GA4132@linux-m68k.org>
-References: <20100817145305.GA7342@linux-m68k.org> <20100818133459.GA6663@kroah.com> <20100818140335.GB18303@linux-m68k.org> <20100818143927.GA1202@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818143927.GA1202@kroah.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 18 Aug 2010 16:10:14 -0400
+X-IronPort-AV: E=Sophos;i="4.56,229,1280732400"; 
+   d="scan'208";a="431462830"
+Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+In-Reply-To: <20100818193440.GZ5854@think>
+References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+	 <20100818193440.GZ5854@think>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Wed, 18 Aug 2010 16:10:10 -0400
+Message-ID: <1282162210.8540.100.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+X-OriginalArrivalTime: 18 Aug 2010 20:10:12.0464 (UTC) FILETIME=[5D6D7700:01CB3F11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 07:39:27AM -0700, Greg KH wrote:
-> On Wed, Aug 18, 2010 at 04:03:35PM +0200, Richard Zidlicky wrote:
-> > On Wed, Aug 18, 2010 at 06:34:59AM -0700, Greg KH wrote:
-
+On Wed, 2010-08-18 at 15:34 -0400, Chris Mason wrote:
+> On Wed, Aug 18, 2010 at 03:04:01PM -0400, Trond Myklebust wrote:
+> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> > 
+> > Allowing kswapd to do GFP_KERNEL memory allocations (or any blocking memory
+> > allocations) is wrong and can cause deadlocks in try_to_release_page(), as
+> > the filesystem believes it is safe to allocate new memory and block,
+> > whereas kswapd is there specifically to clear a low-memory situation...
+> > 
+> > Set the gfp_mask to GFP_IOFS instead.
 > 
-> Yes, they are in Linus's tree, commits:
-> 	d7824370e26325c881b665350ce64fb0a4fde24a
-> and
-> 	11ac552477e32835cb6970bf0a70c210807f5673
+> I always thought releasepage was supposed to do almost zero work.  It
+> could release an instantly freeable page but it wasn't supposed to dive
+> in and solve world hunger or anything.
+> 
+> I thought the VM would be using writepage for that.
 
-great, that works. 
+writepage isn't sufficient for the NFS case: the page may be in the
+'clean but unstable' state, in which case the NFS client needs to send a
+COMMIT rpc call before the page can finally be released.
 
-Unfortunately no improvemenet with the hibernation problem that is there since
-2.6.35?
+That is why we need the gfp_flag to tell us when it is safe to do this,
+and when it is not.
+The main case where it is safe and necessary for try_to_release_page()
+to initiate a COMMIT call is in the invalidate_inode_pages2(). We might
+want to do it in the kswapd case too, but in that case, we definitely
+should tell the filesystem that it is unsafe to block.
 
-Richard
+Trond
