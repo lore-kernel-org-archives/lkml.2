@@ -1,104 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab0HRB1E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:27:04 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49478 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752795Ab0HRB07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:26:59 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: trapdoor6@gmail.com
-Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
-Date: Wed, 18 Aug 2010 03:25:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        trapDoor <trapdoor6@googlemail.com>, Jiri Kosina <jkosina@suse.cz>
-References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
-In-Reply-To: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008180325.17816.rjw@sisk.pl>
+	id S1752795Ab0HRB3U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:29:20 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:51898 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752453Ab0HRB3P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 21:29:15 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6077"; a="51372414"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH v2] ARM: uaccess: Implement strict user copy checks
+Date: Tue, 17 Aug 2010 18:29:10 -0700
+Message-Id: <1282094950-6184-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.2.1.66.g0d0ba
+In-Reply-To: <4C61EE55.5030506@codeaurora.org>
+References: <4C61EE55.5030506@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, August 17, 2010, trapDoor wrote:
-> Hello,
-> The merge window is closed so it's time to hunt for bugs. I've got
-> one, please find details below.
-> -----------------------
-> 
-> Working kernels: from 2.6.35 - to 2.6.35.2
-> Non working kernels: from (at least) 2.6.35-git2 - to 2.6.36-rc1
-> -----------------------
-> 
-> Description of the problem(s):
-> 
-> 1. First of all I confirm that the problem is consistent: suspend
-> works well every time on the 'good' kernels and it newer works (with
-> the symptoms) on any of the 'bad' kernels. I've tested it several
-> times on a couple of 'good' and 'bad' kernels to make sure it's not
-> some random issue.
-> 
-> 2. On a bad kernel, this is what happens when I try to switch to suspend mode:
-> - screen goes blank ['No signal detected !'] - that's OK :)
-> - either the CPU fan or PSU fan or both are still running and they
-> won't stop (left it for about 30 min. once)
-> - the power light is on and still, where in suspend mode it should
-> blink - that won't change either
-> - pressing the power button obviously doesn't wake the system up; need
-> to hard reboot
-> 
-> 3. Now, when booting again, after an unsuccessful suspend and hard
-> reboot, something happens to my network card (and it doesn't matter
-> what is the next kernel I boot from - it can be any 'good' or 'bad'
-> one):
-> - in Gnome, the gnome-panel network indicator shows my connection as
-> disabled (wired eth0 - the only one I use); enabling it doesn't bring
-> my network up
-> 
-> 4. After re-booting from any of the 'good' or 'bad' kernels my network
-> connection is working again.
-> -----------------------
-> 
-> Bisecting turned up the following commit. Reverting it in 2.6.36-rc1
-> results in a system that works.
-> 
-> commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
-> Author: Arnd Bergmann <arnd@arndb.de>
-> Date:   Sun Jul 11 15:34:05 2010 +0200
-> 
->     HID: hiddev: use usb_find_interface, get rid of BKL
-> 
->     This removes the private hiddev_table in the usbhid
->     driver and changes it to use usb_find_interface
->     instead.
-> 
->     The advantage is that we can avoid the race between
->     usb_register_dev and usb_open and no longer need the
->     big kernel lock.
-> 
->     This doesn't introduce race condition -- the intf pointer could be
->     invalidated only in hiddev_disconnect() through usb_deregister_dev(),
->     but that will block on minor_rwsem and not actually remove the device
->     until usb_open().
-> -----------------------
-> 
-> Despite mentioned issues with network (occurring every time after
-> unsuccessful suspend > hard restart) the bisecting turned up a commit
-> which isn't rather related to network. But I can confirm that
-> reverting only this one commit in 2.6.36-rc1
-> [da5cabf80e2433131bf0ed8993abc0f7ea618c73] fixes the whole problem -
-> suspend works OK and I have no issues with my network after waking the
-> system up, neither after re-booting from the same or any other kernel.
-> 
-> Please let me know what further details should I provide. Any logs,
-> hardware specifications? I've also made a brief log recording the
-> bisect if anyone would need it.
+Programmers can easily forget to ensure their buffer size is
+large enough to receive all the user data when calling
+copy_from_user(). Add some sanity checking to copy_from_user() by
+using the builtin __builtin_object_size() provided by newer GCC's
+(4.4 and greater) to prove at compile time that the kernel buffer
+won't overflow. This should catch some security holes earlier
+since at compile time we'll either see a warning stating that
+GCC can't prove the buffer size is large enough, or an error to
+the same effect if CONFIG_DEBUG_STRICT_USER_COPY_CHECKS=y.
 
-Well, we should let the HID maintainer know about the problem (CC added).
+These checks are optimized away when GCC can't prove the buffer
+will overflow and when it can prove the buffer won't overflow.
 
-Thanks,
-Rafael
+This patch is inspired by 9f0cf4a (x86: Use
+__builtin_object_size() to validate the buffer size for
+copy_from_user(), 2009-09-26).
+
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+---
+
+Arnd,
+
+I'm unsure what needs to be done for the follow up patch. Shouldn't
+it be multiple patches sent to each arch maintainer to fix the
+wording?
+
+v2:
+ * More descriptive commit text
+ * dependency on !TRACE_BRANCH_PROFILING (see ad8f435 (x86: Don't use
+ 	the strict copy checks when branch profiling is in use, 2009-10-06))
+
+ arch/arm/Kconfig.debug         |   14 ++++++++++++++
+ arch/arm/include/asm/uaccess.h |   14 ++++++++++++++
+ arch/arm/lib/Makefile          |    3 ++-
+ arch/arm/lib/usercopy.c        |   25 +++++++++++++++++++++++++
+ 4 files changed, 55 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/lib/usercopy.c
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 91344af..64e33b8 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -128,4 +128,18 @@ config DEBUG_S3C_UART
+ 	  The uncompressor code port configuration is now handled
+ 	  by CONFIG_S3C_LOWLEVEL_UART_PORT.
+ 
++config DEBUG_STRICT_USER_COPY_CHECKS
++	bool "Strict user copy size checks"
++	depends on DEBUG_KERNEL && !TRACE_BRANCH_PROFILING
++	help
++	  Enabling this option turns a certain set of sanity checks for user
++	  copy operations into compile time errors.
++
++	  The copy_from_user() etc checks are there to help test if there
++	  are sufficient security checks on the length argument of
++	  the copy operation, by having gcc prove that the argument is
++	  within bounds.
++
++	  If unsure, or if you run an older (pre 4.4) gcc, say N.
++
+ endmenu
+diff --git a/arch/arm/include/asm/uaccess.h b/arch/arm/include/asm/uaccess.h
+index 33e4a48..3153e1a 100644
+--- a/arch/arm/include/asm/uaccess.h
++++ b/arch/arm/include/asm/uaccess.h
+@@ -401,8 +401,22 @@ extern unsigned long __must_check __clear_user_std(void __user *addr, unsigned l
+ extern unsigned long __must_check __strncpy_from_user(char *to, const char __user *from, unsigned long count);
+ extern unsigned long __must_check __strnlen_user(const char __user *s, long n);
+ 
++extern void copy_from_user_overflow(void)
++#ifdef CONFIG_DEBUG_STRICT_USER_COPY_CHECKS
++	__compiletime_error("copy_from_user() buffer size is not provably correct")
++#else
++	__compiletime_warning("copy_from_user() buffer size is not provably correct")
++#endif
++;
++
+ static inline unsigned long __must_check copy_from_user(void *to, const void __user *from, unsigned long n)
+ {
++	unsigned int sz = __compiletime_object_size(to);
++
++	if (unlikely(sz != -1 && sz < n)) {
++		copy_from_user_overflow();
++		return n;
++	}
+ 	if (access_ok(VERIFY_READ, from, n))
+ 		n = __copy_from_user(to, from, n);
+ 	else /* security hole - plug it */
+diff --git a/arch/arm/lib/Makefile b/arch/arm/lib/Makefile
+index 59ff42d..561cf3d 100644
+--- a/arch/arm/lib/Makefile
++++ b/arch/arm/lib/Makefile
+@@ -13,7 +13,8 @@ lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
+ 		   testchangebit.o testclearbit.o testsetbit.o        \
+ 		   ashldi3.o ashrdi3.o lshrdi3.o muldi3.o             \
+ 		   ucmpdi2.o lib1funcs.o div64.o sha1.o               \
+-		   io-readsb.o io-writesb.o io-readsl.o io-writesl.o
++		   io-readsb.o io-writesb.o io-readsl.o io-writesl.o \
++		   usercopy.o
+ 
+ mmu-y	:= clear_user.o copy_page.o getuser.o putuser.o
+ 
+diff --git a/arch/arm/lib/usercopy.c b/arch/arm/lib/usercopy.c
+new file mode 100644
+index 0000000..e57e6e2
+--- /dev/null
++++ b/arch/arm/lib/usercopy.c
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
++ */
++#include <linux/module.h>
++#include <linux/bug.h>
++
++void copy_from_user_overflow(void)
++{
++	WARN(1, "Buffer overflow detected!\n");
++}
++EXPORT_SYMBOL(copy_from_user_overflow);
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
