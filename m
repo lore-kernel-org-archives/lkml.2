@@ -1,71 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab0HRB07 (ORCPT <rfc822;w@1wt.eu>);
+	id S1752817Ab0HRB1E (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:27:04 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49478 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab0HRB07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 17 Aug 2010 21:26:59 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:10883 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab0HRB0w convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:26:52 -0400
-Date: Wed, 18 Aug 2010 03:26:03 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv8 04/13] USB: gadget: mass_storage: moved strings handling
- code to composite
-In-reply-to: <Pine.LNX.4.44L0.1008132019440.23591-100000@netrider.rowland.org>
-To: David Brownell <david-b@pacbell.net>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org
-Message-id: <op.vhl0xpih7p4s8u@localhost>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.61 (Linux)
-References: <Pine.LNX.4.44L0.1008132019440.23591-100000@netrider.rowland.org>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: trapdoor6@gmail.com
+Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
+Date: Wed, 18 Aug 2010 03:25:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, arnd@arndb.de,
+        trapDoor <trapdoor6@googlemail.com>, Jiri Kosina <jkosina@suse.cz>
+References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
+In-Reply-To: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008180325.17816.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 14 Aug 2010 02:23:42 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
+On Tuesday, August 17, 2010, trapDoor wrote:
+> Hello,
+> The merge window is closed so it's time to hunt for bugs. I've got
+> one, please find details below.
+> -----------------------
+> 
+> Working kernels: from 2.6.35 - to 2.6.35.2
+> Non working kernels: from (at least) 2.6.35-git2 - to 2.6.36-rc1
+> -----------------------
+> 
+> Description of the problem(s):
+> 
+> 1. First of all I confirm that the problem is consistent: suspend
+> works well every time on the 'good' kernels and it newer works (with
+> the symptoms) on any of the 'bad' kernels. I've tested it several
+> times on a couple of 'good' and 'bad' kernels to make sure it's not
+> some random issue.
+> 
+> 2. On a bad kernel, this is what happens when I try to switch to suspend mode:
+> - screen goes blank ['No signal detected !'] - that's OK :)
+> - either the CPU fan or PSU fan or both are still running and they
+> won't stop (left it for about 30 min. once)
+> - the power light is on and still, where in suspend mode it should
+> blink - that won't change either
+> - pressing the power button obviously doesn't wake the system up; need
+> to hard reboot
+> 
+> 3. Now, when booting again, after an unsuccessful suspend and hard
+> reboot, something happens to my network card (and it doesn't matter
+> what is the next kernel I boot from - it can be any 'good' or 'bad'
+> one):
+> - in Gnome, the gnome-panel network indicator shows my connection as
+> disabled (wired eth0 - the only one I use); enabling it doesn't bring
+> my network up
+> 
+> 4. After re-booting from any of the 'good' or 'bad' kernels my network
+> connection is working again.
+> -----------------------
+> 
+> Bisecting turned up the following commit. Reverting it in 2.6.36-rc1
+> results in a system that works.
+> 
+> commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
+> Author: Arnd Bergmann <arnd@arndb.de>
+> Date:   Sun Jul 11 15:34:05 2010 +0200
+> 
+>     HID: hiddev: use usb_find_interface, get rid of BKL
+> 
+>     This removes the private hiddev_table in the usbhid
+>     driver and changes it to use usb_find_interface
+>     instead.
+> 
+>     The advantage is that we can avoid the race between
+>     usb_register_dev and usb_open and no longer need the
+>     big kernel lock.
+> 
+>     This doesn't introduce race condition -- the intf pointer could be
+>     invalidated only in hiddev_disconnect() through usb_deregister_dev(),
+>     but that will block on minor_rwsem and not actually remove the device
+>     until usb_open().
+> -----------------------
+> 
+> Despite mentioned issues with network (occurring every time after
+> unsuccessful suspend > hard restart) the bisecting turned up a commit
+> which isn't rather related to network. But I can confirm that
+> reverting only this one commit in 2.6.36-rc1
+> [da5cabf80e2433131bf0ed8993abc0f7ea618c73] fixes the whole problem -
+> suspend works OK and I have no issues with my network after waking the
+> system up, neither after re-booting from the same or any other kernel.
+> 
+> Please let me know what further details should I provide. Any logs,
+> hardware specifications? I've also made a brief log recording the
+> bisect if anyone would need it.
 
-> On Fri, 13 Aug 2010, David Brownell wrote:
->
->> --- On Fri, 8/13/10, Alan Stern <stern@rowland.harvard.edu> wrote:
->> .> ... based on all
->> > the preceding discussion, I now think the best
->> > approach may be _never
->> > to make up a fake serial number.  Use the module
->> > parameter, if any, and
->> > otherwise issue a warning and don't have
->> > a serial number string
->> > descriptor (even though that violates the spec).
->>
->>
->> Agreed, and that's what I had asked for.  I didn't
->> see code faking up a serial ... did I miss such?
->
-> That code has been present in g_file_storage since the beginning.
-> There were some patches earlier which moved the code to a different
-> location.  I guess you missed it.  The current round of patches doesn't
-> touch that code.
+Well, we should let the HID maintainer know about the problem (CC added).
 
-Yep.  I originally moved code from g_file_storage to g_mass_storage (and
-g_multi) but after David's objections the patches have been dropped so
-currently only g_file_storage has this code.
-
->> If so, let's see a new patch with no faking.
->
-> An extra patch or two would be needed to remove the fake-serial
-> generation.
-
-This should be a straightforward patch.  If no one else does it
-I can post it but it may take up to a month for me to find the time
-to work on it.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
-
+Thanks,
+Rafael
