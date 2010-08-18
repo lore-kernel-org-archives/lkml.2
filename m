@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab0HRP71 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:59:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55610 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab0HRP70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:59:26 -0400
-Subject: Re: [GIT PULL] notification tree: directory events
-From: Eric Paris <eparis@redhat.com>
-To: Andreas Gruenbacher <agruen@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        Michael Kerrisk <michael.kerrisk@gmail.com>
-In-Reply-To: <201008181747.15461.agruen@suse.de>
-References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
-	 <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
-	 <201008162232.36873.agruen@suse.de>  <201008181747.15461.agruen@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 11:59:06 -0400
-Message-ID: <1282147146.21419.165.camel@acb20005.ipt.aol.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753906Ab0HRQAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 12:00:55 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:55464 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753376Ab0HRQAw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 12:00:52 -0400
+Date: Wed, 18 Aug 2010 16:58:25 +0100
+From: Chris Webb <chris@arachsys.com>
+To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>, Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andi Kleen <andi@firstfloor.org>,
+        Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: Over-eager swapping
+Message-ID: <20100818155825.GA2370@arachsys.com>
+References: <20100804022148.GA5922@localhost>
+ <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
+ <20100804032400.GA14141@localhost>
+ <20100804095811.GC2326@arachsys.com>
+ <20100804114933.GA13527@localhost>
+ <20100804120430.GB23551@arachsys.com>
+ <20100818143801.GA9086@localhost>
+ <20100818144655.GX2370@arachsys.com>
+ <20100818152103.GA11268@localhost>
+ <1282147034.77481.33.camel@useless.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282147034.77481.33.camel@useless.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 17:47 +0200, Andreas Gruenbacher wrote:
-> Eric,
-> 
-> one more thing that doesn't make sense is events on directories: when watching 
-> a directory, some actions like reading a directory or creat()ing a file in the 
-> directory will generate events (even open_perm and access_perm), but other 
-> actions like hard linking files into the directory or removing files will not 
-> create any events.  This means that fanotify currently cannot be used for 
-> watching for directory changes.
-> 
-> In my opinion, events on directories should either be made to actually work, 
-> or else no directory events at all should be generated.
-> 
-> Also, I can think of users of fanotify which are not concerned with directory 
-> events at all.  It would make sense to allow such users to subscribe only to 
-> file events and not receive any directory events which they will end up 
-> ignoring anyway.
-> 
-> Again it shows that this code just wasn't ready to be merged yet ...
+Lee Schermerhorn <Lee.Schermerhorn@hp.com> writes:
 
-I'm going to file your e-mail into my todo list and hopefully I get the
-time to look at the ability to ignore directory events.  Nothing hard
-about it.  It's as easy as defining a flag and adding a conditional in
-the code but it's not high on my list.
+> On Wed, 2010-08-18 at 23:21 +0800, Wu Fengguang wrote:
+> > Andi, Christoph and Lee:
+> > 
+> > This looks like an "unbalanced NUMA memory usage leading to premature
+> > swapping" problem.
+> 
+> What is the value of the vm.zone_reclaim_mode sysctl?  If it is !0, the
+> system will go into zone reclaim before allocating off-node pages.
+> However, it shouldn't "swap" in this case unless (zone_reclaim_mode & 4)
+> != 0.  And even then, zone reclaim should only reclaim file pages, not
+> anon.  In theory...
 
-Thus far your e-mails have pointed out one bug in the permissions
-implementation I am currently working fixing and a bunch of complaining
-about features you can imagine someone might someday want but which
-noone has actually stood up and said 'I will use this' or 'this sucks
-for my use case'.  I can find all sorts of things around the kernel
-where I can imagine some mythical users might want to do something
-different but it isn't a reason to prevent merger.  I'd love to have
-more review, I'm certainly going to look at your wish list, but don't
-expect response to future trolling messages.
+Hi. This is zero on all our machines:
 
--Eric
+# sysctl vm.zone_reclaim_mode
+vm.zone_reclaim_mode = 0
 
+Cheers,
+
+Chris.
