@@ -1,66 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab0HRNTy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:19:54 -0400
-Received: from avexcashub1.qlogic.com ([198.70.193.61]:36924 "EHLO
-	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752627Ab0HRNTv convert rfc822-to-8bit (ORCPT
+	id S1753061Ab0HRNY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:24:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32858 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab0HRNYz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:19:51 -0400
-From: Amit Salecha <amit.salecha@qlogic.com>
-To: Cong Wang <amwang@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
-        Narender Kumar <narender.kumar@qlogic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ameen Rahman <ameen.rahman@qlogic.com>
-Date: Wed, 18 Aug 2010 08:19:46 -0500
-Subject: RE: [RFC Patch] netxen: remove firmware exports
-Thread-Topic: [RFC Patch] netxen: remove firmware exports
-Thread-Index: Acs+11sKc5VQ9e2hTtueJ5CmP5fbfwAADLMw
-Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80F86E6913F@MNEXMB2.qlogic.org>
-References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
- <99737F4847ED0A48AECC9F4A1974A4B80F86E69129@MNEXMB2.qlogic.org>
- <4C6BDDCB.9040800@redhat.com>
-In-Reply-To: <4C6BDDCB.9040800@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 18 Aug 2010 09:24:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:message-id:x-mailer;
+        b=Z92j2YIJpjwMRIMubBJhWNGBASWVmRu8yh+Jf4JhvT0kRbDxSxWOzDtkQCdELg59cl
+         kFfNKZn4ays8Npov7bZUKuNmRTwjldVD/tgopPUI1VH5RGeef/VxVLBRLpoqLIHs+5pV
+         w3RGzB4AOjgoXTPJmzfwCP41ii8r/Y4dw8kEQ=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] init: mark __user address space on string literals
+Date: Wed, 18 Aug 2010 22:24:49 +0900
+Message-Id: <1282137889-2284-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Then we can work with David Woodhouse and make these firmware available in /lib/firmware
->
-Actually I was not updated, NX_UNIFIED_ROMIMAGE_NAME (phanfw.bin) is already submitted and its present in linux-firmware.git.
+When calling syscall service routines in kernel, some of arguments should be
+user pointers but were missing __user markup on string literals. Add it.
 
-I will get back to you on NX_P2_MN_ROMIMAGE_NAME, NX_P3_CT_ROMIMAGE_NAME and NX_P3_MN_ROMIMAGE_NAME.
-Whether this will be submitted ?
+Impact: remove sparse warnings
 
------Original Message-----
-From: Cong Wang [mailto:amwang@redhat.com] 
-Sent: Wednesday, August 18, 2010 6:49 PM
-To: Amit Salecha
-Cc: linux-kernel@vger.kernel.org; Dhananjay Phadke; Narender Kumar; netdev@vger.kernel.org; David S. Miller; Ameen Rahman
-Subject: Re: [RFC Patch] netxen: remove firmware exports
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ init/do_mounts.c    |    4 ++--
+ init/do_mounts_md.c |    2 +-
+ init/do_mounts_rd.c |    4 ++--
+ init/initramfs.c    |    5 +++--
+ init/noinitramfs.c  |    6 +++---
+ 5 files changed, 11 insertions(+), 10 deletions(-)
 
-On 08/18/10 19:04, Amit Salecha wrote:
-> If problem is firmware files are not present in /lib/firmware.
-> Then we can work with David Woodhouse and make these firmware available in /lib/firmware.
->
-
-Oh, I thought we did this intentionally.
-That would be nice then, please go ahead.
-
-Thanks!
-
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 8eabff6..91fc443 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -235,7 +235,7 @@ static int __init do_mount_root(char *name, char *fs, int flags, void *data)
+ 	if (err)
+ 		return err;
+ 
+-	sys_chdir("/root");
++	sys_chdir((const char __user __force *)"/root");
+ 	ROOT_DEV = current->fs->pwd.mnt->mnt_sb->s_dev;
+ 	printk("VFS: Mounted root (%s filesystem)%s on device %u:%u.\n",
+ 	       current->fs->pwd.mnt->mnt_sb->s_type->name,
+@@ -432,5 +432,5 @@ void __init prepare_namespace(void)
+ out:
+ 	devtmpfs_mount("dev");
+ 	do_mount(".", "/", NULL, MS_MOVE, NULL);
+-	sys_chroot(".");
++	sys_chroot((const char __user __force *)".");
+ }
+diff --git a/init/do_mounts_md.c b/init/do_mounts_md.c
+index 69aebbf..32c4799 100644
+--- a/init/do_mounts_md.c
++++ b/init/do_mounts_md.c
+@@ -283,7 +283,7 @@ static void __init autodetect_raid(void)
+ 
+ 	wait_for_device_probe();
+ 
+-	fd = sys_open("/dev/md0", 0, 0);
++	fd = sys_open((const char __user __force *) "/dev/md0", 0, 0);
+ 	if (fd >= 0) {
+ 		sys_ioctl(fd, RAID_AUTORUN, raid_autopart);
+ 		sys_close(fd);
+diff --git a/init/do_mounts_rd.c b/init/do_mounts_rd.c
+index bf3ef66..6e1ee69 100644
+--- a/init/do_mounts_rd.c
++++ b/init/do_mounts_rd.c
+@@ -168,7 +168,7 @@ int __init rd_load_image(char *from)
+ 	char rotator[4] = { '|' , '/' , '-' , '\\' };
+ #endif
+ 
+-	out_fd = sys_open("/dev/ram", O_RDWR, 0);
++	out_fd = sys_open((const char __user __force *) "/dev/ram", O_RDWR, 0);
+ 	if (out_fd < 0)
+ 		goto out;
+ 
+@@ -267,7 +267,7 @@ noclose_input:
+ 	sys_close(out_fd);
+ out:
+ 	kfree(buf);
+-	sys_unlink("/dev/ram");
++	sys_unlink((const char __user __force *) "/dev/ram");
+ 	return res;
+ }
+ 
+diff --git a/init/initramfs.c b/init/initramfs.c
+index 4b9c202..d9c6e78 100644
+--- a/init/initramfs.c
++++ b/init/initramfs.c
+@@ -528,7 +528,7 @@ static void __init clean_rootfs(void)
+ 	struct linux_dirent64 *dirp;
+ 	int num;
+ 
+-	fd = sys_open("/", O_RDONLY, 0);
++	fd = sys_open((const char __user __force *) "/", O_RDONLY, 0);
+ 	WARN_ON(fd < 0);
+ 	if (fd < 0)
+ 		return;
+@@ -590,7 +590,8 @@ static int __init populate_rootfs(void)
+ 		}
+ 		printk(KERN_INFO "rootfs image is not initramfs (%s)"
+ 				"; looks like an initrd\n", err);
+-		fd = sys_open("/initrd.image", O_WRONLY|O_CREAT, 0700);
++		fd = sys_open((const char __user __force *) "/initrd.image",
++			      O_WRONLY|O_CREAT, 0700);
+ 		if (fd >= 0) {
+ 			sys_write(fd, (char *)initrd_start,
+ 					initrd_end - initrd_start);
+diff --git a/init/noinitramfs.c b/init/noinitramfs.c
+index f4c1a3a..267739d 100644
+--- a/init/noinitramfs.c
++++ b/init/noinitramfs.c
+@@ -29,17 +29,17 @@ static int __init default_rootfs(void)
+ {
+ 	int err;
+ 
+-	err = sys_mkdir("/dev", 0755);
++	err = sys_mkdir((const char __user __force *) "/dev", 0755);
+ 	if (err < 0)
+ 		goto out;
+ 
+-	err = sys_mknod((const char __user *) "/dev/console",
++	err = sys_mknod((const char __user __force *) "/dev/console",
+ 			S_IFCHR | S_IRUSR | S_IWUSR,
+ 			new_encode_dev(MKDEV(5, 1)));
+ 	if (err < 0)
+ 		goto out;
+ 
+-	err = sys_mkdir("/root", 0700);
++	err = sys_mkdir((const char __user __force *) "/root", 0700);
+ 	if (err < 0)
+ 		goto out;
+ 
 -- 
-The opposite of love is not hate, it's indifference.
-  - Elie Wiesel
+1.7.0.4
 
