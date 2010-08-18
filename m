@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604Ab0HRBlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:41:18 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46126 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab0HRBlO (ORCPT
+	id S1752806Ab0HRBtF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:49:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:14673 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab0HRBs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:41:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=bofJq/n9cLVmmRCDqA38Ul5XWG9oG1PVR2J5tjmnwX1t1tRsSizerZoNIYW+mTjExa
-         ysAWSyccxY/Do4tGBW1XDqA3BUzjIQiMbEEn6pVnBvehb37tWpKlyMacQNXJpSqSDVu8
-         +Uo7QSo+m+GVpBZ68ebmknonfgO39ZK0kly+M=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: add __user markup on sys32_waitpid()
-Date: Wed, 18 Aug 2010 10:41:08 +0900
-Message-Id: <1282095668-6147-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 17 Aug 2010 21:48:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6077"; a="51251125"
+Message-ID: <4C6B3C09.7010809@codeaurora.org>
+Date: Tue, 17 Aug 2010 18:48:57 -0700
+From: Bryan Huntsman <bryanh@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Igor Stoppa <igor.stoppa@nokia.com>, linux-pm@lists.linux-foundation.org,
+        Linux-pm mailing list <linux-pm@lists.osdl.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-pm] Wakelocks Rebooted - Power management for embedded
+ devices
+References: <1282034436.13642.1115.camel@vimes.research.nokia.com> <201008171550.06753.rjw@sisk.pl>
+In-Reply-To: <201008171550.06753.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-stat_addr, 2nd arg, is a user pointer but was missing __user markup.
-Add it.
+>> * I would welcome people from silicon companies to participate in the
+>> discussion, since they have the best understanding of the real impact of
+>> a certain power saving implementation on the SoC performance.
+> 
+> Yes, it would be nice to have some input from the hardware folks.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/ia32/sys_ia32.c        |    2 +-
- arch/x86/include/asm/sys_ia32.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Speaking for the Qualcomm MSM folks, we definitely would like to be more 
+active in power management discussions.  I'm hoping to get some of our 
+power experts to attend LPC this year.
 
-diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
-index 3d09331..9677f8e 100644
---- a/arch/x86/ia32/sys_ia32.c
-+++ b/arch/x86/ia32/sys_ia32.c
-@@ -333,7 +333,7 @@ asmlinkage long sys32_alarm(unsigned int seconds)
- 	return alarm_setitimer(seconds);
- }
- 
--asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int *stat_addr,
-+asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int __user *stat_addr,
- 			      int options)
- {
- 	return compat_sys_wait4(pid, stat_addr, options, NULL);
-diff --git a/arch/x86/include/asm/sys_ia32.h b/arch/x86/include/asm/sys_ia32.h
-index cf4e2e3..ce7095c 100644
---- a/arch/x86/include/asm/sys_ia32.h
-+++ b/arch/x86/include/asm/sys_ia32.h
-@@ -40,7 +40,7 @@ asmlinkage long sys32_rt_sigprocmask(int, compat_sigset_t __user *,
- 				     compat_sigset_t __user *, unsigned int);
- asmlinkage long sys32_alarm(unsigned int);
- 
--asmlinkage long sys32_waitpid(compat_pid_t, unsigned int *, int);
-+asmlinkage long sys32_waitpid(compat_pid_t, unsigned int __user *, int);
- asmlinkage long sys32_sysfs(int, u32, u32);
- 
- asmlinkage long sys32_sched_rr_get_interval(compat_pid_t,
+- Bryan
+
 -- 
-1.7.0.4
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
