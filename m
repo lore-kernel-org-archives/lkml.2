@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0HRSmN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 14:42:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49614 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387Ab0HRSmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 14:42:09 -0400
-Message-ID: <4C6C294D.3030404@zytor.com>
-Date: Wed, 18 Aug 2010 11:41:17 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1753326Ab0HRSqB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 14:46:01 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:53244 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab0HRSqA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 14:46:00 -0400
+Date: Wed, 18 Aug 2010 20:45:34 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Alok Kataria <akataria@vmware.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, Borislav Petkov <bp@alien8.de>,
+        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, tsc: Limit CPU frequency calibration on AMD
+Message-ID: <20100818184534.GA12842@aftab>
+References: <4C69D02F.6090601@zytor.com>
+ <1282024311.20786.2.camel@ank32.eng.vmware.com>
+ <4C6A2C98.4060605@zytor.com>
+ <20100817070520.GD32714@liondog.tnic>
+ <1282063532.4388.8.camel@ank32.eng.vmware.com>
+ <20100817185634.GA10597@liondog.tnic>
+ <20100818161639.GF9880@aftab>
+ <4C6C08EC.2080404@zytor.com>
+ <20100818173401.GG9880@aftab>
+ <1282153895.15158.45.camel@ank32.eng.vmware.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2 1/2] x86-32: Fix crashes with CPU hotplug on AMD machines
-References: <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812170644.GZ23755@8bytes.org> <4C644507.9020606@zytor.com> <20100812190414.GA23755@8bytes.org> <20100813123543.GC9046@aftab> <20100816121933.GA28147@aftab> <20100816123833.GB28147@aftab>
-In-Reply-To: <20100816123833.GB28147@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282153895.15158.45.camel@ank32.eng.vmware.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2010 05:38 AM, Borislav Petkov wrote:
->  #else
->  static inline void reserve_trampoline_memory(void) {};
-> +extern void __init setup_trampoline_page_table(void) {};
->  #endif /* CONFIG_X86_TRAMPOLINE */
+From: Alok Kataria <akataria@vmware.com>
+Date: Wed, Aug 18, 2010 at 01:51:35PM -0400
 
-This breaks compilation in the !CONFIG_X86_TRAMPOLINE case; I presume
-you meant:
+Hi,
 
-static inline void setup_trampoline_page_table(void) {}
+> Thanks for doing this. I already had a patch ready doing just this,
 
-... here too?
+sorry if I have caused any conflicts with your patch.
 
-(No semicolon after a function body!)
+> though this change looks much nicer since you have moved all the code
+> to the amd file. Guess I just have to wait for you to do the noop
+> stuff if you are doing that. Once the patch is completed I can then
+> just initialize this func ptr to the noop routine when on VMware's
+> platform.
 
-	-hpa
+yeah, actually I was on the verge of completely removing that
+calibrate_cpu code since maybe 99% of the systems out there should have
+a TSC counting with the P0 rate so the issue becomes moot and no need
+for fixing. But according to Murphy, there'll be this one system which
+needs it and thus we have to keep it, unfortunately.
+
+Anyway, I'll keep you posted.
+
+Thanks.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Regards/Gruss,
+Boris.
 
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
