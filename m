@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846Ab0HRPre (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:47:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60388 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753786Ab0HRPrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:47:31 -0400
-From: Andreas Gruenbacher <agruen@suse.de>
-Organization: SUSE Labs, Novell Inc.
-To: Eric Paris <eparis@redhat.com>
-Subject: Re: [GIT PULL] notification tree: directory events
-Date: Wed, 18 Aug 2010 17:47:14 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        Michael Kerrisk <michael.kerrisk@gmail.com>
-References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com> <201008162232.36873.agruen@suse.de>
-In-Reply-To: <201008162232.36873.agruen@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008181747.15461.agruen@suse.de>
+	id S1753695Ab0HRPrS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:47:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:51900 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752227Ab0HRPrM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 11:47:12 -0400
+From: Andy Whitcroft <apw@canonical.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andy Whitcroft <apw@canonical.com>
+Subject: [PATCH 08/16] checkpatch: simplify and consolidate "missing space after" checks
+Date: Wed, 18 Aug 2010 16:46:41 +0100
+Message-Id: <1282146409-30544-9-git-send-email-apw@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1282146409-30544-1-git-send-email-apw@canonical.com>
+References: <1282146409-30544-1-git-send-email-apw@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric,
+Commonise the code for missing spaces after struct, union, and enum such
+that they share the same code.  Ensure we cover all the common cases in
+each case.  Check against the sanitised line to ensure we do not report
+on comments and strings.
 
-one more thing that doesn't make sense is events on directories: when watching 
-a directory, some actions like reading a directory or creat()ing a file in the 
-directory will generate events (even open_perm and access_perm), but other 
-actions like hard linking files into the directory or removing files will not 
-create any events.  This means that fanotify currently cannot be used for 
-watching for directory changes.
+Signed-off-by: Andy Whitcroft <apw@canonical.com>
+---
+ scripts/checkpatch.pl |   15 +++++----------
+ 1 files changed, 5 insertions(+), 10 deletions(-)
 
-In my opinion, events on directories should either be made to actually work, 
-or else no directory events at all should be generated.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 983ac18..cb19f54 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1905,22 +1905,17 @@ sub process {
+ 			ERROR("open brace '{' following function declarations go on the next line\n" . $herecurr);
+ 		}
+ 
+-# missing space after union or struct definition
+-		if ($rawline =~ /^\+\s*(union|struct)\s+$Ident[=\{]/) {
+-		    WARN("Missing space after struct or union definition\n" . $herecurr);
+-		}
+-
+-# missing space after enum definition
+-		if ($rawline =~ /^\+\s*enum\{/) {
+-		    WARN("Missing space after enum definition\n" . $herecurr);
+-		}
+-
+ # open braces for enum, union and struct go on the same line.
+ 		if ($line =~ /^.\s*{/ &&
+ 		    $prevline =~ /^.\s*(?:typedef\s+)?(enum|union|struct)(?:\s+$Ident)?\s*$/) {
+ 			ERROR("open brace '{' following $1 go on the same line\n" . $hereprev);
+ 		}
+ 
++# missing space after union, struct or enum definition
++		if ($line =~ /^.\s*(?:typedef\s+)?(enum|union|struct)(?:\s+$Ident)?(?:\s+$Ident)?[=\{]/) {
++		    WARN("missing space after $1 definition\n" . $herecurr);
++		}
++
+ # check for spacing round square brackets; allowed:
+ #  1. with a type on the left -- int [] a;
+ #  2. at the beginning of a line for slice initialisers -- [0...10] = 5,
+-- 
+1.7.0.4
 
-Also, I can think of users of fanotify which are not concerned with directory 
-events at all.  It would make sense to allow such users to subscribe only to 
-file events and not receive any directory events which they will end up 
-ignoring anyway.
-
-Again it shows that this code just wasn't ready to be merged yet ...
-
-Andreas
