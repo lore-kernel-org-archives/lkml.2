@@ -1,118 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab0HRIeE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 04:34:04 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:25333 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423Ab0HRIeB (ORCPT
+	id S1752113Ab0HRIfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 04:35:10 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:57803 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab0HRIfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 04:34:01 -0400
-Date: Wed, 18 Aug 2010 17:33:46 +0900
-From: Kyungmin Park <kmpark@infradead.org>
-To: linux-kernel@vger.kernel.org, Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] Ramoops: use the platform data structure instead of module
-	params
-Message-id: <20100818083346.GA6308@july>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
-X-OriginalArrivalTime: 18 Aug 2010 08:33:53.0597 (UTC)
- FILETIME=[174846D0:01CB3EB0]
+	Wed, 18 Aug 2010 04:35:08 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.5.1
+Message-ID: <4C6B9B53.5030800@np.css.fujitsu.com>
+Date: Wed, 18 Aug 2010 17:35:31 +0900
+From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: Huang Ying <ying.huang@intel.com>, Lu Yinghai <yinghai@kernel.org>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        ACPI <linux-acpi@vger.kernel.org>, LKLM <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] [Patch-next] ACPI, APEI, ERST Fix the wrong checking
+ of Serialization Header's length
+References: <4C69DDB5.6060103@np.css.fujitsu.com>	 <1282008836.2744.1490.camel@yhuang-dev>	 <4C69F094.1040607@np.css.fujitsu.com>	 <1282015344.2744.1500.camel@yhuang-dev> <4C6A139D.20507@np.css.fujitsu.com> <1282109696.2744.1553.camel@yhuang-dev>
+In-Reply-To: <1282109696.2744.1553.camel@yhuang-dev>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kyungmin Park <kyungmin.park@samsung.com>
+(2010/08/18 14:34), Huang Ying wrote:
+> On Tue, 2010-08-17 at 12:44 +0800, Jin Dongming wrote:
+>> (2010/08/17 12:22), Huang Ying wrote:
+>>> On Tue, 2010-08-17 at 10:14 +0800, Jin Dongming wrote:
+>>>>> I don't think it is necessary to change the header definition, and
+>>>>> seri_header is not a good name for me.
+>>>> Why I added this structure here is that I don't want to do following checking.
+>>>> For example,
+>>>> 	if (header_length != 0x0c) {
+>>>> 		...
+>>>> 	}
+>>>
+>>> This can be:
+>>>
+>>>  static int erst_check_table(struct acpi_table_erst *erst_tab)
+>>>  {
+>>> -       if (erst_tab->header_length != sizeof(struct acpi_table_erst))
+>>> +       if (erst_tab->header_length !=
+>>> +           (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
+>>>
+>>> like Yinghai has been done.
+>>>
+>> Yes. It looks good. And I am sorry I am unaware of Yinghai' patch. 
+> 
+> Maybe you can help push this fix in, it seems that Yinghai is busy on
+> something else?
+> 
+It is my pleasure if Yinghai agree with it.
 
-As each board and system has different memory for ramoops. It's better to define the platform data instead of module params.
+> Hi, Yinghai,
+> 
+> Do you mind for Dongming to push this fix?
+> 
+> Best REgards,
+> Huang Ying
 
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-index 74f00b5..eb7faba 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -25,6 +25,8 @@
- #include <linux/time.h>
- #include <linux/io.h>
- #include <linux/ioport.h>
-+#include <linux/platform_device.h>
-+#include <linux/ramoops.h>
- 
- #define RAMOOPS_KERNMSG_HDR "===="
- #define RAMOOPS_HEADER_SIZE   (5 + sizeof(struct timeval))
-@@ -91,11 +93,17 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 	cxt->count = (cxt->count + 1) % cxt->max_count;
- }
- 
--static int __init ramoops_init(void)
-+static int __init ramoops_probe(struct platform_device *pdev)
- {
-+	struct ramoops_platform_data *pdata = pdev->dev.platform_data;
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
- 
-+	if (pdata) {
-+		mem_size = pdata->mem_size;
-+		mem_address = pdata->mem_address;
-+	}
-+
- 	if (!mem_size) {
- 		printk(KERN_ERR "ramoops: invalid size specification");
- 		goto fail3;
-@@ -142,7 +150,7 @@ fail3:
- 	return err;
- }
- 
--static void __exit ramoops_exit(void)
-+static void __exit ramoops_remove(void)
- {
- 	struct ramoops_context *cxt = &oops_cxt;
- 
-@@ -153,6 +161,23 @@ static void __exit ramoops_exit(void)
- 	release_mem_region(cxt->phys_addr, cxt->size);
- }
- 
-+static struct platform_driver ramoops_driver = {
-+	.remove		= __exit_p(ramoops_remove),
-+	.driver		= {
-+		.name	= "ramoops",
-+		.owner	= THIS_MODULE,
-+	},
-+};
-+
-+static int __init ramoops_init(void)
-+{
-+	return platform_driver_probe(&ramoops_driver, ramoops_probe);
-+}
-+
-+static void __exit ramoops_exit(void)
-+{
-+	platform_driver_unregister(&ramoops_driver);
-+}
- 
- module_init(ramoops_init);
- module_exit(ramoops_exit);
-diff --git a/include/linux/ramoops.h b/include/linux/ramoops.h
-new file mode 100644
-index 0000000..0ae68a2
---- /dev/null
-+++ b/include/linux/ramoops.h
-@@ -0,0 +1,15 @@
-+#ifndef __RAMOOPS_H
-+#define __RAMOOPS_H
-+
-+/*
-+ * Ramoops platform data
-+ * @mem_size	memory size for ramoops
-+ * @mem_address	physical memory address to contain ramoops
-+ */
-+
-+struct ramoops_platform_data {
-+	unsigned long	mem_size;
-+	unsigned long	mem_address;
-+};
-+
-+#endif
+Best Regards,
+Jin Dongming
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> 
+
+
