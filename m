@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063Ab0HRUKZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:10:25 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40080 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754003Ab0HRUKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:10:20 -0400
-From: Gunnar Gudvardarson <gunni@wave.is>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Gunnar Gudvardarson <gunni@wave.is>
-Subject: [PATCH] Staging: crystalhd: crystalhd_cmds: fixed a brace issue
-Date: Wed, 18 Aug 2010 20:10:06 +0000
-Message-Id: <1282162206-9524-1-git-send-email-gunni@wave.is>
-X-Mailer: git-send-email 1.7.0.4
+	id S1753979Ab0HRUPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:15:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41243 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753278Ab0HRUPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 16:15:14 -0400
+Date: Wed, 18 Aug 2010 12:56:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        magnus.damm@gmail.com, grant.likely@secretlab.ca,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 1/4] platform: Use drv->driver.bus instead of assuming
+ platform_bus_type
+Message-ID: <20100818195646.GA15904@suse.de>
+References: <1282158943-11902-1-git-send-email-ppannuto@codeaurora.org>
+ <1282158943-11902-2-git-send-email-ppannuto@codeaurora.org>
+ <20100818194410.GA17421@suse.de>
+ <4C6C3A28.8070108@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6C3A28.8070108@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a brace issue.
+On Wed, Aug 18, 2010 at 12:53:12PM -0700, Patrick Pannuto wrote:
+> On 08/18/2010 12:44 PM, Greg KH wrote:
+> > On Wed, Aug 18, 2010 at 12:15:40PM -0700, Patrick Pannuto wrote:
+> >> In theory (although not *yet* in practice), a driver being passed
+> >> to platform_driver_probe might have driver.bus set to something
+> >> other than platform_bus_type. Locking drv->driver.bus is always
+> >> correct.
+> >>
+> >> Change-Id: Ib015c35237eb5493d17a812576a3a9906e1344d4
+> > 
+> > What is that field?  Why did you add it?
+> > 
+> > confused,
+> > 
+> > greg k-h
+> 
+> Ugh... It's from gerrit; forgot to remove them, sorry.
+> 
+> Do you want a fresh set, or can you just ignore them for now?
 
-Note: checkpatch was clean until i ran format-patch, which added 3
-trailing whitespaces.
+I'll ignore them for now.
 
-Signed-off-by: Gunnar Gudvardarson <gunni@wave.is>
----
- drivers/staging/crystalhd/crystalhd_cmds.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+thanks,
 
-diff --git a/drivers/staging/crystalhd/crystalhd_cmds.c b/drivers/staging/crystalhd/crystalhd_cmds.c
-index 1429608..d423775 100644
---- a/drivers/staging/crystalhd/crystalhd_cmds.c
-+++ b/drivers/staging/crystalhd/crystalhd_cmds.c
-@@ -309,9 +309,9 @@ static enum BC_STATUS bc_cproc_download_fw(struct crystalhd_cmd *ctx,
- 	sts = crystalhd_download_fw(ctx->adp, (uint8_t *)idata->add_cdata,
- 				  idata->add_cdata_sz);
- 
--	if (sts != BC_STS_SUCCESS) {
-+	if (sts != BC_STS_SUCCESS)
- 		BCMLOG_ERR("Firmware Download Failure!! - %d\n", sts);
--	} else
-+	else
- 		ctx->state |= BC_LINK_INIT;
- 
- 	return sts;
--- 
-1.7.0.4
-
+greg k-h
