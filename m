@@ -1,47 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754440Ab0HRVcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 17:32:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:1175 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745Ab0HRVcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 17:32:15 -0400
-Subject: Re: add memset checks to checkpatch.pl
-From: Joe Perches <joe@perches.com>
-To: Dave Jones <davej@redhat.com>
-Cc: apw@canonical.com, Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100818204016.GA29640@redhat.com>
-References: <20100818204016.GA29640@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 14:32:13 -0700
-Message-ID: <1282167133.6724.165.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+	id S1754476Ab0HRVin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 17:38:43 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31660 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab0HRVik (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 17:38:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6078"; a="51475791"
+Message-ID: <4C6C52DE.4040700@codeaurora.org>
+Date: Wed, 18 Aug 2010 17:38:38 -0400
+From: Neil Leeder <nleeder@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Stepan Moskovchenko <stepanm@codeaurora.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Horace Fu <horace.fu@quantatw.com>,
+        Mandeep Singh Baines <msb@chromium.org>,
+        Trilok Soni <tsoni@codeaurora.org>
+Subject: Re: [PATCH v2] input: mouse: add qci touchpad driver
+References: <1281631760-15589-1-git-send-email-nleeder@codeaurora.org> <20100813024912.GA2661@core.coreip.homeip.net> <4C65BF99.9030601@codeaurora.org> <201008131754.49488.dmitry.torokhov@gmail.com> <4C6AC393.8000109@codeaurora.org> <BC741E3E-377E-45BF-80E1-A60F4E0FDFC9@gmail.com>
+In-Reply-To: <BC741E3E-377E-45BF-80E1-A60F4E0FDFC9@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 16:40 -0400, Dave Jones wrote:
-> Occasionally someone goofs the argument order to memset.
-> This patch makes checkpatch catch those.
-> 
-> I made memset with size of 0 an error, because it's never correct,
-> whereas memset with a size of 1 isn't technically an incorrect
-> thing to do so I left it as a warning. It may still be better to replace
-> it with a single variable assignment in the false positive cases.
+Hi Dmitry,
 
-Maybe something like allows more flexible checking?
+On 8/17/2010 2:05 PM, Dmitry Torokhov wrote:
+> That suggests that the device responds to at least basic PS/2 queries.
+>
+>> I can see data being passed through the serio driver but the logitech
+>> driver can't process it.
+>>
+>
+> What about loading psmouse module with proto=bare?
+>
+> Could you also dump the data received from touchpad during probing?
+>
 
-	if ($line =~ /\bmemset\s*\(\s*($Lval)\s*,\s*($Lval)\s*,\s*($Lval)\s*\)/) {
-		my $memset_addr = $1;
-		my $memset_val = $2;
-		my $memset_size = $3;
-		if ($memset_size =~ /(0x|)0$/i) {
-			ERROR("memset uses second argument as constant byte value, not third.\n" . $herecurr);
-		elsif ($memset_size =~ /(0x|)1/i) {
-			WARN("single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . $herecurr);
-		}
-	}
+It appears the controller does somewhat respond as a PS/2 device. The 
+first problem is it only responds to CMD_GETID correctly about 50% of 
+the time. Sometimes it responds well with a 0x00, other times with 0xfa, 
+which causes psmouse_probe to not recognize it as a pointing device.
 
+[    1.037223] wpce775x_send len=1 data=f2
+[    1.054412] wpce775x_recv ... data_in=fa fa 64 0 0 0 0 0 fa 0 0 0 0 0 
+0 0
 
+It also doesn't respond well to CMD_GETINFO, which is why it gets 
+mis-detected as the wrong device type. As an aside, I'm not sure if 
+combining separate commands into one i2c packet is correct, but 
+separating them didn't seem to produce better results either.
+
+[    1.723943] wpce775x_send len=3 data=e8 3 e6
+[    1.735666] wpce775x_recv ... data_in=fa fa 64 0 0 0 0 0 fa 0 0 0 0 0 
+0 0
+[    1.735892] wpce775x_send len=3 data=e6 e6 e9
+[    1.748281] wpce775x_recv ... data_in=fe fa 64 0 0 0 0 0 fa 0 0 0 0 0 
+0 0
+[    1.748500] wpce775x_send len=3 data=e8 0 e6
+[    1.760233] wpce775x_recv ... data_in=fa fa 64 0 0 0 0 0 fa 0 0 0 0 0 
+0 0
+[    1.760457] wpce775x_send len=3 data=e6 e6 e9
+[    1.772876] wpce775x_recv ... data_in=fe fa 64 0 0 0 0 0 fa 0 0 0 0 0 
+0 0
+
+Using proto=bare gets around the GETINFO failure, but doesn't help with 
+the more important GETID failure.
+
+The other issue is that when the serio driver requests up to 16 bytes 
+over i2c, the controller responds with 16 bytes of data, which appear to 
+be the 3 flags/X/Y regs plus 13 bytes of irrelevant data. This all gets 
+passed to psmouse which interprets it 3 bytes at a time as movement 
+data. Not only does the extra data get interpreted as movement info, but 
+it causes subsequent real data to be mis-aligned and wrongly interpreted.
+
+[  115.915558] wpce775x_recv ... data_in=28 1 ff 0 0 0 0 0 9c 0 0 0 0 0 0 0
+[  115.915649] psmouse_process_byte data=28 01 ff rel_x=1 rel_y=1 
+<--- OK
+[  115.915688] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.915714] psmouse_process_byte data=00 00 9c rel_x=0 rel_y=-156 
+<--- bad
+[  115.915745] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.915771] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.928269] wpce775x_recv ... data_in=28 1 fe 0 0 0 0 0 9c 0 0 0 0 0 0 0
+[  115.928357] psmouse_process_byte data=00 28 01 rel_x=40 rel_y=-1 
+<--- wrong
+[  115.928396] psmouse_process_byte data=fe 00 00 rel_x=0 rel_y=0 
+<--- wrong
+[  115.928426] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.928457] psmouse_process_byte data=9c 00 00 rel_x=0 rel_y=0
+[  115.928484] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.939728] wpce775x_recv ... data_in=28 1 ff 0 0 0 0 0 9c 0 0 0 0 0 0 0
+[  115.939818] psmouse_process_byte data=00 00 28 rel_x=0 rel_y=-40 
+<--- wrong
+[  115.939857] psmouse_process_byte data=01 ff 00 rel_x=255 rel_y=0 
+<--- wrong
+[  115.939889] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.939916] psmouse_process_byte data=00 9c 00 rel_x=156 rel_y=0 
+<--- bad
+[  115.939947] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+[  115.939972] psmouse_process_byte data=00 00 00 rel_x=0 rel_y=0
+
+Is there a way to get the serio driver to only read 3 bytes of data per 
+interrupt?
+
+Thanks.
+
+--
+Neil
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
