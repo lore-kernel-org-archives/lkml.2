@@ -1,137 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751134Ab0HRG47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 02:56:59 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:46575 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab0HRG4x (ORCPT
+	id S1751006Ab0HRHBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 03:01:45 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:46043 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750757Ab0HRHBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 02:56:53 -0400
-Date: Wed, 18 Aug 2010 12:26:07 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Nikanth Karthikesan <knikanth@suse.de>
-Cc: Matt Mackall <mpm@selenic.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] Export mlock information via smaps
-Message-ID: <20100818065607.GC28417@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <201008171039.31070.knikanth@suse.de>
- <201008181023.41378.knikanth@suse.de>
- <20100818055253.GA28417@balbir.in.ibm.com>
- <201008181219.51915.knikanth@suse.de>
+	Wed, 18 Aug 2010 03:01:41 -0400
+X-Sasl-enc: Ko4f/imtTTfHI+8VhkjFFzTkxPxBsBXNLx+23IqPczuB 1282114899
+Message-ID: <4C6B8562.1070902@ladisch.de>
+Date: Wed, 18 Aug 2010 09:01:54 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <201008181219.51915.knikanth@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Yong Zhang <yong.zhang0@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: lockdep false positive? -- firewire-core transaction timer vs.
+ scsi-core host lock
+References: <tkrat.1e48e021935dc8b7@s5r6.in-berlin.de>	<20100817143509.GC2838@zhy> <4C6AB76C.9060809@s5r6.in-berlin.de>
+In-Reply-To: <4C6AB76C.9060809@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nikanth Karthikesan <knikanth@suse.de> [2010-08-18 12:19:51]:
-
-> On Wednesday 18 August 2010 11:22:53 Balbir Singh wrote:
-> > * Nikanth Karthikesan <knikanth@suse.de> [2010-08-18 10:23:41]:
-> > > On Tuesday 17 August 2010 21:55:36 Matt Mackall wrote:
-> > > > On Tue, 2010-08-17 at 10:39 +0530, Nikanth Karthikesan wrote:
-> > > > > Currently there is no way to find whether a process has locked its
-> > > > > pages in memory or not. And which of the memory regions are locked in
-> > > > > memory.
-> > > > >
-> > > > > Add a new field to perms field 'l' to export this information. The
-> > > > > information exported via maps file is not changed.
-> > > >
-> > > > I'm worried that your new 'l' flag will fatally surprise some naive
-> > > > parser of this file.
-> > >
-> > > So how to proceed? Create another "ssmaps" file or something? :) Or is
-> > > the following patch any better? Even the "Yes"/"No" could be changed to
-> > > "0 kB" or "x kB", if it would make it better.
-> > >
-> > > Thanks
-> > > Nikanth
-> > >
-> > > Currently there is no way to find whether a process has locked its pages
-> > > in memory or not. And which of the memory regions are locked in memory.
-> > >
-> > > Add a new field "Locked" to export this information via smaps file.
-> > >
-> > > Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-> > >
-> > > ---
-> > >
-> > > diff --git a/Documentation/filesystems/proc.txt
-> > > b/Documentation/filesystems/proc.txt index a6aca87..6eafd26 100644
-> > > --- a/Documentation/filesystems/proc.txt
-> > > +++ b/Documentation/filesystems/proc.txt
-> > > @@ -373,6 +373,7 @@ Referenced:          892 kB
-> > >  Swap:                  0 kB
-> > >  KernelPageSize:        4 kB
-> > >  MMUPageSize:           4 kB
-> > > +Locked:         No
-> > >
-> > >  The first  of these lines shows  the same information  as is displayed
-> > > for the mapping in /proc/PID/maps.  The remaining lines show  the size of
-> > > the mapping, @@ -397,6 +398,8 @@ To clear the bits for the file mapped
-> > > pages associated with the process
-> > >
-> > >      > echo 3 > /proc/PID/clear_refs
-> > >
-> > >  Any other value written to /proc/PID/clear_refs will have no effect.
-> > >
-> > > +The "Locked" indicates whether the mapping is locked in memory or not.
-> > > +
-> > >
-> > >  1.2 Kernel data
-> > >  ---------------
-> > > diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> > > index aea1d3f..7bafbcf 100644
-> > > --- a/fs/proc/task_mmu.c
-> > > +++ b/fs/proc/task_mmu.c
-> > > @@ -405,7 +405,8 @@ static int show_smap(struct seq_file *m, void *v)
-> > >  		   "Referenced:     %8lu kB\n"
-> > >  		   "Swap:           %8lu kB\n"
-> > >  		   "KernelPageSize: %8lu kB\n"
-> > > -		   "MMUPageSize:    %8lu kB\n",
-> > > +		   "MMUPageSize:    %8lu kB\n"
-> > > +		   "Locked:         %s\n",
-> > >  		   (vma->vm_end - vma->vm_start) >> 10,
-> > >  		   mss.resident >> 10,
-> > >  		   (unsigned long)(mss.pss >> (10 + PSS_SHIFT)),
-> > > @@ -416,7 +417,8 @@ static int show_smap(struct seq_file *m, void *v)
-> > >  		   mss.referenced >> 10,
-> > >  		   mss.swap >> 10,
-> > >  		   vma_kernel_pagesize(vma) >> 10,
-> > > -		   vma_mmu_pagesize(vma) >> 10);
-> > > +		   vma_mmu_pagesize(vma) >> 10,
-> > > +		   (vma->vm_flags & VM_LOCKED) ? "Yes" : "No");
+Stefan Richter wrote:
+> Yong Zhang wrote:
+> > I suspect it's introduced by commit 5c40cbfefa828208c671e2f58789e4dd04f79563
+> > which call del_timer_sync() in softirq.
 > > 
-> > Why not show the Locked as kB as well? I know that the entire VMA is
-> > locked, but ideally if we can show mss.pss as locked, one can write
-> > a simple script to accumulate locked memory for the process. NOTE:
-> > One could choose RSS or PSS, but I'd prefer PSS (even though the
-> > value is not stable across the system) since it is more accurate
-> > representation of the truly locked memory.
-> > 
+> > comments on del_timer_sync() say "It must not be called from interrupt contexts."
 > 
-> Agreed. Attached patch does this, i.e, uses PSS as amount of locked memory.
-> 
-> Matt, will this be okay?
-> 
-> Thanks
-> Nikanth
-> 
-> Currently there is no way to find whether a process has locked its pages in
-> memory or not. And which of the memory regions are locked in memory.
-> 
-> Add a new field "Locked" to export this information via smaps file.
-> 
-> Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
->
+> I hope the del_timer_sync kerneldoc comment is about hardIRQ context,
 
+Then both the comment and its lockdep code would be wrong.
+
+> *otherwise* commit 5c40cbfe is defective indeed.
+
+--8<---------------------------------------------------------------->8--
+firewire: core: do not use del_timer_sync() in interrupt context
+
+Because we might be in interrupt context, replace del_timer_sync() with
+del_timer().  If the timer was already running when we tried to delete
+it, explicitly wait for it to finish to ensure that it does not access
+the transaction data after the normal completion code might have freed
+it.
+
+Many thanks to Yong Zhang for diagnosing this and to Rusty Russell for
+his Locking Guide.
+
+Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+---
+ drivers/firewire/core-transaction.c |   17 ++++++++++++++---
+ 1 file changed, 14 insertions(+), 3 deletions(-)
+
+--- a/drivers/firewire/core-transaction.c
++++ b/drivers/firewire/core-transaction.c
+@@ -78,9 +78,16 @@ static int close_transaction(struct fw_t
+ 	struct fw_transaction *t;
+ 	unsigned long flags;
  
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
++retry:
+ 	spin_lock_irqsave(&card->lock, flags);
+ 	list_for_each_entry(t, &card->transaction_list, link) {
+ 		if (t == transaction) {
++			if (!del_timer(&t->split_timeout_timer)) {
++				/* wait for the timer to cancel it */
++				spin_unlock_irqrestore(&card->lock, flags);
++				cpu_relax();
++				goto retry;
++			}
+ 			list_del_init(&t->link);
+ 			card->tlabel_mask &= ~(1ULL << t->tlabel);
+ 			break;
+@@ -89,7 +96,6 @@ static int close_transaction(struct fw_t
+ 	spin_unlock_irqrestore(&card->lock, flags);
  
--- 
-	Three Cheers,
-	Balbir
+ 	if (&t->link != &card->transaction_list) {
+-		del_timer_sync(&t->split_timeout_timer);
+ 		t->callback(card, rcode, NULL, 0, t->callback_data);
+ 		return 0;
+ 	}
+@@ -918,9 +924,16 @@ void fw_core_handle_response(struct fw_c
+ 	source	= HEADER_GET_SOURCE(p->header[1]);
+ 	rcode	= HEADER_GET_RCODE(p->header[1]);
+ 
++retry:
+ 	spin_lock_irqsave(&card->lock, flags);
+ 	list_for_each_entry(t, &card->transaction_list, link) {
+ 		if (t->node_id == source && t->tlabel == tlabel) {
++			if (!del_timer(&t->split_timeout_timer)) {
++				/* wait for the timer to cancel it */
++				spin_unlock_irqrestore(&card->lock, flags);
++				cpu_relax();
++				goto retry;
++			}
+ 			list_del_init(&t->link);
+ 			card->tlabel_mask &= ~(1ULL << t->tlabel);
+ 			break;
+@@ -963,8 +976,6 @@ void fw_core_handle_response(struct fw_c
+ 		break;
+ 	}
+ 
+-	del_timer_sync(&t->split_timeout_timer);
+-
+ 	/*
+ 	 * The response handler may be executed while the request handler
+ 	 * is still pending.  Cancel the request handler.
