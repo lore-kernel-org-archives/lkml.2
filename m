@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab0HRGUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 02:20:25 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:59727 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750853Ab0HRGUT (ORCPT
+	id S1752014Ab0HRGUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 02:20:32 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:48413 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943Ab0HRGU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 02:20:19 -0400
+	Wed, 18 Aug 2010 02:20:26 -0400
 From: felipe.balbi@nokia.com
 To: Samuel Ortiz <sameo@linux.intel.com>
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         Tony Lindgren <tony@atomide.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Felipe Balbi <felipe.balbi@nokia.com>
-Subject: [PATCH 2/4] mfd: twl-core: switch over to defines in twl.h
-Date: Wed, 18 Aug 2010 09:19:35 +0300
-Message-Id: <1282112377-1335-3-git-send-email-felipe.balbi@nokia.com>
+Subject: [PATCH 4/4] usb: otg: twl4030-usb: switch over to defines in twl.h
+Date: Wed, 18 Aug 2010 09:19:37 +0300
+Message-Id: <1282112377-1335-5-git-send-email-felipe.balbi@nokia.com>
 X-Mailer: git-send-email 1.7.2.1.6.g61bf12
 In-Reply-To: <1282112377-1335-1-git-send-email-felipe.balbi@nokia.com>
 References: <1282112377-1335-1-git-send-email-felipe.balbi@nokia.com>
-X-OriginalArrivalTime: 18 Aug 2010 06:19:49.0931 (UTC) FILETIME=[5CE23FB0:01CB3E9D]
+X-OriginalArrivalTime: 18 Aug 2010 06:19:53.0954 (UTC) FILETIME=[5F481C20:01CB3E9D]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -32,54 +32,46 @@ consistency.
 
 Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
 ---
- drivers/mfd/twl-core.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
+ drivers/usb/otg/twl4030-usb.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
-index 720e099..9689ecf 100644
---- a/drivers/mfd/twl-core.c
-+++ b/drivers/mfd/twl-core.c
-@@ -202,12 +202,6 @@
+diff --git a/drivers/usb/otg/twl4030-usb.c b/drivers/usb/otg/twl4030-usb.c
+index 0e88885..c9b7a87 100644
+--- a/drivers/usb/otg/twl4030-usb.c
++++ b/drivers/usb/otg/twl4030-usb.c
+@@ -124,7 +124,6 @@
+ #define PHY_DPLL_CLK			(1 << 0)
  
- /* Few power values */
- #define R_CFG_BOOT			0x05
--#define R_PROTECT_KEY			0x0E
--
--/* access control values for R_PROTECT_KEY */
--#define KEY_UNLOCK1			0xce
--#define KEY_UNLOCK2			0xec
--#define KEY_LOCK			0x00
+ /* In module TWL4030_MODULE_PM_MASTER */
+-#define PROTECT_KEY			0x0E
+ #define STS_HW_CONDITIONS		0x0F
  
- /* some fields in R_CFG_BOOT */
- #define HFCLK_FREQ_19p2_MHZ		(1 << 0)
-@@ -846,8 +840,8 @@ static inline int __init protect_pm_master(void)
+ /* In module TWL4030_MODULE_PM_RECEIVER */
+@@ -405,8 +404,13 @@ static void twl4030_phy_resume(struct twl4030_usb *twl)
+ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
  {
- 	int e = 0;
- 
--	e = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, KEY_LOCK,
--			R_PROTECT_KEY);
-+	e = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
-+			TWL4030_PM_MASTER_PROTECT_KEY);
- 	return e;
- }
- 
-@@ -855,10 +849,13 @@ static inline int __init unprotect_pm_master(void)
- {
- 	int e = 0;
- 
--	e |= twl_i2c_write_u8(TWL_MODULE_PM_MASTER, KEY_UNLOCK1,
--			R_PROTECT_KEY);
--	e |= twl_i2c_write_u8(TWL_MODULE_PM_MASTER, KEY_UNLOCK2,
--			R_PROTECT_KEY);
-+	e |= twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
+ 	/* Enable writing to power configuration registers */
+-	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0xC0, PROTECT_KEY);
+-	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0x0C, PROTECT_KEY);
++	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
 +			TWL4030_PM_MASTER_KEY_CFG1,
 +			TWL4030_PM_MASTER_PROTECT_KEY);
-+	e |= twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
++
++	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
 +			TWL4030_PM_MASTER_KEY_CFG2,
 +			TWL4030_PM_MASTER_PROTECT_KEY);
-+
- 	return e;
- }
+ 
+ 	/* put VUSB3V1 LDO in active state */
+ 	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB_DEDICATED2);
+@@ -442,7 +446,8 @@ static int twl4030_usb_ldo_init(struct twl4030_usb *twl)
+ 	twl_i2c_write_u8(TWL4030_MODULE_PM_RECEIVER, 0, VUSB1V8_TYPE);
+ 
+ 	/* disable access to power configuration registers */
+-	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0, PROTECT_KEY);
++	twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
++			TWL4030_PM_MASTER_PROTECT_KEY);
+ 
+ 	return 0;
  
 -- 
 1.7.2.1.6.g61bf12
