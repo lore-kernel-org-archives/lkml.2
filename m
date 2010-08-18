@@ -1,113 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab0HRP5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:57:08 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:34094 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751796Ab0HRP5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:57:06 -0400
-Subject: Re: Over-eager swapping
-From: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Chris Webb <chris@arachsys.com>, Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-In-Reply-To: <20100818152103.GA11268@localhost>
-References: <20100803042835.GA17377@localhost>
-	 <20100803214945.GA2326@arachsys.com> <20100804022148.GA5922@localhost>
-	 <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
-	 <20100804032400.GA14141@localhost> <20100804095811.GC2326@arachsys.com>
-	 <20100804114933.GA13527@localhost> <20100804120430.GB23551@arachsys.com>
-	 <20100818143801.GA9086@localhost> <20100818144655.GX2370@arachsys.com>
-	 <20100818152103.GA11268@localhost>
+	id S1753760Ab0HRP71 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:59:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55610 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751796Ab0HRP70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 11:59:26 -0400
+Subject: Re: [GIT PULL] notification tree: directory events
+From: Eric Paris <eparis@redhat.com>
+To: Andreas Gruenbacher <agruen@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+In-Reply-To: <201008181747.15461.agruen@suse.de>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
+	 <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
+	 <201008162232.36873.agruen@suse.de>  <201008181747.15461.agruen@suse.de>
 Content-Type: text/plain; charset="UTF-8"
-Organization: HP/LKTT
-Date: Wed, 18 Aug 2010 11:57:14 -0400
-Message-ID: <1282147034.77481.33.camel@useless.localdomain>
+Date: Wed, 18 Aug 2010 11:59:06 -0400
+Message-ID: <1282147146.21419.165.camel@acb20005.ipt.aol.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 23:21 +0800, Wu Fengguang wrote:
-> Andi, Christoph and Lee:
+On Wed, 2010-08-18 at 17:47 +0200, Andreas Gruenbacher wrote:
+> Eric,
 > 
-> This looks like an "unbalanced NUMA memory usage leading to premature
-> swapping" problem.
-
-What is the value of the vm.zone_reclaim_mode sysctl?  If it is !0, the
-system will go into zone reclaim before allocating off-node pages.
-However, it shouldn't "swap" in this case unless (zone_reclaim_mode & 4)
-!= 0.  And even then, zone reclaim should only reclaim file pages, not
-anon.  In theory...
-
-Note:  zone_reclaim_mode will be enabled by default [= 1] if the SLIT
-contains any distances > 2.0 [20].  Check SLIT values via 'numactl
---hardware'.
-
-Lee
-
+> one more thing that doesn't make sense is events on directories: when watching 
+> a directory, some actions like reading a directory or creat()ing a file in the 
+> directory will generate events (even open_perm and access_perm), but other 
+> actions like hard linking files into the directory or removing files will not 
+> create any events.  This means that fanotify currently cannot be used for 
+> watching for directory changes.
 > 
-> Thanks,
-> Fengguang
+> In my opinion, events on directories should either be made to actually work, 
+> or else no directory events at all should be generated.
 > 
-> On Wed, Aug 18, 2010 at 10:46:59PM +0800, Chris Webb wrote:
-> > Wu Fengguang <fengguang.wu@intel.com> writes:
-> > 
-> > > Did you enable any NUMA policy? That could start swapping even if
-> > > there are lots of free pages in some nodes.
-> > 
-> > Hi. Thanks for the follow-up. We haven't done any configuration or tuning of
-> > NUMA behaviour, but NUMA support is definitely compiled into the kernel:
-> > 
-> >   # zgrep NUMA /proc/config.gz 
-> >   CONFIG_NUMA_IRQ_DESC=y
-> >   CONFIG_NUMA=y
-> >   CONFIG_K8_NUMA=y
-> >   CONFIG_X86_64_ACPI_NUMA=y
-> >   # CONFIG_NUMA_EMU is not set
-> >   CONFIG_ACPI_NUMA=y
-> >   # grep -i numa /var/log/dmesg.boot 
-> >   NUMe: Allocated memnodemap from b000 - 1b540
-> >   NUMA: Using 20 for the hash shift.
-> > 
-> > > Are your free pages equally distributed over the nodes? Or limited to
-> > > some of the nodes? Try this command:
-> > > 
-> > >         grep MemFree /sys/devices/system/node/node*/meminfo
-> > 
-> > My worst-case machines current have swap completely turned off to make them
-> > usable for clients, but I have one machine which is about 3GB into swap with
-> > 8GB of buffers and 3GB free. This shows
-> > 
-> >   # grep MemFree /sys/devices/system/node/node*/meminfo
-> >   /sys/devices/system/node/node0/meminfo:Node 0 MemFree:          954500 kB
-> >   /sys/devices/system/node/node1/meminfo:Node 1 MemFree:         2374528 kB
-> > 
-> > I could definitely imagine that one of the nodes could have dipped down to
-> > zero in the past. I'll try enabling swap on one of our machines with the bad
-> > problem late tonight and repeat the experiment. The node meminfo on this box
-> > currently looks like
-> > 
-> >   # grep MemFree /sys/devices/system/node/node*/meminfo
-> >   /sys/devices/system/node/node0/meminfo:Node 0 MemFree:           82732 kB
-> >   /sys/devices/system/node/node1/meminfo:Node 1 MemFree:         1723896 kB
-> > 
-> > Best wishes,
-> > 
-> > Chris.
+> Also, I can think of users of fanotify which are not concerned with directory 
+> events at all.  It would make sense to allow such users to subscribe only to 
+> file events and not receive any directory events which they will end up 
+> ignoring anyway.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Again it shows that this code just wasn't ready to be merged yet ...
 
+I'm going to file your e-mail into my todo list and hopefully I get the
+time to look at the ability to ignore directory events.  Nothing hard
+about it.  It's as easy as defining a flag and adding a conditional in
+the code but it's not high on my list.
+
+Thus far your e-mails have pointed out one bug in the permissions
+implementation I am currently working fixing and a bunch of complaining
+about features you can imagine someone might someday want but which
+noone has actually stood up and said 'I will use this' or 'this sucks
+for my use case'.  I can find all sorts of things around the kernel
+where I can imagine some mythical users might want to do something
+different but it isn't a reason to prevent merger.  I'd love to have
+more review, I'm certainly going to look at your wish list, but don't
+expect response to future trolling messages.
+
+-Eric
 
