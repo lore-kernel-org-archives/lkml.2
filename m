@@ -1,59 +1,444 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab0HRTZO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:25:14 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:36176 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab0HRTZK (ORCPT
+	id S1753416Ab0HRT1n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:27:43 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:58316 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752911Ab0HRT1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:25:10 -0400
-Date: Wed, 18 Aug 2010 21:25:08 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Neil Brown <neilb@suse.de>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100818192508.GC6567@basil.fritz.box>
-References: <87aaolwar8.fsf@basil.nowhere.org>
- <20100817174134.GA23176@fieldses.org>
- <20100817182920.GD18161@basil.fritz.box>
- <20100817190447.GA28049@fieldses.org>
- <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <20100817192937.GD26609@fieldses.org>
- <20100818155359.66b9ddb6@notabene>
- <20100818175040.GA6567@basil.fritz.box>
- <20100818185456.GD13050@fieldses.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818185456.GD13050@fieldses.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 18 Aug 2010 15:27:41 -0400
+Subject: Re: [PATCH] x86, apic: Add apic calibration hook.
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282153304.15158.39.camel@ank32.eng.vmware.com>
+References: <1282153304.15158.39.camel@ank32.eng.vmware.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Wed, 18 Aug 2010 12:27:40 -0700
+Message-Id: <1282159660.15158.56.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 02:54:56PM -0400, J. Bruce Fields wrote:
-> On Wed, Aug 18, 2010 at 07:50:40PM +0200, Andi Kleen wrote:
-> > >  - nfsd updates it whenever it reads an mtime out of an inode that matches
-> > >    current_fs_time to the granularity of 1/HZ.
-> > 
-> > That means you have a very very hot cache line on a larger system
-> > if there are a lot of mtime changes. Probably a bad idea.
+Here is the patch which adds this hook in the x86_init_ops.timers
+structure.
+
+---
+Add a new function ptr calibrate_apic to x86_init_ops structure. On native this
+does the usual apic calibration. On VMware's platform we override it with a
+routine which gets that information from the hypervisor.
+
+Signed-off-by: Alok N Kataria <akataria@vmware.com>
+Cc: H. Peter Anvin <hpa@zytor.com>
+
+Index: linux-x86-tree.git/arch/x86/include/asm/apic.h
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/include/asm/apic.h	2010-08-17 15:29:21.000000000 -0700
++++ linux-x86-tree.git/arch/x86/include/asm/apic.h	2010-08-17 15:32:11.000000000 -0700
+@@ -238,6 +238,7 @@ extern void setup_boot_APIC_clock(void);
+ extern void setup_secondary_APIC_clock(void);
+ extern int APIC_init_uniprocessor(void);
+ extern void enable_NMI_through_LVT0(void);
++extern unsigned int native_calibrate_apic(void);
+ 
+ /*
+  * On 32bit this is mach-xxx local
+Index: linux-x86-tree.git/arch/x86/include/asm/x86_init.h
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/include/asm/x86_init.h	2010-08-17 15:29:21.000000000 -0700
++++ linux-x86-tree.git/arch/x86/include/asm/x86_init.h	2010-08-18 12:01:35.000000000 -0700
+@@ -83,11 +83,13 @@ struct x86_init_paging {
+  *				boot cpu
+  * @tsc_pre_init:		platform function called before TSC init
+  * @timer_init:			initialize the platform timer (default PIT/HPET)
++ * @calibrate_apic:		calibrate APIC bus freq
+  */
+ struct x86_init_timers {
+ 	void (*setup_percpu_clockev)(void);
+ 	void (*tsc_pre_init)(void);
+ 	void (*timer_init)(void);
++	unsigned int (*calibrate_apic)(void);
+ };
+ 
+ /**
+Index: linux-x86-tree.git/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/kernel/apic/apic.c	2010-08-17 15:29:21.000000000 -0700
++++ linux-x86-tree.git/arch/x86/kernel/apic/apic.c	2010-08-18 12:05:33.000000000 -0700
+@@ -176,7 +176,7 @@ static struct resource lapic_resource = 
+ 	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
+ };
+ 
+-static unsigned int calibration_result;
++static unsigned int apic_calibration_res;
+ 
+ static int lapic_next_event(unsigned long delta,
+ 			    struct clock_event_device *evt);
+@@ -431,7 +431,7 @@ static void lapic_timer_setup(enum clock
+ 	switch (mode) {
+ 	case CLOCK_EVT_MODE_PERIODIC:
+ 	case CLOCK_EVT_MODE_ONESHOT:
+-		__setup_APIC_LVTT(calibration_result,
++		__setup_APIC_LVTT(apic_calibration_res,
+ 				  mode != CLOCK_EVT_MODE_PERIODIC, 1);
+ 		break;
+ 	case CLOCK_EVT_MODE_UNUSED:
+@@ -590,13 +590,46 @@ calibrate_by_pmtimer(long deltapm, long 
+ 	return 0;
+ }
+ 
++static void __init initialize_lapic_clkevt(long delta)
++{
++	/* Calculate the scaled math multiplication factor */
++	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
++				       lapic_clockevent.shift);
++	lapic_clockevent.max_delta_ns =
++		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
++	lapic_clockevent.min_delta_ns =
++		clockevent_delta2ns(0xF, &lapic_clockevent);
++}
++
+ static int __init calibrate_APIC_clock(void)
+ {
++	apic_calibration_res = x86_init.timers.calibrate_apic();
++	if (apic_calibration_res) {
++		struct clock_event_device *levt = &__get_cpu_var(lapic_events);
++		long delta;
++
++		if (lapic_clockevent.mult)
++			return 0;
++
++		delta = (apic_calibration_res * LAPIC_CAL_LOOPS) / APIC_DIVISOR;
++		initialize_lapic_clkevt(delta);
++		levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
++		return 0;
++	} else {
++		pr_warning("Unable to calibrate APIC frequency, "
++			   "disabling apic timer\n");
++		return -1;
++	}
++}
++
++unsigned int __init native_calibrate_apic(void)
++{
+ 	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+ 	void (*real_handler)(struct clock_event_device *dev);
+ 	unsigned long deltaj;
+ 	long delta, deltatsc;
+ 	int pm_referenced = 0;
++	unsigned int calibration_result;
+ 
+ 	local_irq_disable();
+ 
+@@ -631,14 +664,7 @@ static int __init calibrate_APIC_clock(v
+ 	pm_referenced = !calibrate_by_pmtimer(lapic_cal_pm2 - lapic_cal_pm1,
+ 					&delta, &deltatsc);
+ 
+-	/* Calculate the scaled math multiplication factor */
+-	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+-				       lapic_clockevent.shift);
+-	lapic_clockevent.max_delta_ns =
+-		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
+-	lapic_clockevent.min_delta_ns =
+-		clockevent_delta2ns(0xF, &lapic_clockevent);
+-
++	initialize_lapic_clkevt(delta);
+ 	calibration_result = (delta * APIC_DIVISOR) / LAPIC_CAL_LOOPS;
+ 
+ 	apic_printk(APIC_VERBOSE, "..... delta %ld\n", delta);
+@@ -664,7 +690,7 @@ static int __init calibrate_APIC_clock(v
+ 	if (calibration_result < (1000000 / HZ)) {
+ 		local_irq_enable();
+ 		pr_warning("APIC frequency too slow, disabling apic timer\n");
+-		return -1;
++		return 0;
+ 	}
+ 
+ 	levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
+@@ -706,10 +732,10 @@ static int __init calibrate_APIC_clock(v
+ 
+ 	if (levt->features & CLOCK_EVT_FEAT_DUMMY) {
+ 		pr_warning("APIC timer disabled due to verification failure\n");
+-			return -1;
++			return 0;
+ 	}
+ 
+-	return 0;
++	return calibration_result;
+ }
+ 
+ /*
+Index: linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/kernel/cpu/vmware.c	2010-08-17 15:29:21.000000000 -0700
++++ linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c	2010-08-18 12:24:57.000000000 -0700
+@@ -72,17 +72,33 @@ static unsigned long vmware_get_tsc_khz(
+ 	return tsc_hz;
+ }
+ 
++static unsigned int __init vmware_calibrate_apic(void)
++{
++	unsigned int calibration_result;
++	uint32_t eax, ebx, ecx, edx;
++
++	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
++	BUG_ON(!ecx);
++	calibration_result = ecx / HZ;
++
++	printk(KERN_INFO "APIC bus freq read from hypervisor : %u.%03u MHz\n",
++			 calibration_result / (1000000 / HZ),
++			 calibration_result % (1000000 / HZ));
++	return calibration_result;
++}
++
+ static void __init vmware_platform_setup(void)
+ {
+ 	uint32_t eax, ebx, ecx, edx;
+ 
+ 	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
+ 
+-	if (ebx != UINT_MAX)
++	if (ebx != UINT_MAX) {
+ 		x86_platform.calibrate_tsc = vmware_get_tsc_khz;
+-	else
++		x86_init.timers.calibrate_apic = vmware_calibrate_apic;
++	} else
+ 		printk(KERN_WARNING
+-		       "Failed to get TSC freq from the hypervisor\n");
++		       "Failed to setup VMware hypervisor platform\n");
+ }
+ 
+ /*
+Index: linux-x86-tree.git/arch/x86/kernel/x86_init.c
+===================================================================
+--- linux-x86-tree.git.orig/arch/x86/kernel/x86_init.c	2010-08-17 15:29:21.000000000 -0700
++++ linux-x86-tree.git/arch/x86/kernel/x86_init.c	2010-08-18 12:00:09.000000000 -0700
+@@ -68,6 +68,7 @@ struct x86_init_ops x86_init __initdata 
+ 		.setup_percpu_clockev	= setup_boot_APIC_clock,
+ 		.tsc_pre_init		= x86_init_noop,
+ 		.timer_init		= hpet_time_init,
++		.calibrate_apic		= native_calibrate_apic
+ 	},
+ 
+ 	.iommu = {
+@@ -95,7 +96,7 @@ struct x86_platform_ops x86_platform = {
+ 	.iommu_shutdown			= iommu_shutdown_noop,
+ 	.is_untracked_pat_range		= is_ISA_range,
+ 	.nmi_init			= default_nmi_init,
+-	.i8042_detect			= default_i8042_detect
++	.i8042_detect			= default_i8042_detect,
+ };
+ 
+ EXPORT_SYMBOL_GPL(x86_platform);
+
+
+On Wed, 2010-08-18 at 10:41 -0700, Alok Kataria wrote:
+> Add a new function pointer calibrate_apic to x86_platform_ops. On native this
+> does the usual apic calibration. On VMware's platform we override it with a
+> routine which gets that information from the hypervisor.
 > 
-> Only if those mtime changes are also followed immediately by nfsd reads
-> of the mtime.
+> Signed-off-by: Alok N Kataria <akataria@vmware.com>
+> Cc: H. Peter Anvin <hpa@zytor.com>
+> 
+> Index: linux-x86-tree.git/arch/x86/include/asm/apic.h
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/include/asm/apic.h	2010-08-17 15:29:21.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/include/asm/apic.h	2010-08-17 15:32:11.000000000 -0700
+> @@ -238,6 +238,7 @@ extern void setup_boot_APIC_clock(void);
+>  extern void setup_secondary_APIC_clock(void);
+>  extern int APIC_init_uniprocessor(void);
+>  extern void enable_NMI_through_LVT0(void);
+> +extern unsigned int native_calibrate_apic(void);
+>  
+>  /*
+>   * On 32bit this is mach-xxx local
+> Index: linux-x86-tree.git/arch/x86/include/asm/x86_init.h
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/include/asm/x86_init.h	2010-08-17 15:29:21.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/include/asm/x86_init.h	2010-08-18 10:20:21.000000000 -0700
+> @@ -143,6 +143,7 @@ struct x86_cpuinit_ops {
+>   * @is_untracked_pat_range	exclude from PAT logic
+>   * @nmi_init			enable NMI on cpus
+>   * @i8042_detect		pre-detect if i8042 controller exists
+> + * @calibrate_apic:		calibrate APIC bus freq
+>   */
+>  struct x86_platform_ops {
+>  	unsigned long (*calibrate_tsc)(void);
+> @@ -152,6 +153,7 @@ struct x86_platform_ops {
+>  	bool (*is_untracked_pat_range)(u64 start, u64 end);
+>  	void (*nmi_init)(void);
+>  	int (*i8042_detect)(void);
+> +	unsigned int (*calibrate_apic)(void);
+>  };
+>  
+>  extern struct x86_init_ops x86_init;
+> Index: linux-x86-tree.git/arch/x86/kernel/apic/apic.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/apic/apic.c	2010-08-17 15:29:21.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/apic/apic.c	2010-08-18 10:20:55.000000000 -0700
+> @@ -176,7 +176,7 @@ static struct resource lapic_resource = 
+>  	.flags = IORESOURCE_MEM | IORESOURCE_BUSY,
+>  };
+>  
+> -static unsigned int calibration_result;
+> +static unsigned int apic_calibration_res;
+>  
+>  static int lapic_next_event(unsigned long delta,
+>  			    struct clock_event_device *evt);
+> @@ -431,7 +431,7 @@ static void lapic_timer_setup(enum clock
+>  	switch (mode) {
+>  	case CLOCK_EVT_MODE_PERIODIC:
+>  	case CLOCK_EVT_MODE_ONESHOT:
+> -		__setup_APIC_LVTT(calibration_result,
+> +		__setup_APIC_LVTT(apic_calibration_res,
+>  				  mode != CLOCK_EVT_MODE_PERIODIC, 1);
+>  		break;
+>  	case CLOCK_EVT_MODE_UNUSED:
+> @@ -590,13 +590,46 @@ calibrate_by_pmtimer(long deltapm, long 
+>  	return 0;
+>  }
+>  
+> +static void __init initialize_lapic_clkevt(long delta)
+> +{
+> +	/* Calculate the scaled math multiplication factor */
+> +	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+> +				       lapic_clockevent.shift);
+> +	lapic_clockevent.max_delta_ns =
+> +		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
+> +	lapic_clockevent.min_delta_ns =
+> +		clockevent_delta2ns(0xF, &lapic_clockevent);
+> +}
+> +
+>  static int __init calibrate_APIC_clock(void)
+>  {
+> +	apic_calibration_res = x86_platform.calibrate_apic();
+> +	if (apic_calibration_res) {
+> +		struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+> +		long delta;
+> +
+> +		if (lapic_clockevent.mult)
+> +			return 0;
+> +
+> +		delta = (apic_calibration_res * LAPIC_CAL_LOOPS) / APIC_DIVISOR;
+> +		initialize_lapic_clkevt(delta);
+> +		levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
+> +		return 0;
+> +	} else {
+> +		pr_warning("Unable to calibrate APIC frequency, "
+> +			   "disabling apic timer\n");
+> +		return -1;
+> +	}
+> +}
+> +
+> +unsigned int __init native_calibrate_apic(void)
+> +{
+>  	struct clock_event_device *levt = &__get_cpu_var(lapic_events);
+>  	void (*real_handler)(struct clock_event_device *dev);
+>  	unsigned long deltaj;
+>  	long delta, deltatsc;
+>  	int pm_referenced = 0;
+> +	unsigned int calibration_result;
+>  
+>  	local_irq_disable();
+>  
+> @@ -631,14 +664,7 @@ static int __init calibrate_APIC_clock(v
+>  	pm_referenced = !calibrate_by_pmtimer(lapic_cal_pm2 - lapic_cal_pm1,
+>  					&delta, &deltatsc);
+>  
+> -	/* Calculate the scaled math multiplication factor */
+> -	lapic_clockevent.mult = div_sc(delta, TICK_NSEC * LAPIC_CAL_LOOPS,
+> -				       lapic_clockevent.shift);
+> -	lapic_clockevent.max_delta_ns =
+> -		clockevent_delta2ns(0x7FFFFF, &lapic_clockevent);
+> -	lapic_clockevent.min_delta_ns =
+> -		clockevent_delta2ns(0xF, &lapic_clockevent);
+> -
+> +	initialize_lapic_clkevt(delta);
+>  	calibration_result = (delta * APIC_DIVISOR) / LAPIC_CAL_LOOPS;
+>  
+>  	apic_printk(APIC_VERBOSE, "..... delta %ld\n", delta);
+> @@ -664,7 +690,7 @@ static int __init calibrate_APIC_clock(v
+>  	if (calibration_result < (1000000 / HZ)) {
+>  		local_irq_enable();
+>  		pr_warning("APIC frequency too slow, disabling apic timer\n");
+> -		return -1;
+> +		return 0;
+>  	}
+>  
+>  	levt->features &= ~CLOCK_EVT_FEAT_DUMMY;
+> @@ -706,10 +732,10 @@ static int __init calibrate_APIC_clock(v
+>  
+>  	if (levt->features & CLOCK_EVT_FEAT_DUMMY) {
+>  		pr_warning("APIC timer disabled due to verification failure\n");
+> -			return -1;
+> +			return 0;
+>  	}
+>  
+> -	return 0;
+> +	return calibration_result;
+>  }
+>  
+>  /*
+> Index: linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/cpu/vmware.c	2010-08-17 15:29:21.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c	2010-08-18 10:20:21.000000000 -0700
+> @@ -72,17 +72,33 @@ static unsigned long vmware_get_tsc_khz(
+>  	return tsc_hz;
+>  }
+>  
+> +static unsigned int vmware_calibrate_apic(void)
+> +{
+> +	unsigned int calibration_result;
+> +	uint32_t eax, ebx, ecx, edx;
+> +
+> +	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
+> +	BUG_ON(!ecx);
+> +	calibration_result = ecx / HZ;
+> +
+> +	printk(KERN_INFO "APIC bus freq read from hypervisor : %u.%03u MHz\n",
+> +			 calibration_result / (1000000 / HZ),
+> +			 calibration_result % (1000000 / HZ));
+> +	return calibration_result;
+> +}
+> +
+>  static void __init vmware_platform_setup(void)
+>  {
+>  	uint32_t eax, ebx, ecx, edx;
+>  
+>  	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
+>  
+> -	if (ebx != UINT_MAX)
+> +	if (ebx != UINT_MAX) {
+>  		x86_platform.calibrate_tsc = vmware_get_tsc_khz;
+> -	else
+> +		x86_platform.calibrate_apic = vmware_calibrate_apic;
+> +	} else
+>  		printk(KERN_WARNING
+> -		       "Failed to get TSC freq from the hypervisor\n");
+> +		       "Failed to setup VMware hypervisor platform\n");
+>  }
+>  
+>  /*
+> Index: linux-x86-tree.git/arch/x86/kernel/x86_init.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/x86_init.c	2010-08-17 15:29:21.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/x86_init.c	2010-08-17 16:44:20.000000000 -0700
+> @@ -95,7 +95,8 @@ struct x86_platform_ops x86_platform = {
+>  	.iommu_shutdown			= iommu_shutdown_noop,
+>  	.is_untracked_pat_range		= is_ISA_range,
+>  	.nmi_init			= default_nmi_init,
+> -	.i8042_detect			= default_i8042_detect
+> +	.i8042_detect			= default_i8042_detect,
+> +	.calibrate_apic			= native_calibrate_apic
+>  };
+>  
+>  EXPORT_SYMBOL_GPL(x86_platform);
+> 
 
-If multiple writers are changing the same location in quick succession 
-you have a hot cache line that gets bounced around.  It doesn't need reads,
-although reads make it even worse.
-
-There's a lot of effort currently to make the VFS more parallel
-and less synchronized and it would be bad again to regress here again.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
