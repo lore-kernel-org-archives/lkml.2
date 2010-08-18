@@ -1,55 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753657Ab0HROtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:49:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48604 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab0HROs7 (ORCPT
+	id S1753684Ab0HROtY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:49:24 -0400
+Received: from alpha.arachsys.com ([91.203.57.7]:54590 "EHLO
+	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab0HROtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:48:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ve6qWv8YGu3ZDd/4BFzuhI+lGdrnkU/3OyX3wKnnIzf9FTHu3GI4nQiq6qVqEtvIre
-         Oc5qh8tcMXs+27dDvYlZJiaXsIuKUFIc/7PE1FeoiJXq0DhFdjBZQMPB/wiEOyLCZDO/
-         PXiqeOynROvXtJ2zAXzmo9sXNvrbDcMvX19qc=
+	Wed, 18 Aug 2010 10:49:22 -0400
+Date: Wed, 18 Aug 2010 15:46:59 +0100
+From: Chris Webb <chris@arachsys.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: Over-eager swapping
+Message-ID: <20100818144655.GX2370@arachsys.com>
+References: <AANLkTinjmZOOaq7FgwJOZ=UNGS8x8KtQWZg6nv7fqJMe@mail.gmail.com>
+ <20100803042835.GA17377@localhost>
+ <20100803214945.GA2326@arachsys.com>
+ <20100804022148.GA5922@localhost>
+ <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
+ <20100804032400.GA14141@localhost>
+ <20100804095811.GC2326@arachsys.com>
+ <20100804114933.GA13527@localhost>
+ <20100804120430.GB23551@arachsys.com>
+ <20100818143801.GA9086@localhost>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimSkniqYYWAD29VK6Rt45b_5A84fuK0m0q9EznC@mail.gmail.com>
-References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
-	<201008180325.17816.rjw@sisk.pl>
-	<AANLkTimdF_eYurw9k0rQRAzSQ-fZMKsFLupnME_ch1Ru@mail.gmail.com>
-	<alpine.LNX.2.00.1008180911180.1019@pobox.suse.cz>
-	<AANLkTiki82ZFntH2M6UTyB7+215=4mNmk3SsxiS=CGDH@mail.gmail.com>
-	<alpine.LNX.2.00.1008181045110.1019@pobox.suse.cz>
-	<AANLkTikPC1CGjNcP2ARf8SJw3HTEBOcdgGnDjx87DERX@mail.gmail.com>
-	<AANLkTimSkniqYYWAD29VK6Rt45b_5A84fuK0m0q9EznC@mail.gmail.com>
-Date: Wed, 18 Aug 2010 16:48:58 +0200
-Message-ID: <AANLkTikooEGbmLT-UVZ3wb1jAjocT1eO06tZkg+kQefV@mail.gmail.com>
-Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
-From: Gabriel Craciunescu <osnix0@googlemail.com>
-To: Andrea Gelmini <andrea.gelmini@gelma.net>
-Cc: trapdoor6@gmail.com, Jiri Kosina <jkosina@suse.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        arnd@arndb.de, trapDoor <trapdoor6@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100818143801.GA9086@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/8/18 Andrea Gelmini <andrea.gelmini@gelma.net>
->
-> 2010/8/18 trapDoor <trapdoor6@gmail.com>:
-> > Andrea, Gabriel
-> > Would you please check if Jiri's patch solves the problem on your end
-> > as well? Just to make 100% sure we can close related bugzilla call.
->
-> Well, I made the test, with ~10 cycle hibernation/resume.
-> Everything seems goes right.
->
+Wu Fengguang <fengguang.wu@intel.com> writes:
 
-Does work fine here also ..
+> Did you enable any NUMA policy? That could start swapping even if
+> there are lots of free pages in some nodes.
 
-Regards,
+Hi. Thanks for the follow-up. We haven't done any configuration or tuning of
+NUMA behaviour, but NUMA support is definitely compiled into the kernel:
 
-Gabriel
+  # zgrep NUMA /proc/config.gz 
+  CONFIG_NUMA_IRQ_DESC=y
+  CONFIG_NUMA=y
+  CONFIG_K8_NUMA=y
+  CONFIG_X86_64_ACPI_NUMA=y
+  # CONFIG_NUMA_EMU is not set
+  CONFIG_ACPI_NUMA=y
+  # grep -i numa /var/log/dmesg.boot 
+  NUMe: Allocated memnodemap from b000 - 1b540
+  NUMA: Using 20 for the hash shift.
+
+> Are your free pages equally distributed over the nodes? Or limited to
+> some of the nodes? Try this command:
+> 
+>         grep MemFree /sys/devices/system/node/node*/meminfo
+
+My worst-case machines current have swap completely turned off to make them
+usable for clients, but I have one machine which is about 3GB into swap with
+8GB of buffers and 3GB free. This shows
+
+  # grep MemFree /sys/devices/system/node/node*/meminfo
+  /sys/devices/system/node/node0/meminfo:Node 0 MemFree:          954500 kB
+  /sys/devices/system/node/node1/meminfo:Node 1 MemFree:         2374528 kB
+
+I could definitely imagine that one of the nodes could have dipped down to
+zero in the past. I'll try enabling swap on one of our machines with the bad
+problem late tonight and repeat the experiment. The node meminfo on this box
+currently looks like
+
+  # grep MemFree /sys/devices/system/node/node*/meminfo
+  /sys/devices/system/node/node0/meminfo:Node 0 MemFree:           82732 kB
+  /sys/devices/system/node/node1/meminfo:Node 1 MemFree:         1723896 kB
+
+Best wishes,
+
+Chris.
