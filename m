@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753124Ab0HRNeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:34:09 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:41935 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752776Ab0HRNeI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:34:08 -0400
-To: viro@ZenIV.linux.org.uk
-CC: jkmalinen@gmail.com, torvalds@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] uml: fix hostfs lookup
-Message-Id: <E1OlimD-0006YS-3T@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 18 Aug 2010 15:33:57 +0200
+	id S1753226Ab0HRNfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:35:38 -0400
+Received: from kroah.org ([198.145.64.141]:59050 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753075Ab0HRNfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 09:35:36 -0400
+Date: Wed, 18 Aug 2010 06:34:59 -0700
+From: Greg KH <greg@kroah.com>
+To: Richard Zidlicky <rz@linux-m68k.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35.2 regression, does not boot, sleeping function called
+	from invalid context
+Message-ID: <20100818133459.GA6663@kroah.com>
+References: <20100817145305.GA7342@linux-m68k.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817145305.GA7342@linux-m68k.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On Tue, Aug 17, 2010 at 04:53:05PM +0200, Richard Zidlicky wrote:
+> Hi,
+> 
+> updated 2.6.35 -> 2.6.35.2 and it breaks very early during initialisation, does
+> not boot.
+> 
+> The first oops I get is a ~BUG sleeping function called from invalid context, mm/rmap.c:119~
+> Comes right after 
+>   protecting the kernel read only data: 1868K
+> 
+> Backtrace seems to be 
+>   anon_vma_prepare
+>   do_raw_spinlock
+>   expand_downwards
+> 
+> I can email pictures of stack back trace off list if anyone is interested.
+> 2.6.35 works without problems except that hibernation is completely broken,
+> attached dmesgs for 2.6.35
 
-commit e9193059 (hostfs: fix races in dentry_name() and inode_name())
-broke hostfs lookup.
+Does .35.1 work?
 
-The cause of the bug is that strncpy() zero fills the whole buffer.
+.35.2 has some issues that are being worked on, the patches to solve the
+bug is already in Linus's tree, give me a few days to get a new release
+out with this solved.
 
-Replace strncpy() with memcpy() and replace open coded memory move
-with memmove().
+thanks,
 
-Reported-by: Jouni Malinen <jkmalinen@gmail.com>
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/hostfs/hostfs_kern.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
-
-Index: linux-2.6/fs/hostfs/hostfs_kern.c
-===================================================================
---- linux-2.6.orig/fs/hostfs/hostfs_kern.c	2010-08-18 14:53:22.000000000 +0200
-+++ linux-2.6/fs/hostfs/hostfs_kern.c	2010-08-18 15:04:25.000000000 +0200
-@@ -100,20 +100,12 @@ static char *__dentry_name(struct dentry
- 
- 	root = dentry->d_sb->s_fs_info;
- 	len = strlen(root);
--	if (IS_ERR(p)) {
-+	if (IS_ERR(p) || len > p - name) {
- 		__putname(name);
- 		return NULL;
- 	}
--	strncpy(name, root, PATH_MAX);
--	if (len > p - name) {
--		__putname(name);
--		return NULL;
--	}
--	if (p > name + len) {
--		char *s = name + len;
--		while ((*s++ = *p++) != '\0')
--			;
--	}
-+	memcpy(name, root, len);
-+	memmove(name + len, p, PATH_MAX - (p - name) + 1);
- 	return name;
- }
- 
+greg k-h
