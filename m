@@ -1,121 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713Ab0HRK5M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 06:57:12 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:37653 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab0HRK5J (ORCPT
+	id S1752759Ab0HRLEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 07:04:49 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:56256 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab0HRLEq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 06:57:09 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: "Zhang\, Yanmin" <yanmin_zhang@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, alex.shi@intel.com,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>
-References: <1282112318.21202.8.camel@ymzhang.sh.intel.com>
-Date: Wed, 18 Aug 2010 03:56:58 -0700
-In-Reply-To: <1282112318.21202.8.camel@ymzhang.sh.intel.com> (Yanmin Zhang's
-	message of "Wed, 18 Aug 2010 14:18:37 +0800")
-Message-ID: <m1lj842nph.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 18 Aug 2010 07:04:46 -0400
+From: Amit Salecha <amit.salecha@qlogic.com>
+To: Amerigo Wang <amwang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
+        Narender Kumar <narender.kumar@qlogic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ameen Rahman <ameen.rahman@qlogic.com>
+Date: Wed, 18 Aug 2010 06:04:41 -0500
+Subject: RE: [RFC Patch] netxen: remove firmware exports
+Thread-Topic: [RFC Patch] netxen: remove firmware exports
+Thread-Index: Acs+u2qv2tBgFdunQMyq5bEbLzzjMgACS6Iw
+Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80F86E69129@MNEXMB2.qlogic.org>
+References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
+In-Reply-To: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Zhang\, Yanmin" <yanmin_zhang@linux.intel.com>
-X-Spam-Relay-Country: 
-Subject: Re: hackbench regression with 2.6.36-rc1
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Zhang, Yanmin" <yanmin_zhang@linux.intel.com> writes:
+If problem is firmware files are not present in /lib/firmware.
+Then we can work with David Woodhouse and make these firmware available in /lib/firmware.
 
-> Comparing with 2.6.35's result, hackbench (thread mode) has about
-> 80% regression on dual-socket Nehalem machine and about 90% regression
-> on 4-socket Tigerton machines.
-
-That seems unfortunate.  Do you only show a regression in the pthread
-hackbench test?  Do you show a regression when you use pipes?
-
-Does the size of the regression very based on the number of loop
-iterations?  I ask because it appears that on the last message the
-sender will exit necessitating that the receiver put the senders pid.
-Which should be atypical.
-
-> Command to start hackbench:
-> #./hackbench 100 thread 2000
->
-> process mode has no such regression.
->
-> Profiling shows:
-> #perf top
->              samples  pcnt function                 DSO
->              _______ _____ ________________________ ________________________
->
->             74415.00 29.9% put_pid                  [kernel.kallsyms]       
->             38395.00 15.4% unix_stream_recvmsg      [kernel.kallsyms]       
->             34877.00 14.0% unix_stream_sendmsg      [kernel.kallsyms]       
->             25204.00 10.1% pid_vnr                  [kernel.kallsyms]       
->             21864.00  8.8% unix_scm_to_skb          [kernel.kallsyms]       
->             13637.00  5.5% cred_to_ucred            [kernel.kallsyms]       
->              6520.00  2.6% unix_destruct_scm        [kernel.kallsyms]       
->              4731.00  1.9% sock_alloc_send_pskb     [kernel.kallsyms]       
->
->
-> With 2.6.35, perf doesn't show put_pid/pid_NR.
-
-Yes.  2.6.35 is imperfect and can report the wrong pid in some
-circumstances.  I am surprised nothing related to the reference count on
-struct cred does not show up in your profiling traces.
-
-You are performing statistical sampling so I don't believe the
-percentage of hits per function is the same as the percentage of
-time per function.
-
-Given that we are talking about a scheduler benchmark that is
-doing something rather artificial (inter thread communication via
-sockets), I don't know that this case is worth worrying about.
-
-> Alex Shi and I did a quick bisect and located below 2 patches.
-
-That is a plausible result.  The atomic reference counts may
-be causing you to ping pong cache lines between cpus.
-
-Eric
+-----Original Message-----
+From: Amerigo Wang [mailto:amwang@redhat.com] 
+Sent: Wednesday, August 18, 2010 3:25 PM
+To: linux-kernel@vger.kernel.org
+Cc: Dhananjay Phadke; Amit Salecha; Narender Kumar; netdev@vger.kernel.org; David S. Miller; Amerigo Wang
+Subject: [RFC Patch] netxen: remove firmware exports
 
 
-> 1) commit 7361c36c5224519b258219fe3d0e8abc865d8134
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Sun Jun 13 03:34:33 2010 +0000
->
->     af_unix: Allow credentials to work across user and pid namespaces.
->
->     In unix_skb_parms store pointers to struct pid and struct cred instead
->     of raw uid, gid, and pid values, then translate the credentials on
->     reception into values that are meaningful in the receiving processes
->     namespaces.
->
->
-> 2) commit 257b5358b32f17e0603b6ff57b13610b0e02348f
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Sun Jun 13 03:32:34 2010 +0000
->
->     scm: Capture the full credentials of the scm sender.
->
->     Start capturing not only the userspace pid, uid and gid values of the
->     sending process but also the struct pid and struct cred of the sending
->     process as well.
+netxen_nic driver can store firmwares on flash, and get them porperly and
+dynamically, so the firmwares may not appear in /lib/firmware/. However, netxen_nic
+still exports these firmwares via modinfo, this makes our script which parses
+modinfo output fail.
+
+Probably netxen_nic has other way to export these firmwares, but not like other
+modules in a stardand way. I think we can just remove these exports, but
+I am not sure.
+
+Signed-off-by: WANG Cong <amwang@redhat.com>
+Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Dhananjay Phadke <dhananjay.phadke@qlogic.com>
+Cc: Narender Kumar <narender.kumar@qlogic.com>
+
+---
+diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
+index fd86e18..e8443af 100644
+--- a/drivers/net/netxen/netxen_nic_main.c
++++ b/drivers/net/netxen/netxen_nic_main.c
+@@ -41,10 +41,6 @@
+ MODULE_DESCRIPTION("QLogic/NetXen (1/10) GbE Converged Ethernet Driver");
+ MODULE_LICENSE("GPL");
+ MODULE_VERSION(NETXEN_NIC_LINUX_VERSIONID);
+-MODULE_FIRMWARE(NX_P2_MN_ROMIMAGE_NAME);
+-MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
+-MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
+-MODULE_FIRMWARE(NX_UNIFIED_ROMIMAGE_NAME);
+ 
+ char netxen_nic_driver_name[] = "netxen_nic";
+ static char netxen_nic_driver_string[] = "QLogic/NetXen Network Driver v"
+
