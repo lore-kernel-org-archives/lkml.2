@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab0HRKft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 06:35:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48659 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751192Ab0HRKfq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 06:35:46 -0400
-Subject: Re: [PATCH 0/8] [Resend] ideapad: using EC command to control
- rf/camera power
-From: David Woodhouse <dwmw2@infradead.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        "Brown, Len" <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-In-Reply-To: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 11:35:19 +0100
-Message-ID: <1282127719.2747.211.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.31.6 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1752719Ab0HRKji (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 06:39:38 -0400
+Received: from outbound3.messaging.lotuslive.com ([8.12.152.114]:56469 "EHLO
+	outbound3-nonen.messaging.lotuslive.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752161Ab0HRKjg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 06:39:36 -0400
+X-Greylist: delayed 624 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Aug 2010 06:39:36 EDT
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+From: "Teddy Williams" <chambers.es9@operamail.com>
+Date: Wed, 18 Aug 2010 11:29:10 +0100
+Subject: ATTENTION:READ THIS CAREFULLY!!
+X-Originating-Ip: 213.37.134.189
+X-Originating-Server: c-in3ws--03-03.sv2.lotusliveops.com
+X-Ob-Auth: @operamail.com
+Message-Id: <20100818102910.EBC7215F021@c-in3ws--03-03.sv2.lotuslive.com>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 09:36 +0100, Ike Panhc wrote:
-> 
-> Once the rfkill of a laptop is set to block, it is no way to unblock with Linux
-> without driver. Thanks for David Woodhouse wrote the first driver solving this.
-> 
-> But the \_SB_.GECN and \_SB_.DECN are only available on Lenovo ideapad S10-3.
-> Using EC command to control rf/camera power is better because I believe every
-> ideapads which has VPC2004 device in its DSDT has this common method.
-> 
-> This driver is tested and work fine on Lenovo ideapad B550 and ideapad S10-3.
+Attention: 
 
-Works for me too (on S10-3); thanks.
 
-It all looks good, although should we have a delay or a schedule or at
-least a cpu_relax() in the read_ec_data() and write_ec_cmd() loops?
-Those loops should be using time_before() too, rather than open-coding
-the comparison.
+On behalf of the Trustees and Executor of the estate of Late Eng. Jüîrgen Krüîgger. I once again try to notify you as my earlier letter was
+returned undelivered. I hereby attempt to reach you again by this same email address on the WILL. I wish to notify you  that late Eng. Jürgen 
+Krügger made you a beneficiary to his WILL. He left the sum of Thirty Million, One Hundred Thousand Dollars (USD$30, 100.000.00) to you in
+the Codicil and last testament to his WILL.
+
+
+This may sound strange and unbelievable to you, but it is real and true. Being a widely traveled man, he must have been in contact with
+you in the past or simply you were nominated to him by one of his numerous friends abroad who wished you good. Eng. Jürgen Krügger until his
+death was a member of the Helicopter Society and the Institute of Electronic &  Electrical Engineers. He was a very dedicated Christian who loved to
+give out. His great philanthropy earned him numerous awards during hislife time. Late Engr. Jurgen Krugger died on the 13th day of December,
+2004 at the age  of 80 years, and his WILL is now ready for execution.According to him this money is to support your humanitarian activities
+and to help the poor and the needy in our society. Please if I reachyou as I am hopeful, endeavor to get back to me as soon as possible to
+enable me conclude my job. I hope to hear from you in no distant time.Note:You are advise to contact me with my personal email 
+address:teddywilliam.2010@yahoo.com.hk
+
+
+I await your prompt response.
+Yours in Service,
+
+
+BARRISTER TEDDY WILLIAMS ESQ.PRINCIPAL PARTNERS: Barrister Aidan Walsh.Esq Markus Wolfgang,Smith Esq 
+
+Tel+34-603-131-235 
+Fax:+34-911-414-351
+E-mail:teddywilliam.2010@yahoo.com.hk
+
 
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+_______________________________________________
+Surf the Web in a faster, safer and easier way:
+Download Opera 9 at http://www.opera.com
 
