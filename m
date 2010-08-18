@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751035Ab0HRDPv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 23:15:51 -0400
-Received: from mga03.intel.com ([143.182.124.21]:1464 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750708Ab0HRDPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 23:15:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,225,1280732400"; 
-   d="scan'208";a="313786677"
-Subject: Re: selinux build error -
- =?UTF-8?Q?=E2=80=98FILE=5F=5FAUDIT=5FACCESS=E2=80=99?= undeclared
-From: Lin Ming <ming.m.lin@intel.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: "Stephen D. Smalley" <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
-        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <1282045050.21419.119.camel@acb20005.ipt.aol.com>
-References: <1282032919.11858.8.camel@minggr.sh.intel.com>
-	 <1282045050.21419.119.camel@acb20005.ipt.aol.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 11:15:59 +0800
-Message-ID: <1282101359.11858.34.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 8bit
+	id S1751231Ab0HRD2w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 23:28:52 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:50834 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741Ab0HRD2q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 23:28:46 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=D9whEex+nqIMQ7VUrZ1djjEI0/asINII1SN5mvP58RvL3eXBInU3N1IiPzmh/4fkt
+	Mjn5TvcmIo5IUbvcq/sVQ==
+Date: Tue, 17 Aug 2010 20:28:39 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+cc: hughd@google.com, tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [2.6.36-rc1] List corruption when using initrd.
+In-Reply-To: <201008180113.o7I1DXg6077317@www262.sakura.ne.jp>
+Message-ID: <alpine.LSU.2.00.1008172022140.2868@sister.anvils>
+References: <201008170517.o7H5HbCT002910@www262.sakura.ne.jp> <201008170751.o7H7pmAl038739@www262.sakura.ne.jp> <alpine.LSU.2.00.1008171523270.2106@sister.anvils> <201008180113.o7I1DXg6077317@www262.sakura.ne.jp>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 19:37 +0800, Eric Paris wrote:
-> On Tue, 2010-08-17 at 16:15 +0800, Lin Ming wrote:
-> > Current -tip(a3b97ee) tree build error.
-> > My config attached.
-> > 
-> > linux-2.6/security/selinux/hooks.c: In function ‘selinux_inode_permission’:
-> > linux-2.6/security/selinux/hooks.c:2647:38: error: ‘FILE__AUDIT_ACCESS’ undeclared (first use in this function)
-> > 
-> > It was introduced by below commit.
-> > 
-> > commit b782e0a68d17894d9a618ffea55b33639faa6bb4
-> > Author: Eric Paris <eparis@redhat.com>
-> > Date:   Fri Jul 23 11:44:03 2010 -0400
-> > 
-> >     SELinux: special dontaudit for access checks
-> > 
-> > Lin Ming
+On Wed, 18 Aug 2010, Tetsuo Handa wrote:
+> Hugh Dickins wrote:
+> > Thanks for reporting and bisecting.  Certainly there's a bug in shmem
+> > (that we ought to have caught long before it reached 36-rc1: sorry),
+> > and it is probably the cause of your crashes; but it's possible there's
+> > a similar bug elsewhere too, something else messing up the percpu_counters
+> > list - so please check if the patch below really does fix it for you.
 > 
-> did you build with O= ?
+> This patch solved the list_add() corruption messages and
 
-Yes.
+Great.
+
+> "[2.6.36-rc1] Bugs in __free_pipe_info()".
+
+That's good, but puzzling.  I'll mention it in the patch comment, since
+that's what you've found: but I've given up trying to understand how.
 
 > 
-> Fixed in a7a387cc596278af1516c534b50cc0bee171129d but you have to run
-> make clean.  If you want to fix it up by hand run:
+> > I notice your dmesg also showed fs/inode.c:692 unlock_new_inode()
+> > warnings from get_cramfs_inode(): those would be unrelated, and
+> > probably from Al Viro's recent changes in cramfs/inode.c - Cc'ed.
+> unlock_new_inode() warnings remain after applying this patch.
 > 
-> find . -name av_pernmissions.h | xargs rm
-> 
-> Your builds will work find after that.
+> Thank you.
 
-Works now.
+Bigger thanks to you.  Patch to Linus follows.
 
-Thanks.
-
-> 
-> -Eric
-> 
-
-
+Hugh
