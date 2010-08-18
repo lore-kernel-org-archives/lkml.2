@@ -1,42 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab0HRKWK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 06:22:10 -0400
-Received: from ozlabs.org ([203.10.76.45]:59508 "EHLO ozlabs.org"
+	id S1752661Ab0HRK0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 06:26:35 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:39476 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751902Ab0HRKWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 06:22:08 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH 2/5] virtio_blk: implement REQ_FLUSH/FUA support
-Date: Wed, 18 Aug 2010 19:52:02 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
-Cc: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, vst@vlnb.net,
-        jack@suse.cz, rwheeler@redhat.com, hare@suse.de, neilb@suse.de,
-        mst@redhat.com
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <4C6A458B.5040407@kernel.org> <20100817132327.GA3347@lst.de>
-In-Reply-To: <20100817132327.GA3347@lst.de>
+	id S1752223Ab0HRK0e convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 06:26:34 -0400
+From: "Gopinath, Thara" <thara@ti.com>
+To: Andy Whitcroft <apw@canonical.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 18 Aug 2010 15:56:26 +0530
+Subject: RE: Checkpatch false positive in 2.6.36-rc1.
+Thread-Topic: Checkpatch false positive in 2.6.36-rc1.
+Thread-Index: Acs+vwHMQUA7DTALQs+uAa2flZWUOgAAJ/oQ
+Message-ID: <5A47E75E594F054BAF48C5E4FC4B92AB03242223FA@dbde02.ent.ti.com>
+References: <5A47E75E594F054BAF48C5E4FC4B92AB0324222271@dbde02.ent.ti.com>
+ <20100818102033.GP6193@shadowen.org>
+In-Reply-To: <20100818102033.GP6193@shadowen.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008181952.03093.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 17 Aug 2010 10:53:27 pm Christoph Hellwig wrote:
-> Given how little testing lguest gets compared to qemu I really don't
-> want a protocol addition for it unless it really buys us something.
-> Once we're done with this barrier conversion I plan into benchmarking
-> FUA and a pre-flush tag on the command for virtio in real life setups,
-> and see if it actually buys us anything.
 
-Absolutely.  Lguest should follow, not lead!
 
-Rusty.
+>>-----Original Message-----
+>>From: Andy Whitcroft [mailto:apw@canonical.com]
+>>Sent: Wednesday, August 18, 2010 3:51 PM
+>>To: Gopinath, Thara
+>>Cc: linux-kernel@vger.kernel.org
+>>Subject: Re: Checkpatch false positive in 2.6.36-rc1.
+>>
+>>On Wed, Aug 18, 2010 at 11:34:51AM +0530, Gopinath, Thara wrote:
+>>> Hello Andy,
+>>>
+>>> The following is my patch.
+>>>
+>>> Index: linux-omap-pm/arch/arm/plat-omap/Kconfig
+>>> ===================================================================
+>>> --- linux-omap-pm.orig/arch/arm/plat-omap/Kconfig
+>>> +++ linux-omap-pm/arch/arm/plat-omap/Kconfig
+>>> @@ -37,7 +37,7 @@ config OMAP_DEBUG_LEDS
+>>>
+>>>  config OMAP_SMARTREFLEX
+>>>         bool "SmartReflex support"
+>>> -       depends on ARCH_OMAP3 && PM
+>>> +       depends on (ARCH_OMAP3 || ARCH_OMAP4) && PM
+>>>         help
+>>>           Say Y if you want to enable SmartReflex.
+>>>
+>>>
+>>> And the following is the check patch error I am getting
+>>>
+>>> WARNING: please write a paragraph that describes the config symbol fully
+>>> #108: FILE: arch/arm/plat-omap/Kconfig:41:
+>>>         help
+>>
+>>> total: 0 errors, 1 warnings, 67 lines checked
+>>
+>>Yes that is a falsie.  I think I have fixed it in my tree.  Could you
+>>test the version at the URL below and let me know if it works for you.
+>>
+>>  http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
+
+Yep this works. It no longer gives me the warning.
+Thanks.
+
+Regards
+Thara
