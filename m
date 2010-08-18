@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab0HRPa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:30:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60335 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751259Ab0HRPaZ (ORCPT
+	id S1751551Ab0HRPal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:30:41 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58486 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab0HRPaj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:30:25 -0400
-Date: Wed, 18 Aug 2010 11:30:16 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Grundler <grundler@google.com>, Jeff Garzik <jgarzik@pobox.com>,
-        Tejun Heo <tj@kernel.org>, Linux IDE <linux-ide@vger.kernel.org>,
-        Gwendal Grignou <gwendal@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>
-Subject: Re: [PATCH] V2 2.6.35 libata support for > 512 byte sectors (e.g. 4K
- Native)
-Message-ID: <20100818153016.GA6235@infradead.org>
-References: <AANLkTinx-cgn7zony8UO__zejj36GxcJTf3Pr2Z9G2af@mail.gmail.com>
- <201008181704.51357.arnd@arndb.de>
+	Wed, 18 Aug 2010 11:30:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=GG4iZVLdAnKQ+8QzW7/GsFdfokKr0JsCzPueCliZ4sRUM4/9UKtSt3boHzUlLVWUHf
+         XCV8A+Hhyq0EhNSxAFeLtVh7GYoPI9l4yPBf9SdmfYQNVvqO4oYfY2Wl3nA78WqPeqTn
+         lUXhPFeVpLHJWtsMwcuqx22iRUdyCCoh4/onM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201008181704.51357.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AANLkTimJGxn=5kEMH68XVWqFcYG3vpfLjLjZpFGqhG_4@mail.gmail.com>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	<1282144271.3035.31.camel@mulgrave.site>
+	<AANLkTimJGxn=5kEMH68XVWqFcYG3vpfLjLjZpFGqhG_4@mail.gmail.com>
+Date: Wed, 18 Aug 2010 17:30:33 +0200
+X-Google-Sender-Auth: 9MDhInCL3YQ6XZGbHFADtB2cdoY
+Message-ID: <AANLkTinARwxMat+YA0XsKTozdvh5Tta8_CDhZ8bM-NMa@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: Bart Van Assche <bvanassche@acm.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Chetan Loke <generationgnu@yahoo.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 05:04:51PM +0200, Arnd Bergmann wrote:
-> On Tuesday 17 August 2010, Grant Grundler wrote:
-> > [ patch NOT inlined because gmail will word-wrap and make a mess of
-> > it. Please use attached file.]
-> 
-> You should be able to use git-send-email with a gmail account to fix this.
+On Wed, Aug 18, 2010 at 5:11 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+>
+> On Wed, 2010-08-18 at 07:58 -0700, Chetan Loke wrote:
+> > [ ... ]
+> >
+> > During the open panel, my question was really specific -
+> >
+> > Q) What is the future of a SCSI-target subsystem in linux. Which
+> >    target engine/subsystem can we expect?
+> >
+> > Your answer) There is place for only 1 target-subsystem in the Linux
+> > scsi stack and in the LSF summit the decision was taken to merge LIO.
+> > Has that
+> > decision changed since the summit?
+>
+> The decision hasn't been taken to merge LIO, but based on what happened
+> at the summit, I think it's the most viable candidate and will likely be
+> merged by 2.6.37
 
-Or find an google insider that could fix gmail..
+(resending as plain text)
 
+No matter which kernel-based storage target subsystem is merged, a
+migration path should be provided for SCST users such that these can
+continue using their SCST target drivers without too much trouble.
+Otherwise you'll upset a large number of SCST users.
+
+Note: an SCST target driver is the code that implements a storage
+protocol. See also http://scst.sourceforge.net/scst_pg.html for a
+overview diagram.
+
+Bart.
