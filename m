@@ -1,37 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab0HRL2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 07:28:36 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50204 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752645Ab0HRL2e (ORCPT
+	id S1752867Ab0HRLaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 07:30:30 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35346 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752645Ab0HRLa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 07:28:34 -0400
-Date: Wed, 18 Aug 2010 12:44:12 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Pascal GREGIS <pgs@synerway.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: ata_sff_drain_fifo
-Message-ID: <20100818124412.4652eaea@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100818094313.GA3333@gaiman.synerway.com>
-References: <20100818094313.GA3333@gaiman.synerway.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 18 Aug 2010 07:30:27 -0400
+Date: Wed, 18 Aug 2010 12:30:23 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Joe Perches <joe@perches.com>
+Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Add additional attribute
+ #defines
+Message-ID: <20100818113023.GR6193@shadowen.org>
+References: <20100811163505.GB26497@redhat.com>
+ <1281547748.3976.41.camel@Joe-Laptop.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281547748.3976.41.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> so I guess when status is 0xD0, ATA_DRQ is not set but ATA_BUSY is.
-> It would explain why in my case it doesn't drain anything before trying to reset.
+On Wed, Aug 11, 2010 at 10:29:08AM -0700, Joe Perches wrote:
+> On Wed, 2010-08-11 at 12:35 -0400, Dave Jones wrote:
+> > I just got this from a patch I merged..
+> > 
+> > ERROR: need consistent spacing around '*' (ctx:WxV)
+> > #121: FILE: arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c:113:
+> > +static struct pcc_cpu __percpu *pcc_cpu_info;
+> >                                 ^
+> > which doesn't seem right.
 > 
-> Would it be of any interest to drain the fifo also when the ATA_BUSY flag is on, not only the ATA_DRQ ?
+> Perhaps these need to be added to checkpatch.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-If the drive has the busy flag set it is busy, all we can do is wait for
-it and if that fails try to reset it. The FIFO drain handles a specific
-case where the two ends disagree about the amount of data expected, and
-often lets us avoid a reset.
+This one looks sane to me, I've pulled this into my tree.  The version
+at the URL below should contain it for testing:
 
-Alan
+  http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
+
+-apw
