@@ -1,158 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab0HRHT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 03:19:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52342 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922Ab0HRHTX (ORCPT
+	id S1751933Ab0HRHUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 03:20:32 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:43507 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750961Ab0HRHU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 03:19:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i8dSTkcaOIXwb/YOZ73GeXE5XUR1607Ivyzmg7n5zPI1Rth/m5QVrAwre1CsfyTDt/
-         EP+Gayo6axKkFn2diBgeTUlMn8wpWzrGrhf43fPSw4x917MYSKkQNJvgHjSLQarzZ/cf
-         Vt1z5lPUF6yudJXrQt4CKVnFSn42Bo0EJCgOw=
-Date: Wed, 18 Aug 2010 09:19:43 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, devicetree-discuss@lists.ozlabs.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>,
-        Rodolfo Giometti <giometti@linux.it>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100818071942.GA4096@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <363bd749a38d0b785d8431e591bf54c38db4c2d7.1281956490.git.richard.cochran@omicron.at>
- <AANLkTik_2MKMhOuDGOmu8Kzyq-ipLe+Bxrb3FaD+Tv4U@mail.gmail.com>
- <20100817085324.GB3330@riccoc20.at.omicron.at>
- <1282090963.1734.97.camel@localhost>
+	Wed, 18 Aug 2010 03:20:27 -0400
+Date: Wed, 18 Aug 2010 10:19:16 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: "Balbi Felipe (Nokia-MS/Helsinki)" <felipe.balbi@nokia.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4] i2c: twl: add register defines for pm master module
+Message-ID: <20100818071916.GF11947@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <1282112377-1335-1-git-send-email-felipe.balbi@nokia.com>
+ <1282112377-1335-2-git-send-email-felipe.balbi@nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <1282090963.1734.97.camel@localhost>
+In-Reply-To: <1282112377-1335-2-git-send-email-felipe.balbi@nokia.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 05:22:43PM -0700, john stultz wrote:
-> Why would system time not be adjusted to the PTP time?
-> 
-> This is my main concern, that we're presenting a fractured API to
-> userland. Suddenly there isn't just system time, but ptp time as well,
-> and possibly multiple different ptp times.
+hi,
 
-John, it is a good thing to make thoughts about the big picture with
-PTP clocks and the system time, like you are doing. However, the
-situation is not as troubled as you think. Let me try to explain.
+On Wed, Aug 18, 2010 at 08:19:34AM +0200, Balbi Felipe (Nokia-MS/Helsinki) wrote:
+>From: Felipe Balbi <felipe.balbi@nokia.com>
+>
+>Some modules already need to talk to at least PROTECT_KEY
+>register, while at that, add defines to the entire register
+>space.
+>
+>Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+>---
 
-> The PTP clock is a bit of hardware (usually on the NIC) that can put
-> timestamps on packets (both incoming or outgoing?).
+here's updated patch with correct register space
 
-Not only on the NIC. There are bunch of new products doing the
-timestamping in the PHY or in a switch fabric attached to the host
-like a PHY. The synchronization that one can achieve with PHY
-timestamps is better that that with MAC timestamping.
+8<--------------------------------------------------
 
-> So while to me, it think it would be more ideal (or maybe just less
-> different) to have a read-only interface (like the RTC), leaving PTPd to
-> manage offset calculations and use that to steer the system time. I can
-> acknowledge the need to have some way to correct the freq so the packet
-> timestamps are corrected.
+ From a1021f7be2c7e277b303e6930285832f97258f85 Mon Sep 17 00:00:00 2001
+From: Felipe Balbi <felipe.balbi@nokia.com>
+Date: Thu, 1 Jul 2010 13:24:37 +0300
+Subject: [PATCH 1/4] i2c: twl: add register defines for pm master module
 
-The PTPd need not change the system time at all for PTP clock to be
-useful. (see below)
+Some modules already need to talk to at least PROTECT_KEY
+register, while at that, add defines to the entire register
+space.
 
-> I still feel a little concerned over the timer/alarm related interfaces.
-> Could you explain why the alarm interface is necessary? 
+Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+---
+  include/linux/i2c/twl.h |   46 ++++++++++++++++++++++++++++++++++++++++++++++
+  1 files changed, 46 insertions(+), 0 deletions(-)
 
-The timer/alarm stuff is "ancillary" and is not at all necessary. It
-is just a "nice to have." I will happily remove it, if it is too
-troubling for people.
- 
-> So really I think my initial negative gut reaction to this was mostly
-> out of the fact that you introduced a char dev that provides almost 100%
-> coverage of the posix-time interface. That is duplication we definitely
-> don't want. 
+diff --git a/include/linux/i2c/twl.h b/include/linux/i2c/twl.h
+index 6de90bf..9b17244 100644
+--- a/include/linux/i2c/twl.h
++++ b/include/linux/i2c/twl.h
+@@ -357,6 +357,52 @@ int twl6030_interrupt_mask(u8 bit_mask, u8 offset);
+  
+  /*----------------------------------------------------------------------*/
+  
++/*
++ * PM Master module register offsets (use TWL4030_MODULE_PM_MASTER)
++ */
++
++#define TWL4030_PM_MASTER_CFG_P1_TRANSITION	0x00
++#define TWL4030_PM_MASTER_CFG_P2_TRANSITION	0x01
++#define TWL4030_PM_MASTER_CFG_P3_TRANSITION	0x02
++#define TWL4030_PM_MASTER_CFG_P123_TRANSITION	0x03
++#define TWL4030_PM_MASTER_STS_BOOT		0x04
++#define TWL4030_PM_MASTER_CFG_BOOT		0x05
++#define TWL4030_PM_MASTER_SHUNDAN		0x06
++#define TWL4030_PM_MASTER_BOOT_BCI		0x07
++#define TWL4030_PM_MASTER_CFG_PWRANA1		0x08
++#define TWL4030_PM_MASTER_CFG_PWRANA2		0x09
++#define TWL4030_PM_MASTER_BACKUP_MISC_STS	0x0b
++#define TWL4030_PM_MASTER_BACKUP_MISC_CFG	0x0c
++#define TWL4030_PM_MASTER_BACKUP_MISC_TST	0x0d
++#define TWL4030_PM_MASTER_PROTECT_KEY		0x0e
++#define TWL4030_PM_MASTER_STS_HW_CONDITIONS	0x0f
++#define TWL4030_PM_MASTER_P1_SW_EVENTS		0x10
++#define TWL4030_PM_MASTER_P2_SW_EVENTS		0x11
++#define TWL4030_PM_MASTER_P3_SW_EVENTS		0x12
++#define TWL4030_PM_MASTER_STS_P123_STATE	0x13
++#define TWL4030_PM_MASTER_PB_CFG		0x14
++#define TWL4030_PM_MASTER_PB_WORD_MSB		0x15
++#define TWL4030_PM_MASTER_PB_WORD_LSB		0x16
++#define TWL4030_PM_MASTER_SEQ_ADD_W2P		0x1c
++#define TWL4030_PM_MASTER_SEQ_ADD_P2A		0x1d
++#define TWL4030_PM_MASTER_SEQ_ADD_A2W		0x1e
++#define TWL4030_PM_MASTER_SEQ_ADD_A2S		0x1f
++#define TWL4030_PM_MASTER_SEQ_ADD_S2A12		0x20
++#define TWL4030_PM_MASTER_SEQ_ADD_S2A3		0x21
++#define TWL4030_PM_MASTER_SEQ_ADD_WARM		0x22
++#define TWL4030_PM_MASTER_MEMORY_ADDRESS	0x23
++#define TWL4030_PM_MASTER_MEMORY_DATA		0x24
++
++#define TWL4030_PM_MASTER_KEY_CFG1		0xc0
++#define TWL4030_PM_MASTER_KEY_CFG2		0x0c
++
++#define TWL4030_PM_MASTER_KEY_TST1		0xe0
++#define TWL4030_PM_MASTER_KEY_TST2		0x0e
++
++#define TWL4030_PM_MASTER_GLOBAL_TST		0xb6
++
++/*----------------------------------------------------------------------*/
++
+  /* Power bus message definitions */
+  
+  /* The TWL4030/5030 splits its power-management resources (the various
+-- 
+1.7.2.1.6.g61bf12
 
-The reason why I modelled the char device on the posix interface was
-to make the API more familiar to application programmers. After the
-recent discussion (and having reviewed the posix clock implementation
-in Linux), I now think it would be even better to simply offer a new
-posic clock ID for PTP.
+-- 
+balbi
 
-I was emulating the posix interface. Instead I should use it directly.
-
-> Also I think the documentation I've read about PTP (likely just due to
-> the engineering focus) has an odd inverted sense of priority, focusing
-> on keeping obscure hardware clocks on NIC cards in sync, rather then the
-> the more tangible feature of keeping the system time in sync.
-> 
-> This could be comically interpreted as trying to create a shadow-time on
-> the system that is the "real time" and "yea, maybe we'll let the system
-> know what time it is, but user-apps who want to know the score can send
-> a magic ioctl to /dev/something and get the real deal". ;)  I'm sure
-> that's not the case, but I'd like to keep any confusion in userland
-> about which time is the best time to a minimum (ie: use the system
-> time).
-
-You are right. As John Eidson's excellent book points out, modern
-computers and operating systems provide surprisingly little support
-for programming based on absolute time. It is not PTP's fault. PTP is
-actually a step in the right direction, but it doesn't yet really fit
-in to the present computing world.
-
-Okay, here is the Big Picture.
-
-1. Use Case: SW timestamping
-
-   PTP with software timestamping (ie without special hardware) can
-   acheive synchronization within a few dozen microseconds, after
-   about twenty minutes. This is sufficient for very many people. The
-   new API (whether char device or syscall) fully and simply supports
-   this use case. When the PTPd adjusts the PTP clock, it is actually
-   adjusting the system time, just like NTPd.
-
-2. Use Case: HW timestamping for industrial control
-
-   PTP with hardware timestamping can acheive synchronization within
-   100 nanoseconds after one minute. If you want to do something with
-   your wonderfully synchronization PTP clock, it must have some kind
-   of special hardware, like timestamping external signals or
-   generating one-shot or periodic outputs. The new API (whether char
-   device or syscall) supports this use case via the ancillary
-   commands.
-
-   In this case, the end user has an application that interfaces with
-   the outside world via the PTP clock API. Such a specialized
-   application (for example, motor control) uses only the PTP API,
-   since it knows that the standard posix API cannot help. It is
-   irrelevant that the system time is not synchronized, in this case.
-
-   The PTP clock hardware may or may not provide a hardware interface
-   (interrupt) to the main CPU. In this case, it does not matter. The
-   PTP clock is useful all by itself.
-
-3. Use Case: HW timestamping with PPS to host
-
-   This case is the same as case 2, with the exception that the PTP
-   clock can interrupt the main CPU. The PTP clock driver advertises
-   the "PPS" capability. When enabled, the PTP layer delivers events
-   via the existing Linux PPS subsystem. Programs like NTPd can use
-   these events to regulate the system time.
-
-   This means that the system clock and the PTP clock will be at least
-   as well synchronized as when using a traditionial radio clock, GPS,
-   or IRIG-B method. In my opinion, this will be good enough for any
-   practical purpose. For example, let's say you want to run a
-   periodic task synchronized to the absolute wall clock time. Your
-   scheduling latency will be a dozen microseconds or so. Your PPS
-   synchronized system clock should be close enough to the PTP clock
-   to support this.
-
-The API that I have suggested, whether offered as a char device or as
-syscalls, supports all of the use cases using a single API.
-
-Richard
+DefectiveByDesign.org
