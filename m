@@ -1,79 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527Ab0HRGTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 02:19:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:5052 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750847Ab0HRGTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 02:19:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,226,1280732400"; 
-   d="scan'208";a="313834202"
-Subject: hackbench regression with 2.6.36-rc1
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, alex.shi@intel.com,
-        Pavel Emelyanov <xemul@openvz.org>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 18 Aug 2010 14:18:37 +0800
-Message-Id: <1282112318.21202.8.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1751942Ab0HRGUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 02:20:25 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:59727 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750853Ab0HRGUT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 02:20:19 -0400
+From: felipe.balbi@nokia.com
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        Tony Lindgren <tony@atomide.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Felipe Balbi <felipe.balbi@nokia.com>
+Subject: [PATCH 2/4] mfd: twl-core: switch over to defines in twl.h
+Date: Wed, 18 Aug 2010 09:19:35 +0300
+Message-Id: <1282112377-1335-3-git-send-email-felipe.balbi@nokia.com>
+X-Mailer: git-send-email 1.7.2.1.6.g61bf12
+In-Reply-To: <1282112377-1335-1-git-send-email-felipe.balbi@nokia.com>
+References: <1282112377-1335-1-git-send-email-felipe.balbi@nokia.com>
+X-OriginalArrivalTime: 18 Aug 2010 06:19:49.0931 (UTC) FILETIME=[5CE23FB0:01CB3E9D]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comparing with 2.6.35's result, hackbench (thread mode) has about
-80% regression on dual-socket Nehalem machine and about 90% regression
-on 4-socket Tigerton machines.
+From: Felipe Balbi <felipe.balbi@nokia.com>
 
-Command to start hackbench:
-#./hackbench 100 thread 2000
+use the new definitions on twl header for code
+consistency.
 
-process mode has no such regression.
+Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+---
+ drivers/mfd/twl-core.c |   21 +++++++++------------
+ 1 files changed, 9 insertions(+), 12 deletions(-)
 
-Profiling shows:
-#perf top
-             samples  pcnt function                 DSO
-             _______ _____ ________________________ ________________________
-
-            74415.00 29.9% put_pid                  [kernel.kallsyms]       
-            38395.00 15.4% unix_stream_recvmsg      [kernel.kallsyms]       
-            34877.00 14.0% unix_stream_sendmsg      [kernel.kallsyms]       
-            25204.00 10.1% pid_vnr                  [kernel.kallsyms]       
-            21864.00  8.8% unix_scm_to_skb          [kernel.kallsyms]       
-            13637.00  5.5% cred_to_ucred            [kernel.kallsyms]       
-             6520.00  2.6% unix_destruct_scm        [kernel.kallsyms]       
-             4731.00  1.9% sock_alloc_send_pskb     [kernel.kallsyms]       
-
-
-With 2.6.35, perf doesn't show put_pid/pid_vnr.
-
-Alex Shi and I did a quick bisect and located below 2 patches.
-1) commit 7361c36c5224519b258219fe3d0e8abc865d8134
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Sun Jun 13 03:34:33 2010 +0000
-
-    af_unix: Allow credentials to work across user and pid namespaces.
-
-    In unix_skb_parms store pointers to struct pid and struct cred instead
-    of raw uid, gid, and pid values, then translate the credentials on
-    reception into values that are meaningful in the receiving processes
-    namespaces.
-
-
-2) commit 257b5358b32f17e0603b6ff57b13610b0e02348f
-Author: Eric W. Biederman <ebiederm@xmission.com>
-Date:   Sun Jun 13 03:32:34 2010 +0000
-
-    scm: Capture the full credentials of the scm sender.
-
-    Start capturing not only the userspace pid, uid and gid values of the
-    sending process but also the struct pid and struct cred of the sending
-    process as well.
-
-
-
+diff --git a/drivers/mfd/twl-core.c b/drivers/mfd/twl-core.c
+index 720e099..9689ecf 100644
+--- a/drivers/mfd/twl-core.c
++++ b/drivers/mfd/twl-core.c
+@@ -202,12 +202,6 @@
+ 
+ /* Few power values */
+ #define R_CFG_BOOT			0x05
+-#define R_PROTECT_KEY			0x0E
+-
+-/* access control values for R_PROTECT_KEY */
+-#define KEY_UNLOCK1			0xce
+-#define KEY_UNLOCK2			0xec
+-#define KEY_LOCK			0x00
+ 
+ /* some fields in R_CFG_BOOT */
+ #define HFCLK_FREQ_19p2_MHZ		(1 << 0)
+@@ -846,8 +840,8 @@ static inline int __init protect_pm_master(void)
+ {
+ 	int e = 0;
+ 
+-	e = twl_i2c_write_u8(TWL_MODULE_PM_MASTER, KEY_LOCK,
+-			R_PROTECT_KEY);
++	e = twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER, 0,
++			TWL4030_PM_MASTER_PROTECT_KEY);
+ 	return e;
+ }
+ 
+@@ -855,10 +849,13 @@ static inline int __init unprotect_pm_master(void)
+ {
+ 	int e = 0;
+ 
+-	e |= twl_i2c_write_u8(TWL_MODULE_PM_MASTER, KEY_UNLOCK1,
+-			R_PROTECT_KEY);
+-	e |= twl_i2c_write_u8(TWL_MODULE_PM_MASTER, KEY_UNLOCK2,
+-			R_PROTECT_KEY);
++	e |= twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
++			TWL4030_PM_MASTER_KEY_CFG1,
++			TWL4030_PM_MASTER_PROTECT_KEY);
++	e |= twl_i2c_write_u8(TWL4030_MODULE_PM_MASTER,
++			TWL4030_PM_MASTER_KEY_CFG2,
++			TWL4030_PM_MASTER_PROTECT_KEY);
++
+ 	return e;
+ }
+ 
+-- 
+1.7.2.1.6.g61bf12
 
