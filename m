@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0HRBXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:23:40 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:3893 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752317Ab0HRBXe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:23:34 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Date: Tue, 17 Aug 2010 18:23:18 -0700
-From: "Matt Carlson" <mcarlson@broadcom.com>
-To: "Thomas Habets" <thomas@habets.pp.se>
-cc: "Matthew Carlson" <mcarlson@broadcom.com>,
-        "Eric Dumazet" <eric.dumazet@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>, "Michael Chan" <mchan@broadcom.com>
-Subject: Re: BUG: IPv6 stops working after a while, needs ip ne del
- command to reset
-Message-ID: <20100818012318.GA4630@mcarlson.broadcom.com>
-References: <1282024802.2487.687.camel@edumazet-laptop>
- <alpine.DEB.1.10.1008171053230.21857@red.crap.retrofitta.se>
- <1282050920.2448.47.camel@edumazet-laptop>
- <alpine.DEB.1.10.1008171547090.21857@red.crap.retrofitta.se>
- <1282055659.2448.58.camel@edumazet-laptop>
- <alpine.DEB.1.10.1008171737260.21857@red.crap.retrofitta.se>
- <20100817171115.GA4134@mcarlson.broadcom.com>
- <alpine.DEB.1.10.1008171928160.21857@red.crap.retrofitta.se>
- <20100817183112.GA4351@mcarlson.broadcom.com>
- <alpine.DEB.1.10.1008172035520.21857@red.crap.retrofitta.se>
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.1.10.1008172035520.21857@red.crap.retrofitta.se>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 6075E98637O65236081-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
+	id S1752752Ab0HRBYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:24:42 -0400
+Received: from mtoichi12.ns.itscom.net ([219.110.2.182]:37589 "EHLO
+	mtoichi12.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752317Ab0HRBYg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 21:24:36 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Neil Brown <neilb@suse.de>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100817204430.GE5556@shell>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-15-git-send-email-vaurora@redhat.com> <20100810085641.2b9a714c@notabene> <20100817204430.GE5556@shell>
+Date: Wed, 18 Aug 2010 10:23:52 +0900
+Message-ID: <6820.1282094632@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 11:52:27AM -0700, Thomas Habets wrote:
-> On Tue, 17 Aug 2010, Matt Carlson wrote:
-> > Thanks.  I put the question out to the firmware developer.  While we
-> > wait, can you keep Eric's patch in place and give me the results along
-> > with the output of 'ethtool -d eth0 | grep 0x047' after the problem
-> > happens?
-> 
-> Sure.
-> 
-> I think the problem occurs shortly after booting, or is triggered by it 
-> Linux getting a neighbor table entry for the router. The reason it took a 
-> while for everything to actually stop working is that the router was 
-> caching and presumably updating its neighbors cache when it saw traffic.
-> 
-> That is, maybe it only works if the router sets up its neigbor table 
-> first, and not otherwise.
-> 
-> The problem is there now. Last output in the kernel log about this is:
-> 
-> $ dmesg | egrep 'eth0|^add mc|^filters='
-> [...]
-> add mc_addr(ha->addr=33:33:00:00:00:01)
-> add mc_addr(ha->addr=01:00:5e:00:00:01)
-> add mc_addr(ha->addr=33:33:ff:5c:00:02)
-> add mc_addr(ha->addr=33:33:ff:a3:44:24)
-> filters=80020001 00000000 00000000 40000000
-> 
-> $ sudo ethtool -d eth0 | grep 0x047
-> 0x0470	0x80020001
-> 0x0474	0x00000000
-> 0x0478	0x00000000
-> 0x047c	0x40000000
-> 
-> > Eric's patch shows the hash registers at the time they are programmed.
-> > I'm interested to see if the values change (by firmware) after the
-> > failure.
-> 
-> Look the same.
-> 
-> But a strange thing is that if I delete the ipv6 neighbor on the Linux 
-> box (ip ne del 2a00:800:752:1::5c:1 dev eth0) it suddenly answers a ND 
-> solicitation. I tried it just now and it "wakes it up".
-> 
-> Nothing was written to the kernel log when I ran this command, and the 
-> ethtools -d output is the same afterwards as it was before. So unless 
-> there's another code path that changes the registers when I do "ip ne 
-> del" it may still be something else.
 
-Do you have access to any diagnostic software that might have come with
-your machine?
+Valerie Aurora:
+> and at least three national lab computer clusters.  The best argument
+> for their need for a union file system is that they are using unionfs
+> and aufs despite the pain of using out-of-mainline code and (according
+> to the users I have spoken to) frequent crashes.  Union mounts is
 
+Hmm, anyone who meets crash in aufs, please let me know.
+While I never say aufs is bug-free, I don't receive such report
+recently. I always try fixing a bug as soon as possible when I got a
+report.
+
+A reply I have to write repeatedly to who have met a problem in aufs and
+reported to aufs-users ML, is "your aufs version is too old. please get
+the latest one."
+Because aufs is released every week and some linux distributions keep
+using very old aufs version, even over one year old version than thier
+release date.
+
+By the way, I don't have objection to merge Val's UnionMount into
+mainline as I have heard it is already decided.
+
+
+> But frankly, this is an impossible problem to solve generically at the
+> file system level.  When a user says, "Show the changes to the lower
+> file system in my overlaid file system," they are actually saying,
+
+Is it (mostly) possible by receiving a notification via fsnotify?
+For remote FS, their ->d_revalidate() will tell us something is changed.
+
+
+J. R. Okajima
