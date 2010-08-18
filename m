@@ -1,276 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751650Ab0HRRcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 13:32:00 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52920 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109Ab0HRRb6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 13:31:58 -0400
-Date: Wed, 18 Aug 2010 19:34:01 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Alok Kataria <akataria@vmware.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, tsc: Limit CPU frequency calibration on AMD
-Message-ID: <20100818173401.GG9880@aftab>
-References: <1281986754.23253.32.camel@ank32.eng.vmware.com>
- <4C69D02F.6090601@zytor.com>
- <1282024311.20786.2.camel@ank32.eng.vmware.com>
- <4C6A2C98.4060605@zytor.com>
- <20100817070520.GD32714@liondog.tnic>
- <1282063532.4388.8.camel@ank32.eng.vmware.com>
- <20100817185634.GA10597@liondog.tnic>
- <20100818161639.GF9880@aftab>
- <4C6C08EC.2080404@zytor.com>
+	id S1751820Ab0HRReX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 13:34:23 -0400
+Received: from fieldses.org ([174.143.236.118]:46092 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751237Ab0HRReV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 13:34:21 -0400
+Date: Wed, 18 Aug 2010 13:32:03 -0400
+From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100818173203.GC32430@fieldses.org>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+ <87aaolwar8.fsf@basil.nowhere.org>
+ <20100817174134.GA23176@fieldses.org>
+ <20100817182920.GD18161@basil.fritz.box>
+ <20100817190447.GA28049@fieldses.org>
+ <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+ <20100817203941.729830b7@lxorguk.ukuu.org.uk>
+ <20100817192937.GD26609@fieldses.org>
+ <20100818155359.66b9ddb6@notabene>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C6C08EC.2080404@zytor.com>
+In-Reply-To: <20100818155359.66b9ddb6@notabene>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, Aug 18, 2010 at 12:23:08PM -0400
+On Wed, Aug 18, 2010 at 03:53:59PM +1000, Neil Brown wrote:
+> I'm not sure you even want to pay for a per-filesystem atomic access when
+> updating mtime.  mnt_want_write - called at the same time - seems to go to
+> some lengths to avoid an atomic operation.
+> 
+> I think that nfsd should be the only place that has to pay the atomic
+> penalty, as it is where the need is.
+> 
+> I imagine something like this:
+>  - Create a global struct timespec which is protected by a seqlock
+>    Call it current_nfsd_time or similar.
+>  - file_update_time reads this and uses it if it is newer than
+>    current_fs_time.
+>  - nfsd updates it whenever it reads an mtime out of an inode that matches
+>    current_fs_time to the granularity of 1/HZ.
 
-> calibrate_cpu() is AMD-specific, despite the generic name.  (It is also,
-> strangely enough, only compiled on 64 bits for some reason???)
+We can also skip the update whenever current_nfsd_time is greater than
+the inode's mtime--that's enough to ensure that the next
+file_update_time() call will get a time different from the inode's
+current mtime.
 
-Yeah, this is ancient stuff, who knows. I will test the fix on 32-bit
-too after we agree on the design tho.
+And that means that a sequence like
 
-> Either which way, it is definitely not okay for the test for when the
-> code applies to be this distant from the code itself.
+	file_update_time()
+	N nfsd_getattr()'s
 
-Makes sense.
+doesn't make N updates to current_nfsd_time, when only 1 was necessary.
 
-> The easy way to fix this is to rename it amd_calibrate_cpu() and move
-> the applicability test into the routine itself.  That is probably okay
-> as long as there are no other users.  However, if there are other users,
-> then this really should move into x86_init and have a function pointer
-> associated with it.
+>    If the current value is before current_kernel_time, it
+>    is set to current_kernel_time, otherwise tv_nsec is incremented -
+>    unless that increases
+>    beyond jiffies_to_usec(1)*1000 beyond current_kernel_time.
 
-Right, do you have strong preferences between x86_init and x86_platform?
-The version below uses x86_platform because it has the calibrate_tsc()
-function in there too. Also, the version below nicely moves all that
-AMD-specific code to cpu/amd.c.
+... which would only happen on hardware that could process a getattr and
+a data update per nanosecond continuously for a jiffy.
 
-I didn't opt for a calibrate_cpu_noop stub because I didn't want to
-pollute x86_init.c with yet another noop prototype. But I guess I should
-do that since the pointer testing is still executed while stubs are
-removed completely by smart compilers :).
+>  - the global 'struct timespec' is zeroed whenever system time is set
+>    backwards.
 
-Anyway, the version below builds, I'll test tomorrow and send an
-official version then:
+OK, got it, I think: so this is the same as a global version of Alan's
+clock, except that the extra ticks only happen when they need to.
 
---
+The properties it satisfies:
 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index baa579c..f00ed28 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -146,6 +146,7 @@ struct x86_cpuinit_ops {
-  */
- struct x86_platform_ops {
- 	unsigned long (*calibrate_tsc)(void);
-+	unsigned long (*calibrate_cpu)(void);
- 	unsigned long (*get_wallclock)(void);
- 	int (*set_wallclock)(unsigned long nowtime);
- 	void (*iommu_shutdown)(void);
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index 60a57b1..6478bd5 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -6,6 +6,7 @@
- #include <asm/processor.h>
- #include <asm/apic.h>
- #include <asm/cpu.h>
-+#include <asm/nmi.h>
- #include <asm/pci-direct.h>
- 
- #ifdef CONFIG_X86_64
-@@ -381,6 +382,56 @@ static void __cpuinit early_init_amd_mc(struct cpuinfo_x86 *c)
- #endif
- }
- 
-+/*
-+ * calibrate_cpu is used on systems with fixed rate TSCs to determine
-+ * processor frequency
-+ */
-+#define TICK_COUNT 100000000
-+unsigned long __init amd_calibrate_cpu(void)
-+{
-+	int tsc_start, tsc_now;
-+	int i, no_ctr_free;
-+	unsigned long evntsel3 = 0, pmc3 = 0, pmc_now = 0;
-+	unsigned long flags;
-+
-+	for (i = 0; i < 4; i++)
-+		if (avail_to_resrv_perfctr_nmi_bit(i))
-+			break;
-+	no_ctr_free = (i == 4);
-+	if (no_ctr_free) {
-+		WARN(1, KERN_WARNING "Warning: AMD perfctrs busy ... "
-+		     "cpu_khz value may be incorrect.\n");
-+		i = 3;
-+		rdmsrl(MSR_K7_EVNTSEL3, evntsel3);
-+		wrmsrl(MSR_K7_EVNTSEL3, 0);
-+		rdmsrl(MSR_K7_PERFCTR3, pmc3);
-+	} else {
-+		reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i);
-+		reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
-+	}
-+	local_irq_save(flags);
-+	/* start measuring cycles, incrementing from 0 */
-+	wrmsrl(MSR_K7_PERFCTR0 + i, 0);
-+	wrmsrl(MSR_K7_EVNTSEL0 + i, 1 << 22 | 3 << 16 | 0x76);
-+	rdtscl(tsc_start);
-+	do {
-+		rdmsrl(MSR_K7_PERFCTR0 + i, pmc_now);
-+		tsc_now = get_cycles();
-+	} while ((tsc_now - tsc_start) < TICK_COUNT);
-+
-+	local_irq_restore(flags);
-+	if (no_ctr_free) {
-+		wrmsrl(MSR_K7_EVNTSEL3, 0);
-+		wrmsrl(MSR_K7_PERFCTR3, pmc3);
-+		wrmsrl(MSR_K7_EVNTSEL3, evntsel3);
-+	} else {
-+		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
-+		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
-+	}
-+
-+	return pmc_now * tsc_khz / (tsc_now - tsc_start);
-+}
-+
- static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- {
- 	early_init_amd_mc(c);
-@@ -412,6 +463,23 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
- 			set_cpu_cap(c, X86_FEATURE_EXTD_APICID);
- 	}
- #endif
-+
-+	/*
-+	 * We can check for constant TSC CPUID bit here since this bit is
-+	 * introduced with F10h.
-+	 */
-+	if (cpu_has(c, X86_FEATURE_CONSTANT_TSC)) {
-+
-+		if (c->x86 > 0x10 ||
-+		    (c->x86 == 0x10 && c->x86_model >= 0x2)) {
-+			u64 val;
-+
-+			rdmsrl(MSR_K7_HWCR, val);
-+			if (!(val & BIT(24)))
-+				x86_platform.calibrate_cpu = amd_calibrate_cpu;
-+		}
-+	} else
-+		x86_platform.calibrate_cpu = amd_calibrate_cpu;
- }
- 
- static void __cpuinit init_amd(struct cpuinfo_x86 *c)
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 41b2b8b..1915706 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -854,60 +854,6 @@ static void __init init_tsc_clocksource(void)
- 	clocksource_register_khz(&clocksource_tsc, tsc_khz);
- }
- 
--#ifdef CONFIG_X86_64
--/*
-- * calibrate_cpu is used on systems with fixed rate TSCs to determine
-- * processor frequency
-- */
--#define TICK_COUNT 100000000
--static unsigned long __init calibrate_cpu(void)
--{
--	int tsc_start, tsc_now;
--	int i, no_ctr_free;
--	unsigned long evntsel3 = 0, pmc3 = 0, pmc_now = 0;
--	unsigned long flags;
--
--	for (i = 0; i < 4; i++)
--		if (avail_to_resrv_perfctr_nmi_bit(i))
--			break;
--	no_ctr_free = (i == 4);
--	if (no_ctr_free) {
--		WARN(1, KERN_WARNING "Warning: AMD perfctrs busy ... "
--		     "cpu_khz value may be incorrect.\n");
--		i = 3;
--		rdmsrl(MSR_K7_EVNTSEL3, evntsel3);
--		wrmsrl(MSR_K7_EVNTSEL3, 0);
--		rdmsrl(MSR_K7_PERFCTR3, pmc3);
--	} else {
--		reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i);
--		reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
--	}
--	local_irq_save(flags);
--	/* start measuring cycles, incrementing from 0 */
--	wrmsrl(MSR_K7_PERFCTR0 + i, 0);
--	wrmsrl(MSR_K7_EVNTSEL0 + i, 1 << 22 | 3 << 16 | 0x76);
--	rdtscl(tsc_start);
--	do {
--		rdmsrl(MSR_K7_PERFCTR0 + i, pmc_now);
--		tsc_now = get_cycles();
--	} while ((tsc_now - tsc_start) < TICK_COUNT);
--
--	local_irq_restore(flags);
--	if (no_ctr_free) {
--		wrmsrl(MSR_K7_EVNTSEL3, 0);
--		wrmsrl(MSR_K7_PERFCTR3, pmc3);
--		wrmsrl(MSR_K7_EVNTSEL3, evntsel3);
--	} else {
--		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
--		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
--	}
--
--	return pmc_now * tsc_khz / (tsc_now - tsc_start);
--}
--#else
--static inline unsigned long calibrate_cpu(void) { return cpu_khz; }
--#endif
--
- void __init tsc_init(void)
- {
- 	u64 lpj;
-@@ -926,19 +872,8 @@ void __init tsc_init(void)
- 		return;
- 	}
- 
--	if (cpu_has(&boot_cpu_data, X86_FEATURE_CONSTANT_TSC) &&
--			(boot_cpu_data.x86_vendor == X86_VENDOR_AMD)) {
--
--		if (boot_cpu_data.x86 > 0x10 ||
--		    (boot_cpu_data.x86 == 0x10 &&
--		     boot_cpu_data.x86_model >= 0x2)) {
--			u64 val;
--
--			rdmsrl(MSR_K7_HWCR, val);
--			if (!(val & BIT(24)))
--				cpu_khz = calibrate_cpu();
--		}
--	}
-+	if (x86_platform.calibrate_cpu)
-+		cpu_khz = x86_platform.calibrate_cpu();
- 
- 	printk("Detected %lu.%03lu MHz processor.\n",
- 			(unsigned long)cpu_khz / 1000,
+	- It's still a single global clock, so it's consistent between
+	  files.
+	- It degenerates to jiffies in the absence of getattr's from
+	  nfsd.
+	- It need only invalidate the other cpus' cached value of the
+	  clock on the first getattr of a file that follows less than a
+	  jiffy after an update of the file's data.
+	- Absent utime(), time going backwards, or futuristic hardware,
+	  it guarantees that two nfsd reads of an inode's mtime will
+	  return different values iff the inode's data was modified in
+	  between the two.
 
+Shortcomings:
 
--- 
-Regards/Gruss,
-Boris.
+	- The clock advances in units only of either 1 jiffy or 1 ns.
+	  This will look odd.  But when the alternative is units of 1
+	  jiffy or 0 ns, it seems an improvement....
+	- A slowdown due to inodes being file_update_time() marking inodes
+	  dirty more frequently?
+	- Doesn't help with ext3.  Oh well.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Would the extra expense rule out treating sys_stat() the same as nfsd?
+It would be nice to be able to solve the same problem for userspace
+nfsd's (or any other application that might be using mtime to save
+rereading data).
+
+--b.
