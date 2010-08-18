@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753075Ab0HRB7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:59:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48332 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752915Ab0HRB7n (ORCPT
+	id S1751792Ab0HRCHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 22:07:11 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:53570 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab0HRCHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:59:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikQ1dGw0aO10_ZwmVEc-JAVhB==3HS7SrWycE49@mail.gmail.com>
-References: <20100817.180325.104051399.davem@davemloft.net> <AANLkTikQ1dGw0aO10_ZwmVEc-JAVhB==3HS7SrWycE49@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Aug 2010 18:59:17 -0700
-Message-ID: <AANLkTimZ3rhX2AzPExEGfRCXiFNN-BGOWRKqL241-qNa@mail.gmail.com>
-Subject: Re: [GIT] Sparc
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+	Tue, 17 Aug 2010 22:07:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 18 Aug 2010 11:02:00 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: jovi zhang <bookjovi@gmail.com>
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, hughd@google.com,
+        riel@redhat.com, minchan.kim@gmail.com, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] mm: code improvement of check_stack_guard_page
+Message-Id: <20100818110200.ff5b5615.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTinfgXOzbqgrRY4oCGXFtKtEyJO_rvQeeEEeEZz7@mail.gmail.com>
+References: <AANLkTinfgXOzbqgrRY4oCGXFtKtEyJO_rvQeeEEeEZz7@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oh,
- I noticed another thing:
+On Sun, 15 Aug 2010 13:07:56 +0800
+jovi zhang <bookjovi@gmail.com> wrote:
 
-In commit 86fa04b8742ac681d470786f55e2403ada0075b2 you fix the return
-type, but you still have the wrong _argument_ type:
+> little code improvement of check_stack_guard_page function.
+> this commit is on top of commit "mm: keep a guard page below a grow-down
+> stack segment" of linus.
+> 
 
-  extern void atomic64_add(int, atomic64_t *);
-  extern void atomic64_sub(int, atomic64_t *);
-  extern long atomic64_add_ret(int, atomic64_t *);
-  extern long atomic64_sub_ret(int, atomic64_t *);
+Hmm. difference in binary code finally ?
 
-note how if somebody does
+-Kame
 
-   atomic64_add(0x100000000ull, &x)
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 9b3b73f..643b112 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2768,13 +2768,15 @@ out_release:
+>   */
+>  static inline int check_stack_guard_page(struct vm_area_struct *vma,
+> unsigned long address)
+>  {
+> -       address &= PAGE_MASK;
+> -       if ((vma->vm_flags & VM_GROWSDOWN) && address == vma->vm_start) {
+> -               address -= PAGE_SIZE;
+> -               if (find_vma(vma->vm_mm, address) != vma)
+> -                       return -ENOMEM;
+> -
+> -               expand_stack(vma, address);
+> +       if (vma->vm_flags & VM_GROWSDOWN) {
+> +               address &= PAGE_MASK;
+> +               if(address == vma->vm_start) {
+> +                       address -= PAGE_SIZE;
+> +                       if (unlikely(find_vma(vma->vm_mm, address) != vma))
+> +                               return -ENOMEM;
+> +
+> +                       expand_stack(vma, address);
+> +               }
+>         }
+>         return 0;
+>  }
 
-sparc64 will get it wrong, because it will only take the low 32 bits
-of the first argument, and add zero to the 64-bit counter.
-
-Which is definitely not what the code intended, I think.
-
-I merged your pull request, but you've got some fixing up to do,
-methinks. I also really think you need to make your rwsem's use 64-bit
-values on sparc64, because otherwise you can overflow the mmap_sem by
-having more than 65536 threads doing page-faults (on 32-bit, having
-more than 2**16 threads in one process is unlikely to work for other
-reasons, like just pure stack usage, so we don't really care about the
-32-bit case)
-
-                         Linus
