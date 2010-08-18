@@ -1,78 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751069Ab0HRDHZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 23:07:25 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:42391 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab0HRDHV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 23:07:21 -0400
-Date: Wed, 18 Aug 2010 12:02:00 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Mel Gorman <mel@csn.ul.ie>, Wu Fengguang <fengguang.wu@intel.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/9] hugetlb: add allocate function for hugepage migration
-Message-ID: <20100818030200.GA19799@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <1281432464-14833-3-git-send-email-n-horiguchi@ah.jp.nec.com>
- <alpine.DEB.2.00.1008162347400.31544@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1008162347400.31544@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1751035Ab0HRDPv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 23:15:51 -0400
+Received: from mga03.intel.com ([143.182.124.21]:1464 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750708Ab0HRDPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 23:15:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,225,1280732400"; 
+   d="scan'208";a="313786677"
+Subject: Re: selinux build error -
+ =?UTF-8?Q?=E2=80=98FILE=5F=5FAUDIT=5FACCESS=E2=80=99?= undeclared
+From: Lin Ming <ming.m.lin@intel.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: "Stephen D. Smalley" <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+        Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <1282045050.21419.119.camel@acb20005.ipt.aol.com>
+References: <1282032919.11858.8.camel@minggr.sh.intel.com>
+	 <1282045050.21419.119.camel@acb20005.ipt.aol.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 11:15:59 +0800
+Message-ID: <1282101359.11858.34.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Aug 16, 2010 at 11:51:30PM -0700, David Rientjes wrote:
-> On Tue, 10 Aug 2010, Naoya Horiguchi wrote:
-...
-> > +/*
-> > + * This allocation function is useful in the context where vma is irrelevant.
-> > + * E.g. soft-offlining uses this function because it only cares physical
-> > + * address of error page.
-> > + */
-> > +struct page *alloc_huge_page_no_vma_node(struct hstate *h, int nid)
-> > +{
-> > +	struct page *page;
-> > +
-> > +	spin_lock(&hugetlb_lock);
-> > +	get_mems_allowed();
+On Tue, 2010-08-17 at 19:37 +0800, Eric Paris wrote:
+> On Tue, 2010-08-17 at 16:15 +0800, Lin Ming wrote:
+> > Current -tip(a3b97ee) tree build error.
+> > My config attached.
+> > 
+> > linux-2.6/security/selinux/hooks.c: In function ‘selinux_inode_permission’:
+> > linux-2.6/security/selinux/hooks.c:2647:38: error: ‘FILE__AUDIT_ACCESS’ undeclared (first use in this function)
+> > 
+> > It was introduced by below commit.
+> > 
+> > commit b782e0a68d17894d9a618ffea55b33639faa6bb4
+> > Author: Eric Paris <eparis@redhat.com>
+> > Date:   Fri Jul 23 11:44:03 2010 -0400
+> > 
+> >     SELinux: special dontaudit for access checks
+> > 
+> > Lin Ming
 > 
-> Why is this calling get_mems_allowed()?  dequeue_huge_page_node() isn't 
-> concerned if nid can be allocated by current in this context.
+> did you build with O= ?
 
-OK, I'll remove this.
+Yes.
 
-> > +	page = dequeue_huge_page_node(h, nid);
-> > +	put_mems_allowed();
-> > +	spin_unlock(&hugetlb_lock);
-> > +
-> > +	if (!page) {
-> > +		page = alloc_buddy_huge_page_node(h, nid);
-> > +		if (!page) {
-> > +			__count_vm_event(HTLB_BUDDY_PGALLOC_FAIL);
-> >  			return NULL;
-> > -		}
-> > -		prep_new_huge_page(h, page, nid);
-> > +		} else
-> > +			__count_vm_event(HTLB_BUDDY_PGALLOC);
-> >  	}
-> >  
-> > +	set_page_refcounted(page);
 > 
-> Possibility of NULL pointer dereference?
+> Fixed in a7a387cc596278af1516c534b50cc0bee171129d but you have to run
+> make clean.  If you want to fix it up by hand run:
+> 
+> find . -name av_pernmissions.h | xargs rm
+> 
+> Your builds will work find after that.
 
-I think this allocate function returns without calling
-set_page_refcounted() if page == NULL.  Or do you mean another point?
+Works now.
 
-Thanks,
-Naoya Horiguchi
+Thanks.
+
+> 
+> -Eric
+> 
+
+
