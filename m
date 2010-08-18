@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab0HRLaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 07:30:30 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35346 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752645Ab0HRLa1 (ORCPT
+	id S1752886Ab0HRLg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 07:36:27 -0400
+Received: from os.inf.tu-dresden.de ([141.76.48.99]:34968 "EHLO
+	os.inf.tu-dresden.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752687Ab0HRLgV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 07:30:27 -0400
-Date: Wed, 18 Aug 2010 12:30:23 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Joe Perches <joe@perches.com>
-Cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] scripts/checkpatch.pl: Add additional attribute
- #defines
-Message-ID: <20100818113023.GR6193@shadowen.org>
-References: <20100811163505.GB26497@redhat.com>
- <1281547748.3976.41.camel@Joe-Laptop.home>
+	Wed, 18 Aug 2010 07:36:21 -0400
+Date: Wed, 18 Aug 2010 13:36:10 +0200
+From: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
+To: Bian Naimeng <biannm@cn.fujitsu.com>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, linux-kernel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, stable@kernel.org
+Subject: Re: 2.6.35.2: NFS related Oops
+Message-ID: <20100818113610.GA27174@os.inf.tu-dresden.de>
+References: <20100816215056.GA5376@os.inf.tu-dresden.de>
+ <4C6A5FF1.3070209@cn.fujitsu.com>
+ <20100817171454.GB11366@os.inf.tu-dresden.de>
+ <1282084985.18385.24.camel@heimdal.trondhjem.org>
+ <4C6B4181.50100@cn.fujitsu.com>
+ <4C6B4A20.60507@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1281547748.3976.41.camel@Joe-Laptop.home>
+In-Reply-To: <4C6B4A20.60507@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 11, 2010 at 10:29:08AM -0700, Joe Perches wrote:
-> On Wed, 2010-08-11 at 12:35 -0400, Dave Jones wrote:
-> > I just got this from a patch I merged..
+
+On Wed Aug 18, 2010 at 10:49:04 +0800, Bian Naimeng wrote:
+> >>>  	/* We can't create new files, or truncate existing ones here */
+> >>>  	openflags &= ~(O_CREAT|O_TRUNC);
+> >>> -- 
+> >> Nope. The problem is the recent switch to LOOKUP_EXCL as the authority
+> >> for whether or not we're doing an exclusive create.
+> >>
+> >> Does the following patch work?
+> >>
 > > 
-> > ERROR: need consistent spacing around '*' (ctx:WxV)
-> > #121: FILE: arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c:113:
-> > +static struct pcc_cpu __percpu *pcc_cpu_info;
-> >                                 ^
-> > which doesn't seem right.
+> >   Hi Trond, i guess it's not work.
+> > 
+> >   As i see, if we want get LOOKUP_EXCL at nd->flags,  we must open file with 
+> >   O_CREAT and O_EXCL, "nd->flags & LOOKUP_EXCL" have the same effect with
+> >   "(openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL)", so i think the kernel
+> >   still crash, right?
+
+I can confirm, it's oopsing.
+
+> What about this one?
+
+This one works.
+
 > 
-> Perhaps these need to be added to checkpatch.
+>    We we open a positive file just with O_EXCL but no O_CREAT, may cause kernel crash.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+>   Signed-off-by: Bian Naimeng <biannm@cn.fujitsu.com>
+> 
+> ---
+>  fs/namei.c   |    7 +++----
+>  fs/nfs/dir.c |    2 +-
+>  2 files changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 17ea76b..6680a38 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -1813,11 +1813,10 @@ reval:
+>  	nd.intent.open.create_mode = mode;
+>  	nd.flags &= ~LOOKUP_PARENT;
+>  	nd.flags |= LOOKUP_OPEN;
+> -	if (open_flag & O_CREAT) {
+> +	if (open_flag & O_CREAT)
+>  		nd.flags |= LOOKUP_CREATE;
+> -		if (open_flag & O_EXCL)
+> -			nd.flags |= LOOKUP_EXCL;
+> -	}
+> +	if (open_flag & O_EXCL)
+> +		nd.flags |= LOOKUP_EXCL;
+>  	if (open_flag & O_DIRECTORY)
+>  		nd.flags |= LOOKUP_DIRECTORY;
+>  	if (!(open_flag & O_NOFOLLOW))
+> diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+> index 29539ce..bc25da9 100644
+> --- a/fs/nfs/dir.c
+> +++ b/fs/nfs/dir.c
+> @@ -1100,7 +1100,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
+>  		goto no_open_dput;
+>  	openflags = nd->intent.open.flags;
+>  	/* We cannot do exclusive creation on a positive dentry */
+> -	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
+> +	if (nd->flags & LOOKUP_EXCL)
+>  		goto no_open_dput;
+>  	/* We can't create new files, or truncate existing ones here */
+>  	openflags &= ~(O_CREAT|O_TRUNC);
+> -- 
+> 1.7.0
 
-This one looks sane to me, I've pulled this into my tree.  The version
-at the URL below should contain it for testing:
-
-  http://www.kernel.org/pub/linux/kernel/people/apw/checkpatch/checkpatch.pl-testing
-
--apw
+Adam
+-- 
+Adam                 adam@os.inf.tu-dresden.de
+  Lackorzynski         http://os.inf.tu-dresden.de/~adam/
