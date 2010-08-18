@@ -1,62 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0HRQAz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 12:00:55 -0400
-Received: from alpha.arachsys.com ([91.203.57.7]:55464 "EHLO
-	alpha.arachsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753376Ab0HRQAw (ORCPT
+	id S1753947Ab0HRQER (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 12:04:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34743 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185Ab0HRQEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 12:00:52 -0400
-Date: Wed, 18 Aug 2010 16:58:25 +0100
-From: Chris Webb <chris@arachsys.com>
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>, Minchan Kim <minchan.kim@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andi Kleen <andi@firstfloor.org>,
-        Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: Over-eager swapping
-Message-ID: <20100818155825.GA2370@arachsys.com>
-References: <20100804022148.GA5922@localhost>
- <AANLkTi=wRPXY9BTuoCe_sDCwhnRjmmwtAf_bjDKG3kXQ@mail.gmail.com>
- <20100804032400.GA14141@localhost>
- <20100804095811.GC2326@arachsys.com>
- <20100804114933.GA13527@localhost>
- <20100804120430.GB23551@arachsys.com>
- <20100818143801.GA9086@localhost>
- <20100818144655.GX2370@arachsys.com>
- <20100818152103.GA11268@localhost>
- <1282147034.77481.33.camel@useless.localdomain>
+	Wed, 18 Aug 2010 12:04:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=pyh/zJc0cpi6go7Z6FGouE219pMzTT1lWLQ+AdXdrbKRNKBe6Nx1UVWnGbNtTQw1wi
+         9ICbkmMLH+UCO2lusltdeNvSV9pUD6n0P1JGk8pLFcet1JfSk1dhJcnCd+JuCEpfJHu2
+         ugGPF5wKPEjpkQGmc9eeQEr20cnDUaDsgZ2oY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282147034.77481.33.camel@useless.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1282144271.3035.31.camel@mulgrave.site>
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>
+	<1282144271.3035.31.camel@mulgrave.site>
+Date: Wed, 18 Aug 2010 12:04:13 -0400
+Message-ID: <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com>
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+From: Chetan Loke <chetanloke@gmail.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Chetan Loke <generationgnu@yahoo.com>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee Schermerhorn <Lee.Schermerhorn@hp.com> writes:
+On Wed, Aug 18, 2010 at 11:11 AM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+> The decision hasn't been taken to merge LIO, but based on what happened
+> at the summit, I think it's the most viable candidate and will likely be
+> merged by 2.6.37
+>
 
-> On Wed, 2010-08-18 at 23:21 +0800, Wu Fengguang wrote:
-> > Andi, Christoph and Lee:
-> > 
-> > This looks like an "unbalanced NUMA memory usage leading to premature
-> > swapping" problem.
-> 
-> What is the value of the vm.zone_reclaim_mode sysctl?  If it is !0, the
-> system will go into zone reclaim before allocating off-node pages.
-> However, it shouldn't "swap" in this case unless (zone_reclaim_mode & 4)
-> != 0.  And even then, zone reclaim should only reclaim file pages, not
-> anon.  In theory...
+During the open panel, facebook guys and others were tooting that
+start-ups thrive because they can hack linux. Well there are quite a
+few start-ups that use scst too for creating target appliances.
+Has anyone even bothered to glance the scst mailing list to see if
+that community is dead or alive?
 
-Hi. This is zero on all our machines:
+I for one use scst to create synthetic work-loads and test 200+ VM
+nodes in an ESX cluster. Anyone who has worked on a SAN OS will
+appreciate the simplicity of SCST. And if folks still can't understand
+the SCST code(after reading the README) then they are still welcome to
+send an email on SCST. Would you like to make your FC stack go faster,
+well please drop us an email on SCST and we will try our best to
+further optimize the FC driver.
 
-# sysctl vm.zone_reclaim_mode
-vm.zone_reclaim_mode = 0
+I know folks who don't understand simple DMA bus traces, FC wire
+traces and yet they have the power to influence decisions.
 
-Cheers,
+James you are an expert but not everyone is. This is not a venting
+session but even folks who are new to target architecture find it easy
+to hack SCST.
 
-Chris.
+
+>> As a scst-user what I would like to understand is, what was that
+>> decision based on? Because the LSF summit was 'small by invitation'
+>> only summit. The notes don't give us an insight on the selection
+>> criteria/merits etc.
+>
+> The notes list 3, what's unclear about it?
+
+Sorry, my bad. I sent an email earlier. I was trying to access a different link.
+
+
+>> > > 3. I have heard you said "Vlad wasn't comfortable in
+>> > handing up the
+>> > > control to the maintainers ... (this is how kernel.org
+>> > works)." I have
+>> > > no idea what you meant. I have never been asked about
+>> > anything like
+>> > > that, so I couldn't say anyhow that I'm not
+>> > comfortable with anything.
+>> > > Could you clarify that?
+>> > >
+>>
+>> 3) above is something that I emailed Vlad and the scst community based
+>> on our offline conversation after the open panel. If SCST really has
+>> licensing issues then I will personally stop using SCST. Since Vlad
+>> hasn't
+>> expressed any concerns on the above and neither have you commented on
+>> it, is it safe to assume that the licensing requirement is a
+>> non-issue?
+>
+> No.
+>
+
+huh? It's dual licensed. GPL and BSD(if I'm not wrong).
+
+
+> James
+
+--cloke
