@@ -1,64 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751379Ab0HRDzQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 23:55:16 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60792 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab0HRDzN (ORCPT
+	id S1750979Ab0HREKL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 00:10:11 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:50374 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab0HREKJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 23:55:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XhJmZfKnQmNsR3VhJfmw7u61MnH5LlggwJqwj6rQTFWyiChAtzsTxzernJ3zFGht70
-         WFLSAHJrrVvcfgB9IMGT9kT2ny4vhuJEE8KowDzy9AWSa5OA//PgeRFDZhSG8XlomvPt
-         ZW/GpWCOJzoNS0VWBIH07uS/3bbDl/Cmzp7Bo=
-Date: Wed, 18 Aug 2010 05:55:09 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
-        Borislav Petkov <bp@amd64.org>
-Subject: Re: [RFC PATCH 0/0 v3] callchain fixes and cleanups
-Message-ID: <20100818035507.GE24748@nowhere>
-References: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com> <1282041159.22114.2.camel@e102144-lin.cambridge.arm.com>
+	Wed, 18 Aug 2010 00:10:09 -0400
+X-Nat-Received: from [202.181.97.72]:50327 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1282104591.5403
+Message-Id: <201008180409.o7I49pof033727@www262.sakura.ne.jp>
+Subject: Re: [2.6.36-rc1] List corruption when using initrd.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: hughd@google.com
+Cc: tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282041159.22114.2.camel@e102144-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+Date: Wed, 18 Aug 2010 13:09:51 +0900
+References: <201008170517.o7H5HbCT002910@www262.sakura.ne.jp> <201008170751.o7H7pmAl038739@www262.sakura.ne.jp> <alpine.LSU.2.00.1008171523270.2106@sister.anvils> <201008180113.o7I1DXg6077317@www262.sakura.ne.jp> <alpine.LSU.2.00.1008172022140.2868@sister.anvils>
+In-Reply-To: <alpine.LSU.2.00.1008172022140.2868@sister.anvils>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 17082010 #4137160, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 11:32:39AM +0100, Will Deacon wrote:
-> On Mon, 2010-08-16 at 21:48 +0100, Frederic Weisbecker wrote:
-> > Hi,
-> > 
-> Hi Frederic,
-> > 
-> > This set factorizes a lot of callchain code and fixes concurrent
-> > callchain buffers accesses.
+Hugh Dickins wrote:
+> > "[2.6.36-rc1] Bugs in __free_pipe_info()".
 > 
-> > You can test it by pulling that branch:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> >         perf/callchains
-> > 
-> 
-> I've tested this on an ARM Cortex-A9 board and it all seems fine [plus
-> the code is a lot cleaner!].
-> 
-> Tested-by: Will Deacon <will.deacon@arm.com>
+> That's good, but puzzling.  I'll mention it in the patch comment, since
+> that's what you've found: but I've given up trying to understand how.
 
+Yeah, it's puzzling. What I was doing is
 
-Thanks a lot!
+  ./newns ./foo | grep -vF OK
 
-BTW, out of curiosity, do you have NMIs on ARM and do the hardware events
-make use of them? Or may be you use FIQ to simulate NMIs?
+where "./newns" calls mount("tmpfs") after clone(CLONE_NEWNS)
+and ./foo calls chroot()/mount("tmpfs")/umount()/pivot_root() etc.
 
+After applying your patch, I can no longer reproduce __free_pipe_info() errors.
+I don't know why __free_pipe_info() errors are reported on "grep" rather than
+"newns" or "foo". But if the cause of __free_pipe_info() errors was memory
+corruption by the bug in shmem, it is possible that fixing the bug in shmem
+solves __free_pipe_info() errors.
+
+Thanks.
