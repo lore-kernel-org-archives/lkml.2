@@ -1,130 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab0HRB4o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:56:44 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:64227 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492Ab0HRB4k convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:56:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type:content-transfer-encoding;
-        b=kPzoBHft2On3j+EHN4dqYSgiBhkidmuzNVVa1AoYMmY/CbJ1XPgVda65LvulnxW8RP
-         B94oXkaqXHyE5XuyMQBWlnqSXmSrE7uH5QGaPSXC9pwdKcP+862bnFEpLMJ6/9hWF8CK
-         bT2ThhsVehNYuij2KV8lpr6rHhN9fnTh6ZZAw=
-MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-In-Reply-To: <201008180325.17816.rjw@sisk.pl>
-References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
-	<201008180325.17816.rjw@sisk.pl>
-Date: Wed, 18 Aug 2010 02:56:38 +0100
-Message-ID: <AANLkTimdF_eYurw9k0rQRAzSQ-fZMKsFLupnME_ch1Ru@mail.gmail.com>
-Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
-From: trapDoor <trapdoor6@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, arnd@arndb.de,
-        trapDoor <trapdoor6@googlemail.com>, Jiri Kosina <jkosina@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1752815Ab0HRB6i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:58:38 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58696 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751492Ab0HRB6d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 21:58:33 -0400
+Date: Wed, 18 Aug 2010 11:58:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for August 18
+Message-Id: <20100818115825.2f2d58ee.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__18_Aug_2010_11_58_25_+1000_uhKLcaOlINgehh1x"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 2:25 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday, August 17, 2010, trapDoor wrote:
->> Hello,
->> The merge window is closed so it's time to hunt for bugs. I've got
->> one, please find details below.
->> -----------------------
->>
->> Working kernels: from 2.6.35 - to 2.6.35.2
->> Non working kernels: from (at least) 2.6.35-git2 - to 2.6.36-rc1
->> -----------------------
->>
->> Description of the problem(s):
->>
->> 1. First of all I confirm that the problem is consistent: suspend
->> works well every time on the 'good' kernels and it newer works (with
->> the symptoms) on any of the 'bad' kernels. I've tested it several
->> times on a couple of 'good' and 'bad' kernels to make sure it's not
->> some random issue.
->>
->> 2. On a bad kernel, this is what happens when I try to switch to suspend mode:
->> - screen goes blank ['No signal detected !'] - that's OK :)
->> - either the CPU fan or PSU fan or both are still running and they
->> won't stop (left it for about 30 min. once)
->> - the power light is on and still, where in suspend mode it should
->> blink - that won't change either
->> - pressing the power button obviously doesn't wake the system up; need
->> to hard reboot
->>
->> 3. Now, when booting again, after an unsuccessful suspend and hard
->> reboot, something happens to my network card (and it doesn't matter
->> what is the next kernel I boot from - it can be any 'good' or 'bad'
->> one):
->> - in Gnome, the gnome-panel network indicator shows my connection as
->> disabled (wired eth0 - the only one I use); enabling it doesn't bring
->> my network up
->>
->> 4. After re-booting from any of the 'good' or 'bad' kernels my network
->> connection is working again.
->> -----------------------
->>
->> Bisecting turned up the following commit. Reverting it in 2.6.36-rc1
->> results in a system that works.
->>
->> commit bd25f4dd6972755579d0ea50d1a5ace2e9b00d1a
->> Author: Arnd Bergmann <arnd@arndb.de>
->> Date:   Sun Jul 11 15:34:05 2010 +0200
->>
->>     HID: hiddev: use usb_find_interface, get rid of BKL
->>
->>     This removes the private hiddev_table in the usbhid
->>     driver and changes it to use usb_find_interface
->>     instead.
->>
->>     The advantage is that we can avoid the race between
->>     usb_register_dev and usb_open and no longer need the
->>     big kernel lock.
->>
->>     This doesn't introduce race condition -- the intf pointer could be
->>     invalidated only in hiddev_disconnect() through usb_deregister_dev(),
->>     but that will block on minor_rwsem and not actually remove the device
->>     until usb_open().
->> -----------------------
->>
->> Despite mentioned issues with network (occurring every time after
->> unsuccessful suspend > hard restart) the bisecting turned up a commit
->> which isn't rather related to network. But I can confirm that
->> reverting only this one commit in 2.6.36-rc1
->> [da5cabf80e2433131bf0ed8993abc0f7ea618c73] fixes the whole problem -
->> suspend works OK and I have no issues with my network after waking the
->> system up, neither after re-booting from the same or any other kernel.
->>
->> Please let me know what further details should I provide. Any logs,
->> hardware specifications? I've also made a brief log recording the
->> bisect if anyone would need it.
->
-> Well, we should let the HID maintainer know about the problem (CC added).
->
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+--Signature=_Wed__18_Aug_2010_11_58_25_+1000_uhKLcaOlINgehh1x
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks Rafael,
-Before I opened this thread I only searched on
-http://vger.kernel.org/vger-lists.html for any appropriate mailing
-list but nothing linke linux-*hid* there. Now I've found out that
-there is a list of all maintainers included in the kernel source. I'll
-keep that in mind ..
+Hi all,
 
--- 
-Regards
-Tomasz
+Changes since 20100817:
+
+My fixes tree contains:
+	spi: update for of_device to platform_device replacement
+
+The libata tree gained a build failure, so I used the version from
+next-20100817.
+
+The sound-asoc tree lost a conflict.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 170 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+CONFLICT (content): Merge conflict in arch/arm/plat-samsung/Kconfig
+CONFLICT (content): Merge conflict in drivers/input/touchscreen/s3c2410_ts.c
+Merging s5p/for-next
+Merging tegra/for-next
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+CONFLICT (content): Merge conflict in arch/arm/mm/Kconfig
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in net/Makefile
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+$ git reset --hard HEAD^
+Merging refs/next/20100817/libata
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/if_sdio=
+.c
+Merging mtd/master
+Merging crypto/master
+Merging sound-asoc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-s3c64xx/mach-smdk6410.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+CONFLICT (add/add): Merge conflict in drivers/regulator/ab8500.c
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging limits/writable_limits
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging tip/auto-latest
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/sata_fsl.c
+CONFLICT (content): Merge conflict in drivers/ata/sata_mv.c
+CONFLICT (content): Merge conflict in drivers/ata/sata_nv.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/merge-base:master
+$ git checkout scsi-post-merge/master
+
+--Signature=_Wed__18_Aug_2010_11_58_25_+1000_uhKLcaOlINgehh1x
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMaz5BAAoJEDMEi1NhKgbsFCUH/Ay4qDDx4K9xqUcLKfL1PtMY
+6ncCBrvjjamgpAeGXpbLMgPUOlw2tCIKffSHYx4xR6KcfdbAn0CfRA8vk8Gba80r
+9Ga4tNj/VPALNnswGACOQt25EgQ7u9o8FVVi16R8R2E404V5+ocT8eodTrFS2PJu
+8wbXn+NnI55tBWwV+DbY6t3ch84B0vGtwfqVcJQmKKkTM1vrf1HgNa18yA8w0LQH
+19p3memgLLpDmZhf04XX5F+m8YbFazvL3veiRN7ATKIp9c2INxktLVdPwJ5YyMMR
++UYwpZLDNO+0dTGLawSu3wxDisKXSXfmPJJA+/+LQTtU0RiRaXSWNe5gYOabtW0=
+=9PpS
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__18_Aug_2010_11_58_25_+1000_uhKLcaOlINgehh1x--
