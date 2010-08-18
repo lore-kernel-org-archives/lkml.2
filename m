@@ -1,70 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427Ab0HREUw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 00:20:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56402 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab0HREUs convert rfc822-to-8bit (ORCPT
+	id S1751119Ab0HRE1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 00:27:39 -0400
+Received: from smtp109.sbc.mail.gq1.yahoo.com ([67.195.14.39]:32338 "HELO
+	smtp109.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750791Ab0HRE1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 00:20:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=xpfNrzkWQct5jQhlaVqmox8wyo3hs2WNdMv+0wmPgC1RQtYDT0XZeophNAuRYr/+Oq
-         nyQYl4vzg15Yr35FV7ksiPpk9SN6BnNDgozkQAvsCVtAwfsozFfItniPx9WRmVBzw6Xy
-         WHwqZlg/CndNX4L2/0rRLiUr8p7XaivSk9uXU=
-MIME-Version: 1.0
-In-Reply-To: <1281670747.13407.2.camel@mola>
-References: <1281670747.13407.2.camel@mola>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Wed, 18 Aug 2010 12:20:27 +0800
-Message-ID: <AANLkTimUqRMjZ735CuwAHWGrkAakQG+JPiX6Rc=9gS1R@mail.gmail.com>
-Subject: Re: [PATCH] pxa: fix CI_HSYNC and CI_VSYNC MFP defines
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Aug 2010 00:27:33 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: Cb0MSpsVM1n23Bw85.QKut52s_3mJ0yLvVA1nPQu8fkDue3
+ jevTp.0rfP42KQq2uE9Dl66Xob.jSsZha7hxVYhSOQ5FEelLMW1W5JF9BjoF
+ wjxCajJrnI5kqoTBljx.6l60DNt56j8davpwjfYvh0Pge.y_P_t00Gu2ny..
+ VNLr9kpTOQxphNMxn3dOep9zL8ecelBx_YABwVwtlcn4mujDkLVu7bAcYzD8
+ n1v3OuGl2SEqoYnrO8utQuB8VgwevxU0xfY6tVwBdE9OyA6YMWuWbG9LSus_
+ S1aDRvAafQ8HyEIGeXxbX5zW27S1GHi8b9XMt7ONGhNcDYN7KVop..X7nE9X
+ pXmmjjaRsA11MyOA2uA--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH] tcm: Convert transport_map_sg_to_mem() to use sg_next()
+Date: Tue, 17 Aug 2010 21:27:29 -0700
+Message-Id: <1282105649-5157-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Aug 13, 2010 at 11:39 AM, Axel Lin <axel.lin@gmail.com> wrote:
-> According to PXA3xx Processor Family Developer Manuall Vol1. section
-> "Pin Descriptions and Control", PXA30x and PXA31x Processor Alternate Function
-> Table shows the Alt FN 0 for GPIO51 is CI_HSYNC and for GPIO52 is CI_VSYNC.
-> This patch fixes the MFP defines and also corrects the order of MFD defines.
->
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Applied to 'fix'.
+This patch converts the incoming struct scatterlist array pointer logic
+for transport_map_sg_to_mem() to use the include/linux/scatterlist.h
+sg_next() macro in order to properly support incoming linked scatterlists.
 
-> ---
->  arch/arm/mach-pxa/include/mach/mfp-pxa300.h |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/arm/mach-pxa/include/mach/mfp-pxa300.h b/arch/arm/mach-pxa/include/mach/mfp-pxa300.h
-> index 7139e0d..4e12870 100644
-> --- a/arch/arm/mach-pxa/include/mach/mfp-pxa300.h
-> +++ b/arch/arm/mach-pxa/include/mach/mfp-pxa300.h
-> @@ -71,10 +71,10 @@
->  #define GPIO46_CI_DD_7         MFP_CFG_DRV(GPIO46, AF0, DS04X)
->  #define GPIO47_CI_DD_8         MFP_CFG_DRV(GPIO47, AF1, DS04X)
->  #define GPIO48_CI_DD_9         MFP_CFG_DRV(GPIO48, AF1, DS04X)
-> -#define GPIO52_CI_HSYNC                MFP_CFG_DRV(GPIO52, AF0, DS04X)
-> -#define GPIO51_CI_VSYNC                MFP_CFG_DRV(GPIO51, AF0, DS04X)
->  #define GPIO49_CI_MCLK         MFP_CFG_DRV(GPIO49, AF0, DS04X)
->  #define GPIO50_CI_PCLK         MFP_CFG_DRV(GPIO50, AF0, DS04X)
-> +#define GPIO51_CI_HSYNC                MFP_CFG_DRV(GPIO51, AF0, DS04X)
-> +#define GPIO52_CI_VSYNC                MFP_CFG_DRV(GPIO52, AF0, DS04X)
->
->  /* KEYPAD */
->  #define GPIO3_KP_DKIN_6                MFP_CFG_LPM(GPIO3,   AF2, FLOAT)
-> --
-> 1.7.2
->
->
->
->
+An issue was observed recently with TCM_Loop + FILEIO backstores using v2.6.35
+struct scsi_host_template->sg_tablesize=256.  128+128 linked scatterlists
+coming in via struct scsi_cmnd->>sdb.table.sgl where generating bogus struct se_mem
+because of the assumption of a single contigious scatterlist array for the incoming
+memory to be mapped zero-copy to struct se_mem.
+
+The single array walking scatterlist code in transport_map_sg_to_mem() can
+historically be attributed to the matching RAMDISK_DR algortihms existing before
+Jens added proper array linked scatterlist support into v2.6.24-rc series way
+back in October 2007.  For modern TCM purposes, this patch does the "right thing"
+and uses Jen's sg_next() macros when walking physical memory for incoming
+SHT->queuecommand() I/O.
+
+Thanks Jens!
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+---
+ drivers/target/target_core_transport.c |   49 +++++++++++++++++++++----------
+ 1 files changed, 33 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index efb351a..a6b5706 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -6686,14 +6686,14 @@ int transport_map_sg_to_mem(
+ 	u32 *task_offset)
+ {
+ 	struct se_mem *se_mem;
+-	struct scatterlist *sg_s;
+-	u32 j = 0, saved_task_offset = 0, task_size = cmd->data_length;
++	struct scatterlist *sg;
++	u32 sg_count = 0, saved_task_offset = 0, task_size = cmd->data_length;
+ 
+ 	if (!in_mem) {
+ 		printk(KERN_ERR "No source scatterlist\n");
+ 		return -1;
+ 	}
+-	sg_s = (struct scatterlist *)in_mem;
++	sg = (struct scatterlist *)in_mem;
+ 
+ 	while (task_size) {
+ 		se_mem = kmem_cache_zalloc(se_mem_cache, GFP_KERNEL);
+@@ -6702,14 +6702,19 @@ int transport_map_sg_to_mem(
+ 			return -1;
+ 		}
+ 		INIT_LIST_HEAD(&se_mem->se_list);
++		DEBUG_MEM("sg_to_mem: Starting loop with task_size: %u"
++			" sg_page: %p offset: %d length: %d\n", task_size,
++			sg_page(sg), sg->offset, sg->length);
+ 
+ 		if (*task_offset == 0) {
+-			se_mem->se_page = sg_page(&sg_s[j]);
+-			se_mem->se_off = sg_s[j].offset;
++			se_mem->se_page = sg_page(sg);
++			se_mem->se_off = sg->offset;
+ 
+-			if (task_size >= sg_s[j].length)
+-				se_mem->se_len =  sg_s[j++].length;
+-			else {
++			if (task_size >= sg->length) {
++				se_mem->se_len =  sg->length;
++				sg = sg_next(sg);
++				sg_count++;
++			} else {
+ 				se_mem->se_len = task_size;
+ 
+ 				task_size -= se_mem->se_len;
+@@ -6723,10 +6728,10 @@ int transport_map_sg_to_mem(
+ 			if (saved_task_offset)
+ 				*task_offset = saved_task_offset;
+ 		} else {
+-			se_mem->se_page = sg_page(&sg_s[j]);
+-			se_mem->se_off = (*task_offset + sg_s[j].offset);
++			se_mem->se_page = sg_page(sg);
++			se_mem->se_off = (*task_offset + sg->offset);
+ 
+-			if ((sg_s[j].length - *task_offset) > task_size) {
++			if ((sg->length - *task_offset) > task_size) {
+ 				se_mem->se_len = task_size;
+ 
+ 				task_size -= se_mem->se_len;
+@@ -6734,21 +6739,33 @@ int transport_map_sg_to_mem(
+ 					*task_offset += se_mem->se_len;
+ 					goto next;
+ 				}
+-			} else
+-				se_mem->se_len = (sg_s[j++].length -
+-						*task_offset);
++			} else {
++				se_mem->se_len = (sg->length - *task_offset);
++				sg = sg_next(sg);
++				sg_count++;
++			}
+ 
+ 			saved_task_offset = *task_offset;
+ 			*task_offset = 0;
+ 		}
+ 		task_size -= se_mem->se_len;
+ next:
++		DEBUG_MEM("sg_to_mem: *se_mem_cnt: %u task_size: %u, *task_offset: %u "
++			"saved_task_offset: %d\n", *se_mem_cnt, task_size, *task_offset,
++			saved_task_offset);
++				
++		DEBUG_MEM("sg_to_mem: Final se_page: %p se_off: %d se_len: %d\n",
++				se_mem->se_page, se_mem->se_off, se_mem->se_len);
++
+ 		list_add_tail(&se_mem->se_list, se_mem_list);
+ 		(*se_mem_cnt)++;
+ 	}
+ 
+ 	DEBUG_MEM("task[0] - Mapped(%u) struct scatterlist segments to(%u)"
+-		" struct se_mem\n", j, *se_mem_cnt);
++		" struct se_mem\n", sg_count, *se_mem_cnt);
++
++	if (sg_count != *se_mem_cnt)
++		BUG();
+ 
+ 	return 0;
+ }
+-- 
+1.5.6.5
+
