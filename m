@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab0HRUk1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:40:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3218 "EHLO mx1.redhat.com"
+	id S1754166Ab0HRUnP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:43:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:41929 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751069Ab0HRUkX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:40:23 -0400
-Date: Wed, 18 Aug 2010 16:40:17 -0400
-From: Dave Jones <davej@redhat.com>
-To: apw@canonical.com
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: add memset checks to checkpatch.pl
-Message-ID: <20100818204016.GA29640@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, apw@canonical.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1753277Ab0HRUnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 16:43:13 -0400
+Subject: Re: Fwd: Re: [Scst-devel] linuxcon 2010...
+From: James Bottomley <James.Bottomley@suse.de>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: scst-devel <scst-devel@lists.sourceforge.net>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <4C6C1DC1.8090208@vlnb.net>
+References: <4C69653E.6050808@vlnb.net>
+	 <1282077040.16098.47.camel@mulgrave.site>  <4C6C1DC1.8090208@vlnb.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 15:43:08 -0500
+Message-ID: <1282164188.10878.22.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Occasionally someone goofs the argument order to memset.
-This patch makes checkpatch catch those.
+On Wed, 2010-08-18 at 21:52 +0400, Vladislav Bolkhovitin wrote:
+> James Bottomley, on 08/18/2010 12:30 AM wrote:
+> >> 1. What don't you like in the transition path for users from STGT to
+> >> SCST, which I proposed:
+> >>
+> >>    - The only people which would be affected by replacing of STGT by SCST
+> >> would be users of ibmvstgt. Other STGT users would not notice it at all.
+> >> Thus, we should update ibmvstgt for SCST. If ibmvstgt updated for SCST,
+> >> the update for its users would be just writing of a simple scstadmin's
+> >> config file.
+> >>
+> >>    - STGT doesn't have backend drivers, which SCST doesn't have, so
+> >> there's nothing to worry here. At max, AIO support should be added to
+> >> fileio_tgt.
+> >>
+> >>    - STGT user space targets can use SCST backend via scst_local module.
+> >> Scst_local module is ready and work very well.
+> >>
+> >> The result would be very clear without any obsolete mess.
+> >
+> > So does that get us up to being a drop in replacement?  I think you're
+> > saying that even with all of this, at least the VSCSI part will need
+> > updating, so the answer seems to be "no".
+>
+> Sorry, I can't understand, "no" for which? For the whole transition 
+> path, or just until there is a patch for ibmvstgt to become ibmvscst?
 
-I made memset with size of 0 an error, because it's never correct,
-whereas memset with a size of 1 isn't technically an incorrect
-thing to do so I left it as a warning. It may still be better to replace
-it with a single variable assignment in the false positive cases.
+No to the question "does that get us up to being a drop in replacement
+[for STGT]?"
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+> >> 4. Have you changed your opinion that a driver level multipath is
+> >> forbidden in Linux and now you think that an iSCSI target with MC/S
+> >> support is acceptable?
+> >
+> > no; I still think MCS is a pointless duplication of multipath that only
+> > works for iSCSI.
+> 
+> Then, does it mean that similarly as it was with open-iscsi, which had 
+> to remove MC/S support to be able to be accepted into the mainline, an 
+> iSCSI target can't go into mainline if it has MC/S?
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 2039acd..3690173 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2794,6 +2794,14 @@ sub process {
- 			}
- 		}
- 
-+# check for memset with reversed 2nd/3rd arguments.
-+		if ($line =~ /memset.*\,(\ |)(0x|)0(\ |0|)\);/) {
-+			ERROR("memset takes size as third argument, not the second.\n" . $herecurr);
-+		}
-+		if ($line =~ /memset.*\,(\ |)(0x|)1\);/) {
-+			WARN("single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . $herecurr);
-+		}
-+
- # check for lockdep_set_novalidate_class
- 		if ($line =~ /^.\s*lockdep_set_novalidate_class\s*\(/ ||
- 		    $line =~ /__lockdep_no_validate__\s*\)/ ) {
+To be honest, I don't care about targets.  I only care that the
+initiators do the right thing.
+
+James
+
+
