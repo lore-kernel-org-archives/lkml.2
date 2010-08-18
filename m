@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0HRBcY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:32:24 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39333 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752453Ab0HRBcS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:32:18 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100817.180325.104051399.davem@davemloft.net>
-References: <20100817.180325.104051399.davem@davemloft.net>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 17 Aug 2010 18:31:50 -0700
-Message-ID: <AANLkTikQ1dGw0aO10_ZwmVEc-JAVhB==3HS7SrWycE49@mail.gmail.com>
-Subject: Re: [GIT] Sparc
-To: David Miller <davem@davemloft.net>
-Cc: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752855Ab0HRBca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:32:30 -0400
+Received: from mail.perches.com ([173.55.12.10]:1142 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752809Ab0HRBcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 21:32:23 -0400
+Subject: Re: [PATCH] fs.h: introduce functions to get/set file->private_data
+From: Joe Perches <joe@perches.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Christoph Hellwig <hch@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "matthew@wil.cx" <matthew@wil.cx>
+In-Reply-To: <20100817175851.GA11463@merkur.ravnborg.org>
+References: <201008161137.53187.hartleys@visionengravers.com>
+	 <20100816231753.GA16546@infradead.org>
+	 <0D753D10438DA54287A00B0270842697643E50D82E@AUSP01VMBX24.collaborationhost.net>
+	 <1282002601.6518.116.camel@Joe-Laptop> <20100817010355.GG21182@thunk.org>
+	 <20100817085428.GA25330@infradead.org>
+	 <1282065973.24541.106.camel@Joe-Laptop>
+	 <20100817175851.GA11463@merkur.ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 17 Aug 2010 18:32:22 -0700
+Message-ID: <1282095142.6724.11.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 6:03 PM, David Miller <davem@davemloft.net> wrote:
->
-> Among other things, this fixes the rwsem signedness issue we
-> were discussing earlier today.
+On Tue, 2010-08-17 at 19:58 +0200, Sam Ravnborg wrote:
+> It takes minimum effort to create and test, and if you can
+> get ack from Ted and/or Christoph there is a good chance Linus
+> would take it right before/after -rc1.
+> 
+> You obviously need to convince him that the patch has
+> seen decent build testing.
 
-Your commit message is missing the C rules for hex constants. It says
+private_data is the only non f_ prefixed member in
+struct file, so while there is perhaps a tiny value
+in this patch, I'm not in a hurry to push it.
 
-  "hex constants are unsigned unless explicitly casted or negated."
+After a few corrections, Documentation/, comment and
+printk updates, a few macros that spatch didn't update,
+etc, the diff that converts struct file member
+private_data to f_private_data is now:
 
-and that's not true.
+$ git diff --shortstat ..da5cabf80e2433131bf0ed8993abc0f7ea618c73
+ 511 files changed, 2638 insertions(+), 2639 deletions(-)
 
-The rule is that hex constants are signed _except_ if they don't fit
-in a signed.
+Does either Ted or Christoph want to see it?
 
-So with a 32-bit 'int', 0x123 is signed, but 0x80000000 is unsigned.
+Harley?  You want it?
 
-So the reason (-0x00010000) is signed is _not_ because of the
-negation, but simply because 0x00010000 fits in a signed int. So for
-example, the constant (-0xf0000000) is still unsigned, despite the
-negation.
+It's still ~850BKB and probably shouldn't be posted to
+the ML as it's mostly mechanical.
 
-So to make something signed, you need to either cast it, make sure it
-fits in a signed int, use the 'l' postfix (which also makes it long,
-of course), or use a decimal representation. So
+Compiles x86 allyesconfig, defconfig
 
-   #define X 4294901760
 
-is a _signed_ constant with same value as 0xffff0000 (but it's "signed
-long", because the rules for decimal numbers and hex numbers are
-different: a decimal number is always signed and because it doesn't
-fit in 'int' it will extend to 'long'. A hex number is first done as
-unsigned, and only extended to long if it doesn't fit in that.
 
-To make things _really_ confused, sometimes the types actually depend
-on whether you're compiling with the c90 standards. A decimal constant
-is _always_ signed in traditional C - it goes from 'int' to 'long',
-and stays 'long' even if it doesn't fit (ie with a 32-bit long,
-2147483648 is of type 'long' even though it doesn't fit in 'long' and
-is negative). But in c90, it does from 'int' to 'long' to 'unsigned
-long'.
-
-Or maybe it was the other way around. I forget.
-
-Confused yet?
-
-The basic rule becomes: never _ever_ overflow 'int' in a constant,
-without specifying the exact type you want. That way you avoid all the
-subtle cases.
-
-                     Linus
