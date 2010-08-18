@@ -1,105 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab0HRWSq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 18:18:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:39516 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643Ab0HRWSh (ORCPT
+	id S1754405Ab0HRWXv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 18:23:51 -0400
+Received: from smtp105.sbc.mail.gq1.yahoo.com ([67.195.14.108]:33876 "HELO
+	smtp105.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751737Ab0HRWXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 18:18:37 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Bernd Petrovitsch <bernd@sysprog.at>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/1] perf tools: Fix build error on read only source.
-Date: Wed, 18 Aug 2010 19:18:18 -0300
-Message-Id: <1282169898-28321-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1282169898-28321-1-git-send-email-acme@infradead.org>
-References: <1282169898-28321-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 18 Aug 2010 18:23:49 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: ajIDsQYVM1lg5Wqdnkpo0SsR3rrELtp6GD8D0yOYfjul2VW
+ PQLGi2EngOCiiYUO7s62pNuYfzsmVWE_KlafX6ou03VJ1VfA_dF7MHTatkyb
+ iNRE.5QIsD4uEemssN4JlNuUMCQWBHHxnhiaX.ESpA20ZKa77wWTajHIQ8Do
+ pNaGPZdM0Y6K6ZlngDbYES.einQZEkt8Hy_NDA23gec9KnUD_JUDujhqhNmu
+ DG21.LhjBYS_D_SSdz4Pg4Op1pZmxwIZvtAeLUs.DwLOljYNn1w3wJLhZLMj
+ s1BVgpD5c4XonQju3K2mbXc_pDZhK.Q3GEP3.QMOqt3dj6ki6564naQZRVBn
+ DDFgBDdq88F9Ol..dQg--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Hannes Reinecke <hare@suse.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 2/3] tcm: Make transport_calc_sg_num() properly handle task_offset
+Date: Wed, 18 Aug 2010 15:23:46 -0700
+Message-Id: <1282170226-23502-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-Parts of the build process were generating files outside the specified
-O= directory, causing the build to fail on systems where the sources are
-in a read only file system.
+transport_calc_sg_num() is used by dev_obj_do_se_mem_map() to determine
+the number of scatterlists for an individual struct se_task, and then proceeds
+to allocate a contigious array of struct scatterlist in struct se_task->task_sg[].
+This struct se_task->task_sg[] is then used by subsystem plugins like IBLOCK, FILEIO
+and PSCSI to setup I/O descriptors down to the Linux storage subsystem.
 
-Fix it by using $(OUTPUT) on these locations.
+This patch updates transport_calc_sg_num() to fix an issue that was originally
+reported when an underlying struct Scsi_Host was reporting 255 max_sectors to
+IBLOCK, which manifested itself by generating an number of scatterlists for
+the map task_offset carried between struct se_task allocations inside of
+transport_generic_get_cdb_count().
 
-Also check that $(OUTPUT) actually exists, just like the top level
-kernel Makefile does. Otherwise the failure message emitted is
-completely misleading.
+This patch also makes an small improvement by removing the improper usage of
+list_for_each_entry_continue() when picking off the next struct se_mem, and
+instead adds a !list_is_last() check around list_entry().
 
-Cc: Bernd Petrovitsch <bernd@sysprog.at>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-LKML-Reference: <20100817140841.0859362C03A@msa106.auone-net.jp>
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+So far this patch has been tested with TCM_Loop using max_sectors=1024 on top of
+TCM/IBLOCK connected to a scsi_debug device using max_sectors 255-251 to force the
+task_offset to span struct task allocations.
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- tools/perf/Makefile          |   14 ++++++++++----
- tools/perf/feature-tests.mak |    2 +-
- 2 files changed, 11 insertions(+), 5 deletions(-)
+ drivers/target/target_core_transport.c |   45 +++++++++++++++++---------------
+ 1 files changed, 24 insertions(+), 21 deletions(-)
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index dcb9700..4f1fa77 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -5,6 +5,12 @@ endif
- # The default target of this Makefile is...
- all::
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index dbedb7a..43eeb14 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -6554,54 +6554,57 @@ extern u32 transport_calc_sg_num(
+ 	struct se_mem *in_se_mem,
+ 	u32 task_offset)
+ {
++	struct se_cmd *se_cmd = task->task_se_cmd;
+ 	struct se_mem *se_mem = in_se_mem;
+-	u32 sg_length, sg_offset, task_size = task->task_size;
+-	u32 saved_task_offset = 0;
++	u32 sg_length, task_size = task->task_size;
  
-+ifneq ($(OUTPUT),)
-+# check that the output directory actually exists
-+OUTDIR := $(shell cd $(OUTPUT) && /bin/pwd)
-+$(if $(OUTDIR),, $(error output directory "$(OUTPUT)" does not exist))
-+endif
+-	while (task_size) {
++	while (task_size != 0) {
+ 		DEBUG_SC("se_mem->se_page(%p) se_mem->se_len(%u)"
+ 			" se_mem->se_off(%u) task_offset(%u)\n",
+ 			se_mem->se_page, se_mem->se_len,
+ 			se_mem->se_off, task_offset);
+ 
+ 		if (task_offset == 0) {
+-			if (task_size > se_mem->se_len)
++			if (task_size >= se_mem->se_len) {
+ 				sg_length = se_mem->se_len;
+-			else
 +
- # Define V=1 to have a more verbose compile.
- # Define V=2 to have an even more verbose compile.
- #
-@@ -931,15 +937,15 @@ $(OUTPUT)common-cmds.h: $(wildcard Documentation/perf-*.txt)
- 	$(QUIET_GEN). util/generate-cmdlist.sh > $@+ && mv $@+ $@
++				if (!(list_is_last(&se_mem->se_list,
++						T_TASK(se_cmd)->t_mem_list)))
++					se_mem = list_entry(se_mem->se_list.next,
++							struct se_mem, se_list);
++			} else {
+ 				sg_length = task_size;
++				task_size -= sg_length;
++				goto next;
++			}
  
- $(patsubst %.sh,%,$(SCRIPT_SH)) : % : %.sh
--	$(QUIET_GEN)$(RM) $@ $@+ && \
-+	$(QUIET_GEN)$(RM) $(OUTPUT)$@ $(OUTPUT)$@+ && \
- 	sed -e '1s|#!.*/sh|#!$(SHELL_PATH_SQ)|' \
- 	    -e 's|@SHELL_PATH@|$(SHELL_PATH_SQ)|' \
- 	    -e 's|@@PERL@@|$(PERL_PATH_SQ)|g' \
- 	    -e 's/@@PERF_VERSION@@/$(PERF_VERSION)/g' \
- 	    -e 's/@@NO_CURL@@/$(NO_CURL)/g' \
--	    $@.sh >$@+ && \
--	chmod +x $@+ && \
--	mv $@+ $(OUTPUT)$@
-+	    $@.sh > $(OUTPUT)$@+ && \
-+	chmod +x $(OUTPUT)$@+ && \
-+	mv $(OUTPUT)$@+ $(OUTPUT)$@
+ 			DEBUG_SC("sg_length(%u) task_size(%u)\n",
+ 					sg_length, task_size);
+-
+-			if (saved_task_offset)
+-				task_offset = saved_task_offset;
+ 		} else {
+-			sg_offset = task_offset;
+-
+-			if ((se_mem->se_len - task_offset) > task_size)
++			if ((se_mem->se_len - task_offset) > task_size) {
+ 				sg_length = task_size;
+-			else
++				task_size -= sg_length;
++				goto next;
++			 } else {
+ 				sg_length = (se_mem->se_len - task_offset);
  
- configure: configure.ac
- 	$(QUIET_GEN)$(RM) $@ $<+ && \
-diff --git a/tools/perf/feature-tests.mak b/tools/perf/feature-tests.mak
-index ddb68e6..7a7b608 100644
---- a/tools/perf/feature-tests.mak
-+++ b/tools/perf/feature-tests.mak
-@@ -113,7 +113,7 @@ endef
- # try-cc
- # Usage: option = $(call try-cc, source-to-build, cc-options)
- try-cc = $(shell sh -c						  \
--	'TMP="$(TMPOUT).$$$$";			 		  \
-+	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
- 	 echo "$(1)" |						  \
- 	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
- 	 rm -f "$$TMP"')
++				if (!(list_is_last(&se_mem->se_list,
++						T_TASK(se_cmd)->t_mem_list)))
++					se_mem = list_entry(se_mem->se_list.next,
++							struct se_mem, se_list);
++			}
++
+ 			DEBUG_SC("sg_length(%u) task_size(%u)\n",
+ 					sg_length, task_size);
+ 
+-			saved_task_offset = task_offset;
+ 			task_offset = 0;
+ 		}
+ 		task_size -= sg_length;
+-
++next:
+ 		DEBUG_SC("task[%u] - Reducing task_size to(%u)\n",
+ 			task->task_no, task_size);
+ 
+ 		task->task_sg_num++;
+-
+-		list_for_each_entry_continue(se_mem,
+-				task->task_se_cmd->t_task->t_mem_list, se_list)
+-			break;
+-
+-		if (!se_mem)
+-			break;
+ 	}
+ 
+ 	task->task_sg = kzalloc(task->task_sg_num *
 -- 
-1.6.2.5
+1.5.6.5
 
