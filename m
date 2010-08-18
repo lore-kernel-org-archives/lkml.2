@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751237Ab0HRM2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 08:28:42 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57496 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab0HRM2k (ORCPT
+	id S1751455Ab0HRMhU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 08:37:20 -0400
+Received: from msa103.auone-net.jp ([61.117.18.163]:46198 "EHLO
+	msa103.auone-net.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750797Ab0HRMhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 08:28:40 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Subject: Re: [PATCH v2] ARM: uaccess: Implement strict user copy checks
-Date: Wed, 18 Aug 2010 14:28:44 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-References: <4C61EE55.5030506@codeaurora.org> <1282094950-6184-1-git-send-email-sboyd@codeaurora.org>
-In-Reply-To: <1282094950-6184-1-git-send-email-sboyd@codeaurora.org>
+	Wed, 18 Aug 2010 08:37:18 -0400
+Date: Wed, 18 Aug 2010 21:37:12 +0900
+From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf tools: Fix build error on read only source.
+References: <20100817181835.GA21083@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201008181428.45029.arnd@arndb.de>
-X-Provags-ID: V02:K0:/opFxcEPkRQ+cb1cpTsyymQVwp1v1Hv3AVwruoXlh/8
- VYA5Z1XnSGW6bLL3qY3vtI/G9dpUN1VR37/CTpaxjGlYD9T9tb
- 01GkD5o8qtAjFTVh5WGnbVFpSoDaeHezn/mP8e1ZLeYNKPjBtC
- pvbNVkxtCfFo4Lx/54AY6SrNfn5rcJL7gKkIgm+5+cn4rUYC+P
- 55ot+YCCRBgncZbl+KsNw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100817181835.GA21083@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <20100818123713.1F02414C03B@msa103.auone-net.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 18 August 2010, Stephen Boyd wrote:
+On 2010-08-17 15:18:35 -0300, Arnaldo Carvalho de Melo wrote:
+> Em Tue, Aug 17, 2010 at 11:17:54AM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Tue, Aug 17, 2010 at 11:08:40PM +0900, Kusanagi Kouichi escreveu:
+> > > --- a/tools/perf/feature-tests.mak
+> > > +++ b/tools/perf/feature-tests.mak
+> > > @@ -113,7 +113,7 @@ endef
+> > >  # try-cc
+> > >  # Usage: option = $(call try-cc, source-to-build, cc-options)
+> > >  try-cc = $(shell sh -c						  \
+> > > -	'TMP="$(TMPOUT).$$$$";			 		  \
+> > > +	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
+> > >  	 echo "$(1)" |						  \
+> > >  	 $(CC) -x c - $(2) -o "$$TMP" > /dev/null 2>&1 && echo y; \
+> > >  	 rm -f "$$TMP"')
+> > 
+> > Much better! Will test and merge, thanks!
 > 
-> I'm unsure what needs to be done for the follow up patch. Shouldn't
-> it be multiple patches sent to each arch maintainer to fix the
-> wording?
+> Still has issues:
+> 
+> [acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf/
+> [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -s -j9 -C tools/perf install
+> PERF_VERSION = 2.6.36.rc1.2.g19bad
+>     * new build flags or prefix
+> [acme@emilia linux-2.6-tip]$ patch -p1 < Kouichi.patch 
+> patching file tools/perf/Makefile
+> patching file tools/perf/feature-tests.mak
+> [acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf/
+> [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -s -j9 -C tools/perf install
+> Makefile:503: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
+> Makefile:534: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static.  Stop.
+> [acme@emilia linux-2.6-tip]$
+> 
+> Can you please investigate?
+> 
+> Thanks,
+> 
+> - Arnaldo
 
-No, that will just result in half of them applying it, best make 
-a single patch and send it to linux-arch@vger.kernel.org for review.
+With POSIX shell patch, $(OUTPUT) has not been created yet when it is
+used by try-cc. This fixes the issue anyway.
 
-It's probably best to move the config option to lib/Kconfig.debug
-so it only appears once, and make it depend on DEBUG_USER_COPY_CHECKS,
-which is then unconditionally defined by the architectures that want it.
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index dcb9700..5b1c12b 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -281,6 +281,7 @@ endif
 
-	Arnd
+ -include feature-tests.mak
+
++$(shell mkdir -p $(OUTPUT) 2> /dev/null)
+ ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
+ 	CFLAGS := $(CFLAGS) -fstack-protector-all
+ endif
