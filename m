@@ -1,206 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab0HRNfk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:35:40 -0400
-Received: from kroah.org ([198.145.64.141]:59052 "EHLO coco.kroah.org"
+	id S1753283Ab0HRNgC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:36:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753201Ab0HRNfi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:35:38 -0400
-Date: Wed, 18 Aug 2010 06:36:18 -0700
-From: Greg KH <greg@kroah.com>
-To: Chris Frey <cdfrey@foursquare.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: compiler warnings in 2.6.35.2
-Message-ID: <20100818133618.GB6663@kroah.com>
-References: <20100817021252.GA17647@foursquare.net>
+	id S1753127Ab0HRNgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 09:36:00 -0400
+Message-ID: <4C6BE2BD.1030606@redhat.com>
+Date: Wed, 18 Aug 2010 21:40:13 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="lrZ03NoBR/3+SXJZ"
-Content-Disposition: inline
-In-Reply-To: <20100817021252.GA17647@foursquare.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Amit Salecha <amit.salecha@qlogic.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
+        Narender Kumar <narender.kumar@qlogic.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ameen Rahman <ameen.rahman@qlogic.com>
+Subject: Re: [RFC Patch] netxen: remove firmware exports
+References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain> <99737F4847ED0A48AECC9F4A1974A4B80F86E69129@MNEXMB2.qlogic.org> <4C6BDDCB.9040800@redhat.com> <99737F4847ED0A48AECC9F4A1974A4B80F86E6913F@MNEXMB2.qlogic.org>
+In-Reply-To: <99737F4847ED0A48AECC9F4A1974A4B80F86E6913F@MNEXMB2.qlogic.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 08/18/10 21:19, Amit Salecha wrote:
+>> Then we can work with David Woodhouse and make these firmware available in /lib/firmware
+>>
+> Actually I was not updated, NX_UNIFIED_ROMIMAGE_NAME (phanfw.bin) is already submitted and its present in linux-firmware.git.
+>
 
---lrZ03NoBR/3+SXJZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Good.
 
-On Mon, Aug 16, 2010 at 10:12:52PM -0400, Chris Frey wrote:
-> Hi,
-> 
-> When compiling the latest 2.6.35.2 I get a ton of warnings like the
-> following.  Similar warnings were present in 2.6.35, and I assumed a
-> stable point release may have tackled them already.  But maybe they
-> are peculiar to my setup.  Warning below.
-> 
-> - Chris
-> 
-> 
-> 
->   CC      mm/swap.o
-> In file included from include/linux/kobject.h:21,
->                  from include/linux/sched.h:91,
->                  from mm/swap.c:17:
-> include/linux/sysfs.h:183: warning: parameter has incomplete type
+> I will get back to you on NX_P2_MN_ROMIMAGE_NAME, NX_P3_CT_ROMIMAGE_NAME and NX_P3_MN_ROMIMAGE_NAME.
+> Whether this will be submitted ?
+>
 
-Known issue, will show up in a future .35.y kernel release.  The patch
-is below if you need it now.
+Ok, thanks a lot!
 
-thanks,
 
-greg k-h
-
---lrZ03NoBR/3+SXJZ
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="kobject-break-the-kobject-namespace-defs-into-their-own-header.patch"
-
->From dhowells@redhat.com  Thu Aug 12 13:40:21 2010
-From: David Howells <dhowells@redhat.com>
-Subject: kobject: Break the kobject namespace defs into their own header
-To: ebiederm@xmission.com, gregkh@suse.de
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-	David Howells <dhowells@redhat.com>
-Date: Wed, 11 Aug 2010 15:01:02 +0100
-Message-ID: <20100811140102.19596.84876.stgit@warthog.procyon.org.uk>
-
-Break the kobject namespace defs into their own header to avoid a header file
-inclusion ordering problem between linux/sysfs.h and linux/kobject.h.
-
-This fixes the build breakage on older versions of gcc.
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- include/linux/kobject.h    |   35 ----------------------------
- include/linux/kobject_ns.h |   56 +++++++++++++++++++++++++++++++++++++++++++++
- include/linux/sysfs.h      |    1 
- 3 files changed, 58 insertions(+), 34 deletions(-)
-
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -22,6 +22,7 @@
- #include <linux/compiler.h>
- #include <linux/spinlock.h>
- #include <linux/kref.h>
-+#include <linux/kobject_ns.h>
- #include <linux/kernel.h>
- #include <linux/wait.h>
- #include <asm/atomic.h>
-@@ -136,42 +137,8 @@ struct kobj_attribute {
- 
- extern const struct sysfs_ops kobj_sysfs_ops;
- 
--/*
-- * Namespace types which are used to tag kobjects and sysfs entries.
-- * Network namespace will likely be the first.
-- */
--enum kobj_ns_type {
--	KOBJ_NS_TYPE_NONE = 0,
--	KOBJ_NS_TYPE_NET,
--	KOBJ_NS_TYPES
--};
--
- struct sock;
- 
--/*
-- * Callbacks so sysfs can determine namespaces
-- *   @current_ns: return calling task's namespace
-- *   @netlink_ns: return namespace to which a sock belongs (right?)
-- *   @initial_ns: return the initial namespace (i.e. init_net_ns)
-- */
--struct kobj_ns_type_operations {
--	enum kobj_ns_type type;
--	const void *(*current_ns)(void);
--	const void *(*netlink_ns)(struct sock *sk);
--	const void *(*initial_ns)(void);
--};
--
--int kobj_ns_type_register(const struct kobj_ns_type_operations *ops);
--int kobj_ns_type_registered(enum kobj_ns_type type);
--const struct kobj_ns_type_operations *kobj_child_ns_ops(struct kobject *parent);
--const struct kobj_ns_type_operations *kobj_ns_ops(struct kobject *kobj);
--
--const void *kobj_ns_current(enum kobj_ns_type type);
--const void *kobj_ns_netlink(enum kobj_ns_type type, struct sock *sk);
--const void *kobj_ns_initial(enum kobj_ns_type type);
--void kobj_ns_exit(enum kobj_ns_type type, const void *ns);
--
--
- /**
-  * struct kset - a set of kobjects of a specific type, belonging to a specific subsystem.
-  *
---- /dev/null
-+++ b/include/linux/kobject_ns.h
-@@ -0,0 +1,56 @@
-+/* Kernel object name space definitions
-+ *
-+ * Copyright (c) 2002-2003 Patrick Mochel
-+ * Copyright (c) 2002-2003 Open Source Development Labs
-+ * Copyright (c) 2006-2008 Greg Kroah-Hartman <greg@kroah.com>
-+ * Copyright (c) 2006-2008 Novell Inc.
-+ *
-+ * Split from kobject.h by David Howells (dhowells@redhat.com)
-+ *
-+ * This file is released under the GPLv2.
-+ *
-+ * Please read Documentation/kobject.txt before using the kobject
-+ * interface, ESPECIALLY the parts about reference counts and object
-+ * destructors.
-+ */
-+
-+#ifndef _LINUX_KOBJECT_NS_H
-+#define _LINUX_KOBJECT_NS_H
-+
-+struct sock;
-+struct kobject;
-+
-+/*
-+ * Namespace types which are used to tag kobjects and sysfs entries.
-+ * Network namespace will likely be the first.
-+ */
-+enum kobj_ns_type {
-+	KOBJ_NS_TYPE_NONE = 0,
-+	KOBJ_NS_TYPE_NET,
-+	KOBJ_NS_TYPES
-+};
-+
-+/*
-+ * Callbacks so sysfs can determine namespaces
-+ *   @current_ns: return calling task's namespace
-+ *   @netlink_ns: return namespace to which a sock belongs (right?)
-+ *   @initial_ns: return the initial namespace (i.e. init_net_ns)
-+ */
-+struct kobj_ns_type_operations {
-+	enum kobj_ns_type type;
-+	const void *(*current_ns)(void);
-+	const void *(*netlink_ns)(struct sock *sk);
-+	const void *(*initial_ns)(void);
-+};
-+
-+int kobj_ns_type_register(const struct kobj_ns_type_operations *ops);
-+int kobj_ns_type_registered(enum kobj_ns_type type);
-+const struct kobj_ns_type_operations *kobj_child_ns_ops(struct kobject *parent);
-+const struct kobj_ns_type_operations *kobj_ns_ops(struct kobject *kobj);
-+
-+const void *kobj_ns_current(enum kobj_ns_type type);
-+const void *kobj_ns_netlink(enum kobj_ns_type type, struct sock *sk);
-+const void *kobj_ns_initial(enum kobj_ns_type type);
-+void kobj_ns_exit(enum kobj_ns_type type, const void *ns);
-+
-+#endif /* _LINUX_KOBJECT_NS_H */
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -16,6 +16,7 @@
- #include <linux/errno.h>
- #include <linux/list.h>
- #include <linux/lockdep.h>
-+#include <linux/kobject_ns.h>
- #include <asm/atomic.h>
- 
- struct kobject;
-
---lrZ03NoBR/3+SXJZ--
+-- 
+The opposite of love is not hate, it's indifference.
+  - Elie Wiesel
