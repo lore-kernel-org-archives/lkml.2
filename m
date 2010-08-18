@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0HRV20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 17:28:26 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60941
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754571Ab0HRV2X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 17:28:23 -0400
-Date: Wed, 18 Aug 2010 14:28:42 -0700 (PDT)
-Message-Id: <20100818.142842.28795157.davem@davemloft.net>
-To: julia@diku.dk
-Cc: amit.salecha@qlogic.com, anirban.chakraborty@qlogic.com,
-        linux-driver@qlogic.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 16/16] drivers/net/qlcnic: Use available error codes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <Pine.LNX.4.64.1008161828520.19313@ask.diku.dk>
-References: <Pine.LNX.4.64.1008161828520.19313@ask.diku.dk>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1754440Ab0HRVcS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 17:32:18 -0400
+Received: from mail.perches.com ([173.55.12.10]:1175 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750745Ab0HRVcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 17:32:15 -0400
+Subject: Re: add memset checks to checkpatch.pl
+From: Joe Perches <joe@perches.com>
+To: Dave Jones <davej@redhat.com>
+Cc: apw@canonical.com, Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100818204016.GA29640@redhat.com>
+References: <20100818204016.GA29640@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 14:32:13 -0700
+Message-ID: <1282167133.6724.165.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
-Date: Mon, 16 Aug 2010 18:29:13 +0200 (CEST)
-
-> From: Julia Lawall <julia@diku.dk>
+On Wed, 2010-08-18 at 16:40 -0400, Dave Jones wrote:
+> Occasionally someone goofs the argument order to memset.
+> This patch makes checkpatch catch those.
 > 
-> The error code is stored in the variable err, but it is the variable ret
-> that is returned instead.  So store the error code in ret.  Err is then
-> useless.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
- ...
-> Signed-off-by: Julia Lawall <julia@diku.dk>
+> I made memset with size of 0 an error, because it's never correct,
+> whereas memset with a size of 1 isn't technically an incorrect
+> thing to do so I left it as a warning. It may still be better to replace
+> it with a single variable assignment in the false positive cases.
 
-Applied.
+Maybe something like allows more flexible checking?
+
+	if ($line =~ /\bmemset\s*\(\s*($Lval)\s*,\s*($Lval)\s*,\s*($Lval)\s*\)/) {
+		my $memset_addr = $1;
+		my $memset_val = $2;
+		my $memset_size = $3;
+		if ($memset_size =~ /(0x|)0$/i) {
+			ERROR("memset uses second argument as constant byte value, not third.\n" . $herecurr);
+		elsif ($memset_size =~ /(0x|)1/i) {
+			WARN("single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . $herecurr);
+		}
+	}
+
+
