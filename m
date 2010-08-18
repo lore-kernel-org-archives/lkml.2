@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0HRTE3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:04:29 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:17936 "EHLO mx2.netapp.com"
+	id S1752434Ab0HRTEx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:04:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9948 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465Ab0HRTEV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:04:21 -0400
-X-IronPort-AV: E=Sophos;i="4.56,228,1280732400"; 
-   d="scan'208";a="431410609"
-Subject: [PATCH] VM: kswapd should not do blocking memory allocations
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Wed, 18 Aug 2010 15:04:01 -0400
-Message-ID: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+	id S1750793Ab0HRTEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 15:04:51 -0400
+Date: Wed, 18 Aug 2010 15:04:35 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Neil Brown <neilb@suse.de>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 14/39] union-mount: Union mounts documentation
+Message-ID: <20100818190435.GC10850@shell>
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-15-git-send-email-vaurora@redhat.com> <20100810085641.2b9a714c@notabene> <20100817204430.GE5556@shell> <20100818085333.02fa54d4@notabene>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 18 Aug 2010 19:04:02.0612 (UTC) FILETIME=[1F361F40:01CB3F08]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100818085333.02fa54d4@notabene>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+On Wed, Aug 18, 2010 at 08:53:33AM +1000, Neil Brown wrote:
+> On Tue, 17 Aug 2010 16:44:30 -0400
+> Valerie Aurora <vaurora@redhat.com> wrote:
+> > 
+> > I felt the way you did until I talked to several users who explained
+> > to me why none of the existing solutions worked well for their use
+> > case.  The real-life use cases are those where people are currently
+> > using unionfs and aufs, which include many live CDs, Linux appliances,
+> > and at least three national lab computer clusters.  The best argument
+> > for their need for a union file system is that they are using unionfs
+> > and aufs despite the pain of using out-of-mainline code and (according
+> > to the users I have spoken to) frequent crashes.  Union mounts is
+> > intended as an in-mainline replacement for the existing users of
+> > unionfs and aufs.
+> 
+> You present a good argument that "something must be done", but it gives no
+> pointers to what that something should be.
+> I don't suppose it is possible to get that explanation you mention is writing?
 
-Allowing kswapd to do GFP_KERNEL memory allocations (or any blocking memory
-allocations) is wrong and can cause deadlocks in try_to_release_page(), as
-the filesystem believes it is safe to allocate new memory and block,
-whereas kswapd is there specifically to clear a low-memory situation...
+Sorry, all the documentation I have about union mounts is publicly
+available.  I'll announce any new documentation in the usual way.
 
-Set the gfp_mask to GFP_IOFS instead.
+If you are willing to do the research personally, you can start with
+the list of projects using unionfs:
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
+http://www.fsl.cs.sunysb.edu/project-unionfs.html
 
- mm/vmscan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > It is true, you have to know what you are doing and carefully groom
+> > both file systems if you want to change the lower file system and get
+> > the effect you intended.  Just updating the lower file system and
+> > slapping the overlay back on will probably not accomplish what you
+> > want.
+> > 
+> > But frankly, this is an impossible problem to solve generically at the
+> > file system level. 
+> 
+> Absolutely right - no argument about that.
+> I just think that should be explicit in the documentation.
+> Right after the "Online upgrade" paragraph:
+> 
+>   Even off-line upgrade - e.g. installing software on an exported filesystem
+>   and the remounting that on client and union-mounting a pre-existing over
+>   lay on top of it - is significantly non-trivial and would require
+>   significant extra management software to created a working solution.
+>  (or something like that, but more that just one long sentence).
 
+Okay, I'll put something in the next time I update the docs.
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index ec5ddcc..716dd16 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2095,7 +2095,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
- 	unsigned long total_scanned;
- 	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	struct scan_control sc = {
--		.gfp_mask = GFP_KERNEL,
-+		.gfp_mask = GFP_IOFS,
- 		.may_unmap = 1,
- 		.may_swap = 1,
- 		/*
+> > > As a counter-position for you or others to write cogent arguments against,
+> > > and to then include those arguments in the justification section,  I would
+> > > like to present my preferred approach, which is essentially that the problem
+> > > is better solved at the block layer or the distro layer.
+> > 
+> > I personally like the block layer solution better and would be
+> > happiest if all unionfs and aufs users switched to it and no one
+> > needed union mounts. :) This is one case where the author is not in
+> > love with the solution.  I'm not going to argue for the need for it
+> > beyond noting the existing unionfs and aufs user base.
+> 
+> That may be enough justification to work on this as a research project, but I
+> don't think it is enough justification to merge it into mainline.
+> 
+> Just because aufs might be the best available solution to a particular problem
+> doesn't mean that making a better aufs (aka VFS union mounts) will be the best
+> possible solution.  That can only be determine if the key needs, and the
+> problems with all available solutions, are publicly known.
 
+The problems with all available solutions, including union mounts, are
+thoroughly documented in my four LWN articles on union mounts:
+
+http://lwn.net/Articles/324291/
+http://lwn.net/Articles/325369/
+http://lwn.net/Articles/327738/
+http://lwn.net/Articles/396020/
+
+I understand your desire for better documentation.  But contrary to
+popular conception, I hate writing and do it as seldom as possible. :)
+
+Thanks,
+
+-VAL
