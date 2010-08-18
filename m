@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab0HRRq0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 13:46:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57864 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052Ab0HRRqX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 13:46:23 -0400
-Message-ID: <4C6C1C19.2070704@zytor.com>
-Date: Wed, 18 Aug 2010 10:44:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	id S1752287Ab0HRRue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 13:50:34 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:54404 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab0HRRub (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 13:50:31 -0400
+Message-ID: <4C6C1D70.7020502@vlnb.net>
+Date: Wed, 18 Aug 2010 21:50:40 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Alok Kataria <akataria@vmware.com>,
-        the arch/x86 maintainers <x86@kernel.org>, Greg KH <gregkh@suse.de>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "ksrinivasan@novell.com" <ksrinivasan@novell.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, tsc: Limit CPU frequency calibration on AMD
-References: <1281986754.23253.32.camel@ank32.eng.vmware.com> <4C69D02F.6090601@zytor.com> <1282024311.20786.2.camel@ank32.eng.vmware.com> <4C6A2C98.4060605@zytor.com> <20100817070520.GD32714@liondog.tnic> <1282063532.4388.8.camel@ank32.eng.vmware.com> <20100817185634.GA10597@liondog.tnic> <20100818161639.GF9880@aftab> <4C6C08EC.2080404@zytor.com> <20100818173401.GG9880@aftab>
-In-Reply-To: <20100818173401.GG9880@aftab>
-Content-Type: text/plain; charset=UTF-8
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Chetan Loke <chetanloke@gmail.com>, Chetan Loke <generationgnu@yahoo.com>,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
+References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com> <1282148296.3035.49.camel@mulgrave.site>
+In-Reply-To: <1282148296.3035.49.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:UN6qw8hZ9s/X4LFM1xkSFh9LUgWch+01DoPg39+y7Te
+ oIDKyjL2M0eNzwY+hJeApatyf93O135jTB1e5bYgzdLt09lAr0
+ dxKqBAgfysQbp1Gtq1SsW/oYKrUIWxDVGmsLlYZgn75e03PYF3
+ 06Cpnj1pCbxfD6RVymczcnNWcSmchgLiWuVge0EataeXgV7vsU
+ hxzEeynTt+npB40CFqBOA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2010 10:34 AM, Borislav Petkov wrote:
-> 
-> Right, do you have strong preferences between x86_init and x86_platform?
-> The version below uses x86_platform because it has the calibrate_tsc()
-> function in there too. Also, the version below nicely moves all that
-> AMD-specific code to cpu/amd.c.
-> 
+James Bottomley, on 08/18/2010 08:18 PM wrote:
+>> James you are an expert but not everyone is. This is not a venting
+>> session but even folks who are new to target architecture find it easy
+>> to hack SCST.
+>
+> But that's not really relevant, is it?  I would expect that whatever I
+> do, even keeping both out of tree, the communities around the solutions
+> would still exist and be vibrant, since they're out of tree now, nothing
+> will have changed.
 
-x86_init if it is expected to be __init code, otherwise x86_platform.
+The problem that people do believe that the merged code is the best 
+code, so the being merged is an immediate HUGE advertisement. So, you 
+can't say if a code is inside the mainline tree or not isn't relevant.
 
-> I didn't opt for a calibrate_cpu_noop stub because I didn't want to
-> pollute x86_init.c with yet another noop prototype. But I guess I should
-> do that since the pointer testing is still executed while stubs are
-> removed completely by smart compilers :).
+This is the source of the questions from the SCST community. SCST is at 
+the moment the best code. It's several years ahead any competitor. SCST 
+has more functionality, SCST has more users, SCST has bigger community, 
+SCST has more testing and, hence, stability, SCST has more support from 
+storage vendors, etc. But for some reasons all those suddenly ignored 
+and a raw, pursuing SCST code preferred instead.
 
-Don't think it matters much, but tglx might have an opinion.
+So, we want to know those reasons. SCST wasn't even really considered. 
+Isn't Linux anymore a place where the best code wins? Frankly, it looks 
+like the decision was done under closed doors based on rather political 
+reasons, like personal connections...
 
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Vlad
