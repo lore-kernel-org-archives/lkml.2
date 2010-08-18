@@ -1,208 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab0HRNgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:36:42 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:47114 "EHLO mx2.netapp.com"
+	id S1753271Ab0HRNjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:39:17 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10292 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab0HRNgj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:36:39 -0400
+	id S1752951Ab0HRNjP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 09:39:15 -0400
+X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.56,227,1280732400"; 
-   d="scan'208";a="431164741"
-Subject: Re: 2.6.35.2: NFS related Oops
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Cc: Bian Naimeng <biannm@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, stable@kernel.org
-In-Reply-To: <20100818113610.GA27174@os.inf.tu-dresden.de>
-References: <20100816215056.GA5376@os.inf.tu-dresden.de>
-	 <4C6A5FF1.3070209@cn.fujitsu.com>
-	 <20100817171454.GB11366@os.inf.tu-dresden.de>
-	 <1282084985.18385.24.camel@heimdal.trondhjem.org>
-	 <4C6B4181.50100@cn.fujitsu.com> <4C6B4A20.60507@cn.fujitsu.com>
-	 <20100818113610.GA27174@os.inf.tu-dresden.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Wed, 18 Aug 2010 09:36:33 -0400
-Message-ID: <1282138593.3145.9.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 18 Aug 2010 13:36:39.0275 (UTC) FILETIME=[62DEC3B0:01CB3EDA]
+   d="scan'208";a="597773994"
+Date: Wed, 18 Aug 2010 15:39:16 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Thibaut Girka <thib@sitedethib.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Smedia Glamo 3362 core/resource driver
+Message-ID: <20100818133914.GC2608@sortiz-mobl>
+References: <1278508326-7109-1-git-send-email-thib@sitedethib.com>
+ <1278508326-7109-2-git-send-email-thib@sitedethib.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278508326-7109-2-git-send-email-thib@sitedethib.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 13:36 +0200, Adam Lackorzynski wrote:
-> On Wed Aug 18, 2010 at 10:49:04 +0800, Bian Naimeng wrote:
-> > >>>  	/* We can't create new files, or truncate existing ones here */
-> > >>>  	openflags &= ~(O_CREAT|O_TRUNC);
-> > >>> -- 
-> > >> Nope. The problem is the recent switch to LOOKUP_EXCL as the authority
-> > >> for whether or not we're doing an exclusive create.
-> > >>
-> > >> Does the following patch work?
-> > >>
-> > > 
-> > >   Hi Trond, i guess it's not work.
-> > > 
-> > >   As i see, if we want get LOOKUP_EXCL at nd->flags,  we must open file with 
-> > >   O_CREAT and O_EXCL, "nd->flags & LOOKUP_EXCL" have the same effect with
-> > >   "(openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL)", so i think the kernel
-> > >   still crash, right?
-> 
-> I can confirm, it's oopsing.
-> 
-> > What about this one?
-> 
-> This one works.
+Hi Thibaut,
 
-OK... Let's just do the right thing in the NFS layer. open(O_EXCL)
-without an O_CREAT is treated as an ordinary open() by most filesystems
-(including NFSv3), so let's fix NFSv4 to do that too...
-
-Cheers
-  Trond
----------------------------------------------------------------------------------------------------
-NFS: Fix an Oops in the NFSv4 atomic open code
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-Adam Lackorzynski reports:
-
-with 2.6.35.2 I'm getting this reproducible Oops:
-
-[  110.825396] BUG: unable to handle kernel NULL pointer dereference at
-(null)
-[  110.828638] IP: [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638] PGD be89f067 PUD bf18f067 PMD 0
-[  110.828638] Oops: 0000 [#1] SMP
-[  110.828638] last sysfs file: /sys/class/net/lo/operstate
-[  110.828638] CPU 2
-[  110.828638] Modules linked in: rtc_cmos rtc_core rtc_lib amd64_edac_mod
-i2c_amd756 edac_core i2c_core dm_mirror dm_region_hash dm_log dm_snapshot
-sg sr_mod usb_storage ohci_hcd mptspi tg3 mptscsih mptbase usbcore nls_base
-[last unloaded: scsi_wait_scan]
-[  110.828638]
-[  110.828638] Pid: 11264, comm: setchecksum Not tainted 2.6.35.2 #1
-[  110.828638] RIP: 0010:[<ffffffff811247b7>]  [<ffffffff811247b7>]
-encode_attrs+0x1a/0x2a4
-[  110.828638] RSP: 0000:ffff88003bf5b878  EFLAGS: 00010296
-[  110.828638] RAX: ffff8800bddb48a8 RBX: ffff88003bf5bb18 RCX:
-0000000000000000
-[  110.828638] RDX: ffff8800be258800 RSI: 0000000000000000 RDI:
-ffff88003bf5b9f8
-[  110.828638] RBP: 0000000000000000 R08: ffff8800bddb48a8 R09:
-0000000000000004
-[  110.828638] R10: 0000000000000003 R11: ffff8800be779000 R12:
-ffff8800be258800
-[  110.828638] R13: ffff88003bf5b9f8 R14: ffff88003bf5bb20 R15:
-ffff8800be258800
-[  110.828638] FS:  0000000000000000(0000) GS:ffff880041e00000(0063)
-knlGS:00000000556bd6b0
-[  110.828638] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
-[  110.828638] CR2: 0000000000000000 CR3: 00000000be8ef000 CR4:
-00000000000006e0
-[  110.828638] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[  110.828638] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
-0000000000000400
-[  110.828638] Process setchecksum (pid: 11264, threadinfo
-ffff88003bf5a000, task ffff88003f232210)
-[  110.828638] Stack:
-[  110.828638]  0000000000000000 ffff8800bfbcf920 0000000000000000
-0000000000000ffe
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000
-0000000000000000
-[  110.828638] <0> 0000000000000000 0000000000000000 0000000000000000
-0000000000000000
-[  110.828638] Call Trace:
-[  110.828638]  [<ffffffff81124c1f>] ? nfs4_xdr_enc_setattr+0x90/0xb4
-[  110.828638]  [<ffffffff81371161>] ? call_transmit+0x1c3/0x24a
-[  110.828638]  [<ffffffff813774d9>] ? __rpc_execute+0x78/0x22a
-[  110.828638]  [<ffffffff81371a91>] ? rpc_run_task+0x21/0x2b
-[  110.828638]  [<ffffffff81371b7e>] ? rpc_call_sync+0x3d/0x5d
-[  110.828638]  [<ffffffff8111e284>] ? _nfs4_do_setattr+0x11b/0x147
-[  110.828638]  [<ffffffff81109466>] ? nfs_init_locked+0x0/0x32
-[  110.828638]  [<ffffffff810ac521>] ? ifind+0x4e/0x90
-[  110.828638]  [<ffffffff8111e2fb>] ? nfs4_do_setattr+0x4b/0x6e
-[  110.828638]  [<ffffffff8111e634>] ? nfs4_do_open+0x291/0x3a6
-[  110.828638]  [<ffffffff8111ed81>] ? nfs4_open_revalidate+0x63/0x14a
-[  110.828638]  [<ffffffff811056c4>] ? nfs_open_revalidate+0xd7/0x161
-[  110.828638]  [<ffffffff810a2de4>] ? do_lookup+0x1a4/0x201
-[  110.828638]  [<ffffffff810a4733>] ? link_path_walk+0x6a/0x9d5
-[  110.828638]  [<ffffffff810a42b6>] ? do_last+0x17b/0x58e
-[  110.828638]  [<ffffffff810a5fbe>] ? do_filp_open+0x1bd/0x56e
-[  110.828638]  [<ffffffff811cd5e0>] ? _atomic_dec_and_lock+0x30/0x48
-[  110.828638]  [<ffffffff810a9b1b>] ? dput+0x37/0x152
-[  110.828638]  [<ffffffff810ae063>] ? alloc_fd+0x69/0x10a
-[  110.828638]  [<ffffffff81099f39>] ? do_sys_open+0x56/0x100
-[  110.828638]  [<ffffffff81027a22>] ? ia32_sysret+0x0/0x5
-[  110.828638] Code: 83 f1 01 e8 f5 ca ff ff 48 83 c4 50 5b 5d 41 5c c3 41
-57 41 56 41 55 49 89 fd 41 54 49 89 d4 55 48 89 f5 53 48 81 ec 18 01 00 00
-<8b> 06 89 c2 83 e2 08 83 fa 01 19 db 83 e3 f8 83 c3 18 a8 01 8d
-[  110.828638] RIP  [<ffffffff811247b7>] encode_attrs+0x1a/0x2a4
-[  110.828638]  RSP <ffff88003bf5b878>
-[  110.828638] CR2: 0000000000000000
-[  112.840396] ---[ end trace 95282e83fd77358f ]---
-
-We need to ensure that the O_EXCL flag is turned off if the user doesn't
-set O_CREAT.
-
-Cc: stable@kernel.org
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
-
- fs/nfs/dir.c      |    2 +-
- fs/nfs/nfs4proc.c |    8 +++++---
- 2 files changed, 6 insertions(+), 4 deletions(-)
+On Wed, Jul 07, 2010 at 03:12:03PM +0200, Thibaut Girka wrote:
+> +#define GLAMO_IRQ_HOSTBUS	0
+> +#define GLAMO_IRQ_JPEG		1
+> +#define GLAMO_IRQ_MPEG		2
+> +#define GLAMO_IRQ_MPROC1	3
+> +#define GLAMO_IRQ_MPROC0	4
+> +#define GLAMO_IRQ_CMDQUEUE	5
+> +#define GLAMO_IRQ_2D		6
+> +#define GLAMO_IRQ_MMC		7
+> +#define GLAMO_IRQ_RISC		8
+This is conflicting with enum glamo_irq, please fix your namespaces.
 
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index bd91b27..e257172 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -1110,7 +1110,7 @@ static int nfs_open_revalidate(struct dentry *dentry, struct nameidata *nd)
- 	if ((openflags & (O_CREAT|O_EXCL)) == (O_CREAT|O_EXCL))
- 		goto no_open_dput;
- 	/* We can't create new files, or truncate existing ones here */
--	openflags &= ~(O_CREAT|O_TRUNC);
-+	openflags &= ~(O_CREAT|O_EXCL|O_TRUNC);
- 
- 	/*
- 	 * Note: we're not holding inode->i_mutex and so may be racing with
-diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
-index 6b44bbf..089da5b 100644
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -2036,7 +2036,8 @@ nfs4_atomic_open(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
- 	struct rpc_cred *cred;
- 	struct nfs4_state *state;
- 	struct dentry *res;
--	fmode_t fmode = nd->intent.open.flags & (FMODE_READ | FMODE_WRITE | FMODE_EXEC);
-+	int open_flags = nd->intent.open.flags;
-+	fmode_t fmode = open_flags & (FMODE_READ | FMODE_WRITE | FMODE_EXEC);
- 
- 	if (nd->flags & LOOKUP_CREATE) {
- 		attr.ia_mode = nd->intent.open.create_mode;
-@@ -2044,8 +2045,9 @@ nfs4_atomic_open(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
- 		if (!IS_POSIXACL(dir))
- 			attr.ia_mode &= ~current_umask();
- 	} else {
-+		open_flags &= ~O_EXCL;
- 		attr.ia_valid = 0;
--		BUG_ON(nd->intent.open.flags & O_CREAT);
-+		BUG_ON(open_flags & O_CREAT);
- 	}
- 
- 	cred = rpc_lookup_cred();
-@@ -2054,7 +2056,7 @@ nfs4_atomic_open(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
- 	parent = dentry->d_parent;
- 	/* Protect against concurrent sillydeletes */
- 	nfs_block_sillyrename(parent);
--	state = nfs4_do_open(dir, &path, fmode, nd->intent.open.flags, &attr, cred);
-+	state = nfs4_do_open(dir, &path, fmode, open_flags, &attr, cred);
- 	put_rpccred(cred);
- 	if (IS_ERR(state)) {
- 		if (PTR_ERR(state) == -ENOENT) {
+> +
+> +/*
+> + * Glamo internal settings
+> + *
+> + * We run the memory interface from the faster PLLB on 2.6.28 kernels and
+> + * above.  Couple of GTA02 users report trouble with memory bus when they
+> + * upgraded from 2.6.24.  So this parameter allows reversion to 2.6.24
+> + * scheme if their Glamo chip needs it.
+So you're saying that a couple users reported a bug on a specific kernel
+revision, with the same HW, but all other users haven't ?
+Couldnt that be related to a specific HW revision ? 
+Also, this code should be scheduled for 2.6.37, and we're not going to
+carry code to allow it to run on 2.6.28.
 
+
+> +static const struct reg_range reg_range[] = {
+> +	{ 0x0000, 0x76,		"General",	1 },
+> +	{ 0x0200, 0x18,		"Host Bus",	1 },
+> +	{ 0x0300, 0x38,		"Memory",	1 },
+> +/*	{ 0x0400, 0x100,	"Sensor",	0 }, */
+> +/*	{ 0x0500, 0x300,	"ISP",		0 }, */
+> +/*	{ 0x0800, 0x400,	"JPEG",		0 }, */
+> +/*	{ 0x0c00, 0xcc,		"MPEG",		0 }, */
+> +	{ 0x1100, 0xb2,		"LCD 1",	0 },
+> +	{ 0x1200, 0x64,		"LCD 2",	0 },
+> +	{ 0x1400, 0x42,		"MMC",		0 },
+> +/*	{ 0x1500, 0x080,	"MPU 0",	0 },
+> +	{ 0x1580, 0x080,	"MPU 1",	0 },
+> +	{ 0x1600, 0x080,	"Cmd Queue",	0 },
+> +	{ 0x1680, 0x080,	"RISC CPU",	0 },*/
+> +	{ 0x1700, 0x400,	"2D Unit",	0 },
+> +/*	{ 0x1b00, 0x900,	"3D Unit",	0 }, */
+> +};
+Please remove the commented code from this array.
+
+
+> +static void glamo_irq_demux_handler(unsigned int irq, struct irq_desc *desc)
+> +{
+> +	struct glamo_core *glamo = get_irq_desc_data(desc);
+> +	desc->status &= ~(IRQ_REPLAY | IRQ_WAITING);
+> +
+> +	if (unlikely(desc->status & IRQ_INPROGRESS)) {
+> +		desc->status |= (IRQ_PENDING | IRQ_MASKED);
+> +		desc->chip->mask(irq);
+> +		desc->chip->ack(irq);
+> +		return;
+> +	}
+> +	kstat_incr_irqs_this_cpu(irq, desc);
+> +
+> +	desc->chip->ack(irq);
+> +	desc->status |= IRQ_INPROGRESS;
+> +
+> +	do {
+> +		uint16_t irqstatus;
+> +		int i;
+> +
+> +		if (unlikely((desc->status &
+> +				(IRQ_PENDING | IRQ_MASKED | IRQ_DISABLED)) ==
+> +				(IRQ_PENDING | IRQ_MASKED))) {
+> +			/* dealing with pending IRQ, unmasking */
+> +			desc->chip->unmask(irq);
+> +			desc->status &= ~IRQ_MASKED;
+> +		}
+> +
+> +		desc->status &= ~IRQ_PENDING;
+> +
+> +		/* read IRQ status register */
+> +		irqstatus = __reg_read(glamo, GLAMO_REG_IRQ_STATUS);
+> +		for (i = 0; i < 9; ++i) {
+> +			if (irqstatus & BIT(i))
+> +				generic_handle_irq(glamo->irq_base + i);
+> +		}
+> +
+> +	} while ((desc->status & (IRQ_PENDING | IRQ_DISABLED)) == IRQ_PENDING);
+So here you're busy looping in an interrupt handler, and that's not
+recommended.
+
+
+> +#ifdef CONFIG_DEBUG_FS
+> +static ssize_t debugfs_regs_write(struct file *file,
+> +				  const char __user *user_buf,
+> +				  size_t count, loff_t *ppos)
+> +{
+> +	struct glamo_core *glamo = ((struct seq_file *)file->private_data)->private;
+> +	char buf[14];
+> +	unsigned int reg;
+> +	unsigned int val;
+> +	int buf_size;
+> +
+> +	buf_size = min(count, sizeof(buf) - 1);
+> +	if (copy_from_user(buf, user_buf, buf_size))
+> +		return -EFAULT;
+> +	if (sscanf(buf, "%x %x", &reg, &val) != 2)
+> +		return -EFAULT;
+> +
+> +	dev_info(&glamo->pdev->dev, "reg %#02x <-- %#04x\n", reg, val);
+> +
+> +	glamo_reg_write(glamo, reg, val);
+> +
+> +	return count;
+> +}
+> +
+> +static int glamo_show_regs(struct seq_file *s, void *pos)
+> +{
+> +	struct glamo_core *glamo = s->private;
+> +	int i, n;
+> +	const struct reg_range *rr = reg_range;
+> +
+> +	spin_lock(&glamo->lock);
+> +	for (i = 0; i < ARRAY_SIZE(reg_range); ++i, ++rr) {
+> +		if (!rr->dump)
+> +			continue;
+> +		seq_printf(s, "\n%s\n", rr->name);
+> +		for (n = rr->start; n < rr->start + rr->count; n += 2) {
+> +			if ((n & 15) == 0)
+> +				seq_printf(s, "\n%04X:  ", n);
+> +			seq_printf(s, "%04x ", __reg_read(glamo, n));
+> +		}
+> +		seq_printf(s, "\n");
+> +	}
+> +	spin_unlock(&glamo->lock);
+> +
+> +	return 0;
+> +}
+> +
+> +static int debugfs_open_file(struct inode *inode, struct file *file)
+> +{
+> +	return single_open(file, glamo_show_regs, inode->i_private);
+> +}
+> +
+> +static const struct file_operations debugfs_regs_ops = {
+> +	.open = debugfs_open_file,
+> +	.read = seq_read,
+> +	.llseek = seq_lseek,
+> +	.write = debugfs_regs_write,
+> +	.release	= single_release,
+> +};
+> +
+> +struct glamo_engine_reg_set {
+> +	uint16_t reg;
+> +	uint16_t mask_suspended;
+> +	uint16_t mask_enabled;
+> +};
+I think you want this definition outside of the DEBUGFS if.else.endif
+scope. Have you tried building this driver without DEBUGFS enabled ?
+
+
+> +static const struct glamo_engine_reg_set glamo_lcd_regs[] = {
+> +	{ GLAMO_REG_CLOCK_LCD,
+> +	GLAMO_CLOCK_LCD_EN_M5CLK |
+> +	GLAMO_CLOCK_LCD_DG_M5CLK |
+> +	GLAMO_CLOCK_LCD_EN_DMCLK,
+> +
+> +	GLAMO_CLOCK_LCD_EN_DHCLK |
+> +	GLAMO_CLOCK_LCD_EN_DCLK
+> +	},
+> +	{ GLAMO_REG_CLOCK_GEN5_1,
+> +	GLAMO_CLOCK_GEN51_EN_DIV_DMCLK,
+> +
+> +	GLAMO_CLOCK_GEN51_EN_DIV_DHCLK |
+> +	GLAMO_CLOCK_GEN51_EN_DIV_DCLK
+> +	}
+> +};
+Identation could be clearer here:
+static const struct glamo_engine_reg_set glamo_lcd_regs[] = {
+	{
+		GLAMO_REG_CLOCK_LCD,
+
+		GLAMO_CLOCK_LCD_EN_M5CLK |
+		GLAMO_CLOCK_LCD_DG_M5CLK |
+		GLAMO_CLOCK_LCD_EN_DMCLK,
+
+		GLAMO_CLOCK_LCD_EN_DHCLK |
+		GLAMO_CLOCK_LCD_EN_DCLK
+	},
+[...]
+
+
+
+> +/***********************************************************************
+> + * script support
+> + ***********************************************************************/
+> +
+> +#define GLAMO_SCRIPT_END	0xffff
+> +#define GLAMO_SCRIPT_WAIT	0xfffe
+> +#define GLAMO_SCRIPT_LOCK_PLL	0xfffd
+> +
+> +/*
+> + * couple of people reported artefacts with 2.6.28 changes, this
+> + * allows reversion to 2.6.24 settings
+> +*/
+Same remark as with the module option: This is going to be a 2.6.37
+driver, and I'd like you to check if you're still seeing those issues
+before carrying these kind of hacks.
+
+
+> +static const struct glamo_script glamo_init_script[] = {
+> +	{ GLAMO_REG_CLOCK_HOST,		0x1000 },
+> +	{ GLAMO_SCRIPT_WAIT,		     2 },
+> +	{ GLAMO_REG_CLOCK_MEMORY,	0x1000 },
+> +	{ GLAMO_REG_CLOCK_MEMORY,	0x2000 },
+> +	{ GLAMO_REG_CLOCK_LCD,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_MMC,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_ISP,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_ISP,		0x3000 },
+> +	{ GLAMO_REG_CLOCK_JPEG,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_3D,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_3D,		0x3000 },
+> +	{ GLAMO_REG_CLOCK_2D,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_2D,		0x3000 },
+> +	{ GLAMO_REG_CLOCK_RISC1,	0x1000 },
+> +	{ GLAMO_REG_CLOCK_MPEG,		0x1000 },
+> +	{ GLAMO_REG_CLOCK_MPEG,		0x3000 },
+> +	{ GLAMO_REG_CLOCK_MPROC,	0x1000 /*0x100f*/ },
+> +	{ GLAMO_SCRIPT_WAIT,		     2 },
+> +	{ GLAMO_REG_CLOCK_HOST,		0x0000 },
+> +	{ GLAMO_REG_CLOCK_MEMORY,	0x0000 },
+> +	{ GLAMO_REG_CLOCK_LCD,		0x0000 },
+> +	{ GLAMO_REG_CLOCK_MMC,		0x0000 },
+> +	{ GLAMO_REG_PLL_GEN1,		0x05db },	/* 48MHz */
+> +	{ GLAMO_REG_PLL_GEN3,		0x0aba },	/* 90MHz */
+> +	{ GLAMO_SCRIPT_LOCK_PLL, 0 },
+> +	/*
+> +	 * b9 of this register MUST be zero to get any interrupts on INT#
+> +	 * the other set bits enable all the engine interrupt sources
+> +	 */
+> +	{ GLAMO_REG_IRQ_ENABLE,		0x0100 },
+> +	{ GLAMO_REG_CLOCK_GEN6,		0x2000 },
+> +	{ GLAMO_REG_CLOCK_GEN7,		0x0101 },
+> +	{ GLAMO_REG_CLOCK_GEN8,		0x0100 },
+> +	{ GLAMO_REG_CLOCK_HOST,		0x000d },
+> +	/*
+> +	 * b7..b4 = 0 = no wait states on read or write
+> +	 * b0 = 1 select PLL2 for Host interface, b1 = enable it
+> +	 */
+> +	{ GLAMO_REG_HOSTBUS(1),		0x0e03 /* this is replaced by script parser */ },
+> +	{ GLAMO_REG_HOSTBUS(2),		0x07ff }, /* TODO: Disable all */
+> +	{ GLAMO_REG_HOSTBUS(10),	0x0000 },
+> +	{ GLAMO_REG_HOSTBUS(11),	0x4000 },
+> +	{ GLAMO_REG_HOSTBUS(12),	0xf00e },
+> +
+> +	/* S-Media recommended "set tiling mode to 512 mode for memory access
+> +	 * more efficiency when 640x480" */
+> +	{ GLAMO_REG_MEM_TYPE,		0x0c74 }, /* 8MB, 16 word pg wr+rd */
+> +	{ GLAMO_REG_MEM_GEN,		0xafaf }, /* 63 grants min + max */
+> +
+> +	{ GLAMO_REG_MEM_TIMING1,	0x0108 },
+> +	{ GLAMO_REG_MEM_TIMING2,	0x0010 }, /* Taa = 3 MCLK */
+> +	{ GLAMO_REG_MEM_TIMING3,	0x0000 },
+> +	{ GLAMO_REG_MEM_TIMING4,	0x0000 }, /* CE1# delay fall/rise */
+> +	{ GLAMO_REG_MEM_TIMING5,	0x0000 }, /* UB# LB# */
+> +	{ GLAMO_REG_MEM_TIMING6,	0x0000 }, /* OE# */
+> +	{ GLAMO_REG_MEM_TIMING7,	0x0000 }, /* WE# */
+> +	{ GLAMO_REG_MEM_TIMING8,	0x1002 }, /* MCLK delay, was 0x1000 */
+> +	{ GLAMO_REG_MEM_TIMING9,	0x6006 },
+> +	{ GLAMO_REG_MEM_TIMING10,	0x00ff },
+> +	{ GLAMO_REG_MEM_TIMING11,	0x0001 },
+> +	{ GLAMO_REG_MEM_POWER1,		0x0020 },
+> +	{ GLAMO_REG_MEM_POWER2,		0x0000 },
+> +	{ GLAMO_REG_MEM_DRAM1,		0x0000 },
+> +	{ GLAMO_SCRIPT_WAIT,		     1 },
+> +	{ GLAMO_REG_MEM_DRAM1,		0xc100 },
+> +	{ GLAMO_SCRIPT_WAIT,		     1 },
+> +	{ GLAMO_REG_MEM_DRAM1,		0xe100 },
+> +	{ GLAMO_REG_MEM_DRAM2,		0x01d6 },
+> +	{ GLAMO_REG_CLOCK_MEMORY,	0x000b },
+> +};
+Shouldnt those values be set by your platform bootloader ? They're obviously
+not, but I find it weird.
+
+
+> +#ifdef CONFIG_PM
+> +#if 0
+> +static struct glamo_script glamo_resume_script[] = {
+> +
+> +	{ GLAMO_REG_PLL_GEN1,		0x05db },	/* 48MHz */
+> +	{ GLAMO_REG_PLL_GEN3,		0x0aba },	/* 90MHz */
+> +	{ GLAMO_REG_DFT_GEN6, 1 },
+> +		{ 0xfffe, 100 },
+> +		{ 0xfffd, 0 },
+> +	{ 0x200,	0x0e03 },
+> +
+> +	/*
+> +	 * b9 of this register MUST be zero to get any interrupts on INT#
+> +	 * the other set bits enable all the engine interrupt sources
+> +	 */
+> +	{ GLAMO_REG_IRQ_ENABLE,		0x01ff },
+> +	{ GLAMO_REG_CLOCK_HOST,		0x0018 },
+> +	{ GLAMO_REG_CLOCK_GEN5_1, 0x18b1 },
+> +
+> +	{ GLAMO_REG_MEM_DRAM1,		0x0000 },
+> +		{ 0xfffe, 1 },
+> +	{ GLAMO_REG_MEM_DRAM1,		0xc100 },
+> +		{ 0xfffe, 1 },
+> +	{ GLAMO_REG_MEM_DRAM1,		0xe100 },
+> +	{ GLAMO_REG_MEM_DRAM2,		0x01d6 },
+> +	{ GLAMO_REG_CLOCK_MEMORY,	0x000b },
+> +};
+> +#endif
+Please remove all #if 0 code from this driver.
+
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
