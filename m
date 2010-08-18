@@ -1,49 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0HROlp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:41:45 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50625 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753342Ab0HROlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:41:44 -0400
-Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
-From: James Bottomley <James.Bottomley@suse.de>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        linux-scsi@vger.kernel.org, hch@lst.de, jaxboe@fusionio.com,
-        LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org
-In-Reply-To: <4C6BEFD1.8010200@gmail.com>
-References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>
-	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>
-	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 09:41:38 -0500
-Message-ID: <1282142498.3035.17.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1753574Ab0HROrA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:47:00 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:48348 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab0HROq6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 10:46:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fIZCq/rdRCBYU07ugt/7EsfubSwId7A4iFBVHHgR1CjhMQpI/01rAp4ANkT+ZRagN5
+         0HFpiEFyga5iKMkBw6EYpAOXOdcN00wCByjGlk3R4TiIvjX5Q5XFo84+qqAqIj6QgxkT
+         b4SIW7ZJ0fk0tpXpM34qIkNNuG5t0flZ4pGls=
+MIME-Version: 1.0
+In-Reply-To: <20100818155359.66b9ddb6@notabene>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+	<87aaolwar8.fsf@basil.nowhere.org>
+	<20100817174134.GA23176@fieldses.org>
+	<20100817182920.GD18161@basil.fritz.box>
+	<20100817190447.GA28049@fieldses.org>
+	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
+	<20100817192937.GD26609@fieldses.org>
+	<20100818155359.66b9ddb6@notabene>
+Date: Wed, 18 Aug 2010 07:46:57 -0700
+Message-ID: <AANLkTim9qTjB15Hr+Te8UzgUpZWj41JMXLWf_gJrthc3@mail.gmail.com>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: Neil Brown <neilb@suse.de>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Andi Kleen <andi@firstfloor.org>,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
-> On 08/18/2010 04:32 PM, James Bottomley wrote:
-> >> James and Jens, could you take the two remaining (SCSI and BLOCK)?
-> > 
-> > Sure ... could you identify the email by subject, please? lkml.org seems
-> > to be down this morning.
-> 
-> Sure:
-> [PATCH v2] BLOCK: fix bio.bi_rw handling
-> and
-> [PATCH v2] SCSI: fix bio.bi_rw handling
-> 
-> You should have received one copy to your suse.de inbox, if everything
-> worked.
+On Tue, Aug 17, 2010 at 10:53 PM, Neil Brown <neilb@suse.de> wrote:
+>
+> I imagine something like this:
+>  - Create a global struct timespec which is protected by a seqlock
+>   Call it current_nfsd_time or similar.
+>  - file_update_time reads this and uses it if it is newer than
+>   current_fs_time.
+>  - nfsd updates it whenever it reads an mtime out of an inode that matches
+>   current_fs_time to the granularity of 1/HZ.
 
-Got it.  One of life's little ironies is that I couldn't immediately
-locate it in the SCSI list because it was already queued for inclusion.
+I think nfsd can simply update current_nfsd_time whenever the mtime it
+reads from an inode is >= current_nfsd_time.  (The invariant you need
+to maintain is that whenever nfsd reads an mtime, any timestamps
+produced after that have a later time.  So just code it that way
+directly.)
 
-James
+>   If the current value is before current_kernel_time, it
+>   is set to current_kernel_time, otherwise tv_nsec is incremented -
+>   unless that increases
+>   beyond jiffies_to_usec(1)*1000 beyond current_kernel_time.
+>  - the global 'struct timespec' is zeroed whenever system time is set
+>   backwards.
 
+I believe this works.
 
+> [[You could probably make ext3 work reasonably well by adding a mount option
+>  which:
+>    - advertises s_time_gran as 1
+>    - when storing: rounds timestamps up to the next second if tv_nsec != 0
+>    - when loading, setting the timestamp to the current time if the stored
+>      number matches current_kernel_time().tv_sec+1
+>  You would get occasional forward jumps in mtime, but usually when you
+>  aren't looking, and at least you would not get real changes that are not
+>  reflected in mtime
+> ]]
+
+But I do not believe this works.
+
+1) Modify file A
+2) Modify file B
+3) File A experiences one of those "occasional forward jumps in mtime"
+(inode evicted + read back within 1 second)
+4) mtimes on A and B are now out of order -- very bad
+
+As Bruce mentioned, ext3 is a lost cause.
+
+Regardless of any of this, however, the first step is to provide a
+mount option to select the timestamp algorithm...  Because it is still
+absurd that I cannot have accurate timestamps on my files here in the
+21st century.
+
+Once that is done, the rest is just providing the alternative
+implementations and choosing defaults.
+
+ - Pat
