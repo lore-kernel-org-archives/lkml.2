@@ -1,48 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799Ab0HRMsT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 08:48:19 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:51598 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752777Ab0HRMsS (ORCPT
+	id S1752786Ab0HRMuw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 08:50:52 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:48130 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab0HRMut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 08:48:18 -0400
-Date: Wed, 18 Aug 2010 21:48:13 +0900
-From: Simon Horman <horms@verge.net.au>
-To: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Eric Biederman <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [patch] MAINTAINERS: kexec-tools has moved
-Message-ID: <20100818124813.GK9073@verge.net.au>
+	Wed, 18 Aug 2010 08:50:49 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 18 Aug 2010 14:50:25 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: lockdep false positive? -- firewire-core transaction timer vs.
+ scsi-core host lock
+To: Clemens Ladisch <clemens@ladisch.de>
+cc: Peter Zijlstra <peterz@infradead.org>, Yong Zhang <yong.zhang0@gmail.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <4C6BA757.7050108@ladisch.de>
+Message-ID: <tkrat.2aa42a952e4df4b1@s5r6.in-berlin.de>
+References: <tkrat.1e48e021935dc8b7@s5r6.in-berlin.de> 
+ <20100817143509.GC2838@zhy> <4C6AB76C.9060809@s5r6.in-berlin.de> 
+ <4C6B8562.1070902@ladisch.de> <1282121942.1926.3552.camel@laptop>
+ <4C6BA757.7050108@ladisch.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kexec tools has been moved to http://kernel.org/pub/linux/utils/kernel/kexec/
-as user-space code shouldn't be in /pub/linux/kernel
+Clemens Ladisch wrote:
+> firewire: core: do not use del_timer_sync() in interrupt context
+> 
+> Because we might be in interrupt context, replace del_timer_sync() with
+> del_timer().
 
-Signed-off-by: Simon Horman <horms@verge.net.au>
-Acked-by: "Eric W. Biederman" <ebiederm@xmission.com>
+OK.  And thanks for the pointers into the locking guide.
 
---- 
+> If the timer is already running, we know that it will
+> clean up the transaction, so we do not need to do any further processing
+> in the normal transaction handler.
+> 
+> Many thanks to Yong Zhang for diagnosing this.
+> 
+> Reported-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+> ---
+>  drivers/firewire/core-transaction.c |    9 ++++++---
+>  1 file changed, 6 insertions(+), 3 deletions(-)
+> 
+> --- a/drivers/firewire/core-transaction.c
+> +++ b/drivers/firewire/core-transaction.c
+> @@ -81,6 +81,8 @@ static int close_transaction(struct fw_transaction *transaction,
+>  	spin_lock_irqsave(&card->lock, flags);
+>  	list_for_each_entry(t, &card->transaction_list, link) {
+>  		if (t == transaction) {
+> +			if (!del_timer(&t->split_timeout_timer))
+> +				goto timed_out;
 
-Andrew, can you push this?
++			if (!del_timer(&t->split_timeout_timer)) {
++				spin_unlock_irqrestore(&card->lock, flags);
++				goto timed_out;
++			}
 
-Index: linux-2.6/MAINTAINERS
-===================================================================
---- linux-2.6.orig/MAINTAINERS	2010-07-29 13:10:04.000000000 +0900
-+++ linux-2.6/MAINTAINERS	2010-07-29 13:11:40.000000000 +0900
-@@ -3334,7 +3334,7 @@ F:	drivers/s390/kvm/
- 
- KEXEC
- M:	Eric Biederman <ebiederm@xmission.com>
--W:	http://ftp.kernel.org/pub/linux/kernel/people/horms/kexec-tools/
-+W:	http://kernel.org/pub/linux/utils/kernel/kexec/
- L:	kexec@lists.infradead.org
- S:	Maintained
- F:	include/linux/kexec.h
+>  			list_del_init(&t->link);
+>  			card->tlabel_mask &= ~(1ULL << t->tlabel);
+>  			break;
+> @@ -89,11 +91,11 @@ static int close_transaction(struct fw_transaction *transaction,
+>  	spin_unlock_irqrestore(&card->lock, flags);
+>  
+>  	if (&t->link != &card->transaction_list) {
+> -		del_timer_sync(&t->split_timeout_timer);
+>  		t->callback(card, rcode, NULL, 0, t->callback_data);
+>  		return 0;
+>  	}
+>  
+> +timed_out:
+>  	return -ENOENT;
+>  }
+>  
+> @@ -921,6 +923,8 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
+>  	spin_lock_irqsave(&card->lock, flags);
+>  	list_for_each_entry(t, &card->transaction_list, link) {
+>  		if (t->node_id == source && t->tlabel == tlabel) {
+> +			if (!del_timer(&t->split_timeout_timer))
+> +				goto timed_out;
+
+Ditto.
+
+>  			list_del_init(&t->link);
+>  			card->tlabel_mask &= ~(1ULL << t->tlabel);
+>  			break;
+> @@ -929,6 +933,7 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
+>  	spin_unlock_irqrestore(&card->lock, flags);
+>  
+>  	if (&t->link == &card->transaction_list) {
+> +timed_out:
+>  		fw_notify("Unsolicited response (source %x, tlabel %x)\n",
+>  			  source, tlabel);
+>  		return;
+> @@ -963,8 +968,6 @@ void fw_core_handle_response(struct fw_card *card, struct fw_packet *p)
+>  		break;
+>  	}
+>  
+> -	del_timer_sync(&t->split_timeout_timer);
+> -
+>  	/*
+>  	 * The response handler may be executed while the request handler
+>  	 * is still pending.  Cancel the request handler.
+
+Shall I commit with the added spin_unlocks?  Or do you prefer to send an update?
+-- 
+Stefan Richter
+-=====-==-=- =--- =--=-
+http://arcgraph.de/sr/
+
