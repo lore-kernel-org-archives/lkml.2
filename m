@@ -1,122 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751105Ab0HRENi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 00:13:38 -0400
-Received: from mail.lixom.net ([70.86.134.90]:53892 "EHLO mail.lixom.net"
+	id S1751231Ab0HRERK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 00:17:10 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28195 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab0HRENd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 00:13:33 -0400
-Date: Tue, 17 Aug 2010 23:13:33 -0500
-From: Olof Johansson <olof@lixom.net>
-To: linux-mmc@vger.kernel.org
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: make number of mmcblk minors configurable
-Message-ID: <20100818041333.GA14149@lixom.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1750791Ab0HRERC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 00:17:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.56,225,1280732400"; 
+   d="scan'208";a="546321647"
+Subject: Re: [PATCH 1/2] [Patch-next -v2] ACPI, APEI Fix the return
+ value(==NULL) of acpi_pre_map().
+From: Huang Ying <ying.huang@intel.com>
+To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        LKLM <linux-kernel@vger.kernel.org>, ACPI <linux-acpi@vger.kernel.org>
+In-Reply-To: <4C6B1F63.9050703@np.css.fujitsu.com>
+References: <4C6B1F63.9050703@np.css.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 12:16:58 +0800
+Message-ID: <1282105018.2744.1538.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old limit of number of minor numbers per mmcblk device was hardcoded
-at 8. This isn't enough for some of the more elaborate partitioning
-schemes, for example those used by Chrome OS.
+On Wed, 2010-08-18 at 07:46 +0800, Jin Dongming wrote:
+> acpi_pre_map() is used for remapping the physical address of I/O, so
+> it should be return NULL or remapped virtual address. The problem is
+> that when (paddr - pg_off) equals 0, no matter whether I/O remapping is
+> successful or not, the function returns NULL.
+> 
+> In acpi_pre_map(), after the physical address is remapped sucessfully,
+> it will check whether the physical address has been added into acpi_iomaps
+> list again.
+>    - If the physical address has beed added into acpi_iomaps, the virtual
+>      address will be saved in vaddr.
+>    - Otherwise, NULL be saved in vaddr.
+> 
+> So if the physical address is the first time to be remapped, vaddr will be
+> NULL always.
+> 
+> In many cases, (paddr - pg_off) may not equal 0. So the function could work
+> well. In our machine, (paddr - pg_off) equals 0, so the return value of
+> acpi_pre_map() is NULL.
+> 
+> This patch fixed it and I confirmed it on x86_64 next-tree.
+> 
+> Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Acked-by: Huang Ying <ying.huang@intel.com>
 
-Since there might be a bunch of systems out there with static /dev
-contents that relies on the old numbering scheme, let's make it a
-build-time option with the default set to the previous 8.
+Best Regards,
+Huang Ying
 
-Signed-off-by: Olof Johansson <olof@lixom.net>
----
- drivers/mmc/card/Kconfig |   10 ++++++++++
- drivers/mmc/card/block.c |   20 ++++++++------------
- 2 files changed, 18 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/mmc/card/Kconfig b/drivers/mmc/card/Kconfig
-index 3f2a912..e939dcf 100644
---- a/drivers/mmc/card/Kconfig
-+++ b/drivers/mmc/card/Kconfig
-@@ -14,6 +14,16 @@ config MMC_BLOCK
- 	  mount the filesystem. Almost everyone wishing MMC support
- 	  should say Y or M here.
- 
-+config MMC_BLOCK_MINORS
-+	int "Number of minors per block device"
-+	range 4 32
-+	default 8
-+	help
-+	  Number of minors per block device. One is needed for every
-+	  partition (plus one for the whole device).
-+	  Default is 8 to be backwards compatible with previous
-+	  hardcoded device numbering.
-+
- config MMC_BLOCK_BOUNCE
- 	bool "Use bounce buffer for simple hosts"
- 	depends on MMC_BLOCK
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index d545f79..524e232 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -45,13 +45,9 @@
- 
- MODULE_ALIAS("mmc:block");
- 
--/*
-- * max 8 partitions per card
-- */
--#define MMC_SHIFT	3
--#define MMC_NUM_MINORS	(256 >> MMC_SHIFT)
-+#define MMC_MAX_DEVICES	((255 + CONFIG_MMC_BLOCK_MINORS) / CONFIG_MMC_BLOCK_MINORS)
- 
--static DECLARE_BITMAP(dev_use, MMC_NUM_MINORS);
-+static DECLARE_BITMAP(dev_use, MMC_MAX_DEVICES);
- 
- /*
-  * There is one mmc_blk_data per slot.
-@@ -88,10 +84,10 @@ static void mmc_blk_put(struct mmc_blk_data *md)
- 	md->usage--;
- 	if (md->usage == 0) {
- 		int devmaj = MAJOR(disk_devt(md->disk));
--		int devidx = MINOR(disk_devt(md->disk)) >> MMC_SHIFT;
-+		int devidx = MINOR(disk_devt(md->disk)) / CONFIG_MMC_BLOCK_MINORS;
- 
- 		if (!devmaj)
--			devidx = md->disk->first_minor >> MMC_SHIFT;
-+			devidx = md->disk->first_minor / CONFIG_MMC_BLOCK_MINORS;
- 
- 		blk_cleanup_queue(md->queue.queue);
- 
-@@ -567,8 +563,8 @@ static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
- 	struct mmc_blk_data *md;
- 	int devidx, ret;
- 
--	devidx = find_first_zero_bit(dev_use, MMC_NUM_MINORS);
--	if (devidx >= MMC_NUM_MINORS)
-+	devidx = find_first_zero_bit(dev_use, MMC_MAX_DEVICES);
-+	if (devidx >= MMC_MAX_DEVICES)
- 		return ERR_PTR(-ENOSPC);
- 	__set_bit(devidx, dev_use);
- 
-@@ -585,7 +581,7 @@ static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
- 	 */
- 	md->read_only = mmc_blk_readonly(card);
- 
--	md->disk = alloc_disk(1 << MMC_SHIFT);
-+	md->disk = alloc_disk(CONFIG_MMC_BLOCK_MINORS);
- 	if (md->disk == NULL) {
- 		ret = -ENOMEM;
- 		goto err_kfree;
-@@ -602,7 +598,7 @@ static struct mmc_blk_data *mmc_blk_alloc(struct mmc_card *card)
- 	md->queue.data = md;
- 
- 	md->disk->major	= MMC_BLOCK_MAJOR;
--	md->disk->first_minor = devidx << MMC_SHIFT;
-+	md->disk->first_minor = devidx * CONFIG_MMC_BLOCK_MINORS;
- 	md->disk->fops = &mmc_bdops;
- 	md->disk->private_data = md;
- 	md->disk->queue = md->queue.queue;
--- 
-1.5.6.5
 
