@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab0HRTEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:04:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55179 "EHLO mail.zytor.com"
+	id S1752140Ab0HRTE3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:04:29 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:17936 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155Ab0HRTEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:04:20 -0400
-Message-ID: <4C6C2E85.9050401@zytor.com>
-Date: Wed, 18 Aug 2010 12:03:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Borislav Petkov <bp@amd64.org>
-CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2 2/2] x86, cpu hotplug: Fix cpu bringup concurrency
- issue
-References: <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812170644.GZ23755@8bytes.org> <4C644507.9020606@zytor.com> <20100812190414.GA23755@8bytes.org> <20100813123543.GC9046@aftab> <20100816121933.GA28147@aftab> <20100816123959.GC28147@aftab>
-In-Reply-To: <20100816123959.GC28147@aftab>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751465Ab0HRTEV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 15:04:21 -0400
+X-IronPort-AV: E=Sophos;i="4.56,228,1280732400"; 
+   d="scan'208";a="431410609"
+Subject: [PATCH] VM: kswapd should not do blocking memory allocations
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Wed, 18 Aug 2010 15:04:01 -0400
+Message-ID: <1282158241.8540.85.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+X-OriginalArrivalTime: 18 Aug 2010 19:04:02.0612 (UTC) FILETIME=[1F361F40:01CB3F08]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/16/2010 05:39 AM, Borislav Petkov wrote:
-> 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index dcb0593..1598663 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -58,6 +58,7 @@ config X86
->  	select ANON_INODES
->  	select HAVE_ARCH_KMEMCHECK
->  	select HAVE_USER_RETURN_NOTIFIER
-> +	select ARCH_CPU_PROBE_RELEASE
->  
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-warning: (X86) selects ARCH_CPU_PROBE_RELEASE which has unmet direct
-dependencies (HOTPLUG_CPU)
+Allowing kswapd to do GFP_KERNEL memory allocations (or any blocking memory
+allocations) is wrong and can cause deadlocks in try_to_release_page(), as
+the filesystem believes it is safe to allocate new memory and block,
+whereas kswapd is there specifically to clear a low-memory situation...
 
-... and build failure when compiling without CONFIG_HOTPLUG_CPU.
+Set the gfp_mask to GFP_IOFS instead.
 
-	-hpa
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+
+ mm/vmscan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index ec5ddcc..716dd16 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2095,7 +2095,7 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order)
+ 	unsigned long total_scanned;
+ 	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	struct scan_control sc = {
+-		.gfp_mask = GFP_KERNEL,
++		.gfp_mask = GFP_IOFS,
+ 		.may_unmap = 1,
+ 		.may_swap = 1,
+ 		/*
 
