@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753941Ab0HRPIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:08:10 -0400
-Received: from kroah.org ([198.145.64.141]:47482 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753828Ab0HRPHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:07:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Wed Aug 18 08:05:57 2010
-Message-Id: <20100818150557.522312831@clark.site>
-User-Agent: quilt/0.48-11.2
-Date: Wed, 18 Aug 2010 08:01:59 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Pekka Enberg <penberg@kernel.org>
-Subject: [5/6] mm: fix page table unmap for stack guard page properly
-In-Reply-To: <20100818150615.GA4752@kroah.com>
+	id S1753990Ab0HRPIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:08:15 -0400
+Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:44329 "EHLO
+	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753828Ab0HRPIL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 11:08:11 -0400
+Subject: [PATCH] ext4: remove alignment padding from ext4_inode_info on 64
+ bit builds
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: "Theodore Ts'o" <tytso@mit.edu>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 16:08:08 +0100
+Message-ID: <1282144088.2068.16.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+Reorder structure ext4_inode_info to remove 16 bytes of alignment
+padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
+with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
+    
+This will allow this structure to use one fewer cache lines.
 
-------------------
+Also change type of i_delalloc_reserved_flag to bool to better reflect
+its usage.
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-
-commit 11ac552477e32835cb6970bf0a70c210807f5673 upstream.
-
-We do in fact need to unmap the page table _before_ doing the whole
-stack guard page logic, because if it is needed (mainly 32-bit x86 with
-PAE and CONFIG_HIGHPTE, but other architectures may use it too) then it
-will do a kmap_atomic/kunmap_atomic.
-
-And those kmaps will create an atomic region that we cannot do
-allocations in.  However, the whole stack expand code will need to do
-anon_vma_prepare() and vma_lock_anon_vma() and they cannot do that in an
-atomic region.
-
-Now, a better model might actually be to do the anon_vma_prepare() when
-_creating_ a VM_GROWSDOWN segment, and not have to worry about any of
-this at page fault time.  But in the meantime, this is the
-straightforward fix for the issue.
-
-See https://bugzilla.kernel.org/show_bug.cgi?id=16588 for details.
-
-Reported-by: Wylda <wylda@volny.cz>
-Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
-Reported-by: Mike Pagano <mpagano@gentoo.org>
-Reported-by: François Valenduc <francois.valenduc@tvcablenet.be>
-Tested-by: Ed Tomlinson <edt@aei.ca>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Greg KH <gregkh@suse.de>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
+compiled & tested on x86_64
+    
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
 ---
- mm/memory.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+patch against 2.6.36-rc1
 
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2428,14 +2428,13 @@ static int do_anonymous_page(struct mm_s
- 	spinlock_t *ptl;
- 	pte_t entry;
+Early testing shows more consistent results ( i.e. smaller standard
+deviations) on my AMD X2 setup, but I shall re-run these tests to check
+if this is repeatable.
+
+regards
+Richard
+
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index 889ec9d..b63a8e3 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -750,10 +750,11 @@ struct ext4_inode_info {
+ 	 * near to their parent directory's inode.
+ 	 */
+ 	ext4_group_t	i_block_group;
+-	unsigned long	i_state_flags;		/* Dynamic state flags */
+-	unsigned long	i_flags;
  
--	if (check_stack_guard_page(vma, address) < 0) {
--		pte_unmap(page_table);
-+	pte_unmap(page_table);
+ 	ext4_lblk_t		i_dir_start_lookup;
 +
-+	/* Check if we need to add a guard page to the stack */
-+	if (check_stack_guard_page(vma, address) < 0)
- 		return VM_FAULT_SIGBUS;
--	}
++	unsigned long	i_state_flags;		/* Dynamic state flags */
++	unsigned long	i_flags;
+ #ifdef CONFIG_EXT4_FS_XATTR
+ 	/*
+ 	 * Extended attributes can be read independently of the main file
+@@ -816,13 +817,14 @@ struct ext4_inode_info {
+ 	unsigned int i_reserved_data_blocks;
+ 	unsigned int i_reserved_meta_blocks;
+ 	unsigned int i_allocated_meta_blocks;
+-	unsigned short i_delalloc_reserved_flag;
+-	sector_t i_da_metadata_calc_last_lblock;
+-	int i_da_metadata_calc_len;
++	bool i_delalloc_reserved_flag;
  
- 	/* Allocate our own private page. */
--	pte_unmap(page_table);
--
- 	if (unlikely(anon_vma_prepare(vma)))
- 		goto oom;
- 	page = alloc_zeroed_user_highpage_movable(vma, address);
+ 	/* on-disk additional length */
+ 	__u16 i_extra_isize;
+ 
++	sector_t i_da_metadata_calc_last_lblock;
++	int i_da_metadata_calc_len;
++
+ 	spinlock_t i_block_reservation_lock;
+ #ifdef CONFIG_QUOTA
+ 	/* quota space reservation, managed internally by quota code */
 
 
