@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab0HRBca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:32:30 -0400
-Received: from mail.perches.com ([173.55.12.10]:1142 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752809Ab0HRBcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:32:23 -0400
-Subject: Re: [PATCH] fs.h: introduce functions to get/set file->private_data
-From: Joe Perches <joe@perches.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Christoph Hellwig <hch@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
-        H Hartley Sweeten <hartleys@visionengravers.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "matthew@wil.cx" <matthew@wil.cx>
-In-Reply-To: <20100817175851.GA11463@merkur.ravnborg.org>
-References: <201008161137.53187.hartleys@visionengravers.com>
-	 <20100816231753.GA16546@infradead.org>
-	 <0D753D10438DA54287A00B0270842697643E50D82E@AUSP01VMBX24.collaborationhost.net>
-	 <1282002601.6518.116.camel@Joe-Laptop> <20100817010355.GG21182@thunk.org>
-	 <20100817085428.GA25330@infradead.org>
-	 <1282065973.24541.106.camel@Joe-Laptop>
-	 <20100817175851.GA11463@merkur.ravnborg.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 17 Aug 2010 18:32:22 -0700
-Message-ID: <1282095142.6724.11.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1752604Ab0HRBlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:41:18 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46126 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab0HRBlO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 21:41:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bofJq/n9cLVmmRCDqA38Ul5XWG9oG1PVR2J5tjmnwX1t1tRsSizerZoNIYW+mTjExa
+         ysAWSyccxY/Do4tGBW1XDqA3BUzjIQiMbEEn6pVnBvehb37tWpKlyMacQNXJpSqSDVu8
+         +Uo7QSo+m+GVpBZ68ebmknonfgO39ZK0kly+M=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: add __user markup on sys32_waitpid()
+Date: Wed, 18 Aug 2010 10:41:08 +0900
+Message-Id: <1282095668-6147-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 19:58 +0200, Sam Ravnborg wrote:
-> It takes minimum effort to create and test, and if you can
-> get ack from Ted and/or Christoph there is a good chance Linus
-> would take it right before/after -rc1.
-> 
-> You obviously need to convince him that the patch has
-> seen decent build testing.
+stat_addr, 2nd arg, is a user pointer but was missing __user markup.
+Add it.
 
-private_data is the only non f_ prefixed member in
-struct file, so while there is perhaps a tiny value
-in this patch, I'm not in a hurry to push it.
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ arch/x86/ia32/sys_ia32.c        |    2 +-
+ arch/x86/include/asm/sys_ia32.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-After a few corrections, Documentation/, comment and
-printk updates, a few macros that spatch didn't update,
-etc, the diff that converts struct file member
-private_data to f_private_data is now:
-
-$ git diff --shortstat ..da5cabf80e2433131bf0ed8993abc0f7ea618c73
- 511 files changed, 2638 insertions(+), 2639 deletions(-)
-
-Does either Ted or Christoph want to see it?
-
-Harley?  You want it?
-
-It's still ~850BKB and probably shouldn't be posted to
-the ML as it's mostly mechanical.
-
-Compiles x86 allyesconfig, defconfig
-
-
+diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
+index 3d09331..9677f8e 100644
+--- a/arch/x86/ia32/sys_ia32.c
++++ b/arch/x86/ia32/sys_ia32.c
+@@ -333,7 +333,7 @@ asmlinkage long sys32_alarm(unsigned int seconds)
+ 	return alarm_setitimer(seconds);
+ }
+ 
+-asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int *stat_addr,
++asmlinkage long sys32_waitpid(compat_pid_t pid, unsigned int __user *stat_addr,
+ 			      int options)
+ {
+ 	return compat_sys_wait4(pid, stat_addr, options, NULL);
+diff --git a/arch/x86/include/asm/sys_ia32.h b/arch/x86/include/asm/sys_ia32.h
+index cf4e2e3..ce7095c 100644
+--- a/arch/x86/include/asm/sys_ia32.h
++++ b/arch/x86/include/asm/sys_ia32.h
+@@ -40,7 +40,7 @@ asmlinkage long sys32_rt_sigprocmask(int, compat_sigset_t __user *,
+ 				     compat_sigset_t __user *, unsigned int);
+ asmlinkage long sys32_alarm(unsigned int);
+ 
+-asmlinkage long sys32_waitpid(compat_pid_t, unsigned int *, int);
++asmlinkage long sys32_waitpid(compat_pid_t, unsigned int __user *, int);
+ asmlinkage long sys32_sysfs(int, u32, u32);
+ 
+ asmlinkage long sys32_sched_rr_get_interval(compat_pid_t,
+-- 
+1.7.0.4
 
