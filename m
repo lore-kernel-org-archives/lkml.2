@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754484Ab0HRVn3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 17:43:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59161 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750952Ab0HRVn2 (ORCPT
+	id S1754538Ab0HRVox (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 17:44:53 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50525 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab0HRVow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 17:43:28 -0400
+	Wed, 18 Aug 2010 17:44:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=U0I0XsOY98mdEXxH3uLWVKwVxGreSS3Rmr1RzGzpmMmp9yK74fvLQ2IpRFkp7WhZJ2
-         cWC5ubMotPyx7uoWZf/OwTW2jlJJbeJPlJw8kHHpCGdAIpp42UxIvua3RB8JPGhKhUlX
-         enhcks7Vg6WoTWrEWX2vOLEt4yEXm179teywc=
-Date: Wed, 18 Aug 2010 23:34:29 +0200
-From: Richard Zidlicky <rz@linux-m68k.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35.2 regression, does not boot, sleeping function called
-	from invalid context
-Message-ID: <20100818213428.GB4132@linux-m68k.org>
-References: <20100817145305.GA7342@linux-m68k.org> <20100818133459.GA6663@kroah.com> <20100818140335.GB18303@linux-m68k.org> <20100818143927.GA1202@kroah.com> <20100818200057.GA4132@linux-m68k.org> <20100818201751.GA31825@kroah.com>
+        b=Rro702hy2lR3+4fcZRWw4Z+TM5f6V8xqPOdguSF/KuYDcTvK3isHLGUCodxz9ZcRg9
+         9aAkUh7FKpfJWqzDAfwQgkrkhQs8JxUP9mb87TUhYxk5Ts10ID+tPDyGZTJvj3MTeaH9
+         vt63nVYve690rX9Pgiz4VPDXHVhCV5eOl+Fxw=
+Date: Thu, 19 Aug 2010 01:44:47 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: fix BUG: using smp_processor_id() in touch_nmi_watchdog and
+	touch_softlockup_watchdog
+Message-ID: <20100818214447.GC11949@lenovo>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com> <20100818123346.02028e96.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100818201751.GA31825@kroah.com>
+In-Reply-To: <20100818123346.02028e96.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 01:17:51PM -0700, Greg KH wrote:
-
-> > Unfortunately no improvemenet with the hibernation problem that is there since
-> > 2.6.35?
+On Wed, Aug 18, 2010 at 12:33:46PM -0700, Andrew Morton wrote:
+> On Fri, 13 Aug 2010 13:21:58 +0300
+> Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
 > 
-> That's different, right?
+> > Hello,
+> > 
+> > Got this traces today:
+> > 
+> > ...
+> > 
 
-yes. I thought perhaps it might be this 
-  http://lkml.org/lkml/2010/8/6/7
+...
 
-suspend to ram works fine.
+> >  void touch_softlockup_watchdog(void)
+> >  {
+> > -	__get_cpu_var(watchdog_touch_ts) = 0;
+> > +	int this_cpu = get_cpu();
+> > +	per_cpu(watchdog_touch_ts, this_cpu) = 0;
+> > +	put_cpu();
+> >  }
+> >  EXPORT_SYMBOL(touch_softlockup_watchdog);
+> >  
+> > @@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
+> >  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+> >  void touch_nmi_watchdog(void)
+> >  {
+> > -	__get_cpu_var(watchdog_nmi_touch) = true;
+> > +	int this_cpu = get_cpu();
+> > +	per_cpu(watchdog_nmi_touch, this_cpu) = true;
+> > +	put_cpu();
+> >  	touch_softlockup_watchdog();
+> >  }
+> >  EXPORT_SYMBOL(touch_nmi_watchdog);
+> 
+> Why did this start happening?  Surely we've called
+> touch_softlockup_watchdog() from within preemptible code before now. 
 
-> And .34 works for you?  Can you run 'git bisect' on the tree to find the
-> offending patch?
+indeed, and we've been using __raw interface before (2.6.18)
 
-2.6.34 works. Bisect could take ages for me but I would try it as last resort.
+void touch_softlockup_watchdog(void)
+{
+	__raw_get_cpu_var(touch_timestamp) = jiffies;
+}
 
+> Methinks that
+> 
+> : commit 26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+> : Author:     Don Zickus <dzickus@redhat.com>
+> : AuthorDate: Mon May 17 18:06:04 2010 -0400
+> : Commit:     Frederic Weisbecker <fweisbec@gmail.com>
+> : CommitDate: Wed May 19 11:32:14 2010 +0200
+> : 
+> :     lockup_detector: Convert per_cpu to __get_cpu_var for readability
+> 
+> was simply broken?  That would be strange, given that it's been sitting
+> around since May 17.
+> 
+> If we don't want to revert 26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+> then I'd suggest that we simply switch to raw_smp_processor_id(): those
+> newly-added get_cpu/put_cpu calls don't do anything useful.
+>
 
-Richard
+I think it's fine to use __get_cpu_var in touch_nmi_watchdog (which should not
+be called with irq enabled since it ticks anyway then, at least on x86) for hardware
+nmi watchdog, can't conclude anything about softlockup (except that we had __raw
+interface before) since I'm not familiar with soflockup watchdog at moment.
+
+	-- Cyrill
