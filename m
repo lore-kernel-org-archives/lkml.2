@@ -1,80 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0HRPrU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:47:20 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:51896 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752117Ab0HRPrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:47:12 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 03/16] checkpatch: suggest cleanpatch and cleanfile when appropriate
-Date: Wed, 18 Aug 2010 16:46:36 +0100
-Message-Id: <1282146409-30544-4-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1282146409-30544-1-git-send-email-apw@canonical.com>
-References: <1282146409-30544-1-git-send-email-apw@canonical.com>
+	id S1753846Ab0HRPre (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:47:34 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60388 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753786Ab0HRPrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 11:47:31 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: [GIT PULL] notification tree: directory events
+Date: Wed, 18 Aug 2010 17:47:14 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com> <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com> <201008162232.36873.agruen@suse.de>
+In-Reply-To: <201008162232.36873.agruen@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201008181747.15461.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we hit types of whitespace which may be fixed by scripts/cleanpatch
-and scripts/cleanfile suggest their use in our report.
+Eric,
 
-Suggested-by: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- scripts/checkpatch.pl |   13 +++++++++++++
- 1 files changed, 13 insertions(+), 0 deletions(-)
+one more thing that doesn't make sense is events on directories: when watching 
+a directory, some actions like reading a directory or creat()ing a file in the 
+directory will generate events (even open_perm and access_perm), but other 
+actions like hard linking files into the directory or removing files will not 
+create any events.  This means that fanotify currently cannot be used for 
+watching for directory changes.
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 41f59b1..32d6a23 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -103,6 +103,8 @@ for my $key (keys %debug) {
- 	die "$@" if ($@);
- }
- 
-+my $rpt_cleaners = 0;
-+
- if ($terse) {
- 	$emacs = 1;
- 	$quiet++;
-@@ -1389,6 +1391,7 @@ sub process {
- 		} elsif ($rawline =~ /^\+.*\S\s+$/ || $rawline =~ /^\+\s+$/) {
- 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
- 			ERROR("trailing whitespace\n" . $herevet);
-+			$rpt_cleaners = 1;
- 		}
- 
- # check for Kconfig help text having a real description
-@@ -1450,6 +1453,7 @@ sub process {
- 		    $rawline =~ /^\+\s*        \s*/) {
- 			my $herevet = "$here\n" . cat_vet($rawline) . "\n";
- 			ERROR("code indent should use tabs where possible\n" . $herevet);
-+			$rpt_cleaners = 1;
- 		}
- 
- # check for space before tabs.
-@@ -2842,6 +2846,15 @@ sub process {
- 		print "\n" if ($quiet == 0);
- 	}
- 
-+	if ($quiet == 0) {
-+		# If there were whitespace errors which cleanpatch can fix
-+		# then suggest that.
-+		if ($rpt_cleaners) {
-+			print "NOTE: whitespace errors detected, you may wish to use scripts/cleanpatch or\n";
-+			print "      scripts/cleanfile\n\n";
-+		}
-+	}
-+
- 	if ($clean == 1 && $quiet == 0) {
- 		print "$vname has no obvious style problems and is ready for submission.\n"
- 	}
--- 
-1.7.0.4
+In my opinion, events on directories should either be made to actually work, 
+or else no directory events at all should be generated.
 
+Also, I can think of users of fanotify which are not concerned with directory 
+events at all.  It would make sense to allow such users to subscribe only to 
+file events and not receive any directory events which they will end up 
+ignoring anyway.
+
+Again it shows that this code just wasn't ready to be merged yet ...
+
+Andreas
