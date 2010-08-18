@@ -1,113 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750798Ab0HRFxI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 01:53:08 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51066 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750828Ab0HRFxA (ORCPT
+	id S1751813Ab0HRFxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 01:53:21 -0400
+Received: from lvps87-230-0-242.dedicated.hosteurope.de ([87.230.0.242]:47431
+	"EHLO lvps87-230-0-242.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751608Ab0HRFxN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 01:53:00 -0400
-Date: Wed, 18 Aug 2010 11:22:53 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Nikanth Karthikesan <knikanth@suse.de>
-Cc: Matt Mackall <mpm@selenic.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] Export mlock information via smaps
-Message-ID: <20100818055253.GA28417@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <201008171039.31070.knikanth@suse.de>
- <1282062336.10679.226.camel@calx>
- <201008181023.41378.knikanth@suse.de>
+	Wed, 18 Aug 2010 01:53:13 -0400
+Date: Wed, 18 Aug 2010 07:53:02 +0200
+From: Michael Guntsche <mike@it-loops.com>
+To: Brian Norris <norris@broadcom.com>
+Cc: "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUG] Nand support broken with v2.6.36-rc1
+Message-ID: <20100818055302.GA24116@gibson.comsick.at>
+References: <20100817113644.GA31317@gibson.comsick.at>
+ <4C6AC037.7070205@broadcom.com>
+ <20100817174704.GA1322@gibson.comsick.at>
+ <4C6AD9C2.1070705@broadcom.com>
+ <20100817200559.GA4542@gibson.comsick.at>
+ <4C6B024A.7040505@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201008181023.41378.knikanth@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C6B024A.7040505@broadcom.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nikanth Karthikesan <knikanth@suse.de> [2010-08-18 10:23:41]:
+On 17 Aug 10 14:42, Brian Norris wrote:
+> In place of that, though, you can just try this patch on 2.6.36-rc1.
+> I believe it should satisfy the intention of my previous (faulty)
+> commit while reverting the regression behavior. If this works OK, I
+> will submit it to be included in the mainline kernel.
 
-> On Tuesday 17 August 2010 21:55:36 Matt Mackall wrote:
-> > On Tue, 2010-08-17 at 10:39 +0530, Nikanth Karthikesan wrote:
-> > > Currently there is no way to find whether a process has locked its pages
-> > > in memory or not. And which of the memory regions are locked in memory.
-> > >
-> > > Add a new field to perms field 'l' to export this information. The
-> > > information exported via maps file is not changed.
-> > 
-> > I'm worried that your new 'l' flag will fatally surprise some naive
-> > parser of this file.
-> > 
-> 
-> So how to proceed? Create another "ssmaps" file or something? :) Or is the
-> following patch any better? Even the "Yes"/"No" could be changed to "0 kB" or
-> "x kB", if it would make it better.
-> 
-> Thanks
-> Nikanth
-> 
-> Currently there is no way to find whether a process has locked its pages in
-> memory or not. And which of the memory regions are locked in memory.
-> 
-> Add a new field "Locked" to export this information via smaps file.
-> 
-> Signed-off-by: Nikanth Karthikesan <knikanth@suse.de>
-> 
-> ---
-> 
-> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-> index a6aca87..6eafd26 100644
-> --- a/Documentation/filesystems/proc.txt
-> +++ b/Documentation/filesystems/proc.txt
-> @@ -373,6 +373,7 @@ Referenced:          892 kB
->  Swap:                  0 kB
->  KernelPageSize:        4 kB
->  MMUPageSize:           4 kB
-> +Locked:         No
-> 
->  The first  of these lines shows  the same information  as is displayed for the
->  mapping in /proc/PID/maps.  The remaining lines show  the size of the mapping,
-> @@ -397,6 +398,8 @@ To clear the bits for the file mapped pages associated with the process
->      > echo 3 > /proc/PID/clear_refs
->  Any other value written to /proc/PID/clear_refs will have no effect.
-> 
-> +The "Locked" indicates whether the mapping is locked in memory or not.
-> +
-> 
->  1.2 Kernel data
->  ---------------
-> diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-> index aea1d3f..7bafbcf 100644
-> --- a/fs/proc/task_mmu.c
-> +++ b/fs/proc/task_mmu.c
-> @@ -405,7 +405,8 @@ static int show_smap(struct seq_file *m, void *v)
->  		   "Referenced:     %8lu kB\n"
->  		   "Swap:           %8lu kB\n"
->  		   "KernelPageSize: %8lu kB\n"
-> -		   "MMUPageSize:    %8lu kB\n",
-> +		   "MMUPageSize:    %8lu kB\n"
-> +		   "Locked:         %s\n",
->  		   (vma->vm_end - vma->vm_start) >> 10,
->  		   mss.resident >> 10,
->  		   (unsigned long)(mss.pss >> (10 + PSS_SHIFT)),
-> @@ -416,7 +417,8 @@ static int show_smap(struct seq_file *m, void *v)
->  		   mss.referenced >> 10,
->  		   mss.swap >> 10,
->  		   vma_kernel_pagesize(vma) >> 10,
-> -		   vma_mmu_pagesize(vma) >> 10);
-> +		   vma_mmu_pagesize(vma) >> 10,
-> +		   (vma->vm_flags & VM_LOCKED) ? "Yes" : "No");
->
+Hi Brian,
 
-Why not show the Locked as kB as well? I know that the entire VMA is
-locked, but ideally if we can show mss.pss as locked, one can write
-a simple script to accumulate locked memory for the process. NOTE:
-One could choose RSS or PSS, but I'd prefer PSS (even though the
-value is not stable across the system) since it is more accurate
-representation of the truly locked memory. 
+Applying this patch fixes the problem for me. I removed my workaround
+and just tried your patch and was able to mount both mtdblock devices.
 
--- 
-	Three Cheers,
-	Balbir
+Thank you for fixing this,
+Michael Guntsche
