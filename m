@@ -1,40 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab0HRV0V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 17:26:21 -0400
-Received: from mga14.intel.com ([143.182.124.37]:1709 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754414Ab0HRV0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 17:26:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.56,229,1280732400"; 
-   d="scan'208";a="314212700"
-Date: Thu, 19 Aug 2010 05:26:13 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Matthew Wilcox <willy@linux.intel.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Li Shaohua <shaohua.li@intel.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: [TESTCASE] Clean pages clogging the VM
-Message-ID: <20100818212613.GA7366@localhost>
-References: <20100809133000.GB6981@wil.cx>
- <20100817195001.GA18817@linux.intel.com>
- <20100818141308.GD1779@cmpxchg.org>
+	id S1754494Ab0HRV1S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 17:27:18 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:34800 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754468Ab0HRV1Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 17:27:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=o9i3UkZOgOMfwR3eKlMjdzGKxztUfYAl01UygncCbb+4ZI0R/InpsNbpwPX1Atw0d5
+         lQQ5A62IdRqJP50GWFV8cKRZIsCFsiXGt9VZsQRTvTBDZn3wMsLdBD8WWg/YcG4zBFw5
+         tGag0kVDn7t2MDyC7DulFiIpSyAWtx0STyFTo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818141308.GD1779@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: trapdoor6@gmail.com
+In-Reply-To: <AANLkTik3S91w+92rz-KdHd_U=yfuSPbDWWhD_Vu_rDR9@mail.gmail.com>
+References: <201008182102.03201.maciej.rutecki@gmail.com>
+	<AANLkTik3S91w+92rz-KdHd_U=yfuSPbDWWhD_Vu_rDR9@mail.gmail.com>
+Date: Wed, 18 Aug 2010 22:27:14 +0100
+Message-ID: <AANLkTik4=_3wSNpkfqssWsmG_yCYOPFsA-cMDBaVU4BB@mail.gmail.com>
+Subject: Re: [REGRESSION] [SUSPEND] Opps during suspend to disk (probably also
+ during to ram)
+From: trapDoor <trapdoor6@gmail.com>
+To: maciej.rutecki@gmail.com
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Mapped file pages get two rounds on the LRU list, so once the VM
-> starts scanning, it has to go through all of them twice and can only
-> reclaim them on the second encounter.
+On Wed, Aug 18, 2010 at 8:16 PM, trapDoor <trapdoor6@gmail.com> wrote:
+> On Wed, Aug 18, 2010 at 8:02 PM, Maciej Rutecki
+> <maciej.rutecki@gmail.com> wrote:
+>> Last known good kernel: 2.6.35
+>> Failing kernel: 2.6.36-rc1
+>>
+>> When I try suspend to disk under 2.6.36-rc1 ("no_console_suspend" option
+>> enabled) system hangs on this message:
+>> http://unixy.pl/maciek/download/kernel/2.6.36-
+>> rc1/zlom/suspend_issue/dsc_0001.jpg
+>>
+> Hello,
+>
+> I see on the screenshot some messages related to HID so perhaps you
+> have the same issue I came across recently. If it happens so this
+> commit should fix it:
+> http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commitdiff;h=9c9e54a8df0be48aa359744f412377cc55c3b7d2
+>
+> For more details please refer to:
+> https://bugzilla.kernel.org/show_bug.cgi?id=16615
+> or:
+> http://lkml.org/lkml/2010/8/18/92   #currently dead
+>
+>
+>
+> --
+> Regards
+> Tomasz B.
+>
 
-This can be fixed gracefully based on Rik's refault-distance patch :)
-With the distance info we can safely drop the use-once mapped file pages.
+Maciej,
+Just FYI I have updated the bugzilla entry
+(https://bugzilla.kernel.org/show_bug.cgi?id=16615) with relevant
+details.
 
-Thanks,
-Fengguang
+
+-- 
+Thanks
+Tomasz
