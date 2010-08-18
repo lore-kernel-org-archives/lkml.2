@@ -1,131 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab0HRQpq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 12:45:46 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43910 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752368Ab0HRQpo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 12:45:44 -0400
-Date: Wed, 18 Aug 2010 22:15:39 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Chris Webb <chris@arachsys.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: Over-eager swapping
-Message-ID: <20100818164539.GG28417@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100802124734.GI2486@arachsys.com>
+	id S1752397Ab0HRQuI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 12:50:08 -0400
+Received: from p01c11o149.mxlogic.net ([208.65.144.72]:36173 "EHLO
+	p01c11o149.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751360Ab0HRQuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 12:50:05 -0400
+X-MXL-Hash: 4c6c0f3d79ad367e-bf4d1bf31a089108bc8e9d7fb956d1bcccb188e8
+X-MXL-Hash: 4c6c0f285750e48d-c8037e796516318aae7614eb74036acd2401d251
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Joe Perches <joe@perches.com>, Sam Ravnborg <sam@ravnborg.org>
+CC: Christoph Hellwig <hch@infradead.org>, "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "matthew@wil.cx" <matthew@wil.cx>
+Date: Wed, 18 Aug 2010 11:48:37 -0500
+Subject: RE: [PATCH] fs.h: introduce functions to get/set file->private_data
+Thread-Topic: [PATCH] fs.h: introduce functions to get/set file->private_data
+Thread-Index: Acs+dTogR4gFa36oSVijTV56rsUllgAfvbUg
+Message-ID: <0D753D10438DA54287A00B0270842697643E5A1CDF@AUSP01VMBX24.collaborationhost.net>
+References: <201008161137.53187.hartleys@visionengravers.com>
+	 <20100816231753.GA16546@infradead.org>
+	 <0D753D10438DA54287A00B0270842697643E50D82E@AUSP01VMBX24.collaborationhost.net>
+	 <1282002601.6518.116.camel@Joe-Laptop> <20100817010355.GG21182@thunk.org>
+	 <20100817085428.GA25330@infradead.org>
+	 <1282065973.24541.106.camel@Joe-Laptop>
+	 <20100817175851.GA11463@merkur.ravnborg.org>
+ <1282095142.6724.11.camel@Joe-Laptop>
+In-Reply-To: <1282095142.6724.11.camel@Joe-Laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100802124734.GI2486@arachsys.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010073001)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.99]
+X-AnalysisOut: [v=1.0 c=1 a=Am2CfNgCDXIA:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=MfCJKx98tC58LqYwCYfhJw==:17 a=2ep14tqfsFQMehyImlUA]
+X-AnalysisOut: [:9 a=lBac3VEERl3eQJ-NzKnVXCAipFgA:4 a=QEXdDO2ut3YA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o7IGoKI6016938
 
-* Chris Webb <chris@arachsys.com> [2010-08-02 13:47:35]:
-
-> We run a number of relatively large x86-64 hosts with twenty or so qemu-kvm
-> virtual machines on each of them, and I'm have some trouble with over-eager
-> swapping on some (but not all) of the machines. This is resulting in
-> customer reports of very poor response latency from the virtual machines
-> which have been swapped out, despite the hosts apparently having large
-> amounts of free memory, and running fine if swap is turned off.
-> 
-> All of the hosts are running a 2.6.32.7 kernel and have ksm enabled with
-> 32GB of RAM and 2x quad-core processors. There is a cluster of Xeon E5420
-> machines which apparently doesn't exhibit the problem, and a cluster of
-> 2352/2378 Opteron (NUMA) machines, some of which do. The kernel config of
-> the affected machines is at
-> 
->   http://cdw.me.uk/tmp/config-2.6.32.7
-> 
-> This differs very little from the config on the unaffected Xeon machines,
-> essentially just
-> 
->   -CONFIG_MCORE2=y
->   +CONFIG_MK8=y
->   -CONFIG_X86_P6_NOP=y
-> 
-> On a typical affected machine, the virtual machines and other processes
-> would apparently leave around 5.5GB of RAM available for buffers, but the
-> system seems to want to swap out 3GB of anonymous pages to give itself more
-> like 9GB of buffers:
-> 
->   # cat /proc/meminfo 
->   MemTotal:       33083420 kB
->   MemFree:          693164 kB
->   Buffers:         8834380 kB
->   Cached:            11212 kB
->   SwapCached:      1443524 kB
->   Active:         21656844 kB
->   Inactive:        8119352 kB
->   Active(anon):   17203092 kB
->   Inactive(anon):  3729032 kB
->   Active(file):    4453752 kB
->   Inactive(file):  4390320 kB
->   Unevictable:        5472 kB
->   Mlocked:            5472 kB
->   SwapTotal:      25165816 kB
->   SwapFree:       21854572 kB
->   Dirty:              4300 kB
->   Writeback:             4 kB
->   AnonPages:      20780368 kB
->   Mapped:             6056 kB
->   Shmem:                56 kB
->   Slab:             961512 kB
->   SReclaimable:     438276 kB
->   SUnreclaim:       523236 kB
->   KernelStack:       10152 kB
->   PageTables:        67176 kB
->   NFS_Unstable:          0 kB
->   Bounce:                0 kB
->   WritebackTmp:          0 kB
->   CommitLimit:    41707524 kB
->   Committed_AS:   39870868 kB
->   VmallocTotal:   34359738367 kB
->   VmallocUsed:      150880 kB
->   VmallocChunk:   34342404996 kB
->   HardwareCorrupted:     0 kB
->   HugePages_Total:       0
->   HugePages_Free:        0
->   HugePages_Rsvd:        0
->   HugePages_Surp:        0
->   Hugepagesize:       2048 kB
->   DirectMap4k:        5824 kB
->   DirectMap2M:     3205120 kB
->   DirectMap1G:    30408704 kB
-> 
-> We see this despite the machine having vm.swappiness set to 0 in an attempt
-> to skew the reclaim as far as possible in favour of releasing page cache
-> instead of swapping anonymous pages.
+On Tuesday, August 17, 2010 6:32 PM, Joe Perches wrote:
+> On Tue, 2010-08-17 at 19:58 +0200, Sam Ravnborg wrote:
+>> It takes minimum effort to create and test, and if you can
+>> get ack from Ted and/or Christoph there is a good chance Linus
+>> would take it right before/after -rc1.
+>> 
+>> You obviously need to convince him that the patch has
+>> seen decent build testing.
 >
-> After running swapoff -a, the machine is immediately much healthier. Even
-> while the swap is still being reduced, load goes down and response times in
-> virtual machines are much improved. Once the swap is completely gone, there
-> are still several gigabytes of RAM left free which are used for buffers, and
-> the virtual machines are no longer laggy because they are no longer swapped
-> out. Running swapon -a again, the affected machine waits for about a minute
-> with zero swap in use, before the amount of swap in use very rapidly
-> increases to around 2GB and then continues to increase more steadily to 3GB.
-> 
-> We could run with these machines without swap (in the worst cases we're
-> already doing so), but I'd prefer to have a reserve of swap available in
-> case of genuine emergency. If it's a choice between swapping out a guest or
-> oom-killing it, I'd prefer to swap... but I really don't want to swap out
-> running virtual machines in order to have eight gigabytes of page cache
-> instead of five!
-> 
-> Is this a problem with the page reclaim priorities, or am I just tuning
-> these hosts incorrectly? Is there more detailed info than /proc/meminfo
-> available which might shed more light on what's going wrong here?
-> 
+> private_data is the only non f_ prefixed member in
+> struct file, so while there is perhaps a tiny value
+> in this patch, I'm not in a hurry to push it.
+>
+> After a few corrections, Documentation/, comment and
+> printk updates, a few macros that spatch didn't update,
+> etc, the diff that converts struct file member
+> private_data to f_private_data is now:
+>
+> $ git diff --shortstat ..da5cabf80e2433131bf0ed8993abc0f7ea618c73
+>  511 files changed, 2638 insertions(+), 2639 deletions(-)
+>
+> Does either Ted or Christoph want to see it?
+>
+> Harley?  You want it?
 
-Can you give an idea of what the meminfo inside the guest looks like.
-Have you looked at
-http://kerneltrap.org/mailarchive/linux-kernel/2010/6/8/4580772
+Uh... No... ;-)
 
+> It's still ~850BKB and probably shouldn't be posted to
+> the ML as it's mostly mechanical.
 
--- 
-	Three Cheers,
-	Balbir
+I would like to see it merged just to ease grepping but if no one else
+sees any benefit doing it I can live with it.
+
+FWIW, the only reason for bringing this up in the first place was I was
+trying to find all the places that have unnecessary casts when using
+the private_data.  Stuff like:
+
+	struct my_struct *my_data = (struct my_struct *)file->private_data;
+
+Maybe it would be simpler to use spatch to just fix those?
+
+> Compiles x86 allyesconfig, defconfig
+
+Regards,
+Hartleyÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
