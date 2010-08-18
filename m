@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0HRQl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 12:41:58 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55624 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab0HRQl4 convert rfc822-to-8bit (ORCPT
+	id S1752199Ab0HRQmr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 12:42:47 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57381 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751851Ab0HRQmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 12:41:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=B2zjzvVIPArb4kWgpihpXNd7uPq1i/XsJqwoe3IsEOQhQfB4AFcIg7ZYrFK0+WsS1x
-         FQkq2JKdRoD7PjpF8iqHvZcC0/nxEwPnIW/M+Ehhke5sSCONRZJle2zVxKT7ZMzKQ1P9
-         BesK3IR1FMm2UzT2Ajyk0kvgFqLXm1l/FHPsw=
+	Wed, 18 Aug 2010 12:42:45 -0400
+Date: Wed, 18 Aug 2010 12:42:30 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: Andreas Gruenbacher <agruen@suse.de>,
+        Christoph Hellwig <hch@infradead.org>,
+        Matt Helsley <matthltc@us.ibm.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        akpm@linux-foundation.org, Michael Kerrisk <michael.kerrisk@gmail.com>
+Subject: Re: [GIT PULL] notification tree: directory events
+Message-ID: <20100818164230.GA26034@infradead.org>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
+ <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
+ <201008162232.36873.agruen@suse.de>
+ <201008181747.15461.agruen@suse.de>
+ <1282147146.21419.165.camel@acb20005.ipt.aol.com>
 MIME-Version: 1.0
-In-Reply-To: <20100818055045.GD5243@cr0.nay.redhat.com>
-References: <20100817225256.4775.6641.stgit@warthog.procyon.org.uk>
-	<20100818055045.GD5243@cr0.nay.redhat.com>
-Date: Wed, 18 Aug 2010 09:41:55 -0700
-Message-ID: <AANLkTik0q6rzcvC6WYLaRESB2hL=CVD9F9X4N3PZ=YGg@mail.gmail.com>
-Subject: Re: [PATCH] Make do_execve() take a const filename pointer
-From: Tony Luck <tony.luck@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        dhowells@redhat.com
-Cc: torvalds@osdl.org, akpm@linux-foundation.org, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282147146.21419.165.camel@acb20005.ipt.aol.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 10:50 PM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> This patch looks good for me,
+On Wed, Aug 18, 2010 at 11:59:06AM -0400, Eric Paris wrote:
+> Thus far your e-mails have pointed out one bug in the permissions
+> implementation I am currently working fixing and a bunch of complaining
+> about features you can imagine someone might someday want but which
+> noone has actually stood up and said 'I will use this' or 'this sucks
+> for my use case'.  I can find all sorts of things around the kernel
+> where I can imagine some mythical users might want to do something
+> different but it isn't a reason to prevent merger.  I'd love to have
+> more review, I'm certainly going to look at your wish list, but don't
+> expect response to future trolling messages.
 
-Okay in principle to me too ... but you missed a couple of
-sys_execve() declarations. I'll fix
-up the one in arch/ia64/include/asm/unistd.h (it can just be deleted).
+Eric, please stop that crap.  You've sent a pull request for stuff
+that's not only been contentious but also not reviewed at all in this
+form to Linus behind everyones back.  Andreas actually takes his time
+to review the clusterfuck you created, so better be really quite and
+listen to him. 
 
-There is also an unchanged declaration in asm-generic/syscalls.h which
-may need to be
-investigated.
-
--Tony
