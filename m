@@ -1,69 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751323Ab0HRDez (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 23:34:55 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:59657 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741Ab0HRDet (ORCPT
+	id S1751105Ab0HRDtN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 23:49:13 -0400
+Received: from mail.windriver.com ([147.11.1.11]:37474 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772Ab0HRDtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 23:34:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=bg0tTKbOqDcVkLSYnnX2JbLDOIp0qbEECEExTe1dF6pKZbbcEf5VWc6ie5SlLEqK/v
-         4QNjUzXYeLCT6gn2bTdC9/o3QnQUeONpnB2or2LDyzA+iP3UwJ49R4fZoH00olndllat
-         g61rqXgvn3huIxWMB0Q82Db7VFA5uO1Hqen94=
-Subject: [PATCH] regulator: max1586 - improve the logic of choosing selector
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>
-Content-Type: text/plain
-Date: Wed, 18 Aug 2010 11:37:21 +0800
-Message-Id: <1282102641.20985.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	Tue, 17 Aug 2010 23:49:07 -0400
+Message-ID: <4C6B581C.4050909@gmail.com>
+Date: Wed, 18 Aug 2010 11:48:44 +0800
+From: haishan <haishan.bai@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Why I can not receive what I have sent to the list
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 18 Aug 2010 03:49:07.0069 (UTC) FILETIME=[4EEB02D0:01CB3E88]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A little bit improvement in the logic of choosing selector.
+Hello,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/max1586.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/regulator/max1586.c b/drivers/regulator/max1586.c
-index 8867c27..559cfa2 100644
---- a/drivers/regulator/max1586.c
-+++ b/drivers/regulator/max1586.c
-@@ -121,14 +121,14 @@ static int max1586_v6_set(struct regulator_dev *rdev, int min_uV, int max_uV)
- 	if (max_uV < MAX1586_V6_MIN_UV || max_uV > MAX1586_V6_MAX_UV)
- 		return -EINVAL;
- 
--	if (min_uV >= 3000000)
--		selector = 3;
--	if (min_uV < 3000000)
--		selector = 2;
--	if (min_uV < 2500000)
--		selector = 1;
- 	if (min_uV < 1800000)
- 		selector = 0;
-+	else if (min_uV < 2500000)
-+		selector = 1;
-+	else if (min_uV < 3000000)
-+		selector = 2;
-+	else if (min_uV >= 3000000)
-+		selector = 3;
- 
- 	if (max1586_v6_calc_voltage(selector) > max_uV)
- 		return -EINVAL;
--- 
-1.7.2
+I have encountered problems recently that I can not receive what I have 
+sent to the list, any ideas?
 
 
-
+Regards
+Shan Hai
