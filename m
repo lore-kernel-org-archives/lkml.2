@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab0HRWR3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 18:17:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28032 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751042Ab0HRWR1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 18:17:27 -0400
-Date: Wed, 18 Aug 2010 18:17:22 -0400
-From: Dave Jones <davej@redhat.com>
-To: Joe Perches <joe@perches.com>
-Cc: apw@canonical.com, Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: add memset checks to checkpatch.pl
-Message-ID: <20100818221721.GA2667@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Joe Perches <joe@perches.com>, apw@canonical.com,
-	Linux Kernel <linux-kernel@vger.kernel.org>
-References: <20100818204016.GA29640@redhat.com>
- <1282167133.6724.165.camel@Joe-Laptop>
- <20100818214818.GA31094@redhat.com>
- <1282168679.6724.174.camel@Joe-Laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282168679.6724.174.camel@Joe-Laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1754279Ab0HRWSj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 18:18:39 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39508 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0HRWSg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 18:18:36 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Bernd Petrovitsch <bernd@sysprog.at>,
+        Kusanagi Kouichi <slash@ac.auone-net.jp>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [GIT PULL 0/1] perf/urgent fix
+Date: Wed, 18 Aug 2010 19:18:17 -0300
+Message-Id: <1282169898-28321-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 02:57:59PM -0700, Joe Perches wrote:
- > > I'm all for improving my shoddy perl where possible, but this doesn't seem to actually
- > > catch any of the test cases I wrote.  (it's also missing a } )
- > 
- > I intend never to be a perl monk.
- > 
- > I notice the missing { before the elsif after I sent it.
- > Oh well.
- > 
- > I just typed it in the emailer, so it's not tested at all.
- > Also it's missing a $ after 1 in the second $memset_size test.
+Hi Ingo,
 
-still didn't catch anything for me.
+        Please pull from:
 
- > What are your test cases anyway?
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
 
-memset(foo, 0, 10);
-memset(foo, 10, 0);
-memset(foo, 1, 10);
-memset(foo, 10, 1);
+	Or perhaps apply it directly, as git.kernel.org is taking ages to
+sync with master today...
 
- > Likely $Lval isn't matching things like
- > sizeof(*foo) so this isn't checked:
- > 
- > 	memset(foo, bar, sizeof(*foo));
+Regards,
 
-I chose to just ignore any non integer arguments to keep things simple.
+- Arnaldo
 
-	Dave
+Kusanagi Kouichi (1):
+  perf tools: Fix build error on read only source.
+
+ tools/perf/Makefile          |   14 ++++++++++----
+ tools/perf/feature-tests.mak |    2 +-
+ 2 files changed, 11 insertions(+), 5 deletions(-)
 
