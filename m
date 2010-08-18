@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab0HRRCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 13:02:07 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55972 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751735Ab0HRRCG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 13:02:06 -0400
-Date: Wed, 18 Aug 2010 14:01:58 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Bernd Petrovitsch <bernd@sysprog.at>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build error on read only source.
-Message-ID: <20100818170158.GG9410@ghostprotocols.net>
-References: <20100817181835.GA21083@ghostprotocols.net>
- <20100818123713.1F02414C03B@msa103.auone-net.jp>
- <1282135224.1926.3936.camel@laptop>
- <20100818141611.GE9410@ghostprotocols.net>
- <1282141665.1926.4053.camel@laptop>
- <20100818165642.GF9410@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818165642.GF9410@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753241Ab0HRRH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 13:07:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752368Ab0HRRHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 13:07:24 -0400
+Subject: Re: [GIT PULL] notification tree: directory events
+From: Eric Paris <eparis@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Andreas Gruenbacher <agruen@suse.de>, Matt Helsley <matthltc@us.ibm.com>,
+        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        Michael Kerrisk <michael.kerrisk@gmail.com>
+In-Reply-To: <20100818164230.GA26034@infradead.org>
+References: <1281110319.17812.21.camel@dhcp231-200.rdu.redhat.com>
+	 <1281208514.2609.25.camel@dhcp231-200.rdu.redhat.com>
+	 <201008162232.36873.agruen@suse.de> <201008181747.15461.agruen@suse.de>
+	 <1282147146.21419.165.camel@acb20005.ipt.aol.com>
+	 <20100818164230.GA26034@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 13:07:03 -0400
+Message-ID: <1282151223.21419.189.camel@acb20005.ipt.aol.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 18, 2010 at 01:56:42PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Wed, Aug 18, 2010 at 04:27:45PM +0200, Peter Zijlstra escreveu:
-> > On Wed, 2010-08-18 at 11:16 -0300, Arnaldo Carvalho de Melo wrote:
-> > > rm -rf ~/build
-> > > make O=~/build
-> > > 
-> > > and have everything work? Saving some keystrokes 8)
-> > 
-> > The turn side is that if you typo the output dir you'll probably not
-> > ever find it again.. and you could have typed: rm -rf ~/build/* instead.
+On Wed, 2010-08-18 at 12:42 -0400, Christoph Hellwig wrote:
+> On Wed, Aug 18, 2010 at 11:59:06AM -0400, Eric Paris wrote:
+> > Thus far your e-mails have pointed out one bug in the permissions
+> > implementation I am currently working fixing and a bunch of complaining
+> > about features you can imagine someone might someday want but which
+> > noone has actually stood up and said 'I will use this' or 'this sucks
+> > for my use case'.  I can find all sorts of things around the kernel
+> > where I can imagine some mythical users might want to do something
+> > different but it isn't a reason to prevent merger.  I'd love to have
+> > more review, I'm certainly going to look at your wish list, but don't
+> > expect response to future trolling messages.
 > 
-> Not something I'll argue too much :)
-> 
-> I'll apply the patch as it fixes a bug and later make the perf Makefile
-> complain about the output dir not existing, i.e. providing a message
-> similar to what the kernel proper does instead of the cryptic message we
-> get today.
+> Eric, please stop that crap.  You've sent a pull request for stuff
+> that's not only been contentious but also not reviewed at all in this
+> form to Linus behind everyones back.  Andreas actually takes his time
+> to review the clusterfuck you created, so better be really quite and
+> listen to him.
 
-[acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf/
-[acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -C tools/perf 
-make: Entering directory `/home/acme/git/linux-2.6-tip/tools/perf'
-Makefile:503: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
-Makefile:534: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static.  Stop.
-make: Leaving directory `/home/acme/git/linux-2.6-tip/tools/perf'
-[acme@emilia linux-2.6-tip]$
+I admit that there were a number of patches created since the last merge
+request was held up based on Al's review that weren't sent to list.  I
+said I screwed up and pointed out what was missed before it was merged.
+Clearly those changes didn't live in linux-next long enough to catch all
+of their problems (namely the f_count thing everyone agreed was dirty
+and broke sound)  I wasn't the only person to look at most of those
+changes, but they absolutely should have been on list.  I've screwed up
+on that twice.
 
-- Arnaldo
+But an implication that the idea, the interface, the event types sent
+and received, how things worked, or anything like that wasn't sent to
+list or that I didn't beg for review just isn't true (all of which has
+been implied).
+
+I fucked up not posting some of my internal notification reworks to
+improve system performance, maintainability, and reliability.  But any
+belief that 'contentious' portions of code just magically showed up
+behind anyone's back or at the last minute isn't true.
+
+Like I said, I'd love more review.  I'll gladly add more things to my
+todo list if people have useful ideas.  But multiple messages suggesting
+code should be reverted because it doesn't implement some imagined
+feature or because the code has a bug for I'm betting well over a year
+obviously bothers me.
+
+-Eric
+
