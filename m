@@ -1,56 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751837Ab0HRQhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 12:37:00 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:58108 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab0HRQg5 (ORCPT
+	id S1752010Ab0HRQiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 12:38:01 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57057 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab0HRQh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 12:36:57 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=Zyij4oquIrFtjYGpgvBLzzU3H5Uilkh/0gp1R0OSA7NuwXtnE4Lozs/BHExXD030o
-	vEi6RTsi9KCVxRrOWphxg==
+	Wed, 18 Aug 2010 12:37:58 -0400
+Date: Wed, 18 Aug 2010 12:37:58 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: XFS status update for July 2010
+Message-ID: <20100818163758.GA4321@infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20100818153016.GA6235@infradead.org>
-References: <AANLkTinx-cgn7zony8UO__zejj36GxcJTf3Pr2Z9G2af@mail.gmail.com>
-	<201008181704.51357.arnd@arndb.de>
-	<20100818153016.GA6235@infradead.org>
-Date: Wed, 18 Aug 2010 09:36:53 -0700
-Message-ID: <AANLkTin8iYD-mfUDqXaBLyRmbBZax98+NLF5TGAKrX+s@mail.gmail.com>
-Subject: Re: [PATCH] V2 2.6.35 libata support for > 512 byte sectors (e.g. 4K Native)
-From: Grant Grundler <grundler@google.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, Jeff Garzik <jgarzik@pobox.com>,
-        Tejun Heo <tj@kernel.org>, Linux IDE <linux-ide@vger.kernel.org>,
-        Gwendal Grignou <gwendal@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, Matthew Wilcox <matthew@wil.cx>,
-        Matthew Wilcox <matthew.r.wilcox@intel.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 8:30 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Aug 18, 2010 at 05:04:51PM +0200, Arnd Bergmann wrote:
->> On Tuesday 17 August 2010, Grant Grundler wrote:
->> > [ patch NOT inlined because gmail will word-wrap and make a mess of
->> > it. Please use attached file.]
->>
->> You should be able to use git-send-email with a gmail account to fix this.
+July saw three more release candidates for the Linux 2.6.35 kernel, which
+included a relatively large number of XFS updates.  There were two security
+fixes, a small one to prevent swapext to operate on write-only file
+descriptors, and a much larger one to properly validate inode numbers
+coming from NFS clients or userspace applications using the bulkstat or
+the open-by-handle interfaces.  In addition to that another relatively
+large patch fixes the way inodes get reclaimed in the background, and
+avoids inode caches growing out of bounds.
 
-I'll try git-send-email next time - thanks Arndt.
+In the meantime the code for the Linux 2.6.36 got the last touches before
+the expected opening of the merge window, by merging a few more last
+minute fixes and cleanups.  The most notable one is a patch series
+that fixes in-memory corruption when concurrently accessing unwritten
+extents using the in-kernel AIO code.
 
-> Or find an google insider that could fix gmail..
-
-You have no idea how many people have already tried this. Just feels
-like another windmill at this point. :)
-
-thanks,
-grant
-
-
->
->
+The userspace side was still quite slow, but some a bit more activity
+than June.  In xfsprogs the xfs_db code grew two bug fixes, as did
+the xfs_io script.  The xfstests package saw one new test cases and
+various fixes to existing code.  Last but not least a few patches
+affecting the build system for all userspace tools were committed.
