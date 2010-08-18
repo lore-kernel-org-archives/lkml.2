@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab0HRRue (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 13:50:34 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:54404 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0HRRub (ORCPT
+	id S1752500Ab0HRRur (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 13:50:47 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42582 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752369Ab0HRRup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 13:50:31 -0400
-Message-ID: <4C6C1D70.7020502@vlnb.net>
-Date: Wed, 18 Aug 2010 21:50:40 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Wed, 18 Aug 2010 13:50:45 -0400
+Date: Wed, 18 Aug 2010 19:50:40 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Neil Brown <neilb@suse.de>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "Patrick J. LoPresti" <lopresti@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal: Use hi-res clock for file timestamps
+Message-ID: <20100818175040.GA6567@basil.fritz.box>
+References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
+ <87aaolwar8.fsf@basil.nowhere.org>
+ <20100817174134.GA23176@fieldses.org>
+ <20100817182920.GD18161@basil.fritz.box>
+ <20100817190447.GA28049@fieldses.org>
+ <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
+ <20100817203941.729830b7@lxorguk.ukuu.org.uk>
+ <20100817192937.GD26609@fieldses.org>
+ <20100818155359.66b9ddb6@notabene>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Chetan Loke <chetanloke@gmail.com>, Chetan Loke <generationgnu@yahoo.com>,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [Scst-devel] Fwd: Re: linuxcon 2010...
-References: <594039.74663.qm@web111905.mail.gq1.yahoo.com>	 <1282144271.3035.31.camel@mulgrave.site>	 <AANLkTinRDMXqyDAVkcbioD=L7XO-47KHL2qjR+8KA5m3@mail.gmail.com> <1282148296.3035.49.camel@mulgrave.site>
-In-Reply-To: <1282148296.3035.49.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:UN6qw8hZ9s/X4LFM1xkSFh9LUgWch+01DoPg39+y7Te
- oIDKyjL2M0eNzwY+hJeApatyf93O135jTB1e5bYgzdLt09lAr0
- dxKqBAgfysQbp1Gtq1SsW/oYKrUIWxDVGmsLlYZgn75e03PYF3
- 06Cpnj1pCbxfD6RVymczcnNWcSmchgLiWuVge0EataeXgV7vsU
- hxzEeynTt+npB40CFqBOA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100818155359.66b9ddb6@notabene>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley, on 08/18/2010 08:18 PM wrote:
->> James you are an expert but not everyone is. This is not a venting
->> session but even folks who are new to target architecture find it easy
->> to hack SCST.
->
-> But that's not really relevant, is it?  I would expect that whatever I
-> do, even keeping both out of tree, the communities around the solutions
-> would still exist and be vibrant, since they're out of tree now, nothing
-> will have changed.
+>  - nfsd updates it whenever it reads an mtime out of an inode that matches
+>    current_fs_time to the granularity of 1/HZ.
 
-The problem that people do believe that the merged code is the best 
-code, so the being merged is an immediate HUGE advertisement. So, you 
-can't say if a code is inside the mainline tree or not isn't relevant.
+That means you have a very very hot cache line on a larger system
+if there are a lot of mtime changes. Probably a bad idea.
 
-This is the source of the questions from the SCST community. SCST is at 
-the moment the best code. It's several years ahead any competitor. SCST 
-has more functionality, SCST has more users, SCST has bigger community, 
-SCST has more testing and, hence, stability, SCST has more support from 
-storage vendors, etc. But for some reasons all those suddenly ignored 
-and a raw, pursuing SCST code preferred instead.
-
-So, we want to know those reasons. SCST wasn't even really considered. 
-Isn't Linux anymore a place where the best code wins? Frankly, it looks 
-like the decision was done under closed doors based on rather political 
-reasons, like personal connections...
-
-Vlad
+-Andi
