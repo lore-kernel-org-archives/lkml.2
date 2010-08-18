@@ -1,67 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab0HRTc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:32:56 -0400
-Received: from fieldses.org ([174.143.236.118]:50642 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805Ab0HRTcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:32:55 -0400
-Date: Wed, 18 Aug 2010 15:30:43 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Neil Brown <neilb@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100818193043.GG13050@fieldses.org>
-References: <20100817174134.GA23176@fieldses.org>
- <20100817182920.GD18161@basil.fritz.box>
- <20100817190447.GA28049@fieldses.org>
- <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <20100817192937.GD26609@fieldses.org>
- <20100818155359.66b9ddb6@notabene>
- <20100818175040.GA6567@basil.fritz.box>
- <20100818185456.GD13050@fieldses.org>
- <20100818192508.GC6567@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818192508.GC6567@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753786Ab0HRTeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:34:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34706 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751185Ab0HRTeQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 15:34:16 -0400
+Date: Wed, 18 Aug 2010 12:33:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: fix BUG: using smp_processor_id() in touch_nmi_watchdog and
+ touch_softlockup_watchdog
+Message-Id: <20100818123346.02028e96.akpm@linux-foundation.org>
+In-Reply-To: <20100813102158.GA5434@swordfish.minsk.epam.com>
+References: <20100813102158.GA5434@swordfish.minsk.epam.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 09:25:08PM +0200, Andi Kleen wrote:
-> On Wed, Aug 18, 2010 at 02:54:56PM -0400, J. Bruce Fields wrote:
-> > On Wed, Aug 18, 2010 at 07:50:40PM +0200, Andi Kleen wrote:
-> > > >  - nfsd updates it whenever it reads an mtime out of an inode that matches
-> > > >    current_fs_time to the granularity of 1/HZ.
-> > > 
-> > > That means you have a very very hot cache line on a larger system
-> > > if there are a lot of mtime changes. Probably a bad idea.
-> > 
-> > Only if those mtime changes are also followed immediately by nfsd reads
-> > of the mtime.
+On Fri, 13 Aug 2010 13:21:58 +0300
+Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+
+> Hello,
 > 
-> If multiple writers are changing the same location in quick succession 
-> you have a hot cache line that gets bounced around.  It doesn't need reads,
-> although reads make it even worse.
+> Got this traces today:
+> 
+> ...
+> 
+> Avoid using smp_processor_id in touch_softlockup_watchdog and touch_nmi_watchdog.
+> Patch also "removes" second call to smp_processor_id in __touch_watchdog
+> (smp_processor_id itself and smp_processor_id in __get_cpu_var). 
+> 
+> ---
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index 613bc1f..8822f1e 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -116,13 +116,14 @@ static unsigned long get_sample_period(void)
+>  static void __touch_watchdog(void)
+>  {
+>  	int this_cpu = smp_processor_id();
+> -
+> -	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+> +	per_cpu(watchdog_touch_ts, this_cpu) = get_timestamp(this_cpu);
+>  }
 
-OK, at this point one of us is confused, and I'm not sure which.
+Fair enough, although strictly speaking this should be done in a
+separate and later patch.
 
-Is the "same location" that you're referring to the current_nfsd_time?
+>  void touch_softlockup_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_touch_ts) = 0;
+> +	int this_cpu = get_cpu();
+> +	per_cpu(watchdog_touch_ts, this_cpu) = 0;
+> +	put_cpu();
+>  }
+>  EXPORT_SYMBOL(touch_softlockup_watchdog);
+>  
+> @@ -142,7 +143,9 @@ void touch_all_softlockup_watchdogs(void)
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  void touch_nmi_watchdog(void)
+>  {
+> -	__get_cpu_var(watchdog_nmi_touch) = true;
+> +	int this_cpu = get_cpu();
+> +	per_cpu(watchdog_nmi_touch, this_cpu) = true;
+> +	put_cpu();
+>  	touch_softlockup_watchdog();
+>  }
+>  EXPORT_SYMBOL(touch_nmi_watchdog);
 
-Neil's suggestion is to only modify current_nfsd_time on nfsd getattr,
-*not* on the write operation that modifies the file data.
+Why did this start happening?  Surely we've called
+touch_softlockup_watchdog() from within preemptible code before now. 
+Methinks that
 
-Or are you talking about something else?
+: commit 26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+: Author:     Don Zickus <dzickus@redhat.com>
+: AuthorDate: Mon May 17 18:06:04 2010 -0400
+: Commit:     Frederic Weisbecker <fweisbec@gmail.com>
+: CommitDate: Wed May 19 11:32:14 2010 +0200
+: 
+:     lockup_detector: Convert per_cpu to __get_cpu_var for readability
 
-> There's a lot of effort currently to make the VFS more parallel
-> and less synchronized and it would be bad again to regress here again.
+was simply broken?  That would be strange, given that it's been sitting
+around since May 17.
 
-Understood.
-
---b.
+If we don't want to revert 26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+then I'd suggest that we simply switch to raw_smp_processor_id(): those
+newly-added get_cpu/put_cpu calls don't do anything useful.
