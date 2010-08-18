@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab0HRIqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 04:46:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36985 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752158Ab0HRIqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 04:46:36 -0400
-Date: Wed, 18 Aug 2010 10:46:34 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: trapDoor <trapdoor6@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-        arnd@arndb.de, osnix0@googlemail.com, andrea.gelmini@gelma.net,
-        trapDoor <trapdoor6@googlemail.com>
-Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
-In-Reply-To: <AANLkTiki82ZFntH2M6UTyB7+215=4mNmk3SsxiS=CGDH@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1008181045110.1019@pobox.suse.cz>
-References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com> <201008180325.17816.rjw@sisk.pl> <AANLkTimdF_eYurw9k0rQRAzSQ-fZMKsFLupnME_ch1Ru@mail.gmail.com> <alpine.LNX.2.00.1008180911180.1019@pobox.suse.cz>
- <AANLkTiki82ZFntH2M6UTyB7+215=4mNmk3SsxiS=CGDH@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752207Ab0HRIv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 04:51:29 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:54737 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab0HRIv0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 04:51:26 -0400
+Message-ID: <4C6B9F00.8050409@canonical.com>
+Date: Wed, 18 Aug 2010 16:51:12 +0800
+From: Ike Panhc <ike.pan@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Oliver Neukum <oneukum@suse.de>
+CC: linux-pm@vger.kernel.org, "Rafael J. Wysocki" <rjw@novell.com>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Corentin Chary <corentincj@iksaif.net>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Len Brown <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 5/8] ideapad: use EC command to control camera
+References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282120695-11503-1-git-send-email-ike.pan@canonical.com> <201008181042.39943.oneukum@suse.de>
+In-Reply-To: <201008181042.39943.oneukum@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Aug 2010, trapDoor wrote:
+Could you give me an example that I can follow? Just point out which C file
+I shall read. no much knowledge about generic power framework.
 
-> > Could you please verify whether the patch below (which is currently queued
-> > in my tree and I am planning to push it to Linus soon, as it fixes memory
-> > corruption) fixes your issue? Thanks.
-> >
-> > commit 9c9e54a8df0be48aa359744f412377cc55c3b7d2
-> > Author: Jiri Kosina <jkosina@suse.cz>
-> > Date:   Fri Aug 13 12:19:45 2010 +0200
-> >
-> >    HID: hiddev: fix memory corruption due to invalid intfdata
-> >
-> >    Commit bd25f4dd6972755579d0 ("HID: hiddev: use usb_find_interface,
-> >    get rid of BKL") introduced using of private intfdata in hiddev for
-> >    purpose of storing hiddev pointer.
-> >
-> >    This is a problem, because intf pointer is already being set to struct
-> >    hid_device pointer by HID core. This obviously lead to memory corruptions
-> >    at device disconnect time, such as
-> >
-> >    WARNING: at lib/kobject.c:595 kobject_put+0x37/0x4b()
-> >    kobject: '(null)' (ffff88011e9cd898): is not initialized, yet kobject_put() is being called.
-> >
-> >    Convert hiddev into accessing hiddev through struct hid_device which is
-> >    in intfdata already.
-> >
-> >    Reported-and-tested-by: Markus Trippelsdorf <markus@trippelsdorf.de>
-> >    Reported-and-tested-by: Heinz Diehl <htd@fritha.org>
-> >    Reported-and-tested-by: Alan Ott <alan@signal11.us>
-> >    Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> >
-> > diff --git a/drivers/hid/usbhid/hiddev.c b/drivers/hid/usbhid/hiddev.c
-> > index f285017..0a29c51 100644
-> > --- a/drivers/hid/usbhid/hiddev.c
-> > +++ b/drivers/hid/usbhid/hiddev.c
-> > @@ -266,13 +266,15 @@ static int hiddev_open(struct inode *inode, struct file *file)
-> >  {
-> >        struct hiddev_list *list;
-> >        struct usb_interface *intf;
-> > +       struct hid_device *hid;
-> >        struct hiddev *hiddev;
-> >        int res;
-> >
-> >        intf = usb_find_interface(&hiddev_driver, iminor(inode));
-> >        if (!intf)
-> >                return -ENODEV;
-> > -       hiddev = usb_get_intfdata(intf);
-> > +       hid = usb_get_intfdata(intf);
-> > +       hiddev = hid->hiddev;
-> >
-> >        if (!(list = kzalloc(sizeof(struct hiddev_list), GFP_KERNEL)))
-> >                return -ENOMEM;
-> > @@ -890,7 +892,6 @@ int hiddev_connect(struct hid_device *hid, unsigned int force)
-> >        hid->hiddev = hiddev;
-> >        hiddev->hid = hid;
-> >        hiddev->exist = 1;
-> > -       usb_set_intfdata(usbhid->intf, usbhid);
-> >        retval = usb_register_dev(usbhid->intf, &hiddev_class);
-> >        if (retval) {
-> >                err_hid("Not able to get a minor for this device.");
-> >
+Thanks
+
+On 08/18/2010 04:42 PM, Oliver Neukum wrote:
+> Am Mittwoch, 18. August 2010, 10:38:15 schrieb Ike Panhc:
+>> Signed-off-by: Ike Panhc <ike.pan@canonical.com>
+>> ---
+>>  drivers/platform/x86/ideapad_acpi.c |   16 +++++++++++-----
+>>  1 files changed, 11 insertions(+), 5 deletions(-)
 > 
-> Yes. That patch fixes my problem too. Tested on top of the current
-> tree [2.6.36-rc1-00051-g3b89f56]. Thanks!
-
-Thanks a lot for prompt testing.
-
-> One little thing though. There is a message about 2 lines offset when
-> patching. Succeeded anyway but I've never got such messages before so
-> I thought it would be better to mention it:
+> Hi,
 > 
-> patch -p1 <../patches/hid.git-9c9e54a8df0be48aa359744f412377cc55c3b7d2.patch
-> patching file drivers/hid/usbhid/hiddev.c
-> Hunk #2 succeeded at 890 (offset -2 lines).
+> wouldn't it be appropriate to integrate such switches into the generic
+> power framework?
 > 
-> I downloaded the patch from
-> http://git.kernel.org/?p=linux/kernel/git/jikos/hid.git;a=commitdiff;h=9c9e54a8df0be48aa359744f412377cc55c3b7d2
-> to make sure I had the original indentations etc. preserved (Gmail
-> tends to mess up with lines).
+> 	Regards
+> 		Oliver
 
-Yeah, that's fine. It just means that the patch has been generated on a 
-slightly different version of the file, which makes the line numbers be 
-off a bit, but patch, git and friends can cope with this easily.
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
