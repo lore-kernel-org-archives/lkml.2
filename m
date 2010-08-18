@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab0HRPHt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:07:49 -0400
-Received: from kroah.org ([198.145.64.141]:47496 "EHLO coco.kroah.org"
+	id S1753941Ab0HRPIK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:08:10 -0400
+Received: from kroah.org ([198.145.64.141]:47482 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753823Ab0HRPHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:07:41 -0400
-Date: Wed, 18 Aug 2010 08:06:15 -0700
+	id S1753828Ab0HRPHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 11:07:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 18 08:05:57 2010
+Message-Id: <20100818150557.522312831@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 18 Aug 2010 08:01:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [0/6] 2.6.27.52 stable review [try 3]
-Message-ID: <20100818150615.GA4752@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Pekka Enberg <penberg@kernel.org>
+Subject: [5/6] mm: fix page table unmap for stack guard page properly
+In-Reply-To: <20100818150615.GA4752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the 3rd try for the 2.6.27.52 kernel release.  It has 3 more
-patches than the -rc1 release, and two more than -rc2.  I've tested this
-on my machine, but I'm still getting some kernel log warnings from some
-programs.  Any VM developer who wishes to verify that I actually got my
-backports correctly would be greatly appreciated as I am not that
-comfortable with them.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-As an example, look at patch 6/6, I could only figure out the /proc file
-change, not the mlock range change, as the VM has changed a lot from .27
-to today.  Any help in porting commit
-d7824370e26325c881b665350ce64fb0a4fde24a to the .27 tree "properly"
-would be greatly appreciated.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.52-rc3.gz
-and the diffstat can be found below.
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-thanks,
+commit 11ac552477e32835cb6970bf0a70c210807f5673 upstream.
 
-greg k-h
+We do in fact need to unmap the page table _before_ doing the whole
+stack guard page logic, because if it is needed (mainly 32-bit x86 with
+PAE and CONFIG_HIGHPTE, but other architectures may use it too) then it
+will do a kmap_atomic/kunmap_atomic.
+
+And those kmaps will create an atomic region that we cannot do
+allocations in.  However, the whole stack expand code will need to do
+anon_vma_prepare() and vma_lock_anon_vma() and they cannot do that in an
+atomic region.
+
+Now, a better model might actually be to do the anon_vma_prepare() when
+_creating_ a VM_GROWSDOWN segment, and not have to worry about any of
+this at page fault time.  But in the meantime, this is the
+straightforward fix for the issue.
+
+See https://bugzilla.kernel.org/show_bug.cgi?id=16588 for details.
+
+Reported-by: Wylda <wylda@volny.cz>
+Reported-by: Sedat Dilek <sedat.dilek@gmail.com>
+Reported-by: Mike Pagano <mpagano@gentoo.org>
+Reported-by: François Valenduc <francois.valenduc@tvcablenet.be>
+Tested-by: Ed Tomlinson <edt@aei.ca>
+Cc: Pekka Enberg <penberg@kernel.org>
+Cc: Greg KH <gregkh@suse.de>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ mm/memory.c |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2428,14 +2428,13 @@ static int do_anonymous_page(struct mm_s
+ 	spinlock_t *ptl;
+ 	pte_t entry;
+ 
+-	if (check_stack_guard_page(vma, address) < 0) {
+-		pte_unmap(page_table);
++	pte_unmap(page_table);
++
++	/* Check if we need to add a guard page to the stack */
++	if (check_stack_guard_page(vma, address) < 0)
+ 		return VM_FAULT_SIGBUS;
+-	}
+ 
+ 	/* Allocate our own private page. */
+-	pte_unmap(page_table);
+-
+ 	if (unlikely(anon_vma_prepare(vma)))
+ 		goto oom;
+ 	page = alloc_zeroed_user_highpage_movable(vma, address);
 
 
- Makefile            |    2 +-
- arch/x86/mm/fault.c |    9 ++++++++-
- fs/proc/task_mmu.c  |    8 +++++++-
- mm/memory.c         |   26 +++++++++++++++++++++++++-
- mm/mmap.c           |    2 +-
- 5 files changed, 42 insertions(+), 5 deletions(-)
