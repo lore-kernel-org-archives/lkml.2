@@ -1,79 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab0HRLEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 07:04:49 -0400
-Received: from avexcashub1.qlogic.com ([198.70.193.61]:56256 "EHLO
-	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab0HRLEq convert rfc822-to-8bit (ORCPT
+	id S1752738Ab0HRLHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 07:07:12 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33681 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab0HRLHH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 07:04:46 -0400
-From: Amit Salecha <amit.salecha@qlogic.com>
-To: Amerigo Wang <amwang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Dhananjay Phadke <dhananjay.phadke@qlogic.com>,
-        Narender Kumar <narender.kumar@qlogic.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Ameen Rahman <ameen.rahman@qlogic.com>
-Date: Wed, 18 Aug 2010 06:04:41 -0500
-Subject: RE: [RFC Patch] netxen: remove firmware exports
-Thread-Topic: [RFC Patch] netxen: remove firmware exports
-Thread-Index: Acs+u2qv2tBgFdunQMyq5bEbLzzjMgACS6Iw
-Message-ID: <99737F4847ED0A48AECC9F4A1974A4B80F86E69129@MNEXMB2.qlogic.org>
-References: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
-In-Reply-To: <20100818095908.6606.56224.sendpatchset@localhost.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 18 Aug 2010 07:07:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=Iih1a7qXq5MXIRJ/qIobrAKrIk9iz3VD4DsofFXxoX75haHgN3uElpC+xXrhE1/mE0
+         IvYvBYRQGY7cuLUpUHjkSOp4B1vs0RUGFI14+VLMUJw5cGLUSVYxf5YNgxndiIn+LpAO
+         6Q/C8qJcpzyEM7PHmYs+AU+Dw3gIbDmyRHCA4=
 MIME-Version: 1.0
+Date: Wed, 18 Aug 2010 14:07:05 +0300
+Message-ID: <AANLkTin5K=ii_ZhQ1hFm7wfcqfhdQhrUh-mXS7ZAy=h-@mail.gmail.com>
+Subject: Staging drivers das08_cs.c compile error
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If problem is firmware files are not present in /lib/firmware.
-Then we can work with David Woodhouse and make these firmware available in /lib/firmware.
+Linux 2.6.36-rc1 compile error:
 
------Original Message-----
-From: Amerigo Wang [mailto:amwang@redhat.com] 
-Sent: Wednesday, August 18, 2010 3:25 PM
-To: linux-kernel@vger.kernel.org
-Cc: Dhananjay Phadke; Amit Salecha; Narender Kumar; netdev@vger.kernel.org; David S. Miller; Amerigo Wang
-Subject: [RFC Patch] netxen: remove firmware exports
-
-
-netxen_nic driver can store firmwares on flash, and get them porperly and
-dynamically, so the firmwares may not appear in /lib/firmware/. However, netxen_nic
-still exports these firmwares via modinfo, this makes our script which parses
-modinfo output fail.
-
-Probably netxen_nic has other way to export these firmwares, but not like other
-modules in a stardand way. I think we can just remove these exports, but
-I am not sure.
-
-Signed-off-by: WANG Cong <amwang@redhat.com>
-Cc: Amit Kumar Salecha <amit.salecha@qlogic.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Dhananjay Phadke <dhananjay.phadke@qlogic.com>
-Cc: Narender Kumar <narender.kumar@qlogic.com>
-
----
-diff --git a/drivers/net/netxen/netxen_nic_main.c b/drivers/net/netxen/netxen_nic_main.c
-index fd86e18..e8443af 100644
---- a/drivers/net/netxen/netxen_nic_main.c
-+++ b/drivers/net/netxen/netxen_nic_main.c
-@@ -41,10 +41,6 @@
- MODULE_DESCRIPTION("QLogic/NetXen (1/10) GbE Converged Ethernet Driver");
- MODULE_LICENSE("GPL");
- MODULE_VERSION(NETXEN_NIC_LINUX_VERSIONID);
--MODULE_FIRMWARE(NX_P2_MN_ROMIMAGE_NAME);
--MODULE_FIRMWARE(NX_P3_CT_ROMIMAGE_NAME);
--MODULE_FIRMWARE(NX_P3_MN_ROMIMAGE_NAME);
--MODULE_FIRMWARE(NX_UNIFIED_ROMIMAGE_NAME);
- 
- char netxen_nic_driver_name[] = "netxen_nic";
- static char netxen_nic_driver_string[] = "QLogic/NetXen Network Driver v"
-
+drivers/staging/comedi/drivers/das08_cs.c: In function
+‘das08_pcmcia_config_loop’:
+drivers/staging/comedi/drivers/das08_cs.c:225: error: ‘struct
+pcmcia_device’ has no member named ‘io’
