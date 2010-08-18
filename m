@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab0HRH3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 03:29:44 -0400
-Received: from mail4-relais-sop.national.inria.fr ([192.134.164.105]:3041 "EHLO
-	mail4-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750828Ab0HRH3j (ORCPT
+	id S1751087Ab0HRHd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 03:33:59 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:35536 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab0HRHdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 03:29:39 -0400
-X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Aug 2010 03:29:38 EDT
-X-IronPort-AV: E=Sophos;i="4.56,226,1280700000"; 
-   d="scan'208";a="67924312"
-Message-ID: <4C6B88A5.4050305@inria.fr>
-Date: Wed, 18 Aug 2010 09:15:49 +0200
-From: Brice Goglin <Brice.Goglin@inria.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
+	Wed, 18 Aug 2010 03:33:54 -0400
+Date: Wed, 18 Aug 2010 16:32:34 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/9] Hugepage migration (v2)
+Message-ID: <20100818073234.GA28961@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1281432464-14833-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <alpine.DEB.2.00.1008110806070.673@router.home>
+ <20100812075323.GA6112@spritzera.linux.bs1.fc.nec.co.jp>
+ <alpine.DEB.2.00.1008130744550.27542@router.home>
+ <20100816091935.GB3388@spritzera.linux.bs1.fc.nec.co.jp>
+ <alpine.DEB.2.00.1008160707420.11420@router.home>
+ <20100817023719.GC12736@spritzera.linux.bs1.fc.nec.co.jp>
+ <20100817081817.GA28969@spritzera.linux.bs1.fc.nec.co.jp>
+ <20100817094007.GA18161@basil.fritz.box>
 MIME-Version: 1.0
-To: Amerigo Wang <amwang@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-        David Rientjes <rientjes@google.com>, Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 2/2] Makefile: "make kernelrelease" should show the correct
- full kernel version
-References: <20100628030507.5187.95903.sendpatchset@localhost.localdomain> <20100628030516.5187.49089.sendpatchset@localhost.localdomain>
-In-Reply-To: <20100628030516.5187.49089.sendpatchset@localhost.localdomain>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100817094007.GA18161@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch (actually 01ab17887 in 2.6.36-rc1) reveals what looks like a
-problem to me: make kernelrelease always regenerates
-include/config/kernel.release even if it's already more recent than
-include/config/auto.conf. Is this the expected behavior? Do we really
-need include/config/kernel.release to depend on FORCE?
+On Tue, Aug 17, 2010 at 11:40:08AM +0200, Andi Kleen wrote:
+> > When get_user_pages_fast() is called before try_to_unmap(),
+> > direct I/O code increments refcount on the target page.
+> > Because this refcount is not associated to the mapping,
+> > migration code will find remaining refcounts after try_to_unmap()
+> > unmaps all mappings. Then refcount check decides migration to fail,
+> > so direct I/O is continued safely.
+> 
+> This would imply that direct IO can make migration fail arbitarily.
+> Also not good. Should we add some retries, at least for the soft offline
+> case?
 
-$ make kernelrelease -d
-[...]
-Considering target file `kernelrelease'.
- File `kernelrelease' does not exist.
-  Considering target file `include/config/kernel.release'.
-    Pruning file `include/config/auto.conf'.
-    Considering target file `FORCE'.
-     File `FORCE' does not exist.
-     Finished prerequisites of target file `FORCE'.
-    Must remake target `FORCE'.
-    Successfully remade target file `FORCE'.
-   Finished prerequisites of target file `include/config/kernel.release'.
-   Prerequisite `include/config/auto.conf' is older than target `include/config/kernel.release'.
-   Prerequisite `FORCE' of target `include/config/kernel.release' does not exist.
-  Must remake target `include/config/kernel.release'.
-
+Soft offline is kicked from userspace, so the retry logic can be implemented
+in userspace. However, currently we can't distinguish migration failure from
+"unknown page" error by return value (-EIO in both case for now.)
+How about changing return value to -EAGAIN when migration failed?
 
 Thanks,
-Brice
-
-
-
-
-Le 28/06/2010 05:01, Amerigo Wang a écrit :
-> From: Amerigo Wang <amwang@redhat.com>
-> Date: Mon, 28 Jun 2010 10:45:21 +0800
->
-> After commit 85a256d8e0116c8f5ad276730830f5d4d473344d, 'make kernelrelease' doesn't
-> show the correct full kernel version. This patch fixes it, 'make kernelrelease' will
-> show the same version name with the one you finally get.
->
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Signed-off-by: Amerigo Wang <amwang@redhat.com>
-> ---
->  Makefile |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/Makefile b/Makefile
-> index 710f91c..2b517a1 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -414,7 +414,7 @@ endif
->  no-dot-config-targets := clean mrproper distclean \
->  			 cscope TAGS tags help %docs check% \
->  			 include/linux/version.h headers_% \
-> -			 kernelrelease kernelversion
-> +			 kernelversion
->  
->  config-targets := 0
->  mixed-targets  := 0
-> @@ -1468,8 +1468,7 @@ checkstack:
->  	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
->  
->  kernelrelease:
-> -	$(if $(wildcard include/config/kernel.release), $(Q)echo $(KERNELRELEASE), \
-> -	$(error kernelrelease not valid - run 'make prepare' to update it))
-> +	@echo $(kernelrelease)
->  kernelversion:
->  	@echo $(KERNELVERSION)
->  
->   
-
+Naoya Horiguchi
