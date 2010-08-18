@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab0HRV6D (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 17:58:03 -0400
-Received: from mail.perches.com ([173.55.12.10]:1179 "EHLO mail.perches.com"
+	id S1754390Ab0HRWAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 18:00:08 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44074 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab0HRV6B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 17:58:01 -0400
-Subject: Re: add memset checks to checkpatch.pl
-From: Joe Perches <joe@perches.com>
-To: Dave Jones <davej@redhat.com>
-Cc: apw@canonical.com, Linux Kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100818214818.GA31094@redhat.com>
-References: <20100818204016.GA29640@redhat.com>
-	 <1282167133.6724.165.camel@Joe-Laptop>  <20100818214818.GA31094@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 14:57:59 -0700
-Message-ID: <1282168679.6724.174.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1750985Ab0HRWAG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 18:00:06 -0400
+Date: Thu, 19 Aug 2010 00:00:03 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT] HID
+Message-ID: <alpine.LNX.2.00.1008181422210.1019@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 17:48 -0400, Dave Jones wrote:
-> On Wed, Aug 18, 2010 at 02:32:13PM -0700, Joe Perches wrote:
->  > On Wed, 2010-08-18 at 16:40 -0400, Dave Jones wrote:
->  > > Occasionally someone goofs the argument order to memset.
->  > 	if ($line =~ /\bmemset\s*\(\s*($Lval)\s*,\s*($Lval)\s*,\s*($Lval)\s*\)/) {
->  > 		my $memset_addr = $1;
->  > 		my $memset_val = $2;
->  > 		my $memset_size = $3;
->  > 		if ($memset_size =~ /(0x|)0$/i) {
->  > 			ERROR("memset uses second argument as constant byte value, not third.\n" . $herecurr);
->  > 		elsif ($memset_size =~ /(0x|)1/i) {
->  > 			WARN("single byte memset is suspicious. Swapped 2nd/3rd argument?\n" . $herecurr);
->  > 		}
->  > 	}
-> I'm all for improving my shoddy perl where possible, but this doesn't seem to actually
-> catch any of the test cases I wrote.  (it's also missing a } )
+Linus,
 
-I intend never to be a perl monk.
+please pull from 'for-linus' branch from
 
-I notice the missing { before the elsif after I sent it.
-Oh well.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
 
-I just typed it in the emailer, so it's not tested at all.
-Also it's missing a $ after 1 in the second $memset_size test.
+to receive HID fixes below. The most important is the memory corruption 
+fix in hiddev, which was caused by Arnd's patch that tried to get rid of 
+BKL, but messed up intf private data. It's verified to fix various bug 
+reports (warnings from kobject core code, suspend-resume failures, etc).
 
-What are your test cases anyway?
+Apart from that, a few minor fixes in picolcd driver and a device ID 
+addition.
 
-Likely $Lval isn't matching things like
-sizeof(*foo) so this isn't checked:
+Thanks.
 
-	memset(foo, bar, sizeof(*foo));
+Bruno Prémont (1):
+      HID: picolcd: correct ordering of framebuffer freeing
 
-Maybe Andy has a better idea?
+Chris Ball (2):
+      HID: hiddev: protect against disconnect/NULL-dereference race
+      USB HID: Add ID for eGalax Multitouch used in JooJoo tablet
 
+Dan Carpenter (1):
+      HID: picolcd: testing the wrong variable
+
+Jiri Kosina (1):
+      HID: hiddev: fix memory corruption due to invalid intfdata
+
+ drivers/hid/hid-core.c      |    1 +
+ drivers/hid/hid-egalax.c    |    9 +++++++++
+ drivers/hid/hid-ids.h       |    1 +
+ drivers/hid/hid-picolcd.c   |    4 ++--
+ drivers/hid/usbhid/hiddev.c |   11 +++++++----
+ 5 files changed, 20 insertions(+), 6 deletions(-)
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
