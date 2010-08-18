@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab0HRWXv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 18:23:51 -0400
-Received: from smtp105.sbc.mail.gq1.yahoo.com ([67.195.14.108]:33876 "HELO
-	smtp105.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751737Ab0HRWXt (ORCPT
+	id S1754379Ab0HRWaO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 18:30:14 -0400
+Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:29044 "HELO
+	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751659Ab0HRWaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 18:23:49 -0400
+	Wed, 18 Aug 2010 18:30:12 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Aug 2010 18:30:12 EDT
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: ajIDsQYVM1lg5Wqdnkpo0SsR3rrELtp6GD8D0yOYfjul2VW
- PQLGi2EngOCiiYUO7s62pNuYfzsmVWE_KlafX6ou03VJ1VfA_dF7MHTatkyb
- iNRE.5QIsD4uEemssN4JlNuUMCQWBHHxnhiaX.ESpA20ZKa77wWTajHIQ8Do
- pNaGPZdM0Y6K6ZlngDbYES.einQZEkt8Hy_NDA23gec9KnUD_JUDujhqhNmu
- DG21.LhjBYS_D_SSdz4Pg4Op1pZmxwIZvtAeLUs.DwLOljYNn1w3wJLhZLMj
- s1BVgpD5c4XonQju3K2mbXc_pDZhK.Q3GEP3.QMOqt3dj6ki6564naQZRVBn
- DDFgBDdq88F9Ol..dQg--
+X-YMail-OSG: hks1KnAVM1nDorOVZo6CFkRll9Uc2ac17ZV1rG9FGRKb8BU
+ hDrWBigOgZSZYZa6GutHsoIw1px2rNwMuR2CfkNkQdHAZ4D_AP_9BYQEsqOk
+ MniOeI8h6IJEn1GAZtqoLh0p9eqbbZZ.juuuz0OFwWokPModxvbLnHQzFm.r
+ KQLaEFlVkkL7Xjw9SOa2bCdZrHe4SsV1wS__bl8mYuc4el2Lmcv0c8hN_fe4
+ fYDEaI6vzcXIBC6MgWpXmurllT0gbi.Xbu73cFOJdOkpYc.9zPpEF_sWhRRv
+ 4XukH4cCENSxIxIhJYK6iEGiq0TdBE6CnX4h5UzF3GC_KkuwDWdPAfn4o
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
         James Bottomley <James.Bottomley@suse.de>,
         Hannes Reinecke <hare@suse.de>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 2/3] tcm: Make transport_calc_sg_num() properly handle task_offset
-Date: Wed, 18 Aug 2010 15:23:46 -0700
-Message-Id: <1282170226-23502-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 0/3] tcm: Improvements for struct se_mem <-> SGL mapping logic
+Date: Wed, 18 Aug 2010 15:23:29 -0700
+Message-Id: <1282170209-23460-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,114 +35,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-transport_calc_sg_num() is used by dev_obj_do_se_mem_map() to determine
-the number of scatterlists for an individual struct se_task, and then proceeds
-to allocate a contigious array of struct scatterlist in struct se_task->task_sg[].
-This struct se_task->task_sg[] is then used by subsystem plugins like IBLOCK, FILEIO
-and PSCSI to setup I/O descriptors down to the Linux storage subsystem.
+Greetings hch, Jens and Co,
 
-This patch updates transport_calc_sg_num() to fix an issue that was originally
-reported when an underlying struct Scsi_Host was reporting 255 max_sectors to
-IBLOCK, which manifested itself by generating an number of scatterlists for
-the map task_offset carried between struct se_task allocations inside of
-transport_generic_get_cdb_count().
+The following are three patches improve the handling of struct scatterlist -> struct se_mem
+and struct se_mem -> struct scatterlist mapping within the TCM core algorithms.  These
+patches also fix a bug for the struct se_mem -> struct scatterlist case with an underlying
+struct block_device is reporting max_sectors=255, and when multiple struct tasks carrying
+an struct se_mem *in_se_mem and u32 *task_offset pointer need to be carried between
+allocations in transport_generic_get_cdb_count() and for struct se_subsystem_api I/O of
+struct se_task.
 
-This patch also makes an small improvement by removing the improper usage of
-list_for_each_entry_continue() when picking off the next struct se_mem, and
-instead adds a !list_is_last() check around list_entry().
+The last two commits are difficult decipher without looking at the larger context, which is:
 
-So far this patch has been tested with TCM_Loop using max_sectors=1024 on top of
-TCM/IBLOCK connected to a scsi_debug device using max_sectors 255-251 to force the
-task_offset to span struct task allocations.
+Starting in transport_generic_get_cdb_count(), which the generation of N tasks
+based on enforced max_sectors for a single received CDB in struct se_cmd:
 
-Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
----
- drivers/target/target_core_transport.c |   45 +++++++++++++++++---------------
- 1 files changed, 24 insertions(+), 21 deletions(-)
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_transport.c;hb=refs/heads/lio-4.0#l6960
 
-diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
-index dbedb7a..43eeb14 100644
---- a/drivers/target/target_core_transport.c
-+++ b/drivers/target/target_core_transport.c
-@@ -6554,54 +6554,57 @@ extern u32 transport_calc_sg_num(
- 	struct se_mem *in_se_mem,
- 	u32 task_offset)
- {
-+	struct se_cmd *se_cmd = task->task_se_cmd;
- 	struct se_mem *se_mem = in_se_mem;
--	u32 sg_length, sg_offset, task_size = task->task_size;
--	u32 saved_task_offset = 0;
-+	u32 sg_length, task_size = task->task_size;
- 
--	while (task_size) {
-+	while (task_size != 0) {
- 		DEBUG_SC("se_mem->se_page(%p) se_mem->se_len(%u)"
- 			" se_mem->se_off(%u) task_offset(%u)\n",
- 			se_mem->se_page, se_mem->se_len,
- 			se_mem->se_off, task_offset);
- 
- 		if (task_offset == 0) {
--			if (task_size > se_mem->se_len)
-+			if (task_size >= se_mem->se_len) {
- 				sg_length = se_mem->se_len;
--			else
-+
-+				if (!(list_is_last(&se_mem->se_list,
-+						T_TASK(se_cmd)->t_mem_list)))
-+					se_mem = list_entry(se_mem->se_list.next,
-+							struct se_mem, se_list);
-+			} else {
- 				sg_length = task_size;
-+				task_size -= sg_length;
-+				goto next;
-+			}
- 
- 			DEBUG_SC("sg_length(%u) task_size(%u)\n",
- 					sg_length, task_size);
--
--			if (saved_task_offset)
--				task_offset = saved_task_offset;
- 		} else {
--			sg_offset = task_offset;
--
--			if ((se_mem->se_len - task_offset) > task_size)
-+			if ((se_mem->se_len - task_offset) > task_size) {
- 				sg_length = task_size;
--			else
-+				task_size -= sg_length;
-+				goto next;
-+			 } else {
- 				sg_length = (se_mem->se_len - task_offset);
- 
-+				if (!(list_is_last(&se_mem->se_list,
-+						T_TASK(se_cmd)->t_mem_list)))
-+					se_mem = list_entry(se_mem->se_list.next,
-+							struct se_mem, se_list);
-+			}
-+
- 			DEBUG_SC("sg_length(%u) task_size(%u)\n",
- 					sg_length, task_size);
- 
--			saved_task_offset = task_offset;
- 			task_offset = 0;
- 		}
- 		task_size -= sg_length;
--
-+next:
- 		DEBUG_SC("task[%u] - Reducing task_size to(%u)\n",
- 			task->task_no, task_size);
- 
- 		task->task_sg_num++;
--
--		list_for_each_entry_continue(se_mem,
--				task->task_se_cmd->t_task->t_mem_list, se_list)
--			break;
--
--		if (!se_mem)
--			break;
- 	}
- 
- 	task->task_sg = kzalloc(task->task_sg_num *
--- 
-1.5.6.5
+then into dev_obj_do_se_mem_map() for an single individual struct se_task:
+
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_seobj.c;hb=refs/heads/lio-4.0#l103
+
+and finally into transport_calc_sg_num() and transport_map_mem_to_sg() respectively to
+allocate struct se_task->task_sg[] and map the struct se_mem from the per CDB I/O
+descriptor context in T_TASK(se_cmd)->t_mem_list.  This goes into a single struct se_task
+context mapping into struct se_task->task_sg[], that is then dispatched to individual subsystem
+plugin I/O via struct se_subsystem_api->do_task().
+
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_transport.c;hb=refs/heads/lio-4.0#l6553
+http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_transport.c;hb=refs/heads/lio-4.0#l6857
+
+So far this has been tested on v2.6.35 using TCM_Loop for patch #1, and TCM/IBLOCK +
+scsi_debug w/ max_sectors 255-251 for the patch #2 and #3.  I am going to keep testing
+this with some various odd numbered max_sectors values with scsi_debug and see if all
+combinations of SGL -> struct se_mem and struct se_mem -> SGL mapping are working as
+expected.
+
+Best,
+
+--nab
+
+Nicholas Bellinger (3):
+  tcm: Remove task_offset parameter from transport_map_sg_to_mem()
+  tcm: Make transport_calc_sg_num() properly handle task_offset
+  tcm: Make transport_map_mem_to_sg() properly handle task_offset
+
+ drivers/target/target_core_transport.c |  212 +++++++++++++------------------
+ include/target/target_core_transport.h |    2 +-
+ 2 files changed, 90 insertions(+), 124 deletions(-)
 
