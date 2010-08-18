@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab0HRILB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 04:11:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35180 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751107Ab0HRIKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 04:10:54 -0400
-Message-ID: <4C6B95AA.7040502@suse.de>
-Date: Wed, 18 Aug 2010 10:11:22 +0200
-From: Tejun Heo <teheo@suse.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <20100813114858.GA31937@lst.de> <4C654D4B.1030507@kernel.org> <20100813143820.GA7931@lst.de> <4C655BE5.4070809@kernel.org> <20100814103654.GA13292@lst.de> <4C6A5D8A.4010205@kernel.org> <20100817131915.GB2963@lst.de> <4C6ABBCB.9030306@kernel.org> <20100817165929.GB13800@lst.de> <4C6B7F4A.2040807@kernel.org>
-In-Reply-To: <4C6B7F4A.2040807@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1752013Ab0HRILh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 04:11:37 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:56610 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751107Ab0HRILd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 04:11:33 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, jblunck@suse.de,
+        hch@infradead.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-reply-to: <20100817214404.GH5556@shell> (message from Valerie Aurora on
+	Tue, 17 Aug 2010 17:44:04 -0400)
+Subject: Re: [PATCH 19/39] union-mount: Implement union lookup
+References: <1281282776-5447-1-git-send-email-vaurora@redhat.com> <1281282776-5447-20-git-send-email-vaurora@redhat.com> <E1Ojud6-0004Br-D6@pomaz-ex.szeredi.hu> <20100817214404.GH5556@shell>
+Message-Id: <E1Oldjq-0005zf-2m@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Wed, 18 Aug 2010 10:11:10 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 08/18/2010 08:35 AM, Tejun Heo wrote:
->> It's not bisecting to find bugs in the barrier conversion.  We can't
->> easily bisect it down anyway.  The problem is when we try to bisect
->> other problems and get into the middle of the series barriers suddenly
->> are gone.  Which is not very helpful for things like data integrity
->> problems in filesystems.
+On Tue, 17 Aug 2010, Valerie Aurora wrote:
+> On Fri, Aug 13, 2010 at 03:49:04PM +0200, Miklos Szeredi wrote:
+> > On Sun,  8 Aug 2010, Valerie Aurora wrote:
+> > > Implement unioned directories, whiteouts, and fallthrus in pathname
+> > > lookup routines.  do_lookup() and lookup_hash() call lookup_union()
+> > > after looking up the dentry from the top-level file system.
+> > > lookup_union() is centered around __lookup_hash(), which does cached
+> > > and/or real lookups and revalidates each dentry in the union stack.
+> > > 
+> > > XXX - implement negative union cache entries
+> > > 
+> > > XXX - handle different permissions on directories
+> > 
+> > If process doing the lookup doesn't have write permission on the top
+> > level directory then the lookup will fail.  This is not intended, is
+> > it?
 > 
-> Ah, okay, hmmm.... alright, I'll resequence the patches.  If the
-> filesystem changes can be put into a single tree somehow, we can keep
-> things mostly working at least for direct devices.
+> Does it fail?  I'm not checking permissions before calling
+> ->fallthru().  But I can't test this because the code doesn't set the
+> owner of the copied up directory correctly. :)
 
-Sorry but I'm doing it.  It just doesn't make much sense.  I can't
-relax the ordering for REQ_HARDBARRIER without breaking the remapping
-drivers.  So, to keep things working, I'll have to 1. relax the
-ordering 2. implement new REQ_FLUSH/FUA based interface and 3. use
-them in the filesystems in the same patch.  That's just wrong.  And I
-don't think md/dm changes can or should go through the block tree.
-They're way too invasive for that.  It's a new implementation and
-barrier won't work (fail gracefully) for several commits during the
-transition.  I don't think there's a better way around it.
+It fails because everything, including copyup, is done with the
+credentials of the user doing the lookup/copyup.  This is wrong, for
+the time of the copyup the credentials need to be upgraded to be able
+to create and copy the lower file or directory into the upper
+filesystem even when the current process doesn't have enough
+privileges for that.
 
-Thanks.
-
--- 
-tejun
+Thanks,
+Miklos
