@@ -1,101 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753711Ab0HRTbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:31:17 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:25752 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753478Ab0HRTbO convert rfc822-to-8bit (ORCPT
+	id S1753732Ab0HRTcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:32:10 -0400
+Received: from smtp104.prem.mail.ac4.yahoo.com ([76.13.13.43]:29128 "HELO
+	smtp104.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752570Ab0HRTcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:31:14 -0400
-X-IronPort-AV: E=Sophos;i="4.56,229,1280732400"; 
-   d="scan'208";a="431432429"
-Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Ram Pai <ram.n.pai@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <AANLkTi=WkoxjwZbt6Vd0VhbuA7_k2WM-NUXZnrmzOOPy@mail.gmail.com>
-References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
-	 <AANLkTi=WkoxjwZbt6Vd0VhbuA7_k2WM-NUXZnrmzOOPy@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Wed, 18 Aug 2010 15:31:12 -0400
-Message-ID: <1282159872.8540.96.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 18 Aug 2010 19:31:14.0077 (UTC) FILETIME=[EBA3ECD0:01CB3F0B]
+	Wed, 18 Aug 2010 15:32:07 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: DnNc6OEVM1mTXOa5pZCoJ9sMWBtVHdRtskrcoEIwSW8nhw5
+ sXIBF_Vp7neetMU82VZ85p2S.RANMJ7C4jLGED4pCkaiWgdFaZGLLCLTZ_YX
+ _5llL8w9NbBTAi1w1_pCa5pRvrtKmj4WxV2L2Hc9W1nFdXnOIW7NiTh8gOsq
+ CIL5KOble7EjdrWoDqj8G424cYC91_RdJctnLlaGinLYjbTsOV7fnk50A9br
+ OwzmIJLzgh7OgEVVqwYt19uFcMeGt
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 18 Aug 2010 14:32:01 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [S+Q3 20/23] slub: Shared cache to exploit cross cpu caching
+ abilities.
+In-Reply-To: <alpine.DEB.2.00.1008171431590.14588@router.home>
+Message-ID: <alpine.DEB.2.00.1008181431100.9566@router.home>
+References: <20100804024514.139976032@linux.com> <20100804024535.338543724@linux.com> <alpine.DEB.2.00.1008162246500.26781@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171234130.12188@router.home> <alpine.DEB.2.00.1008171137030.6486@chino.kir.corp.google.com>
+ <alpine.DEB.2.00.1008171348220.13665@router.home> <alpine.DEB.2.00.1008171158530.21770@chino.kir.corp.google.com> <alpine.DEB.2.00.1008171431590.14588@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 12:24 -0700, Ram Pai wrote:
-> 
-> 
-> On Wed, Aug 18, 2010 at 12:04 PM, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
->         From: Trond Myklebust <Trond.Myklebust@netapp.com>
->         
->         Allowing kswapd to do GFP_KERNEL memory allocations (or any
->         blocking memory
->         allocations) is wrong and can cause deadlocks in
->         try_to_release_page(), as
->         the filesystem believes it is safe to allocate new memory and
->         block,
->         whereas kswapd is there specifically to clear a low-memory
->         situation...
->         
->         Set the gfp_mask to GFP_IOFS instead.
->         
->         Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
->         ---
->         
->          mm/vmscan.c |    2 +-
->          1 files changed, 1 insertions(+), 1 deletions(-)
->         
->         
->         diff --git a/mm/vmscan.c b/mm/vmscan.c
->         index ec5ddcc..716dd16 100644
->         --- a/mm/vmscan.c
->         +++ b/mm/vmscan.c
->         @@ -2095,7 +2095,7 @@ static unsigned long
->         balance_pgdat(pg_data_t *pgdat, int order)
->                unsigned long total_scanned;
->                struct reclaim_state *reclaim_state =
->         current->reclaim_state;
->                struct scan_control sc = {
->         -               .gfp_mask = GFP_KERNEL,
->         +               .gfp_mask = GFP_IOFS,
->                        .may_unmap = 1,
->                        .may_swap = 1,
->                        /*
-> 
-> Trond,
-> 
->            Has anyone hit this issue? Or is this based on code
-> inspection?  
-> 
->            The reason I  ask is we are seeing a problem, similar to
-> the symptom described, on RH based kernel but have not been able to
-> reproduce on 2.6.35.
+On Tue, 17 Aug 2010, Christoph Lameter wrote:
 
-Hi Ram,
+> > >
+> > > > [   15.752467]
+> > > > [   15.752467] INFO: 0xffff880c7e5f3ec0-0xffff880c7e5f3ec7. First byte 0x30 instead of 0xbb
+> > > > [   15.752467] INFO: Allocated in 0xffff88087e4f11e0 age=131909211166235 cpu=2119111312 pid=-30712
+> > > > [   15.752467] INFO: Freed in 0xffff88087e4f13f0 age=131909211165707 cpu=2119111840 pid=-30712
+> > > > [   15.752467] INFO: Slab 0xffffea002bba4d28 objects=51 new=3 fp=0x0007000000000000 flags=0xa00000000000080
+> > > > [   15.752467] INFO: Object 0xffff880c7e5f3eb0 @offset=3760
+> > > > [   15.752467]
+> > > > [   15.752467] Bytes b4 0xffff880c7e5f3ea0:  18 00 00 00 7e 00 00 00 5a 5a 5a 5a 5a 5a 5a 5a ....~...ZZZZZZZZ
+> > > > [   15.752467]   Object 0xffff880c7e5f3eb0:  d0 0f 4f 7e 08 88 ff ff 80 10 4f 7e 08 88 ff ff .O~....O~..
+> > > > [   15.752467]  Redzone 0xffff880c7e5f3ec0:  30 11 4f 7e 08 88 ff ff                         0.O~..
+> > > > [   15.752467]  Padding 0xffff880c7e5f3ef8:  00 16 4f 7e 08 88 ff ff                         ..O~..
+> > >
+> > > 16 bytes allocated and a pointer array much larger than that is used.
+> > >
+> >
+> > Since the problem persists with and without CONFIG_SLUB_DEBUG_ON, I'd
+> > speculate that this is a problem with node scalability on my 4-node system
+> > if this boots fine for you.
+>
+> Looking at it. I have a fakenuma setup here that does not trigger it.
+> Guess I need something more real.
 
-I was seeing it on NFS until I put in the following kswapd-specific hack
-into nfs_release_page():
+Cannot reproduce it on my real 2 node numa system either.
+Trouble is that results in only one alien cache per cpu caching domain.
 
-	/* Only do I/O if gfp is a superset of GFP_KERNEL */
-	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
-		int how = FLUSH_SYNC;
-
-		/* Don't let kswapd deadlock waiting for OOM RPC calls */
-		if (current_is_kswapd())
-			how = 0;
-		nfs_commit_inode(mapping->host, how);
-	}
-
-Remove the 'if (current_is_kswapd())' line, and run an mmap() write
-intensive workload, and it should hang pretty much every time.
-
-Cheers
-  Trond
