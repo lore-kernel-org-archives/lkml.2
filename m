@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751343Ab0HRDxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 23:53:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63474 "EHLO
+	id S1751379Ab0HRDzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 23:55:16 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60792 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab0HRDxQ (ORCPT
+	with ESMTP id S1750892Ab0HRDzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 23:53:16 -0400
+	Tue, 17 Aug 2010 23:55:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=UYTfFFJ5KRDKKtlcZIqfZGGZgQ2rKN1THDKQcE00+bn2CGeyHplwevVOxcszlOe0cD
-         vPc0d+b2XsoIKgXpwyenoQ1lRAlisrTYoN9UHQmuW84AYsMyPgGRyh9bpc4DAOvMFXSP
-         UZfwA9qQTzVgVPx7D4dnxkOelmk4a8xZWbDOQ=
-Date: Wed, 18 Aug 2010 05:53:12 +0200
+        b=XhJmZfKnQmNsR3VhJfmw7u61MnH5LlggwJqwj6rQTFWyiChAtzsTxzernJ3zFGht70
+         WFLSAHJrrVvcfgB9IMGT9kT2ny4vhuJEE8KowDzy9AWSa5OA//PgeRFDZhSG8XlomvPt
+         ZW/GpWCOJzoNS0VWBIH07uS/3bbDl/Cmzp7Bo=
+Date: Wed, 18 Aug 2010 05:55:09 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Borislav Petkov <bp@amd64.org>
+To: Will Deacon <will.deacon@arm.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        David Miller <davem@davemloft.net>
+        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
+        Borislav Petkov <bp@amd64.org>
 Subject: Re: [RFC PATCH 0/0 v3] callchain fixes and cleanups
-Message-ID: <20100818035310.GD24748@nowhere>
-References: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com> <20100817045820.GA676@aftab>
+Message-ID: <20100818035507.GE24748@nowhere>
+References: <1281991715-10367-1-git-send-regression-fweisbec@gmail.com> <1282041159.22114.2.camel@e102144-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100817045820.GA676@aftab>
+In-Reply-To: <1282041159.22114.2.camel@e102144-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 06:58:20AM +0200, Borislav Petkov wrote:
-> From: Frederic Weisbecker <fweisbec@gmail.com>
-> Date: Mon, Aug 16, 2010 at 04:48:29PM -0400
+On Tue, Aug 17, 2010 at 11:32:39AM +0100, Will Deacon wrote:
+> On Mon, 2010-08-16 at 21:48 +0100, Frederic Weisbecker wrote:
+> > Hi,
+> > 
+> Hi Frederic,
+> > 
+> > This set factorizes a lot of callchain code and fixes concurrent
+> > callchain buffers accesses.
 > 
-> Hey Frederic,
+> > You can test it by pulling that branch:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> >         perf/callchains
+> > 
 > 
-> > Built-tested on PowerPc, Arm and SuperH (can someone point me to a
-> > ready to use sparc cross compiler, like those that can be found there
-> > for other archs: http://www.codesourcery.com/sgpp/lite_edition.html ?)
+> I've tested this on an ARM Cortex-A9 board and it all seems fine [plus
+> the code is a lot cleaner!].
 > 
-> Have you by chance tried http://www.kernel.org/pub/tools/crosstool/
-> already?
+> Tested-by: Will Deacon <will.deacon@arm.com>
 
 
-Nice, I'll give it a try.
+Thanks a lot!
 
-Thanks :)
+BTW, out of curiosity, do you have NMIs on ARM and do the hardware events
+make use of them? Or may be you use FIQ to simulate NMIs?
 
