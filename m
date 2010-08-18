@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0HRSZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 14:25:41 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4029 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752330Ab0HRSZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 14:25:40 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-From: "Brian Norris" <norris@broadcom.com>
-To: linux-mtd@lists.infradead.org
-cc: "David Woodhouse" <dwmw2@infradead.org>,
-        "Artem Bityutskiy" <dedekind1@gmail.com>,
-        "Brian Norris" <norris@broadcom.com>, mike@it-loops.com,
-        "Linux Kernel" <linux-kernel@vger.kernel.org>, awg@embtoolkit.org
-Subject: [PATCH] mtd: nand: Fix regression in BBM detection
-Date: Wed, 18 Aug 2010 11:25:04 -0700
-Message-ID: <1282155904-10113-1-git-send-email-norris@broadcom.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <4C6AC037.7070205@broadcom.com>
-MIME-Version: 1.0
-X-WSS-ID: 6072FA1237O66193366-01-01
-Content-Type: text/plain
+	id S1753277Ab0HRSZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 14:25:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35123 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753226Ab0HRSZ4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 14:25:56 -0400
+Date: Wed, 18 Aug 2010 11:24:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Giel van Schijndel <me@mortis.eu>, Laurens Leemans <laurens@signips.com>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        Randy Dunlap <rdunlap@xenotime.net>, Jean Delvare <khali@linux-fr.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] hwmon: f71882fg: Add support for the Fintek F71808E
+Message-Id: <20100818112418.a25a50d6.akpm@linux-foundation.org>
+In-Reply-To: <4C651800.6030804@redhat.com>
+References: <20100801132226.GE3711@salidar.me.mortis.eu>
+	<1280669402-31213-1-git-send-email-me@mortis.eu>
+	<4C5950B6.5010503@redhat.com>
+	<20100810191117.GN14382@salidar.me.mortis.eu>
+	<4C651800.6030804@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit c7b28e25cb9beb943aead770ff14551b55fa8c79 caused a regression
-in detection of factory-set bad block markers, especially for certain
-small-page NAND. This fix removes some unneeded constraints on using
-NAND_SMALL_BADBLOCK_POS, making the detection code more correct.
+On Fri, 13 Aug 2010 12:01:36 +0200
+Hans de Goede <hdegoede@redhat.com> wrote:
 
-This regression can be seen, for example, in Hynix HY27US081G1M and
-similar.
+> Hi,
+> 
+> On 08/10/2010 09:11 PM, Giel van Schijndel wrote:
+> > On Wed, Aug 04, 2010 at 01:36:22PM +0200, Hans de Goede wrote:
+> >> On 08/01/2010 03:30 PM, Giel van Schijndel wrote:
+> >>> Allow device probing to recognise the Fintek F71808E.
+> >>>
+> >>> Sysfs interface:
+> >>>    * Fan/pwm control is the same as for F71889FG
+> >>
+> >> My datasheet strongly disagrees with this ...
+> >
+> > I just noticed this patch was applied to mainline anyway.  Regardless, I
+> > will (try to) address these issues you raised.
+> >
+> > Right now however, I am prioritising personal stuff above this
+> > driver---bachelor's thesis and graduation presentation.  When finished
+> > with that (september) I'll allocate time to these issues again.
+> >
+> 
+> I've send a mail directly to akpm asking for this to be removed, hopefully
+> this will help.
 
-Signed-off-by: Brian Norris <norris@broadcom.com>
----
- drivers/mtd/nand/nand_base.c |   10 +++-------
- 1 files changed, 3 insertions(+), 7 deletions(-)
+It seems that I managed to muck up my paperwork and the patch was
+merged into mainline.
 
-diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-index a3c7473..a22ed7b 100644
---- a/drivers/mtd/nand/nand_base.c
-+++ b/drivers/mtd/nand/nand_base.c
-@@ -2934,14 +2934,10 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
- 		chip->chip_shift = ffs((unsigned)(chip->chipsize >> 32)) + 32 - 1;
- 
- 	/* Set the bad block position */
--	if (!(busw & NAND_BUSWIDTH_16) && (*maf_id == NAND_MFR_STMICRO ||
--				(*maf_id == NAND_MFR_SAMSUNG &&
--				 mtd->writesize == 512) ||
--				*maf_id == NAND_MFR_AMD))
--		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
--	else
-+	if (mtd->writesize > 512 || (busw & NAND_BUSWIDTH_16))
- 		chip->badblockpos = NAND_LARGE_BADBLOCK_POS;
--
-+	else
-+		chip->badblockpos = NAND_SMALL_BADBLOCK_POS;
- 
- 	/* Get chip options, preserve non chip based options */
- 	chip->options &= ~NAND_CHIPOPTIONS_MSK;
--- 
-1.7.0.4
-
+We can revert it, or we can fix it up in place in time for 2.6.36. 
+What do you guys suggest?
 
