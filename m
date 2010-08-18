@@ -1,32 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752235Ab0HRXqj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 19:46:39 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:36628 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab0HRXqe (ORCPT
+	id S1752322Ab0HRXql (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 19:46:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60078 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423Ab0HRXqj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 19:46:34 -0400
+	Wed, 18 Aug 2010 19:46:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=JEIocgPP1DbumFPs+LDsf0z8fVc0z3Dkj+UqmI34UgsavE0MK5OpIoQJ+rSlft2OZw
-         hHFiK8AmHPaUhY3bhCohtHNDPyujFiXd/3FncmnDcS3V3BnpC9DIjKB7Aqh6zqFdptiN
-         nTg1AiUM5D4NesrH/qchFvY6QWbmCRp7ZcxZk=
+        b=Y4L7uMvYcziMs+rB+G1mcCjCBue1sEOWmVIdl/UfB7bNSaUCffHS3XkrW31aG9P1uM
+         iUJSfc/+LnAS7QKaI5Vf0xK9Zd+ftB3gzOmQYkDBn6snT9YxHjnZ4PDmwJF5jNHwX4xb
+         0Jkp+Qkj0AZAKFjrdEKaBMZpxbjlv9uORTSGg=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Will Deacon <will.deacon@arm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Namhyung Kim <namhyung@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
         Stephane Eranian <eranian@google.com>,
-        Paul Mundt <lethal@linux-sh.org>, David Miller <davem@davemloft.net>,
-        Borislav Petkov <bp@amd64.org>
-Subject: [PATCH 5/7] perf: Fix race in callchains
-Date: Thu, 19 Aug 2010 01:46:14 +0200
-Message-Id: <1282175176-6363-6-git-send-regression-fweisbec@gmail.com>
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 7/7] perf, tracing: add missing __percpu markups
+Date: Thu, 19 Aug 2010 01:46:16 +0200
+Message-Id: <1282175176-6363-8-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1282175176-6363-1-git-send-regression-fweisbec@gmail.com>
@@ -35,459 +34,110 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that software events don't have interrupt disabled anymore in
-the event path, callchains can nest on any context. So seperating
-nmi and others contexts in two buffers has become racy.
+From: Namhyung Kim <namhyung@gmail.com>
 
-Fix this by providing one buffer per nesting level. Given the size
-of the callchain entries (2040 bytes * 4), we now need to allocate
-them dynamically.
+ftrace_event_call->perf_events, perf_trace_buf,
+fgraph_data->cpu_data and some local variables are percpu pointers
+missing __percpu markups. Add them.
 
-v2: Fixed put_callchain_entry call after recursion.
-    Fix the type of the recursion, it must be an array.
-
-v3: Use a manual pr cpu allocation (temporary solution until NMIs
-    can safely access vmalloc'ed memory).
-    Do a better separation between callchain reference tracking and
-    allocation. Make the "put" path lockless for non-release cases.
-
-v4: Protect the callchain buffers with rcu.
-
-v5: Do the cpu buffers allocations node affine.
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Tejun Heo <tj@kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
 Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: Paul Mackerras <paulus@samba.org>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Paul Mundt <lethal@linux-sh.org>
-Cc: David Miller <davem@davemloft.net>
-Cc: Borislav Petkov <bp@amd64.org>
+LKML-Reference: <1281498479-28551-1-git-send-email-namhyung@gmail.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/kernel/cpu/perf_event.c |   22 +--
- include/linux/perf_event.h       |    1 -
- kernel/perf_event.c              |  298 +++++++++++++++++++++++++++++---------
- 3 files changed, 238 insertions(+), 83 deletions(-)
+ include/linux/ftrace_event.h         |    4 ++--
+ kernel/trace/trace_event_perf.c      |   15 ++++++++-------
+ kernel/trace/trace_functions_graph.c |    2 +-
+ 3 files changed, 11 insertions(+), 10 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index a3c9222..8e91cf3 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1608,6 +1608,11 @@ static const struct stacktrace_ops backtrace_ops = {
- void
- perf_callchain_kernel(struct perf_callchain_entry *entry, struct pt_regs *regs)
- {
-+	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
-+		/* TODO: We don't support guest os callchain now */
-+		return NULL;
-+	}
-+
- 	perf_callchain_store(entry, regs->ip);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 02b8b24..5f8ad7b 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -191,8 +191,8 @@ struct ftrace_event_call {
+ 	unsigned int		flags;
  
- 	dump_trace(NULL, regs, NULL, regs->bp, &backtrace_ops, entry);
-@@ -1656,6 +1661,10 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 	struct stack_frame frame;
- 	const void __user *fp;
+ #ifdef CONFIG_PERF_EVENTS
+-	int			perf_refcount;
+-	struct hlist_head	*perf_events;
++	int				perf_refcount;
++	struct hlist_head __percpu	*perf_events;
+ #endif
+ };
  
-+	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
-+		/* TODO: We don't support guest os callchain now */
-+		return NULL;
-+	}
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index db2eae2..92f5477 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -9,7 +9,7 @@
+ #include <linux/kprobes.h>
+ #include "trace.h"
  
- 	fp = (void __user *)regs->bp;
- 
-@@ -1681,19 +1690,6 @@ perf_callchain_user(struct perf_callchain_entry *entry, struct pt_regs *regs)
- 	}
- }
- 
--struct perf_callchain_entry *perf_callchain_buffer(void)
--{
--	if (perf_guest_cbs && perf_guest_cbs->is_in_guest()) {
--		/* TODO: We don't support guest os callchain now */
--		return NULL;
--	}
--
--	if (in_nmi())
--		return &__get_cpu_var(perf_callchain_entry_nmi);
--
--	return &__get_cpu_var(perf_callchain_entry);
--}
--
- unsigned long perf_instruction_pointer(struct pt_regs *regs)
- {
- 	unsigned long ip;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 4db61dd..d7e8ea6 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -983,7 +983,6 @@ extern void perf_callchain_user(struct perf_callchain_entry *entry,
- 				struct pt_regs *regs);
- extern void perf_callchain_kernel(struct perf_callchain_entry *entry,
- 				  struct pt_regs *regs);
--extern struct perf_callchain_entry *perf_callchain_buffer(void);
- 
- 
- static inline void
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 615d024..75ab8a2 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1764,6 +1764,216 @@ static u64 perf_event_read(struct perf_event *event)
- }
+-static char *perf_trace_buf[PERF_NR_CONTEXTS];
++static char __percpu *perf_trace_buf[PERF_NR_CONTEXTS];
  
  /*
-+ * Callchain support
-+ */
-+
-+struct callchain_cpus_entries {
-+	struct rcu_head			rcu_head;
-+	struct perf_callchain_entry	*cpu_entries[0];
-+};
-+
-+static DEFINE_PER_CPU(int, callchain_recursion[4]);
-+static atomic_t nr_callchain_events;
-+static DEFINE_MUTEX(callchain_mutex);
-+struct callchain_cpus_entries *callchain_cpus_entries;
-+
-+
-+__weak void perf_callchain_kernel(struct perf_callchain_entry *entry,
-+				  struct pt_regs *regs)
-+{
-+}
-+
-+__weak void perf_callchain_user(struct perf_callchain_entry *entry,
-+				struct pt_regs *regs)
-+{
-+}
-+
-+static void release_callchain_buffers_rcu(struct rcu_head *head)
-+{
-+	struct callchain_cpus_entries *entries;
-+	int cpu;
-+
-+	entries = container_of(head, struct callchain_cpus_entries, rcu_head);
-+
-+	for_each_possible_cpu(cpu)
-+		kfree(entries->cpu_entries[cpu]);
-+
-+	kfree(entries);
-+}
-+
-+static void release_callchain_buffers(void)
-+{
-+	struct callchain_cpus_entries *entries;
-+
-+	entries = callchain_cpus_entries;
-+	rcu_assign_pointer(callchain_cpus_entries, NULL);
-+	call_rcu(&entries->rcu_head, release_callchain_buffers_rcu);
-+}
-+
-+static int alloc_callchain_buffers(void)
-+{
-+	int cpu;
-+	int size;
-+	struct callchain_cpus_entries *entries;
-+
-+	/*
-+	 * We can't use the percpu allocation API for data that can be
-+	 * accessed from NMI. Use a temporary manual per cpu allocation
-+	 * until that gets sorted out.
-+	 */
-+	size = sizeof(*entries) + sizeof(struct perf_callchain_entry *) *
-+		num_possible_cpus();
-+
-+	entries = kzalloc(size, GFP_KERNEL);
-+	if (!entries)
-+		return -ENOMEM;
-+
-+	size = sizeof(struct perf_callchain_entry) * 4;
-+
-+	for_each_possible_cpu(cpu) {
-+		entries->cpu_entries[cpu] = kmalloc_node(size, GFP_KERNEL,
-+							 cpu_to_node(cpu));
-+		if (!entries->cpu_entries[cpu])
-+			goto fail;
-+	}
-+
-+	rcu_assign_pointer(callchain_cpus_entries, entries);
-+
-+	return 0;
-+
-+fail:
-+	for_each_possible_cpu(cpu)
-+		kfree(entries->cpu_entries[cpu]);
-+	kfree(entries);
-+
-+	return -ENOMEM;
-+}
-+
-+static int get_callchain_buffers(void)
-+{
-+	int err = 0;
-+	int count;
-+
-+	mutex_lock(&callchain_mutex);
-+
-+	count = atomic_inc_return(&nr_callchain_events);
-+	if (WARN_ON_ONCE(count < 1)) {
-+		err = -EINVAL;
-+		goto exit;
-+	}
-+
-+	if (count > 1) {
-+		/* If the allocation failed, give up */
-+		if (!callchain_cpus_entries)
-+			err = -ENOMEM;
-+		goto exit;
-+	}
-+
-+	err = alloc_callchain_buffers();
-+	if (err)
-+		release_callchain_buffers();
-+exit:
-+	mutex_unlock(&callchain_mutex);
-+
-+	return err;
-+}
-+
-+static void put_callchain_buffers(void)
-+{
-+	if (atomic_dec_and_mutex_lock(&nr_callchain_events, &callchain_mutex)) {
-+		release_callchain_buffers();
-+		mutex_unlock(&callchain_mutex);
-+	}
-+}
-+
-+static int get_recursion_context(int *recursion)
-+{
-+	int rctx;
-+
-+	if (in_nmi())
-+		rctx = 3;
-+	else if (in_irq())
-+		rctx = 2;
-+	else if (in_softirq())
-+		rctx = 1;
-+	else
-+		rctx = 0;
-+
-+	if (recursion[rctx])
-+		return -1;
-+
-+	recursion[rctx]++;
-+	barrier();
-+
-+	return rctx;
-+}
-+
-+static inline void put_recursion_context(int *recursion, int rctx)
-+{
-+	barrier();
-+	recursion[rctx]--;
-+}
-+
-+static struct perf_callchain_entry *get_callchain_entry(int *rctx)
-+{
-+	int cpu;
-+	struct callchain_cpus_entries *entries;
-+
-+	*rctx = get_recursion_context(__get_cpu_var(callchain_recursion));
-+	if (*rctx == -1)
-+		return NULL;
-+
-+	entries = rcu_dereference(callchain_cpus_entries);
-+	if (!entries)
-+		return NULL;
-+
-+	cpu = smp_processor_id();
-+
-+	return &entries->cpu_entries[cpu][*rctx];
-+}
-+
-+static void
-+put_callchain_entry(int rctx)
-+{
-+	put_recursion_context(__get_cpu_var(callchain_recursion), rctx);
-+}
-+
-+static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
-+{
-+	int rctx;
-+	struct perf_callchain_entry *entry;
-+
-+
-+	entry = get_callchain_entry(&rctx);
-+	if (rctx == -1)
-+		return NULL;
-+
-+	if (!entry)
-+		goto exit_put;
-+
-+	entry->nr = 0;
-+
-+	if (!user_mode(regs)) {
-+		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
-+		perf_callchain_kernel(entry, regs);
-+		if (current->mm)
-+			regs = task_pt_regs(current);
-+		else
-+			regs = NULL;
-+	}
-+
-+	if (regs) {
-+		perf_callchain_store(entry, PERF_CONTEXT_USER);
-+		perf_callchain_user(entry, regs);
-+	}
-+
-+exit_put:
-+	put_callchain_entry(rctx);
-+
-+	return entry;
-+}
-+
-+/*
-  * Initialize the perf_event context in a task_struct:
-  */
- static void
-@@ -1895,6 +2105,8 @@ static void free_event(struct perf_event *event)
- 			atomic_dec(&nr_comm_events);
- 		if (event->attr.task)
- 			atomic_dec(&nr_task_events);
-+		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN)
-+			put_callchain_buffers();
- 	}
- 
- 	if (event->buffer) {
-@@ -2937,55 +3149,6 @@ void perf_event_do_pending(void)
- 	__perf_pending_run();
- }
- 
--DEFINE_PER_CPU(struct perf_callchain_entry, perf_callchain_entry);
--
--/*
-- * Callchain support -- arch specific
-- */
--
--__weak struct perf_callchain_entry *perf_callchain_buffer(void)
--{
--	return &__get_cpu_var(perf_callchain_entry);
--}
--
--__weak void perf_callchain_kernel(struct perf_callchain_entry *entry,
--				  struct pt_regs *regs)
--{
--}
--
--__weak void perf_callchain_user(struct perf_callchain_entry *entry,
--				struct pt_regs *regs)
--{
--}
--
--static struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
--{
--	struct perf_callchain_entry *entry;
--
--	entry = perf_callchain_buffer();
--	if (!entry)
--		return NULL;
--
--	entry->nr = 0;
--
--	if (!user_mode(regs)) {
--		perf_callchain_store(entry, PERF_CONTEXT_KERNEL);
--		perf_callchain_kernel(entry, regs);
--		if (current->mm)
--			regs = task_pt_regs(current);
--		else
--			regs = NULL;
--	}
--
--	if (regs) {
--		perf_callchain_store(entry, PERF_CONTEXT_USER);
--		perf_callchain_user(entry, regs);
--	}
--
--	return entry;
--}
--
--
- /*
-  * We assume there is only KVM supporting the callbacks.
-  * Later on, we might change it to a list if there is
-@@ -3480,14 +3643,20 @@ static void perf_event_output(struct perf_event *event, int nmi,
- 	struct perf_output_handle handle;
- 	struct perf_event_header header;
- 
-+	/* protect the callchain buffers */
-+	rcu_read_lock();
-+
- 	perf_prepare_sample(&header, data, event, regs);
- 
- 	if (perf_output_begin(&handle, event, header.size, nmi, 1))
--		return;
-+		goto exit;
- 
- 	perf_output_sample(&handle, &header, data, event);
- 
- 	perf_output_end(&handle);
-+
-+exit:
-+	rcu_read_unlock();
- }
- 
- /*
-@@ -4243,32 +4412,16 @@ end:
- int perf_swevent_get_recursion_context(void)
+  * Force it to be aligned to unsigned long to avoid misaligned accesses
+@@ -24,7 +24,7 @@ static int	total_ref_count;
+ static int perf_trace_event_init(struct ftrace_event_call *tp_event,
+ 				 struct perf_event *p_event)
  {
- 	struct perf_cpu_context *cpuctx = &__get_cpu_var(perf_cpu_context);
--	int rctx;
+-	struct hlist_head *list;
++	struct hlist_head __percpu *list;
+ 	int ret = -ENOMEM;
+ 	int cpu;
  
--	if (in_nmi())
--		rctx = 3;
--	else if (in_irq())
--		rctx = 2;
--	else if (in_softirq())
--		rctx = 1;
--	else
--		rctx = 0;
--
--	if (cpuctx->recursion[rctx])
--		return -1;
--
--	cpuctx->recursion[rctx]++;
--	barrier();
--
--	return rctx;
-+	return get_recursion_context(cpuctx->recursion);
- }
- EXPORT_SYMBOL_GPL(perf_swevent_get_recursion_context);
+@@ -42,11 +42,11 @@ static int perf_trace_event_init(struct ftrace_event_call *tp_event,
+ 	tp_event->perf_events = list;
  
- void inline perf_swevent_put_recursion_context(int rctx)
+ 	if (!total_ref_count) {
+-		char *buf;
++		char __percpu *buf;
+ 		int i;
+ 
+ 		for (i = 0; i < PERF_NR_CONTEXTS; i++) {
+-			buf = (char *)alloc_percpu(perf_trace_t);
++			buf = (char __percpu *)alloc_percpu(perf_trace_t);
+ 			if (!buf)
+ 				goto fail;
+ 
+@@ -102,13 +102,14 @@ int perf_trace_init(struct perf_event *p_event)
+ int perf_trace_enable(struct perf_event *p_event)
  {
- 	struct perf_cpu_context *cpuctx = &__get_cpu_var(perf_cpu_context);
--	barrier();
--	cpuctx->recursion[rctx]--;
-+
-+	put_recursion_context(cpuctx->recursion, rctx);
- }
+ 	struct ftrace_event_call *tp_event = p_event->tp_event;
++	struct hlist_head __percpu *pcpu_list;
+ 	struct hlist_head *list;
  
- void __perf_sw_event(u32 event_id, u64 nr, int nmi,
-@@ -4968,6 +5121,13 @@ done:
- 			atomic_inc(&nr_comm_events);
- 		if (event->attr.task)
- 			atomic_inc(&nr_task_events);
-+		if (event->attr.sample_type & PERF_SAMPLE_CALLCHAIN) {
-+			err = get_callchain_buffers();
-+			if (err) {
-+				free_event(event);
-+				return ERR_PTR(err);
-+			}
-+		}
- 	}
+-	list = tp_event->perf_events;
+-	if (WARN_ON_ONCE(!list))
++	pcpu_list = tp_event->perf_events;
++	if (WARN_ON_ONCE(!pcpu_list))
+ 		return -EINVAL;
  
- 	return event;
+-	list = this_cpu_ptr(list);
++	list = this_cpu_ptr(pcpu_list);
+ 	hlist_add_head_rcu(&p_event->hlist_entry, list);
+ 
+ 	return 0;
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 6bff236..fcb5a54 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -23,7 +23,7 @@ struct fgraph_cpu_data {
+ };
+ 
+ struct fgraph_data {
+-	struct fgraph_cpu_data		*cpu_data;
++	struct fgraph_cpu_data __percpu *cpu_data;
+ 
+ 	/* Place to preserve last processed entry. */
+ 	struct ftrace_graph_ent_entry	ent;
 -- 
 1.6.2.3
 
