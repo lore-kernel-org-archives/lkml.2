@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817Ab0HRTCJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:02:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38978 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751050Ab0HRTCH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:02:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=MKazophU+6OaiecDUCe5F/jwLN0uKLhVwMRjqpbRF36BaMtmiXbv3y/s0+FMlHwcpP
-         iTaKKFDni8jEUrTa8MmtiGxd3OOx3SFEG7E8xPzjhn9f/VtSvyTzhWAhoqKJUKb/hjS6
-         ae6NmMROZGFxCmP5zlCJ5PjRJ+lXvomeklOgE=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [REGRESSION] [SUSPEND] Opps during suspend to disk (probably also during to ram)
-Date: Wed, 18 Aug 2010 21:02:02 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35; KDE/4.4.5; i686; ; )
+	id S1751551Ab0HRTEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:04:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55179 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155Ab0HRTEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 15:04:20 -0400
+Message-ID: <4C6C2E85.9050401@zytor.com>
+Date: Wed, 18 Aug 2010 12:03:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: Borislav Petkov <bp@amd64.org>
+CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v2 2/2] x86, cpu hotplug: Fix cpu bringup concurrency
+ issue
+References: <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812170644.GZ23755@8bytes.org> <4C644507.9020606@zytor.com> <20100812190414.GA23755@8bytes.org> <20100813123543.GC9046@aftab> <20100816121933.GA28147@aftab> <20100816123959.GC28147@aftab>
+In-Reply-To: <20100816123959.GC28147@aftab>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201008182102.03201.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last known good kernel: 2.6.35
-Failing kernel: 2.6.36-rc1
+On 08/16/2010 05:39 AM, Borislav Petkov wrote:
+> 
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index dcb0593..1598663 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -58,6 +58,7 @@ config X86
+>  	select ANON_INODES
+>  	select HAVE_ARCH_KMEMCHECK
+>  	select HAVE_USER_RETURN_NOTIFIER
+> +	select ARCH_CPU_PROBE_RELEASE
+>  
 
-When I try suspend to disk under 2.6.36-rc1 ("no_console_suspend" option 
-enabled) system hangs on this message:
-http://unixy.pl/maciek/download/kernel/2.6.36-
-rc1/zlom/suspend_issue/dsc_0001.jpg
+warning: (X86) selects ARCH_CPU_PROBE_RELEASE which has unmet direct
+dependencies (HOTPLUG_CPU)
 
-Also during suspend to ram system hangs, but I got blank screen, so - 
-unfortunately - I cannot debug this.
+... and build failure when compiling without CONFIG_HOTPLUG_CPU.
 
-Config:
-http://unixy.pl/maciek/download/kernel/2.6.36-
-rc1/zlom/suspend_issue/config-2.6.36-rc1
-dmesg:
-http://unixy.pl/maciek/download/kernel/2.6.36-
-rc1/zlom/suspend_issue/dmesg-2.6.36-rc1.txt
+	-hpa
+
+
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
