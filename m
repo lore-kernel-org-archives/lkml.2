@@ -1,56 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab0HRMka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 08:40:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34589 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab0HRMk3 convert rfc822-to-8bit (ORCPT
+	id S1752687Ab0HRMlT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 08:41:19 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58450 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750797Ab0HRMlR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 08:40:29 -0400
-Subject: Re: [PATCH] perf tools: Fix build error on read only source.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100818123713.1F02414C03B@msa103.auone-net.jp>
-References: <20100817181835.GA21083@ghostprotocols.net>
-	 <20100818123713.1F02414C03B@msa103.auone-net.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 18 Aug 2010 14:40:24 +0200
-Message-ID: <1282135224.1926.3936.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 18 Aug 2010 08:41:17 -0400
+Date: Wed, 18 Aug 2010 13:41:16 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Zhang Rui <rui.zhang@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+        mingo@elte.hu, robert.richter@amd.com, acme@redhat.com,
+        paulus@samba.org, dzickus@redhat.com, gorcunov@gmail.com,
+        fweisbec@gmail.com, Lin Ming <ming.m.lin@intel.com>,
+        "Brown, Len" <lenb@kernel.org>, Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [RFC PATCH 0/3] perf: show package power consumption in perf
+Message-ID: <20100818124116.GA17957@console-pimps.org>
+References: <1282118350.5181.115.camel@rui> <1282134329.1926.3918.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282134329.1926.3918.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 21:37 +0900, Kusanagi Kouichi wrote:
-
-> With POSIX shell patch, $(OUTPUT) has not been created yet when it is
-> used by try-cc. This fixes the issue anyway.
+On Wed, Aug 18, 2010 at 02:25:29PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-08-18 at 15:59 +0800, Zhang Rui wrote:
+> > Hi, all,
+> > 
+> > RAPL(running average power limit) is a new feature which provides
+> > mechanisms to enforce power consumption limit, on some new processors.
+> > 
+> > Generally speaking, by using RAPL, OS can set a power budget in a
+> > certain time window, and let Hardware to throttle the processor
+> > P/T-state to meet this energy limitation.
+> > 
+> > RAPL also provides a new MSR, i.e. MSR_PKG_ENERGY_STATUS, which reports
+> > the total amount of energy consumed by the package.
+> > 
+> > I'm not sure if to support RAPL or not, but anyway, it sounds like a
+> > good idea to export the energy status in perf.
+> > 
+> > So a new perf pmu and event to show the package energy consumed is
+> > introduced in this patch.
+> > 
+> > Here is what I get after applying the three patches,
+> > 
+> > #./perf stat -e energy test
+> > Performance counter stats for 'test':
+> > 
+> > 	202	Joules cost by package
+> > 7.926001238	seconds time elapsed
+> > 
+> > 
+> > Note that this patch set is made based on Peter's perf-pmu branch,
+> > git://git.kernel.org/pub/scm/linux/kernel/git/peterz/linux-2.6-perf.git
+> >  which provides better interfaces to register/unregister a new pmu.
+> > 
+> > any comment are welcome. :)
 > 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index dcb9700..5b1c12b 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -281,6 +281,7 @@ endif
 > 
->  -include feature-tests.mak
+> Nice,.. however:
 > 
-> +$(shell mkdir -p $(OUTPUT) 2> /dev/null)
->  ifeq ($(call try-cc,$(SOURCE_HELLO),-Werror -fstack-protector-all),y)
->  	CFLAGS := $(CFLAGS) -fstack-protector-all
->  endif
+>  - if it is a pure read-only counter without sampling support,
+>    expose it as such, don't fudge in the hrtimer stuff. Simply
+>    fail to create a sampling event.
+> 
+>    SH has the same problem for its 'normal' PMU, the solution is
+>    to use event groups, Matt was looking at adding support to
+>    perf-record for that, if creating a sampling event fails, fall
+>    back to {hrtimer, $event} groups.
 
-
-So you're wanting to provide a non-existing O=foo ?
-
-I don't think we should, simply bail when it doesn't exist, kernel
-builds do the same:
-
-# make O=plop-build bzImage
-/bin/sh: line 0: cd: plop-build: No such file or directory
-Makefile:117: *** output directory "plop-build" does not exist.  Stop.
-
+I had a quick look over the patches and Peter is right - the group
+events stuff would probably fit quite well here. Unfortunately, due to
+holidays and things, I haven't been able to get them finished
+yet. I'll get on that ASAP.
