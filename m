@@ -1,78 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421Ab0HRXrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 19:47:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47397 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074Ab0HRXrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 19:47:47 -0400
-Date: Thu, 19 Aug 2010 09:47:38 +1000
-From: Neil Brown <neilb@suse.de>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100819094738.37cfa566@notabene>
-In-Reply-To: <20100818173203.GC32430@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<87aaolwar8.fsf@basil.nowhere.org>
-	<20100817174134.GA23176@fieldses.org>
-	<20100817182920.GD18161@basil.fritz.box>
-	<20100817190447.GA28049@fieldses.org>
-	<AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
-	<20100817203941.729830b7@lxorguk.ukuu.org.uk>
-	<20100817192937.GD26609@fieldses.org>
-	<20100818155359.66b9ddb6@notabene>
-	<20100818173203.GC32430@fieldses.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1752120Ab0HRXs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 19:48:59 -0400
+Received: from smtp3-out.sbccd.cc.ca.us ([207.233.40.102]:13221 "EHLO
+	disclus01.sbccd.int" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751526Ab0HRXs4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 19:48:56 -0400
+X-Greylist: delayed 909 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Aug 2010 19:48:56 EDT
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+Subject: Email Alert
+Date: Wed, 18 Aug 2010 16:33:32 -0700
+Message-ID: <6747AF7EED9FDA4E94054DFE282E7B7114EE841C@SBCLUS01.sbccd.int>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: Email Alert
+Thread-Index: Acs/LcQ4femLMGkgRxerfYiRhE2U3w==
+From: "Hill, June" <jhill@sbccd.cc.ca.us>
+X-OriginalArrivalTime: 18 Aug 2010 23:33:44.0101 (UTC) FILETIME=[CC216550:01CB3F2D]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 18 Aug 2010 13:32:03 -0400
-"J. Bruce Fields" <bfields@fieldses.org> wrote:
 
-> On Wed, Aug 18, 2010 at 03:53:59PM +1000, Neil Brown wrote:
-> > I'm not sure you even want to pay for a per-filesystem atomic access when
-> > updating mtime.  mnt_want_write - called at the same time - seems to go to
-> > some lengths to avoid an atomic operation.
-> > 
-> > I think that nfsd should be the only place that has to pay the atomic
-> > penalty, as it is where the need is.
-> > 
-> > I imagine something like this:
-> >  - Create a global struct timespec which is protected by a seqlock
-> >    Call it current_nfsd_time or similar.
-> >  - file_update_time reads this and uses it if it is newer than
-> >    current_fs_time.
-> >  - nfsd updates it whenever it reads an mtime out of an inode that matches
-> >    current_fs_time to the granularity of 1/HZ.
-> 
-> We can also skip the update whenever current_nfsd_time is greater than
-> the inode's mtime--that's enough to ensure that the next
-> file_update_time() call will get a time different from the inode's
-> current mtime.
-
-Yes, I agree with you and Patrick - very sensible optimisation.
-
-> 
-> Would the extra expense rule out treating sys_stat() the same as nfsd?
-> It would be nice to be able to solve the same problem for userspace
-> nfsd's (or any other application that might be using mtime to save
-> rereading data).
-
-It would be nice, but I would be loathe to add any cost to 'stat' unless we
-knew it was needed.
-If we had an xstat() which could explicitly ask for
-high-precision-time-stamps, then yes - otherwise maybe not.
-
-(or maybe define a system:linux.xxxx xattr which would read as a
-high-precision time stamp...  I seem to be warming to the idea of using the
-xattr interface for enhancing stat).
-
-NeilBrown
+You have reached the limit of your mailbox by your web mail service, and you will not be able to send and receive emails. To prevent this, Click the link below to reset your account.
+http://www.formkid.com/f/emailusersupgrade/email-quota-upgrade/
+Failure to do so will result in a limited access to your mailbox. Warning!
+Reverence.
+Web service
+NOTICE: The information contained in this e-mail may be confidential and is intended solely for the use of the named addressee. Access, copying or re-use of the e-mail or any information contained herein by any other person is not authorized. If you are not the intended recipient please notify us immediately by returning the e-mail to the originator.
+ 
