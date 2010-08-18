@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752563Ab0HRAlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 20:41:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44553 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752478Ab0HRAlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 20:41:06 -0400
-Date: Wed, 18 Aug 2010 10:40:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gwendal Grignou <gwendal@google.com>,
-        Grant Grundler <grundler@google.com>
-Subject: linux-next: build failure after merge of the libata tree
-Message-Id: <20100818104057.5fdaf20d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK"
+	id S1752540Ab0HRApg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 20:45:36 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:58605 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab0HRApa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 20:45:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=g5cgD7h0rqijhxE1tuwfdGGhOzT1Dc4qSVl059YUONsR5Dqshk+Zfx+jgq7TMPvrEu
+         f9kdmRCgqJHJyPxrEG/kX1XpBkjjEGJbDGoyRZfaMn2YQ09CGW2aAnqCse1xon8jQZc4
+         j9BnztBd1B5alAkvjwCX7noq5QS+d9W+D8R+M=
+MIME-Version: 1.0
+Date: Tue, 17 Aug 2010 17:45:28 -0700
+Message-ID: <AANLkTinmWzTBPEsicB-AWv9-=mA8HE2qqEoYqhbV39t8@mail.gmail.com>
+Subject: [PATCH] watchdog: Enable NXP LPC32XX support in Kconfig (resend)
+From: Kevin Wells <wellsk40@gmail.com>
+To: Wim Van Sebroeck <wim@iguana.be>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Vitaly Wool <vitalywool@gmail.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The NXP LPC32XX processor use the same watchdog as the Philips
+PNX4008 processor.
 
-Hi Jeff,
+Signed-off-by: Kevin Wells <wellsk40@gmail.com>
+Tested-by: Wolfram Sang <w.sang@pengutronix.de>
+---
+ drivers/watchdog/Kconfig |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-After merging the libata tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index b04b184..c442b2a 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -206,11 +206,11 @@ config OMAP_WATCHDOG
+         here to enable the OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430
+watchdog timer.
 
-drivers/ata/libata-transport.c: In function 'ata_attach_transport':
-drivers/ata/libata-transport.c:678: error: implicit declaration of function=
- 'kzalloc'
-drivers/ata/libata-transport.c:678: warning: assignment makes pointer from =
-integer without a cast
-drivers/ata/libata-transport.c: In function 'ata_release_transport':
-drivers/ata/libata-transport.c:741: error: implicit declaration of function=
- 'kfree'
+ config PNX4008_WATCHDOG
+-       tristate "PNX4008 Watchdog"
+-       depends on ARCH_PNX4008
++       tristate "PNX4008 and LPC32XX Watchdog"
++       depends on ARCH_PNX4008 || ARCH_LPC32XX
+       help
+         Say Y here if to include support for the watchdog timer
+-         in the PNX4008 processor.
++         in the PNX4008 or LPC32XX processors.
+         This driver can be built as a module by choosing M. The module
+         will be called pnx4008_wdt.
 
-Caused by commit 97395d39931160a171959ac2e1fbff1caba3374b ("[libata] Add
-ATA transport class") neglecting to include linux/slab.h.   See Rule 1 in
-Documentation/SubmitChecklist.
-
-I have used the libata tree form next-20100817 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMaywZAAoJEDMEi1NhKgbs0+wIAIjaC+SjlEzbSvmavh2ymgIt
-Aj+3dkj+QuBpbAwlmE94iJ9L9gcu2ROnfbJ9HmCDo2ZXsHP4yyoCuC3J8EWlEFPj
-T58NiQCK6tE+R8reFeAI5QJB8utYsli4/aldx8rlvrGSka13UgyZHdvh93lR0kjo
-GFk7giFqZ5+xBH8AWRVdyaLE960NOoLUXWB8BfejnG7fS+EkaZt97cRiZkDowKQS
-44jGm9FE/AZmTwrdbTSD0DySiS/+EdB+pgd7ELXMySh85Yt4EKssBRmCU4lWan9I
-06cTXYtiDOF6JSnunhopsh1Ym+jq51mm8PWoL+CEwzp7xKsrDmy/MetqcGOpRuw=
-=4C4E
------END PGP SIGNATURE-----
-
---Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK--
+--
+1.7.1.1
