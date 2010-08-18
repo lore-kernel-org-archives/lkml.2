@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab0HROld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:41:33 -0400
-Received: from kroah.org ([198.145.64.141]:40537 "EHLO coco.kroah.org"
+	id S1753570Ab0HROlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:41:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50625 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753127Ab0HROlb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:41:31 -0400
-Date: Wed, 18 Aug 2010 07:39:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Richard Zidlicky <rz@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35.2 regression, does not boot, sleeping function called
- from invalid context
-Message-ID: <20100818143927.GA1202@kroah.com>
-References: <20100817145305.GA7342@linux-m68k.org>
- <20100818133459.GA6663@kroah.com>
- <20100818140335.GB18303@linux-m68k.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100818140335.GB18303@linux-m68k.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753342Ab0HROlo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 10:41:44 -0400
+Subject: Re: [BUG raid1] kernel BUG at drivers/scsi/scsi_lib.c:1113
+From: James Bottomley <James.Bottomley@suse.de>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        linux-scsi@vger.kernel.org, hch@lst.de, jaxboe@fusionio.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-raid@vger.kernel.org
+In-Reply-To: <4C6BEFD1.8010200@gmail.com>
+References: <20100817220917.GA5268@Krystal> <4C6B097E.7060505@gmail.com>
+	 <20100817223145.GC4641@Krystal>  <4C6BC72E.6040607@gmail.com>
+	 <1282141930.3035.9.camel@mulgrave.site>  <4C6BEFD1.8010200@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 09:41:38 -0500
+Message-ID: <1282142498.3035.17.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 04:03:35PM +0200, Richard Zidlicky wrote:
-> On Wed, Aug 18, 2010 at 06:34:59AM -0700, Greg KH wrote:
+On Wed, 2010-08-18 at 16:36 +0200, Jiri Slaby wrote:
+> On 08/18/2010 04:32 PM, James Bottomley wrote:
+> >> James and Jens, could you take the two remaining (SCSI and BLOCK)?
+> > 
+> > Sure ... could you identify the email by subject, please? lkml.org seems
+> > to be down this morning.
 > 
-> > Does .35.1 work?
+> Sure:
+> [PATCH v2] BLOCK: fix bio.bi_rw handling
+> and
+> [PATCH v2] SCSI: fix bio.bi_rw handling
 > 
-> never tried but can give it a try tonight
-> > .35.2 has some issues that are being worked on, the patches to solve the
-> > bug is already in Linus's tree, give me a few days to get a new release
-> > out with this solved.
-> 
-> thanks, can I find the new patches in git somewhere?
+> You should have received one copy to your suse.de inbox, if everything
+> worked.
 
-Yes, they are in Linus's tree, commits:
-	d7824370e26325c881b665350ce64fb0a4fde24a
-and
-	11ac552477e32835cb6970bf0a70c210807f5673
+Got it.  One of life's little ironies is that I couldn't immediately
+locate it in the SCSI list because it was already queued for inclusion.
 
-thanks,
+James
 
-greg k-h
+
