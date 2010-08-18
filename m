@@ -1,86 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab0HRPIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:08:15 -0400
-Received: from lon1-post-1.mail.demon.net ([195.173.77.148]:44329 "EHLO
-	lon1-post-1.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753828Ab0HRPIL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:08:11 -0400
-Subject: [PATCH] ext4: remove alignment padding from ext4_inode_info on 64
- bit builds
-From: Richard Kennedy <richard@rsk.demon.co.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 18 Aug 2010 16:08:08 +0100
-Message-ID: <1282144088.2068.16.camel@castor.rsk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1753841Ab0HRPIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:08:46 -0400
+Received: from kroah.org ([198.145.64.141]:47468 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753667Ab0HRPHg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 11:07:36 -0400
+X-Mailbox-Line: From gregkh@clark.site Wed Aug 18 08:05:57 2010
+Message-Id: <20100818150557.276273181@clark.site>
+User-Agent: quilt/0.48-11.2
+Date: Wed, 18 Aug 2010 08:01:56 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [2/6] mm: fix missing page table unmap for stack guard page failure case
+In-Reply-To: <20100818150615.GA4752@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reorder structure ext4_inode_info to remove 16 bytes of alignment
-padding on 64 bit builds. This shrinks its size from 904 to 888 bytes
-with (CONFIG_EXT4_S_XATTR=y && CONFIG_QUOTA=n).
-    
-This will allow this structure to use one fewer cache lines.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Also change type of i_delalloc_reserved_flag to bool to better reflect
-its usage.
+------------------
 
-compiled & tested on x86_64
-    
-Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+
+commit 5528f9132cf65d4d892bcbc5684c61e7822b21e9 upstream.
+
+.. which didn't show up in my tests because it's a no-op on x86-64 and
+most other architectures.  But we enter the function with the last-level
+page table mapped, and should unmap it at exit.
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
-patch against 2.6.36-rc1
+ mm/memory.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-Early testing shows more consistent results ( i.e. smaller standard
-deviations) on my AMD X2 setup, but I shall re-run these tests to check
-if this is repeatable.
-
-regards
-Richard
-
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index 889ec9d..b63a8e3 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -750,10 +750,11 @@ struct ext4_inode_info {
- 	 * near to their parent directory's inode.
- 	 */
- 	ext4_group_t	i_block_group;
--	unsigned long	i_state_flags;		/* Dynamic state flags */
--	unsigned long	i_flags;
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2428,8 +2428,10 @@ static int do_anonymous_page(struct mm_s
+ 	spinlock_t *ptl;
+ 	pte_t entry;
  
- 	ext4_lblk_t		i_dir_start_lookup;
-+
-+	unsigned long	i_state_flags;		/* Dynamic state flags */
-+	unsigned long	i_flags;
- #ifdef CONFIG_EXT4_FS_XATTR
- 	/*
- 	 * Extended attributes can be read independently of the main file
-@@ -816,13 +817,14 @@ struct ext4_inode_info {
- 	unsigned int i_reserved_data_blocks;
- 	unsigned int i_reserved_meta_blocks;
- 	unsigned int i_allocated_meta_blocks;
--	unsigned short i_delalloc_reserved_flag;
--	sector_t i_da_metadata_calc_last_lblock;
--	int i_da_metadata_calc_len;
-+	bool i_delalloc_reserved_flag;
+-	if (check_stack_guard_page(vma, address) < 0)
++	if (check_stack_guard_page(vma, address) < 0) {
++		pte_unmap(page_table);
+ 		return VM_FAULT_SIGBUS;
++	}
  
- 	/* on-disk additional length */
- 	__u16 i_extra_isize;
- 
-+	sector_t i_da_metadata_calc_last_lblock;
-+	int i_da_metadata_calc_len;
-+
- 	spinlock_t i_block_reservation_lock;
- #ifdef CONFIG_QUOTA
- 	/* quota space reservation, managed internally by quota code */
+ 	/* Allocate our own private page. */
+ 	pte_unmap(page_table);
 
 
