@@ -1,291 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab0HRUz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:55:29 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48222 "EHLO hera.kernel.org"
+	id S1754383Ab0HRUzu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:55:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48234 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754166Ab0HRUz1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:55:27 -0400
-Date: Wed, 18 Aug 2010 20:55:10 GMT
-From: tip-bot for Joerg Roedel <joerg.roedel@amd.com>
+	id S1754171Ab0HRUzr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 16:55:47 -0400
+Date: Wed, 18 Aug 2010 20:55:30 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         joerg.roedel@amd.com, tglx@linutronix.de, borislav.petkov@amd.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         joerg.roedel@amd.com, tglx@linutronix.de, borislav.petkov@amd.com
-In-Reply-To: <20100816123833.GB28147@aftab>
-References: <20100816123833.GB28147@aftab>
+In-Reply-To: <4C6C294D.3030404@zytor.com>
+References: <4C6C294D.3030404@zytor.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86-32: Separate 1:1 pagetables from swapper_pg_dir
-Message-ID: <tip-fd89a137924e0710078c3ae855e7cec1c43cb845@git.kernel.org>
-Git-Commit-ID: fd89a137924e0710078c3ae855e7cec1c43cb845
+Subject: [tip:x86/urgent] x86-32: Fix dummy trampoline-related inline stubs
+Message-ID: <tip-8848a91068c018bc91f597038a0f41462a0f88a4@git.kernel.org>
+Git-Commit-ID: 8848a91068c018bc91f597038a0f41462a0f88a4
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 Aug 2010 20:55:10 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 Aug 2010 20:55:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd89a137924e0710078c3ae855e7cec1c43cb845
-Gitweb:     http://git.kernel.org/tip/fd89a137924e0710078c3ae855e7cec1c43cb845
-Author:     Joerg Roedel <joerg.roedel@amd.com>
-AuthorDate: Mon, 16 Aug 2010 14:38:33 +0200
+Commit-ID:  8848a91068c018bc91f597038a0f41462a0f88a4
+Gitweb:     http://git.kernel.org/tip/8848a91068c018bc91f597038a0f41462a0f88a4
+Author:     H. Peter Anvin <hpa@zytor.com>
+AuthorDate: Wed, 18 Aug 2010 11:42:23 -0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Wed, 18 Aug 2010 09:17:20 -0700
+CommitDate: Wed, 18 Aug 2010 12:42:24 -0700
 
-x86-32: Separate 1:1 pagetables from swapper_pg_dir
+x86-32: Fix dummy trampoline-related inline stubs
 
-This patch fixes machine crashes which occur when heavily exercising the
-CPU hotplug codepaths on a 32-bit kernel. These crashes are caused by
-AMD Erratum 383 and result in a fatal machine check exception. Here's
-the scenario:
+Fix dummy inline stubs for trampoline-related functions when no
+trampolines exist (until we get rid of the no-trampoline case
+entirely.)
 
-1. On 32-bit, the swapper_pg_dir page table is used as the initial page
-table for booting a secondary CPU.
-
-2. To make this work, swapper_pg_dir needs a direct mapping of physical
-memory in it (the low mappings). By adding those low, large page (2M)
-mappings (PAE kernel), we create the necessary conditions for Erratum
-383 to occur.
-
-3. Other CPUs which do not participate in the off- and onlining game may
-use swapper_pg_dir while the low mappings are present (when leave_mm is
-called). For all steps below, the CPU referred to is a CPU that is using
-swapper_pg_dir, and not the CPU which is being onlined.
-
-4. The presence of the low mappings in swapper_pg_dir can result
-in TLB entries for addresses below __PAGE_OFFSET to be established
-speculatively. These TLB entries are marked global and large.
-
-5. When the CPU with such TLB entry switches to another page table, this
-TLB entry remains because it is global.
-
-6. The process then generates an access to an address covered by the
-above TLB entry but there is a permission mismatch - the TLB entry
-covers a large global page not accessible to userspace.
-
-7. Due to this permission mismatch a new 4kb, user TLB entry gets
-established. Further, Erratum 383 provides for a small window of time
-where both TLB entries are present. This results in an uncorrectable
-machine check exception signalling a TLB multimatch which panics the
-machine.
-
-There are two ways to fix this issue:
-
-        1. Always do a global TLB flush when a new cr3 is loaded and the
-        old page table was swapper_pg_dir. I consider this a hack hard
-        to understand and with performance implications
-
-        2. Do not use swapper_pg_dir to boot secondary CPUs like 64-bit
-        does.
-
-This patch implements solution 2. It introduces a trampoline_pg_dir
-which has the same layout as swapper_pg_dir with low_mappings. This page
-table is used as the initial page table of the booting CPU. Later in the
-bringup process, it switches to swapper_pg_dir and does a global TLB
-flush. This fixes the crashes in our test cases.
-
--v2: switch to swapper_pg_dir right after entering start_secondary() so
-that we are able to access percpu data which might not be mapped in the
-trampoline page table.
-
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-LKML-Reference: <20100816123833.GB28147@aftab>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Borislav Petkov <borislav.petkov@amd.com>
+LKML-Reference: <4C6C294D.3030404@zytor.com>
 ---
- arch/x86/include/asm/pgtable_32.h |    1 +
- arch/x86/include/asm/trampoline.h |    3 +++
- arch/x86/kernel/head_32.S         |    8 +++++++-
- arch/x86/kernel/setup.c           |    2 ++
- arch/x86/kernel/smpboot.c         |   32 +++++++++++++-------------------
- arch/x86/kernel/trampoline.c      |   18 ++++++++++++++++++
- 6 files changed, 44 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/trampoline.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/pgtable_32.h b/arch/x86/include/asm/pgtable_32.h
-index 2984a25..f686f49 100644
---- a/arch/x86/include/asm/pgtable_32.h
-+++ b/arch/x86/include/asm/pgtable_32.h
-@@ -26,6 +26,7 @@ struct mm_struct;
- struct vm_area_struct;
- 
- extern pgd_t swapper_pg_dir[1024];
-+extern pgd_t trampoline_pg_dir[1024];
- 
- static inline void pgtable_cache_init(void) { }
- static inline void check_pgt_cache(void) { }
 diff --git a/arch/x86/include/asm/trampoline.h b/arch/x86/include/asm/trampoline.h
-index cb507bb..8f78fdf 100644
+index 8f78fdf..4dde797 100644
 --- a/arch/x86/include/asm/trampoline.h
 +++ b/arch/x86/include/asm/trampoline.h
-@@ -13,14 +13,17 @@ extern unsigned char *trampoline_base;
- 
- extern unsigned long init_rsp;
- extern unsigned long initial_code;
-+extern unsigned long initial_page_table;
- extern unsigned long initial_gs;
- 
- #define TRAMPOLINE_SIZE roundup(trampoline_end - trampoline_data, PAGE_SIZE)
- 
- extern unsigned long setup_trampoline(void);
-+extern void __init setup_trampoline_page_table(void);
+@@ -22,8 +22,8 @@ extern unsigned long setup_trampoline(void);
+ extern void __init setup_trampoline_page_table(void);
  extern void __init reserve_trampoline_memory(void);
  #else
- static inline void reserve_trampoline_memory(void) {};
-+extern void __init setup_trampoline_page_table(void) {};
+-static inline void reserve_trampoline_memory(void) {};
+-extern void __init setup_trampoline_page_table(void) {};
++static inline void setup_trampoline_page_table(void) {}
++static inline void reserve_trampoline_memory(void) {}
  #endif /* CONFIG_X86_TRAMPOLINE */
  
  #endif /* __ASSEMBLY__ */
-diff --git a/arch/x86/kernel/head_32.S b/arch/x86/kernel/head_32.S
-index ff4c453..fa8c1b8 100644
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -334,7 +334,7 @@ ENTRY(startup_32_smp)
- /*
-  * Enable paging
-  */
--	movl $pa(swapper_pg_dir),%eax
-+	movl pa(initial_page_table), %eax
- 	movl %eax,%cr3		/* set the page table pointer.. */
- 	movl %cr0,%eax
- 	orl  $X86_CR0_PG,%eax
-@@ -614,6 +614,8 @@ ignore_int:
- .align 4
- ENTRY(initial_code)
- 	.long i386_start_kernel
-+ENTRY(initial_page_table)
-+	.long pa(swapper_pg_dir)
- 
- /*
-  * BSS section
-@@ -629,6 +631,10 @@ ENTRY(swapper_pg_dir)
- #endif
- swapper_pg_fixmap:
- 	.fill 1024,4,0
-+#ifdef CONFIG_X86_TRAMPOLINE
-+ENTRY(trampoline_pg_dir)
-+	.fill 1024,4,0
-+#endif
- ENTRY(empty_zero_page)
- 	.fill 4096,1,0
- 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index b008e78..c3a4fbb 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1014,6 +1014,8 @@ void __init setup_arch(char **cmdline_p)
- 	paging_init();
- 	x86_init.paging.pagetable_setup_done(swapper_pg_dir);
- 
-+	setup_trampoline_page_table();
-+
- 	tboot_probe();
- 
- #ifdef CONFIG_X86_64
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index a5e928b..abf4a86 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -73,7 +73,6 @@
- 
- #ifdef CONFIG_X86_32
- u8 apicid_2_node[MAX_APICID];
--static int low_mappings;
- #endif
- 
- /* State of each CPU */
-@@ -281,6 +280,18 @@ notrace static void __cpuinit start_secondary(void *unused)
- 	 * fragile that we want to limit the things done here to the
- 	 * most necessary things.
- 	 */
-+
-+#ifdef CONFIG_X86_32
-+	/*
-+	 * Switch away from the trampoline page-table
-+	 *
-+	 * Do this before cpu_init() because it needs to access per-cpu
-+	 * data which may not be mapped in the trampoline page-table.
-+	 */
-+	load_cr3(swapper_pg_dir);
-+	__flush_tlb_all();
-+#endif
-+
- 	vmi_bringup();
- 	cpu_init();
- 	preempt_disable();
-@@ -299,12 +310,6 @@ notrace static void __cpuinit start_secondary(void *unused)
- 		legacy_pic->chip->unmask(0);
- 	}
- 
--#ifdef CONFIG_X86_32
--	while (low_mappings)
--		cpu_relax();
--	__flush_tlb_all();
--#endif
--
- 	/* This must be done before setting cpu_online_mask */
- 	set_cpu_sibling_map(raw_smp_processor_id());
- 	wmb();
-@@ -750,6 +755,7 @@ do_rest:
- #ifdef CONFIG_X86_32
- 	/* Stack for startup_32 can be just as for start_secondary onwards */
- 	irq_ctx_init(cpu);
-+	initial_page_table = __pa(&trampoline_pg_dir);
- #else
- 	clear_tsk_thread_flag(c_idle.idle, TIF_FORK);
- 	initial_gs = per_cpu_offset(cpu);
-@@ -897,20 +903,8 @@ int __cpuinit native_cpu_up(unsigned int cpu)
- 
- 	per_cpu(cpu_state, cpu) = CPU_UP_PREPARE;
- 
--#ifdef CONFIG_X86_32
--	/* init low mem mapping */
--	clone_pgd_range(swapper_pg_dir, swapper_pg_dir + KERNEL_PGD_BOUNDARY,
--		min_t(unsigned long, KERNEL_PGD_PTRS, KERNEL_PGD_BOUNDARY));
--	flush_tlb_all();
--	low_mappings = 1;
--
- 	err = do_boot_cpu(apicid, cpu);
- 
--	zap_low_mappings(false);
--	low_mappings = 0;
--#else
--	err = do_boot_cpu(apicid, cpu);
--#endif
- 	if (err) {
- 		pr_debug("do_boot_cpu failed %d\n", err);
- 		return -EIO;
-diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
-index c652ef6..a874495 100644
---- a/arch/x86/kernel/trampoline.c
-+++ b/arch/x86/kernel/trampoline.c
-@@ -1,6 +1,7 @@
- #include <linux/io.h>
- 
- #include <asm/trampoline.h>
-+#include <asm/pgtable.h>
- #include <asm/e820.h>
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_ACPI_SLEEP)
-@@ -37,3 +38,20 @@ unsigned long __trampinit setup_trampoline(void)
- 	memcpy(trampoline_base, trampoline_data, TRAMPOLINE_SIZE);
- 	return virt_to_phys(trampoline_base);
- }
-+
-+void __init setup_trampoline_page_table(void)
-+{
-+#ifdef CONFIG_X86_32
-+	/* Copy kernel address range */
-+	clone_pgd_range(trampoline_pg_dir + KERNEL_PGD_BOUNDARY,
-+			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
-+			min_t(unsigned long, KERNEL_PGD_PTRS,
-+			      KERNEL_PGD_BOUNDARY));
-+
-+	/* Initialize low mappings */
-+	clone_pgd_range(trampoline_pg_dir,
-+			swapper_pg_dir + KERNEL_PGD_BOUNDARY,
-+			min_t(unsigned long, KERNEL_PGD_PTRS,
-+			      KERNEL_PGD_BOUNDARY));
-+#endif
-+}
