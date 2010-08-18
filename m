@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750Ab0HRBNx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:13:53 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53717 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752584Ab0HRBNs (ORCPT
+	id S1752735Ab0HRBRF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:17:05 -0400
+Received: from sr-smtp.usish.com ([210.5.144.203]:35719 "EHLO
+	sr-smtp.usish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752310Ab0HRBRA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:13:48 -0400
-Message-Id: <201008180113.o7I1DXg6077317@www262.sakura.ne.jp>
-Subject: Re: [2.6.36-rc1] List corruption when using initrd.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: hughd@google.com
-Cc: tim.c.chen@linux.intel.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, viro@zeniv.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+	Tue, 17 Aug 2010 21:17:00 -0400
+From: "jack wang" <jack_wang@usish.com>
+To: "'Dan Carpenter'" <error27@gmail.com>
+Cc: <lindar_liu@usish.com>, "'James E.J. Bottomley'" <James.Bottomley@suse.de>,
+        "'Jiri Kosina'" <jkosina@suse.cz>, "'Julia Lawall'" <julia@diku.dk>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+References: <20100817115334.GG645@bicker>
+Subject: RE: [patch] scsi/pm8001: handle allocation failures
+Date: Wed, 18 Aug 2010 09:15:23 +0800
+Message-ID: <BE124E04D5CE40BFBBCF6107FDF8B94D@usish.com.cn>
 MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Date: Wed, 18 Aug 2010 10:13:33 +0900
-References: <201008170517.o7H5HbCT002910@www262.sakura.ne.jp> <201008170751.o7H7pmAl038739@www262.sakura.ne.jp> <alpine.LSU.2.00.1008171523270.2106@sister.anvils>
-In-Reply-To: <alpine.LSU.2.00.1008171523270.2106@sister.anvils>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 17082010 #3880867, status: clean
+X-Mailer: Microsoft Office Outlook 11
+In-Reply-To: <20100817115334.GG645@bicker>
+Thread-Index: Acs+A1dCfhbAf56xTsieZm0tPzMm1AAbv9Tw
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh Dickins wrote:
-> Thanks for reporting and bisecting.  Certainly there's a bug in shmem
-> (that we ought to have caught long before it reached 36-rc1: sorry),
-> and it is probably the cause of your crashes; but it's possible there's
-> a similar bug elsewhere too, something else messing up the percpu_counters
-> list - so please check if the patch below really does fix it for you.
 
-This patch solved the list_add() corruption messages and
-"[2.6.36-rc1] Bugs in __free_pipe_info()".
+[Jack] Acked-by: Jack Wang <jack_wang@usish.com> 
+	Thanks!
+                                                                     
 
-> I notice your dmesg also showed fs/inode.c:692 unlock_new_inode()
-> warnings from get_cramfs_inode(): those would be unrelated, and
-> probably from Al Viro's recent changes in cramfs/inode.c - Cc'ed.
-unlock_new_inode() warnings remain after applying this patch.
+Return -ENOMEM if the allocations fail.
 
-Thank you.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/drivers/scsi/pm8001/pm8001_hwi.c
+b/drivers/scsi/pm8001/pm8001_hwi.c
+index 9793aa6..d8db013 100644
+--- a/drivers/scsi/pm8001/pm8001_hwi.c
++++ b/drivers/scsi/pm8001/pm8001_hwi.c
+@@ -4194,6 +4194,8 @@ static int pm8001_chip_get_nvmd_req(struct
+pm8001_hba_info *pm8001_ha,
+ 
+ 	nvmd_type = ioctl_payload->minor_function;
+ 	fw_control_context = kzalloc(sizeof(struct fw_control_ex),
+GFP_KERNEL);
++	if (!fw_control_context)
++		return -ENOMEM;
+ 	fw_control_context->usrAddr = (u8
+*)&ioctl_payload->func_specific[0];
+ 	fw_control_context->len = ioctl_payload->length;
+ 	circularQ = &pm8001_ha->inbnd_q_tbl[0];
+@@ -4272,6 +4274,8 @@ static int pm8001_chip_set_nvmd_req(struct
+pm8001_hba_info *pm8001_ha,
+ 
+ 	nvmd_type = ioctl_payload->minor_function;
+ 	fw_control_context = kzalloc(sizeof(struct fw_control_ex),
+GFP_KERNEL);
++	if (!fw_control_context)
++		return -ENOMEM;
+ 	circularQ = &pm8001_ha->inbnd_q_tbl[0];
+ 	memcpy(pm8001_ha->memoryMap.region[NVMD].virt_ptr,
+ 		ioctl_payload->func_specific,
+@@ -4381,6 +4385,8 @@ pm8001_chip_fw_flash_update_req(struct pm8001_hba_info
+*pm8001_ha,
+ 	struct pm8001_ioctl_payload *ioctl_payload = payload;
+ 
+ 	fw_control_context = kzalloc(sizeof(struct fw_control_ex),
+GFP_KERNEL);
++	if (!fw_control_context)
++		return -ENOMEM;
+ 	fw_control = (struct fw_control_info
+*)&ioctl_payload->func_specific[0];
+ 	if (fw_control->len != 0) {
+ 		if (pm8001_mem_alloc(pm8001_ha->pdev,
+
