@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab0HRAkv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 20:40:51 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:59182 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752453Ab0HRAkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 20:40:43 -0400
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-From: john stultz <johnstul@us.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Richard Cochran <richardcochran@gmail.com>, linuxppc-dev@lists.ozlabs.org,
-        Rodolfo Giometti <giometti@linux.it>, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
-In-Reply-To: <201008171336.29375.arnd@arndb.de>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
-	 <201008170925.55592.arnd@arndb.de>
-	 <20100817105232.GA9079@riccoc20.at.omicron.at>
-	 <201008171336.29375.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 17 Aug 2010 17:40:39 -0700
-Message-ID: <1282092039.1734.115.camel@localhost>
+	id S1752563Ab0HRAlO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 20:41:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44553 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752478Ab0HRAlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 20:41:06 -0400
+Date: Wed, 18 Aug 2010 10:40:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Gwendal Grignou <gwendal@google.com>,
+        Grant Grundler <grundler@google.com>
+Subject: linux-next: build failure after merge of the libata tree
+Message-Id: <20100818104057.5fdaf20d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 13:36 +0200, Arnd Bergmann wrote:
-> On Tuesday 17 August 2010, Richard Cochran wrote:
-> > On Tue, Aug 17, 2010 at 09:25:55AM +0000, Arnd Bergmann wrote:
-> > > Another difference is that we generally use ioctl for devices that can
-> > > be enumerated, while syscalls are for system services that are not tied to
-> > > a specific device. This argument works both ways for PTP IMHO: On the one
-> > > hand you want to have a reliable clock that you can use without knowing
-> > > where it comes from, on the other you might have multiple PTP sources that
-> > > you need to differentiate.
-> > 
-> > Yes, I agree. In normal use, there will be only one PTP clock in a
-> > system. However, for research purposes, it would be nice to have more
-> > than one.
-> > 
-> > I've been looking at offering the PTP clock as a posix clock, and it
-> > is not as hard as I first thought. The PTP clock or clocks just have
-> > to be registered as one of the posix_clocks[MAX_CLOCKS] in
-> > posix-timers.c.
-> 
-> Ok sounds good.
+--Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Oh no. I'm starting to waffle here. :)
+Hi Jeff,
 
-So while I'm not a fan of the duplication of the posix clocks interface
-that the proposed chardev interface introduced, I'm not sure if
-absorbing the PTP clocks as a clockid is much better.
+After merging the libata tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Mainly due to the fact that userland apps now have to chose between two
-clockids that supposedly represent the same thing (the current wall
-time).
+drivers/ata/libata-transport.c: In function 'ata_attach_transport':
+drivers/ata/libata-transport.c:678: error: implicit declaration of function=
+ 'kzalloc'
+drivers/ata/libata-transport.c:678: warning: assignment makes pointer from =
+integer without a cast
+drivers/ata/libata-transport.c: In function 'ata_release_transport':
+drivers/ata/libata-transport.c:741: error: implicit declaration of function=
+ 'kfree'
 
-> > My suggestion would be to reserve three clock ids in time.h,
-> > CLOCK_PTP0, CLOCK_PTP1, and CLOCK_PTP2. The first one would be the
-> > same as CLOCK_REALTIME, for SW timestamping, and the other two would
-> > allow two different PTP clocks at the same time, for the research use
-> > case.
+Caused by commit 97395d39931160a171959ac2e1fbff1caba3374b ("[libata] Add
+ATA transport class") neglecting to include linux/slab.h.   See Rule 1 in
+Documentation/SubmitChecklist.
 
-Why would you have CLOCK_PTP0 == CLOCK_REALTIME? Whats the point of
-that?
+I have used the libata tree form next-20100817 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> I don't think there is a point in making exactly two independent sources
-> available. The clockid_t space is not really limited, so we could define
-> an arbitrary range of ids for ptp sources that could be used simultaneously,
-> as long as we have space more more ids with a fixed number.
-> 
-> Would it be reasonable to assume that on a machine with a large number
-> of NICs, you'd want a separate ptp source for each of them for timestamping?
-> Or would you preferably define just one source in such a setup?
-> 
-> I think both could be done with the use of class device attributes in
-> sysfs for configuration. Maybe you can have one CLOCK_PTP value for one
-> global PTP source and use sysfs to configure which device that is.
-> 
-> If you also need simultaneous access to the specific clocks, you could
-> have run-time configured clockid numbers in a sysfs attribute for each
-> ptp class device.
-> 
-> > Using the clock id will bring another advantage, since it will then be
-> > possible for user space to specify the desired timestamp source for
-> > SO_TIMESTAMPING.
+--Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK
+Content-Type: application/pgp-signature
 
-So how exactly would one map CLOCK_PTPx to an eth device?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-So this is a little bit further out there, but assuming PTPd can sync
-the PTP clock correctly, why could the kernel itself not sync the PTP
-clock to system time?
+iQEcBAEBAgAGBQJMaywZAAoJEDMEi1NhKgbs0+wIAIjaC+SjlEzbSvmavh2ymgIt
+Aj+3dkj+QuBpbAwlmE94iJ9L9gcu2ROnfbJ9HmCDo2ZXsHP4yyoCuC3J8EWlEFPj
+T58NiQCK6tE+R8reFeAI5QJB8utYsli4/aldx8rlvrGSka13UgyZHdvh93lR0kjo
+GFk7giFqZ5+xBH8AWRVdyaLE960NOoLUXWB8BfejnG7fS+EkaZt97cRiZkDowKQS
+44jGm9FE/AZmTwrdbTSD0DySiS/+EdB+pgd7ELXMySh85Yt4EKssBRmCU4lWan9I
+06cTXYtiDOF6JSnunhopsh1Ym+jq51mm8PWoL+CEwzp7xKsrDmy/MetqcGOpRuw=
+=4C4E
+-----END PGP SIGNATURE-----
 
-So instead of the sync path looking like:
-1) packet from master arrives on NIC, is timestamped by PTP clock
-2) PTPd calculates offset between PTP clock and master time
-3) PTPd corrects PTP clock freq/offset
-4) PTPd corrects system time freq/offset
-
-It would look like:
-1) packet from master arrives on NIC, is timestamped by PTP clock
-2) PTPd calculates offset between PTP clock and master time
-3) PTPd corrects system time freq/offset
-4) kernel corrects PTP clock freq/offset
-
-I'm guessing the indirect PTP clock sync would have greater error, but
-it avoids the fractured sense of time.
-
-
-thanks
--john
-
-
+--Signature=_Wed__18_Aug_2010_10_40_57_+1000_+LTNxUCFzUyOTRuK--
