@@ -1,101 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752776Ab0HRBZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 21:25:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56369 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360Ab0HRBZa (ORCPT
+	id S1752793Ab0HRB07 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 21:26:59 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10883 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360Ab0HRB0w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 21:25:30 -0400
-X-Authority-Analysis: v=1.1 cv=yHIl1GXhF427//PKRp6qBSoAWm+VmAP8iV7xFCEBb5c= c=1 sm=0 a=ALrJC2IdMPkA:10 a=Q9fys5e9bTEA:10 a=IXo+6rlC6z1XzBFn1RNpIA==:17 a=i18r_AFR3jBX9JLy4NgA:9 a=ipGkerq4dnN-K2_y4ooA:7 a=NvuQDNWi4GuRzrH0ajU5NBtSbbwA:4 a=PUjeQqilurYA:10 a=2Spnn5INwWhIUN8G:21 a=CRK-b5zTMFaqm9X1:21 a=IXo+6rlC6z1XzBFn1RNpIA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.87.39
-Subject: Re: [RFC PATCH 01/20] Create generic alignment API (v8)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, ltt-dev@lists.casi.polymtl.ca,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Alexander Shishkin <virtuoso@slind.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
-        Jamie Lokier <jamie@shareable.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-In-Reply-To: <20100817232150.251244768@efficios.com>
-References: <20100817231619.277457797@efficios.com>
-	 <20100817232150.251244768@efficios.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 17 Aug 2010 21:25:26 -0400
-Message-ID: <1282094726.3268.2197.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 17 Aug 2010 21:26:52 -0400
+Date: Wed, 18 Aug 2010 03:26:03 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv8 04/13] USB: gadget: mass_storage: moved strings handling
+ code to composite
+In-reply-to: <Pine.LNX.4.44L0.1008132019440.23591-100000@netrider.rowland.org>
+To: David Brownell <david-b@pacbell.net>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org
+Message-id: <op.vhl0xpih7p4s8u@localhost>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.61 (Linux)
+References: <Pine.LNX.4.44L0.1008132019440.23591-100000@netrider.rowland.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-08-17 at 19:16 -0400, Mathieu Desnoyers wrote:
+On Sat, 14 Aug 2010 02:23:42 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-> +/*
-> + * Align pointer on natural object alignment. Object size must be power of two.
-> + */
+> On Fri, 13 Aug 2010, David Brownell wrote:
+>
+>> --- On Fri, 8/13/10, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> .> ... based on all
+>> > the preceding discussion, I now think the best
+>> > approach may be _never
+>> > to make up a fake serial number.  Use the module
+>> > parameter, if any, and
+>> > otherwise issue a warning and don't have
+>> > a serial number string
+>> > descriptor (even though that violates the spec).
+>>
+>>
+>> Agreed, and that's what I had asked for.  I didn't
+>> see code faking up a serial ... did I miss such?
+>
+> That code has been present in g_file_storage since the beginning.
+> There were some patches earlier which moved the code to a different
+> location.  I guess you missed it.  The current round of patches doesn't
+> touch that code.
 
-Hmm, I wonder if we should add a compiler bug here too.
+Yep.  I originally moved code from g_file_storage to g_mass_storage (and
+g_multi) but after David's objections the patches have been dropped so
+currently only g_file_storage has this code.
 
-extern void __bug_obj_not_power_of_two(void);
+>> If so, let's see a new patch with no faking.
+>
+> An extra patch or two would be needed to remove the fake-serial
+> generation.
 
-({
-	if ((sizeof(*obj) - 1) & sizeof(*obj))
-		__bug_obj_not_power_of_two();
-	PTR_ALIGN((obj), __alignof__(*(obj)));
-})
+This should be a straightforward patch.  If no one else does it
+I can post it but it may take up to a month for me to find the time
+to work on it.
 
-> +#define object_align(obj)	PTR_ALIGN((obj), __alignof__(*(obj)))
-> +#define object_align_floor(obj)	PTR_ALIGN_FLOOR((obj), __alignof__(*(obj)))
-> +
-> +/**
-> + * offset_align - Calculate the offset needed to align an object on its natural
-> + *                alignment towards higher addresses.
-> + * @align_drift:  object offset from an "alignment"-aligned address.
-> + * @alignment:    natural object alignment. Must be non-zero, power of 2.
-> + *
-> + * Returns the offset that must be added to align towards higher
-> + * addresses.
-> + */
-> +static inline size_t offset_align(size_t align_drift, size_t alignment)
-> +{
-> +	return (alignment - align_drift) & (alignment - 1);
-> +}
-> +
-> +/**
-> + * offset_align_floor - Calculate the offset needed to align an object
-> + *                      on its natural alignment towards lower addresses.
-> + * @align_drift:  object offset from an "alignment"-aligned address.
-> + * @alignment:    natural object alignment. Must be non-zero, power of 2.
-> + *
-> + * Returns the offset that must be substracted to align towards lower addresses.
-> + */
-> +static inline size_t offset_align_floor(size_t align_drift, size_t alignment)
-> +{
-> +	return (align_drift - alignment) & (alignment - 1);
-> +}
-
-I take it that theses functions can have variables passed to it for
-alignment, thus a check wont help. Although, we could add a test for the
-constant case.
-
--- Steve
-
-> +
-
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
 
