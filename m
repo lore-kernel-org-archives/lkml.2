@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753471Ab0HROOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:14:32 -0400
-Received: from casper.infradead.org ([85.118.1.10]:59666 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab0HROO3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:14:29 -0400
-Date: Wed, 18 Aug 2010 11:14:12 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Cc: Bernd Petrovitsch <bernd@sysprog.at>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf tools: Fix build error on read only source.
-Message-ID: <20100818141412.GD9410@ghostprotocols.net>
-References: <20100817181835.GA21083@ghostprotocols.net>
- <20100818123713.1F02414C03B@msa103.auone-net.jp>
-MIME-Version: 1.0
+	id S1753517Ab0HROPQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:15:16 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:55637 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752803Ab0HROPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 10:15:14 -0400
+Date: Wed, 18 Aug 2010 16:13:08 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [TESTCASE] Clean pages clogging the VM
+Message-ID: <20100818141308.GD1779@cmpxchg.org>
+References: <20100809133000.GB6981@wil.cx> <20100817195001.GA18817@linux.intel.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100818123713.1F02414C03B@msa103.auone-net.jp>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100817195001.GA18817@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Aug 18, 2010 at 09:37:12PM +0900, Kusanagi Kouichi escreveu:
-> On 2010-08-17 15:18:35 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Tue, Aug 17, 2010 at 11:17:54AM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Tue, Aug 17, 2010 at 11:08:40PM +0900, Kusanagi Kouichi escreveu:
-> > > > +++ b/tools/perf/feature-tests.mak
-> > > > @@ -113,7 +113,7 @@ endef
-> > > >  try-cc = $(shell sh -c						  \
-> > > > -	'TMP="$(TMPOUT).$$$$";			 		  \
-> > > > +	'TMP="$(OUTPUT)$(TMPOUT).$$$$";				  \
-> > > >  	 echo "$(1)" |						  \
+Hi Matthew,
 
-> > > Much better! Will test and merge, thanks!
-
-> > Still has issues:
-> > [acme@emilia linux-2.6-tip]$ rm -rf ~/git/build/perf/
-> > [acme@emilia linux-2.6-tip]$ make O=~/git/build/perf -s -j9 -C tools/perf install
-> > Makefile:503: No libdw.h found or old libdw.h found or elfutils is older than 0.138, disables dwarf support. Please install new elfutils-devel/libdw-dev
-> > Makefile:534: *** No gnu/libc-version.h found, please install glibc-dev[el]/glibc-static.  Stop.
-> > [acme@emilia linux-2.6-tip]$
-
-> > Can you please investigate?
+On Tue, Aug 17, 2010 at 03:50:01PM -0400, Matthew Wilcox wrote:
 > 
-> With POSIX shell patch, $(OUTPUT) has not been created yet when it is
-> used by try-cc. This fixes the issue anyway.
-> 
-> diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-> index dcb9700..5b1c12b 100644
-> --- a/tools/perf/Makefile
-> +++ b/tools/perf/Makefile
-> @@ -281,6 +281,7 @@ endif
-> 
->  -include feature-tests.mak
-> 
-> +$(shell mkdir -p $(OUTPUT) 2> /dev/null)
+> No comment on this?  Was it just that I posted it during the VM summit?
 
-But with this we're back using $(shell mkdir), Bernd, ideas on how to
-properly fix this, probably the feature tests have to be triggered by
-the first rule and probably be something like:
+I have not forgotten about it.  I just have a hard time reproducing
+those extreme stalls you observed.
 
-$(phony feature-tests): 
--include feature-tests.mak
+Running that test on a 2.5GHz machine with 2G of memory gives me
+stalls of up to half a second.  The patchset I am experimenting with
+gets me down to peaks of 70ms, but it needs further work.
 
-DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
-$(DIRECTORY_DEPS): $(sort $(dir $(DIRECTORY_DEPS))) feature-tests
+Mapped file pages get two rounds on the LRU list, so once the VM
+starts scanning, it has to go through all of them twice and can only
+reclaim them on the second encounter.
 
-completely untested! Unsure if this would trigger the mkdir first tho.
+At that point, since we scan without making progress, we start waiting
+for IO, which is not happening in this case, so we sit there until a
+timeout expires.
 
-Right?
+This stupid-waiting can be improved, and I am working on that.  But
+since I can not reproduce your observations, I don't know if this is
+the (sole) source of the problem.  Can I send you patches?
 
-- Arnaldo
+> On Mon, Aug 09, 2010 at 09:30:00AM -0400, Matthew Wilcox wrote:
+> > 
+> > This testcase shows some odd behaviour from the Linux VM.
+> > 
+> > It creates a 1TB sparse file, mmaps it, and randomly reads locations 
+> > in it.  Due to the file being entirely sparse, the VM allocates new pages
+> > and zeroes them.  Initially, it runs very fast, taking on the order of
+> > 2.7 to 4us per page fault.  Eventually, the VM runs out of free pages,
+> > and starts doing huge amounts of work trying to figure out which of
+> > these clean pages to throw away.
+
+This is similar to one of my test cases for:
+
+	6457474 vmscan: detect mapped file pages used only once
+	31c0569 vmscan: drop page_mapping_inuse()
+	dfc8d63 vmscan: factor out page reference checks
+
+because the situation was even worse before (see the series
+description in dfc8d63).  Maybe asking the obvious, but the kernel you
+tested on did include those commits, right?
+
+And just to be sure, I sent you a test-patch to disable the used-once
+detection on IRC the other day.  Did you have time to run it yet?
+Here it is again:
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9c7e57c..c757bba 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -584,6 +584,7 @@ static enum page_references page_check_references(struct page *page,
+ 		return PAGEREF_RECLAIM;
+ 
+ 	if (referenced_ptes) {
++		return PAGEREF_ACTIVATE;
+ 		if (PageAnon(page))
+ 			return PAGEREF_ACTIVATE;
+ 		/*
+
+
+> > In my testing with a 6GB machine and 2.9GHz CPU, one in every
+> > 15,000 page faults takes over a second, and one in every 40,000
+> > page faults take over seven seconds!
+> > 
+> > This test-case demonstrates a problem that occurs with a read-mostly 
+> > mmap of a file on very fast media.  I wouldn't like to see a solution
+> > that special-cases zeroed pages.  I think userspace has done its part
+> > to tell the kernel what's it's doing by calling madvise(MADV_RANDOM).
+> > This ought to be enough to hint to the kernel that it should be eagerly
+> > throwing away pages in this VMA.
+
+We can probably do something like the following, but I am not sure
+this is a good fix, either.  How many applications are using
+madvise()?
+
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -495,7 +495,7 @@ int page_referenced_one(struct page *pag
+ 		 * mapping is already gone, the unmap path will have
+ 		 * set PG_referenced or activated the page.
+ 		 */
+-		if (likely(!VM_SequentialReadHint(vma)))
++		if (likely(!(vma->vm_flags & (VM_SEQ_READ|VM_RAND_READ))))
+ 			referenced++;
+ 	}
+ 
