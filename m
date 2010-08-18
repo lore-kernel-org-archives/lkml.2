@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752618Ab0HRAqc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 17 Aug 2010 20:46:32 -0400
-Received: from [87.107.91.67] ([87.107.91.67]:1823 "EHLO irisl.net"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752114Ab0HRAq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 17 Aug 2010 20:46:29 -0400
-X-MDAV-Processed: irisl.net, Tue, 17 Aug 2010 21:27:04 +0430
-X-Spam-Processed: irisl.net, Tue, 17 Aug 2010 21:27:03 +0430
-	(not processed: spam filter heuristic analysis disabled)
-X-Authenticated-Sender: CMD@irisl.net
-X-Return-Path: CMD@irisl.net
-X-Envelope-From: CMD@irisl.net
-Date: Tue, 17 Aug 2010 21:20:48 +0430
-From: "CMD" <CMD@irisl.net>
-Reply-To: mr.fredpetersclaimsagent01@yahoo.com.hk
-Subject: ***You E-mail ID Have Won***
+	id S1752599Ab0HRAzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 17 Aug 2010 20:55:42 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:49533 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752162Ab0HRAzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 17 Aug 2010 20:55:39 -0400
+Date: Wed, 18 Aug 2010 10:55:35 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: Re: [tracing, hang] dumping events gets stuck in synchronise_sched
+Message-ID: <20100818005535.GH7362@dastard>
+References: <20100817073725.GO10429@dastard>
+ <4C6A4A58.2030904@cn.fujitsu.com>
+ <20100817115243.GE7362@dastard>
+ <1282050158.3268.1303.camel@gandalf.stny.rr.com>
+ <20100817224048.GF7362@dastard>
+ <1282086431.3268.1975.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Message-ID: <WC20100817165048.380A5C@irisl.net>
-X-Mailer: WorldClient 10.1.2
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282086431.3268.1975.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Aug 17, 2010 at 07:07:11PM -0400, Steven Rostedt wrote:
+> On Wed, 2010-08-18 at 08:40 +1000, Dave Chinner wrote:
+> 
+> > > When the systems locks up, I assume you want to see why? The trace_pipe
+> > > should show that without locking the system.
+> > 
+> > Exactly.
+> 
+> So it did work?
 
+I haven't got back to the hanging kernel yet - I had to go back to
+2.6.35 to triage and test a regression (which I couldn't with broken
+writeback) and I'm still dealing with the fallout of that one...
 
-This is to inform you that you have been 
-selected for a cash prize of 1,000,000 
-(British Pounds) held on the 15th of August
-2010 in London (United Kingdom). The 
-selection process was carried out through 
-random selection in Our computerized email 
-selection system (ESS) London Uk. Fill the 
-below:
+> > If the trace file cannot be made to handle this type of use
+> > robustly, then perhaps it should be removed...
+> 
+> You mean because it uses synchronize_sched() it should be removed? Seems
+> that it was another kernel bug that caused the issue.
 
-1.Full Name
-2.Full Address
-3.Marital Status
-4.Occupation
-5.Age
-6.Sex
-7.Nationality
-8.Country Of Residence
-9.Telephone Number
+Right now I'm using the trace file for exactly what the docuemntation
+says it should be used for, but it hangs. You're saying that the
+interface is effectively redundant because there's a trace_pipe
+interface that shouldn't hang and I should use that instead.
 
-Agent Name: Mr. Fred Peters
-Tel:+447024051534
-+447024013832
-Email:mr.fredpetersclaimsagent01@yahoo.com.hk
+Debug interfaces should be reliable in the face of common problems -
+a system burning a CPU in a tight loop is a pretty common problem.
+That leads to three options: either fix the hang, document the fact
+that the trace file is not reliable and that you should use other
+interfaces, or remove the interface altogether.
 
+Cheers,
 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
