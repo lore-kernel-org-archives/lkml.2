@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab0HRTse (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:48:34 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:45682 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752809Ab0HRTsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:48:32 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6078"; a="51465348"
-Message-ID: <4C6C3910.80800@codeaurora.org>
-Date: Wed, 18 Aug 2010 12:48:32 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1753722Ab0HRTwS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:52:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33334 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751817Ab0HRTwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 15:52:17 -0400
+Date: Wed, 18 Aug 2010 12:44:10 -0700
+From: Greg KH <gregkh@suse.de>
+To: Patrick Pannuto <ppannuto@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        magnus.damm@gmail.com, grant.likely@secretlab.ca,
+        Paul Mundt <lethal@linux-sh.org>, Magnus Damm <damm@opensource.se>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH 1/4] platform: Use drv->driver.bus instead of assuming
+ platform_bus_type
+Message-ID: <20100818194410.GA17421@suse.de>
+References: <1282158943-11902-1-git-send-email-ppannuto@codeaurora.org>
+ <1282158943-11902-2-git-send-email-ppannuto@codeaurora.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: [PATCH v2] ARM: uaccess: Implement strict user copy checks
-References: <4C61EE55.5030506@codeaurora.org> <1282094950-6184-1-git-send-email-sboyd@codeaurora.org> <201008181428.45029.arnd@arndb.de>
-In-Reply-To: <201008181428.45029.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1282158943-11902-2-git-send-email-ppannuto@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/18/2010 05:28 AM, Arnd Bergmann wrote:
-> On Wednesday 18 August 2010, Stephen Boyd wrote:
->>
->> I'm unsure what needs to be done for the follow up patch. Shouldn't
->> it be multiple patches sent to each arch maintainer to fix the
->> wording?
->
-> No, that will just result in half of them applying it, best make
-> a single patch and send it to linux-arch@vger.kernel.org for review.
->
-> It's probably best to move the config option to lib/Kconfig.debug
-> so it only appears once, and make it depend on DEBUG_USER_COPY_CHECKS,
-> which is then unconditionally defined by the architectures that want it.
+On Wed, Aug 18, 2010 at 12:15:40PM -0700, Patrick Pannuto wrote:
+> In theory (although not *yet* in practice), a driver being passed
+> to platform_driver_probe might have driver.bus set to something
+> other than platform_bus_type. Locking drv->driver.bus is always
+> correct.
+> 
+> Change-Id: Ib015c35237eb5493d17a812576a3a9906e1344d4
 
-Ok.
+What is that field?  Why did you add it?
 
-So the only sticking point now is that x86, parisc, and arm use warnings 
-and errors but s390 only uses warnings. I guess I'll reword it to be:
+confused,
 
-	Enabling this option turns a certain set of sanity checks for
-	user copy operations into compile time warnings/errors.
-
-	The copy_from_user() etc checks are there to help test if there
-	are sufficient security checks on the length argument of the
-	copy operation, by having gcc prove that the argument is
-	within bounds.
-
-	If unsure, or if you run an older (pre 4.4) gcc where this
-	option is a no-op, say N.
-
-or I'll add a patch to make s390 trigger an error when this is enabled?
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+greg k-h
