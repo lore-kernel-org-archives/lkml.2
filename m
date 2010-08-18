@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420Ab0HROEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:04:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33767 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752827Ab0HROET (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:04:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=jmU4MjgLlBuxP3WiV9bDKU061jtTOc2OnsR8VbMrma1uMzU3IGhXIYJNnu5wKDtsM0
-         JNRTcj28S/6Bwtwhclk4uR4oqUkeW6s7tHHg+ruqS1wfZsmH9l0tHCMHKE9NKInrRUa6
-         V+Y2byJvMD9i456IQWwI0tRS59u3trBCOe+Ww=
-Date: Wed, 18 Aug 2010 16:04:40 +0200
-From: Richard Cochran <richardcochran@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: john stultz <johnstul@us.ibm.com>, linuxppc-dev@lists.ozlabs.org,
-        Rodolfo Giometti <giometti@linux.it>, netdev@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Krzysztof Halasa <khc@pm.waw.pl>
-Subject: Re: [PATCH 1/5] ptp: Added a brand new class driver for ptp clocks.
-Message-ID: <20100818140440.GA22655@riccoc20.at.omicron.at>
-References: <cover.1281956490.git.richard.cochran@omicron.at>
- <201008170925.55592.arnd@arndb.de>
- <20100817105232.GA9079@riccoc20.at.omicron.at>
- <201008171336.29375.arnd@arndb.de>
+	id S1753431Ab0HROJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:09:13 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55796 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab0HROJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 10:09:11 -0400
+Date: Wed, 18 Aug 2010 19:38:56 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Nikanth Karthikesan <knikanth@suse.de>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Bill Davidsen <davidsen@tmr.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Subject: Re: [RFC][PATCH] Per file dirty limit throttling
+Message-ID: <20100818140856.GE28417@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <201008160949.51512.knikanth@suse.de>
+ <201008171039.23701.knikanth@suse.de>
+ <1282033475.1926.2093.camel@laptop>
+ <201008181452.05047.knikanth@suse.de>
+ <1282125536.1926.3675.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201008171336.29375.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1282125536.1926.3675.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Aug 17, 2010 at 01:36:29PM +0200, Arnd Bergmann wrote:
-> On Tuesday 17 August 2010, Richard Cochran wrote:
-> > I've been looking at offering the PTP clock as a posix clock, and it
-> > is not as hard as I first thought. The PTP clock or clocks just have
-> > to be registered as one of the posix_clocks[MAX_CLOCKS] in
-> > posix-timers.c.
+* Peter Zijlstra <peterz@infradead.org> [2010-08-18 11:58:56]:
+
+> On Wed, 2010-08-18 at 14:52 +0530, Nikanth Karthikesan wrote:
+> > On Tuesday 17 August 2010 13:54:35 Peter Zijlstra wrote:
+> > > On Tue, 2010-08-17 at 10:39 +0530, Nikanth Karthikesan wrote:
+> > > > Oh, nice.  Per-task limit is an elegant solution, which should help
+> > > > during most of the common cases.
+> > > >
+> > > > But I just wonder what happens, when
+> > > > 1. The dirtier is multiple co-operating processes
+> > > > 2. Some app like a shell script, that repeatedly calls dd with seek and
+> > > > skip? People do this for data deduplication, sparse skipping etc..
+> > > > 3. The app dies and comes back again. Like a VM that is rebooted, and
+> > > > continues writing to a disk backed by a file on the host.
+> > > >
+> > > > Do you think, in those cases this might still be useful?
+> > > 
+> > > Those cases do indeed defeat the current per-task-limit, however I think
+> > > the solution to that is to limit the amount of writeback done by each
+> > > blocked process.
+> > > 
+> > 
+> > Blocked on what? Sorry, I do not understand.
 > 
-> Ok sounds good.
+> balance_dirty_pages(), by limiting the work done there (or actually, the
+> amount of page writeback completions you wait for -- starting IO isn't
+> that expensive), you can also affect the time it takes, and therefore
+> influence the impact.
+>
 
-I've been working turning the PTP stuff into syscalls, but here is a
-little issue I ran into. The PTP clock layer wants to call the PPS
-code via pps_register_source(), but the PPS can be compiled as a
-module. Since the PTP layer is now offering syscalls, it must always
-be present in the kernel. So I need to make sure that the PPS is
-either absent entirely or staticly linked in.
+There is an ongoing effort to look at per-cgroup dirty limits and I
+honestly think it would be nice to do it at that level first. We need
+it there as a part of the overall I/O controller. As a specialized
+need it could handle your case as well. 
 
-How can I do this?
-
-Thanks,
-
-Richard
+-- 
+	Three Cheers,
+	Balbir
