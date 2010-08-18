@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753140Ab0HRNbH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:31:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59454 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab0HRNbD (ORCPT
+	id S1753163Ab0HRNcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:32:07 -0400
+Received: from smtp1.univ-reunion.fr ([194.199.72.33]:60387 "EHLO
+	smtp1.univ-reunion.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751995Ab0HRNcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:31:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=BCDfUjxgM+keMjkq07mvHFsWGMkDnVComejS24Z63YrTrMjdoHCKMlpLLW+CvbTDsL
-         cZtBDjn2eOAn2XjbDMHQEDpILr8GnV7Ntyb3n8DetjNB0oMDQCUy9tIouRLwJ69oGhfR
-         IeFRMrA5l1uR2s9r9cPRaiiiGiuA0hZCySggc=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>, linux-mmc@vger.kernel.org
-Subject: [PATCH] mmc: make dev_to_mmc_card() macro public
-Date: Wed, 18 Aug 2010 16:31:18 +0300
-Message-Id: <1282138278-22304-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
+	Wed, 18 Aug 2010 09:32:05 -0400
+X-Greylist: delayed 2575 seconds by postgrey-1.27 at vger.kernel.org; Wed, 18 Aug 2010 09:32:04 EDT
+Message-ID: <8664.41.220.68.3.1282135279.squirrel@webmail.univ-reunion.fr>
+Date: Wed, 18 Aug 2010 16:41:19 +0400 (RET)
+Subject: 
+From: "Western Union Transfer" <cmarti@univ-reunion.fr>
+Reply-To: westeruniontransfer209@live.co.uk
+User-Agent: SquirrelMail/1.4.9a
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Conversion from struct device to struct mmc_card is used more than in one
-place. Due to this it's better to have public macro for such thing.
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: linux-mmc@vger.kernel.org
----
- drivers/mmc/card/mmc_test.c |    4 +---
- drivers/mmc/core/bus.c      |    1 -
- drivers/mmc/core/bus.h      |    2 +-
- include/linux/mmc/card.h    |    2 ++
- 4 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-index 5dd8576..82d39bd 100644
---- a/drivers/mmc/card/mmc_test.c
-+++ b/drivers/mmc/card/mmc_test.c
-@@ -1935,12 +1935,10 @@ static ssize_t mmc_test_show(struct device *dev,
- static ssize_t mmc_test_store(struct device *dev,
- 	struct device_attribute *attr, const char *buf, size_t count)
- {
--	struct mmc_card *card;
-+	struct mmc_card *card = dev_to_mmc_card(dev);
- 	struct mmc_test_card *test;
- 	int testcase;
- 
--	card = container_of(dev, struct mmc_card, dev);
--
- 	testcase = simple_strtol(buf, NULL, 10);
- 
- 	test = kzalloc(sizeof(struct mmc_test_card), GFP_KERNEL);
-diff --git a/drivers/mmc/core/bus.c b/drivers/mmc/core/bus.c
-index 7cd9749..27326c4 100644
---- a/drivers/mmc/core/bus.c
-+++ b/drivers/mmc/core/bus.c
-@@ -22,7 +22,6 @@
- #include "sdio_cis.h"
- #include "bus.h"
- 
--#define dev_to_mmc_card(d)	container_of(d, struct mmc_card, dev)
- #define to_mmc_driver(d)	container_of(d, struct mmc_driver, drv)
- 
- static ssize_t mmc_type_show(struct device *dev,
-diff --git a/drivers/mmc/core/bus.h b/drivers/mmc/core/bus.h
-index 1817876..7813954 100644
---- a/drivers/mmc/core/bus.h
-+++ b/drivers/mmc/core/bus.h
-@@ -14,7 +14,7 @@
- #define MMC_DEV_ATTR(name, fmt, args...)					\
- static ssize_t mmc_##name##_show (struct device *dev, struct device_attribute *attr, char *buf)	\
- {										\
--	struct mmc_card *card = container_of(dev, struct mmc_card, dev);	\
-+	struct mmc_card *card = dev_to_mmc_card(dev);				\
- 	return sprintf(buf, fmt, args);						\
- }										\
- static DEVICE_ATTR(name, S_IRUGO, mmc_##name##_show, NULL)
-diff --git a/include/linux/mmc/card.h b/include/linux/mmc/card.h
-index 6b75250..71acf19 100644
---- a/include/linux/mmc/card.h
-+++ b/include/linux/mmc/card.h
-@@ -173,6 +173,8 @@ static inline int mmc_blksz_for_byte_mode(const struct mmc_card *c)
- #define mmc_card_name(c)	((c)->cid.prod_name)
- #define mmc_card_id(c)		(dev_name(&(c)->dev))
- 
-+#define dev_to_mmc_card(d)	container_of(d, struct mmc_card, dev)
-+
- #define mmc_list_to_card(l)	container_of(l, struct mmc_card, node)
- #define mmc_get_drvdata(c)	dev_get_drvdata(&(c)->dev)
- #define mmc_set_drvdata(c,d)	dev_set_drvdata(&(c)->dev, d)
--- 
-1.6.3.3
+
+My working partner has helped me to send your
+first payment of US$7,500 to you as
+instructed by Mr. David Cameron and will
+keep sending you US$7,500 twice a week until
+the payment of (US$360,000) is completed
+within six months and here is the information
+below:
+
+MONEY TRANSFER CONTROL NUMBER (MTCN):
+841-116-3297
+
+SENDER'S NAME: Mr.Alexander Onyibor
+AMOUNT: US$7,500
+
+To track your funds forward Western Union
+Money Transfer agent your Full Names and
+Mobile Number via Email to:
+
+Mr Gary Moore
+E-mail:westeruniontransfer209@live.co.uk
+D/L: Tel:+447045713697
+
+Please direct all enquiring to:
+westeruniontransfer209@live.co.uk
+
+Best Regards,
+Mrs. Mr Gary Moore.
 
