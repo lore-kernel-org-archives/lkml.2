@@ -1,103 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab0HRT30 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:29:26 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:32839 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753522Ab0HRT3Y (ORCPT
+	id S1753544Ab0HRTal (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:30:41 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50841 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab0HRTaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:29:24 -0400
-Date: Wed, 18 Aug 2010 21:28:58 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        "Seidel, Conny" <Conny.Seidel@amd.com>,
-        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
-        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -v2 2/2] x86, cpu hotplug: Fix cpu bringup concurrency
- issue
-Message-ID: <20100818192858.GC12842@aftab>
-References: <4C5AC736.20903@zytor.com>
- <20100812144142.GY23755@8bytes.org>
- <4C64148D.5080305@zytor.com>
- <20100812170644.GZ23755@8bytes.org>
- <4C644507.9020606@zytor.com>
- <20100812190414.GA23755@8bytes.org>
- <20100813123543.GC9046@aftab>
- <20100816121933.GA28147@aftab>
- <20100816123959.GC28147@aftab>
- <4C6C2E85.9050401@zytor.com>
+	Wed, 18 Aug 2010 15:30:39 -0400
+Message-ID: <4C6C34E0.3050601@vlnb.net>
+Date: Wed, 18 Aug 2010 23:30:40 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C6C2E85.9050401@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Tejun Heo <tj@kernel.org>
+CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, jack@suse.cz, rwheeler@redhat.com, hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
+ sequenced flush
+References: <1281616891-5691-1-git-send-email-tj@kernel.org> <4C6540C5.8070108@vlnb.net> <4C6546E0.7070208@kernel.org>
+In-Reply-To: <4C6546E0.7070208@kernel.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:BeYy8G0lgWcphvQygX0ygVqlPwuyqevMI55gt7nfIog
+ YiCJUuXa/56vEwt6lX6phxaidAN+VDmQLRT8Fd6CKNX2LdtbT/
+ DEdTlcGrWhReTe9QFXfqXafmcuGeY/nuKvMsnwKsx9fRQ6uGnO
+ yCinUrXNoVgMcLOHedWJMQYrt7Aw2v2EJGtj5+v9SUuxMBQm5Q
+ K34vRuwDN8IB8Hnbo8Gbg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, Aug 18, 2010 at 03:03:33PM -0400
+Hello,
 
-> On 08/16/2010 05:39 AM, Borislav Petkov wrote:
-> > 
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index dcb0593..1598663 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -58,6 +58,7 @@ config X86
-> >  	select ANON_INODES
-> >  	select HAVE_ARCH_KMEMCHECK
-> >  	select HAVE_USER_RETURN_NOTIFIER
-> > +	select ARCH_CPU_PROBE_RELEASE
-> >  
-> 
-> warning: (X86) selects ARCH_CPU_PROBE_RELEASE which has unmet direct
-> dependencies (HOTPLUG_CPU)
+Tejun Heo, on 08/13/2010 05:21 PM wrote:
+>> If requested, I can develop the interface further.
+>
+> I still think the benefit of ordering by tag would be marginal at
+> best, and what have you guys measured there?  Under the current
+> framework, there's no easy way to measure full ordered-by-tag
+> implementation.  The mechanism for filesystems to communicate the
+> ordering information (which would be a partially ordered graph) just
+> isn't there and there is no way the current usage of ordering-by-tag
+> only for barrier sequence can achieve anything close to that level of
+> difference.
 
-well I got 
+Basically, I measured how iSCSI link utilization depends from amount of 
+queued commands and queued data size. This is why I made it as a table. 
+ From it you can see which improvement you will have removing queue 
+draining after 1, 2, 4, etc. commands depending of commands sizes.
 
-+config ARCH_CPU_PROBE_RELEASE
-+       def_bool y
-+       depends on HOTPLUG_CPU
+For instance, on my previous XFS rm example, where rm of 4 files took 
+3.5 minutes with nobarrier option, I could see that XFS was sending 1-3 
+  32K commands in a row. From my table you can see that if it sent all 
+them at once without draining, it would have about 150-200% speed increase.
 
-but I guess ARCH_CPU_PROBE_RELEASE gets selected still. Why isn't that
-"depends on" forcing it, I guess select is stronger.
-
-> ... and build failure when compiling without CONFIG_HOTPLUG_CPU.
-
-This hunk fixes the !CONFIG_HOTPLUG_CPU build here but I should've
-caught it earlier, shame on me. Sorry for the inconvenience, can you
-please drop this second patch for now, I'll send you a revised version
-tomorrow.
-
-Thanks.
-
-diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
-index 251acea..273cfb9 100644
---- a/drivers/base/cpu.c
-+++ b/drivers/base/cpu.c
-@@ -261,7 +261,7 @@ int __init cpu_dev_init(void)
- }
- 
- static struct sysdev_class_attribute *cpu_sysdev_class_attrs[] = {
--#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
-+#if defined(CONFIG_ARCH_CPU_PROBE_RELEASE) && defined(CONFIG_HOTPLUG_CPU)
-        &attr_probe,
-        &attr_release,
- #endif
-
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Vlad
