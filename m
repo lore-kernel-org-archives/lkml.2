@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695Ab0HRPrS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 11:47:18 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:51900 "EHLO
+	id S1753955Ab0HRPrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 11:47:51 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:51951 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227Ab0HRPrM (ORCPT
+	with ESMTP id S1753292Ab0HRPrP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 11:47:12 -0400
+	Wed, 18 Aug 2010 11:47:15 -0400
 From: Andy Whitcroft <apw@canonical.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
         Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 08/16] checkpatch: simplify and consolidate "missing space after" checks
-Date: Wed, 18 Aug 2010 16:46:41 +0100
-Message-Id: <1282146409-30544-9-git-send-email-apw@canonical.com>
+Subject: [PATCH 15/16] checkpatch: statement/block context analyser should look at sanitised lines
+Date: Wed, 18 Aug 2010 16:46:48 +0100
+Message-Id: <1282146409-30544-16-git-send-email-apw@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282146409-30544-1-git-send-email-apw@canonical.com>
 References: <1282146409-30544-1-git-send-email-apw@canonical.com>
@@ -21,48 +21,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commonise the code for missing spaces after struct, union, and enum such
-that they share the same code.  Ensure we cover all the common cases in
-each case.  Check against the sanitised line to ensure we do not report
-on comments and strings.
+When tracking context to find a block or statement we need to use the
+sanitised lines, else perentheses '(' & ')' and braces '{' & '}' can
+throw the scanner out.  Also fix up a couple of error outputs which
+include those sanitised lines incorrectly.
 
 Signed-off-by: Andy Whitcroft <apw@canonical.com>
 ---
- scripts/checkpatch.pl |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ scripts/checkpatch.pl |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 983ac18..cb19f54 100755
+index 8ab45b7..d086ffe 100755
 --- a/scripts/checkpatch.pl
 +++ b/scripts/checkpatch.pl
-@@ -1905,22 +1905,17 @@ sub process {
- 			ERROR("open brace '{' following function declarations go on the next line\n" . $herecurr);
+@@ -691,15 +691,15 @@ sub ctx_block_get {
+ 		$blk .= $rawlines[$line];
+ 
+ 		# Handle nested #if/#else.
+-		if ($rawlines[$line] =~ /^.\s*#\s*(?:ifndef|ifdef|if)\s/) {
++		if ($lines[$line] =~ /^.\s*#\s*(?:ifndef|ifdef|if)\s/) {
+ 			push(@stack, $level);
+-		} elsif ($rawlines[$line] =~ /^.\s*#\s*(?:else|elif)\b/) {
++		} elsif ($lines[$line] =~ /^.\s*#\s*(?:else|elif)\b/) {
+ 			$level = $stack[$#stack - 1];
+-		} elsif ($rawlines[$line] =~ /^.\s*#\s*endif\b/) {
++		} elsif ($lines[$line] =~ /^.\s*#\s*endif\b/) {
+ 			$level = pop(@stack);
  		}
  
--# missing space after union or struct definition
--		if ($rawline =~ /^\+\s*(union|struct)\s+$Ident[=\{]/) {
--		    WARN("Missing space after struct or union definition\n" . $herecurr);
--		}
--
--# missing space after enum definition
--		if ($rawline =~ /^\+\s*enum\{/) {
--		    WARN("Missing space after enum definition\n" . $herecurr);
--		}
--
- # open braces for enum, union and struct go on the same line.
- 		if ($line =~ /^.\s*{/ &&
- 		    $prevline =~ /^.\s*(?:typedef\s+)?(enum|union|struct)(?:\s+$Ident)?\s*$/) {
- 			ERROR("open brace '{' following $1 go on the same line\n" . $hereprev);
- 		}
+-		foreach my $c (split(//, $rawlines[$line])) {
++		foreach my $c (split(//, $lines[$line])) {
+ 			##print "C<$c>L<$level><$open$close>O<$off>\n";
+ 			if ($off > 0) {
+ 				$off--;
+@@ -1652,7 +1652,7 @@ sub process {
  
-+# missing space after union, struct or enum definition
-+		if ($line =~ /^.\s*(?:typedef\s+)?(enum|union|struct)(?:\s+$Ident)?(?:\s+$Ident)?[=\{]/) {
-+		    WARN("missing space after $1 definition\n" . $herecurr);
-+		}
-+
- # check for spacing round square brackets; allowed:
- #  1. with a type on the left -- int [] a;
- #  2. at the beginning of a line for slice initialisers -- [0...10] = 5,
+ 			if ($ctx !~ /{\s*/ && defined($lines[$ctx_ln -1]) && $lines[$ctx_ln - 1] =~ /^\+\s*{/) {
+ 				ERROR("that open brace { should be on the previous line\n" .
+-					"$here\n$ctx\n$lines[$ctx_ln - 1]\n");
++					"$here\n$ctx\n$rawlines[$ctx_ln - 1]\n");
+ 			}
+ 			if ($level == 0 && $pre_ctx !~ /}\s*while\s*\($/ &&
+ 			    $ctx =~ /\)\s*\;\s*$/ &&
+@@ -1661,7 +1661,7 @@ sub process {
+ 				my ($nlength, $nindent) = line_stats($lines[$ctx_ln - 1]);
+ 				if ($nindent > $indent) {
+ 					WARN("trailing semicolon indicates no statements, indent implies otherwise\n" .
+-						"$here\n$ctx\n$lines[$ctx_ln - 1]\n");
++						"$here\n$ctx\n$rawlines[$ctx_ln - 1]\n");
+ 				}
+ 			}
+ 		}
 -- 
 1.7.0.4
 
