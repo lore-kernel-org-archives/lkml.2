@@ -1,80 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508Ab0HRGdD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 02:33:03 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50804 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750728Ab0HRGc4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 02:32:56 -0400
-Message-ID: <4C6B7E92.6010408@kernel.org>
-Date: Wed, 18 Aug 2010 08:32:50 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
+	id S1751907Ab0HRGi2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 02:38:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:40365 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab0HRGiW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 02:38:22 -0400
+Date: Wed, 18 Aug 2010 08:38:12 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        "'Maxim Levitsky'" <maximlevitsky@gmail.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ben-linux@fluff.org, "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: undefined reference to `mmc_pm_notify' when selected MMC
+	without PM.
+Message-ID: <20100818063812.GC16956@pengutronix.de>
+References: <009801cb3adb$6550e400$2ff2ac00$%kim@samsung.com> <20100816051721.GA17903@pengutronix.de> <20100816081239.c5ae02ef.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
-        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
-        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
-        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
-        hare@suse.de, neilb@suse.de, rusty@rustcorp.com.au, mst@redhat.com,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Kiyoshi Ueda <k-ueda@ct.jp.nec.com>,
-        "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>
-Subject: Re: [PATCH 5/5] dm: implement REQ_FLUSH/FUA support
-References: <1281977523-19335-1-git-send-email-tj@kernel.org> <1281977523-19335-6-git-send-email-tj@kernel.org> <20100816190203.GA22299@redhat.com> <4C6A5780.2090100@kernel.org> <20100817140734.GA30768@redhat.com> <4C6ABE12.40705@kernel.org> <20100817182130.GA31737@redhat.com>
-In-Reply-To: <20100817182130.GA31737@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 18 Aug 2010 06:32:24 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100816081239.c5ae02ef.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello Randy,
 
-On 08/17/2010 08:21 PM, Mike Snitzer wrote:
-> Why base your work on a partial 2.6.36 tree?  Why not rebase to linus'
-> 2.6.36-rc1?
-
-Because the block tree contains enough changes which are not in
-mainline yet and bulk of the changes should go through the block tree.
-
-> Once we get the changes in a more suitable state (across the entire
-> tree) we can split the individual changes out to their respective
-> trees.  Without a comprehensive tree I fear this code isn't going to get
-> tested or reviewed properly.
+On Mon, Aug 16, 2010 at 08:12:39AM -0700, Randy Dunlap wrote:
+> On Mon, 16 Aug 2010 07:17:21 +0200 Uwe Kleine-König wrote:
 > 
-> For example: any review of DM changes, against stale DM code, is wasted
-> effort.
-
-Yeap, sure, it will happen all in a good time, but I don't really
-agree that review against block tree would be complete waste of
-effort.  Things usually don't change that drastically unless dm is
-being rewritten as we speak.  Anyways, I'll soon post a rebased /
-updated patch.
-
->> Oh, I was talking about the other way around.  Passing REQ_FUA in
->> bio->bi_rw down to member request_queues.  Sometimes while
->> constructing clone / split bios, the bit is lost (e.g. md raid5).
+> > Hello,
+> > 
+> > On Fri, Aug 13, 2010 at 08:33:40PM +0900, Kukjin Kim wrote:
+> > > Kukjin Kim wrote:
+> > > > 
+> > > > Hi,
+> > > > 
+> > > > Following is build error when selected MMC without PM.
+> > > > 
+> > > > drivers/built-in.o: In function `mmc_alloc_host':
+> > > > drivers/mmc/core/host.c:108: undefined reference to `mmc_pm_notify'
+> > > > make[1]: *** [.tmp_vmlinux1] Error 1
+> > > > make: *** [sub-make] Error 2
+> > > > 
+> > > > That is added from Maxim's ' mmc: fix all hangs related to mmc/sd card
+> > > > insert/removal during suspend/resume '
+> > > > (commit ID: 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e)
+> > > > 
+> > > > Below is temporary patch for avoiding build error.
+> > > > But I'm not sure about this... :-(
+> > > > 
+> > > > ---
+> > > > 
+> > > > diff --git a/drivers/mmc/core/host.c b/drivers/mmc/core/host.c
+> > > > index 0efe631..d80cfdc 100644
+> > > > --- a/drivers/mmc/core/host.c
+> > > > +++ b/drivers/mmc/core/host.c
+> > > > @@ -86,7 +86,9 @@ struct mmc_host *mmc_alloc_host(int extra, struct device
+> > > > *dev)
+> > > >         init_waitqueue_head(&host->wq);
+> > > >         INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+> > > >         INIT_DELAYED_WORK_DEFERRABLE(&host->disable,
+> > > > mmc_host_deeper_disable);
+> > > > +#ifdef CONFIG_PM
+> > > >         host->pm_notify.notifier_call = mmc_pm_notify;
+> > > > +#endif
+> > > > 
+> > > >         /*
+> > > >          * By default, hosts do not support SGIO or large requests.
+> > > > 
+> > > > ---
+> > > 
+> > > Kindly ignore this stuff because I found Uwe's same patch just now ;-)
+> > > Sorry for bothering.
+> > For those who care:
+> > 
+> > 	http://mid.gmane.org/1281691473-15481-1-git-send-email-u.kleine-koenig@pengutronix.de
+> > 
+> > Kgene, do you care to ack this change as it may prod akpm in taking the
+> > fix a bit earlier?
 > 
-> Seems we need to change __blk_rq_prep_clone to propagate REQ_FUA just
-> like REQ_DISCARD: http://git.kernel.org/linus/3383977
+> or this one from earlier:
+> http://lkml.org/lkml/2010/8/12/207
 
-Oooh, right.  I for some reason thought block layer was already doing
-that.  I'll update it.  Thanks for pointing it out.
+If I found your patch on gmane I could answer it with an Ack, on lkml
+and kerneltrap (where I found it) I don't get the Message-Id header.
 
-> Doesn't seem like we need to do the same for REQ_FLUSH (at least not for
-> rq-based DM's benefit) because dm.c:setup_clone already special cases
-> flush requests and sets REQ_FLUSH in cmd_flags.
-
-Hmmm... but in general, I think it would be better to make
-__blk_rq_prep_clone() to copy all command related bits.  If some
-command bits shouldn't be copied, the caller should take care of them.
-
-Thanks.
+Best regards
+Uwe
 
 -- 
-tejun
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
