@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab0HRUKW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 16:10:22 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:15701 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753748Ab0HRUKO convert rfc822-to-8bit (ORCPT
+	id S1754063Ab0HRUKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 16:10:25 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40080 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754003Ab0HRUKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 16:10:14 -0400
-X-IronPort-AV: E=Sophos;i="4.56,229,1280732400"; 
-   d="scan'208";a="431462830"
-Subject: Re: [PATCH] VM: kswapd should not do blocking memory allocations
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-nfs@vger.kernel.org
-In-Reply-To: <20100818193440.GZ5854@think>
-References: <1282158241.8540.85.camel@heimdal.trondhjem.org>
-	 <20100818193440.GZ5854@think>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Wed, 18 Aug 2010 16:10:10 -0400
-Message-ID: <1282162210.8540.100.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-X-OriginalArrivalTime: 18 Aug 2010 20:10:12.0464 (UTC) FILETIME=[5D6D7700:01CB3F11]
+	Wed, 18 Aug 2010 16:10:20 -0400
+From: Gunnar Gudvardarson <gunni@wave.is>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Gunnar Gudvardarson <gunni@wave.is>
+Subject: [PATCH] Staging: crystalhd: crystalhd_cmds: fixed a brace issue
+Date: Wed, 18 Aug 2010 20:10:06 +0000
+Message-Id: <1282162206-9524-1-git-send-email-gunni@wave.is>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 15:34 -0400, Chris Mason wrote:
-> On Wed, Aug 18, 2010 at 03:04:01PM -0400, Trond Myklebust wrote:
-> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > 
-> > Allowing kswapd to do GFP_KERNEL memory allocations (or any blocking memory
-> > allocations) is wrong and can cause deadlocks in try_to_release_page(), as
-> > the filesystem believes it is safe to allocate new memory and block,
-> > whereas kswapd is there specifically to clear a low-memory situation...
-> > 
-> > Set the gfp_mask to GFP_IOFS instead.
-> 
-> I always thought releasepage was supposed to do almost zero work.  It
-> could release an instantly freeable page but it wasn't supposed to dive
-> in and solve world hunger or anything.
-> 
-> I thought the VM would be using writepage for that.
+Fixed a brace issue.
 
-writepage isn't sufficient for the NFS case: the page may be in the
-'clean but unstable' state, in which case the NFS client needs to send a
-COMMIT rpc call before the page can finally be released.
+Note: checkpatch was clean until i ran format-patch, which added 3
+trailing whitespaces.
 
-That is why we need the gfp_flag to tell us when it is safe to do this,
-and when it is not.
-The main case where it is safe and necessary for try_to_release_page()
-to initiate a COMMIT call is in the invalidate_inode_pages2(). We might
-want to do it in the kswapd case too, but in that case, we definitely
-should tell the filesystem that it is unsafe to block.
+Signed-off-by: Gunnar Gudvardarson <gunni@wave.is>
+---
+ drivers/staging/crystalhd/crystalhd_cmds.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Trond
+diff --git a/drivers/staging/crystalhd/crystalhd_cmds.c b/drivers/staging/crystalhd/crystalhd_cmds.c
+index 1429608..d423775 100644
+--- a/drivers/staging/crystalhd/crystalhd_cmds.c
++++ b/drivers/staging/crystalhd/crystalhd_cmds.c
+@@ -309,9 +309,9 @@ static enum BC_STATUS bc_cproc_download_fw(struct crystalhd_cmd *ctx,
+ 	sts = crystalhd_download_fw(ctx->adp, (uint8_t *)idata->add_cdata,
+ 				  idata->add_cdata_sz);
+ 
+-	if (sts != BC_STS_SUCCESS) {
++	if (sts != BC_STS_SUCCESS)
+ 		BCMLOG_ERR("Firmware Download Failure!! - %d\n", sts);
+-	} else
++	else
+ 		ctx->state |= BC_LINK_INIT;
+ 
+ 	return sts;
+-- 
+1.7.0.4
+
