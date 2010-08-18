@@ -1,73 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507Ab0HRT3F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 15:29:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53339 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752911Ab0HRT3D (ORCPT
+	id S1753607Ab0HRT30 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 15:29:26 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:32839 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab0HRT3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 15:29:03 -0400
-Message-ID: <4C6C3481.7000302@vlnb.net>
-Date: Wed, 18 Aug 2010 23:29:05 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Wed, 18 Aug 2010 15:29:24 -0400
+Date: Wed, 18 Aug 2010 21:28:58 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v2 2/2] x86, cpu hotplug: Fix cpu bringup concurrency
+ issue
+Message-ID: <20100818192858.GC12842@aftab>
+References: <4C5AC736.20903@zytor.com>
+ <20100812144142.GY23755@8bytes.org>
+ <4C64148D.5080305@zytor.com>
+ <20100812170644.GZ23755@8bytes.org>
+ <4C644507.9020606@zytor.com>
+ <20100812190414.GA23755@8bytes.org>
+ <20100813123543.GC9046@aftab>
+ <20100816121933.GA28147@aftab>
+ <20100816123959.GC28147@aftab>
+ <4C6C2E85.9050401@zytor.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@lst.de>
-CC: Tejun Heo <tj@kernel.org>, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-raid@vger.kernel.org, James.Bottomley@suse.de, tytso@mit.edu,
-        chris.mason@oracle.com, swhiteho@redhat.com,
-        konishi.ryusuke@lab.ntt.co.jp, dm-devel@redhat.com, jack@suse.cz,
-        rwheeler@redhat.com, hare@suse.de
-Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with
- sequenced flush
-References: <1281616891-5691-1-git-send-email-tj@kernel.org> <4C6540C5.8070108@vlnb.net> <20100813131722.GB4140@lst.de>
-In-Reply-To: <20100813131722.GB4140@lst.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:QN3W2llJWEeOWnU72imQU2ronTBwgGI5jw86yruxuUn
- 9QOWTEI42Yqqky+YyMSG2jfd1Jf/nckaGBFuAs4RK0DKt4gW68
- 2K73+V5DintMBaY1njaRVQnLqgpEySVEoiGMb0eNDOLv2OMMpP
- SCPxH+9jCM2ROFhfymQo47c+KkLCvsnp0tL/W1bNhLYPpSF1L6
- D8XSq/hxJufQvCT5SK32A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C6C2E85.9050401@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig, on 08/13/2010 05:17 PM wrote:
-> As far as playing with ordered tags it's just adding a new flag for
-> it on the bio that gets passed down to the driver.  For a final version
-> you'd need a queue-level feature if it's supported, but you don't
-> even need that for the initial work.  Then you can implement a
-> variant of blk_do_flush that does away with queueing additional requests
-> once finish but queues all two or three at the same time with your
-> new ordered flag set, at which point you are back to the level or
-> ordered tag usage that the old code allows.  You're still left with
-> all the hard problems of actually implementing error handling for it
-> and using it higher up in the filesystem and generic page cache code.
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, Aug 18, 2010 at 03:03:33PM -0400
 
-But how about file systems doing internal local order-by-drain? Without 
-converting them to use ordered commands it would be impossible to show 
-full potential of them and to make the conversion one would need deep 
-internal FS knowledge. That's my point. But if there's a trivial way to 
-see all such places in the filesystems code and convert, then OK, I agree.
+> On 08/16/2010 05:39 AM, Borislav Petkov wrote:
+> > 
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index dcb0593..1598663 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -58,6 +58,7 @@ config X86
+> >  	select ANON_INODES
+> >  	select HAVE_ARCH_KMEMCHECK
+> >  	select HAVE_USER_RETURN_NOTIFIER
+> > +	select ARCH_CPU_PROBE_RELEASE
+> >  
+> 
+> warning: (X86) selects ARCH_CPU_PROBE_RELEASE which has unmet direct
+> dependencies (HOTPLUG_CPU)
 
-> I'd really love to see your results, up to the point of just trying
-> that once I get a little spare time.  But my theory is that it won't
-> help us - the problem with ordered tags is that they enforce global
-> ordering while we currently have local ordering.  While it will reduce
-> the latency for the process waiting for an fsync or similar it will
-> affect other I/O going on in the background and reduce the devices
-> ability to reorder that I/O.
+well I got 
 
-The local ordering vs global ordering is relevant only if you have 
-several applications/threads load. But how about a single 
-application/thread?
++config ARCH_CPU_PROBE_RELEASE
++       def_bool y
++       depends on HOTPLUG_CPU
 
-Another point, for which, AFAIU, the ORDERED commands were invented, is 
-that they make ordering on the _another_ side of the link _after_ all 
-link/transfer latencies. This is why it's hard to see advantage of them 
-on local disks.
+but I guess ARCH_CPU_PROBE_RELEASE gets selected still. Why isn't that
+"depends on" forcing it, I guess select is stronger.
 
-Vlad
+> ... and build failure when compiling without CONFIG_HOTPLUG_CPU.
+
+This hunk fixes the !CONFIG_HOTPLUG_CPU build here but I should've
+caught it earlier, shame on me. Sorry for the inconvenience, can you
+please drop this second patch for now, I'll send you a revised version
+tomorrow.
+
+Thanks.
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 251acea..273cfb9 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -261,7 +261,7 @@ int __init cpu_dev_init(void)
+ }
+ 
+ static struct sysdev_class_attribute *cpu_sysdev_class_attrs[] = {
+-#ifdef CONFIG_ARCH_CPU_PROBE_RELEASE
++#if defined(CONFIG_ARCH_CPU_PROBE_RELEASE) && defined(CONFIG_HOTPLUG_CPU)
+        &attr_probe,
+        &attr_release,
+ #endif
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
