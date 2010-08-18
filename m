@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab0HRRLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 13:11:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:34101 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752493Ab0HRRLe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 13:11:34 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Greg KH <gregkh@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 18 Aug 2010 22:41:24 +0530
-Subject: RE: patch "Staging: ti-st: update TODO" added to staging-next tree
-Thread-Topic: patch "Staging: ti-st: update TODO" added to staging-next tree
-Thread-Index: Acsz6DYDEFq8vHO1THeraMPtcnLT1QLD+D+Q
-Message-ID: <19F8576C6E063C45BE387C64729E7394044F124C7D@dbde02.ent.ti.com>
-References: <1280799040524@site>
- <19F8576C6E063C45BE387C64729E7394044EF4CBB2@dbde02.ent.ti.com>
- <20100804151722.GA26777@suse.de>
-In-Reply-To: <20100804151722.GA26777@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753380Ab0HRRPJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 13:15:09 -0400
+Received: from mail.perches.com ([173.55.12.10]:1160 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752814Ab0HRRPH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 13:15:07 -0400
+Subject: RE: [PATCH] fs.h: introduce functions to get/set file->private_data
+From: Joe Perches <joe@perches.com>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Christoph Hellwig <hch@infradead.org>,
+        "Ted Ts'o" <tytso@mit.edu>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "matthew@wil.cx" <matthew@wil.cx>
+In-Reply-To: <0D753D10438DA54287A00B0270842697643E5A1CDF@AUSP01VMBX24.collaborationhost.net>
+References: <201008161137.53187.hartleys@visionengravers.com>
+	 <20100816231753.GA16546@infradead.org>
+	 <0D753D10438DA54287A00B0270842697643E50D82E@AUSP01VMBX24.collaborationhost.net>
+	 <1282002601.6518.116.camel@Joe-Laptop> <20100817010355.GG21182@thunk.org>
+	 <20100817085428.GA25330@infradead.org>
+	 <1282065973.24541.106.camel@Joe-Laptop>
+	 <20100817175851.GA11463@merkur.ravnborg.org>
+	 <1282095142.6724.11.camel@Joe-Laptop>
+	 <0D753D10438DA54287A00B0270842697643E5A1CDF@AUSP01VMBX24.collaborationhost.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 10:15:05 -0700
+Message-ID: <1282151705.6724.100.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@suse.de]
-> Sent: Wednesday, August 04, 2010 10:17 AM
-> To: Savoy, Pavan
-> Subject: Re: patch "Staging: ti-st: update TODO" added to staging-next tree
+On Wed, 2010-08-18 at 11:48 -0500, H Hartley Sweeten wrote:
+> FWIW, the only reason for bringing this up in the first place was I was
+> trying to find all the places that have unnecessary casts when using
+> the private_data.  Stuff like:
 > 
-> On Wed, Aug 04, 2010 at 06:40:25PM +0530, Savoy, Pavan wrote:
-> >
-> >
-> >
-> >
-> >
-> > > -----Original Message-----
-> > > From: gregkh@suse.de [mailto:gregkh@suse.de]
-> > > Sent: Monday, August 02, 2010 8:31 PM
-> > > To: Savoy, Pavan; gregkh@suse.de
-> > > Subject: patch "Staging: ti-st: update TODO" added to staging-next tree
-> >
-> > Greg,
-> >
-> > Please review the code and suggest as to what needs to be done to move it
-> out of staging...
+> 	struct my_struct *my_data = (struct my_struct *)file->private_data;
 > 
-> Please remind me after the merge window is over, as I have a lot of work
-> to do the next 2 weeks handling that.
+> Maybe it would be simpler to use spatch to just fix those?
 
-With 2.6.36-rc1 out, Please review the driver, and suggest what could be done to move it out of staging?
-I would need the headers (st.h) to be in generic places to introduce FM-V4L2 driver which uses ST.
+I submitted that patch last month.  About half have been applied.
+
+(I generally link to lkml.org, but it seems down)
+http://linux.derkeiler.com/Mailing-Lists/Kernel/2010-07/msg04333.html
+
+I also delete the remaining casts in this conversion.
 
 
-> thanks,
-> 
-> greg k-h
