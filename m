@@ -1,38 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab0HRJnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 05:43:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50296 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0HRJnS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 05:43:18 -0400
-Subject: Re: lockdep false positive? -- firewire-core transaction timer vs.
- scsi-core host lock
-From: Peter Zijlstra <peterz@infradead.org>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Yong Zhang <yong.zhang0@gmail.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <4C6BA757.7050108@ladisch.de>
-References: <tkrat.1e48e021935dc8b7@s5r6.in-berlin.de>
-	 <20100817143509.GC2838@zhy> <4C6AB76C.9060809@s5r6.in-berlin.de>
-	 <4C6B8562.1070902@ladisch.de> <1282121942.1926.3552.camel@laptop>
-	 <4C6BA757.7050108@ladisch.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 18 Aug 2010 11:43:04 +0200
-Message-ID: <1282124584.1926.3641.camel@laptop>
+	id S1752334Ab0HRJrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 05:47:05 -0400
+Received: from verein.lst.de ([213.95.11.210]:47063 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750932Ab0HRJrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 05:47:03 -0400
+Date: Wed, 18 Aug 2010 11:46:20 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: jaxboe@fusionio.com, linux-fsdevel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-raid@vger.kernel.org, hch@lst.de,
+        James.Bottomley@suse.de, tytso@mit.edu, chris.mason@oracle.com,
+        swhiteho@redhat.com, konishi.ryusuke@lab.ntt.co.jp,
+        dm-devel@redhat.com, vst@vlnb.net, jack@suse.cz, rwheeler@redhat.com,
+        hare@suse.de
+Subject: Re: [PATCHSET block#for-2.6.36-post] block: replace barrier with sequenced flush
+Message-ID: <20100818094620.GA14707@lst.de>
+References: <1281616891-5691-1-git-send-email-tj@kernel.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1281616891-5691-1-git-send-email-tj@kernel.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-08-18 at 11:26 +0200, Clemens Ladisch wrote:
-> Anyway, my first patch was crap because the loop isn't actually
-> necessary.
+FYI: One issue with this series is that make_request based drivers
+not have to access all REQ_FLUSH and REQ_FUA requests.  We'll either
+need to add handling to empty REQ_FLUSH requests to all of them or
+figure out a way to prevent them getting sent.  That is assuming they'll
+simply ignore REQ_FLUSH/REQ_FUA on normal writes.
 
-Ok, without loop its all fine with me ;-)
