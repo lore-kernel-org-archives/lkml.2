@@ -1,34 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab0HRLHM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 07:07:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33681 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab0HRLHH convert rfc822-to-8bit (ORCPT
+	id S1752711Ab0HRLKJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 07:10:09 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:52978 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751902Ab0HRLKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 07:07:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=Iih1a7qXq5MXIRJ/qIobrAKrIk9iz3VD4DsofFXxoX75haHgN3uElpC+xXrhE1/mE0
-         IvYvBYRQGY7cuLUpUHjkSOp4B1vs0RUGFI14+VLMUJw5cGLUSVYxf5YNgxndiIn+LpAO
-         6Q/C8qJcpzyEM7PHmYs+AU+Dw3gIbDmyRHCA4=
+	Wed, 18 Aug 2010 07:10:07 -0400
+Date: Wed, 18 Aug 2010 12:10:02 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Rabin VINCENT <rabin.vincent@stericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] checkpatch: check for incorrect permissions
+Message-ID: <20100818111002.GQ6193@shadowen.org>
+References: <1281590145-30708-1-git-send-email-rabin.vincent@stericsson.com>
+ <20100812140222.d3dedf91.akpm@linux-foundation.org>
+ <20100813045528.GA32350@bnru01.bnr.st.com>
 MIME-Version: 1.0
-Date: Wed, 18 Aug 2010 14:07:05 +0300
-Message-ID: <AANLkTin5K=ii_ZhQ1hFm7wfcqfhdQhrUh-mXS7ZAy=h-@mail.gmail.com>
-Subject: Staging drivers das08_cs.c compile error
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100813045528.GA32350@bnru01.bnr.st.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linux 2.6.36-rc1 compile error:
+On Fri, Aug 13, 2010 at 10:25:29AM +0530, Rabin VINCENT wrote:
+> On Thu, Aug 12, 2010 at 23:02:22 +0200, Andrew Morton wrote:
+> > On Thu, 12 Aug 2010 10:45:45 +0530
+> > Rabin Vincent <rabin.vincent@stericsson.com> wrote:
+> > >  		# extract the filename as it passes
+> > > -		if ($line=~/^\+\+\+\s+(\S+)/) {
+> > > +		if ($line=~/^\+\+\+\s+(\S+)/ || $line=~/^diff\s.*?(\S+)$/) {
+> > 
+> > Breakage.  This causes the false warning:
+> > 
+> > WARNING: patch prefix 'drivers' exists, appears to be a -p0 patch
+> 
+> I've fixed this by matching for the filename in the diff line only when
+> it's "diff --git".  Also prevented a double-print of the "do not modify
+> file in include/asm" error.
+> 
+> From b854ea24f1bd5391a63d8d4e2aa63e1c10870816 Mon Sep 17 00:00:00 2001
+> From: Rabin Vincent <rabin.vincent@stericsson.com>
+> Date: Wed, 11 Aug 2010 14:45:45 +0530
+> Subject: [PATCHv2] checkpatch: check for incorrect permissions
 
-drivers/staging/comedi/drivers/das08_cs.c: In function
-‘das08_pcmcia_config_loop’:
-drivers/staging/comedi/drivers/das08_cs.c:225: error: ‘struct
-pcmcia_device’ has no member named ‘io’
+That one looks better.  I've pull this updated one (slightly modified)
+into my tree.
+
+Andrew, will send you this shortly.
+
+-apw
