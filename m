@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab0HRScY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 14:32:24 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35954 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab0HRScW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 14:32:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=h/rMpg0UA13bdjR594hj7v3SM9WEaf4mO8V1kNYo0x/9ZCO6SwWaRe7KSwnxzBu8yQ
-         LN9lKXEwTuz4RjF0rvnaQOQIa8NbpU5RYDyNJTHGtQS3LtYKzaIBfymPoXJvTJMw6ey5
-         zvqKxZEa6QdYqmvTi9ndCqhEw2vRCQUSTMYG8=
+	id S1753308Ab0HRSmN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 14:42:13 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49614 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387Ab0HRSmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 14:42:09 -0400
+Message-ID: <4C6C294D.3030404@zytor.com>
+Date: Wed, 18 Aug 2010 11:41:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1282155658.13405.36.camel@localhost>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
-	<87aaolwar8.fsf@basil.nowhere.org>
-	<20100817174134.GA23176@fieldses.org>
-	<20100817182920.GD18161@basil.fritz.box>
-	<1282155658.13405.36.camel@localhost>
-Date: Wed, 18 Aug 2010 11:32:20 -0700
-Message-ID: <AANLkTin2EOzA5grh5qjZghAs0Y4DbcGBhmdfqp=u1S_4@mail.gmail.com>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-From: "Patrick J. LoPresti" <lopresti@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Andi Kleen <andi@firstfloor.org>, "J. Bruce Fields" <bfields@fieldses.org>,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@amd64.org>
+CC: Joerg Roedel <joro@8bytes.org>, "Roedel, Joerg" <Joerg.Roedel@amd.com>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        "Seidel, Conny" <Conny.Seidel@amd.com>,
+        "Sarathy, Bhavna" <Bhavna.Sarathy@amd.com>,
+        "greg@kroah.com" <greg@kroah.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -v2 1/2] x86-32: Fix crashes with CPU hotplug on AMD machines
+References: <4C59F24B.1010702@zytor.com> <20100805074503.GI18307@amd.com> <4C5AC736.20903@zytor.com> <20100812144142.GY23755@8bytes.org> <4C64148D.5080305@zytor.com> <20100812170644.GZ23755@8bytes.org> <4C644507.9020606@zytor.com> <20100812190414.GA23755@8bytes.org> <20100813123543.GC9046@aftab> <20100816121933.GA28147@aftab> <20100816123833.GB28147@aftab>
+In-Reply-To: <20100816123833.GB28147@aftab>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 11:20 AM, David Woodhouse <dwmw2@infradead.org> wrote:
->
-> Um, can't you? You can't *store* timestamps which are more precise, but
-> they can be in cache can't they?
+On 08/16/2010 05:38 AM, Borislav Petkov wrote:
+>  #else
+>  static inline void reserve_trampoline_memory(void) {};
+> +extern void __init setup_trampoline_page_table(void) {};
+>  #endif /* CONFIG_X86_TRAMPOLINE */
 
-No.  That is how Linux used to work, and it caused many problems,
-which is why the current_fs_time() function was invented.
+This breaks compilation in the !CONFIG_X86_TRAMPOLINE case; I presume
+you meant:
 
-> And since you're not going to drop it from cache and bring it back in
-> again within 4ms, that ought to suffice?
+static inline void setup_trampoline_page_table(void) {}
 
-Not the problem.  As usual, the problem is out-of-order timestamps:
+... here too?
 
-1) Modify file A
-2) Modify file B
-3) File B's inode gets evicted, truncating its timestamp to disk resolution
-4) Call stat() on B, bringing it back in with truncated resolution
+(No semicolon after a function body!)
 
-And boom, B appears to be OLDER than A.  Which is not allowed.
+	-hpa
 
-This is exactly what happened when Linux first added sub-second
-timestamps to the generic VFS layer.  Many complaints about "make"
-rebuilding files unecessarily, among other things.  Eventually it got
-fixed by the introduction of current_fs_time().
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
- - Pat
