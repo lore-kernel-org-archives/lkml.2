@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab0HRN1k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 09:27:40 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60829 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753000Ab0HRN1g (ORCPT
+	id S1753112Ab0HRN3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 09:29:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46417 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752815Ab0HRN3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 09:27:36 -0400
-Date: Wed, 18 Aug 2010 14:27:22 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Corentin Chary <corentincj@iksaif.net>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 3/8] ideapad: make sure we bind on the correct device
-Message-ID: <20100818132722.GA12709@srcf.ucam.org>
-References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com> <1282120653-11434-1-git-send-email-ike.pan@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1282120653-11434-1-git-send-email-ike.pan@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Wed, 18 Aug 2010 09:29:31 -0400
+Subject: Re: [PATCH] regulator: ab3100 - fix the logic to remove already
+ registered regulators in error path
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        Mattias Wallin <mattias.wallin@stericsson.com>
+In-Reply-To: <1281792661.2718.4.camel@phoenix>
+References: <1281792661.2718.4.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 18 Aug 2010 14:29:26 +0100
+Message-ID: <1282138166.3117.421.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 04:37:33PM +0800, Ike Panhc wrote:
-> By reading from method _STA and _CFG to make sure we bind on the correct
-> VPC2004 device.
+On Sat, 2010-08-14 at 21:31 +0800, Axel Lin wrote:
+> In current implementation, ab3100_regulators[0].rdev is not unregistered if
+> the error happen at i > 0.
+> 
+> This patch fixes the resource leak and also improves the readability.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+> I think this change is better ( in readability ) than simply change "while (i > 0)" to "while (i >= 0)".
+> 
+>  drivers/regulator/ab3100.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
+> index 1179099..b349266 100644
+> --- a/drivers/regulator/ab3100.c
+> +++ b/drivers/regulator/ab3100.c
+> @@ -634,12 +634,9 @@ static int __devinit ab3100_regulators_probe(struct platform_device *pdev)
+>  				"%s: failed to register regulator %s err %d\n",
+>  				__func__, ab3100_regulator_desc[i].name,
+>  				err);
+> -			i--;
+>  			/* remove the already registered regulators */
+> -			while (i > 0) {
+> +			while (--i >= 0)
+>  				regulator_unregister(ab3100_regulators[i].rdev);
+> -				i--;
+> -			}
+>  			return err;
+>  		}
+>  
 
-I know some other drivers check _STA themselves, but it's unnecessary - 
-if _STA didn't evaluate appropriately, the bus driver won't create the 
-pnp object and there won't be anything for you to bind to in the first 
-place.
+Applied.
 
+Thanks
+
+Liam
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
