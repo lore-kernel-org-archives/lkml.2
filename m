@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298Ab0HRIhl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 04:37:41 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:51146 "EHLO
+	id S1752344Ab0HRIiM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 04:38:12 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:51501 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752240Ab0HRIhj (ORCPT
+	with ESMTP id S1751177Ab0HRIiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 04:37:39 -0400
+	Wed, 18 Aug 2010 04:38:09 -0400
 From: Ike Panhc <ike.pan@canonical.com>
 To: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org
@@ -16,9 +16,9 @@ Cc: Thomas Renninger <trenn@suse.de>, Alan Cox <alan@linux.intel.com>,
         David Woodhouse <David.Woodhouse@intel.com>,
         Randy Dunlap <randy.dunlap@oracle.com>,
         Len Brown <len.brown@intel.com>, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 3/8] ideapad: make sure we bind on the correct device
-Date: Wed, 18 Aug 2010 16:37:33 +0800
-Message-Id: <1282120653-11434-1-git-send-email-ike.pan@canonical.com>
+Subject: [PATCH 4/8] ideapad: use return value of _CFG to tell if device exist or not
+Date: Wed, 18 Aug 2010 16:38:03 +0800
+Message-Id: <1282120683-11469-1-git-send-email-ike.pan@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
 References: <1282120564-11324-1-git-send-email-ike.pan@canonical.com>
@@ -26,38 +26,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By reading from method _STA and _CFG to make sure we bind on the correct
-VPC2004 device.
+There are several bits of the return value of _CFG shows if RF/Camera devices
+exist or not.
 
 Signed-off-by: Ike Panhc <ike.pan@canonical.com>
 ---
- drivers/platform/x86/ideapad_acpi.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ drivers/platform/x86/ideapad_acpi.c |   44 ++++++++---------------------------
+ 1 files changed, 10 insertions(+), 34 deletions(-)
 
 diff --git a/drivers/platform/x86/ideapad_acpi.c b/drivers/platform/x86/ideapad_acpi.c
-index 6176597..c1eec70 100644
+index c1eec70..673b44d 100644
 --- a/drivers/platform/x86/ideapad_acpi.c
 +++ b/drivers/platform/x86/ideapad_acpi.c
-@@ -328,10 +328,18 @@ MODULE_DEVICE_TABLE(acpi, ideapad_device_ids);
+@@ -40,13 +40,14 @@ struct ideapad_private {
  
- static int ideapad_acpi_add(struct acpi_device *adevice)
+ static struct {
+ 	char *name;
++	int cfgbit;
+ 	int type;
+ } ideapad_rfk_data[] = {
+-	/* camera has no rfkill */
+-	{ "ideapad_wlan",	RFKILL_TYPE_WLAN },
+-	{ "ideapad_bluetooth",	RFKILL_TYPE_BLUETOOTH },
+-	{ "ideapad_3g",		RFKILL_TYPE_WWAN },
+-	{ "ideapad_killsw",	RFKILL_TYPE_WLAN }
++	{ "ideapad_camera",	19, NUM_RFKILL_TYPES },
++	{ "ideapad_wlan",	18, RFKILL_TYPE_WLAN },
++	{ "ideapad_bluetooth",	16, RFKILL_TYPE_BLUETOOTH },
++	{ "ideapad_3g",		17, RFKILL_TYPE_WWAN },
++	{ "ideapad_killsw",	0, RFKILL_TYPE_WLAN }
+ };
+ 
+ /*
+@@ -160,32 +161,6 @@ static int write_ec_cmd(acpi_handle handle, int cmd, unsigned long data)
+ }
+ /* the above is ACPI helpers */
+ 
+-static int ideapad_dev_exists(int device)
+-{
+-	acpi_status status;
+-	union acpi_object in_param;
+-	struct acpi_object_list input = { 1, &in_param };
+-	struct acpi_buffer output;
+-	union acpi_object out_obj;
+-
+-	output.length = sizeof(out_obj);
+-	output.pointer = &out_obj;
+-
+-	in_param.type = ACPI_TYPE_INTEGER;
+-	in_param.integer.value = device + 1;
+-
+-	status = acpi_evaluate_object(NULL, "\\_SB_.DECN", &input, &output);
+-	if (ACPI_FAILURE(status)) {
+-		printk(KERN_WARNING "IdeaPAD \\_SB_.DECN method failed %d. Is this an IdeaPAD?\n", status);
+-		return -ENODEV;
+-	}
+-	if (out_obj.type != ACPI_TYPE_INTEGER) {
+-		printk(KERN_WARNING "IdeaPAD \\_SB_.DECN method returned unexpected type\n");
+-		return -ENODEV;
+-	}
+-	return out_obj.integer.value;
+-}
+-
+ static int ideapad_dev_get_state(int device)
  {
--	int i;
-+	int i, cfg;
- 	int devs_present[5];
- 	struct ideapad_private *priv;
+ 	acpi_status status;
+@@ -341,9 +316,10 @@ static int ideapad_acpi_add(struct acpi_device *adevice)
+ 		return -ENODEV;
  
-+	if (read_method_int(adevice->handle, "_STA", &i))
-+		return -ENODEV;
-+	if (i != 0x0F)
-+		return -ENODEV;
-+
-+	if (read_method_int(adevice->handle, "_CFG", &cfg))
-+		return -ENODEV;
-+
  	for (i = IDEAPAD_DEV_CAMERA; i < IDEAPAD_DEV_KILLSW; i++) {
- 		devs_present[i] = ideapad_dev_exists(i);
- 		if (devs_present[i] < 0)
+-		devs_present[i] = ideapad_dev_exists(i);
+-		if (devs_present[i] < 0)
+-			return devs_present[i];
++		if (test_bit(ideapad_rfk_data[i].cfgbit, (unsigned long *)&cfg))
++			devs_present[i] = 1;
++		else
++			devs_present[i] = 0;
+ 	}
+ 
+ 	/* The hardware switch is always present */
 -- 
 1.7.0.4
 
