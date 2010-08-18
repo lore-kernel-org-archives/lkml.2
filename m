@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab0HROsS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 10:48:18 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37020 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148Ab0HROsR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 10:48:17 -0400
-Date: Wed, 18 Aug 2010 20:18:09 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nikanth Karthikesan <knikanth@suse.de>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Bill Davidsen <davidsen@tmr.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC][PATCH] Per file dirty limit throttling
-Message-ID: <20100818144809.GF28417@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <201008160949.51512.knikanth@suse.de>
- <201008171039.23701.knikanth@suse.de>
- <1282033475.1926.2093.camel@laptop>
- <201008181452.05047.knikanth@suse.de>
- <1282125536.1926.3675.camel@laptop>
- <20100818140856.GE28417@balbir.in.ibm.com>
- <1282141518.1926.4048.camel@laptop>
+	id S1753657Ab0HROtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 10:49:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48604 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab0HROs7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 10:48:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ve6qWv8YGu3ZDd/4BFzuhI+lGdrnkU/3OyX3wKnnIzf9FTHu3GI4nQiq6qVqEtvIre
+         Oc5qh8tcMXs+27dDvYlZJiaXsIuKUFIc/7PE1FeoiJXq0DhFdjBZQMPB/wiEOyLCZDO/
+         PXiqeOynROvXtJ2zAXzmo9sXNvrbDcMvX19qc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1282141518.1926.4048.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTimSkniqYYWAD29VK6Rt45b_5A84fuK0m0q9EznC@mail.gmail.com>
+References: <AANLkTimnC384BMdwJtk1Rp33YnAXr66HJqPvBegOxGmC@mail.gmail.com>
+	<201008180325.17816.rjw@sisk.pl>
+	<AANLkTimdF_eYurw9k0rQRAzSQ-fZMKsFLupnME_ch1Ru@mail.gmail.com>
+	<alpine.LNX.2.00.1008180911180.1019@pobox.suse.cz>
+	<AANLkTiki82ZFntH2M6UTyB7+215=4mNmk3SsxiS=CGDH@mail.gmail.com>
+	<alpine.LNX.2.00.1008181045110.1019@pobox.suse.cz>
+	<AANLkTikPC1CGjNcP2ARf8SJw3HTEBOcdgGnDjx87DERX@mail.gmail.com>
+	<AANLkTimSkniqYYWAD29VK6Rt45b_5A84fuK0m0q9EznC@mail.gmail.com>
+Date: Wed, 18 Aug 2010 16:48:58 +0200
+Message-ID: <AANLkTikooEGbmLT-UVZ3wb1jAjocT1eO06tZkg+kQefV@mail.gmail.com>
+Subject: Re: [REGRESSION, bisected] 2.6.36-rc1 - suspend issues
+From: Gabriel Craciunescu <osnix0@googlemail.com>
+To: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: trapdoor6@gmail.com, Jiri Kosina <jkosina@suse.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+        arnd@arndb.de, trapDoor <trapdoor6@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-08-18 16:25:18]:
+2010/8/18 Andrea Gelmini <andrea.gelmini@gelma.net>
+>
+> 2010/8/18 trapDoor <trapdoor6@gmail.com>:
+> > Andrea, Gabriel
+> > Would you please check if Jiri's patch solves the problem on your end
+> > as well? Just to make 100% sure we can close related bugzilla call.
+>
+> Well, I made the test, with ~10 cycle hibernation/resume.
+> Everything seems goes right.
+>
 
-> On Wed, 2010-08-18 at 19:38 +0530, Balbir Singh wrote:
-> 
-> > There is an ongoing effort to look at per-cgroup dirty limits and I
-> > honestly think it would be nice to do it at that level first. We need
-> > it there as a part of the overall I/O controller. As a specialized
-> > need it could handle your case as well. 
-> 
-> Well, it would be good to isolate that to the cgroup code. Also from
-> what I understood, the plan was to simply mark dirty inodes with a
-> cgroup and use that from writeout_inodes() to write out inodes
-> specifically used by that cgroup.
-> 
-> That is, on top of what Andrea Righi already proposed, which would
-> provide the actual per cgroup dirty limit (although the per-bdi
-> proportions applied to a cgroup limit aren't strictly correct, but that
-> seems to be something you'll have to live with, a per-bdi-per-cgroup
-> proportion would simply be accounting insanity).
-> 
-> That is a totally different thing than what was proposed.
+Does work fine here also ..
 
-Understood, I was indirectly trying to get Nikanth to look at cgroups
-since he was interested in the dirtier (as in task).
+Regards,
 
-
--- 
-	Three Cheers,
-	Balbir
+Gabriel
