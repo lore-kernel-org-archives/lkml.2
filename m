@@ -1,106 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751820Ab0HRReX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 18 Aug 2010 13:34:23 -0400
-Received: from fieldses.org ([174.143.236.118]:46092 "EHLO fieldses.org"
+	id S1751998Ab0HRRhz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 18 Aug 2010 13:37:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:36451 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751237Ab0HRReV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 18 Aug 2010 13:34:21 -0400
-Date: Wed, 18 Aug 2010 13:32:03 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        "Patrick J. LoPresti" <lopresti@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Proposal: Use hi-res clock for file timestamps
-Message-ID: <20100818173203.GC32430@fieldses.org>
-References: <AANLkTimnyXKahtjaFeSsgcq=xMy-pP3na1jidQhZ-dt2@mail.gmail.com>
- <87aaolwar8.fsf@basil.nowhere.org>
- <20100817174134.GA23176@fieldses.org>
- <20100817182920.GD18161@basil.fritz.box>
- <20100817190447.GA28049@fieldses.org>
- <AANLkTi=w1UA5ZZDBigpxMiL7A7DnbnQhLkg62JZpC6Ri@mail.gmail.com>
- <20100817203941.729830b7@lxorguk.ukuu.org.uk>
- <20100817192937.GD26609@fieldses.org>
- <20100818155359.66b9ddb6@notabene>
+	id S1751527Ab0HRRhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 18 Aug 2010 13:37:52 -0400
+Date: Wed, 18 Aug 2010 19:37:09 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        npiggin@kernel.dk, a.p.zijlstra@chello.nl, jack@suse.cz
+Subject: Re: [bug] radix_tree_gang_lookup_tag_slot() looping endlessly
+Message-ID: <20100818173708.GB15010@quack.suse.cz>
+References: <20100818135651.GK7362@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100818155359.66b9ddb6@notabene>
+In-Reply-To: <20100818135651.GK7362@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Aug 18, 2010 at 03:53:59PM +1000, Neil Brown wrote:
-> I'm not sure you even want to pay for a per-filesystem atomic access when
-> updating mtime.  mnt_want_write - called at the same time - seems to go to
-> some lengths to avoid an atomic operation.
+  Hi,
+
+On Wed 18-08-10 23:56:51, Dave Chinner wrote:
+> I'm seeing a livelock with the new writeback sync livelock avoidance
+> code. The problem is that the radix tree lookup via
+> pagevec_lookup_tag()->find_get_pages_tag() is getting stuck in
+> radix_tree_gang_lookup_tag_slot() and never exitting.
+  Is this pagevec_lookup_tag() from write_cache_pages() which was called
+for fsync() or so? 
+
+> The reproducer I'm running is xfstests 013 on 2.6.35-rc1 with some
+> pending XFS changes available here:
 > 
-> I think that nfsd should be the only place that has to pay the atomic
-> penalty, as it is where the need is.
+> git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev.git for-oss
 > 
-> I imagine something like this:
->  - Create a global struct timespec which is protected by a seqlock
->    Call it current_nfsd_time or similar.
->  - file_update_time reads this and uses it if it is newer than
->    current_fs_time.
->  - nfsd updates it whenever it reads an mtime out of an inode that matches
->    current_fs_time to the granularity of 1/HZ.
+> It's 100% reproducable, and a regression against 2.6.35 patched wth exactly
+> the same extra XFS commits as the above branch.
+  Hmm, what HW config do you have? I didn't hit the livelock and I've been
+running xfstests several times with the livelock avoidance patch. Hmm,
+looking at the code maybe what you describe could happen if we remove the
+page from page cache but leave a dangling tag in the radix tree... But
+remove_from_page_cache() is called with tree_lock held and it removes all
+tags from the index we just remove so it shouldn't really happen. Could
+you dump more info about the inode this happens on? Like the i_size, the
+index we stall at... Thanks.
 
-We can also skip the update whenever current_nfsd_time is greater than
-the inode's mtime--that's enough to ensure that the next
-file_update_time() call will get a time different from the inode's
-current mtime.
+> I tried applying Nick's recent indirect pointer fixup patch for the
+> radix tree, but that didn't fix the problem. I applied the patch
+> below on top of that to detect when __lookup_tag is not making
+> progress and the livelock has gone away. Someone who knows the how
+> the radix tree code is supposed to work might be able to pinpoint
+> the problem exactly from this.
 
-And that means that a sequence like
-
-	file_update_time()
-	N nfsd_getattr()'s
-
-doesn't make N updates to current_nfsd_time, when only 1 was necessary.
-
->    If the current value is before current_kernel_time, it
->    is set to current_kernel_time, otherwise tv_nsec is incremented -
->    unless that increases
->    beyond jiffies_to_usec(1)*1000 beyond current_kernel_time.
-
-... which would only happen on hardware that could process a getattr and
-a data update per nanosecond continuously for a jiffy.
-
->  - the global 'struct timespec' is zeroed whenever system time is set
->    backwards.
-
-OK, got it, I think: so this is the same as a global version of Alan's
-clock, except that the extra ticks only happen when they need to.
-
-The properties it satisfies:
-
-	- It's still a single global clock, so it's consistent between
-	  files.
-	- It degenerates to jiffies in the absence of getattr's from
-	  nfsd.
-	- It need only invalidate the other cpus' cached value of the
-	  clock on the first getattr of a file that follows less than a
-	  jiffy after an update of the file's data.
-	- Absent utime(), time going backwards, or futuristic hardware,
-	  it guarantees that two nfsd reads of an inode's mtime will
-	  return different values iff the inode's data was modified in
-	  between the two.
-
-Shortcomings:
-
-	- The clock advances in units only of either 1 jiffy or 1 ns.
-	  This will look odd.  But when the alternative is units of 1
-	  jiffy or 0 ns, it seems an improvement....
-	- A slowdown due to inodes being file_update_time() marking inodes
-	  dirty more frequently?
-	- Doesn't help with ext3.  Oh well.
-
-Would the extra expense rule out treating sys_stat() the same as nfsd?
-It would be nice to be able to solve the same problem for userspace
-nfsd's (or any other application that might be using mtime to save
-rereading data).
-
---b.
+								Honza
+> ---
+>  lib/radix-tree.c |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+> 
+> diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+> index 9eeb9f3..5d2872c 100644
+> --- a/lib/radix-tree.c
+> +++ b/lib/radix-tree.c
+> @@ -1077,6 +1077,11 @@ radix_tree_gang_lookup_tag(struct radix_tree_root *root, void **results,
+>  			break;
+>  		slots_found = __lookup_tag(node, (void ***)results + ret,
+>  				cur_index, max_items - ret, &next_index, tag);
+> +
+> +		/* livelock avoidance */
+> +		if (slots_found == 0 && cur_index == next_index)
+> +			break;
+> +
+>  		nr_found = 0;
+>  		for (i = 0; i < slots_found; i++) {
+>  			struct radix_tree_node *slot;
+> @@ -1147,6 +1152,9 @@ radix_tree_gang_lookup_tag_slot(struct radix_tree_root *root, void ***results,
+>  			break;
+>  		slots_found = __lookup_tag(node, results + ret,
+>  				cur_index, max_items - ret, &next_index, tag);
+> +		/* livelock avoidance */
+> +		if (slots_found == 0 && cur_index == next_index)
+> +			break;
+>  		ret += slots_found;
+>  		if (next_index == 0)
+>  			break;
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
